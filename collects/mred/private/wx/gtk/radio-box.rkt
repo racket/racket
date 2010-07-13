@@ -99,7 +99,11 @@
     (as-entry
      (lambda ()
        (set! no-clicked? #t)
-       (gtk_toggle_button_set_active (list-ref radio-gtks i) #t)
+       (if (= i -1)
+           (let ([i (get-selection)])
+             (unless (= i -1)
+               (gtk_toggle_button_set_active (list-ref radio-gtks i) #f)))
+           (gtk_toggle_button_set_active (list-ref radio-gtks i) #t))
        (set! no-clicked? #f))))
 
   (define/public (get-selection)

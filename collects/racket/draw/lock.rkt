@@ -84,7 +84,7 @@
        (lambda (t) (t))))]))
 
 (define (as-exit f)
-  ;; (unless (eq? monitor-owner (current-thread)) (error 'monitor-exit "not in monitored area for ~e" f))
+  (unless (eq? monitor-owner (current-thread)) (error 'monitor-exit "not in monitored area for ~e" f))
   (let ([paramz old-paramz]
         [break-paramz old-break-paramz])
     (with-continuation-mark 

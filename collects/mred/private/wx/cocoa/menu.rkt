@@ -125,13 +125,14 @@
   (define/public (checked? item)
     (send item get-checked))
 
-  (def/public-unimplemented delete-by-position)
+  (define/public (delete-by-position pos)
+    (let ([mitem (list-ref items pos)])
+      (set! items (append (take items pos)
+                          (drop items (add1 pos))))
+      (when cocoa-menu
+        (tellv cocoa-menu removeItemAtIndex: #:type _NSInteger pos))))
 
   (define/public (delete item)
     (let ([pos (find-pos item)])
       (when pos
-        (let ([mitem (list-ref items pos)])
-          (set! items (append (take items pos)
-                              (drop items (add1 pos))))
-          (when cocoa-menu
-            (tellv cocoa-menu removeItemAtIndex: #:type _NSInteger pos)))))))
+        (delete-by-position pos)))))

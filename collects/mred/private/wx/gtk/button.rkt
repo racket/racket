@@ -20,6 +20,10 @@
 (define-gtk gtk_button_new_with_mnemonic (_fun _string -> _GtkWidget))
 (define-gtk gtk_button_new (_fun -> _GtkWidget))
 (define-gtk gtk_window_set_default (_fun _GtkWidget (_or-null _GtkWidget) -> _void))
+(define-gtk gtk_button_set_label (_fun _GtkWidget _string -> _void))
+
+(define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
+(define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
 
 (define-signal-handler connect-clicked "clicked"
   (_fun _GtkWidget -> _void)
@@ -70,6 +74,17 @@
   (define/public (queue-clicked)
     ;; Called from event-handling thread
     (queue-window-event this (lambda () (clicked))))
+
+  (define/override (set-label s)
+    (cond
+     [(string? s)
+      (gtk_button_set_label gtk (mnemonic-string s))]
+     [else
+      (let ([image-gtk (gtk_image_new_from_pixbuf 
+                        (bitmap->pixbuf s))])
+        (gtk_container_remove gtk (gtk_bin_get_child gtk))
+        (gtk_container_add gtk image-gtk)
+        (gtk_widget_show image-gtk))]))
 
   (define/public (set-border on?)
     (gtk_window_set_default (get-window-gtk) (if on? gtk #f))))

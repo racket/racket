@@ -29,16 +29,18 @@
       ;; Out of atomic mode:
       (let ([k (unbox b)])
         (when k
-          (call-with-continuation-prompt
-           k
-           freeze-tag)))
+          (call-with-continuation-prompt ; to catch aborts
+           (lambda ()
+             (call-with-continuation-prompt
+              k
+              freeze-tag)))))
       (void))))
 
 ;; FIXME: waiting 200msec is not a good enough rule.
 (define (constrained-reply es thunk default [should-give-up?
                                              (let ([now (current-inexact-milliseconds)])
                                                (lambda ()
-                                                 ((current-inexact-milliseconds) . > . 200)))])
+                                                 ((current-inexact-milliseconds) . > . (+ now 200))))])
   (unless (freezer-box)
     (log-error "internal error: constrained-reply not within an unfreeze point"))
   (if (eq? (current-thread) (eventspace-handler-thread es))

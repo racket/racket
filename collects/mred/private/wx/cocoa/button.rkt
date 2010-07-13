@@ -103,6 +103,13 @@
   (tellv button-cocoa setAction: #:type _SEL (selector clicked:))
 
   (define/override (get-cocoa-control) button-cocoa)
+
+  (define/override (set-label label)
+    (cond
+     [(string? label)
+      (tellv cocoa setTitleWithMnemonic: #:type _NSString label)]
+     [else
+      (tellv cocoa setImage: (bitmap->image label))]))
   
   (define callback cb)
   (define/public (clicked)

@@ -21,7 +21,6 @@
  play-sound
  check-for-break
  find-graphical-system-path
- get-top-level-windows
  register-collecting-blit
  unregister-collecting-blit
  shortcut-visible-in-label?
@@ -71,7 +70,6 @@
 (define-unimplemented play-sound)
 (define-unimplemented check-for-break)
 (define-unimplemented find-graphical-system-path)
-(define (get-top-level-windows) null)
 (define (register-collecting-blit . args) (void))
 (define (unregister-collecting-blit . args) (void))
 (define (shortcut-visible-in-label? [mbar? #f]) #t)

@@ -71,7 +71,6 @@
                 shortcut-visible-in-label?
                 unregister-collecting-blit
                 register-collecting-blit
-                get-top-level-windows
                 find-graphical-system-path
                 check-for-break
                 play-sound

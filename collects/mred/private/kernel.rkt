@@ -33,4 +33,5 @@
          main-eventspace?
          eventspace-handler-thread
          queue-callback
-         middle-queue-key)
+         middle-queue-key
+         get-top-level-windows)

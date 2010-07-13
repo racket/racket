@@ -34,6 +34,7 @@
          remove-timer-callback
 
          register-frame-shown
+         get-top-level-windows
 
          queue-quit-event)
 
@@ -101,7 +102,7 @@
 ;; ------------------------------------------------------------
 ;; Eventspaces
 
-(define-struct eventspace (handler-thread queue-proc done-evt)
+(define-struct eventspace (handler-thread queue-proc frames-hash done-evt)
   #:property prop:evt (lambda (v)
                         (wrap-evt (eventspace-done-evt v)
                                   (lambda (_) v))))
@@ -126,7 +127,8 @@
          [else 1]))))
 
 (define (make-eventspace* th)
-  (let ([done-sema (make-semaphore 1)])
+  (let ([done-sema (make-semaphore 1)]
+        [frames (make-hasheq)])
     (make-eventspace th
                      (let ([count 0])
                        (let ([lo (mcons #f #f)]
@@ -134,7 +136,6 @@
                              [hi (mcons #f #f)]
                              [timer (box '())]
                              [timer-counter 0]
-                             [frames (make-hasheq)]
                              [newly-posted-sema (make-semaphore)])
                          (let* ([check-done
                                  (lambda ()
@@ -234,6 +235,7 @@
                                              never-evt))])
                                  (end-atomic)
                                  e))]))))
+                     frames
                      (semaphore-peek-evt done-sema))))
 
 (define main-eventspace (make-eventspace* (current-thread)))
@@ -316,6 +318,10 @@
   (queue-event (current-eventspace) f (if on?
                                           'frame-add
                                           'frame-remove)))
+
+(define (get-top-level-windows)
+  (hash-map (eventspace-frames-hash (current-eventspace))
+            (lambda (k v) k)))
 
 (define (queue-quit-event)
   (queue-event main-eventspace (application-quit-handler) 'med))

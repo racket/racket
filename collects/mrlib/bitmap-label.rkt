@@ -96,6 +96,7 @@
               outside-margin
               (- (/ new-height 2) (/ img-height 2)))
         (send bitmap-dc set-bitmap #f)
+
         new-bitmap)))
       
   (define (bitmap-label-maker text filename-or-bitmap)

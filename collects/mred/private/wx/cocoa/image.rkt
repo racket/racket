@@ -57,12 +57,11 @@
          [h (send bm get-height)]
          [str (make-bytes (* w h 4) 255)])
     (send bm get-argb-pixels 0 0 w h str #f)
-    (let ([mask-bm (send bm get-loaded-mask)])
-      (when mask-bm
-        (send mask-bm get-argb-pixels 0 0 w h str #t)))
+    (when (send bm get-loaded-mask)
+      (send bm get-argb-pixels 0 0 w h str #t))
     (as-entry
      (lambda ()
-       (let ([rgba (scheme_make_sized_byte_string (malloc (* w h 4)) (* w h 4) 1)])
+       (let ([rgba (scheme_make_sized_byte_string (malloc (* w h 4) 'raw) (* w h 4) 0)])
          (memcpy rgba str (sub1 (* w h 4)))
          (let* ([cs (CGColorSpaceCreateDeviceRGB)]
                 [provider (CGDataProviderCreateWithData #f rgba (* w h 4) free-it)]

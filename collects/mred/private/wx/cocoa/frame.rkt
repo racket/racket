@@ -217,8 +217,9 @@
     (define/override (call-pre-on-char w e)
       (pre-on-char w e))
 
+    (define/public (on-menu-click) (void))
+
     (def/public-unimplemented on-toolbar-click)
-    (def/public-unimplemented on-menu-click)
     (def/public-unimplemented on-menu-command)
     (def/public-unimplemented on-mdi-activate)
     (def/public-unimplemented on-close)
