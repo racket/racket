@@ -330,7 +330,8 @@ v4 todo:
             'racket/contract:contract 
             (vector this-> 
                     ;; the -> in the original input to this guy
-                    (car (syntax-e stx))))
+                    (list (car (syntax-e stx)))
+                    '()))
            inner-args/body
            (syntax (dom-names ... rng-names ...))))))))
   

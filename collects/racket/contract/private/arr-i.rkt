@@ -119,6 +119,26 @@
          [(id . args)
           (datum->syntax sstx (cons #'this-arg #'args) sstx)])))))
 
+(define-for-syntax (find-pre/post-keywords stx)
+  (let ([pre #f]
+        [post #f])
+    (let loop ([stx (syntax->list stx)])
+      (cond
+        [(syntax? stx)
+         (loop (syntax-e stx))]
+        [(pair? stx)
+         (when (and (syntax? (car stx))
+                    (eq? (syntax-e (car stx))
+                         '#:pre-cond))
+           (set! pre (car stx)))
+         (when (and (syntax? (car stx))
+                    (eq? (syntax-e (car stx))
+                         '#:post-cond))
+           (set! post (car stx)))
+         (loop (cdr stx))]
+        [else (void)]))
+    (values pre post)))
+
 (define-syntax (->i stx)
   (syntax-case stx ()
     [(_ (raw-mandatory-doms ...)
@@ -250,9 +270,16 @@
                                            (syntax-local-infer-name stx)
                                            #`(λ args (apply f args)))))
                          'racket/contract:contract 
-                         (vector this->i 
-                                 ;; the -> in the original input to this guy
-                                 (car (syntax-e stx))))
+                         (let-values ([(pre-kwd post-kwd) (find-pre/post-keywords #'leftover)])
+                           (vector this->i 
+                                   ;; the -> in the original input to this guy
+                                   (let ([kwd (list (car (syntax-e stx)))])
+                                     (if post-kwd
+                                         (cons post-kwd kwd)
+                                         kwd))
+                                   (if pre-kwd
+                                       (list pre-kwd)
+                                       '()))))
                          'racket/contract:internal-contract
                          (gensym '->i-boundary)))))))))))]))
 

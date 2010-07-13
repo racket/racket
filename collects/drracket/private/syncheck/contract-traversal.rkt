@@ -80,8 +80,12 @@
              [(pair? prop) (sloop (car prop)) (sloop (cdr prop))]
              [(vector? prop)
               (let ([id (vector-ref prop 0)]
-                    [to-color (vector-ref prop 1)])
-                (base-color #'id polarity boundary-contract? my-coloring-plans client-coloring-plans)
+                    [to-color-pos (vector-ref prop 1)]
+                    [to-color-neg (vector-ref prop 2)])
+                (for ((stx (in-list to-color-pos)))
+                  (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans))
+                (for ((stx (in-list to-color-neg)))
+                  (base-color stx (not polarity) boundary-contract? my-coloring-plans client-coloring-plans))
                 (for ((stx (in-list (hash-ref domain-map id '()))))
                   (do-contract-traversal stx boundary-contract?
                                          my-coloring-plans client-coloring-plans
