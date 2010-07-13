@@ -28,23 +28,25 @@
     (or (regexp-match ".*~" name) ; we ignore backup files
         ;; machine optimized and hand optimized versions must expand to the
         ;; same code
-        (and (equal? (parameterize ([current-load-relative-directory
-                                     (build-path here "generic")])
-                       (read-and-expand gen))
-                     (let ((hand-opt-dir (build-path here "hand-optimized")))
-                       (parameterize ([current-load-relative-directory hand-opt-dir])
-                         (read-and-expand (build-path hand-opt-dir name)))))
+        (and (or (equal? (parameterize ([current-load-relative-directory
+                                         (build-path here "generic")])
+                           (read-and-expand gen))
+                         (let ((hand-opt-dir (build-path here "hand-optimized")))
+                           (parameterize ([current-load-relative-directory hand-opt-dir])
+                             (read-and-expand (build-path hand-opt-dir name)))))
+                 (begin (printf "~a failed: expanded code mismatch\n\n" name)
+                        #f))
              ;; optimized and non-optimized versions must evaluate to the
              ;; same thing
-             (equal? (with-output-to-string
-                       (lambda ()
-                         (dynamic-require gen #f)))
-                     (with-output-to-string
-                       (lambda ()
-                         (let ((non-opt-dir (build-path here "non-optimized")))
-                           (dynamic-require (build-path non-opt-dir name) #f))))))
-        (begin (printf "~a failed\n\n" name)
-               #f))))
+             (or (equal? (with-output-to-string
+                           (lambda ()
+                             (dynamic-require gen #f)))
+                         (with-output-to-string
+                           (lambda ()
+                             (let ((non-opt-dir (build-path here "non-optimized")))
+                               (dynamic-require (build-path non-opt-dir name) #f)))))
+                 (begin (printf "~a failed: result mismatch\n\n" name)
+                        #f))))))
 
 (define-runtime-path here ".")
 
