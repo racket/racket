@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require "common.ss"
           scribble/eval
-          file/md5
           (for-label file/md5))
 
 @(define md5-eval (make-base-eval))

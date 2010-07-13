@@ -344,7 +344,9 @@ collection for testing purposes where the peer identifies itself using
 
 @defmodule[openssl/sha1]{The @schememodname[openssl/sha1] library
 provides a Racket wrapper for the OpenSSL library's SHA-1 hashing
-functions.}
+functions. If the OpenSSL library cannot be opened, this library logs
+a warning and falls back to the implementation in
+@racketmodname[file/sha1].}
 
 @defproc[(sha1 [in input-port]) string?]{
 

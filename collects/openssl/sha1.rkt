@@ -1,11 +1,12 @@
 #lang racket/base
 (require ffi/unsafe
          racket/runtime-path
-         (for-syntax racket/base))
+         (for-syntax racket/base)
+         (prefix-in r: file/sha1))
 
 (provide sha1
          sha1-bytes
-         bytes->hex-string)
+         (rename-out [r:bytes->hex-string bytes->hex-string]))
 
 (define-runtime-path libcrypto-so
   (case (system-type)
@@ -13,43 +14,37 @@
     [else '(so "libcrypto")]))
 
 (define libcrypto
-  (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7")))
+  (with-handlers ([exn:fail? (lambda (exn) 
+                               (log-warning (format "warning: couldn't load OpenSSL library: ~a"
+                                                    (if (exn? exn)
+                                                        (exn-message exn)
+                                                        exn)))
+                               #f)])
+    (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7"))))
 
 (define _SHA_CTX-pointer _pointer)
 
 (define SHA1_Init 
-  (get-ffi-obj 'SHA1_Init libcrypto (_fun _SHA_CTX-pointer -> _int)))
+  (get-ffi-obj 'SHA1_Init libcrypto (_fun _SHA_CTX-pointer -> _int) (lambda () #f)))
 (define SHA1_Update 
-  (get-ffi-obj 'SHA1_Update libcrypto (_fun _SHA_CTX-pointer _pointer _long -> _int)))
+  (get-ffi-obj 'SHA1_Update libcrypto (_fun _SHA_CTX-pointer _pointer _long -> _int) (lambda () #f)))
 (define SHA1_Final
-  (get-ffi-obj 'SHA1_Final libcrypto (_fun _pointer _SHA_CTX-pointer -> _int)))
+  (get-ffi-obj 'SHA1_Final libcrypto (_fun _pointer _SHA_CTX-pointer -> _int) (lambda () #f)))
 
 (define (sha1-bytes in)
-  (let ([ctx (malloc 256)]
-        [tmp (make-bytes 4096)]
-        [result (make-bytes 20)])
-    (SHA1_Init ctx)
-    (let loop ()
-      (let ([n (read-bytes-avail! tmp in)])
-        (unless (eof-object? n)
-          (SHA1_Update ctx tmp n)
-          (loop))))
-    (SHA1_Final result ctx)
-    result))
+  (if SHA1_Init
+      (let ([ctx (malloc 256)]
+            [tmp (make-bytes 4096)]
+            [result (make-bytes 20)])
+        (SHA1_Init ctx)
+        (let loop ()
+          (let ([n (read-bytes-avail! tmp in)])
+            (unless (eof-object? n)
+              (SHA1_Update ctx tmp n)
+              (loop))))
+        (SHA1_Final result ctx)
+        result)
+      (r:sha1-bytes in)))
 
 (define (sha1 in)
-  (bytes->hex-string (sha1-bytes in)))
-
-(define (bytes->hex-string bstr)
-  (let* ([len (bytes-length bstr)]
-         [bstr2 (make-bytes (* len 2))]
-         [digit
-          (lambda (v)
-            (if (v . < . 10)
-                (+ v (char->integer #\0))
-                (+ v (- (char->integer #\a) 10))))])
-    (for ([i (in-range len)])
-      (let ([c (bytes-ref bstr i)])
-        (bytes-set! bstr2 (* 2 i) (digit (arithmetic-shift c -4)))
-        (bytes-set! bstr2 (+ (* 2 i) 1) (digit (bitwise-and c #xF)))))
-    (bytes->string/latin-1 bstr2)))
+  (r:bytes->hex-string (sha1-bytes in)))
