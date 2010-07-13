@@ -4159,7 +4159,7 @@ void scheme_thread_block(float sleep_time)
 #ifdef MZ_USE_FUTURES
   scheme_check_future_work();
 #endif
-#ifdef MZ_USE_MZRT
+#if defined(MZ_USE_MZRT) && !defined(DONT_USE_FOREIGN)
   scheme_check_foreign_work();
 #endif
 

@@ -25,11 +25,14 @@
 (define _SHA_CTX-pointer _pointer)
 
 (define SHA1_Init 
-  (get-ffi-obj 'SHA1_Init libcrypto (_fun _SHA_CTX-pointer -> _int) (lambda () #f)))
+  (and libcrypto
+       (get-ffi-obj 'SHA1_Init libcrypto (_fun _SHA_CTX-pointer -> _int) (lambda () #f))))
 (define SHA1_Update 
-  (get-ffi-obj 'SHA1_Update libcrypto (_fun _SHA_CTX-pointer _pointer _long -> _int) (lambda () #f)))
+  (and libcrypto
+       (get-ffi-obj 'SHA1_Update libcrypto (_fun _SHA_CTX-pointer _pointer _long -> _int) (lambda () #f))))
 (define SHA1_Final
-  (get-ffi-obj 'SHA1_Final libcrypto (_fun _pointer _SHA_CTX-pointer -> _int) (lambda () #f)))
+  (and libcrypto
+       (get-ffi-obj 'SHA1_Final libcrypto (_fun _pointer _SHA_CTX-pointer -> _int) (lambda () #f))))
 
 (define (sha1-bytes in)
   (if SHA1_Init

@@ -7,6 +7,9 @@
  ********************************************/
 
 #include "schpriv.h"
+
+#ifndef DONT_USE_FOREIGN
+
 #include <errno.h>
 
 #ifndef WINDOWS_DYNAMIC_LOAD
@@ -3329,3 +3332,145 @@ void scheme_init_foreign(Scheme_Env *env)
 }
 
 /*****************************************************************************/
+
+#else /* DONT_USE_FOREIGN */
+
+static Scheme_Object *unimplemented(int argc, Scheme_Object **argv, Scheme_Object *who)
+{
+  scheme_signal_error("%s: foreign interface not supported for this platform",
+                      ((Scheme_Primitive_Proc *)who)->name);
+  return NULL;
+}
+
+static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object **argv)
+{
+  return scheme_make_integer(4);
+}
+
+static Scheme_Object *foreign_make_ctype(int argc, Scheme_Object **argv)
+{
+  return scheme_false;
+}
+
+void scheme_init_foreign(Scheme_Env *env)
+{
+  /* Create a dummy module. */
+  Scheme_Env *menv;
+  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
+  scheme_add_global("ffi-lib?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-lib?", 1, 1), menv);
+  scheme_add_global("ffi-lib",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-lib", 1, 2), menv);
+  scheme_add_global("ffi-lib-name",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-lib-name", 1, 1), menv);
+  scheme_add_global("ffi-obj?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-obj?", 1, 1), menv);
+  scheme_add_global("ffi-obj",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-obj", 2, 2), menv);
+  scheme_add_global("ffi-obj-lib",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-obj-lib", 1, 1), menv);
+  scheme_add_global("ffi-obj-name",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-obj-name", 1, 1), menv);
+  scheme_add_global("ctype?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ctype?", 1, 1), menv);
+  scheme_add_global("ctype-basetype",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ctype-basetype", 1, 1), menv);
+  scheme_add_global("ctype-scheme->c",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ctype-scheme->c", 1, 1), menv);
+  scheme_add_global("ctype-c->scheme",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ctype-c->scheme", 1, 1), menv);
+  scheme_add_global("make-ctype",
+   scheme_make_prim_w_arity((Scheme_Prim *)foreign_make_ctype, "make-ctype", 3, 3), menv);
+  scheme_add_global("make-cstruct-type",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 2), menv);
+  scheme_add_global("ffi-callback?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-callback?", 1, 1), menv);
+  scheme_add_global("cpointer?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "cpointer?", 1, 1), menv);
+  scheme_add_global("cpointer-tag",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "cpointer-tag", 1, 1), menv);
+  scheme_add_global("set-cpointer-tag!",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "set-cpointer-tag!", 2, 2), menv);
+  scheme_add_global("ctype-sizeof",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ctype-sizeof", 1, 1), menv);
+  scheme_add_global("ctype-alignof",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ctype-alignof", 1, 1), menv);
+  scheme_add_global("compiler-sizeof",
+   scheme_make_prim_w_arity((Scheme_Prim *)foreign_compiler_sizeof, "compiler-sizeof", 1, 1), menv);
+  scheme_add_global("malloc",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "malloc", 1, 5), menv);
+  scheme_add_global("end-stubborn-change",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "end-stubborn-change", 1, 1), menv);
+  scheme_add_global("free",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "free", 1, 1), menv);
+  scheme_add_global("malloc-immobile-cell",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "malloc-immobile-cell", 1, 1), menv);
+  scheme_add_global("free-immobile-cell",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "free-immobile-cell", 1, 1), menv);
+  scheme_add_global("ptr-add",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ptr-add", 2, 3), menv);
+  scheme_add_global("ptr-add!",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ptr-add!", 2, 3), menv);
+  scheme_add_global("offset-ptr?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "offset-ptr?", 1, 1), menv);
+  scheme_add_global("ptr-offset",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ptr-offset", 1, 1), menv);
+  scheme_add_global("set-ptr-offset!",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "set-ptr-offset!", 2, 3), menv);
+  scheme_add_global("vector->cpointer",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "vector->cpointer", 1, 1), menv);
+  scheme_add_global("flvector->cpointer",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "flvector->cpointer", 1, 1), menv);
+  scheme_add_global("memset",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "memset", 3, 5), menv);
+  scheme_add_global("memmove",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "memmove", 3, 6), menv);
+  scheme_add_global("memcpy",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "memcpy", 3, 6), menv);
+  scheme_add_global("ptr-ref",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ptr-ref", 2, 4), menv);
+  scheme_add_global("ptr-set!",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ptr-set!", 3, 5), menv);
+  scheme_add_global("ptr-equal?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ptr-equal?", 2, 2), menv);
+  scheme_add_global("make-sized-byte-string",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-sized-byte-string", 2, 2), menv);
+  scheme_add_global("ffi-call",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-call", 3, 5), menv);
+  scheme_add_global("ffi-callback",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-callback", 3, 6), menv);
+  scheme_add_global("saved-errno",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "saved-errno", 0, 0), menv);
+  scheme_add_global("lookup-errno",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), menv);
+  scheme_add_global("_void", scheme_false, menv);
+  scheme_add_global("_int8", scheme_false, menv);
+  scheme_add_global("_uint8", scheme_false, menv);
+  scheme_add_global("_int16", scheme_false, menv);
+  scheme_add_global("_uint16", scheme_false, menv);
+  scheme_add_global("_int32", scheme_false, menv);
+  scheme_add_global("_uint32", scheme_false, menv);
+  scheme_add_global("_int64", scheme_false, menv);
+  scheme_add_global("_uint64", scheme_false, menv);
+  scheme_add_global("_fixint", scheme_false, menv);
+  scheme_add_global("_ufixint", scheme_false, menv);
+  scheme_add_global("_fixnum", scheme_false, menv);
+  scheme_add_global("_ufixnum", scheme_false, menv);
+  scheme_add_global("_float", scheme_false, menv);
+  scheme_add_global("_double", scheme_false, menv);
+  scheme_add_global("_double*", scheme_false, menv);
+  scheme_add_global("_bool", scheme_false, menv);
+  scheme_add_global("_string/ucs-4", scheme_false, menv);
+  scheme_add_global("_string/utf-16", scheme_false, menv);
+  scheme_add_global("_bytes", scheme_false, menv);
+  scheme_add_global("_path", scheme_false, menv);
+  scheme_add_global("_symbol", scheme_false, menv);
+  scheme_add_global("_pointer", scheme_false, menv);
+  scheme_add_global("_gcpointer", scheme_false, menv);
+  scheme_add_global("_scheme", scheme_false, menv);
+  scheme_add_global("_fpointer", scheme_false, menv);
+  scheme_finish_primitive_module(menv);
+  scheme_protect_primitive_provide(menv, NULL);
+}
+
+#endif

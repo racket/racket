@@ -1585,7 +1585,6 @@ FOREIGN_IF_USED="FOREIGN_NOT_USED"
 if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
   AC_CONFIG_AUX_DIR( foreign/gcc )
   AC_CONFIG_SUBDIRS( foreign/gcc/libffi )
-  makefiles="$makefiles foreign/Makefile"
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"
   # --disable-multilib is needed to avoid problems when running libffi's
@@ -1593,9 +1592,10 @@ if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
   # other scripts do not use it anyway.
   ac_configure_args="$ac_configure_args --disable-multilib"
 else
-  FOREIGNTARGET="foreign-nothing"
+  FOREIGNTARGET="foreign-stub"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
 fi
+makefiles="$makefiles foreign/Makefile"
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_gracket}" = "yes" ; then

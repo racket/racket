@@ -12279,7 +12279,6 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
   subdirs="$subdirs foreign/gcc/libffi"
 
-  makefiles="$makefiles foreign/Makefile"
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"
   # --disable-multilib is needed to avoid problems when running libffi's
@@ -12287,9 +12286,10 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
   # other scripts do not use it anyway.
   ac_configure_args="$ac_configure_args --disable-multilib"
 else
-  FOREIGNTARGET="foreign-nothing"
+  FOREIGNTARGET="foreign-stub"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
 fi
+makefiles="$makefiles foreign/Makefile"
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_gracket}" = "yes" ; then

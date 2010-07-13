@@ -14,6 +14,10 @@ all:
 	$(MAKE) foreign.@LTO@
 	$(MAKE) gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
 
+# just foreign.c, which will generate a stub module:
+stub:
+	$(MAKE) foreign.@LTO@
+
 # Causes objects to be generated in gcc/libffi/src/
 #  in inconvenience mode:
 gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la:

@@ -36,6 +36,7 @@ FOREIGN_DIR = ../foreign
 FOREIGN_OBJ = $(FOREIGN_DIR)/foreign.@LTO@
 FOREIGN_OBJS = $(FOREIGN_OBJ) $(FOREIGN_DIR)/gcc/libffi/src/*.@LTO@ $(FOREIGN_DIR)/gcc/libffi/src/*/*.@LTO@
 FOREIGN_LIB = $(FOREIGN_OBJ) ../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
+FOREIGN_STUB_LIB = $(FOREIGN_OBJ)
 FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 # Dependency always uses FOREIGN_LIB, but linker uses FOREIGN_OBJSLIB. The
 #  FOREIGN_OBJSLIB expansion has too many "*"s to be a valid make target,
@@ -115,8 +116,8 @@ gc.@LIBSFX@:
 foreign-stuff:
 	cd $(FOREIGN_DIR); $(MAKE) all
 
-foreign-nothing:
-	echo no foreign
+foreign-stub:
+	cd $(FOREIGN_DIR); $(MAKE) stub
 
 mzlibrary:
 	cd src; $(MAKE) all 
@@ -124,8 +125,8 @@ mzlibrary:
 
 FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
 FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
-FOREIGN_NOT_USED_LIB = 
-FOREIGN_NOT_USED_OBJSLIB = 
+FOREIGN_NOT_USED_LIB = $(FOREIGN_OBJ)
+FOREIGN_NOT_USED_OBJSLIB = $(FOREIGN_OBJ)
 
 libracket.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB)
 	$(NICEAR) $(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBRACKET_DEP@

@@ -10,6 +10,9 @@ exec racket "$0" > `echo "$0" | sed 's/rktc$/c/'` "$0"
 @header{foreign.rktc}
 
 #include "schpriv.h"
+
+#ifndef DONT_USE_FOREIGN
+
 #include <errno.h>
 
 @@@IFNDEF{WINDOWS_DYNAMIC_LOAD}{
@@ -2412,3 +2415,46 @@ void scheme_init_foreign(Scheme_Env *env)
 }
 
 /*****************************************************************************/
+
+#else /* DONT_USE_FOREIGN */
+
+static Scheme_Object *unimplemented(int argc, Scheme_Object **argv, Scheme_Object *who)
+{
+  scheme_signal_error("%s: foreign interface not supported for this platform",
+                      ((Scheme_Primitive_Proc *)who)->name);
+  return NULL;
+}
+
+static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object **argv)
+{
+  return scheme_make_integer(4);
+}
+
+static Scheme_Object *foreign_make_ctype(int argc, Scheme_Object **argv)
+{
+  return scheme_false;
+}
+
+@(define (lookup name)
+  (if (member (cadr name) '("compiler_sizeof" "make_ctype"))
+      name
+      'unimplemented))
+
+void scheme_init_foreign(Scheme_Env *env)
+{
+  /* Create a dummy module. */
+  Scheme_Env *menv;
+  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
+  @(maplines
+     (lambda (x)
+       (define-values (sname cfun min max) (apply values x))
+       @list{scheme_add_global("@sname",
+              scheme_make_prim_w_arity((Scheme_Prim *)@(lookup cfun), "@sname", @min, @max), menv)})
+      (reverse (cfunctions)))
+  @(map-types
+     @list{scheme_add_global("_@stype", scheme_false, menv)})
+  scheme_finish_primitive_module(menv);
+  scheme_protect_primitive_provide(menv, NULL);
+}
+
+#endif

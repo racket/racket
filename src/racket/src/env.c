@@ -189,19 +189,6 @@ static void init_compile_data(Scheme_Comp_Env *env);
 /*========================================================================*/
 
 
-#ifdef DONT_USE_FOREIGN
-static void init_dummy_foreign(Scheme_Env *env)
-{
-  /* Works just well enough that the `mzscheme' module can 
-     import it (so that attaching `mzscheme' to a namespace 
-     also attaches `#%foreign'). */
-  Scheme_Env *menv;
-  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
-  scheme_finish_primitive_module(menv);
-  scheme_protect_primitive_provide(menv, NULL);
-}
-#endif
-
 static void boot_module_resolver()
 {
   Scheme_Object *boot, *a[2];
@@ -501,7 +488,9 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_gmp_places();
   scheme_alloc_global_fdset();
   scheme_init_file_places();
+#ifndef DONT_USE_FOREIGN
   scheme_init_foreign_places();
+#endif
 
   env = scheme_make_empty_env();
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, (Scheme_Object *)env); 
@@ -530,11 +519,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 #endif
   scheme_init_futures(env);
 
-#ifndef DONT_USE_FOREIGN
   scheme_init_foreign(env);
-#else
-  init_dummy_foreign(env);
-#endif
 
   scheme_add_embedded_builtins(env);
 
