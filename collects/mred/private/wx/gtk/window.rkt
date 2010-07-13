@@ -4,7 +4,7 @@
          ffi/unsafe/atomic
          "../../syntax.rkt"
          "../common/event.rkt"
-         "../cocoa/freeze.rkt"
+         "../common/freeze.rkt"
          "keycode.rkt"
          "queue.rkt"
          "utils.rkt"

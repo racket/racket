@@ -2,7 +2,7 @@
 (require scheme/class
          scheme/foreign
           "../../syntax.rkt"
-          "../cocoa/freeze.rkt"
+          "../common/freeze.rkt"
           "widget.rkt"
           "utils.rkt"
           "types.rkt")

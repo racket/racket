@@ -5,7 +5,7 @@
          "types.rkt"
          racket/draw/lock
          "../common/queue.rkt"
-         "../cocoa/freeze.rkt"
+         "../common/freeze.rkt"
          "const.rkt")
 
 (provide gtk-start-event-pump
@@ -105,11 +105,10 @@
       => (lambda (e)
            (let ([evt (gdk_event_copy evt)])
              (queue-event e (lambda () 
-                              (as-entry (lambda ()
-                                          (call-with-frozen-stack
-                                           (lambda ()
-                                             (gtk_main_do_event evt)
-                                             (gdk_event_free evt)))))))))]
+                              (call-as-unfreeze-point
+                               (lambda ()
+                                 (gtk_main_do_event evt)
+                                 (gdk_event_free evt)))))))]
      [else
       (gtk_main_do_event evt)])))
 (define (uninstall ignored)

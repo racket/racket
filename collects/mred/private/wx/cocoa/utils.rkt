@@ -2,6 +2,7 @@
 (require ffi/unsafe/objc
          ffi/unsafe
          ffi/unsafe/alloc
+         ffi/unsafe/define
          "../common/utils.rkt")
 
 (provide cocoa-lib
@@ -18,21 +19,9 @@
 (define cf-lib (ffi-lib (format "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")))
 (define appserv-lib (ffi-lib (format "/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")))
 
-(define-syntax define-cocoa/private
-  (syntax-rules ()
-    [(_ id type)
-     (define-cocoa/private id id type)]
-    [(_ id c-id type)
-     (define id (get-ffi-obj 'c-id cocoa-lib type))]))
-
-(define-syntax-rule (define-cocoa id type)
-  (define-cocoa/private id id type))
-
-(define-syntax-rule (define-cf id type)
-  (define id (get-ffi-obj 'id cf-lib type)))
-
-(define-syntax-rule (define-appserv id type)
-  (define id (get-ffi-obj 'id appserv-lib type)))
+(define-ffi-definer define-cocoa cocoa-lib)
+(define-ffi-definer define-cf cf-lib)
+(define-ffi-definer define-appserv appserv-lib)
 
 (define (objc-delete v)
   (tellv v release))

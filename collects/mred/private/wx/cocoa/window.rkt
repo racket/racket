@@ -9,7 +9,7 @@
          "keycode.rkt"
          "../common/event.rkt"
          "../../syntax.rkt"
-         "freeze.rkt")
+         "../common/freeze.rkt")
 (unsafe!)
 (objc-unsafe!)
 

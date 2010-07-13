@@ -8,7 +8,7 @@
          "types.rkt"
          "../common/queue.rkt"
          "../../lock.rkt"
-         "freeze.rkt")
+         "../common/freeze.rkt")
 (unsafe!)
 (objc-unsafe!)
 
@@ -213,11 +213,10 @@
                       (begin
                         (retain evt)
                         (queue-event e (lambda () 
-                                         (as-entry (lambda ()
-                                                     (call-with-frozen-stack
-                                                      (lambda ()
-                                                        (tellv app sendEvent: evt)
-                                                        (release evt))))))))
+                                         (call-as-unfreeze-point
+                                          (lambda ()
+                                            (tellv app sendEvent: evt)
+                                            (release evt))))))
                       (tellv app sendEvent: evt)))
                 #t)))
      (tellv pool release))))

@@ -1,8 +1,7 @@
-#lang scheme/base
-(require scheme/foreign)
-(unsafe!)
+#lang racket/base
+(require ffi/unsafe
+         ffi/unsafe/define)
 
 (provide define-mz)
 
-(define-syntax-rule (define-mz id type)
-  (define id (get-ffi-obj 'id #f type)))
+(define-ffi-definer define-mz #f)

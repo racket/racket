@@ -14,7 +14,7 @@
          "../common/queue.rkt"
          "../../syntax.rkt"
          "../../lock.rkt"
-         "freeze.rkt")
+         "../common/freeze.rkt")
 
 (provide canvas%)
 
@@ -61,6 +61,7 @@
           [gl-config #f])
 
     (inherit get-cocoa
+             get-eventspace
              make-graphics-context
              get-client-size
              is-shown-to-root?
@@ -327,11 +328,12 @@
                                [event-type kind]
                                [direction direction]
                                [position (get-scroll-pos direction)])))))))
-      (frozen-stack-run-some 
-       (lambda () (as-exit (lambda () (let loop () (pre-event-sync #t) (when (yield) (loop))))))
-       200))
+      (constrained-reply (get-eventspace)
+                         (lambda ()
+                           (let loop () (pre-event-sync #t) (when (yield) (loop))))
+                         (void)))
     (define/public (on-scroll e) (void))
-
+    
     (define/override (wants-all-events?) 
       ;; Called in Cocoa event-handling mode
       #t)

@@ -1,45 +1,74 @@
 #lang scheme/base
 (require scheme/foreign
-         "../common/utils.rkt"
-         "../common/queue.rkt")
+         racket/draw/hold
+         "utils.rkt"
+         "queue.rkt"
+         "../../lock.rkt")
 (unsafe!)
 
-(provide call-with-frozen-stack
-         frozen-stack-run-some
+(provide call-as-unfreeze-point
          constrained-reply)
 
-(define-mz scheme_with_stack_freeze (_fun (_fun _scheme -> _int) _scheme -> _int))
-(define-mz scheme_frozen_run_some (_fun (_fun _scheme -> _int) _scheme _int -> _int))
-(define-mz scheme_is_in_frozen_stack (_fun -> _int))
+(define-mz scheme_abort_continuation_no_dws (_fun _scheme _scheme -> _scheme))
+(define-mz scheme_call_with_composable_no_dws (_fun _scheme _scheme -> _scheme))
+(define-mz scheme_set_on_atomic_timeout (_fun (_fun -> _void) -> _pointer))
+(define-mz scheme_restore_on_atomic_timeout (_fun _pointer -> _pointer)
+  #:c-id scheme_set_on_atomic_timeout)
 
-(define (do-apply p) 
-  ;; Continuation prompt ensures that errors do not escape
-  ;; (and escapes are not supported by the frozen-stack implementation)
-  (call-with-continuation-prompt p)
-  1)
+(define freezer-box (make-parameter #f))
+(define freeze-tag (make-continuation-prompt-tag))
 
-(define (call-with-frozen-stack thunk)
-  (void (scheme_with_stack_freeze do-apply thunk)))
+;; Runs `thunk' atomically, but cooperates with 
+;; `constrained-reply' to continue a frozen
+;; computation in non-atomic mode.
+(define (call-as-unfreeze-point thunk)
+  (let ([b (box #f)])
+    (parameterize ([freezer-box b])
+      ;; In atomic mode:
+      (as-entry (lambda () (thunk)))
+      ;; Out of atomic mode:
+      (let ([k (unbox b)])
+        (when k
+          (call-with-continuation-prompt
+           k
+           freeze-tag)))
+      (void))))
 
-(define (frozen-stack-run-some thunk msecs)
-  (positive? (scheme_frozen_run_some do-apply thunk msecs)))
-
-;; FIXME: this loop needs to give up on the thunk
-;;  if it takes too long to return; as long as we're in the
-;;  loop, no other threads/eventspaces can run
-(define (constrained-reply es thunk default)
+;; FIXME: waiting 200msec is not a good enough rule.
+(define (constrained-reply es thunk default [should-give-up?
+                                             (let ([now (current-inexact-milliseconds)])
+                                               (lambda ()
+                                                 ((current-inexact-milliseconds) . > . 200)))])
+  (unless (freezer-box)
+    (log-error "internal error: constrained-reply not within an unfreeze point"))
   (if (eq? (current-thread) (eventspace-handler-thread es))
-      (let ([done? #f]
-            [result default])
-        (frozen-stack-run-some (lambda () (set! result (thunk)))
-                               200)
-        (let loop ()
-          (frozen-stack-run-some (lambda () (set! done? #t)) 200)
-          (unless done? (loop)))
-        result)
+      (let* ([prev #f]
+             [ready? #f]
+             [handler (lambda ()
+                        (when (and ready? (should-give-up?))
+                          (scheme_call_with_composable_no_dws
+                           (lambda (proc)
+                             (set-box! (freezer-box) proc)
+                             (scheme_restore_on_atomic_timeout prev)
+                             (scheme_abort_continuation_no_dws
+                              freeze-tag
+                              (lambda () default)))
+                           freeze-tag)
+                          (void)))]
+             [old (scheme_set_on_atomic_timeout handler)])
+        (with-holding 
+         handler
+         (call-with-continuation-prompt ; to catch aborts
+          (lambda ()
+            (call-with-continuation-prompt ; for composable continuation
+             (lambda ()
+               (set! prev old)
+               (set! ready? #t)
+               (begin0
+                (parameterize ([freezer-box #f])
+                  (thunk))
+                (scheme_restore_on_atomic_timeout prev)))
+             freeze-tag)))))
       (begin
-        (eprintf "WARNING: internal error: wrong eventspace for constrained event handling\n")
-        (eprintf "~s\n" (continuation-mark-set->context (current-continuation-marks)))
+        (log-error "internal error: wrong eventspace for constrained event handling\n")
         default)))
-
-

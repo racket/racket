@@ -10,8 +10,8 @@
          "window.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
-         "../../lock.rkt"
-         "freeze.rkt")
+         "../common/freeze.rkt"
+         "../../lock.rkt")
 (unsafe!)
 (objc-unsafe!)
 
@@ -26,9 +26,10 @@
   [wx]
   (-a _void (changed: [_id sender])
       (queue-window-event wx (lambda () (send wx changed)))
-      (frozen-stack-run-some 
-       (lambda () (as-exit (lambda () (let loop () (pre-event-sync #t) (when (yield) (loop))))))
-       200)))
+      (constrained-reply
+       (send wx get-eventspace)
+       (lambda () (let loop () (pre-event-sync #t) (when (yield) (loop))))
+       (void))))
 
 (defclass slider% item%
   (init parent cb
