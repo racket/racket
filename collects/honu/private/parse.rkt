@@ -285,17 +285,17 @@
                [operator operator-stuff])
               (make name1 name2 operator)))
   (syntax-case stx ()
-               [(_ first last operator-stuff ...)
-                (with-syntax ([(name ...) (generate-temporaries #'(operator-stuff ...))])
-                             (with-syntax ([(result ...)
-                                            (create-stuff (cons #'first
-                                                                (append
-                                                                  (drop-last (syntax->list #'(name ...)))
-                                                                  (list #'last)))
+    [(_ first last operator-stuff ...)
+     (with-syntax ([(name ...) (generate-temporaries #'(operator-stuff ...))])
+       (with-syntax ([(result ...)
+                      (create-stuff (cons #'first
+                                          (append
+                                            (drop-last (syntax->list #'(name ...)))
+                                            (list #'last)))
 
-                                                          (syntax->list #'(operator-stuff ...)))])
-                                          #'(begin
-                                             result ...)))]))
+                                    (syntax->list #'(operator-stuff ...)))])
+         #'(begin
+             result ...)))]))
 
 ;; infix operators in the appropriate precedence level
 ;; things defined lower in the table have a higher precedence.
@@ -350,6 +350,12 @@
 
 (define-syntax-class (expression-top context)
                      #:literals (semicolon)
+                     [pattern ((~var left honu-identifier)
+                               honu-=
+                               (~var right (ternary context))
+                               semicolon
+                               . rest)
+                              #:with result #'1]
                      [pattern ((~var x0 (debug-here (format "expression top\n")))
                                (~var e (ternary context))
                                (~var x1 (debug-here (format "expression top 1 ~a\n" (syntax->datum #'e))))
