@@ -112,6 +112,14 @@
                   #`(#,@(append (syntax->list #'(c.bindings ...))
                                 (list #'(imag-part (unsafe-fl- 0.0 c.imag-part)))))))
   (pattern e:expr
+           ;; special handling of inexact reals
+           #:when (subtypeof? #'e -Flonum)
+           #:with real-part (unboxed-gensym)
+           #:with imag-part (unboxed-gensym)
+           #:with (bindings ...)
+           #`((real-part #,((optimize) #'e))
+              (imag-part 0.0)))
+  (pattern e:expr
            ;; can't work on inexact reals, which are a subtype of inexact
            ;; complexes, so this has to be equality
            #:when (isoftype? #'e -InexactComplex)
@@ -131,7 +139,7 @@
 
 (define-syntax-class inexact-complex-expr
   (pattern e:expr
-           #:when (isoftype? #'e -InexactComplex)
+           #:when (subtypeof? #'e -InexactComplex)
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class inexact-complex-opt-expr
@@ -142,9 +150,10 @@
   (pattern (~and exp (#%plain-app (~or (~var op (float-op binary-inexact-complex-ops))
                                        (~and op (~literal conjugate)))
                                   e:inexact-complex-expr ...))
+           #:when (isoftype? #'exp -InexactComplex)
            #:with exp*:unboxed-inexact-complex-opt-expr #'exp
            #:with opt
            (begin (log-optimization "unboxed inexact complex" #'exp)
-                  (begin (reset-unboxed-gensym)
-                         #'(let* (exp*.bindings ...)
-                             (unsafe-make-flrectangular exp*.real-part exp*.imag-part))))))
+                  (reset-unboxed-gensym)
+                  #'(let* (exp*.bindings ...)
+                      (unsafe-make-flrectangular exp*.real-part exp*.imag-part)))))
