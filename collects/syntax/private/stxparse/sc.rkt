@@ -273,7 +273,7 @@ Use cases, explained:
     [(syntax-parse stx-expr . clauses)
      (quasisyntax/loc stx
        (let ([x (datum->syntax #f stx-expr)])
-         (parse:clauses x clauses #,stx)))]))
+         (parse:clauses x clauses #,((make-syntax-introducer) stx))))]))
 
 (define-syntax (syntax-parser stx)
   (syntax-case stx ()
@@ -281,7 +281,7 @@ Use cases, explained:
      (quasisyntax/loc stx
        (lambda (x)
          (let ([x (datum->syntax #f x)])
-           (parse:clauses x clauses #,stx))))]))
+           (parse:clauses x clauses #,((make-syntax-introducer) stx)))))]))
 
 (define-syntax with-patterns
   (syntax-rules ()
