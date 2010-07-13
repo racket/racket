@@ -21,6 +21,26 @@ _smart_filedir()
   return 0
 }
 
+_find_exe()
+{
+  local exename=$1
+  local path=`dirname "${COMP_WORDS[0]}"`
+  local old_exe=`basename "${COMP_WORDS[0]}"`
+  if [ "${path}" = "." ]
+  then
+    if [ "${COMP_WORDS[0]}" = "${path}/${old_exe}" ]
+    then
+      echo "${path}/${exename}"
+    else
+      echo ${exename}
+    fi
+  else
+    echo "${path}/${exename}"
+  fi
+  return 0
+    
+}
+
 _racket()
 {
   local cur prev singleopts doubleopts
@@ -82,23 +102,62 @@ complete  -F _racket $filenames racket
 complete  -F _racket $filenames gracket
 complete  -F _racket $filenames gracket-text
 
+_raco_cmd=$(_find_exe "raco" )
+
+
 _raco_planet()
 {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    local planetcmds=$( echo '' '--help' ;  for x in `raco planet --help 2>&1 | sed -n -e 's/^  raco planet \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
+    local planetcmds=$( echo '' '--help' ;  for x in `${_raco_cmd} planet --help 2>&1 | sed -n -e 's/^  raco planet \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
     COMPREPLY=( $(compgen -W "${planetcmds}" -- ${cur}) )
 }
 
-raco_cmds=$()
+_raco_cmds=$()
+_racket_cmd=$(_find_exe "racket" )
 
 _raco_help()
 {
     local cur="${COMP_WORDS[COMP_CWORD]}"
-    if [ ${#raco_cmds[@]} -eq 0 ]; then
+    if [ ${#_raco_cmds[@]} -eq 0 ]; then
       # removing the empty string on the next line breaks things.  such as my brain.
-      raco_cmds=$( echo '' 'help' ;  for x in `racket -e '(begin (require raco/all-tools) (for ([(k v) (all-tools)]) (printf "~a\n" k)))'` ; do echo ${x} ; done )
+      _raco_cmds=$( echo '' 'help' ;  for x in `${_racket_cmd} -e '(begin (require raco/all-tools) (for ([(k v) (all-tools)]) (printf "~a\n" k)))'` ; do echo ${x} ; done )
     fi
-    COMPREPLY=( $(compgen -W "${raco_cmds}" -- ${cur}) )
+    COMPREPLY=( $(compgen -W "${_raco_cmds}" -- ${cur}) )
+}
+
+_racket_collects_dirs=()
+
+_complete_collects()
+{
+  local cur=$1
+  if [ ${#_racket_collects_dirs[@]} -eq 0 ]; then
+    _racket_collects_dirs=( $( for x in `${_racket_cmd} -e '(for-each displayln (map path->string (current-library-collection-paths)))'`; do echo "${x}/" ; done ) )
+  fi
+  local wordlist=""
+  for dir in ${_racket_collects_dirs[@]}; do
+    wordlist="$wordlist "$( for x in $(compgen -d "${dir}"); do basename "${x}"; done )
+  done
+  COMPREPLY=( $(compgen -W "${wordlist}" -- ${cur}) )
+}
+
+_raco_setup()
+{
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    if [ $COMP_CWORD -eq 2 ]
+    then
+      _complete_collects ${cur}
+    else
+      case "${prev}" in
+        -l) # specifying a particular collection
+          _complete_collects ${cur}
+          ;;
+        *)
+          _filedir
+          ;;
+      esac
+    fi
 }
 
 _raco()
@@ -113,9 +172,9 @@ _raco()
 
     if [ $COMP_CWORD -eq 1 ]; then
       # removing the empty string on the next line breaks things.  such as my brain.
-      raco_cmds=$( echo '' 'help' ;  for x in `racket -e '(begin (require raco/all-tools) (for ([(k v) (all-tools)]) (printf "~a\n" k)))'` ; do echo ${x} ; done )
-      COMPREPLY=($(compgen -W "${raco_cmds}" -- ${cur}))  
-    elif [ $COMP_CWORD -eq 2 ]; then
+      _raco_cmds=$( echo '' 'help' ;  for x in `${_racket_cmd} -e '(begin (require raco/all-tools) (for ([(k v) (all-tools)]) (printf "~a\n" k)))'` ; do echo ${x} ; done )
+      COMPREPLY=($(compgen -W "${_raco_cmds}" -- ${cur}))  
+    elif [ $COMP_CWORD -ge 2 ]; then
       # Here we'll handle the main raco commands
       local prev="${COMP_WORDS[1]}"
       case "${prev}" in
@@ -134,6 +193,9 @@ _raco()
           ;;
         help)
           _raco_help
+          ;;
+        setup)
+          _raco_setup
           ;;
         *)
           _filedir

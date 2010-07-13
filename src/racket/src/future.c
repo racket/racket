@@ -743,28 +743,28 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
   return retval;
 }
 
-#ifdef linux 
-#include <unistd.h>
-#elif OS_X 
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#elif WINDOWS 
-#include <windows.h>
+#if defined(linux)
+# include <unistd.h>
+#elif defined(OS_X)
+# include <sys/param.h>
+# include <sys/sysctl.h>
+#elif defined(DOS_FILE_SYSTEM)
+# include <windows.h>
 #endif 
 
 static void init_cpucount(void)
 /* Called in runtime thread */
 {
-#ifdef linux 
+#if defined(linux)
   cpucount = sysconf(_SC_NPROCESSORS_ONLN);
-#elif OS_X 
-  size_t size = sizeof(cpucount) ;
+#elif defined(OS_X)
+  size_t size = sizeof(cpucount);
 
   if (sysctlbyname("hw.ncpu", &cpucount, &size, NULL, 0))
 	{
 	  cpucount = 1;
 	}
-#elif WINDOWS 
+#elif defined(DOS_FILE_SYSTEM)
   SYSTEM_INFO sysinfo;
   GetSystemInfo(&sysinfo);
   cpucount = sysinfo.dwNumberOfProcessors;

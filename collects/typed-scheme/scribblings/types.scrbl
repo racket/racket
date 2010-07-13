@@ -94,7 +94,7 @@ to describe an infinite family of data.  For example, this is the type
 of binary trees of numbers.  
 
 @racketblock[
-(Rec BT (U Number (Pair BT BT)))]
+(define-type BinaryTree (Rec BT (U Number (Pair BT BT))))]
 
 The @racket[Rec] type constructor specifies that the type @racket[BT]
 refers to the whole binary tree type within the body of the
@@ -148,7 +148,7 @@ Typed Racket offers abstraction over types as well as values.
 
 @subsection{Polymorphic Data Structures}
 
-Virtually every Racket program uses lists and sexpressions.  Fortunately, Typed
+Virtually every Racket program uses lists and other collections.  Fortunately, Typed
 Racket can handle these as well.  A simple list processing program can be
 written like this:
 

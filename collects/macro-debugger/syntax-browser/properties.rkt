@@ -1,13 +1,31 @@
-#lang scheme/base
-(require scheme/class
-         scheme/gui
-         (rename-in unstable/class-iop
-                    [send/i send:])
-         "interfaces.ss"
-         "util.ss"
-         "../util/mpi.ss")
+#lang racket/base
+(require racket/class
+         racket/gui
+         framework
+         unstable/class-iop
+         "interfaces.rkt"
+         "util.rkt"
+         "../util/mpi.rkt"
+         "../util/stxobj.rkt")
 (provide properties-view%
          properties-snip%)
+
+(define color-text-default-style-name
+  "macro-debugger/syntax-browser/properties color-text% basic")
+
+(define color-text%
+  (class (editor:standard-style-list-mixin text:basic%)
+    (inherit get-style-list)
+    (define/override (default-style-name)
+      color-text-default-style-name)
+    (super-new)
+    (let* ([sl (get-style-list)]
+           [standard
+            (send sl find-named-style (editor:get-default-color-style-name))]
+           [basic
+            (send sl find-or-create-style standard
+                  (make-object style-delta% 'change-family 'default))])
+      (send sl new-named-style color-text-default-style-name basic))))
 
 ;; properties-view-base-mixin
 (define properties-view-base-mixin
@@ -22,13 +40,13 @@
     (define mode 'term)
 
     ;; text : text%
-    (field (text (new text%)))
+    (field (text (new color-text%)))
     (field (pdisplayer (new properties-displayer% (text text))))
 
-    (send: controller selection-manager<%> listen-selected-syntax
-           (lambda (stx)
-             (set! selected-syntax stx)
-             (refresh)))
+    (send/i controller selection-manager<%> listen-selected-syntax
+            (lambda (stx)
+              (set! selected-syntax stx)
+              (refresh)))
     (super-new)
 
     ;; get-mode : -> symbol
@@ -122,7 +140,7 @@
            (callback
             (lambda (tp e)
               (set-mode (cdr (list-ref tab-choices (send tp get-selection))))))))
-    (define ecanvas (new editor-canvas% (editor text) (parent tab-panel)))))
+    (define ecanvas (new canvas:color% (editor text) (parent tab-panel)))))
 
 ;; properties-displayer%
 (define properties-displayer%
@@ -188,7 +206,8 @@
     (define/public (display-stxobj-info stx)
       (display-source-info stx)
       (display-extra-source-info stx)
-      (display-symbol-property-info stx))
+      (display-symbol-property-info stx)
+      (display-marks stx))
 
     ;; display-source-info : syntax -> void
     (define/private (display-source-info stx)
@@ -226,7 +245,13 @@
           (display "No additional properties available.\n" n/a-sd))
         (when (pair? keys)
           (for-each (lambda (k) (display-subkv/value k (syntax-property stx k)))
-                    keys))))
+                    keys))
+        (display "\n" #f)))
+
+    ;; display-marks : syntax -> void
+    (define/private (display-marks stx)
+      (display "Marks: " key-sd)
+      (display (format "~s\n" (simplify-marks (get-marks stx))) #f))
 
     ;; display-kv : any any -> void
     (define/private (display-kv key value)

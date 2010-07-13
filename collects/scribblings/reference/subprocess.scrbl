@@ -72,7 +72,7 @@ The @racket[subprocess] procedure returns four values:
 ]
 
 @bold{Important:} All ports returned from @racket[subprocess] must be
-explicitly closed with @racket[close-input-port] or
+explicitly closed, usually with @racket[close-input-port] or
 @racket[close-output-port].
 
 The returned ports are @tech{file-stream ports} (see
@@ -80,7 +80,19 @@ The returned ports are @tech{file-stream ports} (see
 the current custodian (see @secref["custodians"]).  The
 @exnraise[exn:fail] when a low-level error prevents the spawning of a
 process or the creation of operating system pipes for process
-communication.}
+communication.
+
+If the @racket[subprocess-group-enabled] parameter's value is true,
+then the new process is created as a new OS-level process group. In
+that case, @racket[subprocess-kill] attempts to terminate all
+processes within the group, which may include additional processes
+created by the subprocess. See @racket[subprocess-kill] for details,
+and see @racket[subprocess-group-enabled] for additional caveats.
+
+The @racket[current-subprocess-custodian-mode] parameter determines
+whether the subprocess itself is registered with the current
+@tech{custodian} so that a custodian shutdown calls
+@racket[subprocess-kill] for the subprocess.}
 
 
 @defproc[(subprocess-wait [subproc subprocess?]) void?]{
@@ -103,21 +115,56 @@ code is non-zero.}
 
 @defproc[(subprocess-kill [subproc subprocess?] [force? any/c]) void?]{
 
-Terminates the subprocess represented by @racket[subproc] if
-@racket[force?] is true and if the process still running. If an error
-occurs during termination, the @exnraise[exn:fail].
+Terminates the subprocess represented by @racket[subproc]. The precise
+action depends on whether @racket[force?] is true, whether the process
+was created in its own group by setting the
+@racket[subprocess-group-enabled] parameter to a true value, and the
+current platform:
 
-If @racket[force?] is @racket[#f] under @|AllUnix|, the subprocess is
-sent an interrupt signal instead of a kill signal (and the subprocess
-might handle the signal without terminating). Under Windows, no action
-is taken when @racket[force?] is @racket[#f].}
+@itemlist[
+
+ @item{@racket[force?] is true, not a group, all platforms: Terminates
+       the process if the process still running.}
+
+ @item{@racket[force?] is false, not a group, under Unix or Mac OS X:
+       Sends the process an interrupt signal instead of a kill
+       signal.}
+
+ @item{@racket[force?] is false, not a group, under Windows: No action
+       is taken.}
+
+ @item{@racket[force?] is true, a group, under Unix or Mac OS X:
+       Terminates all processes in the group, but only if
+       @racket[subprocess-status] has never produced a
+       non-@racket['running] result for the subprocess and only if
+       functions like @racket[subprocess-wait] and @racket[sync] have
+       not detected the subprocess's completion. Otherwise, no action
+       is taken (because the immediate process is known to have
+       terminated while the continued existence of the group is
+       unknown).}
+
+ @item{@racket[force?] is true, a group, under Windows: Terminates
+       the process if the process still running.}
+
+ @item{@racket[force?] is false, a group, under Unix or Mac OS X: The
+       same as when @racket[force?] is @scheme[#t], but when the group
+       is sent a signal, it is an interrupt signal instead of a kill
+       signal.}
+
+ @item{@racket[force?] is false, a group, under Windows: All processes
+       in the group receive a CTRL-BREAK signal (independent of
+       whether the immediate subprocess has terminated).}
+
+]
+
+If an error occurs during termination, the @exnraise[exn:fail].}
 
 
-@defproc[(subprocess-pid [subproce subprocess?]) exact-nonnegative-integer?]{
+@defproc[(subprocess-pid [subproc subprocess?]) exact-nonnegative-integer?]{
 
 Returns the operating system's numerical ID (if any) for the process
-represented by @racket[subproc], valid only as long as the process is
-running.}
+represented by @racket[subproc]. The result is valid only as long as
+the process is running.}
 
 
 @defproc[(subprocess? [v any/c]) boolean?]{
@@ -126,12 +173,45 @@ Returns @racket[#t] if @racket[v] is a subprocess value, @racket[#f]
 otherwise.}
 
 
+@defparam[current-subprocess-custodian-mode mode (or/c #f 'kill 'interrupt)]{
+
+A @tech{parameter} that determines whether a subprocess (as created by
+@racket[subprocess] or wrappers like @racket[process]) is registered
+with the current @tech{custodian}. If the parameter value is
+@racket[#f], then the subprocess is not registered with the
+custodian---although any created ports are registered. If the
+parameter value is @racket['kill] or @racket['interrupt], then the
+subprocess is shut down through @racket[subprocess-kill], where
+@racket['kill] supplies a @racket[#t] value for the @racket[_force?]
+argument and @racket['interrupt] supplies a @racket[#f] value. The
+shutdown may occur either before or after ports created for the
+subprocess are closed.
+
+Custodian-triggered shutdown is limited by details of process handling
+in the host system. For example, @racket[process] and @racket[system]
+may create an intermediate shell process to run a program, in which
+case custodian-based termination shuts down the shell process and
+probably not the process started by the shell. See also
+@racket[subprocess-kill]. Process groups (see
+@racket[subprocess-group-enabled]) can address some limitations, but
+not all of them.}
+
+
+@defboolparam[subprocess-group-enabled on?]{
+
+A @tech{parameter} that determines whether a subprocess is created as
+a new process group. See @racket[subprocess-kill] for more information.
+
+Beware that creating a group may interfere with the job control in an
+interactive shell, since job control is based on process groups.}
+
+
 @defproc[(shell-execute [verb (or/c string? #f)]
                         [target string?]
                         [parameters string?]
                         [dir path-string?]
                         [show-mode symbol?]) 
-         #f]
+         #f]{
 
 @index['("ShellExecute")]{Performs} the action specified by @racket[verb]
 on @racket[target] in Windows. For platforms other than Windows, the
@@ -223,7 +303,7 @@ the result is @racket[#f].
 In future versions of Racket, the result may be a subprocess value if
 the operating system did returns a process handle (but if a subprocess
 value is returned, its process ID will be @racket[0] instead of the
-real process ID).
+real process ID).}
 
 @; ----------------------------------------------------------------------
 
@@ -237,7 +317,11 @@ Executes a Unix, Mac OS X, or Windows shell command synchronously
 (i.e., the call to @racket[system] does not return until the
 subprocess has ended). The @racket[command] argument is a string
 containing no nul characters. If the command succeeds, the return
-value is @racket[#t], @racket[#f] otherwise.}
+value is @racket[#t], @racket[#f] otherwise.
+
+See also @racket[current-subprocess-custodian-mode] and
+@racket[subprocess-group-enabled], which affect the subprocess used to
+implement @racket[system].}
 
 
 @defproc*[([(system* [command path-string?] [arg string?] ...) boolean?]
@@ -274,7 +358,9 @@ Like @racket[system*], but returns the exit code like
                input-port?
                ((or/c 'status 'wait 'interrupt 'kill) . -> . any))]{
 
-Executes a shell command asynchronously. The result is a list of five values:
+Executes a shell command asynchronously (using @exec{sh} under Unix
+and Mac OS X, @exec{cmd} under Windows). The result is a list of five
+values:
 
 @itemize[
 
@@ -304,7 +390,13 @@ Executes a shell command asynchronously. The result is a list of five values:
 
    @item{@racket['interrupt] sends the subprocess an interrupt signal
     under @|AllUnix|, and takes no action under Windows. The result is
-    @|void-const|.}
+    @|void-const|.
+
+     @margin-note{Under Unix and Mac OS X, if @racket[command] runs a
+     single program, then @exec{sh} typically runs the program in
+     such a way that it replaces @exec{sh} in the same process. For
+     reliable and precise control over process creation, however, use
+     @racket[process*].}}
 
    @item{@racket['kill] terminates the subprocess and returns
      @|void-const|.  Note that the immediate process created by
@@ -318,7 +410,14 @@ Executes a shell command asynchronously. The result is a list of five values:
 
 @bold{Important:} All three ports returned from @racket[process] must
 be explicitly closed with @racket[close-input-port] or
-@racket[close-output-port].}
+@racket[close-output-port].
+
+See also @racket[current-subprocess-custodian-mode] and
+@racket[subprocess-group-enabled], which affect the subprocess used to
+implement @racket[process]. In particular, the @racket['interrupt] and
+@racket['kill] process-control messages are implemented via
+@racket[subprocess-kill], so they can affect a process group instead
+of a single process.}
  
 
 @defproc*[([(process* [command path-string?] [arg string?] ...) list?]

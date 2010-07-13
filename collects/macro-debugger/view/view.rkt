@@ -1,14 +1,13 @@
-#lang scheme/base
-(require scheme/class
-         (rename-in unstable/class-iop
-                    [send/i send:])
-         scheme/pretty
-         scheme/gui
-         framework/framework
-         "interfaces.ss"
-         "frame.ss"
-         "prefs.ss"
-         "../model/trace.ss")
+#lang racket/base
+(require racket/class
+         racket/pretty
+         racket/gui
+         framework
+         unstable/class-iop
+         "interfaces.rkt"
+         "frame.rkt"
+         "prefs.rkt"
+         "../model/trace.rkt")
 (provide macro-stepper-director%
          macro-stepper-frame%
          go)
@@ -28,23 +27,23 @@
       (hash-for-each stepper-frames
                      (lambda (stepper-frame flags)
                        (unless (memq 'no-obsolete flags)
-                         (send: stepper-frame stepper-frame<%> add-obsoleted-warning)))))
+                         (send/i stepper-frame stepper-frame<%> add-obsoleted-warning)))))
     (define/public (add-trace events)
       (hash-for-each stepper-frames
                      (lambda (stepper-frame flags)
                        (unless (memq 'no-new-traces flags)
-                         (send: (send: stepper-frame stepper-frame<%> get-widget) widget<%>
+                         (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
                                 add-trace events)))))
     (define/public (add-deriv deriv)
       (hash-for-each stepper-frames
                      (lambda (stepper-frame flags)
                        (unless (memq 'no-new-traces flags)
-                         (send: (send: stepper-frame stepper-frame<%> get-widget) widget<%>
+                         (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
                                 add-deriv deriv)))))
 
     (define/public (new-stepper [flags '()])
       (define stepper-frame (new-stepper-frame))
-      (define stepper (send: stepper-frame stepper-frame<%> get-widget))
+      (define stepper (send/i stepper-frame stepper-frame<%> get-widget))
       (send stepper-frame show #t)
       (add-stepper! stepper-frame flags)
       stepper)
@@ -65,6 +64,6 @@
 
 (define (go stx)
   (define director (new macro-stepper-director%))
-  (define stepper (send: director director<%> new-stepper))
-  (send: director director<%> add-deriv (trace stx))
+  (define stepper (send/i director director<%> new-stepper))
+  (send/i director director<%> add-deriv (trace stx))
   (void))

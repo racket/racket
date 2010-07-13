@@ -5,4 +5,4 @@ typed-scheme/no-check
 #:read r:read
 #:read-syntax r:read-syntax
 
-(require (prefix-in r: "../../typed-reader.ss"))
+(require (prefix-in r: typed-scheme/typed-reader))

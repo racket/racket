@@ -208,7 +208,7 @@
 (let ([hash-table (make-hasheq)])
   (for-each (λ (x) 
               (hash-set! hash-table x 'define))
-            '(local))
+            '(struct local))
   (for-each (λ (x) 
               (hash-set! hash-table x 'begin))
             '(case-lambda

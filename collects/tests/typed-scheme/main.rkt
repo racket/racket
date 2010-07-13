@@ -5,12 +5,12 @@
 (require rackunit rackunit/text-ui
          mzlib/etc scheme/port
          compiler/compiler
-         scheme/match
+         scheme/match mzlib/compile
          "unit-tests/all-tests.ss"
          "unit-tests/test-utils.ss")
 
 (define (scheme-file? s)
-  (regexp-match ".*[.](rkt|ss|scm)" (path->string s)))
+  (regexp-match ".*[.](rkt|ss|scm)$" (path->string s)))
 
 (define-namespace-anchor a)
 
@@ -23,9 +23,13 @@
                          [(number? e)
                           (and (exn:fail:syntax? val)
                                (= e (length (exn:fail:syntax-exprs val))))]
-                         [else                          
-                          (regexp-match e (exn-message val))]))))
+                         [(or (string? e) (regexp? e))
+                          (regexp-match e (exn-message val))]
+                         [else (error 'exn-pred "bad argument" e)]))))
    args))
+
+(define (cfile file)
+  ((compile-zos #f) (list file) 'auto))
   
 (define (exn-pred p)
   (let ([sexp (with-handlers
@@ -61,9 +65,8 @@
     (make-test-suite dir tests)))
 
 (define (dr p)
-  #;((compile-zos #f) (list p) 'auto)
   (parameterize ([current-namespace (make-base-empty-namespace)])    
-    (dynamic-require `(file ,(path->string p)) #f)))
+    (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)))
 
 (define succ-tests (mk-tests "succeed" 
                              dr
@@ -86,10 +89,54 @@
   (test-suite "Typed Scheme Tests"
               unit-tests int-tests))
 
-(define (go [unit? #f]) (test/gui (if unit? unit-tests tests)))
-(define (go/text [unit? #f]) (run-tests (if unit? unit-tests tests) 'verbose))
+(provide tests int-tests unit-tests)
 
-(provide go go/text)
+(define (go tests) (test/gui tests))
+(define (go/text tests) (run-tests tests 'verbose))
+
+(define (just-one p*)
+  (define-values (path p b) (split-path p*))
+  (define f
+    (if (equal? "fail/" (path->string path))
+        (lambda (p thnk)
+          (define-values (pred info) (exn-pred p))
+          (parameterize ([error-display-handler void])
+            (with-check-info
+             (['predicates info])
+             (check-exn pred thnk))))
+        (lambda (p thnk) (check-not-exn thnk))))
+  (test-suite 
+   (path->string p)
+   (f
+    (build-path path p)
+    (lambda ()
+      (parameterize ([read-accept-reader #t]
+                     [current-load-relative-directory
+                      (path->complete-path path)]
+                     [current-directory path]
+                     [current-output-port (open-output-nowhere)])
+        (dr p))))))
+
+(define (compile-benchmarks)
+  (define (find dir)
+    (for/list ([d (directory-list dir)]
+               #:when (scheme-file? d))
+      d))
+  (define shootout (collection-path "tests" "racket" "benchmarks" "shootout" "typed"))
+  (define common (collection-path "tests" "racket" "benchmarks" "common" "typed"))
+  (define (mk path)
+    (make-test-suite (path->string path)
+                     (for/list ([p (find path)])                       
+                       (parameterize ([current-load-relative-directory
+                                       (path->complete-path path)]
+                                      [current-directory path])
+                         (test-suite (path->string p)
+                                     (check-not-exn (λ () (cfile (build-path path p)))))))))
+  (test-suite "compiling"
+              (mk shootout)
+              (mk common)))
+
+(provide go go/text just-one compile-benchmarks)
 
 
 

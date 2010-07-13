@@ -918,6 +918,8 @@ static int cont_proc_MARK(void *p, struct NewGC *gc) {
   gcMARK2(c->prompt_id, gc);
   gcMARK2(c->prompt_buf, gc);
 
+  gcMARK2(c->escape_cont, gc);
+
   gcMARK2(c->value, gc);
   gcMARK2(c->resume_to, gc);
   gcMARK2(c->use_next_cont, gc);
@@ -957,6 +959,8 @@ static int cont_proc_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(c->prompt_id, gc);
   gcFIXUP2(c->prompt_buf, gc);
+
+  gcFIXUP2(c->escape_cont, gc);
 
   gcFIXUP2(c->value, gc);
   gcFIXUP2(c->resume_to, gc);
@@ -2100,7 +2104,6 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
-  gcMARK2(e->export_registry, gc);
   gcMARK2(e->insp, gc);
 
   gcMARK2(e->rename_set, gc);
@@ -2139,7 +2142,6 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(e->module, gc);
   gcFIXUP2(e->module_registry, gc);
-  gcFIXUP2(e->export_registry, gc);
   gcFIXUP2(e->insp, gc);
 
   gcFIXUP2(e->rename_set, gc);
@@ -2175,6 +2177,31 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
 
 #define namespace_val_IS_ATOMIC 0
 #define namespace_val_IS_CONST_SIZE 1
+
+
+static int module_reg_val_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+}
+
+static int module_reg_val_MARK(void *p, struct NewGC *gc) {
+  Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
+  gcMARK2(r->loaded, gc);
+  gcMARK2(r->exports, gc);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+}
+
+static int module_reg_val_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
+  gcFIXUP2(r->loaded, gc);
+  gcFIXUP2(r->exports, gc);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+}
+
+#define module_reg_val_IS_ATOMIC 0
+#define module_reg_val_IS_CONST_SIZE 1
 
 
 static int random_state_val_SIZE(void *p, struct NewGC *gc) {
@@ -3774,6 +3801,7 @@ static int mark_subprocess_MARK(void *p, struct NewGC *gc) {
 #ifndef WINDOWS_PROCESSES
   Scheme_Subprocess *sp = (Scheme_Subprocess *)p;
   gcMARK2(sp->handle, gc);
+  gcMARK2(sp->mref, gc);
 #endif
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Subprocess));
@@ -3783,6 +3811,7 @@ static int mark_subprocess_FIXUP(void *p, struct NewGC *gc) {
 #ifndef WINDOWS_PROCESSES
   Scheme_Subprocess *sp = (Scheme_Subprocess *)p;
   gcFIXUP2(sp->handle, gc);
+  gcFIXUP2(sp->mref, gc);
 #endif
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Subprocess));
@@ -5596,10 +5625,12 @@ static int future_MARK(void *p, struct NewGC *gc) {
   future_t *f = (future_t *)p;
   gcMARK2(f->orig_lambda, gc);
   gcMARK2(f->arg_s0, gc);
+  gcMARK2(f->arg_t0, gc);
   gcMARK2(f->arg_S0, gc);
   gcMARK2(f->arg_b0, gc);
   gcMARK2(f->arg_n0, gc);
   gcMARK2(f->arg_s1, gc);
+  gcMARK2(f->arg_t1, gc);
   gcMARK2(f->arg_S1, gc);
   gcMARK2(f->arg_s2, gc);
   gcMARK2(f->arg_S2, gc);
@@ -5620,10 +5651,12 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
   future_t *f = (future_t *)p;
   gcFIXUP2(f->orig_lambda, gc);
   gcFIXUP2(f->arg_s0, gc);
+  gcFIXUP2(f->arg_t0, gc);
   gcFIXUP2(f->arg_S0, gc);
   gcFIXUP2(f->arg_b0, gc);
   gcFIXUP2(f->arg_n0, gc);
   gcFIXUP2(f->arg_s1, gc);
+  gcFIXUP2(f->arg_t1, gc);
   gcFIXUP2(f->arg_S1, gc);
   gcFIXUP2(f->arg_s2, gc);
   gcFIXUP2(f->arg_S2, gc);

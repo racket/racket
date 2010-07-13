@@ -1054,7 +1054,7 @@
 ;; check-literal-set-entry : stx stx -> (listof (list id id ct-phase^2))
 (define (check-literal-set-entry stx ctx)
   (define (elaborate litset-id lctx phase)
-    (let ([litset (syntax-local-value/catch litset-id literalset?)])
+    (let ([litset (syntax-local-value/record litset-id literalset?)])
       (unless litset
         (raise-syntax-error #f "expected identifier defined as a literal-set"
                             ctx litset-id))
@@ -1093,7 +1093,7 @@
 ;; returns (cons Conventions (listof syntax))
 (define (check-conventions stx ctx)
   (define (elaborate conventions-id args)
-    (let ([cs (syntax-local-value/catch conventions-id conventions?)])
+    (let ([cs (syntax-local-value/record conventions-id conventions?)])
       (unless cs
         (raise-syntax-error #f "expected identifier defined as a conventions"
                             ctx conventions-id))

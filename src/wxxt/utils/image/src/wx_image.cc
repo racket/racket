@@ -78,7 +78,6 @@ static unsigned long rootbg, rootfg;  /* fg/bg for root border */
 static int    autoquit = 0;     /* quit after loading first pic to rootW */
 static int    autogamma = 0;    /* perform gamma correction by default */
 static int    rootPattern = 0;  /* pattern used for root border */
-static char   initpath[500];
 
 /* used in XResource reading... */
 static char *def_str;
@@ -102,8 +101,6 @@ wxImage::wxImage(void)
   /*****************************************************/
   /*** variable Initialization                       ***/
   /*****************************************************/
-
-  getcwd(initpath, sizeof(initpath));
 
   /* init internal variables */
   display = fname = whitestr = blackstr = NULL;
@@ -329,19 +326,16 @@ void wxImage::SetWindow(wxCanvas *can)
 
 */
 
-int wxImage::openPic(char *fullname)
+int wxImage::openPic(char *filename)
 {
   /* tries to load file #filenum (from 'namelist' list)
    * returns 0 on failure (cleans up after itself)
    * if successful, returns 1
    */
   PICINFO pinfo;
-  int   i,okay,freename, nw, nh;
-  char *tmp;
+  int   i,okay, nw, nh;
+  char *tmp, magicno[8];
   FILE *fp;
-  char  filename[256], /* full name of the file to be loaded (could be /tmp) */
-        basename[128], /* just the name of the original file. No path */
-        magicno[8];    /* first 8 bytes of file */
 
   xvbzero((char *) &pinfo, sizeof(PICINFO));
   
@@ -350,31 +344,6 @@ int wxImage::openPic(char *fullname)
   /* clear any old error messages */
 
   okay = 0;
-
-  /* set up fullname and basename */
-
-  tmp = strchr(fullname,'/');
-  if (!tmp)  {
-    tmp = fullname; 
-  } else {
-    tmp = tmp XFORM_OK_PLUS 1;
-  }
-  strcpy(basename,tmp);
-  tmp = NULL;
-
-  /* if fullname doesn't start with a '/' (ie, it's a relative path), 
-     (and it's not the special case '<stdin>') prepend 'initpath' to it */
-  freename = 0;
-  if (fullname[0] != '/' && strcmp(fullname,STDINSTR)!=0) {
-    char *atmp;
-    atmp = (char *) malloc(strlen(fullname) + strlen(initpath) + 2);
-    if (!atmp) FatalError("malloc 'filename' failed");
-    sprintf(atmp,"%s/%s", initpath, fullname);
-    fullname = atmp;
-    freename = 1;
-  }
-    
-  strcpy(filename,fullname);
 
   /* now, try to determine what type of file we've got by reading the
      first couple bytes and looking for a Magic Number */
@@ -422,9 +391,6 @@ int wxImage::openPic(char *fullname)
 
   /* successfully read this picture */
 
-  /* if we read a /tmp file, delete it.  won't be needing it any more */
-  if (strcmp(fullname,filename)!=0) unlink(filename);
-
   normFact = 1;  nw = pWIDE;  nh = pHIGH;
 
   // expand:  if expansion is negative, treat it as a reciprocal
@@ -440,14 +406,10 @@ int wxImage::openPic(char *fullname)
 
   cpic = pic;  cWIDE = pWIDE;  cHIGH = pHIGH;  cXOFF = cYOFF = 0;
 
-  if (freename) free(fullname);
-
   return 1;
 
   
  FAILED:
-  if (strcmp(fullname,filename)!=0) unlink(filename);   /* kill /tmp file */
-  if (freename) free(fullname);
   return 0;
 }
 

@@ -16,6 +16,10 @@ time.
 
 @section[#:tag "eval"]{@racket[eval]}
 
+@margin-note{This example will not run properly in DrRacket's definitions window
+             but it will in the interactions window; read on for
+             why (specifically see the end of @secref["namespaces"]).}
+
 The @racket[eval] function takes a ``quoted'' expression or definition
 and evaluates it:
 

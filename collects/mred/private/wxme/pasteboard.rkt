@@ -158,7 +158,8 @@
   (define sequence-streak? #f)
 
   (define changed? #f)
-  
+
+  (define prev-mouse-snip #f)
 
   (super-new)
 
@@ -241,28 +242,42 @@
   (def/override (on-event [mouse-event% event])
     (when s-admin
       (let-values ([(dc x y scrollx scrolly)
-                    (if (or (send event button-down?) s-caret-snip)
-                        ;; first, find clicked-on snip:
-                        (let ([x (send event get-x)]
-                              [y (send event get-y)])
-                          (let-boxes ([scrollx 0.0]
-                                      [scrolly 0.0]
-                                      [dc #f])
-                              (set-box! dc (send s-admin get-dc scrollx scrolly))
-                            ;; FIXME: old code returned if !dc
-                            (values dc (+ x scrollx) (+ y scrolly) scrollx scrolly)))
-                        (values #f 0.0 0.0 0.0 0.0))])
-        (let ([snip (if (send event button-down?)
-                        (find-snip x y)
-                        s-caret-snip)])
-        (if (and snip
-                 (eq? snip s-caret-snip))
-            (let ([loc (snip-loc snip)])
-              (send s-caret-snip on-event
+                    ;; first, find clicked-on snip:
+                    (let ([x (send event get-x)]
+                          [y (send event get-y)])
+                      (let-boxes ([scrollx 0.0]
+                                  [scrolly 0.0]
+                                  [dc #f])
+                          (set-box! dc (send s-admin get-dc scrollx scrolly))
+                        ;; FIXME: old code returned if !dc
+                        (values dc (+ x scrollx) (+ y scrolly) scrollx scrolly)))])
+        (let ([snip (find-snip x y)])
+          (when (and prev-mouse-snip
+                     (not (eq? snip prev-mouse-snip)))
+            (let ([loc (snip-loc prev-mouse-snip)])
+              (send prev-mouse-snip on-event
                     dc (- (loc-x loc) scrollx) (- (loc-y loc) scrolly) 
                     (loc-x loc) (loc-y loc)
-                    event))
-            (on-local-event event))))))
+                    event)))
+          (set! prev-mouse-snip #f)
+          (when (and snip
+                     (has-flag? (snip->flags snip) HANDLES-ALL-MOUSE-EVENTS)
+                     (not (eq? snip s-caret-snip)))
+            (let ([loc (snip-loc snip)])
+              (set! prev-mouse-snip snip)
+              (send snip on-event
+                    dc (- (loc-x loc) scrollx) (- (loc-y loc) scrolly) 
+                    (loc-x loc) (loc-y loc)
+                    event)))
+          (if (and s-caret-snip
+                   (or (not (send event button-down?))
+                       (eq? snip s-caret-snip)))
+              (let ([loc (snip-loc s-caret-snip)])
+                (send s-caret-snip on-event
+                      dc (- (loc-x loc) scrollx) (- (loc-y loc) scrolly) 
+                      (loc-x loc) (loc-y loc)
+                      event))
+              (on-local-event event))))))
 
   (def/override (on-default-event [mouse-event% event])
     (when s-admin
@@ -729,6 +744,8 @@
   
   (define/private (-delete del-snip del)
     (when (snip-loc del-snip)
+      (when (eq? del-snip prev-mouse-snip)
+        (set! prev-mouse-snip #f))
       (set! write-locked (add1 write-locked))
       (begin-edit-sequence)
       (let ([ok? (or (can-delete? del-snip)

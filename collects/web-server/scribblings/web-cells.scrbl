@@ -67,20 +67,22 @@ transformations of the program into continuation or store passing style.
   (make-web-cell 0))
 
 (define (include-counter a-counter)
-  (let/cc k
-    (let loop ()
-      (k
-       (lambda (embed/url)
-         `(div (h3 ,(number->string (web-cell-ref a-counter)))
-               (a ([href 
-                    ,(embed/url
-                      (lambda _
-                        @code:comment{A new frame has been created}
-                        (define last (web-cell-ref a-counter))
-                        @code:comment{We can inspect the value at the parent}
-                        (web-cell-shadow a-counter (add1 last))
-                        @code:comment{The new frame has been modified}
-                        (loop)))])
-                  "+")))))))
+  (call-with-current-continuation
+   (λ (k)
+     (let loop ()
+       (k
+        (lambda (embed/url)
+          `(div (h3 ,(number->string (web-cell-ref a-counter)))
+                (a ([href
+                     ,(embed/url
+                       (lambda _
+                         ; A new frame has been created
+                         (define last (web-cell-ref a-counter))
+                         ; We can inspect the value at the parent
+                         (web-cell-shadow a-counter (add1 last))
+                         ; The new frame has been modified
+                         (loop)))])
+                   "+"))))))
+   servlet-prompt))
 ]
 }

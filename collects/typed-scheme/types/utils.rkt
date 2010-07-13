@@ -4,20 +4,16 @@
 
 (require (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
+         "substitute.rkt"
          (only-in (rep free-variance) combine-frees)
+         (env index-env tvar-env)
          scheme/match
          scheme/list
          mzlib/trace
          scheme/contract
          (for-syntax scheme/base syntax/parse))
 
-(provide fv fv/list
-         substitute
-         substitute-dots
-         substitute-dotted
-         subst-all
-         subst 
-         ;ret
+(provide fv fv/list fi
          instantiate-poly
          instantiate-poly-dotted
          tc-result?
@@ -25,114 +21,11 @@
          effects-equal?
          tc-result-t
          unfold
-         (struct-out Dotted)
-         (struct-out DottedBoth)
-         just-Dotted?
          tc-error/expr
          lookup-fail
          lookup-type-fail
          combine-results
          current-poly-struct)
-
-
-;; substitute : Type Name Type -> Type
-(define (substitute image name target #:Un [Un (get-union-maker)])
-  (define (sb t) (substitute image name t))
-  (if (hash-ref (free-vars* target) name #f)
-      (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
-                 target
-                 [#:Union tys (Un (map sb tys))]
-                 [#:F name* (if (eq? name* name) image target)]
-                 [#:arr dom rng rest drest kws
-                        (begin
-                          (when (and (pair? drest)
-                                     (eq? name (cdr drest))
-                                     (just-Dotted? name))
-                            (int-err "substitute used on ... variable ~a in type ~a" name target))
-                          (make-arr (map sb dom)
-                                    (sb rng)
-                                    (and rest (sb rest))
-                                    (and drest (cons (sb (car drest)) (cdr drest)))
-                                    (map sb kws)))]
-                 [#:ValuesDots types dty dbound
-                               (begin
-                                 (when (eq? name dbound)
-                                   (int-err "substitute used on ... variable ~a in type ~a" name target))
-                                 (make-ValuesDots (map sb types) (sb dty) dbound))])
-      target))
-
-;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
-(define (substitute-dots images rimage name target)    
-  (define (sb t) (substitute-dots images rimage name t))
-  (if (hash-ref (free-vars* target) name #f)
-      (type-case (#:Type sb #:Filter (sub-f sb)) target
-                 [#:ValuesDots types dty dbound
-                               (if (eq? name dbound)
-                                   (make-Values
-                                    (append 
-                                     (map sb types)
-                                     ;; We need to recur first, just to expand out any dotted usages of this.
-                                     (let ([expanded (sb dty)])
-                                       (for/list ([img images])
-                                         (make-Result
-                                          (substitute img name expanded)
-                                          (make-FilterSet (make-Top) (make-Top))
-                                          (make-Empty))))))
-                                   (make-ValuesDots (map sb types) (sb dty) dbound))]
-                 [#:arr dom rng rest drest kws
-                        (if (and (pair? drest)
-                                 (eq? name (cdr drest)))                            
-                            (make-arr (append 
-                                       (map sb dom)
-                                       ;; We need to recur first, just to expand out any dotted usages of this.
-                                       (let ([expanded (sb (car drest))])
-                                         (map (lambda (img) (substitute img name expanded)) images)))
-                                      (sb rng)
-                                      rimage
-                                      #f
-                                      (map sb kws))
-                            (make-arr (map sb dom)
-                                      (sb rng)
-                                      (and rest (sb rest))
-                                      (and drest (cons (sb (car drest)) (cdr drest)))
-                                      (map sb kws)))])
-      target))
-
-;; implements sd from the formalism
-;; substitute-dotted : Type Name Name Type -> Type
-(define (substitute-dotted image image-bound name target)
-  (define (sb t) (substitute-dotted image image-bound name t))
-  (if (hash-ref (free-vars* target) name #f)
-      (type-case (#:Type sb #:Filter (sub-f sb))
-                 target
-                 [#:ValuesDots types dty dbound
-                               (make-ValuesDots (map sb types)
-                                                (sb dty)
-                                                (if (eq? name dbound) image-bound dbound))]
-                 [#:F name*
-                      (if (eq? name* name)
-                          image
-                          target)]
-                 [#:arr dom rng rest drest kws
-                        (make-arr (map sb dom)
-                                  (sb rng)
-                                  (and rest (sb rest))
-                                  (and drest
-                                       (cons (sb (car drest))
-                                             (if (eq? name (cdr drest)) image-bound (cdr drest))))
-                                  (map sb kws))])
-       target))
-
-;; substitute many variables
-;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
-;; subst-all : substitution Type -> Type
-(define (subst-all s t)
-  (for/fold ([t t]) ([e s])
-    (match e
-      [(list v (list imgs ...) starred)
-       (substitute-dots imgs starred v t)]
-      [(list v img)
-       (substitute img v t)])))
 
 
 ;; unfold : Type -> Type
@@ -147,13 +40,13 @@
     [(Poly: ns body) 
      (unless (= (length types) (length ns))
        (int-err "instantiate-poly: wrong number of types: expected ~a, got ~a" (length ns) (length types)))
-     (subst-all (map list ns types) body)]
+     (subst-all (make-simple-substitution ns types) body)]
     [(PolyDots: (list fixed ... dotted) body)
      (unless (>= (length types) (length fixed))
        (int-err "instantiate-poly: wrong number of types: expected at least ~a, got ~a" (length fixed) (length types)))
      (let* ([fixed-tys (take types (length fixed))]
             [rest-tys (drop types (length fixed))]
-            [body* (subst-all (map list fixed fixed-tys) body)])
+            [body* (subst-all (make-simple-substitution fixed fixed-tys) body)])
        (substitute-dots rest-tys #f dotted body*))]
     [_ (int-err "instantiate-poly: requires Poly type, got ~a" t)]))
 
@@ -163,7 +56,7 @@
      (unless (= (length fixed) (length types))
        (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a, types were ~a" 
                 (length fixed) (length types) types))
-     (let ([body* (subst-all (map list fixed types) body)])
+     (let ([body* (subst-all (make-simple-substitution fixed types) body)])
        (substitute-dotted image var dotted body*))]
     [_ (int-err "instantiate-poly-dotted: requires PolyDots type, got ~a" t)]))
 
@@ -260,8 +153,6 @@
     [(list (tc-result1: t f o) ...)
      (ret t f o)]))
 
-(define (subst v t e) (substitute t v e))
-
 
 ;; type comparison
 
@@ -276,17 +167,10 @@
 
 ;; fv : Type -> Listof[Name]
 (define (fv t) (hash-map (free-vars* t) (lambda (k v) k)))
+(define (fi t) (for/list ([(k v) (in-hash (free-idxs* t))]) k))
 
 ;; fv/list : Listof[Type] -> Listof[Name]
 (define (fv/list ts) (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
-
-;; t is (make-F v)
-(define-struct Dotted (t))
-(define-struct (DottedBoth Dotted) ())
-
-(define (just-Dotted? S)
-    (and (Dotted? S)
-         (not (DottedBoth? S))))
 
 (define (tc-error/expr msg #:return [return (make-Union null)] #:stx [stx (current-orig-stx)] . rest)
   (tc-error/delayed #:stx stx (apply format msg rest))

@@ -11,7 +11,7 @@ at least theoretically.
 	 scheme/pretty mzlib/pconvert syntax/parse)
 
 ;; to move to unstable
-(provide reverse-begin)
+(provide reverse-begin list-update list-set)
 
 (provide
  ;; optimization
@@ -23,9 +23,10 @@ at least theoretically.
  ;; struct printing
  custom-printer define-struct/printer
  ;; provide macros
- rep utils typecheck infer env private)
+ rep utils typecheck infer env private types)
 
 (define optimize? (make-parameter #f))
+(define-for-syntax enable-contracts? #f)
 
 ;; fancy require syntax
 (define-syntax (define-requirer stx)
@@ -82,6 +83,7 @@ at least theoretically.
 (define-requirer env env-out)
 (define-requirer private private-out)
 (define-requirer types types-out)
+(define-requirer optimizer optimizer-out)
 
 ;; run `h' last, but drop its return value
 (define-syntax-rule (reverse-begin h . forms) (begin0 (begin . forms) h))
@@ -152,13 +154,13 @@ at least theoretically.
   (syntax-parse stx
     [(form name (flds ...) printer:expr)
      #`(define-struct name (flds ...) 
+         #:property prop:custom-print-quotable 'never
          #:property prop:custom-write 
          (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))
-         #:inspector #f)]))
+         #:transparent)]))
 
 
 ;; turn contracts on and off - off by default for performance.
-(define-for-syntax enable-contracts? #f)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c d/c/p)
 
 (define-syntax-rule (d/c/p (name . args) c . body)
@@ -213,3 +215,13 @@ at least theoretically.
      (if enable-contracts?
          (list #'[contracted (nm cnt)])     
          (list #'nm))]))
+
+(define (list-update l i f)
+  (cond [(null? l) (error 'list-update "list not long enough" l i f)]
+        [(zero? i) (cons (f (car l)) (cdr l))]
+        [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
+
+(define (list-set l k v)
+  (if (zero? k)
+      (cons v (cdr l))
+      (cons (car l) (list-set (cdr l) (sub1 k) v))))

@@ -1,9 +1,12 @@
-#lang scheme/base
-(require scheme/match)
+#lang racket/base
+(require racket/match
+         racket/string)
 
 (provide mpi->list
-         mpi->string)
+         mpi->string
+         self-mpi?)
 
+;; mpi->list : module-path-index -> list
 (define (mpi->list mpi)
   (cond [(module-path-index? mpi)
          (let-values ([(path relto) (module-path-index-split mpi)])
@@ -18,11 +21,15 @@
   (if (module-path-index? mpi)
       (let ([mps (mpi->list mpi)])
         (cond [(pair? mps)
-               (apply string-append
-                      (format "~s" (car mps))
-                      (map (lambda (x) (format " <= ~s" x)) (cdr mps)))]
+               (string-join (map (lambda (x) (format "~s" x)) mps)
+                            " <= ")]
               [(null? mps) "this module"]))
       (format "~s" mpi)))
+
+;; self-mpi? : module-path-index -> bool
+(define (self-mpi? mpi)
+  (let-values ([(path relto) (module-path-index-split mpi)])
+    (eq? path #f)))
 
 ;; --
 
@@ -169,7 +176,7 @@
           [package (string-append (caddr m) ".plt")]
           [version (and (cadddr m) (parse-version (cadddr m)))]
           [path (list-ref m 4)])
-      `(planet ,(string-append (or path "main") ".ss")
+      `(planet ,(string-append (or path "main") ".rkt")
                (,owner ,package . ,version)))))
 
 (define (parse-version str)
@@ -179,7 +186,7 @@
 (define (split-mods* path)
   (let ([mods (split-mods path)])
     (if (and (pair? mods) (null? (cdr mods)))
-        (append mods (list "main.ss"))
+        (append mods (list "main.rkt"))
         mods)))
 
 (define (split-mods path [more null])

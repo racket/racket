@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
   (require framework
            mzlib/class
            mred
@@ -462,7 +462,7 @@
       (preferences:set 'drracket:multi-file-search:filter? (send filter-check-box get-value))
       (send filter-text-field enable (send filter-check-box get-value)))
     (define (filter-text-field-callback)
-      (preferences:set 'drracket:multi-file-search:filter-string (send filter-text-field get-value)))
+      (preferences:set 'drracket:multi-file-search:filter-regexp (send filter-text-field get-value)))
     
     (define (recur-check-box-callback)
       (preferences:set 'drracket:multi-file-search:recur? (send recur-check-box get-value)))
@@ -500,7 +500,7 @@
     (send recur-check-box set-value (preferences:get 'drracket:multi-file-search:recur?))
     (send filter-check-box set-value (preferences:get 'drracket:multi-file-search:filter?))
     (send search-text-field set-value (preferences:get 'drracket:multi-file-search:search-string))
-    (send filter-text-field set-value (preferences:get 'drracket:multi-file-search:filter-string))
+    (send filter-text-field set-value (preferences:get 'drracket:multi-file-search:filter-regexp))
     (send dir-field set-value (path->string 
                                (let ([p (preferences:get 'drracket:multi-file-search:directory)])
                                  (if (not p)

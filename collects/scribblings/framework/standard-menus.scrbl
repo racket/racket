@@ -125,7 +125,7 @@
 
 @(defmethod (file-menu:get-quit-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> file-menu:create-quit?) ").")
 
-@(defmethod (file-menu:create-quit?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme (not (current-eventspace-has-standard-menus?))) ".")
+@(defmethod (file-menu:create-quit?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme (not (eq? (system-type) (quote macosx)))) ".")
 
 @(defmethod (file-menu:quit-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (when (exit:user-oks-exit) (exit:exit))) " ")
 

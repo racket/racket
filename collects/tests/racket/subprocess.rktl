@@ -5,8 +5,14 @@
 
 (Section 'subprocess)
 
-(define self (find-executable-path (find-system-path 'exec-file) #f))
-(define cat (find-executable-path "cat" #f))
+(define self
+  (parameterize ([current-directory (find-system-path 'orig-dir)])
+    (find-executable-path (find-system-path 'exec-file) #f)))
+(define cat (find-executable-path 
+	     (if (eq? 'windows (system-type)) 
+		 "cat.exe"
+		 "cat")
+	     #f))
 (define tmpfile (build-path (find-system-path 'temp-dir) "cattmp"))
 (define tmpfile2 (build-path (find-system-path 'temp-dir) "cattmp2"))
 
@@ -260,5 +266,68 @@
 (close-input-port r)
 (close-input-port e)
 (close-output-port w)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; custodians
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let ([try
+       (lambda (post-shutdown)
+         (let ([c (make-custodian)])
+           (let ([l (parameterize ([current-custodian c])
+                      (process* self
+                                "-e"
+                                "(let loop () (loop))"))])
+             (test 'running (list-ref l 4) 'status)
+             (custodian-shutdown-all c)
+             (sleep 0.1)
+             (test post-shutdown (list-ref l 4) 'status)
+             ((list-ref l 4) 'kill))))])
+  (try 'running)
+  (parameterize ([current-subprocess-custodian-mode 'kill])
+    (try 'done-error))
+  (parameterize ([current-subprocess-custodian-mode 'interrupt])
+    (try (if (eq? 'windows (system-type)) 'running 'done-error))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; process groups
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(unless (eq? 'windows (system-type))
+  (let ([try
+         (lambda (post-shutdown?)
+           (let ([l (parameterize ([subprocess-group-enabled (not post-shutdown?)])
+                      (process* self
+                                "-e"
+                                (format "(define l (process* \"~a\" \"-e\" \"(let loop () (loop))\"))" self)
+                                "-e"
+                                "(displayln (list-ref l 2))"
+                                "-e"
+                                "(flush-output)"
+                                "-e"
+                                "(let loop () (loop))"))]
+                 [running? (lambda (sub-pid)
+                             (equal?
+                              (list (number->string sub-pid))
+                              (regexp-match
+                               (format "(?m:^~a(?=[^0-9]))" sub-pid)
+                               (let ([s (open-output-string)])
+                                 (parameterize ([current-output-port s])
+                                   (system (format "ps x")))
+                                 (get-output-string s)))))])
+             (let ([sub-pid (read (car l))])
+               (test 'running (list-ref l 4) 'status)
+               (test #t running? sub-pid)
+               ((list-ref l 4) 'kill)
+               ((list-ref l 4) 'wait)
+               (test 'done-error (list-ref l 4) 'status)
+               (test post-shutdown? running? sub-pid)
+               (when post-shutdown?
+                 (system (format "kill ~a" sub-pid))))))])
+    (try #t)
+    (try #f)))
+  
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

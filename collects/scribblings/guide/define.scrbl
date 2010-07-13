@@ -198,9 +198,8 @@ When the grammar for a syntactic form specifies @racket[_body], then
 the corresponding form can be either a definition or an expression.
 A definition as a @racket[_body] is an @defterm{internal definition}.
 
-All internal definitions in a @racket[_body] sequence must appear
-before any expression, and the last @racket[_body] must be an
-expression.
+Expressions and internal definitions in a @racket[_body] sequence can
+be mixed, as long as the last @racket[_body] is an expression.
 
 For example, the syntax of @racket[lambda] is
 

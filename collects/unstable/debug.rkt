@@ -161,7 +161,7 @@
 
     (lambda ()
       (parameterize ([current-debug-depth (add1 depth)])
-        (with-handlers ([exn:fail? err])
+        (with-handlers ([(lambda _ #t) err])
           (call-with-values thunk
             (match-lambda*
               [(list v)

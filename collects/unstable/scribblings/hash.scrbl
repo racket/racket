@@ -85,7 +85,7 @@ Reports whether @scheme[h] maps keys according to @scheme[equal?].
 @defproc[(hash-has-key? [h hash?] [k any/c]) boolean?]{
 
 Reports whether @scheme[h] has an entry for @scheme[k].  This function is
-re-exported from @schememodname[scheme/base].  In versions of PLT Scheme before
+re-exported from @schememodname[scheme/base].  In versions of Racket before
 @scheme[hash-has-key?] was implemented, this module provides its own definition.
 
 @defexamples[

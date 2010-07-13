@@ -18,7 +18,7 @@
        (with-output-to-string
          (lambda ()
            (for: : Void
-                 ((i : Exact-Positive-Integer '(1 2 3))
+                 ((i : Integer '(1 2 3))
                   (j : Char "abc")
                   #:when (odd? i)
                   (k : True #(#t #t))
@@ -32,22 +32,22 @@
 
 (check equal?
        (for/list: : (Listof Integer)
-                  ((i : Exact-Positive-Integer '(1 2 3))
-                   (j : Exact-Positive-Integer '(10 20 30))
+                  ((i : Integer '(1 2 3))
+                   (j : Integer '(10 20 30))
                    #:when (odd? i))
                   (+ i j 10))
        '(21 43))
 
 (check equal?
        (for/or: : Boolean
-                ((i : Exact-Positive-Integer '(1 2 3)))
+                ((i : Integer '(1 2 3)))
                 (>= i 3))
        #t)
 
 (check equal?
        (for/or: : Boolean
-                ((i : Exact-Positive-Integer '(1 2 3))
-                 (j : Exact-Positive-Integer '(2 1 3)))
+                ((i : Integer '(1 2 3))
+                 (j : Integer '(2 1 3)))
                 (>= i j))
        #t)
 
@@ -56,9 +56,9 @@
                       (for/lists: : (values (Listof Integer) (Listof Integer))
                                   ((x : (Listof Integer))
                                    (y : (Listof Integer)))
-                                  ((i : Exact-Positive-Integer '(1 2 3))
+                                  ((i : Integer '(1 2 3))
                                    #:when #t
-                                   (j : Exact-Positive-Integer '(10 20 30))
+                                   (j : Integer '(10 20 30))
                                    #:when (> j 12))
                                   (values i j))])
                     (append x y))
@@ -67,19 +67,19 @@
 (check =
        (for/fold: : Integer
                   ((acc : Integer 0))
-                  ((i : Exact-Positive-Integer '(1 2 3))
-                   (j : Exact-Positive-Integer '(10 20 30)))
+                  ((i : Integer '(1 2 3))
+                   (j : Integer '(10 20 30)))
                   (+ acc i j))
        66)
 
 (check =
        (for/fold: : Integer
                   ((acc : Integer 0))
-                  ((i : Exact-Positive-Integer '(1 2 3))
+                  ((i : Integer '(1 2 3))
                    #:when (even? i)
-                   (j : Exact-Positive-Integer '(10 20 30))
+                   (j : Integer '(10 20 30))
                    #:when #t
-                   (k : Exact-Positive-Integer '(100 200 300)))
+                   (k : Integer '(100 200 300)))
                   (+ acc i j k))
        1998)
 
@@ -87,8 +87,8 @@
        (with-output-to-string
          (lambda ()
            (for*: : Void
-                  ((i : Exact-Positive-Integer '(1 2 3))
-                   (j : Exact-Positive-Integer '(10 20 30)))
+                  ((i : Integer '(1 2 3))
+                   (j : Integer '(10 20 30)))
                   (display (list i j)))))
        "(1 10)(1 20)(1 30)(2 10)(2 20)(2 30)(3 10)(3 20)(3 30)")
 
@@ -97,8 +97,8 @@
                       (for*/lists: : (values (Listof Integer) (Listof Integer))
                                    ((x : (Listof Integer))
                                     (y : (Listof Integer)))
-                                   ((i : Exact-Positive-Integer '(1 2 3))
-                                    (j : Exact-Positive-Integer '(10 20 30))
+                                   ((i : Integer '(1 2 3))
+                                    (j : Integer '(10 20 30))
                                     #:when (> j 12))
                                    (values i j))])
                     (append x y))
@@ -107,9 +107,9 @@
 (check =
        (for*/fold: : Integer
                    ((acc : Integer 0))
-                   ((i : Exact-Positive-Integer '(1 2 3))
+                   ((i : Integer '(1 2 3))
                     #:when (even? i)
-                    (j : Exact-Positive-Integer '(10 20 30))
-                    (k : Exact-Positive-Integer '(100 200 300)))
+                    (j : Integer '(10 20 30))
+                    (k : Integer '(100 200 300)))
                    (+ acc i j k))
        1998)

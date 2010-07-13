@@ -23,7 +23,7 @@
         (namespace-attach-module cns ''#%builtin ns)
         ns)))
 
-  (define-values (short-name long-names)
+  (define-values (short-name long-names raco?)
     ;; Load the name modulewithout using .zos, and in its own namespace to 
     ;;  avoid poluting the cm-managed namespace later
     (parameterize ([use-compiled-file-paths null]

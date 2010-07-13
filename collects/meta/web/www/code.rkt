@@ -13,8 +13,13 @@
 
 (define (code . strs)
   (let* ([str (apply string-append strs)]
-         [bstr (string->bytes/utf-8
-                (regexp-replace* #rx"(?m:^$)" str "\xA0"))]
+         [str (let ([N (- 6 (length (regexp-match-positions* "\n" str)))])
+                (cond [(N . > . 0) (string-append str (make-string
+                                                       N #\newline))]
+                      [(N . < . 0) (error 'code "too many lines in example: ~e"
+                                          str)]
+                      [else str]))]
+         [bstr (string->bytes/utf-8 (regexp-replace* #rx"(?m:^$)" str "\xA0"))]
          [in (open-input-bytes bstr)])
     (let* ([tokens
             (let loop ([mode #f])
@@ -46,7 +51,7 @@
                                                   (let-values ([(p a) (xref-tag->path+anchor
                                                                        xref tag
                                                                        #:external-root-url doc-root)])
-                                                    (format "~a#~a" p a)))
+                                                    (if a (format "~a#~a" p a) p)))
                                             'importid))
                                       'id)
                                   pos
@@ -70,7 +75,8 @@
                                             #:external-root-url doc-root)])
                                (if p
                                    (list (let ([pos (sub1 (syntax-position mp-stx))])
-                                           (list (cons 'modpath (format "~a#~a" p a))
+                                           (list (cons 'modpath
+                                                       (if a (format "~a#~a" p a) p))
                                                  pos
                                                  (+ pos (syntax-span mp-stx))
                                                  priority)))

@@ -1531,6 +1531,7 @@ please adhere to these guidelines:
   (planet-downloading "PLaneT: Downloading ~a...")
   (planet-installing "PLaneT: Installing ~a...")
   (planet-finished "PLaneT: Finished with ~a.")
+  (planet-docs-building "PLaneT: Building docs (triggered by ~a)...")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
   
   ;; string normalization. To see this, paste some text with a ligature into DrRacket

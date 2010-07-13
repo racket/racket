@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/contract
-         scheme/unit
+         racket/unit
          racket/class
          racket/path
          racket/port

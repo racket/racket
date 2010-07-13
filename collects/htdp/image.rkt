@@ -535,7 +535,7 @@ plt/collects/tests/mzscheme/htdp-image.ss
          sides
          "positive integer bigger than or equal to 3"
          "first")
-  (check-size 'star in-radius "second")
+  (check-size 'regular-polygon in-radius "second")
   (check-mode 'regular-polygon mode "third")
   (check-image-color 'regular-polygon color "fourth")
   (check 'regular-polygon real? angle "real number" "fifth")

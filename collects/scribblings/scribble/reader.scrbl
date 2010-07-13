@@ -141,7 +141,7 @@ expressions.
 }===|
 
 The command part of an @"@"-form is optional as well. In that case,
-the @"@" forms is read as a list, which usually counts as a function
+the @"@" form is read as a list, which usually counts as a function
 application, but it also useful when quoted with the usual Racket
 @racket[quote]:
 

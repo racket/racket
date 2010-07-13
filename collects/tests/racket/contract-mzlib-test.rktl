@@ -4521,7 +4521,7 @@ so that propagation occurs.
   (ctest #t contract-first-order-passes? 
         (cons/c boolean? (-> integer? integer?))
         (list* #t (λ (x) x)))
-  (ctest #t contract-first-order-passes? 
+  (ctest #f contract-first-order-passes? 
         (cons/c boolean? (-> integer? integer?))
         (list* 1 2))
   

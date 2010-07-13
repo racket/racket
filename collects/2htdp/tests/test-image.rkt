@@ -34,11 +34,12 @@
                   make-point
                   make-crop
                   crop?
-                  normalized-shape?)
+                  normalized-shape?
+                  image-snip->image
+                  to-img)
          (only-in "../private/image-more.ss" 
                   bring-between
                   swizzle)
-         (only-in "../private/img-err.ss" image-snip->image)
          ; "../private/img-err.ss"
          "../../mrlib/private/image-core-bitmap.ss"
          lang/posn
@@ -872,6 +873,10 @@
                                             (image-height t)
                                             'solid 'black))))))
 
+(test (text "ab" 18 (make-color 0 0 255))
+      =>
+      (text "ab" 18 "blue"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; triangle
@@ -1215,11 +1220,11 @@
       (void))
 
 
-(define (fill-bitmap b color)
+(define (fill-bitmap b color [x 0] [y 0] [w (send b get-width)] [h (send b get-height)])
   (let ([bdc (make-object bitmap-dc% b)])
     (send bdc set-brush color 'solid)
     (send bdc set-pen color 1 'transparent)
-    (send bdc draw-rectangle 0 0 (send b get-width) (send b get-height))
+    (send bdc draw-rectangle x y w h)
     (send bdc set-bitmap #f)))
 
 (define blue-10x20-bitmap (make-object bitmap% 10 20))
@@ -1228,6 +1233,14 @@
 (fill-bitmap blue-20x10-bitmap "blue")
 (define blue-20x40-bitmap (make-object bitmap% 20 40))
 (fill-bitmap blue-20x40-bitmap "blue")
+
+(define green-blue-10x20-bitmap (make-object bitmap% 10 20))
+(fill-bitmap green-blue-10x20-bitmap "green")
+(fill-bitmap green-blue-10x20-bitmap "blue" 0 0 10 10)
+
+(define green-blue-20x10-bitmap (make-object bitmap% 20 10))
+(fill-bitmap green-blue-20x10-bitmap "green")
+(fill-bitmap green-blue-20x10-bitmap "blue" 10 0 10 10)
 
 (test (image-width (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
       => 
@@ -1245,6 +1258,10 @@
 (test (rotate 90 (make-object image-snip% blue-10x20-bitmap))
       =>
       (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
+
+(test (rotate 90 (make-object image-snip% green-blue-20x10-bitmap))
+      =>
+      (image-snip->image (make-object image-snip% green-blue-10x20-bitmap)))
 
 ;; there was a bug in the bounding box computation for scaled bitmaps that this test exposes
 (test (image-width (frame (rotate 90 (scale 1/2 (bitmap icons/plt-logo-red-diffuse.png)))))
@@ -1365,6 +1382,73 @@
   (test (+ (count-crops (normalize-shape (image-shape an-image))) 1)
         =>
         (count-crops (normalize-shape (image-shape an-image+crop)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  flipping
+;;
+
+(test (flip-horizontal (rotate -30 (rectangle 100 10 'solid 'red)))
+      =>
+      (rotate 30 (rectangle 100 10 'solid 'red)))
+
+(test (flip-vertical (rotate -30 (rectangle 100 10 'solid 'red)))
+      =>
+      (rotate 30 (rectangle 100 10 'solid 'red)))
+(test (flip-vertical
+       (rotate
+        -30
+        (overlay (rectangle 100 10 'solid 'red)
+                 (ellipse 10 100 'solid 'blue))))
+      =>
+      (rotate
+       30
+       (overlay (rectangle 100 10 'solid 'red)
+                (ellipse 10 100 'solid 'blue))))
+(test (flip-horizontal (overlay/xy (rectangle 100 10 'solid 'red)
+                                   10 10
+                                   (ellipse 10 100 'solid 'blue)))
+      =>
+      (overlay/xy (rectangle 100 10 'solid 'red)
+                  80 10
+                  (ellipse 10 100 'solid 'blue)))
+(test (flip-vertical (overlay/xy (rectangle 100 10 'solid 'red)
+                                 10 10
+                                 (ellipse 10 100 'solid 'blue)))
+      =>
+      (overlay/xy (rectangle 100 10 'solid 'red)
+                  10 -100
+                  (ellipse 10 100 'solid 'blue)))
+
+(test (flip-vertical (add-curve (rectangle 200 100 'solid 'black)
+                                20 20 0 1
+                                180 80 -90 1/3
+                                "white"))
+      =>
+      (add-curve (rectangle 200 100 'solid 'black)
+                 20 80 0 1
+                 180 20 90 1/3
+                 "white"))
+
+(let* ([bdc (make-object bitmap-dc%)]
+       [bm-ul (make-object bitmap% 10 10)]
+       [bm-ur (make-object bitmap% 10 10)]
+       [bm-ll (make-object bitmap% 10 10)])
+  (send bdc set-bitmap bm-ul)
+  (send bdc set-pen "red" 1 'transparent)
+  (send bdc set-brush "red" 'solid)
+  (send bdc clear)
+  (send bdc draw-rectangle 0 0 5 5)
+  (send bdc set-bitmap bm-ur)
+  (send bdc set-pen "red" 1 'solid)
+  (send bdc clear)
+  (send bdc draw-rectangle 5 0 5 5)
+  (send bdc set-bitmap bm-ll)
+  (send bdc clear)
+  (send bdc draw-rectangle 0 5 5 5)
+  (send bdc set-bitmap #f)
+  (test (flip-vertical bm-ul) => (to-img bm-ll))
+  (test (flip-horizontal bm-ul) => (to-img bm-ur)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

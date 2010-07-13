@@ -1,5 +1,6 @@
 #lang scheme/base
 (require setup/main-collects
+         scheme/contract
          scribble/core
          scribble/base
          scribble/decode
@@ -7,11 +8,35 @@
          scribble/latex-properties
          (for-syntax scheme/base))
 
+(provide/contract
+ [abstract 
+  (->* () () #:rest (listof pre-content?)
+       block?)]
+ [authorinfo
+  (-> pre-content? pre-content? pre-content?
+      block?)]
+ [conferenceinfo
+  (-> pre-content? pre-content?
+      block?)]
+ [copyrightyear
+  (->* () () #:rest (listof pre-content?)
+       block?)]
+ [copyrightdata
+  (->* () () #:rest (listof pre-content?)
+       block?)]
+ [category
+  (->* (pre-content? pre-content? pre-content?)
+       ((or/c false/c pre-content?))
+       content?)]
+ [terms
+  (->* () () #:rest (listof pre-content?)
+       content?)]
+ [keywords
+  (->* () () #:rest (listof pre-content?)
+       content?)])
+
 (provide preprint 10pt
-         abstract include-abstract
-         authorinfo
-         conferenceinfo copyrightyear copyrightdata
-         category terms keywords)
+         include-abstract)
 
 (define-syntax (preprint stx)
   (raise-syntax-error #f
@@ -97,11 +122,10 @@
 (define (category sec title sub [more #f])
   (make-multiarg-element
    (make-style (format "SCategory~a" (if more "Plus" "")) sigplan-extras)
-   (append
-    (list
-     (make-element #f (decode-content (list sec)))
-     (make-element #f (decode-content (list title)))
-     (make-element #f (decode-content (list sub))))
+   (list*
+    (make-element #f (decode-content (list sec)))
+    (make-element #f (decode-content (list title)))
+    (make-element #f (decode-content (list sub)))
     (if more
         (list (make-element #f (decode-content (list more))))
         null))))

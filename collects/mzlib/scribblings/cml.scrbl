@@ -5,7 +5,7 @@
 @mzlib[#:mode title cml]
 
 The @schememodname[mzlib/cml] library defines a number of procedures
-that wrap PLT Scheme concurrency procedures. The wrapper procedures
+that wrap Racket concurrency procedures. The wrapper procedures
 have names and interfaces that more closely match those of Concurrent
 ML @cite["Reppy99"].
 

@@ -170,7 +170,7 @@ be a possible result from @racket[procedure-arity], except
 that it does not have to be normalized (see @racket[procedure-arity?] for
 the details of normalized arities); @racket[raise-arity-error] 
 will normalize the arity and used the normalized form in the error message.
-If @racket[name-symbol-or-procedure] is a procedure, its actual arity is
+If @racket[name] is a procedure, its actual arity is
 ignored.  
 
 The @racket[arg-v] arguments are the actual supplied
@@ -415,7 +415,7 @@ non-string is returned, then the string @racket["..."] is used. If a
 primitive error string needs to be generated before the handler has
 returned, the default error value conversion handler is used.
 
-Call to an error value conversion handler are @racket[parameterized]
+Call to an error value conversion handler are @racket[parameterize]d
 to re-install the default error value conversion handler, and to
 enable printing of unreadable values (see @racket[print-unreadable]).}
 

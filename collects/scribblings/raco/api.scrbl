@@ -17,21 +17,21 @@
 
 The @schememodname[compiler/compiler] library provides the
 functionality of @exec{mzc} for compilation to bytecode and via C, but
-through a Scheme API.}
+through a Racket API.}
 
 @; ----------------------------------------------------------------------
 
 @section[#:tag "api:zo"]{Bytecode Compilation}
 
 @defproc[((compile-zos [expr any/c] [#:module? module? any/c #f] [#:verbose? verbose? any/c #f]) 
-          [scheme-files (listof path-string?)]
+          [racket-files (listof path-string?)]
           [dest-dir (or/c path-string? false/c (one-of/c 'auto))])
          void?]{
 
 Supplying just @scheme[expr] returns a compiler that is initialized
 with the expression @scheme[expr], as described below.
 
-The compiler takes a list of Scheme files and compiles each of them to
+The compiler takes a list of Racket files and compiles each of them to
 bytecode, placing the resulting bytecode in a @filepath{.zo} file
 within the directory specified by @scheme[dest-dir].  If
 @scheme[dest-dir] is @scheme[#f], each bytecode result is placed in
@@ -75,7 +75,7 @@ The @filepath{.zo} files are placed into the collection's
 @filepath{compiled} directory. By default, all files with the
 extension @filepath{.rkt}, @filepath{.ss}, or @filepath{.scm} in a collection are
 compiled, as are all such files within subdirectories, execept that
-any file or directory whose path starts with @scheme[scheme-path] is
+any file or directory whose path starts with @scheme[racket-path] is
 skipped. (``Starts with'' means that the simplified path @scheme[_p]'s
 byte-string form after @scheme[(simplify-path _p #f)]starts with the
 byte-string form of @scheme[(simplify-path skip-path #f)].)
@@ -138,11 +138,11 @@ instead of using an @filepath{info.rkt} file (if any) in the directory.}
 @section[#:tag "api:ext"]{Compilation via C}
 
 @defproc[((compile-extensions [expr any/c]) 
-          [scheme-files (listof path-string?)]
+          [racket-files (listof path-string?)]
           [dest-dir (or/c path-string? false/c (one-of/c 'auto))])
          void?]{
 
-Like @scheme[compile-zos], but the @scheme[scheme-files] are compiled
+Like @scheme[compile-zos], but the @scheme[racket-files] are compiled
 to native-code extensions via C. If @scheme[dest-dir] is
 @scheme['auto], each extension file (@filepath{.dll}, @filepath{.so},
 or @filepath{.dylib}) is placed in a subdirectory relative to the
@@ -151,7 +151,7 @@ source produced by @scheme[(build-path "compiled" "native"
 
 
 @defproc[((compile-extensions-to-c [expr any/c]) 
-          [scheme-files (listof path-string?)]
+          [racket-files (listof path-string?)]
           [dest-dir (or/c path-string? false/c (one-of/c 'auto))])
          void?]{
 
@@ -235,9 +235,9 @@ A parameter that specifies whether sub-collections are compiled by
 @defboolparam[compile-for-embedded embed?]{
 
 A @scheme[#t] values for this parameter creates @filepath{.c} files
-and object files to be linked directly with an embedded PLT Scheme
+and object files to be linked directly with an embedded Racket
 run-time system, instead of @filepath{.c} files and object files to be
-dynamically loaded into PLT Scheme as an extension. The default is
+dynamically loaded into Racket as an extension. The default is
 @scheme[#f].}
 
 
@@ -286,7 +286,7 @@ Sets the randomizer seed for @scheme['vehicles:monolithic] mode.}
 
 @defparam[max-exprs-per-top-level-set n exact-nonnegative-integer?]{
 
-A parameter that determines the number of top-level Scheme expressions
+A parameter that determines the number of top-level Racket expressions
 crammed into one C function when compiling via C.  The default is
 @scheme[25].}
 
@@ -340,17 +340,17 @@ Evaluates @scheme[expr]. Future calls to @sigelem[compiler:inner^
 compile-extension] or @sigelem[compiler:inner^ compile-extension-to-c]
 see the effects of the evaluation.}
 
-@defproc[(compile-extension [scheme-source path-string?] 
+@defproc[(compile-extension [racket-source path-string?] 
                             [dest-dir path-string?])
          void?]{
 
-Compiles a single Scheme file to an extension.}
+Compiles a single Racket file to an extension.}
 
-@defproc[(compile-extension-to-c [scheme-source path-string?] 
+@defproc[(compile-extension-to-c [racket-source path-string?] 
                                  [dest-dir path-string?])
          void?]{
 
-Compiles a single Scheme file to a @filepath{.c} file.}
+Compiles a single Racket file to a @filepath{.c} file.}
 
 @defproc[(compile-c-extension [c-source path-string?] 
                               [dest-dir path-string?])

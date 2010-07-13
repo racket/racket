@@ -501,6 +501,10 @@ symbols, and that return a symbol.
 
 @defform*/subs[#:literals (any values)
 [(->d (mandatory-dependent-dom ...) 
+      dependent-rest
+      pre-cond
+      dep-range)
+ (->d (mandatory-dependent-dom ...) 
       (optional-dependent-dom ...) 
       dependent-rest
       pre-cond
@@ -525,8 +529,9 @@ expressions have been added in order to express contracts
 that are not naturally tied to a particular argument or
 result.
 
-The first two subforms of a @racket[->d] contract cover the
-mandatory and optional arguments. Following that is an
+The first subforms of a @racket[->d] contract covers the
+mandatory and the second (optional) subform covers the optional
+arguments. Following that is an
 optional rest-args contract, and an optional
 pre-condition. The @racket[dep-range] non-terminal covers
 the possible post-condition contracts. If it is
@@ -743,6 +748,14 @@ The @racket[#:∃] and @racket[#:exists] clauses define new abstract
 contracts. The variables are bound in the remainder of the @racket[provide/contract]
 expression to new contracts that hide the values they accept and
 ensure that the exported functions are treated parametrically.
+
+The implementation of @scheme[provide/contract] attaches uses
+@scheme[syntax-property] to attach properties to the code it generates
+that records the syntax of the contracts in the fully expanded program.
+Specifically, the symbol @scheme['provide/contract-original-contract]
+is bound to vectors of two elements, the exported identifier and a
+syntax object for the expression that produces the contract controlling
+the export.
 }
 
 @defform*/subs[

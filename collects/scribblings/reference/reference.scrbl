@@ -51,7 +51,10 @@ Unless otherwise noted, the bindings defined in this manual are
 exported by the @racketmodname[racket/base] and @racketmodname[racket]
 languages.}
 
-@margin-note{The @racketmodname[racket] library combines
+@margin-note{The @racketmodname[racket/base] library is much smaller than
+the @racketmodname[racket] library and will typically load faster.
+
+The @racketmodname[racket] library combines
 @racketmodname[racket/base]@racket-extra-libs[].}
 
 @table-of-contents[]
@@ -72,6 +75,7 @@ languages.}
 @include-section["os.scrbl"]
 @include-section["memory.scrbl"]
 @include-section["unsafe.scrbl"]
+@include-section["debugging.scrbl"]
 @include-section["running.scrbl"]
 
 @;------------------------------------------------------------------------

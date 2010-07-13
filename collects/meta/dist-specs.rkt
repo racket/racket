@@ -664,7 +664,7 @@ plt-extras :+= (package: "deinprogramm/")
 mz-extras :+= (- (package: "unstable")
                  ;; should "gui" mean DrRacket or GRacket? It's not
                  ;; obvious that "framework" is only in DrRacket.
-                 (cond (not dr) => (collects: "unstable/gui")))
+                 (cond (not plt) => (collects: "unstable/gui")))
 
 ;; -------------------- plai
 plt-extras :+= (package: "plai/")
@@ -675,6 +675,9 @@ plt-extras :+= (package: "schemeunit/")
 
 ;; -------------------- racklog (aka schelog)
 plt-extras :+= (package: "racklog/")
+
+;; -------------------- datalog
+plt-extras :+= (package: "datalog/")
 
 ;; ============================================================================
 ;; Readme header

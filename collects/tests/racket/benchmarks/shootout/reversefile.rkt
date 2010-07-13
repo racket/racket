@@ -3,11 +3,12 @@
 ;;; http://shootout.alioth.debian.org/
 ;;; Provided by Bengt Kleberg
 
-(module reversefile mzscheme
-  (let ([inport (current-input-port)])
-    (let rev ([lines null])
-      (let ([line (read-bytes-line inport)])
-	(if (eof-object? line)
-	    (for-each (lambda (l) (printf "~a\n" l))
-		      lines)
-	    (rev (cons line lines)))))))
+#lang racket/base
+
+(let ([inport (current-input-port)])
+  (let rev ([lines null])
+    (let ([line (read-bytes-line inport)])
+      (if (eof-object? line)
+          (for-each (lambda (l) (printf "~a\n" l))
+                    lines)
+          (rev (cons line lines))))))

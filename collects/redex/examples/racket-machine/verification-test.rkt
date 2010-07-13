@@ -496,6 +496,14 @@
  (negate bytecode-ok?)
  '(let-void-box 1 (application (case-lam (lam (ref) () (loc-box-noclr 0))) (loc-noclr 1))))
 
+(test-predicate
+ (negate bytecode-ok?)
+ '(let-one 42
+           (boxenv 0
+                   (application
+                    (case-lam (lam (ref) () (loc-box 0)))
+                    (loc-box 1)))))
+
 ; literals
 (test-predicate bytecode-ok? #t)
 

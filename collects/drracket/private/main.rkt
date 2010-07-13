@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require string-constants
          mzlib/contract
@@ -487,14 +487,14 @@
                       (drracket:language-configuration:get-languages))])
           (and lang
                (let ([settings (send lang unmarshall-settings marshalled-settings)])
-                 (drracket:language-configuration:make-language-settings
+                 (drracket:language-configuration:language-settings
                   lang
                   (or settings (send lang default-settings)))))))))
 
   ;; preferences initialization
   (drr:set-default 'drracket:multi-file-search:recur? #t boolean?)
   (drr:set-default 'drracket:multi-file-search:filter? #t boolean?)
-  (drr:set-default 'drracket:multi-file-search:filter-string "\\.(ss|scm)$" string?)
+  (drr:set-default 'drracket:multi-file-search:filter-regexp "\\.(rkt.?|ss|scm)$" string?)
   (drr:set-default 'drracket:multi-file-search:search-string "" string?)
   (drr:set-default 'drracket:multi-file-search:search-type
                            1
@@ -560,18 +560,7 @@
    (drracket:frame:create-root-menubar)
    (preferences:set 'framework:exit-when-no-frames #f)]
   [else
-   (preferences:set 'framework:exit-when-no-frames #t)])
-
-
-;; is this used anywhere?
-(let* ([sl (editor:get-standard-style-list)]
-       [sd (make-object style-delta%)])
-  (send sd set-delta-foreground (make-object color% 255 0 0))
-  (send sl new-named-style 
-        "drscheme:text:ports err"
-        (send sl find-or-create-style
-              (send sl find-named-style "text:ports err")
-              sd)))  
+   (preferences:set 'framework:exit-when-no-frames #t)]) 
 
 
 (define repl-error-pref 'drracket:read-eval-print-loop:error-color)

@@ -3,11 +3,9 @@
 (require scheme/match scheme/contract)
 (require "rep-utils.rkt" "free-variance.rkt")
 
-(define Filter/c
-  (flat-named-contract
-   'Filter
-   (λ (e)
-     (and (Filter? e) (not (NoFilter? e)) (not (FilterSet? e))))))
+(define (Filter/c-predicate? e)
+  (and (Filter? e) (not (NoFilter? e)) (not (FilterSet? e))))
+(define Filter/c (flat-named-contract 'Filter Filter/c-predicate?))
 
 (define FilterSet/c
   (flat-named-contract
@@ -48,17 +46,16 @@
              (combine-frees (map free-idxs* fs))])
 
 (df FilterSet (thn els)
-    [#:contract (->d ([t (cond [(Bot? t)
-                                Bot?]
-                               [(Bot? e)
-                                Top?]
-                               [else Filter/c])]
-                      [e (cond [(Bot? e)
-                                Bot?]
-                               [(Bot? t)
-                                Top?]
-                               [else Filter/c])])
+    [#:contract (->d ([t any/c]
+                      [e any/c])
                      (#:syntax [stx #f])
+                     #:pre-cond
+                     (and (cond [(Bot? t) #t]
+                                [(Bot? e) (Top? t)]
+                                [else (Filter/c-predicate? t)])
+                          (cond [(Bot? e) #t]
+                                [(Bot? t) (Top? e)]
+                                [else (Filter/c-predicate? e)]))
                      [result FilterSet?])]
     [#:fold-rhs (*FilterSet (filter-rec-id thn) (filter-rec-id els))])
 

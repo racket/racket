@@ -1,19 +1,20 @@
 #lang scheme/unit
 
 
-(require (rename-in "../utils/utils.rkt" [private private-in]))
-(require syntax/kerncase mzlib/trace
+(require (rename-in "../utils/utils.rkt" [private private-in])
+         syntax/kerncase mzlib/trace
          scheme/match (prefix-in - scheme/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
+         "check-below.rkt" "tc-funapp.rkt"
          (types utils convenience union subtype remove-intersect type-table filter-ops)
          (private-in parse-type type-annotation)
          (rep type-rep)
          (only-in (infer infer) restrict)
          (except-in (utils tc-utils stxclass-util))
-         (env lexical-env)
-         (only-in (env type-environments) lookup current-tvars extend-env)
+         (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal unstable/debug
          (except-in syntax/parse id)
+         unstable/function
          (only-in srfi/1 split-at))
 
 (require (for-template scheme/base racket/private/class-internal))
@@ -34,12 +35,22 @@
     [i:boolean (-val (syntax-e #'i))]
     [i:identifier (-val (syntax-e #'i))]
     [0 -Zero]
+    [(~var i (3d (conjoin number? fixnum? positive?))) -PositiveFixnum]
+    [(~var i (3d (conjoin number? fixnum? negative?))) -NegativeFixnum]
+    [(~var i (3d (conjoin number? fixnum?))) -Fixnum]
     [(~var i (3d exact-positive-integer?)) -ExactPositiveInteger]
     [(~var i (3d exact-nonnegative-integer?)) -ExactNonnegativeInteger]
     [(~var i (3d exact-integer?)) -Integer]
-    [(~var i (3d (lambda (e) (and (number? e) (exact? e) (rational? e))))) -ExactRational]
+    [(~var i (3d (conjoin number? exact? rational?))) -ExactRational]
+    [(~var i (3d (conjoin inexact-real?
+                          (lambda (x) (or (positive? x) (zero? x)))
+                          (lambda (x) (not (eq? x -0.0))))))
+     -NonnegativeFlonum]
     [(~var i (3d inexact-real?)) -Flonum]
     [(~var i (3d real?)) -Real]
+    ;; a complex number can't have an inexact imaginary part and an exact real part
+    [(~var i (3d (conjoin number? (lambda (x) (inexact-real? (imag-part x))))))
+     -InexactComplex]
     [(~var i (3d number?)) -Number]
     [i:str -String]
     [i:char -Char]
@@ -70,9 +81,8 @@
                     [t (in-list ts)])
            (tc-literal l t)))]
        ;; errors are handled elsewhere
-       [_ (make-Vector (apply Un 
-                              (for/list ([l (syntax-e #'i)])
-                                (tc-literal l #f))))])]
+       [_ (make-HeterogenousVector (for/list ([l (syntax-e #'i)])
+                                     (generalize (tc-literal l #f))))])]
     [(~var i (3d hash?))
      (let* ([h (syntax-e #'i)]
             [ks (hash-map h (lambda (x y) (tc-literal x)))]
@@ -118,15 +128,11 @@
                (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
                  (match (syntax-e last-stx)
                    [(cons last-ty-stx (? identifier? last-id-stx))
-                    (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
+                    (unless (bound-index? (syntax-e last-id-stx))
                       (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
                     (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
                         (let* ([last-id (syntax-e last-id-stx)]
-                               [last-ty
-                                (parameterize ([current-tvars (extend-env (list last-id)
-                                                                          (list (make-DottedBoth (make-F last-id)))
-                                                                          (current-tvars))])
-                                  (parse-type last-ty-stx))])
+                               [last-ty (extend-tvars (list last-id) (parse-type last-ty-stx))])
                           (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
                         (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
                                        ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
@@ -160,91 +166,6 @@
   (match (tc-expr/check e t)
     [(tc-result1: t) t]))
 
-(define (print-object o)
-  (match o
-    [(Empty:) "no object"]
-    [_ (format "object ~a" o)]))
-
-;; check-below : (/\ (Results Type -> Result)
-;;                   (Results Results -> Result)
-;;                   (Type Results -> Type)
-;;                   (Type Type -> Type))
-(define (check-below tr1 expected)     
-  (define (filter-better? f1 f2)
-    (match* (f1 f2)
-      [(f f) #t]
-      [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-))
-       (and (implied-atomic? f2+ f1+)
-            (implied-atomic? f2- f1-))]
-      [(_ _) #f]))
-  (define (object-better? o1 o2)
-    (match* (o1 o2)
-      [(o o) #t]
-      [(o (or (NoObject:) (Empty:))) #t]
-      [(_ _) #f]))  
-  (match* (tr1 expected)
-    ;; these two have to be first so that errors can be allowed in cases where multiple values are expected
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) (tc-results: ts2 (NoFilter:) (NoObject:)))
-     (ret ts2)]
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
-     expected]
-    
-    [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
-     (unless (= (length ts) (length ts2))
-       (tc-error/expr "Expected ~a values, but got ~a" (length ts2) (length ts)))
-     (unless (for/and ([t ts] [s ts2]) (subtype t s))
-       (tc-error/expr "Expected ~a, but got ~a" (stringify ts2) (stringify ts)))
-     (if (= (length ts) (length ts2))
-         (ret ts2 fs os)
-         (ret ts2))]
-    [((tc-result1: t1 f1 o1) (tc-result1: t2 (FilterSet: (Top:) (Top:)) (Empty:)))
-     (cond 
-       [(not (subtype t1 t2))
-        (tc-error/expr "Expected ~a, but got ~a" t2 t1)])
-     expected]
-    [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
-     (cond 
-       [(not (subtype t1 t2))
-        (tc-error/expr "Expected ~a, but got ~a" t2 t1)]
-       [(and (not (filter-better? f1 f2))
-             (object-better? o1 o2))
-        (tc-error/expr "Expected result with filter ~a, got filter ~a" f2 f1)]
-       [(and (filter-better? f1 f2)
-             (not (object-better? o1 o2)))
-        (tc-error/expr "Expected result with object ~a, got object ~a" o2 o1)]
-       [(and (not (filter-better? f1 f2))
-             (not (object-better? o1 o2)))
-        (tc-error/expr "Expected result with filter ~a and ~a, got filter ~a and ~a" f2 (print-object o2) f1 (print-object o1))])
-     expected]
-    [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))
-     (unless (andmap subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
-     expected]
-    [((tc-results: t1 fs os) (tc-results: t2 fs os))
-     (unless (= (length t1) (length t2))
-       (tc-error/expr "Expected ~a values, but got ~a" (length t2) (length t1)))
-     (unless (for/and ([t t1] [s t2]) (subtype t s))
-       (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
-     expected]
-    [((tc-result1: t1 f o) (? Type? t2))
-     (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     (ret t2 f o)]
-    [((? Type? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
-     (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     t1]
-    [((? Type? t1) (tc-result1: t2 f o))
-     (if (subtype t1 t2)
-         (tc-error/expr "Expected result with filter ~a and ~a, got ~a" f (print-object o) t1)
-         (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     t1]
-    [((? Type? t1) (? Type? t2))
-     (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     expected]
-    [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
-
 (define (tc-expr/check/type form expected)
   #;(syntax? Type/c . -> . tc-results?)
   (tc-expr/check form (ret expected)))
@@ -255,23 +176,24 @@
     (unless (syntax? form) 
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (let loop ([form form] [expected expected] [checked? #f])
-      (cond [(type-ascription form) 
+    (let loop ([form* form] [expected expected] [checked? #f])
+      (cond [(type-ascription form*) 
              => 
              (lambda (ann)
-               (let* ([r (tc-expr/check/internal form ann)]
+               (let* ([r (tc-expr/check/internal form* ann)]
                       [r* (check-below r expected)])
-                 (add-typeof-expr form expected)
+                 ;; add this to the *original* form, since the newer forms aren't really in the program
+                 (add-typeof-expr form ann)
                  ;; around again in case there is an instantiation
                  ;; remove the ascription so we don't loop infinitely
-                 (loop (remove-ascription form) r* #t)))]
-            [(syntax-property form 'type-inst)
+                 (loop (remove-ascription form*) r* #t)))]
+            [(syntax-property form* 'type-inst)
              ;; check without property first
              ;; to get the appropriate type to instantiate
-             (match (tc-expr (syntax-property form 'type-inst #f))
+             (match (tc-expr (syntax-property form* 'type-inst #f))
                [(tc-results: ts fs os)
                 ;; do the instantiation on the old type
-                (let* ([ts* (do-inst form ts)]
+                (let* ([ts* (do-inst form* ts)]
                        [ts** (ret ts* fs os)])
                   (add-typeof-expr form ts**)
                   ;; make sure the new type is ok
@@ -280,26 +202,9 @@
                [ty (add-typeof-expr form ty) ty])]
             ;; nothing to see here
             [checked? expected]
-            [else (let ([t (tc-expr/check/internal form expected)])
+            [else (let ([t (tc-expr/check/internal form* expected)])
                     (add-typeof-expr form t)
                     t)]))))
-
-#;
-(define (tc-or e1 e2 or-part [expected #f])
-  (match (single-value e1)
-    [(tc-result1: t1 (and f1 (FilterSet: fs+ fs-)) o1)
-     (let*-values ([(flag+ flag-) (values (box #t) (box #t))])
-       (match-let* ([(tc-result1: t2 f2 o2) (with-lexical-env 
-                                             (env+ (lexical-env) fs+ flag+) 
-                                             (with-lexical-env/extend 
-                                              (list or-part) (list (restrict t1 (-val #f))) (single-value e2 expected)))]
-                    [t1* (remove t1 (-val #f))]
-                    [f1* (-FS null (list (make-Bot)))])
-         ;; if we have the same number of values in both cases
-         (let ([r (combine-filter f1 f1* f2 t1* t2 o1 o2)])
-           (if expected 
-               (check-below r expected)
-               r))))]))
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check/internal form expected)
@@ -384,11 +289,11 @@
          (and (identifier? #'name*) (free-identifier=? #'name #'name*))
          (match expected
            [(tc-result1: t)
-            (with-lexical-env/extend (list #'name) (list t) (tc-expr/check/internal #'expr expected))]
+            (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
            [(tc-results: ts) 
             (tc-error/expr #:return (ret (Un)) "Expected ~a values, but got only 1" (length ts))])]
         [(letrec-values ([(name ...) expr] ...) . body)
-         (tc/letrec-values/check #'((name ...) ...) #'(expr ...) #'body form expected)]        
+         (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]        
         ;; other
         [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a~n" (syntax->datum form))]
         ))))

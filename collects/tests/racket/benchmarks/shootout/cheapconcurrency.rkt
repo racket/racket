@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/cmdline)
+#lang racket/base
+(require racket/cmdline)
 
 (define (generate receive-ch n)
   (if (zero? n)

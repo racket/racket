@@ -1,5 +1,5 @@
 #;
-(exn-pred 1)
+(exn-pred 2)
 #lang typed-scheme
 
 (require scheme/list)

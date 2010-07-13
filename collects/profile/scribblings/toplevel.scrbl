@@ -9,7 +9,7 @@
 
 @defmodule[profile]
 
-This module provides one procedure and one macroxs that are convenient
+This module provides one procedure and one macro that are convenient
 high-level entry points for timing expressions.  This hides the
 details that are available through other parts of the library, and is
 intended as a convenient tool for profiling code.

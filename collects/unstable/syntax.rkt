@@ -1,5 +1,5 @@
 #lang racket/base
-;; owner: ryanc (and cce, where noted)
+;; owner: ryanc (and cce and stamourv, where noted)
 (require syntax/kerncase
          syntax/stx
          unstable/struct
@@ -17,10 +17,9 @@
          generate-temporary
          generate-n-temporaries
 
-         current-caught-disappeared-uses
-         with-catching-disappeared-uses
+         current-recorded-disappeared-uses
          with-disappeared-uses
-         syntax-local-value/catch
+         syntax-local-value/record
          record-disappeared-uses
 
          format-symbol
@@ -50,12 +49,16 @@
 
          syntax-list
 
+         ;; by stamourv:
+         
+         format-unique-id
+
          )
 
 ;; Unwrapping syntax
 
-;; unwrap-syntax : any #:stop-at (any -> boolean) -> any
-(define (unwrap-syntax stx #:stop-at [stop-at (lambda (x) #f)])
+;; unwrap-syntax : any #:stop (any -> boolean) -> any
+(define (unwrap-syntax stx #:stop [stop-at (lambda (x) #f)])
   (let loop ([x stx])
     (cond [(stop-at x) x]
           [(syntax? x) (loop (syntax-e x))]
@@ -70,6 +73,7 @@
 ;; Eli: Is there any difference between this (with the default) and
 ;;   `syntax->datum'?  If not, then maybe add the optional (or keyword) to
 ;;   there instead?
+;; Ryan: syntax->datum errors if its arg is not syntax.
 
 ;; Defining pattern variables
 
@@ -79,31 +83,28 @@
 
 ;; Statics and disappeared uses
 
-(define current-caught-disappeared-uses (make-parameter #f))
-
-(define-syntax-rule (with-catching-disappeared-uses . body)
-  (parameterize ((current-caught-disappeared-uses null))
-    (let ([result (let () . body)])
-      (values result (current-caught-disappeared-uses)))))
+(define current-recorded-disappeared-uses (make-parameter #f))
 
 (define-syntax-rule (with-disappeared-uses stx-expr)
   (let-values ([(stx disappeared-uses)
-                (with-catching-disappeared-uses stx-expr)])
+                (parameterize ((current-recorded-disappeared-uses null))
+                  (let ([result stx-expr])
+                    (values result (current-recorded-disappeared-uses))))])
     (syntax-property stx
                      'disappeared-use
                      (append (or (syntax-property stx 'disappeared-use) null)
                              disappeared-uses))))
 
-(define (syntax-local-value/catch id pred)
+(define (syntax-local-value/record id pred)
   (let ([value (syntax-local-value id (lambda () #f))])
     (and (pred value)
          (begin (record-disappeared-uses (list id))
                 value))))
 
 (define (record-disappeared-uses ids)
-  (let ([uses (current-caught-disappeared-uses)])
+  (let ([uses (current-recorded-disappeared-uses)])
     (when uses
-      (current-caught-disappeared-uses (append ids uses)))))
+      (current-recorded-disappeared-uses (append ids uses)))))
 
 ;; Generating temporaries
 
@@ -152,23 +153,6 @@
 ;;   single syntax among its inputs, and will use it for the context etc, or
 ;;   throw an error if there's more or less than 1.
 
-#|
-(define (id-append #:source [src #f]
-                   #:props [props #f]
-                   #:cert [cert #f]
-                   . args)
-  (define stxs (filter syntax? args))
-  (define lctx
-    (cond [(and (pair? stxs) (null? (cdr stxs)))
-           (car stxs)]
-          [(error 'id-append "expected exactly one identifier in arguments: ~e" args)]))
-  (define (convert x) (->atom x 'id-append))
-  (define sym (string->symbol (apply string-append (map convert args))))
-  (datum->syntax lctx sym src props cert))
-;; Eli: Yes, that looks nice (with the same comments as above on the keyword
-;;   args).  It makes more sense with the restriction on the format string.
-|#
-
 (define (restricted-format-string? fmt)
   (regexp-match? #rx"^(?:[^~]|~[aAn~%])*$" fmt))
 
@@ -205,6 +189,7 @@
                         extras)))
 ;; Eli: The `report-error-as' thing seems arbitrary to me.
 
+;; Applies the renaming of intdefs to stx.
 (define (internal-definition-context-apply intdefs stx)
   (let ([qastx (local-expand #`(quote #,stx) 'expression (list #'quote) intdefs)])
     (with-syntax ([(q astx) qastx]) #'astx)))
@@ -244,6 +229,7 @@
                   (define-syntax pvar
                     (make-syntax-mapping 'depth (quote-syntax valvar)))
                   ...)))]))
+;; Ryan: alternative name: define/syntax-pattern ??
 
 ;; auxiliary macro
 (define-syntax (pvar-value stx)
@@ -342,11 +328,12 @@
      "expected an identifier (alone or in application position); cannot redirect to ~a"
      (syntax-e id))]))
 
-(define (head-expand stx [stop-ids null])
+(define (head-expand stx [stop-ids null] [intdef-ctx #f])
   (local-expand stx
                 (syntax-local-context)
                 (append stop-ids (kernel-form-identifier-list))
-                #f))
+                intdef-ctx))
+;; Ryan: added intdef-ctx optional arg
 
 (define (quote-transformer datum)
   #`(quasiquote
@@ -400,3 +387,12 @@
 
   (call-with-composable-continuation body trampoline-prompt-tag)
   (void))
+
+(define (format-unique-id lctx
+                          #:source [src #f]
+                          #:props [props #f]
+                          #:cert [cert #f]
+                          fmt . args)
+  ((make-syntax-introducer) (apply format-id
+                                   lctx #:source src #:props props #:cert cert
+                                   fmt args)))

@@ -1,5 +1,5 @@
 #lang racket/base
-  (require scheme/unit
+  (require racket/unit
            racket/class
            racket/gui/base
            "drsig.rkt"

@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
   (require string-constants
            "drsig.rkt"
            racket/gui/base)
@@ -27,6 +27,8 @@
   
   (define error-display-handler-message-box-title
     (make-parameter (string-constant drscheme-internal-error)))
+  
+  (define system-security-guard (current-security-guard))
   
   ;; override error-display-handler to duplicate the error
   ;; message in both the standard place (as defined by the

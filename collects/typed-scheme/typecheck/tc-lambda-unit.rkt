@@ -3,7 +3,7 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt"
          "tc-metafunctions.rkt"
-         "tc-subst.rkt"
+         "tc-subst.rkt" "check-below.rkt"
          mzlib/trace
          scheme/list
          syntax/private/util syntax/stx
@@ -13,7 +13,7 @@
                     [make-arr* make-arr])
          (private type-annotation)
          (types abbrev utils)
-	 (env type-environments lexical-env)
+	 (env type-env-structs lexical-env tvar-env index-env)
 	 (utils tc-utils)
          unstable/debug
          scheme/match)
@@ -87,15 +87,15 @@
       [(not rest)
        (check-body)]
       [drest
-       (with-dotted-env/extend
-        rest (car drest) (cdr drest)
+       (with-lexical-env/extend
+        (list rest) (list (make-ListDots (car drest) (cdr drest)))
         (check-body))]
       [(dotted? rest)
        =>
        (lambda (b)
          (let ([dty (get-type rest #:default Univ)])
-           (with-dotted-env/extend
-            rest dty b
+           (with-lexical-env/extend
+            (list rest) (list (make-ListDots dty b))
             (check-body))))]
       [else
        (let ([rest-type (cond
@@ -138,27 +138,21 @@
          [(dotted? #'rest)
           =>
           (lambda (bound)
-            (unless (Dotted? (lookup (current-tvars) bound
-                                     (lambda _ (tc-error/stx #'rest
-                                                             "Bound on ... type (~a) was not in scope" bound))))
-              (tc-error "Bound on ... type (~a) is not an appropriate type variable" bound))
-            (let ([rest-type (parameterize ([current-tvars 
-                                             (extend-env (list bound) 
-                                                         (list (make-DottedBoth (make-F bound)))
-                                                         (current-tvars))])
+            (unless (bound-index? bound)
+              (if (bound-tvar? bound)
+                  (tc-error "Bound on ... type (~a) is not an appropriate type variable" bound)
+                  (tc-error/stx #'rest "Bound on ... type (~a) was not in scope" bound)))
+            (let ([rest-type (extend-tvars (list bound)
                                (get-type #'rest #:default Univ))])
               (with-lexical-env/extend 
-               arg-list
-               arg-types
-               (parameterize ([dotted-env (extend-env (list #'rest)
-                                                      (list (cons rest-type bound))
-                                                      (dotted-env))])
-                 (make-lam-result
-                       (map list arg-list arg-types)
-                       null
-                       #f
-                       (cons #'rest (cons rest-type bound))
-                       (tc-exprs (syntax->list body)))))))]
+               (cons #'rest arg-list)
+               (cons (make-ListDots rest-type bound) arg-types)
+               (make-lam-result
+                (map list arg-list arg-types)
+                null
+                #f
+                (cons #'rest (cons rest-type bound))
+                (tc-exprs (syntax->list body))))))]
          [else
           (let ([rest-type (get-type #'rest #:default Univ)])
             (with-lexical-env/extend 
@@ -255,9 +249,7 @@
                         "Expected a polymorphic function without ..., but given function had ..."))
                      (or (and p (map syntax-e (syntax->list p)))
                          ns))]
-            [literal-tvars tvars]
-            [new-tvars (map make-F literal-tvars)]
-            [ty (parameterize ([current-tvars (extend-env literal-tvars new-tvars (current-tvars))])
+            [ty (extend-tvars tvars
                   (maybe-loop form formals bodies (ret expected*)))])
        ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
        t)]
@@ -271,31 +263,23 @@
                     (values var dvar)]
                    [_ (tc-error "Expected a polymorphic function with ..., but given function had no ...")])
                  (values ns dvar)))])
-       (let* ([literal-tvars tvars]
-              [new-tvars (map make-F literal-tvars)]
-              [ty (parameterize ([current-tvars (extend-env (cons dotted literal-tvars)
-                                                            (cons (make-Dotted (make-F dotted))
-                                                                  new-tvars)
-                                                            (current-tvars))])
-                    (maybe-loop form formals bodies (ret expected*)))])
-         t))]
+       ;; check the body for side effect
+       (extend-indexes dotted 
+         (extend-tvars tvars
+           (maybe-loop form formals bodies (ret expected*))))
+       t)]
     [#f
      (match (map syntax-e (syntax->list (syntax-property form 'typechecker:plambda)))
        [(list tvars ... dotted-var '...)
-        (let* ([literal-tvars tvars]
-               [new-tvars (map make-F literal-tvars)]
-               [ty (parameterize ([current-tvars (extend-env (cons dotted-var literal-tvars)
-                                                             (cons (make-Dotted (make-F dotted-var)) new-tvars)
-                                                             (current-tvars))])
-                     (tc/mono-lambda/type formals bodies #f))])
-          (make-PolyDots (append literal-tvars (list dotted-var)) ty))]
+        (let* ([ty (extend-indexes dotted-var
+                     (extend-tvars tvars
+                       (tc/mono-lambda/type formals bodies #f)))])
+          (make-PolyDots (append tvars (list dotted-var)) ty))]
        [tvars
-        (let* ([literal-tvars tvars]
-               [new-tvars (map make-F literal-tvars)]
-               [ty (parameterize ([current-tvars (extend-env literal-tvars new-tvars (current-tvars))])
+        (let* ([ty (extend-tvars tvars
                      (tc/mono-lambda/type formals bodies #f))])
           ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
-          (make-Poly literal-tvars ty))])]
+          (make-Poly tvars ty))])]
     [(tc-result1: t) 
      (unless (check-below (tc/plambda form formals bodies #f) t)
        (tc-error/expr #:return expected

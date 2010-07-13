@@ -241,3 +241,10 @@ particular, transferring the lexical context via
 other than one in @scheme[syms] produces a identifier with no binding.
 
 See also @scheme[quote-syntax/prune].}
+
+@defproc[(identifier-prune-to-source-module [id-stx identifier?])
+         identifier?]{
+
+Returns an identifier with its lexical context minimized to that
+needed for @scheme[syntax-source-module]. The minimized lexical
+context does not include any bindings.}

@@ -8,14 +8,14 @@
   
   (define match-double-string
     (lexer
-     ((:* (:~ #\" #\\)) (append (string->list lexeme)
+     ((:+ (:~ #\" #\\)) (append (string->list lexeme)
                                 (match-double-string input-port)))
      ((:: #\\ any-char) (cons (string-ref lexeme 1) (match-double-string input-port)))
      (#\" null)))
 
    (define match-single-string
     (lexer
-     ((:* (:~ #\' #\\)) (append (string->list lexeme)
+     ((:+ (:~ #\' #\\)) (append (string->list lexeme)
                                 (match-single-string input-port)))
      ((:: #\\ any-char) (cons (string-ref lexeme 1) (match-single-string input-port)))
      (#\' null)))

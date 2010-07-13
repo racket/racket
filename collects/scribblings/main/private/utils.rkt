@@ -40,7 +40,7 @@
 
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version
-(define (main-page id [installation-specific? '?] #:force-scheme-css? [force-scheme-css? #f])
+(define (main-page id [installation-specific? '?] #:force-racket-css? [force-racket-css? #f])
   (define info (page-info id))
   (define title-string (car info))
   (define root (cadr info))
@@ -53,11 +53,11 @@
   (define page-title
     (title #:style (make-style #f (cons 
                                    'no-toc
-                                   (if (not force-scheme-css?)
+                                   (if (not force-racket-css?)
                                        null
                                        (list
                                         (make-css-addition (build-path (collection-path "scribble")
-                                                                       "scheme.css"))))))
+                                                                       "racket.css"))))))
            title-string
            #;
            ;; the "(installation)" part shouldn't be visible on the web, but

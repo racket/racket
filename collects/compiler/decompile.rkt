@@ -221,7 +221,7 @@
        (extract-ids! body ids)
        (let ([vars (for/list ([i (in-range count)]
                               [id (in-vector ids)])
-                     (or id (gensym 'localv)))])
+                     (or id (gensym (if boxes? 'localvb 'localv))))])
          `(let ,(map (lambda (i) `[,i ,(if boxes? `(#%box ?) '?)])
                      vars)
             ,(decompile-expr body globs (append vars stack) closed))))]

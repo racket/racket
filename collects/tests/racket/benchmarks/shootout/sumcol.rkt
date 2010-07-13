@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (for/fold ([acc 0])
     ([n (in-lines)])

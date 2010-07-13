@@ -166,6 +166,7 @@ typedef struct Compile_Data {
   int *sealed; /* NULL => already sealed */
   int *use;
   Scheme_Object *lifts;
+  int min_use, any_use;
 } Compile_Data;
 
 typedef struct Scheme_Full_Comp_Env {
@@ -331,7 +332,7 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_init_true_false();
 
 #ifdef MZ_PRECISE_GC
-  scheme_register_traversers();
+  /* scheme_register_traversers(); --- already done in scheme_set_stack_base() */
   register_traversers();
   scheme_init_hash_key_procs();
 #endif
@@ -357,9 +358,11 @@ Scheme_Env *scheme_engine_instance_init() {
 #endif
   make_kernel_env();
 
-#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
-  scheme_places_block_child_signal();
+#if defined(MZ_PLACES_WAITPID)
+  scheme_places_start_child_signal_handler();
+#endif
 
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   GC_switch_out_master_gc();
 
   scheme_spawn_master_place();
@@ -874,6 +877,7 @@ Scheme_Env *make_empty_inited_env(int toplevel_size)
   Scheme_Env *env;
   Scheme_Object *vector;
   Scheme_Hash_Table* hash_table;
+  Scheme_Module_Registry *reg;
 
   env = make_env(NULL, toplevel_size);
 
@@ -882,12 +886,15 @@ Scheme_Env *make_empty_inited_env(int toplevel_size)
   SCHEME_VEC_ELS(vector)[0] = (Scheme_Object *)hash_table;
   env->modchain = vector;
 
-  hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
-  env->module_registry = hash_table;
-  env->module_registry->iso.so.type = scheme_module_registry_type;
+  reg = MALLOC_ONE_TAGGED(Scheme_Module_Registry);
+  reg->so.type = scheme_module_registry_type;
+  env->module_registry = reg;
 
   hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
-  env->export_registry = hash_table;
+  reg->loaded = hash_table;
+  hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
+  reg->exports = hash_table;
+
   env->label_env = NULL;
 
   return env;
@@ -920,12 +927,10 @@ static Scheme_Env *make_env(Scheme_Env *base, int toplevel_size)
   if (base) {
     env->modchain = base->modchain;
     env->module_registry = base->module_registry;
-    env->export_registry = base->export_registry;
     env->label_env = base->label_env;
   } else {
     env->modchain = NULL;
     env->module_registry = NULL;
-    env->export_registry = NULL;
     env->label_env = NULL;
   }
 
@@ -977,7 +982,6 @@ void scheme_prepare_exp_env(Scheme_Env *env)
 
     eenv->module = env->module;
     eenv->module_registry = env->module_registry;
-    eenv->export_registry = env->export_registry;
     eenv->insp = env->insp;
 
     modchain = SCHEME_VEC_ELS(env->modchain)[1];
@@ -1018,7 +1022,6 @@ void scheme_prepare_template_env(Scheme_Env *env)
 
     eenv->module = env->module;
     eenv->module_registry = env->module_registry;
-    eenv->export_registry = env->export_registry;
     eenv->insp = env->insp;
 
     modchain = SCHEME_VEC_ELS(env->modchain)[2];
@@ -1058,7 +1061,6 @@ void scheme_prepare_label_env(Scheme_Env *env)
 
     lenv->module = env->module;
     lenv->module_registry = env->module_registry;
-    lenv->export_registry = env->export_registry;
     lenv->insp = env->insp;
 
     modchain = scheme_make_vector(5, scheme_false);    
@@ -1090,7 +1092,6 @@ Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obje
 
   menv2->module = menv->module;
   menv2->module_registry = ns->module_registry;
-  menv2->export_registry = ns->export_registry;
   menv2->insp = menv->insp;
 
   if (menv->phase < clone_phase)
@@ -1500,6 +1501,8 @@ static void init_compile_data(Scheme_Comp_Env *env)
   for (i = 0; i < c; i++) {
     use[i] = 0;
   }
+
+  data->min_use = c;
 }
 
 Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags,
@@ -2015,6 +2018,9 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
   u |= (cnt << SCHEME_USE_COUNT_SHIFT);
   
   COMPILE_DATA(frame)->use[i] = u;
+  if (i < COMPILE_DATA(frame)->min_use)
+    COMPILE_DATA(frame)->min_use = i;
+  COMPILE_DATA(frame)->any_use = 1;
 
   return (Scheme_Local *)scheme_make_local(scheme_local_type, p + i, 0);
 }
@@ -3140,6 +3146,21 @@ Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o)
     return NULL;
 }
 
+int scheme_env_check_reset_any_use(Scheme_Comp_Env *frame)
+{
+  int any_use;
+
+  any_use = COMPILE_DATA(frame)->any_use;
+  COMPILE_DATA(frame)->any_use = 0;
+
+  return any_use;
+}
+
+int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos)
+{
+  return COMPILE_DATA(frame)->min_use < pos;
+}
+
 int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
 {
   int *v, i;
@@ -3258,7 +3279,10 @@ static void register_stat_dist(Optimize_Info *info, int i, int j)
       info->sd_depths[k] = 0;
     }
   }
-  
+
+  if (i >= info->new_frame)
+    scheme_signal_error("internal error: bad stat-dist index");
+
   if (info->sd_depths[i] <= j) {
     char *naya, *a;
     int k;
@@ -4046,8 +4070,12 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_O
           *_lifted = lifted;
            
            return 0;
-        } else
-          return info->new_pos[i] + offset;
+        } else {
+          pos = info->new_pos[i];
+          if (pos < 0)
+            scheme_signal_error("internal error: skipped binding is used");
+          return pos + offset;
+        }
       }
     }
 
@@ -4450,7 +4478,7 @@ namespace_mapped_symbols(int argc, Scheme_Object *argv[])
   }
 
   if (env->rename_set)
-    scheme_list_module_rename(env->rename_set, mapped, env->export_registry);
+    scheme_list_module_rename(env->rename_set, mapped, env->module_registry->exports);
 
   l = scheme_null;
   for (i = mapped->size; i--; ) {

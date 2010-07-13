@@ -12,8 +12,6 @@
   (syntax-parse 
    stx
    #:literals (unquote unquote-splicing => #%# values)
-   [s:str
-    (syntax/loc stx empty)]
    [,(formlet . => . (values name:id ...)) (syntax/loc stx (vector name ...))]
    [,(formlet . => . name:id) (syntax/loc stx name)]
    [,e (syntax/loc stx empty)]
@@ -23,14 +21,14 @@
    [(t ([k v] ...) n ...)
     (quasisyntax/loc stx (list #,@(map cross-of (syntax->list #'(n ...)))))]
    [(t n ...)
-    (quasisyntax/loc stx (list #,@(map cross-of (syntax->list #'(n ...)))))]))
+    (quasisyntax/loc stx (list #,@(map cross-of (syntax->list #'(n ...)))))]
+   [s:expr
+    (syntax/loc stx empty)]))
 
 (define-for-syntax (circ-of stx)
   (syntax-parse
    stx
    #:literals (unquote unquote-splicing => #%# values)
-   [s:str
-    (syntax/loc stx (text s))]
    [,(formlet . => . (values name:id ...)) (syntax/loc stx (cross (pure (lambda (name ...) (vector name ...))) formlet))]
    [,(formlet . => . name:id) (syntax/loc stx formlet)]
    [,e (syntax/loc stx (xml e))]
@@ -50,7 +48,9 @@
    [(t n ...)
     (quasisyntax/loc stx
       (tag-xexpr `t empty
-                 #,(circ-of (syntax/loc stx (#%# n ...)))))]))
+                 #,(circ-of (syntax/loc stx (#%# n ...)))))]
+   [s:expr
+    (syntax/loc stx (xml 's))]))
 
 (define-syntax (formlet stx)
   (syntax-case stx ()

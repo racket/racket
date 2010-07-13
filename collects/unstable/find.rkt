@@ -70,4 +70,3 @@
     (if (procedure? default)
         (default)
         default)))
-;; Eli: Note that this is documented "Like `find-first'".

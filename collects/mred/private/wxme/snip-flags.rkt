@@ -20,6 +20,7 @@
 (define CAN-SPLIT #x1000) ;; safety feature
 (define OWNED #x2000)
 (define CAN-DISOWN #x4000)
+(define HANDLES-ALL-MOUSE-EVENTS #x8000)
 
 (define-syntax-rule (has-flag? flags flag)
   (not (zero? (bitwise-and flags flag))))
@@ -61,7 +62,8 @@
           WIDTH-DEPENDS-ON-X 
           HEIGHT-DEPENDS-ON-Y 
           WIDTH-DEPENDS-ON-Y 
-          HEIGHT-DEPENDS-ON-X)))
+          HEIGHT-DEPENDS-ON-X
+          HANDLES-ALL-MOUSE-EVENTS)))
 
 (define (symbols->flags symbols)
   (let-syntax ([syms
@@ -89,4 +91,5 @@
           WIDTH-DEPENDS-ON-X 
           HEIGHT-DEPENDS-ON-Y 
           WIDTH-DEPENDS-ON-Y 
-          HEIGHT-DEPENDS-ON-X)))
+          HEIGHT-DEPENDS-ON-X
+          HANDLES-ALL-MOUSE-EVENTS)))

@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
@@ -31,7 +31,7 @@
           (define-hierarchy child (spec ...) grand ...)
           ...)
        (begin
-         (d-s parent ([name : type] ...) ())
+         (d-s parent ([name : type] ...))
          (define-sub-hierarchy [child parent] (type ...) (spec ...) grand ...)
          ...)]))
 
@@ -66,9 +66,14 @@
      [year-day : -Number]
      [dst? : -Boolean]
      [time-zone-offset : -Number]))
+  
+  (define-hierarchy arity-at-least
+    ([value : -Nat]))
 
   (define-hierarchy exn
     ([message : -String] [continuation-marks : -Cont-Mark-Set])
+    
+    (define-hierarchy exn:break ([continuation : top-func]))
 
     (define-hierarchy exn:fail ()
 
@@ -160,6 +165,8 @@
                              (-> Univ Univ)
                              (-> a Univ)
                              (-> Univ a Univ))))])
+            (-> Univ (-seq a) (seq-vals))
+            #;
             (cl->* (-> Univ (-lst a) (seq-vals))
                    (-> Univ (-vec a) (seq-vals))
                    (-> Univ -String (seq-vals -Char))

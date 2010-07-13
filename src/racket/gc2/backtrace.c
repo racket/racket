@@ -45,7 +45,7 @@ static void *print_out_pointer(const char *prefix, void *p,
   trace_page_t *page;
   const char *what;
 
-  page = pagemap_find_page(GC->page_maps, p);
+  page = pagemap_find_page(GC_instance->page_maps, p);
   if (!page || (trace_page_type(page) == TRACE_PAGE_BAD)) {
     GCPRINT(GCOUTF, "%s??? %p\n", prefix, p);
     return NULL;
@@ -94,7 +94,7 @@ static void print_traced_objects(int path_length_limit,
 				 GC_print_tagged_value_proc print_tagged_value)
 {
   int i;
-  GC->dumping_avoid_collection++;
+  GC_instance->dumping_avoid_collection++;
   GCPRINT(GCOUTF, "Begin Trace\n");
   for (i = 0; i < found_object_count; i++) {
     void *p;
@@ -107,5 +107,5 @@ static void print_traced_objects(int path_length_limit,
     }
   }
   GCPRINT(GCOUTF, "End Trace\n");
-  --GC->dumping_avoid_collection;
+  --GC_instance->dumping_avoid_collection;
 }

@@ -11,14 +11,15 @@
          ;; to appease syntax-parse
          "internal-forms.rkt"
          (rep type-rep)
-         (types utils convenience)
+         (types utils convenience type-table)
          (private parse-type type-annotation type-contract)
-         (env type-env init-envs type-name-env type-alias-env lexical-env)
-         unstable/mutated-vars syntax/id-table
+         (env global-env init-envs type-name-env type-alias-env lexical-env)
+	 unstable/mutated-vars syntax/id-table
          (utils tc-utils)
          "provide-handling.rkt"
          "def-binding.rkt"
          (prefix-in c: racket/contract)
+         racket/dict         
          (for-template
           "internal-forms.rkt"
           unstable/location
@@ -26,15 +27,13 @@
           scheme/base))
 
 (c:provide/contract 
- [type-check (syntax? . c:-> . syntax?)] 
+ [type-check (syntax? . c:-> . syntax?)]
+ [tc-module (syntax? . c:-> . syntax?)]
  [tc-toplevel-form (syntax? . c:-> . c:any/c)])
 
 (define unann-defs (make-free-id-table))
 
 (define (tc-toplevel/pass1 form)
-  ;(printf "form-top: ~a~n" form)
-  ;; first, find the mutated variables:
-  (find-mutated-vars form)
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literals (values define-type-alias-internal define-typed-struct-internal define-type-internal 
@@ -73,7 +72,7 @@
       
       [(define-values () (begin (quote-syntax (require/typed-internal nm ty #:struct-maker parent)) (#%plain-app values)))
        (let* ([t (parse-type #'ty)]
-              [flds (Struct-flds (lookup-type-name (Name-id t)))]
+              [flds (map fld-t (Struct-flds (lookup-type-name (Name-id t))))]
               [mk-ty (flds #f . ->* . t)])
          (register-type #'nm mk-ty)
          (list (make-def-binding #'nm mk-ty)))]
@@ -93,6 +92,16 @@
                                 (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) 
 		  #:maker #'m #:constructor-return #'t)]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...)
+						#:maker m)) 
+                                (#%plain-app values)))
+       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) 
+		  #:maker #'m)]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...)
+						#:maker m)) 
+                                (#%plain-app values)))
+       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
+                       #:maker #'m)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:type-only))
                                 (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:type-only #t)]
@@ -126,16 +135,14 @@
            [(andmap (lambda (s) (lookup-type s (lambda () #f))) vars)
             (for-each finish-register-type vars)
             (map (lambda (s) (make-def-binding s (lookup-type s))) vars)]
-           ;; special case to infer types for top level defines - should handle the multiple values case here
-           [(= 1 (length vars))
-            (match (tc-expr #'expr)
-              [(tc-result1: t)
-               (register-type (car vars) t)
-               (free-id-table-set! unann-defs (car vars) #t)
-               (list (make-def-binding (car vars) t))]
-              [t (int-err "~a is not a tc-result" t)])]
+           ;; special case to infer types for top level defines
            [else
-            (tc-error "Untyped definition : ~a" (map syntax-e vars))]))]
+            (match (get-type/infer vars #'expr tc-expr tc-expr/check)
+              [(tc-results: ts)
+	       (for/list ([i (in-list vars)] [t (in-list ts)])
+		 (register-type i t)
+		 (free-id-table-set! unann-defs i #t)
+		 (make-def-binding i t))])]))]
       
       ;; to handle the top-level, we have to recur into begins
       [(begin . rest)
@@ -259,24 +266,56 @@
     ;; do pass 1, and collect the defintions
     (define defs (apply append (filter list? (map tc-toplevel/pass1 forms))))
     ;; separate the definitions into structures we'll handle for provides    
-    (define stx-defs (filter def-stx-binding? defs))
-    (define val-defs (filter def-binding? defs))
+    (define def-tbl
+      (for/fold ([h (make-immutable-free-id-table)])
+        ([def (in-list defs)])
+        (dict-set h (binding-name def) def)))
     ;; typecheck the expressions and the rhss of defintions
     (for-each tc-toplevel/pass2 forms)
     ;; check that declarations correspond to definitions
     (check-all-registered-types)
     ;; report delayed errors
     (report-all-errors)
+    (define syntax-provide? #f)
+    (define provide-tbl
+      (for/fold ([h (make-immutable-free-id-table)]) ([p (in-list provs)])
+        (syntax-parse p #:literals (#%provide)
+          [(#%provide form ...)
+           (for/fold ([h h]) ([f (syntax->list #'(form ...))])
+             (parameterize ([current-orig-stx f])
+               (syntax-parse f
+                 [i:id 
+                  (when (def-stx-binding? (dict-ref def-tbl #'i #f))
+                    (set! syntax-provide? #t))
+                  (dict-set h #'i #'i)]
+                 [((~datum rename) in out)
+                  (when (def-stx-binding? (dict-ref def-tbl #'in #f))
+                    (set! syntax-provide? #t))
+                  (dict-set h #'in #'out)]
+                 [((~datum protect) . _)
+                  (tc-error "provide: protect not supported by Typed Scheme")]
+                 [_ (int-err "unknown provide form")])))]
+          [_ (int-err "non-provide form! ~a" (syntax->datum p))])))
     ;; compute the new provides
     (with-syntax*
         ([the-variable-reference (generate-temporary #'blame)]
-         [((new-provs ...) ...) (map (generate-prov stx-defs val-defs #'the-variable-reference) provs)])
+         [(new-provs ...) 
+          (generate-prov def-tbl provide-tbl #'the-variable-reference)])
       #`(begin
-          (define the-variable-reference (quote-module-path))
-           #,(env-init-code)
+          #,(if (null? (syntax-e #'(new-provs ...)))
+                #'(begin)
+                #'(define the-variable-reference (quote-module-path)))
+           #,(env-init-code syntax-provide? provide-tbl def-tbl)
            #,(tname-env-init-code)
            #,(talias-env-init-code)
-           (begin new-provs ... ...)))))
+           (begin-for-syntax #,(make-struct-table-code))
+           (begin new-provs ...)))))
+
+;; typecheck a whole module
+;; syntax -> syntax
+(define (tc-module stx)
+  (syntax-parse stx
+    [(pmb . forms) (type-check #'forms)]))
 
 ;; typecheck a top-level form
 ;; used only from #%top-interaction

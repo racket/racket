@@ -1,14 +1,13 @@
-#lang scheme/base
-
-(require (for-syntax scheme/base)
-         scheme/list
-         scheme/contract
-         scheme/match
-         "deriv.ss"
-         "deriv-util.ss"
-         "stx-util.ss"
-         "context.ss"
-         "steps.ss")
+#lang racket/base
+(require (for-syntax racket/base)
+         racket/list
+         racket/contract
+         racket/match
+         "deriv.rkt"
+         "deriv-util.rkt"
+         "stx-util.rkt"
+         "context.rkt"
+         "steps.rkt")
 
 (define-syntax-rule (STRICT-CHECKS form ...)
   (when #f
@@ -60,6 +59,9 @@
         [#:foci1 syntaxish? #:foci2 syntaxish?]
         . ->* . step?)]
  [stumble ([syntaxish? exn?] [#:focus syntaxish?] . ->* . misstep?)]
+ [walk/talk
+  (-> (or/c symbol? string?) (listof (or/c syntax? string? 'arrow))
+      remarkstep?)]
 
  [current-pass-hides? (parameterlike/c boolean?)]
 
@@ -342,6 +344,11 @@
   (make misstep 'error
         (current-state-with stx focus)
         exn))
+
+(define (walk/talk type contents)
+  (make remarkstep type
+        (current-state-with #f null)
+        contents))
 
 (define (foci x)
   (cond [(syntax? x)

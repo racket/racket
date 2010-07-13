@@ -3,7 +3,7 @@
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          "abbrev.rkt" (only-in scheme/contract current-blame-format)
-	 (types comparison printer union subtype utils)
+	 (types comparison printer union subtype utils substitute)
          scheme/list scheme/match scheme/promise
          (for-syntax syntax/parse scheme/base)
          unstable/debug syntax/id-table scheme/dict
@@ -23,9 +23,7 @@
   (apply Un (map tc-result-t args)))
 
 
-;; if t is of the form (Pair t* (Pair t* ... (Listof t*)))
-;; return t*
-;; otherwise, return t
+;; used to produce a more general type for loop variables
 ;; generalize : Type -> Type
 (define (generalize t)
   (let/ec exit
@@ -33,13 +31,23 @@
       (match t*
         [(Value: '()) (-lst Univ)]
 	[(Value: 0) -Nat]
+        [(List: ts) (-lst (apply Un ts))]
+        [(? (lambda (t) (subtype t -Nat))) -Nat]
+        [(? (lambda (t) (subtype t -Integer))) -Integer]
+        [(? (lambda (t) (subtype t -Flonum))) -Flonum]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 (Value: '())) (-lst t1)]
-        [(Pair: t1 t2)
+        [(MPair: t1 (Value: '())) (-mlst t1)]
+        [(or (Pair: t1 t2) (MPair: t1 t2))
          (let ([t-new (loop t2)])
-           (if (type-equal? (-lst t1) t-new)
+           (if (type-equal? ((match t*
+                               [(Pair: _ _) -lst]
+                               [(MPair: _ _) -mlst])
+                             t1)
+                            t-new)
                t-new
                (exit t)))]
+        [(ListDots: t bound) (-lst (substitute Univ bound t))]
         [_ (exit t)]))))
 
 

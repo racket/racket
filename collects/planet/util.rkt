@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket/base
 
 (require "config.rkt"
          "planet-archives.rkt"
@@ -14,15 +14,18 @@
          mzlib/list
          mzlib/etc
          
-         scheme/contract
-         scheme/port
-         scheme/path
+         racket/contract
+         racket/port
+         racket/path
+         racket/class
+         racket/match
          
          setup/pack
          setup/plt-single-installer 
          setup/getinfo
          setup/unpack
          
+         (for-syntax racket/base)
          (prefix-in srfi1: srfi/1)
          )
 
@@ -44,10 +47,10 @@
  display-plt-file-structure
  display-plt-archived-file
  get-package-from-cache
- install-pkg
  pkg->download-url
  exn:fail:planet?
- make-exn:fail:planet)
+ make-exn:fail:planet
+ pkg-spec?)
 
 (provide/contract
  [get-package-spec
@@ -55,10 +58,12 @@
  [download-package 
   (-> pkg-spec? 
       (or/c string?
-            (list/c (λ (x) (eq? x #t)) path? natural-number/c natural-number/c)
-            (list/c false/c string?)))]
+            (list/c #t path? natural-number/c natural-number/c)
+            (list/c #f string?)))]
  [download/install-pkg
-  (-> string? string? natural-number/c any/c (or/c pkg? false/c))]
+  (-> string? string? natural-number/c any/c (or/c pkg? #f))]
+ [install-pkg
+  (-> pkg-spec? path-string? natural-number/c any/c (or/c pkg? #f))]
  [add-hard-link 
   (-> string? string? natural-number/c natural-number/c path? void?)]
  [remove-hard-link 
@@ -628,10 +633,10 @@
                        string?
                        (announce "doc.txt file: ~a\n" doc.txt)
                        (when doc.txt
-                         (warn "Package's info.rkt contains a doc.txt entry, which is now considered deprecated. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the PLT Scheme distribution for more information)."))]
+                         (warn "Package's info.rkt contains a doc.txt entry, which is now considered deprecated. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the Racket distribution for more information)."))]
                       [html-docs
                        (lambda (s) (and (list? s) (andmap string? s)))
-                       (warn "Package specifies an html-docs entry. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the PLT Scheme distribution for more information).")]
+                       (warn "Package specifies an html-docs entry. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the Racket distribution for more information).")]
                       [scribblings
                        (lambda (s) 
                          (and (list? s) 
@@ -664,7 +669,7 @@
                          (warn "Package's info.rkt does not contain a primary-file field. The package's listing on planet.racket-lang.org will not have a valid require line for your package."))]
                       [required-core-version 
                        core-version?
-                       (announce "Required mzscheme version: ~a\n" required-core-version)]
+                       (announce "Required racket version: ~a\n" required-core-version)]
                       [repositories
                        (λ (x) (and (list? x) 
                                    (srfi1:lset<= equal? x '("3xx" "4.x"))))

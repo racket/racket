@@ -2,7 +2,7 @@
 
 ;; XML-like objects and functions, with rendering
 
-(require scribble/text)
+(require scribble/text racket/port)
 
 ;; ----------------------------------------------------------------------------
 ;; Represent attribute names as `foo:' symbols.  They are made self-quoting in
@@ -37,6 +37,15 @@
                                      "missing attribute value for `~s:'" a)]
             [else (loop (cddr xs) (cons (cons a (cadr xs)) as))]))))
 
+;; similar, but keeps the attributes as a list, useful to build new functions
+;; that accept attributes without knowing about the xml structs.
+(provide split-attributes+body)
+(define (split-attributes+body xs)
+  (let loop ([xs xs] [as '()])
+    (if (and (pair? xs) (pair? (cdr xs)) (attribute->symbol (car xs)))
+      (loop (cddr xs) (list* (cadr xs) (car xs) as))
+      (values (reverse as) xs))))
+
 ;; ----------------------------------------------------------------------------
 ;; An output that handles xml quoting, customizable
 
@@ -60,6 +69,10 @@
 (provide output-xml)
 (define (output-xml content [p (current-output-port)])
   (output (disable-prefix (with-writer (xml-writer) content)) p))
+
+(provide xml->string)
+(define (xml->string content)
+  (with-output-to-string (lambda () (output-xml content))))
 
 ;; ----------------------------------------------------------------------------
 ;; Structs for xml data: elements, literals, entities

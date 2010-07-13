@@ -1,17 +1,13 @@
-#lang scheme/base
-(require scheme/class
-         (rename-in unstable/class-iop
-                    [define/i define:]
-                    [send/i send:]
-                    [send*/i send*:]
-                    [init-field/i init-field:])
-         scheme/gui
-         framework/framework
-         scheme/list
-         "interfaces.ss"
-         "partition.ss"
-         "prefs.ss"
-         "widget.ss")
+#lang racket/base
+(require racket/class
+         racket/gui
+         racket/list
+         framework
+         unstable/class-iop
+         "interfaces.rkt"
+         "partition.rkt"
+         "prefs.rkt"
+         "widget.rkt")
 (provide browse-syntax
          browse-syntaxes
          make-syntax-browser
@@ -26,7 +22,7 @@
 (define (browse-syntaxes stxs)
   (let ((w (make-syntax-browser)))
     (for ([stx stxs])
-      (send*: w syntax-browser<%>
+      (send*/i w syntax-browser<%>
         (add-syntax stx)
         (add-separator)))))
 
@@ -41,17 +37,17 @@
   (class* frame% ()
     (inherit get-width
              get-height)
-    (init-field: [config config<%> (new syntax-prefs%)])
+    (init-field/i [config config<%> (new syntax-prefs%)])
     (super-new (label "Syntax Browser")
-               (width (send: config config<%> get-width))
-               (height (send: config config<%> get-height)))
-    (define: widget syntax-browser<%>
+               (width (send/i config config<%> get-width))
+               (height (send/i config config<%> get-height)))
+    (define/i widget syntax-browser<%>
       (new syntax-widget/controls%
            (parent this)
            (config config)))
     (define/public (get-widget) widget)
     (define/augment (on-close)
-      (send*: config config<%>
+      (send*/i config config<%>
         (set-width (get-width))
         (set-height (get-height)))
       (send widget shutdown)
@@ -81,22 +77,22 @@
            (choices (map car -identifier=-choices))
            (callback 
             (lambda (c e)
-              (send: (get-controller) controller<%> set-identifier=?
+              (send/i (get-controller) controller<%> set-identifier=?
                      (assoc (send c get-string-selection)
                             -identifier=-choices))))))
     (new button% 
          (label "Clear")
          (parent -control-panel)
-         (callback (lambda _ (send: (get-controller) controller<%> set-selected-syntax #f))))
+         (callback (lambda _ (send/i (get-controller) controller<%> set-selected-syntax #f))))
     (new button%
          (label "Properties")
          (parent -control-panel)
          (callback
           (lambda _ 
-            (send: config config<%> set-props-shown? 
-                   (not (send: config config<%> get-props-shown?))))))
+            (send/i config config<%> set-props-shown? 
+                   (not (send/i config config<%> get-props-shown?))))))
 
-    (send: (get-controller) controller<%> listen-identifier=?
+    (send/i (get-controller) controller<%> listen-identifier=?
            (lambda (name+func)
              (send -choice set-selection
                    (or (send -choice find-string (car name+func)) 0))))

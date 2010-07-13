@@ -32,7 +32,7 @@ racket
 (define (make-adder x)
   (if (= 1 x)
       add1
-      (lambda (y) (+ x 1))))
+      (lambda (y) (+ x y))))
 (provide/contract [make-adder (-> number? (-> number? number?))])
 ]
 

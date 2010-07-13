@@ -1,9 +1,8 @@
+#lang racket/base
 
 ;; Command-line parsing is in its own module because it has to be used
 ;;  both in setup.ss (pre-zo, pre-cm) and setup-go.ss (use zos and cm).
 ;; This means that command lines will be parsed twice.
-
-#lang racket/base
 
 (require racket/cmdline
          raco/command-name
@@ -25,7 +24,7 @@
   (define (add-flags l)
     (set! x-flags (append (reverse l) x-flags)))
 
-  (define-values (short-name long-name) (get-names))
+  (define-values (short-name long-name raco?) (get-names))
 
   ;; Beware of the poor-man's duplicate of this command-line specification
   ;; in "main.rkt"!
@@ -41,6 +40,8 @@
                    (make-launchers #f)
                    (make-info-domain #f)
                    (make-docs #f)))]
+     [("-j" "--workers") workers "Use <#> parallel-workers"
+      (add-flags `((parallel-workers ,(string->number workers))))]
      [("-n" "--no-zo") "Do not produce .zo files"
       (add-flags '((make-zo #f)))]
      [("-x" "--no-launcher") "Do not produce launcher programs"
@@ -78,36 +79,55 @@
       (add-flags `((compile-mode ,mode)))]
      [("--doc-pdf") dir "Write doc PDF to <dir>"
       (add-flags `((doc-pdf-dest ,dir)))]
-     [("-l") =>
-      (lambda (flag . collections)
-        (map (lambda (v)
-               ;; A normal-form collection path matches a symbolic module path;
-               ;; this is a bit of a hack, but it's not entirely a coincidence:
-               (unless (module-path? (string->symbol v))
-                 (error (format "bad collection path~a: ~a"
-                                (cond [(regexp-match? #rx"/$" v)
-                                       " (trailing slash not allowed)"]
-                                      [(regexp-match? #rx"\\\\" v)
-                                       " (backslash not allowed)"]
-                                      [else ""])
-                                v)))
-               (list v))
-             collections))
-      '("Setup specific <collection>s only" "collection")]
+     [("-l") => (lambda (flag . collections)
+                  (check-collections collections)
+                  (cons 'collections (map list collections)))
+             '("Setup specific <collection>s only" "collection")]
+     [("-A") => (λ (flag . archives)
+                  (cons 'archives archives))
+             '("Unpack and install <archive>s" "archive")]
      #:multi
      [("-P") owner package-name maj min
       "Setup specified PLaneT packages only"
       (set! x-specific-planet-packages (cons (list owner package-name maj min)
                                              x-specific-planet-packages))]
      #:handlers
-     (lambda (collections . archives)
-       (values (if (null? collections) null (car collections))
-               archives))
-     '("archive")
+     (lambda (collections/archives . rest)
+       (let ([pre-archives (if (and (pair? collections/archives)
+                                    (eq? (caar collections/archives) 'archives))
+                               (cdr (car collections/archives))
+                               '())]
+             [pre-collections (if (and (pair? collections/archives)
+                                       (eq? (caar collections/archives) 'collections))
+                                  (cdr (car collections/archives))
+                                  '())])
+         (cond
+         [raco?
+          (check-collections rest)
+          (values (append pre-collections (map list rest))
+                  pre-archives)]
+         [else
+          (values pre-collections
+                  (append pre-archives rest))])))
+     (if raco? '("collection") '("archive"))
      (lambda (s)
        (display s)
-       (printf "If no <archive> or -l <collection> is specified, ~a\n"
-               "all collections are setup")
+       (if raco?
+           (printf "If no <collection> is specified, all collections are setup\n")
+           (printf "If no <archive> or -l <collection> is specified, all collections are setup\n"))
        (exit 0))))
 
     (values short-name x-flags x-specific-collections x-specific-planet-packages x-archives))
+
+(define (check-collections collections)
+  (for ((v (in-list collections)))
+    ;; A normal-form collection path matches a symbolic module path;
+    ;; this is a bit of a hack, but it's not entirely a coincidence:
+    (unless (module-path? (string->symbol v))
+      (error (format "bad collection path~a: ~a"
+                     (cond [(regexp-match? #rx"/$" v)
+                            " (trailing slash not allowed)"]
+                           [(regexp-match? #rx"\\\\" v)
+                            " (backslash not allowed)"]
+                           [else ""])
+                     v)))))

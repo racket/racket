@@ -5,7 +5,7 @@
  (for-syntax (types abbrev) (env init-envs) (r:infer infer-dummy infer)
              "base-env-indexing-abs.rkt"))
 
-(define-for-syntax e (parameterize ([infer-param infer]) (indexing -Nat)))
+(define-for-syntax e (parameterize ([infer-param infer]) (indexing -Integer)))
 (begin-for-syntax (initialize-type-env e))
 
 

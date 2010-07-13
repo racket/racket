@@ -3,7 +3,7 @@
          racket/dict
          (for-syntax racket/base))
 
-; list-prefix : list? list? -> boolean?
+; list-prefix? : list? list? -> boolean?
 ; Is l a prefix or r?
 (define (list-prefix? ls rs)
   (or (null? ls)
@@ -24,8 +24,33 @@
 ;;   lists, and return a matching number of values.
 ;; ryanc: changed to use Eli's version
 
+(define (internal-split-common-prefix as bs same? keep-prefix?)
+  (let loop ([as as] [bs bs])
+    (if (and (pair? as) (pair? bs) (same? (car as) (car bs)))
+        (let-values ([(prefix atail btail) (loop (cdr as) (cdr bs))])
+          (values (and keep-prefix? (cons (car as) prefix)) atail btail))
+        (values null as bs))))
+
+(define (split-common-prefix as bs #:same? [same? equal?])
+  (internal-split-common-prefix as bs same? #t))
+
+(define (take-common-prefix as bs #:same? [same? equal?])
+  (let-values ([(prefix atail btail) (internal-split-common-prefix as bs same? #t)])
+    prefix))
+
+(define (drop-common-prefix as bs #:same? [same? equal?])
+  (let-values ([(atail btail) (internal-split-common-prefix as bs same? #f)])
+    (values atail btail)))
+
 (provide/contract
- [list-prefix? (list? list? . -> . boolean?)])
+ [list-prefix? (list? list? . -> . boolean?)]
+ [split-common-prefix
+  (->* (any/c any/c) (#:same? procedure?) (values list? any/c any/c))]
+ [take-common-prefix
+  (->* (any/c any/c) (#:same? procedure?) list?)]
+ [drop-common-prefix
+  (->* (any/c any/c) (#:same? procedure?) (values any/c any/c))])
+
 
 (define (filter-multiple l . fs)
   (apply values

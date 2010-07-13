@@ -6,7 +6,7 @@
 @mzlib[#:mode title restart]
 
 @margin-note{See @scheme[scheme/sandbox] for a more general way to
-             simulate running a new PLT Scheme process.}
+             simulate running a new Racket process.}
 
 @defproc[(restart-mzscheme [init-argv (vectorof string?)]
                            [adjust-flag-table (any/c . -> . any/c)]

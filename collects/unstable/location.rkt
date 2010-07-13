@@ -31,7 +31,9 @@
                          [pos (srcloc-position src)]
                          [span (srcloc-span src)])
              #'(make-srcloc 'src 'line 'col 'pos 'span)))]
-        [else #'(build-source-location (quote-syntax loc))]))]))
+        [else (with-syntax ([loc (identifier-prune-to-source-module
+                                  (datum->syntax #'loc 'loc #'loc #'loc))])
+                #'(build-source-location (quote-syntax loc)))]))]))
 
 (define-syntax-rule (define-quote-srcloc-accessors [name accessor] ...)
   (define-syntaxes [ name ... ]

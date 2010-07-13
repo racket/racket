@@ -4,8 +4,8 @@
           "private/manuals.ss")
 
 @main-page['start #t 
-                  ;; "scheme.css" needs to be installed so it can be shared:
-                  #:force-scheme-css? #t]
+                  ;; "racket.css" needs to be installed so it can be shared:
+                  #:force-racket-css? #t]
 
 @margin-note{
   @not-on-the-web{

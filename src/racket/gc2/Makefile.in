@@ -323,6 +323,7 @@ main.@LTO@: $(XSRCDIR)/main.c
 
 gc2.@LTO@: \
 		$(srcdir)/alloc_cache.c \
+		$(srcdir)/block_cache.c \
 		$(srcdir)/backtrace.c \
 		$(srcdir)/commongc_internal.h \
 		$(srcdir)/platforms.h \
@@ -351,7 +352,6 @@ gc2.@LTO@: \
 		$(srcdir)/newgc.c \
 		$(srcdir)/newgc.h \
 		$(srcdir)/page_range.c \
-		$(srcdir)/protect_range.c \
 		$(srcdir)/rlimit_heapsize.c \
 		$(srcdir)/roots.c \
 		$(srcdir)/stack_comp.c \

@@ -940,9 +940,17 @@
                                               (regexp-replace #rx"^.*? given: x; (other )?"
                                                               (exn-message exn)
                                                               ""))])
-                             (apply
-                              raise-type-error 'x "x" 0 'x
-                              (append args (apply append (map list kws kw-args))))))]
+                             (let-values ([(struct:written make-written written? written-ref written-set!)
+                                           (make-struct-type 'written #f 1 0)])
+                               (parameterize ([error-value->string-handler
+                                               (let ([prev (error-value->string-handler)])
+                                                 (lambda (v n)
+                                                   (if (written? v)
+                                                       (format "~s" (written-ref v 0))
+                                                       (prev v n))))])
+                                 (apply
+                                  raise-type-error 'x "x" 0 (make-written 'x)
+                                  (append args (apply append (map list (map make-written kws) kw-args))))))))]
                       [proc-name (lambda (p) (or (and (named-keyword-procedure? p)
                                                       (car (keyword-procedure-name+fail p)))
                                                  (object-name p)

@@ -1,4 +1,4 @@
-#lang typed/scheme/base
+#lang typed/racket/base
 
 (require typed/mred/mred
          typed/framework/framework

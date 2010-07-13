@@ -1,9 +1,15 @@
 #lang scheme/base
 
+;; this environment maps *lexical* variables to types
+;; it also contains the proposition environment
+
+;; these environments are unified in "Logical Types for Scheme"
+;; but split here for performance
+
 (require "../utils/utils.rkt"
-	 "type-environments.rkt" 
-	 "type-env.rkt"
-	 unstable/mutated-vars
+	 "type-env-structs.rkt"
+         "global-env.rkt"
+	 unstable/mutated-vars syntax/id-table
          (only-in scheme/contract ->* -> or/c any/c listof cons/c)
          (utils tc-utils)
          (only-in (rep type-rep) Type/c)
@@ -13,11 +19,11 @@
 (provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical
          with-lexical-env/extend/props)
 (p/c
- [lookup-type/lexical ((identifier?) (env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
- [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (env?) . ->* . env?)])
+ [lookup-type/lexical ((identifier?) (prop-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
+ [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (prop-env?) . ->* . env?)])
 
 ;; the current lexical environment
-(define lexical-env (make-parameter (make-empty-env free-identifier=?)))
+(define lexical-env (make-parameter (make-empty-prop-env (make-immutable-free-id-table))))
 
 ;; run code in a new env
 (define-syntax-rule (with-lexical-env e . b)
@@ -34,14 +40,7 @@
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
 ;; identifer -> Type
 (define (lookup-type/lexical i [env (lexical-env)] #:fail [fail #f])
-  (lookup env i 
-          (lambda (i) (lookup-type 
-                       i (lambda () 
-                           (cond [(lookup (dotted-env) i (lambda _ #f))
-                                  =>
-                                  (lambda (a)
-                                    (-lst (substitute Univ (cdr a) (car a))))]
-                                 [else ((or fail lookup-fail) i)]))))))
+  (lookup env i (λ (i) (lookup-type i (λ () ((or fail lookup-fail) i))))))
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment

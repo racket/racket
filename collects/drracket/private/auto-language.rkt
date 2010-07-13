@@ -2,7 +2,7 @@
 
 (require typed/framework/framework 
 	 typed/mred/mred
-         scheme/class)
+         racket/class)
 
 (provide pick-new-language looks-like-module?)
 

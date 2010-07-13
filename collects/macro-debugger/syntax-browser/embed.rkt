@@ -1,11 +1,10 @@
+#lang racket/base
+(require "interfaces.rkt"
+         "widget.rkt"
+         "keymap.rkt"
+         "partition.rkt")
 
-#lang scheme/base
-(require "interfaces.ss"
-         "widget.ss"
-         "keymap.ss"
-         "partition.ss")
-
-(provide (all-from-out "interfaces.ss")
-         (all-from-out "widget.ss")
-         (all-from-out "keymap.ss")
+(provide (all-from-out "interfaces.rkt")
+         (all-from-out "widget.rkt")
+         (all-from-out "keymap.rkt")
          identifier=-choices)

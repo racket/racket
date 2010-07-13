@@ -2,7 +2,7 @@
 
 (require "test-utils.ss" (for-syntax scheme/base)
          (rep type-rep)
-	 (types utils abbrev)
+	 (types utils abbrev substitute)
          rackunit)
 
 (define-syntax-rule (s img var tgt result)

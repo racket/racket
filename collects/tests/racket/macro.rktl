@@ -320,12 +320,14 @@
 		 (define goo 10)
 		 12))
 
-(syntax-test #'(let-syntax ([ohno (lambda (stx) #'(define z -10))])
-		 (let ()
-		   (define ohno 128)
-		   ohno
-		   (define-syntax (goo stx) #'ohno)
-		   (printf "~a\n" ohno))))
+(test 128 apply (lambda ()
+                  (let-syntax ([ohno (lambda (stx) #'(define z -10))])
+                    (let ()
+                      (define ohno 128)
+                      ohno
+                      (define-syntax (goo stx) #'ohno)
+                      ohno)))
+      null)
 
 (define-syntax (def-it stx)
   (syntax-case stx ()

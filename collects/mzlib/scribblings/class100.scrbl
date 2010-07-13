@@ -7,7 +7,7 @@
 @mzlib[#:mode title class100]
 
 The @scheme[class100] and @scheme[class100*] forms provide a syntax
-close to that of @scheme[class] and @scheme[class*] in PLT Scheme
+close to that of @scheme[class] and @scheme[class*] in Racket
 versions 100 through 103, but with the semantics of the current
 @schememodname[scheme/class]-based class system. For a class defined
 with @scheme[class100], keyword-based initialization arguments can be

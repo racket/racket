@@ -1,21 +1,32 @@
 #include "commongc_internal.h"
 #include "gc2_obj.h"
 
+#if defined(MZ_USE_PLACES)
+/*
+# define GC_DEBUG_PAGES
+# define MASTER_ALLOC_DEBUG
+# define KILLING_DEBUG
+*/
+#endif
+
+
 typedef struct mpage {
   struct mpage *next;
   struct mpage *prev;
   void *addr;
   unsigned long previous_size; /* for med page, place to search for available block; for jit nursery, allocated size */
   unsigned long size; /* big page size, med page element size, or nursery starting point */
-  unsigned char generation;
 /*
+  unsigned char generation    :1;
   unsigned char back_pointers :1;
-  unsigned char big_page      :2;
+  unsigned char size_cless    :2;
   unsigned char page_type     :3; 
   unsigned char marked_on     :1;
   unsigned char has_new       :1;
   unsigned char mprotected    :1;
+  unsigned char added         :1;
 */
+  unsigned char generation    ;
   unsigned char back_pointers ;
   unsigned char size_class    ; /* 0 => small; 1 => med; 2 => big; 3 => big marked */
   unsigned char page_type     ; 
@@ -24,7 +35,11 @@ typedef struct mpage {
   unsigned char mprotected    ;
   unsigned char added         ;
   unsigned short live_size;
+#ifdef MZ_GC_BACKTRACE
   void **backtrace;
+  void *backtrace_page_src;
+#endif
+  void *mmu_src_block;
 } mpage;
 
 typedef struct Gen0 {
@@ -85,6 +100,13 @@ typedef struct Page_Range {
   unsigned long range_alloc_used;
 } Page_Range;
 
+typedef struct {
+  char *start;
+  long len;
+  short age;
+  short zeroed;
+} AllocCacheBlock;
+
 #ifdef MZ_USE_PLACES
 typedef struct NewGCMasterInfo {
   unsigned long size;
@@ -111,7 +133,6 @@ typedef struct NewGC {
   PageMap page_maps;
   /* All non-gen0 pages are held in the following structure. */
   struct mpage *gen1_pages[PAGE_TYPES];
-  Page_Range *protect_range;
 
   struct mpage *med_pages[NUM_MED_PAGE_SIZES];
   struct mpage *med_freelist_pages[NUM_MED_PAGE_SIZES];
@@ -209,6 +230,10 @@ typedef struct NewGC {
   GC_Weak_Box   *weak_boxes;
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
-  struct VM     *vm;
+  struct MMU     *mmu;
+
+#if defined(GC_DEBUG_PAGES)
+  FILE *GCVERBOSEFH;
+#endif
 
 } NewGC;

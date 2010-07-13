@@ -251,6 +251,28 @@ other. The top and bottom pair of angles is @racket[angle] and the left and righ
  
 }
                 
+@defproc*[([(radial-star [point-count (and/c integer? (>=/c 2))]
+                         [inner-radius (and/c real? (not/c negative?))]
+                         [outer-radius (and/c real? (not/c negative?))]
+                         [mode mode?]
+                         [color image-color?])
+            image?]
+           [(radial-star [point-count (and/c integer? (>=/c 2))]
+                         [inner-radius (and/c real? (not/c negative?))]
+                         [outer-radius (and/c real? (not/c negative?))]
+                         [outline-mode (or/c 'outline "outline")]
+                         [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+                                   
+Constructs a star-like polygon where the star is specified by two radii and a number of points. 
+The first radius determines where the points begin, the second determines where they end, and
+the @scheme[point-count] argument determines how many points the star has.
+
+@image-examples[(radial-star 8 8 64 "solid" "darkslategray")
+                (radial-star 32 30 40 "outline" "black")]
+
+}
+
 @defproc*[([(polygon [vertices (listof posn?)] 
                      [mode mode?]
                      [color image-color?])
@@ -764,7 +786,7 @@ the parts that fit onto @racket[scene].
 }
 
                 
-@section{Rotating, Scaling, Cropping, and Framing Images}
+@section{Rotating, Scaling, Flipping, Cropping, and Framing Images}
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
   Rotates @racket[image] by @racket[angle] degrees in a counter-clockwise direction.
@@ -807,6 +829,29 @@ the parts that fit onto @racket[scene].
                             2 
                             (ellipse 20 30 "solid" "blue")) 
                   (ellipse 60 60 "solid" "blue")]
+}
+
+@defproc[(flip-horizontal [image image?]) image?]{
+   Flips @scheme[image] left to right.
+         
+         Flipping images with text is not supported (so passing @scheme[flip-horizontal] an image
+         that contains a @scheme[text] or @scheme[text/font] image inside somewhere signals an error).
+         
+         @image-examples[(beside
+                          (rotate 30 (square 50 "solid" "red"))
+                          (flip-horizontal
+                           (rotate 30 (square 50 "solid" "blue"))))]
+}
+
+@defproc[(flip-vertical [image image?]) image?]{
+   Flips @scheme[image] top to bottom.
+         
+         Flipping images with text is not supported (so passing @scheme[flip-horizontal] an image
+         that contains a @scheme[text] or @scheme[text/font] image inside somewhere signals an error).
+
+         @image-examples[(above 
+                          (star 40 "solid" "firebrick")
+                          (scale/xy 1 1/2 (flip-vertical (star 40 "solid" "gray"))))]
 }
 
 @defproc[(crop [x real?] [y real?] 

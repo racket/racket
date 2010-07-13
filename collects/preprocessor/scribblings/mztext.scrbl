@@ -185,13 +185,13 @@ their arity (preferring a the nullary treatment over the unary one):
        (format "<a href=~s>@tt{~a}</a>" (get-arg) (get-arg)))
     @(define (reftt)
        (format "<a href=~s>~a</a>" (get-arg) (tt)))
-    @ttref{www.racket-lang.org}{PLT Scheme}
-    @reftt{www.racket-lang.org}{PLT Scheme}
+    @ttref{www.racket-lang.org}{Racket}
+    @reftt{www.racket-lang.org}{Racket}
 
   ==>
 
-    <a href="www.racket-lang.org"><tt>PLT Scheme</tt></a>
-    <a href="www.racket-lang.org"><tt>PLT Scheme</tt></a>
+    <a href="www.racket-lang.org"><tt>Racket</tt></a>
+    <a href="www.racket-lang.org"><tt>Racket</tt></a>
 }|
 
   Note that in @scheme[reftt] we use @scheme[tt] without arguments since it will
@@ -204,11 +204,11 @@ their arity (preferring a the nullary treatment over the unary one):
     @defcommand{tt}{X}{<tt>X</tt>}
     @defcommand{ref}{url text}{<a href="url">text</a>}
     @defcommand{ttref}{url text}{<a href="url">@tt{text}</a>}
-    @ttref{www.racket-lang.org}{PLT Scheme}
+    @ttref{www.racket-lang.org}{Racket}
 
   ==>
 
-    <a href="www.racket-lang.org"><tt>PLT Scheme</tt></a>
+    <a href="www.racket-lang.org"><tt>Racket</tt></a>
 }|}
 
   @item{A procedure of arity 1 is invoked differently---it is applied on a

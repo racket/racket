@@ -6,6 +6,7 @@
          flsin flcos fltan flasin flacos flatan
          flfloor flceiling flround fltruncate
          fl= fl< fl<= fl> fl>= flmin flmax
-         ->fl
+         ->fl fl->exact-integer
          flvector? flvector make-flvector 
-         flvector-length flvector-ref flvector-set!)
+         flvector-length flvector-ref flvector-set!
+         flreal-part flimag-part make-flrectangular)

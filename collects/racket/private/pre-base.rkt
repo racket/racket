@@ -5,7 +5,7 @@
   (#%require (for-syntax '#%kernel))
   (#%require "more-scheme.rkt"
              "misc.rkt"
-             (all-except "define.rkt" define)
+             (all-except "define.rkt" define define-syntax define-for-syntax)
              "letstx-scheme.rkt"
              "kw.rkt"
              "define-struct.rkt"
@@ -15,7 +15,9 @@
              "map.rkt" ; shadows #%kernel bindings
              "kernstruct.rkt"
              "norm-arity.rkt"
-             '#%builtin) ; so it's attached
+             '#%builtin  ; so it's attached
+             (for-syntax "kw.rkt"
+                         "norm-define.rkt"))
 
   (define-syntaxes (#%top-interaction)
     (lambda (stx)
@@ -77,6 +79,28 @@
          (keyword-apply proc kws kw-args (apply list* args rest))))
      keyword-apply))
 
+  (define-syntaxes (new-define-syntax)
+    (lambda (stx)
+      (let-values ([(id rhs)
+                    (normalize-definition stx (quote-syntax new-lambda) #t #t)]
+                   [(def) (quote-syntax define-syntaxes)])
+        (datum->syntax
+         def
+         (list def (list id) rhs)
+         stx
+         stx))))
+
+  (define-syntaxes (new-define-for-syntax)
+    (lambda (stx)
+      (let-values ([(id rhs)
+                    (normalize-definition stx (quote-syntax new-lambda) #t #t)]
+                   [(def) (quote-syntax define-values-for-syntax)])
+        (datum->syntax
+         def
+         (list def (list id) rhs)
+         stx
+         stx))))
+
   (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
              (all-from "misc.rkt")
              (all-from "define.rkt")
@@ -84,6 +108,8 @@
              (rename new-lambda lambda)
              (rename new-λ λ)
              (rename new-define define)
+             (rename new-define-syntax define-syntax)
+             (rename new-define-for-syntax define-for-syntax)
              (rename new-app #%app)
              (rename new-apply apply)
              new-apply-proc ; for access by Typed Racket

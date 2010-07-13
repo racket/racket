@@ -180,6 +180,7 @@
   (test/no-error '(->d ([x integer?]) ([y integer?]) (values [a number?] [b boolean?])))
   (test/no-error '(->d ([x integer?] #:z [z integer?]) ([y integer?] #:w [w integer?]) (range boolean?)))
   (test/no-error '(->d ([x integer?] #:z [z integer?]) ([y integer?] #:w [w integer?]) #:rest rest any/c (range boolean?)))
+  (test/no-error '(->d ([x integer?] #:z [z integer?]) #:rest rest any/c (range boolean?)))
 
   (test/no-error '(unconstrained-domain-> number?))
   (test/no-error '(unconstrained-domain-> (flat-contract number?)))
@@ -1527,6 +1528,63 @@
                  'neg)
        (lambda () (set! x 2)))))
   
+
+  (test/spec-passed
+   '->d-optopt1
+   '((contract (->d ([x number?]) any)
+               (λ (x) x)
+               'pos 'neg)
+     1))
+  
+  (test/spec-passed
+   '->d-optopt2
+   '((contract (->d ([x number?]) #:rest rst any/c any)
+               (λ (x . y) x)
+               'pos 'neg)
+     1))
+
+  (test/spec-passed
+   '->d-optopt3
+   '((contract (->d ([x number?]) #:pre-cond #t any)
+               (λ (x) x)
+               'pos 'neg)
+     1))
+  
+  (test/spec-passed
+   '->d-optopt4
+   '((contract (->d ([x number?]) #:rest rst any/c #:pre-cond #t any)
+               (λ (x . y) x)
+               'pos 'neg)
+     1))
+  
+  (test/spec-passed
+   '->d-optopt5
+   '((contract (->d ([x number?]) #:rest rst any/c #:pre-cond #t [res any/c] #:post-cond #t)
+               (λ (x . y) x)
+               'pos 'neg)
+     1))
+  
+  (test/spec-passed
+   '->d-optopt6
+   '((contract (->d ([x number?]) #:rest rst any/c [res any/c] #:post-cond #t)
+               (λ (x . y) x)
+               'pos 'neg)
+     1))
+  
+  (test/spec-passed
+   '->d-optopt7
+   '((contract (->d ([x number?]) #:pre-cond #t [res any/c] #:post-cond #t)
+               (λ (x . y) x)
+               'pos 'neg)
+     1))
+  
+  (test/spec-passed
+   '->d-optopt8
+   '((contract (->d ([x number?]) [res any/c] #:post-cond #t)
+               (λ (x . y) x)
+               'pos 'neg)
+     1))
+
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
@@ -7632,7 +7690,7 @@ so that propagation occurs.
   (ctest #t contract-first-order-passes? 
         (cons/c boolean? (-> integer? integer?))
         (list* #t (λ (x) x)))
-  (ctest #t contract-first-order-passes? 
+  (ctest #f contract-first-order-passes? 
         (cons/c boolean? (-> integer? integer?))
         (list* 1 2))
   

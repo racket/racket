@@ -1430,6 +1430,7 @@
   (planet-downloading "PLaneT: ~a herunterladen ...")
   (planet-installing "PLaneT: ~a installieren ...")
   (planet-finished "PLaneT: fertig mit ~a.")
+  (planet-docs-building "PLaneT: Dokumentation bauen (ausgelöst durch ~a)...")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
 
  ;; string normalization. To see this, paste some text with a ligature into DrRacket

@@ -111,7 +111,11 @@ immediate allocations can be rejected with an
 @defproc[(make-custodian-box [cust custodian?] [v any/c]) custodian-box?]{
 
 Returns a @tech{custodian box} that contains @racket[v] as long as
-@racket[cust] has not been shut down.}
+@racket[cust] has not been shut down.
+
+A @tech{custodian box} is a @tech{synchronizable event} for use with
+functions like @racket[sync]. The @tech{custodian box} becomes ready
+when its custodian is shut down.}
 
 @defproc[(custodian-box? [v any/c]) boolean?]{Returns @racket[#t] if
  @racket[v] is a @tech{custodian box} produced by

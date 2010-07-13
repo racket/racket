@@ -76,7 +76,7 @@
 		(error "priority queue empty"))))
 
 (pdefine: (a) (insert [x : a] [p : number] [pq : (priority-queue a)]) : (priority-queue a)
-	  (make (heap:insert (#{cons :: (case-lambda (a (list-of a) -> (list-of a)) (number a -> (cons number a)))} p x) (heap pq))))
+	  (make (heap:insert (cons p x) (heap pq))))
 
 ;; FIXME -- too many annotations needed on cons
 (pdefine: (a) (insert* [xs : (list-of a)] [ps : (list-of number)] [pq : (priority-queue a)]) : (priority-queue a)

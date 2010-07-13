@@ -1,6 +1,6 @@
 #lang scheme/base
 (require compiler/zo-structs
-         unstable/byte-counting-port
+         scheme/port
          scheme/match
          scheme/contract
          scheme/local
@@ -68,7 +68,7 @@
                (out-data (list* max-let-depth prefix (protect-quote form)) 
                          (make-out outp (lambda (v) (hash-ref shared v #f)) wrapped))
                (values offsets post-shared (file-position outp)))
-             (define counting-p (make-byte-counting-port))
+             (define counting-p (open-output-nowhere))
              (define-values (offsets post-shared all-forms-length)
                (write-all counting-p))
              (define all-short? (post-shared . < . #xFFFF))
@@ -479,7 +479,18 @@
                         [l (cons (lookup-req 1) l)] ; et-requires
                         [l (cons (lookup-req 0) l)] ; requires
                         [l (cons (list->vector body) l)]
-                        [l (cons (list->vector syntax-body) l)]
+                        [l (cons (list->vector
+                                  (for/list ([i (in-list syntax-body)])
+                                    (define (maybe-one l) ;; a single symbol is ok
+                                      (if (and (pair? l) (null? (cdr l)))
+                                          (car l)
+                                          l))
+                                    (match i
+                                      [(struct def-syntaxes (ids rhs prefix max-let-depth))
+                                       (vector (maybe-one ids) rhs max-let-depth prefix #f)]
+                                      [(struct def-for-syntax (ids rhs prefix max-let-depth))
+                                       (vector (maybe-one ids) rhs max-let-depth prefix #t)])))
+                                 l)]
                         [l (append (apply
                                     append
                                     (map (lambda (l)

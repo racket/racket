@@ -26,7 +26,8 @@
 
     (lambda (x)
       (syntax-case x ()
-	((_ ?type-name
+	((_ ?stx
+	    ?type-name
 	    ?mutable?
 	    ?signature-constructor-name
 	    ?constructor
@@ -135,6 +136,10 @@
 				 (custom-write-record '?type-name 
 						      (access-record-fields r raw-generic-access number-of-fields)
 						      port write?)))
+			 (cons prop:print-converter
+			       (lambda (r recur)
+				 (list '?constructor
+				       (recur (raw-accessor-proc r)) ...)))
 			 (cons prop:equal+hash
 			       (list record-equal?
 				     (make-equal-hash (lambda (r i) (raw-generic-access r i)) number-of-fields) 
@@ -190,7 +195,7 @@
 	       ;; again, with properties
 	       (with-syntax ((struct-type-defs
 			      (stepper-syntax-property
-			       (syntax/loc x struct-type-defs) 'stepper-skip-completely #t))
+			       (syntax/loc x struct-type-defs) 'stepper-define-struct-hint #'?stx))
 			     (constructor-def
 			      (stepper-syntax-property #'constructor-def 'stepper-skip-completely #t))
 			     (predicate-def
@@ -347,10 +352,11 @@ prints as:
           (syntax->list (syntax (accessor ...)))
           "Selektor ist kein Bezeichner")
 
-         (with-syntax (((dummy-mutator ...)
+         (with-syntax ((?stx x)
+		       ((dummy-mutator ...)
                         (generate-temporaries (syntax (accessor ...)))))
            (syntax
-            (define-record-procedures* ?type-name #f
+            (define-record-procedures* ?stx ?type-name #f
 	      dummy-signature-constructor-name
               ?constructor
               ?predicate
@@ -414,10 +420,11 @@ prints as:
 	  (syntax->list (syntax (accessor ...)))
 	  "Selektor ist kein Bezeichner")
 
-	 (with-syntax (((dummy-mutator ...)
+	 (with-syntax ((?stx x)
+		       ((dummy-mutator ...)
 			(generate-temporaries (syntax (accessor ...)))))
 	   (syntax
-	    (define-record-procedures* ?type-name #f ?signature-constructor-name
+	    (define-record-procedures* ?stx ?type-name #f ?signature-constructor-name
 	      ?constructor
 	      ?predicate
 	      ((accessor dummy-mutator) ...))))))
@@ -479,11 +486,12 @@ prints as:
 				       "Selektor ist kein Bezeichner"))))
 		   (syntax->list (syntax (?field-spec ...))))
 
-	 #'(define-record-procedures* ?type-name #t
-	     dummy-signature-constructor-name
-	     ?constructor
-	     ?predicate
-	     (?field-spec ...))))
+	 (with-syntax ((?stx x))
+	   #'(define-record-procedures* ?stx ?type-name #t
+	       dummy-signature-constructor-name
+	       ?constructor
+	       ?predicate
+	       (?field-spec ...)))))
       ((_ ?type-name
 	  ?constructor
 	  ?predicate
@@ -541,10 +549,11 @@ prints as:
 				       "Selektor ist kein Bezeichner"))))
 		   (syntax->list (syntax (?field-spec ...))))
 
-	 #'(define-record-procedures* ?type-name #t ?signature-constructor-name
-	     ?constructor
-	     ?predicate
-	     (?field-spec ...))))
+	 (with-syntax ((?stx x))
+	   #'(define-record-procedures* ?stx ?type-name #t ?signature-constructor-name
+	       ?constructor
+	       ?predicate
+	       (?field-spec ...)))))
       ((_ ?type-name
 	  ?signature-constructor-name
 	  ?constructor

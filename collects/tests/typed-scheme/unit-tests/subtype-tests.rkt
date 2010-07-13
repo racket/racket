@@ -3,7 +3,7 @@
 (require "test-utils.ss"
          (types subtype convenience union)
 	 (rep type-rep)
-	 (env init-envs type-environments)
+	 (env init-envs type-env-structs)
 	 (r:infer infer infer-dummy)
          rackunit
          (for-syntax scheme/base))
@@ -112,11 +112,15 @@
    
    [(-values (list -Number)) (-values (list Univ))]
    
-   [(-poly (a) ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list -Number a) null #'values)) . -> . (-lst a)))
-    ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list -Number (-pair -Number (-v a))) null #'values)) 
+   [(-poly (b) ((Un (make-Base 'foo #'dummy)
+                    (-struct 'bar #f 
+                             (list (make-fld -Number #'values #f) (make-fld b #'values #f))
+                             #'values))
+                . -> . (-lst b)))
+    ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f)) #'values))
      . -> . (-lst (-pair -Number (-v a))))]
-   [(-poly (a) ((-struct 'bar #f (list -Number a) null #'values) . -> . (-lst a)))
-    ((-struct 'bar #f (list -Number (-pair -Number (-v a))) null #'values) . -> . (-lst (-pair -Number (-v a))))]
+   [(-poly (b) ((-struct 'bar #f (list (make-fld -Number #'values #f) (make-fld b #'values #f)) #'values) . -> . (-lst b)))
+    ((-struct 'bar #f (list (make-fld -Number #'values #f) (make-fld (-pair -Number (-v a)) #'values #f)) #'values) . -> . (-lst (-pair -Number (-v a))))]
    
    [(-poly (a) (a . -> . (make-Listof a))) ((-v b) . -> . (make-Listof (-v b)))]
    [(-poly (a) (a . -> . (make-Listof a))) ((-pair -Number (-v b)) . -> . (make-Listof (-pair -Number (-v b))))]
@@ -128,6 +132,9 @@
    (FAIL (-> Univ) (null Univ . ->* . Univ))
 
    [(cl->* (-Number . -> . -String) (-Boolean . -> . -String)) ((Un -Boolean -Number) . -> . -String)]
+   [(-struct 'a #f null #'values) (-struct 'a #f null #'values)]
+   [(-struct 'a #f (list (make-fld -String #'values #f)) #'values) (-struct 'a #f (list (make-fld -String #'values #f)) #'values)]
+   [(-struct 'a #f (list (make-fld -String #'values #f)) #'values) (-struct 'a #f (list (make-fld Univ #'values #f)) #'values)]
    ))
 
 (define-go 

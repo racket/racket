@@ -1,7 +1,7 @@
 #lang racket/base
-(require scheme/gui/base
+(require racket/gui/base
          framework
-         scheme/class)
+         racket/class)
 
 ;; how long between samples
 (define pause-time 0.1)
@@ -261,8 +261,8 @@
 
 ;; tool code, for integration with drscheme
 (begin
-  (require drscheme/tool
-           scheme/unit
+  (require drracket/tool
+           racket/unit
            string-constants/string-constant)
   
   (define sc-show-sprof "Show SProfile")

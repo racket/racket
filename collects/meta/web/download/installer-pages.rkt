@@ -25,7 +25,7 @@
       [(render-option) (option value: url platform type)]
       [(#f) @a[href: url]{@title}]
       [else (error 'installer-page "unknown mode: ~e" mode)]))
-  @page[#:file html-file #:title title #:referrer this]{
+  @page[#:file html-file #:title title #:referrer this #:part-of 'download]{
     @table[width: "90%" align: 'center]{
       @tr[valign: 'top]{
         @td[width: "50%"]{

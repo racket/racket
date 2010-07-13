@@ -162,7 +162,7 @@ After mastering the world of blogging software, you decide to put the ubiquitous
 
 @defproc[(serve/dispatch [dispatch (request? . -> . response/c)])
          void]{
- Calls @racket[serve/servlet] with appropriate arguments so that every request is handled by @racket[dispatch].
+ Calls @racket[serve/servlet] with a @racket[#:servlet-regexp] argument (@racket[#rx""]) so that every request is handled by @racket[dispatch].
 }
               
 @section{Built-in URL patterns}

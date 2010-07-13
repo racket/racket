@@ -68,6 +68,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          
 	 crop
          rotate
+         flip-horizontal
+         flip-vertical
          frame
          place-image
          place-image/align
@@ -85,6 +87,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          polygon
          star
          star-polygon
+         radial-star
          triangle
          isosceles-triangle
          right-triangle

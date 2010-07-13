@@ -1,10 +1,64 @@
-
-/* 
-   Provides:
-    initialize_page_ranges
-    flush_page_ranges
-    add_page_range
+/*
+  Provides:
+    page_range_initialize
+    page_range_add
+    page_range_flush
+  Requires:
+    os_protect_pages
 */
+
+#ifdef _WIN32
+
+/* VirtualProtect can be used only on pages allocated at the same
+   time, so we can't collapse ranges. */
+
+# define initialize_protect_page_ranges(pr, b, s) /* */
+# define add_protect_page_range(pr, s, l, a, w) vm_protect_pages(s, l, w)
+# define flush_protect_page_ranges(pr, w) /* */
+
+#else
+
+static void page_range_compact(Page_Range *pr);
+static void page_range_reset(Page_Range *pr);
+static void page_range_flush(Page_Range *pr, int writeable);
+static int page_range_add_worker(Page_Range *pr, void *_start, unsigned long len);
+
+
+static Page_Range *page_range_create()
+{
+  Page_Range *pr = ofm_malloc_zero(sizeof(Page_Range));
+  pr->range_root = NULL;
+  pr->range_start = NULL;
+  pr->range_alloc_block = ofm_malloc(APAGE_SIZE);
+  pr->range_alloc_size = APAGE_SIZE;
+  pr->range_alloc_used = 0;
+  return pr;
+}
+
+static void page_range_add(Page_Range *pr, void *_start, unsigned long len, int writeable)
+{
+  GC_MP_CNT_INC(mp_pr_add_cnt);
+  if (!page_range_add_worker(pr, _start, len)) {
+    GC_MP_CNT_INC(mp_pr_ff_cnt);
+    page_range_flush(pr, writeable);
+    page_range_add_worker(pr, _start, len);
+  }
+}
+
+
+static void page_range_flush(Page_Range *pr, int writeable)
+{
+  Range *work;
+
+  page_range_compact(pr);
+
+  for (work = pr->range_start; work; work = work->next) {
+    os_protect_pages((void *)work->start, work->len, writeable);
+    GC_MP_CNT_INC(mp_pr_call_cnt);
+  }
+
+  page_range_reset(pr);
+}
 
 #define Tree Range
 #define Splay_Item(t) (t)->start
@@ -20,16 +74,7 @@
 #undef Splay_Item
 #undef Set_Splay_Item
 
-static void initialize_page_ranges(Page_Range *pr, void *block, unsigned long size)
-{
-  pr->range_root = NULL;
-  pr->range_start = NULL;
-  pr->range_alloc_block = block;
-  pr->range_alloc_size = size;
-  pr->range_alloc_used = 0;
-}
-
-static void compact_page_ranges(Page_Range *pr)
+static void page_range_compact(Page_Range *pr)
 {
   Range *work, *next;
   unsigned long start, len;
@@ -52,7 +97,7 @@ static void compact_page_ranges(Page_Range *pr)
   }
 }
 
-static void reset_page_ranges(Page_Range *pr)
+static void page_range_reset(Page_Range *pr)
 {
   pr->range_alloc_used = 0;
   pr->range_root = NULL;
@@ -77,13 +122,10 @@ static int try_extend(Range *r, unsigned long start, unsigned long len)
   return 0;
  }
 
-static int add_page_range(Page_Range *pr, void *_start, unsigned long len, unsigned long alignment)
+static int page_range_add_worker(Page_Range *pr, void *_start, unsigned long len)
 {
   unsigned long start = (unsigned long)_start;
   Range *r, *range_root = pr->range_root;
-
-  len += (alignment - 1);
-  len -= (len & (alignment - 1));
 
   range_root = range_splay(start, range_root);
 
@@ -130,4 +172,4 @@ static int add_page_range(Page_Range *pr, void *_start, unsigned long len, unsig
     return 1;
   }
 }
-
+#endif

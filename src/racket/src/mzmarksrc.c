@@ -360,6 +360,8 @@ cont_proc {
   gcMARK2(c->prompt_id, gc);
   gcMARK2(c->prompt_buf, gc);
 
+  gcMARK2(c->escape_cont, gc);
+
   gcMARK2(c->value, gc);
   gcMARK2(c->resume_to, gc);
   gcMARK2(c->use_next_cont, gc);
@@ -834,7 +836,6 @@ namespace_val {
 
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
-  gcMARK2(e->export_registry, gc);
   gcMARK2(e->insp, gc);
 
   gcMARK2(e->rename_set, gc);
@@ -866,6 +867,15 @@ namespace_val {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
+}
+
+module_reg_val {
+ mark:
+  Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
+  gcMARK2(r->loaded, gc);
+  gcMARK2(r->exports, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
 }
 
 random_state_val {
@@ -1536,6 +1546,7 @@ mark_subprocess {
 #ifndef WINDOWS_PROCESSES
   Scheme_Subprocess *sp = (Scheme_Subprocess *)p;
   gcMARK2(sp->handle, gc);
+  gcMARK2(sp->mref, gc);
 #endif
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Subprocess));
@@ -2294,10 +2305,12 @@ future {
   future_t *f = (future_t *)p;
   gcMARK2(f->orig_lambda, gc);
   gcMARK2(f->arg_s0, gc);
+  gcMARK2(f->arg_t0, gc);
   gcMARK2(f->arg_S0, gc);
   gcMARK2(f->arg_b0, gc);
   gcMARK2(f->arg_n0, gc);
   gcMARK2(f->arg_s1, gc);
+  gcMARK2(f->arg_t1, gc);
   gcMARK2(f->arg_S1, gc);
   gcMARK2(f->arg_s2, gc);
   gcMARK2(f->arg_S2, gc);

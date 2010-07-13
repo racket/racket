@@ -132,10 +132,10 @@ if it was just an example expression that you were using to explore
 area} as above, click @onscreen{Run}, and then evaluate
 @racket[(extract "the boy")] in the @tech{REPL}.
 
-With @exec{racket}, you'd save the above text in a file using your
-favorite editor. If you save it as @filepath{extract.rkt}, then after starting
-@exec{racket} in the same directory, you'd evaluate the following
-sequence:
+When using command-line @exec{racket} instead of DrRacket, you'd save
+the above text in a file using your favorite editor. If you save it as
+@filepath{extract.rkt}, then after starting @exec{racket} in the same
+directory, you'd evaluate the following sequence:
 
 @interaction[
 #:eval piece-eval
@@ -224,7 +224,7 @@ programs. The problems are not specific to @exec{racket}; they're
 fundamental limitations of the traditional top-level environment,
 which Scheme and Lisp implementations have historically fought with ad
 hoc command-line flags, compiler directives, and build tools. The
-module system is to designed to avoid the problems, so start with
+module system is designed to avoid these problems, so start with
 @hash-lang[], and you'll be happier with Racket in the long run.
 
 @; ----------------------------------------------------------------------

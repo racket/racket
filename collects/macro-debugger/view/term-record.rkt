@@ -1,33 +1,28 @@
-#lang scheme/base
-(require scheme/class
-         (rename-in unstable/class-iop
-                    [define/i define:]
-                    [send/i send:]
-                    [init-field/i init-field:])
-         scheme/unit
-         scheme/list
-         scheme/match
-         scheme/gui
-         framework/framework
-         syntax/boundmap
+#lang racket/base
+(require racket/class
+         racket/unit
+         racket/list
+         racket/match
+         racket/gui
+         framework
          syntax/stx
          unstable/find
-         "interfaces.ss"
-         "prefs.ss"
-         "extensions.ss"
-         "warning.ss"
-         "hiding-panel.ss"
-         "step-display.ss"
-         "../model/deriv.ss"
-         "../model/deriv-util.ss"
-         "../model/deriv-parser.ss"
-         "../model/trace.ss"
-         "../model/reductions-config.ss"
-         "../model/reductions.ss"
-         "../model/steps.ss"
+         unstable/class-iop
+         "interfaces.rkt"
+         "prefs.rkt"
+         "extensions.rkt"
+         "hiding-panel.rkt"
+         "step-display.rkt"
+         "../model/deriv.rkt"
+         "../model/deriv-util.rkt"
+         "../model/deriv-parser.rkt"
+         "../model/trace.rkt"
+         "../model/reductions-config.rkt"
+         "../model/reductions.rkt"
+         "../model/steps.rkt"
          unstable/gui/notify
-         "cursor.ss"
-         "debug-format.ss")
+         "cursor.rkt"
+         "debug-format.rkt")
 
 (provide term-record%)
 
@@ -35,12 +30,12 @@
 
 (define term-record%
   (class* object% (term-record<%>)
-    (init-field: (stepper widget<%>))
+    (init-field/i (stepper widget<%>))
 
-    (define: config config<%>
-      (send: stepper widget<%> get-config))
-    (define: displayer step-display<%>
-      (send: stepper widget<%> get-step-displayer))
+    (define/i config config<%>
+      (send/i stepper widget<%> get-config))
+    (define/i displayer step-display<%>
+      (send/i stepper widget<%> get-step-displayer))
 
     ;; Data
     
@@ -134,7 +129,7 @@
       (unless (or deriv deriv-hidden?)
         (recache-raw-deriv!)
         (when raw-deriv
-          (let ([process (send: stepper widget<%> get-preprocess-deriv)])
+          (let ([process (send/i stepper widget<%> get-preprocess-deriv)])
             (let ([d (process raw-deriv)])
               (when (not d)
                 (set! deriv-hidden? #t))
@@ -151,7 +146,7 @@
       (unless (or raw-steps raw-steps-oops)
         (recache-synth!)
         (when deriv
-          (let ([show-macro? (or (send: stepper widget<%> get-show-macro?)
+          (let ([show-macro? (or (send/i stepper widget<%> get-show-macro?)
                                  (lambda (id) #t))])
             (with-handlers ([(lambda (e) #t)
                              (lambda (e)
@@ -173,12 +168,12 @@
           (set! steps
                 (and raw-steps
                      (let* ([filtered-steps 
-                             (if (send: config config<%> get-show-rename-steps?)
+                             (if (send/i config config<%> get-show-rename-steps?)
                                  raw-steps
                                  (filter (lambda (x) (not (rename-step? x)))
                                          raw-steps))]
                             [processed-steps
-                             (if (send: config config<%> get-one-by-one?)
+                             (if (send/i config config<%> get-one-by-one?)
                                  (reduce:one-by-one filtered-steps)
                                  filtered-steps)])
                        (cursor:new processed-steps))))
@@ -207,7 +202,11 @@
       (and (get-steps) (not (cursor:at-end? (get-steps)))))
 
     (define/public-final (get-step-index)
-      (and (get-steps) (cursor-position (get-steps))))
+      (let ([steps (get-steps)])
+        (and steps (cursor-position steps))))
+    (define/public-final (get-step-count)
+      (let ([steps (get-steps)])
+        (and steps (cursor-count steps))))
 
     (define/public-final (navigate-to-start)
       (cursor:move-to-start (get-steps))
@@ -276,21 +275,21 @@
     ;; display-initial-term : -> void
     (define/public (display-initial-term)
       (cond [raw-deriv-oops
-             (send: displayer step-display<%> add-internal-error
-                    "derivation" raw-deriv-oops #f events)]
+             (send/i displayer step-display<%> add-internal-error
+                     "derivation" raw-deriv-oops #f events)]
             [else
-             (send: displayer step-display<%> add-syntax (wderiv-e1 deriv))]))
+             (send/i displayer step-display<%> add-syntax (wderiv-e1 deriv))]))
 
     ;; display-final-term : -> void
     (define/public (display-final-term)
       (recache-steps!)
       (cond [(syntax? raw-steps-estx)
-             (send: displayer step-display<%> add-syntax raw-steps-estx
-                    #:binders raw-steps-binders
-                    #:shift-table shift-table
-                    #:definites raw-steps-definites)]
+             (send/i displayer step-display<%> add-syntax raw-steps-estx
+                     #:binders raw-steps-binders
+                     #:shift-table shift-table
+                     #:definites raw-steps-definites)]
             [(exn? raw-steps-exn)
-             (send: displayer step-display<%> add-error raw-steps-exn)]
+             (send/i displayer step-display<%> add-error raw-steps-exn)]
             [else (display-oops #f)]))
 
     ;; display-step : -> void
@@ -299,24 +298,24 @@
       (cond [steps
              (let ([step (cursor:next steps)])
                (if step
-                   (send: displayer step-display<%> add-step step
-                          #:shift-table shift-table)
-                   (send: displayer step-display<%> add-final raw-steps-estx raw-steps-exn
-                          #:binders raw-steps-binders
-                          #:shift-table shift-table
-                          #:definites raw-steps-definites)))]
+                   (send/i displayer step-display<%> add-step step
+                           #:shift-table shift-table)
+                   (send/i displayer step-display<%> add-final raw-steps-estx raw-steps-exn
+                           #:binders raw-steps-binders
+                           #:shift-table shift-table
+                           #:definites raw-steps-definites)))]
             [else (display-oops #t)]))
 
     ;; display-oops : boolean -> void
     (define/private (display-oops show-syntax?)
       (cond [raw-steps-oops
-             (send: displayer step-display<%> add-internal-error
-                    "steps" raw-steps-oops
-                    (and show-syntax? (wderiv-e1 deriv))
-                    events)]
+             (send/i displayer step-display<%> add-internal-error
+                     "steps" raw-steps-oops
+                     (and show-syntax? (wderiv-e1 deriv))
+                     events)]
             [raw-deriv-oops
-             (send: displayer step-display<%> add-internal-error
-                    "derivation" raw-deriv-oops #f events)]
+             (send/i displayer step-display<%> add-internal-error
+                     "derivation" raw-deriv-oops #f events)]
             [else
              (error 'term-record::display-oops "internal error")]))
     ))

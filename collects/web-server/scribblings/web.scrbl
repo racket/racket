@@ -5,6 +5,7 @@
 @(require (for-label web-server/servlet/web
                      web-server/servlet/servlet-structs
                      web-server/http
+                     racket/list
                      net/url))
 
 @defmodule[web-server/servlet/web]{The
@@ -141,17 +142,17 @@ functions of interest for the servlet developer.
   ]
 }
 
-@defproc[(redirect/get)
+@defproc[(redirect/get [#:headers hs (listof header?) empty])
          request?]{
- Calls @racket[send/suspend] with @racket[redirect-to].
+ Calls @racket[send/suspend] with @racket[redirect-to], passing @racket[hs] as the headers.
        
  This implements the Post-Redirect-Get pattern. 
  Use this to prevent the @onscreen["Refresh"] button from duplicating effects, such as adding items to a database. 
 }
 
-@defproc[(redirect/get/forget)
+@defproc[(redirect/get/forget [#:headers hs (listof header?) empty])
          request?]{
- Calls @racket[send/forward] with @racket[redirect-to].
+ Calls @racket[send/forward] with @racket[redirect-to], passing @racket[hs] as the headers.
 }
                   
 @defthing[current-servlet-continuation-expiration-handler (parameter/c expiration-handler/c)]{
@@ -202,5 +203,7 @@ functions of interest for the servlet developer.
  Checks if @racket[u] is a URL that refers to a continuation, if so
  returns the instance id, continuation id, and nonce.
 }
+                                                         
+@defthing[servlet-prompt continuation-prompt-tag?]{The tag used for Web interaction continuation capture.}
 
 }

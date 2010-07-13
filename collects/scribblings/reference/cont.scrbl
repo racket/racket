@@ -8,9 +8,9 @@ information about continuations. Racket's support for prompts and
 composable continuations most closely resembles Dorai Sitaram's
 @racket[%] and @racket[fcontrol] operator @cite["Sitaram93"].
 
-Racket installs a @defterm{continuation barrier} around evaluation in
-the following contexts, preventing full-continuation jumps across the
-barrier:
+Racket installs a @tech{continuation barrier} around evaluation in the
+following contexts, preventing full-continuation jumps into the
+evaluation context protected by the barrier:
 
 @itemize[
 
@@ -123,20 +123,19 @@ prompt tagged by @racket[prompt-tag] (not including the prompt; if no
 such prompt exists, the @exnraise[exn:fail:contract:continuation]), or
 up to the nearest continuation frame (if any) shared by the current
 and captured continuations---whichever is first. While removing
-continuation frames, @racket[dynamic-wind] @racket[post-thunk]s are
+continuation frames, @racket[dynamic-wind] @racket[_post-thunk]s are
 executed. Finally, the (unshared portion of the) captured continuation
 is appended to the remaining continuation, applying
-@racket[dynamic-wind] @racket[pre-thunk]s.
+@racket[dynamic-wind] @racket[_pre-thunk]s.
 
 The arguments supplied to an applied procedure become the result
 values for the restored continuation. In particular, if multiple
 arguments are supplied, then the continuation receives multiple
 results.
 
-If, at application time, a continuation barrier appears between the
-current continuation and the prompt tagged with @racket[prompt-tag],
-and if the same barrier is not part of the captured continuation, then
-the @exnraise[exn:fail:contract:continuation].
+If, at application time, a @tech{continuation barrier} would be
+introduced by replacing the current continuation with the applied one,
+then the @exnraise[exn:fail:contract:continuation].
 
 A continuation can be invoked from the thread (see
 @secref["threads"]) other than the one where it was captured.}
@@ -159,10 +158,13 @@ the resulting continuation procedure does not remove any portion of
 the current continuation. Instead, application always extends the
 current continuation with the captured continuation (without
 installing any prompts other than those be captured in the
-continuation). When @racket[call-with-composable-continuation] is
-called, if a continuation barrier appears in the continuation before
-the closest prompt tagged by @racket[prompt-tag], the
-@exnraise[exn:fail:contract:continuation].}
+continuation).
+
+When @racket[call-with-composable-continuation] is called, if a
+continuation barrier appears in the continuation before the closest
+prompt tagged by @racket[prompt-tag], the
+@exnraise[exn:fail:contract:continuation] (because attempting to apply
+the continuation would always fail).}
 
 @defproc[(call-with-escape-continuation 
           [proc (continuation? . -> . any)]) 
@@ -171,8 +173,7 @@ the closest prompt tagged by @racket[prompt-tag], the
 Like @racket[call-with-current-continuation], but @racket[proc] is not
 called in tail position, and the continuation procedure supplied to
 @racket[proc] can only be called during the dynamic extent of the
-@racket[call-with-escape-continuation] call. A continuation barrier,
-however, never prevents the application of the continuation.
+@racket[call-with-escape-continuation] call.
 
 Due to the limited applicability of its continuation,
 @racket[call-with-escape-continuation] can be implemented more efficiently
@@ -201,9 +202,10 @@ Equivalent to @racket[(call/ec (lambda (k) body ...))].
 
 @defproc[(call-with-continuation-barrier [thunk (-> any)]) any]{
 
-Applies @racket[thunk] with a barrier between the application and the
-current continuation. The results of @racket[thunk] are the results of
-the @racket[call-with-continuation-barrier] call.}
+Applies @racket[thunk] with a @tech{continuation barrier} between the
+application and the current continuation. The results of
+@racket[thunk] are the results of the
+@racket[call-with-continuation-barrier] call.}
 
 
 @defproc[(continuation-prompt-available?

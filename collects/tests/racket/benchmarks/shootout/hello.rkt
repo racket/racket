@@ -1,2 +1,2 @@
-#lang scheme/base
+#lang racket/base
 (display "hello world\n")

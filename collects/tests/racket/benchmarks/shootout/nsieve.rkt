@@ -1,14 +1,13 @@
-#!/usr/bin/mzscheme -qu
 ;; $Id: nsieve-mzscheme.code,v 1.6 2006/06/10 23:38:29 bfulgham Exp $
-;; The Great Computer Language Shootout
+;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 ;;
 ;; nsieve benchmark for The Computer Language Shootout
 ;; Written by Dima Dorfman, 2004
 ;; Converted to MzScheme by Brent Fulgham
 
-#lang scheme/base
-(require scheme/cmdline)
+#lang racket/base
+(require racket/cmdline)
 
 (define (nsieve m)
   (let ((a (make-vector m #t)))

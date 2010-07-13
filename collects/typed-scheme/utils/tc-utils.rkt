@@ -7,7 +7,7 @@ don't depend on any other portion of the system
 
 (provide (all-defined-out))
 (require "syntax-traversal.rkt"
-	 "utils.rkt"
+	 "utils.rkt" racket/dict
 	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match unstable/debug
          (for-syntax unstable/syntax))
 
@@ -15,6 +15,11 @@ don't depend on any other portion of the system
 (define current-orig-stx (make-parameter #'here))
 (define orig-module-stx (make-parameter #f))
 (define expanded-module-stx (make-parameter #f))
+
+;; a parameter holding the mutated variables for the form currently being checked
+(define mutated-vars (make-parameter #hash()))
+
+(define (is-var-mutated? id) (dict-ref (mutated-vars) id #f))
 
 (define (stringify l [between " "])
   (define (intersperse v l)
@@ -104,15 +109,16 @@ don't depend on any other portion of the system
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)  
-  (let ([stx (locate-stx (current-orig-stx))])
+  (let* ([ostx (current-orig-stx)]
+         [ostxs (if (list? ostx) ostx (list ostx))]
+         [stxs (map locate-stx ostxs)])
     ;; If this isn't original syntax, then we can get some pretty bogus error messages.  Note
     ;; that this is from a macro expansion, so that introduced vars and such don't confuse the user.
     (cond
-      [(not (orig-module-stx))
-       (raise-typecheck-error (apply format msg rest) (list stx))]
-      [(eq? (syntax-source (current-orig-stx)) (syntax-source (orig-module-stx)))
-       (raise-typecheck-error (apply format msg rest) (list stx))]
-      [else (raise-typecheck-error (apply format (string-append "Error in macro expansion -- " msg) rest) (list stx))])))
+      [(or (not (orig-module-stx))
+           (for/and ([s ostxs]) (eq? (syntax-source s) (syntax-source (orig-module-stx)))))
+       (raise-typecheck-error (apply format msg rest) stxs)]
+      [else (raise-typecheck-error (apply format (string-append "Error in macro expansion -- " msg) rest) stxs)])))
 
 ;; produce a type error, given a particular syntax
 (define (tc-error/stx stx msg . rest)

@@ -1,12 +1,12 @@
 #lang scheme/base
 
 (require unstable/sequence racket/require racket/match
-         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
+         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt" "types/abbrev.rkt"
                   "rep/rep-utils.rkt" "utils/utils.rkt" "utils/tc-utils.rkt"))
 
 ;; do we attempt to find instantiations of polymorphic types to print? 
 ;; FIXME - currently broken
-(define print-poly-types? #f)
+(define print-poly-types? #t)
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
@@ -117,16 +117,15 @@
     [(? Rep-stx a)
      (fp "~a" (syntax->datum (Rep-stx a)))]
     [(Univ:) (fp "Any")]
-    ;; special case number until something better happens
-    ;;[(Base: 'Number _) (fp "Number")]
+    ;; names are just the printed as the original syntax
+    [(Name: stx) (fp "~a" (syntax-e stx))]
     [(app has-name? (? values name))
      (fp "~a" name)]
     [(StructTop: st) (fp "~a" st)]
     [(BoxTop:) (fp "Box")]
+    [(ChannelTop:) (fp "Channel")]
     [(VectorTop:) (fp "Vector")]
     [(MPairTop:) (fp "MPair")]
-    ;; names are just the printed as the original syntax
-    [(Name: stx) (fp "~a" (syntax-e stx))]
     [(App: rator rands stx) 
      (fp "~a" (list* rator rands))]
     ;; special cases for lists
@@ -134,16 +133,20 @@
      (fp "(Listof ~a)" elem-ty)]
     [(Mu: var (Union: (list (Pair: elem-ty (F: var)) (Value: '()))))
      (fp "(Listof ~a)" elem-ty)]
+    [(Mu: var (Union: (list (Value: '()) (MPair: elem-ty (F: var)))))
+     (fp "(MListof ~a)" elem-ty)]
+    [(Mu: var (Union: (list (MPair: elem-ty (F: var)) (Value: '()))))
+     (fp "(MListof ~a)" elem-ty)]
     [(Value: v) (cond [(or (symbol? v) (null? v))
                        (fp "'~a" v)]
                       [else (fp "~a" v)])]
     [(? tuple? t)
      (fp "~a" (cons 'List (tuple-elems t)))]
-    [(Base: n cnt) (fp "~a" n)]      
+    [(Base: n cnt) (fp "~s" n)]      
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: 'Promise par (list fld) proc _ _ _ _ _) (fp "(Promise ~a)" fld)]      
-    [(Struct: nm par flds proc _ _ _ _ _) 
-     (fp "#(struct:~a ~a" nm flds)
+    [(Struct: (== promise-sym) #f  (list (fld: t _ _)) _    _ _ _ _) (fp "(Promise ~a)" t)]
+    [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
+     (fp "#(struct:~a ~a" nm t)
      (when proc
        (fp " ~a" proc))
      (fp ")")]
@@ -165,13 +168,16 @@
                                (fp " ~a" i))
                              (fp ")")]
     [(Box: e) (fp "(Boxof ~a)" e)]
+    [(Channel: e) (fp "(Channelof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
+    [(ListDots: dty dbound) 
+     (fp "(List ~a ...~a~a)" dty (if (special-dots-printing?) "" " ") dbound)]
     [(F: nm) (fp "~a" nm)]   
     ;; FIXME
     [(Values: (list v)) (fp "~a" v)]
-    [(Values: (list v ...)) (fp "~a" (cons 'values v))]
-    [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
+    [(Values: (list v ...)) (fp "~s" (cons 'values v))]
+    [(ValuesDots: v dty dbound) (fp "~s" (cons 'values (append v (list dty '... dbound))))]
     [(Param: in out) 
      (if (equal? in out)
          (fp "(Parameterof ~a)" in)           
@@ -209,9 +215,15 @@
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (fp "~a" t)]
     [(Result: t fs (Empty:)) (fp "(~a : ~a)" t fs)]
     [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
+    [(MPair: s t) (fp "(MPairof ~a ~a)" s t)]
     [(Refinement: parent p? _)
      (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
+    [(Sequence: ts)
+     (fp "(Sequenceof")
+     (for ([t ts]) (fp " ~a" t))
+     (fp ")")]
     [(Error:) (fp "Error")]
+    [(fld: t a m) (fp "(fld ~a)" t)]
     [else (fp "(Unknown Type: ~a)" (struct->vector c))]
     ))
 

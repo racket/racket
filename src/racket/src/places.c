@@ -6,6 +6,9 @@
 #ifdef MZ_USE_PLACES
 
 #include "mzrt.h"
+#ifdef UNIX_PROCESSES
+# include <unistd.h>
+#endif
 
 READ_ONLY static Scheme_Object *scheme_def_place_exit_proc;
 
@@ -202,146 +205,394 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   return (Scheme_Object*) place;
 }
 
-# ifdef MZ_PRECISE_GC
-/*============= SIGNAL HANDLER =============*/
+# if defined(MZ_PLACES_WAITPID)
+/*============= SIGCHLD SIGNAL HANDLING =============*/
+
+/* If SIGCHLD is unblocked, it gets delivered to a random thread
+   --- not necessarily on in the right place for the subprocess.
+   To avoid that problem, we centralize SIGCHLD handling here, and
+   then dispatch back out to specific places as they request 
+   information. */
+
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
 
-
-static void error_info() {
-  char *erstr;
-  erstr = strerror(errno);
-  printf("errno %i %s\n", errno, erstr);
-}
-
 typedef struct Child_Status {
   int pid;
   int status;
+  char done;
+  char unneeded; /* not in a group; result not needed */
+  char is_group;
   void *signal_fd;
   struct Child_Status *next;
+  struct Child_Status *next_group; /* see child_group_statuses */
 } Child_Status;
 
 SHARED_OK static Child_Status *child_statuses = NULL;
 SHARED_OK static mzrt_mutex* child_status_lock = NULL;
+SHARED_OK static mzrt_mutex* child_wait_lock = NULL; /* ordered before status lock */
+
+/* When a process for a process group becomes unreachable 
+   before a waitpid() on the process, then we need to keep
+   waiting on it to let the OS gc the process. Otherwise,
+   we wait only on processes in the same group as Racket. 
+   This list is protect by the wait lock. */
+SHARED_OK static Child_Status *child_group_statuses = NULL;
+
+static void add_group_signal_fd(void *signal_fd);
+static void remove_group_signal_fd(void *signal_fd);
+static void do_group_signal_fds();
 
 static void add_child_status(int pid, int status) {
   Child_Status *st;
-  st = malloc(sizeof(Child_Status));
-  st->pid = pid;
-  st->signal_fd = NULL;
-  st->status = status;
 
+  /* Search for existing record, which will have a signal_fd: */
   mzrt_mutex_lock(child_status_lock);
-  st->next = child_statuses;
-  child_statuses = st;
+  for (st = child_statuses; st; st = st->next) {
+    if (st->pid == pid)
+      break;
+  }
+
+  if (!st) {
+    /* must have terminated before it was registered
+       (and since we detected it, it must not be a group) */
+    st = malloc(sizeof(Child_Status));
+    st->pid = pid;
+    st->signal_fd = NULL;
+    st->next = child_statuses;
+    child_statuses = st;
+    st->next_group = NULL;
+    st->unneeded = 0;
+    st->is_group = 0;
+  }
+  st->status = status;
+  st->done = 1;
+
+  if (st->signal_fd && st->is_group)
+    remove_group_signal_fd(st->signal_fd);
+
   mzrt_mutex_unlock(child_status_lock);
+  
+  if (st->signal_fd)
+    scheme_signal_received_at(st->signal_fd);
+  if (st->unneeded)
+    (void)scheme_get_child_status(st->pid, 0, NULL);
 }
 
-static int raw_get_child_status(int pid, int *status) {
+static int raw_get_child_status(int pid, int *status, int done_only, int do_remove, int do_free) {
   Child_Status *st;
   Child_Status *prev;
   int found = 0;
 
   for (st = child_statuses, prev = NULL; st; prev = st, st = st->next) {
     if (st->pid == pid) {
-      *status = st->status;
-      found = 1;
-      if (prev) {
-        prev->next = st->next;
+      if (!done_only || st->done) {
+        if (status)
+          *status = st->status;
+        found = 1;
+        if (do_remove) {
+          if (prev)
+            prev->next = st->next;
+          else
+            child_statuses = st->next;
+        }
+        if (do_free)
+          free(st);
       }
-      else {
-        child_statuses = st->next;
-      }
-      free(st);
       break;
     }
   }
   return found;
 }
 
-int scheme_get_child_status(int pid, int *status) {
+int scheme_get_child_status(int pid, int is_group, int *status) {
   int found = 0;
+
+  if (is_group) {
+    /* need to specifically try the pid, since we don't
+       wait on other process groups in the background thread */
+    pid_t pid2;
+    int status;
+
+    do {
+      pid2 = waitpid((pid_t)pid, &status, WNOHANG);
+    } while ((pid2 == -1) && (errno == EINTR));
+
+    if (pid2 > 0)
+      add_child_status(pid, status);
+  }
+
   mzrt_mutex_lock(child_status_lock);
-  found = raw_get_child_status(pid, status);
+  found = raw_get_child_status(pid, status, 1, 1, 1);
   mzrt_mutex_unlock(child_status_lock);
   /* printf("scheme_get_child_status found %i pid %i status %i\n", found,  pid, *status); */
+
   return found;
 }
 
-int scheme_places_register_child(int pid, void *signal_fd, int *status) {
+int scheme_places_register_child(int pid, int is_group, void *signal_fd, int *status)
+{
   int found = 0;
 
   mzrt_mutex_lock(child_status_lock);
-  found = raw_get_child_status(pid, status);
+
+  /* The child may have terminated already: */
+  found = raw_get_child_status(pid, status, 0, 0, 0);
+
   if (!found) {
+    /* Create a record for the child: */
     Child_Status *st;
     st = malloc(sizeof(Child_Status));
     st->pid = pid;
     st->signal_fd = signal_fd;
     st->status = 0;
+    st->unneeded = 0;
+    st->done = 0;
+    st->is_group = is_group;
 
     st->next = child_statuses;
     child_statuses = st;
+    st->next_group = NULL;
+
+    if (is_group)
+      add_group_signal_fd(signal_fd);
   }
+
   mzrt_mutex_unlock(child_status_lock);
   return found;
 }
 
 static void *mz_proc_thread_signal_worker(void *data) {
   int status;
-  int pid;
+  int pid, check_pid, is_group;
   sigset_t set;
-  //GC_CAN_IGNORE siginfo_t info;
-  {
-    sigemptyset(&set);
-    sigaddset(&set, SIGCHLD);
-    pthread_sigmask(SIG_UNBLOCK, &set, NULL);
-  }
+  Child_Status *group_status, *prev_group, *next;
 
-  while(1) {
+  sigemptyset(&set);
+  sigaddset(&set, SIGCHLD);
+
+  while (1) {
     int rc;
     int signalid;
+
     do {
       rc = sigwait(&set, &signalid);
       if (rc == -1) {
-        if (errno != EINTR ) {
-        error_info();
+        if (errno != EINTR) {
+          fprintf(stderr, "unexpected error from sigwait(): %d\n", errno);
         }
       }
     } while (rc == -1 && errno == EINTR);
 
-    pid = waitpid((pid_t)-1, &status, WNOHANG);
-    if (pid == -1) {
-      char *erstr;
-      erstr = strerror(errno);
-      /* printf("errno %i %s\n", errno, erstr); */
-    }
-    else {
-      /* printf("SIGCHILD pid %i with status %i %i\n", pid, status, WEXITSTATUS(status)); */
-      add_child_status(pid, status);
-    }
-  };
+    mzrt_mutex_lock(child_status_lock);
+    do_group_signal_fds();
+    mzrt_mutex_unlock(child_status_lock);
+
+    mzrt_mutex_lock(child_wait_lock);
+
+    group_status = child_group_statuses;
+    prev_group = NULL;
+
+    do {
+      if (group_status) {
+        check_pid = group_status->pid;
+        is_group = 1;
+      } else {
+        check_pid = 0; /* => processes in the same group as Racket */
+        is_group = 0;
+      }
+
+      pid = waitpid(check_pid, &status, WNOHANG);
+
+      if (pid == -1) {
+        if (errno == EINTR) {
+          /* try again */
+          pid = 1;
+        } else if (!is_group && (errno == ECHILD)) {
+          /* no more to check */
+        } else {
+          fprintf(stderr, "unexpected error from waitpid(%d[%d]): %d\n", 
+                  check_pid, is_group, errno);
+          if (is_group) {
+            prev_group = group_status;
+            group_status = group_status->next;
+          } 
+        }
+      } else if (pid > 0) {
+        /* printf("SIGCHILD pid %i with status %i %i\n", pid, status, WEXITSTATUS(status)); */
+        if (is_group) {
+          next = group_status->next;
+          if (prev_group)
+            prev_group->next_group = next;
+          else
+            child_group_statuses = next;
+          free(group_status);
+          group_status = next;
+        } else
+          add_child_status(pid, status);
+      } else {
+        if (is_group) {
+          prev_group = group_status;
+          group_status = group_status->next;
+        }
+      }
+    } while ((pid > 0) || is_group);
+
+    mzrt_mutex_unlock(child_wait_lock);
+  }
+
   return NULL;
 }
 
+void scheme_done_with_process_id(int pid, int is_group)
+{
+  Child_Status *st;
 
-void scheme_places_block_child_signal() {
-  {
-    sigset_t set;
-    sigemptyset(&set);
-    sigaddset(&set, SIGCHLD);
-    pthread_sigmask(SIG_BLOCK, &set, NULL);
+  mzrt_mutex_lock(child_wait_lock); /* protects child_group_statuses */
+  mzrt_mutex_lock(child_status_lock);
+
+  for (st = child_statuses; st; st = st->next) {
+    if (st->pid == pid) {
+      if (!st->done) {
+        if (is_group) {
+          st->next_group = child_group_statuses;
+          child_group_statuses = st;
+          if (st->signal_fd)
+            remove_group_signal_fd(st->signal_fd);
+        } else
+          st->unneeded = 1;
+        st->signal_fd = NULL;
+      }
+      break;
+    }
+  }
+      
+  if (st && (is_group || st->done)) {
+    /* remove it from normal list: */
+    raw_get_child_status(pid, NULL, 0, 1, !st->done);
   }
 
-  {
-    mz_proc_thread *signal_thread;
-    mzrt_mutex_create(&child_status_lock);
-    signal_thread = mz_proc_thread_create(mz_proc_thread_signal_worker, NULL);
-    mz_proc_thread_detach(signal_thread);
+  mzrt_mutex_unlock(child_status_lock);
+  mzrt_mutex_unlock(child_wait_lock);
+}
+
+static void got_sigchld() XFORM_SKIP_PROC
+{ 
+  write(2, "SIGCHLD handler called (some thread has SIGCHLD unblocked)\n", 59);
+}
+
+void scheme_places_block_child_signal() XFORM_SKIP_PROC
+{
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGCHLD);
+  sigprocmask(SIG_BLOCK, &set, NULL);
+
+  /* Mac OS X seems to need a handler installed for SIGCHLD to be
+     delivered, since the default is to drop the signal. Also, this
+     handler serves as a back-up alert if some thread is created that
+     does not block SIGCHLD. */
+  MZ_SIGSET(SIGCHLD, got_sigchld);
+}
+
+void scheme_places_start_child_signal_handler()
+{
+  mz_proc_thread *signal_thread;
+
+  mzrt_mutex_create(&child_status_lock);
+  mzrt_mutex_create(&child_wait_lock);
+
+  signal_thread = mz_proc_thread_create(mz_proc_thread_signal_worker, NULL);
+  mz_proc_thread_detach(signal_thread);
+}
+
+void scheme_wait_suspend()
+{
+  mzrt_mutex_lock(child_wait_lock);
+}
+
+void scheme_wait_resume()
+{
+  mzrt_mutex_unlock(child_wait_lock);
+}
+
+/* ---------------------------------------------------------------------- */
+
+/* When a place has a process-group that it may be waiting on, the we
+   need to wake up the place whenever any SIGCHLD is received, since
+   the SIGDCHLD may apply to one of those places.
+   The list of signal_fds is protected by the status lock. */
+
+typedef struct Group_Signal_FD {
+  void *signal_fd;
+  int refcount;
+} Group_Signal_FD;
+
+SHARED_OK static Group_Signal_FD *signal_fds;
+SHARED_OK static int signal_fd_count;
+
+static void add_group_signal_fd(void *signal_fd)
+{
+  int i, count = 0;
+  Group_Signal_FD *a;
+
+  for (i = 0; i < signal_fd_count; i++) {
+    if (signal_fds[i].refcount) {
+      count++;
+      if (signal_fds[i].signal_fd == signal_fd) {
+        signal_fds[i].refcount++;
+        return;
+      }      
+    }
+  }
+
+  if (count == signal_fd_count) {
+    signal_fd_count = (signal_fd_count + 4) * 2;
+    a = (Group_Signal_FD *)malloc(sizeof(Group_Signal_FD) * signal_fd_count);
+    memset(a, 0, sizeof(Group_Signal_FD) * signal_fd_count);
+    memcpy(a, signal_fds, sizeof(Group_Signal_FD) * count);
+    signal_fds = a;
+  }
+
+  for (i = 0; i < signal_fd_count; i++) {
+    if (!signal_fds[i].refcount) {
+      signal_fds[i].signal_fd = signal_fd;
+      signal_fds[i].refcount = 1;
+      break;
+    }
   }
 }
+
+static void remove_group_signal_fd(void *signal_fd)
+{
+  int i;
+
+  for (i = 0; i < signal_fd_count; i++) {
+    if (signal_fds[i].refcount) {
+      if (signal_fds[i].signal_fd == signal_fd) {
+        --signal_fds[i].refcount;
+        return;
+      }
+    }
+  }
+}
+
+static void do_group_signal_fds()
+{
+  int i;
+
+  for (i = 0; i < signal_fd_count; i++) {
+    if (signal_fds[i].refcount) {
+      scheme_signal_received_at(signal_fds[i].signal_fd);
+    }
+  }
+}
+
+#endif
+
+# if defined(MZ_PRECISE_GC)
 
 /*============= THREAD JOIN HANDLER =============*/
 typedef struct {
@@ -515,7 +766,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         car = scheme_places_deep_copy_worker(SCHEME_CAR(so), ht);
         cdr = scheme_places_deep_copy_worker(SCHEME_CDR(so), ht);
         pair = scheme_make_pair(car, cdr);
-        return pair;
+        new_so = pair;
       }
       break;
     case scheme_vector_type:

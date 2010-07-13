@@ -3,7 +3,7 @@
 
 (require (utils tc-utils) 
 	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
-         mzlib/trace scheme/match
+         mzlib/trace scheme/match mzlib/etc
          scheme/contract unstable/debug
          (for-syntax scheme/base syntax/parse))
 
@@ -14,12 +14,12 @@
      (and (Type? e)
           (not (Scope? e))
           (not (arr? e))
+          (not (fld? e))
           (not (Values? e))
           (not (ValuesDots? e))
           (not (Result? e)))))
 
-(define Type/c
-  (flat-named-contract 'Type Type/c?))
+(define Type/c (flat-named-contract 'Type Type/c?))
 
 ;; Name = Symbol
 
@@ -41,13 +41,14 @@
 ;; this is ONLY used when a type error ocurrs
 (dt Error () [#:frees #f] [#:fold-rhs #:base])
 
+;; de Bruijn indexes - should never appear outside of this file
+;; bound type variables
 ;; i is an nat
-(dt B ([i natural-number/c])
-    [#:frees empty-hash-table (make-immutable-hasheq (list (cons i Covariant)))]
-    [#:fold-rhs #:base])
+(dt B ([i natural-number/c]) [#:frees #f] [#:fold-rhs #:base])
 
+;; free type variables
 ;; n is a Name
-(dt F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) empty-hash-table] [#:fold-rhs #:base])
+(dt F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) #hasheq()] [#:fold-rhs #:base])
 
 ;; id is an Identifier
 (dt Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
@@ -57,37 +58,81 @@
 ;; stx is the syntax of the pair of parens
 (dt App ([rator Type/c] [rands (listof Type/c)] [stx (or/c #f syntax?)])
     [#:intern (list rator rands)]
-    [#:frees (combine-frees (map free-vars* (cons rator rands)))
-             (combine-frees (map free-idxs* (cons rator rands)))]
+    [#:frees (λ (f) (combine-frees (map f (cons rator rands))))]
     [#:fold-rhs (*App (type-rec-id rator)
                       (map type-rec-id rands)
                       stx)])
 
+(define (get-variances t num-rands)
+  (match t
+    [(Name: v) (error 'fail)]
+    [(Poly: n scope)
+     (let ([t (free-idxs* scope)])
+       (for/list ([i (in-range n)])
+         (hash-ref t i)))]
+    [(PolyDots: n scope)
+     (let ([t (free-idxs* scope)]
+           [base-count (sub1 n)]
+           [extras (max 0 (- n num-rands))])
+       (append 
+        ;; variances of the fixed arguments
+        (for/list ([i (in-range base-count)])
+          (hash-ref t i))
+        ;; variance of the dotted arguments
+        (for/list ([i (in-range extras)])
+          (hash-ref t n))))]))
+
+(define (apply-variance v tbl)
+  (evcase v
+    [(Constant) (make-constant tbl)]
+    [(Covariant) tbl]
+    [(Invariant) (make-invariant tbl)]
+    [(Contravariant) (flip-variances tbl)]))
+
 ;; left and right are Types
 (dt Pair ([left Type/c] [right Type/c]) [#:key 'pair])
 
+;; dotted list -- after expansion, becomes normal Pair-based list type
+(dt ListDots ([dty Type/c] [dbound (or/c symbol? natural-number/c)])
+    [#:frees (if (symbol? dbound)
+                 (hash-remove (free-vars* dty) dbound)
+                 (free-vars* dty))
+             (if (symbol? dbound)
+                 (combine-frees (list (make-immutable-hasheq (list (cons dbound Covariant))) (free-idxs* dty)))
+                 (free-idxs* dty))]
+    [#:fold-rhs (*ListDots (type-rec-id dty) dbound)])
+
 ;; *mutable* pairs - distinct from regular pairs
 ;; left and right are Types
-(dt MPair ([left Type/c] [right Type/c]) [#:key 'mpair])
+(dt MPair ([left Type/c] [right Type/c])     
+    [#:frees (λ (f) (make-invariant (combine-frees (list (f left) (f right)))))]
+    [#:key 'mpair])
 
 
 ;; elem is a Type
 (dt Vector ([elem Type/c]) 
-    [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+    [#:frees (λ (f) (make-invariant (f elem)))]
     [#:key 'vector])
 
 ;; elems are all Types
 (dt HeterogenousVector ([elems (listof Type/c)])
-    [#:frees (make-invariant (combine-frees (map free-vars* elems))) (make-invariant (combine-frees (map free-idxs* elems)))]
+    [#:frees (λ (f) (make-invariant (combine-frees (map f elems))))]
     [#:key 'vector]
     [#:fold-rhs (*HeterogenousVector (map type-rec-id elems))])
 
 ;; elem is a Type
-(dt Box ([elem Type/c]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+(dt Box ([elem Type/c]) 
+    [#:frees (λ (f) (make-invariant (f elem)))]
     [#:key 'box])  
 
+;; elem is a Type
+(dt Channel ([elem Type/c])
+    [#:frees (λ (f) (make-invariant (f elem)))]
+    [#:key 'channel])
+
 ;; name is a Symbol (not a Name)
-(dt Base ([name symbol?] [contract syntax?]) [#:frees #f] [#:fold-rhs #:base] [#:intern name]
+(dt Base ([name symbol?] [contract syntax?]) 
+    [#:frees #f] [#:fold-rhs #:base] [#:intern name]
     [#:key (case name
 	     [(Number Integer) 'number]
 	     [(Boolean) 'boolean]
@@ -97,9 +142,9 @@
 	     [else #f])])
 
 ;; body is a Scope
-(dt Mu ([body (scope-depth 1)]) #:no-provide [#:frees (free-vars* body) (without-below 1 (free-idxs* body))]
+(dt Mu ([body (scope-depth 1)]) #:no-provide [#:frees (λ (f) (f body))]
     [#:fold-rhs (*Mu (*Scope (type-rec-id (Scope-t body))))]
-    [#:key (Type-key body)])    
+    [#:key (Type-key body)])
 
 ;; n is how many variables are bound here
 ;; body is a Scope
@@ -108,7 +153,7 @@
                       [body (scope-depth n)])
                      (#:syntax [stx (or/c #f syntax?)])
                      [result Poly?])]
-    [#:frees (free-vars* body) (without-below n (free-idxs* body))]
+    [#:frees (λ (f) (f body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
                   (*Poly n (add-scopes n (type-rec-id body*))))]
     [#:key (Type-key body)])
@@ -122,7 +167,7 @@
                      (#:syntax [stx (or/c #f syntax?)])
                      [result PolyDots?])]
     [#:key (Type-key body)]
-    [#:frees (free-vars* body) (without-below n (free-idxs* body))]
+    [#:frees (λ (f) (f body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
                   (*PolyDots n (add-scopes n (type-rec-id body*))))])
 
@@ -148,7 +193,12 @@
     [#:fold-rhs (*Values (map type-rec-id rs))])
 
 (dt ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])
-    [#:frees (λ (f) (combine-frees (map f (cons dty rs))))]
+    [#:frees (if (symbol? dbound)
+                 (hash-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
+                 (combine-frees (map free-vars* (cons dty rs))))
+             (if (symbol? dbound)
+                 (combine-frees (cons (make-immutable-hasheq (list (cons dbound Covariant))) (map free-idxs* (cons dty rs))))
+                 (combine-frees (map free-idxs* (cons dty rs))))]
     [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
 ;; arr is NOT a Type
@@ -165,10 +215,10 @@
                                    dom))
                       (match drest
                         [(cons t (? symbol? bnd))
-                         (list (fix-bound (flip-variances (free-vars* t)) bnd))]                          
-                        [(cons t (? number? bnd)) 
+                         (list (hash-remove (flip-variances (free-vars* t)) bnd))]
+                        [(cons t _)
                          (list (flip-variances (free-vars* t)))]
-                        [#f null])
+                        [_ null])
                       (list (free-vars* rng))))
              (combine-frees 
               (append (map (compose flip-variances free-idxs*) 
@@ -177,10 +227,11 @@
                                    dom))
                       (match drest
                         [(cons t (? symbol? bnd))
+                         (list (make-immutable-hasheq (list (cons bnd Contravariant)))
+                               (flip-variances (free-idxs* t)))]
+                        [(cons t _)
                          (list (flip-variances (free-idxs* t)))]
-                        [(cons t (? number? bnd)) 
-                         (list (fix-bound (flip-variances (free-idxs* t)) bnd))]
-                        [#f null])
+                        [_ null])
                       (list (free-idxs* rng))))]
     [#:fold-rhs (*arr (map type-rec-id dom)
                       (type-rec-id rng)
@@ -196,48 +247,43 @@
 ;; arities : Listof[arr]
 (dt Function ([arities (listof arr/c)])
     [#:key 'procedure]
-    [#:frees (combine-frees (map free-vars* arities))
-             (combine-frees (map free-idxs* arities))]
+    [#:frees (λ (f) (combine-frees (map f arities)))]
     [#:fold-rhs (*Function (map type-rec-id arities))])
 
 
+(dt fld ([t Type/c] [acc identifier?] [mutable? boolean?])
+    [#:frees (λ (f) (if mutable? (make-invariant (f t)) (f t)))]
+    [#:fold-rhs (*fld (type-rec-id t) acc mutable?)]
+    [#:intern (list t (hash-id acc) mutable?)])
+
 ;; name : symbol
 ;; parent : Struct
-;; flds : Listof[Cons[Type,Bool]] type and mutability
+;; flds : Listof[fld]
 ;; proc : Function Type
 ;; poly? : is this a polymorphic type?
 ;; pred-id : identifier for the predicate of the struct
 ;; cert : syntax certifier for pred-id
-(dt Struct ([name symbol?] 
-            [parent (or/c #f Struct? Name?)] 
-            [flds (listof Type/c)]
-            #;
-            [flds (listof (cons/c Type/c boolean?))]
+;; acc-ids : names of the accessors
+;; maker-id : name of the constructor
+(dt Struct ([name symbol?]
+            [parent (or/c #f Struct? Name?)]
+            [flds (listof fld?)]
             [proc (or/c #f Function?)]
-            [poly? boolean?] 
+            [poly? (or/c #f (listof symbol?))]
             [pred-id identifier?]
             [cert procedure?]
-            [acc-ids (listof identifier?)]
             [maker-id identifier?])
     [#:intern (list name parent flds proc)]
-    [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null)
-                                                    (if parent (list parent) null) 
-                                                    
-                                                    flds #;(map car flds))))
-             (combine-frees (map free-idxs* (append (if proc (list proc) null)
-                                                    (if parent (list parent) null)
-                                                    flds #;(map car flds))))]
+    [#:frees (λ (f) (combine-frees (map f (append (if proc (list proc) null)
+                                                           (if parent (list parent) null)                                                     
+                                                           flds))))]
     [#:fold-rhs (*Struct name 
                          (and parent (type-rec-id parent))
                          (map type-rec-id flds)
-                         #;
-                         (for/list ([(t m?) (in-pairs (in-list flds))])
-                           (cons (type-rec-id t) m?))
                          (and proc (type-rec-id proc))
                          poly?
                          pred-id
                          cert
-                         acc-ids
                          maker-id)]
     [#:key #f])
 
@@ -247,6 +293,7 @@
 
 ;; the supertype of all of these values
 (dt BoxTop () [#:fold-rhs #:base] [#:key 'box])
+(dt ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
 (dt VectorTop () [#:fold-rhs #:base] [#:key 'vector])
 (dt HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (dt MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
@@ -270,8 +317,7 @@
                                                 (and sorted? (type<? last e))
                                                 e))])
                                  sorted?))))]) 
-    [#:frees (combine-frees (map free-vars* elems))
-             (combine-frees (map free-idxs* elems))]
+    [#:frees (λ (f) (combine-frees (map f elems)))]
     [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
     [#:key (let loop ([res null] [ts elems])
              (if (null? ts) res
@@ -297,8 +343,7 @@
     [#:key (Type-key parent)]
     [#:intern (list parent (hash-id pred))]
     [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]
-    [#:frees (free-vars* parent)
-             (free-idxs* parent)])
+    [#:frees (λ (f) (f parent))])
     
 
 ;; t : Type
@@ -310,14 +355,10 @@
 (dt Class ([pos-flds (listof Type/c)]
            [name-flds (listof (list/c symbol? Type/c boolean?))]
            [methods (listof (list/c symbol? Function?))])
-    [#:frees (combine-frees
-              (map free-vars* (append pos-flds 
-                                      (map cadr name-flds)
-                                      (map cadr methods))))
-             (combine-frees
-              (map free-idxs* (append pos-flds 
-                                      (map cadr name-flds)
-                                      (map cadr methods))))]
+    [#:frees (λ (f) (combine-frees
+                     (map f (append pos-flds 
+                                    (map cadr name-flds)
+                                    (map cadr methods)))))]
     [#:key 'class]
     [#:fold-rhs (match (list pos-flds name-flds methods)
                   [(list
@@ -334,6 +375,13 @@
 
 ;; cls : Class
 (dt Instance ([cls Type/c]) [#:key 'instance])
+
+;; sequences
+;; includes lists, vectors, etc
+;; tys : sequence produces this set of values at each step
+(dt Sequence ([tys (listof Type/c)])
+    [#:frees (λ (f) (combine-frees (map f tys)))]
+    [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -430,6 +478,9 @@
               (*ValuesDots (map sb rs)
                            (sb dty)
                            (if (eq? dbound name) (+ count outer) dbound))]
+       [#:ListDots dty dbound
+                   (*ListDots (sb dty)
+                              (if (eq? dbound name) (+ count outer) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body* 
                    (let ([body (remove-scopes n body*)])
@@ -478,6 +529,9 @@
                      (*ValuesDots (map sb rs)
                                   (sb dty)
                                   (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
+       [#:ListDots dty dbound
+                   (*ListDots (sb dty)
+                              (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body* 
                    (let ([body (remove-scopes n body*)])

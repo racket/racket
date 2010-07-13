@@ -176,13 +176,14 @@
 
 (define (add-solutions!)
   (define (add! solution)
-    (cond [(not (mcar solutions))
-           (set-mcar! solutions solution)
-           (set-mcdr! solutions solution)]
-          [(bytes<? solution (mcar solutions))
-           (set-mcar! solutions solution)]
-          [(bytes>? solution (mcdr solutions))
-           (set-mcdr! solutions solution)]))
+    (let ((head (mcar solutions)))
+      (cond [(not head)
+             (set-mcar! solutions solution)
+             (set-mcdr! solutions solution)]
+            [(bytes<? solution head)
+             (set-mcar! solutions solution)]
+            [(bytes>? solution (mcdr solutions))
+             (set-mcdr! solutions solution)])))
   (let* ([s (list->bytes
              (for/list ([pos (in-range size)])
                (for/or ([color (in-range 10)])

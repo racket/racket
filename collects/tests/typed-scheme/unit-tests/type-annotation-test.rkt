@@ -4,7 +4,7 @@
          typed-scheme/private/type-annotation
          typed-scheme/private/parse-type
          (types abbrev utils)
-	 (env type-environments  init-envs)
+	 (env type-env-structs init-envs)
 	 (utils tc-utils)
 	 (rep type-rep filter-rep object-rep)
          rackunit)
@@ -17,7 +17,7 @@
                                                  [ns (make-base-namespace)])
                                              (parameterize ([current-namespace ns])
                                                (namespace-require 'typed-scheme/private/prims)
-                                               (namespace-require 'typed-scheme/private/base-types-new)
+                                               (namespace-require 'typed-scheme/private/base-types)
                                                (namespace-require 'typed-scheme/private/base-types-extra)
                                                (expand 'ann-stx))))
                           ty))

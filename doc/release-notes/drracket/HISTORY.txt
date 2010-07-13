@@ -1,4 +1,12 @@
 ------------------------------
+        Version 5.1
+------------------------------
+
+   . Check Syntax now reports obligation information 
+     (via a new item in the "View" menu)
+   . added file-horizontal and flip-vertical to 2htdp/image
+
+------------------------------
         Version 5.0
 ------------------------------
 

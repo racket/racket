@@ -1,5 +1,4 @@
-#reader scribble/reader
-#lang scheme/gui
+#lang at-exp scheme/gui
 
 (require scribble/srcdoc)
 (require/doc scheme/base scribble/manual)
@@ -355,8 +354,7 @@
                                 state in-cb
                                 (build-labels rb))]
               [else (let ([i (- total n)])
-                      (if (or (string=? state (send rb get-item-label i))
-                              (string=? state (send rb get-item-plain-label i)))
+                      (if (ith-item-matches? rb state i)
                           (if (send rb is-enabled? i)
                               (send rb set-selection i)
                               (error 'test:set-radio-box!
@@ -371,6 +369,15 @@
                     "expected a string or a number as second arg, got: ~e (other arg: ~e)"
                     state in-cb)]))))
 
+(define (ith-item-matches? rb state i)
+  (cond
+    [(string? state)
+     (or (string=? state (send rb get-item-label i))
+         (string=? state (send rb get-item-plain-label i)))]
+    [(regexp? state)
+     (or (regexp-match state (send rb get-item-label i))
+         (regexp-match state (send rb get-item-plain-label i)))]))
+
 ;; set-radio-box-item! : string -> void
 (define (set-radio-box-item! state) 
   (control-action
@@ -383,8 +390,7 @@
          (cond
            [(zero? n) (error 'test:set-radio-box-item! "internal error")]
            [else (let ([i (- total n)])
-                   (if (or (string=? state (send rb get-item-label i))
-                           (string=? state (send rb get-item-plain-label i)))
+                   (if (ith-item-matches? rb state i)
                        (if (send rb is-enabled? i)
                            (send rb set-selection i)
                            (error 'test:set-radio-box!
@@ -392,14 +398,23 @@
                                   state))
                        (loop (- n 1))))]))))))
 
-;; entry-matches : string -> radio-box -> boolean
+;; entry-matches : string | regexp -> radio-box -> boolean
 (define (entry-matches name)
   (λ (rb)
     (let loop ([n (send rb get-number)])
-      (and (not (zero? n))
-           (or (equal? name (send rb get-item-label (- n 1)))
-               (equal? name (send rb get-item-plain-label (- n 1)))
-               (loop (- n 1)))))))
+      (cond
+        [(zero? n) #f]
+        [else
+         (let ([itm (send rb get-item-label (- n 1))]
+               [pln-itm (send rb get-item-plain-label (- n 1))])
+           (or (cond
+                 [(string? name)
+                  (or (equal? name itm)
+                      (equal? name pln-itm))]
+                 [(regexp? name)
+                  (or (regexp-match name itm)
+                      (regexp-match name pln-itm))])
+               (loop (- n 1))))]))))
 
 ;;; CHOICE 
 
@@ -844,11 +859,12 @@
  
  (proc-doc/names
   test:set-radio-box!
-  (-> (or/c string? (is-a?/c radio-box%)) (or/c string? number?) void?)
+  (-> (or/c string? regexp? (is-a?/c radio-box%)) (or/c string? number?) void?)
   (radio-box state)
-  @{Sets the radio-box to @scheme[state]. If @scheme[state] is a
-         string, this function finds the choice with that label and
-         if it is a number, it uses the number as an index into the
+  @{Sets the radio-box to the label matching @scheme[state]. If @scheme[state] is a
+         string, this function finds the choice with that label. 
+         If it is a regexp, this function finds the first choice whose label matches the regexp.
+         If it is a number, it uses the number as an index into the
          state. If the number is out of range or if the label isn't
          in the radio box, an exception is raised.
 
@@ -858,9 +874,9 @@
  
  (proc-doc/names
   test:set-radio-box-item!
-  (-> string? void?)
+  (-> (or/c string? regexp?) void?)
   (entry)
-  @{Finds a @scheme[radio-box%] that has a label @scheme[entry]
+  @{Finds a @scheme[radio-box%] that has a label matching @scheme[entry]
           and sets the radio-box to @scheme[entry].})
  
  (proc-doc/names

@@ -4,6 +4,9 @@
 ;; http://shootout.alioth.debian.org/
 ;; Based on the Perl version of the benchmark
 ;; adapted with a GMP interface by Eli Barzilay
+;;
+;; Note that this was later used by several other shootout submissions
+;; without attribution.
 
 (require racket/cmdline
          (for-syntax racket/base)

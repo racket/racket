@@ -369,6 +369,7 @@ static void exit_or_escape(Scheme_Thread *p);
 
 static int resume_suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static int cust_box_ready(Scheme_Object *o);
 
 static int can_break_param(Scheme_Thread *p);
 
@@ -419,6 +420,8 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 #ifdef MZ_PRECISE_GC
 unsigned long scheme_get_current_thread_stack_start(void);
 #endif
+
+SHARED_OK Scheme_Object *initial_cmdline_vec;
 
 /*========================================================================*/
 /*                             initialization                             */
@@ -557,6 +560,8 @@ void scheme_init_thread(Scheme_Env *env)
   scheme_add_evt(scheme_thread_suspend_type, (Scheme_Ready_Fun)resume_suspend_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_thread_resume_type, (Scheme_Ready_Fun)resume_suspend_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_thread_dead_type, (Scheme_Ready_Fun)dead_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_cust_box_type, cust_box_ready, NULL, NULL, 0);
+
 
   scheme_add_global_constant("make-custodian",
 			     scheme_make_prim_w_arity(make_custodian,
@@ -1870,6 +1875,12 @@ static Scheme_Object *custodian_box_p(int argc, Scheme_Object *argv[])
   else
     return scheme_false;
 }
+
+static int cust_box_ready(Scheme_Object *o)
+{
+  return ((Scheme_Custodian_Box *)o)->cust->shut_down;
+}
+
 
 #ifndef MZ_PRECISE_GC
 void scheme_clean_cust_box_list(void)
@@ -3258,6 +3269,7 @@ static Scheme_Object *def_nested_exn_handler(int argc, Scheme_Object *argv[])
   if (scheme_current_thread->nester) {
     Scheme_Thread *p = scheme_current_thread;
     p->cjs.jumping_to_continuation = (Scheme_Object *)scheme_current_thread;
+    p->cjs.alt_full_continuation = NULL;
     p->cjs.val = argv[0];
     p->cjs.is_kill = 0;
     scheme_longjmp(*p->error_buf, 1);
@@ -3861,6 +3873,7 @@ static void exit_or_escape(Scheme_Thread *p)
     if (p->running & MZTHREAD_KILLED)
       p->running -= MZTHREAD_KILLED;
     p->cjs.jumping_to_continuation = (Scheme_Object *)p;
+    p->cjs.alt_full_continuation = NULL;
     p->cjs.is_kill = 1;
     scheme_longjmp(*p->error_buf, 1);
   }
@@ -4106,7 +4119,7 @@ void scheme_thread_block(float sleep_time)
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
 
-#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
+#if defined(UNIX_PROCESSES) && !defined(MZ_PLACES_WAITPID)
   /* Reap zombie processes: */
   scheme_check_child_done();
 #endif
@@ -4145,6 +4158,9 @@ void scheme_thread_block(float sleep_time)
 
 #ifdef MZ_USE_FUTURES
   scheme_check_future_work();
+#endif
+#ifdef MZ_USE_MZRT
+  scheme_check_foreign_work();
 #endif
 
   if (!do_atomic && (sleep_end >= 0.0)) {
@@ -6570,6 +6586,13 @@ static Scheme_Object *parameter_procedure_eq(int argc, Scheme_Object **argv)
 	  : scheme_false);
 }
 
+void scheme_set_command_line_arguments(Scheme_Object *vec)
+{
+  if (!initial_cmdline_vec)
+    REGISTER_SO(initial_cmdline_vec);
+  initial_cmdline_vec = vec;
+}
+
 int scheme_new_param(void)
 {
   return max_configs++;
@@ -6746,7 +6769,10 @@ static void make_initial_config(Scheme_Thread *p)
   
   {
     Scheme_Object *zlv;
-    zlv = scheme_make_vector(0, NULL);
+    if (initial_cmdline_vec)
+      zlv = initial_cmdline_vec;
+    else
+      zlv = scheme_make_vector(0, NULL);
     init_param(cells, paramz, MZCONFIG_CMDLINE_ARGS, zlv);
   }
 
@@ -7409,7 +7435,7 @@ static void get_ready_for_GC()
 #ifdef WINDOWS_PROCESSES
   scheme_suspend_remembered_threads();
 #endif
-#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
+#if defined(UNIX_PROCESSES) && !defined(MZ_PLACES_WAITPID)
   scheme_block_child_signals(1);
 #endif
 
@@ -7440,7 +7466,7 @@ static void done_with_GC()
 #ifdef WINDOWS_PROCESSES
   scheme_resume_remembered_threads();
 #endif
-#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
+#if defined(UNIX_PROCESSES) && !defined(MZ_PLACES_WAITPID)
   scheme_block_child_signals(0);
 #endif
 

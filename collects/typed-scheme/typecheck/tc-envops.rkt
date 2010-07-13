@@ -9,16 +9,12 @@
          (rep type-rep object-rep)
          (utils tc-utils)
          (types resolve)
-         (only-in (env type-environments lexical-env) env? update-type/lexical env-map env-props replace-props)
+         (only-in (env type-env-structs lexical-env) 
+                  env? update-type/lexical env-map env-props replace-props)
          scheme/contract scheme/match
          mzlib/trace unstable/debug unstable/struct
          (typecheck tc-metafunctions)
          (for-syntax scheme/base))
-
-(define (replace-nth l i f)
-  (cond [(null? l) (error 'replace-nth "list not long enough" l i f)]
-        [(zero? i) (cons (f (car l)) (cdr l))]
-        [else (cons (car l) (replace-nth (cdr l) (sub1 i) f))]))
 
 ;(trace replace-nth)
 
@@ -42,15 +38,25 @@
      (make-Syntax (update t (-not-filter u x rst)))]
     
     ;; struct ops
-    [((Struct: nm par flds proc poly pred cert acc-ids maker-id) 
+    [((Struct: nm par flds proc poly pred cert maker-id) 
       (TypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))     
      (make-Struct nm par 
-                  (replace-nth flds idx 
-                               (lambda (e) (update e (-filter u x rst))))
-                  proc poly pred cert acc-ids maker-id)]
-    [((Struct: nm par flds proc poly pred cert acc-ids maker-id) 
+                  (list-update flds idx 
+                            (match-lambda [(fld: e acc-id #f) 
+                                           (make-fld
+                                            (update e (-filter u x rst))
+                                            acc-id #f)]
+                                          [_ (int-err "update on mutable struct field")]))
+                  proc poly pred cert maker-id)]
+    [((Struct: nm par flds proc poly pred cert maker-id) 
       (NotTypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))
-     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (-not-filter u x rst)))) proc poly pred cert acc-ids maker-id)]
+     (make-Struct nm par (list-update flds idx 
+                                      (match-lambda [(fld: e acc-id #f) 
+                                                     (make-fld
+                                                      (update e (-not-filter u x rst))
+                                                      acc-id #f)]
+                                          [_ (int-err "update on mutable struct field")]))
+                  proc poly pred cert maker-id)]
     
     ;; otherwise
     [(t (TypeFilter: u (list) _))
@@ -70,7 +76,7 @@
   (define-values (props atoms) (combine-props fs (env-props env) flag))
   (for/fold ([Γ (replace-props env (append atoms props))]) ([f atoms])
     (match f
-      [(Bot:) (set-box! flag #f) (env-map (lambda (x) (cons (car x) (Un))) Γ)]
+      [(Bot:) (set-box! flag #f) (env-map (lambda (k v) (Un)) Γ)]
       [(or (TypeFilter: _ _ x) (NotTypeFilter: _ _ x))
        (update-type/lexical (lambda (x t) (let ([new-t (update t f)])
                                             (when (type-equal? new-t (Un))

@@ -1,10 +1,10 @@
 #lang scheme/base
 (provide (all-defined-out))
 (require "../utils/utils.rkt"
-         "type-env.rkt" 
+         "global-env.rkt" 
 	 "type-name-env.rkt"
 	 "type-alias-env.rkt"
-         unstable/struct
+         unstable/struct racket/dict
          (rep type-rep object-rep filter-rep rep-utils)
 	 (for-template (rep type-rep object-rep filter-rep) 
 		       (types union)
@@ -25,11 +25,11 @@
     [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
     [(Base: n cnt) `(make-Base ',n (quote-syntax ,cnt))]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
-    [(Struct: name parent flds proc poly? pred-id cert acc-ids maker-id)
+    [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
+    [(Struct: name parent flds proc poly? pred-id cert maker-id)
      `(make-Struct ,(sub name) ,(sub parent) 
                    ,(sub flds) ,(sub proc) ,(sub poly?)
                    (quote-syntax ,pred-id) (syntax-local-certifier)
-                   (list ,@(for/list ([a acc-ids]) `(quote-syntax ,a)))
                    (quote-syntax ,maker-id))]
     [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx))]
     [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]
@@ -80,7 +80,7 @@
                  (show-sharing #f)
                  (booleans-as-true/false #f))                   
     (with-syntax ([registers (filter (lambda (x) x) (type-name-env-map f))])
-      #'(begin (begin-for-syntax  . registers)))))
+      #'(begin-for-syntax  . registers))))
 
 (define (talias-env-init-code)    
   (define (f id ty)
@@ -91,18 +91,20 @@
                  (show-sharing #f)
                  (booleans-as-true/false #f))                   
     (with-syntax ([registers (filter (lambda (x) x) (type-alias-env-map f))])
-      #'(begin (begin-for-syntax  . registers)))))
+      #'(begin-for-syntax  . registers))))
 
-(define (env-init-code)    
+(define (env-init-code syntax-provide? provide-tbl def-tbl)
   (define (f id ty)
-    (if (bound-in-this-module id)
+    (if (and (bound-in-this-module id)
+             ;; if there are no syntax provides, then we only need this identifier if it's provided
+             #;(or syntax-provide? (dict-ref provide-tbl id #f)))     
         #`(register-type #'#,id #,(datum->syntax #'here (print-convert ty)))
         #f))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
                  (booleans-as-true/false #f))                   
-    (with-syntax ([registers (filter (lambda (x) x) (type-env-map f))])
-      #'(begin (begin-for-syntax  . registers)))))
+    (with-syntax ([registers (filter values (type-env-map f))])
+      #'(begin-for-syntax . registers))))
 
 
 

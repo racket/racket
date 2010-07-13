@@ -21,7 +21,7 @@
 ;; running a browser on local files (like NEU).  If you use this, then
 ;; it is a good idea to put the documentation tree somewhere local, to
 ;; have better interaction times and not overload the PLT server.
-;; (define doc-url "http://download.racket-lang.org/doc/4.1/html/")
+;; (define doc-url "http://download.racket-lang.org/docs/5.0/html/")
 ;; (define (send-main-page #:sub [sub "index.html"]
 ;;                         #:fragment [fragment #f] #:query [query #f])
 ;;   (define (part pfx x) (if x (list pfx x) '()))

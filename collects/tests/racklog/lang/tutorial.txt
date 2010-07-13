@@ -1,0 +1,21 @@
+parent(john, douglas).
+
+
+parent(john, douglas).
+parent(bob, john).
+parent(ebbon, bob).
+
+parent(john, douglas).
+
+
+ancestor(john, douglas).
+ancestor(bob, john).
+ancestor(ebbon, bob).
+ancestor(bob, douglas).
+ancestor(ebbon, john).
+ancestor(ebbon, douglas).
+
+ancestor(bob, john).
+ancestor(ebbon, john).
+
+

@@ -3,8 +3,8 @@
 
 (Section 'optimization)
 
-(require scheme/flonum
-         scheme/fixnum
+(require racket/flonum
+         racket/fixnum
          compiler/zo-parse)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -12,8 +12,8 @@
 ;; Check JIT inlining of primitives:
 (parameterize ([current-namespace (make-base-namespace)]
 	       [eval-jit-enabled #t])
-  (namespace-require 'scheme/flonum)
-  (namespace-require 'scheme/fixnum)
+  (namespace-require 'racket/flonum)
+  (namespace-require 'racket/fixnum)
   (let* ([check-error-message (lambda (name proc)
 				(unless (memq name '(eq? not null? pair?
 							 real? number? boolean? 
@@ -90,11 +90,12 @@
                                       (/ v 33333)))
 			      v)])
 		  (bin0 iv op (/ arg1 33333) (/ arg2 33333)))
-                (let ([iv (if (number? v) +nan.0 #f)])
-                  (bin0 iv op (exact->inexact arg1) +nan.0)
-                  (bin0 iv op +nan.0 (exact->inexact arg2))
-                  (unless (eq? op 'eq?)
-                    (bin0 iv op +nan.0 +nan.0))))]
+                (unless (eq? op 'make-rectangular)
+                  (let ([iv (if (number? v) +nan.0 #f)])
+                    (bin0 iv op (exact->inexact arg1) +nan.0)
+                    (bin0 iv op +nan.0 (exact->inexact arg2))
+                    (unless (eq? op 'eq?)
+                      (bin0 iv op +nan.0 +nan.0)))))]
 	 [tri0 (lambda (v op get-arg1 arg2 arg3 check-effect #:wrap [wrap values])
 		 ;; (printf "Trying ~a ~a ~a\n" op (get-arg1) arg2 arg3);
 		 (let ([name `(,op ,get-arg1 ,arg2, arg3)]
@@ -337,6 +338,12 @@
     (un-exact 10.0 '->fl 10)
     (un-exact 10.0 'fx->fl 10)
 
+    (un-exact 11 'fl->exact-integer 11.0)
+    (un-exact -1 'fl->exact-integer -1.0)
+    (un-exact (inexact->exact 5e200) 'fl->exact-integer 5e200)
+    (un-exact 11 'fl->fx 11.0)
+    (un-exact -11 'fl->fx -11.0)
+
     (bin 11 '+ 4 7)
     (bin -3 '+ 4 -7)
     (bin (expt 2 30) '+ (expt 2 29) (expt 2 29))
@@ -497,6 +504,22 @@
     (bin-exact #t 'bitwise-bit-set? (expt 2 40) 40)
     (bin-exact #f 'bitwise-bit-set? (expt 2 40) 41)
     (bin-exact #t 'bitwise-bit-set? (- (expt 2 40)) 41)
+
+    (un 1 'real-part 1+2i)
+    (un 105 'real-part 105)
+    (un-exact 10.0 'flreal-part 10.0+7.0i)
+    (un 2 'imag-part 1+2i)
+    (un-exact 0 'imag-part 106)
+    (un-exact 0 'imag-part 106.0)
+    (un-exact 7.0 'flimag-part 10.0+7.0i)
+
+    (bin 1+2i 'make-rectangular 1 2)
+    (bin-exact 1.0+2.0i 'make-rectangular 1 2.0)
+    (bin-exact 1.0+2.0i 'make-rectangular 1.0 2)
+    (bin-exact 1.0+0.5i 'make-rectangular 1.0 1/2)
+    (bin-exact 0.75+2.0i 'make-rectangular 3/4 2.0)
+    (bin-exact 1 'make-rectangular 1 0)
+    (bin-exact 1.0 'make-rectangular 1.0 0)
 
     (bin-exact #t 'char=? #\a #\a)
     (bin-exact #t 'char=? #\u1034 #\u1034)
@@ -896,6 +919,51 @@
              '(letrec ((even (lambda (x) (if (zero? x) #t (even (sub1 x))))))
                 (even 10000))))
 
+(test-comp '(lambda (a)
+              (define (x) (x))
+              (displayln a)
+              (define (y) (y))
+              (list (x) (y)))
+           '(lambda (a)
+              (letrec ([x (lambda () (x))])
+                (displayln a)
+                (letrec ([y (lambda () (y))])
+                  (list (x) (y))))))
+
+(test-comp '(lambda (a)
+              (define (x) (x))
+              (define (y) (y))
+              (list x y))
+           '(lambda (a)
+              (letrec ([x (lambda () (x))])
+                (letrec ([y (lambda () (y))])
+                  (list x y)))))
+
+(test-comp '(lambda (a)
+              (define (x) (x))
+              (displayln x)
+              (define (y) (y))
+              (list x y))
+           '(lambda (a)
+              (letrec ([x (lambda () (x))])
+                (displayln x)
+                (letrec ([y (lambda () (y))])
+                  (list x y)))))
+
+(parameterize ([compile-context-preservation-enabled 
+                ;; Avoid different amounts of unrolling
+                #t])
+  (test-comp '(lambda (a)
+                (define (x) (y))
+                (define h (+ a a))
+                (define (y) (x))
+                (list (x) (y) h))
+             '(lambda (a)
+                (define h (+ a a))
+                (letrec ([x (lambda () (y))]
+                         [y (lambda () (x))])
+                  (list (x) (y) h)))))
+
 (test-comp '(procedure? add1)
            #t)
 (test-comp '(procedure? (lambda (x) x))
@@ -980,27 +1048,27 @@
                 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
 
 (let ([check (lambda (proc arities non-arities)
-               (test-comp `(module m scheme/base
+               (test-comp `(module m racket/base
                              (define f ,proc)
                              (print (procedure? f)))
-                          `(module m scheme/base
+                          `(module m racket/base
                              (define f ,proc)
                              (print #t)))
                (for-each
                 (lambda (a)
-                  (test-comp `(module m scheme/base
+                  (test-comp `(module m racket/base
                                 (define f ,proc)
                                 (print (procedure-arity-includes? f ,a)))
-                             `(module m scheme/base
+                             `(module m racket/base
                                 (define f ,proc)
                                 (print #t))))
                 arities)
                (for-each
                 (lambda (a)
-                  (test-comp `(module m scheme/base
+                  (test-comp `(module m racket/base
                                 (define f ,proc)
                                 (print (procedure-arity-includes? f ,a)))
-                             `(module m scheme/base
+                             `(module m racket/base
                                 (define f ,proc)
                                 (print #f))))
                 non-arities))])

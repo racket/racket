@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-	 (types utils comparison resolve abbrev)
+	 (types utils comparison resolve abbrev substitute)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          scheme/match unstable/match
@@ -16,7 +16,7 @@
 
 (define-struct (exn:subtype exn:fail) (s t))
 
-;; inference failure - masked before it gets to the user program
+;; subtyping failure - masked before it gets to the user program
 (define-syntax fail!
   (syntax-rules ()
     [(_ s t) (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t))]))
@@ -196,6 +196,13 @@
        [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
+(define (subtype/flds* A flds flds*)
+  (for/fold ([A A]) ([f (in-list flds)] [f* (in-list flds*)])
+    (match* (f f*)
+      [((fld: t _ #t) (fld: t* _ #t))
+       (subtype* (subtype* A t* t) t t*)]
+      [((fld: t _ #f) (fld: t* _ #f))
+       (subtype* A t t*)])))
 
 ;; the algorithm for recursive types transcribed directly from TAPL, pg 305
 ;; List[(cons Number Number)] type type -> List[(cons Number Number)]
@@ -226,10 +233,11 @@
 	      [((Union: (list)) _) A0]
 	      ;; value types              
 	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
-	      ;; now we encode the numeric hierarchy - bletch	      
+	      ;; now we encode the numeric hierarchy - bletch
 	      [((Base: 'Integer _) (Base: 'Number _)) A0]
 	      [((Base: 'Flonum _)  (== -Real =t)) A0]
 	      [((Base: 'Integer _)  (== -Real =t)) A0]
+              [((Base: 'Flonum _)  (Base: 'InexactComplex _)) A0]
 	      [((Base: 'Flonum _)  (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
 	      [((Base: 'Integer _) (Base: 'Exact-Rational _)) A0]
@@ -237,11 +245,33 @@
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (== -Nat =t)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Integer _)) A0]
+
+              [((Base: 'Positive-Fixnum _) (Base: 'Exact-Positive-Integer _)) A0]
+	      [((Base: 'Positive-Fixnum _) (Base: 'Exact-Rational _)) A0]
+	      [((Base: 'Positive-Fixnum _) (Base: 'Number _)) A0]
+	      [((Base: 'Positive-Fixnum _) (== -Nat =t)) A0]
+	      [((Base: 'Positive-Fixnum _) (Base: 'Integer _)) A0]
+
+	      [((Base: 'Negative-Fixnum _) (Base: 'Exact-Rational _)) A0]
+	      [((Base: 'Negative-Fixnum _) (Base: 'Number _)) A0]
+	      [((Base: 'Negative-Fixnum _) (Base: 'Integer _)) A0]
+              
 	      [((== -Nat =t) (Base: 'Number _)) A0]
 	      [((== -Nat =t) (Base: 'Exact-Rational _)) A0]
 	      [((== -Nat =t) (Base: 'Integer _)) A0]
 
-	      ;; values are subtypes of their "type"
+	      [((== -Fixnum =t) (Base: 'Number _)) A0]
+	      [((== -Fixnum =t) (Base: 'Exact-Rational _)) A0]
+	      [((== -Fixnum =t) (Base: 'Integer _)) A0]
+
+              [((Base: 'Nonnegative-Flonum _) (Base: 'Flonum _)) A0]
+              [((Base: 'Nonnegative-Flonum _) (Base: 'InexactComplex _)) A0]
+              [((Base: 'Nonnegative-Flonum _) (Base: 'Number _)) A0]
+
+              [((Base: 'InexactComplex _) (Base: 'Number _)) A0]
+
+              
+              ;; values are subtypes of their "type"
 	      [((Value: (? exact-integer? n)) (Base: 'Integer _)) A0]
 	      [((Value: (and n (? number?) (? exact?) (? rational?))) (Base: 'Exact-Rational _)) A0]
 	      [((Value: (? exact-nonnegative-integer? n)) (== -Nat =t)) A0]
@@ -256,7 +286,26 @@
 	      [((Value: (? symbol? n)) (Base: 'Symbol _)) A0]
 	      [((Value: (? string? n)) (Base: 'String _)) A0]
 	      ;; tvars are equal if they are the same variable
-	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
+	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]              
+              ;; sequences are covariant
+              [((Sequence: ts) (Sequence: ts*))
+               (subtypes* A0 ts ts*)]
+              [((Listof: t) (Sequence: (list t*)))
+               (subtype* A0 t t*)]
+              [((List: ts) (Sequence: (list t*)))
+               (subtypes* A0 ts (map (λ _ t*) ts))]
+              [((HeterogenousVector: ts) (Sequence: (list t*)))
+               (subtypes* A0 ts (map (λ _ t*) ts))]
+              [((Vector: t) (Sequence: (list t*)))
+               (subtype* A0 t t*)]
+              [((Base: 'String _) (Sequence: (list t*)))
+               (subtype* A0 -Char t*)]
+              [((Base: 'Bytes _) (Sequence: (list t*)))
+               (subtype* A0 -Nat t*)]
+              [((Base: 'Input-Port _) (Sequence: (list t*)))
+               (subtype* A0 -Nat t*)]
+              [((Hashtable: k v) (Sequence: (list k* v*)))
+               (subtypes* A0 (list k v) (list k* v*))]
               ;; special-case for case-lambda/union
               [((Function: arr1) (Function: (list arr2)))
                (when (null? arr1) (fail! s t))
@@ -276,13 +325,17 @@
 	      [((Pair: a d) (Pair: a* d*))
 	       (let ([A1 (subtype* A0 a a*)])
 		 (and A1 (subtype* A1 d d*)))]
+              ;; recur structurally on dotted lists, assuming same bounds
+              [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
+               (subtype* A0 s-dty t-dty)]
+              [((ListDots: s-dty dbound) (Listof: t-elem))
+               (subtype* A0 (substitute Univ dbound s-dty) t-elem)]
 	      ;; quantification over two types preserves subtyping
 	      [((Poly: ns b1) (Poly: ms b2)) 
 	       (=> unmatch)
 	       (unless (= (length ns) (length ms)) 
 		       (unmatch))
-					;(printf "Poly: ~n~a ~n~a~n" b1 (subst-all (map list ms (map make-F ns)) b2))
-	       (subtype* A0 b1 (subst-all (map list ms (map make-F ns)) b2))]
+	       (subtype* A0 b1 (subst-all (make-simple-substitution ms (map make-F ns)) b2))]
 	      [((Refinement: par _ _) t)
                (subtype* A0 par t)]
 	      ;; use unification to see if we can use the polytype here
@@ -308,14 +361,16 @@
                                    (fail! s t))]
 	      [(s (Union: es)) (or (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)
                                    (fail! s t))]
-	      ;; subtyping on immutable structs is covariant
-	      [((Struct: nm _ flds #f _ _ _ _ _) (Struct: nm _ flds* #f _ _ _ _ _))
-	       (subtypes* A0 flds flds*)]
-	      [((Struct: nm _ flds proc _ _ _ _ _) (Struct: nm _ flds* proc* _ _ _ _ _))
-	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
-              [((Struct: _ _ _ _ _ _ _ _ _) (StructTop: (? (lambda (s2) (type-equal? s2 s)))))
+	      ;; subtyping on immutable structs is covariant	      
+	      [((Struct: nm _ flds proc _ _ _ _) (Struct: nm _ flds* proc* _ _ _ _))
+               (let ([A (cond [(and proc proc*) (subtype* proc proc*)]
+                              [proc* (fail! proc proc*)]
+                              [else A0])])
+                 (subtype/flds* A flds flds*))]
+              [((Struct: _ _ _ _ _ _ _ _) (StructTop: (== s type-equal?)))
                A0]
               [((Box: _) (BoxTop:)) A0]
+              [((Channel: _) (ChannelTop:)) A0]
               [((Vector: _) (VectorTop:)) A0]
               [((HeterogenousVector: _) (VectorTop:)) A0]
               [((HeterogenousVector: (list e ...)) (Vector: e*))
@@ -323,11 +378,11 @@
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy
-	      [((Struct: nm (? Type? parent) flds proc _ _ _ _ _) other) 
+	      [((Struct: nm (? Type? parent) flds proc _ _ _ _) other) 
                ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
-	      [((Struct: 'Promise _ (list t) _ _ _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _ _ _)) (subtype* A0 t t*)]
+	      [((Struct: (== promise-sym) _ (list t) _ _ _ _ _) (Struct: (== promise-sym) _ (list t*) _ _ _ _ _)) (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise
 	      [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; trivial case for Result

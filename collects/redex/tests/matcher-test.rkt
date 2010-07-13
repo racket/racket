@@ -136,7 +136,7 @@
                    `(,(make-repeat '(name x (name y b)) (list (make-bind 'x '()) (make-bind 'y '())) #f #f)))
     (test-ellipses '((in-hole (name x a) (name y b)) ...)
                    `(,(make-repeat '(in-hole (name x a) (name y b)) 
-                                   (list (make-bind 'x '()) (make-bind 'y '())) #f #f)))
+                                   (list (make-bind 'y '()) (make-bind 'x '())) #f #f)))
     
     (test-ellipses '(a ..._1)
                    `(,(make-repeat 'a (list) '..._1 #f)))
@@ -185,6 +185,7 @@
     (test-empty '((name x a) ...) '() (list (make-test-mtch (make-bindings (list (make-bind 'x '()))) '() none)))
     (test-empty '((name x a) ...) '(a) (list (make-test-mtch (make-bindings (list (make-bind 'x '(a)))) '(a) none)))
     (test-empty '((name x a) ...) '(a a) (list (make-test-mtch (make-bindings (list (make-bind 'x '(a a)))) '(a a) none)))
+    (test-empty '(hole ...) '() (list (make-test-mtch (make-bindings empty) '() none)))
     
     (test-empty '(b ... a ...) '() (list (make-test-mtch (make-bindings empty) '() none)))
     (test-empty '(b ... a ...) '(a) (list (make-test-mtch (make-bindings empty) '(a) none)))
@@ -625,10 +626,11 @@
                   "compile-pattern"
                   equal?)
     
-    (test-ellipsis-binding '((number_1 number_2) ...) '((1 2)))
-    (test-ellipsis-binding '((name x number_1) ...) '(1 2))
-    (test-ellipsis-binding '(((number_1 ...) (number_2 ...)) ...) '(((1) (2))))
-    (test-ellipsis-binding '(number ... variable) '(1 x))
+    (test-ellipsis-binding '((number_1 number_2) ...) '() '((1 2)))
+    (test-ellipsis-binding '((name x number_1) ...) '() '(1 2))
+    (test-ellipsis-binding '(((number_1 ...) (number_2 ...)) ...) '() '(((1) (2))))
+    (test-ellipsis-binding '(number ... variable) '() '(1 x))
+    (test-ellipsis-binding '((in-hole H_1 number_1) ...) '((H hole)) '(1 2))
     
     (cond
       [(= failures 0)
@@ -660,10 +662,14 @@
       exp)
      ans))
   
+  ;; make-nt-map : (listof nt) -> (listof (listof symbol))
+  (define (make-nt-map nts)
+    (map (λ (x) (list (nt-name x))) nts))
+  
   ;; test-lang : sexp[pattern] sexp[term] answer (list/c nt) -> void
   ;; returns #t if pat matching exp with the language defined by the given nts
   (define (test-lang pat exp ans nts)
-    (let ([nt-map (map (λ (x) (list (nt-name x))) nts)])
+    (let ([nt-map (make-nt-map nts)])
       (run-match-test
        `(match-pattern (compile-pattern (compile-language 'pict-stuff-not-used ',nts ',nt-map) ',pat #t) ',exp)
        (match-pattern 
@@ -751,10 +757,10 @@
   (define (test-suite:non-underscore-binder? x)
     (memq x '(number any variable string)))
   
-  ;; test-ellipsis-binding: sexp sexp -> boolean
+  ;; test-ellipsis-binding: sexp sexp sexp -> boolean
   ;; Checks that `extract-empty-bindings' produces bindings in the same order
   ;; as the matcher, as required by `collapse-single-multiples'
-  (define (test-ellipsis-binding pat exp)
+  (define (test-ellipsis-binding pat nts/sexp exp)
     (define (binding-names bindings)
       (map (λ (b)
              (cond [(bind? b) (bind-name b)]
@@ -767,7 +773,8 @@
        (mtch-bindings
         (car 
          ((compiled-pattern-cp
-           (compile-pattern (compile-language 'pict-stuff-not-used '() '()) pat #t))
+           (let ([nts (map (λ (nt-def) (nt (car nt-def) (map rhs (cdr nt-def)))) nts/sexp)])
+             (compile-pattern (compile-language 'pict-stuff-not-used nts (make-nt-map nts)) pat #t)))
           exp
           #t)))))
      (binding-names (extract-empty-bindings test-suite:non-underscore-binder? pat))))

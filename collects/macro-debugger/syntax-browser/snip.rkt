@@ -1,16 +1,14 @@
-#lang scheme/base
-(require scheme/class
-         (rename-in unstable/class-iop
-                    [send/i send:])
-         scheme/match
-         mzlib/string
-         mred
+#lang racket/base
+(require racket/class
+         racket/gui
+         racket/match
+         (only-in mzlib/string read-from-string)
          framework
-         "interfaces.ss"
-         "display.ss"
-         "controller.ss"
-         "keymap.ss"
-         "prefs.ss")
+         "interfaces.rkt"
+         "display.rkt"
+         "controller.rkt"
+         "keymap.rkt"
+         "prefs.rkt")
 
 (provide syntax-snip%
          marshall-syntax
@@ -167,7 +165,7 @@
 
 ;; SNIPCLASS
 
-;; COPIED AND MODIFIED from mrlib/syntax-browser.ss
+;; COPIED AND MODIFIED from mrlib/syntax-browser.rkt
 (define syntax-snipclass%
   (class snip-class%
     (define/override (read stream)
@@ -178,4 +176,4 @@
 (define snip-class (new syntax-snipclass%))
 (send snip-class set-version 2)
 (send snip-class set-classname
-      (format "~s" '(lib "macro-debugger/syntax-browser/snip.ss")))
+      (format "~s" '(lib "macro-debugger/syntax-browser/snip.rkt")))

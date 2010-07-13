@@ -146,7 +146,7 @@ Generates a list of @racket[n] fresh identifiers.
 
 @;{----}
 
-@defparam[current-caught-disappeared-uses ids
+@defparam[current-recorded-disappeared-uses ids
           (or/c (listof identifier?) false/c)]{
 
 Parameter for tracking disappeared uses. Tracking is ``enabled'' when
@@ -165,33 +165,22 @@ object.
 
 }
 
-@defform[(with-catching-disappeared-uses body-expr)]{
-
-Evaluates the @racket[body-expr], catching identifiers looked up using
-@racket[syntax-local-value/catch]. Returns two values: the result of
-@racket[body-expr] and the list of caught identifiers.
-
-}
-
-@defproc[(syntax-local-value/catch [id identifier?] [predicate (-> any/c boolean?)])
+@defproc[(syntax-local-value/record [id identifier?] [predicate (-> any/c boolean?)])
          any/c]{
 
 Looks up @racket[id] in the syntactic environment (as
 @racket[syntax-local-value]). If the lookup succeeds and returns a
 value satisfying the predicate, the value is returned and @racket[id]
-is recorded (``caught'') as a disappeared use. If the lookup fails or
-if the value does not satisfy the predicate, @racket[#f] is returned
-and the identifier is not recorded as a disappeared use.
-
-If not used within the extent of a @racket[with-disappeared-uses] form
-or similar, has no effect.
+is recorded as a disappeared use. If the lookup fails or if the value
+does not satisfy the predicate, @racket[#f] is returned and the
+identifier is not recorded as a disappeared use.
 
 }
 
 @defproc[(record-disappeared-uses [ids (listof identifier?)])
          void?]{
 
-Add @racket[ids] to the current disappeared uses.
+Add @racket[ids] to @racket[(current-recorded-disappeared-uses)].
 
 If not used within the extent of a @racket[with-disappeared-uses] form
 or similar, has no effect.
@@ -247,6 +236,17 @@ in the argument list are automatically converted to symbols.
 
 (Scribble doesn't show it, but the DrRacket pinpoints the location of
 the second error but not of the first.)
+}
+
+@margin-note{This binding was added by Vincent St-Amour.}
+@defproc[(format-unique-id [lctx (or/c syntax? #f)]
+                    	   [#:source src (or/c syntax? #f) #f]
+                    	   [#:props props (or/c syntax? #f) #f]
+                    	   [#:cert cert (or/c syntax? #f) #f]
+                    	   [fmt string?]
+                    	   [v (or/c string? symbol? identifier? keyword? char? number?)] ...)
+         identifier?]{
+Like @racket[format-id], but returned identifiers are guaranteed to be unique.
 }
 
 @defproc[(internal-definition-context-apply [intdef-ctx internal-definition-context?]
@@ -408,7 +408,12 @@ object referring to one identifier into a syntax object referring to another.
 
 }
 
-@defproc[(head-expand [stx syntax?] [stop-list (listof identifier?)]) syntax?]{
+@defproc[(head-expand [stx syntax?]
+                      [stop-list (listof identifier?) null]
+                      [intdef-ctx (or/c internal-definitions-context?
+                                        (non-empty-listof internal-definitions-context?)
+                                        #f)])
+         syntax?]{
 
 This function performs head expansion on @scheme[stx].  In other words, it uses
 @scheme[local-expand] to expand @scheme[stx] until its head identifier is a core
@@ -416,7 +421,7 @@ form (a member of @scheme[(kernel-form-identifier-list)]) or a member of
 @scheme[stop-list], or until it can not be expanded further (e.g. due to error).
 
 It is equivalent to @scheme[(local-expand stx (syntax-local-context) (append
-stop-ids (kernel-form-identifier-list) #f))].
+stop-ids (kernel-form-identifier-list) intdef-ctx))].
 
 }
 

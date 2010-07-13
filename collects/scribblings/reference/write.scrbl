@@ -81,7 +81,8 @@ escapes:
 
 @itemize[
 
-  @item{@FmtMark{n} or @FmtMark{%} prints a newline, the same as @litchar{\n}}
+  @item{@FmtMark{n} or @FmtMark{%} prints a newline character (which
+  is equivalent to @litchar{\n} in a literal format string)}
 
   @item{@FmtMark{a} or @FmtMark{A} @racket[display]s the next argument
   among the @racket[v]s}
@@ -92,10 +93,18 @@ escapes:
   @item{@FmtMark{v} or @FmtMark{V} @racket[print]s the next argument
   among the @racket[v]s}
  
+  @item{@FmtMark{.}@nonterm{c} where @nonterm{c} is @litchar{a},
+  @litchar{A}, @litchar{s}, @litchar{S}, @litchar{v}, or @litchar{V}:
+  truncates @racket[display], @racket[write], or @racket[print] output
+  to @racket[(error-print-width)] characters, using @litchar{...} as
+  the last three characters if the untruncated output would be longer}
+
   @item{@FmtMark{e} or @FmtMark{E} outputs the next argument among the
   @racket[v]s using the current error value conversion handler (see
   @racket[error-value->string-handler]) and current error printing
-  width} @item{@FmtMark{c} or @FmtMark{C} @racket[write-char]s the
+  width}
+
+  @item{@FmtMark{c} or @FmtMark{C} @racket[write-char]s the
   next argument in @racket[v]s; if the next argument is not a
   character, the @exnraise[exn:fail:contract]}
 

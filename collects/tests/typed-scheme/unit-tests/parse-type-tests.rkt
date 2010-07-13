@@ -1,12 +1,13 @@
 #lang scheme/base
 (require "test-utils.ss" (for-syntax scheme/base)
+         racket/set
          (utils tc-utils)
-	 (env type-alias-env type-environments type-name-env init-envs)
+	 (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
 	 (rep type-rep)
 	 (rename-in (types comparison subtype union utils convenience)
                     [Un t:Un] [-> t:->])
-         (private base-types-new base-types-extra colon)
-         (for-template (private base-types-new base-types-extra base-env colon))
+         (private base-types base-types-extra colon)
+         (for-template (private base-types base-types-extra base-env colon))
          (private parse-type)
          rackunit)
 
@@ -74,6 +75,11 @@
    [(-> (values Number Boolean Number)) (t:-> (-values (list N B N)))]
    [(Number -> Number) (t:-> N N)]
    [(Number -> Number) (t:-> N N)]
+   [(All (A) Number -> Number) (-poly (a) (t:-> N N))]
+   [(All (A) (Number -> Number)) (-poly (a) (t:-> N N))]
+   [(All (A) A -> A) (-poly (a) (t:-> a a))]
+   [(All (A) A → A) (-poly (a) (t:-> a a))]
+   [(All (A) (A -> A)) (-poly (a) (t:-> a a))]
    ;; requires transformer time stuff that doesn't work
    #;[(Refinement even?) (make-Refinement #'even?)]
    [(Number Number Number Boolean -> Number) (N N N B . t:-> . N)]
@@ -100,8 +106,7 @@
    
    [(Listof Number) (make-Listof  N)]
    
-   [a (-v a) (extend-env (list 'a) (list (-v a))
-                            initial-tvar-env)]
+   [a (-v a) (set-add initial-tvar-env 'a)]
    [(All (a ...) (a ... -> Number))
     (-polydots (a) ((list) [a a] . ->... . N))]
    

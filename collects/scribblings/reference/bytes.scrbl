@@ -134,9 +134,9 @@ positions are initialized with the given @scheme[b]s.
              (bytes-copy! s 0 s 3 4)
              s]}
 
-@defproc[(bytes-fill! [dest (and/c bytes? (not/c immutable?))] [char
- char?]) void?]{ Changes @scheme[dest] so that every position in the
- bytes is filled with @scheme[char].
+@defproc[(bytes-fill! [dest (and/c bytes? (not/c immutable?))] [b
+ byte?]) void?]{ Changes @scheme[dest] so that every position in the
+ bytes is filled with @scheme[b].
 
 @mz-examples[(define s (bytes 65 112 112 108 101))
              (bytes-fill! s 113)

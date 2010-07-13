@@ -4,7 +4,7 @@
          mrlib/bitmap-label
          racket/contract
          framework
-         scheme/unit
+         racket/unit
          racket/class
          racket/gui/base
          "drsig.rkt")

@@ -105,6 +105,12 @@ THREAD_LOCAL_DECL(static int free_list_bucket_count;)
 
 void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
 {
+#if defined(MZ_PLACES_WAITPID)
+  /* Early, to maximize the chance that no threads have been
+     created that might later receive SIGCHLD */
+  scheme_places_block_child_signal();
+#endif
+
 #ifdef MZ_PRECISE_GC
   GC_init_type_tags(_scheme_last_type_, 
                     scheme_pair_type, scheme_mutable_pair_type, scheme_weak_box_type, 
@@ -324,6 +330,7 @@ void scheme_set_report_out_of_memory(Scheme_Report_Out_Of_Memory_Proc p)
 #include <mach/mach.h>
 # ifdef MZ_PRECISE_GC
 extern void GC_attach_current_thread_exceptions_to_handler();
+extern void GC_detach_current_thread_exceptions_from_handler();
 # endif
 #endif
 
@@ -370,6 +377,18 @@ void scheme_init_os_thread_like(void *other) XFORM_SKIP_PROC
 void scheme_init_os_thread() XFORM_SKIP_PROC
 {
   scheme_init_os_thread_like(NULL);
+}
+
+void scheme_done_os_thread() XFORM_SKIP_PROC
+{
+#if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) || defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
+  free(scheme_get_thread_local_variables());
+#endif
+#ifdef OS_X
+# ifdef MZ_PRECISE_GC
+  GC_detach_current_thread_exceptions_from_handler();
+# endif
+#endif
 }
 
 /************************************************************************/

@@ -261,18 +261,22 @@
                (cdr rst)))])))
 
 
-;                                                                                   
-;                               ;;      ;;                   ;;                     
-;                               ;;      ;;                  ;;;                     
-;    ;;;;    ;;;;   ;;;;;; ;;;  ;;;;;   ;;  ;; ;;;   ;;;;  ;;;;;  ;;;;   ;;;; ;;;;; 
-;   ;;;;;;  ;;;;;;  ;;;;;;;;;;  ;;;;;;  ;;  ;;;;;;  ;;  ;;  ;;;; ;;;;;;  ;;;; ;; ;; 
-;  ;;;     ;;;  ;;; ;;  ;;  ;;  ;;  ;;; ;;  ;;  ;;    ;;;;  ;;; ;;;  ;;; ;;   ;;;;; 
-;  ;;;     ;;;  ;;; ;;  ;;  ;;  ;;  ;;; ;;  ;;  ;;  ;;; ;;  ;;; ;;;  ;;; ;;     ;;;;
-;   ;;;;;;  ;;;;;;  ;;  ;;  ;;  ;;;;;;  ;;  ;;  ;; ;;;  ;;  ;;;; ;;;;;;  ;;   ;; ;;;
-;    ;;;;    ;;;;   ;;  ;;  ;;  ;; ;;   ;;  ;;  ;;  ;;;;;;   ;;;  ;;;;   ;;   ;;;;; 
-;                                                                                   
-;                                                                                   
-;       
+;                                                                                                  
+;                                                                                                  
+;                                                                                                  
+;                                 ;;;;        ;;                        ;                          
+;                                 ;;;;        ;;                       ;;                          
+;    ;;;;;   ;;;;   ;;;;;;; ;;;;  ;;;;;;;        ;;;; ;;;  ;;;;;;;   ;;;;;   ;;;;   ;;; ;;;  ;;;;; 
+;   ;;;;;;  ;;;;;;  ;;;;;;;;;;;;; ;;;;;;;;  ;;;; ;;;;;;;;; ;;;;;;;; ;;;;;;  ;;;;;;  ;;;;;;; ;;;;;; 
+;  ;;;;;;; ;;;;;;;; ;;;; ;;; ;;;; ;;;;;;;;; ;;;; ;;;; ;;;;     ;;;;  ;;;;  ;;;;;;;; ;;;; ;; ;;;;   
+;  ;;;;    ;;;; ;;; ;;;; ;;; ;;;; ;;;; ;;;; ;;;; ;;;; ;;;;  ;;;;;;;  ;;;;  ;;;; ;;; ;;;;     ;;;;  
+;  ;;;;;;; ;;;;;;;; ;;;; ;;; ;;;; ;;;;;;;;; ;;;; ;;;; ;;;; ;;  ;;;;  ;;;;; ;;;;;;;; ;;;;      ;;;; 
+;   ;;;;;;  ;;;;;;  ;;;; ;;; ;;;; ;;;;;;;;  ;;;; ;;;; ;;;; ;;;;;;;;  ;;;;;  ;;;;;;  ;;;;    ;;;;;; 
+;    ;;;;;   ;;;;   ;;;; ;;; ;;;; ;;;;;;;   ;;;; ;;;; ;;;;  ;; ;;;;   ;;;;   ;;;;   ;;;;    ;;;;;  
+;                                                                                                  
+;                                                                                                  
+;                                                                                                  
+    
 
 ;; crop : number number number number image -> image
 ;; crops an image to be w x h from (x,y)
@@ -385,7 +389,7 @@
      (rotate-simple angle shape)]))
 
 ;; rotate-simple : angle simple-shape -> simple-shape
-(define (rotate-simple θ simple-shape)
+(define/contract (rotate-simple θ simple-shape)
   (-> number? simple-shape? simple-shape?)
   (cond
     [(line-segment? simple-shape)
@@ -488,7 +492,7 @@
   (let-values ([(left top right bottom) (points->ltrb-values points)])
     (make-ltrb left top right bottom)))
 
-(define (np-atomic-bb atomic-shape)
+(define/contract (np-atomic-bb atomic-shape)
   (-> np-atomic-shape? (values number? number? number? number?))
   (cond
     [(ellipse? atomic-shape)
@@ -506,12 +510,13 @@
                                    (text-string atomic-shape) 
                                    (text->font atomic-shape))])
        (rotated-rectangular-bounding-box w h (text-angle atomic-shape)))]
-    [(bitmap? atomic-shape)
-     (let ([bb (bitmap-raw-bitmap atomic-shape)])
+    [(flip? atomic-shape)
+     (let* ([bitmap (flip-shape atomic-shape)]
+            [bb (bitmap-raw-bitmap bitmap)])
        (let-values ([(l t r b)
-                     (rotated-rectangular-bounding-box (* (send bb get-width) (bitmap-x-scale atomic-shape))
-                                                       (* (send bb get-height) (bitmap-y-scale atomic-shape))
-                                                       (bitmap-angle atomic-shape))])
+                     (rotated-rectangular-bounding-box (* (send bb get-width) (bitmap-x-scale bitmap))
+                                                       (* (send bb get-height) (bitmap-y-scale bitmap))
+                                                       (bitmap-angle bitmap))])
          (values l t r b)))]
     [else
      (fprintf (current-error-port) "using bad bounding box for ~s\n" atomic-shape)
@@ -593,14 +598,20 @@
                 (text-style atomic-shape)
                 (text-weight  atomic-shape)
                 (text-underline atomic-shape))]
-    [(bitmap? atomic-shape)
-     (make-bitmap (bitmap-raw-bitmap atomic-shape)
-                  (bitmap-raw-mask atomic-shape)
-                  (bring-between (+ θ (bitmap-angle atomic-shape)) 360)
-                  (bitmap-x-scale atomic-shape)
-                  (bitmap-y-scale atomic-shape)
-                  #f
-                  #f)]))
+    [(flip? atomic-shape)
+     (let ([bitmap (flip-shape atomic-shape)]
+           [flipped? (flip-flipped? atomic-shape)])
+       (make-flip flipped?
+                  (make-bitmap (bitmap-raw-bitmap bitmap)
+                               (bitmap-raw-mask bitmap)
+                               (bring-between (if flipped? 
+                                                  (+ θ (bitmap-angle bitmap))
+                                                  (- (+ θ (bitmap-angle bitmap))))
+                                              360)
+                               (bitmap-x-scale bitmap)
+                               (bitmap-y-scale bitmap)
+                               #f
+                               #f)))]))
 
 ;; rotate-point : point angle -> point
 (define (rotate-point p θ)
@@ -638,6 +649,109 @@
        x]
       [else
        (loop (- x upper-bound))])))
+
+(define/chk (flip-horizontal image)
+  (rotate 90 (flip-vertical (rotate -90 image))))
+
+(define/chk (flip-vertical image)
+  (let* ([flipped-shape (flip-normalized-shape 
+                         (send image get-normalized-shape))]
+        [ltrb (normalized-shape-bb flipped-shape)])
+    (make-image (make-translate (- (ltrb-left ltrb)) (- (ltrb-top ltrb)) flipped-shape)
+                (make-bb (- (ltrb-right ltrb) (ltrb-left ltrb))
+                         (- (ltrb-bottom ltrb) (ltrb-top ltrb))
+                         (- (ltrb-bottom ltrb) (ltrb-top ltrb)))
+                #f)))
+
+(define/contract (flip-normalized-shape shape)
+  (-> normalized-shape? normalized-shape?)
+  (cond
+    [(overlay? shape)
+     (let ([top-shape (flip-normalized-shape (overlay-top shape))]
+           [bottom-shape (flip-cn-or-simple-shape (overlay-bottom shape))])
+       (make-overlay top-shape bottom-shape))]
+    [else 
+     (flip-cn-or-simple-shape shape)]))
+
+(define/contract (flip-cn-or-simple-shape shape)
+  (-> cn-or-simple-shape? cn-or-simple-shape?)
+  (cond
+    [(crop? shape)
+     (make-crop (flip-points (crop-points shape))
+                (flip-normalized-shape (crop-shape shape)))]
+    [else
+     (flip-simple shape)]))
+
+(define/contract (flip-simple simple-shape)
+  (-> simple-shape? simple-shape?)
+  (cond
+    [(line-segment? simple-shape)
+     (make-line-segment (flip-point (line-segment-start simple-shape))
+                        (flip-point (line-segment-end simple-shape))
+                        (line-segment-color simple-shape))]
+    [(curve-segment? simple-shape)
+     (make-curve-segment (flip-point (curve-segment-start simple-shape))
+                         (bring-between (- (curve-segment-s-angle simple-shape)) 360)
+                         (curve-segment-s-pull simple-shape)
+                         (flip-point (curve-segment-end simple-shape))
+                         (bring-between (- (curve-segment-e-angle simple-shape)) 360)
+                         (curve-segment-e-pull simple-shape)
+                         (curve-segment-color simple-shape))]
+    [(polygon? simple-shape)
+     (make-polygon (flip-points (polygon-points simple-shape))
+                   (polygon-mode simple-shape)
+                   (polygon-color simple-shape))]
+    [else
+     (make-translate (translate-dx simple-shape) 
+                     (- (translate-dy simple-shape))
+                     (flip-atomic (translate-shape simple-shape)))]))
+
+(define/contract (flip-atomic atomic-shape)
+  (-> np-atomic-shape? np-atomic-shape?)
+  (cond
+    [(ellipse? atomic-shape)
+     (cond
+       [(= (ellipse-width atomic-shape)
+           (ellipse-height atomic-shape))
+        atomic-shape]
+       [else
+        (let ([new-angle (bring-between (- 180 (ellipse-angle atomic-shape)) 180)])
+          (cond
+            [(< new-angle 90)
+             (make-ellipse (ellipse-width atomic-shape)
+                           (ellipse-height atomic-shape)
+                           new-angle
+                           (ellipse-mode atomic-shape)
+                           (ellipse-color atomic-shape))]
+            [else
+             (make-ellipse (ellipse-height atomic-shape)
+                           (ellipse-width atomic-shape)
+                           (- new-angle 90)
+                           (ellipse-mode atomic-shape)
+                           (ellipse-color atomic-shape))]))])]
+    [(text? atomic-shape)
+     (error 'flip "cannot flip shapes that contain text")]
+    [(flip? atomic-shape)
+     (make-flip (not (flip-flipped? atomic-shape))
+                (flip-shape atomic-shape))]))
+
+(define (flip-point point) (make-point (point-x point) (- (point-y point))))
+(define (flip-points points) (map flip-point points))
+;                                                                                                 
+;                                                                                                 
+;                                                                                                 
+;  ;;;;                        ;;               ;;                                                
+;  ;;;;                        ;;               ;;                                                
+;  ;;;;;;;   ;;;;;;;   ;;;;;        ;;;;;          ;;;;;;; ;;;;  ;;;;;;;   ;;;;;;;   ;;;    ;;;;; 
+;  ;;;;;;;;  ;;;;;;;; ;;;;;; ;;;;  ;;;;;;     ;;;; ;;;;;;;;;;;;; ;;;;;;;; ;;;;;;;;  ;;;;;  ;;;;;; 
+;  ;;;;;;;;;     ;;;; ;;;;   ;;;; ;;;;;;;     ;;;; ;;;; ;;; ;;;;     ;;;; ;;; ;;;; ;;;; ;; ;;;;   
+;  ;;;; ;;;;  ;;;;;;;  ;;;;  ;;;; ;;;;        ;;;; ;;;; ;;; ;;;;  ;;;;;;; ;;;;;;;; ;;;;;;;  ;;;;  
+;  ;;;;;;;;; ;;  ;;;;   ;;;; ;;;; ;;;;;;;     ;;;; ;;;; ;;; ;;;; ;;  ;;;;  ;;;;;;; ;;;;;     ;;;; 
+;  ;;;;;;;;  ;;;;;;;; ;;;;;; ;;;;  ;;;;;;     ;;;; ;;;; ;;; ;;;; ;;;;;;;; ;   ;;;;  ;;;;;; ;;;;;; 
+;  ;;;;;;;    ;; ;;;; ;;;;;  ;;;;   ;;;;;     ;;;; ;;;; ;;; ;;;;  ;; ;;;; ;;;;;;;;   ;;;;  ;;;;;  
+;                                                                         ;;;;;;;;                
+;                                                                          ;;;;;;                 
+;                                                                                                 
 
 
 (define/chk (polygon posns mode color)
@@ -810,6 +924,32 @@
   (make-a-polygon (adjust (regular-polygon-points side-length side-count)) 
                   mode color))
 
+(define/chk (radial-star point-count radius1 radius2 mode color)
+  (make-a-polygon (star-points radius1 radius2 point-count) mode color))
+  
+(define (star-points in-small-rad in-large-rad points)
+  (let* ([small-rad (- in-small-rad 1)]
+         [large-rad (- in-large-rad 1)]
+         [roff (floor (/ large-rad 2))])
+    (let loop ([i points])
+      (cond
+        [(zero? i) '()]
+        [else 
+         (let* ([this-p (- i 1)]
+                [theta1 (* 2 pi (/ this-p points))]
+                [theta2 (* 2 pi (/ (- this-p 1/2) points))])
+           (let-values ([(x1 y1) (find-xy small-rad theta1)]
+                        [(x2 y2) (find-xy large-rad theta2)])
+             (let ([p1 (make-point (+ large-rad x1)
+                                   (+ large-rad y1))]
+                   [p2 (make-point (+ large-rad x2)
+                                   (+ large-rad y2))])
+               (list* p1 p2 (loop (- i 1))))))]))))
+
+(define (find-xy radius theta)
+  (values (* radius (cos theta))
+          (* radius (sin theta))))
+
 (define (make-a-polygon points mode color)
   (let* ([poly (make-polygon points mode color)]
          [ltrb (simple-bb poly)]
@@ -939,6 +1079,8 @@
          
          rotate
          crop
+         flip-vertical
+         flip-horizontal
          frame
 
          place-image
@@ -971,6 +1113,7 @@
          right-triangle
          star
          star-polygon
+         radial-star
          
          line
          add-line

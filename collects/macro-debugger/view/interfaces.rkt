@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 (require unstable/class-iop
-         (prefix-in sb: "../syntax-browser/interfaces.ss"))
+         (prefix-in sb: "../syntax-browser/interfaces.rkt"))
 (provide (all-defined-out))
 
 (define-interface config<%> (sb:config<%>)
@@ -62,6 +62,7 @@
   (get-raw-deriv
    get-deriv-hidden?
    get-step-index
+   get-step-count
    invalidate-synth!
    invalidate-steps!
 

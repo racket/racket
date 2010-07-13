@@ -65,7 +65,7 @@
      (if date `(" " ,@(decode-content (list date)) ".") null)
      (if url `(" " ,(link url (tt url))) null)))))
 
-(define-on-demand bib-style (make-style "SBibliography" scheme-properties))
+(define-on-demand bib-style (make-style "RBibliography" scheme-properties))
 
 (define (bibliography #:tag [tag "doc-bibliography"] . citations)
   (make-unnumbered-part

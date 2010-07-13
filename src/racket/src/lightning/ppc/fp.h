@@ -215,6 +215,7 @@
                                   MOVEIri(JIT_AUX,-4), \
                                   STFIWXrrr(7,JIT_SP,JIT_AUX),   \
                                   LWZrm((rd),-4,JIT_SP))
+#define jit_roundr_d_l(rd,rs) jit_roundr_d_i(rd,rs)
 
 #define jit_truncr_d_i(rd,rs)  (FCTIWZrr(7,(rs)), \
                                   MOVEIri(JIT_AUX,-4), \

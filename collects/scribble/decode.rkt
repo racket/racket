@@ -295,6 +295,7 @@
   (append-map (lambda (s) (cond
                            [(string? s) (decode-string s)]
                            [(void? s) null]
+                           [(splice? s) (decode-content (splice-run s))]
                            [else (list s)]))
               (skip-whitespace l)))
 

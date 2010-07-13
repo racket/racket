@@ -550,51 +550,53 @@ subdirectory.
 ;; install the given pkg to the planet cache and return a PKG representing the
 ;; installed file
 (define (install-pkg pkg path maj min)
-  (unless (install?)
-    (raise (make-exn:fail:planet
-            (format
-             "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
-             (list (car (pkg-spec-path pkg)) (pkg-spec-name pkg) maj min))
-            (current-continuation-marks))))
-  (let* ([owner (car (pkg-spec-path pkg))]
-         [extra-path (cdr (pkg-spec-path pkg))]
-         [the-dir
-          (apply build-path (CACHE-DIR)
-                 (append (pkg-spec-path pkg) (list (pkg-spec-name pkg)
-                                                   (number->string maj)
-                                                   (number->string min))))]
-         [was-nested? (planet-nested-install)])
-    (if (directory-exists? the-dir)
-      (raise (make-exn:fail
-              "Internal PLaneT error: trying to install already-installed package"
-              (current-continuation-marks)))
-      (parameterize ([planet-nested-install #t])
-        (planet-terse-log 'install (pkg-spec->string pkg))
-        (with-logging
-         (LOG-FILE)
-         (lambda ()
-           (printf "\n============= Installing ~a on ~a =============\n"
-                   (pkg-spec-name pkg)
-                   (current-time))
-           ;; oh man is this a bad hack!
-           (parameterize ([current-namespace (make-namespace)])
-             (printf "new namespace\n")
-             (let ([ipp (dynamic-require 'setup/plt-single-installer
-                                         'install-planet-package)]
-                   [rud (dynamic-require 'setup/plt-single-installer
-                                         'reindex-user-documentation)]
-                   [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
-               (printf "starting setup-plt ~s ~s\n" (manager-skip-file-handler) (msfh))
-               (parameterize ([msfh (manager-skip-file-handler)])
-                 (printf "starting setup-plt.2 ~s ~s\n" (manager-skip-file-handler) (msfh))
-                 (ipp path the-dir (list owner (pkg-spec-name pkg)
-                                         extra-path maj min))
-                 (unless was-nested?
-                   (printf "------------- Rebuilding documentation index -------------\n")
-                   (rud)))))))
-        (planet-terse-log 'finish (pkg-spec->string pkg))
-        (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg)
-                  maj min the-dir 'normal)))))
+  (let ([pkg-path (pkg-spec-path pkg)]
+        [pkg-name (pkg-spec-name pkg)]
+        [pkg-string (pkg-spec->string pkg)])
+    (unless (install?)
+      (raise (make-exn:fail:planet
+              (format
+               "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
+               (list (car pkg-path) pkg-name maj min))
+              (current-continuation-marks))))
+    (let* ([owner (car pkg-path)]
+           [extra-path (cdr pkg-path)]
+           [the-dir
+            (apply build-path (CACHE-DIR)
+                   (append pkg-path (list pkg-name
+                                          (number->string maj)
+                                          (number->string min))))]
+           [was-nested? (planet-nested-install)])
+      (if (directory-exists? the-dir)
+          (raise (make-exn:fail
+                  "PLaneT error: trying to install already-installed package"
+                  (current-continuation-marks)))
+          (parameterize ([planet-nested-install #t])
+            (planet-terse-log 'install pkg-string)
+            (with-logging
+             (LOG-FILE)
+             (lambda ()
+               (printf "\n============= Installing ~a on ~a =============\n"
+                       pkg-name
+                       (current-time))
+               ;; oh man is this a bad hack!
+               (parameterize ([current-namespace (make-namespace)])
+                 (let ([ipp (dynamic-require 'setup/plt-single-installer
+                                             'install-planet-package)]
+                       [rud (dynamic-require 'setup/plt-single-installer
+                                             'reindex-user-documentation)]
+                       [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
+                   (parameterize ([msfh (manager-skip-file-handler)]
+                                  [use-compiled-file-paths (list (string->path "compiled"))])
+                     (ipp path the-dir (list owner pkg-name
+                                             extra-path maj min))
+                     (unless was-nested?
+                       (planet-terse-log 'docs-build pkg-string)
+                       (printf "------------- Rebuilding documentation index -------------\n")
+                       (rud)))))))
+            (planet-terse-log 'finish pkg-string)
+            (make-pkg pkg-name pkg-path
+                      maj min the-dir 'normal))))))
 
 ;; download-package : FULL-PKG-SPEC -> RESPONSE
 ;; RESPONSE ::= (list #f string) | (list #t path[file] Nat Nat)
@@ -768,22 +770,18 @@ subdirectory.
              (abort (format "Internal error (unknown HTTP response code ~a)"
                             response-code))]))))))
 
-;; formats the pkg-spec back into a string the way the user typed it in.
+;; formats the pkg-spec back into a string the way the user typed it in,
+;; except it never shows the minor version number (since some later one may actually be being used)
 ;; assumes that the pkg-spec comes from the command-line
 (define (pkg-spec->string pkg)
-  (format "~a/~a~a~a"
+  (format "~a/~a~a"
           (if (pair? (pkg-spec-path pkg))
               (car (pkg-spec-path pkg))
               "<<unknown>>") ;; this shouldn't happen
           (regexp-replace #rx"\\.plt$" (pkg-spec-name pkg) "")
           (if (pkg-spec-maj pkg) 
               (format ":~a" (pkg-spec-maj pkg))
-              "")
-          (cond
-            [(and (pkg-spec-maj pkg)
-                  (pkg-spec-minor-lo pkg))
-             (format ".~a" (pkg-spec-minor-lo pkg))]
-            [else ""])))
+              "")))
   
 ;; =============================================================================
 ;; MODULE MANAGEMENT

@@ -60,6 +60,15 @@ all content of the value is serializable.  If a value given to
 @scheme[serialize] is not completely serializable, the
 @exnraise[exn:fail:contract].
 
+If @racket[v] contains a cycle (i.e., a collection of objects that
+are all reachable from each other), then @racket[v] can be serialized
+only if the cycle includes a mutable value, where a @tech{prefab}
+structure counts as mutable only if all of its fields are mutable.
+
+@margin-note{The @racket[serialize] and @racket[deserialize] functions
+currently do not handle certain cyclic values that @racket[read] and
+@racket[write] can handle, such as @racket['@#,read[(open-input-string "#0=(#0#)")]].}
+
 See @scheme[deserialize] for information on the format of serialized
 data.}
 

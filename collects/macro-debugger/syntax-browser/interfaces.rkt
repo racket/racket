@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          unstable/class-iop
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 (provide (all-defined-out))
 
 ;; Helpers
@@ -14,7 +14,7 @@
           [else (error '->string)]))
   (string->symbol (apply string-append (map ->string args))))
 
-;; not in notify.ss because notify depends on scheme/gui
+;; not in notify.rkt because notify depends on gui
 (define-interface-expander methods:notify
   (lambda (stx)
     (syntax-case stx ()
@@ -61,18 +61,16 @@
    ;; reset-primary-partition : -> void
    reset-primary-partition))
 
-;; secondary-partition<%>
-(define-interface secondary-partition<%> ()
-  (;; secondary-partition : notify-box of partition<%>
-   ;; identifier=? : notify-box of (cons string procedure)
-   (methods:notify secondary-partition
-                   identifier=?)))
+;; secondary-relation<%>
+(define-interface secondary-relation<%> ()
+  (;; identifier=? : notify-box of (cons string (U #f (id id -> bool)))
+   (methods:notify identifier=?)))
 
 ;; controller<%>
 (define-interface controller<%> (displays-manager<%>
                                  selection-manager<%>
                                  mark-manager<%>
-                                 secondary-partition<%>)
+                                 secondary-relation<%>)
   ())
 
 

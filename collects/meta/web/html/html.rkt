@@ -170,8 +170,7 @@
 (provide style/inline)
 (define (style/inline . args)
   (let-values ([(attrs body) (attributes+body args)])
-    (make-element 'style attrs
-                  `("\n" ,(apply comment #:newlines? #t body) "\n"))))
+    (make-element 'style attrs `("\n" ,body "\n"))))
 
 ;; ----------------------------------------------------------------------------
 ;; Entities

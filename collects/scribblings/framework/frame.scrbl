@@ -38,13 +38,10 @@
     @schemeblock[
     (class ...
       ...
-     (rename [super-make-root-area-container 
-              make-root-area-container])
-     (field
-       [status-panel #f])
+     (define status-panel #f)
      (define/override (make-root-area-container cls parent)
        (set! status-panel
-             (super-make-root-area-container vertical-panel% parent))
+             (super make-root-area-container vertical-panel% parent))
        (let ([root (make-object cls status-panel)])
 
           (code:comment "... add other children to status-panel ...")

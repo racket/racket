@@ -4,11 +4,11 @@
 
 (provide help)
 (define help
-  (page #:link-title "Need Help?"
-   (parlist @strong{Don't Panic!}
+  @page[#:link-title "Need Help?"]{
+   @parlist[@strong{Don't Panic!}
             @text{Racket has a variety of resources designed to help you
-                  with any problems you may have.})
-   (parlist @strong{Help Desk}
+                  with any problems you may have.}]
+   @parlist[@strong{Help Desk}
             @text{Your first stop should always be with the help system that's
                   built into Racket and available from DrRacket's help menu
                   @strong{or by pressing F1 with the cursor on a search term}.
@@ -17,24 +17,24 @@
                   installed.  As a second line of defense, the documentation
                   for the core of the most recent version of Racket is
                   available
-                  @a[href: "http://docs.plt-scheme.org"]{from this web site}.}
+                  @a[href: "http://docs.plt-scheme.org/"]{from this web site}.}
             @text{Not sure what to search for?  The documentation includes a
                   @a[href: "http://docs.plt-scheme.org/guide/"]{guide} (also
                   located in your local copy of the documentation) that
                   provides a narrative introduction to many of Racket's
-                  features.})
-   (parlist @strong{Learning how to Program}
-            @text{Try going through @|-htdp|.})
-   (parlist @strong{Searching the Web}
+                  features.}]
+   @parlist[@strong{Learning how to Program}
+            @text{Try going through @|-htdp|.}]
+   @parlist[@strong{Searching the Web}
             @text{The
                   @-cookbook is
                   a wiki for Scheme snippets, many of which work in Racket.
                   Additionally, your favorite search engine may well provide
-                  answers for many of your questions.})
-   (parlist @strong{The Mailing List}
+                  answers for many of your questions.}]
+   @parlist[@strong{The Mailing List}
             @text{The @tt|{users@racket-lang.org}| mailing list is a great
                   source for answers to questions when the above resources
                   don't pan out@";" sign up for it in the @community area of
-                  the website.})
+                  the website.}]
    @br
-   @text{Thanks for using Racket!}))
+   @text{Thanks for using Racket!}})

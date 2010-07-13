@@ -1,6 +1,7 @@
-#lang scheme/base
-(require scheme/unit scheme/contract "constraint-structs.rkt" "../utils/utils.rkt")
-(require (rep type-rep) (utils unit-utils))
+#lang racket/base
+(require racket/unit racket/contract racket/require
+         "constraint-structs.rkt" 
+         (path-up "utils/utils.rkt" "utils/unit-utils.rkt" "rep/type-rep.rkt"))
 (provide (all-defined-out))
 
 (define-signature dmap^
@@ -16,11 +17,11 @@
    ;; inference failure - masked before it gets to the user program
    (define-syntaxes (fail!)
      (syntax-rules ()
-       [(_ s t) (raise fail-sym)]))
+       [(_ s t) (raise (list fail-sym s t))]))
    [cnt cset-meet (cset? cset? . -> . cset?)]
    [cnt cset-meet* ((listof cset?) . -> . cset?)]
    no-constraint
-   [cnt empty-cset ((listof symbol?) . -> . cset?)]
+   [cnt empty-cset ((listof symbol?) (listof symbol?) . -> . cset?)]
    [cnt insert (cset? symbol? Type? Type? . -> . cset?)]
    [cnt cset-combine ((listof cset?) . -> . cset?)]
    [cnt c-meet ((c? c?) (symbol?) . ->* . c?)]))
@@ -29,13 +30,32 @@
   ([cnt restrict (Type? Type? . -> . Type?)]))
 
 (define-signature infer^
-  ([cnt infer (((listof symbol?) (listof Type?) (listof Type?) Type? (listof symbol?)) ((or/c #f Type?)) . ->* . any)]
-   [cnt infer/vararg (((listof symbol?) 
+  ([cnt infer ((;; variables from the forall
+                (listof symbol?) 
+                ;; indexes from the forall
+                (listof symbol?) 
+                ;; actual argument types from call site
+                (listof Type?)
+                ;; domain
+                (listof Type?)
+                ;; range
+                (or/c #f Type?))
+               ;; optional expected type
+               ((or/c #f Type?)) 
+               . ->* . any)]
+   [cnt infer/vararg ((;; variables from the forall
+                       (listof symbol?) 
+                       ;; indexes from the forall
+                       (listof symbol?) 
+                       ;; actual argument types from call site
                        (listof Type?)
+                       ;; domain
                        (listof Type?)
+                       ;; rest
                        (or/c #f Type?)
-                       Type?
-                       (listof symbol?))
+                       ;; range
+                       (or/c #f Type?))
+                      ;; [optional] expected type
                       ((or/c #f Type?)) . ->* . any)]
    [cnt infer/dots (((listof symbol?) 
                      symbol?

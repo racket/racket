@@ -1,7 +1,6 @@
-
-#lang scheme/base
-(require (prefix-in yacc: parser-tools/yacc)
-         (for-syntax scheme/base))
+#lang racket/base
+(require (for-syntax racket/base)
+         (prefix-in yacc: parser-tools/yacc))
 (provide parser
          options
          productions

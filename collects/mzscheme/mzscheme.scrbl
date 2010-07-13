@@ -15,7 +15,8 @@
                               make-immutable-hasheq
 			      exn:fail exn:fail:contract)))
 
-@(define-syntax-rule (def-base base-define base-define-struct
+@(define-syntax-rule (def-base base-define base-define-syntax base-define-for-syntax
+                               base-define-struct
                                base-if base-cond base-case base-top-interaction
                                base-open-input-file base-apply base-prop:procedure
                                base-free-identifier=? base-free-template-identifier=?
@@ -23,6 +24,8 @@
    (begin
     (require (for-label scheme/base))
     (define base-define (scheme define))
+    (define base-define-syntax (scheme define-syntax))
+    (define base-define-for-syntax (scheme define-for-syntax))
     (define base-define-struct (scheme define-struct))
     (define base-if (scheme if))
     (define base-cond (scheme cond))
@@ -35,7 +38,7 @@
     (define base-free-template-identifier=? (scheme free-template-identifier=?))
     (define base-free-transformer-identifier=? (scheme free-transformer-identifier=?))
     (define base-free-label-identifier=? (scheme free-label-identifier=?))))
-@(def-base base-define base-define-struct
+@(def-base base-define base-define-syntax base-define-for-syntax base-define-struct
            base-if base-cond base-case base-top-interaction
            base-open-input-file base-apply base-prop:procedure
            base-free-identifier=? base-free-template-identifier=?
@@ -122,6 +125,17 @@ The same binding as @scheme[#%app].  (This binding was not present in
 
 Like @|base-define| in @schememodname[scheme/base], but without
 support for keyword arguments or optional arguments.}
+
+@deftogether[(
+@defform*[[(define-syntax id expr)
+           (define-syntax (head args) body ...+)]]
+@defform*[[(define-for-syntax id expr)
+           (define-for-syntax (head args) body ...+)]]
+)]{
+
+Like @|base-define-syntax| and @|base-define-for-syntax| in
+@schememodname[scheme/base], but without support for keyword arguments
+or optional arguments (i.e., @scheme[head] is as for @scheme[define]).}
 
 @defform*[[(if test-expr then-expr else-expr)
            (if test-expr then-expr)]]{

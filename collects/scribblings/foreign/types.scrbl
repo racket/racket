@@ -345,6 +345,7 @@ the later case, the result is the @scheme[ctype]).}
                       [output-type ctype?]
                       [#:abi abi (or/c symbol/c #f) #f]
                       [#:atomic? atomic? any/c #f]
+                      [#:async-apply async-apply (or/c #f ((-> any) . -> . any)) #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
                                          #f]
@@ -381,13 +382,31 @@ If @scheme[atomic?] is true, then when a Racket procedure is given
 this procedure type and called from foreign code, then the Racket
 process is put into atomic mode while evaluating the Racket procedure
 body. In atomic mode, other Racket threads do not run, so the Racket
-code must not call any function that potentially synchronizes with
-other threads, or else it may deadlock. In addition, the Racket code
-must not perform any potentially blocking operation (such as I/O), it
-must not raise an uncaught exception, it must not perform any escaping
-continuation jumps, and its non-tail recursion must be minimal to
-avoid C-level stack overflow; otherwise, the process may crash or
-misbehave.
+code must not call any function that potentially blocks on
+synchronization with other threads, or else it may lead to deadlock. In
+addition, the Racket code must not perform any potentially blocking
+operation (such as I/O), it must not raise an uncaught exception, it
+must not perform any escaping continuation jumps, and its non-tail
+recursion must be minimal to avoid C-level stack overflow; otherwise,
+the process may crash or misbehave.
+
+If an @scheme[async-apply] procedure is provided, then a Racket
+procedure with the generated procedure type can be applied in a
+foreign thread (i.e., an OS-level thread other than the one used to
+run Racket). In that case, @scheme[async-apply] is applied to a thunk
+that encapsulates the specific callback invocation, and the foreign
+thread blocks until the thunk is called and completes; the thunk must
+be called exactly once, and the callback invocation must return
+normally. The @scheme[async-apply] procedure itself is called in an
+unspecified Racket thread and in atomic mode (see @scheme[atomic?]
+above); its job is to arrange for the thunk to be called in a suitable
+context without blocking in any synchronization. (If the callback is
+known to complete quickly, require no synchronization, and work
+independent of the Racket thread in which it runs, then
+@scheme[async-apply] can apply the thunk directly.) Foreign-thread
+detection to trigger @scheme[async-apply] works only when Racket is
+compiled with OS-level thread support, which is the default for many
+platforms.
 
 If @scheme[save-errno] is @scheme['posix], then the value of
 @as-index{@tt{errno}} is saved (specific to the current thread)
@@ -471,7 +490,8 @@ values: @itemize[
               ([fun-option (code:line #:abi abi-expr)
                            (code:line #:save-errno save-errno-expr)
                            (code:line #:keep keep-expr)
-                           (code:line #:atomic? atomic?-expr)]
+                           (code:line #:atomic? atomic?-expr)
+                           (code:line #:async-apply async-apply-expr)]
                [maybe-args code:blank
                            (code:line (id ...) ::)
                            (code:line id ::)

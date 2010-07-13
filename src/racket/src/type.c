@@ -424,12 +424,14 @@ static int bad_trav_FIXUP(void *p, struct NewGC *gc)
 static void MARK_cjs(Scheme_Continuation_Jump_State *cjs, struct NewGC *gc)
 {
   gcMARK2(cjs->jumping_to_continuation, gc);
+  gcMARK2(cjs->alt_full_continuation, gc);
   gcMARK2(cjs->val, gc);
 }
 
 static void FIXUP_cjs(Scheme_Continuation_Jump_State *cjs, struct NewGC *gc)
 {
   gcFIXUP2(cjs->jumping_to_continuation, gc);
+  gcFIXUP2(cjs->alt_full_continuation, gc);
   gcFIXUP2(cjs->val, gc);
 }
 
@@ -577,7 +579,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_thread_dead_type, small_object);
   GC_REG_TRAV(scheme_hash_table_type, hash_table_val);
   GC_REG_TRAV(scheme_bucket_table_type, bucket_table_val);
-  GC_REG_TRAV(scheme_module_registry_type, hash_table_val);
+  GC_REG_TRAV(scheme_module_registry_type, module_reg_val);
   GC_REG_TRAV(scheme_namespace_type, namespace_val);
   GC_REG_TRAV(scheme_random_state_type, random_state_val);
   

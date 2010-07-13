@@ -8,7 +8,7 @@
          string-constants
          mrlib/graph
          "drsig.rkt"
-         scheme/unit
+         racket/unit
          racket/async-channel
          setup/private/lib-roots)
 
@@ -667,7 +667,7 @@
     (define text/pos 
       (let ([t (make-object text:basic%)])
         (send t load-file filename)
-        (drracket:language:make-text/pos
+        (drracket:language:text/pos
          t
          0
          (send t last-position))))

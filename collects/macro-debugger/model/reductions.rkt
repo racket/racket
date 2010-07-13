@@ -1,10 +1,9 @@
-
-#lang scheme/base
-(require scheme/match
-         "stx-util.ss"
-         "deriv-util.ss"
-         "deriv.ss"
-         "reductions-engine.ss")
+#lang racket/base
+(require racket/match
+         "stx-util.rkt"
+         "deriv-util.rkt"
+         "deriv.rkt"
+         "reductions-engine.rkt")
 
 (provide reductions
          reductions+)
@@ -419,7 +418,15 @@
      ;; FIXME: add action
      (R [#:do (take-lift!)]
         [#:binders ids]
-        [#:reductions (list (walk expr ids 'local-lift))])]
+        [#:reductions
+         (list
+          (walk/talk 'local-lift
+                     (list "The macro lifted an expression"
+                           ""
+                           "Expression:"
+                           expr
+                           "Identifiers:"
+                           (datum->syntax #f ids))))])]
 
     [(struct local-lift-end (decl))
      ;; (walk/mono decl 'module-lift)
@@ -436,7 +443,9 @@
      [R [! ?1]
         ;; FIXME: use renames
         [#:binders names]
-        [#:when bindrhs => (BindSyntaxes bindrhs)]]]))
+        [#:when bindrhs => (BindSyntaxes bindrhs)]]]
+    [(struct local-remark (contents))
+     (R [#:reductions (list (walk/talk 'remark contents))])]))
 
 ;; List : ListDerivation -> RST
 (define (List ld)

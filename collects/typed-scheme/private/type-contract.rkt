@@ -30,7 +30,7 @@
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
      (let ([typ (if maker?
-                    ((Struct-flds (lookup-type-name (Name-id typ))) #f . t:->* . typ)
+                    ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
                     typ)])
        (with-syntax ([cnt (type->contract 
                            typ 
@@ -64,7 +64,7 @@
           [(Function: arrs)
            (when flat? (exit (fail)))
            (let ()           
-             (define (f a)
+             (define ((f [case-> #f]) a)
                (define-values (dom* opt-dom* rngs* rst)
                  (match a
                    ;; functions with no filters or objects
@@ -91,16 +91,21 @@
                             [(list r) r]
                             [_ #`(values #,@rngs*)])]
                     [rst* rst])
-                 (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
-                     #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*)
-                     #'(dom* ... . -> . rng*))))
+		 ;; Garr, I hate case->!
+		 (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
+		     (exit (fail))
+		     (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
+			 (if case->
+			     #'(dom* ... #:rest (listof rst*) . -> . rng*)
+			     #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*))
+			 #'(dom* ... . -> . rng*)))))
              (unless (no-duplicates (for/list ([t arrs])
                                       (match t
                                         [(arr: dom _ _ _ _) (length dom)]
                                         ;; is there something more sensible here?
                                         [(top-arr:) (int-err "got top-arr")])))
                (exit (fail)))
-             (match (map f arrs)
+             (match (map (f (not (= 1 (length arrs)))) arrs)
                [(list e) e]
                [l #`(case-> #,@l)]))]
           [_ (int-err "not a function" f)]))
@@ -160,7 +165,7 @@
            #;#'class?           
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
-        [(Struct: nm par flds proc poly? pred? cert acc-ids maker-id)
+        [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred? cert maker-id)
          (cond 
            [(assf (λ (t) (type-equal? t ty)) structs-seen)
             =>

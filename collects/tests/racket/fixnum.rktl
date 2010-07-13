@@ -7,7 +7,9 @@
 (define unary-table 
   (list (list fxnot unsafe-fxnot)
         (list fxabs unsafe-fxabs)
-        (list fx->fl unsafe-fx->fl)))
+        (list fx->fl unsafe-fx->fl)
+        (list (lambda (v) (fl->fx (exact->inexact x)))
+              (lambda (v) (unsafe-fl->fx (exact->inexact x))))))
 
 (define binary-table
   (list (list fx+ unsafe-fx+)

@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require typed-scheme/utils/utils
-         (prefix-in ce: test-engine/scheme-tests)
+         (prefix-in ce: test-engine/racket-tests)
          (for-syntax
           scheme/base syntax/parse
           (utils tc-utils)

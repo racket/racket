@@ -18,11 +18,12 @@ If the namespace does not, they are colored the unbound color.
 
 
 (require string-constants
-         scheme/unit
-         scheme/contract
-         scheme/class
-         scheme/list
-         scheme/promise
+         racket/unit
+         racket/contract
+         racket/class
+         racket/list
+         racket/promise
+         racket/pretty
          drracket/tool
          syntax/toplevel
          syntax/boundmap
@@ -37,7 +38,7 @@ If the namespace does not, they are colored the unbound color.
          net/url
          net/uri-codec
          browser/external
-         (for-syntax scheme/base)
+         (for-syntax racket/base)
          "syncheck-drracket-button.rkt")
 (provide tool@)
 
@@ -53,6 +54,12 @@ If the namespace does not, they are colored the unbound color.
 (define jump-to-binding (string-constant cs-jump-to-binding))
 (define jump-to-definition (string-constant cs-jump-to-definition))
 
+(define cs-my-obligation-color "my obligations")
+(define cs-their-obligation-color "my assumptions")
+(define cs-unk-obligation-color "unknown obligations")
+(define cs-mode-menu-show-contract "Show Contract Obligations")
+(define cs-mode-menu-show-syntax "Show Syntactic Categories")
+
 (define-local-member-name
   syncheck:init-arrows
   syncheck:clear-arrows
@@ -67,7 +74,7 @@ If the namespace does not, they are colored the unbound color.
   syncheck:jump-to-definition
   
   syncheck:clear-highlighting
-  syncheck:add-to-cleanup-texts
+  syncheck:apply-style/remember
   ;syncheck:error-report-visible? ;; test suite uses this one.
   ;syncheck:get-bindings-table    ;; test suite uses this one.
   syncheck:clear-error-message
@@ -79,7 +86,11 @@ If the namespace does not, they are colored the unbound color.
   turn-off-error-report
   turn-on-error-report
   
-  update-button-visibility/settings)
+  update-button-visibility/settings
+  
+  set-syncheck-mode
+  get-syncheck-mode
+  update-menu-item-label)
 
 (define tool@ 
   (unit 
@@ -106,7 +117,15 @@ If the namespace does not, they are colored the unbound color.
     (define (printf . args) (apply fprintf o args))
     
     
-    (define xref (delay/idle (load-collections-xref)))
+    (define xref (if (getenv "PLTDRXREFDELAY")
+                     (begin
+                       (printf "PLTDRXREFDELAY: using plain delay\n")
+                       (delay (begin
+                                (printf "PLTDRXREFDELAY: loading xref\n")
+                                (begin0
+                                  (load-collections-xref)
+                                  (printf "PLTDRXREFDELAY: loaded xref\n")))))
+                     (delay/idle (load-collections-xref))))
     (define (get-xref) (force xref))
     
     
@@ -235,6 +254,7 @@ If the namespace does not, they are colored the unbound color.
             
             ;; cleanup-texts : (or/c #f (listof text))
             (define cleanup-texts #f)
+            (define style-mapping #f)
             
             ;; bindings-table : hash-table[(list text number number) -o> (listof (list text number number))]
             ;; this is a private field
@@ -335,7 +355,6 @@ If the namespace does not, they are colored the unbound color.
                 (set-arrow-end-x! arrow end-x)
                 (set-arrow-end-y! arrow end-y)))
             
-            
             (define/private (update-tail-arrow-poss arrow)
               ;; If the item is an embedded editor snip, redirect
               ;; the arrow to point at the left edge rather than the
@@ -380,6 +399,7 @@ If the namespace does not, they are colored the unbound color.
               (set! arrow-vectors (make-hasheq))
               (set! bindings-table (make-hash))
               (set! cleanup-texts '())
+              (set! style-mapping (make-hash))
               (let ([f (get-top-level-window)])
                 (when f
                   (send f open-status-line 'drracket:check-syntax:mouse-over))))
@@ -404,6 +424,7 @@ If the namespace does not, they are colored the unbound color.
                     (for-each (λ (text) (send text thaw-colorer))
                               cleanup-texts))
                   (set! cleanup-texts #f)
+                  (set! style-mapping #f)
                   (when any-tacked?
                     (invalidate-bitmap-cache))
                   (update-docs-background #f)
@@ -411,13 +432,22 @@ If the namespace does not, they are colored the unbound color.
                     (when f
                       (send f close-status-line 'drracket:check-syntax:mouse-over))))))
             
-            ;; syncheck:add-to-cleanup-texts : (is-a?/c text%) -> void
-            (define/public (syncheck:add-to-cleanup-texts txt)
+            ;; syncheck:apply-style/remember : (is-a?/c text%) number number style% symbol -> void
+            (define/public (syncheck:apply-style/remember txt start finish style mode)
+              (when (eq? mode syncheck-mode)
+                (add-to-cleanup/apply-style txt start finish style))
+              (when cleanup-texts
+                (hash-set! style-mapping mode (cons (list txt start finish style)
+                                                    (hash-ref style-mapping mode '())))))
+            
+            ;; add-to-cleanup/apply-style : (is-a?/c text%) number number style% symbol -> boolean
+            (define/private (add-to-cleanup/apply-style txt start finish style)
               (cond
                 [cleanup-texts
                  (unless (memq txt cleanup-texts)
                    (send txt freeze-colorer)
                    (set! cleanup-texts (cons txt cleanup-texts)))
+                 (send txt change-style style start finish #f)
                  #t]
                 [else #f]))
             
@@ -959,6 +989,40 @@ If the namespace does not, they are colored the unbound color.
                   (send frame update-button-visibility/settings settings)))
               (inner (void) after-set-next-settings settings))
             
+            (define syncheck-mode 'default-mode)
+            (define/public (set-syncheck-mode m) 
+              (let ([old-mode syncheck-mode])
+                (set! syncheck-mode m)
+                (when style-mapping
+                  (unless (eq? old-mode syncheck-mode)
+                    (apply-syncheck-mode)))))
+            (define/public (get-syncheck-mode) (if style-mapping
+                                                   syncheck-mode
+                                                   #f))
+            
+            (define/private (apply-syncheck-mode)
+              (let ([edit-sequences '()])
+                (for ((l (in-list (reverse (hash-ref style-mapping syncheck-mode)))))
+                  (let-values ([(txt start finish style) (apply values l)])
+                    (unless (memq txt edit-sequences)
+                      (send txt begin-edit-sequence #f)
+                      
+                      ;; this little dance resets the 
+                      ;; colors to their natural values
+                      (begin
+                        (cond
+                          [(send txt is-frozen?)
+                           (send txt thaw-colorer)]
+                          [else
+                           (send txt freeze-colorer)
+                           (send txt thaw-colorer)])
+                        (send txt freeze-colorer))
+                      
+                      (set! edit-sequences (cons txt edit-sequences)))
+                    (add-to-cleanup/apply-style txt start finish style)))
+                (for ((txt (in-list edit-sequences)))
+                  (send txt end-edit-sequence))))
+              
             (super-new)))))
     
     (define syncheck-frame<%>
@@ -993,7 +1057,8 @@ If the namespace does not, they are colored the unbound color.
           (send report-error-text delete/io 0 (send report-error-text last-position))
           (send report-error-text lock #t)
           (when (is-current-tab?)
-            (send (get-frame) hide-error-report)))
+            (send (get-frame) hide-error-report)
+            (send (get-frame) update-menu-item-label this)))
         
         (define/public (syncheck:clear-highlighting)
           (let* ([definitions (get-defs)]
@@ -1030,6 +1095,7 @@ If the namespace does not, they are colored the unbound color.
               (show-error-report)
               (hide-error-report))
           (send report-error-canvas set-editor (send new-tab get-error-report-text))
+          (update-menu-item-label new-tab)
           (update-button-visibility/tab new-tab))
         
         (define/private (update-button-visibility/tab tab)
@@ -1046,9 +1112,11 @@ If the namespace does not, they are colored the unbound color.
         
         (define/augment (enable-evaluation)
           (send check-syntax-button enable #t)
+          (send mode-menu-item enable #t)
           (inner (void) enable-evaluation))
         
         (define/augment (disable-evaluation)
+          (send mode-menu-item enable #f)
           (send check-syntax-button enable #f)
           (inner (void) disable-evaluation))
         
@@ -1110,13 +1178,45 @@ If the namespace does not, they are colored the unbound color.
             (set! rest-panel r-root)
             r-root))
         
+        (define mode-menu-item #f)
+        
+        (define/override (add-show-menu-items show-menu)
+          (super add-show-menu-items show-menu)
+          (set! mode-menu-item
+                (new menu-item% 
+                     [parent show-menu]
+                     [label ""]
+                     [callback
+                      (λ (a b)
+                        (let ([defs (send (get-current-tab) get-defs)])
+                          (case (send defs get-syncheck-mode)
+                            [(#f) (syncheck:button-callback #f 'contract-mode)]
+                            [(default-mode)
+                             (send defs set-syncheck-mode 'contract-mode)
+                             (update-menu-item-label (get-current-tab))]
+                            [else 
+                             (send defs set-syncheck-mode 'default-mode)
+                             (update-menu-item-label (get-current-tab))])))])))
+        
+        (define/public (update-menu-item-label tab)
+          (when mode-menu-item
+            (let ([mode (send (send (get-current-tab) get-defs) get-syncheck-mode)])
+              (case mode
+                [(#f) 
+                 (send mode-menu-item set-label cs-mode-menu-show-contract)]
+                [(default-mode)
+                 (send mode-menu-item set-label cs-mode-menu-show-contract)]
+                [(contract-mode)
+                 (send mode-menu-item set-label cs-mode-menu-show-syntax)]))))
+                
         (inherit open-status-line close-status-line update-status-line ensure-rep-hidden)
         ;; syncheck:button-callback : (case-> (-> void) ((union #f syntax) -> void)
         ;; this is the only function that has any code running on the user's thread
         (define/public syncheck:button-callback
           (case-lambda
             [() (syncheck:button-callback #f)]
-            [(jump-to-id)
+            [(jump-to-id) (syncheck:button-callback jump-to-id 'default-mode)]
+            [(jump-to-id mode)
              (when (send check-syntax-button is-enabled?)
                (open-status-line 'drracket:check-syntax)
                (update-status-line 'drracket:check-syntax status-init)
@@ -1238,6 +1338,8 @@ If the namespace does not, they are colored the unbound color.
                                       (λ ()
                                         (parameterize ([currently-processing-definitions-text definitions-text])
                                           (expansion-completed user-namespace user-directory)
+                                          (send (send (get-current-tab) get-defs) set-syncheck-mode mode)
+                                          (update-menu-item-label (get-current-tab))
                                           (send definitions-text syncheck:sort-bindings-table))))
                                      (cleanup)
                                      (custodian-shutdown-all user-custodian))))]
@@ -1280,7 +1382,7 @@ If the namespace does not, they are colored the unbound color.
             (thnk)
             (send definitions-text end-edit-sequence)
             (send definitions-text lock locked?)))
-        
+                
         (super-new)
         
         (define check-syntax-button-parent-panel 
@@ -1351,6 +1453,13 @@ If the namespace does not, they are colored the unbound color.
     (define lexically-bound-variable-style-name (symbol->string lexically-bound-variable-style-pref))
     (define imported-variable-style-name (symbol->string imported-variable-style-pref))
     (define set!d-variable-style-name (symbol->string set!d-variable-style-pref))
+
+    (define my-obligation-style-pref 'drracket:check-syntax:my-obligation-style-pref)
+    (define their-obligation-style-pref 'drracket:check-syntax:their-obligation-style-pref)
+    (define unk-obligation-style-pref 'drracket:check-syntax:unk-obligation-style-pref)
+    (define my-obligation-style-name (symbol->string my-obligation-style-pref))
+    (define their-obligation-style-name (symbol->string their-obligation-style-pref))
+    (define unk-obligation-style-name (symbol->string unk-obligation-style-pref))
     
     (define error-style-name (fw:scheme:short-sym->style-name 'error))
     ;(define constant-style-name (fw:scheme:short-sym->style-name 'constant))
@@ -1367,7 +1476,19 @@ If the namespace does not, they are colored the unbound color.
       (fw:color-prefs:build-color-selection-panel parent
                                                   set!d-variable-style-pref
                                                   set!d-variable-style-name
-                                                  (string-constant cs-set!d-variable)))
+                                                  (string-constant cs-set!d-variable))
+      (fw:color-prefs:build-color-selection-panel parent
+                                                  my-obligation-style-pref
+                                                  my-obligation-style-name
+                                                  cs-my-obligation-color)
+      (fw:color-prefs:build-color-selection-panel parent
+                                                  their-obligation-style-pref
+                                                  their-obligation-style-name
+                                                  cs-their-obligation-color)
+      (fw:color-prefs:build-color-selection-panel parent
+                                                  unk-obligation-style-pref
+                                                  unk-obligation-style-name
+                                                  cs-unk-obligation-color))
     
     (fw:color-prefs:register-color-preference lexically-bound-variable-style-pref
                                               lexically-bound-variable-style-name
@@ -1381,6 +1502,18 @@ If the namespace does not, they are colored the unbound color.
                                               imported-variable-style-name
                                               (make-object color% 68 0 203)
                                               (make-object color% 166 0 255))
+    (fw:color-prefs:register-color-preference my-obligation-style-pref
+                                              my-obligation-style-name
+                                              (send the-color-database find-color "firebrick")
+                                              (send the-color-database find-color "pink"))
+    (fw:color-prefs:register-color-preference their-obligation-style-pref
+                                              their-obligation-style-name
+                                              (make-object color% 0 116 0)
+                                              (send the-color-database find-color "limegreen"))
+    (fw:color-prefs:register-color-preference unk-obligation-style-pref
+                                              unk-obligation-style-name
+                                              (make-object color% 139 142 28)
+                                              (send the-color-database find-color "khaki"))
     
     
     
@@ -1468,7 +1601,8 @@ If the namespace does not, they are colored the unbound color.
                                              requires
                                              require-for-syntaxes
                                              require-for-templates
-                                             require-for-labels))]
+                                             require-for-labels)
+                         (annotate-contracts sexp))]
                       [else
                        (annotate-basic sexp
                                        user-namespace user-directory jump-to-id
@@ -1633,10 +1767,10 @@ If the namespace does not, they are colored the unbound color.
                  
                  (loop (syntax e)))]
               [(quote datum)
-               ;(color-internal-structure (syntax datum) constant-style-name)
+               ;(color-internal-structure (syntax datum) constant-style-name 'default-mode)
                (annotate-raw-keyword sexp varrefs)]
               [(quote-syntax datum)
-               ;(color-internal-structure (syntax datum) constant-style-name)
+               ;(color-internal-structure (syntax datum) constant-style-name 'default-mode)
                (annotate-raw-keyword sexp varrefs)
                (let loop ([stx #'datum])
                  (cond [(identifier? stx)
@@ -1973,6 +2107,57 @@ If the namespace does not, they are colored the unbound color.
         (color-unused require-for-syntaxes unused-require-for-syntaxes)
         (color-unused requires unused-requires)
         (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
+    
+    (define (annotate-contracts stx)
+      (let loop ([stx stx])
+        (let sloop ([prop (syntax-property stx 'provide/contract-original-contract)])
+          (cond
+            [(vector? prop)
+             (color-obligations (vector-ref prop 1))]
+            [(pair? prop) (sloop (car prop)) 
+                          (sloop (cdr prop))]))
+        (syntax-case stx ()
+          [(a . b) (loop #'a) (loop #'b)]
+          [else (void)])))
+    
+    (define (color-obligations stx)
+      (let loop ([stx stx]
+                 [polarity #t])
+      (syntax-case stx (->)
+        [(-> a ... rng)
+         (begin
+           (base-color (car (syntax-e stx)) polarity)
+           (for-each (λ (x) (loop x (not polarity))) (syntax->list #'(a ...)))
+           (syntax-case #'rng (values any)
+             [(values b ...)
+              (for-each (λ (x) (loop x polarity)) (syntax->list #'(b ...)))]
+             [any
+              (void)]
+             [rng
+              (loop #'rng polarity)]))]
+        [id
+         (and (identifier? #'id)
+              (known-predicate? #'id))
+         (base-color stx polarity)]
+        [else
+         (color stx unk-obligation-style-name 'contract-mode)])))
+    
+    ;; returns #t if the result is known to be a predicate that shoudl correspond to a
+    ;; complete obligation for the contract. If it is some unknown variable, this variable
+    ;; may refer to some other contract with nested obligations, so we have to return #f here.
+    ;; approximate this by just asking 'did this identifier come from the core?' (which is known
+    ;; to not bind any contracts (I hope))
+    (define (known-predicate? id)
+      (let ([ib (identifier-binding id)])
+        (and (list? ib)
+             (let ([src (list-ref ib 0)])
+               (let-values ([(base rel) (module-path-index-split src)])
+                 (member base '('#%kernel racket racket/base scheme scheme/base)))))))
+    
+    (define (base-color stx polarity)
+      (color stx 
+             (if polarity my-obligation-style-name their-obligation-style-name) 
+             'contract-mode))
         
     ;; record-renamable-var : rename-ht syntax -> void
     (define (record-renamable-var rename-ht stx)
@@ -1986,7 +2171,7 @@ If the namespace does not, they are colored the unbound color.
       (hash-for-each
        unused
        (λ (k v)
-         (for-each (λ (stx) (color stx error-style-name))
+         (for-each (λ (stx) (color stx error-style-name 'default-mode))
                    (hash-ref requires k)))))
     
     ;; connect-identifier : syntax
@@ -2127,8 +2312,8 @@ If the namespace does not, they are colored the unbound color.
                      (namespace-variable-value (syntax-e var) #t (λ () (k #f)))
                      #t)))])
         (if top-bound?
-            (color var lexically-bound-variable-style-name)
-            (color var error-style-name))
+            (color var lexically-bound-variable-style-name 'default-mode)
+            (color var error-style-name 'default-mode))
         (connect-identifier var rename-ht binders #f #f 0 user-namespace user-directory #t)))
     
     ;; color-variable : syntax phase-level module-identifier-mapping -> void
@@ -2145,9 +2330,9 @@ If the namespace does not, they are colored the unbound color.
                                      (not b)))))))])
         (cond
           [(get-ids varsets var)
-           (color var set!d-variable-style-name)]
-          [lexical? (color var lexically-bound-variable-style-name)]
-          [(pair? b) (color var imported-variable-style-name)])))
+           (color var set!d-variable-style-name 'default-mode)]
+          [lexical? (color var lexically-bound-variable-style-name 'default-mode)]
+          [(pair? b) (color var imported-variable-style-name 'default-mode)])))
     
     ;; add-var : hash-table -> syntax -> void
     ;; adds the variable to the hash table.
@@ -2416,7 +2601,7 @@ If the namespace does not, they are colored the unbound color.
               (add-id id-map f-stx))))))
     
     ;; color-internal-structure : syntax str -> void
-    (define (color-internal-structure stx style-name)
+    (define (color-internal-structure stx style-name mode)
       (let ([ht (make-hasheq)]) 
         ;; ht : stx -o> true
         ;; indicates if we've seen this syntax object before
@@ -2431,7 +2616,7 @@ If the namespace does not, they are colored the unbound color.
                (loop (cdr stx) (cdr datum))]
               [(syntax? stx)
                (when (syntax-original? stx)
-                 (color stx style-name))
+                 (color stx style-name mode))
                (let ([stx-e (syntax-e stx)]) 
                  (cond
                    [(cons? stx-e)
@@ -2459,23 +2644,22 @@ If the namespace does not, they are colored the unbound color.
     
     ;; color : syntax[original] str -> void
     ;; colors the syntax with style-name's style
-    (define (color stx style-name)
+    (define (color stx style-name mode)
       (let ([source (find-source-editor stx)])
         (when (and (is-a? source text%)
                    (syntax-position stx)
                    (syntax-span stx))
           (let ([pos (- (syntax-position stx) 1)]
                 [span (syntax-span stx)])
-            (color-range source pos (+ pos span) style-name)))))
+            (color-range source pos (+ pos span) style-name mode)))))
     
     ;; color-range : text start finish style-name 
     ;; colors a range in the text based on `style-name'
-    (define (color-range source start finish style-name)
+    (define (color-range source start finish style-name mode)
       (let ([style (send (send source get-style-list)
                          find-named-style
                          style-name)])
-        (when (add-to-cleanup-texts source)
-          (send source change-style style start finish #f))))
+        (apply-style/remember source start finish style mode)))
     
     ;; hash-table[syntax -o> (listof syntax)] -> void
     (define (add-tail-ht-links tail-ht)
@@ -2544,11 +2728,11 @@ If the namespace does not, they are colored the unbound color.
                    [to-pos (syntax-position to-stx)])
                (and from-pos to-pos)))))
     
-    ;; add-to-cleanup-texts : (is-a?/c editor<%>) -> void
-    (define (add-to-cleanup-texts ed)
+    ;; apply-style/remember : (is-a?/c editor<%>) number number style% symbol -> void
+    (define (apply-style/remember ed start finish style mode)
       (let ([outermost (find-outermost-editor ed)])
         (and (is-a? outermost drracket:unit:definitions-text<%>)
-             (send outermost syncheck:add-to-cleanup-texts ed))))
+             (send outermost syncheck:apply-style/remember ed start finish style mode))))
     
     (define (find-outermost-editor ed)
       (let loop ([ed ed])

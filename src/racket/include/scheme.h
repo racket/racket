@@ -640,11 +640,16 @@ typedef struct Scheme_Offset_Cptr
 #define SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER   (128 | 256)
 #define SCHEME_PRIM_TYPE_PARAMETER               64
 #define SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER      (64 | 128)
-/* combinations still available: 64|256, 64|128|256 */
+#define SCHEME_PRIM_SOMETIMES_INLINED            (64 | 256)
+/* combination still available: 64|128|256 */
 
 #define SCHEME_PRIM_IS_STRUCT_PROC (SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER | SCHEME_PRIM_IS_STRUCT_PRED | SCHEME_PRIM_IS_STRUCT_OTHER)
 
 #define SCHEME_PRIM_PROC_FLAGS(x) (((Scheme_Prim_Proc_Header *)x)->flags)
+
+#define SCHEME_PRIM_IS_SOMETIMES_INLINED(rator) \
+  (((SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_SOMETIMES_INLINED) \
+   || (SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_UNARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED)))
 
 typedef struct Scheme_Object *(Scheme_Prim)(int argc, Scheme_Object *argv[]);
 
@@ -874,6 +879,7 @@ typedef struct Scheme_Jumpup_Buf_Holder {
 
 typedef struct Scheme_Continuation_Jump_State {
   struct Scheme_Object *jumping_to_continuation;
+  struct Scheme_Object *alt_full_continuation;
   Scheme_Object *val; /* or **vals */
   mzshort num_vals;
   short is_kill, is_escape;
@@ -1249,6 +1255,9 @@ enum {
 
   MZCONFIG_THREAD_SET,
   MZCONFIG_THREAD_INIT_STACK_SIZE,
+
+  MZCONFIG_SUBPROC_CUSTODIAN_MODE,
+  MZCONFIG_SUBPROC_GROUP_ENABLED,
 
   MZCONFIG_LOAD_DELAY_ENABLED,
   MZCONFIG_DELAY_LOAD_INFO,
@@ -1754,6 +1763,8 @@ MZ_EXTERN Scheme_Object *scheme_set_run_cmd(char *s);
 MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_original_dir(Scheme_Object *d);
 MZ_EXTERN void scheme_set_addon_dir(Scheme_Object *p);
+MZ_EXTERN void scheme_set_command_line_arguments(Scheme_Object *vec);
+MZ_EXTERN void scheme_set_compiled_file_paths(Scheme_Object *list);
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
 MZ_EXTERN void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs);

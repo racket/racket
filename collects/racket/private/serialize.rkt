@@ -130,7 +130,17 @@
 		 (vector? o)
 		 (hash? o))
 	     (not (immutable? o)))
-	(serializable-struct? o)))
+	(serializable-struct? o)
+        (let ([k (prefab-struct-key o)])
+          (and k
+               ;; Check whether all fields are mutable:
+               (pair? k)
+               (let-values ([(si skipped?) (struct-info o)])
+                 (let loop ([si si])
+                   (let*-values ([(name init auto acc mut imms super skipped?) (struct-type-info si)])
+                     (and (null? imms)
+                          (or (not super)
+                              (loop super))))))))))
 
   ;; Finds a mutable object among those that make the
   ;;  current cycle.
@@ -152,8 +162,8 @@
     (+ (hash-count share)
        (hash-count cycle)))
 
-  ;; Traverses v to find cycles and charing. Shared
-  ;;  object go in the `shared' table, and cycle-breakers go in
+  ;; Traverses v to find cycles and sharing. Shared
+  ;;  objects go in the `shared' table, and cycle-breakers go in
   ;;  `cycle'. In each case, the object is mapped to a number that is
   ;;  incremented as shared/cycle objects are discovered, so
   ;;  when the objects are deserialized, build them in reverse
@@ -332,7 +342,11 @@
      [(hash? v)
       (cons 'h (append
 		(if (not (hash-eq? v)) '(equal) null)
-		(if (hash-weak? v) '(weak) null)))]))
+		(if (hash-weak? v) '(weak) null)))]
+     [else
+      ;; A mutable prefab
+      (cons 'pf (cons (prefab-struct-key v)
+                      (sub1 (vector-length (struct->vector v)))))]))
 
   (define (serialize v)
     (let ([mod-map (make-hasheq)]
@@ -491,7 +505,22 @@
 				   ht
 				   (lambda (k v)
 				     (hash-set! ht0 k v)))))
-	   ht0)])]
+	   ht0)]
+        [(pf)
+         ;; Prefab
+         (let ([s (apply make-prefab-struct 
+                         (cadr v)
+                         (vector->list (make-vector (cddr v) #f)))])
+           (vector-set! fixup n (lambda (v)
+                                  (let-values ([(si skipped?) (struct-info s)])
+                                    (let loop ([si si])
+                                      (let*-values ([(name init auto acc mut imms super skipped?) (struct-type-info si)])
+                                        (let ([count (+ init auto)])
+                                          (for ([i (in-range 0 count)])
+                                            (mut s i (acc v i)))
+                                          (when super
+                                            (loop super))))))))
+           s)])]
      [else
       (case v
         [(c)

@@ -47,7 +47,7 @@
   
   (define (combiner f flds)
     (syntax-parse flds
-      [() #'empty-hash-table]
+      [() #'#hasheq()]
       [(e) #`(#,f e)]
       [(e ...) #`(combine-frees (list (#,f e) ...))]))
   (define-splicing-syntax-class frees-pat
@@ -55,8 +55,8 @@
     #:attributes (f1 f2)
     (pattern (~seq f1:expr f2:expr))
     (pattern #f
-             #:with f1 #'empty-hash-table
-             #:with f2 #'empty-hash-table)
+             #:with f1 #'#hasheq()
+             #:with f2 #'#hasheq())
     (pattern e:expr
              #:with f1 #'(e Rep-free-vars)
              #:with f2 #'(e Rep-free-idxs)))
@@ -130,7 +130,7 @@
                      #,(quasisyntax/loc #'nm
                          (defintern (nm.*maker . flds.fs) flds.maker intern?
                            #:extra-args
-                           frees.f1 frees.f2 #:syntax [orig-stx #f] 
+                           frees.f1 frees.f2 #:syntax [orig-stx #f]
                            #,@(if key? (list #'key-expr) null)))))
             provides))])))
 
@@ -247,22 +247,16 @@
                                [Rep-free-idxs free-idxs*]))
 
 (p/c (struct Rep ([seq exact-nonnegative-integer?] 
-                  [free-vars (hash/c symbol? variance?)] 
-                  [free-idxs (hash/c exact-nonnegative-integer? variance?)]
+                  [free-vars (hash/c symbol? variance?)]                   
+                  [free-idxs (hash/c symbol? variance?)]
                   [stx (or/c #f syntax?)]))
      [replace-syntax (Rep? syntax? . -> . Rep?)])
-
-
-(define (list-update l k v)
-  (if (zero? k)
-      (cons v (cdr l))
-      (cons (car l) (list-update (cdr l) (sub1 k) v))))
 
 (define (replace-field val new-val idx)
   (define-values (type skipped) (struct-info val))
   (define maker (struct-type-make-constructor type))
   (define flds (cdr (vector->list (struct->vector val))))
-  (apply maker (list-update flds idx new-val)))
+  (apply maker (list-set flds idx new-val)))
 
 (define (replace-syntax rep stx)
   (replace-field rep stx 3))

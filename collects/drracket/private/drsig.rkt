@@ -1,5 +1,5 @@
 #lang racket/base
-(require scheme/unit)
+(require racket/unit)
 
 (provide drracket:eval^
          drracket:debug^
@@ -39,6 +39,7 @@
   (add-mode
    get-modes
    add-initial-modes
+   make-mode
    (struct mode (name surrogate repl-submit matches-language) 
            #:omit-constructor)))
 
@@ -118,6 +119,7 @@
    system-custodian
    system-eventspace
    system-namespace
+   system-security-guard
    first-dir))
 
 (define-signature drracket:language-configuration-cm^
@@ -126,6 +128,7 @@
   (add-language
    get-languages
    (struct language-settings (language settings))
+   make-language-settings
    get-settings-preferences-symbol
    language-dialog
    fill-language-dialog))
@@ -143,6 +146,7 @@
   ())
 (define-signature drracket:tools^ extends drracket:tools-cm^
   ((struct successful-tool (spec bitmap name url))
+   make-successful-tool
    get-successful-tools
    only-in-phase
    load/invoke-all-tools
@@ -185,7 +189,8 @@
    add-to-program-editor-mixin
    forget-saved-bug-report
    record-saved-bug-report
-   (struct teachpack-callbacks (get-names remove add))))
+   (struct teachpack-callbacks (get-names remove add))
+   make-teachpack-callbacks))
 
 (define-signature drracket:frame-cm^
   (<%>
@@ -280,8 +285,9 @@
    put-executable
    
    ;(struct loc (source position line column span))
-   
+   make-text/pos
    (struct text/pos (text start end))
+   make-simple-settings
    (struct simple-settings (case-sensitive 
                             printing-style 
                             fraction-style

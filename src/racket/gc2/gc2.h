@@ -9,6 +9,12 @@
 # endif
 #endif
 
+# ifdef __GNUC__
+#  define MAYBE_UNUSED __attribute__((unused))
+# else
+#  define MAYBE_UNUSED
+# endif
+
 /***************************************************************************/
 /***   See README for a general overview of the interface architecture.  ***/
 /***************************************************************************/

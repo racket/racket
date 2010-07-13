@@ -1,5 +1,5 @@
 #lang racket/base
-  (require scheme/unit
+  (require racket/unit
            mrlib/hierlist
            racket/class
            racket/contract
@@ -16,8 +16,33 @@
   (define original-output (current-output-port))
   (define (printfo . args) (apply fprintf original-output args))
   
-  (define sc-use-language-in-source (string-constant use-language-in-source))
-  (define sc-choose-a-language (string-constant choose-a-language))
+  (define-values (sc-use-language-in-source sc-choose-a-language mouse-event-uses-shortcut-prefix?)
+    (let* ([shortcut-prefix (get-default-shortcut-prefix)]
+           [menukey-string 
+            (apply string-append
+                   (map (λ (x)
+                          (case x
+                            [(cmd) "⌘"]
+                            [else (format "~a-" x)]))
+                        shortcut-prefix))])
+      (define (mouse-event-uses-shortcut-prefix? evt)
+        (andmap (λ (prefix)
+                  (case prefix
+                    [(alt) (case (system-type)
+                             [(windows) (send evt get-meta-down)]
+                             [else (send evt get-alt-down)])]
+                    [(cmd) (send evt get-meta-down)]
+                    [(meta) (send evt get-meta-down)]
+                    [(ctl) (send evt get-control-down)]
+                    [(shift) (send evt get-shiftdown)]
+                    [(option) (send evt get-alt-down)]))
+                shortcut-prefix))
+    (values (string-append (string-constant use-language-in-source)
+                           (format " (~aU)" menukey-string))
+            (string-append (string-constant choose-a-language)
+                           (format " (~aC)" menukey-string))
+            mouse-event-uses-shortcut-prefix?)))
+  
   (define sc-lang-in-source-discussion (string-constant lang-in-source-discussion))
 
   (provide language-configuration@)
@@ -102,9 +127,9 @@
                                     x))
                              (get-languages))
                       (list-ref (get-languages) 0))])
-        (make-language-settings lang (send lang default-settings))))
+        (language-settings lang (send lang default-settings))))
     
-    ;; type language-settings = (make-language-settings (instanceof language<%>) settings)
+    ;; type language-settings = (language-settings (instanceof language<%>) settings)
     (define-struct language-settings (language settings))
     
     
@@ -141,7 +166,9 @@
               (case (send evt get-key-code)
                 [(escape) (cancel-callback)]
                 [(#\return numpad-enter) (enter-callback)]
-                [else (super on-subwindow-char receiver evt)]))
+                [else
+                 (or (key-pressed receiver evt)
+                     (super on-subwindow-char receiver evt))]))
             (super-instantiate ())))
         
         (define dialog (instantiate ret-dialog% ()
@@ -208,7 +235,7 @@
                 [(execute)     (enter-callback) (void)]
                 [else (error 'ok-handler "internal error (~e)" msg)]))))
         
-        (define-values (get-selected-language get-selected-language-settings)
+        (define-values (get-selected-language get-selected-language-settings key-pressed)
           (fill-language-dialog language-dialog-meat-panel
                                 button-panel
                                 language-settings-to-show
@@ -235,7 +262,7 @@
         (send dialog show #t)
         (if cancelled?
             #f
-            (make-language-settings
+            (language-settings
              (get-selected-language)
              (get-selected-language-settings)))))
     
@@ -365,7 +392,7 @@
             (on-click-always #t)
             (allow-deselect #t)))
         
-        (define outermost-panel (make-object horizontal-pane% parent))
+        (define outermost-panel (new horizontal-pane% [parent parent]))
         (define languages-choice-panel (new vertical-panel%
                                             [parent outermost-panel]
                                             [alignment '(left top)]))
@@ -377,8 +404,10 @@
                [parent languages-choice-panel]
                [callback
                 (λ (rb evt)
-                  (module-language-selected)
-                  (send use-chosen-language-rb set-selection #f))]))
+                  (use-language-in-source-rb-callback))]))
+        (define (use-language-in-source-rb-callback)
+          (module-language-selected)
+          (send use-chosen-language-rb set-selection #f))
         (define in-source-discussion-panel (new horizontal-panel% 
                                                 [parent languages-choice-panel]
                                                 [stretchable-height #f]))
@@ -395,10 +424,12 @@
                [parent languages-choice-panel]
                [callback
                 (λ (this-rb evt)
-                  (when most-recent-languages-hier-list-selection
-                    (send languages-hier-list select 
-                          most-recent-languages-hier-list-selection))
-                  (send use-language-in-source-rb set-selection #f))]))
+                  (use-chosen-language-rb-callback))]))
+        (define (use-chosen-language-rb-callback)
+          (when most-recent-languages-hier-list-selection
+            (send languages-hier-list select 
+                  most-recent-languages-hier-list-selection))
+          (send use-language-in-source-rb set-selection #f))
         (define languages-hier-list-panel (new horizontal-panel% [parent languages-choice-panel]))
         (define languages-hier-list-spacer (new horizontal-panel% 
                                                 [parent languages-hier-list-panel]
@@ -919,7 +950,23 @@
          (λ () selected-language)
          (λ () 
            (and get/set-selected-language-settings
-                (get/set-selected-language-settings))))))
+                (get/set-selected-language-settings)))
+         (λ (receiver evt)
+           (case (send evt get-key-code)
+             [(#\u) 
+              (if (mouse-event-uses-shortcut-prefix? evt)
+                  (begin (send use-language-in-source-rb set-selection 0)
+                         (use-language-in-source-rb-callback)
+                         #t)
+                  #f)]
+             [(#\c)
+              (if (mouse-event-uses-shortcut-prefix? evt)
+                  (begin 
+                    (send use-chosen-language-rb set-selection 0)
+                    (use-chosen-language-rb-callback)
+                    #t)
+                  #f)]
+             [else #f])))))
     
     (define (add-discussion p)
       (let* ([t (new text:standard-style-list%)]
@@ -1930,8 +1977,8 @@
           
           (let ([new-lang
                  (language-dialog #f
-                                  (make-language-settings lang
-                                                          (send lang default-settings))
+                                  (language-settings lang
+                                                     (send lang default-settings))
                                   drs-frame)])
             (when new-lang
               (set! language-chosen? #t)

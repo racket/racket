@@ -22,16 +22,21 @@ Binds @scheme[~cite-id], @scheme[citet-id], and
 @scheme[generate-bibliography-id], which share state to accumulate and
 render citations.
 
-The function bound to @scheme[~cite-id] produces a citation with a
-preceding non-breaking space. It has the contract
+The function bound to @scheme[~cite-id] produces a citation referring
+to one or more bibliography entries with a preceding non-breaking
+space. It has the contract
 
 @schemeblock[
 ((bib?) () (listof bib?) . ->* . element?)
 ]
 
-The function bound to @scheme[citet-id] has the same contract as the
-function for @scheme[~cite-id], but it generates an element suitable
-for use as a noun refering to the document or its author.
+The function bound to @scheme[citet-id] generates an element suitable
+for use as a noun---referring to a document or its author---for one
+or more bibliography entries which share an author. It has the contract
+
+@schemeblock[
+((bib?) () (listof bib?) . ->* . element?)
+]
 
 The function bound to @scheme[generate-bibliography-id] generates the
 section for the bibliography. It has the contract
@@ -65,9 +70,9 @@ standard format.
 An element produced by a function like @scheme[author-name] tracks
 first, last names, and name suffixes separately, so that names can be
 ordered and rendered correctly. When a string is provided as an author
-name, the last non-empty sequence of ASCII alphabetic characters after
-a space is treated as the author name, and the rest is treated as the
-first name.}
+name, the last non-empty sequence of alphabetic characters or
+@litchar["-"] after a space is treated as the author name, and the
+rest is treated as the first name.}
 
 @defproc[(in-bib [orig bib?] [where string?]) bib?]{
 

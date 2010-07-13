@@ -751,7 +751,7 @@ call_error(char *buffer, int len, Scheme_Object *exn)
   }
 }
 
-static long get_print_width(void)
+long scheme_get_print_width(void)
 {
   long print_width;
   Scheme_Object *w;
@@ -774,7 +774,7 @@ static char *init_buf(long *len, long *_size)
   long size;
   
   local_max_symbol_length = scheme_get_max_symbol_length();
-  print_width             = get_print_width();
+  print_width             = scheme_get_print_width();
 
   size = (3 * local_max_symbol_length + 500 + 2 * print_width);
 
@@ -1950,7 +1950,7 @@ char *scheme_make_provided_string(Scheme_Object *o, int count, int *lenout)
 {
   long len;
 
-  len = get_print_width();
+  len = scheme_get_print_width();
 
   if (count)
     len /= count;
@@ -2465,6 +2465,7 @@ def_error_escape_proc(int argc, Scheme_Object *argv[])
 
   if (prompt) {
     p->cjs.jumping_to_continuation = prompt;
+    p->cjs.alt_full_continuation = NULL;
     p->cjs.num_vals = 1;
     p->cjs.val = scheme_void_proc;
   }

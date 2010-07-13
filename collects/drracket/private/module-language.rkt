@@ -1,11 +1,12 @@
 #lang racket/base
 
 (provide module-language@)
-(require scheme/unit
+(require racket/unit
          racket/class
          racket/list
          racket/path
          racket/contract
+         racket/sandbox
          mred
          compiler/embed
          compiler/cm
@@ -29,7 +30,8 @@
   
   (define module-language<%>
     (interface ()
-      get-users-language-name))
+      get-users-language-name
+      get-language-info))
   
   ;; add-module-language : -> void
   ;; adds the special module-only language to drscheme
@@ -57,6 +59,26 @@
   ;;             -> (implements drracket:language:language<%>)
   (define (module-mixin %)
     (class* % (drracket:language:language<%> module-language<%>)
+      
+      (define language-info #f) ;; a result from module-compiled-language-info
+      (define sandbox #f)       ;; a sandbox for querying the language-info
+      (define/public (get-language-info key default)
+        (init-sandbox)
+        (cond
+          [(and language-info sandbox)
+           (let ([mp (vector-ref language-info 0)]
+                 [name (vector-ref language-info 1)]
+                 [val (vector-ref language-info 2)])
+             (call-in-sandbox-context
+              sandbox
+              (λ ()
+                (parameterize ([current-security-guard drracket:init:system-security-guard])
+                  (((dynamic-require mp name) val) key default)))))]
+          [else default]))
+      (define (init-sandbox)
+        (unless sandbox
+          (when language-info
+            (set! sandbox (make-evaluator 'racket/base)))))
       
       (inherit get-language-name)
       (define/public (get-users-language-name defs-text)
@@ -191,6 +213,12 @@
       
       (define/override (on-execute settings run-in-user-thread)
         (super on-execute settings run-in-user-thread)
+        
+        ;; reset the language info so that if the module is illformed, 
+        ;; we don't save the language info from the last run
+        (set! language-info #f)
+        (set! sandbox #f)
+        
         (run-in-user-thread
          (λ ()
            (current-command-line-arguments
@@ -323,6 +351,9 @@
           (check-interactive-language))
         (define (*do-module-specified-configuration)
           (let ([info (module->language-info modspec #t)])
+            (parameterize ([current-eventspace drracket:init:system-eventspace])
+              (queue-callback
+               (λ () (set! language-info info))))
             (when info
               (let ([get-info
                      ((dynamic-require (vector-ref info 0)

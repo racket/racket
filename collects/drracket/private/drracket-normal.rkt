@@ -15,7 +15,7 @@
 ;; to open. See also main.rkt.
 (current-command-line-arguments (apply vector files-to-open))
 
-(define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween? weekend?)
+(define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween? valentines-day? weekend?)
   (let* ([date (seconds->date (current-seconds))]
          [month (date-month date)]
          [day (date-day date)]
@@ -24,6 +24,7 @@
             (and (= 3 month) (= 26 day))
             (and (= 6 month) (= 11 day))
             (and (= 10 month) (= 31 day))
+            (and (= 2 month) (= 14 day))
             (or (= dow 6) (= dow 0)))))
 
 (define high-color? ((get-display-depth) . > . 8))
@@ -98,7 +99,9 @@
 
 (start-splash
  (cond
-   [(or prince-kuhio-day? kamehameha-day?)
+   [(and valentines-day? high-color?)
+    (build-path (collection-path "icons") "heart.png")]
+   [(and (or prince-kuhio-day? kamehameha-day?) high-color?)
     (set-splash-progress-bar? #f)
     (let ([size ((dynamic-require 'drracket/private/palaka 'palaka-pattern-size) 4)])
       (vector (dynamic-require 'drracket/private/honu-logo 'draw-honu) 

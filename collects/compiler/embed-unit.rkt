@@ -657,37 +657,37 @@
                                                                                                          (cddr name)))
                                                                                              (ss->rkt (cadr name))))
                                                                           (if (eq? 'planet (car name))
-                                                                              (if (null? (cddr name))
-                                                                                  ;; need to normalize:
-                                                                                  (let-values ([(s) (if (symbol? (cadr name))
-                                                                                                        (symbol->string (cadr name))
-                                                                                                        (cadr name))])
-                                                                                    (letrec-values ([(split)
-                                                                                                     (lambda (s rx suffix-after)
-                                                                                                       (let-values ([(m) (regexp-match-positions 
-                                                                                                                          rx
-                                                                                                                          s)])
-                                                                                                         (if m
-                                                                                                             (cons (substring s 0 (caar m))
-                                                                                                                   (split (substring s (cdar m))
-                                                                                                                          rx 
-                                                                                                                          (- suffix-after 1)))
-                                                                                                             (list
-                                                                                                              (if (suffix-after . <= . 0)
-                                                                                                                  (if (regexp-match? #rx"[.]" s)
-                                                                                                                      s
-                                                                                                                      (string-append s ".rkt"))
-                                                                                                                  s)))))]
-                                                                                                    [(last-of)
-                                                                                                     (lambda (l)
-                                                                                                       (if (null? (cdr l))
-                                                                                                           (car l)
-                                                                                                           (last-of (cdr l))))]
-                                                                                                    [(not-last)
-                                                                                                     (lambda (l)
-                                                                                                       (if (null? (cdr l))
-                                                                                                           null
-                                                                                                           (cons (car l) (not-last (cdr l)))))])
+                                                                              (letrec-values ([(split)
+                                                                                               (lambda (s rx suffix-after)
+                                                                                                 (let-values ([(m) (regexp-match-positions 
+                                                                                                                    rx
+                                                                                                                    s)])
+                                                                                                   (if m
+                                                                                                       (cons (substring s 0 (caar m))
+                                                                                                             (split (substring s (cdar m))
+                                                                                                                    rx 
+                                                                                                                    (- suffix-after 1)))
+                                                                                                       (list
+                                                                                                        (if (suffix-after . <= . 0)
+                                                                                                            (if (regexp-match? #rx"[.]" s)
+                                                                                                                s
+                                                                                                                (string-append s ".rkt"))
+                                                                                                            s)))))]
+                                                                                              [(last-of)
+                                                                                               (lambda (l)
+                                                                                                 (if (null? (cdr l))
+                                                                                                     (car l)
+                                                                                                     (last-of (cdr l))))]
+                                                                                              [(not-last)
+                                                                                               (lambda (l)
+                                                                                                 (if (null? (cdr l))
+                                                                                                     null
+                                                                                                     (cons (car l) (not-last (cdr l)))))])
+                                                                                (if (null? (cddr name))
+                                                                                    ;; need to normalize:
+                                                                                    (let-values ([(s) (if (symbol? (cadr name))
+                                                                                                          (symbol->string (cadr name))
+                                                                                                          (cadr name))])
                                                                                       (let-values ([(parts) (split s #rx"/" 2)])
                                                                                         (let-values ([(vparts) (split (cadr parts) #rx":" +inf.0)])
                                                                                           (cons 'planet
@@ -705,13 +705,23 @@
                                                                                                                   (cdddr parts))))
                                                                                                        (if (null? (cddr parts))
                                                                                                            null
-                                                                                                           (not-last (cddr parts))))))))))
-                                                                                  ;; already in long form:
-                                                                                  name)
+                                                                                                           (not-last (cddr parts)))))))))
+                                                                                  ;; already in long form; move subcollects to end:
+                                                                                  (let-values ([(s) (cadr name)])
+                                                                                    (let-values ([(parts) (split s #rx"/" +inf.0)])
+                                                                                      (if (= 1 (length parts))
+                                                                                          name
+                                                                                          (list* 'planet
+                                                                                                 (last-of parts)
+                                                                                                 (caddr name)
+                                                                                                 (append
+                                                                                                  (cdddr name)
+                                                                                                  (not-last parts))))))))
                                                                               #f))
                                                                       #f))]
                                                                [(planet-match?)
                                                                 (lambda (a b)
+                                                                  (eprintf "pmatch? ~s ~s\n" a b)
                                                                   (if (equal? (cons (car a) (cddr a))
                                                                               (cons (car b) (cddr b)))
                                                                       (let-values ([(a) (cadr a)]
@@ -1055,8 +1065,8 @@
                   ((apply +
                           (map (lambda (s)
                                  (+ word-size (bytes-length (string->bytes/utf-8 s))))
-                               cmdline)) . < . 60))
-        (error 'create-embedding-executable "command line too long"))
+                               cmdline)) . < . 80))
+        (error 'create-embedding-executable "command line too long: ~e" cmdline))
       (check-collects-path 'create-embedding-executable collects-path collects-path-bytes)
       (let ([exe (find-exe mred? variant)])
         (when verbose?

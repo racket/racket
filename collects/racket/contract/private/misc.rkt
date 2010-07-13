@@ -714,47 +714,59 @@
 
 (define-syntax (*-immutableof stx)
   (syntax-case stx ()
-    [(_ predicate? fill testmap type-name name)
+    [(_ predicate? app fill testmap type-name name)
      (identifier? (syntax predicate?))
      (syntax
-      (let ([fill-name fill])
+      (let ([fill-name fill]
+            [for-each-name app])
         (λ (input)
-          (let ([ctc (coerce-contract 'name input)])
+          (let* ([ctc (coerce-contract 'name input)]
+                 [fo-check 
+                  (λ (x)
+                    (and (predicate? x) 
+                         (testmap (λ (v) (contract-first-order-passes? ctc v)) x)))]
+                 [proj (contract-projection ctc)])
             (if (flat-contract? ctc)
-                (let ([content-pred? (flat-contract-predicate ctc)])
-                  (build-flat-contract
-                   `(name ,(contract-name ctc))
-                   (lambda (x) (and (predicate? x) (testmap content-pred? x)))))
-                (let ([proj (contract-projection ctc)])
-                  (make-contract
-                   #:name (build-compound-type-name 'name ctc)
-                   #:projection
-                   (λ (blame)
-                     (let ([p-app (proj blame)])
-                       (λ (val)
-                         (unless (predicate? val)
-                           (raise-blame-error
-                            blame
-                            val
-                            "expected <~a>, given: ~e"
-                            'type-name
-                            val))
-                         (fill-name p-app val))))
-                   #:first-order predicate?)))))))]))
+                (make-flat-contract
+                 #:name (build-compound-type-name 'name ctc)
+                 #:first-order fo-check
+                 #:projection
+                 (λ (blame)
+                   (let ([p-app (proj blame)])
+                     (λ (val)
+                       (unless (predicate? val)
+                         (raise-blame-error blame val
+                                            "expected <~a>, given: ~e"
+                                            'type-name val))
+                       (for-each-name p-app val)
+                       val))))
+                (make-contract
+                 #:name (build-compound-type-name 'name ctc)
+                 #:first-order fo-check
+                 #:projection
+                 (λ (blame)
+                   (let ([p-app (proj blame)])
+                     (λ (val)
+                       (unless (predicate? val)
+                         (raise-blame-error blame val
+                                            "expected <~a>, given: ~e"
+                                            'type-name val))
+                       (fill-name p-app val))))))))))]))
 
 (define listof
-  (*-immutableof list? map andmap list listof))
+  (*-immutableof list? for-each map andmap list listof))
 
 (define (non-empty-list? x) (and (pair? x) (list? (cdr x))))
 (define non-empty-listof
-  (*-immutableof non-empty-list? map andmap non-empty-list non-empty-listof))
+  (*-immutableof non-empty-list? for-each map andmap non-empty-list non-empty-listof))
 
 (define (immutable-vector? val) (and (immutable? val) (vector? val)))
 
 (define vector-immutableof
   (*-immutableof immutable-vector?
-                 (λ (f v) (apply vector-immutable (map f (vector->list v))))
-                 (λ (f v) (andmap f (vector->list v)))
+                 (λ (f v) (for ([e (in-vector v)]) (f e)))
+                 (λ (f v) (apply vector-immutable (for/list ([e (in-vector v)]) (f e))))
+                 (λ (f v) (for/and ([e (in-vector v)]) (f e)))
                  immutable-vector
                  vector-immutableof))
 
@@ -865,7 +877,15 @@
      (and (eq? #f (syntax->datum (syntax arb?)))
           (boolean? (syntax->datum #'test-immutable?)))
      (let ([test-immutable? (syntax->datum #'test-immutable?)])
-       (with-syntax ([(params ...) (generate-temporaries (syntax (selectors ...)))]
+       (with-syntax ([pred?
+                      (if test-immutable?
+                          #'(λ (v) (and (predicate?-name v) (immutable? v)))
+                          #'predicate?-name)]
+                     [pred-fail-text
+                      (if test-immutable?
+                          "expected immutable <~a>, given: ~e"
+                          "expected <~a>, given: ~e")]
+                     [(params ...) (generate-temporaries (syntax (selectors ...)))]
                      [(p-apps ...) (generate-temporaries (syntax (selectors ...)))]
                      [(ctc-x ...) (generate-temporaries (syntax (selectors ...)))]
                      [(procs ...) (generate-temporaries (syntax (selectors ...)))]
@@ -874,35 +894,38 @@
                  [constructor-name constructor]
                  [selector-names selectors] ...)
              (λ (params ...)
-               (let ([ctc-x (coerce-contract 'name params)] ...)
+               (let* ([ctc-x (coerce-contract 'name params)] ...
+                      [procs (contract-projection ctc-x)] ...
+                      [fo-check
+                       (λ (v)
+                         (and (pred? v)
+                              (contract-first-order-passes? ctc-x (selector-names v)) ...))])
                  (if (and (flat-contract? ctc-x) ...)
-                     (let ([p-apps (flat-contract-predicate ctc-x)] ...)
-                       (build-flat-contract
-                        `(name ,(contract-name ctc-x) ...)
-                        (lambda (x)
-                          (and (predicate?-name x)
-                               (p-apps (selector-names x)) 
-                               ...))))
-                     (let ([procs (contract-projection ctc-x)] ...)
-                       (make-contract
-                        #:name (build-compound-type-name 'name ctc-x ...)
-                        #:projection
-                        (λ (blame)
-                          (let ([p-apps (procs blame)] ...)
-                            (λ (v)
-                              (if #,(if test-immutable?
-                                        #'(and (predicate?-name v)
-                                               (immutable? v))
-                                        #'(predicate?-name v))
-                                  (constructor-name (p-apps (selector-names v)) ...)
-                                  (raise-blame-error
-                                   blame
-                                   v
-                                   #,(if test-immutable?
-                                         "expected immutable <~a>, given: ~e"
-                                         "expected <~a>, given: ~e")
-                                   'type-name
-                                   v)))))))))))))]
+                     (make-flat-contract
+                      #:name (build-compound-type-name 'name ctc-x ...)
+                      #:first-order fo-check
+                      #:projection
+                      (λ (blame)
+                        (let ([p-apps (procs blame)] ...)
+                          (λ (v)
+                            (unless (pred? v)
+                              (raise-blame-error blame v
+                                                   pred-fail-text
+                                                   'type-name v))
+                            (void (p-apps (selector-names v)) ...)
+                            v))))
+                     (make-contract
+                      #:name (build-compound-type-name 'name ctc-x ...)
+                      #:first-order fo-check
+                      #:projection
+                      (λ (blame)
+                        (let ([p-apps (procs blame)] ...)
+                          (λ (v)
+                            (unless (pred? v)
+                              (raise-blame-error blame v
+                                                 pred-fail-text
+                                                 'type-name v))
+                            (constructor-name (p-apps (selector-names v)) ...)))))))))))]
     [(_ predicate? constructor (arb? selector) correct-size type-name name)
      (eq? #t (syntax->datum (syntax arb?)))
      (syntax
@@ -910,32 +933,50 @@
             [constructor-name constructor]
             [selector-name selector])
         (λ params
-          (let ([ctcs (map (λ (param) (coerce-contract 'name param)) params)])
-            (let ([procs (map contract-projection ctcs)])
-              (make-contract
-               #:name (apply build-compound-type-name 'name ctcs)
-               #:projection
-               (λ (blame)
-                 (let ([p-apps (map (λ (proc) (proc blame)) procs)]
-                       [count (length params)])
-                   (λ (v)
-                     (if (and (immutable? v)
-                              (predicate?-name v)
-                              (correct-size count v))
-                         (apply constructor-name 
-                                (let loop ([p-apps p-apps]
-                                           [i 0])
-                                  (cond
-                                    [(null? p-apps) null]
-                                    [else (let ([p-app (car p-apps)])
-                                            (cons (p-app (selector-name v i))
-                                                  (loop (cdr p-apps) (+ i 1))))])))
-                         (raise-blame-error
-                          blame
-                          v
-                          "expected <~a>, given: ~e"
-                          'type-name
-                          v)))))))))))]))
+          (let* ([count (length params)]
+                 [pred? (λ (v)
+                          (and (immutable? v)
+                               (predicate?-name v) 
+                               (correct-size count v)))]
+                 [ctcs (map (λ (param) (coerce-contract 'name param)) params)]
+                 [procs (map contract-projection ctcs)]
+                 [fo-check
+                  (λ (v)
+                    (and (pred? v)
+                         (for/and ([c (in-list ctcs)]
+                                   [i (in-naturals)])
+                           (contract-first-order-passes? c (selector-name v i)))))])
+            (if (andmap flat-contract? ctcs)
+                (make-flat-contract
+                 #:name (apply build-compound-type-name 'name ctcs)
+                 #:first-order fo-check
+                 #:projection
+                 (λ (blame)
+                   (let ([p-apps (map (λ (proc) (proc blame)) procs)])
+                     (λ (v)
+                       (unless (pred? v)
+                         (raise-blame-error blame v
+                                            "expected <~a>, given: ~e"
+                                            'type-name v))
+                       (for ([p (in-list p-apps)]
+                             [i (in-naturals)])
+                         (p (selector-name v i)))
+                       v))))
+                (make-contract
+                 #:name (apply build-compound-type-name 'name ctcs)
+                 #:first-order fo-check
+                 #:projection
+                 (λ (blame)
+                   (let ([p-apps (map (λ (proc) (proc blame)) procs)])
+                     (λ (v)
+                       (unless (pred? v)
+                         (raise-blame-error blame v
+                                            "expected <~a>, given: ~e"
+                                            'type-name v))
+                       (apply constructor-name 
+                              (for/list ([p (in-list p-apps)]
+                                         [i (in-naturals)])
+                                (p (selector-name v i)))))))))))))]))
 
 (define cons/c (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
 (define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))

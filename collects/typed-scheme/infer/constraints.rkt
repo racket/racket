@@ -14,19 +14,22 @@
 
 (define-values (fail-sym exn:infer?)
   (let ([sym (gensym 'infer-fail)])
-    (values sym (lambda (s) (eq? s sym)))))
+    (values sym (λ (s) (and (pair? s) (eq? (car s) sym))))))
 
 ;; why does this have to be duplicated?
 ;; inference failure - masked before it gets to the user program
 (define-syntaxes (fail!)
   (syntax-rules ()
-    [(_ s t) (raise fail-sym)]))
+    [(_ s t) (raise (list fail-sym s t))]))
 
 ;; Widest constraint possible
 (define (no-constraint v)
   (make-c (Un) v Univ))
 
-(define (empty-cset X)
+;; Create an empty constraint map from a set of type variables X and
+;; index variables Y.  For now, we add the widest constraints for
+;; variables in X to the cmap and create an empty dmap.
+(define (empty-cset X Y)
   (make-cset (list (cons (for/hash ([x X]) (values x (no-constraint x)))
                          (make-dmap (make-immutable-hash null))))))
 
@@ -58,13 +61,6 @@
        (unless (subtype S T)
          (fail! S T))
        (make-c S (or var X) T))]))
-
-(define (subst-all/c sub -c)
-  (match -c
-    [(struct c (S X T))
-     (make-c (subst-all sub S)
-             (F-n (subst-all sub (make-F X)))
-             (subst-all sub T))]))
 
 (define (cset-meet x y)
   (match* (x y)

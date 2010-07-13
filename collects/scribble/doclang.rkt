@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
 (require "struct.ss"
          "decode.ss"
-         (for-syntax scheme/base
+         (for-syntax racket/base
                      syntax/kerncase))
 
-(provide (except-out (all-from-out scheme/base) #%module-begin)
+(provide (except-out (all-from-out racket/base) #%module-begin)
          (rename-out [*module-begin #%module-begin]))
 
 ;; Module wrapper ----------------------------------------

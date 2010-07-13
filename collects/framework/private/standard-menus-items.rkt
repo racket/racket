@@ -280,7 +280,7 @@
                            (string-constant quit-menu-item-windows)
                            (string-constant quit-menu-item-others))
                       on-demand-do-nothing
-                      '(not (current-eventspace-has-standard-menus?)))
+                      '(not (eq? (system-type) 'macosx)))
         (make-after 'file-menu 'quit 'nothing)
         
         (make-an-item 'edit-menu 'undo 

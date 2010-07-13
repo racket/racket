@@ -1,12 +1,11 @@
-
-#lang scheme/base
-(require (for-syntax scheme/base)
+#lang racket/base
+(require (for-syntax racket/base)
          syntax/stx
-         "yacc-ext.ss"
-         "yacc-interrupted.ss"
-         "deriv.ss"
-         "deriv-util.ss"
-         "deriv-tokens.ss")
+         "yacc-ext.rkt"
+         "yacc-interrupted.rkt"
+         "deriv.rkt"
+         "deriv-util.rkt"
+         "deriv-tokens.rkt")
 (provide parse-derivation)
 
 (define (deriv-error ok? name value start end)
@@ -202,6 +201,20 @@
       (make local-bind $1 $2 $3 #f)]
      [(local-bind rename-list (? BindSyntaxes))
       (make local-bind $1 #f $2 $3)]
+     [(local-remark)
+      (make local-remark $1)]
+     [(local-artificial-step)
+      (let ([ids (list-ref $1 0)]
+            [before (list-ref $1 1)]
+            [mbefore (list-ref $1 2)]
+            [mafter (list-ref $1 3)]
+            [after (list-ref $1 4)])
+        (make local-expansion
+          before after #f mbefore
+          (make mrule mbefore mafter ids #f
+                before null after #f mafter
+                (make p:stop mafter mafter null #f))
+          #f after #f))]
      ;; -- Not really local actions, but can occur during evaluation
      ;; called 'expand' (not 'local-expand') within transformer
      [(start (? EE)) #f]

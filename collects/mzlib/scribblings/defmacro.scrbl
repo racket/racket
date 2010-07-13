@@ -56,7 +56,7 @@ original expression supplies the lexical context and source location
 for converted elements.
 
 @bold{Important:} Although @scheme[define-macro] is non-hygienic, it
-is still restricted by PLT Scheme's phase separation rules.  This
+is still restricted by Racket's phase separation rules.  This
 means that a macro cannot access run-time bindings, because it is
 executed in the syntax-expansion phase.  Translating code that
 involves @scheme[define-macro] or @scheme[defmacro] from an

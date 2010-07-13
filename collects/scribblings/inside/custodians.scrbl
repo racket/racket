@@ -103,5 +103,15 @@ Installs a function to be called on each custodian-registered item and
                                   void *d);
 }
 
-where @var{d} is the second argument for @var{f}.}
+where @var{d} is the second argument for @var{f}.
 
+At-exit functions are run in reverse of the order that they are
+added. An at-exit function is initially registered (and therefore runs
+last) that flushes each file-stream output port.
+
+An at-exit function should not necessarily apply the closer function
+for every object that it is given. In particular, shutting down a
+file-stream output port would disable the flushing action of the final
+at-exit function. Typically, an at-exit function ignores most objects
+while handling a specific type of object that requires a specific
+clean-up action before the OS-level process terminates.}

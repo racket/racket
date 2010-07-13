@@ -2,14 +2,15 @@
 
 (require "../utils/utils.rkt" 
 	 "signatures.rkt" "constraint-structs.rkt"
-	 (utils tc-utils)
+	 (utils tc-utils) racket/contract
 	 unstable/sequence unstable/hash scheme/match)
 
 (import constraints^)
 (export dmap^)
 
 ;; dcon-meet : dcon dcon -> dcon
-(define (dcon-meet dc1 dc2)
+(d/c (dcon-meet dc1 dc2)
+  (dcon/c dcon/c . -> . dcon/c)
   (match* (dc1 dc2)
     [((struct dcon-exact (fixed1 rest1)) (or (struct dcon (fixed2 rest2))
                                              (struct dcon-exact (fixed2 rest2))))
@@ -20,6 +21,7 @@
                  [c2 fixed2])
         (c-meet c1 c2 (c-X c1)))
       (c-meet rest1 rest2 (c-X rest1)))]
+    ;; redo in the other order to call the first case
     [((struct dcon (fixed1 rest1)) (struct dcon-exact (fixed2 rest2)))
      (dcon-meet dc2 dc1)]
     [((struct dcon (fixed1 #f)) (struct dcon (fixed2 #f)))
@@ -50,10 +52,13 @@
                    [c2 (in-sequence-forever shorter srest)])
           (c-meet c1 c2 (c-X c1)))
         (c-meet lrest srest (c-X lrest))))]
-    [((struct dcon-dotted (c1 bound1)) (struct dcon-dotted (c2 bound2)))
-     (unless (eq? bound1 bound2)
+    [((struct dcon-dotted (fixed1 c1 bound1)) (struct dcon-dotted (fixed2 c2 bound2)))
+     (unless (and (= (length fixed1) (length fixed2))
+                  (eq? bound1 bound2))
        (fail! bound1 bound2))
-     (make-dcon-dotted (c-meet c1 c2 bound1) bound1)]
+     (make-dcon-dotted (for/list ([c1 fixed1] [c2 fixed2])
+                         (c-meet c1 c2 (c-X c1)))
+                       (c-meet c1 c2 bound1) bound1)]
     [((struct dcon _) (struct dcon-dotted _))
      (fail! dc1 dc2)]
     [((struct dcon-dotted _) (struct dcon _))

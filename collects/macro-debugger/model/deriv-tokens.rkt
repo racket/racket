@@ -1,7 +1,6 @@
-
-#lang scheme/base
+#lang racket/base
 (require parser-tools/lex
-         "deriv.ss")
+         "deriv.rkt")
 (provide (all-defined-out))
 
 (define-tokens basic-tokens
@@ -59,6 +58,9 @@
 
    top-begin            ; identifier
    top-non-begin        ; .
+
+   local-remark         ; (listof (U string syntax))
+   local-artificial-step ; (list syntax syntax syntax syntax)
    ))
 
 (define-tokens renames-tokens
@@ -93,6 +95,8 @@
     (#f  start                   ,token-start)
     (#f  top-begin               ,token-top-begin)
     (#f  top-non-begin           ,token-top-non-begin)
+    (#f  local-remark            ,token-local-remark)
+    (#f  local-artificial-step   ,token-local-artificial-step)
 
     ;; Standard signals
     (0   visit                   ,token-visit)

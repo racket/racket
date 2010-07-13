@@ -3,19 +3,20 @@
 (require "../utils/utils.rkt")
 
 (require (rep type-rep object-rep filter-rep rep-utils)
-	 "printer.rkt" "utils.rkt" "resolve.rkt"
+	 #;"printer.rkt" "utils.rkt" "resolve.rkt"
          (utils tc-utils)
          scheme/list
          scheme/match         
          scheme/promise
          scheme/flonum (except-in scheme/contract ->* ->)
-         unstable/syntax unstable/mutated-vars
+         unstable/syntax
          (prefix-in c: scheme/contract)
          (for-syntax scheme/base syntax/parse)
 	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp scheme/flonum))
 
 (provide (all-defined-out)
-         (rename-out [make-Listof -lst]))
+         (rename-out [make-Listof -lst]
+                     [make-MListof -mlst]))
 
 ;; convenient constructors
 
@@ -26,7 +27,9 @@
 (define -val make-Value)
 (define -Param make-Param)
 (define -box make-Box)
+(define -channel make-Channel)
 (define -vec make-Vector)
+(define (-seq . args) (make-Sequence args))
 
 (define-syntax *Un
   (syntax-rules ()
@@ -34,12 +37,16 @@
 
 
 (define (make-Listof elem) (-mu list-rec (*Un (-val null) (-pair elem list-rec))))
+(define (make-MListof elem) (-mu mlist-rec (*Un (-val null) (-mpair elem mlist-rec))))
 
 (define (-lst* #:tail [tail (-val null)] . args)
   (for/fold ([tl tail]) ([a (reverse args)]) (-pair a tl)))
 
 (define (-Tuple l)
   (foldr -pair (-val '()) l))
+
+(define (-Tuple* l b)
+  (foldr -pair b l))
 
 (define (untuple t)
   (match (resolve t)
@@ -51,14 +58,20 @@
 (define-match-expander Listof:
   (lambda (stx)
     (syntax-parse stx
-      [(_ elem-pat)
-       #'(Mu: var (Union: (list (Value: '()) (Pair: elem-pat (F: var)))))])))
+      [(_ elem-pat (~optional var-pat #:defaults ([var-pat #'var])))
+       (syntax/loc stx (Mu: var-pat (Union: (list (Value: '()) (Pair: elem-pat (F: var-pat))))))])))
 
 (define-match-expander List:
   (lambda (stx)
     (syntax-parse stx
       [(_ elem-pats)
        #'(app untuple (? values elem-pats))])))
+
+(define-match-expander MListof:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ elem-pat)
+       #'(Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))])))
 
 
 (d/c (-result t [f -no-filter] [o -no-obj])
@@ -73,10 +86,12 @@
 
 ;; basic types
 
+(define promise-sym (string->uninterned-symbol "Promise"))
+
 (define make-promise-ty
-  (let ([s (string->uninterned-symbol "Promise")])
+  (let ([s promise-sym])
     (lambda (t)
-      (make-Struct s #f (list t) #f #f #'promise? values (list #'values) #'values))))
+      (make-Struct s #f (list (make-fld t #'values #f)) #f #f #'promise? values #'values))))
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
@@ -91,6 +106,7 @@
 (define -String (make-Base 'String #'string?))
 (define -Keyword (make-Base 'Keyword #'keyword?))
 (define -Char (make-Base 'Char #'char?))
+(define -Thread (make-Base 'Thread #'thread?))
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag?))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set?))
 (define -Path (make-Base 'Path #'path?))
@@ -134,7 +150,13 @@
 ;; Numeric hierarchy
 (define -Number (make-Base 'Number #'number?))
 
+;; a complex number can't have an inexact imaginary part and an exact real part
+(define -InexactComplex (make-Base 'InexactComplex #'(and/c number? (lambda (x) (inexact-real? (imag-part x))))))
+
 (define -Flonum (make-Base 'Flonum #'inexact-real?))
+(define -NonnegativeFlonum (make-Base 'Nonnegative-Flonum #'(and/c inexact-real?
+                                                                   (or/c positive? zero?)
+                                                                   (lambda (x) (not (eq? x -0.0))))))
 
 (define -ExactRational 
   (make-Base 'Exact-Rational #'(and/c number? rational? exact?)))
@@ -142,12 +164,19 @@
 (define -ExactPositiveInteger
   (make-Base 'Exact-Positive-Integer #'exact-positive-integer?))
 
+(define -PositiveFixnum
+  (make-Base 'Positive-Fixnum #'(and/c number? fixnum? positive?)))
+(define -NegativeFixnum
+  (make-Base 'Negative-Fixnum #'(and/c number? fixnum? negative?)))
+
 (define -Zero (-val 0))
 (define -Real (*Un -Flonum -ExactRational))
+(define -Fixnum (*Un -PositiveFixnum -NegativeFixnum -Zero))
+(define -NonnegativeFixnum (*Un -PositiveFixnum -Zero))
 (define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))
 (define -Nat -ExactNonnegativeInteger)
 
-(define -Byte -Number)
+(define -Byte -Integer)
 
 
 
@@ -263,8 +292,8 @@
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))
 
-(define (-struct name parent flds accs constructor [proc #f] [poly #f] [pred #'dummy] [cert values])
-  (make-Struct name parent flds proc poly pred cert accs constructor))
+(define (-struct name parent flds constructor [proc #f] [poly #f] [pred #'dummy] [cert values])
+  (make-Struct name parent flds proc poly pred cert constructor))
 
 (d/c (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)

@@ -4,10 +4,23 @@
 
 (define (url str) (tt (a href: str str)))
 
+;;TODO: this should be done with some common function, together with
+;;translating "``" etc.
+(define (split-to-paras xs)
+  (let loop ([cur #f] [paras '()] [xs xs])
+    (cond
+      [(null? xs) (map p (reverse (if cur (cons (reverse cur) paras) paras)))]
+      [cur (if (and (equal? "\n" (car xs))
+                    (pair? (cdr xs)) (equal? "\n" (cadr xs)))
+             (loop #f (cons (reverse cur) paras) (cdr xs))
+             (loop (cons (car xs) cur) paras (cdr xs)))]
+      [else (loop (if (equal? "\n" (car xs)) cur (list (car xs)))
+                  paras (cdr xs))])))
+
 (define ((FAQ tag . ques) . answer)
   @div[class: 'faqentry]{
     @div[class: 'faqques]{@a[name: tag]{@ques}}
-    @div[class: 'faqans]{@answer}})
+    @div[class: 'faqans]{@@(split-to-paras answer)}})
 
 (define styles
   @style/inline{
@@ -39,9 +52,8 @@
     }})
 
 (define new-name
-  (page #:title "From PLT Scheme to Racket"
-    styles
-
+  @page[#:title "From PLT Scheme to Racket"]{
+    @styles
 
     @div[class: 'nestedheading]{PLT Scheme is a Racket}
 
@@ -135,7 +147,7 @@
         possible.}
 
       @@FAQ["edu"]{
-        How can I tell my department that we should teach with Racket in
+        How can I tell my department that we should teach with Racket
         instead of Scheme?  They've never heard of @name{Racket}.
         }{
 
@@ -176,4 +188,4 @@
         it has a vague connection to the word @|ldquo|scheme.@|rdquo|  Mostly,
         though, we just like it.}
 
-      }))
+      }})

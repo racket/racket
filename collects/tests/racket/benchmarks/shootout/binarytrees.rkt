@@ -1,54 +1,57 @@
 #lang racket/base
 
-;;; The Great Computer Language Shootout
+;;; The Computer Language Benchmarks Game
 ;;; http://shootout.alioth.debian.org/
 ;;; Derived from the Chicken variant by Sven Hartrumpf
 
-(require racket/cmdline)
+(require racket/cmdline racket/require (for-syntax racket/base)
+         (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+                      racket/unsafe/ops))
 
-(struct node (left val right))
+(struct *leaf (val))
+(struct *node *leaf (left right))
 
-;; Instead of (define-struct leaf (val)):
-(define (leaf val) (node #f val #f))
-(define (leaf? l) (not (node-left l)))
-(define (leaf-val l) (node-val l))
+(define-syntax leaf  (make-rename-transformer #'*leaf))
+(define-syntax leaf? (make-rename-transformer #'*leaf?))
+(define-syntax node  (make-rename-transformer #'*node))
+(define-syntax node? (make-rename-transformer #'*node?))
+(define-syntax-rule (leaf-val l)   (struct-ref l 0))
+(define-syntax-rule (node-left n)  (struct-ref n 1))
+(define-syntax-rule (node-right n) (struct-ref n 2))
 
 (define (make item d)
-  (if (= d 0)
-      (leaf item)
-      (let ((item2 (* item 2))
-            (d2 (- d 1)))
-        (node (make (- item2 1) d2) 
-              item 
-              (make item2 d2)))))
+  (if (fx= d 0)
+    (leaf item)
+    (let ([item2 (fx* item 2)] [d2 (fx- d 1)])
+      (node item (make (fx- item2 1) d2) (make item2 d2)))))
 
 (define (check t)
-  (if (leaf? t)
-      (leaf-val t)
-      (+ (node-val t) (- (check (node-left t)) 
-                         (check (node-right t))))))
+  (let loop ([t t] [acc 0])
+    (let ([acc (fx+ (leaf-val t) acc)])
+      (if (node? t)
+        (loop (node-left t)
+              (fx- acc (loop (node-right t) 0)))
+        acc))))
+
+(define min-depth 4)
 
 (define (main n)
-  (let* ((min-depth 4)
-         (max-depth (max (+ min-depth 2) n)))
-    (let ((stretch-depth (+ max-depth 1)))
+  (let ([max-depth (max (+ min-depth 2) n)])
+    (let ([stretch-depth (+ max-depth 1)])
       (printf "stretch tree of depth ~a\t check: ~a\n"
               stretch-depth
               (check (make 0 stretch-depth))))
-    (let ((long-lived-tree (make 0 max-depth)))
-      (for ((d (in-range 4 (add1 max-depth) 2)))
-        (let ((iterations (arithmetic-shift 1 (+ (- max-depth d) min-depth))))
+    (let ([long-lived-tree (make 0 max-depth)])
+      (for ([d (in-range 4 (+ max-depth 1) 2)])
+        (let ([iterations (expt 2 (+ (- max-depth d) min-depth))])
           (printf "~a\t trees of depth ~a\t check: ~a\n"
                   (* 2 iterations)
                   d
-                  (for/fold ([c 0])
-                            ([i (in-range iterations)])
-                    (+ c 
-                       (check (make i d)) 
-                       (check (make (- i) d)))))))
+                  (for/fold ([c 0]) ([i (in-range iterations)])
+                    (fx+ c (fx+ (check (make i d))
+                                (check (make (fx- 0 i) d))))))))
       (printf "long lived tree of depth ~a\t check: ~a\n"
               max-depth
               (check long-lived-tree)))))
 
-(command-line #:args (n) 
-              (main (string->number n)))
+(command-line #:args (n) (main (string->number n)))
