@@ -2,7 +2,7 @@
 
 @(require (for-label (only-in racket/contract and/c or/c any/c not/c)
                      2htdp/image
-                     (except-in lang/htdp-beginner make-posn posn? posn-x posn-y image?)
+                     (except-in lang/htdp-beginner posn make-posn posn? posn-x posn-y image?)
                      lang/posn
                      racket/gui/base
                      (only-in racket/base path-string?))
