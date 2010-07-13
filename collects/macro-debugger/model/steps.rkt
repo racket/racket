@@ -112,7 +112,8 @@
           rename-case-lambda
           rename-let-values
           rename-letrec-values
-          rename-lsv)))
+          rename-lsv
+          track-origin)))
 
 (define (rewrite-step? x)
   (and (step? x) (not (rename-step? x))))

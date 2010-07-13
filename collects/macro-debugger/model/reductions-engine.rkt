@@ -150,7 +150,7 @@
                       (current-state-with v (with-syntax1 ([p f]) fs)))]
              [type-var type])
          (DEBUG
-          (printf "visibility = ~s\n" (visibility))
+          (printf "visibility = ~s\n" (if (visibility) 'VISIBLE 'HIDDEN))
           (printf "step: s1 = ~s\n" s)
           (printf "step: s2 = ~s\n\n" s2))
          (let ([ws2
@@ -324,7 +324,7 @@
          (visibility-off (not previous-pass-hides?)
                          v
                          (lambda ()
-                           (print-viable-subterms v)
+                           (when #f (print-viable-subterms v))
                            (R** f v p s ws clause ... => k))
                          #t))]
 
@@ -495,26 +495,29 @@
 (define (seek-point stx vstx k)
   (if (visibility)
       (k vstx)
-      (let ([paths (table-get (subterms-table) stx)])
-        (cond [(null? paths)
-               (DEBUG (printf "seek-point: failed on ~.s\n" (stx->datum stx)))
-               (k vstx)]
-              [(null? (cdr paths))
-               (let ([path (car paths)])
-                 (DEBUG (printf "seek => hide: ~.s\n" (stx->datum stx)))
-                 (let ([ctx (lambda (x) (path-replace vstx path x))])
-                   (RScase (parameterize ((visibility #t)
-                                          (subterms-table #f)
-                                          (marking-table #f))
-                             ;; Found stx within vstx
-                             (with-context ctx (k stx)))
-                           (lambda (ws2 stx2 vstx2 s2)
-                             (let ([vstx2 (ctx vstx2)])
-                               (RSunit ws2 stx2 vstx2 s2)))
-                           (lambda (ws exn)
-                             (RSfail ws exn)))))]
-              [else
-               (raise (make nonlinearity stx paths))]))))
+      (begin
+        (DEBUG (printf "Seek point\n")
+               (print-viable-subterms stx))
+        (let ([paths (table-get (subterms-table) stx)])
+          (cond [(null? paths)
+                 (DEBUG (printf "seek-point: failed on ~.s\n" (stx->datum stx)))
+                 (k vstx)]
+                [(null? (cdr paths))
+                 (let ([path (car paths)])
+                   (DEBUG (printf "seek => hide: ~.s\n" (stx->datum stx)))
+                   (let ([ctx (lambda (x) (path-replace vstx path x))])
+                     (RScase (parameterize ((visibility #t)
+                                            (subterms-table #f)
+                                            (marking-table #f))
+                               ;; Found stx within vstx
+                               (with-context ctx (k stx)))
+                             (lambda (ws2 stx2 vstx2 s2)
+                               (let ([vstx2 (ctx vstx2)])
+                                 (RSunit ws2 stx2 vstx2 s2)))
+                             (lambda (ws exn)
+                               (RSfail ws exn)))))]
+                [else
+                 (raise (make nonlinearity stx paths))])))))
 
 (provide print-viable-subterms)
 (define (print-viable-subterms stx)
