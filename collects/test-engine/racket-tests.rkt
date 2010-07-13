@@ -3,7 +3,8 @@
 (require lang/private/teachprims
          scheme/class
          scheme/match
-         (only scheme/base for memf)
+	 lang/private/continuation-mark-key
+         (only scheme/base for memf findf)
          "test-engine.scm"
 	 "test-info.scm"
          )
@@ -340,6 +341,48 @@
 
 (define scheme-test-data (make-parameter (list #f #f #f)))
 
+(define signature-test-info%
+  (class* test-info-base% ()
+	 
+    (define signature-violations '())
+
+    (define/pubment (signature-failed obj signature message blame)
+
+      (let* ((cms
+	      (continuation-mark-set->list (current-continuation-marks)
+					   teaching-languages-continuation-mark-key))
+	     (srcloc
+	      (cond
+	       ((findf (lambda (mark)
+			 (and mark
+			      (or (path? (car mark))
+				  (symbol? (car mark)))))
+		       cms)
+		=> (lambda (mark)
+		     (apply (lambda (source line col pos span)
+			      (make-srcloc source line col pos span))
+			    mark)))
+	       (else #f)))
+	     (message
+	      (or message
+		  (make-signature-got obj (test-format)))))
+		  
+	(set! signature-violations
+	      (cons (make-signature-violation obj signature message srcloc blame)
+		    signature-violations)))
+      (inner (void) signature-failed obj signature message))
+
+    (define/public (failed-signatures) (reverse signature-violations))
+    
+    (inherit add-check-failure)
+    (define/pubment (property-failed result src-info)
+      (add-check-failure (make-property-fail src-info (test-format) result) #f))
+
+    (define/pubment (property-error exn src-info)
+      (add-check-failure (make-property-error src-info (test-format) (exn-message exn) exn) exn))
+
+    (super-instantiate ())))
+
 (define scheme-test%
   (class* test-engine% ()
     (super-instantiate ())
@@ -348,6 +391,8 @@
 
     (field [tests null]
            [test-objs null])
+
+    (define/override (info-class) signature-test-info%)
 
     (define/public (add-test tst)
       (set! tests (cons tst tests)))
@@ -366,4 +411,5 @@
       (test)
       (inner (void) run-test test))))
 
-(provide scheme-test-data test-format test-execute test-silence error-handler)
+(provide scheme-test-data test-format test-execute test-silence error-handler 
+	 signature-test-info% build-test-engine)
