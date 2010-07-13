@@ -139,7 +139,8 @@
            #:with opt
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
-  (pattern (~and exp (#%plain-app (~var op (float-op binary-inexact-complex-ops))
+  (pattern (~and exp (#%plain-app (~or (~var op (float-op binary-inexact-complex-ops))
+                                       (~and op (~literal conjugate)))
                                   e:inexact-complex-expr ...))
            #:with exp*:unboxed-inexact-complex-opt-expr #'exp
            #:with opt
