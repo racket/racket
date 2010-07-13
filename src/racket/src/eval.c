@@ -12366,7 +12366,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       f = scheme_syntax_validaters[p];
       f((Scheme_Object *)SCHEME_IPTR_VAL(expr), port, stack, tls, depth, letlimit, delta, 
-        num_toplevels, num_stxes, num_lifts, vc, tailpos, procs);
+        num_toplevels, num_stxes, num_lifts, result_ignored, vc, tailpos, procs);
     }
     break;
   case scheme_application_type:

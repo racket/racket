@@ -164,61 +164,61 @@ static Scheme_Object *bangboxenv_sfs(Scheme_Object *data, SFS_Info *info);
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                    char *stack, Validate_TLS tls,
                                    int depth, int letlimit, int delta, 
-				   int num_toplevels, int num_stxes, int num_lifts,
+				   int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                    struct Validate_Clearing *vc, int tailpos,
                                    Scheme_Hash_Tree *procs);
 static void ref_validate(Scheme_Object *data, Mz_CPort *port, 
                          char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-			 int num_toplevels, int num_stxes, int num_lifts,
+			 int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                          struct Validate_Clearing *vc, int tailpos,
                          Scheme_Hash_Tree *procs);
 static void set_validate(Scheme_Object *data, Mz_CPort *port, 
                          char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-			 int num_toplevels, int num_stxes, int num_lifts,
+			 int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                          struct Validate_Clearing *vc, int tailpos,
                          Scheme_Hash_Tree *procs);
 static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
                                      char *stack, Validate_TLS tls,
                                      int depth, int letlimit, int delta, 
-				     int num_toplevels, int num_stxes, int num_lifts,
+				     int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                      struct Validate_Clearing *vc, int tailpos,
                                      Scheme_Hash_Tree *procs);
 static void define_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
                                          char *stack, Validate_TLS tls,
                                          int depth, int letlimit, int delta, 
-					 int num_toplevels, int num_stxes, int num_lifts,
+					 int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                          struct Validate_Clearing *vc, int tailpos,
                                          Scheme_Hash_Tree *procs);
 static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, 
                                  char *stack, Validate_TLS tls,
                                  int depth, int letlimit, int delta, 
-				 int num_toplevels, int num_stxes, int num_lifts,
+				 int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                  struct Validate_Clearing *vc, int tailpos,
                                  Scheme_Hash_Tree *procs);
 static void begin0_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta,
-			    int num_toplevels, int num_stxes, int num_lifts,
+			    int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                             struct Validate_Clearing *vc, int tailpos,
                             Scheme_Hash_Tree *procs);
 static void apply_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                   char *stack, Validate_TLS tls,
                                   int depth, int letlimit, int delta,
-                                  int num_toplevels, int num_stxes, int num_lifts,
+                                  int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                   struct Validate_Clearing *vc, int tailpos,
                                   Scheme_Hash_Tree *procs);
 static void splice_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta,
-                            int num_toplevels, int num_stxes, int num_lifts,
+                            int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                             struct Validate_Clearing *vc, int tailpos,
                             Scheme_Hash_Tree *procs);
 static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
                                 char *stack, Validate_TLS tls,
                                 int depth, int letlimit, int delta,
-				int num_toplevels, int num_stxes, int num_lifts,
+				int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                 struct Validate_Clearing *vc, int tailpos,
                                 Scheme_Hash_Tree *procs);
 
@@ -900,7 +900,7 @@ static Scheme_Object *define_values_jit(Scheme_Object *data)
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
 				   char *stack,  Validate_TLS tls,
                                    int depth, int letlimit, int delta, 
-                                   int num_toplevels, int num_stxes, int num_lifts,
+                                   int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                    struct Validate_Clearing *vc, int tailpos,
                                    Scheme_Hash_Tree *procs)
 {
@@ -1540,7 +1540,7 @@ static Scheme_Object *set_jit(Scheme_Object *data)
 static void set_validate(Scheme_Object *data, Mz_CPort *port, 
 			 char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-                         int num_toplevels, int num_stxes, int num_lifts,
+                         int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                          struct Validate_Clearing *vc, int tailpos,
                          Scheme_Hash_Tree *procs)
 {
@@ -1902,7 +1902,7 @@ static Scheme_Object *ref_jit(Scheme_Object *data)
 static void ref_validate(Scheme_Object *tl, Mz_CPort *port, 
 			 char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-                         int num_toplevels, int num_stxes, int num_lifts,
+                         int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                          struct Validate_Clearing *vc, int tailpos,
                          Scheme_Hash_Tree *procs)
 {
@@ -2178,7 +2178,7 @@ apply_values_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int del
 static void apply_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                   char *stack, Validate_TLS tls,
                                   int depth, int letlimit, int delta, 
-                                  int num_toplevels, int num_stxes, int num_lifts,
+                                  int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                   struct Validate_Clearing *vc, int tailpos,
                                   Scheme_Hash_Tree *procs)
 {
@@ -2343,7 +2343,7 @@ static Scheme_Object *case_lambda_jit(Scheme_Object *expr)
 
 static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Validate_TLS tls,
 				 int depth, int letlimit, int delta, 
-                                 int num_toplevels, int num_stxes, int num_lifts,
+                                 int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                  struct Validate_Clearing *vc, int tailpos,
                                  Scheme_Hash_Tree *procs)
 {
@@ -2743,7 +2743,7 @@ static Scheme_Object *bangboxenv_jit(Scheme_Object *data)
 static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
 				char *stack, Validate_TLS tls,
                                 int depth, int letlimit, int delta, 
-                                int num_toplevels, int num_stxes, int num_lifts,
+                                int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                 struct Validate_Clearing *vc, int tailpos,
                                 Scheme_Hash_Tree *procs)
 {
@@ -2754,7 +2754,7 @@ static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port,
 
   scheme_validate_expr(port, SCHEME_CDR(data), stack, tls, depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0, 0, vc, tailpos, 0, procs);
+                       NULL, 0, result_ignored, vc, tailpos, 0, procs);
 }
 
 /**********************************************************************/
@@ -5171,7 +5171,7 @@ static Scheme_Object *begin0_jit(Scheme_Object *data)
 static void begin0_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
 			    int depth, int letlimit, int delta, 
-                            int num_toplevels, int num_stxes, int num_lifts,
+                            int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                             struct Validate_Clearing *vc, int tailpos,
                             Scheme_Hash_Tree *procs)
 {
@@ -5569,7 +5569,7 @@ splice_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, in
 static void splice_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta, 
-                            int num_toplevels, int num_stxes, int num_lifts,
+                            int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                             struct Validate_Clearing *vc, int tailpos,
                             Scheme_Hash_Tree *procs)
 {
@@ -5898,7 +5898,7 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
 static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
 				     char *stack, Validate_TLS tls,
                                      int depth, int letlimit, int delta, 
-				     int num_toplevels, int num_stxes, int num_lifts,
+				     int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                      struct Validate_Clearing *vc, int tailpos,
                                      Scheme_Hash_Tree *procs)
 {
@@ -5909,7 +5909,7 @@ static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
 static void define_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
 					 char *stack, Validate_TLS tls,
                                          int depth, int letlimit, int delta, 
-					 int num_toplevels, int num_stxes, int num_lifts,
+					 int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                          struct Validate_Clearing *vc, int tailpos,
                                          Scheme_Hash_Tree *procs)
 {

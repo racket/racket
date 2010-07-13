@@ -2129,7 +2129,7 @@ struct Validate_Clearing;
 typedef void (*Scheme_Syntax_Validater)(Scheme_Object *data, Mz_CPort *port, 
                                         char *stack, Validate_TLS tls,
 					int depth, int letlimit, int delta,
-					int num_toplevels, int num_stxes, int num_lifts,
+					int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                         struct Validate_Clearing *vc, int tailpos,
                                         Scheme_Hash_Tree *procs);
 
