@@ -146,19 +146,21 @@
         leftover)
      (let-values ([(raw-optional-doms id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)]
                   [(this->i) (gensym '->i)])
+       (define (add-indy-prop stx)
+         (syntax-property stx 'racket/contract:internal-contract (gensym '->i-boundary)))
        (with-syntax ([(([mandatory-regular-id mandatory-dom/no-prop] ... ) 
                        ([mandatory-kwd (mandatory-kwd-id mandatory-kwd-dom/no-prop)] ...)) 
                       (verify-->i-structure stx (split-doms stx '->i #'(raw-mandatory-doms ...)))]
                      [(([optional-regular-id optional-dom/no-prop] ...)
                        ([optional-kwd (optional-kwd-id optional-kwd-dom/no-prop)] ...))
                       (verify-->i-structure stx (split-doms stx '->i raw-optional-doms))])
-         (with-syntax ([(mandatory-dom ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->i)) 
+         (with-syntax ([(mandatory-dom ...) (map (λ (x) (add-indy-prop (syntax-property x 'racket/contract:negative-position this->i))) 
                                                  (syntax->list #'(mandatory-dom/no-prop ...)))]
-                       [(mandatory-kwd-dom ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->i)) 
+                       [(mandatory-kwd-dom ...) (map (λ (x) (add-indy-prop (syntax-property x 'racket/contract:negative-position this->i))) 
                                                      (syntax->list #'(mandatory-kwd-dom/no-prop ...)))]
-                       [(optional-dom ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->i)) 
+                       [(optional-dom ...) (map (λ (x) (add-indy-prop (syntax-property x 'racket/contract:negative-position this->i))) 
                                                 (syntax->list #'(optional-dom/no-prop ...)))]
-                       [(optional-kwd-dom ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->i)) 
+                       [(optional-kwd-dom ...) (map (λ (x) (syntax-property x 'racket/contract:negative-position this->i)) 
                                                     (syntax->list #'(optional-kwd-dom/no-prop ...)))])
          (with-syntax ([((kwd kwd-id) ...)
                         (sort-keywords 
@@ -182,13 +184,13 @@
              (with-syntax ([((rng-params ...) rng-ctcs)
                             (syntax-case range (any values)
                               [(values [id ctc/no-prop] ...)
-                               (with-syntax ([(ctc ...) (map (λ (x) (syntax-property x 'racket/contract:rng-of this->i))
+                               (with-syntax ([(ctc ...) (map (λ (x) (add-indy-prop (syntax-property x 'racket/contract:positive-position this->i)))
                                                              (syntax->list #'(ctc/no-prop ...)))])
                                  #'((id ...) (ctc ...)))]
                               [(values [id ctc] ... x . y) (raise-syntax-error #f "expected binding pair" stx #'x)]
                               [any #'(() #f)]
                               [[id ctc] 
-                               #`((id) (#,(syntax-property #'ctc 'racket/contract:rng-of this->i)))]
+                               #`((id) (#,(add-indy-prop (syntax-property #'ctc 'racket/contract:positive-position this->i))))]
                               [x (raise-syntax-error #f "expected binding pair or any" stx #'x)])]
                            [mtd? (and (syntax-parameter-value #'making-a-method) #t)])
                (let ([rng-underscores? 
@@ -232,7 +234,6 @@
                      (syntax-parameterize 
                       ((making-a-method #f)) 
                       #,(syntax-property
-                         (syntax-property
                          #`(build-->d mtd? 
                                       (list (λ (dom-params ...)
                                               (parameterize-this this-parameter ... mandatory-dom)) ...)
@@ -279,9 +280,7 @@
                                          kwd))
                                    (if pre-kwd
                                        (list pre-kwd)
-                                       '()))))
-                         'racket/contract:internal-contract
-                         (gensym '->i-boundary)))))))))))]))
+                                       '())))))))))))))]))
 
 (define ->d-tail-key (gensym '->d-tail-key))
 

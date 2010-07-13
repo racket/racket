@@ -301,11 +301,11 @@ v4 todo:
       (with-syntax ([(dom-names ...) dom-names]
                     [(rng-names ...) rng-names]
                     [(kwd-names ...) kwd-names]
-                    [(dom-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->)) 
+                    [(dom-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:negative-position this->)) 
                                          (syntax->list dom-ctcs))]
-                    [(rng-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:rng-of this->))
+                    [(rng-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:positive-position this->))
                                          (syntax->list rng-ctcs))]
-                    [(kwd-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->))
+                    [(kwd-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:negative-position this->))
                                          (syntax->list kwd-ctcs))]
                     [(kwds ...) kwds]
                     [inner-lambda 

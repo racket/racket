@@ -753,12 +753,13 @@
                                             'type-name val))
                        (fill-name p-app val))))))))))]))
 
-(define listof
-  (*-immutableof list? for-each map andmap list listof))
+(define listof-func (*-immutableof list? for-each map andmap list listof))
+(define/subexpression-pos-prop (listof x) (listof-func x))
 
 (define (non-empty-list? x) (and (pair? x) (list? (cdr x))))
-(define non-empty-listof
+(define non-empty-listof-func
   (*-immutableof non-empty-list? for-each map andmap non-empty-list non-empty-listof))
+(define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
 (define/final-prop (immutable-vector? val) (and (immutable? val) (vector? val)))
 
@@ -978,7 +979,8 @@
                                          [i (in-naturals)])
                                 (p (selector-name v i)))))))))))))]))
 
-(define cons/c (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
+(define cons/c-main-function (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
+(define/subexpression-pos-prop (cons/c a b) (cons/c-main-function a b))
 (define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))
 (define vector-immutable/c (*-immutable/c vector?
                                           vector-immutable

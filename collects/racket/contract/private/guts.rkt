@@ -435,7 +435,7 @@
                  [(_ margs (... ...))
                   (let ([this-one (gensym 'ctc)])
                     (with-syntax ([(margs (... ...)) 
-                                   (map (λ (x) (syntax-property x 'racket/contract:rng-of this-one))
+                                   (map (λ (x) (syntax-property x 'racket/contract:positive-position this-one))
                                         (syntax->list #'(margs (... ...))))])
                       (syntax-property 
                        #'(ctc/proc margs (... ...))

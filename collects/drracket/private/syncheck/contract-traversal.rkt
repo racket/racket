@@ -21,8 +21,8 @@
   (let loop ([stx stx])
     (add-to-map stx 'racket/contract:contract-on-boundary boundary-start-map)
     (add-to-map stx 'racket/contract:internal-contract internal-start-map)
-    (add-to-map stx 'racket/contract:domain-of domain-map)
-    (add-to-map stx 'racket/contract:rng-of range-map)
+    (add-to-map stx 'racket/contract:negative-position domain-map)
+    (add-to-map stx 'racket/contract:positive-position range-map)
     (add-to-map stx 'racket/contract:function-contract arrow-map)
     (syntax-case stx ()
       [(a . b) (loop #'a) (loop #'b)]
@@ -44,7 +44,7 @@
                              my-coloring-plans client-coloring-plans
                              low-binders binding-inits
                              arrow-map domain-map range-map
-                             #t)))
+                             #f)))
   
   ;; enact the coloring plans
   (for ((coloring-plans (in-list (list my-coloring-plans client-coloring-plans)))
