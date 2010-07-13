@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket/base
 
 (require "contexts.ss"
          "util.ss"
@@ -8,7 +8,8 @@
          syntax/parse
          syntax/parse/experimental/splicing
          "syntax.ss"
-         (for-syntax syntax/parse)
+         (for-syntax syntax/parse
+                     racket/base)
          macro-debugger/emit
          scheme/splicing
          (for-syntax syntax/define)
@@ -18,7 +19,7 @@
          (for-syntax syntax/private/stxparse/runtime-prose
                      syntax/private/stxparse/runtime
                      )
-         (for-template scheme/base))
+         (for-template racket/base))
 
 (provide (all-defined-out))
 
@@ -116,7 +117,7 @@
                                  (printf "Transforming honu macro ~a\n" (car stx))
                                  (let-values ([(used rest)
                                                (transformer (introducer stx) context)])
-                                   (list rest (syntax-object-position stx rest)
+                                   (list (introducer rest) (syntax-object-position stx rest)
                                          (introducer (used)))))]
      
      [else (syntax-case stx ()
@@ -144,6 +145,18 @@
                     (printf "Trying a call on ~a and ~a\n" #'e #'(rest ...))
                     #f)]
 
+  [pattern (~seq (~var e (expression-simple context))
+                 (#%parens 
+                  (~seq (~var arg (ternary context))
+                        (~var d3 (debug-here (format "call 3 ~a\n" #'arg)))
+                        (~optional honu-comma))
+                  ...))
+           #:with call
+             (begin
+               (printf "Resulting call is ~a\n" (syntax->datum #'(e.result arg.result ...)))
+               #'(e.result arg.result ...))]
+
+  #;
   [pattern (~seq (~var e honu-identifier
                        #;
                        (honu-expr context))
@@ -161,7 +174,21 @@
              #'(e.x arg.result ...))])
 
 (define-splicing-syntax-class honu-identifier
-  [pattern (~seq x:identifier) #:when (not (free-identifier=? #'honu-comma #'x))])
+  [pattern (~seq x:identifier) #:when (not (or (free-identifier=? #'honu-comma #'x)
+                                               (free-identifier=? #'semicolon #'x))
+                                           )
+                               #:with result #'x])
+
+(define-splicing-syntax-class (expression-simple context)
+                              #:literals (#%parens)
+  [pattern (~seq (#%parens (~var e (expression-1 context)))) #:with result #'e.result]
+  [pattern (~seq (~var e (honu-transformer
+                           the-expression-context
+                           #;
+                           context))) #:with result #'e.result]
+  [pattern (~seq x:number) #:with result (begin (printf "got a number ~a\n" #'x) #'x)]
+  [pattern (~seq x:str) #:with result #'x]
+  [pattern (~seq x:honu-identifier) #:with result #'x.x])
 
 (define-splicing-syntax-class (expression-last context)
                               #:literals (#%parens)
@@ -179,11 +206,13 @@
                     #'raw))]
 
   [pattern (~seq (#%parens (~var e (expression-1 context)))) #:with result #'e.result]
+  [pattern (~seq (~var call (call context))) #:with result #'call.call]
   [pattern (~seq (~var e (honu-transformer
                            the-expression-context
                            #;
-                           context))) #:with result #'e.result]
-  [pattern (~seq (~var call (call context))) #:with result #'call.call]
+                           context)))
+           #:with result #'e.result
+           #:with rest #'e.rest]
   [pattern (~seq x:number) #:with result (begin (printf "got a number ~a\n" #'x) #'x)]
   [pattern (~seq x:str) #:with result #'x]
   [pattern (~seq x:honu-identifier) #:with result #'x.x]
@@ -324,7 +353,7 @@
                      [pattern ((~var x0 (debug-here (format "expression top\n")))
                                (~var e (ternary context))
                                (~var x1 (debug-here (format "expression top 1 ~a\n" (syntax->datum #'e))))
-                               semicolon
+                               semicolon ...
                                (~var x2 (debug-here "expression top 2"))
                                . rest)
                               #:with result #'e.result])
@@ -549,6 +578,7 @@
                                  (parse-block-one/2 #'(stuff ... more ...) context))])
                    (values out rest2))))
         ]
+    #;
     [(get-transformer stx) => (lambda (transformer)
                                 (define introducer (make-syntax-introducer))
                                 (define introduce introducer)

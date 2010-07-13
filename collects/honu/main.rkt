@@ -71,14 +71,13 @@
                      ...
                      map
                      syntax->list
-                     identifier
+                     ;identifier
                      expression
                      statement
                      (rename-out (semicolon \;
                                             )
                                  (ellipses-comma ec)
                                  (ellipses-repeat repeat)
-                                 #;
                                  (honu-identifier identifier)
                                  (expression-comma expression_comma)
                                  (honu-macro macro)
@@ -107,6 +106,7 @@
          let
          ;; end stuff
          else
+         lambda
          #%app
          (for-template #%app)
          quote
@@ -117,14 +117,17 @@
          define-struct
          #;
          (for-template #%parens #%brackets #%braces)
+         in-range
          ;; (for-meta 2 (rename-out (honu-syntax syntax)))
          (rename-out
            (syntax real-syntax)
+           (for scheme-for)
            (honu-if if)
            (honu-provide provide)
            (honu-macro-item macroItem)
            (honu-macro macro)
            (honu-identifier identifier)
+           (honu-identifier identifier123)
            (honu-require require)
            (honu-for-syntax forSyntax)
            (honu-syntax syntax)

@@ -355,11 +355,12 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 (define-honu-syntax honu-keywords
   (lambda (stx ctx)
     (syntax-parse stx #:literals (semicolon)
-      [(_ word:identifier ... semicolon . rest)
+      [(_ keyword:honu-identifier ... semicolon . rest)
        (values (lambda () (apply-scheme-syntax
-                            #'(begin
-                                (define-syntax word (lambda (xx) (raise-syntax-error 'word "dont use this")))
-                              ...)))
+                            (syntax/loc stx
+                                        (begin
+                                          (define-syntax keyword.x (lambda (xx) (raise-syntax-error 'keyword.x "dont use this")))
+                                          ...))))
                #'rest)])))
 
 (define-honu-syntax honu-if
@@ -517,10 +518,11 @@ if (foo){
 (define-honu-syntax honu-provide
   (lambda (body ctx)
     (syntax-parse body #:literals (semicolon)
-      [(_ x:id ... semicolon . rest)
+      [(_ x:honu-identifier ... semicolon . rest)
        (values
          (lambda ()
-           #'(provide x ...))
+           (printf "Providing ~a\n" #'(x ...))
+           #'(provide x.x ...))
          #'rest)])))
 
 (define-honu-syntax honu-require

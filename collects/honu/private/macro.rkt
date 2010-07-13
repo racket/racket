@@ -460,17 +460,25 @@
 
 (define-honu-syntax honu-macro
   (lambda (stx ctx)
+    (define-splicing-syntax-class patterns
+                         #:literal-sets ([cruft #:phase (syntax-local-phase-level)])
+      [pattern (~seq (#%braces template ...)
+                     (#%braces code ...))
+               #:with (fixed ...) (fix-template #'(template ...))])
     (define-syntax-class honu-macro3
                          ;; #:literals (#%parens #%braces)
                          #:literal-sets ([cruft ;;#:at stx
                                            #:phase (syntax-local-phase-level)
                                            ])
       [pattern (_ name (#%parens literals ...)
-                  (#%braces template ...) (#%braces code ...)
+                  pattern:patterns ...
                   . rest)
                #:with result
                (list
-                 (with-syntax ([(fixed ...) (fix-template #'(template ...))]
+                 (with-syntax (
+                               #;
+                               [(fixed ...) (fix-template #'(template ...))]
+                               #;
                                [first-pattern (stx-car #'(template ...))]
                                #;
                                [your-bracket (datum->syntax #'name '#%brackets #'name)]
@@ -492,7 +500,8 @@
                               (let ([result (honu-unparsed-begin code ...)])
                                 (lambda () result))
                               #'(rrest (... ...)))])))
-                   (printf "Original pattern ~a\n" (syntax->datum #'(fixed ... rrest (... ...))))
+                   #;
+                   (printf "Original pattern ~a\n" (syntax->datum #'(pattern.fixed ... rrest (... ...))))
                    (apply-scheme-syntax
                    (syntax/loc stx
                                (define-honu-syntax name
@@ -502,7 +511,7 @@
                                    (syntax-parse stx
                                      #:literal-sets ([cruft #:at name])
                                      #:literals (foobar literals ...)
-                                     [(fixed ... rrest (... ...))
+                                     [(pattern.fixed ... rrest (... ...))
                                       (values
                                         #;
                                         (with-syntax ([(real-out (... ...)) #'(code ...)])
@@ -513,11 +522,13 @@
                                           (emit-remark "Do macro transformer" (quote-syntax (code ...)))
                                           #;
                                           (printf "Macro transformer `~a'\n" (syntax->datum (quote-syntax (code ...))))
-                                          (let ([result (honu-unparsed-begin code ...)])
+                                          (let ([result (honu-unparsed-begin pattern.code ...)])
                                             (lambda ()
                                               (emit-remark "Excuting macro " (symbol->string 'name))
                                               result)))
-                                        #'(rrest (... ...)))]))))))
+                                        #'(rrest (... ...)))]
+                                     ...
+                                     ))))))
                  #;
                  (with-syntax ([parsed (let-values ([(out rest*)
                                                      (parse-block-one/2 #'(code ...)
