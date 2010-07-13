@@ -73,7 +73,6 @@
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-part and imag-part
-                     ;; we currently don't skip imaginary parts of reals
                      #,@(let ((l (map (lambda (x) (if (syntax->datum x) x #'0.0))
                                       (syntax->list #'(c1.imag-part c2.imag-part cs.imag-part ...)))))
                           (let loop ([o1 #'c1.real-part]
@@ -91,13 +90,23 @@
                                 (reverse res)
                                 (loop (car rs) (car is) (cdr e1) (cdr e2) (cdr rs) (cdr is)
                                       ;; complex multiplication, imag part, then real part (reverse)
-                                      (list* #`(#,(car is)
-                                                (unsafe-fl+ (unsafe-fl* #,o2 #,(car e1))
-                                                            (unsafe-fl* #,o1 #,(car e2))))
-                                             #`(#,(car rs)
-                                                (unsafe-fl- (unsafe-fl* #,o1 #,(car e1))
-                                                            (unsafe-fl* #,o2 #,(car e2))))
-                                             res))))))))
+                                      ;; we eliminate operations on the imaginary parts of reals
+                                      (let ((o-real? (equal? (syntax->datum o2) 0.0))
+                                            (e-real? (equal? (syntax->datum (car e2)) 0.0)))
+                                        (list* #`(#,(car is)
+                                                  #,(cond ((and o-real? e-real?) #'0.0)
+                                                          (o-real? #`(unsafe-fl* #,o1 #,(car e2)))
+                                                          (e-real? #`(unsafe-fl* #,o2 #,(car e1)))
+                                                          (else
+                                                           #`(unsafe-fl+ (unsafe-fl* #,o2 #,(car e1))
+                                                                         (unsafe-fl* #,o1 #,(car e2))))))
+                                               #`(#,(car rs)
+                                                  #,(cond ((or o-real? e-real?)
+                                                           #`(unsafe-fl* #,o1 #,(car e1)))
+                                                          (else
+                                                           #`(unsafe-fl- (unsafe-fl* #,o1 #,(car e1))
+                                                                         (unsafe-fl* #,o2 #,(car e2))))))
+                                             res)))))))))
   (pattern (#%plain-app (~and op (~literal /))
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
