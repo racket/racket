@@ -1,7 +1,8 @@
 #lang racket/base
 (require ffi/unsafe
          racket/stxparam
-         (for-syntax racket/base))
+         (for-syntax racket/base)
+         "atomic.rkt")
 
 (define objc-lib (ffi-lib "libobjc"))
 
@@ -91,9 +92,14 @@
        ;; simple as this:
        ((ctype-sizeof v) . <= . 16))]))
 
+;; Make `msgSends' access atomic, so that a thread cannot be suspended
+;; or killed during access, whcih would block other threads.
+(define-syntax-rule (as-atomic e)
+  (begin (start-atomic) (begin0 e (end-atomic))))
+
 (define (lookup-send types msgSends msgSend msgSend_fpret msgSend_stret first-arg-type)
   ;; First type in `types' vector is the result type
-  (or (hash-ref msgSends types #f)
+  (or (as-atomic (hash-ref msgSends types #f))
       (let ([ret-layout (ctype->layout (vector-ref types 0))])
         (if (and (list? ret-layout)
                  (not (sizes-for-direct-struct-results (vector-ref types 0))))
@@ -106,7 +112,7 @@
                         (let ([v (malloc (vector-ref types 0))])
                           (apply pre-m v args)
                           (ptr-ref v (vector-ref types 0))))])
-              (hash-set! msgSends types m)
+              (as-atomic (hash-set! msgSends types m))
               m)
             ;; Non-structure return type:
             (let ([m (function-ptr (if (memq ret-layout
@@ -116,7 +122,7 @@
                                    (_cprocedure
                                     (list* first-arg-type _SEL (cdr (vector->list types)))
                                     (vector-ref types 0)))])
-              (hash-set! msgSends types m)
+              (as-atomic (hash-set! msgSends types m))
               m)))))
 
 (define msgSends (make-hash))
