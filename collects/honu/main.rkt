@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require (for-syntax scheme/base))
-(require scheme/class)
+(require racket/class)
 
 (require "private/honu-typed-scheme.ss"
          ;; "private/honu.ss"
@@ -34,6 +34,17 @@
 (define (sql4) #f)
 (define (sql5) #f)
 
+(define-syntax (honu-struct stx)
+  (syntax-parse stx
+    [(_ name (my-field ...))
+     (with-syntax ([new-name (gensym (syntax->datum #'name))])
+       #'(begin
+           (define new-name
+             (class object%
+                    (init-field my-field ...)
+                    (super-new)))
+           (define name (lambda args (apply make-object new-name args)))))]))
+
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
                      ;; (honu-top #%top)
                      (semicolon \;
@@ -43,6 +54,7 @@
                      (+ scheme:+)
                      (honu-/ /)
                      (honu-- -)
+                     (honu-= =)
                      (honu-? ?)
                      (honu-: :)
                      (honu-comma |,|)
@@ -114,12 +126,14 @@
          foobar2000
          expression
          str
-         define-struct
+         ;; define-struct
          #;
          (for-template #%parens #%brackets #%braces)
          in-range
+         honu-struct
          ;; (for-meta 2 (rename-out (honu-syntax syntax)))
          (rename-out
+           (struct scheme-struct)
            (syntax real-syntax)
            (for scheme-for)
            (honu-if if)

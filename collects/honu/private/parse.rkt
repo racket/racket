@@ -4,7 +4,8 @@
          "util.ss"
          (for-template "literals.ss"
                        "language.ss"
-                       "syntax.ss")
+                       "syntax.ss"
+                       racket/class)
          syntax/parse
          syntax/parse/experimental/splicing
          "syntax.ss"
@@ -14,6 +15,7 @@
          scheme/splicing
          (for-syntax syntax/define)
          syntax/name
+         racket/match
          syntax/stx
          (for-syntax "util.ss")
          (for-syntax syntax/private/stxparse/runtime-prose
@@ -327,7 +329,7 @@
                                       ([honu-* (sl (left right) #'(* left right))]
                                        [honu-% (sl (left right) #'(modulo left right))]
                                        [honu-/ (sl (left right) #'(/ left right))])
-                                      ([honu-. (sl (left right) #'(field-access right left))])
+                                      ([honu-. (sl (left right) #'(get-field right left))])
                                       ))
 
 (define-splicing-syntax-class (ternary context)
@@ -348,14 +350,33 @@
                            (printf "Debug parse I got here ~a\n" d)
                            #t)])
 
+(define (make-assignment left right)
+  (match (identifier-binding left)
+    ['lexical (with-syntax ([left left] [right right])
+                #'(set! left right))]
+    [#f (with-syntax ([left left] [right right])
+          #'(define left right))]
+    [(list source-mod source-id nominal-source-mod nominal-source-id source-phase import-phase nominal-export-phase) (with-syntax ([left left] [right right])
+                                                                                                                       #'(set! left right))]
+    [else (raise-syntax-error 'assignment "failed to assign" left right)]
+    ))
+
+(define-syntax-class (assignment context)
+  #:literals (semicolon honu-=)
+  [pattern ((~var left honu-identifier)
+            honu-=
+            (~var right (ternary context))
+            semicolon
+            . rest)
+           ;; FIXME! 1 isn't the right result
+           ;; either `set!' or `define' the variable
+           #:with result (make-assignment #'left.result #'right.result)])
+
 (define-syntax-class (expression-top context)
                      #:literals (semicolon)
-                     [pattern ((~var left honu-identifier)
-                               honu-=
-                               (~var right (ternary context))
-                               semicolon
-                               . rest)
-                              #:with result #'1]
+                     [pattern (~var assignment (assignment context))
+                              #:with result #'assignment.result
+                              #:with rest #'assignment.rest]
                      [pattern ((~var x0 (debug-here (format "expression top\n")))
                                (~var e (ternary context))
                                (~var x1 (debug-here (format "expression top 1 ~a\n" (syntax->datum #'e))))
