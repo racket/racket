@@ -114,45 +114,67 @@
            #:with real-part (unboxed-gensym)
            #:with imag-part (unboxed-gensym)
            #:with reals (syntax->list #'(c1.real-part c2.real-part cs.real-part ...))
-           ;; we currently don't skip imaginary parts of reals
            #:with imags (map (lambda (x) (if (syntax->datum x) x #'0.0))
                              (syntax->list #'(c1.imag-part c2.imag-part cs.imag-part ...)))
-           #:with (denominators ...)
-           (for/list
-            ([e1 (cdr (syntax->list #'reals))]
-             [e2 (cdr (syntax->list #'imags))])
-            #`(#,(unboxed-gensym) (unsafe-fl+ (unsafe-fl* #,e1 #,e1) (unsafe-fl* #,e2 #,e2))))
            #:with (bindings ...)
            (begin (log-optimization "unboxed binary inexact complex" #'op)
-                  #`(c1.bindings ... c2.bindings ... cs.bindings ... ... denominators ...
+                  #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-part and imag-part
                      #,@(let loop ([o1 (car (syntax->list #'reals))]
                                    [o2 (car (syntax->list #'imags))]
                                    [e1 (cdr (syntax->list #'reals))]
                                    [e2 (cdr (syntax->list #'imags))]
-                                   [d  (map (lambda (x) (car (syntax-e x)))
-                                            (syntax->list #'(denominators ...)))]
                                    [rs (append (map (lambda (x) (unboxed-gensym))
                                                     (syntax->list #'(cs.real-part ...)))
                                                (list #'real-part))]
                                    [is (append (map (lambda (x) (unboxed-gensym))
                                                     (syntax->list #'(cs.imag-part ...)))
                                                (list #'imag-part))]
+                                   [ds (map (lambda (x) (unboxed-gensym))
+                                            (syntax->list #'(c2.real-part cs.real-part ...)))]
                                    [res '()])
                           (if (null? e1)
                               (reverse res)
-                              (loop (car rs) (car is) (cdr e1) (cdr e2) (cdr d) (cdr rs) (cdr is)
-                                    ;; complex division, imag part, then real part (reverse)
-                                    (list* #`(#,(car is)
-                                              (unsafe-fl/ (unsafe-fl- (unsafe-fl* #,o2 #,(car e1))
-                                                                      (unsafe-fl* #,o1 #,(car e2)))
-                                                          #,(car d)))
-                                           #`(#,(car rs)
-                                              (unsafe-fl/ (unsafe-fl+ (unsafe-fl* #,o1 #,(car e1))
-                                                                      (unsafe-fl* #,o2 #,(car e2)))
-                                                          #,(car d)))
-                                           res)))))))
+                              (loop (car rs) (car is) (cdr e1) (cdr e2) (cdr rs) (cdr is) (cdr ds)
+                                    ;; complex division, imag part, real part, then denominator (reverse)
+                                    (let ((o-real? (equal? (syntax->datum o2) 0.0))
+                                          (e-real? (equal? (syntax->datum (car e2)) 0.0)))
+                                      (cond [(and o-real? e-real?)
+                                             (list*
+                                              #`(#,(car is) 0.0) ; currently not propagated
+                                              #`(#,(car rs) (unsafe-fl/ #,o1 #,(car e1)))
+                                              res)]
+                                            [o-real?
+                                             (list*
+                                              #`(#,(car is)
+                                                 (unsafe-fl/ (unsafe-fl- 0.0
+                                                                         (unsafe-fl* #,o1 #,(car e2)))
+                                                             #,(car ds)))
+                                              #`(#,(car rs) (unsafe-fl/ (unsafe-fl* #,o1 #,(car e1))
+                                                                        #,(car ds)))
+                                              #`(#,(car ds) (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
+                                                                        (unsafe-fl* #,(car e2) #,(car e2))))
+                                              res)]
+                                            [e-real?
+                                             (list*
+                                              #`(#,(car is) (unsafe-fl/ #,o2 #,(car e1)))
+                                              #`(#,(car rs) (unsafe-fl/ #,o1 #,(car e1)))
+                                              res)]
+                                            [else
+                                             (list*
+                                              #`(#,(car is)
+                                                 (unsafe-fl/ (unsafe-fl- (unsafe-fl* #,o2 #,(car e1))
+                                                                         (unsafe-fl* #,o1 #,(car e2)))
+                                                             #,(car ds)))
+                                              #`(#,(car rs)
+                                                 (unsafe-fl/ (unsafe-fl+ (unsafe-fl* #,o1 #,(car e1))
+                                                                         (unsafe-fl* #,o2 #,(car e2)))
+                                                             #,(car ds)))
+                                              #`(#,(car ds)
+                                                 (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
+                                                             (unsafe-fl* #,(car e2) #,(car e2))))
+                                              res)]))))))))
   (pattern (#%plain-app (~and op (~literal conjugate)) c:unboxed-inexact-complex-opt-expr)
            #:with real-part #'c.real-part
            #:with imag-part (unboxed-gensym)
