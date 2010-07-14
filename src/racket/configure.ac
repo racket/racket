@@ -1583,8 +1583,7 @@ fi
 FOREIGNTARGET=
 FOREIGN_IF_USED="FOREIGN_NOT_USED"
 if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
-  AC_CONFIG_AUX_DIR( foreign/gcc )
-  AC_CONFIG_SUBDIRS( foreign/gcc/libffi )
+  AC_CONFIG_SUBDIRS( foreign/libffi )
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"
   # --disable-multilib is needed to avoid problems when running libffi's

@@ -1,6 +1,0 @@
-This directory is here only for configuring libffi which is
-distributed as part of GCC.  It contains the minimal set of files that
-make it possible to configure and build libffi, as well as recreate
-its configure script.
-
-See the ../README file for more details.

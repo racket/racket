@@ -1,49 +1,20 @@
-The `gcc' directory holds a copy of libffi from the GCC repository,
-with extra files that are needed to configure it.  Similarly, The
-`libffi_msvc' directory holds a copy of the libffi version from the
-CTypes project.
+The "libffi" directory holds a copy of libffi (somwehere between version 3.0.9 and 3.0.10).
+Similarly, The "libffi_msvc" directory holds a copy of the libffi
+version from the CTypes project.
 
-*** Next update should use the new location of the sources, which is now
-    at git://github.com/atgreen/libffi.git
+The libffi code is distributed under an LGPL-compatible license.
+CTypes is under the MIT License.
 
-Note: libffi is distributed under an LGPL-compatible license.  CTypes is
-under the MIT License.
-
-========== gcc directory =============================================
-
-The directory is synced from the GCC repository, revision 140226.
+========== libffi directory =============================================
 
 Our copy of libffi for Racket has been changed in a few small
-ways:
+ways at git commit 3f5b1375ab1e2b8e3d59 from
+
+ http://github.com/atgreen/libffi
 
 Local changes:
 
- * Removed libffi/testsuite directory (r8401)
-
- * Removed testsuite mention in configure and make files (r8403)
-
- * Recreated the libffi/configure with autoconf version 2.61 (r8412)
-
- * Changed config/multi.m4 to allow in-source-tree builds, rebuild
-   libffi/configure (r8413)
-
- * Removed +live_support in src/powerpc/darwin_closure.S so it builds
-   with Mac OS X 10.3 (r8436)
-
- * Manually added datarootdir handling in libffi/Makefile.in and
-   libffi/include/Makefile.in to eliminate warnings, change taken from
-   git master source at http://github.com/atgreen/libffi/, tree
-   997968323ed45a5ea5db1ff83124619ae1949bfb. (r18350)
-
- * Observing ftruncate result in closures.c to remove warning. (commit 
-   b5ee4ac21b1c4d759659 and c64704742c0963310b49)
-
- * Check for __i368 in addition to __i386__ in ffitarget.h
-
-Note: recreating "configure" with autoconf 2.61 does not work as is,
-since the scripts require 2.59.  To allow this, the two requirements
-in "libffi/configure.ac" and "config/override.m4" were temporarily
-changed.
+ * cast ftruncate() result in "closures.c" to avoid warning.
 
 ========== libffi_msvc directory =====================================
 

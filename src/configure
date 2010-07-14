@@ -769,7 +769,7 @@ CCC
 CXXCPP
 XMKMF'
 ac_subdirs_all='racket/gc/libatomic_ops
-foreign/gcc/libffi
+foreign/libffi
 wxcommon/jpeg
 wxxt/src/x/wbuild '
 
@@ -12246,38 +12246,7 @@ fi
 FOREIGNTARGET=
 FOREIGN_IF_USED="FOREIGN_NOT_USED"
 if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
-  ac_aux_dir=
-for ac_dir in foreign/gcc  "$srcdir"/foreign/gcc ; do
-  if test -f "$ac_dir/install-sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f "$ac_dir/install.sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f "$ac_dir/shtool"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in foreign/gcc  \"$srcdir\"/foreign/gcc " >&5
-echo "$as_me: error: cannot find install-sh or install.sh in foreign/gcc  \"$srcdir\"/foreign/gcc " >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
-# These three variables are undocumented and unsupported,
-# and are intended to be withdrawn in a future Autoconf release.
-# They can cause serious problems if a builder's source tree is in a directory
-# whose full name contains unusual characters.
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
-ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
-
-  subdirs="$subdirs foreign/gcc/libffi"
+  subdirs="$subdirs foreign/libffi"
 
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"

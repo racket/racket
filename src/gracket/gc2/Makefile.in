@@ -1216,8 +1216,8 @@ wx_mac_LIBS = -framework Carbon -framework Cocoa -framework QuickTime -framework
 
 GRACKETLINKER = @GRACKETLINKER@
 
-FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@
-FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.@LTA@
+FOREIGN_OBJS = ../../foreign/libffi/src/*.@LTO@ ../../foreign/libffi/src/*/*.@LTO@
+FOREIGN_LIB = ../../foreign/libffi/libffi@FOREIGN_CONVENIENCE@.@LTA@
 FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 
 FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)

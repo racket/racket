@@ -34,8 +34,8 @@ MZSRC = $(srcdir)/src
 
 FOREIGN_DIR = ../foreign
 FOREIGN_OBJ = $(FOREIGN_DIR)/foreign.@LTO@
-FOREIGN_OBJS = $(FOREIGN_OBJ) $(FOREIGN_DIR)/gcc/libffi/src/*.@LTO@ $(FOREIGN_DIR)/gcc/libffi/src/*/*.@LTO@
-FOREIGN_LIB = $(FOREIGN_OBJ) ../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
+FOREIGN_OBJS = $(FOREIGN_OBJ) $(FOREIGN_DIR)/libffi/src/*.@LTO@ $(FOREIGN_DIR)/libffi/src/*/*.@LTO@
+FOREIGN_LIB = $(FOREIGN_OBJ) ../foreign/libffi/libffi@FOREIGN_CONVENIENCE@.la
 FOREIGN_STUB_LIB = $(FOREIGN_OBJ)
 FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 # Dependency always uses FOREIGN_LIB, but linker uses FOREIGN_OBJSLIB. The

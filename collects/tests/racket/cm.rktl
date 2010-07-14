@@ -49,6 +49,15 @@
                                 (lambda () (display " "))))
                             to-touch)
                   (for-each (lambda (f)
+                              (let* ([d (build-path dir "compiled" (path-add-suffix f #".zo"))]
+                                     [ts (file-or-directory-modify-seconds d #f (lambda () #f))])
+                                (when ts
+                                  (printf "mangling .zo for ~a\n" f)
+                                  (with-output-to-file d
+                                    #:exists 'truncate
+                                    (lambda () (display "#~bad"))))))
+                            (caddr recomp))
+                  (for-each (lambda (f)
                               (printf "re-making ~a\n" f)
                               (managed-compile-zo (build-path dir f)))
                             to-make)

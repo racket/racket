@@ -6,22 +6,22 @@ CC = @CC@
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ \
          -I$(builddir)/../racket \
          -I$(srcdir)/../racket/include -I$(srcdir)/../racket/src \
-         -Igcc/libffi/include
+         -Ilibffi/include
 ARFLAGS = @ARFLAGS@
 
 # compile sub-libraries & foreign.c
 all:
 	$(MAKE) foreign.@LTO@
-	$(MAKE) gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
+	$(MAKE) libffi/libffi@FOREIGN_CONVENIENCE@.la
 
 # just foreign.c, which will generate a stub module:
 stub:
 	$(MAKE) foreign.@LTO@
 
-# Causes objects to be generated in gcc/libffi/src/
+# Causes objects to be generated in libffi/src/
 #  in inconvenience mode:
-gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la:
-	cd gcc/libffi; $(MAKE) libffi@FOREIGN_CONVENIENCE@.la
+libffi/libffi@FOREIGN_CONVENIENCE@.la:
+	cd libffi; $(MAKE) libffi@FOREIGN_CONVENIENCE@.la
 
 foreign.@LTO@: $(srcdir)/foreign.c \
            $(srcdir)/../racket/include/scheme.h \
@@ -31,4 +31,4 @@ foreign.@LTO@: $(srcdir)/foreign.c \
 
 clean:
 	rm -f foreign.@LTO@
-	cd gcc/libffi; $(MAKE) clean
+	cd libffi; $(MAKE) clean
