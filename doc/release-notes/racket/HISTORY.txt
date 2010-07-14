@@ -2,6 +2,7 @@ Version 5.0.0.9
 Continuation barriers now block only downward continuation jumps
  and allow escapes through full continuations
 Added #:async-apply option to _fun
+Upgraded to libffi 3.0.9+
 
 Version 5.0.0.8
 Changed internal-definition handling to allow expressions mixed

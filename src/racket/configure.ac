@@ -1586,10 +1586,6 @@ if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
   AC_CONFIG_SUBDIRS( foreign/libffi )
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"
-  # --disable-multilib is needed to avoid problems when running libffi's
-  # configure script.  This thing affects all usages of AC_CONFIG_SUBDIRS, but
-  # other scripts do not use it anyway.
-  ac_configure_args="$ac_configure_args --disable-multilib"
 else
   FOREIGNTARGET="foreign-stub"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"

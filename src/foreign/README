@@ -14,7 +14,8 @@ ways at git commit 3f5b1375ab1e2b8e3d59 from
 
 Local changes:
 
- * cast ftruncate() result in "closures.c" to avoid warning.
+ * Test ftruncate() result in "closures.c" to avoid a compiler
+   warning.
 
 ========== libffi_msvc directory =====================================
 
