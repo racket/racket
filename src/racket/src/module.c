@@ -102,13 +102,13 @@ static Scheme_Object *top_level_require_sfs(Scheme_Object *data, SFS_Info *info)
 static void module_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes, int num_lifts,
+			    int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                             struct Validate_Clearing *vc, int tailpos,
                             Scheme_Hash_Tree *procs);
 static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
                                        char *stack, Validate_TLS tls,
                                        int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes, int num_lifts,
+				       int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                        struct Validate_Clearing *vc, int tailpos,
                                        Scheme_Hash_Tree *procs);
 
@@ -5368,7 +5368,7 @@ Scheme_Object *scheme_module_eval_clone(Scheme_Object *data)
 static void module_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
 			    int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes, int num_lifts,
+			    int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                             struct Validate_Clearing *vc, int tailpos,
                             Scheme_Hash_Tree *procs)
 {
@@ -9785,7 +9785,7 @@ top_level_require_jit(Scheme_Object *data)
 static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
                                        char *stack, Validate_TLS tls,
 				       int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes, int num_lifts,
+				       int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
                                        struct Validate_Clearing *vc, int tailpos,
                                        Scheme_Hash_Tree *procs)
 {
