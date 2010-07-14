@@ -4,7 +4,7 @@
          "../utils/utils.rkt"
          (for-template scheme/base scheme/math scheme/flonum scheme/unsafe/ops)
          (types abbrev type-table utils subtype)
-         (optimizer utils))
+         (optimizer utils float fixnum))
 
 (provide inexact-complex-opt-expr)
 
@@ -161,15 +161,6 @@
                   #`(#,@(append (syntax->list #'(c.bindings ...))
                                 (list #'(imag-part (unsafe-fl- 0.0 c.imag-part)))))))
   (pattern e:expr
-           ;; special handling of inexact reals
-           #:when (subtypeof? #'e -Flonum)
-           #:with real-part (unboxed-gensym)
-           #:with imag-part #f
-           #:with (bindings ...)
-           #`((real-part #,((optimize) #'e))))
-  (pattern e:expr
-           ;; can't work on inexact reals, which are a subtype of inexact
-           ;; complexes, so this has to be equality
            #:when (isoftype? #'e -InexactComplex)
            #:with e* (unboxed-gensym)
            #:with real-part (unboxed-gensym)
@@ -177,7 +168,23 @@
            #:with (bindings ...)
            #`((e* #,((optimize) #'e))
               (real-part (unsafe-flreal-part e*))
-              (imag-part (unsafe-flimag-part e*)))))
+              (imag-part (unsafe-flimag-part e*))))
+  ;; special handling of reals
+  (pattern e:float-expr
+           #:with real-part (unboxed-gensym)
+           #:with imag-part #f
+           #:with (bindings ...)
+           #`((real-part #,((optimize) #'e))))
+  (pattern e:fixnum-expr
+           #:with real-part (unboxed-gensym)
+           #:with imag-part #f
+           #:with (bindings ...)
+           #`((real-part (unsafe-fx->fl #,((optimize) #'e)))))
+  (pattern e:int-expr
+           #:with real-part (unboxed-gensym)
+           #:with imag-part #f
+           #:with (bindings ...)
+           #`((real-part (->fl #,((optimize) #'e))))))
 
 (define-syntax-class inexact-complex-unary-op
   (pattern (~or (~literal real-part) (~literal flreal-part)) #:with unsafe #'unsafe-flreal-part)
@@ -188,7 +195,7 @@
 
 (define-syntax-class inexact-complex-expr
   (pattern e:expr
-           #:when (subtypeof? #'e -InexactComplex)
+           #:when (isoftype? #'e -InexactComplex)
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class inexact-complex-opt-expr
@@ -196,7 +203,7 @@
            #:with opt
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
-  (pattern (~and exp (#%plain-app op:inexact-complex-binary-op e:inexact-complex-expr ...))
+  (pattern (~and exp (#%plain-app op:inexact-complex-binary-op e:expr ...))
            #:when (isoftype? #'exp -InexactComplex)
            #:with exp*:unboxed-inexact-complex-opt-expr #'exp
            #:with opt
