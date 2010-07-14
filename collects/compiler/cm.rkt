@@ -21,7 +21,6 @@
          get-file-sha1
          get-compiled-file-sha1)
 
-; Parameters 
 (define manager-compile-notify-handler (make-parameter void))
 (define trace (make-parameter void))
 (define indent (make-parameter ""))
@@ -135,19 +134,15 @@
 (define (try-file-time path)
   (file-or-directory-modify-seconds path #f (lambda () #f)))
 
-(define (try-delete-file path)
+(define (try-delete-file path [noisy? #t])
   ;; Attempt to delete, but give up if it doesn't work:
   (with-handlers ([exn:fail:filesystem? void])
-    (trace-printf "deleting: ~a" path)
-    (delete-file path)))
-(define (silent-try-delete-file path)
-  ;; Attempt to delete, but give up if it doesn't work:
-  (with-handlers ([exn:fail:filesystem? void])
+    (when noisy? (trace-printf "deleting: ~a" path))
     (delete-file path)))
 
 (define (compilation-failure mode path zo-name date-path reason)
   (try-delete-file zo-name)
-  (trace-printf "failure: compiling ~a to ~a" path zo-name))
+  (trace-printf "failure"))
 
 ;; with-compile-output : path (output-port -> alpha) -> alpha
 ;;  Open a temporary path for writing, automatically renames after,
@@ -179,7 +174,7 @@
   (with-handlers ([exn:fail:filesystem? (lambda (exn) #f)])
     (call-with-input-file* p sha1)))
 
-(define (get-dep-sha1s deps up-to-date mode must-exist?)
+(define (get-dep-sha1s deps up-to-date read-src-syntax mode must-exist?)
   (let ([l (for/fold ([l null]) ([dep (in-list deps)])
              (and l
                   ;; (cons 'ext rel-path) => a non-module file, check source
@@ -192,7 +187,9 @@
                               [v (cons (cons (delay v) dep) l)]
                               [must-exist? (error 'cm "cannot find external-dependency file: ~v" p)]
                               [else #f]))]
-                     [(check-cache mode p up-to-date (lambda x #f))
+                     [(or (hash-ref up-to-date (simple-form-path p) #f)
+                          ;; Use `compiler-root' with `sha1-only?' as #t:
+                          (compile-root mode p up-to-date read-src-syntax #t))
                       => (lambda (sh)
                            (cons (cons (cdr sh) dep) l))]
                      [must-exist?
@@ -222,7 +219,7 @@
                           external-deps))])
         (write (list* (version)
                       (cons (or src-sha1 (get-source-sha1 path))
-                            (get-dep-sha1s deps up-to-date mode #t))
+                            (get-dep-sha1s deps up-to-date read-src-syntax mode #t))
                       deps)
                op)
         (newline op))))))
@@ -354,7 +351,61 @@
             alt-path
             path))))
 
-    
+(define (maybe-compile-zo sha1-only? deps mode path orig-path read-src-syntax up-to-date)
+  (let ([actual-path (actual-source-path orig-path)])
+    (unless sha1-only?
+      ((manager-compile-notify-handler) actual-path)
+      (trace-printf "compiling: ~a" actual-path))
+    (begin0
+     (parameterize ([indent (string-append "  " (indent))])
+       (let* ([zo-name (path-add-suffix (get-compilation-path mode path) #".zo")]
+              [zo-exists? (file-exists? zo-name)])
+         (if (and zo-exists? (trust-existing-zos))
+             (begin
+               (log-info (format "cm: ~atrusting ~a" 
+                                 (build-string 
+                                  (depth)
+                                  (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
+                                 zo-name))
+               (touch zo-name)
+               #f)
+             (let ([src-sha1 (and zo-exists?
+                                  deps
+                                  (cadr deps)
+                                  (get-source-sha1 path))])
+               (if (and zo-exists?
+                        src-sha1
+                        (equal? src-sha1 (caadr deps))
+                        (equal? (get-dep-sha1s (cddr deps) up-to-date read-src-syntax mode #f)
+                                (cdadr deps)))
+                   (begin
+                     (log-info (format "cm: ~ahash-equivalent ~a" 
+                                       (build-string 
+                                        (depth)
+                                        (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
+                                       zo-name))
+                     (touch zo-name)
+                     #f)
+                   ((if sha1-only? values (lambda (build) (build) #f))
+                    (lambda ()
+                      (when zo-exists? (try-delete-file zo-name #f))
+                      (log-info (format "cm: ~acompiling ~a" 
+                                        (build-string 
+                                         (depth)
+                                         (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
+                                        actual-path))
+                      (parameterize ([depth (+ (depth) 1)])
+                        (with-handlers
+                            ([exn:get-module-code?
+                              (lambda (ex)
+                                (compilation-failure mode path zo-name
+                                                     (exn:get-module-code-path ex)
+                                                     (exn-message ex))
+                                (raise ex))])
+                          (compile-zo* mode path src-sha1 read-src-syntax zo-name up-to-date))))))))))
+     (unless sha1-only?
+       (trace-printf "end compile: ~a" actual-path)))))
+
 (define (get-compiled-time mode path)
   (define-values (dir name) (get-compilation-dir+name mode path))
   (or (try-file-time (build-path dir "native" (system-library-subpath)
@@ -387,20 +438,14 @@
         (path-replace-suffix p #".ss")
         p)))
 
-;; needs->compile: mode -> raw-path -> up-to-date -> (deps -> path -> zo-name -> src-sha1 -> dep-info ) -> dep-info
-;;  dep-info: (list path-zo-time (delay compiled-sha1))
-;;  checks to see if a path is already compile if so it returs a dep-info
-;;  if compilation is needed it calls the compile-thunk passing deps -> path -> zo-name -> src-sha1 -> update-cache-with-zo-time
-(define (check-cache mode raw-path up-to-date compile-thunk)
-  (define orig-path (simple-form-path raw-path))
+(define (compile-root mode path0 up-to-date read-src-syntax sha1-only?)
+  (define orig-path (simple-form-path path0))
   (define (read-deps path)
     (with-handlers ([exn:fail:filesystem? (lambda (ex) (list (version) '#f))])
       (call-with-input-file
           (path-add-suffix (get-compilation-path mode path) #".dep")
         read)))
-  (define (cached?) (and up-to-date (hash-ref up-to-date orig-path #f)))
-  (define (update-cache value) (hash-set! up-to-date orig-path value))
-  (define (get-ss-rkt-resolved-path orig-path)
+  (define (do-check)
     (let* ([main-path orig-path]
            [alt-path (rkt->ss orig-path)]
            [main-path-time (try-file-time main-path)]
@@ -410,94 +455,64 @@
            [path (if alt-path-time alt-path main-path)]
            [path-time (or main-path-time alt-path-time)]
            [path-zo-time (get-compiled-time mode path)])
-      (define (update-cache-with-zo-time)
-        (let ([stamp (cons (get-compiled-time mode path) (delay (get-compiled-sha1 mode path)))])
-          (hash-set! up-to-date main-path stamp)
-          (unless (eq? main-path alt-path)
-            (hash-set! up-to-date alt-path stamp))
-          stamp))
-      (values path path-time path-zo-time update-cache-with-zo-time)))
-  
-  (cond 
-    [(cached?)      => (lambda (x) x)]  ; already up to date, no need to compile
-    [((manager-skip-file-handler) orig-path) => (lambda (x) (update-cache x) x)]
-    [else
-      (let-values ([(path path-time path-zo-time update-cache-with-zo-time) (get-ss-rkt-resolved-path orig-path)])
-        (define (path-does-not-exist) (not path-time))
-        (cond
-          [(not path-time) ; path to compile does not exist
-            (trace-printf "~a does not exist" orig-path)
-            (update-cache-with-zo-time)]
-          [else
-            (let ([deps (read-deps path)])
-              (define (newer-version?) (not (and (pair? deps) (equal? (version) (car deps)))))
-              (define (newer-src?) (> path-time path-zo-time))
-              (define (out-of-date-dep dep)
-                ;; (cons 'ext rel-path) => a non-module file (check date)
-                ;; rel-path => a module file name (check transitive dates)
-                (define ext? (and (pair? dep) (eq? 'ext (car dep))))
-                (define dep-path (main-collects-relative->path (if ext? (cdr dep) dep)))
-                (define t
-                  (if ext?
-                      (cons (try-file-time dep-path) #f)
-                      (check-cache mode dep-path up-to-date compile-thunk)))
-                (and t
-                     (car t)
-                     (> (car t) path-zo-time)
-                     (begin 
-                        (trace-printf "newer: ~a (~a > ~a)..." dep-path (car t) path-zo-time)
-                        #t)))
-              (define (check-sha1-equivalence deps)
-                 (let* ([zo-name (path-add-suffix (get-compilation-path mode path) #".zo")]
-                        [zo-exists? (file-exists? zo-name)])
-                   (define (touch-update-cache msg)
-                     (define spacing (build-string (depth) (λ (x) (if (= 2 (modulo x 3)) #\| #\space))))
-                     (log-info (format "cm: ~a~a ~a" spacing msg zo-name))
-                     (touch zo-name)
-                     (update-cache-with-zo-time))
-                   (define (zo-is-trusted?) (and zo-exists? (trust-existing-zos)))
-                   (define (get-valid-src-sha1) (and zo-exists? deps (cadr deps) (get-source-sha1 path)))
-                   (define (sha1-equivalent? src-sha1)
-                      (and zo-exists?
-                           src-sha1
-                           (equal? src-sha1 (caadr deps))
-                           (equal? (get-dep-sha1s (cddr deps) up-to-date mode #f) (cdadr deps))))
-                   (if (zo-is-trusted?)
-                       (touch-update-cache "trusting-existing-zo")
-                       (let ([src-sha1 (get-valid-src-sha1)])
-                         (if (sha1-equivalent? src-sha1) 
-                             (touch-update-cache"hash-equivalent src and deps")
-                             (compile-thunk deps path zo-name src-sha1 update-cache-with-zo-time zo-exists?))))))
-              (cond 
-                [(newer-version?)
-                    (trace-printf "newer racket bytecode version...")
-                    (check-sha1-equivalence #f)]
-                [(newer-src?) 
-                  (trace-printf "newer src...")
-                  (check-sha1-equivalence deps)]
-                [(ormap out-of-date-dep (cddr deps))
-                  (check-sha1-equivalence deps)]
-                [else (update-cache-with-zo-time)]))]))]))
-
-(define (compile-root mode raw-path up-to-date read-src-syntax)
-  (let ([actual-path (actual-source-path (simple-form-path raw-path))])
-    (define (compile-it deps path zo-name src-sha1 update-cache-with-zo-time zo-exists?)
-      (when zo-exists? (silent-try-delete-file zo-name))
-      ((manager-compile-notify-handler) actual-path)
-      (trace-printf "compiling: ~a" actual-path)
-      (parameterize ([depth (+ (depth) 1)]
-                     [indent (string-append "  " (indent))])
-        (with-handlers
-            ([exn:get-module-code?
-              (lambda (ex)
-                (compilation-failure mode path zo-name
-                                     (exn:get-module-code-path ex)
-                                     (exn-message ex))
-                (raise ex))])
-          (compile-zo* mode path src-sha1 read-src-syntax zo-name up-to-date)))
-      (trace-printf "end compile: ~a" actual-path)
-      (update-cache-with-zo-time))
-    (check-cache mode raw-path up-to-date compile-it)))
+      (cond
+       [(not path-time)
+        (trace-printf "~a does not exist" orig-path)
+        (or (and up-to-date (hash-ref up-to-date orig-path #f))
+            (let ([stamp (cons path-zo-time
+                               (delay (get-compiled-sha1 mode path)))])
+              (hash-set! up-to-date main-path stamp)
+              (unless (eq? main-path alt-path)
+                (hash-set! up-to-date alt-path stamp))
+              stamp))]
+       [else
+        (let ([deps (read-deps path)])
+          (define build
+            (cond
+             [(not (and (pair? deps) (equal? (version) (car deps))))
+              (lambda ()
+                (trace-printf "newer version...")
+                (maybe-compile-zo #f #f mode path orig-path read-src-syntax up-to-date))]
+             [(> path-time path-zo-time)
+              (trace-printf "newer src...")
+              ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
+              (maybe-compile-zo sha1-only? deps mode path orig-path read-src-syntax up-to-date)]
+             [(ormap
+               (lambda (p)
+                 ;; (cons 'ext rel-path) => a non-module file (check date)
+                 ;; rel-path => a module file name (check transitive dates)
+                 (define ext? (and (pair? p) (eq? 'ext (car p))))
+                 (define d (main-collects-relative->path (if ext? (cdr p) p)))
+                 (define t
+                   (if ext?
+                       (cons (try-file-time d) #f)
+                       (compile-root mode d up-to-date read-src-syntax #f)))
+                 (and (car t)
+                      (> (car t) path-zo-time)
+                      (begin (trace-printf "newer: ~a (~a > ~a)..."
+                                           d (car t) path-zo-time)
+                             #t)))
+               (cddr deps))
+              ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
+              (maybe-compile-zo sha1-only? deps mode path orig-path read-src-syntax up-to-date)]
+             [else #f]))
+          (cond
+           [(and build sha1-only?) #f]
+           [else
+            (when build (build))
+            (let ([stamp (cons (get-compiled-time mode path)
+                               (delay (get-compiled-sha1 mode path)))])
+              (hash-set! up-to-date main-path stamp)
+              (unless (eq? main-path alt-path)
+                (hash-set! up-to-date alt-path stamp))
+              stamp)]))])))
+  (or (and up-to-date (hash-ref up-to-date orig-path #f))
+      (let ([v ((manager-skip-file-handler) orig-path)])
+        (and v
+             (hash-set! up-to-date orig-path v)
+             v))
+      (begin (trace-printf "checking: ~a" orig-path)
+             (do-check))))
 
 (define (managed-compile-zo zo [read-src-syntax read-syntax])
   ((make-caching-managed-compile-zo read-src-syntax) zo))
@@ -511,7 +526,8 @@
         (compile-root (car (use-compiled-file-paths))
                       (path->complete-path src)
                       cache
-                      read-src-syntax)
+                      read-src-syntax
+                      #f)
         (void)))))
 
 (define (make-compilation-manager-load/use-compiled-handler)
@@ -555,7 +571,7 @@
                            (namespace-module-registry (current-namespace)))]
             [else
              (trace-printf "processing: ~a" path)
-             (compile-root (car modes) path cache read-syntax)
+             (compile-root (car modes) path cache read-syntax #f)
              (trace-printf "done: ~a" path)])
       (default-handler path mod-name))
     (when (null? modes)
