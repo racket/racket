@@ -39,6 +39,15 @@
          queue-quit-event)
 
 ;; ------------------------------------------------------------
+;; This module must be instantiated only once:
+
+(define-mz scheme_register_process_global (_fun _string _pointer -> _pointer))
+(let ([v (scheme_register_process_global "GRacket-support-initialized"
+                                         (cast 1 _scheme _pointer))])
+  (when v
+    (error "cannot start GRacket a second time in the same process")))
+
+;; ------------------------------------------------------------
 ;; Create a Scheme evt that is ready when a queue is nonempty
 
 (define _Scheme_Type _short)
