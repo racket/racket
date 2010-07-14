@@ -908,6 +908,18 @@
 [set-mcdr! (-poly (a b)
                   (cl->* (-> (-mpair a b) b -Void)
                          (-> (-mlst a) (-mlst a) -Void)))]
+[unsafe-mcar (-poly (a b)
+                    (cl->* (-> (-mpair a b) a)
+                           (-> (-mlst a) a)))]
+[unsafe-mcdr (-poly (a b)
+                    (cl->* (-> (-mpair a b) b)
+                           (-> (-mlst a) (-mlst a))))]
+[unsafe-set-mcar! (-poly (a b)
+                         (cl->* (-> (-mpair a b) a -Void)
+                                (-> (-mlst a) a -Void)))]
+[unsafe-set-mcdr! (-poly (a b)
+                         (cl->* (-> (-mpair a b) b -Void)
+                                (-> (-mlst a) (-mlst a) -Void)))]
 [mpair? (make-pred-ty (make-MPairTop))]
 [mlist (-poly (a) (->* (list) a (-mlst a)))]
 [mlength (-poly (a) (-> (-mlst a) -NonnegativeFixnum))]

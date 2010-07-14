@@ -15,6 +15,12 @@
 (define-syntax-class pair-unary-op
   (pattern (~literal car) #:with unsafe #'unsafe-car)
   (pattern (~literal cdr) #:with unsafe #'unsafe-cdr))
+(define-syntax-class mpair-op
+  (pattern (~literal mcar) #:with unsafe #'unsafe-mcar)
+  (pattern (~literal mcdr) #:with unsafe #'unsafe-mcdr)
+  (pattern (~literal set-mcar!) #:with unsafe #'unsafe-set-mcar!)
+  (pattern (~literal set-mcdr!) #:with unsafe #'unsafe-set-mcdr!))
+
 
 (define-syntax-class pair-expr
   (pattern e:expr
@@ -22,9 +28,19 @@
                     [(tc-result1: (Pair: _ _)) #t]
                     [_ #f])
            #:with opt ((optimize) #'e)))
+(define-syntax-class mpair-expr
+  (pattern e:expr
+           #:when (match (type-of #'e) ; type of the operand
+                    [(tc-result1: (MPair: _ _)) #t]
+                    [_ #f])
+           #:with opt ((optimize) #'e)))
 
 (define-syntax-class pair-opt-expr
   (pattern (#%plain-app op:pair-unary-op p:pair-expr)
            #:with opt
            (begin (log-optimization "unary pair" #'op)
-                  #'(op.unsafe p.opt))))
+                  #'(op.unsafe p.opt)))
+  (pattern (#%plain-app op:mpair-op p:mpair-expr e:expr ...)
+           #:with opt
+           (begin (log-optimization "mutable pair" #'op)
+                  #`(op.unsafe p.opt #,@(map (optimize) (syntax->list #'(e ...)))))))
