@@ -60,12 +60,13 @@
      (build-path log-dir "src" "build" "make")
      (make-path) 
      (list "-j" (number->string (number-of-cpus))))
-    (run/collect/wait/log
-     #:timeout (current-make-install-timeout-seconds)
-     #:env (current-env)
-     (build-path log-dir "src" "build" "make-install")
-     (make-path) 
-     (list "-j" (number->string (number-of-cpus)) "install"))))
+    (with-env (["SETUP_OPTIONS" (format "-j ~a" (number-of-cpus))])
+      (run/collect/wait/log
+       #:timeout (current-make-install-timeout-seconds)
+       #:env (current-env)
+       (build-path log-dir "src" "build" "make-install")
+       (make-path) 
+       (list "-j" (number->string (number-of-cpus)) "install")))))
 
 (define (call-with-temporary-directory thunk)
   (define tempdir (symbol->string (gensym 'tmpdir)))
