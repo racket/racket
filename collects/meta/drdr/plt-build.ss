@@ -60,7 +60,7 @@
      (build-path log-dir "src" "build" "make")
      (make-path) 
      (list "-j" (number->string (number-of-cpus))))
-    (with-env (["SETUP_OPTIONS" (format "-j ~a" (number-of-cpus))])
+    (with-env (["PLT_SETUP_OPTIONS" (format "-j ~a" (number-of-cpus))])
       (run/collect/wait/log
        #:timeout (current-make-install-timeout-seconds)
        #:env (current-env)
