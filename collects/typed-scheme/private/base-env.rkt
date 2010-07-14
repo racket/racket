@@ -622,6 +622,8 @@
 
 [exit (-> (Un))]
 
+[collect-garbage (-> -Void)]
+
 [module->namespace (-> (-mu x (-lst (Un -Symbol -String -Nat x (-val #f)))) -Namespace)]
 [current-namespace (-Param -Namespace -Namespace)]
 
