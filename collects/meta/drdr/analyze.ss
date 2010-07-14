@@ -275,7 +275,7 @@
                   ; XXX maybe mflatt, eli, or tewk
                   (and (regexp-match #rx"/src/" (path->string* log-pth))
                        "jay")
-                  "unknown"))
+                  "nobody"))
             (define lc
               (list (path->bytes log-pth)))
             (make-rendering start end dur 
@@ -324,7 +324,7 @@
                        (with-handlers ([exn:fail? (lambda (x) #f)])
                          (scm-commit-author (read-cache (revision-commit-msg (current-rev))))))
                   (or (path-responsible (trunk-path dir-pth))
-                      "unknown"))
+                      "nobody"))
                  
                  empty)
                 (directory-list* dir-pth))))
