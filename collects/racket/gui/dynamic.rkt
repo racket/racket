@@ -6,6 +6,8 @@
 (define (gui-available?)
   (and (zero? (variable-reference->phase (#%variable-reference)))
        (with-handlers ([exn:fail? (lambda (exn) #f)])
+         ;; Fails if mred/private/dynamic is not instantiated:
+         (module->language-info 'mred/private/dynamic #f)
          (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
               'done))))
 
