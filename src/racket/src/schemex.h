@@ -923,6 +923,7 @@ void (*scheme_signal_received_at)(void *);
 void *(*scheme_get_signal_handle)();
 int (*scheme_char_strlen)(const mzchar *s);
 Scheme_Object *(*scheme_stx_extract_marks)(Scheme_Object *stx);
+void *(*scheme_register_process_global)(const char *key, void *val);
 #ifndef SCHEME_EX_INLINE
 } Scheme_Extension_Table;
 #endif

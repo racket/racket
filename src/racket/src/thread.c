@@ -271,6 +271,17 @@ typedef struct {
 # define xCUSTODIAN_FAM(x) (*(x))
 #endif
 
+typedef struct Proc_Global_Rec {
+  const char *key;
+  void *val;
+  struct Proc_Global_Rec *next;
+} Proc_Global_Rec;
+
+SHARED_OK static Proc_Global_Rec *process_globals;
+#if defined(MZ_USE_MZRT)
+static mzrt_mutex *process_global_lock;
+#endif
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -2521,6 +2532,49 @@ void scheme_set_runstack_limits(Scheme_Object **rs, long len, long start, long e
 #else
   memset(rs, 0, start * sizeof(Scheme_Object *));
   memset(rs + end, 0, (len - end) * sizeof(Scheme_Object *));
+#endif
+}
+
+void *scheme_register_process_global(const char *key, void *val)
+{
+  void *old_val = NULL;
+  char *key2;
+  Proc_Global_Rec *pg;
+  long len;
+
+#if defined(MZ_USE_MZRT)
+  mzrt_mutex_lock(process_global_lock);
+#endif
+
+  for (pg = process_globals; pg; pg = pg->next) {
+    if (!strcmp(pg->key, key)) {
+      old_val = pg->val;
+      break;
+    }
+  }
+
+  if (!old_val && val) {
+    len = strlen(key);
+    key2 = (char *)malloc(len + 1);
+    memcpy(key2, key, len + 1);
+    pg = (Proc_Global_Rec *)malloc(sizeof(Proc_Global_Rec));
+    pg->key = key2;
+    pg->val = val;
+    pg->next = process_globals;
+    process_globals = pg;
+  }
+
+#if defined(MZ_USE_MZRT)
+  mzrt_mutex_unlock(process_global_lock);
+#endif
+
+  return old_val;
+}
+
+void scheme_init_process_globals(void)
+{
+#if defined(MZ_USE_MZRT)
+  mzrt_mutex_create(&process_global_lock);
 #endif
 }
 

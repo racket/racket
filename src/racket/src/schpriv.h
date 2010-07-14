@@ -180,6 +180,7 @@ void scheme_register_traversers(void);
 void scheme_init_hash_key_procs(void);
 #endif
 Scheme_Thread *scheme_make_thread(void*);
+void scheme_init_process_globals(void);
 void scheme_init_true_false(void);
 void scheme_init_symbol_table(void);
 void scheme_init_symbol_type(Scheme_Env *env);

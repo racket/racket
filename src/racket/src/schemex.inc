@@ -649,3 +649,4 @@
   scheme_extension_table->scheme_get_signal_handle = scheme_get_signal_handle;
   scheme_extension_table->scheme_char_strlen = scheme_char_strlen;
   scheme_extension_table->scheme_stx_extract_marks = scheme_stx_extract_marks;
+  scheme_extension_table->scheme_register_process_global = scheme_register_process_global;

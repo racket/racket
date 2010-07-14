@@ -311,10 +311,12 @@ Scheme_Env *scheme_engine_instance_init() {
 #endif
 
   scheme_starting_up = 1;
- 
+
   scheme_init_portable_case();
   init_scheme_local();
   init_toplevels();
+
+  scheme_init_process_globals();
 
   scheme_init_true_false();
 
@@ -358,11 +360,11 @@ Scheme_Env *scheme_engine_instance_init() {
   env = place_instance_init(stack_base, 1);
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
-{
-  void *signal_fd;
-  signal_fd = scheme_get_signal_handle();
-  GC_set_put_external_event_fd(signal_fd);
-}
+  {
+    void *signal_fd;
+    signal_fd = scheme_get_signal_handle();
+    GC_set_put_external_event_fd(signal_fd);
+  }
 #endif
 
   return env;

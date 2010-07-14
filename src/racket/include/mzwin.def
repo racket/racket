@@ -577,3 +577,4 @@ EXPORTS
  scheme_get_signal_handle
  scheme_char_strlen
  scheme_stx_extract_marks
+ scheme_register_process_global
