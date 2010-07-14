@@ -1,5 +1,5 @@
 #!/bin/sh
-#|
+#| -*- scheme -*-
 exe="racket";
 if [ -x "$PLTHOME/bin/racket" ]; then exe="$PLTHOME/bin/racket"; fi
 exec "$exe" "$0" "$@"
@@ -69,7 +69,7 @@ exec "$exe" "$0" "$@"
 (printf "Building ~a content...\n" build-mode)
 (parameterize ([url-roots (and (eq? 'web build-mode) sites)])
   (when (and extra-file (file-exists? extra-file))
-    (dynamic-require extra-file #f))
+    (dynamic-require `(file ,extra-file) #f))
   (parameterize ([current-directory output-dir])
     (render-all)
     (when distribute?
