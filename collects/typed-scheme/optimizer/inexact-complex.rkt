@@ -206,7 +206,18 @@
            #:with real-part (unboxed-gensym)
            #:with imag-part #f
            #:with (bindings ...)
-           #`((real-part (->fl #,((optimize) #'e))))))
+           #`((real-part (->fl #,((optimize) #'e)))))
+  (pattern e:expr
+           #:when (isoftype? #'e -Real)
+           #:with real-part (unboxed-gensym)
+           #:with imag-part #f
+           #:with (bindings ...)
+           #`((real-part (exact->inexact #,((optimize) #'e)))))
+  (pattern e:expr
+           #:with (bindings ...)
+           (error "non exhaustive pattern match")
+           #:with real-part #f
+           #:with imag-part #f))
 
 (define-syntax-class inexact-complex-unary-op
   (pattern (~or (~literal real-part) (~literal flreal-part)) #:with unsafe #'unsafe-flreal-part)
