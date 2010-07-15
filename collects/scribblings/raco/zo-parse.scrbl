@@ -180,7 +180,7 @@ values. The @racket[max-let-depth] field indicates the maximum size of
 the stack that will be created by @racket[rhs] (not counting
 @racket[prefix]).}
 
-@defstruct+[(req form) ([reqs syntax?]
+@defstruct+[(req form) ([reqs stx?]
                         [dummy toplevel?])]{
 
 Represents a top-level @racket[#%require] form (but not one in a
@@ -543,6 +543,13 @@ information and @racket[certs] is certificate information. When the
 
 A supertype for lexical-information elements.}
 
+@defstruct+[(top-level-rename wrap) ([flag boolean?])]{
+                                                       
+A top-level renaming.}
+
+@defstruct+[(mark-barrier wrap) ([value symbol?])]{
+                                                       
+A mark barrier.}
 
 @defstruct+[(lexical-rename wrap) ([alist (listof (cons/c symbol? symbol?))])]{
 
