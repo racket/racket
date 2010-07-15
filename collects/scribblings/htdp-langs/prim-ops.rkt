@@ -47,7 +47,7 @@
     (hspace 1))
    (to-paragraph
     (typeset-type (cadr func)))))
-  
+
 (define (prim-ops lib ctx-stx)
   (let ([ops (map (lambda (cat)
                     (cons (car cat)
@@ -93,21 +93,23 @@
      (apply
       append
       (map (lambda (category)
-             (filter values
-                     (map
-                      (lambda (func)
-                        (let ([id (datum->syntax ctx-stx (car func))])
-                          (and (not (ormap
-                                     (lambda (ns)
-                                       (free-label-identifier=?
-                                        id
-                                        (parameterize ([current-namespace ns])
-                                          (namespace-syntax-introduce (datum->syntax #f (car func))))))
-                                     not-in-ns))
-                               (let ([desc-strs (cddr func)])
-                                 (defthing/proc
-                                   id
-                                   (to-paragraph (typeset-type (cadr func)))
-                                   (cons "Purpose: " desc-strs))))))
-                      (sort-category category))))
+             (cons
+              (subsection #:tag-prefix (format "~a" lib) (car category))
+              (filter values
+                      (map
+                       (lambda (func)
+                         (let ([id (datum->syntax ctx-stx (car func))])
+                           (and (not (ormap
+                                      (lambda (ns)
+                                        (free-label-identifier=?
+                                         id
+                                         (parameterize ([current-namespace ns])
+                                           (namespace-syntax-introduce (datum->syntax #f (car func))))))
+                                      not-in-ns))
+                                (let ([desc-strs (cddr func)])
+                                  (defthing/proc
+                                    id
+                                    (to-paragraph (typeset-type (cadr func)))
+                                    (cons "Purpose: " desc-strs))))))
+                       (sort-category category)))))
            ops)))))
