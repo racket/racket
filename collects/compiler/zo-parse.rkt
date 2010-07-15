@@ -624,9 +624,9 @@
                                              (and plus-kern? 'plus-kern)))]
                       [else (error "bad module rename: ~e" a)]))]
                  [(boolean? a)
-                  `(#%top-level-rename ,a)]
+                  (make-top-level-rename a)]
                  [(symbol? a)
-                  '(#%mark-barrier)]
+                  (make-mark-barrier a)]
                  [(box? a)
                   (match (unbox a)
                     [(list (? symbol?) ...) (make-prune (unbox a))]
