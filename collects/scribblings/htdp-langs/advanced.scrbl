@@ -82,7 +82,7 @@
       (time expr)
       empty
       (code:line id (code:comment @#,seclink["intermediate-id"]{identifier}))
-      (code:line prim-op (code:comment @#,seclink["intermediate-lambda-prim-op"]{primitive operation}))
+      (code:line prim-op (code:comment @#,seclink["advanced-prim-ops"]{primitive operation}))
       (code:line @#,elem{@schemevalfont{'}@scheme[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
       (code:line @#,elem{@schemevalfont{`}@scheme[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
