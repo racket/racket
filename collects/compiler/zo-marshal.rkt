@@ -609,6 +609,10 @@
          (vector-set! vec (+ 2 i) k)
          (vector-set! vec (+ 2 i len) v))
        vec]
+      [(struct top-level-rename (flag))
+       flag]
+      [(struct mark-barrier (value)) 
+       value]
       [(struct prune (syms))
        (box syms)]
       [(struct wrap-mark (val))
