@@ -130,5 +130,7 @@
                (shutdown-server))])
     (with-handlers ([exn:break? (lambda (exn) (bye))])
       (semaphore-wait/enable-break sema)
+      ; Give the final response time to get there
+      (sleep 2)
       ;; We can get here if a /quit url is visited
       (bye))))

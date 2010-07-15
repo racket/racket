@@ -25,7 +25,7 @@
 (define (quit-server sema)
   (lift:make
    (lambda (request)
-     (thread (lambda () (sleep 2) (semaphore-post sema)))
+     (semaphore-post sema)
      `(html (head (title "Server Stopped")
               (link ([rel "stylesheet"] [href "/error.css"])))
             (body (div ([class "section"])
