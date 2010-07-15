@@ -182,6 +182,7 @@
 [gensym (->opt [Sym] Sym)]
 [string-append (->* null -String -String)]
 [open-input-string (-> -String -Input-Port)]
+[open-input-bytes (-> -Bytes -Input-Port)]
 [open-output-file
  (->key -Pathlike
         #:mode (one-of/c 'binary 'text) #f
@@ -610,6 +611,7 @@
 [byte-ready? (->opt [-Input-Port] B)]
 
 [open-output-string (-> -Output-Port)]
+[open-output-bytes (-> -Output-Port)]
 ;; FIXME - this is too general
 [get-output-string (-> -Output-Port -String)]
 
