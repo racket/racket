@@ -158,6 +158,8 @@
    [bytes-utf-8-ref (-Bytes [index-type (Un (-val #f) -Char) index-type index-type] . ->opt . -Char)]
    [bytes-utf-8-index (-Bytes [index-type (Un (-val #f) -Char) index-type index-type] . ->opt . -NonnegativeFixnum)]
 
+   [integer->integer-bytes (-Integer index-type Univ [Univ -Bytes index-type] . ->opt . -Bytes)]
+   [integer-bytes->integer (-Bytes Univ [Univ index-type index-type] . ->opt . -Integer)]
    
    [peek-char
     (cl->* [->opt [-Input-Port index-type] (Un -Char (-val eof))])]
