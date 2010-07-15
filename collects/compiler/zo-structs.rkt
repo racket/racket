@@ -23,6 +23,7 @@
 (define-syntax-rule (define-form-struct* id id+par ([field-id field-contract] ...))
   (begin
     (define-struct id+par (field-id ...) #:prefab)
+    #;(provide (struct-out id))
     (provide/contract
      [struct id ([field-id field-contract] ...)])))
 
@@ -147,7 +148,7 @@
 (define-form-struct (primval expr) ([id exact-nonnegative-integer?])) ; direct preference to a kernel primitive
 
 ;; Top-level `require'
-(define-form-struct (req form) ([reqs syntax?] [dummy toplevel?]))
+(define-form-struct (req form) ([reqs stx?] [dummy toplevel?]))
 
 (define-form-struct (lexical-rename wrap) ([bool1 boolean?] ; this needs a name
                                            [bool2 boolean?] ; this needs a name
@@ -193,6 +194,12 @@
                                           [renames (listof (cons/c symbol? module-binding?))] 
                                           [mark-renames any/c] 
                                           [plus-kern? boolean?]))
+
+; XXX better name for 'flag'
+(define-form-struct (top-level-rename wrap) ([flag boolean?]))
+
+; XXX better name for 'value'
+(define-form-struct (mark-barrier wrap) ([value symbol?]))
 
 (provide/contract (struct indirect ([v (or/c closure? #f)])))
 
