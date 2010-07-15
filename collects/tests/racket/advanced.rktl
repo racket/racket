@@ -208,6 +208,31 @@
 (htdp-test #t 'equal~? (equal~?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10.02 x)]) x) 0.1))
 (htdp-test #f 'equal~? (equal~?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10.2 x)]) x) 0.1))
 
+(htdp-test 42 'hash-for-each 
+           (local [(define x 0)
+                   (define (f k v) (set! x 42))]
+             (begin (hash-for-each (make-hash (list (list 1 2))) f)
+                    x)))
+(htdp-test #t 'hash-has-key? (hash-has-key? (make-hash (list (list 1 2))) 1))
+(htdp-test #f 'hash-has-key? (hash-has-key? (make-hash (list (list 1 2))) 2))
+(htdp-test (list #f #f) 'hash-map
+           (hash-map (make-hash (list (list 1 #t) (list 2 #t)))
+                     (lambda (k v) (not v))))
+(htdp-test 1 'hash-ref (hash-ref (make-hash (list (list 'a 1))) 'a))
+(htdp-test (list #t #f) 'hash-remove! 
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (list (hash-has-key? ht 'a)
+                   (begin (hash-remove! ht 'a)
+                          (hash-has-key? ht 'a)))))
+(htdp-test 2 'hash-set!
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (begin (hash-set! ht 'a 2)
+                    (hash-ref ht 'a))))
+(htdp-test #t 'hash?
+           (hash? (make-hash (list (list 'a 1)))))
+(htdp-test #f 'hash?
+           (hash? 1))
+
 ;; Simulate set! in the repl
 (module my-advanced-module (lib "htdp-advanced.rkt" "lang")
   (define x 10)
