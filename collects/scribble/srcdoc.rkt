@@ -57,33 +57,18 @@
   (lambda (stx)
     (syntax-case stx ()
       [(_ id contract desc)
-       (with-syntax ([(header result (body-stuff ...) better-contract)
+       (with-syntax ([(header result (body-stuff ...))
                       (syntax-case #'contract (->d -> values)
-                        [(->d ([arg-id arg/c] ...) () (values [name res] ...))
-                         #'((id [arg-id arg/c] ...) 
-                            (values res ...)
-                            ()
-                            (-> arg/c ... (values res ...)))]
+                        [(->d (req ...) () (values [name res] ...))
+                         #'((id req ...) (values res ...) ())]
                         [(->d (req ...) () #:pre-cond condition (values [name res] ...))
-                         #'((id req ...) 
-                            (values res ...) 
-                            ((bold "Pre-condition: ") (scheme condition) "\n" "\n") 
-                            contract)]
-                        [(->d ([arg-id arg/c] ...) () [name res])
-                         #'((id [arg-id arg/c] ...) 
-                            res
-                            ()
-                            (-> arg/c ... res))]
+                         #'((id req ...) (values res ...) ((bold "Pre-condition: ") (scheme condition) "\n" "\n"))]
+                        [(->d (req ...) () [name res])
+                         #'((id req ...) res ())]
                         [(->d (req ...) () #:pre-cond condition [name res])
-                         #'((id req ...)
-                            res 
-                            ((bold "Pre-condition: ")  (scheme condition) "\n" "\n" )
-                            contract)]
-                        [(->d ([arg-id arg/c] ...) () #:rest rest rest-ctc [name res])
-                         #'((id [arg-id arg/c] ... [rest rest-ctc] (... ...))
-                            res
-                            ()
-                            (->* (arg/c ...) () #:rest rest-ctc res))]
+                         #'((id req ...) res ((bold "Pre-condition: ")  (scheme condition) "\n" "\n" ))]
+                        [(->d (req ...) () #:rest rest rest-ctc [name res])
+                         #'((id req ... [rest rest-ctc] (... ...)) res ())]
                         [(->d (req ...) (one more ...) whatever)
                          (raise-syntax-error
                           #f
@@ -98,7 +83,7 @@
                           stx
                           #'contract)]
                         [(-> result)
-                         #'((id) result () contract)]
+                         #'((id) result ())]
                         [(-> whatever ...) 
                          (raise-syntax-error
                           #f
@@ -113,7 +98,7 @@
                           stx
                           #'contract)])])
          (values
-          #'[id better-contract]
+          #'[id contract]
           #'(defproc header result body-stuff ... . desc)
           #'(scribble/manual)
           #'id))])))
