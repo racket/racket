@@ -1294,10 +1294,12 @@ and the @racket[exn:fail:redex:test-term] component contains the term that induc
 
 @defform/subs[(check-reduction-relation relation property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
-                       (code:line #:retries retries-expr)])
+                       (code:line #:retries retries-expr)
+                       (code:line #:print? print?-expr)])
               #:contracts ([property (-> any/c any/c)]
                            [attempts-expr natural-number/c]
-                           [retries-expr natural-number/c])]{
+                           [retries-expr natural-number/c]
+                           [print?-expr any/c])]{
 Tests @racket[relation] as follows: for each case of @racket[relation],
 @racket[check-reduction-relation] generates @racket[attempts] random
 terms that match that case's left-hand side and applies @racket[property] 
@@ -1311,10 +1313,12 @@ when @racket[relation] is a relation on @racket[L] with @racket[n] rules.}
 
 @defform/subs[(check-metafunction metafunction property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
-                       (code:line #:retries retries-expr)])
+                       (code:line #:retries retries-expr)
+                       (code:line #:print? print?-expr)])
               #:contracts ([property (-> (listof any/c) any/c)]
                            [attempts-expr natural-number/c]
-                           [retries-expr natural-number/c])]{
+                           [retries-expr natural-number/c]
+                           [print?-expr any/c])]{
 Like @racket[check-reduction-relation] but for metafunctions. 
 @racket[check-metafunction] calls @racket[property] with lists
 containing arguments to the metafunction.}
