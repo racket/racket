@@ -3,23 +3,23 @@
 (require (for-syntax scheme/base))
 (require racket/class)
 
-(require "../private/honu-typed-scheme.ss"
+(require "private/honu-typed-scheme.ss"
          ;; "private/honu.ss"
-         "../private/parse.ss"
-         (for-syntax "../private/literals.ss")
-         (for-syntax "../private/honu-typed-scheme.ss")
-         (for-syntax "../private/parse.ss")
+         "private/parse.ss"
+         (for-syntax "private/literals.ss")
+         (for-syntax "private/honu-typed-scheme.ss")
+         (for-syntax "private/parse.ss")
          syntax/parse
          (for-syntax syntax/parse)
-         "../private/literals.ss"
-         "../private/syntax.ss"
-         "../private/more.ss"
+         "private/literals.ss"
+         "private/syntax.ss"
+         "private/more.ss"
          (for-template scheme/base)
-         (for-template "../private/literals.rkt")
-         (for-syntax "../private/more.ss")
-         (for-syntax "../private/syntax.ss")
-         (for-syntax "../private/macro.ss")
-         "../private/macro.ss")
+         (for-template "private/literals.rkt")
+         (for-syntax "private/more.ss")
+         (for-syntax "private/syntax.ss")
+         (for-syntax "private/macro.ss")
+         "private/macro.ss")
 
 (define test-x-class
   (class object%
