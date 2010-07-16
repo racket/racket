@@ -208,6 +208,12 @@
 (htdp-test #t 'equal~? (equal~?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10.02 x)]) x) 0.1))
 (htdp-test #f 'equal~? (equal~?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10.2 x)]) x) 0.1))
 
+(htdp-test 1 'hash-copy
+           (local [(define ht (make-hash (list (list 'a 1))))
+                   (define htp (hash-copy ht))]
+             (begin (hash-set! htp 'a 2)
+                    (hash-ref ht 'a))))
+(htdp-test 1 'hash-count (hash-count (make-hash (list (list 'a 1)))))
 (htdp-test 42 'hash-for-each 
            (local [(define x 0)
                    (define (f k v) (set! x 42))]
@@ -219,6 +225,18 @@
            (hash-map (make-hash (list (list 1 #t) (list 2 #t)))
                      (lambda (k v) (not v))))
 (htdp-test 1 'hash-ref (hash-ref (make-hash (list (list 'a 1))) 'a))
+(htdp-test 2 'hash-ref (hash-ref (make-hash (list (list 'a 1))) 'b 2))
+(htdp-test 2 'hash-ref (hash-ref (make-hash (list (list 'a 1))) 'b (lambda () 2)))
+(htdp-test 1 'hash-ref!
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (hash-ref! ht 'a 2)))
+(htdp-test 2 'hash-ref!
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (hash-ref! ht 'b 2)))
+(htdp-test 2 'hash-ref!
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (begin (hash-ref! ht 'b 2)
+                    (hash-ref ht 'b))))
 (htdp-test (list #t #f) 'hash-remove! 
            (local [(define ht (make-hash (list (list 'a 1))))]
              (list (hash-has-key? ht 'a)
@@ -228,10 +246,45 @@
            (local [(define ht (make-hash (list (list 'a 1))))]
              (begin (hash-set! ht 'a 2)
                     (hash-ref ht 'a))))
+(htdp-test 2 'hash-update!
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (begin (hash-update! ht 'a add1)
+                    (hash-ref ht 'a))))
+(htdp-test 2 'hash-update!
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (begin (hash-update! ht 'b add1 1)
+                    (hash-ref ht 'b))))
+(htdp-test 2 'hash-update!
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (begin (hash-update! ht 'b add1 (lambda () 1))
+                    (hash-ref ht 'b))))
 (htdp-test #t 'hash?
            (hash? (make-hash (list (list 'a 1)))))
+(htdp-test #t 'hash?
+           (hash? (make-hasheq (list (list 'a 1)))))
+(htdp-test #t 'hash?
+           (hash? (make-hasheqv (list (list 'a 1)))))
 (htdp-test #f 'hash?
            (hash? 1))
+(htdp-test #t 'hash-equal?
+           (hash-equal? (make-hash (list (list 'a 1)))))
+(htdp-test #f 'hash-equal?
+           (hash-equal? (make-hasheq (list (list 'a 1)))))
+(htdp-test #f 'hash-equal?
+           (hash-equal? (make-hasheqv (list (list 'a 1)))))
+(htdp-test #f 'hash-eq?
+           (hash-eq? (make-hash (list (list 'a 1)))))
+(htdp-test #t 'hash-eq?
+           (hash-eq? (make-hasheq (list (list 'a 1)))))
+(htdp-test #f 'hash-eq?
+           (hash-eq? (make-hasheqv (list (list 'a 1)))))
+(htdp-test #f 'hash-eqv?
+           (hash-eqv? (make-hash (list (list 'a 1)))))
+(htdp-test #f 'hash-eqv?
+           (hash-eqv? (make-hasheq (list (list 'a 1)))))
+(htdp-test #t 'hash-eqv?
+           (hash-eqv? (make-hasheqv (list (list 'a 1)))))
+
 
 ;; Simulate set! in the repl
 (module my-advanced-module (lib "htdp-advanced.rkt" "lang")

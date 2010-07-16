@@ -345,13 +345,17 @@ namespace.
     (check-last/cycle 'append x)
     (apply append x)))
 
-(define-teach advanced hash-ref
-  (lambda (h k)
-    (hash-ref h k)))
-
 (define-teach advanced make-hash
   (lambda (a)
     (make-hash (map (lambda (l) (cons (first l) (second l))) a))))
+
+(define-teach advanced make-hasheq
+  (lambda (a)
+    (make-hasheq (map (lambda (l) (cons (first l) (second l))) a))))
+
+(define-teach advanced make-hasheqv
+  (lambda (a)
+    (make-hasheqv (map (lambda (l) (cons (first l) (second l))) a))))
 
 (provide  
  false?
@@ -383,8 +387,9 @@ namespace.
  advanced-cons
  advanced-list*
  advanced-append
- advanced-hash-ref
  advanced-make-hash
+ advanced-make-hasheq
+ advanced-make-hasheqv
  cyclic-list?)
 
 ;; -----------------------------------------------------------------------------
