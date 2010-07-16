@@ -24,7 +24,8 @@
          [(list (F: _) _) #t]
          [(list _ (F: _)) #t]
          [(list (Name: n) (Name: n*)) 
-          (overlap (resolve-once t1) (resolve-once t2))]
+          (or (free-identifier=? n n*)
+              (overlap (resolve-once t1) (resolve-once t2)))]
          [(list (? Mu?) _) (overlap (unfold t1) t2)]
          [(list _ (? Mu?)) (overlap t1 (unfold t2))]
          [(list (Union: e) t)
@@ -73,8 +74,8 @@
                 (and t2 (Struct: n* p* flds* _ _ _ _ _)))
           (let ([p1 (if (Name? p) (resolve-name p) p)]
                 [p2 (if (Name? p*) (resolve-name p*) p*)])
-            (or (overlap t1 p2)
-                (overlap t2 p1)
+            (or (and p2 (overlap t1 p2))
+                (and p1 (overlap t2 p1))
                 (and (= (length flds) (length flds*)) 
                      (for/and ([f flds] [f* flds*]) 
                        (match* (f f*)
