@@ -148,9 +148,11 @@
                     #f)]
 
   [pattern (~seq (~var e (expression-simple context))
+                 (~var dx (debug-here (format "call 1 ~a" #'e)))
                  (#%parens 
-                  (~seq (~var arg (ternary context))
-                        (~var d3 (debug-here (format "call 3 ~a\n" #'arg)))
+                  (~seq (~var dz (debug-here (format "call 2")))
+                        (~var arg (ternary context))
+                        (~var d3 (debug-here (format "call 3 ~a" #'arg)))
                         (~optional honu-comma))
                   ...))
            #:with call
@@ -236,10 +238,9 @@
               #:with result 
               (begin
                 (printf "Left was ~a\n" left)
-                (attribute new-right.result))
-
-              #;
-              (apply-scheme-syntax (attribute new-right.result)))
+                #;
+                (attribute new-right.result)
+                (apply-scheme-syntax (attribute new-right.result))))
 
      (pattern (~seq) #:with result (begin #;(printf "Left is still ~a\n" left)
                                           left)))
@@ -373,10 +374,15 @@
            #:with result (make-assignment #'left.result #'right.result)])
 
 (define-syntax-class (expression-top context)
-                     #:literals (semicolon)
+                     #:literals (semicolon #%braces)
                      [pattern (~var assignment (assignment context))
                               #:with result #'assignment.result
                               #:with rest #'assignment.rest]
+                     [pattern ((#%braces stuff ...) . rest)
+                              #:with result (let-values ([(parsed dont-care)
+                                                          (parse-block-one/2 #'(stuff ...) context)])
+                                              (printf "Parsed ~a. Dont care rest ~a\n" parsed dont-care)
+                                              parsed)]
                      [pattern ((~var x0 (debug-here (format "expression top\n")))
                                (~var e (ternary context))
                                (~var x1 (debug-here (format "expression top 1 ~a\n" (syntax->datum #'e))))

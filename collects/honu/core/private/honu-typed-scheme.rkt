@@ -503,7 +503,9 @@ if (foo){
 (define-syntax (honu-unparsed-expr stx)
   (syntax-parse stx
     [(_ expr ...)
-     (parse-an-expr #'(expr ...))]))
+     (emit-remark "Parse an expression" #'(expr ...))
+     (parse-an-expr #'(expr ...))]
+    [else (raise-syntax-error 'honu-unparsed-expr "Invalid expression syntax" stx)]))
 
 (define-honu-syntax scheme-syntax
   (lambda (body ctx)

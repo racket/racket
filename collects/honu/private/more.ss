@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket/base
 
 (require "honu-typed-scheme.ss"
          "literals.ss"
@@ -8,6 +8,7 @@
          (for-syntax syntax/parse
                      syntax/stx
                      racket/list
+                     racket/base
                      "contexts.ss"
                      "syntax.ss"
                      (only-in racket (... scheme-ellipses))
@@ -130,7 +131,7 @@
          #;
          #'(one* rest* ...))]
       [else stuff]))
-  (define (replace stuff)
+  (define (replace2 stuff)
     (syntax-parse stuff #:literals (ellipses-comma ellipses-repeat #%parens)
       [(ellipses-repeat (#%parens ellipses-comma things-to-repeat ...) rest ...)
        (with-syntax ([(rest* ...) (replace #'(rest ...))])
@@ -164,6 +165,42 @@
          #;
          #'(z* rest* ...))]
       [else stuff]))
+
+  (define (replace stuff)
+    #|
+    (printf "Replacing ~a\n" (syntax->datum stuff))
+    (printf "Local phase level ~a\n" (syntax-local-phase-level))
+    (printf "Checking..\n")
+    (syntax-parse stuff
+      [(a b c rest ...)
+       (printf "a: ~a\n" #'a)
+       (printf "b: ~a identifier ~a = , is ~a. honu-comma at ~a\n" #'b (identifier? #'b) (and (identifier? #'b) (free-identifier=? #'b #'honu-comma)) (identifier-binding #'honu-comma))
+       (printf "c: ~a = ... is ~a\n" #'c (and (identifier? #'c) (free-identifier=? #'c #'(... ...))))]
+      [else (void)])
+    |#
+    (syntax-parse stuff
+      #:literals (;; honu-comma
+                  ;; FIXME! Use a literal-set and #:at instead of this
+                  [honu-comma honu-comma #:phase (sub1 (syntax-local-phase-level))]
+                  [ellipses ...] ellipses-comma ellipses-repeat #%parens)
+      [(a honu-comma ellipses rest ...)
+       (with-syntax ([a* (replace #'a)]
+                     [(rest* ...) (replace #'(rest ...))])
+         (datum->syntax stuff
+                        (cons
+                          (cons #'ellipses-comma (cons #'a* '()))
+                          (cons
+                            #'(... ...)
+                            #'(rest* ...)))
+                        stuff stuff))]
+      [(z rest ...)
+       (with-syntax ([z* (replace #'z)]
+                     [(rest* ...) (replace #'(rest ...))])
+         (datum->syntax stuff
+                        (cons #'z* #'(rest* ...))
+                        stuff stuff))]
+      [else stuff]
+      ))
   
   (printf "Do fix template for ~a\n" (syntax->datum stuff))
   (syntax-parse stuff
