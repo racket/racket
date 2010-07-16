@@ -484,8 +484,8 @@
 [unsafe-fxior fx-op]
 [unsafe-fxxor fx-op]
 [unsafe-fxnot fx-unop]
-[unsafe-fxlshift fx-intop]
-[unsafe-fxrshift (cl->* (-> -NonnegativeFixnum -NonnegativeFixnum -NonnegativeFixnum) fx-intop)]
+[unsafe-fxlshift fx-natop]
+[unsafe-fxrshift fx-natop]
 
 [unsafe-fx= fx=-type]
 [unsafe-fx< fx<-type]
@@ -509,8 +509,8 @@
 [fxior fx-op]
 [fxxor fx-op]
 [fxnot fx-unop]
-[fxlshift fx-intop]
-[fxrshift (cl->* (-> -NonnegativeFixnum -NonnegativeFixnum -NonnegativeFixnum) fx-intop)]
+[fxlshift fx-natop]
+[fxrshift fx-natop]
 
 [fx= fx=-type]
 [fx< fx<-type]
