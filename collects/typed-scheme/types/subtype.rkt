@@ -237,7 +237,6 @@
 	      [((Base: 'Integer _) (Base: 'Number _)) A0]
 	      [((Base: 'Flonum _)  (== -Real =t)) A0]
 	      [((Base: 'Integer _)  (== -Real =t)) A0]
-              [((Base: 'Flonum _)  (Base: 'InexactComplex _)) A0]
 	      [((Base: 'Flonum _)  (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
 	      [((Base: 'Integer _) (Base: 'Exact-Rational _)) A0]
