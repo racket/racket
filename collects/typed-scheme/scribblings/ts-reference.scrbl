@@ -603,4 +603,17 @@ have the types ascribed to them; these types are converted to contracts and chec
   (define val 17))
 
 (fun val)]
+
+@section{Optimization in Typed Racket}
+
+Typed Racket provides a type-driven optimizer that rewrites well-typed
+programs to potentially make them faster. It should in no way make
+your programs slower or unsafe.
+
+Typed Racket's optimizer is not currently turned on by default. If you
+want to activate it, you must add the @racket[#:optimize] keyword when
+specifying the language of your program:
+
+@racketmod[typed/racket #:optimize]
+
 }
