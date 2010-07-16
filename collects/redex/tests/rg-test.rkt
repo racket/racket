@@ -662,6 +662,15 @@
                           #:source mf)))
           #rx"no counterexamples"))
   
+  ; Without the #:attempt-size argument, the attempt would use size 0,
+  ; which does not require a non-terminal decision.
+  (test (let/ec k
+          (parameterize ([generation-decisions 
+                          (decisions #:nt (list (λ _ (k #t))))])
+            (redex-check lang d #t #:attempts 1 #:print? #f #:attempt-size add1)
+            #f))
+        #t)
+  
   (test (raised-exn-msg 
          exn:fail:redex?
          (redex-check lang n #t #:source (reduction-relation lang (--> x 1))))
@@ -818,6 +827,15 @@
          (λ () (check-reduction-relation (reduction-relation L (--> 1 2) (--> 3 4 name)) (curry eq? 1))))
         #px"counterexample found after 1 attempt with name:\n3\n")
   
+  (test (let/ec k
+          (parameterize ([generation-decisions 
+                          (decisions #:nt (list (λ _ (k #t))))])
+            (check-reduction-relation 
+             (reduction-relation L (--> e e))
+             (λ _ #t) #:attempts 1 #:print? #f #:attempt-size add1)
+            #f))
+        #t)
+  
   (let ([T (reduction-relation
             L
             (==> number number
@@ -908,6 +926,16 @@
             (check-metafunction f (λ (_) #t) #:attempts 1 #:print? #f))
           generated)
         '((4 4) (4 3) (3 4)))
+  
+  (test (let/ec k
+          (define-language L (n number))
+          (define-metafunction L
+            [(f n) n])
+          (parameterize ([generation-decisions 
+                          (decisions #:nt (list (λ _ (k #t))))])
+            (check-metafunction f (λ _ #t) #:attempts 1 #:print? #f #:attempt-size add1)
+            #f))
+        #t)
   
   (test (output (λ () (check-metafunction m (λ (_) #t)))) #rx"no counterexamples")
   (test (output (λ () (check-metafunction m (curry eq? 1))))

@@ -1209,12 +1209,14 @@ repeating as necessary. The optional keyword argument @racket[retries-expr]
                        (code:line #:source metafunction)
                        (code:line #:source relation-expr)
                        (code:line #:retries retries-expr)
-                       (code:line #:print? print?-expr)])
+                       (code:line #:print? print?-expr)
+                       (code:line #:attempt-size attempt-size-expr)])
               #:contracts ([property-expr any/c]
                            [attempts-expr natural-number/c]
                            [relation-expr reduction-relation?]
                            [retries-expr natural-number/c]
-                           [print?-expr any/c])]{
+                           [print?-expr any/c]
+                           [attempt-size-expr (-> natural-number/c natural-number/c)])]{
 Searches for a counterexample to @racket[property-expr], interpreted
 as a predicate universally quantified over the pattern variables
 bound by @racket[pattern]. @racket[redex-check] constructs and tests 
@@ -1224,8 +1226,11 @@ using the @racket[match-bindings] produced by @racket[match]ing
 @math{t} against @racket[pattern].
 
 @racket[redex-check] generates at most @racket[attempts-expr] (default @racket[1000])
-random terms in its search. The size and complexity of these terms increase with 
-each failed attempt. 
+random terms in its search. The size and complexity of these terms tend to increase 
+with each failed attempt. The @racket[#:attempt-size] keyword determines the rate at which
+terms grow by supplying a function that bounds term size based on the number of failed
+attempts (see @racket[generate-term]'s @racket[#:size] keyword). By default, the bound
+grows logarithmically with failed attempts.
 
 When @racket[print?-expr] produces any non-@racket[#f] value (the default), 
 @racket[redex-check] prints the test outcome on @racket[current-output-port].
@@ -1295,11 +1300,13 @@ and the @racket[exn:fail:redex:test-term] component contains the term that induc
 @defform/subs[(check-reduction-relation relation property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:retries retries-expr)
-                       (code:line #:print? print?-expr)])
+                       (code:line #:print? print?-expr)
+                       (code:line #:attempt-size attempt-size-expr)])
               #:contracts ([property (-> any/c any/c)]
                            [attempts-expr natural-number/c]
                            [retries-expr natural-number/c]
-                           [print?-expr any/c])]{
+                           [print?-expr any/c]
+                           [attempt-size-expr (-> natural-number/c natural-number/c)])]{
 Tests @racket[relation] as follows: for each case of @racket[relation],
 @racket[check-reduction-relation] generates @racket[attempts] random
 terms that match that case's left-hand side and applies @racket[property] 
@@ -1314,11 +1321,13 @@ when @racket[relation] is a relation on @racket[L] with @racket[n] rules.}
 @defform/subs[(check-metafunction metafunction property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:retries retries-expr)
-                       (code:line #:print? print?-expr)])
+                       (code:line #:print? print?-expr)
+                       (code:line #:attempt-size attempt-size-expr)])
               #:contracts ([property (-> (listof any/c) any/c)]
                            [attempts-expr natural-number/c]
                            [retries-expr natural-number/c]
-                           [print?-expr any/c])]{
+                           [print?-expr any/c]
+                           [attempt-size-expr (-> natural-number/c natural-number/c)])]{
 Like @racket[check-reduction-relation] but for metafunctions. 
 @racket[check-metafunction] calls @racket[property] with lists
 containing arguments to the metafunction.}

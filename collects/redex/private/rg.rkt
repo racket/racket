@@ -104,8 +104,27 @@
 
 ; Determines a size measure for numbers, sequences, etc., using the
 ; attempt count.
-(define (attempt->size n)
-  (inexact->exact (floor (/ (log (add1 n)) (log 5)))))
+(define attempt->size
+  (make-parameter (λ (n) (inexact->exact (floor (/ (log (add1 n)) (log 5)))))))
+(define-for-syntax (with-attempt->size arg-stx redex-form body)
+  (if arg-stx
+      #`(parameterize ([attempt->size
+                        (contract (-> natural-number/c natural-number/c) #,arg-stx
+                                  #,(let ([m (syntax-source-module arg-stx)])
+                                      (cond [(module-path-index? m)
+                                             (format "~a" (module-path-index-resolve m))]
+                                            [(or (symbol? m) (path? m))
+                                             (format "~a" m)]
+                                            [else (format "~s client" redex-form)]))
+                                  '#,redex-form 
+                                  "#:attempt-size argument"
+                                  #(#,(syntax-source arg-stx)
+                                    #,(syntax-line arg-stx) 
+                                    #,(syntax-column arg-stx) 
+                                    #,(syntax-position arg-stx)
+                                    #,(syntax-span arg-stx)))])
+          #,body)
+      body))
 
 (define (pick-number attempt #:top-threshold [top-threshold complex-threshold] [random random])
   (let loop ([threshold 0] 
@@ -118,7 +137,7 @@
             (< attempt (caar levels))
             (< top-threshold (caar levels))
             (not (exotic-choice? random)))
-        (generator (expected-value->p (attempt->size (- attempt threshold))) random)
+        (generator (expected-value->p ((attempt->size) (- attempt threshold))) random)
         (loop (caar levels) (cdar levels) (cdr levels)))))
 
 (define (pick-natural attempt [random random])
@@ -131,7 +150,7 @@
   (pick-number attempt #:top-threshold real-threshold random))
 
 (define (pick-sequence-length attempt)
-  (random-natural (expected-value->p (attempt->size attempt))))
+  (random-natural (expected-value->p ((attempt->size) attempt))))
 
 (define (min-prods nt prods base-table)
   (let* ([sizes (hash-ref base-table nt)]
@@ -709,12 +728,13 @@
      (let-values ([(names names/ellipses) 
                    (extract-names (language-id-nts #'lang 'redex-check)
                                   'redex-check #t #'pat)]
-                  [(attempts-stx source-stx retries-stx print?-stx)
+                  [(attempts-stx source-stx retries-stx print?-stx size-stx)
                    (apply values
                           (parse-kw-args `((#:attempts . ,#'default-check-attempts)
                                            (#:source . #f)
                                            (#:retries . ,#'default-retries)
-                                           (#:print? . #t))
+                                           (#:print? . #t)
+                                           (#:attempt-size . #f))
                                          (syntax kw-args)
                                          stx))])
        (with-syntax ([(name ...) names]
@@ -728,27 +748,28 @@
              (let ([att (assert-nat 'redex-check #,attempts-stx)]
                    [ret (assert-nat 'redex-check #,retries-stx)]
                    [print? #,print?-stx])
-               (unsyntax
-                (if source-stx
-                    #`(let-values ([(metafunc/red-rel num-cases) 
-                                    #,(cond [(and (identifier? source-stx) (metafunc source-stx))
-                                             => (λ (x) #`(values #,x (length (metafunc-proc-cases #,x))))]
-                                            [else
-                                             #`(let ([r (assert-rel 'redex-check #,source-stx)])
-                                                 (values r (length (reduction-relation-make-procs r))))])])
-                        (check-lhs-pats
-                         lang
-                         metafunc/red-rel
-                         property
-                         (max 1 (floor (/ att num-cases)))
-                         ret
-                         'redex-check
-                         (and print? show)
-                         (test-match lang pat)
-                         (λ (generated) (redex-error 'redex-check "~s does not match ~s" generated 'pat))))
-                    #`(check-prop
-                       #,(term-generator #'lang #'pat 'redex-check)
-                       property att ret (and print? show)))))))))]))
+               #,(with-attempt->size
+                  size-stx 'redex-check
+                  (if source-stx
+                      #`(let-values ([(metafunc/red-rel num-cases) 
+                                      #,(cond [(and (identifier? source-stx) (metafunc source-stx))
+                                               => (λ (x) #`(values #,x (length (metafunc-proc-cases #,x))))]
+                                              [else
+                                               #`(let ([r (assert-rel 'redex-check #,source-stx)])
+                                                   (values r (length (reduction-relation-make-procs r))))])])
+                          (check-lhs-pats
+                           lang
+                           metafunc/red-rel
+                           property
+                           (max 1 (floor (/ att num-cases)))
+                           ret
+                           'redex-check
+                           (and print? show)
+                           (test-match lang pat)
+                           (λ (generated) (redex-error 'redex-check "~s does not match ~s" generated 'pat))))
+                      #`(check-prop
+                         #,(term-generator #'lang #'pat 'redex-check)
+                         property att ret (and print? show)))))))))]))
 
 (define (format-attempts a)
   (format "~a attempt~a" a (if (= 1 a) "" "s")))
@@ -773,7 +794,7 @@
     (if (zero? remaining)
         #t
         (let ([attempt (add1 (- attempts remaining))])
-          (let-values ([(term bindings) (generator (attempt->size attempt) attempt retries)])
+          (let-values ([(term bindings) (generator ((attempt->size) attempt) attempt retries)])
             (if (andmap (λ (bindings) 
                           (with-handlers 
                               ([exn:fail?
@@ -866,25 +887,28 @@
 (define-syntax (check-metafunction stx)
   (syntax-case stx ()
     [(_ name property . kw-args)
-     (with-syntax ([m (metafunc/err #'name stx)]
-                   [(attempts retries print?) 
-                    (parse-kw-args `((#:attempts . , #'default-check-attempts)
-                                     (#:retries . ,#'default-retries)
-                                     (#:print? . #t))
-                                   (syntax kw-args)
-                                   stx)])
-       (with-syntax ([show (show-message stx)])
-         (syntax/loc stx
-           (let ([att (assert-nat 'check-metafunction attempts)]
-                 [ret (assert-nat 'check-metafunction retries)])
-             (check-lhs-pats 
-              (metafunc-proc-lang m)
-              m
-              (λ (term _) (property term))
-              att
-              ret
-              'check-metafunction
-              (and print? show))))))]))
+     (let-values ([(attempts retries print? size)
+                   (apply values
+                          (parse-kw-args `((#:attempts . , #'default-check-attempts)
+                                           (#:retries . ,#'default-retries)
+                                           (#:print? . #t)
+                                           (#:attempt-size . #f))
+                                         (syntax kw-args)
+                                         stx))]
+                  [(m) (metafunc/err #'name stx)])
+       (with-attempt->size
+        size 'check-metafunction
+        (quasisyntax/loc stx
+          (let ([att (assert-nat 'check-metafunction #,attempts)]
+                [ret (assert-nat 'check-metafunction #,retries)])
+            (check-lhs-pats 
+             (metafunc-proc-lang #,m)
+             #,m
+             (λ (term _) (property term))
+             att
+             ret
+             'check-metafunction
+             (and #,print? #,(show-message stx)))))))]))
 
 (define (reduction-relation-srcs r)
   (map (λ (proc) (or (rewrite-proc-name proc)
@@ -898,25 +922,28 @@
 (define-syntax (check-reduction-relation stx)
   (syntax-case stx ()
     [(_ relation property . kw-args)
-     (with-syntax ([(attempts retries print?)
-                    (parse-kw-args `((#:attempts . , #'default-check-attempts)
-                                     (#:retries . ,#'default-retries)
-                                     (#:print? . #t))
-                                   (syntax kw-args)
-                                   stx)]
-                   [show (show-message stx)])
-       (syntax/loc stx
-         (let ([att attempts]
-               [ret (assert-nat 'check-reduction-relation retries)]
-               [rel (assert-rel 'check-reduction-relation relation)])
-           (check-lhs-pats
-            (reduction-relation-lang rel)
-            rel
-            (λ (term _) (property term))
-            attempts
-            retries
-            'check-reduction-relation
-            (and print? show)))))]))
+     (let-values ([(attempts retries print? size)
+                   (apply values
+                          (parse-kw-args `((#:attempts . , #'default-check-attempts)
+                                           (#:retries . ,#'default-retries)
+                                           (#:print? . #t)
+                                           (#:attempt-size . #f))
+                                         (syntax kw-args)
+                                         stx))])
+       (with-attempt->size
+        size 'check-reduction-relation
+        (quasisyntax/loc stx
+          (let ([att (assert-nat 'check-reduction-relation #,attempts)]
+                [ret (assert-nat 'check-reduction-relation #,retries)]
+                [rel (assert-rel 'check-reduction-relation relation)])
+            (check-lhs-pats
+             (reduction-relation-lang rel)
+             rel
+             (λ (term _) (property term))
+             att
+             ret
+             'check-reduction-relation
+             (and #,print? #,(show-message stx)))))))]))
 
 (define-signature decisions^
   (next-variable-decision
