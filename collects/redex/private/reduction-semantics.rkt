@@ -2127,9 +2127,11 @@
            (for-each
             (λ (v2) (fprintf (current-error-port) "expected: ~v\n" v2))
             expected)
-           (for-each
-            (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
-            got)))])))
+           (if (empty? got)
+               (fprintf (current-error-port) "got nothing\n")
+               (for-each
+                (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
+                got))))])))
 
 (define-syntax (test-predicate stx)
   (syntax-case stx ()
