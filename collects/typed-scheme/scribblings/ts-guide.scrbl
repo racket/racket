@@ -19,6 +19,7 @@ with Racket.  For an introduction to Racket, see the @(other-manual '(lib "scrib
 @include-section["begin.scrbl"]
 @include-section["more.scrbl"]
 @include-section["types.scrbl"]
+@include-section["optimization.scrbl"]
 
 @;@section{How the Type System Works}
 
