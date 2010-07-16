@@ -1,0 +1,7 @@
+#lang honu/core
+
+provide print;
+
+macro print ()
+{ _ (value:expression); } { syntax(display(value_result); newline();); }
+{ _ value:expression_comma ... ; } { syntax({display(value_result); newline();} ...); }

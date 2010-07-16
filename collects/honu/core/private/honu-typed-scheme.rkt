@@ -621,6 +621,7 @@ if (foo){
                      (honu-unparsed-begin forms ...))
                     (#%plain-module-begin (honu-unparsed-begin forms ...)))
 
+#;
 (define (honu-print arg)
   (printf "~a\n" arg))
 

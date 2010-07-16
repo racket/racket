@@ -12,7 +12,8 @@
 
 (provide-module "core/main.rkt"
                 "private/struct.honu"
-                "private/function.honu")
+                "private/function.honu"
+                "private/common.honu")
 
 #|
 (racket:require "core/main.rkt"

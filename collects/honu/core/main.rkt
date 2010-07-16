@@ -61,6 +61,7 @@
                      (honu-. |.|)
                      )
 
+         #;
          (rename-out [honu-print print])
 
          #%top
