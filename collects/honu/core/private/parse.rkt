@@ -17,7 +17,8 @@
          syntax/name
          racket/match
          syntax/stx
-         (for-syntax "util.ss")
+         (for-syntax "util.ss"
+                     macro-debugger/emit)
          (for-syntax syntax/private/stxparse/runtime-prose
                      syntax/private/stxparse/runtime
                      )
@@ -379,7 +380,10 @@
                               #:with result #'assignment.result
                               #:with rest #'assignment.rest]
                      [pattern ((#%braces stuff ...) . rest)
-                              #:with result (let-values ([(parsed dont-care)
+                              #:with result
+                              (do-parse-block #'(stuff ...))
+                              #;
+                              (let-values ([(parsed dont-care)
                                                           (parse-block-one/2 #'(stuff ...) context)])
                                               (printf "Parsed ~a. Dont care rest ~a\n" parsed dont-care)
                                               parsed)]
@@ -544,7 +548,7 @@
   #;
   [pattern (~seq (~var expr honu-identifier) (~optional honu-comma))]
 
-  [pattern (~seq (~var expr (expression-1 the-expression-context)) (~optional honu-comma)) #:with result #'expr.result]
+  [pattern (~seq (~var expr (expression-1 the-expression-context)) (~optional honu-comma)) #:with result (apply-scheme-syntax #'expr.result)]
 
   #;
   [pattern ((~seq (~var expr (expression-1 the-expression-context)) (~optional honu-comma)) ...)])
@@ -720,3 +724,15 @@
        (raise-syntax-error 'honu-syntax "should have been handled already")
        #;
        (parse-block-one/2 #'(expr ...) the-expression-context))])))
+
+(define (do-parse-block block)
+  (define parsed
+    (let loop ([out '()]
+               [rest block])
+       (if (stx-null? rest)
+         out
+         (let-values ([(out* rest*) (parse-block-one/2 rest the-top-block-context)])
+           (loop (cons out* out)
+                 rest*)))))
+  (with-syntax ([(out ...) (reverse parsed)])
+    #'(begin out ...)))
