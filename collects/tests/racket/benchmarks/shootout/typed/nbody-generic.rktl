@@ -131,7 +131,7 @@ Correct output N = 1000 is
                    [dy    (- o1y (body-y i1))]
                    [dz    (- o1z (body-z i1))]
                    [dist2 (+ (* dx dx) (* dy dy) (* dz dz))]
-                   [mag   (assert (/ +dt+ (* dist2 (sqrt dist2))) inexact-real?)]
+                   [mag   (/ +dt+ (* dist2 (assert (sqrt dist2) inexact-real?)))]
                    [dxmag (* dx mag)]
                    [dymag (* dy mag)]
                    [dzmag (* dz mag)]
