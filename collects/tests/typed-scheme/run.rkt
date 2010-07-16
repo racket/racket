@@ -27,7 +27,7 @@
 (cond [(and (nightly?) (eq? 'cgc (system-type 'gc)))
        (printf "Skipping Typed Racket tests.\n")]
       [(unless (= 0 ((exec) (the-tests)))
-         (error "Typed Racket Tests did not pass."))
+         (eprintf "Typed Racket Tests did not pass."))
        (when (opt?)
          (parameterize ([current-command-line-arguments #()])
            (dynamic-require '(file "optimizer/run.rkt") #f))
