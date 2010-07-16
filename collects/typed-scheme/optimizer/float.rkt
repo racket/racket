@@ -85,4 +85,9 @@
   (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-expr)
            #:with opt
            (begin (log-optimization "float to float" #'op)
-                  #'f.opt)))
+                  #'f.opt))
+
+  (pattern (#%plain-app (~and op (~literal zero?)) f:float-expr)
+           #:with opt
+           (begin (log-optimization "float zero?" #'op)
+                  #'(unsafe-fl= f.opt 0.0))))

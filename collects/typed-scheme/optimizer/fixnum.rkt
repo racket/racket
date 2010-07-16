@@ -74,4 +74,9 @@
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-expr)
            #:with opt
            (begin (log-optimization "fixnum to float" #'op)
-                  #'(unsafe-fx->fl n.opt))))
+                  #'(unsafe-fx->fl n.opt)))
+
+  (pattern (#%plain-app (~and op (~literal zero?)) n:fixnum-expr)
+           #:with opt
+           (begin (log-optimization "fixnum zero?" #'op)
+                  #'(unsafe-fx= n.opt 0))))
