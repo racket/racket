@@ -26,8 +26,8 @@
 
 (: check (*leaf -> Integer))
 (define (check t)
-  (let loop ([t t] [acc 0])
-    (let ([acc (fx+ (leaf-val t) acc)])
+  (let: loop : Integer ([t : *leaf t] [acc : Integer 0])
+    (let: ([acc : Integer (fx+ (leaf-val t) acc)])
       (if (node? t)
         (loop (node-left t)
               (fx- acc (loop (node-right t) 0)))

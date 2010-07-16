@@ -3068,7 +3068,7 @@
           (tfo-inv-ortho
             (cond ((rA? ref-nuc)
                    (tfo-align (atom-pos nuc-C1* ref)
-                              (atom-pos rA-N9   ref)
+                              (atom-pos (lambda (x) (rA-N9 (assert x rA?))) ref)
                               (atom-pos nuc-C4  ref)))
                   ((rC? ref-nuc)
                    (tfo-align (atom-pos nuc-C1* ref)
@@ -3076,7 +3076,7 @@
                               (atom-pos nuc-C2  ref)))
                   ((rG? ref-nuc)
                    (tfo-align (atom-pos nuc-C1* ref)
-                              (atom-pos rG-N9   ref)
+                              (atom-pos (lambda (x) (rG-N9 (assert x rG?))) ref)
                               (atom-pos nuc-C4  ref)))
                   ((rU? ref-nuc)
                    (tfo-align (atom-pos nuc-C1* ref)
