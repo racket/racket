@@ -65,15 +65,15 @@
 ;; "bug" found - handling of empty heaps
 (pdefine: (a) (find-min [pq : (priority-queue a)]) : a 
 	  (let ([h (heap pq)])
-            (if (heap:empty? h)
-                (error "priority queue empty")
-                (elm (heap:find-min h)))))
+	    (if (heap:heap-node? h)
+		(elm (heap:find-min h))
+		(error "priority queue empty"))))
 
 (pdefine: (a) (find-min-priority [pq : (priority-queue a)]) : number
 	  (let ([h (heap pq)])
-	    (if (heap:empty? h)
-		(error "priority queue empty")
-                (pri (heap:find-min h)))))
+	    (if (heap:heap-node? h)
+		(pri (heap:find-min h))
+		(error "priority queue empty"))))
 
 (pdefine: (a) (insert [x : a] [p : number] [pq : (priority-queue a)]) : (priority-queue a)
 	  (make (heap:insert (cons p x) (heap pq))))
@@ -84,9 +84,9 @@
 
 (pdefine: (a) (delete-min [pq : (priority-queue a)]) : (priority-queue a)
 	  (let ([h (heap pq)])
-	    (if (heap:empty? h)
-                (error "priority queue empty")
-		(make (heap:delete-min h)))))
+	    (if (heap:heap-node? h)
+		(make (heap:delete-min h))
+		(error "priority queue empty"))))
 
 
 (pdefine: (a) (size [pq : (priority-queue a)]) : number
