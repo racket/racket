@@ -358,8 +358,10 @@
 
     (define/private (dest->url dest)
       (format "~a~a~a"
-              (from-root (relative->path (dest-path dest))
-                         (get-dest-directory))
+              (let ([p (relative->path (dest-path dest))])
+                (if (equal? p (current-output-file))
+                    ""
+                    (from-root p (get-dest-directory))))
               (if (dest-page? dest) "" "#")
               (if (dest-page? dest)
                   ""
