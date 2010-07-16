@@ -656,7 +656,7 @@
 (define (assert-rel name x)
   (if (reduction-relation? x)
       x
-      (raise-type-error 'redex-check "reduction-relation" x)))
+      (raise-type-error name "reduction-relation" x)))
 
 (define-for-syntax (term-generator lang pat what)
   (with-syntax ([pattern 
