@@ -1346,6 +1346,7 @@ typedef struct Scheme_Cont {
   mz_jmp_buf *savebuf; /* save old error buffer here */
 
   Scheme_Object *escape_cont;
+  int orig_escape_cont;
 
   /* Arguments passed to a continuation invocation to the continuation restorer: */
   Scheme_Object *value; /* argument(s) to continuation */
@@ -1366,7 +1367,7 @@ typedef struct Scheme_Escaping_Cont {
 #ifdef MZ_USE_JIT
   Scheme_Object *native_trace;
 #endif
-  mz_jmp_buf *saveerr;
+  mz_jmp_buf *saveerr, *myerr;
 } Scheme_Escaping_Cont;
 
 #define SCHEME_CONT_F(obj) (((Scheme_Escaping_Cont *)(obj))->f)
@@ -1477,7 +1478,8 @@ void scheme_about_to_move_C_stack(void);
 
 Scheme_Object *scheme_apply_multi_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state);
 
-Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object **old_runstack);
+Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
+                                           Scheme_Object **old_runstack, int can_ec);
 
 /*========================================================================*/
 /*                         semaphores and locks                           */

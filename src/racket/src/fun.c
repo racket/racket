@@ -190,6 +190,8 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
                                      Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
                                      MZ_MARK_POS_TYPE *_vpos);
 
+static Scheme_Object *jump_to_alt_continuation();
+
 typedef void (*DW_PrePost_Proc)(void *);
 
 #define CONS(a,b) scheme_make_pair(a,b)
@@ -4517,6 +4519,7 @@ do_call_ec (int argc, Scheme_Object *argv[], Scheme_Object *_for_cc)
 
   cont->saveerr = p1->error_buf;
   p1->error_buf = &newbuf;
+  cont->myerr = &newbuf;
 
   scheme_save_env_stack_w_thread(cont->envss, p1);
 
@@ -4533,7 +4536,19 @@ do_call_ec (int argc, Scheme_Object *argv[], Scheme_Object *_for_cc)
     Scheme_Thread *p2 = scheme_current_thread;
     if (p2->cjs.jumping_to_continuation
 	&& SAME_OBJ(p2->cjs.jumping_to_continuation, (Scheme_Object *)cont)) {
-      int n = p2->cjs.num_vals;
+      Scheme_Object *alt_cont;
+      int n;
+
+      alt_cont = p2->cjs.alt_full_continuation;
+      if (alt_cont && !((Scheme_Cont *)alt_cont)->orig_escape_cont) {
+        /* The escape continuation does not exactly match the target
+           continuation; the fll continuation was just re-using an
+           existing escape continuation. Now that there's no barrier
+           in the way, jump to the full continuation. */
+        return jump_to_alt_continuation();
+      }
+
+      n = p2->cjs.num_vals;
       v = p2->cjs.val;
       reset_cjs(&p2->cjs);
       scheme_restore_env_stack_w_thread(cont->envss, p2);
@@ -4545,6 +4560,7 @@ do_call_ec (int argc, Scheme_Object *argv[], Scheme_Object *_for_cc)
     }
   } else if (for_cc) {
     ((Scheme_Cont *)for_cc)->escape_cont = (Scheme_Object *)cont;
+    ((Scheme_Cont *)for_cc)->orig_escape_cont = 1;
     a[0] = (Scheme_Object *)for_cc;
     MZ_CONT_MARK_POS -= 2;
     v = _scheme_apply_multi(argv[0], 1, a);
@@ -5973,6 +5989,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   MZ_MARK_POS_TYPE prompt_pos, barrier_pos;
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Prompt *prompt, *barrier_prompt, *effective_barrier_prompt;
+  Scheme_Object *ec;
   GC_CAN_IGNORE void *stack_start;
   int composable;
 
@@ -6018,6 +6035,18 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     sub_cont = NULL;
   else
     sub_cont = (Scheme_Cont *)scheme_extract_one_cc_mark(NULL, cont_key);
+  if (sub_cont 
+      && (sub_cont->save_overflow == p->overflow)
+      && (sub_cont->prompt_tag == prompt_tag)
+      && (sub_cont->barrier_prompt == effective_barrier_prompt)
+      && (((Scheme_Escaping_Cont *)sub_cont->escape_cont)->myerr == p->error_buf)) {
+    /* Whether sub_cont turns out to be the same continuaiton, we can use
+       its escape continuation, because jumping to the escape continuation
+       triggers the same C-level clean-up actions, same `dynamic-wind's, and
+       crosses the same continuation barriers. */
+    ec = sub_cont->escape_cont; 
+  } else
+    ec = NULL;
   if (sub_cont && ((sub_cont->save_overflow != p->overflow)
 		   || (sub_cont->prompt_tag != prompt_tag)
 		   || (sub_cont->barrier_prompt != effective_barrier_prompt)
@@ -6135,6 +6164,8 @@ internal_call_cc (int argc, Scheme_Object *argv[])
      when calling `cont' composably (i.e., when supplying a resume). */
   cont->prompt_stack_start = stack_start;
 
+  cont->escape_cont = ec;
+
   /* Zero out any local variable that shouldn't be saved by the
      continuation.  The meta-continuation for the prompt is an
      especially important one to zero out (otherwise we build up
@@ -6187,7 +6218,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     scheme_check_break_now();
     
     return result;
-  } else if (composable) {
+  } else if (composable || cont->escape_cont) {
     Scheme_Object *argv2[1];
 
     argv2[0] = (Scheme_Object *)cont;
@@ -8381,14 +8412,7 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
           if (p->cjs.alt_full_continuation) {
             /* We were trying to execute a full-continuation jump through
                an escape-continuation jump. Go back to full-jump mode. */
-            Scheme_Object *a[1], **args, *fc;
-            a[0] = p->cjs.val;
-            fc = p->cjs.alt_full_continuation;
-            args = ((p->cjs.num_vals == 1) ? a : (Scheme_Object **)p->cjs.val);
-            p->cjs.jumping_to_continuation = NULL;
-            p->cjs.alt_full_continuation = NULL;
-            p->cjs.val = NULL;
-            return scheme_jump_to_continuation(fc, p->cjs.num_vals, args, NULL);
+            return jump_to_alt_continuation();
           }
           scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
                            "jump to escape continuation in progress,"
@@ -8519,6 +8543,23 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
   }
   old_mc = clone_meta_cont(old_mc, NULL, actual_depth, NULL, NULL, rest, 0);
   p->meta_continuation = old_mc;
+}
+
+static Scheme_Object *jump_to_alt_continuation()
+{
+  Scheme_Thread *p;
+  Scheme_Object *a[1], **args, *fc;
+
+  p = scheme_current_thread;
+
+  a[0] = p->cjs.val;
+  fc = p->cjs.alt_full_continuation;
+  args = ((p->cjs.num_vals == 1) ? a : (Scheme_Object **)p->cjs.val);
+  p->cjs.jumping_to_continuation = NULL;
+  p->cjs.alt_full_continuation = NULL;
+  p->cjs.val = NULL;
+
+  return scheme_jump_to_continuation(fc, p->cjs.num_vals, args, NULL, 0);
 }
 
 /*========================================================================*/

@@ -8768,7 +8768,8 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
   return common_depth;
 }
 
-Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object **old_runstack)
+Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
+                                           Scheme_Object **old_runstack, int can_ec)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Cont *c;
@@ -8781,7 +8782,8 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
   c = (Scheme_Cont *)obj;
   
-  if (c->escape_cont
+  if (can_ec
+      && c->escape_cont
       && scheme_escape_continuation_ok(c->escape_cont))
     scheme_escape_to_continuation(c->escape_cont, num_rands, rands, (Scheme_Object *)c);
       
@@ -9475,7 +9477,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 #endif
     } else if (type == scheme_cont_type) {
       UPDATE_THREAD_RSPTR();
-      v = scheme_jump_to_continuation(obj, num_rands, rands, old_runstack);
+      v = scheme_jump_to_continuation(obj, num_rands, rands, old_runstack, 1);
     } else if (type == scheme_escaping_cont_type) {
       UPDATE_THREAD_RSPTR();
       scheme_escape_to_continuation(obj, num_rands, rands, NULL);
