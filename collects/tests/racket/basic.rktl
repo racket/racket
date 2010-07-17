@@ -1698,6 +1698,14 @@
   (test 42 test-call/cc (lambda (k)
                           (call-with-exception-handler k (lambda () (add1 (raise 42))))))
 
+  (let ([x 0])
+    ;; Make sure inner `k2' doesn't escape using outer `k':
+    (let/cc k (+ 1 (dynamic-wind 
+                       (lambda () (set! x (add1 x)))
+                       (lambda () (let/cc k (k 2))) 
+                       void)))
+    (test 1 values x))
+
   ))
 	      
 
