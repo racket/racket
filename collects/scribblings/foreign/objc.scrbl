@@ -72,8 +72,8 @@ Synonym for @racket[#f]}
                 (tell result-type obj-expr arg ...)]
                ([result-type code:blank
                              (code:line #:type ctype-expr)]
-                [arg (code:line method-id expr)
-                     (code:line #:type ctype-expr method-id arg)])]{
+                [arg (code:line method-id arg-expr)
+                     (code:line method-id #:type ctype-expr arg-expr)])]{
 
 Sends a message to the Objective-C object produced by
 @racket[obj-expr]. When a type is omitted for either the result or an
