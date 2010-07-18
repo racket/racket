@@ -427,7 +427,7 @@
                  [x
                   (identifier? #'x)
                   (syntax-property 
-                   #'x
+                   #'ctc/proc
                    'racket/contract:contract 
                    (vector (gensym 'ctc) 
                            (list stx)
