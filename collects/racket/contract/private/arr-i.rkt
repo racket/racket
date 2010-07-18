@@ -183,13 +183,20 @@
                              kwd-id ...)])
              (with-syntax ([((rng-params ...) rng-ctcs)
                             (syntax-case range (any values)
-                              [(values [id ctc/no-prop] ...)
-                               (with-syntax ([(ctc ...) (map (λ (x) (add-indy-prop (syntax-property x 'racket/contract:positive-position this->i)))
-                                                             (syntax->list #'(ctc/no-prop ...)))])
-                                 #'((id ...) (ctc ...)))]
-                              [(values [id ctc] ... x . y) (raise-syntax-error #f "expected binding pair" stx #'x)]
+                              [(values ctc-pr ...)
+			       (with-syntax ([((id ctc/no-prop) ...)
+					      (map (lambda (x) (syntax-case x ()
+								 [[id ctc/no-prop] #'[id ctc/no-prop]]
+								 [[id (id2 ...) ctc/no-prop] #'[id ctc/no-prop]]
+								 [x (raise-syntax-error #f "expected binding pair" stx #'x)]))
+						   (syntax->list #'(ctc-pr ...)))])
+					    (with-syntax ([(ctc ...) (map (λ (x) (add-indy-prop (syntax-property x 'racket/contract:positive-position this->i)))
+									  (syntax->list #'(ctc/no-prop ...)))])
+							 #'((id ...) (ctc ...))))]
                               [any #'(() #f)]
                               [[id ctc] 
+                               #`((id) (#,(add-indy-prop (syntax-property #'ctc 'racket/contract:positive-position this->i))))]
+                              [[id (id2 ...) ctc] 
                                #`((id) (#,(add-indy-prop (syntax-property #'ctc 'racket/contract:positive-position this->i))))]
                               [x (raise-syntax-error #f "expected binding pair or any" stx #'x)])]
                            [mtd? (and (syntax-parameter-value #'making-a-method) #t)])
