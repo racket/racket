@@ -413,7 +413,8 @@ generates wrapper functions that can call the original
 function directly. Contracts built with @racket[->*] require
 packaging up arguments as lists in the wrapper function and
 then using either @racket[keyword-apply] or
-@racket[apply]. Finally, @racket[->d] is the most expensive,
+@racket[apply]. Finally, @racket[->i]
+is the most expensive (along with @racket[->d]),
 because it requires delaying the evaluation of the contract
 expressions for the domain and range until the function
 itself is called or returns.
@@ -500,6 +501,89 @@ symbols, and that return a symbol.
 }
 
 @defform*/subs[#:literals (any values)
+[(->i (mandatory-dependent-dom ...) 
+      dependent-rest
+      pre-cond
+      dep-range)
+ (->i (mandatory-dependent-dom ...) 
+      (optional-dependent-dom ...) 
+      dependent-rest
+      pre-cond
+      dep-range)]
+([mandatory-dependent-dom id+ctc 
+                          (code:line keyword id+ctc)]
+ [optional-dependent-dom id+ctc
+                         (code:line keyword id+ctc)]
+ [dependent-rest (code:line) (code:line #:rest id rest-expr)]
+ [pre-cond (code:line) (code:line #:pre-cond boolean-expr)]
+ [dep-range any
+            (code:line id+ctc/range post-cond)
+            (code:line un+ctc post-cond)
+            (code:line (values id+ctc/range ...) post-cond)
+            (code:line (values un+ctc ...) post-cond)]
+ [post-cond (code:line) (code:line #:post-cond boolean-expr)]
+ [id+ctc [id contract-expr]
+         [id (id ...) contract-expr]]
+ [un+ctc [_ contract-expr]
+         [_ (id ...) contract-expr]]
+)]{
+
+The @racket[->i] contract combinator is similar in shape to @racket[->*], with
+two extensions: names have been added to each argument and
+result, which allows the contracts to depend on the values
+of the arguments and results, and pre- and post-condition
+expressions have been added in order to express contracts
+that are not naturally tied to a particular argument or
+result.
+
+The first subforms of a @racket[->i] contract covers the
+mandatory and the second (optional) subform covers the optional
+arguments. Following that is an
+optional rest-args contract, and an optional
+pre-condition. The @racket[dep-range] non-terminal covers
+the possible post-condition contracts. If it is
+@racket[any], then any result (or results) are
+allowed. Otherwise, the result contract can be a name and a
+result contract, or a multiple values return and, in either
+of the last two cases, it may be optionally followed by a
+post-condition.
+
+Each of the @racket[id]s on an argument (including the rest
+argument) is visible in the pre- and post-conditions sub-expressions of
+@racket[->i], as well as visible in any of the argument or 
+result contracts that have explicitly listed it as a dependent argument.
+For example, this contract:
+@racketblock[(->i ([x number?]
+                   [y (x) (>=/c x)])
+                  [result (x y) (>=/c (+ x y))])]
+accepts two arugment functions from numbers to numbers, so long
+as the second argument is greater than the first and the result is
+greater than the sum of the two arguments. In order for @racket[x]
+to be used in the contract for @racket[y], it must declare that, by
+writing the @racket[(x)] following @racket[y]. Since @racket[x]'s
+contract does not depend on anything else, it does not have
+the parenthesized list at all. 
+
+In general, an empty parenthesized list is (nearly) semantically
+equivalent to not adding a list at all, except that the former
+is more expensive than the latter. (Also, the contract
+expressions are evaluated at different times. If the empty sequence is there, 
+the contract expression is evaluated each time the function
+is called. Without the empty sequence, the contract expression is
+evaluated when the @racket[->i] is evaluated).
+
+If the identifier position of the range contract is
+@racket[_] (an underscore), then the range contract
+expressions are evaluated when the function is called (and
+the underscore is not bound in the range). Otherwise the
+range expressions are evaluated when the function returns.
+
+If there are optional arguments that are not supplied, then 
+the corresponding variables will be bound to a special value
+called the @racket[unsupplied-arg] value.
+}
+
+@defform*/subs[#:literals (any values)
 [(->d (mandatory-dependent-dom ...) 
       dependent-rest
       pre-cond
@@ -520,43 +604,23 @@ symbols, and that return a symbol.
             (code:line (values [id range-expr] ...) post-cond)]
  [post-cond (code:line) (code:line #:post-cond boolean-expr)]
 )]{
+   
+This contract is here for backwards compatibility; any new code should
+use @scheme[->i] instead.
 
-The @racket[->d] is similar in shape to @racket[->*], with
-two extensions: names have been added to each argument and
-result, which allows the contracts to depend on the values
-of the arguments and results, and pre- and post-condition
-expressions have been added in order to express contracts
-that are not naturally tied to a particular argument or
-result.
+This contract is similar to @racket[->i], but is ``lax'', meaning
+that it does not enforce contracts internally. For example, using
+this contract
+@racketblock[(->d ([f (-> integer? integer?)])
+                  #:pre-cond
+                  (zero? (f #f))
+                  any)]
+will allow @racket[f] to be called with @racket[#f], trigger whatever bad
+behavior the author of @scheme[f] was trying to prohibit by insisting that
+@racket[f]'s contract accept ony integers.
 
-The first subforms of a @racket[->d] contract covers the
-mandatory and the second (optional) subform covers the optional
-arguments. Following that is an
-optional rest-args contract, and an optional
-pre-condition. The @racket[dep-range] non-terminal covers
-the possible post-condition contracts. If it is
-@racket[any], then any result (or results) are
-allowed. Otherwise, the result contract can be a name and a
-result contract, or a multiple values return and, in either
-of the last two cases, it may be optionally followed by a
-post-condition.
-
-Each of the @racket[id]s on an argument (including the rest
-argument) is visible in all of the sub-expressions of
-@racket[->d]. Each of the @racket[id]s on a result is
-visible in the subexpressions of the @racket[dep-range].
-
-If the identifier position of the range contract is
-@racket[_] (an underscore), then the range contract
-expressions are evaluated when the function is called (and
-the underscore is not bound in the range). Otherwise the
-range expressions are evaluated when the function returns.
-
-If there are optional arguments that are not supplied, then 
-the corresponding variables will be bound to a special value
-called the @racket[unsupplied-arg] value.
 }
-
+  
 @defform*/subs[#:literals (any values ->)
 [(case-> (-> dom-expr ... rest range) ...)]
 ([rest (code:line) (code:line #:rest rest-expr)]
