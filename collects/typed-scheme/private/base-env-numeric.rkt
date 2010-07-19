@@ -240,6 +240,8 @@
                   (list (->* (list -Pos) -Flonum -Flonum))
                   (list (->* (list -Flonum) -Pos -Flonum))
                   (list (->* (list) -Real -Real))
+                  (list (->* (list -Flonum) -InexactComplex -InexactComplex))
+                  (list (->* (list -InexactComplex) -Flonum -InexactComplex))
                   (list (->* (list) -InexactComplex -InexactComplex))
                   (list (->* (list) N N))))]
 [+ (apply cl->*
@@ -253,8 +255,8 @@
                   (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list) -Real -Real))
-                  (list (->* (list -Real) -InexactComplex -InexactComplex))
-                  (list (->* (list -InexactComplex) -Real -InexactComplex))
+                  (list (->* (list N) -InexactComplex -InexactComplex))
+                  (list (->* (list -InexactComplex) N -InexactComplex))
                   (list (->* (list) -InexactComplex -InexactComplex))
                   (list (->* (list) N N))))]
 
@@ -264,8 +266,8 @@
                   (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list -Real) -Real -Real))
-                  (list (->* (list -Real) -InexactComplex -InexactComplex))
-                  (list (->* (list -InexactComplex) -Real -InexactComplex))
+                  (list (->* (list N) -InexactComplex -InexactComplex))
+                  (list (->* (list -InexactComplex) N -InexactComplex))
                   (list (->* (list -InexactComplex) -InexactComplex -InexactComplex))
                   (list (->* (list N) N N))))]
 [/ (apply cl->*
@@ -275,6 +277,8 @@
                   ;; only exact 0 as first argument can cause the result of a division involving inexacts to be exact
                   (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real) -Real -Real))
+                  (list (->* (list -Flonum) -InexactComplex -InexactComplex))
+                  (list (->* (list -InexactComplex) -Flonum -InexactComplex))
                   (list (->* (list -InexactComplex) -InexactComplex -InexactComplex))
                   (list (->* (list N) N N))))]
 
