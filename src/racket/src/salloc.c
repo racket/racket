@@ -94,15 +94,6 @@ SHARED_OK static int use_registered_statics;
 extern MZ_DLLIMPORT void GC_init();
 #endif
 
-struct free_list_entry {
-  long size; /* size of elements in this bucket */
-  void *elems; /* doubly linked list for free blocks */
-  int count; /* number of items in `elems' */
-};
-
-THREAD_LOCAL_DECL(static struct free_list_entry *free_list;)
-THREAD_LOCAL_DECL(static int free_list_bucket_count;)
-
 void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
 {
 #if defined(MZ_PLACES_WAITPID)
@@ -806,6 +797,14 @@ static int fd, fd_created;
 
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
 
+struct free_list_entry {
+  long size; /* size of elements in this bucket */
+  void *elems; /* doubly linked list for free blocks */
+  int count; /* number of items in `elems' */
+};
+
+THREAD_LOCAL_DECL(static struct free_list_entry *free_list;)
+THREAD_LOCAL_DECL(static int free_list_bucket_count;)
 
 static long get_page_size()
 {
