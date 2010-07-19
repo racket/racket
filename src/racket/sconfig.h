@@ -388,10 +388,6 @@
 
 # define USE_TIMEZONE_AND_ALTZONE_VAR
 
-# ifdef _ABIN32
-#  define USE_LONG_LONG_FOR_BIGDIG
-# endif
-
 # define FLAGS_ALREADY_SET
 
 #endif

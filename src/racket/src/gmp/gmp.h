@@ -40,9 +40,15 @@ MA 02111-1307, USA. */
 # endif
 #endif
 
-#if (defined (__mips) || defined(mips)) && defined (_ABIN32)
+#if 0
+# if (defined (__mips) || defined(mips)) && defined (_ABIN32)
 /* Force the use of 64-bit limbs for all 64-bit MIPS CPUs if ABI permits.  */
-#define _LONG_LONG_LIMB
+# define _LONG_LONG_LIMB
+# endif
+#endif
+
+#ifdef USE_LONG_LONG_FOR_BIGDIG
+# define _LONG_LONG_LIMB
 #endif
 
 #if (__STDC__-0) || defined (__cplusplus)
@@ -606,6 +612,14 @@ enum
 
 #define gmp_version __gmp_version
 extern __gmp_const char *gmp_version;
+
+/* Test for gcc >= maj.min, as per __GNUC_PREREQ in glibc */
+#if defined (__GNUC__) && defined (__GNUC_MINOR__)
+#define __GMP_GNUC_PREREQ(maj, min) \
+  ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+#else
+#define __GMP_GNUC_PREREQ(maj, min)  0
+#endif
 
 #define __GMP_H__
 #endif /* __GMP_H__ */
