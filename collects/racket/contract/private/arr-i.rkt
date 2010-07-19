@@ -38,6 +38,11 @@
                     (and (identifier? #'id)
                          (not (keyword? (syntax-e #'rest-expr))))
                     (values #'(id rest-expr) #'leftover)]
+                   [(#:rest id (id2 ...) rest-expr . leftover)
+                    (and (identifier? #'id)
+                         (andmap identifier? (syntax->list #'(id2 ...)))
+                         (not (keyword? (syntax-e #'rest-expr))))
+                    (values #'(id rest-expr) #'leftover)]
                    [(#:rest id rest-expr . leftover)
                     (begin
                       (unless (identifier? #'id)

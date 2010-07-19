@@ -33,7 +33,8 @@ v4 todo:
          ->d
          case->
          unconstrained-domain->
-         the-unsupplied-arg 
+         the-unsupplied-arg
+         unsupplied-arg?
          making-a-method
          procedure-accepts-and-more?
          check-procedure

@@ -503,25 +503,27 @@ symbols, and that return a symbol.
 @defform*/subs[#:literals (any values)
 [(->i (mandatory-dependent-dom ...) 
       dependent-rest
-      pre-cond
-      dep-range)
+      pre-condition
+      dep-range
+      post-condition)
  (->i (mandatory-dependent-dom ...) 
       (optional-dependent-dom ...) 
       dependent-rest
-      pre-cond
-      dep-range)]
+      pre-condition
+      dep-range
+      post-condition)]
 ([mandatory-dependent-dom id+ctc 
                           (code:line keyword id+ctc)]
  [optional-dependent-dom id+ctc
                          (code:line keyword id+ctc)]
  [dependent-rest (code:line) (code:line #:rest id rest-expr)]
- [pre-cond (code:line) (code:line #:pre-cond boolean-expr)]
- [dep-range any
-            (code:line id+ctc/range post-cond)
-            (code:line un+ctc post-cond)
-            (code:line (values id+ctc/range ...) post-cond)
-            (code:line (values un+ctc ...) post-cond)]
- [post-cond (code:line) (code:line #:post-cond boolean-expr)]
+ [pre-condition (code:line) (code:line #:pre-cond boolean-expr)]
+ [dependent-range any
+                  id+ctc
+                  un+ctc
+                  (values id+ctc ...)
+                  (values un+ctc ...)]
+ [post-condition (code:line) (code:line #:post-cond boolean-expr)]
  [id+ctc [id contract-expr]
          [id (id ...) contract-expr]]
  [un+ctc [_ contract-expr]
@@ -546,7 +548,8 @@ the possible post-condition contracts. If it is
 allowed. Otherwise, the result contract can be a name and a
 result contract, or a multiple values return and, in either
 of the last two cases, it may be optionally followed by a
-post-condition.
+post-condition (the post-condition expression is not allowed
+if the range is @racket[any]).
 
 Each of the @racket[id]s on an argument (including the rest
 argument) is visible in the pre- and post-conditions sub-expressions of
@@ -570,39 +573,41 @@ is more expensive than the latter. (Also, the contract
 expressions are evaluated at different times. If the empty sequence is there, 
 the contract expression is evaluated each time the function
 is called. Without the empty sequence, the contract expression is
-evaluated when the @racket[->i] is evaluated).
+evaluated when the @racket[->i] expression itself is evaluated).
 
-If the identifier position of the range contract is
-@racket[_] (an underscore), then the range contract
+If all of the identifier positions of the range contract are
+@racket[_]s (underscores), then the range contract
 expressions are evaluated when the function is called (and
 the underscore is not bound in the range). Otherwise the
 range expressions are evaluated when the function returns.
 
 If there are optional arguments that are not supplied, then 
 the corresponding variables will be bound to a special value
-called the @racket[unsupplied-arg] value.
+called @racket[the-unsupplied-arg] value.
 }
 
 @defform*/subs[#:literals (any values)
 [(->d (mandatory-dependent-dom ...) 
       dependent-rest
-      pre-cond
-      dep-range)
+      pre-condition
+      dependent-range
+      post-condition)
  (->d (mandatory-dependent-dom ...) 
       (optional-dependent-dom ...) 
       dependent-rest
-      pre-cond
-      dep-range)]
+      pre-condition
+      dependent-range
+      post-condition)]
 ([mandatory-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
  [optional-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
  [dependent-rest (code:line) (code:line #:rest id rest-expr)]
- [pre-cond (code:line) (code:line #:pre-cond boolean-expr)]
- [dep-range any
-            (code:line [_ range-expr] post-cond)
-            (code:line (values [_ range-expr] ...) post-cond)
-            (code:line [id range-expr] post-cond)
-            (code:line (values [id range-expr] ...) post-cond)]
- [post-cond (code:line) (code:line #:post-cond boolean-expr)]
+ [pre-condition (code:line) (code:line #:pre-cond boolean-expr)]
+ [dependent-range any
+                  [_ range-expr]
+                  (values [_ range-expr] ...)
+                  [id range-expr]
+                  (values [id range-expr] ...)]
+ [post-condition (code:line) (code:line #:post-cond boolean-expr)]
 )]{
    
 This contract is here for backwards compatibility; any new code should
@@ -671,6 +676,15 @@ be blamed using the above contract:
   (apply g (build-list i add1)))
 ]}
 
+@defthing[the-unsupplied-arg unsupplied-arg?]{
+  Used by @racket[->i] (and @racket[->d]) to bind 
+  optional arguments that are not supplied by a call site.
+}
+
+@defproc[(unsupplied-arg? [v any/c]) boolean?]{
+  A predicate to determine if @racket[v] is 
+  @racket[the-unsupplied-arg].
+}
 
 @; ------------------------------------------------------------------------
 
