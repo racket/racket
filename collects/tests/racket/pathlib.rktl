@@ -52,6 +52,7 @@
 
 ;; ----------------------------------------
 
+(rtest path-only "a" #f)
 (rtest path-only "a/b" (string->path "a/"))
 (rtest path-only "a/b/" (string->path "a/b/"))
 (rtest path-only "a/.." (string->path "a/.."))
