@@ -236,24 +236,40 @@
            (free-identifier=? #'-where #'where/hidden))
        (let-values ([(names names/ellipses) (extract-names lang-nts 'reduction-relation #t #'x)])
          (let ([env+ (for/fold ([env env])
-                               ([name names] 
-                                [w/ellipses names/ellipses])
-                               (hash-set env (syntax-e name) w/ellipses))])
-           (with-syntax ([side-conditions-rewritten (rewrite-side-conditions/check-errs
-                                                     lang-nts
-                                                     'reduction-relation
-                                                     #f
-                                                     #'x)]
-                         [(names ...) names]
-                         [(names/ellipses ...) names/ellipses]
-                         [(x ...) (generate-temporaries names)])
-             (with-syntax ([(binding-constraints ...)
-                            (for/fold ([cs '()])
-                                      ([n (syntax->list #'(names ...))]
-                                       [x (syntax->list #'(x ...))])
-                                      (cond [(hash-ref env (syntax-e n) #f)
-                                             => (λ (b) (cons #`(equal? #,x (term #,b)) cs))]
-                                            [else cs]))])
+                       ([name names] 
+                        [w/ellipses names/ellipses])
+                       (hash-set env (syntax-e name) w/ellipses))]
+               [temporaries (generate-temporaries names)])
+           (define (id/depth stx)
+             (syntax-case stx ()
+               [(s (... ...))
+                (let ([r (id/depth #'s)])
+                  (make-id/depth (id/depth-id r) (add1 (id/depth-depth r))))]
+               [s (make-id/depth #'s 0)]))
+           (with-syntax ([(binding-constraints ...)
+                          (for/fold ([cs '()])
+                            ([n names]
+                             [w/e names/ellipses]
+                             [x temporaries])
+                            (cond [(hash-ref env (syntax-e n) #f)
+                                   => (λ (b) 
+                                        (let ([b-id/depth (id/depth b)]
+                                              [n-id/depth (id/depth w/e)])
+                                          (if (= (id/depth-depth b-id/depth) (id/depth-depth n-id/depth))
+                                              (cons #`(equal? #,x (term #,b)) cs)
+                                              (raise-ellipsis-depth-error
+                                               orig-name
+                                               (id/depth-id n-id/depth) (id/depth-depth n-id/depth)
+                                               (id/depth-id b-id/depth) (id/depth-depth b-id/depth)))))]
+                                  [else cs]))])
+             (with-syntax ([side-conditions-rewritten (rewrite-side-conditions/check-errs
+                                                       lang-nts
+                                                       'reduction-relation
+                                                       #f
+                                                       #'x)]
+                           [(names ...) names]
+                           [(names/ellipses ...) names/ellipses]
+                           [(x ...) temporaries])
                (let ([rest-body (loop #'(y ...) #`(list x ... #,to-not-be-in) env+)])
                  #`(let* ([mtchs (match-pattern (compile-pattern #,lang `side-conditions-rewritten #t) (term e))]
                           [result (λ (mtch)

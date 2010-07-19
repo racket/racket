@@ -1155,6 +1155,14 @@
                 #rx"same name on multiple rules"
                 2)
   
+  (test-syn-err (reduction-relation
+                 grammar
+                 (--> number_1
+                      ()
+                      (where (number_1 ...) '())))
+                #rx"different depths"
+                2)
+  
   (test-syn-err (reduction-relation 
                  grammar
                  (--> 1 2)

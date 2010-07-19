@@ -8,8 +8,11 @@
   
   (provide rewrite-side-conditions/check-errs
            extract-names
+           raise-ellipsis-depth-error
            make-language-id
            language-id-nts)
+  
+  (provide (struct-out id/depth))
   
   (define-values (language-id make-language-id language-id? language-id-get language-id-set) (make-struct-type 'language-id #f 2 0 #f '() #f 0))
   
@@ -176,6 +179,17 @@
            (and (not (regexp-match #rx"^\\.\\.\\._" str))
                 (not (regexp-match #rx"_!_" str))))))
   
+  (define (raise-ellipsis-depth-error what one-binder one-depth another-binder another-depth)
+    (raise
+     (make-exn:fail:syntax
+      (format "~a: found the same binder, ~s, at different depths, ~a and ~a"
+              what
+              (syntax->datum one-binder)
+              one-depth
+              another-depth)
+      (current-continuation-marks)
+      (list one-binder another-binder))))
+  
   (define (filter-duplicates what orig-stx dups)
     (let loop ([dups dups])
       (cond
@@ -189,14 +203,9 @@
                       (when same-id?
                         (unless (equal? (id/depth-depth x)
                                         (id/depth-depth (car dups)))
-                          (raise
-                           (make-exn:fail:syntax
-                            (format "~a: found the same binder, ~s, at different depths, ~a and ~a"
-                                    what
-                                    (syntax->datum (id/depth-id x))
-                                    (id/depth-depth x)
-                                    (id/depth-depth (car dups)))
-                            (current-continuation-marks)
-                            (list (id/depth-id x) (id/depth-id (car dups)))))))
+                          (raise-ellipsis-depth-error
+                           what 
+                           (id/depth-id x) (id/depth-depth x)
+                           (id/depth-id (car dups)) (id/depth-depth (car dups)))))
                       (not same-id?)))
                   (loop (cdr dups))))]))))
