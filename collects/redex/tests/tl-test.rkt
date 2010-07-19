@@ -886,6 +886,18 @@
            '(x 4)))
         '(x))
   
+  ; test multiply matching `where' with failing `where' inside
+  (test (apply-reduction-relation
+         (reduction-relation
+          empty-language
+          (--> ()
+               ()
+               (where (number_1 ... number_i number_i+1 ...)
+                      (1 2 3))
+               (where number_i 2)))
+         '())
+        '(()))
+  
   (test (apply-reduction-relation/tag-with-names
          (reduction-relation 
           grammar
@@ -1703,7 +1715,7 @@
             (where (y ... w z ...) (x ...)))))
     
     (test (apply-reduction-relation red (term (a b c)))
-          (list (term (a b)) (term (a c)) (term (b c)))))
+          (list (term (b c)) (term (a c)) (term (a b)))))
   
   
   (let ([r (reduction-relation

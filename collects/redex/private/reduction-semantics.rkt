@@ -266,7 +266,9 @@
                          #,
                          (case where-mode
                            [(flatten)
-                            #`(apply append (map result mtchs))]
+                            #`(for/fold ([r '()]) ([m mtchs])
+                                (let ([s (result m)])
+                                  (if s (append s r) r)))]
                            [(predicate) 
                             #`(ormap result mtchs)]
                            [else (error 'unknown-where-mode "~s" where-mode)])
