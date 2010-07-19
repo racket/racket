@@ -1,5 +1,7 @@
 #lang honu/core
 
+require (forSyntax "with.honu");
+
 provide print;
 
 macro print ()

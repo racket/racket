@@ -1,0 +1,9 @@
+#lang honu/core
+
+provide withSyntax;
+
+macro withSyntax () {
+ _ [variable:identifier expr:expression] { b ... /* body:statement */ }; } {
+  #sx scheme:syntax #sx(with-syntax ([variable expr_result]) (honu-unparsed-begin b ...))
+  // applySchemeSyntax(#sx(real-syntax (with-syntax ([variable expr_result]) (honu-unparsed-begin b ...))))
+}
