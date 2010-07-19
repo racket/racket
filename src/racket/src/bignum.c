@@ -81,19 +81,22 @@ void scheme_bignum_use_fuel(long n);
 #endif
 
 #if defined(USE_LONG_LONG_FOR_BIGDIG)
-# define TOP_BITS_MASK 0xFFFFFFFF00000000
+# define TOP_BITS_MASK ((bigdig)0xFFFFFFFF << 32)
 # define BOTTOM_BITS_MASK 0x00000000FFFFFFFF
+# define FIRST_BIT_MASK_LL ((bigdig)FIRST_BIT_MASK << 32)
+#else
+# define FIRST_BIT_MASK_LL FIRST_BIT_MASK
 #endif
 
 #if defined(SIXTY_FOUR_BIT_INTEGERS) || defined(USE_LONG_LONG_FOR_BIGDIG)
 # define BIG_RADIX 18446744073709551616.0 /* = 0x10000000000000000 */
-# define ALL_ONES 0xFFFFFFFFFFFFFFFF
 # define WORD_SIZE 64
 #else
 # define BIG_RADIX 4294967296.0 /* = 0x100000000 */
-# define ALL_ONES 0xFFFFFFFF
 # define WORD_SIZE 32
 #endif
+
+# define ALL_ONES (~(bigdig)0)
 
 READ_ONLY static Scheme_Object *bignum_one;
 
@@ -402,7 +405,7 @@ int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v)
   } else if (SCHEME_BIGLEN(o) == 0) {
     *v = 0;
     return 1;
-  } else if (SCHEME_BIGDIG(o)[MAX_BN_SIZE_FOR_LL - 1] == FIRST_BIT_MASK 
+  } else if (SCHEME_BIGDIG(o)[MAX_BN_SIZE_FOR_LL - 1] == FIRST_BIT_MASK_LL 
 # ifndef USE_LONG_LONG_FOR_BIGDIG
 	     && !SCHEME_BIGDIG(o)[0]
 # endif
@@ -413,7 +416,7 @@ int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v)
     v2 = (v2 << 63);
     *v = v2;
     return 1;
-  } else if ((SCHEME_BIGDIG(o)[MAX_BN_SIZE_FOR_LL - 1] & FIRST_BIT_MASK) != 0) { /* Won't fit into a signed long long */
+  } else if ((SCHEME_BIGDIG(o)[MAX_BN_SIZE_FOR_LL - 1] & FIRST_BIT_MASK_LL) != 0) { /* Won't fit into a signed long long */
     return 0;
   } else {
     mzlonglong v2;
@@ -444,7 +447,7 @@ int scheme_bignum_get_unsigned_long_long_val(const Scheme_Object *o, umzlonglong
   } else {
     umzlonglong v2;
     v2 = SCHEME_BIGDIG(o)[0];
-    if (SCHEME_BIGLEN(o)) {
+    if (SCHEME_BIGLEN(o) > 1) {
       v2 |= ((umzlonglong)SCHEME_BIGDIG(o)[1]) << 32;
     }
     *v = v2;

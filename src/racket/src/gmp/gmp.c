@@ -52,7 +52,7 @@ THREAD_LOCAL_DECL(static void *gmp_mem_pool);
 # define MP_BASES_BIG_BASE_10            CNST_LIMB(0x8ac7230489e80000)
 # define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0xd83c94fb6d2ac34a)
 # define MP_BASES_NORMALIZATION_STEPS_10 0
-# define GMP_NUMB_MASK 0xFFFFFFFFFFFFFFFF
+# define GMP_NUMB_MASK (~(mp_limb_t)0)
 #endif
 
 #define MPN_DIVREM_OR_PREINV_DIVREM_1(qp,xsize,ap,size,d,dinv,shift)    \
