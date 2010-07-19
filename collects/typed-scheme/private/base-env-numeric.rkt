@@ -338,7 +338,9 @@
                          (-Nat -Nat . -> . -Nat)
                          (-Integer -Integer . -> . -Integer))]
 [bitwise-and (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
+                    ((list -Integer) -NonnegativeFixnum . ->* . -NonnegativeFixnum)
                     (null -Fixnum . ->* . -Fixnum)
+                    ((list -Integer) -Fixnum . ->* . -Fixnum)
                     (null -Nat . ->* . -Nat)
                     (null -Integer . ->* . -Integer))]
 [bitwise-ior (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
