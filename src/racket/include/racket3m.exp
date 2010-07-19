@@ -82,6 +82,9 @@ scheme_pop_break_enable
 scheme_with_stack_freeze
 scheme_frozen_run_some
 scheme_is_in_frozen_stack
+scheme_abort_continuation_no_dws
+scheme_call_with_composable_no_dws
+scheme_set_on_atomic_timeout
 scheme_signal_error
 scheme_raise_exn
 scheme_warning

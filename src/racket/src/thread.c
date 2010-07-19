@@ -207,6 +207,7 @@ HOOK_SHARED_OK void (*scheme_notify_multithread)(int on);
 HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
 HOOK_SHARED_OK int (*scheme_check_for_break)(void);
 HOOK_SHARED_OK void (*scheme_on_atomic_timeout)(void);
+HOOK_SHARED_OK static int atomic_timeout_auto_suspend;
 
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
@@ -3272,6 +3273,7 @@ static Scheme_Object *def_nested_exn_handler(int argc, Scheme_Object *argv[])
     p->cjs.alt_full_continuation = NULL;
     p->cjs.val = argv[0];
     p->cjs.is_kill = 0;
+    p->cjs.skip_dws = 0;
     scheme_longjmp(*p->error_buf, 1);
   }
 
@@ -3875,6 +3877,7 @@ static void exit_or_escape(Scheme_Thread *p)
     p->cjs.jumping_to_continuation = (Scheme_Object *)p;
     p->cjs.alt_full_continuation = NULL;
     p->cjs.is_kill = 1;
+    p->cjs.skip_dws = 0;
     scheme_longjmp(*p->error_buf, 1);
   }
 
@@ -4216,8 +4219,16 @@ void scheme_thread_block(float sleep_time)
     swap_target = next;
     next = NULL;
     do_swap_thread();
-  } else if (do_atomic && scheme_on_atomic_timeout) {
+  } else if (do_atomic && scheme_on_atomic_timeout
+             && (atomic_timeout_auto_suspend < 2)) {
+    if (atomic_timeout_auto_suspend) {
+      atomic_timeout_auto_suspend++;
+      scheme_fuel_counter = p->engine_weight;
+      scheme_jit_stack_boundary = scheme_stack_boundary;
+    }
     scheme_on_atomic_timeout();
+    if (atomic_timeout_auto_suspend > 1)
+      --atomic_timeout_auto_suspend;
   } else {
     /* If all processes are blocked, check for total process sleeping: */
     if (p->block_descriptor != NOT_BLOCKED) {
@@ -4468,6 +4479,18 @@ static void wait_until_suspend_ok()
   while (do_atomic && scheme_on_atomic_timeout) {
     scheme_on_atomic_timeout();
   }
+}
+
+Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Timeout_Proc p)
+{
+  Scheme_On_Atomic_Timeout_Proc old;
+
+  old = scheme_on_atomic_timeout;
+  scheme_on_atomic_timeout = p;
+  if (p)
+    atomic_timeout_auto_suspend = 1;
+
+  return old;
 }
 
 void scheme_weak_suspend_thread(Scheme_Thread *r)

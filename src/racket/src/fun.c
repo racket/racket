@@ -4481,6 +4481,7 @@ static void reset_cjs(Scheme_Continuation_Jump_State *a)
   a->num_vals = 0;
   a->is_kill = 0;
   a->is_escape = 0;
+  a->skip_dws = 0;
 }
 
 void scheme_clear_escape(void)
@@ -4499,6 +4500,7 @@ static void copy_cjs(Scheme_Continuation_Jump_State *a, Scheme_Continuation_Jump
   a->num_vals = b->num_vals;
   a->is_kill = b->is_kill;
   a->is_escape = b->is_escape;
+  a->skip_dws = b->skip_dws;
 }
 
 Scheme_Object *
@@ -5402,7 +5404,8 @@ static MZ_MARK_STACK_TYPE exec_dyn_wind_pres(Scheme_Dynamic_Wind_List *dwl,
                                              Scheme_Cont *cont,
                                              MZ_MARK_STACK_TYPE copied_cms,
                                              int clear_cm_caches,
-                                             Scheme_Object **_sub_conts)
+                                             Scheme_Object **_sub_conts,
+                                             int skip_dws)
 {
   Scheme_Thread *p = scheme_current_thread;
   int old_cac = scheme_continuation_application_count;
@@ -5426,7 +5429,8 @@ static MZ_MARK_STACK_TYPE exec_dyn_wind_pres(Scheme_Dynamic_Wind_List *dwl,
                            clear_cm_caches);
         copied_cms = MZ_CONT_MARK_STACK;
 
-        pre(dwl->dw->data);
+        if (!skip_dws)
+          pre(dwl->dw->data);
 
         if (scheme_continuation_application_count != old_cac) {
           old_cac = scheme_continuation_application_count;
@@ -5954,7 +5958,8 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
 
         meta_depth += dw->next_meta;
       }
-      copied_cms = exec_dyn_wind_pres(dwl, dwl_len, cont, copied_cms, clear_cm_caches, &sub_conts);
+      copied_cms = exec_dyn_wind_pres(dwl, dwl_len, cont, copied_cms, clear_cm_caches, &sub_conts,
+                                      cont->skip_dws);
       p = scheme_current_thread;
       p->dw = all_dw;
       p->next_meta = cont->next_meta;      
@@ -6012,7 +6017,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 
   barrier_prompt = scheme_get_barrier_prompt(&barrier_cont, &barrier_pos);
 
-  if (composable) {
+  if (composable && SCHEME_FALSEP(argv[2])) {
     if (!prompt && !barrier_prompt->is_barrier) {
       /* Pseduo-prompt ok. */
     } else {
@@ -6220,6 +6225,9 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     return result;
   } else if (composable || cont->escape_cont) {
     Scheme_Object *argv2[1];
+
+    if (SCHEME_TRUEP(argv[2]))
+      cont->skip_dws = 1;
 
     argv2[0] = (Scheme_Object *)cont;
     ret = _scheme_tail_apply(argv[0], 1, argv2);
@@ -7127,6 +7135,7 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
     p->cjs.val = (Scheme_Object *)cont;
     p->cjs.num_vals = 1;
     p->cjs.is_escape = 1;
+    p->cjs.skip_dws = 0;
 
     p->stack_start = mc->overflow->stack_start;
     p->decompose_mc = mc;
@@ -7159,7 +7168,7 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
   return value;
 }
 
-static Scheme_Object *abort_continuation (int argc, Scheme_Object *argv[])
+static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], int skip_dws)
 {
   Scheme_Object *prompt_tag;
   Scheme_Prompt *prompt;
@@ -7197,13 +7206,31 @@ static Scheme_Object *abort_continuation (int argc, Scheme_Object *argv[])
   }
   p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
   p->cjs.alt_full_continuation = NULL;
+  p->cjs.skip_dws = skip_dws;
 
   scheme_longjmp(*p->error_buf, 1);
 
   return NULL;
 }
 
-static Scheme_Object *call_with_control (int argc, Scheme_Object *argv[])
+static Scheme_Object *abort_continuation (int argc, Scheme_Object *argv[])
+{
+  return do_abort_continuation(argc, argv, 0);
+}
+
+Scheme_Object *scheme_abort_continuation_no_dws (Scheme_Object *pt, Scheme_Object *v)
+{
+  /* This function is useful for GRacket-like extensions of Racket that need to
+     implement something like subtreads through composable continuations. */
+  Scheme_Object *a[2];
+
+  a[0] = pt;
+  a[1] = v;
+
+  return do_abort_continuation(2, a, 1);
+}
+
+static Scheme_Object *do_call_with_control (int argc, Scheme_Object *argv[], int no_dws)
 {
   Scheme_Object *prompt_tag;
   Scheme_Object *a[3];
@@ -7220,11 +7247,27 @@ static Scheme_Object *call_with_control (int argc, Scheme_Object *argv[])
 
   a[0] = argv[0];
   a[1] = prompt_tag;
-  a[2] = scheme_true;
+  a[2] = (no_dws ? scheme_true : scheme_false);
 
   /* Trampoline to internal_call_cc. This trampoline ensures that
      the runstack is flushed before we try to grab the continuation. */
   return _scheme_tail_apply(internal_call_cc_prim, 3, a);
+}
+
+static Scheme_Object *call_with_control (int argc, Scheme_Object *argv[])
+{
+  return do_call_with_control(argc, argv, 0);
+}
+
+Scheme_Object *scheme_call_with_composable_no_dws (Scheme_Object *proc, Scheme_Object *pt)
+{
+  /* Works with scheme_abort_continuation_no_dws() above. */
+  Scheme_Object *a[2];
+
+  a[0] = proc;
+  a[1] = pt;
+
+  return do_call_with_control(2, a, 1);
 }
 
 static Scheme_Object *continuation_marks(Scheme_Thread *p,
@@ -8373,14 +8416,16 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
     } else {
       Scheme_Continuation_Jump_State cjs;
       p = scheme_current_thread;
-      ASSERT_SUSPEND_BREAK_ZERO();
-      p->suspend_break++;
-      copy_cjs(&cjs, &p->cjs);
-      reset_cjs(&p->cjs);
-      post(data);
-      copy_cjs(&p->cjs, &cjs);
-      p = scheme_current_thread;
-      --p->suspend_break;
+      if (!p->cjs.skip_dws) {
+        ASSERT_SUSPEND_BREAK_ZERO();
+        p->suspend_break++;
+        copy_cjs(&cjs, &p->cjs);
+        reset_cjs(&p->cjs);
+        post(data);
+        copy_cjs(&p->cjs, &cjs);
+        p = scheme_current_thread;
+        --p->suspend_break;
+      }
     }
   }
 
@@ -8558,6 +8603,7 @@ static Scheme_Object *jump_to_alt_continuation()
   p->cjs.jumping_to_continuation = NULL;
   p->cjs.alt_full_continuation = NULL;
   p->cjs.val = NULL;
+  p->cjs.skip_dws = 0;
 
   return scheme_jump_to_continuation(fc, p->cjs.num_vals, args, NULL, 0);
 }

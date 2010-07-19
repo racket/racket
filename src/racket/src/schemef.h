@@ -180,6 +180,11 @@ MZ_EXTERN int scheme_with_stack_freeze(Scheme_Frozen_Stack_Proc wha_f, void *wha
 MZ_EXTERN int scheme_frozen_run_some(Scheme_Frozen_Stack_Proc do_f, void *do_data, int run_msecs);
 MZ_EXTERN int scheme_is_in_frozen_stack();
 
+MZ_EXTERN Scheme_Object *scheme_abort_continuation_no_dws (Scheme_Object *pt, Scheme_Object *v);
+MZ_EXTERN Scheme_Object *scheme_call_with_composable_no_dws (Scheme_Object *proc, Scheme_Object *pt);
+
+MZ_EXTERN Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Timeout_Proc p);
+
 /*========================================================================*/
 /*                              error handling                            */
 /*========================================================================*/

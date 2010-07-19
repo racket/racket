@@ -8906,6 +8906,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         p->cjs.alt_full_continuation = NULL;
         p->overflow = overflow;
         p->stack_start = overflow->stack_start;
+        p->cjs.skip_dws = 0;
         scheme_longjmpup(&overflow->jmp->cont);
       }
     } else {
@@ -8916,6 +8917,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
       p->cjs.num_vals = 1;
       p->cjs.val = (Scheme_Object *)c;
       p->cjs.is_escape = 1;
+      p->cjs.skip_dws = 0;
        
       if (prompt_mc) {
         /* The prompt is from a meta-continuation that's different
@@ -9008,6 +9010,7 @@ void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Obj
   p->cjs.val = value;
   p->cjs.jumping_to_continuation = obj;
   p->cjs.alt_full_continuation = alt_full;
+  p->cjs.skip_dws = 0;
   scheme_longjmp(MZTHREADELEM(p, error_buf), 1);
 }
 

@@ -882,7 +882,7 @@ typedef struct Scheme_Continuation_Jump_State {
   struct Scheme_Object *alt_full_continuation;
   Scheme_Object *val; /* or **vals */
   mzshort num_vals;
-  short is_kill, is_escape;
+  char is_kill, is_escape, skip_dws;
 } Scheme_Continuation_Jump_State;
 
 /* A mark position is in odd number, so that it can be
@@ -1684,6 +1684,8 @@ extern void *scheme_malloc_envunbox(size_t);
 /*                   embedding configuration and hooks                    */
 /*========================================================================*/
 
+typedef void (*Scheme_On_Atomic_Timeout_Proc)(void);
+
 #if SCHEME_DIRECT_EMBEDDED
 
 #if defined(_IBMR2)
@@ -1810,7 +1812,7 @@ MZ_EXTERN void scheme_register_static(void *ptr, long size);
 # define MZ_REGISTER_STATIC(x) /* empty */
 #endif
 
-MZ_EXTERN void (*scheme_on_atomic_timeout)(void);
+MZ_EXTERN Scheme_On_Atomic_Timeout_Proc scheme_on_atomic_timeout;
 
 MZ_EXTERN void scheme_immediate_exit(int status);
 

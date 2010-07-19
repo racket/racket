@@ -1312,7 +1312,7 @@ typedef struct Scheme_Dynamic_Wind {
 
 typedef struct Scheme_Cont {
   Scheme_Object so;
-  char composable, has_prompt_dw, need_meta_prompt;
+  char composable, has_prompt_dw, need_meta_prompt, skip_dws;
   struct Scheme_Meta_Continuation *meta_continuation;
   Scheme_Jumpup_Buf buf;
   Scheme_Dynamic_Wind *dw;
