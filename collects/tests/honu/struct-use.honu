@@ -1,6 +1,6 @@
 #lang honu
 
-require "struct.honu";
+// require "struct.honu";
 
 struct foo {a b c};
 

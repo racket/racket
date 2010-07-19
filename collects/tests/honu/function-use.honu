@@ -1,6 +1,6 @@
 #lang honu
 
-require "function.honu";
+// require "function.honu";
 
 function foo (a b c){
   display("5");
