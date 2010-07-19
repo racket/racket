@@ -54,9 +54,16 @@
                      (+ scheme:+)
                      (honu-/ /)
                      (honu-- -)
+                     (honu-< <)
+                     (honu-> >)
+                     (honu->= >=)
+                     (honu-<= <=)
+                     (honu-== ==)
                      (honu-= =)
+                     (honu-!= !=)
                      (honu-? ?)
                      (honu-: :)
+                     (honu-and and)
                      (honu-comma |,|)
                      (honu-. |.|)
                      )
@@ -107,7 +114,7 @@
                                  (scheme-syntax schemeSyntax)
                                  ))
          #%braces #%parens #%brackets
-         x
+         sqrt
          true
          false
          display

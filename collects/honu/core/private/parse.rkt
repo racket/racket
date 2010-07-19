@@ -306,7 +306,11 @@
 ;; the first set of operators is `expression-1'
 (splicing-let-syntax ([sl (make-rename-transformer #'syntax-lambda)])
   (infix-operators expression-1 expression-last
-                                      ([honu-= (sl (left right) #'(= left right))]
+                                      ([honu-and (sl (left right) #'(and left right))])
+                                      (
+                                       #;
+                                       [honu-= (sl (left right) #'(= left right))]
+                                       [honu-== (sl (left right) #'(equal? left right))]
                                        [honu-+= (sl (left right) #'(+ left right))]
                                        [honu--= (sl (left right) #'(- left right))]
                                        [honu-*= (sl (left right) #'(* left right))]
@@ -324,6 +328,7 @@
                                        [honu->>> (sl (left right) #'(+ left right))]
                                        [honu-< (sl (left right) #'(< left right))]
                                        [honu-> (sl (left right) #'(> left right))]
+                                       [honu-!= (sl (left right) #'(not (equal? left right)))]
                                        [honu-<= (sl (left right) #'(<= left right))]
                                        [honu->= (sl (left right) #'(>= left right))])
                                       ([honu-+ (sl (left right) #'(+ left right))]

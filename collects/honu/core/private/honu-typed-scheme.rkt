@@ -389,21 +389,31 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
     (define-syntax-class expr
       [pattern e])
     (define-syntax-class paren-expr
-      [pattern (#%parens expr:expr)])
+      [pattern (#%parens expr:expression) #:with result #'expr.result])
     (define-syntax-class block
                          [pattern (#%braces statement ...)
-                                  #:with line (parse-complete-block #'(statement ...))])
+                                  #:with line #'(honu-unparsed-begin statement ...)
+                                  #;
+                                  (parse-complete-block #'(statement ...))])
     ;; (printf "Original syntax ~a\n" (syntax->datum stx))
     (syntax-parse stx
       #:literals (else)
       [(_ condition:paren-expr on-true:block else on-false:block . rest)
        ;; (printf "used if with else\n")
        (let ([result #'(if condition.expr on-true.line on-false.line)])
-         (expression-result ctx result (syntax/loc #'rest rest)))]
+         (values
+           (lambda () result)
+           #'rest)
+           #;
+           (expression-result ctx result (syntax/loc #'rest rest)))]
       [(_ condition:paren-expr on-true:block . rest)
        ;; (printf "used if with no else\n")
-       (let ([result #'(when condition.expr on-true.line)])
-         (expression-result ctx result #'rest))])))
+       (let ([result #'(when condition.result on-true.line)])
+         (values
+           (lambda () result)
+           #'rest)
+           #;
+           (expression-result ctx result #'rest))])))
 
 #|
 if (foo){

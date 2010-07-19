@@ -5,3 +5,13 @@ provide print;
 macro print ()
 { _ (value:expression); } { syntax(display(value_result); newline();); }
 { _ value:expression_comma ... ; } { syntax({display(value_result); newline();} ...); }
+
+provide check_expect;
+provide expect;
+keywords expect;
+macro check_expect (expect) { _ check:expression expect expected:expression ; }
+{ syntax({ checked = check_result;
+           out = expected_result;
+           if (checked != out){
+             print "Expected ", out, " but got ", checked;
+           }});}
