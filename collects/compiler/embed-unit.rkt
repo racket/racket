@@ -712,7 +712,7 @@
                                                                                       (if (= 1 (length parts))
                                                                                           name
                                                                                           (list* 'planet
-                                                                                                 (last-of parts)
+                                                                                                 (ss->rkt (last-of parts))
                                                                                                  (caddr name)
                                                                                                  (append
                                                                                                   (cdddr name)
@@ -721,7 +721,6 @@
                                                                       #f))]
                                                                [(planet-match?)
                                                                 (lambda (a b)
-                                                                  (eprintf "pmatch? ~s ~s\n" a b)
                                                                   (if (equal? (cons (car a) (cddr a))
                                                                               (cons (car b) (cddr b)))
                                                                       (let-values ([(a) (cadr a)]
