@@ -556,11 +556,12 @@ path contains an embedded path for a non-existent directory,
 or if an infinite cycle of soft links is detected.}
 
 @defproc[(path-only [path (or/c path-string? path-for-some-system?)])
-         path-for-some-system?]{
+         (or/c #f path-for-some-system?)]{
 
 If @racket[path] is a filename, the file's path is returned. If
 @racket[path] is syntactically a directory, @racket[path] is returned
-(as a path, if it was a string).}
+(as a path, if it was a string). If @racket[path] has no directory part
+@racket[#f] is returned.}
 
 @defproc[(simple-form-path [path path-string?]) path?]{
 
