@@ -2,10 +2,13 @@
 
 (require syntax/parse 
          syntax/id-table racket/dict
-         (for-template scheme/base scheme/flonum scheme/fixnum scheme/unsafe/ops racket/private/for)
+         (for-template scheme/base
+                       scheme/flonum scheme/fixnum scheme/unsafe/ops
+                       racket/private/for)
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)
-         (optimizer utils fixnum float inexact-complex vector pair sequence box struct dead-code))
+         (optimizer utils fixnum float inexact-complex vector string
+                    pair sequence box struct dead-code))
 
 (provide optimize-top)
 
@@ -22,6 +25,7 @@
   (pattern e:float-opt-expr           #:with opt #'e.opt)
   (pattern e:inexact-complex-opt-expr #:with opt #'e.opt)
   (pattern e:vector-opt-expr          #:with opt #'e.opt)
+  (pattern e:string-opt-expr          #:with opt #'e.opt)
   (pattern e:pair-opt-expr            #:with opt #'e.opt)
   (pattern e:sequence-opt-expr        #:with opt #'e.opt)
   (pattern e:box-opt-expr             #:with opt #'e.opt)

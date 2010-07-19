@@ -7,7 +7,7 @@
          "../utils/utils.rkt" "../utils/tc-utils.rkt"
          (rep type-rep)
          (types abbrev type-table utils subtype)
-         (optimizer utils))
+         (optimizer utils string))
 
 (provide sequence-opt-expr)
 
@@ -27,15 +27,6 @@
                     [(tc-result1: (Vector: _)) #t]
                     [(tc-result1: (HeterogenousVector: _)) #t]
                     [_ #f])
-           #:with opt ((optimize) #'e)))
-
-(define-syntax-class string-expr
-  (pattern e:expr
-           #:when (isoftype? #'e -String)
-           #:with opt ((optimize) #'e)))
-(define-syntax-class bytes-expr
-  (pattern e:expr
-           #:when (isoftype? #'e -Bytes)
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class sequence-opt-expr
