@@ -142,7 +142,7 @@ particular.}
            [(blank [w real?] [h real?] [a real?] [d real?]) pict?])]{
 
 Creates a pict that draws nothing. The one-argument case supplies a
-value sued for both the width and height. In the one- and two-argument
+value used for both the width and height. In the one- and two-argument
 case, the ascent and descent are @math{0} for the resulting pict's
 bounding box; in the three-argument case, the height is computed by
 adding the given ascent and descent.}
