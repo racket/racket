@@ -5,7 +5,6 @@
 #define ___XWGROUPP_H
 #include <./xwRowColP.h>
 #include <./xwGroup.h>
-#include <stdint.h>
 _XFUNCPROTOBEGIN
 
 typedef struct {

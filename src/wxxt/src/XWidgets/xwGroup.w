@@ -327,11 +327,10 @@ be turned off, except by turning on another one.
     Cardinal bits = sizeof($selection) * 8;
 
     switch ($selectionStyle) {
+    case XfwfSingleSelection:
+	/* $selection = -1L; break; */  /* Allows nothing selected - disabled */
     case XfwfOneSelection:
 	XtVaSetValues(toggle, XtNon, True, NULL); /* Undo */
-	break;
-    case XfwfSingleSelection:
-	$selection = -1L;			/* Nothing selected */
 	break;
     case XfwfMultipleSelection:
 	if (toggle_ord < bits) $selection &= ~(1L << toggle_ord);
