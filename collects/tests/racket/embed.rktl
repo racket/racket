@@ -461,6 +461,7 @@
     (go '(planet racket-tester/p1/other) "two\nother\n")
     (go '(planet "private/sub.rkt" ("racket-tester" "p2.plt" 2 0)) "two\nsub\n")
     (go '(planet "private/sub.ss" ("racket-tester" "p2.plt" 2 0)) "two\nsub\n")
+    (go '(planet "main.ss" ("racket-tester" "p2.plt" 2 0)) "two\n")
 
     (void))
   
@@ -469,11 +470,11 @@
 
 ;; ----------------------------------------
 
-;(try-basic)
-;(try-mzc)
-;(try-extension)
-;(try-gracket)
-;(try-reader)
+(try-basic)
+(try-mzc)
+(try-extension)
+(try-gracket)
+(try-reader)
 (try-planet)
 
 ;; ----------------------------------------
