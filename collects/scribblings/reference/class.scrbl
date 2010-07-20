@@ -1875,7 +1875,7 @@ See @scheme[prop:custom-write] for more information. The
 @defthing[writable<%> interface?]{
 
 Like @scheme[printable<%>], but includes only the
-@scheme[custom-write] and @scheme[custom-print] methods.
+@scheme[custom-write] and @scheme[custom-display] methods.
 A @racket[print] request is directed to @scheme[custom-write].}
 
 @; ------------------------------------------------------------------------
