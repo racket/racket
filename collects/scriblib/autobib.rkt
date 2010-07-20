@@ -30,13 +30,16 @@
 (define-struct (author-element element) (names cite))
 (define-struct (other-author-element author-element) ())
          
-(define (add-cite group bib-entry which)
+(define (add-cite group bib-entry which with-specific?)
   (hash-set! (bib-group-ht group) bib-entry #t)
   (make-delayed-element
    (lambda (renderer part ri)
      (let ([s (resolve-get part ri `(,which ,(auto-bib-key bib-entry)))])
        (list (make-link-element #f 
-                                (list (or s "???") (auto-bib-specific bib-entry))
+                                (list (or s "???") 
+                                      (if with-specific?
+                                          (auto-bib-specific bib-entry)
+                                          ""))
                                 `(autobib ,(auto-bib-key bib-entry))))))
    (lambda () "(???)")
    (lambda () "(???)")))
@@ -47,12 +50,12 @@
     (error 'citet "citet must be used with identical authors, given ~a" (map auto-bib-author bib-entries)))
   (make-element 
    #f
-   (list (add-cite group (car bib-entries) 'autobib-author)
+   (list (add-cite group (car bib-entries) 'autobib-author #f)
          'nbsp
          "("
          (let loop ([keys bib-entries])
            (if (null? (cdr keys))
-               (add-cite group (car keys) 'autobib-date)
+               (add-cite group (car keys) 'autobib-date #t)
                (make-element
                 #f
                 (list (loop (list (car keys)))
@@ -70,9 +73,9 @@
                (make-element 
                 #f 
                 (list 
-                 (add-cite group (car keys) 'autobib-author)
+                 (add-cite group (car keys) 'autobib-author #f)
                  " "
-                 (add-cite group (car keys) 'autobib-date)))
+                 (add-cite group (car keys) 'autobib-date #t)))
                (make-element
                 #f
                 (list (loop (list (car keys)))
