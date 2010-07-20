@@ -1,35 +1,19 @@
-Version 5.0.0.9
+Version 5.0.1, July 2010
 Continuation barriers now block only downward continuation jumps
  and allow escapes through full continuations
-Added #:async-apply option to _fun
-Upgraded to libffi 3.0.9+
-
-Version 5.0.0.8
 Changed internal-definition handling to allow expressions mixed
  with definitions
-
-Version 5.0.0.7
 Added support for subprocesses as new process groups
-
-Version 5.0.0.6
 Added support for best-effort termination of subprocess by a
  custodian
-
-Version 5.0.0.5
 Added flreal-part, flimag-part, make-flrectangular, and unsafe
  variants
-
-Version 5.0.0.4
-Added chaperone-evt
-
-Version 5.0.0.3
-identifier-prune-to-source-module
-
-Version 5.0.0.2
 Added fl->eact-integer, fl->fx, and unsafe-fl->fx
-
-Version 5.0.0.1
+Added #:async-apply option to _fun
+Added chaperone-evt
+Added identifier-prune-to-source-module
 Changed apply binding to enable lower-level optimizations
+Upgraded to libffi 3.0.9+
 
 Version 5.0, May 2010
 Changed the core executable from mzscheme to racket
