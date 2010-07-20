@@ -3570,10 +3570,16 @@ static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt
 
     if (!wrt) {
       Scheme_Object *wd;
-      wd = CURRENT_WD();
-      wrt = SCHEME_PATH_VAL(wd);
-      wlen = SCHEME_PATH_LEN(wd);
-      scheme_security_check_file("path->complete-path", NULL, SCHEME_GUARD_FILE_EXISTS);
+      if (scheme_current_thread) {
+        wd = CURRENT_WD();
+        wrt = SCHEME_PATH_VAL(wd);
+        wlen = SCHEME_PATH_LEN(wd);
+        scheme_security_check_file("path->complete-path", NULL, SCHEME_GUARD_FILE_EXISTS);
+      } else {
+        int actlen;
+        wrt = scheme_os_getcwd(NULL, 0, &actlen, 1);
+        wlen = actlen - 1;
+      }
     }
 
     if (kind == SCHEME_WINDOWS_PATH_KIND) {
@@ -3614,7 +3620,7 @@ static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt
     }
     memcpy(naya + wlen, filename, ilen);
     naya[wlen + ilen] = 0;
-    
+
     return naya;
   }
 
