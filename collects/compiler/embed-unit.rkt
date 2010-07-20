@@ -710,7 +710,9 @@
                                                                                   (let-values ([(s) (cadr name)])
                                                                                     (let-values ([(parts) (split s #rx"/" +inf.0)])
                                                                                       (if (= 1 (length parts))
-                                                                                          name
+                                                                                          (list* 'planet
+                                                                                                 (ss->rkt (cadr name))
+                                                                                                 (cddr name))
                                                                                           (list* 'planet
                                                                                                  (ss->rkt (last-of parts))
                                                                                                  (caddr name)
