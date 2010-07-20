@@ -17,8 +17,7 @@
   (initial-queue jobqueue))
 
 (define (process-comp jobqueue nprocs stopat)
-  (define process-worker-filename
-    (path->string (build-path (collection-path "setup") "parallel-build-worker.rkt")))
+  (define process-worker-library "setup/parallel-build-worker")
 
   (define executable (parameterize ([current-directory (find-system-path 'orig-dir)])
                        (find-executable-path (find-system-path 'exec-file) #f)))
@@ -26,7 +25,12 @@
     (write x ch)
     (flush-output ch))
   (define (spawn i)
-    (let-values ([(s o in e) (subprocess #f #f (current-error-port) executable process-worker-filename)])
+    (let-values ([(s o in e) (subprocess #f #f (current-error-port) 
+                                         executable
+                                         "-X"
+                                         (path->string (find-system-path 'collects-dir))
+                                         "-l"
+                                         process-worker-library)])
       (send/msg i in)
       (list i s o in e)))
   (define (kill-worker i nw o in)
