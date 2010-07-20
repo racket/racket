@@ -176,14 +176,21 @@
     [(struct boxenv (pos body))
      (extract-ids! body ids)]
     [else #f]))
+
+(define (decompile-tl expr globs stack closed no-check?)
+  (match expr
+    [(struct toplevel (depth pos const? ready?))
+     (let ([id (list-ref/protect globs pos 'toplevel)])
+       (if (or no-check? const? ready?)
+           id
+           `(#%checked ,id)))]))
              
 (define (decompile-expr expr globs stack closed)
   (match expr
     [(struct toplevel (depth pos const? ready?))
-     (let ([id (list-ref/protect globs pos 'toplevel)])
-       (if (or const? ready?)
-           id
-           `(#%checked ,id)))]
+     (decompile-tl expr globs stack closed #f)]
+    [(struct varref (tl))
+     `(#%variable-reference ,(decompile-tl tl globs stack closed #t))]
     [(struct topsyntax (depth pos midpt))
      (list-ref/protect globs (+ midpt pos) 'topsyntax)]
     [(struct primval (id))
