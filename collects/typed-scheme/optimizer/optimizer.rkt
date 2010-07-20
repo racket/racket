@@ -7,7 +7,7 @@
                        racket/private/for)
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)
-         (optimizer utils fixnum float inexact-complex vector string
+         (optimizer utils number fixnum float inexact-complex vector string
                     pair sequence box struct dead-code))
 
 (provide optimize-top)
@@ -21,6 +21,7 @@
   #:literal-sets (kernel-literals)
 
   ;; interesting cases, where something is optimized
+  (pattern e:number-opt-expr          #:with opt #'e.opt)
   (pattern e:fixnum-opt-expr          #:with opt #'e.opt)
   (pattern e:float-opt-expr           #:with opt #'e.opt)
   (pattern e:inexact-complex-opt-expr #:with opt #'e.opt)

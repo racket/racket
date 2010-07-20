@@ -71,6 +71,12 @@
            #:with opt
            (begin (log-optimization "binary nonzero fixnum" #'op)
                   #'(op.unsafe n1.opt n2.opt)))
+
+  (pattern (#%plain-app (~and op (~literal -)) f:fixnum-expr)
+           #:with opt
+           (begin (log-optimization "unary fixnum" #'op)
+                  #'(unsafe-fx- 0 f.opt)))
+
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-expr)
            #:with opt
            (begin (log-optimization "fixnum to float" #'op)
