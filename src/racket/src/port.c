@@ -6886,6 +6886,8 @@ static void check_child_done(pid_t pid)
         START_XFORM_SKIP;
         if (WIFEXITED(status))
           status = WEXITSTATUS(status);
+        else if (WIFSIGNALED(status))
+          status = WTERMSIG(status) + 128;
         else
           status = MZ_FAILURE_STATUS;
         END_XFORM_SKIP;
