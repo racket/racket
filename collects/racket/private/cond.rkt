@@ -54,10 +54,7 @@
                                              (free-identifier=? (stx-car value) =>-stx))
                                         (if (and (stx-pair? (stx-cdr value))
                                                  (stx-null? (stx-cdr (stx-cdr value))))
-                                            (let ([test (if else?
-                                                            #t 
-                                                            test)]
-                                                  [gen (gen-temp-id 'c)])
+                                            (let ([gen (gen-temp-id 'c)])
                                               `(,(quote-syntax let-values) ([(,gen) ,test])
                                                 (,(quote-syntax if) ,gen
                                                  (,(stx-car (stx-cdr value)) ,gen)
@@ -66,11 +63,15 @@
                                              "bad syntax (bad clause form with =>)"
                                              line))
                                         (if else?
-                                            (if first?
-                                                ;; first => be careful not to introduce a splicable begin...
-                                                `(,(quote-syntax if) #t ,(cons (quote-syntax begin) value) (void))
-                                                ;; we're in an `if' branch already...
-                                                (cons (quote-syntax begin) value))
+                                            (if (stx-null? value)
+                                                (serror
+                                                 "missing expressions in `else' clause"
+                                                 line)
+                                                (if first?
+                                                    ;; first => be careful not to introduce a splicable begin...
+                                                    `(,(quote-syntax if) #t ,(cons (quote-syntax begin) value) (void))
+                                                    ;; we're in an `if' branch already...
+                                                    (cons (quote-syntax begin) value)))
                                             (if (stx-null? value)
                                                 (let ([gen (gen-temp-id 'c)])
                                                   `(,(quote-syntax let-values) ([(,gen) ,test])
