@@ -1,8 +1,12 @@
+v5.0.1
+
   * changed the matching of `where' clauses in a
     backwards-incompatible way. Previously, pattern variables bound by
-    a `where' left-hand side shadowed bindings from earlier clause's
+    a `where' left-hand side shadowed bindings from earlier clauses
     and the case's left-hand side; now, `where' clauses match only
     when their bindings match the existing ones. 
+
+  * fixed minor bugs
 
 v5.0
 
