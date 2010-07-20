@@ -155,11 +155,10 @@ static void off_cb(toggle,client_data,call_data)Widget  toggle;XtPointer  client
     Cardinal bits = sizeof(((XfwfGroupWidget)self)->xfwfGroup.selection) * 8;
 
     switch (((XfwfGroupWidget)self)->xfwfGroup.selectionStyle) {
+    case XfwfSingleSelection:
+	/* $selection = -1L; break; */  /* Allows nothing selected - disabled */
     case XfwfOneSelection:
 	XtVaSetValues(toggle, XtNon, True, NULL); /* Undo */
-	break;
-    case XfwfSingleSelection:
-	((XfwfGroupWidget)self)->xfwfGroup.selection = -1L;			/* Nothing selected */
 	break;
     case XfwfMultipleSelection:
 	if (toggle_ord < bits) ((XfwfGroupWidget)self)->xfwfGroup.selection &= ~(1L << toggle_ord);
