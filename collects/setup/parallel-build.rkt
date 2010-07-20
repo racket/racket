@@ -3,6 +3,7 @@
 (require racket/future
          racket/list
          racket/match
+         racket/path
          setup/collects
          unstable/generics)
 
@@ -21,6 +22,12 @@
 
   (define executable (parameterize ([current-directory (find-system-path 'orig-dir)])
                        (find-executable-path (find-system-path 'exec-file) #f)))
+  (define collects-dir (let ([p (find-system-path 'collects-dir)])
+                         (if (complete-path? p)
+                             p
+                             (path->complete-path p (or (path-only executable)
+                                                        (find-system-path 'orig-dir))))))
+                        
   (define (send/msg x ch)
     (write x ch)
     (flush-output ch))
@@ -28,7 +35,7 @@
     (let-values ([(s o in e) (subprocess #f #f (current-error-port) 
                                          executable
                                          "-X"
-                                         (path->string (find-system-path 'collects-dir))
+                                         (path->string collects-dir)
                                          "-l"
                                          process-worker-library)])
       (send/msg i in)
