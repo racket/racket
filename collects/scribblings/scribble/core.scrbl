@@ -524,7 +524,7 @@ The following @tech{style properties} are currently recognized:
 
 
 @defstruct[nested-flow ([style any/c]
-                        [paragraphs (listof block?)])]{
+                        [blocks (listof block?)])]{
 
 A @techlink{nested flow} has a style and a @tech{flow}.
 
