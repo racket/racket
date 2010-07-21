@@ -538,6 +538,7 @@ path/s is either such a string or a list of them.
 "collects/2htdp/image.rkt" responsible (robby) drdr:command-line (gracket-text "-t" *)
 "collects/2htdp/private/check-aux.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/2htdp/private/checked-cell.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/2htdp/private/image-core.rkt" responsible (robby) drdr:command-line (gracket *)
 "collects/2htdp/private/image-more.rkt" responsible (robby) drdr:command-line (gracket-text "-t" *)
 "collects/2htdp/private/img-err.rkt" responsible (robby) drdr:command-line (gracket *)
 "collects/2htdp/private/last.rkt" drdr:command-line (gracket-text "-t" *)
