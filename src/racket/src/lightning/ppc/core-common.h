@@ -305,6 +305,7 @@ static jit_state 			_jit;
 #define jit_pusharg_ui(rs)		jit_pusharg_i(rs)
 #define jit_pusharg_ul(rs)		jit_pusharg_l(rs)
 #define jit_pusharg_p(rs)		jit_pusharg_ul(rs)
+#define jit_normal_pushonlyarg_p(rs)    jit_pusharg_ul(rs)
 
 /* Memory synonyms */
 
