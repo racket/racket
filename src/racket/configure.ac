@@ -540,6 +540,7 @@ EXTRALIBS=
 
 # for gmp assembly:
 EXTRA_GMP_OBJ=
+EXTRA_GMP_DEP=
 
 # For Racket targets:
 OSX=".osx"
@@ -605,6 +606,7 @@ case $OS in
        ;;
       alpha)
        EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
+       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
        ;;
       i386|i486|i586|i686)
        enable_futures_by_default=yes
@@ -619,6 +621,7 @@ case $OS in
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then 
       EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
+      EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
     fi
     ;;
   HP-UX)
@@ -1493,6 +1496,7 @@ AC_SUBST(XFORMFLAGS)
 AC_SUBST(MZBINTARGET)
 AC_SUBST(MZINSTALLTARGET)
 AC_SUBST(EXTRA_GMP_OBJ)
+AC_SUBST(EXTRA_GMP_DEP)
 AC_SUBST(OSX)
 AC_SUBST(NOT_OSX)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)

@@ -699,6 +699,7 @@ XFORMFLAGS
 MZBINTARGET
 MZINSTALLTARGET
 EXTRA_GMP_OBJ
+EXTRA_GMP_DEP
 OSX
 NOT_OSX
 FRAMEWORK_INSTALL_DIR
@@ -5843,6 +5844,7 @@ EXTRALIBS=
 
 # for gmp assembly:
 EXTRA_GMP_OBJ=
+EXTRA_GMP_DEP=
 
 # For Racket targets:
 OSX=".osx"
@@ -5908,6 +5910,7 @@ case $OS in
        ;;
       alpha)
        EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
+       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
        ;;
       i386|i486|i586|i686)
        enable_futures_by_default=yes
@@ -5922,6 +5925,7 @@ case $OS in
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then
       EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
+      EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
     fi
     ;;
   HP-UX)
@@ -12189,6 +12193,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -13064,6 +13069,7 @@ XFORMFLAGS!$XFORMFLAGS$ac_delim
 MZBINTARGET!$MZBINTARGET$ac_delim
 MZINSTALLTARGET!$MZINSTALLTARGET$ac_delim
 EXTRA_GMP_OBJ!$EXTRA_GMP_OBJ$ac_delim
+EXTRA_GMP_DEP!$EXTRA_GMP_DEP$ac_delim
 OSX!$OSX$ac_delim
 NOT_OSX!$NOT_OSX$ac_delim
 FRAMEWORK_INSTALL_DIR!$FRAMEWORK_INSTALL_DIR$ac_delim
@@ -13075,7 +13081,6 @@ MZRT_CGC_FLAGS!$MZRT_CGC_FLAGS$ac_delim
 LIBATOM!$LIBATOM$ac_delim
 GRACKETLINKER!$GRACKETLINKER$ac_delim
 LIBSFX!$LIBSFX$ac_delim
-WXLIBS!$WXLIBS$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -13117,6 +13122,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+WXLIBS!$WXLIBS$ac_delim
 WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
@@ -13161,7 +13167,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 42; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 43; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
