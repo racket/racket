@@ -1,7 +1,7 @@
 Stepper
 -------
 
-Changes for v5.1:
+Changes for v5.0.1:
 
 None.
 
