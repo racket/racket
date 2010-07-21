@@ -644,7 +644,7 @@ void wxPenList::AddPen (wxPen * pen)
   pen->Lock(1);
 }
 
-wxPen *wxPenList::FindOrCreatePen (wxColour * colour, double width, int style)
+wxPen *wxPenList::FindOrCreatePen (wxColour * colour, double width, int style, int cap, int join)
 {
   wxPen *pen;
   wxChildNode *node;
@@ -661,6 +661,8 @@ wxPen *wxPenList::FindOrCreatePen (wxColour * colour, double width, int style)
       c = each_pen->GetColour();
       if (each_pen->GetWidthF() == width &&
 	  each_pen->GetStyle() == style &&
+          each_pen->GetCap() == cap &&
+          each_pen->GetJoin() == join &&
 	  c->Red () == colour->Red () &&
 	  c->Green () == colour->Green () &&
 	  c->Blue () == colour->Blue ())
@@ -668,16 +670,18 @@ wxPen *wxPenList::FindOrCreatePen (wxColour * colour, double width, int style)
     }
   }
   pen = new WXGC_PTRS wxPen (colour, width, style);
+  if (cap != wxCAP_ROUND) pen->SetCap(cap);
+  if (join != wxJOIN_ROUND) pen->SetJoin(join);
   AddPen(pen);
   return pen;
 }
 
-wxPen *wxPenList::FindOrCreatePen (char *colour, double width, int style)
+wxPen *wxPenList::FindOrCreatePen (char *colour, double width, int style, int cap, int join)
 {
   wxColour *the_colour;
   the_colour = wxTheColourDatabase->FindColour(colour);
   if (the_colour)
-    return FindOrCreatePen (the_colour, width, style);
+    return FindOrCreatePen (the_colour, width, style, cap, join);
   else
     return NULL;
 }

@@ -262,8 +262,8 @@ class wxPenList: public wxObject
   wxPenList(void);
   ~wxPenList(void);
   void AddPen(wxPen *pen);
-  wxPen *FindOrCreatePen(wxColour *colour, double width, int style);
-  wxPen *FindOrCreatePen(char *colour, double width, int style);
+  wxPen *FindOrCreatePen(wxColour *colour, double width, int style, int cap = wxCAP_ROUND, int join = wxJOIN_ROUND);
+  wxPen *FindOrCreatePen(char *colour, double width, int style, int cap = wxCAP_ROUND, int join = wxJOIN_ROUND);
 };
 
 class wxBrushList: public wxObject
