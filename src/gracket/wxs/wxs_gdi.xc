@@ -202,8 +202,8 @@
 
 @CREATOR ();
 
-@ "find-or-create-pen" : wxPen! FindOrCreatePen(wxColour!,rdouble[0|255],SYM[penStyle]); <> color%
-@ "find-or-create-pen" : wxPen^ FindOrCreatePen(string,rdouble[0|255],SYM[penStyle]); <> color name
+@ "find-or-create-pen" : wxPen! FindOrCreatePen(wxColour!,rdouble[0|255],SYM[penStyle],SYM[cap]=wxCAP_ROUND,SYM[join]=wxJOIN_ROUND); <> color%
+@ "find-or-create-pen" : wxPen^ FindOrCreatePen(string,rdouble[0|255],SYM[penStyle],SYM[cap]=wxCAP_ROUND,SYM[join]=wxJOIN_ROUND); <> color name
 
 @END
 
