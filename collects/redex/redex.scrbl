@@ -875,6 +875,19 @@ sequences that do not repeat, this function will not
 terminate (it does terminate if the only infinite reduction paths are cyclic).
 }
 
+@examples[
+#:eval redex-eval
+       (define-language empty-lang)
+       (define R
+         (reduction-relation
+          empty-lang
+          (--> 0 1)
+          (--> 0 2)
+          (--> 2 3)
+          (--> 3 3)))
+       (apply-reduction-relation R 0)
+       (apply-reduction-relation* R 0)]                        
+                        
 @defidform[-->]{ Recognized specially within
   @racket[reduction-relation]. A @racket[-->] form is an
   error elsewhere.  }
