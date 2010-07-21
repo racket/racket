@@ -11264,7 +11264,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
      callee-saved registers to match the mz protocol 
      (on x86_64). */
   mz_prepare(1);
-  jit_pusharg_p(JIT_R0);
+  jit_normal_pushonlyarg_p(JIT_R0);
   (void)jit_normal_finish(decrement_cache_stack_pos);
   jit_retval(JIT_R1); /* = pointer to a stack_cache_stack element */
   CHECK_LIMIT();
