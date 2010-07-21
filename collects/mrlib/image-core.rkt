@@ -150,7 +150,8 @@ has been moved out).
 ;;  - (make-bitmap (is-a?/c bitmap%) angle positive-real (or/c #f (is-a?/c bitmap%)))
 ;;    NOTE: bitmap copying needs to happen in 'write' and 'read' methods
 (define-struct/reg-mk bitmap (raw-bitmap raw-mask angle x-scale y-scale [rendered-bitmap #:mutable] [rendered-mask #:mutable])
-  #:omit-define-syntaxes #:transparent)
+  #:omit-define-syntaxes #:transparent
+  #:property prop:custom-write (λ (x y z) (bitmap-write x y z)))
 
 ;; a flip is:
 ;;   - (make-flip boolean bitmap)
@@ -158,7 +159,7 @@ has been moved out).
 ;; * this struct is here to avoid adding a field to bitmaps, so that old save files
 ;;   from when the library did not support flipping still load
 ;;   (since normalization will add a flip structure if necessary)
-(define-struct/reg-mk flip (flipped? shape))
+(define-struct/reg-mk flip (flipped? shape) #:transparent)
 
 ;; a polygon is:
 ;;
@@ -312,7 +313,7 @@ has been moved out).
     (define/override (find-scroll-step y)
       (calc-scroll-step)
       (inexact->exact (ceiling (/ y scroll-step))))
-               
+
     (define/override (copy) (make-image shape bb normalized?))
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
       (let ([smoothing (send dc get-smoothing)])
@@ -342,8 +343,8 @@ has been moved out).
   (and (= (round (bb-right bb1)) (round (bb-right bb2)))
        (= (round (bb-bottom bb1)) (round (bb-bottom bb2)))
        (= (round (bb-baseline bb1)) (round (bb-baseline bb2)))))
-(define racket/base:read read)
 
+(define racket/base:read read)
 (define image-snipclass% 
   (class snip-class%
     (define/override (read f)
@@ -370,7 +371,7 @@ has been moved out).
 
 (provide snip-class) 
 (define snip-class (new image-snipclass%))
-(send snip-class set-classname (format "~s" '(lib "image-core.ss" "2htdp" "private")))
+(send snip-class set-classname (format "~s" '(lib "image-core.ss" "mrlib")))
 (send snip-class set-version 1)
 (send (get-the-snip-class-list) add snip-class)
 
@@ -384,12 +385,17 @@ has been moved out).
         [(vector? sexp)
          (if (= (vector-length sexp) 0)
              (k #f)
-             (let ([constructor (id->constructor (vector-ref sexp 0))]
-                   [args (cdr (vector->list sexp))])
-               (if (and constructor
-                        (procedure-arity-includes? constructor (length args)))
-                   (apply constructor (map loop args))
-                   (k #f))))]
+             (cond
+               [(bytes? (vector-ref sexp 0))
+                ;; bitmaps are vectors with a bytes in the first field
+                (apply bytes->bitmap (vector->list sexp))]
+               [else
+                (let ([constructor (id->constructor (vector-ref sexp 0))]
+                      [args (cdr (vector->list sexp))])
+                  (if (and constructor
+                           (procedure-arity-includes? constructor (length args)))
+                      (apply constructor (map loop args))
+                      (k #f)))]))]
         [else sexp]))))
 
 (define-id->constructor id->constructor)
@@ -829,7 +835,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
       (let-values ([(rotated-bytes rotated-w rotated-h)
                     (rotate-bytes bytes w h θ)])
         (let* ([flipped-bytes (if flip?
-                                  (flip-bytes rotated-bytes w h)
+                                  (flip-bytes rotated-bytes rotated-w rotated-h)
                                   rotated-bytes)]
                [bm (bytes->bitmap flipped-bytes rotated-w rotated-h)]
                [mask (send bm get-loaded-mask)])
@@ -1004,6 +1010,24 @@ the mask bitmap and the original bitmap are all together in a single bytes!
                                 (make-bitmap bm mask-bm 0 1 1 #f #f))
                 (make-bb w h h)
                 #f)))
+
+(define (bitmap-write bitmap port mode)
+  (let* ([v (struct->vector bitmap)]
+         [recur (case mode
+                  [(#t) write]
+                  [(#f) display]
+                  [else (lambda (p port) (print p port mode))])]
+         [update 
+          (λ (i)
+            (let ([o (vector-ref v i)])
+              (let ([nv (call-with-values (λ () (bitmap->bytes o)) vector)])
+                (vector-set! v i nv))))])
+    (update 1)
+    (update 2)
+    ;; don't save the rendered bitmap (if it is there)
+    (vector-set! v 6 #f)
+    (vector-set! v 7 #f)
+    (recur v port)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

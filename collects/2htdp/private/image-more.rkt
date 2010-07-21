@@ -427,6 +427,8 @@
              (min (ltrb-top ltrb1) (ltrb-top ltrb2))
              (max (ltrb-right ltrb1) (ltrb-right ltrb2))
              (max (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
+
+;; only intersection if they already overlap.
 (define (intersect-ltrb ltrb1 ltrb2)
   (make-ltrb (max (ltrb-left ltrb1) (ltrb-left ltrb2))
              (max (ltrb-top ltrb1) (ltrb-top ltrb2))

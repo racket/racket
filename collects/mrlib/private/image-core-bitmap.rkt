@@ -67,7 +67,11 @@ instead of this scaling code, we use the dc<%>'s scaling code.
 
 (define (bytes->bitmap bytes w h)
   (unless (= (bytes-length bytes) (* w h NUM-CHANNELS))
-    (error 'bytes->bitmap "wrong sizes"))
+    (error 'bytes->bitmap "wrong sizes, got ~a bytes, w ~a h ~a (which should be ~a bytes)"
+           (bytes-length bytes)
+           w
+           h
+           (* w h NUM-CHANNELS)))
   (let* ([bm (make-object bitmap% w h)]
          [mask (make-object bitmap% w h)]
          [bdc (make-object bitmap-dc% bm)])
