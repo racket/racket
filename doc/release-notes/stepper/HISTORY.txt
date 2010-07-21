@@ -1,6 +1,10 @@
 Stepper
 -------
 
+Changes for v5.1:
+
+None.
+
 Changes for v5.0:
 
 Bug fixes, computes all steps ahead of time (some time in last few revs)?
