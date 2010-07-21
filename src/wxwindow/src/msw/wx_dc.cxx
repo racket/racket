@@ -25,7 +25,15 @@
 
 // Declarations local to this file
 
-static wxMemoryDC *blit_dc, *blit_mdc;
+/* We need two temporary DCs for the Blit method. One would be
+   enough, except that some forms of Blit can allocate,
+   which can trigger a GC and a GC-icon blit that also
+   needs a temporary DC. */
+static wxMemoryDC *blit1_dc;
+static int blit1_in_use;
+static wxMemoryDC *blit2_dc;
+static int blit2_in_use;
+static wxMemoryDC *blit_mdc; /* GC Blit cannot use a mask */
 
 #define wxPI 3.141592653589793
 
@@ -2518,6 +2526,7 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
   wxBitmap *invented = NULL;
   Bool success = 1, invented_col = 0, use_alpha = 0;
   DWORD op = 0;
+  wxMemoryDC *blit_dc = NULL;
 
   dc = ThisDC();
 
@@ -2546,9 +2555,11 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
   iw = (int)floor(xsrc + width) - xsrc1;
   ih = (int)floor(ysrc + height) - ysrc1;
  
-  if (!blit_dc) {
-    wxREGGLOB(blit_dc);
-    blit_dc = new wxMemoryDC(1);
+  if (!blit1_dc) {
+    wxREGGLOB(blit1_dc);
+    wxREGGLOB(blit2_dc);
+    blit1_dc = new wxMemoryDC(1);
+    blit2_dc = new wxMemoryDC(1);
   }
 
   sel = (wxMemoryDC *)source->selectedInto;
@@ -2556,6 +2567,13 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
     sel->SetScaleMode(wxWX_SCALE);
     dc_src = sel->ThisDC(FALSE);
   } else {
+    if (blit1_in_use) {
+      blit2_in_use++;
+      blit_dc = blit2_dc;
+    } else {
+      blit1_in_use++;
+      blit_dc = blit1_dc;
+    }
     blit_dc->SelectObject(source);
     dc_src = blit_dc->ThisDC(FALSE);
   }
@@ -2705,6 +2723,10 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
 	} else {
 	  blit_dc->DoneDC(dc_src);
 	  blit_dc->SelectObject(NULL);
+	  if (blit_dc == blit1_dc)
+	    blit1_in_use--;
+	  else
+	    blit2_in_use--;
 	}
 	return 0;
       }
@@ -2838,6 +2860,10 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
   } else {
     blit_dc->DoneDC(dc_src);
     blit_dc->SelectObject(NULL);
+    if (blit_dc == blit1_dc)
+      blit1_in_use--;
+    else
+      blit2_in_use--;
   }
   if (mdc && (mdc != dc_src)) {
     if (msel) {
@@ -2971,7 +2997,8 @@ void wxCanvasDC::TryColour(wxColour *src, wxColour *dest)
 Bool wxCanvasDC::GCBlit(double xdest, double ydest, double width, double height,
 			wxBitmap *source, double xsrc, double ysrc)
 {
-  if (blit_dc)
+  if ((blit1_dc && !blit1_in_use)
+      || (blit2_dc && !blit2_in_use))
     return Blit(xdest, ydest, width, height, source, xsrc, ysrc, wxSTIPPLE, NULL);
   else
     return FALSE;
