@@ -55,15 +55,18 @@
                                    (if p-date
                                        p
                                        (rkt->ss p)))]
-                       [mode (car (use-compiled-file-paths))]
+                       [modes (use-compiled-file-paths)]
                        [get-zo-date (lambda (name)
-                                      (file-or-directory-modify-seconds
-                                       (build-path 
-                                        base
-                                        mode
-                                        (path-add-suffix name #".zo"))
-                                       #f
-                                       (lambda () #f)))]
+                                      (ormap
+                                       (lambda (mode)
+                                         (file-or-directory-modify-seconds
+                                          (build-path 
+                                           base
+                                           mode
+                                           (path-add-suffix name #".zo"))
+                                          #f
+                                          (lambda () #f)))
+                                       modes))]
                        [main-zo-date (and (or p-date (not alt-date))
                                           (get-zo-date name))]
                        [alt-zo-date (and (or alt-date
@@ -199,7 +202,13 @@
                      [else #f]))))])
     (and l
          (let ([p (open-output-string)]
-               [l (map (lambda (v) (cons (force (car v)) (cdr v))) l)])
+               [l (map (lambda (v) 
+                         (let ([sha1 (force (car v))]
+                               [dep (cdr v)])
+                           (unless sha1
+                             (error 'cm "no SHA-1 for dependency: ~s" dep))
+                           (cons sha1 dep)))
+                       l)])
            ;; sort by sha1s so that order doesn't matter
            (write (sort l string<? #:key car) p)
            ;; compute one hash from all hashes
@@ -458,7 +467,7 @@
       (cond
        [(not path-time)
         (trace-printf "~a does not exist" orig-path)
-        (or (and up-to-date (hash-ref up-to-date orig-path #f))
+        (or (hash-ref up-to-date orig-path #f)
             (let ([stamp (cons path-zo-time
                                (delay (get-compiled-sha1 mode path)))])
               (hash-set! up-to-date main-path stamp)
