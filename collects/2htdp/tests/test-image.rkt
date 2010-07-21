@@ -45,6 +45,7 @@
          lang/posn
          racket/math
          racket/class
+         racket/file
          racket/gui/base
          rackunit
          (prefix-in 1: htdp/image)
@@ -1611,7 +1612,13 @@
          (crop coord coord size size image)
          (scale/xy factor factor image)
          (scale factor image)
-         (rotate angle image))
+         (rotate angle image)
+         (flip-vertical image)
+         (flip-horizontal image)
+         (bitmap bmp-spec))
+  
+  (bmp-spec icons/b-run.png
+            icons/stop-16x16.png)
 
   (factor (+ 1 big-nat) 1/2 1/3 1/4) ;; scaling factors
   (size big-nat)
@@ -1632,7 +1639,7 @@
     (let loop ([obj obj])
       (when (struct? obj)
         (let ([stuff (vector->list (struct->vector obj))])
-          (unless (member (car stuff) '(struct:translate struct:scale)) ;; skip these becuase normalization eliminates them
+          (unless (member (car stuff) '(struct:flip struct:translate struct:scale)) ;; skip these becuase normalization eliminates them
             (hash-set! counts (car stuff) (+ 1 (hash-ref counts (car stuff) 0))))
           (for-each loop (cdr stuff)))))
     (sort (hash-map counts list) string<=? #:key (λ (x) (symbol->string (car x))))))
@@ -1640,20 +1647,44 @@
 (define (check-image-properties img-sexp img)
   (let* ([raw-size (image-struct-count (image-shape img))]
          [normalized (normalize-shape (image-shape img) values)]
-         [norm-size (image-struct-count normalized)])
+         [norm-size (image-struct-count normalized)]) 
     (unless (normalized-shape? normalized)
       (error 'test-image.ss "found a non-normalized shape after normalization:\n~s" 
              img-sexp))
     (unless (equal? norm-size raw-size)
       (error 'test-image.ss "found differing sizes for ~s:\n  ~s\n  ~s" 
-             img-sexp raw-size norm-size))))       
-  
+             img-sexp raw-size norm-size))))
+
+(define (test-save/load img fn)
+  (let ([t1 (new text%)]
+        [t2 (new text%)])
+    (send t1 insert img)
+    (send t1 save-file fn)
+    (send t2 load-file fn)
+    (let ([s1 (send t1 find-first-snip)]
+          [s2 (send t2 find-first-snip)])
+      (equal? s1 s2))))
+
 (time
  (redex-check
   2htdp/image
   image
   (check-image-properties 
    (term image)
-   (eval (term image) (namespace-anchor->namespace anchor)))
+   (to-img (eval (term image) (namespace-anchor->namespace anchor))))
   #:attempts 1000))
+
+;; this one is commented out because it catches 
+;; a bug where cropping a shape outside of its
+;; bounding box leads to strange, bad behavior.
+#;
+(time
+ (let ([fn (make-temporary-file "test-image~a")])
+   (redex-check
+    2htdp/image
+    image
+    (let ([img (to-img (eval (term image) (namespace-anchor->namespace anchor)))])  
+      (unless (test-save/load img fn)  
+        (error 'test-image.rkt "saving and loading this image fails:\n  ~s" (term image))))
+    #:attempts 1000)))
 
