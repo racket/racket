@@ -1,3 +1,10 @@
+------------------------------------------------------------------------
+Version 5.0.1.  			  [Tue Jul 20 20:52:09 EDT 2010]
+
+* typos in documentation 
+
+------------------------------------------------------------------------
+
 Version 5.0				  [Fri May 28 13:43:21 EDT 2010]
 
 * added to-draw to universe to prepare the switch to the new terminoloy
