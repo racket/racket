@@ -13577,7 +13577,7 @@ typedef void *(*Get_Stack_Proc)();
 # define RETURN_ADDRESS_OFFSET 1
 #endif
 
-#define CACHE_STACK_MIN_TRIGGER 1024
+#define CACHE_STACK_MIN_TRIGGER 128
 
 #define USE_STACK_CHECK 0
 

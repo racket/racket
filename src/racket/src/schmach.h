@@ -39,10 +39,10 @@
 
 #ifdef STACK_GROWS_UP
 # define STK_COMP(a,b) ((a) > (b))
-# define STK_DIFF(a, b) ((a) - (b))
+# define STK_DIFF(a, b) ((b) - (a))
 #else
 # define STK_COMP(a,b) ((a) < (b))
-# define STK_DIFF(a, b) ((b) - (a))
+# define STK_DIFF(a, b) ((a) - (b))
 #endif
 
 #ifdef SHORT_ALIGN
