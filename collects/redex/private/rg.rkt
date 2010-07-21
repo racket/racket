@@ -775,14 +775,14 @@
                           (and print? show)
                           fix
                           #:term-match term-match))
-                     #`(check-prop
+                     #`(check-one
                         #,(term-generator #'lang #'pat 'redex-check)
                         property att ret (and print? show) fix (and fix term-match)))))))))]))
 
 (define (format-attempts a)
   (format "~a attempt~a" a (if (= 1 a) "" "s")))
 
-(define (check-prop generator property attempts retries show term-fix term-match) 
+(define (check-one generator property attempts retries show term-fix term-match) 
   (let ([c (check generator property attempts retries show 
                   #:term-fix term-fix
                   #:term-match term-match)])
@@ -844,34 +844,6 @@
                                (if source (format " with ~a" source) "")))
                       (pretty-print term (current-output-port)))
                     (make-counterexample term)))))))))
-
-(define-syntax (check-metafunction-contract stx)
-  (syntax-case stx ()
-    [(_ name . kw-args)
-     (identifier? #'name)
-     (with-syntax ([m (metafunc/err #'name stx)]
-                   [(attempts retries)
-                    (parse-kw-args `((#:attempts . ,#'default-check-attempts)
-                                     (#:retries . ,#'default-retries))
-                                   (syntax kw-args)
-                                   stx)]
-                   [show (show-message stx)])
-       (syntax/loc stx 
-        (let ([lang (metafunc-proc-lang m)]
-              [dom (metafunc-proc-dom-pat m)]
-              [att (assert-nat 'check-metafunction-contract attempts)])
-          (check-prop 
-           ((compile lang 'check-metafunction-contract)
-            (if dom dom '(any (... ...))))
-           (term-prop
-            (λ (t) 
-              (with-handlers ([exn:fail:redex? (λ (_) #f)])
-                (begin (term (name ,@t)) #t))))
-           att
-           retries
-           show
-           #f
-           #f))))]))
 
 (define (check-lhs-pats lang mf/rr prop attempts retries what show term-fix
                         #:term-match [term-match #f])
@@ -999,7 +971,6 @@
 
 (provide redex-check
          generate-term
-         check-metafunction-contract
          check-reduction-relation
          check-metafunction
          exn:fail:redex:generation-failure?)

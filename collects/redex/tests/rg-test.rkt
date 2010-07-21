@@ -747,59 +747,6 @@
        (--> (side-condition any #f) any impossible)
        #rx"^redex-check: unable to generate LHS of impossible in 42"))))
 
-;; check-metafunction-contract
-(let ()
-  (define-language L
-    (C hole (1 hole)))
-  
-  (define-metafunction L
-    f : (side-condition number_1 (odd? (term number_1))) -> number
-    [(f 1) 1]
-    [(f 3) 'NaN])
-  
-  (define-metafunction L
-    g : (1 1) -> C
-    [(g (in-hole C any)) C])
-  
-  (define-metafunction L
-    h : number -> number
-    [(h any) any])
-  
-  (define-metafunction L
-    [(i any ...) (any ...)])
-  
-  (define-metafunction L
-    j : (side-condition any #f) -> any
-    [(j any ...) (any ...)])
-  
-  ;; Dom(f) < Ctc(f)
-  (test (output 
-         (λ () 
-           (parameterize ([generation-decisions 
-                           (decisions #:num (list (λ _ 2) (λ _ 5)))])
-             (check-metafunction-contract f))))
-        #rx"check-metafunction-contract:.*counterexample found after 1 attempt:\n\\(5\\)\n")
-  ;; Rng(f) > Codom(f)
-  (test (output
-         (λ () 
-           (parameterize ([generation-decisions
-                           (decisions #:num (list (λ _ 3)))])
-             (check-metafunction-contract f))))
-        #rx"counterexample found after 1 attempt:\n\\(3\\)\n")
-  ;; LHS matches multiple ways
-  (test (output (λ () (check-metafunction-contract g)))
-        #rx"counterexample found after 1 attempt:\n\\(\\(1 1\\)\\)\n")
-  ;; OK -- generated from Dom(h)
-  (test (output (λ () (check-metafunction-contract h))) #rx"no counterexamples")
-  ;; OK -- generated from pattern (any ...)
-  (test (output (λ () (check-metafunction-contract i #:attempts 5))) #rx"no counterexamples")
-  
-  ;; Unable to generate domain
-  (test (raised-exn-msg
-         exn:fail:redex:generation-failure?
-         (check-metafunction-contract j #:attempts 1 #:retries 42))
-        #rx"^check-metafunction-contract: unable .* in 42"))
-
 ;; check-reduction-relation
 (let ()
   (define-language L

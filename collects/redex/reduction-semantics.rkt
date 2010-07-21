@@ -48,7 +48,6 @@
 (provide redex-check
          generate-term
          check-metafunction
-         check-metafunction-contract
          check-reduction-relation
          exn:fail:redex:generation-failure?
          (struct-out exn:fail:redex:test)
