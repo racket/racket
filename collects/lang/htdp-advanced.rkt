@@ -48,6 +48,7 @@
             [advanced-when when]
             [advanced-unless unless]
             [advanced-case case]
+            [advanced-match match]
             [advanced-delay delay]
             [advanced-module-begin #%module-begin]
             )

@@ -43,7 +43,9 @@
 
 @schemegrammar*+qq[
 #:literals (define define-struct define-datatype lambda λ cond else if and or empty true false require lib planet
-            local let let* letrec time begin begin0 set! delay shared recur when case unless
+            local let let* letrec time begin begin0 set! delay shared recur when case match unless
+             ; match
+             _ cons list list* struct vector box
             check-expect check-within check-error)
 (check-expect check-within check-error require)
 [program (code:line def-or-expr ...)]
@@ -75,6 +77,7 @@
                  [(choice choice ...) expr])
       (case expr [(choice choice ...) expr] ... 
                  [else expr])
+      (match expr [pattern expr] ...)
       (if expr expr expr)
       (when expr expr)
       (unless expr expr)
@@ -88,11 +91,37 @@
       (code:line @#,elem{@schemevalfont{`}@scheme[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
+      
       false
       string
       character]
 [choice (code:line id (code:comment @#,t{treated as a symbol}))
         number]
+[pattern _
+         empty
+         id
+         number
+         true
+         false
+         string
+         character
+         @#,elem{@schemevalfont{'}@scheme[_quoted]}
+         @#,elem{@schemevalfont{`}@scheme[_quasiquoted-pattern]}
+         (cons pattern pattern)
+         (list pattern ...)
+         (list* pattern ...)
+         (struct id (pattern ...))
+         (vector pattern ...)
+         (box pattern)]
+[quasiquoted-pattern id
+                     number
+                     string
+                     character
+                     (quasiquoted-pattern ...)
+                     @#,elem{@schemevalfont{'}@scheme[_quasiquoted-pattern]}
+                     @#,elem{@schemevalfont{`}@scheme[_quasiquoted-pattern]}
+                     @#,elem{@schemefont[","]@scheme[_pattern]}
+                     @#,elem{@schemefont[",@"]@scheme[_pattern]}]
 ]
 
 @|prim-nonterms|
@@ -293,7 +322,22 @@ This form of @scheme[case] is similar to the prior one, except that
 the final @scheme[else] clause is always taken if no prior line
 contains a choice matching the value of the initial @scheme[expr]. In
 other words, so there is no possibility to ``fall off the end'' of
-the @scheme[case] form.}
+the @scheme[case] form.}@; ----------------------------------------------------------------------
+
+@section{@scheme[match]}
+
+@defform[(match expr [pattern expr] ...)]{
+                                          
+A @scheme[match] form contains one or more ``lines'' that are
+surrounded by parentheses or square brackets. Each line contains a
+pattern---a description of a value---and an answer @scheme[expr].
+The initial @scheme[expr] is evaluated, and the resulting value
+is matched against the pattern in each line, where the lines are
+considered in order. The first line that contains a matching pattern
+provides an answer @scheme[expr] whose value is the result of the
+whole @scheme[match] expression. This @scheme[expr] may reference
+identifiers bound in the matching pattern. If none of the lines
+contains a matching pattern, it is an error.}
 
 @; ----------------------------------------------------------------------
 

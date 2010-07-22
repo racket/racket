@@ -49,7 +49,10 @@
 	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
 	   test-engine/scheme-tests
 	   scheme/class
-	   (only lang/private/teachprims beginner-equal? beginner-equal~?))
+           "../posn.rkt"
+	   (only lang/private/teachprims
+                 beginner-equal? beginner-equal~?
+                 advanced-cons advanced-list*))
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
 		      syntax/kerncase
@@ -209,6 +212,7 @@
 			      advanced-begin
 			      advanced-begin0
 			      advanced-case
+                              advanced-match
 			      advanced-shared
 			      advanced-delay)
 
@@ -2520,6 +2524,133 @@
 		(with-syntax ([clauses clauses])
 		  (syntax/loc stx (case v-expr . clauses)))))]
 	   [_else (bad-use-error 'case stx)]))))
+    
+    ;; match (advanced)
+    (define (advanced-match/proc stx)
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_)
+	    (teach-syntax-error
+	     'match
+	     stx
+	     #f
+	     "expected an expression after `match', but nothing's there")]
+	   [(_ expr)
+	    (teach-syntax-error
+	     'match
+	     stx
+	     #f
+	     "expected a pattern--answer clause after the expression following `match', but nothing's there")]
+	   [(_ v-expr clause ...)
+	    (let ([clauses (syntax->list (syntax (clause ...)))])
+	      (for-each
+	       (lambda (clause)
+		 (syntax-case clause ()
+		   [(pattern answer ...)
+		    (let ([pattern (syntax pattern)]
+			  [answers (syntax->list (syntax (answer ...)))])
+		      (check-single-expression 'match
+					       "for the answer in a `match' clause"
+					       clause
+					       answers
+					       null))]
+		   [()
+		    (teach-syntax-error
+		     'match
+		     stx
+		     clause
+		     "expected a pattern--answer clause, but found an empty clause")]
+		   [_else
+		    (teach-syntax-error
+		     'match
+		     stx
+		     clause
+		     "expected a pattern--answer clause, but found ~a"
+		     (something-else clause))]))
+	       clauses)
+              
+              (letrec
+                  ([check-and-translate-qqp
+                    (λ (qqp)
+                      (syntax-case qqp (intermediate-unquote intermediate-unquote-splicing)
+                        [(intermediate-unquote p)
+                         (quasisyntax/loc qqp
+                           (unquote #,(check-and-translate-p #'p)))]
+                        [(intermediate-unquote-splicing p)
+                         (quasisyntax/loc qqp
+                           (unquote-splicing #,(check-and-translate-p #'p)))]
+                        [(qqpi ...)
+                         (quasisyntax/loc qqp
+                           (#,@(map check-and-translate-qqp (syntax->list #'(qqpi ...)))))]
+                        [_
+                         qqp]))]
+                    [check-and-translate-p
+                    (λ (p)
+                      (syntax-case p (struct posn true false empty intermediate-quote intermediate-quasiquote advanced-cons list advanced-list* vector box)
+                        [true
+                         (syntax/loc p
+                           #t)]
+                        [false
+                         (syntax/loc p
+                           #f)]
+                        [empty
+                         (syntax/loc p
+                           (list))]
+                        [(intermediate-quote qp)
+                         (syntax/loc p
+                           (quote qp))]
+                        [(intermediate-quasiquote qqp)
+                         (quasisyntax/loc p
+                           (quasiquote #,(check-and-translate-qqp #'qqp)))]
+                        [(advanced-cons p1 p2)
+                         (quasisyntax/loc p
+                           (cons #,(check-and-translate-p #'p1)
+                                 #,(check-and-translate-p #'p2)))]
+                        [(list pi ...)
+                         (quasisyntax/loc p
+                           (list #,@(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(advanced-list* pi ...)
+                         (quasisyntax/loc p
+                           (list* #,@(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(struct posn (pi ...))
+                         (quasisyntax/loc p
+                           (struct posn-id #,(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(struct struct-id (pi ...))
+                         (quasisyntax/loc p
+                           (struct struct-id #,(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(vector pi ...)
+                         (quasisyntax/loc p
+                           (vector #,@(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(box p1)
+                         (quasisyntax/loc p
+                           (box #,(check-and-translate-p #'p1)))]
+                        [_
+                         (let ([v (syntax->datum p)])
+                           (if (or (and (symbol? v)
+                                        (not (member v '(true false empty))))
+                                   (number? v)
+                                   (string? v)
+                                   (char? v))
+                               p
+                               (teach-syntax-error
+                                'match
+                                stx
+                                p
+                                "expected a pattern, but found ~a"
+                                (something-else p))))]))])
+              (let ([clauses
+                     (map (λ (c)
+                            (syntax-case c ()
+                              [(p e)
+                               (quasisyntax/loc c
+                                 (#,(check-and-translate-p #'p) e))]))
+                          clauses)])
+                (with-syntax ([clauses clauses])
+                  (syntax/loc stx
+                    (match v-expr . clauses))))))]
+           [_else (bad-use-error 'match stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; delay (advanced)

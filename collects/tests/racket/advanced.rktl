@@ -343,6 +343,102 @@
 (htdp-test #f 'a? (a? 1))
 (htdp-top-pop 1)
 
+;; match
+
+(htdp-syntax-test #'match #rx"match: found a use of `match' that does not follow an open parenthesis")
+(htdp-syntax-test #'(match) #rx"match: expected an expression after `match', but nothing's there")
+(htdp-syntax-test #'(match 1) #rx"match: expected a pattern--answer clause after the expression following `match', but nothing's there")
+
+(htdp-syntax-test #'(match 1 10) #rx"match: expected a pattern--answer clause, but found a number")
+(htdp-syntax-test #'(match 1 x) #rx"match: expected a pattern--answer clause, but found something else")
+(htdp-syntax-test #'(match 1 []) #rx"match: expected a pattern--answer clause, but found an empty clause")
+(htdp-syntax-test #'(match 1 [x]) #rx"expected an expression for the answer in a `match' clause, but nothing's there")
+(htdp-syntax-test #'(match 1 [x 10 10]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+(htdp-syntax-test #'(match 1 [x 10 x]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+
+(htdp-syntax-test #'(match 1 [x 10] 10) #rx"match: expected a pattern--answer clause, but found a number")
+(htdp-syntax-test #'(match 1 [x 10] x) #rx"match: expected a pattern--answer clause, but found something else")
+(htdp-syntax-test #'(match 1 [x 10] []) #rx"match: expected a pattern--answer clause, but found an empty clause")
+(htdp-syntax-test #'(match 1 [x 10] [x]) #rx"expected an expression for the answer in a `match' clause, but nothing's there")
+(htdp-syntax-test #'(match 1 [x 10] [x 10 10]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+(htdp-syntax-test #'(match 1 [x 10] [x 10 x]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+
+(define-syntax-rule (htdp-match/v res pat expr val)
+  (htdp-test res 'pat (match expr [pat val] [else #f])))
+(define-syntax-rule (htdp-match res pat expr)
+  (htdp-match/v res pat expr #t))
+
+(htdp-match #t true true)
+(htdp-match #f true false)
+(htdp-match #f true 1)
+
+(htdp-match #f false true)
+(htdp-match #t false false)
+(htdp-match #f false 1)
+
+(htdp-match #t empty empty)
+(htdp-match #f empty 1)
+
+(htdp-match #t 1 1)
+(htdp-match #t '1 1)
+(htdp-match #t `1 1)
+(htdp-match #f 1 2)
+
+(htdp-match #t "foo" "foo")
+(htdp-match #t '"foo" "foo")
+(htdp-match #t `"foo" "foo")
+(htdp-match #f "foo" "bar")
+
+(htdp-match #t #\a #\a)
+(htdp-match #t '#\a #\a)
+(htdp-match #t `#\a #\a)
+(htdp-match #f #\a #\b)
+
+(htdp-match #t 'a 'a)
+(htdp-match #f 'a 'b)
+
+(htdp-match #t '(a b) (list 'a 'b))
+(htdp-match #t ''a ''a)
+(htdp-match #t '`a '`a)
+(htdp-match #t ',a ',a)
+(htdp-match #t ',@a ',@a)
+
+(htdp-match #t `(a b) (list 'a 'b))
+(htdp-match #t `'a ''a)
+(htdp-match #t ``a '`a)
+
+(htdp-match #t (cons a b) (list 1))
+(htdp-match #f (cons 1 2) 1)
+(htdp-match #t (list a b) (list 1 2))
+(htdp-match #f (list a b) (list 1))
+(htdp-match #t (list* a b) (list 1))
+(htdp-match #f (list* a b) empty)
+
+(htdp-match #t (vector x y) (vector 1 2))
+(htdp-match #f (vector x x) (vector 1 2))
+(htdp-match #t (vector _ _) (vector 1 2))
+(htdp-match #f (vector x y) (vector 1))
+
+(htdp-match #t (box x) (box 1))
+(htdp-match #f (box x) 1)
+
+(htdp-match/v 1 a 1 a)
+
+(htdp-top (define-struct my-posn (x y)))
+(htdp-match/v 3 (struct my-posn (x y)) (make-my-posn 1 2) (+ x y))
+(htdp-top-pop 1)
+
+(htdp-match/v 3 (struct posn (x y)) (make-posn 1 2) (+ x y))
+(htdp-match/v 3 (cons (struct posn (x y)) empty) (cons (make-posn 1 2) empty) (+ x y))
+(htdp-match/v 3 (list* (struct posn (x y)) empty) (list* (make-posn 1 2) empty) (+ x y))
+(htdp-match/v 3 (list (struct posn (x y))) (list (make-posn 1 2)) (+ x y))
+(htdp-match/v 3 (vector (struct posn (x y))) (vector (make-posn 1 2)) (+ x y))
+(htdp-match/v 3 (box (struct posn (x y))) (box (make-posn 1 2)) (+ x y))
+
+(htdp-match/v 3 `,(struct posn (x y)) (make-posn 1 2) (+ x y))
+(htdp-match/v 1 `(a ,b) (list 'a 1) b)
+(htdp-match/v 1 `(a ,@(list b)) (list 'a 1) b)
+
 ;; ----------------------------------------
 
 (report-errs)
