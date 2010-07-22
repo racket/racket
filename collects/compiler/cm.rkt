@@ -57,29 +57,35 @@
                                        p
                                        (rkt->ss p)))]
                        [modes (use-compiled-file-paths)]
-                       [get-zo-date (lambda (name)
-                                      (ormap
-                                       (lambda (mode)
-                                         (file-or-directory-modify-seconds
-                                          (build-path 
-                                           base
-                                           mode
-                                           (path-add-suffix name #".zo"))
-                                          #f
-                                          (lambda () #f)))
-                                       modes))]
-                       [main-zo-date (and (or p-date (not alt-date))
-                                          (get-zo-date name))]
-                       [alt-zo-date (and (or alt-date
-                                             (and (not p-date) 
-                                                  (not alt-date)
-                                                  (not main-zo-date)))
-                                         (get-zo-date (rkt->ss name)))]
-                       [zo-date (or main-zo-date alt-zo-date)]
+                       [get-zo-date+mode (lambda (name)
+                                           (ormap
+                                            (lambda (mode)
+                                              (let ([v (file-or-directory-modify-seconds
+                                                        (build-path 
+                                                         base
+                                                         mode
+                                                         (path-add-suffix name #".zo"))
+                                                        #f
+                                                        (lambda () #f))])
+                                                (and v (cons v mode))))
+                                            modes))]
+                       [main-zo-date+mode (and (or p-date (not alt-date))
+                                               (get-zo-date+mode name))]
+                       [alt-zo-date+mode (and (or alt-date
+                                                  (and (not p-date) 
+                                                       (not alt-date)
+                                                       (not main-zo-date+mode)))
+                                              (get-zo-date+mode (rkt->ss name)))]
+                       [zo-date+mode (or main-zo-date+mode alt-zo-date+mode)]
+                       [zo-date (and zo-date+mode (car zo-date+mode))]
                        [get-zo-path (lambda ()
-                                      (if main-zo-date
-                                          (path-add-suffix name #".zo")
-                                          (path-add-suffix (rkt->ss name) #".zo")))])
+                                      (let-values ([(name mode)
+                                                    (if main-zo-date+mode
+                                                        (values (path-add-suffix name #".zo")
+                                                                (cdr main-zo-date+mode))
+                                                        (values (path-add-suffix (rkt->ss name) #".zo")
+                                                                (cdr (cdr alt-zo-date+mode))))])
+                                        (build-path base mode name)))])
                   (cond
                    [(and zo-date
                          (or (not date)
