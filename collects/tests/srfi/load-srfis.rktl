@@ -24,6 +24,7 @@
 (require srfi/35)
 (require srfi/35)
 (require srfi/40)
+(require srif/41)
 (require srfi/42)
 (require srfi/42ref)
 (require srfi/43)
@@ -43,6 +44,7 @@
 (require srfi/78)
 (require srfi/86)
 (require srfi/87)
+(require srfi/98)
 
 (require srfi/1/list)
 (require srfi/2/and-let)
