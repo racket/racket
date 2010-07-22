@@ -1225,7 +1225,7 @@ path/s is either such a string or a list of them.
 "collects/scribble/text" responsible (eli)
 "collects/scribble/tools/drracket-buttons.rkt" drdr:command-line (gracket-text *)
 "collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line (gracket-text * "skip")
-"collects/scribblings" responsible (mflatt eli robby mathias)
+"collects/scribblings" responsible (mflatt eli robby matthias)
 "collects/scribblings/framework/standard-menus.scrbl" drdr:command-line #f
 "collects/scribblings/guide/contracts-examples/6.rkt" drdr:command-line (racket "-f" *)
 "collects/scribblings/guide/read.scrbl" drdr:command-line #f
