@@ -1,4 +1,4 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
 (require racket/unsafe/ops)
 ((lambda: ((t : Integer))
           (let* ((unboxed-gensym-1 (exact->inexact (sin (* t 6.28))))
