@@ -145,6 +145,8 @@
     (define/override (is-parent-enabled-to-root?)
       #t)
 
+    (define/override (is-view?) #f)
+
     (define/public (flip-screen y)
       (let ([f (tell #:type _NSRect (tell cocoa screen) frame)])
         (- (NSSize-height (NSRect-size f)) y)))

@@ -31,6 +31,28 @@
         x y w h
         style
         label)
+  (inherit register-as-child)
+
+  (define children null)
+
+  (define/public (fix-dc)
+    (for ([child (in-list children)])
+      (send child fix-dc)))
+
+  (define/override (set-size x y w h)
+    (super set-size x y w h)
+    (fix-dc))
+
+  (define/override (maybe-register-as-child parent on?)
+    (register-as-child parent on?))
+  
+  (define/override (register-child child on?)
+    (let ([now-on? (and (memq child children) #t)])
+      (unless (eq? on? now-on?)
+        (set! children 
+              (if on?
+                  (cons child children)
+                  (remq child children))))))
 
   (super-new [parent parent]
              [cocoa
@@ -39,4 +61,3 @@
                      initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint x y)
                                                                 (make-NSSize w h))))]
              [no-show? (memq 'deleted style)]))
-  

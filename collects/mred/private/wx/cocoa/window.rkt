@@ -89,55 +89,57 @@
   (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
          [bit? (lambda (m b) (positive? (bitwise-and m b)))]
          [pos (tell #:type _NSPoint event locationInWindow)]
-         [str (tell #:type _NSString event characters)]
-         [k (new key-event%
-                 [key-code (or
-                            (map-key-code (tell #:type _ushort event keyCode))
-                            (if (string=? "" str)
-                                #\nul
-                                (string-ref str 0)))]
-                 [shift-down (bit? modifiers NSShiftKeyMask)]
-                 [control-down (bit? modifiers NSControlKeyMask)]
-                 [meta-down (bit? modifiers NSCommandKeyMask)]
-                 [alt-down (bit? modifiers NSAlternateKeyMask)]
-                 [x (NSPoint-x pos)]
-                 [y (NSPoint-y pos)]
-                 [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
-                 [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-    (if (send wx wants-all-events?)
-        (begin
-          (queue-window-event wx (lambda ()
-                                   (send wx dispatch-on-char k #f)))
-          #t)
-        (constrained-reply (send wx get-eventspace)
-                           (lambda () (send wx dispatch-on-char k #t))
-                           #t))))
+         [str (tell #:type _NSString event characters)])
+    (let-values ([(x y) (send wx window-point-to-view pos)])
+      (let ([k (new key-event%
+                    [key-code (or
+                               (map-key-code (tell #:type _ushort event keyCode))
+                               (if (string=? "" str)
+                                   #\nul
+                                   (string-ref str 0)))]
+                    [shift-down (bit? modifiers NSShiftKeyMask)]
+                    [control-down (bit? modifiers NSControlKeyMask)]
+                    [meta-down (bit? modifiers NSCommandKeyMask)]
+                    [alt-down (bit? modifiers NSAlternateKeyMask)]
+                    [x (->long x)]
+                    [y (->long y)]
+                    [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                    [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+        (if (send wx wants-all-events?)
+            (begin
+              (queue-window-event wx (lambda ()
+                                       (send wx dispatch-on-char k #f)))
+              #t)
+            (constrained-reply (send wx get-eventspace)
+                               (lambda () (send wx dispatch-on-char k #t))
+                               #t))))))
 
 (define (do-mouse-event wx event kind l? m? r?)
   (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
          [bit? (lambda (m b) (positive? (bitwise-and m b)))]
-         [pos (tell #:type _NSPoint event locationInWindow)]
-         [m (new mouse-event%
-                 [event-type kind]
-                 [left-down l?]
-                 [middle-down m?]
-                 [right-down r?]
-                 [x (->long (NSPoint-x pos))]
-                 [y (->long (send wx flip-client (NSPoint-y pos)))]
-                 [shift-down (bit? modifiers NSShiftKeyMask)]
-                 [control-down (bit? modifiers NSControlKeyMask)]
-                 [meta-down (bit? modifiers NSCommandKeyMask)]
-                 [alt-down (bit? modifiers NSAlternateKeyMask)]
-                 [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
-                 [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-    (if (send wx wants-all-events?)
-        (begin
-          (queue-window-event wx (lambda ()
-                                   (send wx dispatch-on-event m #f)))
-          #t)
-        (constrained-reply (send wx get-eventspace)
-                           (lambda () (send wx dispatch-on-event m #t))
-                           #t))))
+         [pos (tell #:type _NSPoint event locationInWindow)])
+    (let-values ([(x y) (send wx window-point-to-view pos)])
+      (let ([m (new mouse-event%
+                    [event-type kind]
+                    [left-down l?]
+                    [middle-down m?]
+                    [right-down r?]
+                    [x (->long x)]
+                    [y (->long y)]
+                    [shift-down (bit? modifiers NSShiftKeyMask)]
+                    [control-down (bit? modifiers NSControlKeyMask)]
+                    [meta-down (bit? modifiers NSCommandKeyMask)]
+                    [alt-down (bit? modifiers NSAlternateKeyMask)]
+                    [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                    [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+        (if (send wx wants-all-events?)
+            (begin
+              (queue-window-event wx (lambda ()
+                                       (send wx dispatch-on-event m #f)))
+              #t)
+            (constrained-reply (send wx get-eventspace)
+                               (lambda () (send wx dispatch-on-event m #t))
+                               #t))))))
 
 (define window%
   (class object%
@@ -173,7 +175,14 @@
     (define/public (show on?)
       (if on?
           (tellv (send parent get-cocoa-content) addSubview: cocoa)
-          (tellv cocoa removeFromSuperview)))
+          (tellv cocoa removeFromSuperview))
+      (maybe-register-as-child parent on?))
+    (define/public (maybe-register-as-child parent on?)
+      (void))
+    (define/public (register-as-child parent on?)
+      (send parent register-child this on?))
+    (define/public (register-child child on?)
+      (void))
 
     (define/public (is-shown?)
       (and (tell cocoa superview) #t))
@@ -209,6 +218,16 @@
             (- (NSSize-height (NSRect-size r)) 
                (- y (client-y-offset))))))
     (define/public (client-y-offset) 0)
+
+    (define/public (is-view?) #t)
+    (define/public (window-point-to-view pos)
+      (let ([pos (if (is-view?)
+                     (tell #:type _NSPoint (get-cocoa-content) 
+                           convertPoint: #:type _NSPoint pos
+                           fromView: #f)
+                     pos)])
+        (values (NSPoint-x pos)
+                (flip-client (NSPoint-y pos)))))
 
     (define/public (get-x)
       (->long (NSPoint-x (NSRect-origin (get-frame)))))

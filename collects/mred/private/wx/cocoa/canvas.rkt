@@ -66,7 +66,8 @@
              get-client-size
              is-shown-to-root?
              move get-x get-y
-             on-size)
+             on-size
+             register-as-child)
 
     (define vscroll-ok? (and (memq 'vscroll style) #t))
     (define vscroll? vscroll-ok?)
@@ -119,6 +120,9 @@
             [yb (box 0)])
         (get-client-size xb yb)
         (send dc reset-bounds (NSPoint-x p) (NSPoint-y p) (unbox xb) (unbox yb))))
+
+    (define/override (maybe-register-as-child parent on?)
+      (register-as-child parent on?))
 
     (define/public (on-paint) (void))
 
