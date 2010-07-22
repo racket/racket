@@ -35,10 +35,9 @@
   (pattern e:dead-code-opt-expr       #:with opt #'e.opt)
   
   ;; boring cases, just recur down
-  (pattern (#%plain-lambda formals e:opt-expr ...)
-           #:with opt #'(#%plain-lambda formals e.opt ...))
-  (pattern (define-values formals e:opt-expr ...)
-           #:with opt #'(define-values formals e.opt ...))
+  (pattern ((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
+            formals e:opt-expr ...)
+           #:with opt #'(op formals e.opt ...))
   (pattern (case-lambda [formals e:opt-expr ...] ...)
            #:with opt #'(case-lambda [formals e.opt ...] ...))
   (pattern (let-values ([ids e-rhs:opt-expr] ...) e-body:opt-expr ...)

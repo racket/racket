@@ -14,7 +14,7 @@
                         (lambda (x y) #t)))))
   (void)
   ((letrec-values (((for-loop)
-                    (#%plain-lambda
+                    (lambda
                      (fold-var pos)
                      (if (pos-cont? pos)
                          (let-values (((i) (pos->vals pos)))
