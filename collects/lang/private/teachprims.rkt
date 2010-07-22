@@ -504,7 +504,7 @@ namespace.
 
 (define-teach beginner string-whitespace? 
   (lambda (s)
-    (cerr 'string-upper-case? (string? s)  "<string>" s)
+    (cerr 'string-whitespace? (string? s)  "<string>" s)
     (andmap char-whitespace? (string->list s))))
 
 ;; -----------------------------------------------------------------------------
