@@ -42,7 +42,7 @@
 @declare-exporting[lang/htdp-advanced]
 
 @schemegrammar*+qq[
-#:literals (define define-struct lambda λ cond else if and or empty true false require lib planet
+#:literals (define define-struct define-datatype lambda λ cond else if and or empty true false require lib planet
             local let let* letrec time begin begin0 set! delay shared recur when case unless
             check-expect check-within check-error)
 (check-expect check-within check-error require)
@@ -53,7 +53,8 @@
              library-require]
 [definition (define (id id id ...) expr)
             (define id expr)
-            (define-struct id (id ...))]
+            (define-struct id (id ...))
+            (define-datatype id (id id ...) ...)]
 [expr (begin expr expr ...)
       (begin0 expr expr ...)
       (set! id expr)
@@ -126,6 +127,26 @@ additional set of operations:
        : takes an instance of the structure and a value, and changes
        the instance's field to the given value.}
 
+]}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "advanced-define-datatype"]{@scheme[define-datatype]}
+
+@defform[(define-datatype datatypeid [variantid fieldid ...] ...)]{
+                                                                  
+A short-hand for defining a group of related structures. A @scheme[define-datatype] form
+@schemeblock[
+ (define-datatype datatypeid
+   [variantid fieldid (unsyntax @schemeidfont{...})]
+   (unsyntax @schemeidfont{...}))
+]
+is equivalent to
+@schemeblock[
+ (define ((unsyntax @scheme[datatypeid])? x)
+   (or ((unsyntax @scheme[variantid])? x) (unsyntax @schemeidfont{...})))
+ (define-struct variantid (fieldid (unsyntax @schemeidfont{...})))
+ (unsyntax @schemeidfont{...})
 ]}
 
 @; ----------------------------------------------------------------------

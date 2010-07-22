@@ -15,6 +15,7 @@
   (provide (rename-out
             [advanced-define define]
             [advanced-define-struct define-struct]
+            [advanced-define-datatype define-datatype]
             [advanced-lambda lambda]
             [advanced-lambda λ]
             [advanced-app #%app]

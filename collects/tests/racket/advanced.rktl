@@ -300,6 +300,49 @@
   (eval #'(set! s? 12))
   (eval #'(set! set-s-x! 12)))
 
+;; define-datatype
+
+(htdp-syntax-test #'define-datatype #rx"define-datatype: found a use of `define-datatype' that does not follow an open parenthesis")
+(htdp-syntax-test #'(define-datatype) #rx"define-datatype: expected a datatype type name after `define-datatype', but nothing's there")
+(htdp-syntax-test #'(define-datatype dt 10) #rx"define-datatype: expected a variant after the datatype type name in `define-datatype', but found a number")
+(htdp-syntax-test #'(define-datatype dt [v1] 10) #rx"define-datatype: expected a variant after the datatype type name in `define-datatype', but found a number")
+(htdp-syntax-test #'(define-datatype dt v1) #rx"define-datatype: expected a variant after the datatype type name in `define-datatype', but found something else")
+(htdp-syntax-test #'(define-datatype dt [v1 f1 f1]) #rx"define-datatype: in variant `v1': found a field name that was used more than once: f1")
+(htdp-syntax-test #'(define-datatype dt [10]) #rx"define-datatype: expected a variant name, found a number")
+(htdp-syntax-test #'(define-datatype dt [(v1)]) #rx"define-datatype: expected a variant name, found something else")
+(htdp-syntax-test #'(define-datatype dt [v1 10]) #rx"define-datatype: in variant `v1': expected a field name, found a number")
+(htdp-syntax-test #'(define-datatype dt [v1] [v1]) #rx"define-datatype: found a variant name that was used more than once: v1")
+(htdp-syntax-test #'(define-datatype posn [v1]) #rx"posn\\?: this name has a built-in meaning and cannot be re-defined")
+(htdp-syntax-test #'(define-datatype dt [posn]) #rx"posn: this name has a built-in meaning and cannot be re-defined")
+(htdp-syntax-test #'(define-datatype lambda [v1]) #rx"define-datatype: expected a datatype type name after `define-datatype', but found a keyword")
+(htdp-syntax-test #'(define-datatype dt [lambda]) #rx"define-datatype: expected a variant name, found a keyword")
+(htdp-syntax-test #'(define-datatype (dt)) #rx"define-datatype: expected a datatype type name after `define-datatype', but found something else")
+(htdp-syntax-test #'(+ 1 (define-datatype dt [v1])) #rx"define-datatype: found a definition that is not at the top level")
+
+(htdp-top (define-datatype dt))
+(htdp-test #f 'dt? (dt? 1))
+(htdp-top-pop 1)
+
+(htdp-top (define x 5))
+(htdp-syntax-test #'(define-datatype x [v1]) #rx"x: this name was defined previously and cannot be re-defined")
+(htdp-syntax-test #'(define-datatype dt [x]) #rx"x: this name was defined previously and cannot be re-defined")
+(htdp-top-pop 1)
+
+(htdp-top (define-datatype a
+            [a0]
+            [a1 b]
+            [a3 b c d]))
+(htdp-test #t 'a0? (a0? (make-a0)))
+(htdp-test #t 'a? (a? (make-a0)))
+(htdp-test #t 'a1? (a1? (make-a1 1)))
+(htdp-test #t 'a? (a? (make-a1 1)))
+(htdp-test #t 'a3? (a3? (make-a3 1 2 3)))
+(htdp-test #t 'a? (a? (make-a3 1 2 3)))
+(htdp-test #f 'a1? (a1? (make-a3 1 2 3)))
+(htdp-test #f 'a3? (a3? (make-a1 1)))
+(htdp-test #f 'a? (a? 1))
+(htdp-top-pop 1)
+
 ;; ----------------------------------------
 
 (report-errs)

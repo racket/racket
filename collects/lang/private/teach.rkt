@@ -203,6 +203,7 @@
 			      advanced-when
 			      advanced-unless
 			      advanced-define-struct
+                              advanced-define-datatype
 			      advanced-let
 			      advanced-recur
 			      advanced-begin
@@ -930,6 +931,109 @@
 
     (define (intermediate-define-struct/proc stx)
       (do-define-struct stx #f #f))
+    
+    (define (advanced-define-datatype/proc stx)
+      (unless (or (ok-definition-context)
+                  (identifier? stx))
+        (teach-syntax-error
+         'define-datatype
+         stx
+         #f
+         "found a definition that is not at the top level"))
+      
+      (syntax-case stx ()
+        
+        ;; First, check for a datatype name:
+	[(_ name . __)
+	 (not (identifier/non-kw? (syntax name)))
+	 (teach-syntax-error
+	  'define-datatype
+	  stx
+	  (syntax name)
+	  "expected a datatype type name after `define-datatype', but found ~a"
+	  (something-else/kw (syntax name)))]
+        
+        [(_ name (variant field ...) ...)
+         
+         (let ([find-duplicate
+                (λ (stxs fail-k)
+                  (define ht (make-hash-table))
+                  (for-each
+                   (λ (s)
+                     (define sym (syntax-e s))
+                     (when (hash-table-get ht sym (λ () #f))
+                       (fail-k s))
+                     (hash-table-put! ht sym #t))
+                   (syntax->list stxs)))])
+           (for-each 
+            (λ (v)
+              (unless (identifier/non-kw? v)
+                (teach-syntax-error
+                 'define-datatype
+                 stx
+                 v
+                 "expected a variant name, found ~a"
+                 (something-else/kw v))))
+            (syntax->list #'(variant ...)))
+           (find-duplicate #'(variant ...)
+                           (λ (v-stx)
+                             (define v (syntax-e v-stx))
+                             (teach-syntax-error
+                              'define-datatype
+                              stx
+                              v-stx
+                              "found a variant name that was used more than once: ~a"
+                              v)))              
+           
+           (for-each
+            (λ (vf)
+              (with-syntax ([(variant field ...) vf])
+                (for-each
+                 (λ (f)
+                   (unless (identifier? f)
+                     (teach-syntax-error
+                      'define-datatype
+                      stx
+                      f
+                      "in variant `~a': expected a field name, found ~a"
+                      (syntax-e #'variant)
+                      (something-else f))))
+                 (syntax->list #'(field ...)))
+                (find-duplicate #'(field ...)
+                                (λ (f-stx)
+                                  (teach-syntax-error
+                                   'define-datatype
+                                   stx
+                                   f-stx
+                                   "in variant `~a': found a field name that was used more than once: ~a"
+                                   (syntax-e #'variant)
+                                   (syntax-e f-stx))))))
+            (syntax->list #'((variant field ...) ...))))
+         
+         (with-syntax ([(name? variant? ...)
+                        (map (lambda (stx)
+                               (datum->syntax stx (string->symbol (format "~a?" (syntax->datum stx)))))
+                             (syntax->list #'(name variant ...)))])
+           (syntax/loc stx
+              (begin (advanced-define (name? x)
+                                      (or (variant? x) ...))
+                     (advanced-define-struct variant (field ...))
+                     ...)))]
+        [(_ name_ (variant field ...) ... something . rest)
+	 (teach-syntax-error
+	  'define-datatype
+	  stx
+	  (syntax something)
+	  "expected a variant after the datatype type name in `define-datatype', ~
+         but found ~a"
+	  (something-else (syntax something)))]
+	[(_)
+	 (teach-syntax-error
+	  'define-datatype
+	  stx
+	  #f
+	  "expected a datatype type name after `define-datatype', but nothing's there")]
+	[_else (bad-use-error 'define-datatype stx)]))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; application (beginner and intermediate)
