@@ -5154,6 +5154,7 @@ EXTRALIBS=
 
 # for gmp assembly:
 EXTRA_GMP_OBJ=
+EXTRA_GMP_DEP=
 
 # For Racket targets:
 OSX=".osx"
@@ -5212,6 +5213,7 @@ case $OS in
        ;;
       alpha)
        EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
+       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
        ;;
       i386|i486|i586|i686)
        enable_futures_by_default=yes
@@ -5226,6 +5228,7 @@ case $OS in
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then
       EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
+      EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
     fi
     ;;
   HP-UX)
@@ -5261,7 +5264,6 @@ case $OS in
     ;;
   Darwin)
 
-  # Check for libraries that X11R6 Xt/Xaw programs need.
     if test "${enable_sdk}" != "" ; then
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4 -DEXTRA_EXCEPTION_STUBS"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4"
@@ -9486,6 +9488,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -10274,7 +10277,6 @@ WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
 LIBFINISH!$LIBFINISH$ac_delim
-MAKE_GRACKET!$MAKE_GRACKET$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -10316,6 +10318,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+MAKE_GRACKET!$MAKE_GRACKET$ac_delim
 MAKE_WBUILD!$MAKE_WBUILD$ac_delim
 MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 MAKE_FINISH!$MAKE_FINISH$ac_delim
@@ -10350,7 +10353,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 32; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 33; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
