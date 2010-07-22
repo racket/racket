@@ -82,29 +82,28 @@
     @h2{Option 1: Installer}
     @content-hole
     @version-hole
-    extra
-    @p{@table[width: "80%" align: 'center]{
-         @tr{@td[valign: 'top]{Installers:}
-             @td{@nbsp}
-             @td{@dl{@dt{@b{Racket}}
-                     @dd{Same as the normal distribution, containing the basic
-                         systems and DrRacket.}
-                     @dt{@b{Racket Textual}}
-                     @dd{A small distribution that contains only Racket and
-                         console applications based on it, including the Racket
-                         web server.  No docs and no GUI applications.}
-                     @dt{@b{Racket Full}}
-                     @dd{Contains the @i{complete} Racket tree from @git,
-                         including full documentation, full source tree,
-                         libraries that are not completely stable, and esoteric
-                         material.}}}}
-         @tr{@td[colspan: 3]{
-               Note: the default installation directory contains the version
-               number to avoid clobbering a normal installation.
-               @small{Under Windows, registry names are different, too.}}}}}
+    @table[width: "80%" align: 'center]{
+      @tr{@td[valign: 'top]{Installers:}
+          @td{@nbsp}
+          @td{@dl*{@~ @b{Racket}
+                   @~ Same as the normal distribution, containing the basic
+                      systems and DrRacket.
+                   @~ @b{Racket Textual}
+                   @~ A small distribution that contains only Racket and
+                      console applications based on it, including the Racket
+                      web server.  No docs and no GUI applications.
+                   @~ @b{Racket Full}
+                   @~ Contains the @i{complete} Racket tree from the
+                      @git{repository}, including full documentation, full
+                      source tree, libraries that are not completely stable,
+                      and esoteric material.}}}
+      @tr{@td[colspan: 3]{
+            Note: the default installation directory contains the version
+            number to avoid clobbering a normal installation.
+            @small{(Under Windows, registry names are different, too.)}}}}
     @; ----------------------------------------
     @h2{Option 2: git Repository}
-    @p{Full source is available from @|git|.}
+    @p{Full source is available from the @git{repository}.}
     @; ----------------------------------------
     @h2{Option 3: Other}
     @p{Want Racket sources from @git but don't want to build binaries?
