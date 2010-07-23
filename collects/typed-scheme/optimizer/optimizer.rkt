@@ -8,7 +8,7 @@
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)
          (optimizer utils number fixnum float inexact-complex vector string
-                    pair sequence box struct dead-code apply))
+                    pair sequence box struct dead-code apply unboxed-let))
 
 (provide optimize-top)
 
@@ -33,6 +33,7 @@
   (pattern e:box-opt-expr             #:with opt #'e.opt)
   (pattern e:struct-opt-expr          #:with opt #'e.opt)
   (pattern e:dead-code-opt-expr       #:with opt #'e.opt)
+  (pattern e:unboxed-let-opt-expr     #:with opt #'e.opt)
   
   ;; boring cases, just recur down
   (pattern ((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
@@ -40,12 +41,15 @@
            #:with opt #'(op formals e.opt ...))
   (pattern (case-lambda [formals e:opt-expr ...] ...)
            #:with opt #'(case-lambda [formals e.opt ...] ...))
-  (pattern (let-values ([ids e-rhs:opt-expr] ...) e-body:opt-expr ...)
-           #:with opt #'(let-values ([ids e-rhs.opt] ...) e-body.opt ...))
-  (pattern (letrec-values ([ids e-rhs:opt-expr] ...) e-body:opt-expr ...)
-           #:with opt #'(letrec-values ([ids e-rhs.opt] ...) e-body.opt ...))
-  (pattern (letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs:opt-expr] ...) e-body:opt-expr ...)
-           #:with opt #'(letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs.opt] ...) e-body.opt ...))
+  (pattern ((~and op (~or (~literal let-values) (~literal letrec-values)))
+            ([ids e-rhs:opt-expr] ...) e-body:opt-expr ...)
+           #:with opt #'(op ([ids e-rhs.opt] ...) e-body.opt ...))
+  (pattern (letrec-syntaxes+values stx-bindings
+                                   ([(ids ...) e-rhs:opt-expr] ...)
+                                   e-body:opt-expr ...)
+           #:with opt #'(letrec-syntaxes+values stx-bindings
+                                                ([(ids ...) e-rhs.opt] ...)
+                                                e-body.opt ...))
   (pattern (kw:identifier expr ...)
            #:when 
 	   (for/or ([k (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression

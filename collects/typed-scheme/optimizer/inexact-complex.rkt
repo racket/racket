@@ -1,13 +1,18 @@
 #lang scheme/base
 
-(require syntax/parse
+(require syntax/parse syntax/id-table scheme/dict
          "../utils/utils.rkt"
          (for-template scheme/base scheme/math scheme/flonum scheme/unsafe/ops)
          (types abbrev type-table utils subtype)
          (optimizer utils float fixnum))
 
-(provide inexact-complex-opt-expr)
+(provide inexact-complex-opt-expr inexact-complex-arith-opt-expr
+         unboxed-inexact-complex-opt-expr unboxed-vars-table)
 
+
+;; contains the bindings which actually exist as separate bindings for each component
+;; associates identifiers to lists (real-part imag-part)
+(define unboxed-vars-table (make-free-id-table))
 
 ;; it's faster to take apart a complex number and use unsafe operations on
 ;; its parts than it is to use generic operations
@@ -209,11 +214,10 @@
 
   ;; if we see a variable that's already unboxed, use the unboxed bindings
   (pattern v:id
-           #:with unboxed-real-part (syntax-property #'v 'unboxed-real-part)
-           #:with unboxed-imag-part (syntax-property #'v 'unboxed-imag-part)
-           #:when (and (syntax-e #'unboxed-real-part) (syntax-e #'unboxed-imag-part))
-           #:with real-part #'unboxed-real-part
-           #:with imag-part #'unboxed-imag-part
+           #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
+           #:when (syntax->datum #'unboxed-info)
+           #:with real-part (car  (syntax->list #'unboxed-info))
+           #:with imag-part (cadr (syntax->list #'unboxed-info))
            #:with (bindings ...) #'())
   
   ;; else, do the unboxing here  
