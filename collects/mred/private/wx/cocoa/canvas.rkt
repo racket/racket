@@ -40,7 +40,7 @@
               (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
                                                  (make-NSSize 32000 32000))))
             (tellv ctx restoreGraphicsState))))
-      (send wx refresh))
+      (send wx queue-paint))
   (-a _void (viewWillMoveToWindow: [_id w])
       (when wx
         (queue-window-event wx (lambda () (send wx fix-dc)))))
@@ -77,13 +77,16 @@
     (define canvas-style style)
 
     (define paint-queued? #f)
-    (define/override (refresh)
+    (define/public (queue-paint)
       ;; can be called from any thread, including the event-pump thread
       (unless paint-queued?
         (set! paint-queued? #t)
         (queue-window-event this (lambda () 
                                    (set! paint-queued? #f)
                                    (on-paint)))))
+
+    (define/override (refresh)
+      (tellv content-cocoa setNeedsDisplay: #:type _BOOL #t))
 
     (define/override (get-cocoa-content) content-cocoa)
 
@@ -108,7 +111,7 @@
 
     (define dc (make-object dc% (make-graphics-context) 0 0 10 10))
 
-    (refresh)
+    (queue-paint)
     
     (define/public (get-dc) dc)
 

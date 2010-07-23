@@ -266,7 +266,7 @@
     (define/public (set-focus)
       (let ([w (tell cocoa window)])
         (when w
-          (tellv w makeFirstResponder: cocoa))))
+          (tellv w makeFirstResponder: (get-cocoa-content)))))
     (define/public (on-set-focus) (void))
     (define/public (on-kill-focus) (void))
 

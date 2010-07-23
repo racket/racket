@@ -215,7 +215,9 @@
             #t
             (make-editor-canvas% (make-control% wx:editor-canvas%
                                                 0 0 #t #t)))
-      (inherit editor-canvas-on-scroll)
+      (inherit editor-canvas-on-scroll
+               set-no-expose-focus)
       (define/override (on-scroll e)
         (editor-canvas-on-scroll))
-      (super-new))))
+      (super-new)
+      (set-no-expose-focus))))

@@ -52,7 +52,8 @@
 (define-gtk gtk_widget_size_request (_fun _GtkWidget _GtkRequisition-pointer -> _void))
 (define-gtk gtk_widget_size_allocate (_fun _GtkWidget _GtkAllocation-pointer -> _void))
 (define-gtk gtk_widget_set_size_request (_fun _GtkWidget _int _int -> _void))
-(define-gtk gtk_widget_grab_focus (_fun _GtkWidget -> _gboolean))
+(define-gtk gtk_widget_grab_focus (_fun _GtkWidget -> _void))
+(define-gtk gtk_widget_is_focus (_fun _GtkWidget -> _gboolean))
 (define-gtk gtk_widget_set_sensitive (_fun _GtkWidget _gboolean -> _void))
 
 ;; ----------------------------------------
@@ -105,6 +106,8 @@
 (define-signal-handler connect-button-press "button-press-event"
   (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)
   (lambda (gtk event)
+    (unless (gtk_widget_is_focus gtk)
+      (gtk_widget_grab_focus gtk))
     (do-button-event gtk event #f #f)))
 
 (define-signal-handler connect-button-release "button-release-event"
@@ -288,7 +291,7 @@
     (define/public (drag-accept-files on?) (void))
 
     (define/public (set-focus)
-      (gtk_widget_grab_focus gtk))
+      (gtk_widget_grab_focus (get-client-gtk)))
 
     (define/public (set-cursor v)
       (void))

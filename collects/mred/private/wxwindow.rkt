@@ -180,7 +180,10 @@
        [old-w -1]
        [old-h -1]
        [old-x -1]
-       [old-y -1])
+       [old-y -1]
+       [expose-focus? #t])
+      (public
+        [set-no-expose-focus (lambda () (set! expose-focus? #f))])
       (override
 	[on-drop-file (entry-point
 		       (lambda (f)
@@ -210,6 +213,12 @@
 			       (set! old-x x)
 			       (set! old-y y)
 			       (as-exit (lambda () (send mred on-move x y)))))))))))]
+	[on-set-focus (lambda () 
+                        (super on-set-focus)
+                        (when expose-focus? (send (get-proxy) on-focus #t)))]
+	[on-kill-focus (lambda () 
+                         (super on-kill-focus)
+                         (when expose-focus? (send (get-proxy) on-focus #f)))]
 	[pre-on-char (lambda (w e)
 		       (or (super pre-on-char w e)
                            (if (skip-subwindow-events?)
