@@ -62,9 +62,9 @@
     (syntax-parse exp
       #:literal-sets (kernel-literals)
       
-      ;; used within a complex arithmetic expression? safe to unbox
+      ;; can be used in a complex arithmetic expr, can be a direct child
       [exp:inexact-complex-arith-opt-expr
-       (direct-child-of? #'exp)]
+       (andmap rec (syntax->list #'exp))]
       
       ;; recur down
       [((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
