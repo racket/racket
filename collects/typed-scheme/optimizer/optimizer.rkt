@@ -8,7 +8,7 @@
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)
          (optimizer utils number fixnum float inexact-complex vector string
-                    pair sequence box struct dead-code))
+                    pair sequence box struct dead-code apply))
 
 (provide optimize-top)
 
@@ -21,6 +21,7 @@
   #:literal-sets (kernel-literals)
 
   ;; interesting cases, where something is optimized
+  (pattern e:apply-opt-expr           #:with opt #'e.opt)
   (pattern e:number-opt-expr          #:with opt #'e.opt)
   (pattern e:fixnum-opt-expr          #:with opt #'e.opt)
   (pattern e:float-opt-expr           #:with opt #'e.opt)
@@ -47,9 +48,10 @@
   (pattern (letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs:opt-expr] ...) e-body:opt-expr ...)
            #:with opt #'(letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs.opt] ...) e-body.opt ...))
   (pattern (kw:identifier expr ...)
-           #:when (ormap (lambda (k) (free-identifier=? k #'kw))
-                         (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
-                               #'#%variable-reference #'with-continuation-mark))
+           #:when 
+	   (for/or ([k (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
+			     #'#%variable-reference #'with-continuation-mark)])
+	     (free-identifier=? k #'kw))
            ;; we don't want to optimize in the cases that don't match the #:when clause
            #:with (expr*:opt-expr ...) #'(expr ...)
            #:with opt #'(kw expr*.opt ...))
@@ -64,12 +66,8 @@
                   (current-output-port))))
     (begin0
       (parameterize ([current-output-port port]
-                     [optimize (lambda (stx)
-                                 (syntax-parse stx #:literal-sets (kernel-literals)
-                                               [e:opt-expr
-                                                (syntax/loc stx e.opt)]))])
+                     [optimize (syntax-parser [e:opt-expr #'e.opt])])
         ((optimize) stx))
-      (if (and *log-optimizations?*
-               *log-optimizatons-to-log-file?*)
-          (close-output-port port)
-          #t))))
+      (when (and *log-optimizations?*
+                 *log-optimizatons-to-log-file?*)
+        (close-output-port port)))))
