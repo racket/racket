@@ -2,8 +2,10 @@
 
 (require racket/file
          racket/future
-         racket/match
+         scheme/fasl
+         scheme/match
          racket/path
+         scheme/serialize
          unstable/generics
          racket/stxparam
          (for-syntax syntax/parse
@@ -47,7 +49,7 @@
       (when initialcode
         (send/msg initialcode in))
       (when initialmsg 
-        (send/msg (initialmsg id) in))
+        (send/msg (s-exp->fasl (serialize (initialmsg id))) in))
       (make-worker id process-handle out in err)))
   (define (kill-worker wrkr)
     (match wrkr
@@ -166,7 +168,7 @@
             (lambda (x)
                 (fprintf orig-err "WORKER RECEIVE MESSAGE ERROR ~a~n" (exn-message x)))])
           (read)))
-        (match (pdo-recv)
+        (match (deserialize (fasl->s-exp (pdo-recv)))
           [globals-list
             globals-body ...
             (let loop ()
