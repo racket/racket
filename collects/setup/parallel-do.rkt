@@ -82,7 +82,8 @@
                                   (send/msg cmd-list in))])
                             (loop idle (cons (list job wrkr) inflight) count)))]
                      ;; Queue empty and all workers idle, we are all done
-                     [(list (and (? empty?) idle) (list) count) (void)]
+                     [(list (and (? empty?) idle) (list) count) 
+                      (set! workers idle)]
                      ;; Wait for reply from worker
                      [(list idle inflight count)
                        (apply sync (map (λ (node-worker) (match node-worker
@@ -180,7 +181,7 @@
                         (send/resp (list 'DONE result)))
                     (define (send/errorp message)
                         (send/resp (list 'ERROR message)))
-                    (with-handlers ([exn:fail? (lambda (x) (send/errorp (exn-message x)))])
+                    (with-handlers ([exn:fail? (lambda (x) (send/errorp (exn-message x)) (loop))])
                       (parameterize ([current-output-port out-str-port]
                                      [current-error-port err-str-port])
                       (syntax-parameterize ([send/success (make-rename-transformer #'send/successp)]
