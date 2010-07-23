@@ -1776,7 +1776,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/struct.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/structlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/stx.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/subprocess.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/subprocess.rktl" drdr:command-line (racket "-f" *) drdr:random #t
 "collects/tests/racket/sync.rktl" drdr:command-line #f
 "collects/tests/racket/syntax-tests.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/syntax.rktl" drdr:command-line #f
