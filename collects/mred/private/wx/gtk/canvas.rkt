@@ -56,8 +56,7 @@
       (when gc
         (gdk_draw_rectangle (g_object_get_window gtk) gc #t
                             0 0 32000 32000)))
-    (queue-window-event wx (lambda ()
-                             (send wx on-paint))))
+    (send wx queue-paint))
   #t)
 (define handle_expose
   (function-ptr handle-expose (_fun #:atomic? #t _GtkWidget _GdkEventExpose -> _gboolean)))
@@ -171,6 +170,26 @@
     (define/override (get-client-gtk) client-gtk)
     (define/override (handles-events?) #t)
 
+    ;; Avoid multiple queued paints:
+    (define paint-queued? #f)
+    ;; To handle paint requests that happen while on-paint
+    ;;  is being called already:
+    (define now-drawing? #f)
+    (define refresh-after-drawing? #f)
+
+    (define/public (queue-paint)
+      ;; can be called from any thread, including the event-pump thread
+      (unless paint-queued?
+        (set! paint-queued? #t)
+        (queue-window-event this (lambda () 
+                                   (set! paint-queued? #f)
+                                   (set! now-drawing? #t)
+                                   (on-paint)
+                                   (set! now-drawing? #f)
+                                   (when refresh-after-drawing?
+                                     (set! refresh-after-drawing? #f)
+                                     (refresh))))))
+
     (define/public (on-paint) (void))
 
     (define/override (refresh)
@@ -235,17 +254,21 @@
     (define/public (get-canvas-background) bg-col)
     (define/public (set-canvas-background col) (set! bg-col col))
     (define/public (get-canvas-background-for-clearing) 
-      (if clear-bg?
-          (let ([conv (lambda (x) (bitwise-ior x (arithmetic-shift x 8)))])
-            (unless gc
-              (let ([w (g_object_get_window gtk)])
-                (set! gc (gdk_gc_new w))))
-            (gdk_gc_set_rgb_fg_color gc (make-GdkColor 0
-                                                       (conv (color-red bg-col))
-                                                       (conv (color-green bg-col))
-                                                       (conv (color-blue bg-col))))
-            gc)
-          #f))
+      (if now-drawing?
+          (begin
+            (set! refresh-after-drawing? #t)
+            #f)
+          (if clear-bg?
+              (let ([conv (lambda (x) (bitwise-ior x (arithmetic-shift x 8)))])
+                (unless gc
+                  (let ([w (g_object_get_window gtk)])
+                    (set! gc (gdk_gc_new w))))
+                (gdk_gc_set_rgb_fg_color gc (make-GdkColor 0
+                                                           (conv (color-red bg-col))
+                                                           (conv (color-green bg-col))
+                                                           (conv (color-blue bg-col))))
+                gc)
+              #f)))
 
     (def/public-unimplemented set-background-to-gray)
 

@@ -32,11 +32,15 @@
                       appName))))))
    "MrEd"))
 
+(define the-apple-menu #f)
+
 (define-objc-class MyBarMenu NSMenu
   []
-  ;; Disable automatic handling of keyboard shortcuts
+  ;; Disable automatic handling of keyboard shortcuts, except for
+  ;;  the Apple menu
   (-a _BOOL (performKeyEquivalent: [_id evt])
-      #f))
+      (and the-apple-menu
+           (tell #:type _BOOL the-apple-menu performKeyEquivalent: evt))))
 
 (define cocoa-mb (tell (tell MyBarMenu alloc) init))
 (define current-mb #f)
@@ -108,7 +112,8 @@
     (add-one cocoa-mb apple)
     (tellv app setAppleMenu: apple)
     (tellv apple release)
-    (tellv app setMainMenu: cocoa-mb)))
+    (tellv app setMainMenu: cocoa-mb)
+    (set! the-apple-menu apple)))
 
 (defclass menu-bar% object%
   (define menus null)
