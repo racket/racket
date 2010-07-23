@@ -22,7 +22,7 @@
            #:with ((candidates ...) (others ...))
            (let-values
                (((candidates others)
-                 ;; clauses of form ((v) rhs), currently only suppose 1 lhs var
+                 ;; clauses of form ((v) rhs), currently only supports 1 lhs var
                  (partition (lambda (p)
                               (and (isoftype? (cadr p) -InexactComplex)
                                    (let ((v (car (syntax-e (car p)))))
