@@ -129,12 +129,23 @@
     (define/override (set-size x y w h)
       (do-set-size x y w h))
 
+    (define tr 0)
+
     (define/private (do-set-size x y w h)
       (super set-size x y w h)
+      (when tr
+        (tellv content-cocoa removeTrackingRect: #:type _NSInteger tr)
+        (set! tr #f))
       (let ([sz (make-NSSize (- w (if vscroll? scroll-width 0))
                              (- h (if hscroll? scroll-width 0)))]
             [pos (make-NSPoint 0 (if hscroll? scroll-width 0))])
-        (tellv content-cocoa setFrame: #:type _NSRect (make-NSRect pos sz)))
+        (tellv content-cocoa setFrame: #:type _NSRect (make-NSRect pos sz))
+        (set! tr (tell #:type _NSInteger
+                       content-cocoa
+                       addTrackingRect: #:type _NSRect (make-NSRect (make-NSPoint 0 0) sz)
+                       owner: content-cocoa
+                       userData: #f
+                       assumeInside: #:type _BOOL #f)))
       (when v-scroller
         (tellv (scroller-cocoa v-scroller) setFrame: #:type _NSRect
                (make-NSRect

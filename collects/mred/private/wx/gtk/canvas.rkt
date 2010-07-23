@@ -153,7 +153,9 @@
                                                    GDK_BUTTON_PRESS_MASK
                                                    GDK_BUTTON_RELEASE_MASK
                                                    GDK_POINTER_MOTION_MASK
-                                                   GDK_FOCUS_CHANGE_MASK))
+                                                   GDK_FOCUS_CHANGE_MASK
+                                                   GDK_ENTER_NOTIFY_MASK
+                                                   GDK_LEAVE_NOTIFY_MASK))
     (set-gtk-object-flags! client-gtk (bitwise-ior (get-gtk-object-flags client-gtk)
                                                    GTK_CAN_FOCUS))
 

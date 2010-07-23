@@ -64,7 +64,7 @@
     (eq? et 'enter))
 
   (def/public (leaving?)
-    (eq? et 'leaving))
+    (eq? et 'leave))
 
   (def/public (moving?)
     (and (eq? et 'motion)

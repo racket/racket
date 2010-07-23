@@ -16,7 +16,9 @@
          _GdkEventKey _GdkEventKey-pointer
          (struct-out GdkEventKey)
          _GdkEventMotion _GdkEventMotion-pointer
-         (struct-out GdkEventMotion))
+         (struct-out GdkEventMotion)
+         _GdkEventCrossing _GdkEventCrossing-pointer
+         (struct-out GdkEventCrossing))
 
 (define _GdkWindow (_cpointer/null 'GdkWindow))
 
@@ -71,3 +73,16 @@
                                  [device _GdkDevice]
                                  [x_root _double]
                                  [y_root _double]))
+
+(define-cstruct _GdkEventCrossing ([type _GdkEventType]
+                                   [window _GdkWindow]
+                                   [send_event _byte]
+                                   [time _uint32]
+                                   [x _double]
+                                   [y _double]
+                                   [x_root _double]
+                                   [y_root _double]
+                                   [mode _int]
+                                   [detail _int]
+                                   [focus _gboolean]
+                                   [state _uint]))

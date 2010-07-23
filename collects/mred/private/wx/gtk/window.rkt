@@ -105,39 +105,59 @@
 (define-signal-handler connect-button-press "button-press-event"
   (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)
   (lambda (gtk event)
-    (do-button-event gtk event #f)))
+    (do-button-event gtk event #f #f)))
 
 (define-signal-handler connect-button-release "button-release-event"
   (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)
   (lambda (gtk event)
-    (do-button-event gtk event #f)))
+    (do-button-event gtk event #f #f)))
 
 (define-signal-handler connect-pointer-motion "motion-notify-event"
   (_fun _GtkWidget _GdkEventMotion-pointer -> _gboolean)
   (lambda (gtk event)
-    (do-button-event gtk event #t)))
+    (do-button-event gtk event #t #f)))
+
+(define-signal-handler connect-enter "enter-notify-event"
+  (_fun _GtkWidget _GdkEventCrossing-pointer -> _gboolean)
+  (lambda (gtk event)
+    (do-button-event gtk event #f #t)))
+
+(define-signal-handler connect-leave "leave-notify-event"
+  (_fun _GtkWidget _GdkEventCrossing-pointer -> _gboolean)
+  (lambda (gtk event)
+    (do-button-event gtk event #f #t)))
 
 (define (connect-key-and-mouse gtk)
   (connect-key-press gtk)
   (connect-button-press gtk)
   (connect-button-release gtk)
-  (connect-pointer-motion gtk))
+  (connect-pointer-motion gtk)
+  (connect-enter gtk)
+  (connect-leave gtk))
 
-(define (do-button-event gtk event motion?)
+(define (do-button-event gtk event motion? crossing?)
   (let ([type (if motion?
                   GDK_MOTION_NOTIFY
-                  (GdkEventButton-type event))])
+                  (if crossing?
+                      (GdkEventCrossing-type event)
+                      (GdkEventButton-type event)))])
     (unless (or (= type GDK_2BUTTON_PRESS)
                 (= type GDK_3BUTTON_PRESS))
       (let* ([wx (gtk->wx gtk)]
              [modifiers (if motion?
                             (GdkEventMotion-state event)
-                            (GdkEventButton-state event))]
+                            (if crossing?
+                                (GdkEventCrossing-state event)
+                                (GdkEventButton-state event)))]
              [bit? (lambda (m v) (positive? (bitwise-and m v)))]
              [m (new mouse-event%
                      [event-type (cond
                                   [(= type GDK_MOTION_NOTIFY)
                                    'motion]
+                                  [(= type GDK_ENTER_NOTIFY)
+                                   'enter]
+                                  [(= type GDK_LEAVE_NOTIFY)
+                                   'leave]
                                   [(= type GDK_BUTTON_PRESS)
                                    (case (GdkEventButton-button event)
                                      [(1) 'left-down]
@@ -151,13 +171,20 @@
                      [left-down (bit? modifiers GDK_BUTTON1_MASK)]
                      [middle-down (bit? modifiers GDK_BUTTON2_MASK)]
                      [right-down (bit? modifiers GDK_BUTTON2_MASK)]
-                     [x (->long ((if motion? GdkEventMotion-x GdkEventButton-x) event))]
-                     [y (->long ((if motion? GdkEventMotion-y GdkEventButton-y) event))]
+                     [x (->long ((if motion? 
+                                     GdkEventMotion-x 
+                                     (if crossing? GdkEventCrossing-x GdkEventButton-x))
+                                 event))]
+                     [y (->long ((if motion? GdkEventMotion-y 
+                                     (if crossing? GdkEventCrossing-y GdkEventButton-y))
+                                 event))]
                      [shift-down (bit? modifiers GDK_SHIFT_MASK)]
                      [control-down (bit? modifiers GDK_CONTROL_MASK)]
                      [meta-down (bit? modifiers GDK_META_MASK)]
                      [alt-down (bit? modifiers GDK_MOD1_MASK)]
-                     [time-stamp ((if motion? GdkEventMotion-time GdkEventButton-time) event)]
+                     [time-stamp ((if motion? GdkEventMotion-time 
+                                      (if crossing? GdkEventCrossing-time GdkEventButton-time))
+                                  event)]
                      [caps-down (bit? modifiers GDK_LOCK_MASK)])])
         (if (send wx handles-events?)
             (begin

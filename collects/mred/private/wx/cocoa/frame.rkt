@@ -110,6 +110,8 @@
     (define cocoa (get-cocoa))
     (tellv cocoa setDelegate: cocoa)
 
+    (tellv cocoa setAcceptsMouseMovedEvents: #:type _BOOL #t)
+
     (define/override (get-cocoa-content) 
       (tell cocoa contentView))
     (define/override (get-cocoa-window) cocoa)
