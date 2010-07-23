@@ -69,7 +69,12 @@
                   (current-output-port))))
     (begin0
       (parameterize ([current-output-port port]
-                     [optimize (syntax-parser [e:opt-expr #'e.opt])])
+                     [optimize (syntax-parser
+                                [e:expr
+                                 #:when (not (syntax-property #'e 'typechecker:ignore))
+                                 #:with e*:opt-expr #'e
+                                 #'e*.opt]
+                                [e:expr #'e])])
         ((optimize) stx))
       (when (and *log-optimizations?*
                  *log-optimizatons-to-log-file?*)
