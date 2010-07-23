@@ -19,6 +19,7 @@
          set-eventspace-hook!
          set-front-hook!
          set-menu-bar-hooks!
+         post-dummy-event
 
          ;; from common/queue:
          current-eventspace

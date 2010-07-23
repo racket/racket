@@ -37,7 +37,7 @@
 (define-glib g_main_context_query (_fun _GMainContext
 					_int
 					_pointer
-					_GPollFD-pointer
+					_pointer ;; GPollFD array
 					_int
 					-> _int))
 

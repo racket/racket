@@ -10,6 +10,7 @@
          "types.rkt"
          "window.rkt"
          "dc.rkt"
+         "queue.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
          "../../syntax.rkt"
@@ -40,7 +41,9 @@
               (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
                                                  (make-NSSize 32000 32000))))
             (tellv ctx restoreGraphicsState))))
-      (send wx queue-paint))
+      (send wx queue-paint)
+      ;; ensure that `nextEventMatchingMask:' returns
+      (post-dummy-event))
   (-a _void (viewWillMoveToWindow: [_id w])
       (when wx
         (queue-window-event wx (lambda () (send wx fix-dc)))))
@@ -76,15 +79,26 @@
 
     (define canvas-style style)
 
+    ;; Avoid multiple queued paints:
     (define paint-queued? #f)
+    ;; To handle paint requests that happen while on-paint
+    ;;  is being called already:
+    (define now-drawing? #f)
+    (define refresh-after-drawing? #f)
+
     (define/public (queue-paint)
       ;; can be called from any thread, including the event-pump thread
       (unless paint-queued?
         (set! paint-queued? #t)
         (queue-window-event this (lambda () 
                                    (set! paint-queued? #f)
-                                   (on-paint)))))
-
+                                   (set! now-drawing? #t)
+                                   (fix-dc)
+                                   (on-paint)
+                                   (set! now-drawing? #f)
+                                   (when refresh-after-drawing?
+                                     (set! refresh-after-drawing? #f)
+                                     (refresh))))))
     (define/override (refresh)
       (tellv content-cocoa setNeedsDisplay: #:type _BOOL #t))
 
@@ -312,9 +326,13 @@
     (define/public (get-canvas-background) bg-col)
     (define/public (set-canvas-background col) (set! bg-col col))
     (define/public (get-canvas-background-for-clearing) 
-      (and (not (memq 'transparent canvas-style)) 
-           (not (memq 'no-autoclear canvas-style)) 
-           bg-col))
+      (if now-drawing?
+          (begin
+            (set! refresh-after-drawing? #t)
+            #f)
+          (and (not (memq 'transparent canvas-style)) 
+               (not (memq 'no-autoclear canvas-style)) 
+               bg-col)))
 
     (define/public (do-scroll direction scroller)
       ;; Called from the Cocoa handler thread

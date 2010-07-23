@@ -759,7 +759,11 @@
        (do-text cr #f s 0 0 font combine? offset 0.0)))
 
     (define/private (do-text cr draw? s x y font combine? offset angle)
-      (let ([s (if (zero? offset) s (substring s offset))])
+      (let* ([s (if (zero? offset) 
+                    s 
+                    (substring s offset))]
+             [blank? (equal? s "")]
+             [s (if (and (not draw?) blank?) " " s)])
         (unless context
           (set! context (pango_cairo_create_context cr)))
         (set-font-antialias context (send font get-smoothing))
@@ -788,7 +792,9 @@
                      (void)
                      (let ([logical (make-PangoRectangle 0 0 0 0)])
                        (pango_layout_get_extents layout #f logical)
-                       (values (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))
+                       (values (if blank?
+                                   0.0
+                                   (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))
                                (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))
                                (integral (/ (- (PangoRectangle-height logical)
                                                (pango_layout_get_baseline layout))
@@ -820,7 +826,7 @@
                                               (pango_layout_get_baseline layout))
                                            (exact->inexact PANGO_SCALE)))]
                           [la 0.0])
-                      (values (+ w lw) (max h lh) (max d ld) (max a la))))))))))
+                      (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la))))))))))
     
     (def/public (get-char-width)
       10.0)
