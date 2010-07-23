@@ -10,7 +10,8 @@
          "queue.rkt"
          "menu-bar.rkt"
          "../../syntax.rkt"
-         "../common/queue.rkt")
+         "../common/queue.rkt"
+         "../../lock.rkt")
 (unsafe!)
 (objc-unsafe!)
 
@@ -18,11 +19,13 @@
 
 ;; ----------------------------------------
 
-(import-class NSWindow NSGraphicsContext NSMenu)
+(import-class NSWindow NSGraphicsContext NSMenu 
+              NSApplication NSAutoreleasePool)
 
 (define front #f)
 
 (define empty-mb (new menu-bar%))
+(define root-fake-frame #f)
 
 (define-objc-class MyWindow NSWindow
   #:mixins (FocusResponder KeyMouseResponder)
@@ -48,12 +51,13 @@
   [-a _void (windowDidBecomeMain: [_id notification])
       (when wx
         (set! front wx)
+        (send wx install-mb)
         (queue-window-event wx (lambda ()
-                                 (send wx install-mb)
                                  (send wx on-activate #t))))]
   [-a _void (windowDidResignMain: [_id notification])
       (when wx
         (when (eq? front wx) (set! front #f))
+        (send empty-mb install)
         (queue-window-event wx (lambda ()
                                  (send wx on-activate #f))))])
 
@@ -130,10 +134,30 @@
       (tellv cocoa setTitle: #:type _NSString label))
 
     (define/public (direct-show on?)
-      (if on?
-          (tellv cocoa makeKeyAndOrderFront: #f)
-          (tellv cocoa orderOut: #f))
-      (register-frame-shown this on?))
+      (as-entry
+       (lambda ()
+         (when (and (not on?)
+                    (eq? front this))
+           (set! front #f)
+           (send empty-mb install))
+         (if on?
+             (tellv cocoa makeKeyAndOrderFront: #f)
+             (begin
+               (tellv cocoa orderOut: #f)
+               (let ([next
+                      (let* ([pool (tell (tell NSAutoreleasePool alloc) init)]
+                             [wins (tell (tell NSApplication sharedApplication) orderedWindows)])
+                        (begin0
+                         (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
+                           (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
+                             (and (tell #:type _BOOL win isVisible)
+                                  win)))
+                         (tellv pool release)))])
+                 (cond
+                  [next (tellv next makeKeyWindow)]
+                  [root-fake-frame (send root-fake-frame install-mb)]
+                  [else (void)]))))
+         (register-frame-shown this on?))))
 
     (define/override (show on?)
       (direct-show on?))
@@ -227,7 +251,8 @@
     (def/public-unimplemented on-menu-command)
     (def/public-unimplemented on-mdi-activate)
     (def/public-unimplemented on-close)
-    (define/public (designate-root-frame) (void))
+    (define/public (designate-root-frame)
+      (set! root-fake-frame this))
     (def/public-unimplemented system-menu)
 
     (define/public (set-modified on?)
