@@ -61,15 +61,14 @@
                                     freeze-tag
                                     (lambda () default)))
                                  freeze-tag)
-                                (void)))]
-                   [old (scheme_set_on_atomic_timeout handler)])
+                                (void)))])
               (with-holding 
                handler
                (call-with-continuation-prompt ; to catch aborts
                 (lambda ()
                   (call-with-continuation-prompt ; for composable continuation
                    (lambda ()
-                     (set! prev old)
+                     (set! prev (scheme_set_on_atomic_timeout handler))
                      (set! ready? #t)
                      (begin0
                       (parameterize ([freezer-box #f])

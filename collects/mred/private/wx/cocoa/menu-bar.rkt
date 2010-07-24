@@ -59,14 +59,7 @@
         (and (<= x (NSPoint-x p) (+ x w))
              (<= (- y h) (NSPoint-y p) y)))))))
 
-(define suspend-menu-bar
-  (lambda (on?)
-    ;; We don't actually suspend anything, since the MrEd layer
-    ;; will drop events that shouldn't be delivered.
-    (void)))
-
-(set-menu-bar-hooks! in-menu-bar-range
-                     suspend-menu-bar)
+(set-menu-bar-hooks! in-menu-bar-range)
 
 ;; Init menu bar
 (let ([app (tell NSApplication sharedApplication)]

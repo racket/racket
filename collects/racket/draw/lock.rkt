@@ -48,7 +48,12 @@
 (define (as-entry f)
   (cond
    [(eq? monitor-owner (current-thread))
-    (f)]
+    ;; Need to increment atomicity level for cooperation with
+    ;; freezing speculative computations (in mred/private/wx/common/freeze)
+    (dynamic-wind
+        start-atomic
+        f
+        end-atomic)]
    [else
     (with-continuation-mark 
         exited-key 

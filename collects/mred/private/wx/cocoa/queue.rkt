@@ -162,42 +162,47 @@
 (define (set-front-hook! proc) (set! front-hook proc))
 
 (define in-menu-bar-range? (lambda (p) #f))
-(define suspend-menu-bar (lambda (suspend?) (void)))
-(define (set-menu-bar-hooks! r? s) 
-  (set! in-menu-bar-range? r?)
-  (set! suspend-menu-bar s))
+(define (set-menu-bar-hooks! r?) 
+  (set! in-menu-bar-range? r?))
 
 (define events-suspended? #f)
+(define was-menu-bar #f)
 
 (define (check-menu-bar-click evt)
-  (when (and evt 
-             (= 14 (tell #:type _NSUInteger evt type))
-             (= 7 (tell #:type _short evt subtype))
-             (not (tell evt window))
-             (in-menu-bar-range? (tell #:type _NSPoint evt locationInWindow)))
-    ;; Mouse down in the menu bar:
-    (let-values ([(f e) (front-hook)])
-      (when e
-        ;; Don't handle further events until we've made an effort
-        ;; at on-demand notifications.
-        (set! events-suspended? #t)
-        (let ([t (thread (lambda ()
-                           (sleep 2)
-                           ;; on-demand took too long, so disable the menu bar
-                           ;; until the application can catch up
-                           (suspend-menu-bar #t)
-                           (set! events-suspended? #f)))])
-          (queue-event e (lambda ()
-                           (send f on-menu-click)
-                           (set! events-suspended? #f)
-                           (kill-thread t))))))))
+  (if (and evt 
+           (= 14 (tell #:type _NSUInteger evt type))
+           (= 7 (tell #:type _short evt subtype))
+           (not (tell evt window))
+           (in-menu-bar-range? (tell #:type _NSPoint evt locationInWindow)))
+      ;; Mouse down in the menu bar:
+      (let-values ([(f e) (front-hook)])
+        (when e
+          ;; Avoid spiral of on-demand calls:
+          (unless (and was-menu-bar
+                       (eq? e (weak-box-value was-menu-bar)))
+            ;; Don't handle further events until we've made an effort
+            ;; at on-demand notifications.
+            (set! was-menu-bar (make-weak-box e))
+            (set! events-suspended? #t)
+            (let* ([c (make-custodian)]
+                   [t (parameterize ([current-custodian c])
+                        (thread (lambda ()
+                                  (sleep 2)
+                                  ;; on-demand took too long, so wait
+                                  ;; until the application can catch up
+                                  (set! events-suspended? #f))))])
+              (queue-event e (lambda ()
+                               (send f on-menu-click)
+                               (set! events-suspended? #f)
+                               (custodian-shutdown-all c)))))))
+      (set! was-menu-bar #f)))
 
 ;; Call this function only in atomic mode:
 (define (check-one-event wait? dequeue?)
   (pre-event-sync wait?)
   (let ([pool (tell (tell NSAutoreleasePool alloc) init)])
     (when (and events-suspended? wait?)
-      (suspend-menu-bar #t)
+      (set! was-menu-bar #f)
       (set! events-suspended? #f))
     (begin0
      (let ([evt (if events-suspended?
