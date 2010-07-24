@@ -626,7 +626,7 @@
                                  #f
                                  #f)])
                  (when need-out-write?
-                     (render-time "xref-out" (write-out/info latex-dest info sci))
+                   (render-time "xref-out" (write-out/info latex-dest info sci))
                    (set-info-need-out-write?! info #f))
                  (when (info-need-in-write? info)
                      (render-time "xref-in" (write-in/info latex-dest info))
@@ -671,12 +671,12 @@
 
 (define (load-sxrefs latex-dest doc vers)
   (match (list (load-sxref (sxref-path latex-dest doc "in.sxref")) (load-sxref (sxref-path latex-dest doc "out.sxref")))
-    [(list (list in-version undef deps-rel searches dep-dirs) (list out-version sci provides))
+    [(list (list in-version undef deps-rel searches dep-docs) (list out-version sci provides))
       (unless (and (equal? in-version  (list vers (doc-flags doc)))
                    (equal? out-version (list vers (doc-flags doc))))
         (error "old info has wrong version or flags"))
       (with-my-namespace*
-        (values (deserialize undef) deps-rel (deserialize searches) dep-dirs sci (deserialize provides)))]))
+        (values (deserialize undef) deps-rel (deserialize searches) (deserialize dep-docs) sci (deserialize provides)))]))
 
 (define (build-again! latex-dest info with-record-error)
   (define (cleanup-dest-dir doc)
@@ -690,7 +690,7 @@
                      (not (regexp-match? #"[.]sxref$"
                                          (path-element->bytes f)))))
              (delete-file (build-path dir f)))))))
-  (define (load-doc-sci dest-dir)
+  (define (load-doc-sci doc)
     (cadr (load-sxref (sxref-path latex-dest doc "out.sxref"))))
   (define doc (if (info? info ) (info-doc info) info))
   (define renderer (make-renderer latex-dest doc))
@@ -698,13 +698,13 @@
     (doc-src-file doc)
     (lambda ()
       (define vers (send renderer get-serialize-version))
-      (define-values (ff-undef ff-deps-rel ff-searches ff-dep-dirs ff-sci ff-provides)
+      (define-values (ff-undef ff-deps-rel ff-searches ff-dep-docs ff-sci ff-provides)
         (if (info? info)
           (values (info-undef info) 
                   (info-deps->rel-doc-src-file info)
                   (info-searches info)
-                  (info-deps->doc-dest-dir info)
-                  (load-doc-sci (doc-dest-dir doc))
+                  (info-deps->doc info)
+                  (load-doc-sci doc)
                   (info-provides info))
           (load-sxrefs latex-dest doc vers)))
         
@@ -714,8 +714,8 @@
               [fp (render-time "traverse" (send renderer traverse (list v) (list dest-dir)))]
               [ci (render-time "collect" (send renderer collect (list v) (list dest-dir) fp))]
               [ri (begin 
-                    (render-time "deserialize" (with-my-namespace* (for ([dest-dir ff-dep-dirs]) 
-                      (send renderer deserialize-info (load-doc-sci dest-dir) ci))))
+                    (render-time "deserialize" (with-my-namespace* (for ([dep-doc ff-dep-docs]) 
+                      (send renderer deserialize-info (load-doc-sci dep-doc) ci))))
                     (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci)))]
               [sci (render-time "serialize" (send renderer serialize-info ri))]
               [defs (render-time "defined" (send renderer get-defined ci))]
@@ -732,7 +732,7 @@
                     (doc-src-file doc)))
 
           (when in-delta?
-              (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel ff-searches ff-dep-dirs)))
+              (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel ff-searches ff-dep-docs)))
           (when out-delta?
               (render-time "xref-out" (write-out latex-dest vers doc sci defs)))
 
@@ -795,12 +795,12 @@
 (define (write-out/info latex-dest info sci)
   (write-out latex-dest (info-vers info) (info-doc info) sci (info-provides info)))
     
-(define (write-in latex-dest vers doc undef rels searches dest-dirs)
+(define (write-in latex-dest vers doc undef rels searches dep-docs)
   (write- latex-dest vers doc "in.sxref" 
                (list (serialize undef)
                      rels
                      (serialize searches)
-                     dest-dirs)))
+                     (serialize dep-docs))))
 
 (define (write-in/info latex-dest info)
   (write-in latex-dest
@@ -809,7 +809,7 @@
             (info-undef info)
             (info-deps->rel-doc-src-file info)
             (info-searches info)
-            (info-deps->doc-dest-dir info)))
+            (info-deps->doc info)))
 
 (define (rel->path r)
   (if (bytes? r)
@@ -827,5 +827,5 @@
                                (path->rel (doc-src-file (info-doc i))))) 
               (info-deps info)))
 
-(define (info-deps->doc-dest-dir info)
-  (filter-map (lambda (i) (and (info? i) (doc-dest-dir (info-doc i)))) (info-deps info)))
+(define (info-deps->doc info)
+  (filter-map (lambda (i) (and (info? i) (info-doc i))) (info-deps info)))

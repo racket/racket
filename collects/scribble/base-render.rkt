@@ -207,7 +207,7 @@
     ;; marshal info
 
     (define/public (get-serialize-version)
-      3)
+      4)
 
     (define/public (serialize-info ri)
       (parameterize ([current-serialize-resolve-info ri])
