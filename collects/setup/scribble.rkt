@@ -286,7 +286,7 @@
                                         (and (info-need-run? i)
                                              (begin
                                                 (when (info-need-in-write? i) 
-                                                  (write-in/info i)
+                                                  (write-in/info latex-dest i)
                                                   (set-info-need-in-write?! i #f))
                                                 (set-info-deps! i (filter info? (info-deps i)))
                                                 (set-info-need-run?! i #f)
@@ -319,7 +319,10 @@
                 (lambda (i) 
                   (say-rendering i)
                   (s-exp->fasl (serialize (info-doc i))))
-                (lambda (i r outstr errstr) (update-info i (deserialize (fasl->s-exp r))))
+                (lambda (i r outstr errstr) 
+                  #;(printf "~a" outstr) 
+                  #;(printf "~a" errstr)
+                  (update-info i (deserialize (fasl->s-exp r))))
                 (lambda (i errmsg outstr errstr) (parallel-do-default-error-handler i errmsg outstr errstr) #f)
                 (define-worker (build-again!-worker2  workerid verbosev latex-dest)
                   (define (with-record-error cc go fail-k)
@@ -344,8 +347,7 @@
   (when infos
     (make-loop #t 0)
     ;; cache info to disk
-    (unless latex-dest
-      (for ([i infos] #:when (info-need-in-write? i)) (write-in/info i)))))
+    (for ([i infos] #:when (info-need-in-write? i)) (write-in/info latex-dest i))))
 
 (define (make-renderer latex-dest doc)
   (if latex-dest
@@ -389,6 +391,12 @@
            (build-path latex-dest (path-replace-suffix name #".tex")))]
         [(memq 'multi-page (doc-flags doc)) (doc-dest-dir doc)]
         [else (build-path (doc-dest-dir doc) "index.html")]))
+
+(define (sxref-path latex-dest doc file)
+  (cond [latex-dest
+         (let-values ([(base name dir?) (split-path (doc-src-file doc))])
+           (build-path latex-dest (path-replace-suffix name (string-append "." file))))]
+        [else (build-path (doc-dest-dir doc) file)]))
 
 (define (can-build? only-dirs doc)
   (or (not only-dirs)
@@ -461,9 +469,9 @@
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
                        with-record-error setup-printf)
          doc)
-  (let* ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
-         [info-in-file  (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
-         [stamp-file  (build-path (or latex-dest (doc-dest-dir doc)) "stamp.sxref")]
+  (let* ([info-out-file (sxref-path latex-dest doc "out.sxref")]
+         [info-in-file  (sxref-path latex-dest doc "in.sxref")]
+         [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
          [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
                    (build-path base "compiled" (path-add-suffix name ".zo")))]
@@ -618,12 +626,10 @@
                                  #f
                                  #f)])
                  (when need-out-write?
-                   (unless latex-dest 
-                     (render-time "xref-out" (write-out/info info sci)))
+                     (render-time "xref-out" (write-out/info latex-dest info sci))
                    (set-info-need-out-write?! info #f))
                  (when (info-need-in-write? info)
-                   (unless latex-dest 
-                     (render-time "xref-in" (write-in/info info)))
+                     (render-time "xref-in" (write-in/info latex-dest info))
                    (set-info-need-in-write?! info #f))
 
                  (when (or (stamp-time . < . aux-time)
@@ -663,9 +669,8 @@
      (time expr)
      (collect-garbage) (collect-garbage) (printf "post ~a ~s\n" what (current-memory-use)))))
 
-(define (load-sxrefs doc vers)
-  (define dest-dir (doc-dest-dir doc))
-  (match (list (load-sxref (build-path dest-dir "in.sxref")) (load-sxref (build-path dest-dir "out.sxref")))
+(define (load-sxrefs latex-dest doc vers)
+  (match (list (load-sxref (sxref-path latex-dest doc "in.sxref")) (load-sxref (sxref-path latex-dest doc "out.sxref")))
     [(list (list in-version undef deps-rel searches dep-dirs) (list out-version sci provides))
       (unless (and (equal? in-version  (list vers (doc-flags doc)))
                    (equal? out-version (list vers (doc-flags doc))))
@@ -686,7 +691,7 @@
                                          (path-element->bytes f)))))
              (delete-file (build-path dir f)))))))
   (define (load-doc-sci dest-dir)
-    (cadr (load-sxref (build-path (or latex-dest dest-dir) "out.sxref"))))
+    (cadr (load-sxref (sxref-path latex-dest doc "out.sxref"))))
   (define doc (if (info? info ) (info-doc info) info))
   (define renderer (make-renderer latex-dest doc))
   (with-record-error
@@ -701,7 +706,7 @@
                   (info-deps->doc-dest-dir info)
                   (load-doc-sci (doc-dest-dir doc))
                   (info-provides info))
-          (load-sxrefs doc vers)))
+          (load-sxrefs latex-dest doc vers)))
         
       (parameterize ([current-directory (doc-src-dir doc)])
         (let* ([v (render-time "load" (load-doc/ensure-prefix doc))]
@@ -727,11 +732,9 @@
                     (doc-src-file doc)))
 
           (when in-delta?
-            (unless latex-dest 
-              (render-time "xref-in" (write-in vers doc undef ff-deps-rel ff-searches ff-dep-dirs))))
+              (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel ff-searches ff-dep-dirs)))
           (when out-delta?
-            (unless latex-dest 
-              (render-time "xref-out" (write-out vers doc sci defs))))
+              (render-time "xref-out" (write-out latex-dest vers doc sci defs)))
 
           (cleanup-dest-dir doc)
           (render-time
@@ -776,31 +779,32 @@
       (parameterize ([current-namespace p])
         (call-in-nested-thread (lambda () (dynamic-require mod-path 'doc)))))))
 
-(define (write- vers doc name data)
-  (let* ([filename (build-path (doc-dest-dir doc) name)])
+(define (write- latex-dest vers doc name data)
+  (let* ([filename (sxref-path latex-dest doc name)])
     (when (verbose) (printf " [Caching to disk ~a]\n" filename))
     (make-directory* (doc-dest-dir doc))
     (with-compile-output filename 
       (lambda (out tmp-filename)
         (write-bytes (s-exp->fasl (append (list (list vers (doc-flags doc))) data)) out)))))
 
-(define (write-out vers doc sci provides)
-  (write- vers doc "out.sxref" 
+(define (write-out latex-dest vers doc sci provides)
+  (write- latex-dest vers doc "out.sxref" 
           (list sci
                 (serialize provides))))
 
-(define (write-out/info info sci)
-  (write-out (info-vers info) (info-doc info) sci (info-provides info)))
+(define (write-out/info latex-dest info sci)
+  (write-out latex-dest (info-vers info) (info-doc info) sci (info-provides info)))
     
-(define (write-in vers doc undef rels searches dest-dirs)
-  (write- vers doc "in.sxref" 
+(define (write-in latex-dest vers doc undef rels searches dest-dirs)
+  (write- latex-dest vers doc "in.sxref" 
                (list (serialize undef)
                      rels
                      (serialize searches)
                      dest-dirs)))
 
-(define (write-in/info info)
-  (write-in (info-vers info)
+(define (write-in/info latex-dest info)
+  (write-in latex-dest
+            (info-vers info)
             (info-doc info)
             (info-undef info)
             (info-deps->rel-doc-src-file info)
