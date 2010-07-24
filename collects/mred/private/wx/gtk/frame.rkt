@@ -8,6 +8,7 @@
          "window.rkt"
          "client-window.rkt"
          "widget.rkt"
+         "procs.rkt"
          "../common/queue.rkt")
 (unsafe!)
 
@@ -25,6 +26,7 @@
 (define-gtk gtk_window_set_decorated (_fun _GtkWidget _gboolean -> _void))
 (define-gtk gtk_window_maximize (_fun _GtkWidget -> _void))
 (define-gtk gtk_window_unmaximize (_fun _GtkWidget -> _void))
+(define-gtk gtk_widget_set_uposition (_fun _GtkWidget _int _int -> _void))
 
 (define (handle-delete gtk)
   (let ([wx (gtk->wx gtk)])
@@ -112,6 +114,31 @@
 
     (define/public (enforce-size min-x min-y max-x max-y inc-x inc-y)
       (void))
+
+    (define/override (center dir wrt)
+      (let ([w-box (box 0)]
+            [h-box (box 0)]
+            [sw-box (box 0)]
+            [sh-box (box 0)])
+        (get-size w-box h-box)
+        (display-size sw-box sh-box #t)
+        (let* ([sw (unbox sw-box)]
+               [sh (unbox sh-box)]
+               [fw (unbox w-box)]
+               [fh (unbox h-box)])
+          (set-top-position (if (or (eq? dir 'both)
+                                    (eq? dir 'horizontal))
+                                (/ (- sw fw) 2)
+                                -11111)
+                            (if (or (eq? dir 'both)
+                                    (eq? dir 'vertical))
+                                (/ (- sh fh) 2)
+                                -11111)))))
+
+    (define/override (set-top-position x y)
+      (gtk_widget_set_uposition gtk
+                                (if (= x -11111) -2 x)
+                                (if (= y -11111) -2 y)))
 
     (define/override (get-size wb hb)
       (let-values ([(w h) (gtk_window_get_size gtk)])

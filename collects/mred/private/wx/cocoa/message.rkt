@@ -2,6 +2,7 @@
 (require scheme/class
          scheme/foreign
          ffi/objc
+         racket/draw/bitmap
           "../../syntax.rkt"
          "item.rkt"
          "utils.rkt"
@@ -14,7 +15,20 @@
 
 ;; ----------------------------------------
 
-(import-class NSTextField NSImageView)
+(import-class NSTextField NSImageView NSWorkspace)
+
+(define _OSType _uint32)
+
+(define-cocoa NSFileTypeForHFSTypeCode (_fun _OSType -> _id))
+
+(define (get-app-icon)
+  (tell (tell NSWorkspace sharedWorkspace)
+        iconForFile:
+        (tell (tell (tell NSWorkspace sharedWorkspace)
+                    activeApplication)
+              objectForKey:
+              #:type _NSString
+              "NSApplicationPath")))
 
 (defclass message% item%
   (init parent label
@@ -25,7 +39,21 @@
   (super-new [parent parent]
              [cocoa (let* ([label (cond
                                    [(string? label) label]
-                                   [(symbol? label) (format "<~a>" label)]
+                                   [(symbol? label)
+                                    (let ([icon
+                                           (if (eq? label 'app)
+                                               (get-app-icon)
+                                               (let ([id (integer-bytes->integer
+                                                          (case label
+                                                            [(caution) #"caut"]
+                                                            [(stop) #"stop"])
+                                                          #f
+                                                          #t)])
+                                                 (tell (tell NSWorkspace sharedWorkspace)
+                                                       iconForFileType:
+                                                       (NSFileTypeForHFSTypeCode id))))])
+                                      (tellv icon setSize: #:type _NSSize (make-NSSize 64 64))
+                                      icon)]
                                    [(send label ok?) label]
                                    [else "<bad>"])]
                            [cocoa
@@ -43,11 +71,15 @@
                         (tellv cocoa setTitleWithMnemonic: #:type _NSString label)
                         (tellv cocoa sizeToFit)]
                        [else
-                        (tellv cocoa setImage: (bitmap->image label))
+                        (tellv cocoa setImage: (if (label . is-a? . bitmap%)
+                                                   (bitmap->image label)
+                                                   label))
                         (tellv cocoa setFrame: #:type _NSRect 
                                (make-NSRect (make-NSPoint 0 0)
-                                            (make-NSSize (send label get-width)
-                                                         (send label get-height))))])
+                                            (if (label . is-a? . bitmap%)
+                                                (make-NSSize (send label get-width)
+                                                             (send label get-height))
+                                                (tell #:type _NSSize label size))))])
                       cocoa)]
              [no-show? (memq 'deleted style)])
 

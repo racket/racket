@@ -173,7 +173,9 @@
     ;; Avoid multiple queued paints:
     (define paint-queued? #f)
     ;; To handle paint requests that happen while on-paint
-    ;;  is being called already:
+    ;;  is being called already. kProbably doesn't happen,
+    ;;  because expose callabcks should be in the right
+    ;;  eventspace.
     (define now-drawing? #f)
     (define refresh-after-drawing? #f)
 

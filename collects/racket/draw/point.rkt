@@ -1,5 +1,6 @@
 #lang scheme/base
-(require scheme/class)
+(require scheme/class
+         "syntax.rkt")
 
 (provide point% point-x point-y
          list-of-pair-of-real?)
@@ -8,6 +9,10 @@
   (class object%
     (init-field [x 0.0]
                 [y 0.0])
+    (define/public (get-x) x)
+    (define/public (get-y) y)
+    (def/public (set-x [real? v]) (set! x (exact->inexact v)))
+    (def/public (set-y [real? v]) (set! y (exact->inexact v)))
     (super-new)))
 
 (define point-x (class-field-accessor point% x))

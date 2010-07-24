@@ -318,7 +318,15 @@
     (define/public (center a b) (void))
     (def/public-unimplemented refresh)
 
-    (def/public-unimplemented screen-to-client)
+    (define/public (screen-to-client xb yb)
+      (let ([p (tell #:type _NSPoint (get-cocoa-content) 
+                     convertPointFromBase: #:type _NSPoint
+                     (tell #:type _NSPoint (get-cocoa-window)
+                           convertScreenToBase:
+                           #:type _NSPoint (make-NSPoint (unbox xb) 
+                                                         (send (get-wx-window) flip-screen (unbox yb)))))])
+        (set-box! xb (inexact->exact (floor (NSPoint-x p))))
+        (set-box! yb (inexact->exact (floor (flip-client (NSPoint-y p)))))))
 
     (define/public (client-to-screen xb yb)
       (let* ([p (tell #:type _NSPoint (get-cocoa-window)
@@ -328,8 +336,8 @@
                             convertPointToBase: #:type _NSPoint
                             (make-NSPoint (unbox xb) (flip-client (unbox yb)))))])
         (let ([new-y (send (get-wx-window) flip-screen (NSPoint-y p))])
-          (set-box! xb (NSPoint-x p))
-          (set-box! yb new-y))))
+          (set-box! xb (inexact->exact (floor (NSPoint-x p))))
+          (set-box! yb (inexact->exact (floor new-y))))))
       
     (def/public-unimplemented fit)
 

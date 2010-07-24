@@ -235,7 +235,9 @@
       (unless (= h -1) (set! save-h h))
       (if parent
           (send parent set-child-size gtk save-x save-y save-w save-h)
-          (set-child-size gtk save-x save-y save-w save-h)))
+          (set-child-size gtk save-x save-y save-w save-h))
+      (set-top-position save-x save-y))
+    (define/public (set-top-position x y) (void))
     (define/public (set-child-size child-gtk x y w h)
       (gtk_widget_set_size_request child-gtk w h)
       (gtk_widget_size_allocate child-gtk (make-GtkAllocation x y w h)))
