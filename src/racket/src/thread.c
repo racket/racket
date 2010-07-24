@@ -208,6 +208,7 @@ HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
 HOOK_SHARED_OK int (*scheme_check_for_break)(void);
 HOOK_SHARED_OK void (*scheme_on_atomic_timeout)(void);
 HOOK_SHARED_OK static int atomic_timeout_auto_suspend;
+HOOK_SHARED_OK static int atomic_timeout_atomic_level;
 
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
@@ -4275,14 +4276,16 @@ void scheme_thread_block(float sleep_time)
     do_swap_thread();
   } else if (do_atomic && scheme_on_atomic_timeout
              && (atomic_timeout_auto_suspend < 2)) {
-    if (atomic_timeout_auto_suspend) {
-      atomic_timeout_auto_suspend++;
-      scheme_fuel_counter = p->engine_weight;
-      scheme_jit_stack_boundary = scheme_stack_boundary;
+    if (do_atomic <= atomic_timeout_atomic_level) {
+      if (atomic_timeout_auto_suspend) {
+        atomic_timeout_auto_suspend++;
+        scheme_fuel_counter = p->engine_weight;
+        scheme_jit_stack_boundary = scheme_stack_boundary;
+      }
+      scheme_on_atomic_timeout();
+      if (atomic_timeout_auto_suspend > 1)
+        --atomic_timeout_auto_suspend;
     }
-    scheme_on_atomic_timeout();
-    if (atomic_timeout_auto_suspend > 1)
-      --atomic_timeout_auto_suspend;
   } else {
     /* If all processes are blocked, check for total process sleeping: */
     if (p->block_descriptor != NOT_BLOCKED) {
@@ -4530,6 +4533,11 @@ void scheme_end_atomic(void)
 
 static void wait_until_suspend_ok()
 {
+  if (do_atomic > atomic_timeout_atomic_level) {
+    scheme_log_abort("attempted to wait for suspend in nested atomic mode");
+    abort();
+  }
+
   while (do_atomic && scheme_on_atomic_timeout) {
     scheme_on_atomic_timeout();
   }
@@ -4541,8 +4549,10 @@ Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Time
 
   old = scheme_on_atomic_timeout;
   scheme_on_atomic_timeout = p;
-  if (p)
+  if (p) {
     atomic_timeout_auto_suspend = 1;
+    atomic_timeout_atomic_level = do_atomic;
+  }
 
   return old;
 }
@@ -7924,6 +7934,7 @@ static void froz_run_new(FrozenTramp * volatile froz, int run_msecs)
     Scheme_Frozen_Stack_Proc do_f;
     scheme_start_atomic();
     scheme_on_atomic_timeout = suspend_froz_progress;
+    atomic_timeout_atomic_level = -1;
     do_f = froz->do_f;
     do_f(froz->do_data);
   }
@@ -7981,6 +7992,7 @@ int scheme_frozen_run_some(Scheme_Frozen_Stack_Proc do_f, void *do_data, int run
         froz->continue_until = msecs + run_msecs;
 	scheme_start_atomic();
 	scheme_on_atomic_timeout = suspend_froz_progress;
+        atomic_timeout_atomic_level = -1;
 	if (!scheme_setjmp(froz->progress_base)) {
 #ifdef MZ_PRECISE_GC
 	  froz->fixup_var_stack_chain = &__gc_var_stack__;
