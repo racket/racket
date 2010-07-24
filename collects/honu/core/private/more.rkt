@@ -28,7 +28,7 @@
   (datum->syntax lexical consed lexical))
 
 (define (replace-commas stuff)
-  (printf "Replace commas with: ~a\n" (syntax->datum stuff))
+  ;; (printf "Replace commas with: ~a\n" (syntax->datum stuff))
   (syntax-parse stuff #:literals (ellipses-comma ellipses-comma*)
     [((ellipses-comma* z ...) thing blah ...)
      #;

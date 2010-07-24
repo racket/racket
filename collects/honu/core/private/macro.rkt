@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "honu-typed-scheme.ss"
          "literals.rkt"
@@ -7,7 +7,7 @@
          syntax/parse
          (for-syntax macro-debugger/emit)
          (for-meta 2 macro-debugger/emit
-                   scheme/base)
+                   racket/base)
          (for-meta -3
            (only-in "literals.rkt" (#%parens literal-parens)))
          #;
@@ -18,7 +18,7 @@
                      "syntax.ss"
                      "literals.rkt"
                      "honu-typed-scheme.ss"
-                     scheme/base
+                     racket/base
                      syntax/parse
                      syntax/stx
                      scheme/pretty
@@ -515,14 +515,15 @@
                                       (values
                                         #;
                                         (with-syntax ([(real-out (... ...)) #'(code ...)])
-                                          (let ([result (honu-unparsed-begin #'(real-out (... ...)))])
+                                          (let ([result (let ()
+                                                          (honu-unparsed-begin #'(real-out (... ...))))])
                                             (lambda () result)))
                                         (begin
-                                          #;
-                                          (emit-remark "Do macro transformer" (quote-syntax (code ...)))
+                                          (emit-remark "Do macro transformer" (quote-syntax (pattern.code ...)))
                                           #;
                                           (printf "Macro transformer `~a'\n" (syntax->datum (quote-syntax (code ...))))
-                                          (let ([result (honu-unparsed-begin pattern.code ...)])
+                                          (let ([result (let ()
+                                                          (honu-unparsed-begin pattern.code ...))])
                                             (lambda ()
                                               (emit-remark "Excuting macro " (symbol->string 'name))
                                               result)))

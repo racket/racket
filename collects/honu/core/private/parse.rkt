@@ -741,3 +741,6 @@
                  rest*)))))
   (with-syntax ([(out ...) (reverse parsed)])
     #'(begin out ...)))
+
+(define (cheetos) 1)
+; (define cheetos "foo")

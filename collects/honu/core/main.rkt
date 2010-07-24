@@ -1,24 +1,26 @@
 #lang racket/base
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
+(require (for-meta 2 racket/base))
 (require racket/class)
 
-(require "private/honu-typed-scheme.ss"
+(require "private/honu-typed-scheme.rkt"
          ;; "private/honu.ss"
          "private/parse.ss"
-         (for-syntax "private/literals.ss")
-         (for-syntax "private/honu-typed-scheme.ss")
-         (for-syntax "private/parse.ss")
+         (for-syntax "private/literals.rkt")
+         (for-syntax "private/honu-typed-scheme.rkt")
+         (for-syntax "private/parse.rkt")
+         (for-syntax "private/canonical.rkt")
          syntax/parse
          (for-syntax syntax/parse)
-         "private/literals.ss"
-         "private/syntax.ss"
-         "private/more.ss"
-         (for-template scheme/base)
+         "private/literals.rkt"
+         "private/syntax.rkt"
+         "private/more.rkt"
+         (for-template racket/base)
          (for-template "private/literals.rkt")
-         (for-syntax "private/more.ss")
-         (for-syntax "private/syntax.ss")
-         (for-syntax "private/macro.ss")
+         (for-syntax "private/more.rkt")
+         (for-syntax "private/syntax.rkt")
+         (for-syntax "private/macro.rkt")
          "private/macro.ss")
 
 (define test-x-class
@@ -33,6 +35,11 @@
 (define (sql3) #f)
 (define (sql4) #f)
 (define (sql5) #f)
+
+(define-for-syntax (syntax-to-string stx)
+  (format "original '~a' - ~a" (syntax->datum stx) (to-honu-string stx)))
+
+(define (cheetos1) 5)
 
 (define-syntax (honu-struct stx)
   (syntax-parse stx
@@ -71,6 +78,10 @@
          #;
          (rename-out [honu-print print])
 
+         (for-syntax (rename-out [syntax-to-string syntax_to_string]))
+         (for-syntax cheetos)
+         cheetos1
+
          #%top
 
          ;; sql nonsense
@@ -83,6 +94,8 @@
          ;; end sql
 
          #%datum
+         (for-template #%datum)
+         datum->syntax
          #%top-interaction
          (for-syntax #%datum
                      display

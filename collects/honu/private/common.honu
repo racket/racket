@@ -1,19 +1,35 @@
 #lang honu/core
 
 require (forSyntax "with.honu");
+require (forSyntax "function.honu");
 
 provide print;
 
 macro print ()
 { _ (value:expression); } { syntax(display(value_result); newline();); }
-{ _ value:expression_comma ... ; } { syntax({display(value_result); newline();} ...); }
+{ _ value:expression_comma ... ; } { syntax({display(value_result);} ...); }
 
 provide check_expect;
 provide expect;
 keywords expect;
 macro check_expect (expect) { _ check:expression expect expected:expression ; }
-{ syntax({ checked = check_result;
+{ 
+  function bar(g){
+     g + 1 
+  }
+  function foo(){
+    cheetos()
+  }
+  // withSyntax [check_raw bar(2)]{
+  withSyntax [check_raw syntax_to_string(syntax(check);)]{
+  // withSyntax [check_raw syntax_to_string(1)]{
+  // withSyntax [check_raw foo()]{
+  // withSyntax [check_raw 1]{
+   syntax({checked = check_result;
            out = expected_result;
            if (checked != out){
-             print "Expected ", out, " but got ", checked;
-           }});}
+             // print "Expected ", out, " but got ", checked, " (", check_raw, ")";
+             print "Expected ", out, " but got ", checked, " (", check_raw, ")";
+           }});
+   };
+}

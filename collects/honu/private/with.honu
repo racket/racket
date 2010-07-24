@@ -4,6 +4,13 @@ provide withSyntax;
 
 macro withSyntax () {
  _ [variable:identifier expr:expression] { b ... /* body:statement */ }; } {
-  #sx scheme:syntax #sx(with-syntax ([variable expr_result]) (honu-unparsed-begin b ...))
-  // applySchemeSyntax(#sx(real-syntax (with-syntax ([variable expr_result]) (honu-unparsed-begin b ...))))
+  #sx scheme:syntax #sx
+  (with-syntax ([variable_result (datum->syntax (real-syntax expr) expr_result
+                                                (real-syntax expr)
+                                                (real-syntax expr))])
+    (honu-unparsed-begin b ...))
 }
+  
+  
+  
+// applySchemeSyntax(#sx(real-syntax (with-syntax ([variable_result expr_result]) (honu-unparsed-begin b ...))))
