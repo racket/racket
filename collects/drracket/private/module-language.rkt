@@ -474,7 +474,7 @@
                       "There must be a valid module in the\n"
                       "definitions window.  Try starting your program with\n"
                       "\n"
-                      "  #lang scheme\n"
+                      "  #lang racket\n"
                       "\n"
                       "and clicking ‘Run’."))
                error-args))))
