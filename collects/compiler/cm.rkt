@@ -84,7 +84,7 @@
                                                         (values (path-add-suffix name #".zo")
                                                                 (cdr main-zo-date+mode))
                                                         (values (path-add-suffix (rkt->ss name) #".zo")
-                                                                (cdr (cdr alt-zo-date+mode))))])
+                                                                (cdr alt-zo-date+mode)))])
                                         (build-path base mode name)))])
                   (cond
                    [(and zo-date
