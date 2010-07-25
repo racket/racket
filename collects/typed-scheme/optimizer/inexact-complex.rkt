@@ -1,19 +1,25 @@
 #lang scheme/base
 
-(require syntax/parse
+(require syntax/parse syntax/id-table scheme/dict
          "../utils/utils.rkt"
          (for-template scheme/base scheme/math scheme/flonum scheme/unsafe/ops)
          (types abbrev type-table utils subtype)
          (optimizer utils float fixnum))
 
-(provide inexact-complex-opt-expr)
+(provide inexact-complex-opt-expr inexact-complex-arith-opt-expr
+         unboxed-inexact-complex-opt-expr unboxed-vars-table)
 
+
+;; contains the bindings which actually exist as separate bindings for each component
+;; associates identifiers to lists (real-part imag-part)
+(define unboxed-vars-table (make-free-id-table))
 
 ;; it's faster to take apart a complex number and use unsafe operations on
 ;; its parts than it is to use generic operations
 ;; we keep the real and imaginary parts unboxed as long as we stay within
 ;; complex operations
 (define-syntax-class unboxed-inexact-complex-opt-expr
+  
   (pattern (#%plain-app (~and op (~literal +))
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
@@ -23,20 +29,21 @@
            #:with (bindings ...)
            (begin (log-optimization "unboxed binary inexact complex" #'op)
                   #`(#,@(append (syntax->list #'(c1.bindings ... c2.bindings ... cs.bindings ... ...))
-                                (list #`(real-part #,(for/fold ((o #'c1.real-part))
-                                                         ((e (syntax->list #'(c2.real-part cs.real-part ...))))
-                                                       #`(unsafe-fl+ #,o #,e)))
-                                      ;; we can skip the imaginary parts of reals (#f)
-                                      #`(imag-part
-                                         #,(let ((l (filter syntax->datum
-                                                            (syntax->list #'(c1.imag-part c2.imag-part cs.imag-part ...)))))
-                                             (case (length l)
-                                               ((0) #'0.0)
-                                               ((1) (car l))
-                                               (else
-                                                (for/fold ((o (car l)))
-                                                    ((e (cdr l)))
-                                                  #`(unsafe-fl+ #,o #,e)))))))))))
+                                (let ()
+                                   ;; we can skip the real parts of imaginaries (#f) and vice versa
+                                   (define (skip-0s l)
+                                     (let ((l (filter syntax->datum (syntax->list l))))
+                                       (case (length l)
+                                         ((0) #'0.0)
+                                         ((1) (car l))
+                                         (else
+                                          (for/fold ((o (car l)))
+                                              ((e (cdr l)))
+                                            #`(unsafe-fl+ #,o #,e))))))
+                                   (list
+                                    #`(real-part #,(skip-0s #'(c1.real-part c2.real-part cs.real-part ...)))
+                                    #`(imag-part #,(skip-0s #'(c1.imag-part c2.imag-part cs.imag-part ...)))))))))
+  
   (pattern (#%plain-app (~and op (~literal -))
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
@@ -46,22 +53,24 @@
            #:with (bindings ...)
            (begin (log-optimization "unboxed binary inexact complex" #'op)
                   #`(#,@(append (syntax->list #'(c1.bindings ... c2.bindings ... cs.bindings ... ...))
-                                (list #`(real-part #,(for/fold ((o #'c1.real-part))
-                                                         ((e (syntax->list #'(c2.real-part cs.real-part ...))))
-                                                       #`(unsafe-fl- #,o #,e)))
-                                      ;; unlike addition, we simply can't skip imaginary parts of reals
-                                      #`(imag-part
-                                         #,(let* ((l1 (map (lambda (x) (if (syntax->datum x) x #'0.0))
-                                                           (syntax->list #'(c1.imag-part c2.imag-part cs.imag-part ...))))
-                                                  ;; but we can skip all but the first 0
-                                                  (l2 (filter (lambda (x) (not (equal? (syntax->datum x) 0.0)))
-                                                              (cdr l1))))
-                                             (case (length l2)
-                                               ((0) (car l1))
-                                               (else
-                                                (for/fold ((o (car l1)))
-                                                    ((e l2))
-                                                  #`(unsafe-fl- #,o #,e)))))))))))
+                                (let ()
+                                  ;; unlike addition, we simply can't skip real parts of imaginaries
+                                  (define (skip-0s l)
+                                    (let* ((l1 (map (lambda (x) (if (syntax->datum x) x #'0.0))
+                                                    (syntax->list l)))
+                                           ;; but we can skip all but the first 0
+                                           (l2 (filter (lambda (x) (not (equal? (syntax->datum x) 0.0)))
+                                                       (cdr l1))))
+                                      (case (length l2)
+                                        ((0) (car l1))
+                                        (else
+                                         (for/fold ((o (car l1)))
+                                             ((e l2))
+                                           #`(unsafe-fl- #,o #,e))))))
+                                  (list
+                                   #`(real-part #,(skip-0s #'(c1.real-part c2.real-part cs.real-part ...)))
+                                   #`(imag-part #,(skip-0s #'(c1.imag-part c2.imag-part cs.imag-part ...)))))))))
+  
   (pattern (#%plain-app (~and op (~literal *))
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
@@ -73,12 +82,14 @@
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-part and imag-part
-                     #,@(let ((l (map (lambda (x) (if (syntax->datum x) x #'0.0))
-                                      (syntax->list #'(c1.imag-part c2.imag-part cs.imag-part ...)))))
-                          (let loop ([o1 #'c1.real-part]
-                                     [o2 (car l)]
-                                     [e1 (syntax->list #'(c2.real-part cs.real-part ...))]
-                                     [e2 (cdr l)]
+                     #,@(let ((lr (map (lambda (x) (if (syntax->datum x) x #'0.0))
+                                       (syntax->list #'(c1.real-part c2.real-part cs.real-part ...))))
+                              (li (map (lambda (x) (if (syntax->datum x) x #'0.0))
+                                       (syntax->list #'(c1.imag-part c2.imag-part cs.imag-part ...)))))
+                          (let loop ([o1 (car lr)]
+                                     [o2 (car li)]
+                                     [e1 (cdr lr)]
+                                     [e2 (cdr li)]
                                      [rs (append (map (lambda (x) (unboxed-gensym))
                                                       (syntax->list #'(cs.real-part ...)))
                                                  (list #'real-part))]
@@ -107,13 +118,15 @@
                                                            #`(unsafe-fl- (unsafe-fl* #,o1 #,(car e1))
                                                                          (unsafe-fl* #,o2 #,(car e2))))))
                                              res)))))))))
+  
   (pattern (#%plain-app (~and op (~literal /))
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
            #:with real-part (unboxed-gensym)
            #:with imag-part (unboxed-gensym)
-           #:with reals (syntax->list #'(c1.real-part c2.real-part cs.real-part ...))
+           #:with reals (map (lambda (x) (if (syntax->datum x) x #'0.0))
+                             (syntax->list #'(c1.real-part c2.real-part cs.real-part ...)))
            #:with imags (map (lambda (x) (if (syntax->datum x) x #'0.0))
                              (syntax->list #'(c1.imag-part c2.imag-part cs.imag-part ...)))
            #:with (bindings ...)
@@ -175,6 +188,7 @@
                                                  (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
                                                              (unsafe-fl* #,(car e2) #,(car e2))))
                                               res)]))))))))
+
   (pattern (#%plain-app (~and op (~literal conjugate)) c:unboxed-inexact-complex-opt-expr)
            #:with real-part #'c.real-part
            #:with imag-part (unboxed-gensym)
@@ -182,6 +196,31 @@
            (begin (log-optimization "unboxed unary inexact complex" #'op)
                   #`(#,@(append (syntax->list #'(c.bindings ...))
                                 (list #'(imag-part (unsafe-fl- 0.0 c.imag-part)))))))
+
+  (pattern (#%plain-app (~and op (~or (~literal real-part) (~literal unsafe-flreal-part)))
+                        c:unboxed-inexact-complex-opt-expr)
+           #:with real-part #'c.real-part
+           #:with imag-part #f
+           #:with (bindings ...)
+           (begin (log-optimization "unboxed unary inexact complex" #'op)
+                  #'(c.bindings ...)))
+  (pattern (#%plain-app (~and op (~or (~literal imag-part) (~literal unsafe-flimag-part)))
+                        c:unboxed-inexact-complex-opt-expr)
+           #:with real-part #'c.imag-part
+           #:with imag-part #f
+           #:with (bindings ...)
+           (begin (log-optimization "unboxed unary inexact complex" #'op)
+                  #'(c.bindings ...)))
+
+  ;; if we see a variable that's already unboxed, use the unboxed bindings
+  (pattern v:id
+           #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
+           #:when (syntax->datum #'unboxed-info)
+           #:with real-part (car  (syntax->list #'unboxed-info))
+           #:with imag-part (cadr (syntax->list #'unboxed-info))
+           #:with (bindings ...) #'())
+  
+  ;; else, do the unboxing here  
   (pattern e:expr
            #:when (isoftype? #'e -InexactComplex)
            #:with e* (unboxed-gensym)
@@ -223,7 +262,7 @@
   (pattern (~or (~literal real-part) (~literal flreal-part)) #:with unsafe #'unsafe-flreal-part)
   (pattern (~or (~literal imag-part) (~literal flimag-part)) #:with unsafe #'unsafe-flimag-part))
 
-(define-syntax-class inexact-complex-binary-op
+(define-syntax-class inexact-complex-op
   (pattern (~or (~literal +) (~literal -) (~literal *) (~literal /) (~literal conjugate))))
 
 (define-syntax-class inexact-complex-expr
@@ -232,13 +271,37 @@
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class inexact-complex-opt-expr
+
+  ;; we can optimize taking the real of imag part of an unboxed complex
+  ;; hopefully, the compiler can eliminate unused bindings for the other part if it's not used
+  (pattern (#%plain-app (~and op (~or (~literal real-part) (~literal unsafe-flreal-part)
+                                      (~literal imag-part) (~literal unsafe-flimag-part)))
+                        c:inexact-complex-expr)
+           #:with c*:inexact-complex-arith-opt-expr #'c
+           #:with opt
+           (begin (log-optimization "unboxed inexact complex" #'op)
+                  (reset-unboxed-gensym)
+                  #`(let* (c*.bindings ...)
+                      #,(if (or (free-identifier=? #'op #'real-part)
+                                (free-identifier=? #'op #'unsafe-flreal-part))
+                            #'c*.real-part
+                            #'c*.imag-part))))
+  
   (pattern (#%plain-app op:inexact-complex-unary-op n:inexact-complex-expr)
            #:with opt
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
-  (pattern (~and exp (#%plain-app op:inexact-complex-binary-op e:expr ...))
+  (pattern e:inexact-complex-arith-opt-expr
+           #:with opt
+           #'e.opt))
+
+(define-syntax-class inexact-complex-arith-opt-expr
+  (pattern (~and exp (#%plain-app op:inexact-complex-op e:expr ...))
            #:when (isoftype? #'exp -InexactComplex)
            #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+           #:with real-part #'exp*.real-part
+           #:with imag-part #'exp*.imag-part
+           #:with (bindings ...) #'(exp*.bindings ...)
            #:with opt
            (begin (log-optimization "unboxed inexact complex" #'exp)
                   (reset-unboxed-gensym)

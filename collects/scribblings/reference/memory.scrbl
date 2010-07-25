@@ -143,7 +143,7 @@ referenced until the will procedure is executed.}
 @defproc[(will-execute [executor will-executor?]) any]{
 
 Invokes the will procedure for a single ``unreachable'' value
-registered with the executor @racket[executable]. The values returned
+registered with the executor @racket[executor]. The values returned
 by the will procedure are the result of the @racket[will-execute]
 call.  If no will is ready for immediate execution,
 @racket[will-execute] blocks until one is ready.}

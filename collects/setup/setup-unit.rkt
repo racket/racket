@@ -786,6 +786,8 @@
 
   (define (doc:setup-scribblings latex-dest auto-start-doc?)
     (scr:call 'setup-scribblings
+              (parallel-workers)
+              name-str
               (if no-specific-collections? #f (map cc-path ccs-to-compile))
               latex-dest auto-start-doc? (make-user)
               (lambda (what go alt) (record-error what "Building docs" go alt))

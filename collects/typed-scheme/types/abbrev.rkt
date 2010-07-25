@@ -176,7 +176,7 @@
 (define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))
 (define -Nat -ExactNonnegativeInteger)
 
-(define -Byte -Integer)
+(define -Byte -NonnegativeFixnum)
 
 
 

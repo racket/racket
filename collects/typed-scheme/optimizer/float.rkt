@@ -68,13 +68,22 @@
            #:with opt
            (begin (log-optimization "binary float" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
-  (pattern (~and res (#%plain-app (~var op (float-op binary-float-comps))
-                                  f1:float-expr
-                                  f2:float-expr
-                                  fs:float-expr ...))
+  (pattern (#%plain-app (~var op (float-op binary-float-comps))
+                        f1:float-expr
+                        f2:float-expr
+                        fs:float-expr ...)
            #:with opt
            (begin (log-optimization "binary float comp" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
+
+  (pattern (#%plain-app (~and op (~literal -)) f:float-expr)
+           #:with opt
+           (begin (log-optimization "unary float" #'op)
+                  #'(unsafe-fl- 0.0 f.opt)))
+  (pattern (#%plain-app (~and op (~literal /)) f:float-expr)
+           #:with opt
+           (begin (log-optimization "unary float" #'op)
+                  #'(unsafe-fl/ 1.0 f.opt)))
   
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-expr)
@@ -85,4 +94,9 @@
   (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-expr)
            #:with opt
            (begin (log-optimization "float to float" #'op)
-                  #'f.opt)))
+                  #'f.opt))
+
+  (pattern (#%plain-app (~and op (~literal zero?)) f:float-expr)
+           #:with opt
+           (begin (log-optimization "float zero?" #'op)
+                  #'(unsafe-fl= f.opt 0.0))))

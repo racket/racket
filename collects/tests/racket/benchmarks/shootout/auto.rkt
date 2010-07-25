@@ -129,7 +129,6 @@ exec racket -qu "$0" ${1+"$@"}
       nbody-generic
       nbody-vec
       nbody-vec-generic
-      nbody-vec-unsafe
       nestedloop
       nothing
       nsieve

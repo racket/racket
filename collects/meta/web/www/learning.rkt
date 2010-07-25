@@ -87,13 +87,17 @@
       @a[href: "http://www.cs.utah.edu/~mflatt/"]{Matthew},
       @a[href: "http://www.cs.brown.edu/~sk/"]{Shriram}}})
 
+(require "techreports.rkt")
 (define techreports
   @page[#:file "techreports/" #:part-of learning
-        #:title "Technical Reports"
-        #:extra-headers
-        @meta[http-equiv: "refresh"
-              content: "0;url=http://plt-scheme.org/techreports/"]]{
-    TODO})
+        #:title "Technical Reports"]{
+    @p{PLT publishes technical reports about some of its tools and libraries so
+       that scholars who wish to give proper credit to some of our innovations
+       have a definite citation.  Each entry below provides the full pdf and a
+       bibtex entry; some of the bibtex entries provide additional citations to
+       published papers.}
+
+    @make-bib-table{}})
 
 ;; redirection page for the previous name of this page
 (define outreach+research

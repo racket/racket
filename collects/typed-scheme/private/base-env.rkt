@@ -200,10 +200,18 @@
 [newline (->opt [-Output-Port] -Void)]
 [not (-> Univ B)]
 [box (-poly (a) (a . -> . (-box a)))]
-[unbox (-poly (a) (cl->*                   
+[unbox (-poly (a) (cl->*
                    ((-box a) . -> . a)
                    ((make-BoxTop) . -> . Univ)))]
 [set-box! (-poly (a) ((-box a) a . -> . -Void))]
+[unsafe-unbox (-poly (a) (cl->*
+                          ((-box a) . -> . a)
+                          ((make-BoxTop) . -> . Univ)))]
+[unsafe-set-box! (-poly (a) ((-box a) a . -> . -Void))]
+[unsafe-unbox* (-poly (a) (cl->*
+                           ((-box a) . -> . a)
+                           ((make-BoxTop) . -> . Univ)))]
+[unsafe-set-box*! (-poly (a) ((-box a) a . -> . -Void))]
 [box? (make-pred-ty (make-BoxTop))]
 [cons? (make-pred-ty (-pair Univ Univ))]
 [pair? (make-pred-ty (-pair Univ Univ))]

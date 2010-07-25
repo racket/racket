@@ -1,4 +1,4 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
 (require racket/unsafe/ops)
 (let* ((unboxed-gensym-1 1.0+2.0i)
        (unboxed-gensym-2 (unsafe-flreal-part unboxed-gensym-1))

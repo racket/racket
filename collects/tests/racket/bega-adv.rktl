@@ -30,13 +30,3 @@
 (htdp-syntax-test #'((unquote-splicing (list 10))))
 
 (htdp-err/rt-test `(,@4))
-
-(htdp-top (require scheme/match))
-(htdp-test 17 'match (match 'x [`x 17]))
-(htdp-test 'x 'match (match 'x [`y 17][z z]))
-(htdp-test 2 'match (match (list 1 2 3) [`(,a ,b 3) b]))
-(htdp-test 'no 'match (match (list 1 2 3) [`(,a ,b 4) b] [z 'no]))
-(htdp-test 2 'match (match (list 1 2 3) [`(,a ,b ,c) b]))
-(htdp-test 2 'match (match (list 1 2 3) [`(,a ,@`(,b ,@`(,c))) b]))
-(htdp-test (list 2 3) 'match (match (list 1 2 3) [`(,a ,b ...) b]))
-(htdp-top-pop 1)

@@ -52,9 +52,9 @@
 ;; necessary to have predictable symbols to add in the hand-optimized versions
 ;; of the optimizer tests (which check for equality of expanded code)
 (define *unboxed-gensym-counter* 0)
-(define (unboxed-gensym)
+(define (unboxed-gensym [name 'unboxed-gensym-])
   (set! *unboxed-gensym-counter* (add1 *unboxed-gensym-counter*))
-  (format-unique-id #'here "unboxed-gensym-~a" *unboxed-gensym-counter*))
+  (format-unique-id #'here "~a~a" name *unboxed-gensym-counter*))
 (define (reset-unboxed-gensym)
   (set! *unboxed-gensym-counter* 0))
 

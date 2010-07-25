@@ -875,6 +875,19 @@ sequences that do not repeat, this function will not
 terminate (it does terminate if the only infinite reduction paths are cyclic).
 }
 
+@examples[
+#:eval redex-eval
+       (define-language empty-lang)
+       (define R
+         (reduction-relation
+          empty-lang
+          (--> 0 1)
+          (--> 0 2)
+          (--> 2 3)
+          (--> 3 3)))
+       (apply-reduction-relation R 0)
+       (apply-reduction-relation* R 0)]                        
+                        
 @defidform[-->]{ Recognized specially within
   @racket[reduction-relation]. A @racket[-->] form is an
   error elsewhere.  }
@@ -1210,13 +1223,15 @@ repeating as necessary. The optional keyword argument @racket[retries-expr]
                        (code:line #:source relation-expr)
                        (code:line #:retries retries-expr)
                        (code:line #:print? print?-expr)
-                       (code:line #:attempt-size attempt-size-expr)])
+                       (code:line #:attempt-size attempt-size-expr)
+                       (code:line #:prepare prepare-expr)])
               #:contracts ([property-expr any/c]
                            [attempts-expr natural-number/c]
                            [relation-expr reduction-relation?]
                            [retries-expr natural-number/c]
                            [print?-expr any/c]
-                           [attempt-size-expr (-> natural-number/c natural-number/c)])]{
+                           [attempt-size-expr (-> natural-number/c natural-number/c)]
+                           [prepare-expr (-> any/c any/c)])]{
 Searches for a counterexample to @racket[property-expr], interpreted
 as a predicate universally quantified over the pattern variables
 bound by @racket[pattern]. @racket[redex-check] constructs and tests 
@@ -1241,6 +1256,14 @@ nothing, instead
   @item{returning @racket[#t] when all tests pass, or}
   @item{raising a @racket[exn:fail:redex:test] when checking the property raises an exception.}
 ]
+
+The optional @racket[#:prepare] keyword supplies a function that transforms each
+generated example before @racket[redex-check] checks @racket[property-expr].
+This keyword may be useful when @racket[property-expr] takes the form
+of a conditional, and a term chosen freely from the grammar is unlikely to
+satisfy the conditional's hypothesis. In some such cases, the @racket[prepare] 
+keyword  can be used to increase the probability that an example satifies the
+hypothesis.
 
 When passed a metafunction or reduction relation via the optional @racket[#:source]
 argument, @racket[redex-check] distributes its attempts across the left-hand sides
@@ -1285,7 +1308,18 @@ term that does not match @racket[pattern].}
           (Σ number ...)
           (printf "~s\n" (term (number ...)))
           #:attempts 3
-          #:source R))]
+          #:source R))
+                      
+       (redex-check
+        empty-lang
+        number
+        (begin
+          (printf "checking ~s\n" (term number))
+          (positive? (term number)))
+        #:prepare (λ (n)
+                    (printf "preparing ~s; " n)
+                    (add1 (abs n)))
+        #:attempts 3)]
 
 @defstruct[counterexample ([term any/c]) #:inspector #f]{
 Produced by @racket[redex-check], @racket[check-reduction-relation], and 
@@ -1301,12 +1335,14 @@ and the @racket[exn:fail:redex:test-term] component contains the term that induc
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:retries retries-expr)
                        (code:line #:print? print?-expr)
-                       (code:line #:attempt-size attempt-size-expr)])
+                       (code:line #:attempt-size attempt-size-expr)
+                       (code:line #:prepare prepare-expr)])
               #:contracts ([property (-> any/c any/c)]
                            [attempts-expr natural-number/c]
                            [retries-expr natural-number/c]
                            [print?-expr any/c]
-                           [attempt-size-expr (-> natural-number/c natural-number/c)])]{
+                           [attempt-size-expr (-> natural-number/c natural-number/c)]
+                           [prepare-expr (-> any/c any/c)])]{
 Tests @racket[relation] as follows: for each case of @racket[relation],
 @racket[check-reduction-relation] generates @racket[attempts] random
 terms that match that case's left-hand side and applies @racket[property] 
@@ -1322,15 +1358,18 @@ when @racket[relation] is a relation on @racket[L] with @racket[n] rules.}
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:retries retries-expr)
                        (code:line #:print? print?-expr)
-                       (code:line #:attempt-size attempt-size-expr)])
+                       (code:line #:attempt-size attempt-size-expr)
+                       (code:line #:prepare prepare-expr)])
               #:contracts ([property (-> (listof any/c) any/c)]
                            [attempts-expr natural-number/c]
                            [retries-expr natural-number/c]
                            [print?-expr any/c]
-                           [attempt-size-expr (-> natural-number/c natural-number/c)])]{
+                           [attempt-size-expr (-> natural-number/c natural-number/c)]
+                           [prepare-expr (-> (listof any/c) (listof any/c))])]{
 Like @racket[check-reduction-relation] but for metafunctions. 
 @racket[check-metafunction] calls @racket[property] with lists
-containing arguments to the metafunction.}
+containing arguments to the metafunction. Similarly, @racket[prepare-expr]
+produces and consumes argument lists.}
 
 @examples[
 #:eval redex-eval

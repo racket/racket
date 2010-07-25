@@ -3235,6 +3235,8 @@ static Scheme_Object *os_wxPenListFindOrCreatePen(int n,  Scheme_Object *p[])
     class wxColour* x0 INIT_NULLED_OUT;
     double x1;
     int x2;
+    int x3;
+    int x4;
 
     SETUP_VAR_STACK_PRE_REMEMBERED(3);
     VAR_STACK_PUSH(0, p);
@@ -3242,14 +3244,22 @@ static Scheme_Object *os_wxPenListFindOrCreatePen(int n,  Scheme_Object *p[])
     VAR_STACK_PUSH(2, x0);
 
     
-    if (n != (POFFSET+3)) 
-      WITH_VAR_STACK(scheme_wrong_count_m("find-or-create-pen in pen-list% (color% case)", POFFSET+3, POFFSET+3, n, p, 1));
+    if ((n < (POFFSET+3)) || (n > (POFFSET+5))) 
+      WITH_VAR_STACK(scheme_wrong_count_m("find-or-create-pen in pen-list% (color% case)", POFFSET+3, POFFSET+5, n, p, 1));
     x0 = WITH_VAR_STACK(objscheme_unbundle_wxColour(p[POFFSET+0], "find-or-create-pen in pen-list% (color% case)", 0));
     x1 = WITH_VAR_STACK(objscheme_unbundle_double_in(p[POFFSET+1], 0, 255, "find-or-create-pen in pen-list% (color% case)"));
     x2 = WITH_VAR_STACK(unbundle_symset_penStyle(p[POFFSET+2], "find-or-create-pen in pen-list% (color% case)"));
+    if (n > (POFFSET+3)) {
+      x3 = WITH_VAR_STACK(unbundle_symset_cap(p[POFFSET+3], "find-or-create-pen in pen-list% (color% case)"));
+    } else
+      x3 = wxCAP_ROUND;
+    if (n > (POFFSET+4)) {
+      x4 = WITH_VAR_STACK(unbundle_symset_join(p[POFFSET+4], "find-or-create-pen in pen-list% (color% case)"));
+    } else
+      x4 = wxJOIN_ROUND;
 
     
-    r = WITH_VAR_STACK(((wxPenList *)((Scheme_Class_Object *)p[0])->primdata)->FindOrCreatePen(x0, x1, x2));
+    r = WITH_VAR_STACK(((wxPenList *)((Scheme_Class_Object *)p[0])->primdata)->FindOrCreatePen(x0, x1, x2, x3, x4));
 
     
     
@@ -3258,6 +3268,8 @@ static Scheme_Object *os_wxPenListFindOrCreatePen(int n,  Scheme_Object *p[])
     string x0 INIT_NULLED_OUT;
     double x1;
     int x2;
+    int x3;
+    int x4;
 
     SETUP_VAR_STACK_PRE_REMEMBERED(3);
     VAR_STACK_PUSH(0, p);
@@ -3265,14 +3277,22 @@ static Scheme_Object *os_wxPenListFindOrCreatePen(int n,  Scheme_Object *p[])
     VAR_STACK_PUSH(2, x0);
 
     
-    if (n != (POFFSET+3)) 
-      WITH_VAR_STACK(scheme_wrong_count_m("find-or-create-pen in pen-list% (color name case)", POFFSET+3, POFFSET+3, n, p, 1));
+    if ((n < (POFFSET+3)) || (n > (POFFSET+5))) 
+      WITH_VAR_STACK(scheme_wrong_count_m("find-or-create-pen in pen-list% (color name case)", POFFSET+3, POFFSET+5, n, p, 1));
     x0 = (string)WITH_VAR_STACK(objscheme_unbundle_string(p[POFFSET+0], "find-or-create-pen in pen-list% (color name case)"));
     x1 = WITH_VAR_STACK(objscheme_unbundle_double_in(p[POFFSET+1], 0, 255, "find-or-create-pen in pen-list% (color name case)"));
     x2 = WITH_VAR_STACK(unbundle_symset_penStyle(p[POFFSET+2], "find-or-create-pen in pen-list% (color name case)"));
+    if (n > (POFFSET+3)) {
+      x3 = WITH_VAR_STACK(unbundle_symset_cap(p[POFFSET+3], "find-or-create-pen in pen-list% (color name case)"));
+    } else
+      x3 = wxCAP_ROUND;
+    if (n > (POFFSET+4)) {
+      x4 = WITH_VAR_STACK(unbundle_symset_join(p[POFFSET+4], "find-or-create-pen in pen-list% (color name case)"));
+    } else
+      x4 = wxJOIN_ROUND;
 
     
-    r = WITH_VAR_STACK(((wxPenList *)((Scheme_Class_Object *)p[0])->primdata)->FindOrCreatePen(x0, x1, x2));
+    r = WITH_VAR_STACK(((wxPenList *)((Scheme_Class_Object *)p[0])->primdata)->FindOrCreatePen(x0, x1, x2, x3, x4));
 
     
     
@@ -3321,7 +3341,7 @@ void objscheme_setup_wxPenList(Scheme_Env *env)
 
   os_wxPenList_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "pen-list%", "object%", (Scheme_Method_Prim *)os_wxPenList_ConstructScheme, 1));
 
-  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxPenList_class, "find-or-create-pen" " method", (Scheme_Method_Prim *)os_wxPenListFindOrCreatePen, 3, 3));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxPenList_class, "find-or-create-pen" " method", (Scheme_Method_Prim *)os_wxPenListFindOrCreatePen, 3, 5));
 
 
   WITH_VAR_STACK(scheme_made_class(os_wxPenList_class));

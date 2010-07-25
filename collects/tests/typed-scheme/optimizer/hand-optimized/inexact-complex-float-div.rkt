@@ -1,8 +1,8 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
 (require racket/unsafe/ops)
 (map (lambda: ((x : Inexact-Complex))
-              (string-append (real->decimal-string (real-part x) 10)
-                             (real->decimal-string (imag-part x) 10)))
+              (string-append (real->decimal-string (unsafe-flreal-part x) 10)
+                             (real->decimal-string (unsafe-flimag-part x) 10)))
      (list
       (let* ((unboxed-gensym-1 1.0)
              (unboxed-gensym-2 2.0+4.0i)

@@ -19,7 +19,8 @@
          file-stamp-in-paths
          (rename-out [trace manager-trace-handler])
          get-file-sha1
-         get-compiled-file-sha1)
+         get-compiled-file-sha1
+         with-compile-output)
 
 (define manager-compile-notify-handler (make-parameter void))
 (define trace (make-parameter void))
@@ -55,27 +56,36 @@
                                    (if p-date
                                        p
                                        (rkt->ss p)))]
-                       [mode (car (use-compiled-file-paths))]
-                       [get-zo-date (lambda (name)
-                                      (file-or-directory-modify-seconds
-                                       (build-path 
-                                        base
-                                        mode
-                                        (path-add-suffix name #".zo"))
-                                       #f
-                                       (lambda () #f)))]
-                       [main-zo-date (and (or p-date (not alt-date))
-                                          (get-zo-date name))]
-                       [alt-zo-date (and (or alt-date
-                                             (and (not p-date) 
-                                                  (not alt-date)
-                                                  (not main-zo-date)))
-                                         (get-zo-date (rkt->ss name)))]
-                       [zo-date (or main-zo-date alt-zo-date)]
+                       [modes (use-compiled-file-paths)]
+                       [get-zo-date+mode (lambda (name)
+                                           (ormap
+                                            (lambda (mode)
+                                              (let ([v (file-or-directory-modify-seconds
+                                                        (build-path 
+                                                         base
+                                                         mode
+                                                         (path-add-suffix name #".zo"))
+                                                        #f
+                                                        (lambda () #f))])
+                                                (and v (cons v mode))))
+                                            modes))]
+                       [main-zo-date+mode (and (or p-date (not alt-date))
+                                               (get-zo-date+mode name))]
+                       [alt-zo-date+mode (and (or alt-date
+                                                  (and (not p-date) 
+                                                       (not alt-date)
+                                                       (not main-zo-date+mode)))
+                                              (get-zo-date+mode (rkt->ss name)))]
+                       [zo-date+mode (or main-zo-date+mode alt-zo-date+mode)]
+                       [zo-date (and zo-date+mode (car zo-date+mode))]
                        [get-zo-path (lambda ()
-                                      (if main-zo-date
-                                          (path-add-suffix name #".zo")
-                                          (path-add-suffix (rkt->ss name) #".zo")))])
+                                      (let-values ([(name mode)
+                                                    (if main-zo-date+mode
+                                                        (values (path-add-suffix name #".zo")
+                                                                (cdr main-zo-date+mode))
+                                                        (values (path-add-suffix (rkt->ss name) #".zo")
+                                                                (cdr (cdr alt-zo-date+mode))))])
+                                        (build-path base mode name)))])
                   (cond
                    [(and zo-date
                          (or (not date)
@@ -199,7 +209,13 @@
                      [else #f]))))])
     (and l
          (let ([p (open-output-string)]
-               [l (map (lambda (v) (cons (force (car v)) (cdr v))) l)])
+               [l (map (lambda (v) 
+                         (let ([sha1 (force (car v))]
+                               [dep (cdr v)])
+                           (unless sha1
+                             (error 'cm "no SHA-1 for dependency: ~s" dep))
+                           (cons sha1 dep)))
+                       l)])
            ;; sort by sha1s so that order doesn't matter
            (write (sort l string<? #:key car) p)
            ;; compute one hash from all hashes
@@ -458,7 +474,7 @@
       (cond
        [(not path-time)
         (trace-printf "~a does not exist" orig-path)
-        (or (and up-to-date (hash-ref up-to-date orig-path #f))
+        (or (hash-ref up-to-date orig-path #f)
             (let ([stamp (cons path-zo-time
                                (delay (get-compiled-sha1 mode path)))])
               (hash-set! up-to-date main-path stamp)

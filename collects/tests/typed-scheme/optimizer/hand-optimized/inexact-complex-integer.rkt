@@ -1,4 +1,4 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
 (require racket/unsafe/ops racket/flonum)
 (let* ((unboxed-gensym-1 (->fl (expt 2 100)))
        (unboxed-gensym-2 1.0+2.0i)
