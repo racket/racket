@@ -36,10 +36,11 @@
     ;; avoid building the mask unless we use it
     (define todays-icon
       (make-object bitmap% 
-        (build-path (collection-path "icons")
-                    (case (date-week-day (seconds->date (current-seconds)))
-                      [(6 0) "plt-logo-red-shiny.png"]
-                      [else "plt-logo-red-diffuse.png"]))
+        (collection-file-path 
+         (case (date-week-day (seconds->date (current-seconds)))
+           [(6 0) "plt-logo-red-shiny.png"]
+           [else "plt-logo-red-diffuse.png"])
+         "icons")
         'png/mask))
     
     (define todays-icon-bw-mask 

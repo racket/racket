@@ -226,7 +226,7 @@
     (field
      [funny-value 0]
      [funny-bitmap
-      (make-object bitmap% (build-path (collection-path "icons") "touch.bmp"))]
+      (make-object bitmap% (collection-file-path "touch.bmp" "icons"))]
      [max-value 1])
     
     (define/public (get-range) max-value)

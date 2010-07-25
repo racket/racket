@@ -1,12 +1,15 @@
-#lang scheme/gui
+#lang racket/gui
 
 (require setup/getinfo mrlib/bitmap-label "show-help.ss")
 
 (define-struct game (file name set icon))
 
-(define gamedir (collection-path "games"))
+(define gamedirs 
+  (filter directory-exists?
+          (map (λ (x) (build-path x "games"))
+               (current-library-collection-paths))))
 
-(define (get-game game)
+(define (get-game gamedir game)
   (let* ([game (path-element->string game)]
          [info (with-handlers ([exn:fail? (lambda (x) #f)])
                  (get-info (list "games" game)))]
@@ -48,7 +51,11 @@
          (run))))))
 
 (define games
-  (filter values (map get-game (directory-list gamedir))))
+  (apply 
+   append
+   (for/list ([gamedir (in-list gamedirs)])
+     (filter values (map (λ (x) (get-game gamedir x))
+                         (directory-list gamedir))))))
 
 (define game-sets
   (let ([ht (make-hash)])

@@ -257,10 +257,10 @@ Marshalling (and hence the 'read' method of the snipclass omitted for fast proto
   
   (define (set-box/f! b v) (when (box? b) (set-box! b v)))
   
-  (define down-bitmap (make-object bitmap% (build-path (collection-path "icons") "turn-down.png")))
-  (define up-bitmap (make-object bitmap% (build-path (collection-path "icons") "turn-up.png")))
-  (define down-click-bitmap (make-object bitmap% (build-path (collection-path "icons") "turn-down-click.png")))
-  (define up-click-bitmap (make-object bitmap% (build-path (collection-path "icons") "turn-up-click.png")))
+  (define down-bitmap (make-object bitmap% (collection-file-path "turn-down.png" "icons")))
+  (define up-bitmap (make-object bitmap% (collection-file-path "turn-up.png" "icons")))
+  (define down-click-bitmap (make-object bitmap% (collection-file-path "turn-down-click.png" "icons")))
+  (define up-click-bitmap (make-object bitmap% (collection-file-path "turn-up-click.png" "icons")))
   (define arrow-snip-height
     (max 10
          (send up-bitmap get-height)

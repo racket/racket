@@ -1030,12 +1030,10 @@
              [outer-pb (make-object outer-pb%)]
              [bitmap 
               (make-object bitmap%
-                (build-path (collection-path "icons") 
-                            "plt-small-shield.gif"))]
+                (build-path (collection-file-path "plt-small-shield.gif" "icons")))]
              [image-snip
               (make-object image-snip% 
-                (build-path (collection-path "icons") 
-                            "plt-small-shield.gif"))]
+                (collection-file-path "plt-small-shield.gif" "icons"))]
              [before-text (make-object text%)]
              [before-snip (make-object editor-snip% before-text #f)]
              [before-ec%
@@ -1794,8 +1792,7 @@
                (string<=? (cadr x) (cadr y))])))))
       
       (define plt-logo-shiny
-        (make-object bitmap% (build-path (collection-path "icons") 
-                                         "plt-logo-red-shiny.png")
+        (make-object bitmap% (collection-file-path "plt-logo-red-shiny.png" "icons")
           'png/mask))
 
       (define (display-racketeer)
@@ -1951,8 +1948,7 @@
                         (stretchable-height #f))]
                [msg (new message%
                          (label (make-object bitmap%
-                                  (build-path (apply collection-path (cdr icon-lst))
-                                              (car icon-lst))
+                                  (apply collection-file-path icon-lst)
                                   'unknown/mask))
                          (parent hp))]
                [vp (new vertical-pane% 

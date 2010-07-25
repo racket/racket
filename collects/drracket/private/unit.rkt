@@ -355,9 +355,9 @@ module browser threading seems wrong.
                      frame
                      program-filename)))])))
     
-    (define execute-bitmap (make-object bitmap% (build-path (collection-path "icons") "run.png") 'png/mask))
-    (define break-bitmap (make-object bitmap% (build-path (collection-path "icons") "break.png") 'png/mask))
-    (define save-bitmap (make-object bitmap% (build-path (collection-path "icons") "save.png") 'png/mask))
+    (define execute-bitmap (make-object bitmap% (collection-file-path "run.png" "icons") 'png/mask))
+    (define break-bitmap (make-object bitmap% (collection-file-path "break.png" "icons") 'png/mask))
+    (define save-bitmap (make-object bitmap% (collection-file-path "save.png" "icons") 'png/mask))
     
     (define-values (get-program-editor-mixin add-to-program-editor-mixin)
       (let* ([program-editor-mixin

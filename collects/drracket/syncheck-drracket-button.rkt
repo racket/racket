@@ -8,7 +8,7 @@
 
 (define-local-member-name syncheck:button-callback)
 
-(define syncheck-bitmap (make-object bitmap% (build-path (collection-path "icons") "syncheck.png") 'png/mask))
+(define syncheck-bitmap (make-object bitmap% (collection-file-path "syncheck.png" "icons") 'png/mask))
 
 (define syncheck-drracket-button
   (list 
