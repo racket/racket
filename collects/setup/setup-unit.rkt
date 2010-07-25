@@ -983,7 +983,7 @@
 
   (when (make-docs)
     ;; Double-check that "setup/scribble" is present.
-    (when (file-exists? (build-path (collection-path "setup") "scribble.rkt"))
+    (when (file-exists? (collection-file-path "scribble.rkt" "setup"))
       (make-docs-step)))
   (when (doc-pdf-dest) (doc-pdf-dest-step))
 

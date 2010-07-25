@@ -3,7 +3,7 @@
 ;; #%misc : file utilities, etc. - remaining functions
 
 (module misc '#%kernel
-  (#%require '#%utils ; built into mzscheme
+  (#%require '#%utils ; built into racket
              "more-scheme.rkt" "small-scheme.rkt" "define.rkt"
              (for-syntax '#%kernel "stx.rkt" "stxcase-scheme.rkt" "stxcase.rkt"))
   
@@ -179,7 +179,7 @@
              load/cd
              load-relative load-relative-extension
              path-list-string->path-list find-executable-path
-             collection-path load/use-compiled
+             collection-path collection-file-path load/use-compiled
              guard-evt channel-get channel-try-get channel-put
              port? displayln
              find-library-collection-paths))

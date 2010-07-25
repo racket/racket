@@ -1,3 +1,7 @@
+Version 5.0.1.2
+Added collection-file-path and collection splicing at the file
+level
+
 Version 5.0.1, July 2010
 Continuation barriers now block only downward continuation jumps
  and allow escapes through full continuations

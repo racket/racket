@@ -63,15 +63,13 @@ For the default @tech{module name resolver}, The search path for
 collections is determined by the
 @racket[current-library-collection-paths] parameter. The list of paths
 in @racket[current-library-collection-paths] is searched from first to
-last to locate the first collection in a @racket[_rel-string]. To find
-a sub-collection, the enclosing collection is first found; if the
-sub-collection is not present in the found enclosing collection, then
-the search continues by looking for another instance of the enclosing
-collection, and so on. In other words, the directory tree for each
-element in the search path is spliced together with the directory
-trees of other path elements. (The ``splicing'' of tress applies only
-to directories; a file within a collection is found only within the
-first instance of the collection.)
+last to locate the first that contains @racket[_rel-string]. In other
+words, the filesystem tree for each element in the search path is
+spliced together with the filesystem trees of other path
+elements. Some Racket tools rely on unique resolution of module path
+names, so an installation and
+@racket[current-library-collection-paths] configuration should not
+allow multiple files to match the same collection and file name.
 
 The value of the @racket[current-library-collection-paths] parameter
 is initialized in the Racket executable to the result of
@@ -121,12 +119,27 @@ Produces a list of paths as follows:
 ]}
 
 
-@defproc[(collection-path [collection string?] ...+) path?]{
+@defproc[(collection-file-path [file path-string?] [collection path-string?] ...+) path?]{
 
-Returns the path to a directory containing the libraries of the
-collection indicated by @racket[collection]s, where the second
-@racket[collection] (if any) names a sub-collection, and so on. If the
+Returns the path to the file indicated by @racket[file] in the
+collection specified by the @racket[collection]s, where the second
+@racket[collection] (if any) names a sub-collection, and so on. If
+@racket[file] is not found, but @racket[file] ends in @filepath{.rkt}
+and a file with the suffix @filepath{.ss} exists, then the directory
+of the @filepath{.ss} file is used. If @racket[file] is not found and
+the @filepath{.rkt}/@filepath{.ss} conversion does not apply, but a
+directory corresponding to the @racket[collection]s is found, then a
+path using the first such directory is returned. Finally, if the
 collection is not found, the @exnraise[exn:fail:filesystem].}
+
+
+@defproc[(collection-path [collection path-string?] ...+) path?]{
+
+Like @racket[collection-path-path], but without a specified file name,
+so that the first directory indicated by @racket[collection]s is
+returned. The @racket[collection-file-path] function normally should
+be used, instead, to support splicing of library-collection trees at
+the file level.}
 
 
 @defparam[current-library-collection-paths paths (listof (and/c path? complete-path?))]{

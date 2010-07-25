@@ -14,7 +14,7 @@
 (define jfp-extras
   (let ([abs (lambda (s)
                (path->main-collects-relative
-                (build-path (collection-path "scribble") "jfp" s)))])
+                (collection-file-path s "scribble" "jfp")))])
     (list
      (make-css-addition (abs "jfp.css"))
      (make-tex-addition (abs "jfp.tex")))))

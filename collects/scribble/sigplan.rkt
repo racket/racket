@@ -50,7 +50,7 @@
 (define sigplan-extras
   (let ([abs (lambda (s)
                (path->main-collects-relative
-                (build-path (collection-path "scribble") "sigplan" s)))])
+                (collection-file-path s "scribble" "sigplan")))])
     (list
      (make-css-addition (abs "sigplan.css"))
      (make-tex-addition (abs "sigplan.tex")))))

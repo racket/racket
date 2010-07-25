@@ -39,13 +39,7 @@
       (apply build-path p args)))
 
   (define (find-library name . cp)
-    (let ([dir (with-handlers ([exn:fail:filesystem? (lambda (exn) #f)])
-                 (if (null? cp)
-                     (collection-path "mzlib")
-                     (apply collection-path cp)))])
-      (and dir
-           (let ([file (build-path dir name)])
-             (and (file-exists? file) file)))))
+    (apply collection-file-path name cp))
 
   (define (-call-with-input-file* file thunk . flags)
     (let ([p (apply mz:open-input-file file flags)])

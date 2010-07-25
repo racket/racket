@@ -16,7 +16,7 @@
 (define autobib-style-extras
   (let ([abs (lambda (s)
                (path->main-collects-relative
-                (build-path (collection-path "scriblib") s)))])
+                (collection-file-path s "scriblib")))])
     (list
      (make-css-addition (abs "autobib.css"))
      (make-tex-addition (abs "autobib.tex")))))

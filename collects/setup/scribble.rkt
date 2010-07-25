@@ -354,8 +354,8 @@
     (new (latex:render-mixin render%)
          [dest-dir latex-dest]
          ;; Use PLT manual style:
-         [prefix-file (build-path (collection-path "scribble") "manual-prefix.tex")]
-         [style-file (build-path (collection-path "scribble") "manual-style.tex")])
+         [prefix-file (collection-file-path "manual-prefix.tex" "scribble")]
+         [style-file (collection-file-path "manual-style.tex" "scribble")])
     (let* ([flags (doc-flags doc)]
            [multi? (memq 'multi-page flags)]
            [main?  (doc-under-main? doc)]
@@ -369,7 +369,7 @@
                     ddir)]
         [alt-paths   (if main?
                          (let ([std-path (lambda (s)
-                                           (cons (build-path (collection-path "scribble") s)
+                                           (cons (collection-file-path s "scribble")
                                                  (format "../~a" s)))])
                            (list (std-path "scribble.css")
                                  (std-path "scribble-style.css")
@@ -492,8 +492,7 @@
                                          "latex-render.rkt"
                                          "html-render.rkt")
                                      ".zo"))]
-         [css-path (build-path (collection-path "scribble")
-                               "scribble.css")]
+         [css-path (collection-file-path "scribble.css" "scribble")]
          [aux-time (max (file-or-directory-modify-seconds/stamp
                          renderer-path
                          stamp-time stamp-data 1
