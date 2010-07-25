@@ -34,8 +34,10 @@
                             (file-or-directory-modify-seconds this-file))))])
       (let* ([x (x)]
              [m (and (string? x) (regexp-match rx:secs+id x))]
-             [d (and m (seconds->date (string->number (cadr m))))])
+             [d (and m (seconds->date (string->number (cadr m))))]
+             [id (and m (substring (caddr m) 0 10))]
+             [how (and m (cadddr m))])
         (define (pad02 f) (let ([n (f d)]) (if (< n 10) (format "0~a" n) n)))
-        (and d (apply format "~a-~a-~a(~a/~a)"
-                      (date-year d) (pad02 date-month) (pad02 date-day)
-                      (cddr m)))))))
+        (and d (format "~a-~a-~a(~a/~a)"
+                       (date-year d) (pad02 date-month) (pad02 date-day)
+                       id how))))))
