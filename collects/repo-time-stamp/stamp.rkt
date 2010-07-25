@@ -35,7 +35,7 @@
       (let* ([x (x)]
              [m (and (string? x) (regexp-match rx:secs+id x))]
              [d (and m (seconds->date (string->number (cadr m))))]
-             [id (and m (substring (caddr m) 0 10))]
+             [id (and m (caddr m))]
              [how (and m (cadddr m))])
         (define (pad02 f) (let ([n (f d)]) (if (< n 10) (format "0~a" n) n)))
         (and d (format "~a-~a-~a(~a/~a)"
