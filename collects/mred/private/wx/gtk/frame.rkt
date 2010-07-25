@@ -128,11 +128,11 @@
                [fh (unbox h-box)])
           (set-top-position (if (or (eq? dir 'both)
                                     (eq? dir 'horizontal))
-                                (/ (- sw fw) 2)
+                                (quotient (- sw fw) 2)
                                 -11111)
                             (if (or (eq? dir 'both)
                                     (eq? dir 'vertical))
-                                (/ (- sh fh) 2)
+                                (quotient (- sh fh) 2)
                                 -11111)))))
 
     (define/override (set-top-position x y)
