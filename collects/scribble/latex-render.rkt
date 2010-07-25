@@ -562,11 +562,11 @@
         [(symbol? i)
          (display (case i
                     [(nbsp) "~"]
-                    [(mdash) "---"]
-                    [(ndash) "--"]
-                    [(ldquo) "``"]
-                    [(rdquo) "''"]
-                    [(rsquo) "'"]
+                    [(mdash) "{---}"]
+                    [(ndash) "{--}"]
+                    [(ldquo) "{``}"]
+                    [(rdquo) "{''}"]
+                    [(rsquo) "{'}"]
                     [(prime) "$'$"]
                     [(rarr) "$\\rightarrow$"]
                     [(larr) "$\\leftarrow$"]
@@ -597,6 +597,9 @@
                      [(#\>) (if (rendering-tt) "{\\texttt >}" "$>$")]
                      [(#\<) (if (rendering-tt) "{\\texttt <}" "$<$")]
                      [(#\|) (if (rendering-tt) "{\\texttt |}" "$|$")]
+                     [(#\-) "{-}"] ;; avoid en- or em-dash
+                     [(#\`) "{`}"] ;; avoid double-quotes
+                     [(#\') "{'}"] ;; avoid double-quotes
                      [(#\? #\! #\. #\:)
                       (if (rendering-tt) (format "{\\hbox{\\texttt{~a}}}" c) c)]
                      [(#\~) "$\\sim$"]
