@@ -49,16 +49,16 @@
 (define (level-of dir)
   (let ([dir (string->symbol (basename dir))])
     (case dir
-      [(bin)      #f]
-      [(collects) 1]
-      [(doc)      1]
-      [(include)  1]
+      [(bin)        #f]
+      [(collects)   1]
+      [(doc)        1]
+      [(include)    1]
       ;; if shared libraries are used, then these files should be moved
       ;; independently, as if they had a level of #f
-      [(lib)      1]
-      [(man)      #f]
-      [(src)      1]
-      [(README)   #f] ; moved last
+      [(lib)        1]
+      [(man)        #f]
+      [(src)        1]
+      [(readme.txt) #f] ; moved last
       [else (error 'level-of "internal-error -- unknown dir: ~e" dir)])))
 
 (define (make-path . args) ; like build-path but returns a string
