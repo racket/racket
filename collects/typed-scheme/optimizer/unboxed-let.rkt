@@ -37,8 +37,8 @@
                   ;; add the unboxed bindings to the table, for them to be used by
                   ;; further optimizations
                   (for ((v (in-list (syntax->list #'(opt-candidates.id ...))))
-                        (r (in-list (syntax->list #'(opt-candidates.real-part ...))))
-                        (i (in-list (syntax->list #'(opt-candidates.imag-part ...)))))
+                        (r (in-list (syntax->list #'(opt-candidates.real-binding ...))))
+                        (i (in-list (syntax->list #'(opt-candidates.imag-binding ...)))))
                        (dict-set! unboxed-vars-table v (list r i)))
                   #`(let* (opt-candidates.bindings ... ... opt-others.res ...)
                       #,@(map (optimize) (syntax->list #'(body ...)))))))
@@ -92,8 +92,8 @@
 (define-syntax-class unboxed-let-clause
   (pattern ((v:id) rhs:unboxed-inexact-complex-opt-expr)
            #:with id #'v
-           #:with real-part #'rhs.real-part
-           #:with imag-part #'rhs.imag-part
+           #:with real-binding #'rhs.real-binding
+           #:with imag-binding #'rhs.imag-binding
            #:with (bindings ...) #'(rhs.bindings ...)))
 (define-syntax-class let-clause ; to turn let-values clauses into let clauses
   (pattern ((v:id) rhs:expr)
