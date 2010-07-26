@@ -4,6 +4,7 @@
          scribble/base
          scribble/decode
          scribble/sigplan
+         racket/list
          "../private/defaults.ss"
          (for-syntax scheme/base))
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
@@ -15,30 +16,32 @@
   (syntax-case stx ()
     [(_ id . body)
      (let ([preprint? #f]
-           [10pt? #f])
+           [10pt? #f]
+           [nocopyright? #f])
        (let loop ([stuff #'body])
-         (syntax-case* stuff (preprint 10pt) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
+         (syntax-case* stuff (preprint 10pt nocopyright) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
            [(ws . body)
             ;; Skip intraline whitespace to find options:
             (and (string? (syntax-e #'ws))
                  (regexp-match? #rx"^ *$" (syntax-e #'ws)))
             (loop #'body)]
            [(preprint . body)
-            (set! preprint? #t)
+            (set! preprint? "preprint")
+            (loop #'body)]
+           [(nocopyright . body)
+            (set! nocopyright? "nocopyrightspace")
             (loop #'body)]
            [(10pt . body)
-            (set! 10pt? #t)
+            (set! 10pt? "10pt")
             (loop #'body)]
            [body
-            #`(#%module-begin id (post-process #,preprint? #,10pt?) () . body)])))]))
+            #`(#%module-begin id (post-process #,preprint? #,10pt? #,nocopyright?) () . body)])))]))
 
-(define ((post-process preprint? 10pt?) doc)
+(define ((post-process . opts) doc)
   (let ([options 
-         (cond
-           [(and preprint? 10pt?) "[preprint, 10pt]"]
-           [preprint? "[preprint]"]
-           [10pt? "[10pt]"]
-           [else ""])])
+         (if (ormap values opts)
+             (format "[~a]" (apply string-append (add-between (filter values opts) ", ")))
+             "")])
     (add-sigplan-styles 
      (add-defaults doc
                    (string->bytes/utf-8
