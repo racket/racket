@@ -135,7 +135,7 @@ collection is not found, the @exnraise[exn:fail:filesystem].}
 
 @defproc[(collection-path [collection path-string?] ...+) path?]{
 
-Like @racket[collection-path-path], but without a specified file name,
+Like @racket[collection-file-path], but without a specified file name,
 so that the first directory indicated by @racket[collection]s is
 returned. The @racket[collection-file-path] function normally should
 be used, instead, to support splicing of library-collection trees at
