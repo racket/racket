@@ -49,16 +49,16 @@
 (define (level-of dir)
   (let ([dir (string->symbol (basename dir))])
     (case dir
-      [(bin)        #f]
-      [(collects)   1]
-      [(doc)        1]
-      [(include)    1]
+      [(bin)      #f]
+      [(collects) 1]
+      [(doc)      1]
+      [(include)  1]
       ;; if shared libraries are used, then these files should be moved
       ;; independently, as if they had a level of #f
-      [(lib)        1]
-      [(man)        #f]
-      [(src)        1]
-      [(readme.txt) #f] ; moved last
+      [(lib)      1]
+      [(man)      #f]
+      [(src)      1]
+      [(README)   #f] ; moved last
       [else (error 'level-of "internal-error -- unknown dir: ~e" dir)])))
 
 (define (make-path . args) ; like build-path but returns a string
@@ -400,8 +400,8 @@
     ;; a place where it would not be usable.
     (when (and (directory-exists? "src") move?) (rm "src"))
     ;; part of the distribution:
-    (when (file-exists? "readme.txt")
-      (do-tree "readme.txt" (make-path (dir: 'doc) "readme.txt")))
+    (when (file-exists? "README")
+      (do-tree "README" (make-path (dir: 'doc) "README")))
     ;; nothing should be left now if this was a move
     (when (and move? (not (null? (ls))))
       (error (format "leftovers in source tree: ~s" (ls))))
