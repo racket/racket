@@ -25,15 +25,28 @@
               (when p
                     (fprintf
                      (current-error-port)
-                     "warning: tool ~s registered twice: ~e and ~e"
+                     "warning: tool ~s registered twice: ~e and ~e\n"
                      (car entry)
                      (car p)
                      d)))
-            (hash-set! tools (car entry) entry)]
+            (let ([entry (let ([e (cadr entry)])
+                           (if (or (string? e)
+                                   (and (pair? e)
+                                        (eq? (car e) 'file)
+                                        (relative-path? (cadr e))))
+                               ;; convert absolute path to realive to "info.rkt":
+                               (list* (car entry)
+                                      (build-path d (if (pair? e)
+                                                        (cadr e)
+                                                        e))
+                                      (cddr entry))
+                               ;; module path is absolute already:
+                               entry))])
+              (hash-set! tools (car entry) entry))]
            [else
             (fprintf
              (current-error-port)
-             "warning: ~s provided bad `raco-commands' spec: ~e"
+             "warning: ~s provided bad `raco-commands' spec: ~e\n"
              d
              entry)]))))
     tools))
