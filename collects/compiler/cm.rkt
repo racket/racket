@@ -181,7 +181,9 @@
            (try-delete-file tmp-path))))))
 
 (define (get-source-sha1 p)
-  (with-handlers ([exn:fail:filesystem? (lambda (exn) #f)])
+  (with-handlers ([exn:fail:filesystem? (lambda (exn)
+                                          (and (regexp-match? #rx#"[.]rkt$" (path->bytes p))
+                                               (get-source-sha1 (path-replace-suffix p #".ss"))))])
     (call-with-input-file* p sha1)))
 
 (define (get-dep-sha1s deps up-to-date read-src-syntax mode must-exist?)
