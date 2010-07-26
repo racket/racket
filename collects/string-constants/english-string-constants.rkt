@@ -1015,7 +1015,7 @@ please adhere to these guidelines:
  (enforce-primitives-group-box-label "Initial Bindings")
  (enforce-primitives-check-box-label "Disallow redefinition of initial bindings")
  (automatically-compile "Populate compiled/ directories (for faster loading)")
- (preserve-stacktrace-information "Preserve stacktrace (disable some JIT optimizations)")
+ (preserve-stacktrace-information "Preserve stacktrace (disable some optimizations)")
  (expression-level-stacktrace "Expression-level stacktrace")
  (function-level-stacktrace "Function-level stacktrace")
   
