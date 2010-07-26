@@ -254,11 +254,13 @@
            #`((real-binding (exact->inexact #,((optimize) #'e)))))
   (pattern e:expr
            #:when (isoftype? #'e -Number) ; complex, maybe exact, maybe not
+           #:with e* (unboxed-gensym)
            #:with real-binding (unboxed-gensym)
            #:with imag-binding (unboxed-gensym)
            #:with (bindings ...)
-           #`((real-binding (real-part #,((optimize) #'e)))
-              (imag-binding (imag-part #,((optimize) #'e)))))
+           #`((e* #,((optimize) #'e))
+              (real-binding (exact->inexact (real-part e*)))
+              (imag-binding (exact->inexact (imag-part e*)))))
   (pattern e:expr
            #:with (bindings ...)
            (error "non exhaustive pattern match")
