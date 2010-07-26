@@ -15,7 +15,8 @@
 
 (define-syntax-class unboxed-let-opt-expr
   #:literal-sets (kernel-literals)
-  (pattern (~and exp (let-values (clause:expr ...) body:expr ...))
+  (pattern (~and exp ((~and op (~or (~literal let-values) (~literal letrec-values)))
+                      (clause:expr ...) body:expr ...))
            ;; we look for bindings of complexes that are not mutated and only
            ;; used in positions where we would unbox them
            ;; these are candidates for unboxing
@@ -40,7 +41,8 @@
                         (r (in-list (syntax->list #'(opt-candidates.real-binding ...))))
                         (i (in-list (syntax->list #'(opt-candidates.imag-binding ...)))))
                        (dict-set! unboxed-vars-table v (list r i)))
-                  #`(let* (opt-candidates.bindings ... ... opt-others.res ...)
+                  #`(#,(if (free-identifier=? #'op #'let-values) #'let* #'letrec)
+                        (opt-candidates.bindings ... ... opt-others.res ...)
                       #,@(map (optimize) (syntax->list #'(body ...)))))))
 
 ;; if a variable is only used in complex arithmetic operations, it's safe
