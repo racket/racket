@@ -15,7 +15,7 @@
 
 (define-syntax-class unboxed-let-opt-expr
   #:literal-sets (kernel-literals)
-  (pattern (~and exp ((~and op (~or (~literal let-values) (~literal letrec-values)))
+  (pattern (~and exp (letk:let-like-keyword
                       (clause:expr ...) body:expr ...))
            ;; we look for bindings of complexes that are not mutated and only
            ;; used in positions where we would unbox them
@@ -32,7 +32,7 @@
                             (map syntax->list (syntax->list #'(clause ...))))))
              (list candidates others))
            #:with (opt-candidates:unboxed-let-clause ...) #'(candidates ...)
-           #:with (opt-others:let-clause ...) #'(others ...)
+           #:with (opt-others:opt-let-values-clause ...) #'(others ...)
            #:with opt
            (begin (log-optimization "unboxed let bindings" #'exp)
                   ;; add the unboxed bindings to the table, for them to be used by
@@ -41,9 +41,18 @@
                         (r (in-list (syntax->list #'(opt-candidates.real-binding ...))))
                         (i (in-list (syntax->list #'(opt-candidates.imag-binding ...)))))
                        (dict-set! unboxed-vars-table v (list r i)))
-                  #`(#,(if (free-identifier=? #'op #'let-values) #'let* #'letrec)
+                  #`(letk.key ...
                         (opt-candidates.bindings ... ... opt-others.res ...)
                       #,@(map (optimize) (syntax->list #'(body ...)))))))
+
+(define-splicing-syntax-class let-like-keyword
+  #:literal-sets (kernel-literals)
+  (pattern (~literal let-values)
+           #:with (key ...) #'(let*-values))
+  (pattern (~literal letrec-values)
+           #:with (key ...) #'(letrec-values))
+  (pattern (~seq (~literal letrec-syntaxes+values) stx-bindings)
+           #:with (key ...) #'(letrec-syntaxes+values stx-bindings)))
 
 ;; if a variable is only used in complex arithmetic operations, it's safe
 ;; to unbox it
@@ -97,6 +106,6 @@
            #:with real-binding #'rhs.real-binding
            #:with imag-binding #'rhs.imag-binding
            #:with (bindings ...) #'(rhs.bindings ...)))
-(define-syntax-class let-clause ; to turn let-values clauses into let clauses
-  (pattern ((v:id) rhs:expr)
-           #:with res #`(v #,((optimize) #'rhs))))
+(define-syntax-class opt-let-values-clause
+  (pattern (vs rhs:expr)
+           #:with res #`(vs #,((optimize) #'rhs))))

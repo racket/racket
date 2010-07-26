@@ -41,8 +41,8 @@
                                               ((e (cdr l)))
                                             #`(unsafe-fl+ #,o #,e))))))
                                    (list
-                                    #`(real-binding #,(skip-0s #'(c1.real-binding c2.real-binding cs.real-binding ...)))
-                                    #`(imag-binding #,(skip-0s #'(c1.imag-binding c2.imag-binding cs.imag-binding ...)))))))))
+                                    #`((real-binding) #,(skip-0s #'(c1.real-binding c2.real-binding cs.real-binding ...)))
+                                    #`((imag-binding) #,(skip-0s #'(c1.imag-binding c2.imag-binding cs.imag-binding ...)))))))))
   
   (pattern (#%plain-app (~and op (~literal -))
                         c1:unboxed-inexact-complex-opt-expr
@@ -68,8 +68,8 @@
                                              ((e l2))
                                            #`(unsafe-fl- #,o #,e))))))
                                   (list
-                                   #`(real-binding #,(skip-0s #'(c1.real-binding c2.real-binding cs.real-binding ...)))
-                                   #`(imag-binding #,(skip-0s #'(c1.imag-binding c2.imag-binding cs.imag-binding ...)))))))))
+                                   #`((real-binding) #,(skip-0s #'(c1.real-binding c2.real-binding cs.real-binding ...)))
+                                   #`((imag-binding) #,(skip-0s #'(c1.imag-binding c2.imag-binding cs.imag-binding ...)))))))))
   
   (pattern (#%plain-app (~and op (~literal *))
                         c1:unboxed-inexact-complex-opt-expr
@@ -104,14 +104,14 @@
                                       ;; we eliminate operations on the imaginary parts of reals
                                       (let ((o-real? (equal? (syntax->datum o2) 0.0))
                                             (e-real? (equal? (syntax->datum (car e2)) 0.0)))
-                                        (list* #`(#,(car is)
+                                        (list* #`((#,(car is))
                                                   #,(cond ((and o-real? e-real?) #'0.0)
                                                           (o-real? #`(unsafe-fl* #,o1 #,(car e2)))
                                                           (e-real? #`(unsafe-fl* #,o2 #,(car e1)))
                                                           (else
                                                            #`(unsafe-fl+ (unsafe-fl* #,o2 #,(car e1))
                                                                          (unsafe-fl* #,o1 #,(car e2))))))
-                                               #`(#,(car rs)
+                                               #`((#,(car rs))
                                                   #,(cond ((or o-real? e-real?)
                                                            #`(unsafe-fl* #,o1 #,(car e1)))
                                                           (else
@@ -155,36 +155,36 @@
                                           (e-real? (equal? (syntax->datum (car e2)) 0.0)))
                                       (cond [(and o-real? e-real?)
                                              (list*
-                                              #`(#,(car is) 0.0) ; currently not propagated
-                                              #`(#,(car rs) (unsafe-fl/ #,o1 #,(car e1)))
+                                              #`((#,(car is)) 0.0) ; currently not propagated
+                                              #`((#,(car rs)) (unsafe-fl/ #,o1 #,(car e1)))
                                               res)]
                                             [o-real?
                                              (list*
-                                              #`(#,(car is)
+                                              #`((#,(car is))
                                                  (unsafe-fl/ (unsafe-fl- 0.0
                                                                          (unsafe-fl* #,o1 #,(car e2)))
                                                              #,(car ds)))
-                                              #`(#,(car rs) (unsafe-fl/ (unsafe-fl* #,o1 #,(car e1))
-                                                                        #,(car ds)))
-                                              #`(#,(car ds) (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
-                                                                        (unsafe-fl* #,(car e2) #,(car e2))))
+                                              #`((#,(car rs)) (unsafe-fl/ (unsafe-fl* #,o1 #,(car e1))
+                                                                          #,(car ds)))
+                                              #`((#,(car ds)) (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
+                                                                          (unsafe-fl* #,(car e2) #,(car e2))))
                                               res)]
                                             [e-real?
                                              (list*
-                                              #`(#,(car is) (unsafe-fl/ #,o2 #,(car e1)))
-                                              #`(#,(car rs) (unsafe-fl/ #,o1 #,(car e1)))
+                                              #`((#,(car is)) (unsafe-fl/ #,o2 #,(car e1)))
+                                              #`((#,(car rs)) (unsafe-fl/ #,o1 #,(car e1)))
                                               res)]
                                             [else
                                              (list*
-                                              #`(#,(car is)
+                                              #`((#,(car is))
                                                  (unsafe-fl/ (unsafe-fl- (unsafe-fl* #,o2 #,(car e1))
                                                                          (unsafe-fl* #,o1 #,(car e2)))
                                                              #,(car ds)))
-                                              #`(#,(car rs)
+                                              #`((#,(car rs))
                                                  (unsafe-fl/ (unsafe-fl+ (unsafe-fl* #,o1 #,(car e1))
                                                                          (unsafe-fl* #,o2 #,(car e2)))
                                                              #,(car ds)))
-                                              #`(#,(car ds)
+                                              #`((#,(car ds))
                                                  (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
                                                              (unsafe-fl* #,(car e2) #,(car e2))))
                                               res)]))))))))
@@ -195,7 +195,7 @@
            #:with (bindings ...)
            (begin (log-optimization "unboxed unary inexact complex" #'op)
                   #`(#,@(append (syntax->list #'(c.bindings ...))
-                                (list #'(imag-binding (unsafe-fl- 0.0 c.imag-binding)))))))
+                                (list #'((imag-binding) (unsafe-fl- 0.0 c.imag-binding)))))))
 
   (pattern (#%plain-app (~and op (~or (~literal real-part) (~literal unsafe-flreal-part)))
                         c:unboxed-inexact-complex-opt-expr)
@@ -227,40 +227,40 @@
            #:with real-binding (unboxed-gensym)
            #:with imag-binding (unboxed-gensym)
            #:with (bindings ...)
-           #`((e* #,((optimize) #'e))
-              (real-binding (unsafe-flreal-part e*))
-              (imag-binding (unsafe-flimag-part e*))))
+           #`(((e*) #,((optimize) #'e))
+              ((real-binding) (unsafe-flreal-part e*))
+              ((imag-binding) (unsafe-flimag-part e*))))
   ;; special handling of reals
   (pattern e:float-expr
            #:with real-binding (unboxed-gensym)
            #:with imag-binding #f
            #:with (bindings ...)
-           #`((real-binding #,((optimize) #'e))))
+           #`(((real-binding) #,((optimize) #'e))))
   (pattern e:fixnum-expr
            #:with real-binding (unboxed-gensym)
            #:with imag-binding #f
            #:with (bindings ...)
-           #`((real-binding (unsafe-fx->fl #,((optimize) #'e)))))
+           #`(((real-binding) (unsafe-fx->fl #,((optimize) #'e)))))
   (pattern e:int-expr
            #:with real-binding (unboxed-gensym)
            #:with imag-binding #f
            #:with (bindings ...)
-           #`((real-binding (->fl #,((optimize) #'e)))))
+           #`(((real-binding) (->fl #,((optimize) #'e)))))
   (pattern e:expr
            #:when (isoftype? #'e -Real)
            #:with real-binding (unboxed-gensym)
            #:with imag-binding #f
            #:with (bindings ...)
-           #`((real-binding (exact->inexact #,((optimize) #'e)))))
+           #`(((real-binding) (exact->inexact #,((optimize) #'e)))))
   (pattern e:expr
            #:when (isoftype? #'e -Number) ; complex, maybe exact, maybe not
            #:with e* (unboxed-gensym)
            #:with real-binding (unboxed-gensym)
            #:with imag-binding (unboxed-gensym)
            #:with (bindings ...)
-           #`((e* #,((optimize) #'e))
-              (real-binding (exact->inexact (real-part e*)))
-              (imag-binding (exact->inexact (imag-part e*)))))
+           #`(((e*) #,((optimize) #'e))
+              ((real-binding) (exact->inexact (real-part e*)))
+              ((imag-binding) (exact->inexact (imag-part e*)))))
   (pattern e:expr
            #:with (bindings ...)
            (error "non exhaustive pattern match")
@@ -290,7 +290,7 @@
            #:with opt
            (begin (log-optimization "unboxed inexact complex" #'op)
                   (reset-unboxed-gensym)
-                  #`(let* (c*.bindings ...)
+                  #`(let*-values (c*.bindings ...)
                       #,(if (or (free-identifier=? #'op #'real-part)
                                 (free-identifier=? #'op #'unsafe-flreal-part))
                             #'c*.real-binding
@@ -314,5 +314,5 @@
            #:with opt
            (begin (log-optimization "unboxed inexact complex" #'exp)
                   (reset-unboxed-gensym)
-                  #'(let* (exp*.bindings ...)
+                  #'(let*-values (exp*.bindings ...)
                       (unsafe-make-flrectangular exp*.real-binding exp*.imag-binding)))))
