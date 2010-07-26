@@ -316,15 +316,15 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
   [compare-marshalled-to-marshalled-marshalled 
    #f
    (bytes-not-equal?-error marshal-parsed marshal-marshalled)]
+  #;[show-orig-and-marshal-parsed
+   #f
+   (print-bytes read-orig marshal-parsed)]
   #;[replace-with-marshalled 
      #t
      (replace-file file marshal-marshalled)]
   [decompile-parsed 
    #t
    (decompile parse-orig)]
-  [show-orig-and-marshal-parsed
-   #f
-   (print-bytes read-orig marshal-parsed)]
   [c-parse-marshalled
    #t
    (read-compiled-bytes marshal-parsed)]
@@ -333,6 +333,8 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
    (bytes-not-equal?-error read-orig marshal-parsed)])
 
 (define (run-test file)
+  (when (debugging?)
+    (printf "~a\n" file))
   (run-with-limit 
    file
    (* 1024 1024 128)
