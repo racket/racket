@@ -11,7 +11,7 @@
 
 @defmodule[compiler/zo-parse]
 
-@defproc[(zo-parse [in input-port?]) compilation-top?]{
+@defproc[(zo-parse [in input-port? (current-input-port)]) compilation-top?]{
 
 Parses a port (typically the result of opening a @filepath{.zo} file)
 containing bytecode. Beware that the structure types used to represent the

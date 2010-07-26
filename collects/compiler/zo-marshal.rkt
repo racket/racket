@@ -1,6 +1,7 @@
 #lang scheme/base
 (require compiler/zo-structs
          scheme/port
+         racket/vector
          scheme/match
          scheme/contract
          scheme/local
@@ -633,6 +634,7 @@
                                           (bloop b2))]
                                    [else
                                     (encode-wrapped b)])))]
+                      ; XXX Cylic list error possible
                       [len (let loop ([datum datum][len 0])
                              (cond
                                [(null? datum) #f]
@@ -643,14 +645,15 @@
                   (if len
                       (cons len p) 
                       p))]
-               [(box x) (box (encode-wrapped x))]
-               [(vector a ...) (list->vector 
-                                (map encode-wrapped a))]
+               [(box x)
+                (box (encode-wrapped x))]
+               [(? vector? v)
+                (vector-map encode-wrapped v)]
                [(? prefab-struct-key)
-                (let ([l (vector->list (struct->vector datum))])
-                  (make-prefab-struct
-                   (car l)
-                   (map encode-wrapped (cdr l))))]
+                (define l (vector->list (struct->vector datum)))
+                (make-prefab-struct
+                 (car l)
+                 (map encode-wrapped (cdr l)))]
                [_ datum])]
             [p (cons enc-datum
                      (encode-wraps wraps))])

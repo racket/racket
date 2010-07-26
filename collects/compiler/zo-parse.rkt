@@ -502,7 +502,6 @@
   (if (integer? v)
       (unmarshal-stx-get/decode cp v decode-stx)
       (let loop ([v v])
-        ;(printf "~s~n" v)
         (let-values ([(cert-marks v encoded-wraps)
                       (match v
                         [`#((,datum . ,wraps) ,cert-marks) (values cert-marks datum wraps)]
