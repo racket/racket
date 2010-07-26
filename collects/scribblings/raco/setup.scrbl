@@ -72,6 +72,15 @@ The @exec{raco setup} command performs two main services:
    controlled by @filepath{info.rkt}; see
    @elemref["clean"]{@racket[clean]} for more information.
 
+   The @DFlag{workers} (or @Flag{j}) flag to @exec{raco setup} causes it
+   to compile upto n jobs in parallel.  The default is 
+   @racket[(processor-count)], which uses all the machine's processing cores.
+   The number of workers to use during parallel build can also be set through
+   the @as-index{@envvar{PLT_SETUP_OPTIONS}} environment variable when running 
+   make install.  
+
+   @commandline{PLT_SETUP_OPTIONS="-j 1" make install.}
+
    The @Flag{l} flag takes one or more collection names and restricts
    @exec{raco setup}'s action to those collections.
 
