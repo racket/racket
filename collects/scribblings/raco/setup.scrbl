@@ -20,7 +20,8 @@
                     launcher/launcher
                     compiler/sig
                     launcher/launcher-sig
-                    racket/gui/base))
+                    racket/gui/base
+                    racket/future))
 
 @(define-syntax-rule (local-module mod . body)
   (begin
@@ -72,14 +73,11 @@ The @exec{raco setup} command performs two main services:
    controlled by @filepath{info.rkt}; see
    @elemref["clean"]{@racket[clean]} for more information.
 
-   The @DFlag{workers} (or @Flag{j}) flag to @exec{raco setup} causes it
-   to compile upto n jobs in parallel.  The default is 
-   @racket[(processor-count)], which uses all the machine's processing cores.
-   The number of workers to use during parallel build can also be set through
-   the @as-index{@envvar{PLT_SETUP_OPTIONS}} environment variable when running 
-   make install.  
-
-   @commandline{PLT_SETUP_OPTIONS="-j 1" make install.}
+   The @DFlag{workers} (or @Flag{j}) flag to @exec{raco setup} takes
+   an argument @scheme[_n] to make compilation use up to @scheme[_n]
+   parallel processes.  The default value of @scheme[_n] is
+   @racket[(processor-count)], which typically uses all the machine's
+   processing cores.
 
    The @Flag{l} flag takes one or more collection names and restricts
    @exec{raco setup}'s action to those collections.
@@ -92,7 +90,15 @@ The @exec{raco setup} command performs two main services:
    @filepath{zo-compile.rkt} module in that collection, and extracting
    its @racket[zo-compile] export. The @racket[zo-compile] export
    should be a function like @racket[compile]; see the
-   @filepath{errortrace} collection for an example.}
+   @filepath{errortrace} collection for an example.
+
+   When building @exec{racket}, flags can be provided to @exec{raco
+   setup} as run by @exec{make install} by setting the
+   @as-index{@envvar{PLT_SETUP_OPTIONS}} environment variable. For
+   example, the following command line uses a single process to build
+   collections during an install:
+
+   @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}}
 
  @item{@bold{Unpacking @filepath{.plt} files:} A
    @filepath{.plt} file is a platform-independent distribution archive
