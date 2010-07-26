@@ -912,7 +912,7 @@
  (enforce-primitives-check-box-label "Änderungen von initialen Bindungen verbieten")
 
  (automatically-compile "compiled/-Verzeichnisse bestücken (für schnelleres laden)")
- (preserve-stacktrace-information "Stack-Trace aufbewahren (einige JIT-Optimierungen werden abgeschaltet)")
+ (preserve-stacktrace-information "Stack-Trace behalten (einige Optimierungen werden abgeschaltet)")
  (expression-level-stacktrace "Stack-Trace mit Ausdrücken")
  (function-level-stacktrace "Stack-Trace mit Funktionen")
 
