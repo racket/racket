@@ -109,6 +109,7 @@
   (super-new [parent parent]
              [gtk gtk]
              [extra-gtks (list client-gtk selection)]
+             [callback cb]
              [no-show? (memq 'deleted style)])
 
   (set-auto-size)

@@ -40,6 +40,7 @@
              [gtk (if (memq 'vertical style)
                       (gtk_vscale_new #f)
                       (gtk_hscale_new #f))]
+             [callback cb]
              [no-show? (memq 'deleted style)])
   (define gtk (get-gtk))
 

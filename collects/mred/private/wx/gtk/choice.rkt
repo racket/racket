@@ -59,6 +59,7 @@
   (super-new [parent parent]
              [gtk gtk]
              [extra-gtks (list button-gtk)]
+             [callback cb]
              [no-show? (memq 'deleted style)])
 
   (gtk_combo_box_set_active gtk 0)

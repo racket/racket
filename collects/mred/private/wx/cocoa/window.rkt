@@ -22,8 +22,6 @@
 
 ;; ----------------------------------------
 
-(import-class NSArray)
-
 (define-objc-mixin (FocusResponder Superclass)
   [wx]
   [-a _BOOL (acceptsFirstResponder)

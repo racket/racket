@@ -8,6 +8,8 @@
 (defclass item% window%
   (inherit get-client-gtk)
 
+  (init-field [callback void])
+
   (super-new)
 
   (let ([client-gtk (get-client-gtk)])
@@ -16,7 +18,10 @@
 
   (def/public-unimplemented set-label)
   (def/public-unimplemented get-label)
-  (def/public-unimplemented command))
+
+  (define/public (command e)
+    (callback this e)))
+
 
 
 

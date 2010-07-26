@@ -54,6 +54,7 @@
                       (tellv cocoa setContinuous: #:type _BOOL #t)
                       ; (tellv cocoa sizeToFit)
                       cocoa)]
+             [callback cb]
              [no-show? (memq 'deleted style)])
 
   (define cocoa (get-cocoa))

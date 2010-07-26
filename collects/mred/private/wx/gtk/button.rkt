@@ -52,6 +52,7 @@
                       gtk)]
                    [else
                     (gtk_new_with_mnemonic "<bad>")])]
+             [callback cb]
              [no-show? (memq 'deleted style)])
   (define gtk (get-gtk))
   

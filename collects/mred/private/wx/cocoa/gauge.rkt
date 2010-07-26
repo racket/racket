@@ -42,6 +42,7 @@
                                                                           (if vert? 32 24))))
                       (tellv cocoa sizeToFit)
                       cocoa)]
+             [callback void]
              [no-show? (memq 'deleted style)])
   
   (define cocoa (get-cocoa))

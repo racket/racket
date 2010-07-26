@@ -70,10 +70,13 @@
                    (lambda ()
                      (set! prev (scheme_set_on_atomic_timeout handler))
                      (set! ready? #t)
-                     (begin0
-                      (parameterize ([freezer-box #f])
-                        (thunk))
-                      (scheme_restore_on_atomic_timeout prev)))
+                     (dynamic-wind
+                         void
+                         (lambda ()
+                           (parameterize ([freezer-box #f])
+                             (thunk)))
+                         (lambda ()
+                           (scheme_restore_on_atomic_timeout prev))))
                    freeze-tag))))))
         (begin
           (log-error "internal error: wrong eventspace for constrained event handling\n")

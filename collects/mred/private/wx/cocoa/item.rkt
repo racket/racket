@@ -18,6 +18,8 @@
 (defclass item% window%
   (inherit get-cocoa)
 
+  (init-field callback)
+
   (define/public (get-cocoa-control) (get-cocoa))
 
   (define/override (enable on?)
@@ -28,9 +30,11 @@
   (define/override (gets-focus?)
     (tell #:type _BOOL (get-cocoa) canBecomeKeyView))
 
+  (define/public (command e)
+    (callback this e))
+
   (def/public-unimplemented set-label)
   (def/public-unimplemented get-label)
-  (def/public-unimplemented command)
   (super-new)
 
   (define/public (init-font cocoa font)

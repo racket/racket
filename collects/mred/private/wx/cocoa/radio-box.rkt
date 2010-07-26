@@ -98,6 +98,7 @@
                 (tellv cocoa setTarget: cocoa)
                 (tellv cocoa setAction: #:type _SEL (selector clicked:))
                 cocoa)]
+             [callback cb]
              [no-show? (memq 'deleted style)])
 
   (define count (length labels))

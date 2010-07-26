@@ -81,6 +81,7 @@
                                                              (send label get-height))
                                                 (tell #:type _NSSize label size))))])
                       cocoa)]
+             [callback void]
              [no-show? (memq 'deleted style)])
 
   (define/override (set-label label)

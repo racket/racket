@@ -83,7 +83,7 @@
                    (tellv apple addItem: item)
                    (tellv item release)))])
       (std (format "About ~a" app-name) (selector orderFrontStandardAboutPanel:))
-      (std "Preferences..."  #f)
+      (std "Preferences..."  (selector openPreferences:))
       (tellv apple addItem: (tell NSMenuItem separatorItem))
       (let ([services (tell (tell NSMenu alloc) initWithTitle: #:type _NSString "Services")])
         (tellv app setServicesMenu: services)

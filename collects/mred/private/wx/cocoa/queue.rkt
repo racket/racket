@@ -35,7 +35,10 @@
   []
   [-a _BOOL (applicationShouldTerminate: [_id app])
       (queue-quit-event)
-      #f])
+      #f]
+  [-a _BOOL (openPreferences: [_id app])
+      (log-error "prefs")
+      #t])
 
 (tellv app finishLaunching)
 

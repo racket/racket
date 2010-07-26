@@ -66,6 +66,7 @@
   (super-new [parent parent]
              [gtk gtk]
              [extra-gtks radio-gtks]
+             [callback cb]
              [no-show? (memq 'deleted style)])
 
   (set-auto-size)

@@ -94,7 +94,8 @@
 
   (super-new [parent parent]
              [cocoa cocoa]
-             [no-show? (memq 'deleted style)])
+             [no-show? (memq 'deleted style)]
+             [callback cb])
 
   (when (memq 'border style)
     (tellv (get-cocoa-window) setDefaultButtonCell: (tell button-cocoa cell)))
