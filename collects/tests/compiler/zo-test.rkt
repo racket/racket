@@ -326,7 +326,7 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
    #f
    (print-bytes read-orig marshal-parsed)]
   [c-parse-marshalled
-   #f
+   #t
    (read-compiled-bytes marshal-parsed)]
   [compare-orig-to-marshalled 
    #f

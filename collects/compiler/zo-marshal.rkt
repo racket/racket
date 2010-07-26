@@ -621,11 +621,42 @@
 (define (encode-wrapped w)
   (match w
     [(struct wrapped (datum wraps certs))
-     (vector
-      (cons
-       datum
-       (encode-wraps wraps))
-      certs)]))
+     (let* ([enc-datum
+             (match datum
+               [(cons a b) 
+                (let ([p (cons (encode-wrapped a)
+                               (let bloop ([b b])
+                                 (match b
+                                   ['() null]
+                                   [(cons b1 b2)
+                                    (cons (encode-wrapped b1)
+                                          (bloop b2))]
+                                   [else
+                                    (encode-wrapped b)])))]
+                      [len (let loop ([datum datum][len 0])
+                             (cond
+                               [(null? datum) #f]
+                               [(pair? datum) (loop (cdr datum) (add1 len))]
+                               [else len]))])
+                  ;; for improper lists, we need to include the length so the 
+                  ;; parser knows where the end of the improper list is
+                  (if len
+                      (cons len p) 
+                      p))]
+               [(box x) (box (encode-wrapped x))]
+               [(vector a ...) (list->vector 
+                                (map encode-wrapped a))]
+               [(? prefab-struct-key)
+                (let ([l (vector->list (struct->vector datum))])
+                  (make-prefab-struct
+                   (car l)
+                   (map encode-wrapped (cdr l))))]
+               [_ datum])]
+            [p (cons enc-datum
+                     (encode-wraps wraps))])
+       (if certs
+           (vector p certs)
+           p))]))
 
 (define (lookup-encoded-wrapped w out)
   (hash-ref (out-encoded-wraps out) w))

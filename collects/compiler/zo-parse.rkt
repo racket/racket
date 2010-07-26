@@ -502,6 +502,7 @@
   (if (integer? v)
       (unmarshal-stx-get/decode cp v decode-stx)
       (let loop ([v v])
+        ;(printf "~s~n" v)
         (let-values ([(cert-marks v encoded-wraps)
                       (match v
                         [`#((,datum . ,wraps) ,cert-marks) (values cert-marks datum wraps)]
@@ -933,7 +934,7 @@
 
 ;; path -> bytes
 ;; implementes read.c:read_compiled
-(define (zo-parse port)
+(define (zo-parse [port (current-input-port)])
   (begin-with-definitions    
     ;; skip the "#~"
     (unless (equal? #"#~" (read-bytes 2 port))
