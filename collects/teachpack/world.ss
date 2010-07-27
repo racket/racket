@@ -7,7 +7,7 @@
 
 (define prgm 
   '("(big-bang World_0"
-    "  (on-draw render WIDTH HEIGHT)"
+    "  (to-draw render WIDTH HEIGHT)"
     "  (on-tick tock RATE)"
     "  (on-mouse click)"
     "  (on-key react)"
