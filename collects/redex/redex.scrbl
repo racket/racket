@@ -1395,27 +1395,33 @@ produces and consumes argument lists.}
 @deftech{Debugging PLT Redex Programs}
 
 It is easy to write grammars and reduction rules that are
-subtly wrong and typically such mistakes result in examples
-that just get stuck when viewed in a @racket[traces] window.
+subtly wrong. Typically such mistakes result in examples
+that get stuck when viewed in a @racket[traces] window.
 
 The best way to debug such programs is to find an expression
-that looks like it should reduce but doesn't and try to find
-out what pattern is failing to match. To do so, use the
-@racket[redex-match] special form, described above.
+that looks like it should reduce, but doesn't, then try to find
+out which pattern is failing to match. To do so, use the
+@racket[redex-match] form.
 
-In particular, first ceck to see if the term matches the
-main non-terminal for your system (typically the expression
-or program nonterminal). If it does not, try to narrow down
-the expression to find which part of the term is failing to
-match and this will hopefully help you find the problem. If
-it does match, figure out which reduction rule should have
-matched, presumably by inspecting the term. Once you have
-that, extract a pattern from the left-hand side of the
-reduction rule and do the same procedure until you find a
-small example that shoudl work but doesn't (but this time
-you might also try simplifying the pattern as well as
-simplifying the expression).
+In particular, first check if the term in question matches the
+your system's main non-terminal (typically the expression
+or program non-terminal). If it does not match, simplify the term
+piece by piece to determine whether the problem is in the
+term or the grammar. 
 
+If the term does match your system's main
+non-terminal, determine by inspection which reduction rules
+should apply. For each such rule, repeat the above term-pattern 
+debugging procedure, this time using the rule's left-hand side 
+pattern instead of the system's main non-terminal. In addition
+to simplifying the term, also consider simplifying the pattern.
+
+If the term matches the left-hand side, but the rule does not 
+apply, then one of the rule's @racket[side-condition] or 
+@racket[where] clauses is not satisfied. Using the bindings
+reported by @racket[redex-match], check each @racket[side-condition]
+expression and each @racket[where] pattern-match to discover which
+clause is preventing the rule's application.
 
 @section{GUI}
 @defmodule[redex/gui]
