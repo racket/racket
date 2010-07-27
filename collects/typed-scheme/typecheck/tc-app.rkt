@@ -565,10 +565,11 @@
        [(tc-result1: t) (tc-error/expr #:return (ret (Un))
                                        "Cannot apply expression of type ~a, since it is not a function type" t)])]
     ;; even more special case for match
-    [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
+    [(#%plain-app (letrec-values ([(lp) (~and lam (#%plain-lambda args . body))]) lp*) . actuals)
      #:fail-unless expected #f 
      #:fail-unless (not (andmap type-annotation (syntax->list #'(lp . args)))) #f
      #:fail-unless (free-identifier=? #'lp #'lp*) #f
+     (add-typeof-expr #'lam expected)
      (let-loop-check form #'lp #'actuals #'args #'body expected)]
     ;; special cases for classes
     [(#%plain-app make-object cl . args)     
