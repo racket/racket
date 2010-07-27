@@ -2181,7 +2181,7 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       int i;
       if (scheme_is_hash_tree_equal(obj))
         kind = 1;
-      else if (scheme_is_hash_tree_equal(obj))
+      else if (scheme_is_hash_tree_eqv(obj))
         kind = 2;
       else
         kind = 0;
