@@ -2,6 +2,7 @@
 
 (require syntax/parse 
          syntax/id-table racket/dict
+         racket/pretty
          (for-template scheme/base
                        scheme/flonum scheme/fixnum scheme/unsafe/ops
                        racket/private/for)
@@ -91,7 +92,10 @@
                                  #:with e*:opt-expr #'e
                                  #'e*.opt]
                                 [e:expr #'e])])
-        ((optimize) stx))
+        (let ((result ((optimize) stx)))
+          (when *show-optimized-code*
+            (pretty-print (syntax->datum result)))
+          result))
       (when (and *log-optimizations?*
                  *log-optimizatons-to-log-file?*)
         (close-output-port port)))))
