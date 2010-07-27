@@ -1363,6 +1363,7 @@ path/s is either such a string or a list of them.
 "collects/tests/aligned-pasteboard/test2.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/compiler" responsible (jay)
 "collects/tests/compiler/regression.rkt" responsible (mflatt)
+"collects/tests/compiler/zo-test-worker.rkt" drdr:command-line #f
 "collects/tests/compiler/zo-test.rkt" drdr:command-line (racket "-t" * "--" "-I" "-S" "-t" "60" "-v" "-R") drdr:random #t
 "collects/tests/datalog" responsible (jay)
 "collects/tests/deinprogramm" responsible (sperber)
