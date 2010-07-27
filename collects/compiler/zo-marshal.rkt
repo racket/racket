@@ -16,7 +16,6 @@
   
   Less sharing occurs than in the C implementation, creating much larger files
 
-  protect-quote caused some things to be sent to write. But there are some things (like paths) that can be read and passed to protect-quote that cannot be 'read' in after 'write', so we turned it off
 |#
 
 (define current-wrapped-ht (make-parameter #f))
@@ -681,11 +680,11 @@
      (out-module form out)]
     [(struct def-values (ids rhs))
      (out-syntax DEFINE_VALUES_EXPD
-                 (list->vector (cons rhs ids))
+                 (list->vector (cons (protect-quote rhs) ids))
                  out)]
     [(struct def-syntaxes (ids rhs prefix max-let-depth))
      (out-syntax DEFINE_SYNTAX_EXPD
-                 (list->vector (list* rhs
+                 (list->vector (list* (protect-quote rhs)
                                       prefix
                                       max-let-depth
                                       *dummy*
@@ -693,7 +692,7 @@
                  out)]
     [(struct def-for-syntax (ids rhs prefix max-let-depth))
      (out-syntax DEFINE_FOR_SYNTAX_EXPD
-                 (list->vector (list* rhs
+                 (list->vector (list* (protect-quote rhs)
                                       prefix
                                       max-let-depth
                                       *dummy*
@@ -1091,11 +1090,12 @@
 
 (define-struct quoted (v) #:prefab)
 
+; protect-quote caused some things to be sent to write. But there are some things (like paths) that can be read and passed to protect-quote that cannot be 'read' in after 'write', so we turned it off
 (define (protect-quote v)
-  v
-  #;(if (or (list? v) (vector? v) (box? v) (hash? v))
-        (make-quoted v)
-        v))
+  #;v
+  (if (or (list? v) (vector? v) (box? v) (hash? v))
+      (make-quoted v)
+      v))
 
 
 (define-struct svector (vec))

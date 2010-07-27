@@ -19,4 +19,17 @@
                                (make-reader-graph ht)))))]
    (hash-test make-hash-placeholder)
    (hash-test make-hasheq-placeholder)
-   (hash-test make-hasheqv-placeholder)))
+   (hash-test make-hasheqv-placeholder))
+ 
+ 
+ (roundtrip 
+  (compilation-top 0 
+                   (prefix 0 empty empty)
+                   (current-directory)))
+ 
+ (roundtrip 
+  (compilation-top 0 
+                   (prefix 0 empty empty)
+                   (list (current-directory)))))
+
+
