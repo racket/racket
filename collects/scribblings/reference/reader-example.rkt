@@ -61,7 +61,7 @@
                                                      [(number? v)
                                                       (let loop ([v v])
                                                         (if (inexact? v)
-                                                            `(inexact->exact ,(loop (inexact->exact v)))
+                                                            `(exact->inexact ,(loop (inexact->exact v)))
                                                             (cond
                                                              [(integer? v) v]
                                                              [(real? v) `(/ ,(numerator v)
