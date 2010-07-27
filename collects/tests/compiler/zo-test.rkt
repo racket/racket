@@ -109,7 +109,7 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
                         (when (debugging?)
                           (printf "~a\n" p))
                         (define-values
-                          (sp stdout stdin _stderr)
+                          (sp stdout stdin stderr)
                           (subprocess #f #f #f racket-path (path->string zo-test-worker-path) p))
                         (define r
                           (dynamic-wind
@@ -118,6 +118,7 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
                              (read stdout))
                            (λ ()
                              (close-input-port stdout)
+                             (close-input-port stderr)
                              (close-output-port stdin)
                              (subprocess-kill sp #t))))
                         (channel-put from-worker-ch (cons p r))
