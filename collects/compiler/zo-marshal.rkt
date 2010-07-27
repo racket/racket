@@ -778,9 +778,9 @@
                     out)]
     [(struct let-one (rhs body flonum? unused?))
      (out-byte (cond
-                [flonum? CPT_LET_ONE_FLONUM]
-                [unused? CPT_LET_ONE_UNUSED]
-                [else CPT_LET_ONE])
+                 [flonum? CPT_LET_ONE_FLONUM]
+                 [unused? CPT_LET_ONE_UNUSED]
+                 [else CPT_LET_ONE])
                out)
      (out-expr (protect-quote rhs) out)
      (out-expr (protect-quote body) out)]
@@ -1078,14 +1078,14 @@
      (out-wrapped expr out)]      
     [else
      (out-byte CPT_QUOTE out)
-     (let ([s (open-output-bytes)])
-       (write (if (quoted? expr) 
-                  (quoted-v expr)
-                  expr) s)
-       (out-byte CPT_ESCAPE out)
-       (let ([bstr (get-output-bytes s)])
-         (out-number (bytes-length bstr) out)
-         (out-bytes bstr out)))]))
+     (if (quoted? expr)
+         (out-data (quoted-v expr) out)
+         (let ([s (open-output-bytes)])
+           (write expr s)
+           (out-byte CPT_ESCAPE out)
+           (let ([bstr (get-output-bytes s)])
+             (out-number (bytes-length bstr) out)
+             (out-bytes bstr out))))]))
 
 
 (define-struct quoted (v) #:prefab)
