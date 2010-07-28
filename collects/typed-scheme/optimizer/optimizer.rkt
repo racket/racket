@@ -22,6 +22,8 @@
   #:literal-sets (kernel-literals)
 
   ;; interesting cases, where something is optimized
+  (pattern e:dead-code-opt-expr       #:with opt #'e.opt)
+  (pattern e:unboxed-let-opt-expr     #:with opt #'e.opt)
   (pattern e:apply-opt-expr           #:with opt #'e.opt)
   (pattern e:number-opt-expr          #:with opt #'e.opt)
   (pattern e:fixnum-opt-expr          #:with opt #'e.opt)
@@ -33,8 +35,6 @@
   (pattern e:sequence-opt-expr        #:with opt #'e.opt)
   (pattern e:box-opt-expr             #:with opt #'e.opt)
   (pattern e:struct-opt-expr          #:with opt #'e.opt)
-  (pattern e:dead-code-opt-expr       #:with opt #'e.opt)
-  (pattern e:unboxed-let-opt-expr     #:with opt #'e.opt)
   
   ;; boring cases, just recur down
   (pattern ((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
