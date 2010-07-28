@@ -332,6 +332,16 @@
                                  e.imag-binding ...
                                  #,@(map (lambda (i) ((optimize) (get-arg i)))
                                          boxed)))]))) ; boxed params
+
+  ;; unboxed variable used in a boxed fashion, we have to box
+  (pattern v:id
+           #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
+           #:when (syntax->datum #'unboxed-info)
+           #:with real-binding (car  (syntax->list #'unboxed-info))
+           #:with imag-binding (cadr (syntax->list #'unboxed-info))
+           #:with opt
+           (begin (log-optimization "boxing of an unboxed variable" #'v)
+                  #'(unsafe-make-flrectangular real-binding imag-binding)))
   
   (pattern e:inexact-complex-arith-opt-expr
            #:with opt

@@ -109,16 +109,15 @@
   (ormap (lambda (x) (and (identifier? x) (free-identifier=? x v)))
          (syntax->list exp)))
 
-;; if a variable is only used in complex arithmetic operations, it's safe
-;; to unbox it
+;; if a variable is used at least once in complex arithmetic operations,
+;; it's worth unboxing
 (define (could-be-unboxed-in? v exp)
 
   ;; if v is a direct child of exp, that means it's used in a boxed
   ;; fashion, and is not safe to unboxed
   ;; if not, recur on the subforms
   (define (look-at exp)
-    (and (not (direct-child-of? v exp))
-         (andmap rec (syntax->list exp))))
+    (ormap rec (syntax->list exp)))
   
   (define (rec exp)
     (syntax-parse exp
@@ -126,7 +125,8 @@
       
       ;; can be used in a complex arithmetic expr, can be a direct child
       [exp:inexact-complex-arith-opt-expr
-       (andmap rec (syntax->list #'exp))]
+       (or (direct-child-of? v #'exp)
+           (ormap rec (syntax->list #'exp)))]
       
       ;; recur down
       [((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
