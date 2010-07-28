@@ -1,7 +1,7 @@
 #lang scheme
 
 (require redex/reduction-semantics)
-(require "grammar.ss")
+(require "grammar.ss" "util.ss")
 
 (define (bytecode-ok? e)
   (not (eq? 'invalid (car (term (verify ,e () 0 #f () () ∅))))))
@@ -58,11 +58,10 @@
   
   ; branch
   [(verify (branch e_c e_t e_e) s n_l b γ η f)
-   ; FIXME: should redo γ_2?
-   ((redo-clears γ_3 (trim s_3 s)) γ_1 η_3)
+   ((redo-clears γ_2 (trim s_3 s)) (concat γ_2 γ_3) η_3)
    (where (s_1 γ_1 η_1) (verify e_c s n_l #f γ η ∅))
    (where (s_2 γ_2 η_2) (verify e_t (trim s_1 s) 0 b () () f))
-   (where (s_3 γ_3 η_3) (verify e_e (undo-noclears η_2 (undo-clears γ_2 (trim s_2 s))) 0 b γ_2 η_1 f))]
+   (where (s_3 γ_3 η_3) (verify e_e (undo-noclears η_2 (undo-clears γ_2 (trim s_2 s))) 0 b γ_1 η_1 f))]
   
   ; let-one
   [(verify (let-one e_r e_b) (ṽ_1 ...) n_l b γ η f)
@@ -345,10 +344,5 @@
 (define-metafunction verification
   [(not-member? any_1 (any_2 ...))
    ,(not (member (term any_1) (term (any_2 ...))))])
-
-;; Shouldn't have copied from "reduction.ss":
-(define-metafunction bytecode
-  [(count-up number)
-   ,(build-list (term number) (λ (x) x))])
 
 (provide (all-defined-out))

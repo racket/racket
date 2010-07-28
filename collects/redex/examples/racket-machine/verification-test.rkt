@@ -374,6 +374,15 @@
  (negate bytecode-ok?)
  '(let-one 'x (branch (loc-noclr 0) (loc-noclr 0) (loc-clr 0))))
 
+(test-predicate
+ bytecode-ok?
+ '(proc-const (val val val)
+              (branch (loc 0)
+                      (branch (loc 1)
+                              (loc-clr 2)
+                              void)
+                      (application (loc 2)))))
+
 ; let-rec
 (test-predicate
  bytecode-ok?

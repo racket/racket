@@ -1,7 +1,7 @@
 #lang scheme
 
 (require redex/reduction-semantics)
-(require "grammar.ss")
+(require "grammar.ss" "util.ss")
 
 (define-extended-language runtime bytecode
   (p (V S H T C) error)
@@ -33,10 +33,6 @@
   (e ....
      (self-app x e_0 e_1 ...))
   (m n ?))
-
-(define-metafunction bytecode
-  [(count-up number)
-   ,(build-list (term number) (λ (x) x))])
 
 (define procedure-rules
   (reduction-relation
@@ -244,10 +240,6 @@
   (h any)
   (T any)
   (l any))
-
-(define-metafunction loader
-  concat : (any ...) ... -> (any ...)
-  [(concat any ...) ,(apply append (term (any ...)))])
 
 (define-metafunction loader
   [(load e ((x_0 (name e_0 (proc-const (τ ...) e_b))) ...))
