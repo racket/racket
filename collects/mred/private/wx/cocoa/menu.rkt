@@ -3,10 +3,11 @@
          scheme/foreign
          (only-in scheme/list drop take)
          ffi/objc
-          "../../syntax.rkt"
-          "utils.rkt"
-          "types.rkt"
-          "window.rkt")
+         "../common/event.rkt"
+         "../../syntax.rkt"
+         "utils.rkt"
+         "types.rkt"
+         "window.rkt")
 (unsafe!)
 (objc-unsafe!)
 
@@ -28,7 +29,7 @@
   (define cocoa #f)
   (define cocoa-menu #f)
 
-  (define/public (install cocoa-parent label)
+  (define/public (create-menu label)
     (unless cocoa
       (set! cocoa
             (as-objc-allocation
@@ -46,16 +47,42 @@
                   (if item
                       (send (mitem-item item) install cocoa-menu)
                       (tellv cocoa-menu addItem: (tell NSMenuItem separatorItem))))
-                items))
+                items)))
+
+  (define/public (install cocoa-parent label)
+    (create-menu label)
     (tellv cocoa-parent addItem: cocoa))
 
+  (define popup-box #f)
+
+  (define/public (do-popup v x y queue-cb)
+    (unless (null? items)
+      (create-menu "menu")
+      (let ([b (box #f)])
+        (set! popup-box b)
+        (tellv cocoa-menu 
+               popUpMenuPositioningItem: (tell cocoa-menu itemAtIndex: #:type _NSUInteger 0)
+               atLocation: #:type _NSPoint (make-NSPoint x y)
+               inView: v)
+        (set! popup-box #f)
+        (let* ([i (unbox b)]
+               [e (new popup-event% [event-type 'menu-popdown])])
+          (send e set-menu-id i)
+          (queue-cb (lambda () (callback this e)))))))
+  
   (define/public (item-selected menu-item)
     ;; called in Cocoa thread
-    (let ([top (get-top-parent)])
-      (when top
-        (queue-window-event
-         top
-         (lambda () (send top on-menu-command menu-item))))))
+    (cond
+     [popup-box
+      (set-box! popup-box menu-item)]
+     [(parent . is-a? . menu%)
+      (send parent item-selected menu-item)]
+     [else
+      (let ([top (get-top-parent)])
+        (when top
+          (queue-window-event
+           top
+           (lambda () (send top on-menu-command menu-item)))))]))
 
   (define parent #f)
   (define/public (set-parent p) (set! parent p))

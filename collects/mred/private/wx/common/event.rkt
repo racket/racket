@@ -91,7 +91,8 @@
   (init-properties [[(symbol-in button check-box choice
                                 list-box list-box-dclick text-field
                                 text-field-enter slider radio-box
-                                menu-popdown menu-popdown-none tab-panel) 
+                                menu-popdown menu-popdown-none tab-panel
+                                menu) 
                      event-type]
                     ;; FIXME: should have no default
                     'button])
@@ -99,7 +100,8 @@
   (super-new [time-stamp time-stamp]))
 
 (defclass popup-event% control-event%
-  (properties [[any? menu-id] 0]))
+  (properties [[any? menu-id] 0])
+  (super-new))
 
 (defclass scroll-event% event%
   (init-properties [[(symbol-in top bottom line-up line-down page-up page-down thumb) event-type]

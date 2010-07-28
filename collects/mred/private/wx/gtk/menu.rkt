@@ -7,7 +7,8 @@
          "types.rkt"
          "const.rkt"
          "utils.rkt"
-         "menu-bar.rkt")
+         "menu-bar.rkt"
+         "../common/event.rkt")
 (unsafe!)
 
 (provide menu%)
@@ -22,12 +23,26 @@
 (define-gtk gtk_check_menu_item_get_active (_fun _GtkWidget -> _gboolean))
 (define-gtk gtk_menu_item_set_label  (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
+(define-gtk gtk_label_set_text_with_mnemonic (_fun _GtkWidget _string -> _void))
+(define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
+
+(define-gtk gtk_get_current_event_time (_fun -> _uint32))
+(define-gtk gtk_menu_popup (_fun _GtkWidget _pointer _pointer 
+                                 (_fun _GtkWidget _pointer _pointer _pointer -> _void)
+                                 _pointer _uint _uint32
+                                 -> _void))
 
 (define-signal-handler connect-menu-item-activate "activate"
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
       (send wx do-on-select))))
+
+(define-signal-handler connect-menu-deactivate "deactivate"
+  (_fun _GtkWidget -> _void)
+  (lambda (gtk)
+    (let ([wx (gtk->wx gtk)])
+      (send wx do-no-selected))))
 
 (define menu-item-handler%
   (class widget%
@@ -41,11 +56,7 @@
     (define/public (get-item) menu-item)
 
     (define/public (do-on-select)
-      (let ([top (send menu get-top-parent)])
-        (when top
-          (queue-window-event
-           top
-           (lambda () (send top on-menu-command menu-item))))))
+      (send menu do-selected menu-item))
 
     (define/public (on-select)
       (send menu on-select-item menu-item))))
@@ -55,10 +66,14 @@
         callback
         font)
 
+  (define cb callback)
+  
   (define gtk (gtk_menu_new))
   (define/public (get-gtk) gtk)
 
   (super-new [gtk gtk])
+
+  (connect-menu-deactivate gtk)
 
   (define items null)
 
@@ -72,6 +87,56 @@
              (send parent get-top-parent)
              (send parent get-top-window))))
 
+  (define on-popup #f)
+  (define cancel-none-box (box #t))
+
+  (define/public (popup x y queue-cb)
+    (set! on-popup queue-cb)
+    (set! cancel-none-box (box #f))
+    (gtk_menu_popup gtk 
+                    #f 
+                    #f
+                    (lambda (menu _x _y _push)
+                      (ptr-set! _x _int x)
+                      (ptr-set! _y _int y)
+                      (ptr-set! _push _gboolean #t))
+                    #f
+                    0
+                    (gtk_get_current_event_time)))
+
+  (define/public (do-selected menu-item)
+    ;; Called in event-pump thread
+    (let ([top (get-top-parent)])
+      (cond
+       [top
+        (queue-window-event
+         top
+         (lambda () (send top on-menu-command menu-item)))]
+       [on-popup
+        (let* ([e (new popup-event% [event-type 'menu-popdown])]
+               [pu on-popup]
+               [cnb cancel-none-box])
+          (set! on-popup #f)
+          (set-box! cancel-none-box #t)
+          (send e set-menu-id menu-item)
+          (pu (lambda () (cb this e))))]
+       [parent (send parent do-selected menu-item)])))
+
+  (define/public (do-no-selected)
+    ;; Queue a none-selected event, but only tentatively, because
+    ;; the selection event may come later and cancel the none-selected
+    ;; event.
+    (when on-popup
+      (let* ([e (new popup-event% [event-type 'menu-popdown])]
+             [pu on-popup]
+             [cnb cancel-none-box])
+        (send e set-menu-id #f)
+        (pu (lambda () 
+              (when (eq? on-popup pu)
+                (set! on-popup #f))
+              (unless (unbox cnb) 
+                (cb this e)))))))
+  
   (define/private (adjust-shortcut item-gtk title)
     (cond
      [(regexp-match #rx"\tCtrl[+](.)$" title)
@@ -124,7 +189,8 @@
   (define/public (set-label item str)
     (let ([gtk (find-gtk item)])
       (when gtk
-        (gtk_menu_item_set_label gtk str))))
+        (gtk_label_set_text_with_mnemonic (gtk_bin_get_child gtk) 
+                                          (fixup-mneumonic str)))))
 
   (define/public (enable item on?)
     (let ([gtk (find-gtk item)])

@@ -40,10 +40,10 @@
 (define-objc-mixin (KeyMouseResponder Superclass)
   [wx]
   [-a _void (mouseDown: [_id event]) 
-      (unless (do-mouse-event wx event 'left-down #t #f #f)
+      (unless (do-mouse-event wx event 'left-down #t #f #f 'right-down)
         (super-tell #:type _void mouseDown: event))]
   [-a _void (mouseUp: [_id event]) 
-      (unless (do-mouse-event wx event 'left-up #f #f #f)
+      (unless (do-mouse-event wx event 'left-up #f #f #f 'right-up)
         (super-tell #:type _void mouseUp: event))]
   [-a _void (mouseDragged: [_id event]) 
       (unless (do-mouse-event wx event 'motion #t #f #f)
@@ -112,20 +112,20 @@
                                (lambda () (send wx dispatch-on-char k #t))
                                #t))))))
 
-(define (do-mouse-event wx event kind l? m? r?)
+(define (do-mouse-event wx event kind l? m? r? [ctl-kind kind])
   (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
          [bit? (lambda (m b) (positive? (bitwise-and m b)))]
          [pos (tell #:type _NSPoint event locationInWindow)])
-    (let-values ([(x y) (send wx window-point-to-view pos)])
+    (let-values ([(x y) (send wx window-point-to-view pos)]
+                 [(control-down) (bit? modifiers NSControlKeyMask)])
       (let ([m (new mouse-event%
-                    [event-type kind]
-                    [left-down l?]
+                    [event-type (if control-down ctl-kind kind)]
+                    [left-down (and l? (not control-down))]
                     [middle-down m?]
-                    [right-down r?]
+                    [right-down (or r? (and l? control-down))]
                     [x (->long x)]
                     [y (->long y)]
                     [shift-down (bit? modifiers NSShiftKeyMask)]
-                    [control-down (bit? modifiers NSControlKeyMask)]
                     [meta-down (bit? modifiers NSCommandKeyMask)]
                     [alt-down (bit? modifiers NSAlternateKeyMask)]
                     [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
@@ -312,7 +312,12 @@
     (def/public-unimplemented on-drop-file)
     (def/public-unimplemented get-handle)
     (def/public-unimplemented set-phantom-size)
-    (def/public-unimplemented popup-menu)
+
+    (define/public (popup-menu m x y)
+      (send m do-popup (get-cocoa-content) x (flip-client y)
+            (lambda (thunk)
+              (queue-window-event this thunk))))
+
     (define/public (center a b) (void))
     (def/public-unimplemented refresh)
 

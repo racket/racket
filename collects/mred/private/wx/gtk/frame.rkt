@@ -27,6 +27,9 @@
 (define-gtk gtk_window_maximize (_fun _GtkWidget -> _void))
 (define-gtk gtk_window_unmaximize (_fun _GtkWidget -> _void))
 (define-gtk gtk_widget_set_uposition (_fun _GtkWidget _int _int -> _void))
+(define-gtk gtk_window_get_position (_fun _GtkWidget (x : (_ptr o _int)) (y : (_ptr o _int)) 
+                                          -> _void
+                                          -> (values x y)))
 
 (define (handle-delete gtk)
   (let ([wx (gtk->wx gtk)])
@@ -162,7 +165,9 @@
       (pre-on-char w e))
 
     (define/override (client-to-screen x y)
-      (void))
+      (let-values ([(dx dy) (gtk_window_get_position gtk)])
+        (set-box! x (+ (unbox x) dx))
+        (set-box! y (+ (unbox y) dy))))
 
     (def/public-unimplemented on-toolbar-click)
     (def/public-unimplemented on-menu-click)

@@ -153,27 +153,37 @@
                                 (GdkEventCrossing-state event)
                                 (GdkEventButton-state event)))]
              [bit? (lambda (m v) (positive? (bitwise-and m v)))]
+             [type (cond
+                    [(= type GDK_MOTION_NOTIFY)
+                     'motion]
+                    [(= type GDK_ENTER_NOTIFY)
+                     'enter]
+                    [(= type GDK_LEAVE_NOTIFY)
+                     'leave]
+                    [(= type GDK_BUTTON_PRESS)
+                     (case (GdkEventButton-button event)
+                       [(1) 'left-down]
+                       [(3) 'right-down]
+                       [else 'middle-down])]
+                    [else
+                     (case (GdkEventButton-button event)
+                       [(1) 'left-up]
+                       [(3) 'right-up]
+                       [else 'middle-up])])]
              [m (new mouse-event%
-                     [event-type (cond
-                                  [(= type GDK_MOTION_NOTIFY)
-                                   'motion]
-                                  [(= type GDK_ENTER_NOTIFY)
-                                   'enter]
-                                  [(= type GDK_LEAVE_NOTIFY)
-                                   'leave]
-                                  [(= type GDK_BUTTON_PRESS)
-                                   (case (GdkEventButton-button event)
-                                     [(1) 'left-down]
-                                     [(3) 'right-down]
-                                     [else 'middle-down])]
-                                  [else
-                                   (case (GdkEventButton-button event)
-                                     [(1) 'left-up]
-                                     [(3) 'right-up]
-                                     [else 'middle-up])])]
-                     [left-down (bit? modifiers GDK_BUTTON1_MASK)]
-                     [middle-down (bit? modifiers GDK_BUTTON2_MASK)]
-                     [right-down (bit? modifiers GDK_BUTTON2_MASK)]
+                     [event-type type]
+                     [left-down (case type
+                                  [(left-down) #t]
+                                  [(left-up) #f]
+                                  [else (bit? modifiers GDK_BUTTON1_MASK)])]
+                     [middle-down (case type
+                                    [(middle-down) #t]
+                                    [(middle-up) #f]
+                                    [else (bit? modifiers GDK_BUTTON2_MASK)])]
+                     [right-down (case type
+                                   [(right-down) #t]
+                                   [(right-up) #f]
+                                   [else (bit? modifiers GDK_BUTTON3_MASK)])]
                      [x (->long ((if motion? 
                                      GdkEventMotion-x 
                                      (if crossing? GdkEventCrossing-x GdkEventButton-x))
@@ -338,7 +348,14 @@
     (def/public-unimplemented on-drop-file)
     (def/public-unimplemented get-handle)
     (def/public-unimplemented set-phantom-size)
-    (def/public-unimplemented popup-menu)
+
+    (define/public (popup-menu m x y)
+      (let ([gx (box x)]
+            [gy (box y)])
+        (client-to-screen gx gy)
+        (send m popup (unbox gx) (unbox gy)
+              (lambda (thunk) (queue-window-event this thunk)))))
+
     (define/public (center a b) (void))
     (define/public (refresh) (void))
 
@@ -349,7 +366,7 @@
         (set-box! x (- (unbox x) (unbox xb)))
         (set-box! y (- (unbox y) (unbox yb)))))
     (define/public (client-to-screen x y)
-      (send parent screen-to-client x y)
+      (send parent client-to-screen x y)
       (set-box! x (+ (unbox x) save-x))
       (set-box! y (+ (unbox y) save-y)))
 
