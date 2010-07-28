@@ -21,6 +21,7 @@
 (import-class NSMatrix NSButtonCell)
 
 (define NSRadioModeMatrix 0)
+(define NSListModeMatrix 2)
 
 (define-objc-class MyMatrix NSMatrix
   #:mixins (FocusResponder)
@@ -115,8 +116,14 @@
         (set-focus)))
 
   (define/public (set-selection i)
-    (tellv (get-cocoa) selectCellAtRow: #:type _NSInteger (if horiz? 0 i)
-           column: #:type _NSInteger (if horiz? i 0)))
+    (if (= i -1)
+        (begin
+          ;; Need to change to NSListModeMatrix to disable all.
+          ;; It seem that we don't have to change the mode back, for some reason.
+          (tellv (get-cocoa) setMode: #:type _int NSListModeMatrix)
+          (tellv (get-cocoa) deselectAllCells))
+        (tellv (get-cocoa) selectCellAtRow: #:type _NSInteger (if horiz? 0 i)
+               column: #:type _NSInteger (if horiz? i 0))))
   (define/public (get-selection)
     (if horiz?
         (tell #:type _NSInteger (get-cocoa) selectedColumn)

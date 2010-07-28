@@ -8,6 +8,7 @@
          "widget.rkt"
          "window.rkt"
          "pixbuf.rkt"
+         "message.rkt"
          "../common/event.rkt"
          "../../lock.rkt")
 (unsafe!)
@@ -18,7 +19,7 @@
 
 (define _GSList (_cpointer/null 'GSList))
 
-(define-gtk gtk_radio_button_new_with_label (_fun _GSList _string -> _GtkWidget))
+(define-gtk gtk_radio_button_new_with_mnemonic (_fun _GSList _string -> _GtkWidget))
 (define-gtk gtk_radio_button_new (_fun _GSList -> _GtkWidget))
 (define-gtk gtk_radio_button_get_group (_fun _GtkWidget -> _GSList))
 (define-gtk gtk_radio_button_set_group (_fun _GtkWidget _GSList -> _void))
@@ -46,7 +47,7 @@
   (define radio-gtks (for/list ([lbl (in-list labels)])
                        (let ([radio-gtk (cond
                                          [(string? lbl)
-                                          (gtk_radio_button_new_with_label #f lbl)]
+                                          (gtk_radio_button_new_with_mnemonic #f (mnemonic-string lbl))]
                                          [(send lbl ok?)
                                           (let ([radio-gtk (gtk_radio_button_new #f)]
                                                 [image-gtk (gtk_image_new_from_pixbuf 
@@ -55,13 +56,15 @@
                                             (gtk_widget_show image-gtk)
                                             radio-gtk)]
                                          [else
-                                          (gtk_radio_button_new_with_label #f "<bad bitmap>")])])
+                                          (gtk_radio_button_new_with_mnemonic #f "<bad bitmap>")])])
                          (gtk_box_pack_start gtk radio-gtk #t #t 0)
                          (gtk_widget_show radio-gtk)
                          radio-gtk)))
   (for ([radio-gtk (in-list (cdr radio-gtks))])
     (let ([g (gtk_radio_button_get_group (car radio-gtks))])
       (gtk_radio_button_set_group radio-gtk g)))
+
+  (define dummy-gtk #f)
                     
   (super-new [parent parent]
              [gtk gtk]
@@ -101,9 +104,11 @@
      (lambda ()
        (set! no-clicked? #t)
        (if (= i -1)
-           (let ([i (get-selection)])
-             (unless (= i -1)
-               (gtk_toggle_button_set_active (list-ref radio-gtks i) #f)))
+           (when (pair? radio-gtks)
+             (unless dummy-gtk 
+               (set! dummy-gtk (gtk_radio_button_new
+                                (gtk_radio_button_get_group (car radio-gtks)))))
+             (gtk_toggle_button_set_active dummy-gtk #t))
            (gtk_toggle_button_set_active (list-ref radio-gtks i) #t))
        (set! no-clicked? #f))))
 

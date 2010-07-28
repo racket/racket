@@ -331,7 +331,9 @@
             1)]))
 
     (define bg-col (make-object color% "white"))
-    (define/public (get-canvas-background) bg-col)
+    (define/public (get-canvas-background) (if (memq 'transparent canvas-style)
+                                               #f
+                                               bg-col))
     (define/public (set-canvas-background col) (set! bg-col col))
     (define/public (get-canvas-background-for-clearing) 
       (if now-drawing?
