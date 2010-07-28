@@ -38,6 +38,12 @@
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
 
+(define (matrix-vector? m)
+  (and (vector? m)
+       (= 6 (vector-length m))
+       (for/and ([e (in-vector m)])
+         (real? e))))
+
 ;; dc-backend : interface
 ;;
 ;; This is the interface that the backend specific code must implement
@@ -196,10 +202,12 @@
 
     (def/public (get-font) font)
 
+    (define matrix (make-cairo_matrix_t 1 0 0 1 0 0))
     (define origin-x 0.0)
     (define origin-y 0.0)
     (define scale-x 1.0)
     (define scale-y 1.0)
+    (define rotation 0.0)
 
     (def/public (set-scale [real? sx] [real? sy])
       (unless (and (equal? scale-x sx)
@@ -218,14 +226,38 @@
         (reset-matrix)))
     (def/public (get-origin) (values origin-x origin-y))
 
+    (def/public (set-rotation [real? th])
+      (unless (and (equal? rotation th))
+        (set! rotation th)
+        (reset-matrix)))
+    (def/public (get-rotation) rotation)
+
+    (def/public (set-initial-matrix [matrix-vector? m])
+      (set! matrix (make-cairo_matrix_t (vector-ref m 0)
+                                        (vector-ref m 1)
+                                        (vector-ref m 2)
+                                        (vector-ref m 3)
+                                        (vector-ref m 4)
+                                        (vector-ref m 5)))
+      (reset-matrix))
+
+    (def/public (get-initial-matrix)
+      (let ([m matrix])
+        (vector-immutable (cairo_matrix_t-xx m)
+                          (cairo_matrix_t-yx m)
+                          (cairo_matrix_t-xy m)
+                          (cairo_matrix_t-yy m)
+                          (cairo_matrix_t-x0 m)
+                          (cairo_matrix_t-y0 m))))
+                    
     (define/private (reset-matrix)
       (with-cr
        (void)
        cr
-       (cairo_identity_matrix cr)
-       (init-cr-matrix cr)
+       (cairo_set_matrix cr matrix)
        (cairo_translate cr origin-x origin-y)
-       (cairo_scale cr scale-x scale-y)))
+       (cairo_scale cr scale-x scale-y)
+       (cairo_rotate cr rotation)))
 
     (inherit get-font-metrics-key)
     (define/public (cache-font-metrics-key)

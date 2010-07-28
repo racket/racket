@@ -226,7 +226,9 @@
        [save-filename #f]
        [save-file-format #f]
        [clip 'none]
-       [current-alpha 1.0])
+       [current-alpha 1.0]
+       [current-rotation 0.0]
+       [current-skew? #f])
   (send hp0 stretchable-height #f)
   (send hp stretchable-height #f)
   (send hp2.5 stretchable-height #f)
@@ -965,6 +967,10 @@
 		      (send dc start-page)
 
                       (send dc set-alpha current-alpha)
+                      (send dc set-rotation current-rotation)
+                      (send dc set-initial-matrix (if current-skew?
+                                                      (vector 1 0 0.2 1 3 0)
+                                                      (vector 1 0 0 1 0 0)))
 
 		      (if clip-pre-scale?
 			  (begin
@@ -1243,7 +1249,18 @@
                        (unless (= a current-alpha)
                          (set! current-alpha a)
                          (send canvas refresh))))
-                   10 '(horizontal plain))))
+                   10 '(horizontal plain))
+      (make-object slider% "Rotation" 0 100 hp4
+                   (lambda (s e)
+                     (let ([a (* pi 1/4 (/ (send s get-value) 100.0))])
+                       (unless (= a current-rotation)
+                         (set! current-rotation a)
+                         (send canvas refresh))))
+                   0 '(horizontal plain))
+      (make-object check-box% "Skew" hp4
+                   (lambda (c e)
+                     (set! current-skew? (send c get-value))
+                     (send canvas refresh)))))
 
   (send f show #t))
 
