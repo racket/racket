@@ -148,8 +148,8 @@
                            #'#%variable-reference #'with-continuation-mark))
        (look-at #'(expr ...))]
             
-      ;; not used, safe to unbox
-      [_ #t]))
+      ;; not used, not worth unboxing
+      [_ #f]))
 
   ;; of course, if the var is mutated, we can't do anything
   (and (not (is-var-mutated? v))
