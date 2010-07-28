@@ -6,8 +6,10 @@
          (types abbrev type-table utils subtype)
          (optimizer utils float fixnum))
 
-(provide inexact-complex-opt-expr inexact-complex-arith-opt-expr
+(provide inexact-complex-opt-expr
+         inexact-complex-arith-opt-expr
          unboxed-inexact-complex-opt-expr
+         inexact-complex-call-site-opt-expr
          unboxed-vars-table unboxed-funs-table)
 
 
@@ -311,27 +313,14 @@
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
 
-  ;; call site of a function with unboxed parameters
-  ;; the calling convention is: real parts of unboxed, imag parts, boxed
-  (pattern (#%plain-app op:id args:expr ...)
+  (pattern (~and e (#%plain-app op:id args:expr ...))
            #:with unboxed-info (dict-ref unboxed-funs-table #'op #f)
            #:when (syntax->datum #'unboxed-info)
-           #:with ((to-unbox ...) (boxed ...)) #'unboxed-info
+           #:with (~var e* (inexact-complex-call-site-opt-expr
+                            #'unboxed-info #'op)) ; no need to optimize op
+           #'e
            #:with opt
-           (let ((args    (syntax->list #'(args ...)))
-                 (unboxed (syntax->datum #'(to-unbox ...)))
-                 (boxed   (syntax->datum #'(boxed ...))))
-             (define (get-arg i) (list-ref args i))
-             (syntax-parse (map get-arg unboxed)
-               [(e:unboxed-inexact-complex-opt-expr ...)
-                (log-optimization "unboxed call site" #'op)
-                (reset-unboxed-gensym)
-                #`(let*-values (e.bindings ... ...)
-                    (#%plain-app op
-                                 e.real-binding ...
-                                 e.imag-binding ...
-                                 #,@(map (lambda (i) ((optimize) (get-arg i)))
-                                         boxed)))]))) ; boxed params
+           #'e*.opt)
 
   ;; unboxed variable used in a boxed fashion, we have to box
   (pattern v:id
@@ -359,3 +348,27 @@
                   (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
                       (unsafe-make-flrectangular exp*.real-binding exp*.imag-binding)))))
+
+;; takes as argument a structure describing which arguments will be unboxed
+;; and the optimized version of the operator. operators are optimized elsewhere
+;; to benefit from local information
+(define-syntax-class (inexact-complex-call-site-opt-expr unboxed-info opt-operator)
+  ;; call site of a function with unboxed parameters
+  ;; the calling convention is: real parts of unboxed, imag parts, boxed
+  (pattern (#%plain-app op:expr args:expr ...)
+           #:with ((to-unbox ...) (boxed ...)) unboxed-info
+           #:with opt
+           (let ((args    (syntax->list #'(args ...)))
+                 (unboxed (syntax->datum #'(to-unbox ...)))
+                 (boxed   (syntax->datum #'(boxed ...))))
+             (define (get-arg i) (list-ref args i))
+             (syntax-parse (map get-arg unboxed)
+               [(e:unboxed-inexact-complex-opt-expr ...)
+                (log-optimization "unboxed call site" #'op)
+                (reset-unboxed-gensym)
+                #`(let*-values (e.bindings ... ...)
+                    (#%plain-app #,opt-operator
+                                 e.real-binding ...
+                                 e.imag-binding ...
+                                 #,@(map (lambda (i) ((optimize) (get-arg i)))
+                                         boxed)))])))) ; boxed params
