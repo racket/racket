@@ -13,8 +13,37 @@
 
 ;; possibly replace bindings of complex numbers by bindings of their 2 components
 ;; useful for intermediate results used more than once and for loop variables
-
 (define-syntax-class unboxed-let-opt-expr
+  (pattern e:app-of-unboxed-let-opt-expr
+           #:with opt #'e.opt)
+  (pattern (~var e (unboxed-let-opt-expr-internal #f))
+           #:with opt #'e.opt))
+
+;; let loops expand to an application of a letrec-values
+;; thus, the loop function technically escapes from the letrec, but it
+;; escapes in the operator position of a call site we control (here)
+;; we can extend unboxing
+(define-syntax-class app-of-unboxed-let-opt-expr
+  #:literal-sets (kernel-literals)
+  (pattern (~and e ((~literal #%plain-app)
+                    (~and let-e
+                          ((~literal letrec-values)
+                           bindings
+                           loop-fun:id)) ; sole element of the body
+                    args:expr ...))
+           #:with (~var operator (unboxed-let-opt-expr-internal #t)) #'let-e
+           #:with unboxed-info (dict-ref unboxed-funs-table #'loop-fun #f)
+           #:when (syntax->datum #'unboxed-info)
+           #:with (~var e* (inexact-complex-call-site-opt-expr
+                            #'unboxed-info #'operator.opt))
+           #'e
+           #:with opt
+           #'e*.opt))
+
+;; does the bulk of the work
+;; detects which let bindings can be unboxed, same for arguments of let-bound
+;; functions
+(define-syntax-class (unboxed-let-opt-expr-internal let-loop?)
   #:literal-sets (kernel-literals)
   (pattern (~and exp (letk:let-like-keyword
                       (clause:expr ...) body:expr ...))
@@ -40,8 +69,8 @@
                     (let ((fun-name (car (syntax-e (car p)))))
                       (and
                        ;; if the function escapes, we can't change it's interface
-                       (and (not (is-var-mutated? fun-name))
-                            (not (escapes? fun-name #'(begin body ...))))
+                       (not (is-var-mutated? fun-name))
+                       (not (escapes? fun-name #'(begin body ...) let-loop?))
                        (match (type-of (cadr p)) ; rhs, we want a lambda
                          [(tc-result1: (Function: (list (arr: doms rngs
                                                               (and rests #f)
@@ -158,7 +187,10 @@
 ;; very simple escape analysis for functions
 ;; if a function is ever used in a non-operator position, we consider it escapes
 ;; if it doesn't escape, we may be able to pass its inexact complex args unboxed
-(define (escapes? v exp)
+;; if we are in a let loop, don't consider functions that escape by being the
+;; sole thing in the let's body as escaping, since they would only escape to
+;; a call site that we control, which is fine
+(define (escapes? v exp let-loop?)
 
   (define (look-at exp)
     (or (direct-child-of? v exp)
@@ -193,7 +225,17 @@
 
       ;; does not escape
       [_ #f]))
-  (rec exp))
+
+  ;; if the given var is the _only_ element of the body and we're in a
+  ;; let loop, we let it slide
+  (and (not (and let-loop?
+                 (syntax-parse exp
+                   #:literal-sets (kernel-literals)
+                   ;; the body gets wrapped in a begin before it's sent here
+                   [(begin i:identifier)
+                    (free-identifier=? #'i v)]
+                   [_ #f])))
+       (rec exp)))
 
 ;; let clause whose rhs is going to be unboxed (turned into multiple bindings)
 (define-syntax-class unboxed-let-clause
