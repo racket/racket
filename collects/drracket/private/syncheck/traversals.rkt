@@ -1114,7 +1114,43 @@
         (when (and (is-a? src text%)
                    pos
                    span)
-          (send src set-position (- pos 1) (+ pos span -1)))))
+          (send src begin-edit-sequence)
+          
+          ;; try to scroll so stx's location is
+          ;; near the top of the visible region
+          (let ([admin (send src get-admin)])
+            (when admin 
+              (let ([wb (box 0.0)]
+                    [hb (box 0.0)]
+                    [xb (box 0.0)]
+                    [yb (box 0.0)])
+                (send admin get-view #f #f wb hb)
+                (send src position-location (- pos 1) xb yb #t #f #t)
+                (let ([w (unbox wb)]
+                      [h (unbox hb)]
+                      [x (unbox xb)]
+                      [y (unbox yb)])
+                  (send src scroll-editor-to 
+                        (max 0 (- x (* .1 w)))
+                        (max 0 (- y (* .1 h)))
+                        w h
+                        #t
+                        'none)))))
+
+          
+          (let ([admin (send src get-admin)])
+            (when admin 
+              (let-values ([(w h) (send admin get-view-size)]
+                           [(x y) (send src position-location (- pos 1))])
+                (send src scroll-editor-to 
+                      (max 0 (- x (* .1 w)))
+                      (max 0 (- y (* .1 h)))
+                      w h
+                      #t
+                      'none))))
+
+          (send src set-position (- pos 1) (+ pos span -1))
+          (send src end-edit-sequence))))
 
     ;; hash-table[syntax -o> (listof syntax)] -> void
     (define (add-tail-ht-links tail-ht)
