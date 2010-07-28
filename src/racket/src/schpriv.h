@@ -746,6 +746,7 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
 					int num_islots,
 					Scheme_Object *uninit_val,
 					char *immutable_pos_list);
+Scheme_Object *scheme_prefab_struct_key(Scheme_Object *s);
 
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 

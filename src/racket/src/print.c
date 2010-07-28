@@ -2252,9 +2252,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
                                               && SCHEME_PREFABP(SCHEME_CHAPERONE_VAL(obj))))) {
         Scheme_Object *vec, *prefab;
         print_compact(pp, CPT_PREFAB);
-        prefab = ((Scheme_Structure *)obj)->stype->prefab_key;
+        prefab = scheme_prefab_struct_key(obj);
         vec = scheme_struct_to_vector(obj, (notdisplay >= 3) ? qq_ellipses : NULL, pp->inspector);
-        SCHEME_VEC_ELS(vec)[0] = SCHEME_CDR(prefab);
+        SCHEME_VEC_ELS(vec)[0] = prefab;
         print_vector(vec, notdisplay, compact, ht, mt, pp, 1);
       } else if (compact || !pp->print_unreadable) {
         cannot_print(pp, notdisplay, obj, ht, compact);
@@ -2275,18 +2275,18 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
 	if (pb) {
           Scheme_Object *vec, *prefab;
-          prefab = ((Scheme_Structure *)obj)->stype->prefab_key;
+          prefab = scheme_prefab_struct_key(obj);
 	  vec = scheme_struct_to_vector(obj, (notdisplay >= 3) ? qq_ellipses : NULL, pp->inspector);
-          if (prefab)
+          if (SCHEME_TRUEP(prefab))
             notdisplay = to_quoted(obj, pp, notdisplay);
           if (notdisplay == 3) {
             vec = scheme_vector_to_list(vec);
             vec = scheme_make_pair(scheme_object_name(obj), SCHEME_CDR(vec));
             print_pair(vec, notdisplay, compact, ht, mt, pp, scheme_pair_type, !pp->print_pair_curly, 1);
           } else {
-            if (prefab)
-              SCHEME_VEC_ELS(vec)[0] = SCHEME_CDR(prefab);
-            print_vector(vec, notdisplay, compact, ht, mt, pp, !!prefab);
+            if (SCHEME_TRUEP(prefab))
+              SCHEME_VEC_ELS(vec)[0] = prefab;
+            print_vector(vec, notdisplay, compact, ht, mt, pp, SCHEME_TRUEP(prefab));
           }
 	  closed = 1;
 	} else {

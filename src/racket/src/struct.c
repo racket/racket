@@ -117,6 +117,9 @@ static Scheme_Object *struct_to_vector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_struct_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[]);
+#ifdef MZ_USE_PLACES
+static Scheme_Object *convert_prefab_key_to_external_form(Scheme_Object *key);
+#endif
 
 static Scheme_Object *struct_setter_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_getter_p(int argc, Scheme_Object *argv[]);
@@ -2687,14 +2690,25 @@ static Scheme_Object *struct_to_vector(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *prefab_struct_key(int argc, Scheme_Object *argv[])
 {
-  Scheme_Structure *s = (Scheme_Structure *)argv[0];
+  return scheme_prefab_struct_key(argv[0]);
+}
+
+Scheme_Object *scheme_prefab_struct_key(Scheme_Object *so)
+{
+  Scheme_Structure *s = (Scheme_Structure *)so;
 
   if (SCHEME_CHAPERONEP((Scheme_Object *)s))
     s = (Scheme_Structure *)SCHEME_CHAPERONE_VAL((Scheme_Object *)s);
   
-  if (SCHEME_STRUCTP(((Scheme_Object *)s))
-      && s->stype->prefab_key)
-    return SCHEME_CDR(s->stype->prefab_key);
+  if (SCHEME_STRUCTP(((Scheme_Object *)s)) && s->stype->prefab_key) {
+    Scheme_Object *prefab_key;
+    prefab_key = SCHEME_CDR(s->stype->prefab_key);
+#ifdef MZ_USE_PLACES
+    return convert_prefab_key_to_external_form(prefab_key);
+#else
+    return prefab_key;
+#endif
+  }
   
   return scheme_false;
 }
@@ -4560,6 +4574,29 @@ static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutab
   }
   return immutable_array;
 }
+
+#ifdef MZ_USE_PLACES
+static Scheme_Object *convert_prefab_key_to_external_form(Scheme_Object *key)
+{
+  Scheme_Object *l;
+  Scheme_Object *nl;
+
+  if (SCHEME_SYMBOLP(key)) return key;
+  if (SCHEME_BYTE_STRINGP(key))
+    return scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(key), SCHEME_BYTE_STRLEN_VAL(key));
+
+  nl = scheme_null;
+  for (l = key; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+    Scheme_Object *a;
+    a = SCHEME_CAR(l);
+    if (SCHEME_BYTE_STRINGP(a))
+     a = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(a), SCHEME_BYTE_STRLEN_VAL(a));
+    nl = scheme_make_pair(a, nl);
+  }
+
+  return scheme_reverse(nl);
+}
+#endif
 
 Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count)
 {
