@@ -73,9 +73,8 @@
              [no-show? (memq 'deleted style)])
 
   (set-auto-size)
-  (for ([radio-gtk (in-list (cdr radio-gtks))])
-    (connect-clicked radio-gtk))
   (for ([radio-gtk (in-list radio-gtks)])
+    (connect-clicked radio-gtk)
     (connect-key-and-mouse radio-gtk)
     (connect-focus radio-gtk))
 
