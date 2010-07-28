@@ -17,11 +17,35 @@
 
 (define (panel-mixin %)
   (class %
-    (define lbl-pos 'vertical)
+    (inherit register-as-child)
+
+    (define lbl-pos 'horizontal)
+    (define children null)
+
     (super-new)
 
     (define/public (get-label-position) lbl-pos)
     (define/public (set-label-position pos) (set! lbl-pos pos))
+
+    (define/public (reset-child-dcs)
+      (when (pair? children)
+        (for ([child (in-list children)])
+          (send child reset-child-dcs))))
+    
+    (define/override (set-size x y w h)
+      (super set-size x y w h)
+      (reset-child-dcs))
+    
+    (define/override (maybe-register-as-child parent on?)
+      (register-as-child parent on?))
+    
+    (define/override (register-child child on?)
+      (let ([now-on? (and (memq child children) #t)])
+        (unless (eq? on? now-on?)
+          (set! children 
+                (if on?
+                    (cons child children)
+                    (remq child children))))))
 
     (def/public-unimplemented on-paint)
     (define/public (set-item-cursor x y) (void))

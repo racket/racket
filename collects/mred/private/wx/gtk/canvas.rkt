@@ -84,7 +84,8 @@
           [ignored-name #f]
           [gl-config #f])
 
-    (inherit get-gtk set-size get-client-size)
+    (inherit get-gtk set-size get-size get-client-size 
+             on-size register-as-child)
 
     (define client-gtk (gtk_drawing_area_new))
     (define-values (gtk hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box)
@@ -196,9 +197,19 @@
 
     (define/override (refresh)
       (gtk_widget_queue_draw client-gtk))
+    
+    (define/public (reset-child-dcs)
+      (send dc reset-dc #t))
+    (define/override (maybe-register-as-child parent on?)
+      (register-as-child parent on?))
 
     (define/override (internal-on-client-size w h)
-      (send dc reset-dc-size))
+      (send dc reset-dc #f))
+    (define/override (on-client-size w h) 
+      (let ([xb (box 0)]
+            [yb (box 0)])
+        (get-size xb yb)
+        (on-size (unbox xb) (unbox yb))))
 
     (define/public (show-scrollbars h? v?)
       (when hscroll-gtk

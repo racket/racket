@@ -255,7 +255,8 @@
       (if on?
           (gtk_widget_show gtk)
           (gtk_widget_hide gtk))
-      (set! shown? (and on? #t)))
+      (set! shown? (and on? #t))
+      (maybe-register-as-child parent on?))
     (define/public (show on?)
       (direct-show on?))
     (define/public (is-shown?) shown?)
@@ -325,8 +326,16 @@
     (define/public (on-char e) (void))
     (define/public (on-event e) (void))
 
+    (define/public (on-size w h) (void))
+
+    (define/public (maybe-register-as-child parent on?)
+      (void))
+    (define/public (register-as-child parent on?)
+      (send parent register-child this on?))
+    (define/public (register-child child on?)
+      (void))
+
     (def/public-unimplemented on-drop-file)
-    (def/public-unimplemented on-size)
     (def/public-unimplemented get-handle)
     (def/public-unimplemented set-phantom-size)
     (def/public-unimplemented popup-menu)

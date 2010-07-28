@@ -45,7 +45,8 @@
           style
           labels)
     
-    (inherit set-size set-auto-size get-gtk)
+    (inherit set-size set-auto-size get-gtk
+             reset-child-dcs)
 
     (define gtk (gtk_notebook_new))
     ;; Reparented so that it's always in the current page's bin:
@@ -56,7 +57,9 @@
 
     (define (select-bin bin-gtk)
       (set! current-bin-gtk bin-gtk)
-      (gtk_box_pack_start bin-gtk client-gtk #t #t 0))
+      (gtk_box_pack_start bin-gtk client-gtk #t #t 0)
+      ;; re-parenting can change the underlying window dc:
+      (reset-child-dcs))
 
     (define pages
       (for/list ([lbl labels])

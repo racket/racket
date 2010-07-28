@@ -9,13 +9,13 @@
          racket/draw/local
          ffi/unsafe/alloc)
 
-(provide dc% reset-dc-size)
+(provide dc% reset-dc)
 
 (define-gdk gdk_cairo_create (_fun _pointer -> _cairo_t)
   #:wrap (allocator cairo_destroy))
 
 (define-local-member-name
-  reset-dc-size)
+  reset-dc)
 
 (define dc-backend%
   (class default-dc-backend%
@@ -31,8 +31,9 @@
                  (set! c (gdk_cairo_create w))
                  c))))
 
-    (define/public (reset-dc-size)
-      (when (eq? 'windows (system-type))
+    (define/public (reset-dc force?)
+      (when (or force?
+                (eq? 'windows (system-type)))
         ;; FIXME: ensure that the dc is not in use
         (as-entry
          (lambda ()
