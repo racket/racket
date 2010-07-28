@@ -223,18 +223,26 @@
                (let loop ((params     (syntax->list #'params))
                           (i          0)
                           (real-parts (syntax->list #'(real-params ...)))
-                          (imag-parts (syntax->list #'(imag-params ...))))
-                 (cond [(null? params)] ; done
+                          (imag-parts (syntax->list #'(imag-params ...)))
+                          (boxed      '()))
+                 (cond [(null? params) ; done, create the new clause
+                        ;; real parts of unboxed parameters go first, then all imag
+                        ;; parts, then boxed occurrences of unboxed parameters will
+                        ;; be inserted when optimizing the body
+                        #`((v) (#%plain-lambda
+                                (real-params ... imag-params ... #,@(reverse boxed))
+                                #,@(map (optimize) (syntax->list #'(body ...)))))]
+
                        [(memq i to-unbox) ; we unbox the current param, add to the table
                         (dict-set! unboxed-vars-table (car params)
                                    (list (car real-parts) (car imag-parts)))
-                        (loop (cdr params) (add1 i) (cdr real-parts) (cdr imag-parts))]
+                        (loop (cdr params) (add1 i)
+                              (cdr real-parts) (cdr imag-parts)
+                              boxed)]
                        [else ; that param stays boxed, keep going
-                        (loop (cdr params) (add1 i) real-parts imag-parts)])))
-             ;; real parts of unboxed parameters go first, then all imag parts, then boxed
-             ;; occurrences of unboxed parameters will be inserted when optimizing the body
-             #`((v) (#%plain-lambda (real-params ... imag-params ... boxed ...)
-                                    #,@(map (optimize) (syntax->list #'(body ...))))))))
+                        (loop (cdr params) (add1 i)
+                              real-parts imag-parts
+                              (cons (car params) boxed))]))))))
 
 (define-syntax-class opt-let-clause
   (pattern (vs rhs:expr)
