@@ -18,6 +18,8 @@
   (lambda (gtk a)
     (let ([wx (gtk->wx gtk)])
       (send wx remember-client-size 
+            (GtkAllocation-x a)
+            (GtkAllocation-y a)
             (GtkAllocation-width a)
             (GtkAllocation-height a)))
     #t))
@@ -30,11 +32,15 @@
 
     (define client-w 0)
     (define client-h 0)
+    (define client-x 0)
+    (define client-y 0)
 
     (define/public (on-client-size w h) (void))
 
-    (define/public (remember-client-size w h)
+    (define/public (remember-client-size x y w h)
       ;; Called in the Gtk event-loop thread
+      (set! client-x x)
+      (set! client-y y)
       (set! client-w w)
       (set! client-h h)
       (queue-window-event this (lambda () 
@@ -47,5 +53,8 @@
     (define/override (get-client-size xb yb)
       (set-box! xb client-w)
       (set-box! yb client-h))
+
+    (define/override (get-client-delta)
+      (values client-x client-y))
 
     (super-new)))

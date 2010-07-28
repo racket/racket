@@ -366,9 +366,13 @@
         (set-box! x (- (unbox x) (unbox xb)))
         (set-box! y (- (unbox y) (unbox yb)))))
     (define/public (client-to-screen x y)
-      (send parent client-to-screen x y)
-      (set-box! x (+ (unbox x) save-x))
-      (set-box! y (+ (unbox y) save-y)))
+      (let-values ([(dx dy) (get-client-delta)])
+        (send parent client-to-screen x y)
+        (set-box! x (+ (unbox x) save-x dx))
+        (set-box! y (+ (unbox y) save-y dy))))
+
+    (define/public (get-client-delta)
+      (values 0 0))
 
     (def/public-unimplemented get-position)
     (def/public-unimplemented fit)

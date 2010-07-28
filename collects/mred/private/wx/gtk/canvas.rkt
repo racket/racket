@@ -171,6 +171,11 @@
     (define/override (get-client-gtk) client-gtk)
     (define/override (handles-events?) #t)
 
+    ;; For the moment, the client area always starts at the 
+    ;; control area's top left
+    (define/override (get-client-delta)
+      (values 0 0))
+
     ;; Avoid multiple queued paints:
     (define paint-queued? #f)
     ;; To handle paint requests that happen while on-paint

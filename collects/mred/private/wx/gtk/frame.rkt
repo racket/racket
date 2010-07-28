@@ -16,6 +16,10 @@
 
 ;; ----------------------------------------
 
+(define GDK_GRAVITY_NORTH_WEST 1)
+(define GDK_GRAVITY_STATIC 10)
+
+
 (define-gtk gtk_window_new (_fun _int -> _GtkWidget))
 (define-gtk gtk_window_set_title (_fun _GtkWindow _string -> _void))
 (define-gtk gtk_fixed_new (_fun _gboolean _int -> _GtkWidget))
@@ -30,6 +34,7 @@
 (define-gtk gtk_window_get_position (_fun _GtkWidget (x : (_ptr o _int)) (y : (_ptr o _int)) 
                                           -> _void
                                           -> (values x y)))
+(define-gtk gtk_window_set_gravity (_fun _GtkWindow _int -> _void))
 
 (define (handle-delete gtk)
   (let ([wx (gtk->wx gtk)])
@@ -74,7 +79,8 @@
     (init [is-dialog? #f])
    
     (inherit get-gtk set-size on-size
-             pre-on-char pre-on-event)
+             pre-on-char pre-on-event
+             get-client-delta)
 
     (define gtk (gtk_window_new GTK_WINDOW_TOPLEVEL))
     (when (memq 'no-caption style)
@@ -165,9 +171,12 @@
       (pre-on-char w e))
 
     (define/override (client-to-screen x y)
-      (let-values ([(dx dy) (gtk_window_get_position gtk)])
-        (set-box! x (+ (unbox x) dx))
-        (set-box! y (+ (unbox y) dy))))
+      (gtk_window_set_gravity gtk GDK_GRAVITY_STATIC)
+      (let-values ([(dx dy) (gtk_window_get_position gtk)]
+                   [(cdx cdy) (get-client-delta)])
+        (gtk_window_set_gravity gtk GDK_GRAVITY_NORTH_WEST)
+        (set-box! x (+ (unbox x) dx cdx))
+        (set-box! y (+ (unbox y) dy cdy))))
 
     (def/public-unimplemented on-toolbar-click)
     (def/public-unimplemented on-menu-click)
