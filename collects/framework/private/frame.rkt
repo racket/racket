@@ -1807,7 +1807,7 @@
                            [bt (box 0)]
                            [bb (box 0)])
                        (send text get-visible-line-range bt bb #f)
-                       (unless (<= (unbox bt) search-result-line (unbox bb))
+                       (unless (< (unbox bt) search-result-line (unbox bb))
                          (let* ([half (sub1 (quotient (- (unbox bb) (unbox bt)) 2))]
                                 [last-pos (send text position-line (send text last-position))]
                                 [top-pos (send text line-start-position 
