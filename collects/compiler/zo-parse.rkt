@@ -594,31 +594,22 @@
                          (make-module-rename phase 
                                              (if kind 'marked 'normal)
                                              set-id
-                                             (let ([results (map (lambda (u)
-                                                                   ; u = (list path phase . src-phase)
-                                                                   ; or u = (list path phase src-phase exn ... . prefix)
-                                                                   (let ([just-phase? (let ([v (cddr u)])
-                                                                                        (or (number? v) (not v)))])
-                                                                     (let-values ([(exns prefix)
-                                                                                   (if just-phase?
-                                                                                       (values null #f)
-                                                                                       (let loop ([u (if just-phase? null (cdddr u))]
-                                                                                                  [a null])
-                                                                                         (if (pair? u)
-                                                                                             (loop (cdr u) (cons (car u) a))
-                                                                                             (values (reverse a) u))))])
-                                                                       (make-all-from-module
-                                                                        (parse-module-path-index cp (car u))
-                                                                        (cadr u)
-                                                                        (if just-phase?
-                                                                            (cddr u)
-                                                                            (caddr u))
-                                                                        exns
-                                                                        prefix))))
-                                                                 unmarshals)])
-                                               #;(printf "~nunmarshals: ~S~n" unmarshals)
-                                               #;(printf "~nunmarshal results: ~S~n" results)
-                                               results)
+                                             (map (local [(define (phase? v)
+                                                            (or (number? v) (not v)))]
+                                                    (match-lambda
+                                                      [(list* path (? phase? phase) (? phase? src-phase) exn ... prefix)
+                                                       (make-all-from-module
+                                                        (parse-module-path-index cp path)
+                                                        phase src-phase exn prefix)]
+                                                      [(list* path (? phase? phase) (list exn ...) (? phase? src-phase))
+                                                       (make-all-from-module
+                                                        (parse-module-path-index cp path)
+                                                        phase src-phase exn #f)]
+                                                      [(list* path (? phase? phase) (? phase? src-phase))
+                                                       (make-all-from-module
+                                                        (parse-module-path-index cp path)
+                                                        phase src-phase empty #f)]))
+                                                  unmarshals)
                                              (decode-renames renames)
                                              mark-renames
                                              (and plus-kern? 'plus-kern)))]

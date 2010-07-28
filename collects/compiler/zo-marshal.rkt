@@ -576,12 +576,14 @@
                     (list* path phase export-name (encode-nominal-path nominal-path) nominal-export-name)])))
   encoded-bindings)
 
-(define (encode-all-from-module all)
-  (match all
-    [(struct all-from-module (path phase src-phase exceptions prefix))
-     (if (and (empty? exceptions) (not prefix))
-         (list* path phase src-phase)
-         (list* path phase src-phase (append exceptions prefix)))]))
+(define encode-all-from-module
+  (match-lambda
+    [(struct all-from-module (path phase src-phase (list) #f))
+     (list* path phase src-phase)]
+    [(struct all-from-module (path phase src-phase exns #f))
+     (list* path phase exns src-phase)]
+    [(struct all-from-module (path phase src-phase exns prefix))
+     (list* path phase src-phase (append exns prefix))]))
 
 (define (encode-wraps wraps)
   (for/list ([wrap (in-list wraps)])
