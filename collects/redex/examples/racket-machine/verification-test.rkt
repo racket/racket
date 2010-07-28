@@ -383,6 +383,13 @@
                               void)
                       (application (loc 2)))))
 
+(test-predicate
+ bytecode-ok?
+ '(let-one 'x
+           (branch #f
+                   (let-one (loc-noclr 1) void)
+                   (loc-clr 0))))
+
 ; let-rec
 (test-predicate
  bytecode-ok?
