@@ -83,7 +83,7 @@
                            ;; at least 1 argument has to be of type inexact-complex
                            ;; and can be unboxed
                            (syntax-parse (cadr p)
-                             [(#%plain-lambda params body ...)
+                             [((~literal #%plain-lambda) params body ...)
                               ;; keep track of the param # of each param that can be unboxed
                               (let loop ((unboxed '())
                                          (boxed   '())
