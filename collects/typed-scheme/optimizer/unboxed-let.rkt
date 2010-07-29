@@ -46,7 +46,8 @@
 (define-syntax-class (unboxed-let-opt-expr-internal let-loop?)
   #:literal-sets (kernel-literals)
   (pattern (~and exp (letk:let-like-keyword
-                      (clause:expr ...) body:expr ...))
+                      ((~and clause (lhs rhs ...)) ...)
+                      body:expr ...))
            ;; we look for bindings of complexes that are not mutated and only
            ;; used in positions where we would unbox them
            ;; these are candidates for unboxing
@@ -74,6 +75,7 @@
                        (and
                         ;; if the function escapes, we can't change it's interface
                         (not (is-var-mutated? fun-name))
+                        (not (escapes? fun-name #'(begin rhs ... ...) #f))
                         (not (escapes? fun-name #'(begin body ...) let-loop?))
                         (match (type-of (cadr p)) ; rhs, we want a lambda
                           [(tc-result1: (Function: (list (arr: doms rngs
