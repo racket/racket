@@ -8,6 +8,7 @@
          "png.ss"
          "jpeg.ss"
          "xbm.ss"
+         "xpm.ss"
          "gif.rkt"
          "local.ss"
          "color.ss")
@@ -314,6 +315,14 @@
                   (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)])
                     (install-bytes-rows s w h rows #t #f #f #t)
                     (values s #t))
+                  (values #f #f)))]
+           [(xpm xpm/alpha)
+            (let-values ([(w h rows) (read-xpm in)])
+              (if rows
+                  (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
+                        [alpha? #t])
+                    (install-bytes-rows s w h rows #f alpha? #t #f)
+                    (values s #f))
                   (values #f #f)))]
            [else (values #f #f)])))
     
