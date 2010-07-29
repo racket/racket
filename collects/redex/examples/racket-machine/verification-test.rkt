@@ -390,6 +390,15 @@
                    (let-one (loc-noclr 1) void)
                    (loc-clr 0))))
 
+(test-predicate
+ (negate bytecode-ok?)
+ '(proc-const (val)
+              (seq
+               (branch (loc 0)
+                       (loc-clr 0)
+                       void)
+               (install-value 0 'x void))))
+
 ; let-rec
 (test-predicate
  bytecode-ok?

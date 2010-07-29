@@ -310,7 +310,7 @@
   [(redo-clears γ invalid) invalid]
   [(redo-clears () s) s]
   [(redo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
-   (redo-clears ((n_1 ṽ_1) ...) (set uninit n_0 s))])
+   (redo-clears ((n_1 ṽ_1) ...) (set not n_0 s))])
 
 (define-metafunction verification
   trim : s s -> s
