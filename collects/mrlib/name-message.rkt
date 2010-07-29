@@ -185,6 +185,7 @@
         (let-values ([(w h) (get-client-size)])
           (cond
             [hidden? 
+             #;
              (let ([pen (send dc get-pen)]
                    [brush (send dc get-brush)])
                (send dc set-brush (send the-brush-list find-or-create-brush (get-panel-background) 'panel))
