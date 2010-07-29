@@ -18,7 +18,9 @@
  (only-in mzscheme make-namespace)
  (only-in racket/match/runtime match:error matchable? match-equality-test)
  (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
-             (only-in (rep type-rep) make-HashtableTop make-MPairTop make-BoxTop make-ChannelTop make-VectorTop)))
+             (only-in (rep type-rep) make-HashtableTop make-MPairTop
+                                     make-BoxTop make-ChannelTop make-VectorTop
+                                     make-HeterogenousVector)))
 
 [raise (Univ . -> . (Un))]
 [raise-syntax-error (cl->* 
@@ -933,3 +935,69 @@
 [mlength (-poly (a) (-> (-mlst a) -NonnegativeFixnum))]
 [mreverse! (-poly (a) (-> (-mlst a) (-mlst a)))]
 [mappend (-poly (a) (->* (list) (-mlst a) (-mlst a)))]
+
+;; module names and loading
+[resolved-module-path? (make-pred-ty -Resolved-Module-Path)]
+[make-resolved-module-path (-> (Un -Symbol -Path) -Resolved-Module-Path)]
+[resolved-module-path-name (-> -Resolved-Module-Path (Un -Path -Symbol))]
+[module-path? (make-pred-ty -Module-Path)]
+[current-module-name-resolver (-Param (cl->* (-Resolved-Module-Path . -> . Univ)
+                                             ((Un -Module-Path -Path)
+                                              (-opt -Resolved-Module-Path)
+                                              (-opt (-Syntax Univ))
+                                              -Boolean
+                                              . -> . -Resolved-Module-Path))
+                                      (cl->* (-Resolved-Module-Path . -> . Univ)
+                                             ((Un -Module-Path -Path)
+                                              (-opt -Resolved-Module-Path)
+                                              (-opt (-Syntax Univ))
+                                              -Boolean
+                                              . -> . -Resolved-Module-Path)))]
+[current-module-declare-name (-Param (-opt -Resolved-Module-Path)
+                                     (-opt -Resolved-Module-Path))]
+[current-module-declare-source (-Param (-opt (Un -Symbol -Path))
+                                       (-opt (Un -Symbol -Path)))]
+[module-path-index? (make-pred-ty -Module-Path-Index)]
+[module-path-index-resolve (-> -Module-Path-Index -Resolved-Module-Path)]
+[module-path-index-split (-> -Module-Path-Index
+                             (-values
+                              (list (-opt -Module-Path)
+                                    (-opt (Un -Module-Path-Index
+                                              -Resolved-Module-Path)))))]
+[module-path-index-join (-> (-opt -Module-Path)
+                            (-opt (Un -Module-Path-Index -Resolved-Module-Path))
+                            -Module-Path-Index)]
+[compiled-module-expression? (make-pred-ty -Compiled-Module-Expression)]
+[module-compiled-name (-> -Compiled-Module-Expression -Symbol)]
+[module-compiled-imports (-> -Compiled-Module-Expression
+                             (-lst (-pair (-opt -Integer)
+                                          (-lst -Module-Path-Index))))]
+[module-compiled-exports
+ (-> -Compiled-Module-Expression
+     (-values
+      (list
+       (-lst (-pair (-opt -Integer)
+                    (-lst (-pair -Symbol
+                                 (-pair
+                                  (-lst
+                                   (Un -Module-Path-Index
+                                       (-pair -Module-Path-Index
+                                              (-pair (-opt -Integer)
+                                                     (-pair -Symbol
+                                                            (-pair (-opt -Integer)
+                                                                   (-val null)))))))
+                                  (-val null))))))
+       (-lst (-pair (-opt -Integer)
+                    (-lst (-pair -Symbol
+                                 (-pair
+                                  (-lst
+                                   (Un -Module-Path-Index
+                                       (-pair -Module-Path-Index
+                                              (-pair (-opt -Integer)
+                                                     (-pair -Symbol
+                                                            (-pair (-opt -Integer)
+                                                                   (-val null)))))))
+                                  (-val null)))))))))]
+[module-compiled-language-info
+ (-> -Compiled-Module-Expression
+     (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
