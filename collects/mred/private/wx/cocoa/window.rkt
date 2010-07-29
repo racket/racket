@@ -49,6 +49,19 @@
       (unless (do-mouse-event wx event 'motion #t #f #f)
         (super-tell #:type _void mouseDragged: event))]
   [-a _void (mouseMoved: [_id event]) 
+      ;; This event is sent to the first responder, instead of the
+      ;; view under the mouse.
+      (let* ([win (tell event window)]
+             [view (and win (tell win contentView))]
+             [hit (and view (tell view hitTest: #:type _NSPoint 
+                                  (tell #:type _NSPoint event locationInWindow)))])
+        (let loop ([hit hit])
+          (when hit
+            (if (tell #:type _BOOL hit respondsToSelector: #:type _SEL (selector doMouseMoved:))
+                (tell hit doMouseMoved: event)
+                (loop (tell hit superview))))))]
+  [-a _void (doMouseMoved: [_id event]) 
+      ;; called by mouseMoved:
       (unless (do-mouse-event wx event 'motion #f #f #f)
         (super-tell #:type _void mouseMoved: event))]
   [-a _void (mouseEntered: [_id event]) 

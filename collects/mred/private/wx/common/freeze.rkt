@@ -36,6 +36,30 @@
               freeze-tag)))))
       (void))))
 
+(define (internal-error str)
+  (log-error
+   (apply string-append
+          (format "internal error: ~s" str)
+          (for/list ([c (continuation-mark-set->context (current-continuation-marks))])
+            (let ([name (car c)]
+                  [loc (cdr c)])
+              (cond
+               [loc
+                (string-append
+                 "\n"
+                 (cond 
+                  [(srcloc-line loc)
+                   (format "~a:~a:~a" 
+                           (srcloc-source loc)
+                           (srcloc-line loc)
+                           (srcloc-column loc))]
+                  [else
+                   (format "~a::~a" 
+                           (srcloc-source loc)
+                           (srcloc-position loc))])
+                 (if name (format " ~a" name) ""))]
+               [else (format "\n ~a" name)]))))))
+
 ;; FIXME: waiting 200msec is not a good enough rule.
 (define (constrained-reply es thunk default [should-give-up?
                                              (let ([now (current-inexact-milliseconds)])
@@ -43,7 +67,7 @@
                                                  ((current-inexact-milliseconds) . > . (+ now 200))))])
   (let ([b (freezer-box)])
     (unless b
-      (log-error "internal error: constrained-reply not within an unfreeze point"))
+      (internal-error "constrained-reply not within an unfreeze point"))
     (if (eq? (current-thread) (eventspace-handler-thread es))
         (if (pair? b)
             ;; already suspended, so push this work completely:
@@ -79,5 +103,5 @@
                            (scheme_restore_on_atomic_timeout prev))))
                    freeze-tag))))))
         (begin
-          (log-error "internal error: wrong eventspace for constrained event handling\n")
+          (internal-error "wrong eventspace for constrained event handling\n")
           default))))
