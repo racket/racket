@@ -660,6 +660,22 @@ case $OS in
     if test "${enable_sdk}" != "" ; then 
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4 -DEXTRA_EXCEPTION_STUBS"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4"
+      if test "${CC}" = "gcc" ; then
+        CC=gcc-4.0
+      fi
+      if test "${CXX}" = "g++" ; then
+        CXX=g++-4.0
+      fi
+      if test "${CPP}" = "gcc -E" ; then
+        CPP="gcc-4.0 -E"
+      fi
+      if test "${CXXCPP}" = "g++ -E" ; then
+        CXXCPP="g++-4.0 -E"
+      fi
+      if test "${LD}" = "gcc" ; then
+        LD=gcc-4.0
+      fi
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS} ${PREFLAGS}"'"'
     fi
     
     case `$UNAME -m` in
