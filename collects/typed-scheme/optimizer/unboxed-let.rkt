@@ -66,46 +66,50 @@
                  ;; this covers loop variables
                  (partition
                   (lambda (p)
-                    (let ((fun-name (car (syntax-e (car p)))))
-                      (and
-                       ;; if the function escapes, we can't change it's interface
-                       (not (is-var-mutated? fun-name))
-                       (not (escapes? fun-name #'(begin body ...) let-loop?))
-                       (match (type-of (cadr p)) ; rhs, we want a lambda
-                         [(tc-result1: (Function: (list (arr: doms rngs
-                                                              (and rests #f)
-                                                              (and drests #f)
-                                                              (and kws '())))))
-                          ;; at least 1 argument has to be of type inexact-complex
-                          ;; and can be unboxed
-                          (syntax-parse (cadr p)
-                            [(#%plain-lambda params body ...)
-                             ;; keep track of the param # of each param that can be unboxed
-                             (let loop ((unboxed '())
-                                        (boxed   '())
-                                        (i        0)
-                                        (params   (syntax->list #'params))
-                                        (doms     doms))
-                               (cond [(null? params)
-                                      ;; done. can we unbox anything?
-                                      (and (> (length unboxed) 0)
-                                           ;; if so, add to the table of functions with
-                                           ;; unboxed params, so we can modify its call
-                                           ;; sites, it's body and its header
-                                           (dict-set! unboxed-funs-table fun-name
-                                                      (list (reverse unboxed)
-                                                            (reverse boxed))))]
-                                     [(and (equal? (car doms) -InexactComplex)
-                                           (could-be-unboxed-in?
-                                            (car params) #'(begin body ...)))
-                                      ;; we can unbox
-                                      (loop (cons i unboxed) boxed
-                                            (add1 i) (cdr params) (cdr doms))]
-                                     [else ; can't unbox
-                                      (loop unboxed (cons i boxed)
-                                            (add1 i) (cdr params) (cdr doms))]))]
-                            [_ #f])]
-                         [_ #f]))))
+                    (and
+                     ;; typed racket introduces let-values that bind no values
+                     ;; we can't optimize these
+                     (not (null? (syntax-e (car p))))
+                     (let ((fun-name (car (syntax-e (car p)))))
+                       (and
+                        ;; if the function escapes, we can't change it's interface
+                        (not (is-var-mutated? fun-name))
+                        (not (escapes? fun-name #'(begin body ...) let-loop?))
+                        (match (type-of (cadr p)) ; rhs, we want a lambda
+                          [(tc-result1: (Function: (list (arr: doms rngs
+                                                               (and rests #f)
+                                                               (and drests #f)
+                                                               (and kws '())))))
+                           ;; at least 1 argument has to be of type inexact-complex
+                           ;; and can be unboxed
+                           (syntax-parse (cadr p)
+                             [(#%plain-lambda params body ...)
+                              ;; keep track of the param # of each param that can be unboxed
+                              (let loop ((unboxed '())
+                                         (boxed   '())
+                                         (i        0)
+                                         (params   (syntax->list #'params))
+                                         (doms     doms))
+                                (cond [(null? params)
+                                       ;; done. can we unbox anything?
+                                       (and (> (length unboxed) 0)
+                                            ;; if so, add to the table of functions with
+                                            ;; unboxed params, so we can modify its call
+                                            ;; sites, it's body and its header
+                                            (dict-set! unboxed-funs-table fun-name
+                                                       (list (reverse unboxed)
+                                                             (reverse boxed))))]
+                                      [(and (equal? (car doms) -InexactComplex)
+                                            (could-be-unboxed-in?
+                                             (car params) #'(begin body ...)))
+                                       ;; we can unbox
+                                       (loop (cons i unboxed) boxed
+                                             (add1 i) (cdr params) (cdr doms))]
+                                      [else ; can't unbox
+                                       (loop unboxed (cons i boxed)
+                                             (add1 i) (cdr params) (cdr doms))]))]
+                             [_ #f])]
+                          [_ #f])))))
                   rest)))
              (list candidates function-candidates others))
            #:with (opt-candidates:unboxed-let-clause ...) #'(candidates ...)
