@@ -63,7 +63,7 @@
         handling an unspecified number of events; the menu may still be
         popped up when this method returns. If a menu item is selected from
         the popup-menu, the callback for the menu item is called. (The
-        eventspace for menu item's callback is the @|what|'s eventspace.)}
+        eventspace for the menu item's callback is the @|what|'s eventspace.)}
 
      @p{While the menu is popped up, its target is set to the @|other|. See
         @method[popup-menu% get-popup-target]
