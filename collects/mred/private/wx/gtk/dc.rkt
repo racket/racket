@@ -20,7 +20,9 @@
 (define dc-backend%
   (class default-dc-backend%
     (init-field gtk
-                get-client-size)
+                get-client-size
+		window-lock)
+    (inherit reset-cr)
 
     (define c #f)
 
@@ -28,8 +30,21 @@
       (or c
           (let ([w (g_object_get_window gtk)])
             (and w
-                 (set! c (gdk_cairo_create w))
-                 c))))
+		 (begin
+		   ;; Under Windows, creating a Cairo context within
+		   ;; a frame inteferes with any other Cairo context 
+		   ;; within the same frame. So we use a lock to 
+		   ;; serialize drawing to different contexts.
+		   (when window-lock (semaphore-wait window-lock))
+		   (set! c (gdk_cairo_create w))
+		   (reset-cr c)
+		   c)))))
+
+    (define/override (release-cr cr)
+      (when window-lock
+	(cairo_destroy c)
+	(set! c #f)
+	(semaphore-post window-lock)))
 
     (define/public (reset-dc)
       ;; FIXME: ensure that the dc is not in use

@@ -124,6 +124,11 @@
     (define/public (enforce-size min-x min-y max-x max-y inc-x inc-y)
       (void))
 
+    (define/override (get-top-win) this)
+
+    (define dc-lock (and (eq? 'windows (system-type)) (make-semaphore 1)))
+    (define/public (get-dc-lock) dc-lock)
+
     (define/override (center dir wrt)
       (let ([w-box (box 0)]
             [h-box (box 0)]

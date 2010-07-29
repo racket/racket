@@ -38,7 +38,7 @@
           (err "unrecognized format")))
     (for ([i (in-range (bytes->int (cadddr m) 10))]) (read-color))
     (values (bytes->int (cadr m) 10) (bytes->int (caddr m) 10)))
-  (unless (equal? "/* XPM */" (read-line in)) (err "not an XPM file"))
+  (unless (equal? "/* XPM */" (read-line in 'any)) (err "not an XPM file"))
   (unless (regexp-match? rx:start in) (err "expected C prefix not found"))
   (let*-values ([(width height) (read-meta)]
                 [(result) (make-vector height)]

@@ -85,7 +85,7 @@
           [gl-config #f])
 
     (inherit get-gtk set-size get-size get-client-size 
-             on-size register-as-child)
+             on-size register-as-child get-top-win)
 
     (define client-gtk (gtk_drawing_area_new))
     (define-values (gtk hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box)
@@ -134,7 +134,8 @@
                                        (let ([w (box 0)]
                                              [h (box 0)])
                                          (get-client-size w h)
-                                         (values (unbox w) (unbox h))))]))
+                                         (values (unbox w) (unbox h))))]
+		    [window-lock (send (get-top-win) get-dc-lock)]))
 
     (gtk_widget_realize gtk)
     (gtk_widget_realize client-gtk)

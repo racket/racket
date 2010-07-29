@@ -49,13 +49,18 @@
 ;; This is the interface that the backend specific code must implement
 (define dc-backend<%>
   (interface ()
-    ;; get-cr : -> cairo_t
+    ;; get-cr : -> cairo_t or #f
     ;;
     ;; Gets a cairo_t created in a backend specific manner.
     ;; We assume that no one else is using this Cairo context
-    ;; or its surface (i.e., no state will change out frm user us,
+    ;; or its surface (i.e., no state will change out from user us,
     ;; and our state won't bother anyone else).
     get-cr
+
+    ;; release-cr : cairo_t -> void
+    ;;
+    ;; Stops using a cairo_t obtained by a get-cr
+    release-cr
 
     ;; Ends a document
     end-cr
@@ -110,6 +115,7 @@
   (class* object% (dc-backend<%>)
 
     (define/public (get-cr) #f)
+    (define/public (release-cr cr) (void))
     (define/public (end-cr) (void))
     (define/public (reset-cr) (void))
     
@@ -153,7 +159,7 @@
   (defclass* dc% backend% (dc<%>)
     (super-new)
 
-    (inherit flush-cr get-cr end-cr init-cr-matrix get-pango
+    (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing reset-clip
              collapse-bitmap-b&w?)
 
@@ -165,7 +171,10 @@
        (lambda ()
          (let ([cr (get-cr)])
            (if cr 
-               (begin . body)
+	       (dynamic-wind
+		   void
+		   (lambda () . body) 
+		   (lambda () (release-cr cr)))
                default)))))
 
     (define/public (in-cairo-context cb)
@@ -249,24 +258,29 @@
                           (cairo_matrix_t-yy m)
                           (cairo_matrix_t-x0 m)
                           (cairo_matrix_t-y0 m))))
-                    
+
+    (define/private (do-reset-matrix cr)
+      (cairo_set_matrix cr matrix)
+      (cairo_translate cr origin-x origin-y)
+      (cairo_scale cr scale-x scale-y)
+      (cairo_rotate cr rotation))
+    
     (define/private (reset-matrix)
       (with-cr
        (void)
        cr
-       (cairo_set_matrix cr matrix)
-       (cairo_translate cr origin-x origin-y)
-       (cairo_scale cr scale-x scale-y)
-       (cairo_rotate cr rotation)))
+       (do-reset-matrix cr)))
 
     (inherit get-font-metrics-key)
     (define/public (cache-font-metrics-key)
       (get-font-metrics-key scale-x scale-y))
 
-    (define/override (reset-cr)
+    (define/override (reset-cr cr)
       (set! context #f)
       (reset-layouts!)
-      (reset-matrix))
+      (do-reset-matrix cr)
+      (when clipping-region
+        (send clipping-region install-region cr)))
 
     (define smoothing 'unsmoothed)
 

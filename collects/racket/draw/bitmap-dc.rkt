@@ -32,7 +32,7 @@
 
     (def/public (set-bitmap [(make-or-false bitmap%) v])
       (do-set-bitmap v)
-      (reset-cr))
+      (when c (reset-cr c)))
 
     (def/public (get-bitmap) bm)
 

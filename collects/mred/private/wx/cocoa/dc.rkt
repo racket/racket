@@ -69,7 +69,7 @@
       (CGContextScaleCTM cg 1 -1)
       (CGContextTranslateCTM cg (- old-dx) (- old-dy))
       (set-bounds dx dy width height)
-      (reset-cr))
+      (reset-cr cr))
 
     (def/override (get-size)
       (values (exact->inexact clip-width)

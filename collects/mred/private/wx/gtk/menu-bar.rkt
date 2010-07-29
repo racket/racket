@@ -18,6 +18,8 @@
 (define-gtk gtk_menu_item_new_with_mnemonic (_fun _string -> _GtkWidget))
 (define-gtk gtk_menu_item_set_submenu (_fun _GtkWidget (_or-null _GtkWidget) -> _void))
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
+(define-gtk gtk_label_set_text_with_mnemonic (_fun _GtkWidget _string -> _void))
+(define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
 
 (define (fixup-mneumonic title)
   (regexp-replace*
@@ -56,7 +58,12 @@
   (define/public (get-top-window)
     top-wx)
 
-  (def/public-unimplemented set-label-top)
+  (define/public (set-label-top pos str)
+    (let ([l (list-ref menus pos)])
+      (let ([item-gtk (car l)])
+	(gtk_label_set_text_with_mnemonic (gtk_bin_get_child item-gtk) 
+                                          (fixup-mneumonic str)))))
+    
   (def/public-unimplemented number)
   (def/public-unimplemented enable-top)
 
@@ -77,7 +84,7 @@
   (define (append-menu menu title)
     (send menu set-parent this)
     (let ([item (gtk_menu_item_new_with_mnemonic (fixup-mneumonic title))])
-      (set! menus (append menus (list (list item menu title))))
+      (set! menus (append menus (list (list item menu))))
       (let ([gtk (send menu get-gtk)])
         (g_object_ref gtk)
         (gtk_menu_item_set_submenu item gtk))

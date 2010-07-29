@@ -20,7 +20,7 @@
 
 (define PNG_LIBPNG_VER_STRING 
   (case (system-type)
-    [(macosx) #"1.4"]
+    [(macosx windows) #"1.4"]
     [else #"1.2"]))
 
 (define _png_structp (_cpointer 'png_structp))

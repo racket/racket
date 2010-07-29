@@ -285,6 +285,8 @@
 
     (define/public (get-parent) parent)
 
+    (define/public (get-top-win) (send parent get-top-win))
+
     (define/public (get-size xb yb)
       (set-box! xb save-w)
       (set-box! yb save-h))
