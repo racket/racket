@@ -163,6 +163,23 @@
       [exp:inexact-complex-arith-opt-expr
        (or (direct-child-of? v #'exp)
            (ormap rec (syntax->list #'exp)))]
+      ;; if the variable gets rebound to something else, we look for unboxing
+      ;; opportunities for the new variable too
+      ;; this case happens in the expansion of the for macros, so we care
+      [(l:let-like-keyword
+        ([ids e-rhs:expr] ...) e-body:expr ...)
+       #:with rebindings
+       (filter (lambda (x) x)
+               (map (syntax-parser
+                     [((id) rhs)
+                      #:when (and (identifier? #'rhs)
+                                  (free-identifier=? v #'rhs))
+                      #'id]
+                     [_ #f])
+                    (syntax->list #'((ids e-rhs) ...))))
+       (or (look-at #'(e-rhs ... e-body ...))
+           (ormap (lambda (x) (could-be-unboxed-in? x exp))
+                  (syntax->list #'rebindings)))]
       
       ;; recur down
       [((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
@@ -170,13 +187,6 @@
        (look-at #'(e ...))]
       [(case-lambda [formals e:expr ...] ...)
        (look-at #'(e ... ...))]
-      [((~or (~literal let-values) (~literal letrec-values))
-        ([ids e-rhs:expr] ...) e-body:expr ...)
-       (look-at #'(e-rhs ... e-body ...))]
-      [(letrec-syntaxes+values stx-bindings
-                               ([(ids ...) e-rhs:expr] ...)
-                               e-body:expr ...)
-       (look-at #'(e-rhs ... e-body ...))]
       [(kw:identifier expr ...)
        #:when (ormap (lambda (k) (free-identifier=? k #'kw))
                      (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
