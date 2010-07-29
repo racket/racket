@@ -516,7 +516,7 @@ symbols, and that return a symbol.
                           (code:line keyword id+ctc)]
  [optional-dependent-dom id+ctc
                          (code:line keyword id+ctc)]
- [dependent-rest (code:line) (code:line #:rest id rest-expr)]
+ [dependent-rest (code:line) (code:line #:rest id+ctc)]
  [pre-condition (code:line) (code:line #:pre-cond boolean-expr)]
  [dependent-range any
                   id+ctc

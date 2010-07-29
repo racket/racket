@@ -1,6 +1,12 @@
 #lang racket/base
 (require racket/contract)
 
+(let ([c integer?])
+  (->i ((arg any/c)) () (values (_ (arg) c) (x (arg) c) (_ (arg) c))))
+; => all or none _s
+
+
+#;
 (->i (#:kwd1 [x number?]
       #:kwd2 [y number?])
      #:rest [x any/c]
@@ -55,5 +61,10 @@ test cases:
       #:kwd2 [y number?])
      [x number?])
 ;=> duplicate identifier 'x'
+
+(let ([c integer?])
+  (->i ((arg any/c)) () (values (_ (arg) c) (x (arg) c) (_ (arg) c))))
+; => all or none _s
+
 
 |#

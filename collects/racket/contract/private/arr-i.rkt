@@ -3,13 +3,15 @@
 (require "guts.rkt"
          "arrow.rkt"
          "opt.rkt"
-         racket/stxparam)
-(require (for-syntax racket/base)
-         (for-syntax "opt-guts.rkt")
-         (for-syntax "helpers.rkt")
-         (for-syntax syntax/stx)
-         (for-syntax syntax/name)
-         (for-syntax "arr-util.rkt"))
+         racket/stxparam
+         
+         (for-syntax racket/base
+                     syntax/stx
+                     syntax/name
+                     "arr-i-parse.rkt"
+                     "opt-guts.rkt"
+                     "helpers.rkt"
+                     "arr-util.rkt"))
 
 (provide ->i)
 
@@ -34,21 +36,17 @@
                    [_ (values '() leftover)])]
                 [(id/rest-id leftover) 
                  (syntax-case leftover ()
-                   [(#:rest id rest-expr . leftover)
+                   [(#:rest [id rest-expr] . leftover)
                     (and (identifier? #'id)
                          (not (keyword? (syntax-e #'rest-expr))))
                     (values #'(id rest-expr) #'leftover)]
-                   [(#:rest id (id2 ...) rest-expr . leftover)
+                   [(#:rest [id (id2 ...) rest-expr] . leftover)
                     (and (identifier? #'id)
                          (andmap identifier? (syntax->list #'(id2 ...)))
                          (not (keyword? (syntax-e #'rest-expr))))
                     (values #'(id rest-expr) #'leftover)]
-                   [(#:rest id rest-expr . leftover)
-                    (begin
-                      (unless (identifier? #'id)
-                        (raise-syntax-error #f "expected an identifier" stx #'id))
-                      (when (keyword? (syntax-e #'rest-expr))
-                        (raise-syntax-error #f "expected an expression, not a keyword" stx #'rest-expr)))]
+                   [(#:rest something . leftover)
+                    (raise-syntax-error #f "expected id+ctc" stx #'something)]
                    [_ (values #f leftover)])]
                 [(pre-cond leftover)
                  (syntax-case leftover ()
@@ -145,6 +143,8 @@
     (values pre post)))
 
 (define-syntax (->i stx)
+  (parse-->i stx)
+  (printf "finished ->i parsing\n")
   (syntax-case stx ()
     [(_ (raw-mandatory-doms ...)
         .
