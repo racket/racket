@@ -26,8 +26,6 @@
 
   I think parse-module-path-index was only used for debugging, so it is short-circuited now
 
- collects/browser/compiled/browser_scrbl.zo (eg) contains a all-from-module that looks like: (#<module-path-index> 0 (1363072) . #f) --- that doesn't seem to match the spec
-
 |#
 ;; ----------------------------------------
 ;; Bytecode unmarshalers for various forms
@@ -587,7 +585,7 @@
                  [(integer? a) 
                   (unmarshal-stx-get/decode cp a (lambda (cp v) (aloop v)))]
                  ; A mark (not actually a number as the C says, but a (list <num>)
-                 [(and (pair? a) (null? (cdr a)) (number? (car a)))
+                 [(and (pair? a) (number? (car a)))
                   (make-wrap-mark (car a))]
                  
                  [(vector? a) 
@@ -617,10 +615,11 @@
                                              (map (local [(define (phase? v)
                                                             (or (number? v) (not v)))]
                                                     (match-lambda
-                                                      [(list* path (? phase? phase) (? phase? src-phase) exn ... prefix)
+                                                      [(list* path (? phase? phase) (? phase? src-phase) 
+                                                              (list exn ...) prefix)
                                                        (make-all-from-module
                                                         (parse-module-path-index cp path)
-                                                        phase src-phase exn prefix)]
+                                                        phase src-phase exn (vector prefix))]
                                                       [(list* path (? phase? phase) (list exn ...) (? phase? src-phase))
                                                        (make-all-from-module
                                                         (parse-module-path-index cp path)
@@ -628,7 +627,7 @@
                                                       [(list* path (? phase? phase) (? phase? src-phase))
                                                        (make-all-from-module
                                                         (parse-module-path-index cp path)
-                                                        phase src-phase empty #f)]))
+                                                        phase src-phase #f #f)]))
                                                   unmarshals)
                                              (decode-renames renames)
                                              mark-renames
