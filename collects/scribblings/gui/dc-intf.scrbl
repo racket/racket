@@ -99,12 +99,8 @@ If the mask bitmap is monochrome, drawing occurs in the target
 If the mask bitmap is grayscale and the bitmap to draw is not
  monochrome, then the blackness of each mask pixel controls the
  opacity of the drawn pixel (i.e., the mask acts as an inverted alpha
- channel), at least on most platforms. (Non-monochrome masks
- are collapsed to monochrome under X when the RENDER extension is not
- available, and under Windows 95 and NT when @filepath{msing32.dll} is not
- available.) Other combinations involving a non-monochrome mask (i.e.,
- a non-grayscale mask or a monochrome bitmap to draw) produce
- platform-specific results.
+ channel). If a mask bitmap is color, the component values of a given
+ pixel are averaged to arrive at a gray value for the pixel.
 
 The current brush, current pen, current text, and current alpha
  settings for the DC have no effect on how the bitmap is drawn, but
@@ -232,12 +228,7 @@ The @scheme[fill-style] argument specifies the fill rule:
  point is considered enclosed within the path if it is enclosed by an
  odd number of sub-path loops. In @scheme['winding] mode, a point is
  considered enclosed within the path if it is enclosed by more or less
- clockwise sub-path loops than counter-clockwise sub-path loops. In
- unsmoothed mode, the @scheme['winding] fill rule is not supported
- under Mac OS X and it is not supported when @scheme[path] contains
- multiple sub-paths; the @scheme['winding] fill rules is always
- supported when smoothing is enabled (see
-@method[dc<%> set-smoothing]).
+ clockwise sub-path loops than counter-clockwise sub-path loops.
 
 See also @method[dc<%> set-smoothing] for information on the
  @scheme['aligned] smoothing mode.
@@ -281,10 +272,7 @@ The @scheme[fill-style] argument specifies the fill rule:
  point is considered enclosed within the polygon if it is enclosed by
  an odd number of loops. In @scheme['winding] mode, a point is
  considered enclosed within the polygon if it is enclosed by more or
- less clockwise loops than counter-clockwise loops. The
- @scheme['winding] fill rule is not supported under Mac OS X,
- except when smoothing is enabled (see
-@method[dc<%> set-smoothing]).
+ less clockwise loops than counter-clockwise loops.
 
 See also @method[dc<%> set-smoothing] for information on the
  @scheme['aligned] smoothing mode.
@@ -516,11 +504,43 @@ See @scheme[gl-context<%>] for more information.
 
 }
 
+@defmethod[(get-initial-matrix)
+           (vector/c real? real? real? real? real? real?)]{
+
+Returns a transformation matrix that converts logical coordinates to
+ device coordinates. The matrix applies before additional origin
+ offset, scaling, and rotation.
+
+The vector content corresponds to a transformation matrix in the
+following order:
+
+@itemlist[
+
+ @item{@racket[_xx]: a scale from the logical @racket[_x] to the device @racket[_x]}
+
+ @item{@racket[_xy]: a scale from the logical @racket[_x] added to the device @racket[_y]}
+
+ @item{@racket[_yx]: a scale from the logical @racket[_y] added to the device @racket[_x]}
+
+ @item{@racket[_yy]: a scale from the logical @racket[_y] to the device @racket[_y]}
+
+ @item{@racket[_x0]: an additional amount added to the device @racket[_x]}
+
+ @item{@racket[_y0]: an additional amount added to the device @racket[_y]}
+
+]
+
+See also @method[dc<%> set-initial-matrix].
+
+}
+
+
 @defmethod[(get-origin)
            (values real? real?)]{
 
 Returns the device origin, i.e., the location in device coordinates of
- @math{(0,0)} in logical coordinates.
+ @math{(0,0)} in logical coordinates. The origin offset applies after
+ the initial transformation matrix, but before scaling and rotation.
 
 See also @method[dc<%> set-origin].
 
@@ -534,11 +554,22 @@ Gets the current pen. See also @method[dc<%> set-pen].
 
 }
 
+@defmethod[(get-rotation) real?]{
+
+Returns the rotation of logical coordinates in radians to device
+coordinates. Rotation applies after the initial transformation matrix,
+origin offset, and scaling.
+
+See also @method[dc<%> set-rotation].
+
+}
+
 @defmethod[(get-scale)
            (values real? real?)]{
 
 Returns the scaling factor that maps logical coordinates to device
-coordinates.
+coordinates. Scaling applies after the initial transformation matrix
+and origin offset, but before rotation.
 
 See also @method[dc<%> set-scale].
 
@@ -667,29 +698,15 @@ Returns @scheme[#t] if the drawing context is usable.
 
 }
 
+
 @defmethod[(set-alpha [opacity (real-in 0 1)])
            void?]{
 
-Determines the opacity of drawing, under certain conditions:
+Determines the opacity of drawing. A value of @scheme[0.0] corresponds
+to completely transparent (i.e., invisible) drawing, and @scheme[1.0]
+corresponds to completely opaque drawing. For intermediate values,
+drawing is blended with the existing content of the drawing context.}
 
-@itemize[
-
- @item{pen- and brush-based drawing when @method[dc<%> get-smoothing]
-       produces @scheme['smoothed] or @scheme['aligned], and when the
-       drawing context is not an instance of @scheme[post-script-dc%];
-       and}
-
- @item{text drawing for most platforms (Mac OS X, X with
-       Xft/fontconfig; transparency approximated under Windows by
-       fading the drawing color), and when the drawing context is not
-       an instance of @scheme[post-script-dc].}
-
-]
-
-A value of @scheme[0.0] corresponds to completely transparent (i.e.,
-invisible) drawing, and @scheme[1.0] corresponds to completely opaque
-drawing. For intermediate values, drawing is blended with the existing
-content of the drawing context.}
 
 @defmethod[(set-background [color (is-a?/c color%)])
            void?]{
@@ -763,14 +780,33 @@ Sets the current font for drawing text in this object.
 
 }
 
+@defmethod[(set-initial-matrix [m (vector/c real? real? real? real? real? real?)])
+           void?]{
+
+Set a transformation matrix that converts logical coordinates to
+ device coordinates. The matrix applies before additional origin
+ offset, scaling, and rotation.
+
+See @method[dc<%> get-initial-matrix] for information on the matrix as
+ represented by a vector @racket[m].
+
+Changing a @scheme[dc<%>] object's transformations does not affect
+ @scheme[region%] objects that were previously created. See
+ @scheme[region%] for more information.
+
+@|DrawSizeNote|
+
+}
+
 @defmethod[(set-origin [x real?]
                        [y real?])
            void?]{
 
 Sets the device origin, i.e., the location in device coordinates of
- @math{(0,0)} in logical coordinates.
+ @math{(0,0)} in logical coordinates. The origin offset applies after
+ the initial transformation matrix, but before scaling and rotation.
 
-Changing a @scheme[dc<%>] object's origin or scale does not affect
+Changing a @scheme[dc<%>] object's transformations does not affect
  @scheme[region%] objects that were previously created. See
 @scheme[region%] for more information.
  
@@ -807,13 +843,29 @@ While a pen is selected into a drawing context, it cannot be modified.
 
 }
 
+@defmethod[(set-rotation [angle real?]) void?]{
+
+Set the rotation of logical coordinates in radians to device
+coordinates. Rotation applies after the initial transformation matrix,
+origin offset, and scaling.
+
+Changing a @scheme[dc<%>] object's transformations does not affect
+ @scheme[region%] objects that were previously created. See
+ @scheme[region%] for more information.
+
+@|DrawSizeNote|
+
+}
+
 @defmethod[(set-scale [x-scale (and/c real? (not/c negative?))]
                       [y-scale (and/c real? (not/c negative?))])
            void?]{
 
-Sets a scaling factor that maps logical coordinates to device coordinates.
+Sets a scaling factor that maps logical coordinates to device
+ coordinates.  Scaling applies after the initial transformation matrix
+ and origin offset, but before rotation.
 
-Changing a @scheme[dc<%>] object's origin or scale does not affect
+Changing a @scheme[dc<%>] object's transformations does not affect
  @scheme[region%] objects that were previously created. See
  @scheme[region%] for more information.
 
@@ -824,17 +876,9 @@ Changing a @scheme[dc<%>] object's origin or scale does not affect
 @defmethod[(set-smoothing [mode (one-of/c 'unsmoothed 'smoothed 'aligned)])
            void?]{
 
-Enables or disables anti-aliased smoothing of lines, curves,
- rectangles, rounded rectangles, ellipses, polygons, paths, and clear
- operations. (Text smoothing is not affected by this method, and is
- instead controlled through the @scheme[font%] object.)
-
-Smoothing is supported under Windows only when Microsoft's
- @filepath{gdiplus.dll} is installed (which is always the case for Windows
- XP). Smoothing is supported under Mac OS X always. Smoothing is
- supported under X only when Cairo is installed when GRacket is compiled.
- Smoothing is never supported for black-and-white contexts. Smoothing
- is always supported (and cannot be disabled) for PostScript output.
+Enables or disables anti-aliased smoothing for drawing. (Text
+ smoothing is not affected by this method, and is instead controlled
+ through the @scheme[font%] object.)
 
 The smoothing mode is either @scheme['unsmoothed], @scheme['smoothed],
  or @scheme['aligned]. Both @scheme['aligned] and @scheme['smoothed]

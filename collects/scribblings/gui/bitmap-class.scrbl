@@ -4,7 +4,7 @@
 @defclass/title[bitmap% object% ()]{
 
 A @scheme[bitmap%] object is a pixel-based image, either
- monochrome or color.
+ monochrome, color, or color with an alpha channel.
 
 Sometimes, a bitmap object creation fails in a low-level manner. In
  that case, the @method[bitmap% ok?] method returns @scheme[#f], and
@@ -14,11 +14,15 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
 
 @defconstructor*/make[(([width (integer-in 1 10000)]
                         [height (integer-in 1 10000)]
-                        [monochrome? any/c #f])
+                        [monochrome? any/c #f]
+                        [alpha? any/c #f])
                        ([filename path-string?]
-                        [kind (one-of/c 'unknown 'unknown/mask 
-                                        'gif 'gif/mask 'jpeg 'png 'png/mask 
-                                        'xbm 'xpm 'bmp 'pict)
+                        [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                                        'gif 'gif/mask 'gif/alpha 
+                                        'jpeg 'jpeg/alpha
+                                        'png 'png/mask 'png/alpha
+                                        'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                                        'bmp 'bmp/alpha)
                               'unknown]
                         [bg-color (or/c (is-a?/c color%) false/c) #f])
                        ([bits bytes?]
@@ -26,9 +30,10 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
                         [height (integer-in 1 10000)]))]{
 
 When @scheme[width] and @scheme[height] are provided: Creates a new
- bitmap. If @scheme[monochrome?] is @scheme[#f], the bitmap matches
- the display depth of the screen. The initial content of the bitmap is
- undefined.
+ bitmap. If @scheme[monochrome?] is true, the bitmap is monochrome; if
+ @scheme[monochrome?] is @scheme[#f] and @racket[alpha?] is true, the
+ bitmap has an alpha channel; otherwise, the bitmap is color without
+ an alpha channel. The initial content of the bitmap is undefined.
 
 When @scheme[filename] is provided: Creates a bitmap from a file,
  where @scheme[kind] specifies the kind of image file. See
@@ -63,8 +68,9 @@ the bitmap is selected into another DC, attached as a button label, etc.).
 @defmethod[(get-depth)
            exact-nonnegative-integer?]{
 
-Gets the color depth of the bitmap. See also @method[bitmap%
-is-color?].
+Gets the color depth of the bitmap, which is @racket[1] for a
+monochrome bitmap and @racket[32] for a color bitmap. See also
+@method[bitmap% is-color?].
 
 }
 
@@ -101,13 +107,21 @@ When a PNG file is loaded with @scheme['png/mask] or
  values, the mask bitmap is monochrome, otherwise it is grayscale
  (representing the alpha channel inverted).
 
-The mask bitmap is @italic{not} used automatically by drawing
- routines. The mask bitmap can be extracted and supplied explicitly as
- a mask (e.g., as the sixth argument to @method[dc<%>
- draw-bitmap]). The mask bitmap is used by @method[bitmap% save-file]
- when saving a bitmap as @scheme['png] if the mask has the same
- dimensions as the saved bitmap. The mask bitmap is also used
- automatically when the bitmap is a control label.
+When an XPM file is loaded with @scheme['xpm/mask] or
+ @scheme['unknown/mask], a mask bitmap is generated to indicate which
+ pixels are set.
+
+When @scheme['unknown/alpha] and similar modes are used to load a
+ bitmap, transparency information is instead represented by an alpha
+ channel, not by a mask bitmap.
+
+Unlike an alpha channel, the mask bitmap is @italic{not} used
+ automatically by drawing routines. The mask bitmap can be extracted
+ and supplied explicitly as a mask (e.g., as the sixth argument to
+ @method[dc<%> draw-bitmap]). The mask bitmap is used by
+ @method[bitmap% save-file] when saving a bitmap as @scheme['png] if
+ the mask has the same dimensions as the saved bitmap. The mask bitmap
+ is also used automatically when the bitmap is a control label.
 
 }
 
@@ -126,9 +140,12 @@ Returns @scheme[#f] if the bitmap is monochrome, @scheme[#t] otherwise.
 }
 
 @defmethod[(load-file [name path-string?]
-                      [kind (one-of/c 'unknown 'unknown/mask 
-                                      'gif 'gif/mask 'jpeg 'png 'png/mask 
-                                      'xbm 'xpm 'bmp 'pict)
+                      [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                                      'gif 'gif/mask 'gif/alpha 
+                                      'jpeg 'jpeg/alpha
+                                      'png 'png/mask 'png/alpha
+                                      'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                                      'bmp 'bmp/alpha)
                             'unknown]
                       [bg-color (or/c (is-a?/c color%) false/c) #f])
            boolean?]{
@@ -141,32 +158,42 @@ Loads a bitmap from a file. If the bitmap is in use by a
 The @scheme[kind] argument specifies the file's format:
 
 @itemize[
-@item{@scheme['unknown] --- examine the file to determine its format}
+@item{@scheme['unknown] --- examine the file to determine its format; creates either a monochrome or
+                            or color bitmap without an alpha channel}
 @item{@scheme['unknown/mask] --- like @scheme['unknown], but see @method[bitmap% get-loaded-mask]}
-@item{@scheme['gif] --- load a @as-index{GIF} bitmap file (X, Windows, Mac OS X)}
-@item{@scheme['gif/mask] --- like @scheme['gif], but see @method[bitmap% get-loaded-mask] (X, Windows, Mac OS X)}
-@item{@scheme['jpeg] --- load a @as-index{JPEG} bitmap file (X, Windows, Mac OS X)}
-@item{@scheme['png] --- load a @as-index{PNG} bitmap file (X, Windows, Mac OS X)}
-@item{@scheme['png/mask] --- like @scheme['png], but see @method[bitmap% get-loaded-mask] (X, Windows, Mac OS X)}
-@item{@scheme['xbm] --- load an X bitmap (@as-index{XBM}) file (X, Windows, Mac OS X); creates a monochrome bitmap}
-@item{@scheme['xpm] --- load an @as-index{XPM} bitmap file (X, Windows, Mac OS X)}
-@item{@scheme['bmp] --- load a Windows bitmap file (X, Windows, Mac OS X)}
-@item{@scheme['pict] --- load a @as-index{PICT} bitmap file (Mac OS X)}
+@item{@scheme['unknown/alpha] --- like @scheme['unknown], but if the bitmap is color, it has an
+                                  alpha channel, and transparency in the image file is recorded
+                                  in the alpha channel}
+@item{@scheme['gif] --- load a @as-index{GIF} bitmap file, creating a color bitmap}
+@item{@scheme['gif/mask] --- like @scheme['gif], but see @method[bitmap% get-loaded-mask]}
+@item{@scheme['gif/alpha] --- like @scheme['gif], but with an alpha channel}
+@item{@scheme['jpeg] --- load a @as-index{JPEG} bitmap file, creating a color bitmap}
+@item{@scheme['jpeg/alpha] --- like @racket['jpeg], but with an alpha channel}
+@item{@scheme['png] --- load a @as-index{PNG} bitmap file, creating a color or monochrome bitmap}
+@item{@scheme['png/mask] --- like @scheme['png], but see @method[bitmap% get-loaded-mask]}
+@item{@scheme['png/alpha] --- like @scheme['png], but always color and with an alpha channel}
+@item{@scheme['xbm] --- load an X bitmap (@as-index{XBM}) file; creates a monochrome bitmap}
+@item{@scheme['xbm/alpha] --- like @racket['xbm], but creates a color bitmap with an alpha channel}
+@item{@scheme['xpm] --- load an @as-index{XPM} bitmap file, creating a color bitmap}
+@item{@scheme['xpm/alpha] --- like @racket['xpm], but with an alpha channel}
+@item{@scheme['bmp] --- load a Windows bitmap file, creating a color bitmap}
+@item{@scheme['bmp/alpha] --- like @racket['bmp], but with an alpha channel}
 ]
 
 An XBM image is always loaded as a monochrome bitmap. A 1-bit
  grayscale PNG without a mask or alpha channel is also loaded as a
  monochrome bitmap. An image in any other format is always loaded as a
- bitmap that matches the depth of the screen.
+ color bitmap.
 
 For PNG loading, if @scheme[bg-color] is not @scheme[#f], then it is
  combined with the file's alpha channel or mask (if any) while loading
- the image; in this case, no separate mask bitmap is generated, even
- if @scheme['unknown/mask] or @scheme['png/mask] is specified for the
- format. If the format is specified as @scheme['unknown] or
- @scheme['png] and @scheme[bg-color] is not specified, the PNG file is
- consulted for a background color to use for loading, and white is
- used if no background color is indicated in the file.
+ the image; in this case, no separate mask bitmap is generated and the
+ alpha channel fills the bitmap, even if @scheme['unknown/mask],
+ @scheme['png/mask] is specified for the format. If the format is
+ specified as @scheme['unknown] or @scheme['png] and @scheme[bg-color]
+ is not specified, the PNG file is consulted for a background color to
+ use for loading, and white is used if no background color is
+ indicated in the file.
 
 @index["gamma correction"]{In} all PNG-loading modes, gamma correction
  is applied when the file provides a gamma value, otherwise gamma
@@ -200,15 +227,15 @@ The @scheme[kind] argument determined the type of file that is created,
 
 @itemize[
 
- @item{@scheme['png] --- save a @as-index{PNG} file (X, Windows, Mac OS X)}
+ @item{@scheme['png] --- save a @as-index{PNG} file}
 
- @item{@scheme['jpeg] --- save a @as-index{JPEG} file (X, Windows, Mac OS X)}
+ @item{@scheme['jpeg] --- save a @as-index{JPEG} file}
 
- @item{@scheme['xbm] --- save an X bitmap (@as-index{XBM}) file (X, Windows, Mac OS X)}
+ @item{@scheme['xbm] --- save an X bitmap (@as-index{XBM}) file}
 
- @item{@scheme['xpm] --- save an @as-index{XPM} bitmap file (X, Windows, Mac OS X)}
+ @item{@scheme['xpm] --- save an @as-index{XPM} bitmap file}
 
- @item{@scheme['bmp] --- save a Windows bitmap file (Windows)}
+ @item{@scheme['bmp] --- save a Windows bitmap file}
 
 ]
 
@@ -218,8 +245,8 @@ The @scheme[quality] argument is used only for saving as @scheme['jpeg], in
  precisely) and size (low quality is smaller).
 
 When saving as @scheme['png], if @method[bitmap% get-loaded-mask]
-returns a bitmap of the same size as this one, a grayscale version is
-included in the PNG file as the alpha channel.
+ returns a bitmap of the same size as this one, a grayscale version is
+ included in the PNG file as the alpha channel.
 
 A monochrome bitmap saved as @scheme['png] without a mask bitmap
  produces a 1-bit grayscale PNG file (which, when read with
