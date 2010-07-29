@@ -31,15 +31,13 @@
                  (set! c (gdk_cairo_create w))
                  c))))
 
-    (define/public (reset-dc force?)
-      (when (or force?
-                (eq? 'windows (system-type)))
-        ;; FIXME: ensure that the dc is not in use
-        (as-entry
-         (lambda ()
-	   (when c
-	     (cairo_destroy c)
-	     (set! c #f))))))
+    (define/public (reset-dc)
+      ;; FIXME: ensure that the dc is not in use
+      (as-entry
+       (lambda ()
+         (when c
+           (cairo_destroy c)
+           (set! c #f)))))
 
     (define/override (get-size)
       (let-values ([(w h) (get-client-size)])

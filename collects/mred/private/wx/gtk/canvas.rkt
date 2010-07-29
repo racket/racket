@@ -204,12 +204,12 @@
       (gtk_widget_queue_draw client-gtk))
     
     (define/public (reset-child-dcs)
-      (send dc reset-dc #t))
+      (send dc reset-dc))
     (define/override (maybe-register-as-child parent on?)
       (register-as-child parent on?))
 
     (define/override (internal-on-client-size w h)
-      (send dc reset-dc #f))
+      (send dc reset-dc))
     (define/override (on-client-size w h) 
       (let ([xb (box 0)]
             [yb (box 0)])
