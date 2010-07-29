@@ -586,12 +586,12 @@
 
 (define encode-all-from-module
   (match-lambda
-    [(struct all-from-module (path phase src-phase (list) #f))
-     (list* path phase src-phase)]
+    [(struct all-from-module (path phase src-phase #f #f))
+      (list* path phase src-phase)]
     [(struct all-from-module (path phase src-phase exns #f))
      (list* path phase exns src-phase)]
-    [(struct all-from-module (path phase src-phase exns prefix))
-     (list* path phase src-phase (append exns prefix))]))
+    [(struct all-from-module (path phase src-phase exns (vector prefix)))
+     (list* path phase src-phase exns prefix)]))
 
 (define (encode-wraps wraps)
   (for/list ([wrap (in-list wraps)])
