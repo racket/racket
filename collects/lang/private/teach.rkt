@@ -113,13 +113,13 @@
   (define-for-syntax (stepper-ignore-checker stx)
     (stepper-syntax-property stx 'stepper-skipto '(syntax-e cdr syntax-e cdr car)))
 
-  (define-for-syntax (map-with-index proc list)
-    (let loop ([i 0] [list list] [rev-result '()])
-      (if (null? list)
+  (define-for-syntax (map-with-index proc . lists)
+    (let loop ([i 0] [lists lists] [rev-result '()])
+      (if (null? (car lists))
 	  (reverse rev-result)
 	  (loop (+ 1 i)
-		(cdr list)
-		(cons (proc i (car list)) rev-result)))))
+		(map cdr lists)
+		(cons (apply proc i (map car lists)) rev-result)))))
 
   ;; build-struct-names is hard to handle
   (define-for-syntax (make-struct-names name fields stx)
@@ -850,16 +850,28 @@
 							       ;; give `check-struct-wraps!' access
 							       (make-inspector)))
 
-					   #,@(map-with-index (lambda (i name)
-								#`(define (#,name r)
-								    (raw-generic-access r #,i) ; error checking
-								    (check-struct-wraps! r)
-								    (raw-generic-access r #,i)))
-							      getter-names)
-					   #,@(map-with-index (lambda (i name)
-								#`(define (#,name r v)
-								    (raw-generic-mutate r #,i v)))
-							      setter-names)
+					   #,@(map-with-index (lambda (i name field-name)
+								#`(define #,name
+                                                                    (let ([raw (make-struct-field-accessor
+                                                                                raw-generic-access
+                                                                                #,i
+                                                                                '#,field-name)])
+                                                                      (lambda (r)
+                                                                        (raw r) ; error checking
+                                                                        (check-struct-wraps! r)
+                                                                        (raw r)))))
+							      getter-names
+                                                              fields)
+					   #,@(map-with-index (lambda (i name field-name)
+								#`(define #,name 
+                                                                    (let ([raw (make-struct-field-mutator
+                                                                                raw-generic-mutate
+                                                                                #,i
+                                                                                '#,field-name)])
+                                                                      (lambda (r v)
+                                                                        (raw r v)))))
+							      setter-names
+                                                              fields)
 					   (define #,predicate-name raw-predicate)
 					   (define #,constructor-name raw-constructor)
 

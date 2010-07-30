@@ -77,6 +77,7 @@
 (htdp-test #t 'a3? (a3? (make-a3 1 2 3)))
 (htdp-test #f 'a1? (a1? (make-a3 1 2 3)))
 (htdp-test #f 'a3? (a3? (make-a1 1)))
+(htdp-err/rt-test (a1-b 10) #rx"a1-b")
 
 (htdp-syntax-test #'cond)
 (htdp-syntax-test #'(cond))

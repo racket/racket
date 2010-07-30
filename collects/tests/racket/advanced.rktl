@@ -285,6 +285,10 @@
 (htdp-test #t 'hash-eqv?
            (hash-eqv? (make-hasheqv (list (list 'a 1)))))
 
+;; Check set...! error message:
+(htdp-top (define-struct a1 (b)))
+(htdp-err/rt-test (set-a1-b! 1 2) #rx"set-a1-b!")
+(htdp-top-pop 1)
 
 ;; Simulate set! in the repl
 (module my-advanced-module (lib "htdp-advanced.rkt" "lang")
