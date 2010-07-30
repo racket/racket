@@ -234,6 +234,11 @@
        (for ([(k v) (in-hash expr)])
          (traverse-data k visit)
          (traverse-data v visit)))]
+    [(prefab-struct-key expr)
+     (when (visit expr)
+       (let ([v (struct->vector expr)])
+         (for ([i (in-range 1 (vector-length v))])
+           (traverse-data (vector-ref v i) visit))))]
     [(protected-symref? expr)
      (visit (protected-symref-val expr))]
     [else
@@ -310,7 +315,7 @@
   CPT_MODULE_VAR
   CPT_PATH
   CPT_CLOSURE
-  CPT_DELAY_REF
+  CPT_DELAY_REF ; XXX unused, but appears to be same as CPT_SYMREF
   CPT_PREFAB
   CPT_LET_ONE_UNUSED)
 
@@ -681,7 +686,9 @@
            p))]))
 
 (define (lookup-encoded-wrapped w out)
-  (hash-ref (out-encoded-wraps out) w))
+  (hash-ref (out-encoded-wraps out) w
+            (lambda ()
+              (error 'lookup-encoded-wrapped "Cannot find encoded version of wrap: ~e" w))))
 
 (define (out-wrapped w out)
   (out-data (lookup-encoded-wrapped w out) out))
@@ -1053,6 +1060,7 @@
                       (print-contents-as-proper)
                       (out-data null out)))
            (if (len . < . (- CPT_SMALL_LIST_END CPT_SMALL_LIST_START))
+               ; XXX If len = 1 (or maybe = 2?) then this could by CPT_PAIR
                (begin (out-byte (+ CPT_SMALL_LIST_START len) out)
                       (print-contents-as-improper))
                (begin (out-byte CPT_LIST out)
@@ -1099,7 +1107,13 @@
     [(stx? expr)
      (out-stx expr out)]
     [(wrapped? expr)
-     (out-wrapped expr out)]      
+     (out-wrapped expr out)]
+    [(prefab-struct-key expr)
+     => (lambda (key)
+          (define pre-v (struct->vector expr))
+          (vector-set! pre-v 0 key)
+          (out-byte CPT_PREFAB out)
+          (out-data pre-v out))]
     [else
      (out-byte CPT_QUOTE out)
      (if (quoted? expr)
@@ -1112,12 +1126,12 @@
              (out-bytes bstr out))))]))
 
 
-(define-struct quoted (v) #:prefab)
+(define-struct quoted (v))
 
 ; protect-quote caused some things to be sent to write. But there are some things (like paths) that can be read and passed to protect-quote that cannot be 'read' in after 'write', so we turned it off
 (define (protect-quote v)
   #;v
-  (if (or (list? v) (vector? v) (box? v) (hash? v))
+  (if (or (pair? v) (vector? v) (prefab-struct-key v) (box? v) (hash? v) (svector? v))
       (make-quoted v)
       v))
 
