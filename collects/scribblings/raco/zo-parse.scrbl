@@ -532,12 +532,26 @@ kernel.}
 
 @defstruct+[wrapped ([datum any/c]
                      [wraps (listof wrap?)]
-                     [certs (or/c list? #f)])]{
+                     [certs (or/c certificate? #f)])]{
 
 Represents a syntax object, where @racket[wraps] contain the lexical
 information and @racket[certs] is certificate information. When the
 @racket[datum] part is itself compound, its pieces are wrapped, too.}
 
+@defstruct+[certificate ()]{
+                            
+A supertype for syntax certificates.}
+
+@defstruct+[(certificate:nest certificate) ([nested (listof number? module-path-index? ...)]
+                                            [map (listof number? module-path-index? ...)])]{
+                                                                                            
+A nested certificate.}
+
+@defstruct+[(certificate:ref certificate) ([val any/c]
+                                           [map (listof number? module-path-index? ...)])]{
+                                                                                            
+A reference certificate.}
+                                                                                           
 
 @defstruct+[wrap ()]{
 
