@@ -110,15 +110,20 @@
 	[get-menu (lambda () menu)]
 	[append (lambda (item)
 		  (check-label-string '(method combo-field% append) item)
-		  (make-object menu-item% item menu 
-			       (lambda (i e)
-				 (focus)
-				 (set-value item)
-				 (let ([e (get-editor)])
-				   (send e set-position 0 (send e last-position)))
-				 (send (as-entry (lambda () (mred->wx this)))
-				       command
-				       (make-object wx:control-event% 'text-field)))))])
+                  (unless (send (mred->wx this) append-combo-item item
+                                (lambda () (handle-selected item)))
+                    (make-object menu-item% item menu 
+                                 (lambda (i e)
+                                   (handle-selected item)))))])
+      (private
+        [handle-selected (lambda (item)
+                           (focus)
+                           (set-value item)
+                           (let ([e (get-editor)])
+                             (send e set-position 0 (send e last-position)))
+                           (send (as-entry (lambda () (mred->wx this)))
+                                 command
+                                 (make-object wx:control-event% 'text-field)))])
       (override
 	[on-subwindow-event (lambda (w e)
 			      (and (send e button-down?)
@@ -130,7 +135,6 @@
       (private-field
        [menu (new popup-menu% [font font])])
       (sequence
-	(for-each (lambda (item) 
-		    (append item))
-		  choices)
-	(super-init label parent callback init-value (list* combo-flag 'single style))))))
+	(super-init label parent callback init-value (list* combo-flag 'single style))
+	(for-each (lambda (item) (append item))
+		  choices)))))

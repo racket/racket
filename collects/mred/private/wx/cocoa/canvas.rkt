@@ -330,6 +330,9 @@
             (scroller-page scroller)
             1)]))
 
+    (define/public (append-combo-item str) #f)
+    (define/public (on-combo-select i) (void))
+
     (define bg-col (make-object color% "white"))
     (define/public (get-canvas-background) (if (memq 'transparent canvas-style)
                                                #f

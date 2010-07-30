@@ -20,6 +20,9 @@
 
 (define-gtk gtk_drawing_area_new (_fun -> _GtkWidget))
 
+(define-gtk gtk_combo_box_entry_new_text (_fun -> _GtkWidget))
+(define-gtk gtk_combo_box_append_text (_fun _GtkWidget _string -> _void))
+
 (define-gtk gtk_widget_queue_draw (_fun _GtkWidget -> _void))
 
 (define-gtk gtk_hscrollbar_new (_fun _pointer -> _GtkWidget))
@@ -37,6 +40,12 @@
 (define-gtk gtk_adjustment_get_page_increment (_fun _GtkAdjustment -> _double*))
 (define-gtk gtk_adjustment_set_page_increment (_fun _GtkAdjustment _double* -> _void))
 
+(define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
+(define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
+
+(define-gobj g_object_set_bool (_fun _GtkWidget _string _gboolean [_pointer = #f] -> _void)
+  #:c-id g_object_set)
+
 (define-cstruct _GdkColor ([pixel _uint32]
                            [red _uint16]
                            [green _uint16]
@@ -49,9 +58,30 @@
 (define-gdk gdk_gc_set_rgb_fg_color (_fun _pointer _GdkColor-pointer -> _void))
 (define-gdk gdk_draw_rectangle (_fun _GdkWindow _pointer _gboolean _int _int _int _int -> _void))
 
+;; We rely some on the implementation of GtkComboBoxEntry to replace
+;; the drawing routine.
+(define-cstruct _GList ([data _pointer]))
+(define-gdk gdk_window_get_children (_fun _pointer -> _GList-pointer/null))
+(define-gdk gdk_window_hide (_fun _pointer -> _void))
+(define (get-subwindow gtk)
+  (let* ([win (g_object_get_window gtk)]
+         [subs (gdk_window_get_children win)])
+    (if subs
+        (GList-data subs)
+        win)))
+
+(define-signal-handler connect-changed "changed"
+  (_fun _GtkWidget -> _void)
+  (lambda (gtk)
+    (let ([wx (gtk->wx gtk)])
+      (send wx combo-maybe-clicked))))
+
+(define-gtk gtk_combo_box_set_active (_fun _GtkWidget _int -> _void))
+(define-gtk gtk_combo_box_get_active (_fun _GtkWidget -> _int))
+
 (define (handle-expose gtk event)
   (let ([wx (gtk->wx gtk)])
-    (let ([gc (send wx get-canvas-background-for-clearing)])
+    (let ([gc (send wx get-canvas-background-for-clearing)])      
       (when gc
         (gdk_draw_rectangle (g_object_get_window gtk) gc #t
                             0 0 32000 32000)))
@@ -74,6 +104,7 @@
 (define handle_value_changed_v
   (function-ptr handle-value-changed-v (_fun #:atomic? #t _GtkWidget _pointer -> _void)))
 
+(define-gtk gtk_entry_get_type (_fun -> _GType))
 
 (define canvas%
   (class (client-size-mixin window%)
@@ -86,36 +117,45 @@
     (inherit get-gtk set-size get-size get-client-size 
              on-size register-as-child get-top-win)
 
-    (define client-gtk (gtk_drawing_area_new))
-    (define-values (gtk hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box)
-      (if (or (memq 'hscroll style)
-              (memq 'vscroll style))
-          (let ([hadj (gtk_adjustment_new 0.0 0.0 1.0 1.0 1.0 1.0)]
-                [vadj (gtk_adjustment_new 0.0 0.0 1.0 1.0 1.0 1.0)])
-            (let ([h (gtk_hbox_new #f 0)]
-                  [v (gtk_vbox_new #f 0)]
-                  [v2 (gtk_vbox_new #f 0)]
-                  [h2 (gtk_vbox_new #f 0)]
-                  [hscroll (gtk_hscrollbar_new hadj)]
-                  [vscroll (gtk_vscrollbar_new vadj)]
-                  [resize-box (gtk_drawing_area_new)])
-              (gtk_box_pack_start h v #t #t 0)
-              (gtk_box_pack_start v client-gtk #t #t 0)
-              (gtk_box_pack_start h v2 #f #f 0)
-              (gtk_box_pack_start v2 vscroll #t #t 0)
-              (gtk_box_pack_start v h2 #f #f 0)
-              (gtk_box_pack_start h2 hscroll #t #t 0)
-              (gtk_box_pack_start v2 resize-box #f #f 0)
-              (gtk_widget_show hscroll)
-              (gtk_widget_show vscroll)
-              (gtk_widget_show h)
-              (gtk_widget_show v)
-              (gtk_widget_show v2)
-              (gtk_widget_show h2)
-              (gtk_widget_show resize-box)
-              (gtk_widget_show client-gtk)
-              (values h hadj vadj h2 v2 resize-box)))
-          (values client-gtk #f #f #f #f #f)))
+    (define is-combo? (memq 'combo style))
+
+    (define-values (client-gtk gtk hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box)
+      (cond
+       [(or (memq 'hscroll style)
+            (memq 'vscroll style))
+        (let* ([client-gtk (gtk_drawing_area_new)]
+               [hadj (gtk_adjustment_new 0.0 0.0 1.0 1.0 1.0 1.0)]
+               [vadj (gtk_adjustment_new 0.0 0.0 1.0 1.0 1.0 1.0)])
+          (let ([h (gtk_hbox_new #f 0)]
+                [v (gtk_vbox_new #f 0)]
+                [v2 (gtk_vbox_new #f 0)]
+                [h2 (gtk_vbox_new #f 0)]
+                [hscroll (gtk_hscrollbar_new hadj)]
+                [vscroll (gtk_vscrollbar_new vadj)]
+                [resize-box (gtk_drawing_area_new)])
+            (gtk_box_pack_start h v #t #t 0)
+            (gtk_box_pack_start v client-gtk #t #t 0)
+            (gtk_box_pack_start h v2 #f #f 0)
+            (gtk_box_pack_start v2 vscroll #t #t 0)
+            (gtk_box_pack_start v h2 #f #f 0)
+            (gtk_box_pack_start h2 hscroll #t #t 0)
+            (gtk_box_pack_start v2 resize-box #f #f 0)
+            (gtk_widget_show hscroll)
+            (gtk_widget_show vscroll)
+            (gtk_widget_show h)
+            (gtk_widget_show v)
+            (gtk_widget_show v2)
+            (gtk_widget_show h2)
+            (gtk_widget_show resize-box)
+            (gtk_widget_show client-gtk)
+            (values client-gtk h hadj vadj h2 v2 resize-box)))]
+       [is-combo?
+        (let* ([gtk (gtk_combo_box_entry_new_text)]
+               [orig-entry (gtk_bin_get_child gtk)])
+          (values orig-entry gtk #f #f #f #f #f))]
+       [else
+        (let ([client-gtk (gtk_drawing_area_new)])
+          (values client-gtk client-gtk #f #f #f #f #f))]))
 
     (super-new [parent parent]
                [gtk gtk]
@@ -123,7 +163,9 @@
                [no-show? (memq 'deleted style)]
                [extra-gtks (if (eq? client-gtk gtk)
                                null
-                               (list client-gtk hscroll-adj vscroll-adj))])
+                               (if hscroll-adj
+                                   (list client-gtk hscroll-adj vscroll-adj)
+                                   (list client-gtk)))])
     
     (set-size x y w h)
 
@@ -134,7 +176,11 @@
                                              [h (box 0)])
                                          (get-client-size w h)
                                          (values (unbox w) (unbox h))))]
-		    [window-lock (send (get-top-win) get-dc-lock)]))
+		    [window-lock (send (get-top-win) get-dc-lock)]
+                    [get-window (lambda (client-gtk)
+                                  (if is-combo?
+                                      (get-subwindow client-gtk)
+                                      (g_object_get_window client-gtk)))]))
 
     (gtk_widget_realize gtk)
     (gtk_widget_realize client-gtk)
@@ -146,7 +192,7 @@
                                      (GtkRequisition-height r)
                                      (GtkRequisition-height r))))
 
-    (g_signal_connect client-gtk "expose_event" handle_expose)
+    (g_signal_connect client-gtk "expose-event" handle_expose)
     (connect-key-and-mouse client-gtk)
     (connect-focus client-gtk)
     (gtk_widget_add_events client-gtk (bitwise-ior GDK_KEY_PRESS_MASK
@@ -293,6 +339,19 @@
                                                            (conv (color-blue bg-col))))
                 gc)
               #f)))
+
+    (when is-combo?
+      (connect-changed client-gtk))
+
+    (define/public (append-combo-item str)
+      (gtk_combo_box_append_text gtk str))
+
+    (define/public (combo-maybe-clicked)
+      (let ([i (gtk_combo_box_get_active gtk)])
+        (when (i . > . -1)
+          (gtk_combo_box_set_active gtk -1)
+          (queue-window-event this (lambda () (on-combo-select i))))))
+    (define/public (on-combo-select i) (void))
 
     (def/public-unimplemented set-background-to-gray)
 

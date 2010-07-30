@@ -6,6 +6,7 @@
          _GtkWidget _GtkWindow
          _gpointer
          _GdkEventExpose
+         _GType
 
          _fnpointer
          _gboolean
@@ -19,6 +20,8 @@
          (struct-out GdkEventMotion)
          _GdkEventCrossing _GdkEventCrossing-pointer
          (struct-out GdkEventCrossing))
+
+(define _GType _long)
 
 (define _GdkWindow (_cpointer/null 'GdkWindow))
 

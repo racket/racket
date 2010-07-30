@@ -19,6 +19,8 @@
          g_object_get_data
          g_signal_connect
 
+         g_object_new
+
          (rename-out [g_object_get g_object_get_window])
 
          get-gtk-object-flags
@@ -86,6 +88,8 @@
 (define-gobj g_object_get (_fun _GtkWidget (_string = "window") 
 				[w : (_ptr o _GdkWindow)]
 				(_pointer = #f) -> _void -> w))
+
+(define-gobj g_object_new (_fun _GType _pointer -> _GtkWidget))
 
 ;; This seems dangerous, since the shape of GtkObject is not
 ;;  documented. But it seems to be the only way to get and set
