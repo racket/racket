@@ -97,6 +97,15 @@ and then operates on it to generate the expanded form
           (raise-syntax-error #f "dependent variable not bound"
                               stx var))))
     
+    ;; not-range-bound : (listof identifier[used-by-an-arg]) -> void
+    (define (not-range-bound arg-vars)
+      (when (istx-ress istx)
+        (for ([arg-var (in-list arg-vars)])
+          (when (ormap (λ (a-res) (free-identifier=? (res-var a-res) arg-var))
+                       (istx-ress istx))
+            (raise-syntax-error #f "an argument cannot depend on a result"
+                                stx arg-var)))))
+    
     ;; no dups in the domains
     (for ([dom (in-list (istx-args istx))])
       (when (arg-kwd dom)
@@ -126,10 +135,12 @@ and then operates on it to generate the expanded form
       (no-var-dups (rst-var (istx-rst istx))))
     
     
-    ;; dependent arg variables are all bound.
+    ;; dependent arg variables are all bound, but not to a range variable
     (for ([an-arg (in-list (istx-args istx))])
-      (when (arg-vars an-arg)
-        (ensure-bound (arg-vars an-arg))))
+      (let ([a-vars (arg-vars an-arg)])
+        (when a-vars
+          (ensure-bound a-vars)
+          (not-range-bound a-vars))))
     
     ;; dependent range variables are all bound.
     (when (istx-ress istx)
@@ -138,39 +149,48 @@ and then operates on it to generate the expanded form
           (ensure-bound (res-vars a-res)))))))
 
 (define (ensure-no-cycles stx istx)
-  (let ([neighbors (make-hash)]
-        [sp '()]
-        [safe (make-hash)]
-        [vars->stx (make-hash)])
+  (let ([neighbors (make-free-identifier-mapping)]
+        [safe (make-free-identifier-mapping)]
+        [sp '()])
 
     (define (link from to)
       (printf "linking ~s => ~s\n" from to)
-      (set! sp (cons (syntax-e from) sp))
-      (hash-set! vars->stx (syntax-e from) from)
-      (hash-set! neighbors (syntax-e from)
-                 (cons (syntax-e to)
-                       (hash-ref neighbors (syntax-e from) '()))))
+      (set! sp (cons from sp))
+      (free-identifier-mapping-put!
+       neighbors from
+       (cons to (free-identifier-mapping-get neighbors from (λ () '())))))
+    
+    (define (no-links from)
+      (printf "no links ~s\n" from)
+      (set! sp (cons from sp))
+      (free-identifier-mapping-put! neighbors from '()))
     
     (for ([an-arg (in-list (istx-args istx))])
-      (when (arg-vars an-arg)
-        (for ([nvar (in-list (arg-vars an-arg))])
-          (link (arg-var an-arg) nvar))))
+      (cond
+        [(arg-vars an-arg)
+         (for ([nvar (in-list (arg-vars an-arg))])
+           (link (arg-var an-arg) nvar))]
+        [else
+         (no-links (arg-var an-arg))]))
     
     (when (istx-ress istx)
       (for ([a-res (in-list (istx-ress istx))])
-        (when (res-vars a-res)
-          (for ([nvar (in-list (res-vars a-res))])
-            (link (res-var a-res) nvar)))))
-    
+        (cond
+          [(res-vars a-res)
+           (for ([nvar (in-list (res-vars a-res))])
+             (link (res-var a-res) nvar))]
+          [else
+           (no-links (res-var a-res))])))
+           
     (for ([var (in-list sp)])
       (let loop ([var var]
                  [visited '()])
+        (printf "var ~s\n" var)
         (cond
-          [(hash-ref safe var #f)
+          [(free-identifier-mapping-get safe var (λ () #f))
            (void)]
-          [(member var visited)
-           (let ([ids (map (λ (x) (hash-ref vars->stx x))
-                           (trim-at var visited))])
+          [(memf (λ (x) (free-identifier=? x var)) visited)
+           (let ([ids (trim-at var visited)])
              (raise-syntax-error #f 
                                  "cyclic dependencies are not allowed"
                                  stx
@@ -178,18 +198,18 @@ and then operates on it to generate the expanded form
                                  (cdr ids)))]
           [else
            (let ([new-visited (cons var visited)])
-             (for ([neighbor (in-list (hash-ref neighbors var))])
+             (for ([neighbor (in-list (free-identifier-mapping-get neighbors var))])
                (loop neighbor new-visited)
-               (hash-set! safe var #t)))])))))
+               (free-identifier-mapping-put! safe var #t)))])))))
 
-;; trim-at : X (listof X) -> (listof X)
+;; trim-at : identifier? (listof identifier?) -> (listof identifier?)
 ;; returns the shortest prefix of vars that ends with var
 (define (trim-at var vars)
   (let loop ([vars vars])
     (cond
       [(null? vars) (error 'trim-at "not found")]
       [else (let ([fst (car vars)])
-              (if (eq? fst var)
+              (if (free-identifier=? fst var)
                   (list fst)
                   (cons fst (loop (cdr vars)))))])))
 

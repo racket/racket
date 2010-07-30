@@ -1,9 +1,6 @@
 #lang racket/base
 (require racket/contract)
 
-(->i ([x (y) number?])
-     [y number?])
-; => domain cannot depend on a range variable
 
 #|
 test cases:
@@ -84,6 +81,18 @@ test cases:
 
 ;; => cyclic depenencies
 
+(->i ([x (y) number?]
+      [y number?])
+     any)
+; => no syntax error
+
+(->i ()
+     (values [x (y) number?]
+             [y number?]))
+; => no syntax error
+
+(->i ([x (y) number?])
+     [y number?])
+; => domain cannot depend on a range variable
+
 |#
-
-
