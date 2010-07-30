@@ -1,18 +1,9 @@
 #lang racket/base
 (require racket/contract)
 
-(let ([c integer?])
-  (->i ((arg any/c)) () (values (_ (arg) c) (x (arg) c) (_ (arg) c))))
-; => all or none _s
-
-
-#;
-(->i (#:kwd1 [x number?]
-      #:kwd2 [y number?])
-     #:rest [x any/c]
-     any)
-;=> duplicate identifier 'x'
-
+(->i ([x (y) number?])
+     [y number?])
+; => domain cannot depend on a range variable
 
 #|
 test cases:
@@ -62,9 +53,37 @@ test cases:
      [x number?])
 ;=> duplicate identifier 'x'
 
+(->i (#:kwd1 [x number?]
+      #:kwd2 [y number?])
+     #:rest [x any/c]
+     any)
+;=> duplicate identifier 'x'
+
+
 (let ([c integer?])
   (->i ((arg any/c)) () (values (_ (arg) c) (x (arg) c) (_ (arg) c))))
 ; => all or none _s
 
+(->i ([x (y) number?])
+     any)
+; => unknown dependent variable
+
+(->i ([x (x) number?])
+     any)
+; => cyclic dependencies not allowed
+
+(->i ([x (y) number?]
+      [y (x) number?])
+     any)
+; => cyclic dependencies not allowed
+
+(->i ([in number?])
+     (values [x (y) number?]
+             [y (z) number?]
+             [z (x) number?]))
+
+;; => cyclic depenencies
 
 |#
+
+

@@ -16,12 +16,16 @@ and then operates on it to generate the expanded form
 
 |#
 
-;; doms : (listof arg?)
+;; args : (listof arg?)
 ;; rest : (or/c #f rst?)
 ;; pre  : (or/c stx[expr] #f)
-;; rngs : (or/c #f (listof res?))
+;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (or/c stx[expr] #f)
 (struct istx (args rst pre ress post))
+;; NOTE: the ress field may contain a mixture of eres and lres structs
+;;       but only temporarily; after it is constructed, a syntax error
+;;       is signalled and the istx struct is not used afterwards
+
 
 ;; kwd  : (or/c #f syntax[kwd])
 ;; var  : identifier?
@@ -33,7 +37,14 @@ and then operates on it to generate the expanded form
 ;; var  : identifier?
 ;; vars : (or/c #f (listof identifier?))
 ;; ctc  : syntax[expr]
-(struct res (var vars ctc))
+(struct res (var vars ctc) #:constructor-name ___do-not-use-this-constructor)
+
+;; these represent res contracts that came from _s (and thus should be evaluated early)
+(struct eres res ())
+
+;; these represent res contracts that came from _s (and thus should be evaluated later)
+(struct lres res ())
+
 
 ;; var  : identifier?
 ;; vars : (or/c #f (listof identifier?))
@@ -52,7 +63,7 @@ and then operates on it to generate the expanded form
                  (parse-range stx range)
                  post-cond)])
       (ensure-wf-names stx candidate)
-      ;(ensure-no-cycles stx candidate)
+      (ensure-no-cycles stx candidate)
       candidate)))
 
 (define (ensure-wf-names stx istx)
@@ -80,29 +91,108 @@ and then operates on it to generate the expanded form
           [else
            (hash-set! km kwd kwd-stx)])))
     
+    (define (ensure-bound vars)
+      (for ([var (in-list vars)])
+        (unless (free-identifier-mapping-get nm var (λ () #f))
+          (raise-syntax-error #f "dependent variable not bound"
+                              stx var))))
+    
+    ;; no dups in the domains
     (for ([dom (in-list (istx-args istx))])
       (when (arg-kwd dom)
         (no-kwd-dups (arg-kwd dom)))
       (no-var-dups (arg-var dom)))
     
+    ;; no dups in the ranges
     (when (istx-ress istx)
-      (let ([any-_? #f]
-            [all-_? #t])
-        (for ([rng (in-list (istx-ress istx))])
+      (let ([any-eres? #f]
+            [all-eres? #t])
+        (for ([res (in-list (istx-ress istx))])
           (cond
-            [(free-identifier=? #'_ (res-var rng))
-             (set! any-_? #t)]
+            [(eres? res)
+             (set! any-eres? #t)]
             [else 
-             (set! all-_? #f)
-             (no-var-dups (res-var rng))]))
-        (when any-_?
-          (unless all-_?
-            (raise-syntax-error #f "either all of the dependent range variables must be _ or none of them"
-                                stx (map res-var (istx-ress istx)))))))
+             (set! all-eres? #f)
+             (no-var-dups (res-var res))]))
+        (when any-eres?
+          (unless all-eres?
+            (raise-syntax-error
+             #f
+             "either all or none of the dependent range variables must be _"
+             stx #f (map res-var (istx-ress istx)))))))
     
+    ;; no dups in the rest var
     (when (istx-rst istx)
-      (no-var-dups (rst-var (istx-rst istx))))))
+      (no-var-dups (rst-var (istx-rst istx))))
     
+    
+    ;; dependent arg variables are all bound.
+    (for ([an-arg (in-list (istx-args istx))])
+      (when (arg-vars an-arg)
+        (ensure-bound (arg-vars an-arg))))
+    
+    ;; dependent range variables are all bound.
+    (when (istx-ress istx)
+      (for ([a-res (in-list (istx-ress istx))])
+        (when (res-vars a-res)
+          (ensure-bound (res-vars a-res)))))))
+
+(define (ensure-no-cycles stx istx)
+  (let ([neighbors (make-hash)]
+        [sp '()]
+        [safe (make-hash)]
+        [vars->stx (make-hash)])
+
+    (define (link from to)
+      (printf "linking ~s => ~s\n" from to)
+      (set! sp (cons (syntax-e from) sp))
+      (hash-set! vars->stx (syntax-e from) from)
+      (hash-set! neighbors (syntax-e from)
+                 (cons (syntax-e to)
+                       (hash-ref neighbors (syntax-e from) '()))))
+    
+    (for ([an-arg (in-list (istx-args istx))])
+      (when (arg-vars an-arg)
+        (for ([nvar (in-list (arg-vars an-arg))])
+          (link (arg-var an-arg) nvar))))
+    
+    (when (istx-ress istx)
+      (for ([a-res (in-list (istx-ress istx))])
+        (when (res-vars a-res)
+          (for ([nvar (in-list (res-vars a-res))])
+            (link (res-var a-res) nvar)))))
+    
+    (for ([var (in-list sp)])
+      (let loop ([var var]
+                 [visited '()])
+        (cond
+          [(hash-ref safe var #f)
+           (void)]
+          [(member var visited)
+           (let ([ids (map (λ (x) (hash-ref vars->stx x))
+                           (trim-at var visited))])
+             (raise-syntax-error #f 
+                                 "cyclic dependencies are not allowed"
+                                 stx
+                                 (car ids)
+                                 (cdr ids)))]
+          [else
+           (let ([new-visited (cons var visited)])
+             (for ([neighbor (in-list (hash-ref neighbors var))])
+               (loop neighbor new-visited)
+               (hash-set! safe var #t)))])))))
+
+;; trim-at : X (listof X) -> (listof X)
+;; returns the shortest prefix of vars that ends with var
+(define (trim-at var vars)
+  (let loop ([vars vars])
+    (cond
+      [(null? vars) (error 'trim-at "not found")]
+      [else (let ([fst (car vars)])
+              (if (eq? fst var)
+                  (list fst)
+                  (cons fst (loop (cdr vars)))))])))
+
 (define (parse-doms stx optional? doms)
   (let loop ([doms doms])
     (syntax-case doms ()
@@ -135,30 +225,41 @@ and then operates on it to generate the expanded form
        (raise-syntax-error #f "expected an argument specification" stx #'a)])))
 
 (define (parse-range stx range)
-  (syntax-case range (any values) #;(λ (x y) (eq? (syntax-e x) (syntax-e y)))
+  (syntax-case range (any values _)
     [(values ctc-pr ...)
-     (map (λ (x) (syntax-case x ()
+     (map (λ (x) (syntax-case x (_)
                    [[id ctc] 
                     (begin
                       (check-id stx #'id)
-                      (res #'id #f #'ctc))]
+                      ((if (free-identifier=? #'_ #'id) eres lres)
+                       #'id #f #'ctc))]
                    [[id (id2 ...) ctc]
                     (begin
                       (check-id stx #'id)
                       (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-                      (res #'id (syntax->list #'(id2 ...)) #'ctc))]
+                      ((if (free-identifier=? #'_ #'id) eres lres)
+                       #'id (syntax->list #'(id2 ...)) #'ctc))]
                    [x (raise-syntax-error #f "expected binding pair" stx #'x)]))
           (syntax->list #'(ctc-pr ...)))]
     [any #f]
+    [[_ ctc]
+     (begin
+       (check-id stx #'id)
+       (list (eres #'id #f #'ctc)))]
     [[id ctc]
      (begin
        (check-id stx #'id)
-       (list (res #'id #f #'ctc)))]
+       (list (lres #'id #f #'ctc)))]
+    [[_ (id2 ...) ctc] 
+     (begin
+       (check-id stx #'id)
+       (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
+       (list (eres #'id (syntax->list #'(id2 ...)) #'ctc)))]
     [[id (id2 ...) ctc] 
      (begin
        (check-id stx #'id)
        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-       (list (res #'id (syntax->list #'(id2 ...)) #'ctc)))]
+       (list (lres #'id (syntax->list #'(id2 ...)) #'ctc)))]
     [x (raise-syntax-error #f "expected the range portion" stx #'x)]))
 
 (define (check-id stx id)
