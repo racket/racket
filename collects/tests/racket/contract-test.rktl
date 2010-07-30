@@ -1795,11 +1795,11 @@
   
   (test/spec-passed
    '->i9
-   '((contract (->i ([y (<=/c x)] [x (x) number?]) () [r (x) (<=/c x)]) (lambda (y x) (- x 1)) 'pos 'neg) 1 2))
+   '((contract (->i ([y (x) (<=/c x)] [x number?]) () [r (x) (<=/c x)]) (lambda (y x) (- x 1)) 'pos 'neg) 1 2))
   
   (test/neg-blame
    '->i10
-   '((contract (->i ([y (<=/c x)] [x (x) number?]) () [r (x) (<=/c x)]) (lambda (y x) (+ x 1)) 'pos 'neg) 1 0))
+   '((contract (->i ([y (x) (<=/c x)] [x number?]) () [r (x) (<=/c x)]) (lambda (y x) (+ x 1)) 'pos 'neg) 1 0))
 
   (test/spec-passed
    '->i11
@@ -4849,7 +4849,7 @@
   
   (test/spec-passed
    'object-contract-->i1b
-   '(send (contract (object-contract (m (->i ([x number?]) () [range (i) (<=/c x)])))
+   '(send (contract (object-contract (m (->i ([x number?]) () [range (x) (<=/c x)])))
                     (new (class object% (define/public m (lambda (x) (- x 1))) (super-new)))
                     'pos
                     'neg)
@@ -4858,7 +4858,7 @@
 
   (test/pos-blame 
    'object-contract-->i2
-   '(send (contract (object-contract (m (->i ([x number?]) () [range (i) (<=/c x)])))
+   '(send (contract (object-contract (m (->i ([x number?]) () [range (x) (<=/c x)])))
                     (new (class object% (define/public m (lambda (x) (+ x 1))) (super-new)))
                     'pos
                     'neg)
