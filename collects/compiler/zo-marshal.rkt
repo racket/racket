@@ -76,7 +76,8 @@
        (write-bytes #"#~" outp)
        (write-bytes (bytes (bytes-length version-bs)) outp)
        (write-bytes version-bs outp)
-       (write-bytes (int->bytes (add1 (hash-count shared))) outp)
+       (define symtabsize (add1 (hash-count shared)))
+       (write-bytes (int->bytes symtabsize) outp)
        (write-bytes (bytes (if all-short? 1 0)) outp)
        (for ([o (in-list offsets)])
          (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
@@ -233,6 +234,8 @@
        (for ([(k v) (in-hash expr)])
          (traverse-data k visit)
          (traverse-data v visit)))]
+    [(protected-symref? expr)
+     (visit (protected-symref-val expr))]
     [else
      (void)]))
 
@@ -620,6 +623,21 @@
       [(struct wrap-mark (val))
        (list val)])))
 
+(define (encode-mark-map mm)
+  mm
+  #;(for/fold ([l empty])
+    ([(k v) (in-hash ht)])
+    (list* k v l)))
+
+(define-struct protected-symref (val))
+
+(define encode-certs
+  (match-lambda
+    [(struct certificate:nest (m1 m2))
+     (list* (encode-mark-map m1) (encode-mark-map m2))]
+    [(struct certificate:ref (val m))
+     (list* #f (make-protected-symref val) (encode-mark-map m))]))
+
 (define (encode-wrapped w)
   (match w
     [(struct wrapped (datum wraps certs))
@@ -659,7 +677,7 @@
             [p (cons enc-datum
                      (encode-wraps wraps))])
        (if certs
-           (vector p certs)
+           (vector p (encode-certs certs))
            p))]))
 
 (define (lookup-encoded-wrapped w out)
@@ -932,6 +950,10 @@
 
 (define (out-value expr out)
   (cond
+    [(protected-symref? expr)
+     (let* ([val (protected-symref-val expr)]
+            [val-ref ((out-shared-index out) val)])
+       (out-value val-ref out))]
     [(and (symbol? expr) (not (symbol-interned? expr)))
      (out-as-bytes expr 
                    #:before-length (if (symbol-unreadable? expr) 0 1)

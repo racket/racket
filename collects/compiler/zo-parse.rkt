@@ -498,6 +498,25 @@
 
 ;; ----------------------------------------
 ;; Syntax unmarshaling
+(define (decode-mark-map alist)
+  alist
+  #;(let loop ([alist alist]
+             [ht (make-immutable-hasheq empty)])
+    (match alist
+      [(list) ht]
+      [(list* (? number? key) (? module-path-index? val) alist)
+       (loop alist (hash-set ht key val))])))
+
+(define (decode-marks cp ms)
+  (match ms
+    [#f #f]
+    [(list* #f (? number? symref) alist)
+     (make-certificate:ref
+      (vector-ref (cport-symtab cp) symref)
+      (decode-mark-map alist))]
+    [(list* (? list? nested) alist)
+     (make-certificate:nest (decode-mark-map nested) (decode-mark-map alist))]))
+
 (define (decode-stx cp v)
   (if (integer? v)
       (unmarshal-stx-get/decode cp v decode-stx)
@@ -508,7 +527,8 @@
                         [`(,datum . ,wraps) (values #f datum wraps)]
                         [else (error 'decode-wraps "bad datum+wrap: ~e" v)])])
           (let* ([wraps (decode-wraps cp encoded-wraps)]
-                 [add-wrap (lambda (v) (make-wrapped v wraps cert-marks))])
+                 [marks (decode-marks cp cert-marks)]
+                 [add-wrap (lambda (v) (make-wrapped v wraps marks))])
             (cond
               [(pair? v)
                (if (eq? #t (car v))
