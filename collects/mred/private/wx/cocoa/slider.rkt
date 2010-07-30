@@ -45,6 +45,7 @@
                           [vert? (memq 'vertical style)])
                       (tellv cocoa setMinValue: #:type _double* lo)
                       (tellv cocoa setMaxValue: #:type _double* hi)
+                      (tellv cocoa setDoubleValue: #:type _double* val)
                       (tellv cocoa setNumberOfTickMarks: #:type _NSUInteger (add1 (- hi lo)))
                       (tellv cocoa setAllowsTickMarkValuesOnly: #:type _BOOL #t)
                       (tellv cocoa setFrame: #:type _NSRect (make-NSRect 
