@@ -42,10 +42,29 @@
                                      [phase (or/c 0 1)])) ; direct access to exported id
 
 ;; Syntax object
+(define ((alist/c k? v?) l)
+  (let loop ([l l])
+    (match l
+      [(list) #t]
+      [(list* (? k?) (? v?) l)
+       (loop l)]
+      [_ #f])))
+
+(define mark-map? 
+  (alist/c number? module-path-index?)
+  #;(hash/c number? module-path-index?))
+(define-form-struct certificate ())
+(define-form-struct (certificate:nest certificate)
+  ([nested mark-map?]
+   [map  mark-map?]))
+(define-form-struct (certificate:ref certificate)
+  ([val any/c]
+   [map  mark-map?]))
+
 (define-form-struct wrap ())
 (define-form-struct wrapped ([datum any/c] 
                              [wraps (listof wrap?)] 
-                             [certs (or/c list? #f)]))
+                             [certs (or/c certificate? #f)]))
 
 ;; In stxs of prefix:
 (define-form-struct stx ([encoded wrapped?]))
