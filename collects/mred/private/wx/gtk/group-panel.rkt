@@ -25,7 +25,7 @@
           style
           label)
     
-    (inherit set-size set-auto-size get-gtk)
+    (inherit set-size set-auto-size get-gtk get-height)
 
     (define gtk (gtk_frame_new label))
     (define client-gtk (gtk_fixed_new))
@@ -39,6 +39,15 @@
                [no-show? (memq 'deleted style)])
 
     (set-auto-size)
+
+    ;; The delta between the group box height and its
+    ;; client height can go bad if the label is set.
+    ;; Avoid the problem by effectively using the
+    ;; original delta.
+    (define orig-h (get-height))
+    (define/override (get-client-size xb yb)
+      (super get-client-size xb yb)
+      (set-box! yb (- (get-height) orig-h)))
 
     (define/public (set-label s)
       (gtk_frame_set_label gtk s))

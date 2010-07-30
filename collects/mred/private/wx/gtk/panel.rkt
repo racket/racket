@@ -37,8 +37,9 @@
       (reset-child-dcs))
     
     (define/override (maybe-register-as-child parent on?)
-      (register-as-child parent on?))
-    
+      (register-as-child parent on?)
+      (when on? (reset-child-dcs)))
+
     (define/override (register-child child on?)
       (let ([now-on? (and (memq child children) #t)])
         (unless (eq? on? now-on?)

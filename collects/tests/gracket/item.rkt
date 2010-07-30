@@ -2214,7 +2214,7 @@
   (let loop ([l radios])
     (let* ([c (car l)]
 	   [rest (cdr l)]
-	   [n (send c number)]
+	   [n (send c get-number)]
 	   [v (send c get-selection)])
       (if (< v (sub1 n))
 	  (send c set-selection (add1 v))

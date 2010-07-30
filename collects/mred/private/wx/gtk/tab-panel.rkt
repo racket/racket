@@ -16,7 +16,6 @@
 
 (define-gtk gtk_notebook_new (_fun -> _GtkWidget))
 (define-gtk gtk_fixed_new (_fun -> _GtkWidget))
-(define-gtk gtk_hbox_new (_fun _gboolean _int -> _GtkWidget))
 
 (define-gtk gtk_notebook_append_page (_fun _GtkWidget _GtkWidget (_or-null _GtkWidget) -> _void))
 (define-gtk gtk_notebook_remove_page (_fun _GtkWidget _int -> _void))

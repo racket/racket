@@ -95,7 +95,8 @@
                  (tell (tell MyWindow alloc)
                        initWithContentRect: #:type _NSRect (let-values ([(x y) (init-pos x y)])
                                                              (make-NSRect (make-NSPoint x y)
-                                                                          (make-NSSize w h)))
+                                                                          (make-NSSize (max 30 w) 
+                                                                                       (max 0 h))))
                        styleMask: #:type _int (if (memq 'no-caption style)
                                                   NSBorderlessWindowMask
                                                   (bitwise-ior 

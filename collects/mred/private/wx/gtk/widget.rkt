@@ -14,6 +14,7 @@
          gtk_widget_hide
 
          gtk_vbox_new
+         gtk_hbox_new
          gtk_box_pack_start
          gtk_box_pack_end)
 
@@ -21,6 +22,7 @@
 (define-gtk gtk_widget_hide (_fun _GtkWidget -> _void))
 
 (define-gtk gtk_vbox_new (_fun _gboolean _int -> _GtkWidget))
+(define-gtk gtk_hbox_new (_fun _gboolean _int -> _GtkWidget))
 (define-gtk gtk_box_pack_start (_fun _GtkWidget _GtkWidget _gboolean _gboolean _uint -> _void))
 (define-gtk gtk_box_pack_end (_fun _GtkWidget _GtkWidget _gboolean _gboolean _uint -> _void))
 (define-gtk gtk_widget_get_parent (_fun _GtkWidget -> (_or-null _GtkWidget)))

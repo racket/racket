@@ -22,7 +22,6 @@
 
 (define-gtk gtk_widget_queue_draw (_fun _GtkWidget -> _void))
 
-(define-gtk gtk_hbox_new (_fun _gboolean _int -> _GtkWidget))
 (define-gtk gtk_hscrollbar_new (_fun _pointer -> _GtkWidget))
 (define-gtk gtk_vscrollbar_new (_fun _pointer -> _GtkWidget))
 
@@ -205,9 +204,11 @@
       (gtk_widget_queue_draw client-gtk))
     
     (define/public (reset-child-dcs)
-      (send dc reset-dc))
+      (when (dc . is-a? . dc%)
+        (send dc reset-dc)))
     (define/override (maybe-register-as-child parent on?)
-      (register-as-child parent on?))
+      (register-as-child parent on?)
+      (when on? (reset-child-dcs)))
 
     (define/override (internal-on-client-size w h)
       (send dc reset-dc))

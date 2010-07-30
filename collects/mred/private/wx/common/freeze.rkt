@@ -39,26 +39,28 @@
 (define (internal-error str)
   (log-error
    (apply string-append
-          (format "internal error: ~s" str)
-          (for/list ([c (continuation-mark-set->context (current-continuation-marks))])
-            (let ([name (car c)]
-                  [loc (cdr c)])
-              (cond
-               [loc
-                (string-append
-                 "\n"
-                 (cond 
-                  [(srcloc-line loc)
-                   (format "~a:~a:~a" 
-                           (srcloc-source loc)
-                           (srcloc-line loc)
-                           (srcloc-column loc))]
-                  [else
-                   (format "~a::~a" 
-                           (srcloc-source loc)
-                           (srcloc-position loc))])
-                 (if name (format " ~a" name) ""))]
-               [else (format "\n ~a" name)]))))))
+          (format "internal error: ~a" str)
+          (append
+           (for/list ([c (continuation-mark-set->context (current-continuation-marks))])
+             (let ([name (car c)]
+                   [loc (cdr c)])
+               (cond
+                [loc
+                 (string-append
+                  "\n"
+                  (cond 
+                   [(srcloc-line loc)
+                    (format "~a:~a:~a" 
+                            (srcloc-source loc)
+                            (srcloc-line loc)
+                            (srcloc-column loc))]
+                   [else
+                    (format "~a::~a" 
+                            (srcloc-source loc)
+                            (srcloc-position loc))])
+                  (if name (format " ~a" name) ""))]
+                [else (format "\n ~a" name)])))
+           '("\n")))))
 
 ;; FIXME: waiting 200msec is not a good enough rule.
 (define (constrained-reply es thunk default [should-give-up?
@@ -66,42 +68,46 @@
                                                (lambda ()
                                                  ((current-inexact-milliseconds) . > . (+ now 200))))])
   (let ([b (freezer-box)])
-    (unless b
-      (internal-error "constrained-reply not within an unfreeze point"))
-    (if (eq? (current-thread) (eventspace-handler-thread es))
-        (if (pair? (unbox b))
-            ;; already suspended, so push this work completely:
-            (set-box! b (cons thunk (unbox b)))
-            ;; try to do some work:
-            (let* ([prev #f]
-                   [ready? #f]
-                   [handler (lambda ()
-                              (when (and ready? (should-give-up?))
-                                (scheme_call_with_composable_no_dws
-                                 (lambda (proc)
-                                   (set-box! b (cons proc (unbox b)))
-                                   (scheme_restore_on_atomic_timeout prev)
-                                   (scheme_abort_continuation_no_dws
-                                    freeze-tag
-                                    (lambda () default)))
-                                 freeze-tag)
-                                (void)))])
-              (with-holding 
-               handler
-               (call-with-continuation-prompt ; to catch aborts
-                (lambda ()
-                  (call-with-continuation-prompt ; for composable continuation
+    (cond
+     [(not b)
+      (internal-error (format "constrained-reply not within an unfreeze point for ~s"
+                              thunk))
+      default]
+     [(not (eq? (current-thread) (eventspace-handler-thread es)))
+      (internal-error "wrong eventspace for constrained event handling\n")
+      default]
+     [(pair? (unbox b))
+      ;; already suspended, so push this work completely:
+      (set-box! b (cons thunk (unbox b)))
+      default]
+     [else
+      ;; try to do some work:
+      (let* ([prev #f]
+             [ready? #f]
+             [handler (lambda ()
+                        (when (and ready? (should-give-up?))
+                          (scheme_call_with_composable_no_dws
+                           (lambda (proc)
+                             (set-box! b (cons proc (unbox b)))
+                             (scheme_restore_on_atomic_timeout prev)
+                             (scheme_abort_continuation_no_dws
+                              freeze-tag
+                              (lambda () default)))
+                           freeze-tag)
+                          (void)))])
+        (with-holding 
+         handler
+         (call-with-continuation-prompt ; to catch aborts
+          (lambda ()
+            (call-with-continuation-prompt ; for composable continuation
+             (lambda ()
+               (set! prev (scheme_set_on_atomic_timeout handler))
+               (set! ready? #t)
+               (dynamic-wind
+                   void
                    (lambda ()
-                     (set! prev (scheme_set_on_atomic_timeout handler))
-                     (set! ready? #t)
-                     (dynamic-wind
-                         void
-                         (lambda ()
-                           (parameterize ([freezer-box #f])
-                             (thunk)))
-                         (lambda ()
-                           (scheme_restore_on_atomic_timeout prev))))
-                   freeze-tag))))))
-        (begin
-          (internal-error "wrong eventspace for constrained event handling\n")
-          default))))
+                     (parameterize ([freezer-box #f])
+                       (thunk)))
+                   (lambda ()
+                     (scheme_restore_on_atomic_timeout prev))))
+             freeze-tag)))))])))

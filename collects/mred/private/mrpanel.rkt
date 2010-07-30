@@ -10,9 +10,7 @@
 	   "kw.ss"
 	   "wxpanel.ss"
 	   "mrwindow.ss"
-	   "mrcontainer.ss"
-	   "mrtabgroup.ss"
-	   "mrgroupbox.ss")
+	   "mrcontainer.ss")
 
   (provide pane%
 	   vertical-pane%

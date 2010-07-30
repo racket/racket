@@ -43,7 +43,9 @@
   (inherit set-auto-size
            on-set-focus)
 
-  (define gtk (gtk_vbox_new #f 0))
+  (define gtk (if (memq 'horizontal style)
+                  (gtk_hbox_new #f 0)
+                  (gtk_vbox_new #f 0)))
   (define radio-gtks (for/list ([lbl (in-list labels)])
                        (let ([radio-gtk (cond
                                          [(string? lbl)
