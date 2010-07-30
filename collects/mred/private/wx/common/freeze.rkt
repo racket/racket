@@ -3,7 +3,7 @@
          racket/draw/hold
          "utils.rkt"
          "queue.rkt"
-         "../../lock.rkt")
+         ffi/unsafe/atomic)
 (unsafe!)
 
 (provide call-as-unfreeze-point
@@ -25,7 +25,7 @@
   (let ([b (box null)])
     (parameterize ([freezer-box b])
       ;; In atomic mode:
-      (as-entry (lambda () (thunk)))
+      (call-as-atomic (lambda () (thunk)))
       ;; Out of atomic mode:
       (let ([l (unbox b)])
         (for ([k (in-list (reverse l))])
@@ -69,7 +69,7 @@
     (unless b
       (internal-error "constrained-reply not within an unfreeze point"))
     (if (eq? (current-thread) (eventspace-handler-thread es))
-        (if (pair? b)
+        (if (pair? (unbox b))
             ;; already suspended, so push this work completely:
             (set-box! b (cons thunk (unbox b)))
             ;; try to do some work:
@@ -79,7 +79,7 @@
                               (when (and ready? (should-give-up?))
                                 (scheme_call_with_composable_no_dws
                                  (lambda (proc)
-                                   (set-box! (freezer-box) (cons proc (freezer-box)))
+                                   (set-box! b (cons proc (unbox b)))
                                    (scheme_restore_on_atomic_timeout prev)
                                    (scheme_abort_continuation_no_dws
                                     freeze-tag

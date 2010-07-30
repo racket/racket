@@ -155,6 +155,9 @@
 (define hilite-color (send the-color-database find-color "black"))
 (define hilite-alpha 0.3)
 
+(define-local-member-name
+  draw-bitmap-section/mask-offset)
+
 (define (dc-mixin backend%)
   (defclass* dc% backend% (dc<%>)
     (super-new)
@@ -427,7 +430,7 @@
                                               CAIRO_CONTENT_COLOR_ALPHA
                                               12 12)]
              [cr2 (cairo_create s)])
-        (install-color cr2 col 1.0)
+        (install-color cr2 col alpha)
         (cairo_set_line_width cr2 1)
         (cairo_set_line_cap cr CAIRO_LINE_CAP_ROUND)
         (cairo_set_antialias cr2 (case (dc-adjust-smoothing smoothing)
@@ -458,12 +461,14 @@
                                (send st get-width) (send st get-height) mode col
                                #f)
                               get-cairo-surface))]
-                  [(send st is-color?)
+                  [(and (send st is-color?)
+                        (= alpha 1.0))
                    (put (send st get-cairo-surface))]
                   [else
                    (put (send (bitmap-to-argb-bitmap 
                                st 0 0 
-                               (send st get-width) (send st get-height) mode col)
+                               (send st get-width) (send st get-height) 
+                               0 0 mode col alpha #f)
                               get-cairo-surface))])])
           (let* ([p (cairo_pattern_create_for_surface s)])
             (cairo_pattern_set_extend p CAIRO_EXTEND_REPEAT)
@@ -908,27 +913,51 @@
                                      [(symbol-in solid opaque xor) [style 'solid]]
                                      [(make-or-false color%) [color black]]
                                      [(make-or-false bitmap%) [mask #f]])
-      (let ([black? (or (not color)
-                        (and (= 0 (color-red color))
-                             (= 0 (color-green color))
-                             (= 0 (color-blue color))))])
-        (cond
-         [(and (collapse-bitmap-b&w?)
-               (or (send src is-color?)
-                   (and mask
-                        (send mask is-color?))))
-          ;; Need to ensure that the result is still B&W
-          (let* ([tmp-bm (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)])
-            (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 'solid #f #t #f))]
-         [(and (not black?) mask)
-          ;; both mask and forground color apply
-          (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h style color)])
-            (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 'solid #f #t mask))]
-         [else
-          ;; Normal combination...
-          (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h style color black? mask)])))
+      (draw-bitmap-section/mask-offset src dest-x dest-y src-x src-y src-w src-h src-x src-y
+                                       style color mask))
 
-    (define/public (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h style color black? mask)
+    (define/public (draw-bitmap-section/mask-offset src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y
+                                                    style color mask)
+      (let-values ([(src src-x src-y)
+                    (if (and (alpha . < . 1.0)
+                             (send src is-color?))
+                        ;; need a faded source
+                        (let* ([alpha-mask (make-object bitmap% (floor src-w) (floor src-h))]
+                               [adc (make-object -bitmap-dc% alpha-mask)])
+                          (send adc set-alpha alpha)
+                          (send adc set-brush "black" 'solid)
+                          (send adc draw-rectangle 0 0 src-w src-h)
+                          (send adc set-bitmap #f)
+                          (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 
+                                                               style black 1.0 alpha-mask)])
+                            (values tmp-bm 0 0)))
+                        ;; no change to source
+                        (values src src-x src-y))])
+        (let ([black? (or (not color)
+                          (and (= 0 (color-red color))
+                               (= 0 (color-green color))
+                               (= 0 (color-blue color))))])
+          (cond
+           [(and (collapse-bitmap-b&w?)
+                 (or (send src is-color?)
+                     (and mask
+                          (send mask is-color?))))
+            ;; Need to ensure that the result is still B&W
+            (let* ([tmp-bm (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)])
+              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t #f))]
+           [(and mask
+                 (or (not black?)
+                     (alpha . < . 1.0)))
+            ;; mask plus color or alpha with a color bitmap
+            (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 style color alpha #f)])
+              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h msrc-x msrc-y 'solid #f #t mask))]
+           [else
+            ;; Normal combination...
+            (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y
+                                    style color black? mask)]))))
+
+    (define/public (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y 
+                                           style color black? mask)
       (with-cr
        (void)
        cr
@@ -939,8 +968,10 @@
               [a-dest-h (- (align-y/delta (+ dest-y src-h) 0) a-dest-y)]
               [a-src-x (floor src-x)]
               [a-src-y (floor src-y)]
+              [a-msrc-x (floor msrc-x)]
+              [a-msrc-y (floor msrc-y)]
               [stamp-pattern
-               (lambda (src)
+               (lambda (src a-src-x a-src-y)
                  (let ([p (cairo_pattern_create_for_surface (send src get-cairo-alpha-surface))]
                        [m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
                    (cairo_matrix_init_translate m (- a-src-x a-dest-x) (- a-src-y a-dest-y))
@@ -950,6 +981,7 @@
          (cond
           [(or (send src is-color?)
                (and (not (eq? style 'opaque))
+                    (= alpha 1.0)
                     black?))
            (let ([s (cairo_get_source cr)])
              (cairo_pattern_reference s)
@@ -958,7 +990,7 @@
                                        (- a-dest-x a-src-x)
                                        (- a-dest-y a-src-y))
              (if mask
-                 (stamp-pattern mask)
+                 (stamp-pattern mask a-msrc-x a-msrc-y)
                  (begin
                    (cairo_new_path cr)
                    (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
@@ -972,7 +1004,7 @@
              (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
              (cairo_fill cr))
            (install-color cr color alpha)
-           (stamp-pattern src)])
+           (stamp-pattern src a-src-x a-src-y)])
          (flush-cr))))
 
     (define/private (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)
@@ -1000,13 +1032,16 @@
           (send tmp-bm set-argb-pixels 0 0 bm-w bm-h bstr)
           tmp-bm)))
     
-    (define/private (bitmap-to-argb-bitmap src src-x src-y src-w src-h style color) 
+    (define/private (bitmap-to-argb-bitmap src src-x src-y src-w src-h msrc-x msrc-y 
+                                           style color alpha mask) 
       (let* ([bm-w (inexact->exact (ceiling src-w))]
              [bm-h (inexact->exact (ceiling src-h))]
              [tmp-bm (make-object bitmap% src-w src-h #f #t)]
              [tmp-dc (make-object -bitmap-dc% tmp-bm)])
+        (send tmp-dc set-alpha alpha)
         (send tmp-dc set-background bg)
-        (send tmp-dc draw-bitmap-section src 0 0 src-x src-y src-w src-h style color)
+        (send tmp-dc draw-bitmap-section/mask-offset src 0 0 src-x src-y src-w src-h msrc-x msrc-y
+              style color mask)
         (send tmp-dc set-bitmap #f)
         tmp-bm))
 
