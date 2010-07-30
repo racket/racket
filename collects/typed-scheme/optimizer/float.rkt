@@ -7,7 +7,7 @@
          (types abbrev type-table utils subtype)
          (optimizer utils fixnum))
 
-(provide float-opt-expr float-expr int-expr)
+(provide float-opt-expr float-expr int-expr float-coerce-expr)
 
 
 (define (mk-float-tbl generic)
@@ -40,6 +40,19 @@
   (pattern e:expr
            #:when (subtypeof? #'e -Integer)
            #:with opt ((optimize) #'e)))
+(define-syntax-class real-expr
+  (pattern e:expr
+           #:when (subtypeof? #'e -Real)
+           #:with opt ((optimize) #'e)))
+
+
+;; generates coercions to floats
+(define-syntax-class float-coerce-expr
+  (pattern e:float-arg-expr
+           #:with opt #'e.opt)
+  (pattern e:real-expr
+           #:with opt #'(exact->inexact e.opt)))
+
 
 ;; if the result of an operation is of type float, its non float arguments
 ;; can be promoted, and we can use unsafe float operations

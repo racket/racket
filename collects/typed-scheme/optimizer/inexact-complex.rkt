@@ -224,6 +224,17 @@
            (begin (log-optimization "unboxed unary inexact complex" #'op)
                   #'(c.bindings ...)))
 
+  ;; we can eliminate boxing that was introduced by the user
+  (pattern (#%plain-app (~and op (~or (~literal make-rectangular)
+                                      (~literal unsafe-make-flrectangular)))
+                        real:float-coerce-expr imag:float-coerce-expr)
+           #:with real-binding (unboxed-gensym)
+           #:with imag-binding (unboxed-gensym)
+           #:with (bindings ...)
+           (begin (log-optimization "make-rectangular elimination" #'op)
+                  #`(((real-binding) real.opt)
+                     ((imag-binding) imag.opt))))
+
   ;; if we see a variable that's already unboxed, use the unboxed bindings
   (pattern v:id
            #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
@@ -243,27 +254,11 @@
               ((real-binding) (unsafe-flreal-part e*))
               ((imag-binding) (unsafe-flimag-part e*))))
   ;; special handling of reals
-  (pattern e:float-expr
+  (pattern e:float-coerce-expr
            #:with real-binding (unboxed-gensym)
            #:with imag-binding #f
            #:with (bindings ...)
-           #`(((real-binding) #,((optimize) #'e))))
-  (pattern e:fixnum-expr
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding #f
-           #:with (bindings ...)
-           #`(((real-binding) (unsafe-fx->fl #,((optimize) #'e)))))
-  (pattern e:int-expr
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding #f
-           #:with (bindings ...)
-           #`(((real-binding) (->fl #,((optimize) #'e)))))
-  (pattern e:expr
-           #:when (isoftype? #'e -Real)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding #f
-           #:with (bindings ...)
-           #`(((real-binding) (exact->inexact #,((optimize) #'e)))))
+           #`(((real-binding) e.opt)))
   (pattern e:expr
            #:when (isoftype? #'e -Number) ; complex, maybe exact, maybe not
            #:with e* (unboxed-gensym)
