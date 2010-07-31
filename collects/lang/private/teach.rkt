@@ -777,7 +777,8 @@
 						(append getter-names setter-names)
 						getter-names))]
 		    [proc-names (cdr to-define-names)])
-	       (with-syntax ([compile-info (build-struct-expand-info name fields #f (not setters?) #t null null)])
+	       (with-syntax ([compile-info (build-struct-expand-info name fields #f (not setters?) #t null null)]
+                             [(field_/no-loc ...) (map (λ (x) (datum->syntax x (syntax->datum x) #f)) (syntax->list #'(field_ ...)))])
 		 (let-values ([(defn0 bind-names)
 			       (wrap-func-definitions 
 				first-order? 
@@ -881,11 +882,11 @@
 						 #`(define (#,parametric-signature-name field_ ...)
 						     (signature
 						      (combined (at name_ (predicate raw-predicate))
-								(at field_ (signature:property getter-name field_)) ...)))
+								(at field_ (signature:property getter-name field_/no-loc)) ...)))
 						 #`(define (#,parametric-signature-name field_ ...)
 						     (make-struct-wrap-signature 'name_
 										type-descriptor
-										(list field_ ...)
+										(list field_/no-loc ...)
 										#'name_)))
 
 					   (values #,signature-name #,parametric-signature-name proc-name ...)))
