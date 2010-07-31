@@ -85,7 +85,8 @@
 
   (super-new [parent parent]
              [cocoa cocoa]
-             [no-show? (memq 'deleted style)])
+             [no-show? (memq 'deleted style)]
+             [callback cb])
 
   (set-size 0 0 32 50)
   ; (tellv content-cocoa sizeToFit)

@@ -20,15 +20,16 @@
   (provide (protect wx-text-field%))
 
   (define text-field-text% 
-    (class100 text% (cb ret-cb control set-cb-mgrs!)
+    (class100 text% (cb ret-cb control set-cb-mgrs! record-text)
       (rename [super-on-char on-char])
-      (inherit get-text last-position set-max-undo-history)
+      (inherit get-text last-position set-max-undo-history get-flattened-text)
       (private-field
        [return-cb ret-cb])
       (private-field
        [block-callback 1]
        [callback
 	(lambda (type)
+          (as-exit (lambda () (record-text (get-flattened-text))))
 	  (when (zero? block-callback)
 	    (let ([e (make-object wx:control-event% type)])
 	      (as-exit (lambda ()
@@ -88,7 +89,9 @@
 		       this
 		       (lambda (wc cr)
 			 (set! without-callback wc)
-			 (set! callback-ready cr)))])
+			 (set! callback-ready cr))
+                       (lambda (t)
+                         (send c set-combo-text t)))])
       (sequence
 	(as-exit
 	 (lambda ()

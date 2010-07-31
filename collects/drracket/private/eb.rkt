@@ -56,7 +56,7 @@
     (with-handlers ([exn:fail? (lambda (x)
                                  (printf "~s\n" (exn-message x))
                                  #f)])
-      (let ([b (make-object bitmap% (collection-file-path "recycle.gif" "icons"))])
+      (let ([b (make-object bitmap% (collection-file-path "recycle.png" "icons"))])
         (cond
           [(send b ok?)
            (let ([gbdc (make-object bitmap-dc% b)]

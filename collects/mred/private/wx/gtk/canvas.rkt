@@ -353,6 +353,8 @@
           (queue-window-event this (lambda () (on-combo-select i))))))
     (define/public (on-combo-select i) (void))
 
+    (define/public (set-combo-text t) (void))
+
     (def/public-unimplemented set-background-to-gray)
 
     (define/public (do-scroll direction)

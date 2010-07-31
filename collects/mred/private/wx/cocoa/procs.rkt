@@ -94,7 +94,7 @@
 (define-unimplemented draw-tab)
 (define-unimplemented draw-tab-base)
 (define-unimplemented key-symbol-to-integer)
-(define (get-control-font-size) 14)
+(define (get-control-font-size) 13)
 (define-unimplemented cancel-quit)
 (define-unimplemented fill-private-color)
 (define (flush-display) (void))

@@ -64,7 +64,7 @@
         val
         style
         font)
-  (inherit get-cocoa set-focus)
+  (inherit get-cocoa set-focus init-font)
 
   (define horiz? (and (memq 'horizontal style) #t))
 
@@ -91,9 +91,11 @@
                         (begin
                           (tellv button setTitle: #:type _NSString "")
                           (set-ivar! button img (bitmap->image label)))
-                        (tellv button setTitleWithMnemonic: #:type _NSString (if (string? label)
-                                                                                 label
-                                                                                 "<bad>")))
+                        (begin
+                          (init-font button font)
+                          (tellv button setTitleWithMnemonic: #:type _NSString (if (string? label)
+                                                                                   label
+                                                                                   "<bad>"))))
                     (tellv button setButtonType: #:type _int NSRadioButton)))
                 (tellv cocoa sizeToFit)
                 (tellv cocoa setTarget: cocoa)

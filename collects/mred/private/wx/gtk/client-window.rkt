@@ -17,7 +17,7 @@
   (_fun _GtkWidget _GtkAllocation-pointer -> _gboolean)
   (lambda (gtk a)
     (let ([wx (gtk->wx gtk)])
-      (send wx remember-client-size 
+      (send wx save-client-size 
             (GtkAllocation-x a)
             (GtkAllocation-y a)
             (GtkAllocation-width a)
@@ -28,6 +28,8 @@
   (class %
     (init client-gtk)
 
+    (inherit remember-client-size)
+
     (connect-size-allocate client-gtk)
 
     (define client-w 0)
@@ -37,18 +39,23 @@
 
     (define/public (on-client-size w h) (void))
 
-    (define/public (remember-client-size x y w h)
+    (define/public (save-client-size x y w h)
       ;; Called in the Gtk event-loop thread
       (set! client-x x)
       (set! client-y y)
       (set! client-w w)
       (set! client-h h)
+      (remember-client-size w h)
       (queue-window-event this (lambda () 
 				 (internal-on-client-size w h)
 				 (on-client-size w h))))
 
     (define/public (internal-on-client-size w h)
       (void))
+
+    (define/override (tentative-client-size w h)
+      (set! client-w w)
+      (set! client-h h))
 
     (define/override (get-client-size xb yb)
       (set-box! xb client-w)

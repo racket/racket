@@ -15,7 +15,7 @@
 (define-mz scheme_restore_on_atomic_timeout (_fun _pointer -> _pointer)
   #:c-id scheme_set_on_atomic_timeout)
 
-(define freezer-box (make-parameter null))
+(define freezer-box (make-parameter #f))
 (define freeze-tag (make-continuation-prompt-tag))
 
 ;; Runs `thunk' atomically, but cooperates with 
@@ -70,6 +70,10 @@
   (let ([b (freezer-box)])
     (cond
      [(not b)
+      ;; Ideally, this would count as an error that we can fix. It seems that we
+      ;; don't always have enough control to use the right eventspace with an
+      ;; unfreeze point, though, so just bail out with the default.
+      #;
       (internal-error (format "constrained-reply not within an unfreeze point for ~s"
                               thunk))
       default]

@@ -58,12 +58,12 @@
         (let loop ([hit hit])
           (when hit
             (if (tell #:type _BOOL hit respondsToSelector: #:type _SEL (selector doMouseMoved:))
-                (tell hit doMouseMoved: event)
+                (unless (tell #:type _BOOL hit doMouseMoved: event)
+                  (super-tell #:type _void mouseMoved: event))
                 (loop (tell hit superview))))))]
-  [-a _void (doMouseMoved: [_id event]) 
+  [-a _BOOL (doMouseMoved: [_id event]) 
       ;; called by mouseMoved:
-      (unless (do-mouse-event wx event 'motion #f #f #f)
-        (super-tell #:type _void mouseMoved: event))]
+      (do-mouse-event wx event 'motion #f #f #f)]
   [-a _void (mouseEntered: [_id event]) 
       (unless (do-mouse-event wx event 'enter #f #f #f)
         (super-tell #:type _void mouseEntered: event))]
@@ -116,7 +116,7 @@
                     [y (->long y)]
                     [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
                     [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-        (if (send wx wants-all-events?)
+        (if (send wx definitely-wants-event? k)
             (begin
               (queue-window-event wx (lambda ()
                                        (send wx dispatch-on-char k #f)))
@@ -143,7 +143,7 @@
                     [alt-down (bit? modifiers NSAlternateKeyMask)]
                     [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
                     [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-        (if (send wx wants-all-events?)
+        (if (send wx definitely-wants-event? m)
             (begin
               (queue-window-event wx (lambda ()
                                        (send wx dispatch-on-event m #f)))
@@ -261,6 +261,7 @@
         (set-box! h (->long (NSSize-height s)))))
 
     (define/public (get-client-size w h)
+      ;; May be called in Cocoa event-handling mode
       (let ([s (NSRect-size (tell #:type _NSRect (get-cocoa-content) bounds))])
         (set-box! w (->long (NSSize-width s)))
         (set-box! h (->long (NSSize-height s)))))
@@ -281,7 +282,7 @@
     (define/public (on-set-focus) (void))
     (define/public (on-kill-focus) (void))
 
-    (define/public (wants-all-events?) 
+    (define/public (definitely-wants-event? e) 
       ;; Called in Cocoa event-handling mode
       #f)
 

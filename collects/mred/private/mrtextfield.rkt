@@ -124,14 +124,6 @@
                            (send (as-entry (lambda () (mred->wx this)))
                                  command
                                  (make-object wx:control-event% 'text-field)))])
-      (override
-	[on-subwindow-event (lambda (w e)
-			      (and (send e button-down?)
-				   (let-values ([(cw) (send (mred->wx this) get-canvas-width)])
-				     (and ((send e get-x) . >= . (- cw side-combo-width))
-					  (begin
-					    (on-popup e)
-					    #t)))))])
       (private-field
        [menu (new popup-menu% [font font])])
       (sequence

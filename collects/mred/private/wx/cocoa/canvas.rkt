@@ -11,6 +11,7 @@
          "window.rkt"
          "dc.rkt"
          "queue.rkt"
+         "item.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
          "../../syntax.rkt"
@@ -21,7 +22,9 @@
 
 ;; ----------------------------------------
 
-(import-class NSView NSGraphicsContext NSScroller)
+(import-class NSView NSGraphicsContext NSScroller NSComboBox)
+
+(import-protocol NSComboBoxDelegate)
 
 (define-objc-class MyView NSView 
   #:mixins (FocusResponder KeyMouseResponder) 
@@ -52,6 +55,38 @@
   (-a _void (onVScroll: [_id scroller])
       (when wx (send wx do-scroll 'vertical scroller))))
 
+(define-objc-class MyComboBox NSComboBox
+  #:mixins (FocusResponder KeyMouseResponder) 
+  #:protocols (NSComboBoxDelegate)
+  [wx]
+  (-a _void (drawRect: [_NSRect r])
+      (super-tell #:type _void drawRect: #:type _NSRect r)
+      (unless (send wx during-menu-click?)
+        (let ([bg (send wx get-canvas-background-for-clearing)])
+          (when bg
+            (let ([ctx (tell NSGraphicsContext currentContext)])
+              (tellv ctx saveGraphicsState)
+              (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
+                    [adj (lambda (v) (/ v 255.0))])
+                (CGContextSetRGBFillColor cg
+                                          (adj (color-red bg))
+                                          (adj (color-blue bg))
+                                          (adj (color-green bg))
+                                          1.0)
+                (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
+                                                   (make-NSSize 32000 32000))))
+              (tellv ctx restoreGraphicsState))))
+        (send wx queue-paint)
+        ;; ensure that `nextEventMatchingMask:' returns
+        (post-dummy-event)))
+  (-a _void (comboBoxWillPopUp: [_id notification])
+      (send wx starting-combo))
+  (-a _void (comboBoxWillDismiss: [_id notification])
+      (send wx ending-combo))
+  (-a _void (viewWillMoveToWindow: [_id w])
+      (when wx
+        (queue-window-event wx (lambda () (send wx fix-dc))))))
+
 (define-struct scroller (cocoa [range #:mutable] [page #:mutable]))
 (define scroll-width (tell #:type _CGFloat NSScroller scrollerWidth))
 
@@ -66,7 +101,6 @@
     (inherit get-cocoa
              get-eventspace
              make-graphics-context
-             get-client-size
              is-shown-to-root?
              move get-x get-y
              on-size
@@ -103,9 +137,12 @@
                                        (set! refresh-after-drawing? #f)
                                        (refresh)))))))
     (define/override (refresh)
+      ;; can be called from any thread, including the event-pump thread
       (tellv content-cocoa setNeedsDisplay: #:type _BOOL #t))
 
     (define/override (get-cocoa-content) content-cocoa)
+
+    (define is-combo? (memq 'combo style))
 
     (super-new 
      [parent parent]
@@ -118,13 +155,19 @@
 
     (define cocoa (get-cocoa))
 
-    (define content-cocoa 
-      (as-objc-allocation
-       (tell (tell MyView alloc) 
-             initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint 0 0)
-                                                        (make-NSSize w h)))))
+    (define content-cocoa
+      (let ([r (make-NSRect (make-NSPoint 0 0)
+                            (make-NSSize w h))])
+        (as-objc-allocation
+         (tell (tell (if is-combo? MyComboBox MyView) alloc) 
+               initWithFrame: #:type _NSRect r))))
     (tell #:type _void cocoa addSubview: content-cocoa)
     (set-ivar! content-cocoa wx this)
+
+    (when is-combo?
+      (tellv content-cocoa setEditable: #:type _BOOL #f)
+      (tellv content-cocoa setDelegate: content-cocoa)
+      (install-control-font content-cocoa #f))
 
     (define dc (make-object dc% (make-graphics-context) 0 0 10 10))
 
@@ -139,7 +182,16 @@
             [xb (box 0)]
             [yb (box 0)])
         (get-client-size xb yb)
-        (send dc reset-bounds (NSPoint-x p) (NSPoint-y p) (unbox xb) (unbox yb))))
+        (send dc reset-bounds 
+              (+ (NSPoint-x p) (if is-combo? 2 0))
+              (- (NSPoint-y p) (if is-combo? 22 0))
+              (max 1 (- (unbox xb) (if is-combo? 22 0)))
+              (unbox yb))))
+
+    (define/override (get-client-size xb yb)
+      (super get-client-size xb yb)
+      (when is-combo?
+        (set-box! yb (max 0 (- (unbox yb) 5)))))
 
     (define/override (maybe-register-as-child parent on?)
       (register-as-child parent on?))
@@ -330,7 +382,9 @@
             (scroller-page scroller)
             1)]))
 
-    (define/public (append-combo-item str) #f)
+    (define/public (append-combo-item str)
+      (tellv content-cocoa addItemWithObjectValue: #:type _NSString str)
+      #t)
     (define/public (on-combo-select i) (void))
 
     (define bg-col (make-object color% "white"))
@@ -383,9 +437,40 @@
                          (void)))
     (define/public (on-scroll e) (void))
     
-    (define/override (wants-all-events?) 
+    (define/override (definitely-wants-event? e) 
       ;; Called in Cocoa event-handling mode
-      #t)
+      (or (not is-combo?)
+          (e . is-a? . key-event%)
+          (not (send e button-down? 'left))
+          (not (on-menu-click? e))))
+
+    (define/private (on-menu-click? e)
+      ;; Called in Cocoa event-handling mode
+      (let ([xb (box 0)]
+            [yb (box 0)])
+        (get-client-size xb yb)
+        ((send e get-x) . > . (- (unbox xb) 22))))
+
+    (define/public (starting-combo)
+      (set! in-menu-click? #t)
+      (tellv content-cocoa setStringValue: #:type _NSString current-text))
+    
+    (define/public (ending-combo)
+      (set! in-menu-click? #f)
+      (let ([pos (tell #:type _NSInteger content-cocoa indexOfSelectedItem)])
+        (when (pos . > . -1)
+          (queue-window-event this (lambda () (on-combo-select pos)))))
+      (refresh))
+
+    (define current-text "")
+    (define/public (set-combo-text t)
+      (set! current-text t))
+
+    (define in-menu-click? #f)
+
+    (define/public (during-menu-click?)
+      ;; Called in Cocoa event-handling mode
+      in-menu-click?)
 
     (def/public-unimplemented set-background-to-gray)
     (def/public-unimplemented scroll)

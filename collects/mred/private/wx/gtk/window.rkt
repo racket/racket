@@ -210,6 +210,32 @@
 
 ;; ----------------------------------------
 
+(define (internal-error str)
+  (log-error
+   (apply string-append
+          (format "internal error: ~a" str)
+          (append
+           (for/list ([c (continuation-mark-set->context (current-continuation-marks))])
+             (let ([name (car c)]
+                   [loc (cdr c)])
+               (cond
+                [loc
+                 (string-append
+                  "\n"
+                  (cond 
+                   [(srcloc-line loc)
+                    (format "~a:~a:~a" 
+                            (srcloc-source loc)
+                            (srcloc-line loc)
+                            (srcloc-column loc))]
+                   [else
+                    (format "~a::~a" 
+                            (srcloc-source loc)
+                            (srcloc-position loc))])
+                  (if name (format " ~a" name) ""))]
+                [else (format "\n ~a" name)])))
+           '("\n")))))
+
 (define window%
   (class widget%
     (init-field parent
@@ -234,23 +260,46 @@
     (define/public (get-window-gtk) (send parent get-window-gtk))
 
     (define/public (move x y)
-      (set! save-x x)
-      (set! save-y y)
-      (when parent
-        (send parent set-child-position gtk x y)))
+      (set-size x y -1 -1))
+
     (define/public (set-size x y w h)
-      (unless (= x -11111) (set! save-x x))
-      (unless (= y -11111) (set! save-y y))
-      (unless (= w -1) (set! save-w w))
-      (unless (= h -1) (set! save-h h))
-      (if parent
-          (send parent set-child-size gtk save-x save-y save-w save-h)
-          (set-child-size gtk save-x save-y save-w save-h))
-      (set-top-position save-x save-y))
-    (define/public (set-top-position x y) (void))
+      (unless (and (or (= x -11111) (= save-x x))
+                   (or (= y -11111) (= save-y y))
+                   (or (= w -1) (= save-w w))
+                   (or (= h -1) (= save-h h)))
+        (unless (= x -11111) (set! save-x x))
+        (unless (= y -11111) (set! save-y y))
+        (unless (= w -1) (set! save-w w))
+        (unless (= h -1) (set! save-h h))
+        (tentative-client-size (+ save-w client-delta-w)
+                               (+ save-h client-delta-h))
+        (if parent
+            (send parent set-child-size gtk save-x save-y save-w save-h)
+            (set-top-size save-x save-y save-w save-h))))
+
     (define/public (set-child-size child-gtk x y w h)
       (gtk_widget_set_size_request child-gtk w h)
       (gtk_widget_size_allocate child-gtk (make-GtkAllocation x y w h)))
+
+    (define/public (set-top-size x y w h) (void))
+
+    (define/public (remember-size w h)
+      ;; called in event-pump thread
+      (unless (and (= save-w w)
+                   (= save-h h))
+        (set! save-w w)
+        (set! save-h h)
+        (queue-window-event this (lambda () (on-size w h)))))
+
+    (define client-delta-w 0)
+    (define client-delta-h 0)
+    (define/public (remember-client-size w h)
+      ;; Called in the Gtk event-loop thread
+      (set! client-delta-w (max 0 (- save-w w)))
+      (set! client-delta-h (max 0 (- save-h h)))
+      (queue-window-event this (lambda () (on-size 0 0))))
+    (define/public (tentative-client-size w h)
+      (void))
 
     (define/public (set-auto-size)
       (let ([req (make-GtkRequisition 0 0)])

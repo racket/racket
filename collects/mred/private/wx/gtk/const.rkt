@@ -120,3 +120,13 @@
 (define GDK_WINDOW_STATE_FULLSCREEN (1 . << . 4))
 (define GDK_WINDOW_STATE_ABOVE      (1 . << . 5))
 (define GDK_WINDOW_STATE_BELOW      (1 . << . 6))
+
+(define GDK_HINT_POS (1 . << . 0))
+(define GDK_HINT_MIN_SIZE (1 . << . 1))
+(define GDK_HINT_MAX_SIZE (1 . << . 2))
+(define GDK_HINT_BASE_SIZE (1 . << . 3))
+(define GDK_HINT_ASPECT (1 . << . 4))
+(define GDK_HINT_RESIZE_INC (1 . << . 5))
+(define GDK_HINT_WIN_GRAVITY (1 . << . 6))
+(define GDK_HINT_USER_POS (1 . << . 7))
+(define GDK_HINT_USER_SIZE (1 . << . 8))

@@ -9,11 +9,15 @@
 (unsafe!)
 (objc-unsafe!)
 
-(provide item%)
+(provide item%
+         install-control-font)
 
 (import-class NSFont)
 (define sys-font (tell NSFont
                        systemFontOfSize: #:type _CGFloat 13))
+
+(define (install-control-font cocoa font)
+  (tellv cocoa setFont: sys-font))
 
 (defclass item% window%
   (inherit get-cocoa)
@@ -38,4 +42,4 @@
   (super-new)
 
   (define/public (init-font cocoa font)
-    (tellv cocoa setFont: sys-font)))
+    (install-control-font cocoa font)))

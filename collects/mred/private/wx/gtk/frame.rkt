@@ -36,6 +36,22 @@
                                           -> (values x y)))
 (define-gtk gtk_window_set_gravity (_fun _GtkWindow _int -> _void))
 
+(define-gtk gtk_window_resize (_fun _GtkWidget _int _int -> _void))
+
+(define-cstruct _GdkGeometry ([min_width _int]
+                              [min_height _int]
+                              [max_width _int]
+                              [max_height _int]
+                              [base_width _int]
+                              [base_height _int]
+                              [width_inc _int]
+                              [height_inc _int]
+                              [min_aspect _double]
+                              [max_aspect _double]
+                              [win_gravity _int]))
+(define-gtk gtk_window_set_geometry_hints (_fun _GtkWindow _GtkWidget _GdkGeometry-pointer _int -> _void))
+
+
 (define (handle-delete gtk)
   (let ([wx (gtk->wx gtk)])
     (queue-window-event wx (lambda () 
@@ -45,14 +61,14 @@
   (function-ptr handle-delete
                 (_fun #:atomic? #t _GtkWidget -> _gboolean)))
 
-(define (handle-configure gtk)
-  (let ([wx (gtk->wx gtk)])
-    (queue-window-event wx (lambda () 
-                             (send wx on-size 0 0)))
+(define-signal-handler connect-configure "configure-event"
+  (_fun _GtkWidget _GdkEventConfigure-pointer -> _gboolean)
+  (lambda (gtk a)
+    (let ([wx (gtk->wx gtk)])
+      (send wx remember-size 
+            (GdkEventConfigure-width a)
+            (GdkEventConfigure-height a)))
     #f))
-(define handle_configure
-  (function-ptr handle-configure
-                (_fun #:atomic? #t _GtkWidget -> _gboolean)))
 
 (define-cstruct _GdkEventWindowState ([type _int]
                                       [window _GtkWindow]
@@ -80,7 +96,7 @@
    
     (inherit get-gtk set-size on-size
              pre-on-char pre-on-event
-             get-client-delta)
+             get-client-delta get-size)
 
     (define gtk (gtk_window_new GTK_WINDOW_TOPLEVEL))
     (when (memq 'no-caption style)
@@ -105,7 +121,7 @@
     (set-size x y w h)
 
     (g_signal_connect gtk "delete_event" handle_delete)
-    ;; (g_signal_connect gtk "configure_event" handle_configure)
+    (connect-configure gtk)
 
     (when label
       (gtk_window_set_title gtk label))
@@ -121,8 +137,21 @@
         (gtk_box_pack_start vbox-gtk mb-gtk #t #t 0)
         (gtk_widget_show mb-gtk)))
 
+    (define saved-enforcements (vector 0 0 -1 -1))
+
     (define/public (enforce-size min-x min-y max-x max-y inc-x inc-y)
-      (void))
+      (define (to-max v) (if (= v -1) #x3FFFFFFF v))
+      (set! saved-enforcements (vector min-x min-y max-x max-y))
+      (gtk_window_set_geometry_hints gtk gtk 
+                                     (make-GdkGeometry min-x min-y
+                                                       (to-max max-x) (to-max max-y)
+                                                       0 0
+                                                       inc-x inc-y
+                                                       0.0 0.0
+                                                       0)
+                                     (bitwise-ior GDK_HINT_MIN_SIZE
+                                                  GDK_HINT_MAX_SIZE
+                                                  GDK_HINT_RESIZE_INC)))
 
     (define/override (get-top-win) this)
 
@@ -149,15 +178,22 @@
                                 (quotient (- sh fh) 2)
                                 -11111)))))
 
-    (define/override (set-top-position x y)
+    (define/public (set-top-position x y)
+      (when (and (vector? saved-enforcements)
+                 (or (x . < . (vector-ref saved-enforcements 0))
+                     (let ([max-x (vector-ref saved-enforcements 1)])
+                       (and (max-x . > . -1) (x . > . max-x)))
+                     (y . < . (vector-ref saved-enforcements 2))
+                     (let ([max-y (vector-ref saved-enforcements 3)])
+                       (and (max-y . > . -1) (y . > . max-y)))))
+        (enforce-size 0 0 -1 -1 1 1))
       (gtk_widget_set_uposition gtk
                                 (if (= x -11111) -2 x)
                                 (if (= y -11111) -2 y)))
 
-    (define/override (get-size wb hb)
-      (let-values ([(w h) (gtk_window_get_size gtk)])
-        (set-box! wb w)
-        (set-box! hb h)))
+    (define/override (set-top-size x y w h)
+      (set-top-position x y)
+      (gtk_window_resize gtk w h))
 
     (define/override (direct-show on?)
       (super direct-show on?)

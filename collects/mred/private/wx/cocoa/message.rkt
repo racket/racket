@@ -34,7 +34,7 @@
   (init parent label
         x y
         style font)
-  (inherit get-cocoa)
+  (inherit get-cocoa init-font)
   
   (super-new [parent parent]
              [cocoa (let* ([label (cond
@@ -64,6 +64,7 @@
                                  (tell (tell NSImageView alloc) init)))])
                       (cond
                        [(string? label)
+                        (init-font cocoa font)
                         (tellv cocoa setSelectable: #:type _BOOL #f)
                         (tellv cocoa setEditable: #:type _BOOL #f)
                         (tellv cocoa setBordered: #:type _BOOL #f)
