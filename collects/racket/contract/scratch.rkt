@@ -1,6 +1,33 @@
 #lang racket/base
 (require racket/contract)
 
+#;
+(->i ([x number?]
+      [y (x) (<=/c x)])
+     any)
+
+#;
+(define (coerce-proj x)
+  ...)
+
+#;
+(build-->i 
+ (list number?)
+ (list (λ (x pos neg blame info) (coerce-proj (<=/c x) pos neg blame info)))
+ (λ (x/c y/proc)  ;; <= arguments are in strange order: first the non-dependent things, then the dependent things
+   (λ (pos neg blame info)
+     (let ([here ...])
+       (let ([x/proj (x/c neg pos blame info)]
+             [x/proj/i (x/c here pos blame info)])
+         (λ (f)
+           (λ (x y)
+             (let ([x (x/proj x)]
+                   [xi (x/proj/i x)])
+               (let ([y (y/proc xi neg pos blame info)]
+                     [y (y/proc xi here pos blame info)])
+                 (f x y))))))))))
+
+(syntax->datum (expand #'(-> number? (<=/c 10) any)))
 
 #|
 test cases:
