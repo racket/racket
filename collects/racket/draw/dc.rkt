@@ -814,22 +814,30 @@
                     s 
                     (substring s offset))]
              [blank? (equal? s "")]
-             [s (if (and (not draw?) blank?) " " s)])
+             [s (if (and (not draw?) blank?) " " s)]
+             [rotate? (and draw? (not (zero? angle)))])
         (unless context
           (set! context (pango_cairo_create_context cr)))
         (set-font-antialias context (send font get-smoothing))
         (when draw?
           (when (eq? text-mode 'solid)
-            (let-values ([(w h d a) (do-text cr #f s 0 0 font combine? 0 0.0)])
-              (install-color cr text-bg alpha)
-              (cairo_new_path cr)
-              (cairo_rectangle cr x y w h)
-              (cairo_fill cr)))
+            (unless rotate?
+              (let-values ([(w h d a) (do-text cr #f s 0 0 font combine? 0 0.0)])
+                (install-color cr text-bg alpha)
+                (cairo_new_path cr)
+                (cairo_rectangle cr x y w h)
+                (cairo_fill cr))))
           (cairo_new_path cr) ; important for underline mode
           (install-color cr text-fg alpha))
+        (when rotate?
+          (cairo_save cr)
+          (cairo_translate cr x y)
+          (cairo_rotate cr (- angle)))
         (let ([desc (get-pango font)]
               [attrs (send font get-pango-attrs)]
-              [integral round])
+              [integral round]
+              [x (if rotate? 0.0 x)]
+              [y (if rotate? 0.0 y)])
           (if combine?
               (let ([layout (pango_layout_new context)])
                 (pango_layout_set_font_description layout desc)
@@ -851,33 +859,36 @@
                                                (pango_layout_get_baseline layout))
                                             (exact->inexact PANGO_SCALE)))
                                0.0)))
-                 (g_object_unref layout)))
+                 (g_object_unref layout)
+                 (when rotate? (cairo_restore cr))))
               (let ([logical (make-PangoRectangle 0 0 0 0)])
-                (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
-                    ([ch (in-string s)])
-                  (let* ([key (vector desc attrs ch)]
-                         [layout (hash-ref layouts
-                                           key
-                                           (lambda ()
-                                             (let ([layout (pango_layout_new context)])
-                                               (pango_layout_set_font_description layout desc)
-                                               (when attrs (pango_layout_set_attributes layout attrs))
-                                               (pango_layout_set_text layout (string ch))
-                                               (hash-set! layouts key layout)
-                                               layout)))])
-                    (pango_cairo_update_layout cr layout)
-                    ;; (cairo_show_glyphs cr (make-cairo_glyph_t 65 x y) 1)
-                    (when draw?
-                      (cairo_move_to cr (+ x w) y)
-                      (pango_cairo_show_layout cr layout))
-                    (pango_layout_get_extents layout #f logical)
-                    (let ([lw (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))]
-                          [lh (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))]
-                          [ld (integral (/ (- (PangoRectangle-height logical) 
-                                              (pango_layout_get_baseline layout))
-                                           (exact->inexact PANGO_SCALE)))]
-                          [la 0.0])
-                      (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la))))))))))
+                (begin0
+                 (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
+                     ([ch (in-string s)])
+                   (let* ([key (vector desc attrs ch)]
+                          [layout (hash-ref layouts
+                                            key
+                                            (lambda ()
+                                              (let ([layout (pango_layout_new context)])
+                                                (pango_layout_set_font_description layout desc)
+                                                (when attrs (pango_layout_set_attributes layout attrs))
+                                                (pango_layout_set_text layout (string ch))
+                                                (hash-set! layouts key layout)
+                                                layout)))])
+                     (pango_cairo_update_layout cr layout)
+                     ;; (cairo_show_glyphs cr (make-cairo_glyph_t 65 x y) 1)
+                     (when draw?
+                       (cairo_move_to cr (+ x w) y)
+                       (pango_cairo_show_layout cr layout))
+                     (pango_layout_get_extents layout #f logical)
+                     (let ([lw (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))]
+                           [lh (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))]
+                           [ld (integral (/ (- (PangoRectangle-height logical) 
+                                               (pango_layout_get_baseline layout))
+                                            (exact->inexact PANGO_SCALE)))]
+                           [la 0.0])
+                       (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la)))))
+                 (when rotate? (cairo_restore cr))))))))
     
     (def/public (get-char-width)
       10.0)
