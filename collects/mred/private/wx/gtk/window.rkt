@@ -273,15 +273,14 @@
         (unless (= h -1) (set! save-h h))
         (tentative-client-size (+ save-w client-delta-w)
                                (+ save-h client-delta-h))
-        (if parent
-            (send parent set-child-size gtk save-x save-y save-w save-h)
-            (set-top-size save-x save-y save-w save-h))))
+        (really-set-size gtk save-x save-y save-w save-h)))
+
+    (define/public (really-set-size gtk x y w h)
+      (send parent set-child-size gtk x y w h))
 
     (define/public (set-child-size child-gtk x y w h)
       (gtk_widget_set_size_request child-gtk w h)
       (gtk_widget_size_allocate child-gtk (make-GtkAllocation x y w h)))
-
-    (define/public (set-top-size x y w h) (void))
 
     (define/public (remember-size w h)
       ;; called in event-pump thread

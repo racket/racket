@@ -191,9 +191,9 @@
                                 (if (= x -11111) -2 x)
                                 (if (= y -11111) -2 y)))
 
-    (define/override (set-top-size x y w h)
+    (define/override (really-set-size gtk x y w h)
       (set-top-position x y)
-      (gtk_window_resize gtk w h))
+      (gtk_window_resize gtk (max 1 w) (max 1 h)))
 
     (define/override (direct-show on?)
       (super direct-show on?)
