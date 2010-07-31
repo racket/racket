@@ -132,8 +132,9 @@ and then operates on it to generate the expanded form
     
     ;; no dups in the rest var
     (when (istx-rst istx)
+      (when (rst-vars (istx-rst istx))
+        (not-range-bound (rst-vars (istx-rst istx))))
       (no-var-dups (rst-var (istx-rst istx))))
-    
     
     ;; dependent arg variables are all bound, but not to a range variable
     (for ([an-arg (in-list (istx-args istx))])
@@ -154,14 +155,12 @@ and then operates on it to generate the expanded form
         [sp '()])
 
     (define (link from to)
-      (printf "linking ~s => ~s\n" from to)
       (set! sp (cons from sp))
       (free-identifier-mapping-put!
        neighbors from
        (cons to (free-identifier-mapping-get neighbors from (λ () '())))))
     
     (define (no-links from)
-      (printf "no links ~s\n" from)
       (set! sp (cons from sp))
       (free-identifier-mapping-put! neighbors from '()))
     
@@ -181,11 +180,19 @@ and then operates on it to generate the expanded form
              (link (res-var a-res) nvar))]
           [else
            (no-links (res-var a-res))])))
+    
+    (let ([a-rst (istx-rst istx)])
+      (when a-rst
+        (cond
+          [(rst-vars a-rst)
+           (for ([nvar (in-list (rst-vars a-rst))])
+             (link (rst-var a-rst) nvar))]
+          [else
+           (no-links (rst-var a-rst))])))
            
     (for ([var (in-list sp)])
       (let loop ([var var]
                  [visited '()])
-        (printf "var ~s\n" var)
         (cond
           [(free-identifier-mapping-get safe var (λ () #f))
            (void)]

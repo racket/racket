@@ -65,6 +65,15 @@ test cases:
      any)
 ; => unknown dependent variable
 
+(->i ([x (y) number?])
+     [y number?])
+; => domain cannot depend on a range variable
+
+(->i ()
+     #:rest [x (y) number?]
+     [y number?])
+; => domain cannot depend on a range variable
+
 (->i ([x (x) number?])
      any)
 ; => cyclic dependencies not allowed
@@ -81,6 +90,11 @@ test cases:
 
 ;; => cyclic depenencies
 
+(->i ()
+     #:rest [x (x) number?]
+     any)
+; => error cyclic dependencies
+
 (->i ([x (y) number?]
       [y number?])
      any)
@@ -91,8 +105,10 @@ test cases:
              [y number?]))
 ; => no syntax error
 
-(->i ([x (y) number?])
-     [y number?])
-; => domain cannot depend on a range variable
+(->i ()
+     #:rest [x number?]
+     [y (x) number?])
+;; => no syntax error
+
 
 |#
