@@ -27,7 +27,24 @@
                      [y (y/proc xi here pos blame info)])
                  (f x y))))))))))
 
+#;
+(build-->i 
+ (list number?)
+ (list (λ (x) (coerce-proj (<=/c x))))
+ (λ (proj-x proj-x/i y/proc here pos neg blame info) 
+   ;; λ arguments are in strange order: first the non-dependent things,
+   ;;   then the dependent things
+   (λ (f)
+     (λ (x y)
+       (let ([x (x/proj x)]
+             [xi (x/proj/i x)])
+         (let ([y (y/proc xi neg pos blame info)]
+               [yi (y/proc xi here pos blame info)])
+           (f x y)))))))
+
 (syntax->datum (expand #'(-> number? (<=/c 10) any)))
+
+
 
 #|
 test cases:
