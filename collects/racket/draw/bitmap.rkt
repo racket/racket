@@ -104,7 +104,7 @@
              (bytes-fill! (cairo_image_surface_get_data s) 255)])
            s)
          #f)]
-       [([path-string? filename]
+       [([(make-alts path-string? input-port?) filename]
          [kind-symbol? [kind 'unknown]]
          [(make-or-false color%) [bg-color #f]])
         (let-values ([(s b&w?) (do-load-bitmap filename kind bg-color)]

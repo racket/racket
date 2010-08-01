@@ -16,7 +16,7 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
                         [height (integer-in 1 10000)]
                         [monochrome? any/c #f]
                         [alpha? any/c #f])
-                       ([filename path-string?]
+                       ([in (or/c path-string? input-port?)]
                         [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
                                         'gif 'gif/mask 'gif/alpha 
                                         'jpeg 'jpeg/alpha
@@ -35,9 +35,9 @@ When @scheme[width] and @scheme[height] are provided: Creates a new
  bitmap has an alpha channel; otherwise, the bitmap is color without
  an alpha channel. The initial content of the bitmap is undefined.
 
-When @scheme[filename] is provided: Creates a bitmap from a file,
- where @scheme[kind] specifies the kind of image file. See
- @method[bitmap% load-file] for details.
+When @scheme[in] is provided: Creates a bitmap from a file format,
+ where @scheme[kind] specifies the format. See @method[bitmap%
+ load-file] for details.
 
 
 When a @scheme[bits] byte string is provided: Creates a monochrome
@@ -139,7 +139,7 @@ Returns @scheme[#f] if the bitmap is monochrome, @scheme[#t] otherwise.
 
 }
 
-@defmethod[(load-file [name path-string?]
+@defmethod[(load-file [in (or/c path-string? input-port?)]
                       [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
                                       'gif 'gif/mask 'gif/alpha 
                                       'jpeg 'jpeg/alpha
@@ -150,15 +150,16 @@ Returns @scheme[#f] if the bitmap is monochrome, @scheme[#t] otherwise.
                       [bg-color (or/c (is-a?/c color%) false/c) #f])
            boolean?]{
 
-Loads a bitmap from a file. If the bitmap is in use by a
- @scheme[bitmap-dc%] object or a control, the bitmap file is not
+Loads a bitmap from a file format that read from @racket[in].
+ If the bitmap is in use by a
+ @scheme[bitmap-dc%] object or a control, the image data is not
  loaded. The bitmap changes its size and depth to match that of 
  the loaded image.
 
 The @scheme[kind] argument specifies the file's format:
 
 @itemize[
-@item{@scheme['unknown] --- examine the file to determine its format; creates either a monochrome or
+@item{@scheme['unknown] --- examine the file to determine its format; creates either a monochrome
                             or color bitmap without an alpha channel}
 @item{@scheme['unknown/mask] --- like @scheme['unknown], but see @method[bitmap% get-loaded-mask]}
 @item{@scheme['unknown/alpha] --- like @scheme['unknown], but if the bitmap is color, it has an
