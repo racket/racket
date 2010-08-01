@@ -333,4 +333,5 @@
             (lambda (k v) k)))
 
 (define (queue-quit-event)
+  ;; called in event-pump thread
   (queue-event main-eventspace (application-quit-handler) 'med))

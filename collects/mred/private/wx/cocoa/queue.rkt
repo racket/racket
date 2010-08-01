@@ -200,6 +200,8 @@
                                (custodian-shutdown-all c)))))))
       (set! was-menu-bar #f)))
 
+(define o (current-error-port))
+
 ;; Call this function only in atomic mode:
 (define (check-one-event wait? dequeue?)
   (pre-event-sync wait?)

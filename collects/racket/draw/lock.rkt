@@ -4,7 +4,10 @@
 
 (provide (protect-out as-entry
                       as-exit
-                      entry-point))
+                      entry-point
+
+                      inside-lock?
+                      any-lock?))
 
 ;; We need atomic mode for a couple of reasons:
 ;;
@@ -123,3 +126,8 @@
        (syntax (case-lambda 
                 [vars (as-entry (lambda () body1 body ...))]
                 ...))])))
+
+;; For debugging: 
+(define (inside-lock?) (eq? monitor-owner (current-thread)))
+(define (any-lock?) (and monitor-owner #t))
+

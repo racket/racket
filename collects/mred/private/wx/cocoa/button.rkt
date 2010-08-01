@@ -14,11 +14,14 @@
 (objc-unsafe!)
 
 (provide button%
+         core-button%
          MyButton)
 
 ;; ----------------------------------------
 
 (import-class NSButton NSView NSImageView)
+
+(define MIN-BUTTON-WIDTH 72)
 
 (define-objc-class MyButton NSButton
   #:mixins (FocusResponder)
@@ -26,7 +29,7 @@
   (-a _void (clicked: [_id sender])
       (queue-window-event wx (lambda () (send wx clicked)))))
 
-(defclass button% item%
+(defclass core-button% item%
   (init parent cb label x y w h style font
         [button-type #f])
   (init-field [event-type 'button])
@@ -55,6 +58,14 @@
         (tellv cocoa setTitle: #:type _NSString "<bad>")])
       (init-font cocoa font)
       (tellv cocoa sizeToFit)
+      (when (and (eq? event-type 'button)
+                 (string? label))
+        (let ([frame (tell #:type _NSRect cocoa frame)])
+          (when ((NSSize-width (NSRect-size frame)) . < . MIN-BUTTON-WIDTH)
+            (tellv cocoa setFrame: #:type _NSRect 
+                   (make-NSRect (NSRect-origin frame)
+                                (make-NSSize MIN-BUTTON-WIDTH
+                                             (NSSize-height (NSRect-size frame))))))))
       cocoa))
 
   (define cocoa (if (and button-type
@@ -119,3 +130,7 @@
                         [time-stamp (current-milliseconds)])))
   
   (def/public-unimplemented set-border))
+
+(define button%
+  (class core-button% (super-new)))
+

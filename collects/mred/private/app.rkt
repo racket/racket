@@ -42,7 +42,8 @@
 			 (dynamic-wind
 			     void
 			     (lambda ()
-			       (send af on-exit)
+                               (as-exit (lambda ()
+                                          (send af on-exit)))
 			       (unless (null? (wx:get-top-level-windows))
 				 (wx:cancel-quit)))
 			     (lambda () 

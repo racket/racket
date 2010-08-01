@@ -13,7 +13,7 @@
 
 ;; ----------------------------------------
 
-(defclass check-box% button%
+(defclass check-box% core-button%
   (inherit get-cocoa)
   (super-new [button-type NSSwitchButton]
              [event-type 'check-box])
