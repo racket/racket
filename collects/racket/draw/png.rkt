@@ -131,7 +131,7 @@
 (define-png png_write_end (_fun _png_structp _png_infop -> _void))
 
 (define-png png_get_valid (_fun _png_structp _png_infop _uint32 -> _uint32))
-(define-png png_get_bKGD (_fun _png_structp _png_infop (p : (_ptr o _png_color_16-pointer)) -> (r : _bool) -> (and r p)))
+(define-png png_get_bKGD (_fun _png_structp _png_infop (p : (_ptr o _png_color_16-pointer/null)) -> (r : _bool) -> (and r p)))
 (define-png png_set_background (_fun _png_structp _png_color_16-pointer _int _int _double* -> _bool))
 (define-png png_get_gAMA (_fun _png_structp _png_infop (g : (_ptr o _double)) 
                                -> (ok? : _bool)
