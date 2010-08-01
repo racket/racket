@@ -47,16 +47,19 @@
         (cairo_surface_destroy surface))
       (set! clip-width width)
       (set! clip-height height)
-      (cairo_rectangle cr 0 0 width height)
-      (cairo_clip cr))
+      (reset-clip cr))
 
     (define clip-width width)
     (define clip-height height)
 
     (define/override (reset-clip cr)
       (super reset-clip cr)
-      (cairo_rectangle cr 0 0 clip-width clip-height)
-      (cairo_clip cr))
+      (let ([m (make-cairo_matrix_t 0 0 0 0 0 0)])
+        (cairo_get_matrix cr m)
+        (cairo_set_matrix cr (make-cairo_matrix_t 1 0 0 1 0 0))
+        (cairo_rectangle cr 0 0 clip-width clip-height)
+        (cairo_clip cr)
+        (cairo_set_matrix cr m)))
 
     (define cr #f)
     (set-bounds dx dy width height)

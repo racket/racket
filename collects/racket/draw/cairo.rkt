@@ -94,11 +94,14 @@
 (define-cairo cairo_scale (_fun _cairo_t _double* _double* -> _void))
 (define-cairo cairo_rotate (_fun _cairo_t _double* -> _void))
 (define-cairo cairo_identity_matrix (_fun _cairo_t -> _void))
+(define-cairo cairo_get_matrix (_fun _cairo_t _cairo_matrix_t-pointer -> _void))
 (define-cairo cairo_set_matrix (_fun _cairo_t _cairo_matrix_t-pointer -> _void))
 
 (define-cairo cairo_matrix_init_translate (_fun _cairo_matrix_t-pointer _double* _double* -> _void))
 (define-cairo cairo_matrix_init (_fun _cairo_matrix_t-pointer _double* _double* _double* _double* _double* _double* -> _void))
-
+(define-cairo cairo_matrix_translate (_fun _cairo_matrix_t-pointer _double* _double* -> _void))
+(define-cairo cairo_matrix_scale (_fun _cairo_matrix_t-pointer _double* _double* -> _void))
+(define-cairo cairo_matrix_rotate (_fun _cairo_matrix_t-pointer _double* -> _void))
 
 ;; Stroke & Fill
 (define-cairo cairo_set_source_rgb (_fun _cairo_t _double* _double* _double* -> _void))

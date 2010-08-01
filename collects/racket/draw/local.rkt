@@ -13,6 +13,7 @@
 
   ;; dc%
   in-cairo-context
+  get-clipping-matrix
 
   ;; region%
   install-region

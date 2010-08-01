@@ -38,12 +38,6 @@
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
 
-(define (matrix-vector? m)
-  (and (vector? m)
-       (= 6 (vector-length m))
-       (for/and ([e (in-vector m)])
-         (real? e))))
-
 ;; dc-backend : interface
 ;;
 ;; This is the interface that the backend specific code must implement
@@ -266,7 +260,7 @@
       (cairo_set_matrix cr matrix)
       (cairo_translate cr origin-x origin-y)
       (cairo_scale cr scale-x scale-y)
-      (cairo_rotate cr rotation))
+      (cairo_rotate cr (- rotation)))
     
     (define/private (reset-matrix)
       (with-cr
@@ -408,6 +402,23 @@
        (when clipping-region
          (send clipping-region lock-region 1)
          (send clipping-region install-region cr))))
+
+    (define/public (get-clipping-matrix)
+      (let* ([cm (make-cairo_matrix_t (cairo_matrix_t-xx matrix)
+                                      (cairo_matrix_t-yx matrix)
+                                      (cairo_matrix_t-xy matrix)
+                                      (cairo_matrix_t-yy matrix)
+                                      (cairo_matrix_t-x0 matrix)
+                                      (cairo_matrix_t-y0 matrix))])
+        (cairo_matrix_translate cm origin-x origin-y)
+        (cairo_matrix_scale cm scale-x scale-y)
+        (cairo_matrix_rotate cm (- rotation))
+        (vector (cairo_matrix_t-xx cm)
+                (cairo_matrix_t-yx cm)
+                (cairo_matrix_t-xy cm)
+                (cairo_matrix_t-yy cm)
+                (cairo_matrix_t-x0 cm)
+                (cairo_matrix_t-y0 cm))))
 
     (def/public (set-clipping-rect [real? x] 
                                    [real? y] 

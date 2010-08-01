@@ -21,10 +21,11 @@
 
     (init [the-dc #f])
     (define dc the-dc)
-    (unless (dc . is-a? . dc<%>)
-      (raise-type-error (init-name 'region%)
-                        "dc<%> instance"
-                        dc))
+    (when dc
+      (unless (dc . is-a? . dc<%>)
+        (raise-type-error (init-name 'region%)
+                          "dc<%> instance or #f"
+                          dc)))
 
     ;; Intersected paths, each as (cons <path> <fill-style>),
     ;;  where <fill-style> is 'odd-even, 'winding, or 'any.
@@ -46,8 +47,7 @@
                this))
       (set! empty-known? #f))
 
-    (define (ox oy) (send dc get-origin))
-    (define (sx sy) (send dc get-scale))
+    (define matrix (and dc (send dc get-clipping-matrix)))
     
     (def/public (get-dc) dc)
     (define/public (internal-get-dc) dc)
@@ -73,7 +73,14 @@
     (define/public (install-region cr [init (void)] [install (lambda (cr v) (cairo_clip cr))])
       (let ([default-fill-rule (if (ormap (lambda (pr) (eq? (cdr pr) 'odd-even)) paths)
                                    CAIRO_FILL_RULE_EVEN_ODD
-                                   CAIRO_FILL_RULE_WINDING)])
+                                   CAIRO_FILL_RULE_WINDING)]
+            [old-matrix (and matrix
+                             (let ([m (make-cairo_matrix_t 0 0 0 0 0 0)])
+                               (cairo_get_matrix cr m)
+                               m))])
+        (when old-matrix 
+          ;; each path is already transformed
+          (cairo_set_matrix cr (make-cairo_matrix_t 1 0 0 1 0 0)))
         (for/fold ([v init]) ([pr (in-list paths)])
           (cairo_new_path cr)
           (send (car pr) do-path cr values values)
@@ -82,7 +89,8 @@
                                  [(odd-even) CAIRO_FILL_RULE_EVEN_ODD]
                                  [(winding) CAIRO_FILL_RULE_WINDING]
                                  [else default-fill-rule]))
-          (install cr v))))
+          (install cr v))
+        (when old-matrix (cairo_set_matrix cr old-matrix))))
 
     (def/public (is-empty?)
       (really-is-empty?))
@@ -131,6 +139,7 @@
         (send p move-to (+ x (/ width 2)) (+ y (/ height 2)))
         (send p arc x y width height start-radians end-radians)
         (send p close)
+        (when matrix (send p transform matrix))
         (set! paths (list (cons p 'any)))))
 
     (def/public (set-ellipse [real? x]
@@ -140,6 +149,7 @@
       (modifying 'set-ellipse)
       (let ([p (new dc-path%)])
         (send p ellipse x y width height)
+        (when matrix (send p transform matrix))
         (set! paths (list (cons p 'any)))))
 
     (def/public (set-path [dc-path% path]
@@ -149,6 +159,7 @@
       (modifying 'set-path)
       (let ([p (new dc-path%)])
         (send p append path)
+        (when matrix (send p transform matrix))
         (set! paths (list (cons p fill-style)))))
 
     (def/public (set-polygon [(make-alts (make-list point%) list-of-pair-of-real?) pts]
@@ -168,6 +179,7 @@
                   (send p line-to (car i) (cdr i))
                   (send p line-to (point-x i) (point-y i))))
             (send p close)
+            (when matrix (send p transform matrix))
             (set! paths (list (cons p fill-style))))))
 
     (def/public (set-rectangle [real? x]
@@ -177,6 +189,7 @@
       (modifying 'set-rectangle)
       (let ([p (new dc-path%)])
         (send p rectangle x y width height)
+        (when matrix (send p transform matrix))
         (set! paths (list (cons p 'any)))))
 
     (def/public (set-rounded-rectangle [real? x]
@@ -187,6 +200,7 @@
       (modifying 'set-rounded-rectangle)
       (let ([p (new dc-path%)])
         (send p rounded-rectangle x y width height radius)
+        (when matrix (send p transform matrix))
         (set! paths (list (cons p 'any)))))
 
     (define/private (check-compatible r who)

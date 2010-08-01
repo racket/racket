@@ -11,7 +11,8 @@
                   [reverse s:reverse]))
 
 (provide dc-path%
-         do-path)
+         do-path
+         matrix-vector?)
 
 (define-local-member-name
   get-closed-points
@@ -20,6 +21,12 @@
 
 (define 2pi (* 2.0 pi))
 (define pi/2 (/ pi 2.0))
+
+(define (matrix-vector? m)
+  (and (vector? m)
+       (= 6 (vector-length m))
+       (for/and ([e (in-vector m)])
+         (real? e))))
 
 (define dc-path%
   (class object%
@@ -64,7 +71,7 @@
                                   (align-x (vector-ref p 2)) (align-y (vector-ref p 3))
                                   (align-x (car p2)) (align-y (cdr p2)))
                   (loop (cddr l) #f))))])))
-    
+
     (define/public (do-path cr align-x align-y)
       (flatten-closed!)
       (flatten-open!)
@@ -329,6 +336,29 @@
       (let* ([cx (make-rectangular x y)]
              [cx (make-polar (magnitude cx) (+ (angle cx) (- th)))])
         (values (real-part cx) (imag-part cx))))
+
+    (def/public (transform [matrix-vector? m])
+      (flatten-open!)
+      (flatten-closed!)
+      (set! open-points (transform-points open-points m))
+      (set! closed-points
+            (for/list ([pts (in-list closed-points)])
+              (transform-points pts m))))
+    (define/private (transform-points pts m)
+      (for/list ([p (in-list pts)])
+        (if (pair? p)
+            (let-values ([(x y) (transform-point m (car p) (cdr p))])
+              (cons x y))
+            (let-values ([(x2 y2) (transform-point m (vector-ref p 0) (vector-ref p 1))]
+                         [(x3 y3) (transform-point m (vector-ref p 2) (vector-ref p 3))])
+              (vector x2 y2 x3 y3)))))
+    (define/private (transform-point m x y)
+      (values (+ (* x (vector-ref m 0))
+                 (* y (vector-ref m 2))
+                 (vector-ref m 4))
+              (+ (* x (vector-ref m 1))
+                 (* y (vector-ref m 3))
+                 (vector-ref m 5))))
 
     (def/public (rectangle [real? x] [real? y] [real? w] [real? h])
       (when (open?) (close))
