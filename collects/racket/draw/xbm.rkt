@@ -2,7 +2,7 @@
 
 (provide read-xbm)
 
-(define rx:define #rx#"#define[ \t]+[A-Za-z0-9_]+[ \t]+([0-9]+)")
+(define rx:define #rx#"#define[ \t]+[-A-Za-z0-9_]+[ \t]+([0-9]+)")
 (define rx:byte #rx#"0x([0-9a-fA-F][0-9a-fA-F])")
 
 (define (read-xbm in)

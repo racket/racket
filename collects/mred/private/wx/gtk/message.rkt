@@ -56,8 +56,10 @@
                             [(caution) (gtk_image_new_from_stock "gtk-dialog-warning" icon-size)]
                             [(stop) (gtk_image_new_from_stock "gtk-dialog-error" icon-size)]
                             [else (gtk_image_new_from_stock "gtk-dialog-question" icon-size)])
-                          (gtk_image_new_from_pixbuf 
-                           (bitmap->pixbuf label))))]
+                          (if (send label ok?)
+                              (gtk_image_new_from_pixbuf 
+                               (bitmap->pixbuf label))
+                              (gtk_label_new_with_mnemonic "<bad-image>"))))]
              [no-show? (memq 'deleted style)])
 
   (set-auto-size)

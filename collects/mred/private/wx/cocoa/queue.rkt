@@ -33,9 +33,9 @@
 
 (define-objc-class MyApplicationDelegate NSObject #:protocols (NSApplicationDelegate)
   []
-  [-a _BOOL (applicationShouldTerminate: [_id app])
+  [-a _int (applicationShouldTerminate: [_id app])
       (queue-quit-event)
-      #f]
+      0]
   [-a _BOOL (openPreferences: [_id app])
       (log-error "prefs")
       #t])

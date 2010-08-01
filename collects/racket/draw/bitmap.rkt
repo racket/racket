@@ -251,6 +251,7 @@
             ;; Using libpng directly:
             (let-values ([(r w h b&w? alpha?) (create-png-reader 
                                                in
+                                               (memq kind '(png/mask png/alpha))
                                                (and bg
                                                     (list (send bg red)
                                                           (send bg green)
@@ -258,7 +259,7 @@
               (let ([rows (read-png r)])
                 (destroy-png-reader r)
                 (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
-                       [pre? (and alpha? (memq kind '(png/alpha png/mask)))])
+                       [pre? (and alpha? (eq? kind 'png/alpha))])
                   (install-bytes-rows s w h rows b&w? alpha? pre? #f)
                   (values s b&w?))))]
            [(jpeg jpeg/alpha)
@@ -303,7 +304,7 @@
             (let-values ([(w h rows) (gif->rgba-rows in)])
               (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
                      [alpha? #t]
-                     [pre? #f]
+                     [pre? (and alpha? (eq? kind 'gif/alpha))]
                      [b&w? #f])
                 (install-bytes-rows s w h rows b&w? alpha? pre? #f)
                 (values s b&w?)))]
@@ -379,19 +380,11 @@
                            [al (if alpha?
                                    (unsafe-bytes-ref r (fx+ spos 3))
                                    255)]
-                           [a (if pre?
-                                  al
-                                  255)]
                            [premult (lambda (al v)
                                       (if pre?
                                           (unsafe-fxquotient (fx* al v) 255)
-                                          (if alpha?
-                                              (unsafe-fxquotient 
-                                               (+ (* 255 (- 255 al))
-                                                  (* v al))
-                                               255)
-                                              v)))])
-                      (unsafe-bytes-set! dest (fx+ pos A) a)
+                                          v))])
+                      (unsafe-bytes-set! dest (fx+ pos A) al)
                       (unsafe-bytes-set! dest (fx+ pos R) (premult al (unsafe-bytes-ref r spos)))
                       (unsafe-bytes-set! dest (fx+ pos G) (premult al (unsafe-bytes-ref r (fx+ spos 1))))
                       (unsafe-bytes-set! dest (fx+ pos B) (premult al (unsafe-bytes-ref r (fx+ spos 2))))))))))
@@ -442,7 +435,8 @@
                     (= height (send loaded-mask get-height)))
                (let ([bstr (make-bytes (* width height 4))])
                  (get-argb-pixels 0 0 width height bstr)
-                 (get-argb-pixels 0 0 width height bstr #t)
+                 (when loaded-mask
+                   (send loaded-mask get-argb-pixels 0 0 width height bstr #t))
                  ;; PNG wants RGBA instead of ARGB...
                  (let ([rows (build-vector height (lambda (i) (make-bytes (* 4 width))))])
                    (for ([j (in-range height)]
@@ -533,8 +527,8 @@
               (bytes-set! bstr (+ p 2) 0)
               (bytes-set! bstr (+ p 3) 0))))
       ;; Get pixels:
-      (let-values ([(A R G B) (argb-indices)])
-        (when (not get-alpha?)
+      (when (not get-alpha?)
+        (let-values ([(A R G B) (argb-indices)])
           (cairo_surface_flush s)
           (let ([data (cairo_image_surface_get_data s)]
                 [row-width (cairo_image_surface_get_stride s)])
@@ -559,17 +553,10 @@
                       (bytes-set! bstr (+ pi 2) (unmult a (bytes-ref data (+ ri G))))
                       (bytes-set! bstr (+ pi 3) (unmult a (bytes-ref data (+ ri B))))))))))))
       (cond
-       [(and get-alpha?
-             (not alpha-channel?)
-             loaded-mask
-             (= width (send loaded-mask get-width))
-             (= height (send loaded-mask get-height)))
-        ;; Get alpha from mask bitmap:
-        (send loaded-mask get-alphas-as-mask x y w h bstr)]
-       [(and get-alpha? alpha-channel?)
+       [get-alpha?
         (get-alphas-as-mask x y w h bstr)]
        [(and (not get-alpha?) (not alpha-channel?))
-        ;; For non-alpha mode or no mask; fill in 255s:
+        ;; For non-alpha mode and no alpha channel; fill in 255s for alpha:
         (for ([j (in-range 0 (min h (- height y)))])
           (let ([row (* j (* 4 w))])
             (for ([i (in-range 0 (min w (- width x)))])

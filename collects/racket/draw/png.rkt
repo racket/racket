@@ -131,8 +131,8 @@
 (define-png png_write_end (_fun _png_structp _png_infop -> _void))
 
 (define-png png_get_valid (_fun _png_structp _png_infop _uint32 -> _uint32))
-(define-png png_get_bKGD (_fun _png_structp _png_infop _png_color_16-pointer -> _bool))
-(define-png png_set_background (_fun _png_structp _png_infop _png_color_16-pointer _int _int _double* -> _bool))
+(define-png png_get_bKGD (_fun _png_structp _png_infop (p : (_ptr o _png_color_16-pointer)) -> (r : _bool) -> (and r p)))
+(define-png png_set_background (_fun _png_structp _png_color_16-pointer _int _int _double* -> _bool))
 (define-png png_get_gAMA (_fun _png_structp _png_infop (g : (_ptr o _double)) 
                                -> (ok? : _bool)
                                -> (and ok? g)))
@@ -199,7 +199,7 @@
 (define free-cell ((deallocator) free-immobile-cell))
 (define make-cell ((allocator free-cell) malloc-immobile-cell))
 
-(define (create-png-reader in bg-rgb)
+(define (create-png-reader in keep-alpha? bg-rgb)
   (let* ([png (png_create_read_struct PNG_LIBPNG_VER_STRING #f error-esc void)]
          [info (png_create_info_struct png)]
          [ib (make-cell in)])
@@ -209,8 +209,9 @@
                      interlace-type compression-type filter-type)
                   (png_get_IHDR png info)])
       (let* ([tRNS? (positive? (png_get_valid png info PNG_INFO_tRNS))]
-             [alpha? (or tRNS?
-                         (positive? (bitwise-ior color-type PNG_COLOR_MASK_ALPHA)))]
+             [alpha? (and keep-alpha?
+                          (or tRNS?
+                              (positive? (bitwise-ior color-type PNG_COLOR_MASK_ALPHA))))]
              [b&w? (and (= depth 1)
                         (= color-type PNG_COLOR_TYPE_GRAY)
                         (not tRNS?))])
@@ -239,8 +240,14 @@
                      (set-png_color_16-green! bg (deep (cadr bg-rgb)))
                      (set-png_color_16-blue! bg (deep (caddr bg-rgb)))
                      (set-png_color_16-gray! bg (deep (floor (/ (apply + bg-rgb) 3))))]
-             [else (png_get_bKGD png info bg)])
-            (png_set_background png info bg PNG_BACKGROUND_GAMMA_SCREEN 0 1.0)))
+             [else (let ([c (png_get_bKGD png info)])
+                     (when c
+                       (memcpy bg c (ctype-sizeof _png_color_16))))])
+            (png_set_background png bg 
+                                (if bg-rgb
+                                    PNG_BACKGROUND_GAMMA_SCREEN 
+                                    PNG_BACKGROUND_GAMMA_FILE)
+                                0 1.0)))
         (let ([gamma (png_get_gAMA png info)])
           (when gamma
             (let* ([s (getenv "SCREEN_GAMMA")]

@@ -36,8 +36,9 @@
          [h (send bm get-height)]
          [str (make-bytes (* w h 4) 255)])
     (send bm get-argb-pixels 0 0 w h str #f)
-    (when (send bm get-loaded-mask)
-      (send bm get-argb-pixels 0 0 w h str #t))
+    (let ([mask (send bm get-loaded-mask)])
+      (when mask
+        (send mask get-argb-pixels 0 0 w h str #t)))
     (as-entry
      (lambda ()
        (let ([rgba (scheme_make_sized_byte_string (malloc (* w h 4) 'raw) (* w h 4) 0)])
