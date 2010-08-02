@@ -7,6 +7,7 @@
                      web-server/private/util
                      web-server/private/connection-manager
                      net/tcp-sig
+                     racket/async-channel
                      racket/tcp
                      web-server/web-server-sig))
 
@@ -24,8 +25,8 @@ provides two signatures.
 The @racket[dispatch-server^] signature is an alias for
 @racket[web-server^].
 
- @defproc[(serve) (-> void)]{
-  Runs the server and returns a procedure that shuts down the server.
+ @defproc[(serve) (->* () (#:confirmation-channel (or/c false/c async-channel?)) (-> void))]{
+  Runs the server---the confirmation channel will be send an exception if one occurs starting the server or @racket[#f] if the is none---and returns a procedure that shuts down the server.
  }
 
  @defproc[(serve-ports [ip input-port?]

@@ -1,5 +1,6 @@
 #lang racket/unit
 (require net/tcp-sig
+         racket/async-channel
          mzlib/thread)
 (require "web-server-structs.rkt"
          "connection-manager.rkt"
@@ -9,9 +10,13 @@
 (import tcp^ (prefix config: dispatch-server-config^))
 (export dispatch-server^) 
 
+(define (async-channel-put* ac v)
+  (when ac
+    (async-channel-put ac v)))
+
 ;; serve: -> -> void
 ;; start the server and return a thunk to shut it down
-(define (serve)
+(define (serve #:confirmation-channel [confirmation-channel #f])
   (define the-server-custodian (make-custodian))
   (parameterize ([current-custodian the-server-custodian]
                  [current-server-custodian the-server-custodian]
@@ -27,7 +32,13 @@
                       (format "Connection error: ~a" (exn-message exn))
                       exn))
                    (lambda (p mw re)
-                     (tcp-listen p config:max-waiting #t config:listen-ip))
+                     (with-handlers ([exn? 
+                                      (λ (x)
+                                        (async-channel-put* confirmation-channel x)
+                                        (raise x))])
+                       (begin0
+                         (tcp-listen p config:max-waiting #t config:listen-ip)
+                         (async-channel-put* confirmation-channel #f))))
                    tcp-close
                    tcp-accept
                    tcp-accept/enable-break))))
