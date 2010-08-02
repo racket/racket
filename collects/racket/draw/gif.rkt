@@ -152,7 +152,7 @@
                    i
                    (loop (cons i parsed-blocks))))]
             [else
-             (log-warning (format "gif: unhandled block type 0x~x~n" id))
+             (log-warning (format "gif: unhandled block type 0x~x" id))
              (loop parsed-blocks)]))))
     parsed-blocks))
 
