@@ -165,8 +165,11 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_data->ready    = ready;
 
   if (argc == 2 || argc == 3 ) {
-    place_data->module   = args[0];
-    place_data->function = args[1];
+    Scheme_Object *so;
+    so = scheme_places_deep_copy_in_master(args[0]);
+    place_data->module   = so;
+    so = scheme_places_deep_copy_in_master(args[1]);
+    place_data->function = so;
     place_data->ready    = ready;
     if (argc == 2) {
       Scheme_Object *channel;
@@ -754,9 +757,13 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       if (SCHEME_SYM_UNINTERNEDP(so)) {
         scheme_log_abort("cannot copy uninterned symbol");
         abort();
-      } else
-        scheme_log_abort("NEED SERIALZATION WORK");
-        new_so = so;
+      } else {
+        new_so = scheme_make_sized_offset_byte_string(SCHEME_SYM_VAL(so), 0, SCHEME_SYM_LEN(so), 1);
+        new_so->type = scheme_serialized_symbol_type;
+      }
+      break;
+    case scheme_serialized_symbol_type:
+        new_so = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
       break;
     case scheme_pair_type:
       {
@@ -894,7 +901,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   /* scheme_make_thread behaves differently if the above global vars are not null */
   scheme_place_instance_init(stack_base);
 
-  a[0] = place_data->current_library_collection_paths;
+  a[0] = scheme_places_deep_copy(place_data->current_library_collection_paths);
   scheme_current_library_collection_paths(1, a);
 
   a[0] = scheme_places_deep_copy(place_data->module);
@@ -997,6 +1004,7 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
 
 Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
   if (argc == 1) {
+    Scheme_Object *mso;
     Scheme_Place_Bi_Channel *ch;
     if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
       ch = (Scheme_Place_Bi_Channel *) ((Scheme_Place *) args[0])->channel;
@@ -1004,7 +1012,8 @@ Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
     else {
       ch = (Scheme_Place_Bi_Channel *) args[0];
     }
-    return scheme_place_async_recv((Scheme_Place_Async_Channel *) ch->recvch);
+    mso = scheme_place_async_recv((Scheme_Place_Async_Channel *) ch->recvch);
+    return scheme_places_deep_copy(mso);
   }
   else {
     scheme_wrong_count_m("place-channel-recv", 1, 2, argc, args, 0);
