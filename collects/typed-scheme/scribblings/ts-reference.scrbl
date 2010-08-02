@@ -231,16 +231,6 @@ recursive type in the body @racket[t]}
 
 @defform[(Option t)]{Either @racket[t] of @racket[#f]}
 
-Other types cannot be written by the programmer, but are used
-internally and may appear in error messages.
-
-@defform/none[(struct:n (t ...))]{is the type of structures named
-@racket[n] with field types @racket[t].  There may be multiple such
-types with the same printed representation.}
-@defform/none[<n>]{is the printed representation of a reference to the
-type variable @racket[n]}
-
-
 @section[#:tag "special-forms"]{Special Form Reference}
 
 Typed Racket provides a variety of special forms above and beyond
@@ -615,5 +605,21 @@ want to activate it, you must add the @racket[#:optimize] keyword when
 specifying the language of your program:
 
 @racketmod[typed/racket #:optimize]
+
+@section{Legacy Forms}
+
+The following forms are provided by Typed Racket for backwards
+compatibility.  
+
+@defidform[define-type-alias]{Equivalent to @racket[define-type].}
+@defidform[require/opaque-type]{Similar to using the @racket[opaque]
+keyword with @racket[require/typed].}
+@defidform[require-typed-struct]{Similar to using the @racket[struct]
+keyword with @racket[require/typed].}
+
+@(defmodulelang* (typed-scheme)
+                 #:use-sources (typed-scheme/typed-scheme
+                 typed-scheme/private/prims))
+Equivalent to the @racketmod[typed/racket/base] language.
 
 }
