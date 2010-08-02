@@ -3,16 +3,16 @@
          racket/pretty)
 (pretty-print
  (syntax->datum (expand 
-                 #'(->i (#:x [x number?]
-                             [y (x) (<=/c x)])
+                 #'(->i ([x number?])
+                        ([y (x) (<=/c x)])
                         any))))
 
-((contract (->i (#:x [x number?]
-                     [y (x) (<=/c x)])
+((contract (->i ([x number?])
+                ([y (x) (<=/c x)])
                 any)
-           (λ (x y) x)
+           (λ (x [y 1]) y)
            'pos 'neg)
- 2 1)
+ 2)
 
 #;
 (define (coerce-proj x)
@@ -51,6 +51,7 @@
            (f x y)))))))
 
 ;(pretty-print (syntax->datum (expand #'(-> number? (<=/c 10) any))))
+;(pretty-print (syntax->datum (expand #'(->* () (#:fst number? #:snd boolean?) any))))
 
 
 

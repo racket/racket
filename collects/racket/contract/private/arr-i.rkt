@@ -36,10 +36,9 @@
                     swapped-blame
                     indy-blame
                     (λ (val mtd?)
-                      ' ;; WRONG!
                       (if has-rest?
-                          (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords blame)
-                          (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords blame)))
+                          (check-procedure/more val mtd? (->i-mandatory-args ctc) (->i-mandatory-kwds ctc) (->i-opt-kwds ctc) blame)
+                          (check-procedure val mtd? (->i-mandatory-args ctc) (->i-opt-args ctc) (->i-mandatory-kwds ctc) (->i-opt-kwds ctc) blame)))
                     ctc
                     (append partial-doms
                             (->i-arg-dep-ctcs ctc)
@@ -56,6 +55,61 @@
            (for/list ([arg (in-list args)]
                       [i (in-naturals)])
              i))))
+
+;; args/vars->arglist : (listof arg?) (vectorof identifier?) -> syntax
+;; (vector-length vars) = (length args)
+;; builds the parameter list for the wrapper λ
+(define-for-syntax (args/vars->arglist args vars)
+  ;; WRONG: does not deal with optional args properly
+  (let loop ([args args]
+             [i 0])
+    (cond
+      [(null? args) #'()]
+      [else
+       (let* ([arg (car args)]
+              [kwd (arg-kwd arg)]
+              [opt? (arg-optional? arg)]
+              [arg-exp
+               (cond
+                 [(and kwd opt?)
+                  #`(#,kwd [#,(vector-ref vars i) the-unsupplied-arg])]
+                 [kwd
+                  #`(#,kwd #,(vector-ref vars i))]
+                 [opt?
+                  #`([#,(vector-ref vars i) the-unsupplied-arg])]
+                 [else
+                  #`(#,(vector-ref vars i))])])
+         
+         #`(#,@arg-exp
+            .
+            #,(loop (cdr args) (+ i 1))) )])))
+
+(define-for-syntax (args/vars->callsite fn args vars)
+  (let ([opts? (ormap arg-optional? args)]) 
+    (cond
+      [(and opts? (ormap arg-kwd args))
+       ;; has both optional and keyword args
+       #`(keyword-apply #,fn)]
+      [opts?
+       ;; has optional args, but no keyword args
+       #`(apply/no-unsupplied #,fn #,@(vector->list vars))] 
+      [else
+       ;; no optional or keyword args
+       `(,fn
+         ,(let loop ([args args]
+                     [i 0])
+            (cond
+              [(null? args) #'()]
+              [else
+               (let ([arg (car args)])
+                 `(,@(if (arg-kwd arg)
+                         `(,(arg-kwd arg) ,(vector-ref vars i))
+                         `(,(vector-ref vars i)))
+                   .
+                   ,(loop (cdr args) (+ i 1))))])))])))
+
+(define (apply/no-unsupplied fn . args)
+  (apply fn (filter (λ (x) (not (eq? x the-unsupplied-arg))) args)))
 
 (define-for-syntax (mk-wrapper-func an-istx)
   (let-values ([(ordered-args arg-indicies) (find-ordering (istx-args an-istx))])
@@ -81,8 +135,8 @@
           (λ (val)
             (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
             (make-contracted-function
-             (λ #,(vector->list wrapper-args)
-               #,(for/fold ([body #`(val #,@(vector->list wrapper-args))])
+             (λ #,(args/vars->arglist (istx-args an-istx) wrapper-args)
+               #,(for/fold ([body (args/vars->callsite #'val (istx-args an-istx) wrapper-args)])
                    ([indy-arg (in-list indy-args)]
                     [arg (in-list ordered-args)]
                     [arg-index arg-indicies])
