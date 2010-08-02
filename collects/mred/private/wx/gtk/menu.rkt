@@ -25,6 +25,7 @@
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_label_set_text_with_mnemonic (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
+(define-gtk gtk_menu_item_set_submenu (_fun _GtkWidget (_or-null _GtkWidget) -> _void))
 
 (define-gtk gtk_get_current_event_time (_fun -> _uint32))
 (define-gtk gtk_menu_popup (_fun _GtkWidget _pointer _pointer 
@@ -55,11 +56,19 @@
 
     (define/public (get-item) menu-item)
 
+    (define/public (removing-item) (void))
+
     (define/public (do-on-select)
       (send menu do-selected menu-item))
 
     (define/public (on-select)
       (send menu on-select-item menu-item))))
+
+(define separator-item-handler%
+  (class object%
+    (define/public (get-item) #f)
+    (define/public (removing-item) (void))
+    (super-new)))
 
 (defclass menu% widget%
   (init label
@@ -86,6 +95,15 @@
          (if (parent . is-a? . menu%)
              (send parent get-top-parent)
              (send parent get-top-window))))
+
+  (define self-item #f)
+  (define remover void)
+  (define/public (set-self-item i r) (set! self-item i) (set! remover r))
+  (define/public (get-item) self-item)
+  (define/public (removing-item) 
+    (set! self-item #f)
+    (remover)
+    (set! remover void))
 
   (define on-popup #f)
   (define cancel-none-box (box #t))
@@ -152,23 +170,32 @@
                  (gtk_menu_item_set_accel_path item-gtk accel-path)))))]))
   
   (public [append-item append])
-  (define (append-item i label help-str chckable?)
-    (let* ([item-gtk ((if chckable?
-                          gtk_check_menu_item_new_with_mnemonic
-                          gtk_menu_item_new_with_mnemonic)
-                      (fixup-mneumonic label))]
-           [item (new menu-item-handler% 
-                      [gtk item-gtk]
-                      [menu this]
-                      [menu-item i])])
-      (set! items (append items (list (list item item-gtk label chckable?))))
-      (adjust-shortcut item-gtk label)
+  (define (append-item i label help-str-or-submenu chckable?)
+    (let ([item-gtk ((if chckable?
+                         gtk_check_menu_item_new_with_mnemonic
+                         gtk_menu_item_new_with_mnemonic)
+                     (fixup-mneumonic label))])
+      (if (help-str-or-submenu . is-a? . menu%)
+          (let ([submenu help-str-or-submenu])
+            (let ([gtk (send submenu get-gtk)])
+              (g_object_ref gtk)
+              (gtk_menu_item_set_submenu item-gtk gtk)
+              (send submenu set-parent this)
+              (send submenu set-self-item i
+                    (lambda () (gtk_menu_item_set_submenu item-gtk #f)))
+              (set! items (append items (list (list submenu item-gtk label chckable?))))))
+          (let ([item (new menu-item-handler% 
+                           [gtk item-gtk]
+                           [menu this]
+                           [menu-item i])])
+            (set! items (append items (list (list item item-gtk label chckable?))))
+            (adjust-shortcut item-gtk label)))
       (gtk_menu_shell_append gtk item-gtk)
       (gtk_widget_show item-gtk)))
 
   (define/public (append-separator)
     (let ([item-gtk (gtk_separator_menu_item_new)])
-      (set! items (append items (list (list #f item-gtk #f #f))))
+      (set! items (append items (list (list (new separator-item-handler%) item-gtk #f #f))))
       (gtk_menu_shell_append gtk item-gtk)
       (gtk_widget_show item-gtk)))
 
@@ -214,6 +241,7 @@
             (cond
              [(null? items) null]
              [(zero? pos)
+              (send (caar items) removing-item)
               (gtk_container_remove gtk (cadar items))
               (cdr items)]
              [else (cons (car items)
@@ -225,6 +253,7 @@
             (cond
              [(null? items) null]
              [(eq? (send (caar items) get-item) item)
+              (send (caar items) removing-item)
               (gtk_container_remove gtk (cadar items))
               (cdr items)]
              [else (cons (car items)

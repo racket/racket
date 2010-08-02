@@ -233,6 +233,11 @@
                              major (filter-style style) font))
       (set-c c)
 
+      (define/override enable
+        (case-lambda
+         [(on?) (super enable on?)]
+         [(i on?) (send c enable-button i on?)]))
+
       (bounce 
        c
        (button-focus i)

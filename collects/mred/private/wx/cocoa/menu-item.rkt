@@ -41,35 +41,40 @@
   (define/public (set-enabled-flag e?) (set! enabled? e?))
   (define/public (get-enabled-flag) enabled?)
 
+  (define submenu #f)
+  (define/public (set-submenu m) (set! submenu m))
+
   (define/public (install menu)
-    (let ([item (tell (tell MyMenuItem alloc) 
-                      initWithTitle: #:type _NSString (regexp-replace #rx"\t.*" label "")
-                      action: #:type _SEL #f
-                      keyEquivalent: #:type _NSString "")])
-      (set-ivar! item wx this)
-      (tellv menu addItem: item)
-      (tellv item setEnabled: #:type _BOOL enabled?)
-      (tellv item setTarget: item)
-      (tellv item setAction: #:type _SEL (selector selected:))
-      (let ([shortcut (regexp-match #rx"\tCut=(.)(.*)" label)])
-        (when shortcut
-          (let* ([s (string-downcase (string (integer->char (string->number (caddr shortcut)))))]
-                 [flags (- (char->integer (string-ref (cadr shortcut) 0))
-                           (char->integer #\A))]
-                 [mods (+ (if (positive? (bitwise-and flags 1))
-                              NSShiftKeyMask
-                              0)
-                          (if (positive? (bitwise-and flags 2))
-                              NSAlternateKeyMask
-                              0)
-                          (if (positive? (bitwise-and flags 4))
-                              NSControlKeyMask
-                              0)
-                          (if (positive? (bitwise-and flags 8))
-                              0
-                              NSCommandKeyMask))])
-            (tellv item setKeyEquivalent: #:type _NSString s)
-            (tellv item setKeyEquivalentModifierMask: #:type _NSUInteger mods))))
-      (tellv item release)))
+    (if submenu
+        (send submenu install menu label)
+        (let ([item (tell (tell MyMenuItem alloc) 
+                          initWithTitle: #:type _NSString (regexp-replace #rx"\t.*" label "")
+                          action: #:type _SEL #f
+                          keyEquivalent: #:type _NSString "")])
+          (set-ivar! item wx this)
+          (tellv menu addItem: item)
+          (tellv item setEnabled: #:type _BOOL enabled?)
+          (tellv item setTarget: item)
+          (tellv item setAction: #:type _SEL (selector selected:))
+          (let ([shortcut (regexp-match #rx"\tCut=(.)(.*)" label)])
+            (when shortcut
+              (let* ([s (string-downcase (string (integer->char (string->number (caddr shortcut)))))]
+                     [flags (- (char->integer (string-ref (cadr shortcut) 0))
+                               (char->integer #\A))]
+                     [mods (+ (if (positive? (bitwise-and flags 1))
+                                  NSShiftKeyMask
+                                  0)
+                              (if (positive? (bitwise-and flags 2))
+                                  NSAlternateKeyMask
+                                  0)
+                              (if (positive? (bitwise-and flags 4))
+                                  NSControlKeyMask
+                                  0)
+                              (if (positive? (bitwise-and flags 8))
+                                  0
+                                  NSCommandKeyMask))])
+                (tellv item setKeyEquivalent: #:type _NSString s)
+                (tellv item setKeyEquivalentModifierMask: #:type _NSUInteger mods))))
+          (tellv item release))))
 
   (super-new))

@@ -17,6 +17,9 @@
 
 (define-struct mitem (item))
 
+(define (clean-label str)
+  (regexp-replace* #rx"&(.)" str "\\1"))
+
 (defclass menu% object%
   (init-field label
               callback
@@ -34,13 +37,13 @@
       (set! cocoa
             (as-objc-allocation
              (tell (tell NSMenuItem alloc)
-                   initWithTitle: #:type _NSString label
+                   initWithTitle: #:type _NSString (clean-label label)
                    action: #:type _SEL #f
                    keyEquivalent: #:type _NSString "")))
       (set! cocoa-menu
             (as-objc-allocation
              (tell (tell NSMenu alloc)
-                   initWithTitle: #:type _NSString label)))
+                   initWithTitle: #:type _NSString (clean-label label))))
       (tellv cocoa-menu setAutoenablesItems: #:type _BOOL #f)
       (tellv cocoa setSubmenu: cocoa-menu)
       (for-each (lambda (item)
@@ -94,8 +97,11 @@
              (send parent get-top-window))))
 
   (public [append-item append])
-  (define (append-item i label help-str chckable?)
+  (define (append-item i label help-str-or-submenu chckable?)
     (send i set-label label)
+    (when (help-str-or-submenu . is-a? . menu%)
+      (send i set-submenu help-str-or-submenu)
+      (send help-str-or-submenu set-parent this))
     (set! items (append items (list (make-mitem i))))
     (send i set-parent this)
     (when cocoa-menu
@@ -131,9 +137,9 @@
   (define/public (set-label item label)
     (adjust item
             (lambda (item-cocoa)
-              (tellv item-cocoa setTitle: #:type _NSString label))
+              (tellv item-cocoa setTitle: #:type _NSString (clean-label label)))
             (lambda (mitem)
-              (send (mitem-item mitem) set-label label))))
+              (send (mitem-item mitem) set-label (clean-label label)))))
                   
   (define/public (check item on?)
     (adjust item

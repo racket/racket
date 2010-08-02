@@ -33,22 +33,29 @@
     "_\\1")
    "&"))
 
-(define-signal-handler connect-button-press "button-press-event"
-  (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)
-  (lambda (gtk event)
+(define-signal-handler connect-select "select"
+  (_fun _GtkWidget -> _void)
+  (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
       (let ([frame (send wx get-top-window)])
-        (constrained-reply (send wx get-eventspace)
-                           (lambda () (send frame on-menu-click) #f)
-                           #t)))))
+        (when frame
+          (constrained-reply (send frame get-eventspace)
+                             (lambda () (send frame on-menu-click))
+                             (void)))))))
+
+(define top-menu%
+  (class widget%
+    (init-field parent)
+    (define/public (get-top-window) (send parent get-top-window))
+    (super-new)))
+
+
 
 (defclass menu-bar% widget%
   (define menus null)
 
   (define gtk (gtk_menu_bar_new))
   (super-new [gtk gtk])
-
-  (connect-button-press gtk)
 
   (define/public (get-gtk) gtk)
 
@@ -83,8 +90,10 @@
   (public [append-menu append])
   (define (append-menu menu title)
     (send menu set-parent this)
-    (let ([item (gtk_menu_item_new_with_mnemonic (fixup-mneumonic title))])
-      (set! menus (append menus (list (list item menu))))
+    (let* ([item (gtk_menu_item_new_with_mnemonic (fixup-mneumonic title))]
+           [item-wx (new top-menu% [parent this] [gtk item])])
+      (connect-select item)
+      (set! menus (append menus (list (list item menu item-wx))))
       (let ([gtk (send menu get-gtk)])
         (g_object_ref gtk)
         (gtk_menu_item_set_submenu item gtk))

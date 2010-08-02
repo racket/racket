@@ -120,5 +120,8 @@
                i))
         -1))
 
+  (define/public (enable-button i on?)
+    (gtk_widget_set_sensitive (list-ref radio-gtks i) on?))
+
   (define count (length labels))
   (define/public (number) count))
