@@ -33,7 +33,10 @@ When @scheme[width] and @scheme[height] are provided: Creates a new
  bitmap. If @scheme[monochrome?] is true, the bitmap is monochrome; if
  @scheme[monochrome?] is @scheme[#f] and @racket[alpha?] is true, the
  bitmap has an alpha channel; otherwise, the bitmap is color without
- an alpha channel. The initial content of the bitmap is undefined.
+ an alpha channel.
+
+The initial content of the bitmap is ``empty'': all white, and with
+ zero alpha in the case of a bitmap with an alpha channel.
 
 When @scheme[in] is provided: Creates a bitmap from a file format,
  where @scheme[kind] specifies the format. See @method[bitmap%

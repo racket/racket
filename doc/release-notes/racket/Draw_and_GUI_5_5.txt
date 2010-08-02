@@ -1,0 +1,52 @@
+Changes to the drawing toolbox:
+
+ * The drawing portion of the old GUI toolbox is now available as a
+   separate layer: `racket/draw'. This layer can be used from plain
+   Racket independent of the `racket/gui' library, although
+   `racket/gui' re-exports `racket/draw'.
+
+   The `racket/draw' library is built on top of the widely used Cairo
+   drawing library and Pango text-rendering library.
+
+ * A color bitmap can have an alpha channel, instead of just a mask
+   bitmap. When drawing a bitmap, alpha channels are used more
+   consistently and automatically than mask bitmaps. More
+   significantly, drawing into a bitmap with an alpha channel
+   preserves the drawn alphas; for example, drawing a line in the
+   middle of an empty bitmap produces an image with non-zero alpha
+   only at the drawn line.
+
+   Create a bitmap with an alpha channel by supplying #t as the new
+   `alpha?' argument to the `bitmap%' constructor, or by loading an
+   image with a type like 'unknown/alpha insteda of 'unknown or
+   'unknown/mask.
+
+   A newly created `bitmap%' has an empty content (i.e., white with
+   zero alpha), insteda of unspecified content.
+
+   Images can be read into a `bitmap%' from from input ports, instead
+   of requiring a file path.
+
+ * A `dc<%>' supports additional drawing transformations: a rotation
+   (via `set-rotation') and a general transformation matrix (via
+   `set-initial-matrix').
+
+   A transformation matrix has the form `(vector xx xy yx yy x0 y0)',
+   where a point (x1, y1) is transformed to a point (x2, y2) with
+   x2 = xx*x1 + yx*y1 + x0 and y2 = xy*x1 + yy*y1 + y0.
+
+   The old translation and scaling transformations apply after the
+   initial matrix. The new rotation transformation applies after the
+   other transformations. This layering is a little redundant, since
+   all transformations could be expressed in a single matrix, but it
+   is backward compatibile.
+
+ * A `region%' can be created as independent of any `dc<%>', in which
+   cases it uses the drawing context's current transformation at the
+   time that it is installed as a clipping region.
+
+ * The old 'xor mode for pens and brushes is no longer available.
+
+Changes to the GUI toolbox:
+
+ [Nothing to report, yet.]
