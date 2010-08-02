@@ -24,21 +24,22 @@
     (start-connection-manager)
     (thread
      (lambda ()
-       (run-server config:port 
+       (run-server 1 ; This is the port argument, but because we specialize listen, it is ignored. 
                    handle-connection
                    #f
                    (lambda (exn)
                      ((error-display-handler) 
                       (format "Connection error: ~a" (exn-message exn))
                       exn))
-                   (lambda (p mw re)
+                   (lambda (_ mw re)
                      (with-handlers ([exn? 
                                       (λ (x)
                                         (async-channel-put* confirmation-channel x)
                                         (raise x))])
-                       (begin0
-                         (tcp-listen p config:max-waiting #t config:listen-ip)
-                         (async-channel-put* confirmation-channel #f))))
+                       (define listener (tcp-listen config:port config:max-waiting #t config:listen-ip))
+                       (let-values ([(local-addr local-port end-addr end-port) (tcp-addresses listener #t)])
+                         (async-channel-put* confirmation-channel local-port))
+                       listener))
                    tcp-close
                    tcp-accept
                    tcp-accept/enable-break))))

@@ -14,6 +14,7 @@
          web-server/private/mime-types
          web-server/servlet/setup
          web-server/servlet-dispatch
+         unstable/contract
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
          (prefix-in fsmap: web-server/dispatchers/filesystem-map)
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
@@ -43,7 +44,7 @@
                   #:quit? boolean?
                   #:banner? boolean?
                   #:listen-ip (or/c false/c string?)
-                  #:port number?
+                  #:port tcp-listen-port?
                   #:ssl? boolean?
                   #:ssl-cert (or/c false/c path-string?)
                   #:ssl-key (or/c false/c path-string?)

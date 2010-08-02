@@ -7,6 +7,7 @@
                      web-server/private/util
                      web-server/private/connection-manager
                      net/tcp-sig
+                     unstable/contract
                      racket/async-channel
                      racket/tcp
                      web-server/web-server-sig))
@@ -26,7 +27,7 @@ The @racket[dispatch-server^] signature is an alias for
 @racket[web-server^].
 
  @defproc[(serve) (->* () (#:confirmation-channel (or/c false/c async-channel?)) (-> void))]{
-  Runs the server---the confirmation channel will be send an exception if one occurs starting the server or @racket[#f] if the is none---and returns a procedure that shuts down the server.
+  Runs the server---the confirmation channel will be send an exception if one occurs starting the server or the port number if there is none---and returns a procedure that shuts down the server.
  }
 
  @defproc[(serve-ports [ip input-port?]
@@ -39,12 +40,12 @@ The @racket[dispatch-server^] signature is an alias for
 
 @defsignature[dispatch-server-config^ ()]{
 
- @defthing[port port-number?]{Specifies the port to serve on.}
+ @defthing[port tcp-listen-port?]{Specifies the port to serve on.}
  @defthing[listen-ip (or/c string? false/c)]{Passed to @racket[tcp-listen].}
  @defthing[max-waiting integer?]{Passed to @racket[tcp-accept].}
  @defthing[initial-connection-timeout integer?]{Specifies the initial timeout given to a connection.}
  @defproc[(read-request [c connection?]
-                        [p port-number?]
+                        [p tcp-listen-port?]
                         [port-addresses 
                          (input-port? . -> . (values string? string?))])
           (values any/c boolean?)]{

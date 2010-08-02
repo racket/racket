@@ -9,6 +9,7 @@
          racket/serialize
          net/tcp-unit
          net/tcp-sig
+         unstable/contract
          net/ssl-tcp-unit)
 (require web-server/web-server
          web-server/managers/lru
@@ -37,7 +38,7 @@
                      (#:launch-path (or/c false/c string?)
                                     #:banner? boolean?
                                     #:listen-ip (or/c false/c string?)
-                                    #:port number?
+                                    #:port tcp-listen-port?
                                     #:ssl-cert (or/c false/c path-string?)
                                     #:ssl-key (or/c false/c path-string?))
                      . ->* .
@@ -93,24 +94,19 @@
          #:listen-ip
          [listen-ip "127.0.0.1"]
          #:port
-         [port 8000]
+         [port-arg 8000]
          #:ssl-cert
          [ssl-cert #f]
          #:ssl-key
          [ssl-key #f])
   (define ssl? (and ssl-cert ssl-key))
-  (define server-url
-    (string-append (if ssl? "https" "http")
-                   "://localhost"
-                   (if (and (not ssl?) (= port 80))
-                       "" (format ":~a" port))))
   (define sema (make-semaphore 0))
   (define confirm-ch (make-async-channel 1))
   (define shutdown-server
     (serve #:confirmation-channel confirm-ch
            #:dispatch (dispatcher sema)
            #:listen-ip listen-ip
-           #:port port
+           #:port port-arg
            #:tcp@ (if ssl?
                       (let ()
                         (define-unit-binding ssl-tcp@
@@ -121,15 +117,20 @@
                         ssl-tcp@)
                       tcp@)))
   (define serve-res (async-channel-get confirm-ch))
-  (if serve-res
+  (if (exn? serve-res)
       (begin
         (when banner? (eprintf "There was an error starting the Web server.\n"))
         (match serve-res
-          [(and (? exn?) (app exn-message (regexp "tcp-listen: listen on .+ failed \\(Address already in use; errno=.+\\)" (list _))))
-           (when banner? (eprintf "\tThe TCP port (~a) is already in use.\n" port))]
+          [(app exn-message (regexp "tcp-listen: listen on .+ failed \\(Address already in use; errno=.+\\)" (list _)))
+           (when banner? (eprintf "\tThe TCP port (~a) is already in use.\n" port-arg))]
           [_
            (void)]))
-      (begin
+      (local [(define port serve-res)
+              (define server-url
+                (string-append (if ssl? "https" "http")
+                               "://localhost"
+                               (if (and (not ssl?) (= port 80))
+                                   "" (format ":~a" port))))]
         (when launch-path
           ((send-url) (string-append server-url launch-path) #t))
         (when banner?

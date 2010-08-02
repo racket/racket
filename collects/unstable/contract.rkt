@@ -7,6 +7,7 @@
 ;;   from this (see `string->path-element') .
 
 (define port-number? (between/c 1 65535))
+(define tcp-listen-port? (between/c 0 65535))
 
 (define non-empty-string/c
   (and/c string?
@@ -364,6 +365,7 @@
  [non-empty-string/c contract?]
  [path-element? contract?]
  [port-number? contract?]
+ [tcp-listen-port? contract?]
 
  [non-empty-string? predicate/c]
  [non-empty-bytes? predicate/c]

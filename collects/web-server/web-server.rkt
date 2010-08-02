@@ -5,6 +5,7 @@
          racket/unit
          racket/async-channel
          racket/contract
+         unstable/contract
          web-server/dispatchers/dispatch
          web-server/private/dispatch-server-sig
          web-server/private/dispatch-server-unit
@@ -17,7 +18,7 @@
   (->* (#:dispatch dispatcher/c)
        (#:confirmation-channel (or/c false/c async-channel?)
         #:tcp@ (unit/c (import) (export tcp^))
-        #:port number?
+        #:port tcp-listen-port?
         #:listen-ip (or/c false/c string?)
         #:max-waiting number?
         #:initial-connection-timeout number?)
@@ -26,7 +27,7 @@
   (->* (#:dispatch dispatcher/c)
        (#:confirmation-channel (or/c false/c async-channel?)
         #:tcp@ (unit/c (import) (export tcp^))
-        #:ports (listof number?)
+        #:ports (listof tcp-listen-port?)
         #:listen-ip (or/c false/c string?)
         #:max-waiting number?
         #:initial-connection-timeout number?)
@@ -35,7 +36,7 @@
   (->* (#:dispatch dispatcher/c)
        (#:confirmation-channel (or/c false/c async-channel?)
         #:tcp@ (unit/c (import) (export tcp^))
-        #:ips+ports (listof (cons/c (or/c false/c string?) (listof number?)))
+        #:ips+ports (listof (cons/c (or/c false/c string?) (listof tcp-listen-port?)))
         #:max-waiting number?
         #:initial-connection-timeout number?)
        (-> void))]
