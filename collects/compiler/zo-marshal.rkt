@@ -675,7 +675,8 @@
                 (vector-map encode-wrapped v)]
                [(? prefab-struct-key)
                 (define l (vector->list (struct->vector datum)))
-                (make-prefab-struct
+                (apply
+                 make-prefab-struct
                  (car l)
                  (map encode-wrapped (cdr l)))]
                [_ datum])]
