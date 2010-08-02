@@ -88,13 +88,23 @@
   (let ([opts? (ormap arg-optional? args)]) 
     (cond
       [(and opts? (ormap arg-kwd args))
-       ;; has both optional and keyword args
-       #`(keyword-apply #,fn)]
+       (let ([arg->var (make-hash)]
+             [kwd-args (filter arg-kwd args)]
+             [non-kwd-args (filter (λ (x) (not (arg-kwd x))) args)])
+         (for ([arg (in-list args)]
+               [var (in-vector vars)])
+           (hash-set! arg->var arg var))
+         ;; has both optional and keyword args
+         #`(keyword-apply/no-unsupplied 
+            #,fn 
+            '#,(map arg-kwd kwd-args)
+            (list #,@(map (λ (arg) (hash-ref arg->var arg)) kwd-args))
+            #,@(map (λ (arg) (hash-ref arg->var arg)) non-kwd-args)))]
       [opts?
        ;; has optional args, but no keyword args
        #`(apply/no-unsupplied #,fn #,@(vector->list vars))] 
       [else
-       ;; no optional or keyword args
+       ;; no optional args
        `(,fn
          ,(let loop ([args args]
                      [i 0])
@@ -110,6 +120,22 @@
 
 (define (apply/no-unsupplied fn . args)
   (apply fn (filter (λ (x) (not (eq? x the-unsupplied-arg))) args)))
+
+(define (keyword-apply/no-unsupplied fn kwds kwd-args . args)
+  (let-values ([(supplied-kwds supplied-kwd-args)
+                (let loop ([kwds kwds]
+                           [kwd-args kwd-args])
+                  (cond
+                    [(null? kwds) (values '() '())]
+                    [else 
+                     (let-values ([(kwds-rec args-rec) (loop (cdr kwds) (cdr kwd-args))])
+                       (cond
+                         [(eq? (car kwd-args) the-unsupplied-arg)
+                          (values kwds-rec args-rec)]
+                         [else
+                          (values (cons (car kwds) kwds-rec)
+                                  (cons (car kwd-args) args-rec))]))]))])
+    (keyword-apply fn kwds kwd-args (filter (λ (x) (not (eq? x the-unsupplied-arg))) args))))
 
 (define-for-syntax (mk-wrapper-func an-istx)
   (let-values ([(ordered-args arg-indicies) (find-ordering (istx-args an-istx))])
@@ -142,14 +168,25 @@
                     [arg-index arg-indicies])
                    (let ([wrapper-arg (vector-ref wrapper-args arg-index)]
                          [arg-proj-var (vector-ref arg-proj-vars arg-index)])
-                     #`(let ([#,indy-arg #,(if (arg-vars arg)
-                                               #`(un-dep (#,arg-proj-var #,@(map arg-to-indy-var (arg-vars arg))) #,wrapper-arg indy-blame)
-                                               ;; WRONG! (need to pass in the indy'ized projections somewhere)
-                                               #`(#,arg-proj-var #,wrapper-arg))]
+                     (define (add-unsupplied-check stx)
+                       (if (arg-optional? arg)
+                           #`(if (eq? #,wrapper-arg the-unsupplied-arg)
+                                 #,wrapper-arg
+                                 #,stx)
+                           stx))
+                     #`(let (
+                             ;; WRONG! can avoid creating this thing if it isn't used elsewhere.
+                             [#,indy-arg 
+                              #,(add-unsupplied-check
+                                 (if (arg-vars arg)
+                                     #`(un-dep (#,arg-proj-var #,@(map arg-to-indy-var (arg-vars arg))) #,wrapper-arg indy-blame)
+                                     ;; WRONG! (need to pass in the indy'ized projections somewhere)
+                                     #`(#,arg-proj-var #,wrapper-arg)))]
                              [#,wrapper-arg 
-                              #,(if (arg-vars arg)
-                                    #`(un-dep (#,arg-proj-var #,@(map arg-to-indy-var (arg-vars arg))) #,wrapper-arg swapped-blame)
-                                    #`(#,arg-proj-var #,wrapper-arg))])
+                              #,(add-unsupplied-check
+                                 (if (arg-vars arg)
+                                     #`(un-dep (#,arg-proj-var #,@(map arg-to-indy-var (arg-vars arg))) #,wrapper-arg swapped-blame)
+                                     #`(#,arg-proj-var #,wrapper-arg)))])
                          #,body))))
              ctc))))))
 
