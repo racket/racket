@@ -34,7 +34,8 @@
       [(Name: n) 
        (when (and (current-poly-struct) 
                   (free-identifier=? n (poly-name (current-poly-struct)))
-                  (not (andmap type-equal? rands (poly-vars (current-poly-struct)))))
+                  (not (or (ormap Error? rands)
+                           (andmap type-equal? rands (poly-vars (current-poly-struct))))))
          (tc-error "Structure type constructor ~a applied to non-regular arguments ~a" rator rands))
        (let ([r (resolve-name rator)])
          (and r  (resolve-app r rands stx)))]

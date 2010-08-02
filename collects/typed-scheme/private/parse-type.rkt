@@ -311,7 +311,8 @@
            [(Name: n)
             (when (and (current-poly-struct) 
                        (free-identifier=? n (poly-name (current-poly-struct)))
-                       (not (andmap type-equal? args (poly-vars (current-poly-struct)))))
+                       (not (or (ormap Error? args)
+                                (andmap type-equal? args (poly-vars (current-poly-struct))))))
               (tc-error "Structure type constructor ~a applied to non-regular arguments ~a" rator args))
             (make-App rator args stx)]
            [(Poly: ns _)
