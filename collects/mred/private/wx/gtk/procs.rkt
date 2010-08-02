@@ -91,7 +91,12 @@
 (define (get-control-font-size) 10) ;; FIXME
 (define-unimplemented cancel-quit)
 (define-unimplemented fill-private-color)
-(define (flush-display) (void))
+
+(define _GdkDisplay (_cpointer 'GdkDisplay))
+(define-gdk gdk_display_flush (_fun _GdkDisplay -> _void))
+(define-gdk gdk_display_get_default (_fun -> _GdkDisplay))
+(define (flush-display) (gdk_display_flush (gdk_display_get_default)))
+
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
 

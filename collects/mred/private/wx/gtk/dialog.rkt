@@ -13,6 +13,7 @@
 (define GTK_WIN_POS_CENTER_ON_PARENT 4)
 
 (define-gtk gtk_window_set_position (_fun _GtkWidget _int -> _void))
+(define-gtk gtk_window_set_transient_for (_fun _GtkWidget _GtkWidget -> _void))
 
 (defclass dialog% frame%
   (inherit get-gtk
@@ -22,6 +23,10 @@
 
   (define close-sema #f)
 
+  (let ([p (get-parent)])
+    (when p
+      (gtk_window_set_transient_for (get-gtk) (send p get-gtk))))
+
   (define/override (direct-show on?)
     (unless on?
       (when close-sema
@@ -30,7 +35,7 @@
     (super direct-show on?))
 
   (define/override (center dir wrt)
-    (if #f ; (eq? dir 'both)
+    (if (eq? dir 'both)
         (gtk_window_set_position (get-gtk) 
                                  (if (get-parent)
                                      GTK_WIN_POS_CENTER_ON_PARENT
