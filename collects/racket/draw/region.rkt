@@ -19,7 +19,7 @@
 (define region%
   (class object%
 
-    (init [the-dc #f])
+    (init [(the-dc dc) #f])
     (define dc the-dc)
     (when dc
       (unless (dc . is-a? . dc<%>)
@@ -62,7 +62,36 @@
                        [r r]
                        [b b])
               (if (null? paths)
-                  (values l t r b)
+                  (if matrix
+                      ;; Convert absolute coordinates back to the DC's
+                      ;;  logical space by inverting its transformation
+                      (let ([m (send dc get-clipping-matrix)])
+                        ;; Matrix is [ma mc 
+                        ;;            mb md]
+                        (let ([ma (vector-ref m 0)]
+                              [mb (vector-ref m 2)]
+                              [mc (vector-ref m 1)]
+                              [md (vector-ref m 3)]
+                              [dx (vector-ref m 4)]
+                              [dy (vector-ref m 5)])
+                          (let ([det (- (* ma md) (* mb mc))])
+                            (if (zero? det)
+                                ;; determinant is 0 => dc's matrix maps any area to 0
+                                (values 0.0 0.0 0.0 0.0)
+                                ;; tx and ty apply inverse matrix
+                                (let ([tx (lambda (x y)
+                                            (let ([x (- x dx)]
+                                                  [y (- y dy)])
+                                              (/ (- (* md x) (* mb y)) det)))]
+                                      [ty (lambda (x y)
+                                            (let ([x (- x dx)]
+                                                  [y (- y dy)])
+                                              (/ (- (* ma y) (* mc x)) det)))])
+                                  ;; unwind bound-box points to pre-transformed
+                                  (values (tx l t) (ty l t)
+                                          (tx r b) (ty r b)))))))
+                      ;; no dc un-transformation needed
+                      (values l t r b))
                   (let-values ([(l2 t2 r2 b2) (send (caar paths) get-bounding-box)])
                     (loop (cdr paths)
                           (min l l2)
@@ -126,7 +155,19 @@
            (set! temp-cr
                  (cairo_create
                   (cairo_image_surface_create CAIRO_FORMAT_A8 1 1))))
-         (install-region temp-cr #t (lambda (cr v) (and v (cairo_in_fill temp-cr x y)))))))
+         (let-values ([(x y)
+                       (if matrix
+                           ;; need to use the DC's current transformation
+                           (let ([m (send dc get-clipping-matrix)])
+                             (values (+ (* x (vector-ref m 0))
+                                        (* y (vector-ref m 2))
+                                        (vector-ref m 4))
+                                     (+ (* x (vector-ref m 1))
+                                        (* y (vector-ref m 3))
+                                        (vector-ref m 5))))
+                           ;; no transformation needed
+                           (values x y))])
+           (install-region temp-cr #t (lambda (cr v) (and v (cairo_in_fill temp-cr x y))))))))
 
     (def/public (set-arc [real? x]
                          [real? y]
