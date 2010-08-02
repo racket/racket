@@ -13635,7 +13635,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_context_t cx;
   unw_cursor_t c;
-  int manual_unw;
+  int manual_unw = 0;
   unw_word_t stack_addr;
 #else
   Get_Stack_Proc gs;
