@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@begin[(require "utils.rkt" scribble/eval
+@begin[(require "utils.rkt" scribble/eval scriblib/footnote
                 racket/sandbox)
        (require (for-label (only-meta-in 0 typed/racket)
                            racket/list srfi/14
@@ -595,6 +595,12 @@ have the types ascribed to them; these types are converted to contracts and chec
 (fun val)]
 
 @section{Optimization in Typed Racket}
+
+@note{
+See
+@secref[#:doc '(lib "typed-scheme/scribblings/ts-guide.scrbl")]{optimization}
+in the guide for tips to get the most out of the optimizer.
+}
 
 Typed Racket provides a type-driven optimizer that rewrites well-typed
 programs to potentially make them faster. It should in no way make
