@@ -38,7 +38,7 @@ improve method arity mismatch contract violation error messages?
         "(either 4 or 6 arguments)"))]))
 
 (define (apply-contract c v pos neg name loc usr)
-  (let* ([c (coerce-contract 'contract c)])
+  (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
     (((contract-projection c)
       (make-blame loc name (contract-name c) pos neg usr #t))

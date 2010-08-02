@@ -9,7 +9,7 @@
                         any))))
 
 ((contract (->i ([f (-> number? number?)] 
-                 [y (f) (<=/c (f 0))])
+                 [y (f) (<=/c (f 'not-a-number))])
                 any)
            (λ (f y) 'final-result)
            'pos 'neg)

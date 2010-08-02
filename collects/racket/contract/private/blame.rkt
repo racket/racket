@@ -12,6 +12,7 @@
          blame-original?
          blame-swapped?
          blame-swap
+         blame-replace-negative ;; used for indy blame
 
          raise-blame-error
          current-blame-format
@@ -44,6 +45,9 @@
    [original? (not (blame-original? b))]
    [positive (blame-negative b)]
    [negative (blame-positive b)]))
+
+(define (blame-replace-negative b new-neg)
+  (struct-copy blame b [negative new-neg]))
 
 (define (blame-swapped? b)
   (not (blame-original? b)))
