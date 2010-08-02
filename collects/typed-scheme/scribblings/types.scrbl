@@ -102,12 +102,12 @@ refers to the whole binary tree type within the body of the
 
 @section{Structure Types}
 
-Using @racket[define-struct:] introduces new types, distinct from any
+Using @racket[struct:] introduces new types, distinct from any
 previous type.    
 
-@racketblock[(define-struct: point ([x : Real] [y : Real]))]
+@racketblock[(struct: point ([x : Real] [y : Real]))]
 
-Instances of this structure, such as @racket[(make-point 7 12)], have type @racket[point].
+Instances of this structure, such as @racket[(point 7 12)], have type @racket[point].
 
 @section{Subtyping}
 
@@ -172,25 +172,25 @@ an analog of the @tt{Maybe} type constructor from Haskell:
 
 @racketmod[
 typed/racket
-(define-struct: None ())
-(define-struct: (a) Some ([v : a]))
+(struct: None ())
+(struct: (a) Some ([v : a]))
 
 (define-type (Opt a) (U None (Some a)))
 
 (: find (Number (Listof Number) -> (Opt Number)))
 (define (find v l)
-  (cond [(null? l) (make-None)]
-        [(= v (car l)) (make-Some v)]
+  (cond [(null? l) (None)]
+        [(= v (car l)) (Some v)]
         [else (find v (cdr l))]))
 ]
 
-The first @racket[define-struct:] defines @racket[None] to be
+The first @racket[struct:] defines @racket[None] to be
 a structure with no contents.  
 
 The second definition
 
 @racketblock[
-(define-struct: (a) Some ([v : a]))
+(struct: (a) Some ([v : a]))
 ]
 
 creates a parameterized type, @racket[Just], which is a structure with
@@ -207,8 +207,8 @@ creates a parameterized type --- @racket[Opt] is a potential
 container for whatever type is supplied.
 
 The @racket[find] function takes a number @racket[v] and list, and
-produces @racket[(make-Some v)] when the number is found in the list,
-and @racket[(make-None)] otherwise.  Therefore, it produces a
+produces @racket[(Some v)] when the number is found in the list,
+and @racket[(None)] otherwise.  Therefore, it produces a
 @racket[(Opt Number)], just as the annotation specified.  
 
 @subsection{Polymorphic Functions}

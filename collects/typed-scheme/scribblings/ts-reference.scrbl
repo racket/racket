@@ -397,7 +397,7 @@ corresponding to @racket[define-struct].}
 @defform/subs[
 (define-struct/exec: name-spec ([f : t] ...) [e : proc-t])
 ([name-spec name (name parent)])]{
- Like @racket[define-struct:], but defines an procedural structure.  
+ Like @racket[define-struct:], but defines a procedural structure.  
  The procdure @racket[e] is used as the value for @racket[prop:procedure], and must have type @racket[proc-t].}
 
 @subsection{Names for Types}

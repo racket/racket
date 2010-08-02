@@ -23,7 +23,7 @@ are provided as well; for example, the
 @racketmodname[typed/racket/base] language corresponds to
 @racketmodname[racket/base].   
 
-@racketblock[(define-struct: pt ([x : Real] [y : Real]))]
+@racketblock[(struct: pt ([x : Real] [y : Real]))]
 
 @margin-note{Many forms in Typed Racket have the same name as the
 untyped forms, with a @racket[:] suffix.}
@@ -31,10 +31,10 @@ This defines a new structure, name @racket[pt], with two fields,
 @racket[x] and @racket[y].  Both fields are specified to have the type
 @racket[Real], which corresponds to the @rtech{real numbers}.
  The
-@racket[define-struct:] form corresponds to the @racket[define-struct]
+@racket[struct:] form corresponds to the @racket[struct]
 form from @racketmodname[racket]---when porting a program from
 @racketmodname[racket] to @racketmodname[typed/racket], uses of
-@racket[define-struct] should be changed to @racket[define-struct:].
+@racket[struct] should be changed to @racket[struct:].
 
 @racketblock[(: mag (pt -> Number))]
 
@@ -71,8 +71,8 @@ represent these using @italic{union types}, written @racket[(U t1 t2 ...)].
 @racketmod[
 typed/racket
 (define-type Tree (U leaf node))
-(define-struct: leaf ([val : Number]))
-(define-struct: node ([left : Tree] [right : Tree]))
+(struct: leaf ([val : Number]))
+(struct: node ([left : Tree] [right : Tree]))
 
 (: tree-height (Tree -> Integer))
 (define (tree-height t)
