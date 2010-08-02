@@ -55,12 +55,12 @@
     (def/public (get-bounding-box)
       (if (null? paths)
           (values 0.0 0.0 0.0 0.0)
-          (let-values ([(l t r b) (send (caar paths) get-bounding-box)])
+          (let-values ([(l t w h) (send (caar paths) get-bounding-box)])
             (let loop ([paths (cdr paths)]
                        [l l]
                        [t t]
-                       [r r]
-                       [b b])
+                       [r (+ l w)]
+                       [b (+ t h)])
               (if (null? paths)
                   (if matrix
                       ;; Convert absolute coordinates back to the DC's
@@ -88,16 +88,19 @@
                                                   [y (- y dy)])
                                               (/ (- (* ma y) (* mc x)) det)))])
                                   ;; unwind bound-box points to pre-transformed
-                                  (values (tx l t) (ty l t)
-                                          (tx r b) (ty r b)))))))
+                                  (let ([l (tx l t)]
+                                        [t (ty l t)]
+                                        [r (tx r b)]
+                                        [b (ty r b)])
+                                  (values l t (- r l) (- b t))))))))
                       ;; no dc un-transformation needed
-                      (values l t r b))
-                  (let-values ([(l2 t2 r2 b2) (send (caar paths) get-bounding-box)])
+                      (values l t (- r l) (- b t)))
+                  (let-values ([(l2 t2 w2 h2) (send (caar paths) get-bounding-box)])
                     (loop (cdr paths)
                           (min l l2)
                           (min t t2)
-                          (max r r2)
-                          (max b b2))))))))
+                          (max r (+ l2 w2))
+                          (max b (+ t2 h2)))))))))
 
     (define/public (install-region cr [init (void)] [install (lambda (cr v) (cairo_clip cr))])
       (let ([default-fill-rule (if (ormap (lambda (pr) (eq? (cdr pr) 'odd-even)) paths)
@@ -200,6 +203,7 @@
       (modifying 'set-path)
       (let ([p (new dc-path%)])
         (send p append path)
+        (send p translate x y)
         (when matrix (send p transform matrix))
         (set! paths (list (cons p fill-style)))))
 

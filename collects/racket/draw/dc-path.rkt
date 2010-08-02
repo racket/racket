@@ -128,21 +128,23 @@
                               (let ([p (car l)])
                                 (values (car p) (cdr p)
                                         (car p) (cdr p)))))])
-            (for*/fold ([l l]
-                        [t t]
-                        [r r]
-                        [b b])
-                ([pts (in-list (cons open-points closed-points))]
-                 [p (in-list pts)])
-              (cond
-               [(pair? p) (values (min l (car p))
-                                  (min t (cdr p))
-                                  (max r (car p))
-                                  (max b (cdr p)))]
-               [else (values (min l (vector-ref p 0) (vector-ref p 2))
-                             (min t (vector-ref p 1) (vector-ref p 3))
-                             (max r (vector-ref p 0) (vector-ref p 2))
-                             (max b (vector-ref p 1) (vector-ref p 3)))])))))
+            (let-values ([(l t r b)
+                          (for*/fold ([l l]
+                                      [t t]
+                                      [r r]
+                                      [b b])
+                              ([pts (in-list (cons open-points closed-points))]
+                               [p (in-list pts)])
+                            (cond
+                             [(pair? p) (values (min l (car p))
+                                                (min t (cdr p))
+                                                (max r (car p))
+                                                (max b (cdr p)))]
+                             [else (values (min l (vector-ref p 0) (vector-ref p 2))
+                                           (min t (vector-ref p 1) (vector-ref p 3))
+                                           (max r (vector-ref p 0) (vector-ref p 2))
+                                           (max b (vector-ref p 1) (vector-ref p 3)))]))])
+              (values l t (- r l) (- b t))))))
     
     (def/public (move-to [real? x] [real? y])
       (when (or (pair? open-points)
