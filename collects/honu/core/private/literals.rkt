@@ -18,8 +18,11 @@
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
                 honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
                 honu-!= honu-==
+                honu-literal
                 honu-? honu-: honu-comma honu-. #%braces #%brackets #%parens colon
                 honu-and
-                ellipses-comma ellipses-comma* ellipses-repeat honu-for-syntax)
+                ellipses-comma ellipses-comma* ellipses-repeat
+                honu-for-syntax
+                honu-for-template)
 
 (define-literal-set cruft (#%parens #%brackets #%braces semicolon))

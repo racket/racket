@@ -389,6 +389,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
     (define-syntax-class expr
       [pattern e])
     (define-syntax-class paren-expr
+                         #:literals (#%parens)
       [pattern (#%parens expr:expression) #:with result #'expr.result])
     (define-syntax-class block
                          [pattern (#%braces statement ...)
@@ -399,8 +400,9 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
     (syntax-parse stx
       #:literals (else)
       [(_ condition:paren-expr on-true:block else on-false:block . rest)
+       ;; (printf "Condition expr is ~a\n" #'condition.expr)
        ;; (printf "used if with else\n")
-       (let ([result #'(if condition.expr on-true.line on-false.line)])
+       (let ([result #'(if condition.result on-true.line on-false.line)])
          (values
            (lambda () result)
            #'rest)
@@ -548,10 +550,17 @@ if (foo){
                #;
                (datum->syntax body (cons #'for-syntax (cons #'spec #'()))
                                             body body)])
+    (define-syntax-class for-template-form
+                         #:literals (#%parens honu-for-template)
+      [pattern (#%parens honu-for-template spec)
+               #:with result
+               (datum->syntax #'spec (cons #'for-template (cons #'spec #'()))
+                              #'spec #'spec)])
     (define-syntax-class normal-form
       [pattern x:str #:with result #'x])
     (define-syntax-class form
       [pattern x:for-syntax-form #:with result #'x.result]
+      [pattern x:for-template-form #:with result #'x.result]
       [pattern x:normal-form #:with result #'x.result])
     (syntax-parse body #:literals (semicolon)
       [(_ form:form ... semicolon . rest)

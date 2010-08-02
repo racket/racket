@@ -2,29 +2,22 @@
 
 require (forSyntax "with.honu");
 require (forSyntax "function.honu");
+require (forSyntax "patterns.honu");
+require "keywords.honu";
 
 provide print;
+provide then;
 
 macro print ()
 { _ (value:expression); } { syntax(display(value_result); newline();); }
-{ _ value:expression_comma ... ; } { syntax({display(value_result);} ...); }
+{ _ value:expression_comma ... ; } { syntax({display(value_result);} ... newline()); }
 
 provide check_expect;
 provide expect;
 keywords expect;
 macro check_expect (expect) { _ check:expression expect expected:expression ; }
 { 
-  function bar(g){
-     g + 1 
-  }
-  function foo(){
-    cheetos()
-  }
-  // withSyntax [check_raw bar(2)]{
   withSyntax [check_raw syntax_to_string(syntax(check);)]{
-  // withSyntax [check_raw syntax_to_string(1)]{
-  // withSyntax [check_raw foo()]{
-  // withSyntax [check_raw 1]{
    syntax({checked = check_result;
            out = expected_result;
            if (checked != out){
@@ -33,3 +26,13 @@ macro check_expect (expect) { _ check:expression expect expected:expression ; }
            }});
    };
 }
+
+provide condition;
+macro condition (){ _ clause:condition_clause rest ... ;}
+{ syntax(if (clause_condition_result) {
+           clause_out_result
+         } else {
+           condition rest ... ;
+         }
+         ); }
+{ _ ; } { syntax(1;); }

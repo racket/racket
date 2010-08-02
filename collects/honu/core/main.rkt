@@ -39,8 +39,6 @@
 (define-for-syntax (syntax-to-string stx)
   (format "original '~a' - ~a" (syntax->datum stx) (to-honu-string stx)))
 
-(define (cheetos1) 5)
-
 (define-syntax (honu-struct stx)
   (syntax-parse stx
     [(_ name (my-field ...))
@@ -67,20 +65,20 @@
                      (honu-<= <=)
                      (honu-== ==)
                      (honu-= =)
+                     (honu-literal literals)
                      (honu-!= !=)
                      (honu-? ?)
                      (honu-: :)
                      (honu-and and)
                      (honu-comma |,|)
                      (honu-. |.|)
+                     (expression-comma expression_comma)
                      )
 
          #;
          (rename-out [honu-print print])
 
          (for-syntax (rename-out [syntax-to-string syntax_to_string]))
-         (for-syntax cheetos)
-         cheetos1
 
          #%top
 
@@ -167,6 +165,7 @@
            (honu-identifier identifier123)
            (honu-require require)
            (honu-for-syntax forSyntax)
+           (honu-for-template forTemplate)
            (honu-syntax syntax)
            (honu-pattern pattern)
            (honu-keywords keywords)

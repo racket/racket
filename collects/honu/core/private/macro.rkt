@@ -435,8 +435,12 @@
 (define-honu-syntax honu-pattern
   (lambda (stx ctx)
     (syntax-parse stx #:literal-sets ([cruft #:at stx])
+      #:literals (honu-literal)
       ;; #%parens #%brackets semicolon)
-      [(_ name (#%parens all-attributes:identifier ...) (#%brackets xpattern ...)
+      [(_ name
+          (~optional (~seq honu-literal (#%parens literals ...)))
+          (#%parens all-attributes:identifier ...)
+          (#%brackets xpattern ...)
           semicolon . rest)
        (define my-parens (datum->syntax #'name '#%parens #'name #'name))
        (define (create-pattern stuff)
@@ -444,15 +448,20 @@
            (syntax/loc stuff (pattern (~seq fixed ...)))))
        (values
          (lambda ()
-           (with-syntax ([final-pattern (create-pattern #'(xpattern ...))]
-                         #;
-                         [parens (datum->syntax stx '#%parens stx)]
-                         [parens (datum->syntax #'name '#%parens #'name #'name)])
-             (syntax/loc stx
-                         (define-splicing-syntax-class name
-                                                       #:literal-sets ([cruft #:at name])
-                                                       #:attributes (all-attributes ...)
-                                                       final-pattern))))
+           (if (attribute literals)
+             (with-syntax ([final-pattern (create-pattern #'(xpattern ...))])
+                           (syntax/loc stx
+                                       (define-splicing-syntax-class name
+                                                                     #:literal-sets ([cruft #:at name])
+                                                                     #:literals (literals ...)
+                                                                     #:attributes (all-attributes ...)
+                                                                     final-pattern)))
+             (with-syntax ([final-pattern (create-pattern #'(xpattern ...))])
+                           (syntax/loc stx
+                                       (define-splicing-syntax-class name
+                                                                     #:literal-sets ([cruft #:at name])
+                                                                     #:attributes (all-attributes ...)
+                                                                     final-pattern)))))
          #'rest)])))
 
 (define foobar 0)
@@ -529,6 +538,7 @@
                                               result)))
                                         #'(rrest (... ...)))]
                                      ...
+                                     [else (raise-syntax-error 'name "bad syntax")]
                                      ))))))
                  #;
                  (with-syntax ([parsed (let-values ([(out rest*)

@@ -14,12 +14,3 @@
                 "private/struct.honu"
                 "private/function.honu"
                 "private/common.honu")
-
-#|
-(racket:require "core/main.rkt"
-                "private/struct.honu"
-                "private/function.honu")
-(racket:provide [all-from-out "core/main.rkt"])
-(racket:provide [all-from-out "private/struct.honu"
-                              "private/function.honu"])
-|#

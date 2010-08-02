@@ -85,7 +85,7 @@
                                  (printf "Transforming honu macro ~a\n" (stx-car stx))
                                  (let-values ([(used rest)
                                                (transformer (introducer stx) context)])
-                                   (printf "Result is ~a. Object position is ~a\n" used (syntax-object-position stx (introducer rest)))
+                                   (printf "Result is ~a. Object position is ~a out of expression ~a\n" used (syntax-object-position stx (introducer rest)) (syntax->datum stx))
                                    (list (introducer rest) (syntax-object-position stx (introducer rest))
                                          (introducer (used)))))]
      
@@ -196,7 +196,7 @@
   [pattern (~seq x:honu-identifier) #:with result #'x.x])
 
 (define-splicing-syntax-class (expression-last context)
-                              #:literals (#%parens)
+                              #:literals (#%parens honu-:)
 
                               #;
   [pattern (~seq a 1 2 3 b 4 5 6)]
@@ -210,6 +210,9 @@
                     (stx-car #'raw)
                     #'raw))]
 
+  [pattern (~seq (#%braces code:statement))
+           #:with result #'(begin code.result)]
+
   [pattern (~seq (#%parens (~var e (expression-1 context)))) #:with result #'e.result]
   [pattern (~seq (~var call (call context))) #:with result #'call.call]
   [pattern (~seq (~var e (honu-transformer
@@ -219,6 +222,7 @@
            #:with result #'e.result
            #:with rest #'e.rest]
   [pattern (~seq x:number) #:with result (begin (printf "got a number ~a\n" #'x) #'x)]
+  [pattern (~seq honu-: id:honu-identifier) #:with result #''id.result]
   [pattern (~seq x:str) #:with result #'x]
   [pattern (~seq x:honu-identifier) #:with result #'x.x]
   #;
@@ -514,6 +518,7 @@
                  )
            #:with result (apply-scheme-syntax (attribute x.result))
            #:with rest #'x.rest]
+
                      #;
   [pattern ((~var f (debug-here "statement1"))
                  (~var x (expression-top the-top-block-context)))
@@ -553,7 +558,9 @@
   #;
   [pattern (~seq (~var expr honu-identifier) (~optional honu-comma))]
 
-  [pattern (~seq (~var expr (expression-1 the-expression-context)) (~optional honu-comma)) #:with result (apply-scheme-syntax #'expr.result)]
+  [pattern (~seq (~var expr (expression-1 the-expression-context))
+                 (~optional honu-comma))
+           #:with result (apply-scheme-syntax #'expr.result)]
 
   #;
   [pattern ((~seq (~var expr (expression-1 the-expression-context)) (~optional honu-comma)) ...)])
