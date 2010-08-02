@@ -94,7 +94,24 @@
 
     (super-new)))
 
+(define black (send the-color-database find-color "black"))
+
 (define bitmap-dc%
-  (dc-mixin dc-backend%))
+  (class (dc-mixin dc-backend%)
+    (inherit draw-bitmap-section)
+    
+    (def/public (draw-bitmap-section-smooth [bitmap% src]
+                                            [real? dest-x]
+                                            [real? dest-y]
+                                            [real? src-x]
+                                            [real? src-y]
+                                            [real? src-w]
+                                            [real? src-h]
+                                            [(symbol-in solid opaque xor) [style 'solid]]
+                                            [(make-or-false color%) [color black]]
+                                            [(make-or-false bitmap%) [mask #f]])
+      (draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h style color mask))
+    
+    (super-new)))
 
 (install-bitmap-dc-class! bitmap-dc%)

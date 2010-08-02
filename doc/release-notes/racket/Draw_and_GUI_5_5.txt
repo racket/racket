@@ -29,23 +29,40 @@ Changes to the drawing toolbox:
 
  * A `dc<%>' supports additional drawing transformations: a rotation
    (via `set-rotation') and a general transformation matrix (via
-   `set-initial-matrix').
+   `set-initial-matrix'). Scaling factors can be negative, which
+   corresponds to flipping the direction of drawing.
 
    A transformation matrix has the form `(vector xx xy yx yy x0 y0)',
-   where a point (x1, y1) is transformed to a point (x2, y2) with
-   x2 = xx*x1 + yx*y1 + x0 and y2 = xy*x1 + yy*y1 + y0.
+   where a point (x1, y1) is transformed to a point (x2, y2) with x2 =
+   xx*x1 + yx*y1 + x0 and y2 = xy*x1 + yy*y1 + y0, which is the usual
+   convention.
+
+   New methods `translate', `scale', `rotate', and `transform'
+   simplify adding a further translation, scaling, rotation, or
+   arbitrary matrix transformation on top of the current
+   transformation. The new `get-translation' and `set-translation'
+   methods help to capture and restore transformation settings.
 
    The old translation and scaling transformations apply after the
    initial matrix. The new rotation transformation applies after the
-   other transformations. This layering is a little redundant, since
-   all transformations could be expressed in a single matrix, but it
-   is backward compatibile.
+   other transformations. This layering is redundant, since all
+   transformations can be expressed in a single matrix, but it is
+   backward-compatibile. Methods like `get-translation',
+   `set-translation', `scale', etc. help hide the reundancy.
+
+   The alpha value of a `dc<%>' (as set by `set-alpha') is used for
+   all drawing operations, including drawing a bitmap.
+
+   The `draw-bitmap' and `draw-bitmap-section' methods now smooth
+   bitmaps while scaling, so the `draw-bitmap-section-smooth' method
+   of `bitmap-dc%' simply calls `draw-bitmap-section'.
 
  * A `region%' can be created as independent of any `dc<%>', in which
    cases it uses the drawing context's current transformation at the
    time that it is installed as a clipping region.
 
- * The old 'xor mode for pens and brushes is no longer available.
+ * The old 'xor mode for pens and brushes is no longer available
+   (since it is not supported by Cairo).
 
 Changes to the GUI toolbox:
 

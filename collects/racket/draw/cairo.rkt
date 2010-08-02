@@ -102,6 +102,7 @@
 (define-cairo cairo_matrix_translate (_fun _cairo_matrix_t-pointer _double* _double* -> _void))
 (define-cairo cairo_matrix_scale (_fun _cairo_matrix_t-pointer _double* _double* -> _void))
 (define-cairo cairo_matrix_rotate (_fun _cairo_matrix_t-pointer _double* -> _void))
+(define-cairo cairo_matrix_multiply (_fun _cairo_matrix_t-pointer _cairo_matrix_t-pointer _cairo_matrix_t-pointer -> _void))
 
 ;; Stroke & Fill
 (define-cairo cairo_set_source_rgb (_fun _cairo_t _double* _double* _double* -> _void))

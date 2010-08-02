@@ -152,8 +152,7 @@ information@|details|, even if the editor currently has delayed refreshing (see
 
   (define SeeMzParam @elem{(see @secref[#:doc reference-doc "parameters"])})
   
-  (define DrawSizeNote @elem{Restrictions on the magnitude of
-                            drawing coordinates are described with @scheme[dc<%>].})
+  (define DrawSizeNote "")
 
   (define LineNumbering @elem{Lines are numbered starting with @scheme[0].})
   (define ParagraphNumbering @elem{Paragraphs are numbered starting with @scheme[0].})

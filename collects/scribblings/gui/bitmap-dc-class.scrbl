@@ -39,10 +39,9 @@ Creates a new memory DC. If @scheme[bitmap] is not @scheme[#f], it is
                                        [mask (or/c (is-a?/c bitmap%) false/c)])
            boolean?]{
 
-Display part of a bitmap with smooth scaling. For most platforms, this
- method produces better results than adjusting the scale of a drawing
- context before using @method[dc<%> draw-bitmap] and @method[dc<%>
- draw-bitmap-section], but this method is much slower.
+The same as @method[dc<%> draw-bitmap-section]. In older version, this
+ method smoothed drawing more than @method[dc<%> draw-bitmap-section], but
+ smoothing is now provided by @method[dc<%> draw-bitmap-section].
 
 }
 

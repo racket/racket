@@ -7,12 +7,6 @@ A @scheme[dc<%>] object is a drawing context for drawing graphics and
  text.  It represents output devices in a generic way; e.g., a canvas
  has a drawing context, as does a printer.
 
-The drawing methods, such as @method[dc<%> draw-rectangle], accept
-real number values as arguments, but the results are only well-defined
-when the drawing coordinates are in the range @scheme[-16383] to
-@scheme[16383]. This restriction applies to the coordinates both
-before and after offsets and scaling factors are applied.
-
 
 @defmethod[(cache-font-metrics-key)
            exact-integer?]{
@@ -530,7 +524,7 @@ following order:
 
 ]
 
-See also @method[dc<%> set-initial-matrix].
+See also @method[dc<%> set-initial-matrix] and @method[dc<%> get-transformation].
 
 }
 
@@ -542,7 +536,7 @@ Returns the device origin, i.e., the location in device coordinates of
  @math{(0,0)} in logical coordinates. The origin offset applies after
  the initial transformation matrix, but before scaling and rotation.
 
-See also @method[dc<%> set-origin].
+See also @method[dc<%> set-origin] and @method[dc<%> get-transformation].
 
 }
 
@@ -560,7 +554,7 @@ Returns the rotation of logical coordinates in radians to device
 coordinates. Rotation applies after the initial transformation matrix,
 origin offset, and scaling.
 
-See also @method[dc<%> set-rotation].
+See also @method[dc<%> set-rotation] and @method[dc<%> get-transformation].
 
 }
 
@@ -571,7 +565,7 @@ Returns the scaling factor that maps logical coordinates to device
 coordinates. Scaling applies after the initial transformation matrix
 and origin offset, but before rotation.
 
-See also @method[dc<%> set-scale].
+See also @method[dc<%> set-scale] and @method[dc<%> get-transformation].
 
 }
 
@@ -665,12 +659,36 @@ set-text-foreground].
 
 }
 
+
 @defmethod[(get-text-mode)
            (one-of/c 'solid 'transparent)]{
 Reports how text is drawn; see
-@method[dc<%> set-text-mode] .
+@method[dc<%> set-text-mode].}
 
-}
+
+@defmethod[(get-transformation)
+           (vector/c (vector/c real? real? real? real? real? real?)
+                     real? real? real? real? real?)]{
+
+Returns the current transformation setting of the drawing context in a
+form that is suitable for restoration via @method[dc<%>
+set-transformation].
+
+The vector content is as follows:
+
+@itemlist[
+
+ @item{the initial transformation matrix; see @method[dc<%>
+       get-initial-matrix];}
+
+ @item{the X and Y origin; see @method[dc<%> get-origin];}
+
+ @item{the X and Y scale; see @method[dc<%> get-origin];}
+
+ @item{a rotation; see @method[dc<%> get-rotation].}
+
+]}
+
 
 @defmethod[(glyph-exists? [c char]
                           [font (or/c (is-a?/c font%) false/c) #f])
@@ -698,6 +716,30 @@ Returns @scheme[#t] if the drawing context is usable.
 
 }
 
+@defmethod[(rotate [angle real?]) void?]{
+
+Adds a rotation of @racket[angle] radians to the drawing context's
+current transformation.
+
+Afterward, the drawing context's transformation is represented in the
+initial transformation matrix, and the separate origin, scale, and
+rotation settings have their identity values.
+
+}
+
+@defmethod[(scale [x-scale real?]
+                  [y-scale real?])
+           void?]{
+
+Adds a scaling of @racket[x-scale] in the X-direction and
+@racket[y-scale] in the Y-direction to the drawing context's current
+transformation.
+
+Afterward, the drawing context's transformation is represented in the
+initial transformation matrix, and the separate origin, scale, and
+rotation settings have their identity values.
+
+}
 
 @defmethod[(set-alpha [opacity (real-in 0 1)])
            void?]{
@@ -790,9 +832,9 @@ Set a transformation matrix that converts logical coordinates to
 See @method[dc<%> get-initial-matrix] for information on the matrix as
  represented by a vector @racket[m].
 
-Changing a @scheme[dc<%>] object's transformations does not affect
- @scheme[region%] objects that were previously created. See
- @scheme[region%] for more information.
+See also @method[dc<%> transform], which adds a transformation to the
+ current transformation, instead of changing the transformation
+ composition in the middle.
 
 @|DrawSizeNote|
 
@@ -806,10 +848,9 @@ Sets the device origin, i.e., the location in device coordinates of
  @math{(0,0)} in logical coordinates. The origin offset applies after
  the initial transformation matrix, but before scaling and rotation.
 
-Changing a @scheme[dc<%>] object's transformations does not affect
- @scheme[region%] objects that were previously created. See
-@scheme[region%] for more information.
- 
+See also @method[dc<%> translate], which adds a translation to the
+ current transformation, instead of changing the transformation
+ composition in the middle.
 
 @|DrawSizeNote|
 
@@ -849,25 +890,25 @@ Set the rotation of logical coordinates in radians to device
 coordinates. Rotation applies after the initial transformation matrix,
 origin offset, and scaling.
 
-Changing a @scheme[dc<%>] object's transformations does not affect
- @scheme[region%] objects that were previously created. See
- @scheme[region%] for more information.
+See also @method[dc<%> rotate], which adds a rotation to the current
+ transformation, instead of changing the transformation composition.
 
 @|DrawSizeNote|
 
 }
 
-@defmethod[(set-scale [x-scale (and/c real? (not/c negative?))]
-                      [y-scale (and/c real? (not/c negative?))])
+@defmethod[(set-scale [x-scale real?]
+                      [y-scale real?])
            void?]{
 
 Sets a scaling factor that maps logical coordinates to device
  coordinates.  Scaling applies after the initial transformation matrix
- and origin offset, but before rotation.
+ and origin offset, but before rotation. Negative scaling factors have
+ the effect of flipping.
 
-Changing a @scheme[dc<%>] object's transformations does not affect
- @scheme[region%] objects that were previously created. See
- @scheme[region%] for more information.
+See also @method[dc<%> scale], which adds a scale to the current
+ transformation, instead of changing the transformation composition in
+ the middle.
 
 @|DrawSizeNote|
 
@@ -957,6 +998,16 @@ Determines how text is drawn:
 
 }
 
+
+@defmethod[(set-transformation
+            [t (vector/c (vector/c real? real? real? real? real? real?)
+                         real? real? real? real? real?)])
+           void?]{
+
+Sets the draw context's transformation. See @method[dc<%>
+get-transformation] for information about @racket[t].}
+
+
 @defmethod[(start-doc [message string?])
            boolean?]{
 
@@ -990,6 +1041,35 @@ For printer or PostScript output, an exception is raised if
  @scheme[as-eps] initialization argument for @scheme[post-script-dc%].
 
 }
+
+@defmethod[(transform [m (vector/c real? real? real? real? real? real?)])
+           void?]{
+
+Adds a transformation by @racket[m] to the drawing context's current
+transformation. 
+
+See @method[dc<%> get-initial-matrix] for information on the matrix as
+ represented by a vector @racket[m].
+
+Afterward, the drawing context's transformation is represented in the
+initial transformation matrix, and the separate origin, scale, and
+rotation settings have their identity values.
+
+}
+
+@defmethod[(translate [dx real?]
+                      [dy real?])
+           void?]{
+
+Adds a scaling of @racket[dx] in the X-direction and @racket[dy] in
+the Y-direction to the drawing context's current transformation.
+
+Afterward, the drawing context's transformation is represented in the
+initial transformation matrix, and the separate origin, scale, and
+rotation settings have their identity values.
+
+}
+
 
 @defmethod[(try-color [try (is-a?/c color%)]
                       [result (is-a?/c color%)])

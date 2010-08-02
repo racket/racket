@@ -38,6 +38,16 @@
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
 
+(define (transformation-vector? v)
+  (and (vector? v)
+       (= 6 (vector-length v))
+       (matrix-vector? (vector-ref v 0))
+       (real? (vector-ref v 1))
+       (real? (vector-ref v 2))
+       (real? (vector-ref v 3))
+       (real? (vector-ref v 4))
+       (real? (vector-ref v 5))))
+
 ;; dc-backend : interface
 ;;
 ;; This is the interface that the backend specific code must implement
@@ -238,6 +248,37 @@
         (reset-matrix)))
     (def/public (get-rotation) rotation)
 
+    (def/public (translate [real? ox] [real? oy])
+      (transform (vector 1 0 0 1 ox oy)))
+    (def/public (scale [real? sx] [real? sy])
+      (transform (vector sx 0 0 sy 0 0)))
+    (def/public (rotate [real? theta])
+      (let ([s (sin (- theta))]
+            [c (cos (- theta))])
+        (transform (vector c s (- s) c 0 0))))
+
+    (def/public (transform [matrix-vector? mi])
+      (let* ([m matrix]
+             [mx (make-cairo_matrix_t 1 0 0 1 0 0)]
+             [mx2 (make-cairo_matrix_t (vector-ref mi 0)
+                                       (vector-ref mi 1)
+                                       (vector-ref mi 2)
+                                       (vector-ref mi 3)
+                                       (vector-ref mi 4)
+                                       (vector-ref mi 5))])
+        (cairo_matrix_rotate mx (- rotation))
+        (cairo_matrix_scale mx scale-x scale-y)
+        (cairo_matrix_translate mx origin-x origin-y)
+        (cairo_matrix_multiply mx mx m)
+        (cairo_matrix_multiply mx mx mx2)
+        (set! origin-x 0.0)
+        (set! origin-y 0.0)
+        (set! scale-x 1.0)
+        (set! scale-y 1.0)
+        (set! rotation 0.0)
+        (set! matrix mx)
+        (reset-matrix)))
+
     (def/public (set-initial-matrix [matrix-vector? m])
       (set! matrix (make-cairo_matrix_t (vector-ref m 0)
                                         (vector-ref m 1)
@@ -255,6 +296,19 @@
                           (cairo_matrix_t-yy m)
                           (cairo_matrix_t-x0 m)
                           (cairo_matrix_t-y0 m))))
+
+    (def/public (get-transformation)
+      (vector-immutable (get-initial-matrix)
+                        origin-x origin-y
+                        scale-x scale-y
+                        rotation))
+
+    (def/public (set-transformation [transformation-vector? v])
+      (set-initial-matrix (vector-ref v 0))
+      (set-origin (vector-ref v 1) (vector-ref v 2))
+      (set-scale (vector-ref v 3) (vector-ref v 4))
+      (set-rotation (vector-ref v 5)))
+    
 
     (define/private (do-reset-matrix cr)
       (cairo_set_matrix cr matrix)
