@@ -45,15 +45,15 @@
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(box box-nc)))]
   
-  [(verify (loc-clr n) (ṽ_0 ... imm ṽ_n+1 ...) n_l #f γ η f)
-   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n imm n_l γ) η)
+  [(verify (loc-clr n) (name s (ṽ_0 ... imm ṽ_n+1 ...)) n_l #f γ η f)
+   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n s n_l γ) η)
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))]
-  [(verify (loc-clr n) (ṽ_0 ... ṽ_n ṽ_n+1 ...) n_l #t γ η f)
-   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n ṽ_n n_l γ) η)
+  [(verify (loc-clr n) (name s (ṽ_0 ... ṽ_n ṽ_n+1 ...)) n_l #t γ η f)
+   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n s n_l γ) η)
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(imm box)))]
-  [(verify (loc-box-clr n) (ṽ_0 ... box ṽ_n+1 ...) n_l b γ η f) 
-   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n box n_l γ) η)
+  [(verify (loc-box-clr n) (name s (ṽ_0 ... box ṽ_n+1 ...)) n_l b γ η f) 
+   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n s n_l γ) η)
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))]
   
   ; branch
@@ -292,25 +292,35 @@
    (undo-noclears (n_1 ...) s)])
 
 (define-metafunction verification
-  log-clear : n ṽ n γ -> γ
-  [(log-clear n_p ṽ n_l ((n_0 ṽ_0) ...))
-   ((,(- (term n_p) (term n_l)) ṽ) (n_0 ṽ_0) ...)
-   (side-condition (>= (term n_p) (term n_l)))]
-  [(log-clear n_p ṽ n_l γ) γ])
+  log-clear : n s n γ -> γ
+  [(log-clear n_p (name s (ṽ_0 ... ṽ_p ṽ_p+1 ...)) n_l ((n_i ṽ_i) ...))
+   ((,(- (- (term n_h) (term n_p)) (term 1)) ṽ_p) (n_i ṽ_i) ...)
+   (where n_h ,(length (term s)))
+   (side-condition (>= (term n_p) (term n_l)))
+   (side-condition (= (length (term (ṽ_0 ...))) (term n_p)))]
+  [(log-clear n_p s n_l γ) γ])
 
 (define-metafunction verification
   undo-clears : γ s -> s
   [(undo-clears γ invalid) invalid]
   [(undo-clears () s) s]
   [(undo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s)
-   (undo-clears ((n_1 ṽ_1) ...) (set ṽ_0 n_0 s))])
+   (undo-clears ((n_1 ṽ_1) ...) (set ṽ_0 ,(- (- (term n_h) (term n_0)) (term 1)) s))
+   (where n_h ,(length (term s)))
+   (side-condition (< (term n_0) (term n_h)))]
+  [(undo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s)
+   (undo-clears ((n_1 ṽ_1) ...) s)])
 
 (define-metafunction verification
   redo-clears : γ s -> s
   [(redo-clears γ invalid) invalid]
   [(redo-clears () s) s]
   [(redo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
-   (redo-clears ((n_1 ṽ_1) ...) (set not n_0 s))])
+   (redo-clears ((n_1 ṽ_1) ...) (set not ,(- (- (term n_h) (term n_0)) (term 1)) s))
+   (where n_h ,(length (term s)))
+   (side-condition (< (term n_0) (term n_h)))]
+  [(redo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
+   (redo-clears ((n_1 ṽ_1) ...) s)])
 
 (define-metafunction verification
   trim : s s -> s

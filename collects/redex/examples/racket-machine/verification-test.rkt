@@ -399,6 +399,40 @@
                        void)
                (install-value 0 'x void))))
 
+(test-predicate
+ bytecode-ok?
+ '(proc-const (val)
+              (seq
+               (branch (loc 0)
+                       (let-one 'x
+                                (branch (loc 1)
+                                        (loc-clr 0)
+                                        void))
+                       void)
+               (loc 0))))
+
+(test-predicate
+ bytecode-ok?
+ '(proc-const (val)
+              (branch (loc 0)
+                      (let-void-box 2
+                                    (branch (loc 2)
+                                            (loc-box-clr 1)
+                                            void))
+                      void)))
+
+(test-predicate
+ bytecode-ok?
+ '(proc-const (val)
+              (seq
+               (branch (loc 0)
+                       (let-one 'x
+                                (branch (loc 1)
+                                        (let-one 'x (loc-clr 1))
+                                        void))
+                       void)
+               (loc 0))))
+
 ; let-rec
 (test-predicate
  bytecode-ok?
