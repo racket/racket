@@ -1001,7 +1001,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          [update 
           (λ (i)
             (let ([o (vector-ref v i)])
-              (let ([nv (call-with-values (λ () (bitmap->bytes o)) vector)])
+              (let ([nv (and o 
+                             (call-with-values (λ () (bitmap->bytes o)) vector))])
                 (vector-set! v i nv))))])
     (update 1)
     (update 2)
