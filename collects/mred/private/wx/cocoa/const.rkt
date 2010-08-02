@@ -2,11 +2,14 @@
 
 (provide (except-out (all-defined-out) <<))
 
+(define (<< a b) (arithmetic-shift a b))
+
 (define NSTitledWindowMask 1)
 (define NSBorderlessWindowMask 0)
 (define NSClosableWindowMask 2)
 (define NSMiniaturizableWindowMask 4)
 (define NSResizableWindowMask 8)
+(define NSUtilityWindowMask (1 . << . 4))
 (define NSTexturedBackgroundWindowMask 256)
 
 (define NSBackingStoreBuffered 2)
@@ -14,8 +17,6 @@
 (define NSRegularSquareBezelStyle 2)
 
 (define NSAnyEventMask #xffffffff)
-
-(define (<< a b) (arithmetic-shift a b))
 
 (define NSAlphaShiftKeyMask (1 . << . 16))
 (define NSShiftKeyMask (1 . << . 17))

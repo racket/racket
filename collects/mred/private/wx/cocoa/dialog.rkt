@@ -21,6 +21,9 @@
            (set! close-sema #f)))))
     (super direct-show on?))
 
+  ;; #t result avoids children sheets
+  (define/override (get-sheet) #t)
+
   (define/override (show on?)
     (if on?
         (let ([s (as-entry

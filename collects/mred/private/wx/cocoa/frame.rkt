@@ -19,7 +19,7 @@
 
 ;; ----------------------------------------
 
-(import-class NSWindow NSGraphicsContext NSMenu 
+(import-class NSWindow NSGraphicsContext NSMenu NSPanel
               NSApplication NSAutoreleasePool)
 
 (define front #f)
@@ -27,8 +27,7 @@
 (define empty-mb (new menu-bar%))
 (define root-fake-frame #f)
 
-(define-objc-class MyWindow NSWindow
-  #:mixins (FocusResponder KeyMouseResponder)
+(define-objc-mixin (MyWindowMethods Superclass)
   [wx]
   [-a _scheme (getEventspace)
       (send wx get-eventspace)]
@@ -61,6 +60,14 @@
         (queue-window-event wx (lambda ()
                                  (send wx on-activate #f))))])
 
+(define-objc-class MyWindow NSWindow
+  #:mixins (FocusResponder KeyMouseResponder MyWindowMethods)
+  [wx])
+
+(define-objc-class MyPanel NSPanel
+  #:mixins (FocusResponder KeyMouseResponder MyWindowMethods)
+  [wx])
+
 (set-front-hook! (lambda () (values front
                                     (and front (send front get-eventspace)))))
 
@@ -86,31 +93,39 @@
           style)
     (init [is-dialog? #f])
 
-    (inherit get-cocoa
+    (inherit get-cocoa get-parent
              pre-on-char pre-on-event)
 
-    (super-new [parent #f]
+    (super-new [parent parent]
                [cocoa
-                (as-objc-allocation
-                 (tell (tell MyWindow alloc)
-                       initWithContentRect: #:type _NSRect (let-values ([(x y) (init-pos x y)])
-                                                             (make-NSRect (make-NSPoint x y)
-                                                                          (make-NSSize (max 30 w) 
-                                                                                       (max 0 h))))
-                       styleMask: #:type _int (if (memq 'no-caption style)
-                                                  NSBorderlessWindowMask
-                                                  (bitwise-ior 
-                                                   NSTitledWindowMask
-                                                   (if is-dialog?
-                                                       0
-                                                       (bitwise-ior 
-                                                        NSClosableWindowMask
-                                                        NSMiniaturizableWindowMask
-                                                        (if (memq 'no-resize-border style)
-                                                            0
-                                                            NSResizableWindowMask)))))
-                       backing: #:type _int NSBackingStoreBuffered
-                       defer: #:type _BOOL NO))]
+                (let ([is-sheet? (and #f
+                                      is-dialog? 
+                                      parent
+                                      (not (send parent frame-is-dialog?)))])
+                  (as-objc-allocation
+                   (tell (tell (if is-sheet?
+                                   MyPanel
+                                   MyWindow)
+                               alloc)
+                         initWithContentRect: #:type _NSRect (let-values ([(x y) (init-pos x y)])
+                                                               (make-NSRect (make-NSPoint x y)
+                                                                            (make-NSSize (max 30 w) 
+                                                                                         (max 0 h))))
+                         styleMask: #:type _int (if (memq 'no-caption style)
+                                                    NSBorderlessWindowMask
+                                                    (bitwise-ior 
+                                                     NSTitledWindowMask
+                                                     (if is-sheet? NSUtilityWindowMask 0)
+                                                     (if is-dialog?
+                                                         0
+                                                         (bitwise-ior 
+                                                          NSClosableWindowMask
+                                                          NSMiniaturizableWindowMask
+                                                          (if (memq 'no-resize-border style)
+                                                              0
+                                                              NSResizableWindowMask)))))
+                         backing: #:type _int NSBackingStoreBuffered
+                         defer: #:type _BOOL NO)))]
                [no-show? #t])
     (define cocoa (get-cocoa))
     (tellv cocoa setDelegate: cocoa)
@@ -126,6 +141,9 @@
       (as-objc-allocation
        (tell NSGraphicsContext graphicsContextWithWindow: cocoa)))
 
+    (define is-a-dialog? is-dialog?)
+    (define/public (frame-is-dialog?) is-a-dialog?)
+
     (define/public (clean-up)
       ;; When a window is resized, then any drawing that is in flight
       ;; might draw outside the canvas boundaries. Just refresh everything.
@@ -133,6 +151,10 @@
 
     (when label
       (tellv cocoa setTitle: #:type _NSString label))
+    
+    (define child-sheet #f)
+    (define/public (get-sheet) child-sheet)
+    (define/public (set-sheet s) (set! child-sheet s))
 
     (define/public (direct-show on?)
       (as-entry
@@ -142,8 +164,25 @@
            (set! front #f)
            (send empty-mb install))
          (if on?
-             (tellv cocoa makeKeyAndOrderFront: #f)
+             (if (and is-a-dialog?
+                      (let ([p (get-parent)])
+                        (and p 
+                             (not (send p get-sheet)))))
+                 (let ([p (get-parent)])
+                   (send p set-sheet this)
+                   (tell (tell NSApplication sharedApplication)
+                         beginSheet: cocoa
+                         modalForWindow: (send p get-cocoa)
+                         modalDelegate: #f
+                         didEndSelector: #:type _SEL #f
+                         contextInfo: #f))
+                 (tellv cocoa makeKeyAndOrderFront: #f))
              (begin
+               (when is-a-dialog?
+                 (let ([p (get-parent)])
+                   (when (and p
+                              (eq? this (send p get-sheet)))
+                     (send p set-sheet #f))))
                (tellv cocoa orderOut: #f)
                (let ([next
                       (let* ([pool (tell (tell NSAutoreleasePool alloc) init)]
@@ -185,11 +224,22 @@
         (move x y))
       (let ([f (tell #:type _NSRect cocoa frame)])
         (tellv cocoa setFrame: 
-               #:type _NSRect (make-NSRect (make-NSPoint (NSPoint-x (NSRect-origin f))
-                                                         (- (NSPoint-y (NSRect-origin f))
-                                                            (- h
-                                                               (NSSize-height (NSRect-size f)))))
-                                           (make-NSSize w h))
+               #:type _NSRect (make-NSRect 
+                               (make-NSPoint (if (and is-a-dialog?
+                                                      (let ([p (get-parent)])
+                                                        (and p
+                                                             (eq? this (send p get-sheet)))))
+                                                 ;; need to re-center sheet:
+                                                 (let* ([p (get-parent)]
+                                                        [px (send p get-x)]
+                                                        [pw (send p get-width)])
+                                                   (+ px (/ (- pw w) 2)))
+                                                 ;; keep current x position:
+                                                 (NSPoint-x (NSRect-origin f)))
+                                             (- (NSPoint-y (NSRect-origin f))
+                                                (- h
+                                                   (NSSize-height (NSRect-size f)))))
+                               (make-NSSize w h))
                display: #:type _BOOL #t)))
     (define/override (move x y)
       (tellv cocoa setFrameTopLeftPoint: #:type _NSPoint (make-NSPoint x (flip-screen y))))

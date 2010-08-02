@@ -96,7 +96,8 @@
    
     (inherit get-gtk set-size on-size
              pre-on-char pre-on-event
-             get-client-delta get-size)
+             get-client-delta get-size
+             get-parent)
 
     (define gtk (gtk_window_new GTK_WINDOW_TOPLEVEL))
     (when (memq 'no-caption style)
@@ -161,21 +162,29 @@
     (define/override (center dir wrt)
       (let ([w-box (box 0)]
             [h-box (box 0)]
+            [sx-box (box 0)]
+            [sy-box (box 0)]
             [sw-box (box 0)]
             [sh-box (box 0)])
         (get-size w-box h-box)
-        (display-size sw-box sh-box #t)
+        (let ([p (get-parent)])
+          (if p
+              (begin
+                (send p get-size sw-box sh-box)
+                (set-box! sx-box (send p get-x))
+                (set-box! sy-box (send p get-y)))
+              (display-size sw-box sh-box #t)))
         (let* ([sw (unbox sw-box)]
                [sh (unbox sh-box)]
                [fw (unbox w-box)]
                [fh (unbox h-box)])
           (set-top-position (if (or (eq? dir 'both)
                                     (eq? dir 'horizontal))
-                                (quotient (- sw fw) 2)
+                                (+ (unbox sx-box) (quotient (- sw fw) 2))
                                 -11111)
                             (if (or (eq? dir 'both)
                                     (eq? dir 'vertical))
-                                (quotient (- sh fh) 2)
+                                (+ (unbox sy-box) (quotient (- sh fh) 2))
                                 -11111)))))
 
     (define/public (set-top-position x y)

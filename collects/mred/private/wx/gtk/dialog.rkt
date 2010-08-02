@@ -40,7 +40,10 @@
     (super direct-show on?))
 
   (define/override (center dir wrt)
-    (if (eq? dir 'both)
+    ;; We're supposed to use gtk_window_set_position() for dialogs,
+    ;;  but we must be doing something else wrong so that it doesn't
+    ;;  work.
+    (if #f ; (eq? dir 'both)
         (gtk_window_set_position (get-gtk) 
                                  (if (get-parent)
                                      GTK_WIN_POS_CENTER_ON_PARENT
