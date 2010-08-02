@@ -12,19 +12,20 @@
 #|
 
 The ->i contract first parses its input into an istx struct 
-and then operates on it to generate the expanded form
+and then operates on it to generate the expanded form. This
+code does the parsing and validation of the syntax.
 
 |#
 
 ;; args : (listof arg?)
-;; rest : (or/c #f rst?)
+;; rst  : (or/c #f rst?)
 ;; pre  : (or/c stx[expr] #f)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (or/c stx[expr] #f)
 (struct istx (args rst pre ress post))
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
-;;       but only temporarily; after it is constructed, a syntax error
-;;       is signalled and the istx struct is not used afterwards
+;;       but only temporarily; in that case, a syntax error
+;;       is signaled and the istx struct is not used afterwards
 
 
 ;; kwd  : (or/c #f syntax[kwd])

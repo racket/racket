@@ -120,31 +120,27 @@ v4 todo:
   (build-contract-property
    #:projection
    (λ (ctc) 
-      (let* ([doms-proj (map contract-projection
-                             (if (->-dom-rest/c ctc)
-                               (append (->-doms/c ctc) (list (->-dom-rest/c ctc)))
-                               (->-doms/c ctc)))]
-             [doms-optional-proj (map contract-projection (->-optional-doms/c ctc))]
-             [rngs-proj (map contract-projection (->-rngs/c ctc))]
-             [mandatory-kwds-proj (map contract-projection (->-mandatory-kwds/c ctc))]
-             [optional-kwds-proj (map contract-projection (->-optional-kwds/c ctc))]
-             [mandatory-keywords (->-mandatory-kwds ctc)]
-             [optional-keywords (->-optional-kwds ctc)]
-             [func (->-func ctc)]
-             [dom-length (length (->-doms/c ctc))]
-             [optionals-length (length (->-optional-doms/c ctc))]
-             [has-rest? (and (->-dom-rest/c ctc) #t)])
-        (λ (blame)
-           (let ([partial-doms (map (λ (dom) (dom (blame-swap blame)))
-                                    doms-proj)]
-                 [partial-optional-doms (map (λ (dom) (dom (blame-swap blame)))
-                                             doms-optional-proj)]
-                 [partial-ranges (map (λ (rng) (rng blame))
-                                      rngs-proj)]
-                 [partial-mandatory-kwds (map (λ (kwd) (kwd (blame-swap blame)))
-                                              mandatory-kwds-proj)]
-                 [partial-optional-kwds (map (λ (kwd) (kwd (blame-swap blame)))
-                                             optional-kwds-proj)])
+     (let* ([doms-proj (map contract-projection
+                            (if (->-dom-rest/c ctc)
+                                (append (->-doms/c ctc) (list (->-dom-rest/c ctc)))
+                                (->-doms/c ctc)))]
+            [doms-optional-proj (map contract-projection (->-optional-doms/c ctc))]
+            [rngs-proj (map contract-projection (->-rngs/c ctc))]
+            [mandatory-kwds-proj (map contract-projection (->-mandatory-kwds/c ctc))]
+            [optional-kwds-proj (map contract-projection (->-optional-kwds/c ctc))]
+            [mandatory-keywords (->-mandatory-kwds ctc)]
+            [optional-keywords (->-optional-kwds ctc)]
+            [func (->-func ctc)]
+            [dom-length (length (->-doms/c ctc))]
+            [optionals-length (length (->-optional-doms/c ctc))]
+            [has-rest? (and (->-dom-rest/c ctc) #t)])
+       (λ (blame)
+         (let ([swapped (blame-swap blame)])
+           (let ([partial-doms (map (λ (dom) (dom swapped)) doms-proj)]
+                 [partial-optional-doms (map (λ (dom) (dom swapped)) doms-optional-proj)]
+                 [partial-ranges (map (λ (rng) (rng blame)) rngs-proj)]
+                 [partial-mandatory-kwds (map (λ (kwd) (kwd swapped)) mandatory-kwds-proj)]
+                 [partial-optional-kwds (map (λ (kwd) (kwd swapped)) optional-kwds-proj)])
              (apply func
                     (λ (val mtd?)
                       (if has-rest?
@@ -153,7 +149,7 @@ v4 todo:
                     ctc
                     (append partial-doms partial-optional-doms 
                             partial-mandatory-kwds partial-optional-kwds
-                            partial-ranges))))))
+                            partial-ranges)))))))
 
    #:name
    (λ (ctc) (single-arrow-name-maker 

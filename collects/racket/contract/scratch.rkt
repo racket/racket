@@ -1,10 +1,18 @@
 #lang racket/base
-(require racket/contract)
+(require racket/contract
+         racket/pretty)
+(pretty-print
+ (syntax->datum (expand 
+                 #'(->i (#:x [x number?]
+                             [y (x) (<=/c x)])
+                        any))))
 
-#;
-(->i ([x number?]
-      [y (x) (<=/c x)])
-     any)
+((contract (->i (#:x [x number?]
+                     [y (x) (<=/c x)])
+                any)
+           (λ (x y) x)
+           'pos 'neg)
+ 2 1)
 
 #;
 (define (coerce-proj x)
@@ -42,7 +50,7 @@
                [yi (y/proc xi here pos blame info)])
            (f x y)))))))
 
-(syntax->datum (expand #'(-> number? (<=/c 10) any)))
+;(pretty-print (syntax->datum (expand #'(-> number? (<=/c 10) any))))
 
 
 
