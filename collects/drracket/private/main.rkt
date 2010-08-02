@@ -95,6 +95,8 @@
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
+(drr:set-default 'drracket:language-dialog:hierlist-default #f (λ (x) (or (not x) (and (list? x) (andmap string? x)))))
+
 (drr:set-default 'drracket:create-executable-gui-type 'stand-alone (λ (x) (memq x '(launcher stand-alone distribution))))
 (drr:set-default 'drracket:create-executable-gui-base 'racket (λ (x) (memq x '(racket gracket))))
 

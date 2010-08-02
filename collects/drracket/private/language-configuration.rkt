@@ -291,6 +291,7 @@
         ;; actual language selections
         (define hieritem-language<%>
           (interface (hierarchical-list-item<%>)
+            get-language
             selected))
         
         (define selectable-hierlist%
@@ -370,10 +371,10 @@
               cached-fringe)
             
             (define/override (on-select i)
-              (when i
-                (set! most-recent-languages-hier-list-selection i))
               (cond
                 [(and i (is-a? i hieritem-language<%>))
+                 (preferences:set 'drracket:language-dialog:hierlist-default (send (send i get-language) get-language-position))
+                 (set! most-recent-languages-hier-list-selection i)
                  (something-selected i)]
                 [else
                  (non-language-selected)]))
@@ -416,7 +417,7 @@
                                                  [stretchable-width #f]
                                                  [min-width 32]))
         (define in-source-discussion-editor-canvas (add-discussion in-source-discussion-panel))
-        (define most-recent-languages-hier-list-selection #f)
+        (define most-recent-languages-hier-list-selection (preferences:get 'drracket:language-dialog:hierlist-default))
         (define use-chosen-language-rb
           (new radio-box%
                [label #f]
@@ -429,7 +430,8 @@
           (when most-recent-languages-hier-list-selection
             (send languages-hier-list select 
                   most-recent-languages-hier-list-selection))
-          (send use-language-in-source-rb set-selection #f))
+          (send use-language-in-source-rb set-selection #f)
+          (send languages-hier-list focus))
         (define languages-hier-list-panel (new horizontal-panel% [parent languages-choice-panel]))
         (define languages-hier-list-spacer (new horizontal-panel% 
                                                 [parent languages-hier-list-panel]
@@ -473,8 +475,8 @@
           (λ (%)
             (class* % (hieritem-language<%>)
               (init-rest args)
-              (public selected)
-              (define (selected)
+              (define/public (get-language) language)
+              (define/public (selected)
                 (update-gui-based-on-selected-language language get-language-details-panel get/set-settings))
               (apply super-make-object args))))
         
@@ -782,36 +784,47 @@
             [(not (and language-to-show settings-to-show))
              (no-language-selected)]
             [(is-a? language-to-show drracket:module-language:module-language<%>)
+             (let ([hier-default (preferences:get 'drracket:language-dialog:hierlist-default)])
+               (when hier-default
+                 (select-a-language-in-hierlist hier-default)))
+             ;; the above changes the radio button selections, so do it before calling module-language-selected
              (module-language-selected)]
             [else
              (send languages-hier-list focus) ;; only focus when the module language isn't selected
              (send use-chosen-language-rb set-selection 0)
              (send use-language-in-source-rb set-selection #f)
-             (let ([language-position (send language-to-show get-language-position)])
-               (cond
-                 [(null? (cdr language-position))
-                  ;; nothing to open here
-                  (send (car (send languages-hier-list get-items)) select #t)
-                  (void)]
-                 [else
-                  (let loop ([hi languages-hier-list]
-                             
-                             ;; skip the first position, since it is flattened into the dialog
-                             [first-pos (cadr language-position)]
-                             [position (cddr language-position)])
-                    (let ([child
-                           ;; know that this `car' is okay by construction of the dialog
-                           (car 
-                            (filter (λ (x)
-                                      (equal? (send (send x get-editor) get-text)
-                                              first-pos))
-                                    (send hi get-items)))])
+             (select-a-language-in-hierlist (send language-to-show get-language-position))]))
+        
+        (define (select-a-language-in-hierlist language-position)
+          (cond
+            [(null? (cdr language-position))
+             ;; nothing to open here
+             (send (car (send languages-hier-list get-items)) select #t)
+             (void)]
+            [else
+             (let loop ([hi languages-hier-list]
+                        
+                        ;; skip the first position, since it is flattened into the dialog
+                        [first-pos (cadr language-position)]
+                        [position (cddr language-position)])
+               (let ([matching-children
+                      (filter (λ (x)
+                                (equal? (send (send x get-editor) get-text)
+                                        first-pos))
+                              (send hi get-items))])
+                 (cond
+                   [(null? matching-children) 
+                    ;; just give up here. probably this means that a bad preference was saved 
+                    ;; and we're being called from the module-language case in 'open-current-language'
+                    (void)]
+                   [else
+                    (let ([child (car matching-children)])
                       (cond
                         [(null? position)
                          (send child select #t)]
                         [else
                          (send child open)
-                         (loop child (car position) (cdr position))])))]))]))
+                         (loop child (car position) (cdr position))]))])))]))
         
         ;; docs-callback : -> void
         (define (docs-callback)
