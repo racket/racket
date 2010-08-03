@@ -218,7 +218,7 @@
                     [get-client-size (lambda ()
                                        (let ([w (box 0)]
                                              [h (box 0)])
-                                         (get-client-size w h)
+                                         (get-virtual-size w h)
                                          (values (unbox w) (unbox h))))]
 		    [window-lock (send (get-top-win) get-dc-lock)]
                     [get-window (lambda (client-gtk)

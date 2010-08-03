@@ -226,7 +226,12 @@
       (tellv content-cocoa setDelegate: content-cocoa)
       (install-control-font content-cocoa #f))
 
-    (define dc (make-object dc% (make-graphics-context) 0 0 10 10))
+    (define dc (make-object dc% (make-graphics-context) 0 0 10 10
+                            (lambda ()
+                              (let ([w (box 0)]
+                                    [h (box 0)])
+                                (get-virtual-size w h)
+                                (values (unbox w) (unbox h))))))
 
     (queue-paint)
     

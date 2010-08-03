@@ -30,7 +30,7 @@
 
 (define dc-backend%
   (class* default-dc-backend% (dc-backend<%>)
-    (init context dx dy width height)
+    (init context dx dy width height -get-virtual-size)
     (super-new)
 
     (inherit reset-cr set-auto-scroll)
@@ -79,9 +79,11 @@
       (set-bounds dx dy width height)
       (reset-cr cr))
 
+    (define get-virtual-size -get-virtual-size)
     (def/override (get-size)
-      (values (exact->inexact clip-width)
-              (exact->inexact clip-height)))
+      (let-values ([(w h) (get-virtual-size)])
+        (values (exact->inexact w)
+                (exact->inexact h))))
 
     (define/override (get-cr) cr)
     

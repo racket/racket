@@ -961,12 +961,12 @@
 				      mem-dc)
 				    (get-dc)))])
 		    (when dc
-                      (send dc clear)
-
-		      (send dc start-doc "Draw Test")
+                      (send dc start-doc "Draw Test")
 		      (send dc start-page)
 
-                      (send dc set-alpha current-alpha)
+                      (send dc clear)
+
+		      (send dc set-alpha current-alpha)
                       (send dc set-rotation current-rotation)
                       (send dc set-initial-matrix (if current-skew?
                                                       (vector 1 0 0.2 1 3 0)
