@@ -57,11 +57,16 @@
       (private-field
        [wx #f])
       (public
+        [set-field-background (lambda (c)
+                                (check-instance '(method text-field% set-field-color) 
+                                                wx:color% 'color% #f c)
+                                (send wx set-field-background c))]
+        [get-field-background (lambda () (send wx get-field-background))]
 	[get-editor (entry-point (lambda () (send wx get-editor)))]
 	[get-value (lambda () (send wx get-value))] ; note: wx method doesn't expect as-entry
 	[set-value (entry-point 
 		    (lambda (v) 
-		      (check-string '(method text-control<%> set-value) v)
+		      (check-string '(method text-field% set-value) v)
 		      (send wx set-value v)))])
       (sequence
 	;; Technically a bad way to change margin defaults, since it's

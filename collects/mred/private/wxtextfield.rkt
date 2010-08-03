@@ -113,7 +113,12 @@
 	[get-canvas-width (lambda ()
 			    (let ([tw (box 0)])
 			      (send c get-size tw (box 0))
-			      (unbox tw)))])
+			      (unbox tw)))]
+        
+        [set-field-background (lambda (col)
+                                (send c set-canvas-background col))]
+        [get-field-background (lambda ()
+                                (send c get-canvas-background))])
       (override
 	;; These might be called before we are fully initialized
 
