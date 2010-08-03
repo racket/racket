@@ -168,6 +168,8 @@
 (define-cairo cairo_ps_surface_create (_fun _path _double* _double* -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_ps_surface_set_eps (_fun _cairo_surface_t _bool -> _void))
+(define-cairo cairo_ps_surface_dsc_begin_setup (_fun _cairo_surface_t -> _void))
+(define-cairo cairo_ps_surface_dsc_comment (_fun _cairo_surface_t _string -> _void))
 (define-cairo cairo_image_surface_get_data (_fun (s : _cairo_surface_t)
                                                  -> (_bytes o
                                                             (* (cairo_image_surface_get_height s)

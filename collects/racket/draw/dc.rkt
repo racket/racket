@@ -325,13 +325,10 @@
     
 
     (define/private (do-reset-matrix cr)
-      (if (and (zero? scroll-dx)
-               (zero? scroll-dy))
-          (cairo_set_matrix cr matrix)
-          (begin
-            (cairo_identity_matrix cr)
-            (cairo_translate cr scroll-dx scroll-dy)
-            (cairo_transform cr matrix)))
+      (cairo_identity_matrix cr)
+      (init-cr-matrix cr)
+      (cairo_translate cr scroll-dx scroll-dy)
+      (cairo_transform cr matrix)
       (cairo_translate cr origin-x origin-y)
       (cairo_scale cr scale-x scale-y)
       (cairo_rotate cr (- rotation)))

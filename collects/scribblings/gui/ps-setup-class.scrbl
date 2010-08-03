@@ -22,10 +22,12 @@ Creates a new @scheme[ps-setup%] object with the (platform-specific)
 
 }
 
-@defmethod[(copy-from [source (is-a?/c ps-setup%)])
+@defmethod[(copy-from [source (is-a?/c ps-setup%)]
+                      [copy-filename? any/c #f])
            void?]{
 
-Copies the settings @scheme[copy-from] to @this-obj[].
+Copies the settings @scheme[copy-from] to @this-obj[], excluding the
+filename unless @racket[copy-filename?] is true.
 
 }
 

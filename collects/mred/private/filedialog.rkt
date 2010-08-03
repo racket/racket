@@ -52,7 +52,9 @@
 	(raise-type-error who "list of 2-string lists" filters))
       (let* ([std? (memq 'common style)]
              [style (if std? (remq 'common style) style)])
-        (if (or std? (eq? (system-type) 'unix))
+        (if (or std? 
+                #t ; for now, always use the manually constructed dialog
+                (eq? (system-type) 'unix))
           (send (new path-dialog%
                   [put?      put?]
                   [dir?      dir?]

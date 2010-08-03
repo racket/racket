@@ -27,12 +27,12 @@
   (define/public (get-cocoa-control) (get-cocoa))
 
   (define/override (enable on?)
-    (tellv (get-cocoa) setEnabled: #:type _BOOL on?))
+    (tellv (get-cocoa-control) setEnabled: #:type _BOOL on?))
   (define/override (is-window-enabled?)
     (tell #:type _BOOL (get-cocoa-control) isEnabled))
 
   (define/override (gets-focus?)
-    (tell #:type _BOOL (get-cocoa) canBecomeKeyView))
+    (tell #:type _BOOL (get-cocoa-control) canBecomeKeyView))
 
   (define/public (command e)
     (callback this e))

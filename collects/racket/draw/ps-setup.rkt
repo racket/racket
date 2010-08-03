@@ -14,13 +14,13 @@
 
 (define (paper-name-string? s)
   (and (string? s)
-       (assoc paper-sizes s)))
+       (assoc s paper-sizes)))
 
 (define ps-setup%
   (class object%
     (properties
      [[string? command] "lpr"]
-     [[(make-or-false path-string?) filename] #f]
+     [[(make-or-false path-string?) file] #f]
      [[bool? level-2] #t]
      [[(symbol-in preview file printer) mode] 'file]
      [[(symbol-in portrait landscape) orientation] 'portrait]
@@ -35,6 +35,16 @@
     (define scale-y 0.8)
     (define trans-x 0.0)
     (define trans-y 0.0)
+
+    (def/public (copy-from [ps-setup% source]
+                           [any? [filename? #f]])
+      (set! command (send source get-command))
+      (when filename? (set! file (send source get-file)))
+      (set! level-2 (send source get-level-2))
+      (set! mode (send source get-mode))
+      (set! orientation (send source get-orientation))
+      (set! paper-name (send source get-paper-name))
+      (set! preview-command (send source get-preview-command)))
      
     (def/public (get-editor-margin [(make-box nonnegative-real?) x]
                                    [(make-box nonnegative-real?) y])
