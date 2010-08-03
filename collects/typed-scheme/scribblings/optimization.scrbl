@@ -38,10 +38,19 @@ For example, the following programs both typecheck:
              (f 3.5)]
 
 However, the second one uses more informative types: the
-@racket[Float] type includes only inexact real numbers whereas the
-@racket[Real] type includes both exact and inexact real numbers. Typed
-Racket's optimizer can optimize the latter program to use
-inexact-specific operations whereas it cannot do anything with the
+@racket[Float] type includes only
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
+"inexact numbers"]{inexact}
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{real numbers}
+whereas the
+@racket[Real] type includes both exact and
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
+"inexact numbers"]{inexact}
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{real numbers}.
+Typed Racket's optimizer can optimize the latter program to use
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
+"inexact numbers"]{inexact}
+-specific operations whereas it cannot do anything with the
 former program.
 
 Thus, to get the most of Typed Racket's optimizer, you should use the
@@ -49,9 +58,17 @@ Thus, to get the most of Typed Racket's optimizer, you should use the
 
 On a similar note, the @racket[Inexact-Complex] type is preferable to
 the @racket[Complex] type for the same reason. Typed Racket can keep
-inexact complex numbers unboxed; as such, programs using complex
-numbers can have better performance than equivalent programs that
-represent complex numbers as two real numbers. To get the most of
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
+"inexact numbers"]{inexact}
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{complex numbers}
+unboxed; as such, programs using
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{complex numbers}
+can have better performance than equivalent programs that
+represent
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{complex numbers}
+as two
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{real numbers}.
+To get the most of
 Typed Racket's optimizer, you should also favor rectangular
 coordinates over polar coordinates.
 
