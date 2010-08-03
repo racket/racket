@@ -93,6 +93,7 @@
 (define-cairo cairo_translate (_fun _cairo_t _double* _double* -> _void))
 (define-cairo cairo_scale (_fun _cairo_t _double* _double* -> _void))
 (define-cairo cairo_rotate (_fun _cairo_t _double* -> _void))
+(define-cairo cairo_transform (_fun _cairo_t _cairo_matrix_t-pointer -> _void))
 (define-cairo cairo_identity_matrix (_fun _cairo_t -> _void))
 (define-cairo cairo_get_matrix (_fun _cairo_t _cairo_matrix_t-pointer -> _void))
 (define-cairo cairo_set_matrix (_fun _cairo_t _cairo_matrix_t-pointer -> _void))

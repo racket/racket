@@ -20,6 +20,7 @@
 (define-gtk gtk_label_set_text (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_label_set_text_with_mnemonic (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_image_new_from_stock (_fun _string _int -> _GtkWidget))
+(define-gtk gtk_misc_set_alignment (_fun _GtkWidget _float _float -> _void))
 
 (define (mnemonic-string s)
   (if (regexp-match? #rx"&" s)
@@ -61,6 +62,9 @@
                                (bitmap->pixbuf label))
                               (gtk_label_new_with_mnemonic "<bad-image>"))))]
              [no-show? (memq 'deleted style)])
+
+  (when (string? label)
+    (gtk_misc_set_alignment (get-gtk) 0.0 0.0))
 
   (set-auto-size)
 

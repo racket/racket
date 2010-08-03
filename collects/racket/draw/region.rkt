@@ -102,7 +102,7 @@
                           (max r (+ l2 w2))
                           (max b (+ t2 h2)))))))))
 
-    (define/public (install-region cr [init (void)] [install (lambda (cr v) (cairo_clip cr))])
+    (define/public (install-region cr scroll-dx scroll-dy [init (void)] [install (lambda (cr v) (cairo_clip cr))])
       (let ([default-fill-rule (if (ormap (lambda (pr) (eq? (cdr pr) 'odd-even)) paths)
                                    CAIRO_FILL_RULE_EVEN_ODD
                                    CAIRO_FILL_RULE_WINDING)]
@@ -112,7 +112,7 @@
                                m))])
         (when old-matrix 
           ;; each path is already transformed
-          (cairo_set_matrix cr (make-cairo_matrix_t 1 0 0 1 0 0)))
+          (cairo_set_matrix cr (make-cairo_matrix_t 1 0 0 1 scroll-dx scroll-dy)))
         (for/fold ([v init]) ([pr (in-list paths)])
           (cairo_new_path cr)
           (send (car pr) do-path cr values values)
@@ -133,7 +133,7 @@
        in-cairo-context
        (lambda (cr)
          (cairo_save cr)
-         (install-region cr)
+         (install-region cr 0 0)
          (begin0
           (proc cr)
           (cairo_restore cr)))))

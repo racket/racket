@@ -61,9 +61,11 @@
   (-a _void (drawRect: [_NSRect r])
       (let ([ctx (tell NSGraphicsContext currentContext)])
         (tellv ctx saveGraphicsState)
-        (let ([cg (tell #:type _CGContextRef ctx graphicsPort)])
+        (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
+              [r (tell #:type _NSRect self bounds)])
           (CGContextSetRGBFillColor cg 0 0 0 1.0)
-          (CGContextFillRect cg r))
+          (CGContextAddRect cg r)
+          (CGContextStrokePath cg))
         (tellv ctx restoreGraphicsState))))
 
 (define-cocoa NSSetFocusRingStyle (_fun _int -> _void))
@@ -144,11 +146,15 @@
     (define hscroll-ok? (and (memq 'hscroll style) #t))
     (define hscroll? hscroll-ok?)
 
-    (define-values (x-margin y-margin)
+    (define auto-scroll? #f)
+    (define virtual-height #f)
+    (define virtual-width #f)
+
+    (define-values (x-margin y-margin x-sb-margin y-sb-margin)
       (cond
-       [(memq 'control-border style) (values 3 3)]
-       [(memq 'border style) (values 1 1)]
-       [else (values 0 0)]))
+       [(memq 'control-border style) (values 3 3 3 3)]
+       [(memq 'border style) (values 1 1 0 0)]
+       [else (values 0 0 0 0)]))
 
     (define canvas-style style)
 
@@ -193,6 +199,7 @@
      [cocoa
       (as-objc-allocation
        (tell (tell (cond
+                    [is-combo? NSView]
                     [(memq 'control-border style) FocusView]
                     [(memq 'border style) FrameView]
                     [else NSView])
@@ -236,7 +243,9 @@
               (+ (NSPoint-x p) (if is-combo? 2 0))
               (- (NSPoint-y p) (if is-combo? 22 0))
               (max 1 (- (unbox xb) (if is-combo? 22 0)))
-              (unbox yb))))
+              (unbox yb)
+              (if auto-scroll? (scroll-pos h-scroller) 0)
+              (if auto-scroll? (scroll-pos v-scroller) 0))))
 
     (define/override (get-client-size xb yb)
       (super get-client-size xb yb)
@@ -276,27 +285,25 @@
       (when v-scroller
         (tellv (scroller-cocoa v-scroller) setFrame: #:type _NSRect
                (make-NSRect
-                (make-NSPoint (- w scroll-width x-margin)
+                (make-NSPoint (- w scroll-width x-sb-margin)
                               (+ (if hscroll?
                                      scroll-width
                                      0)
-                                 y-margin))
+                                 y-sb-margin))
                 (make-NSSize scroll-width
                              (max 0 (- h (if hscroll? scroll-width 0)
-                                       x-margin x-margin))))))
+                                       x-sb-margin x-sb-margin))))))
       (when h-scroller
         (tellv (scroller-cocoa h-scroller) setFrame: #:type _NSRect
                (make-NSRect
-                (make-NSPoint x-margin y-margin)
+                (make-NSPoint x-sb-margin y-sb-margin)
                 (make-NSSize (max 0 (- w (if vscroll? scroll-width 0)
-                                       x-margin x-margin))
+                                       x-sb-margin x-sb-margin))
                              scroll-width))))
       (fix-dc)
+      (when auto-scroll?
+        (reset-auto-scroll 0 0))
       (on-size 0 0))
-    (define/override (client-y-offset)
-      (if hscroll?
-          scroll-width
-          0))
 
     (define/public (show-scrollbars h? v?)
       (let ([h? (and h? hscroll-ok?)]
@@ -325,16 +332,62 @@
                                    h-page v-page
                                    h-pos v-pos
                                    auto?)
-      (scroll-range h-scroller h-len)
-      (scroll-page h-scroller h-page)
-      (scroll-pos h-scroller h-pos)
-      (when h-scroller
-        (tell (scroller-cocoa h-scroller) setEnabled: #:type _BOOL (and h-step (positive? h-len))))
-      (scroll-range v-scroller v-len)
-      (scroll-page v-scroller v-page)
-      (scroll-pos v-scroller v-pos)
-      (when v-scroller
-        (tell (scroller-cocoa v-scroller) setEnabled: #:type _BOOL (and v-step (positive? v-len)))))
+      (cond
+       [auto?
+        (set! auto-scroll? #t)
+        (set! virtual-width (and (positive? h-len) h-len))
+        (set! virtual-height (and (positive? v-len) v-len))
+        (reset-auto-scroll h-pos v-pos)
+        (refresh-for-autoscroll)]
+       [else
+        (let ([a? auto-scroll?])
+          (set! auto-scroll? #f)
+          (when a? (fix-dc))) ; disable scroll offsets
+        (scroll-range h-scroller h-len)
+        (scroll-page h-scroller h-page)
+        (scroll-pos h-scroller h-pos)
+        (when h-scroller
+          (tell (scroller-cocoa h-scroller) setEnabled: #:type _BOOL (and h-step (positive? h-len))))
+        (scroll-range v-scroller v-len)
+        (scroll-page v-scroller v-page)
+        (scroll-pos v-scroller v-pos)
+        (when v-scroller
+          (tell (scroller-cocoa v-scroller) setEnabled: #:type _BOOL (and v-step (positive? v-len))))
+        (set! virtual-width #f)
+        (set! virtual-height #f)]))
+
+    (define/private (reset-auto-scroll h-pos v-pos)
+      (let ([xb (box 0)]
+            [yb (box 0)])
+        (get-client-size xb yb)
+        (let ([cw (unbox xb)]
+              [ch (unbox yb)])
+          (let ([h-len (if virtual-width
+                           (max 0 (- virtual-width cw))
+                           0)]
+                [v-len (if virtual-height
+                           (max 0 (- virtual-height ch))
+                           0)]
+                [h-page (if virtual-width
+                            cw
+                            0)]
+                [v-page (if virtual-height
+                            ch
+                            0)])
+            (scroll-range h-scroller h-len)
+            (scroll-page h-scroller h-page)
+            (scroll-pos h-scroller h-pos)
+            (when h-scroller
+              (tell (scroller-cocoa h-scroller) setEnabled: #:type _BOOL (positive? h-len)))
+            (scroll-range v-scroller v-len)
+            (scroll-page v-scroller v-page)
+            (scroll-pos v-scroller v-pos)
+            (when v-scroller
+              (tell (scroller-cocoa v-scroller) setEnabled: #:type _BOOL (positive? v-len)))))))
+
+    (define/private (refresh-for-autoscroll)
+      (fix-dc)
+      (refresh))
 
     (define (update which scroll- v)
       (if (eq? which 'vertical)
@@ -361,14 +414,14 @@
             (as-objc-allocation
              (tell (tell NSScroller alloc) initWithFrame: 
                    #:type _NSRect (make-NSRect
-                                   (make-NSPoint (- w scroll-width x-margin)
+                                   (make-NSPoint (- w scroll-width x-sb-margin)
                                                  (+ (if hscroll?
                                                         scroll-width
                                                         0)
-                                                    y-margin))
+                                                    y-sb-margin))
                                    (make-NSSize scroll-width
                                                 (max (- h (if hscroll? scroll-width 0)
-                                                        y-margin y-margin)
+                                                        y-sb-margin y-sb-margin)
                                                      (+ scroll-width 10))))))
             1
             1)))
@@ -378,9 +431,9 @@
             (as-objc-allocation
              (tell (tell NSScroller alloc) initWithFrame: 
                    #:type _NSRect (make-NSRect
-                                   (make-NSPoint x-margin y-margin)
+                                   (make-NSPoint x-sb-margin y-sb-margin)
                                    (make-NSSize (max (- w (if vscroll? scroll-width 0)
-                                                        x-margin x-margin)
+                                                        x-sb-margin x-sb-margin)
                                                      (+ scroll-width 10))
                                                 scroll-width))))
             1
@@ -501,10 +554,12 @@
                     'thumb]
                    [else #f])])
              (when kind
-               (on-scroll (new scroll-event%
-                               [event-type kind]
-                               [direction direction]
-                               [position (get-scroll-pos direction)])))))))
+               (if auto-scroll?
+                   (refresh-for-autoscroll)
+                   (on-scroll (new scroll-event%
+                                   [event-type kind]
+                                   [direction direction]
+                                   [position (get-scroll-pos direction)]))))))))
       (constrained-reply (get-eventspace)
                          (lambda ()
                            (let loop () (pre-event-sync #t) (when (yield) (loop))))
@@ -547,9 +602,31 @@
       in-menu-click?)
 
     (def/public-unimplemented set-background-to-gray)
-    (def/public-unimplemented scroll)
+
+    (define/public (scroll x y)
+      (when (x . > . 0) (scroll-pos h-scroller (* x (scroll-range h-scroller))))
+      (when (y . > . 0) (scroll-pos v-scroller (* y (scroll-range v-scroller))))
+      (when auto-scroll? (refresh-for-autoscroll)))
+
     (def/public-unimplemented warp-pointer)
-    (def/public-unimplemented view-start)
+
+    (define/public (view-start xb yb)
+      (if auto-scroll?
+          (begin
+            (set-box! xb (if virtual-width
+                             (scroll-pos h-scroller)
+                             0))
+            (set-box! yb (if virtual-height
+                             (scroll-pos v-scroller)
+                             0)))
+          (begin
+            (set-box! xb 0)
+            (set-box! yb 0))))
+
     (define/public (set-resize-corner on?)
       (void))
-    (def/public-unimplemented get-virtual-size)))
+
+    (define/public (get-virtual-size xb yb)
+      (get-client-size xb yb)
+      (when virtual-width (set-box! xb virtual-width))
+      (when virtual-height (set-box! yb virtual-height)))))

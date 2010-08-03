@@ -1,4 +1,3 @@
-
 #lang scheme/gui
 
 (require mzlib/class
@@ -1679,7 +1678,7 @@
 				    (get-scroll-pos 'horizontal)
 				    (get-scroll-range 'horizontal)
 				    (get-scroll-page 'horizontal))]
-			 [dc (get-dc)])
+                         [dc (get-dc)])
 		     (let-values ([(w h) (get-client-size)]
 				  [(w2 h2) (get-virtual-size)]
 				  [(x y) (get-view-start)])

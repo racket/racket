@@ -13,7 +13,9 @@
 (provide dc%
          _CGContextRef
          CGContextSetRGBFillColor
-         CGContextFillRect)
+         CGContextFillRect
+         CGContextAddRect
+         CGContextStrokePath)
 
 (define _CGContextRef (_cpointer 'CGContextRef))
 (define-appserv CGContextTranslateCTM (_fun _CGContextRef _CGFloat _CGFloat -> _void))
@@ -21,6 +23,8 @@
 (define-appserv CGContextFlush (_fun _CGContextRef -> _void))
 (define-appserv CGContextSetRGBFillColor (_fun _CGContextRef _CGFloat _CGFloat _CGFloat _CGFloat -> _void))
 (define-appserv CGContextFillRect (_fun _CGContextRef _NSRect -> _void))
+(define-appserv CGContextAddRect (_fun _CGContextRef _NSRect -> _void))
+(define-appserv CGContextStrokePath (_fun _CGContextRef -> _void))
 (define-appserv CGContextConvertPointToUserSpace (_fun  _CGContextRef _NSPoint -> _NSPoint))
 (define-appserv CGContextConvertSizeToUserSpace (_fun  _CGContextRef _NSSize -> _NSSize))
 
@@ -29,7 +33,7 @@
     (init context dx dy width height)
     (super-new)
 
-    (inherit reset-cr)
+    (inherit reset-cr set-auto-scroll)
 
     (define the-context context) ;; retain as long as we need `cg'
     (define cg (tell #:type _CGContextRef context graphicsPort))
@@ -64,11 +68,12 @@
     (define cr #f)
     (set-bounds dx dy width height)
 
-    (define/public (reset-bounds dx dy width height)
+    (define/public (reset-bounds dx dy width height auto-dx auto-dy)
       (let ([old-cr cr])
         (when old-cr
           (set! cr #f)
           (cairo_destroy old-cr)))
+      (set-auto-scroll auto-dx auto-dy)
       (CGContextScaleCTM cg 1 -1)
       (CGContextTranslateCTM cg (- old-dx) (- old-dy))
       (set-bounds dx dy width height)

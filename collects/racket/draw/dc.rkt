@@ -113,7 +113,12 @@
     dc-adjust-smoothing
 
     ;; The public get-size method:
-    get-size))
+    get-size
+
+    ;; set-auto-scroll : real real -> void
+    ;;
+    ;; used by a back-end to install canvas scrolling
+    set-auto-scroll))
 
 (define default-dc-backend%
   (class* object% (dc-backend<%>)
@@ -153,6 +158,8 @@
     (define/public (collapse-bitmap-b&w?) #f)
 
     (define/public (get-size) (values 0.0 0.0))
+
+    (define/public (set-auto-scroll dx dy) (void))
 
     (super-new)))
 
@@ -224,6 +231,13 @@
     (define scale-x 1.0)
     (define scale-y 1.0)
     (define rotation 0.0)
+
+    (define scroll-dx 0.0)
+    (define scroll-dy 0.0)
+
+    (define/override (set-auto-scroll dx dy)
+      (set! scroll-dx (- dx))
+      (set! scroll-dy (- dy)))
 
     (def/public (set-scale [real? sx] [real? sy])
       (unless (and (equal? scale-x sx)
@@ -311,7 +325,13 @@
     
 
     (define/private (do-reset-matrix cr)
-      (cairo_set_matrix cr matrix)
+      (if (and (zero? scroll-dx)
+               (zero? scroll-dy))
+          (cairo_set_matrix cr matrix)
+          (begin
+            (cairo_identity_matrix cr)
+            (cairo_translate cr scroll-dx scroll-dy)
+            (cairo_transform cr matrix)))
       (cairo_translate cr origin-x origin-y)
       (cairo_scale cr scale-x scale-y)
       (cairo_rotate cr (- rotation)))
@@ -331,7 +351,7 @@
       (reset-layouts!)
       (do-reset-matrix cr)
       (when clipping-region
-        (send clipping-region install-region cr)))
+        (send clipping-region install-region cr scroll-dx scroll-dy)))
 
     (define smoothing 'unsmoothed)
 
@@ -455,7 +475,7 @@
        (reset-clip cr)
        (when clipping-region
          (send clipping-region lock-region 1)
-         (send clipping-region install-region cr))))
+         (send clipping-region install-region cr scroll-dx scroll-dy))))
 
     (define/public (get-clipping-matrix)
       (let* ([cm (make-cairo_matrix_t (cairo_matrix_t-xx matrix)

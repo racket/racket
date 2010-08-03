@@ -141,6 +141,10 @@
 
     (define margin (if has-border? 1 0))
 
+    (define auto-scroll? #f)
+    (define virtual-height #f)
+    (define virtual-width #f)
+
     (define-values (client-gtk gtk hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box)
       (cond
        [(or (memq 'hscroll style)
@@ -289,13 +293,24 @@
     
     (define/public (reset-child-dcs)
       (when (dc . is-a? . dc%)
-        (send dc reset-dc)))
+        (reset-dc)))
     (define/override (maybe-register-as-child parent on?)
       (register-as-child parent on?)
       (when on? (reset-child-dcs)))
 
+    (define/private (reset-dc)
+      (if auto-scroll?
+          (send dc reset-dc 
+                (if virtual-width
+                    (gtk_adjustment_get_value hscroll-adj)
+                    0)
+                (if virtual-height
+                    (gtk_adjustment_get_value vscroll-adj)
+                    0))
+          (send dc reset-dc 0 0)))
+
     (define/override (internal-on-client-size w h)
-      (send dc reset-dc))
+      (reset-dc))
     (define/override (on-client-size w h) 
       (let ([xb (box 0)]
             [yb (box 0)])
@@ -319,20 +334,59 @@
           ;; remove corner 
           (gtk_widget_hide resize-box)])))
 
+    (define/private (configure-adj adj scroll-gtk len page pos)
+      (when (and scroll-gtk adj)
+        (if (zero? len)
+            (gtk_adjustment_configure adj 0 0 1 1 1 1)
+            (gtk_adjustment_configure adj pos 0 (+ len page) 1 page page))))
+
     (define/public (set-scrollbars h-step v-step
                                    h-len v-len
                                    h-page v-page
                                    h-pos v-pos
                                    auto?)
-      (when hscroll-adj
-        (gtk_adjustment_configure hscroll-adj h-pos 0 h-len 1 h-page h-page))
-      (when vscroll-adj
-        (gtk_adjustment_configure vscroll-adj v-pos 0 v-len 1 v-page v-page)))
+      (let ([h-page (if (zero? h-len) 0 h-page)]
+            [v-page (if (zero? v-len) 0 v-page)])
+        (cond
+         [auto?
+          (set! auto-scroll? #t)
+          (set! virtual-width (and (positive? h-len) hscroll-gtk h-len))
+          (set! virtual-height (and (positive? v-len) vscroll-gtk v-len))
+          (reset-auto-scroll h-pos v-pos)
+          (refresh-for-autoscroll)]
+         [else
+          (configure-adj hscroll-adj hscroll-gtk h-len h-page h-pos)
+          (configure-adj vscroll-adj vscroll-gtk v-len v-page v-pos)])))
 
-    (define/private (dispatch which proc)
+    (define/private (reset-auto-scroll h-pos v-pos)
+      (let ([xb (box 0)]
+            [yb (box 0)])
+        (get-client-size xb yb)
+        (let ([cw (unbox xb)]
+              [ch (unbox yb)])
+          (let ([h-len (if virtual-width
+                           (max 0 (- virtual-width cw))
+                           0)]
+                [v-len (if virtual-height
+                           (max 0 (- virtual-height ch))
+                           0)]
+                [h-page (if virtual-width
+                            cw
+                            0)]
+                [v-page (if virtual-height
+                            ch
+                            0)])
+            (configure-adj hscroll-adj hscroll-gtk h-len h-page h-pos)
+            (configure-adj vscroll-adj vscroll-gtk v-len v-page v-pos)))))
+
+    (define/private (refresh-for-autoscroll)
+      (reset-dc)
+      (refresh))
+
+    (define/private (dispatch which proc [default (void)])
       (if (eq? which 'vertical)
-          (when vscroll-adj (proc vscroll-adj))
-          (when hscroll-adj (proc hscroll-adj))))
+          (if vscroll-adj (proc vscroll-adj) default)
+          (if hscroll-adj (proc hscroll-adj) default)))
 
     (define/public (set-scroll-page which v)
       (dispatch which (lambda (adj)
@@ -349,13 +403,14 @@
       (dispatch which (lambda (adj) (gtk_adjustment_set_value adj v))))
 
     (define/public (get-scroll-page which) 
-      (->long (dispatch which (lambda (adj)
-                                (- (gtk_adjustment_get_page_size adj)
-                                   (gtk_adjustment_get_page_size adj))))))
+      (->long (dispatch which gtk_adjustment_get_page_size 0)))
     (define/public (get-scroll-range which)
-      (->long (dispatch which gtk_adjustment_get_upper)))
+      (->long (dispatch which (lambda (adj)
+                                (- (gtk_adjustment_get_upper adj)
+                                   (gtk_adjustment_get_page_size adj)))
+                        0)))
     (define/public (get-scroll-pos which)
-      (->long (dispatch which gtk_adjustment_get_value)))
+      (->long (dispatch which gtk_adjustment_get_value 0)))
     
     (define clear-bg?
       (and (not (memq 'transparent style)) 
@@ -403,16 +458,38 @@
     (def/public-unimplemented set-background-to-gray)
 
     (define/public (do-scroll direction)
-      (on-scroll (new scroll-event%
-                      [event-type 'thumb]
-                      [direction direction]
-                      [position (get-scroll-pos direction)])))
+      (if auto-scroll?
+          (refresh-for-autoscroll)
+          (on-scroll (new scroll-event%
+                          [event-type 'thumb]
+                          [direction direction]
+                          [position (get-scroll-pos direction)]))))
     (define/public (on-scroll e) (void))
 
-    (def/public-unimplemented scroll)
+    (define/public (scroll x y)
+      (when hscroll-adj (gtk_adjustment_set_value hscroll-adj x))
+      (when vscroll-adj (gtk_adjustment_set_value vscroll-adj y))
+      (when auto-scroll? (refresh-for-autoscroll)))
+
     (def/public-unimplemented warp-pointer)
-    (def/public-unimplemented view-start)
+
+    (define/public (view-start xb yb)
+      (if auto-scroll?
+          (begin
+            (set-box! xb (if virtual-width
+                             (gtk_adjustment_get_value hscroll-adj)
+                             0))
+            (set-box! yb (if virtual-height
+                             (gtk_adjustment_get_value vscroll-adj)
+                             0)))
+          (begin
+            (set-box! xb 0)
+            (set-box! yb 0))))
+
     (define/public (set-resize-corner on?) (void))
     
-    (define/public (get-virtual-size xb yb) (set-box! xb 10) (set-box! yb 10))))
+    (define/public (get-virtual-size xb yb)
+      (get-client-size xb yb)
+      (when virtual-width (set-box! xb virtual-width))
+      (when virtual-height (set-box! yb virtual-height)))))
 

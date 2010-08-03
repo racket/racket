@@ -23,7 +23,7 @@
                 get-client-size
 		window-lock
                 [get-window g_object_get_window])
-    (inherit reset-cr)
+    (inherit reset-cr set-auto-scroll)
 
     (define c #f)
 
@@ -47,13 +47,14 @@
 	(set! c #f)
 	(semaphore-post window-lock)))
 
-    (define/public (reset-dc)
+    (define/public (reset-dc scroll-dx scroll-dy)
       ;; FIXME: ensure that the dc is not in use
       (as-entry
        (lambda ()
          (when c
            (cairo_destroy c)
-           (set! c #f)))))
+           (set! c #f))
+         (set-auto-scroll scroll-dx scroll-dy))))
 
     (define/override (get-size)
       (let-values ([(w h) (get-client-size)])

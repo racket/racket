@@ -287,9 +287,9 @@ The @scheme[h-value] and @scheme[v-value] arguments each specify a fraction
  of the scrollbar's movement.  A @scheme[0.0] value sets the scrollbar to
  its left/top, while a @scheme[1.0] value sets the scrollbar to its
  right/bottom. A @scheme[0.5] value sets the scrollbar to its middle. In
- general, if the canvas's virtual size is @scheme[v], its client size is
- @scheme[c], and @scheme[(> v c)], then scrolling to @scheme[p]
- sets the view start to @scheme[(floor (* p (- v c)))].
+ general, if the canvas's virtual size is @scheme[_v], its client size is
+ @scheme[_c], and @scheme[(> _v _c)], then scrolling to @scheme[_p]
+ sets the view start to @scheme[(floor (* _p (- _v _c)))].
 
 See also
 @method[canvas% init-auto-scrollbars] and
