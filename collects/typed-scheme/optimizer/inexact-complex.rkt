@@ -232,8 +232,20 @@
            #:with imag-binding (unboxed-gensym)
            #:with (bindings ...)
            (begin (log-optimization "make-rectangular elimination" #'op)
-                  #`(((real-binding) real.opt)
+                  #'(((real-binding) real.opt)
                      ((imag-binding) imag.opt))))
+  (pattern (#%plain-app (~and op (~literal make-polar))
+                        r:float-coerce-expr theta:float-coerce-expr)
+           #:with magnitude    (unboxed-gensym)
+           #:with angle        (unboxed-gensym)
+           #:with real-binding (unboxed-gensym)
+           #:with imag-binding (unboxed-gensym)
+           #:with (bindings ...)
+           (begin (log-optimization "make-rectangular elimination" #'op)
+                  #'(((magnitude)    r.opt)
+                     ((angle)        theta.opt)
+                     ((real-binding) (unsafe-fl* magnitude (unsafe-flcos angle)))
+                     ((imag-binding) (unsafe-fl* magnitude (unsafe-flsin angle))))))
 
   ;; if we see a variable that's already unboxed, use the unboxed bindings
   (pattern v:id
@@ -307,6 +319,16 @@
            #:with opt
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
+
+  (pattern (~and exp (#%plain-app (~and op (~literal make-polar)) r theta))
+           #:when (isoftype? #'exp -InexactComplex)
+           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+           #:with opt
+           (begin (log-optimization "make-polar" #'op)
+                  (reset-unboxed-gensym)
+                  #'(let*-values (exp*.bindings ...)
+                      (unsafe-make-flrectangular exp*.real-binding
+                                                 exp*.imag-binding))))
 
   (pattern (~and e (#%plain-app op:id args:expr ...))
            #:with unboxed-info (dict-ref unboxed-funs-table #'op #f)
