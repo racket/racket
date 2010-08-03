@@ -1022,16 +1022,19 @@ If @racket[style?] is true, then @racket[defterm] is used on
 @racket[pre-content].}
 
 @defproc[(tech [pre-content pre-content?] ...
-               [#:doc module-path (or/c module-path? false/c) #f]
-               [#:tag-prefixes prefixes (or/c (listof string?) false/c) #f])
+               [#:key key (or/c string? #f) #f]
+               [#:doc module-path (or/c module-path? #f) #f]
+               [#:tag-prefixes prefixes (or/c (listof string?) #f) #f])
          element?]{
 
 Produces an element for the @tech{decode}d @racket[pre-content], and
-hyperlinks it to the definition of the content as established by
-@racket[deftech]. The content's string form is normalized in the same
-way as for @racket[deftech]. The @racket[#:doc] and
-@racket[#:tag-prefixes] arguments support cross-document and
-section-specific references, like in @racket[secref].
+hyperlinks it to the definition of the key as established by
+@racket[deftech]. If @racket[key] is false, the decoded content is
+converted to a string (using @racket[content->string]) to use as a
+key; in either case, the key is normalized in the same way as for
+@racket[deftech]. The @racket[#:doc] and @racket[#:tag-prefixes]
+arguments support cross-document and section-specific references, like
+in @racket[secref].
 
 With the default style files, the hyperlink created by @racket[tech]
 is somewhat quieter than most hyperlinks: the underline in HTML output
@@ -1045,11 +1048,12 @@ defined, but a sentence uses the term ``binding,'' the latter can be
 linked to the former using @racketfont["@tech{bind}ing"].}
 
 @defproc[(techlink [pre-content pre-content?] ...
-                   [#:doc module-path (or/c module-path? false/c) #f]
-                   [#:tag-prefixes prefixes (or/c (listof string?) false/c) #f]) 
+                   [#:key key (or/c string? #f) #f]
+                   [#:doc module-path (or/c module-path? #f) #f]
+                   [#:tag-prefixes prefixes (or/c (listof string?) #f) #f]) 
          element?]{
 
-Like @racket[tech], but the link is not a quiet. For example, in HTML
+Like @racket[tech], but the link is not quiet. For example, in HTML
 output, a hyperlink underline appears even when the mouse is not over
 the link.}
 
@@ -1122,12 +1126,12 @@ which is created with @racket[bib-entry]. The entries are typeset in
 order as given.}
 
 @defproc[(bib-entry [#:key key string?]
-                    [#:title title (or/c false/c pre-content?)]
+                    [#:title title (or/c #f pre-content?)]
                     [#:is-book? is-book? boolean? #f]
-                    [#:author author (or/c false/c pre-content?) #f]
-                    [#:location location (or/c false/c pre-content?) #f]
-                    [#:date date (or/c false/c pre-content?) #f] 
-                    [#:url url (or/c false/c pre-content?) #f])
+                    [#:author author (or/c #f pre-content?) #f]
+                    [#:location location (or/c #f pre-content?) #f]
+                    [#:date date (or/c #f pre-content?) #f] 
+                    [#:url url (or/c #f pre-content?) #f])
          bib-entry?]{
 
 Creates a bibliography entry. The @racket[key] is used to refer to the
