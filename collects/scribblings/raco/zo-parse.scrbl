@@ -565,7 +565,27 @@ A top-level renaming.}
                                                        
 A mark barrier.}
 
-@defstruct+[(lexical-rename wrap) ([alist (listof (cons/c symbol? symbol?))])]{
+@defstruct+[free-id-info ([path0 module-path-index?]
+                          [symbol0 symbol?]
+                          [path1 module-path-index?]
+                          [symbol1 symbol?]
+                          [phase0 (or/c exact-integer? #f)]
+                          [phase1 (or/c exact-integer? #f)]
+                          [phase2 (or/c exact-integer? #f)]
+                          [use-current-inspector? boolean?])]{
+Information about a free identifier.}
+
+@defstruct+[(lexical-rename wrap) ([has-free-id-info? boolean?]
+                                   [bool2 boolean?]
+                                   [alist (listof 
+                                           (cons/c symbol?
+                                                   (or/c
+                                                    symbol?
+                                                    (cons/c
+                                                     symbol?
+                                                     (or/c
+                                                      (cons/c symbol? (or/c symbol? #f))
+                                                      free-id-info?)))))])]{
 
 A local-binding mapping from symbols to binding-set names.}
 
@@ -589,7 +609,7 @@ Represents a set of module and import bindings.}
 @defstruct+[all-from-module ([path module-path-index?]
                              [phase (or/c exact-integer? #f)]
                              [src-phase (or/c exact-integer? #f)]
-                             [exceptions (listof symbol?)]
+                             [exceptions (listof (or/c symbol? number?))]
                              [prefix (or/c symbol? #f)])]{
 
 Represents a set of simple imports from one module within a
