@@ -49,16 +49,24 @@
    [() (void)]
    [([color% _color]
      [pen-width? _width]
-     [pen-style-symbol? _style])
+     [pen-style-symbol? _style]
+     [pen-cap-symbol? [_cap 'round]]
+     [pen-join-symbol? [_join 'round]])
     (set! color (color->immutable-color _color))
     (set! width _width)
-    (set! style _style)]
+    (set! style _style)
+    (set! cap _cap)
+    (set! join _join)]
    [([string? _color]
      [pen-width? _width]
-     [pen-style-symbol? _style])
+     [pen-style-symbol? _style]
+     [pen-cap-symbol? [_cap 'round]]
+     [pen-join-symbol? [_join 'round]])
     (set! color (send the-color-database find-color _color))
     (set! width _width)
-    (set! style _style)]
+    (set! style _style)
+    (set! cap _cap)
+    (set! join _join)]
    (init-name 'pen%))
 
   (define immutable? #f)
@@ -104,26 +112,30 @@
   (define pens (make-weak-hash))
   (super-new)
   (define/public (find-or-create-pen . args)
-    (let-values ([(col w s)
+    (let-values ([(col w s c j)
                   (case-args
                    args
                    [([color% _color]
                      [pen-width? _width]
-                     [pen-style-symbol? _style])
-                    (values (color->immutable-color _color) _width _style)]
+                     [pen-style-symbol? _style]
+                     [pen-cap-symbol? [_cap 'round]]
+                     [pen-join-symbol? [_join 'round]])
+                    (values (color->immutable-color _color) 
+                            _width _style _cap _join)]
                    [([string? _color]
                      [pen-width? _width]
-                     [pen-style-symbol? _style])
+                     [pen-style-symbol? _style]
+                     [pen-cap-symbol? [_cap 'round]]
+                     [pen-join-symbol? [_join 'round]])
                     (values (send the-color-database find-color _color)
-                            _width
-                            _style)]
+                            _width _style _cap _join)]
                    (method-name 'find-or-create-pen 'pen-list%))])
       (let ([key (vector (send col red) (send col green) (send col blue)
-                         w s)])
+                         w s c j)])
         (let ([e (hash-ref pens key #f)])
           (or (and e
                    (ephemeron-value e))
-              (let* ([f (make-object pen% col w s)]
+              (let* ([f (make-object pen% col w s c j)]
                      [e (make-ephemeron key f)])
                 (send f s-set-key key)
                 (hash-set! pens key e)
