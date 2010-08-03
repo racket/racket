@@ -101,31 +101,38 @@
                 (let ([is-sheet? (and #f
                                       is-dialog? 
                                       parent
-                                      (not (send parent frame-is-dialog?)))])
-                  (as-objc-allocation
-                   (tell (tell (if is-sheet?
-                                   MyPanel
-                                   MyWindow)
-                               alloc)
-                         initWithContentRect: #:type _NSRect (let-values ([(x y) (init-pos x y)])
-                                                               (make-NSRect (make-NSPoint x y)
-                                                                            (make-NSSize (max 30 w) 
-                                                                                         (max 0 h))))
-                         styleMask: #:type _int (if (memq 'no-caption style)
-                                                    NSBorderlessWindowMask
-                                                    (bitwise-ior 
-                                                     NSTitledWindowMask
-                                                     (if is-sheet? NSUtilityWindowMask 0)
-                                                     (if is-dialog?
-                                                         0
-                                                         (bitwise-ior 
-                                                          NSClosableWindowMask
-                                                          NSMiniaturizableWindowMask
-                                                          (if (memq 'no-resize-border style)
-                                                              0
-                                                              NSResizableWindowMask)))))
-                         backing: #:type _int NSBackingStoreBuffered
-                         defer: #:type _BOOL NO)))]
+                                      (not (send parent frame-is-dialog?)))]
+                      [init-rect (let-values ([(x y) (init-pos x y)])
+                                   (make-NSRect (make-NSPoint x y)
+                                                (make-NSSize (max 30 w) 
+                                                             (max (if (memq 'no-caption style)
+                                                                      0
+                                                                      22)
+                                                                  h))))])
+                  (let ([c (as-objc-allocation
+                            (tell (tell (if is-sheet?
+                                            MyPanel
+                                            MyWindow)
+                                        alloc)
+                                  initWithContentRect: #:type _NSRect init-rect
+                                  styleMask: #:type _int (if (memq 'no-caption style)
+                                                             NSBorderlessWindowMask
+                                                             (bitwise-ior 
+                                                              NSTitledWindowMask
+                                                              (if is-sheet? NSUtilityWindowMask 0)
+                                                              (if is-dialog?
+                                                                  0
+                                                                  (bitwise-ior 
+                                                                   NSClosableWindowMask
+                                                                   NSMiniaturizableWindowMask
+                                                                   (if (memq 'no-resize-border style)
+                                                                       0
+                                                                       NSResizableWindowMask)))))
+                                  backing: #:type _int NSBackingStoreBuffered
+                                  defer: #:type _BOOL NO))])
+                    ;; use init rect as frame size, not content size
+                    (tellv c setFrame: #:type _NSRect init-rect display: #:type _BOOL #f)
+                    c))]
                [no-show? #t])
     (define cocoa (get-cocoa))
     (tellv cocoa setDelegate: cocoa)
