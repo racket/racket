@@ -75,8 +75,8 @@
 (define-ffi-definer define-gdk gdk-lib)
 (define-ffi-definer define-gdk_pixbuf gdk_pixbuf-lib)
 
-(define-gobj g_object_ref (_fun _GtkWidget -> _void))
-(define-gobj g_object_unref (_fun _GtkWidget -> _void))
+(define-gobj g_object_ref (_fun _pointer -> _void))
+(define-gobj g_object_unref (_fun _pointer -> _void))
 
 (define-gobj g_object_set_data (_fun _GtkWidget _string _pointer -> _void))
 (define-gobj g_object_get_data (_fun _GtkWidget _string -> _pointer))

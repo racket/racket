@@ -5,7 +5,6 @@
 (provide _GdkWindow
          _GtkWidget _GtkWindow
          _gpointer
-         _GdkEventExpose
          _GType
 
          _fnpointer
@@ -21,7 +20,10 @@
          _GdkEventCrossing _GdkEventCrossing-pointer
          (struct-out GdkEventCrossing)
          _GdkEventConfigure _GdkEventConfigure-pointer
-         (struct-out GdkEventConfigure))
+         (struct-out GdkEventConfigure)
+         _GdkEventExpose _GdkEventExpose-pointer
+         (struct-out GdkEventExpose)
+         (struct-out GdkRectangle))
 
 (define _GType _long)
 
@@ -31,7 +33,6 @@
 (define _GtkWindow _GtkWidget)
 
 (define _gpointer _GtkWidget)
-(define _GdkEventExpose (_cpointer 'GdkEventExpose))
 
 (define _GdkDevice (_cpointer 'GdkDevice))
 
@@ -99,3 +100,15 @@
                                     [y _int]
                                     [width _int]
                                     [height _int]))
+
+(define-cstruct _GdkRectangle ([x _int]
+                               [y _int]
+                               [width _int]
+                               [height _int]))
+
+(define-cstruct _GdkEventExpose ([type _GdkEventType]
+                                 [window _GdkWindow]
+                                 [send_event _byte]
+                                 [area _GdkRectangle]
+                                 [region _pointer]
+                                 [count _int]))

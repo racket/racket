@@ -43,6 +43,8 @@
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
 
+(define-gtk gtk_container_set_border_width (_fun _GtkWidget _int -> _void))
+
 (define-gobj g_object_set_bool (_fun _GtkWidget _string _gboolean [_pointer = #f] -> _void)
   #:c-id g_object_set)
 
@@ -79,16 +81,32 @@
 (define-gtk gtk_combo_box_set_active (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_combo_box_get_active (_fun _GtkWidget -> _int))
 
-(define (handle-expose gtk event)
-  (let ([wx (gtk->wx gtk)])
-    (let ([gc (send wx get-canvas-background-for-clearing)])      
+(define-signal-handler connect-expose "expose-event"
+  (_fun _GtkWidget _GdkEventExpose-pointer -> _gboolean)
+  (lambda (gtk event)
+    (let ([wx (gtk->wx gtk)])
+      (let ([gc (send wx get-canvas-background-for-clearing)])      
+        (when gc
+          (gdk_draw_rectangle (g_object_get_window gtk) gc #t
+                              0 0 32000 32000)))
+      (send wx queue-paint))
+    #t))
+
+(define-signal-handler connect-expose-border "expose-event"
+  (_fun _GtkWidget _GdkEventExpose-pointer -> _gboolean)
+  (lambda (gtk event)
+    (let* ([win (g_object_get_window gtk)]
+           [gc (gdk_gc_new win)]
+           [gray #x8000])
       (when gc
-        (gdk_draw_rectangle (g_object_get_window gtk) gc #t
-                            0 0 32000 32000)))
-    (send wx queue-paint))
-  #t)
-(define handle_expose
-  (function-ptr handle-expose (_fun #:atomic? #t _GtkWidget _GdkEventExpose -> _gboolean)))
+        (gdk_gc_set_rgb_fg_color gc (make-GdkColor 0 gray gray gray))
+        (let ([r (GdkEventExpose-area event)])
+          (gdk_draw_rectangle win gc #t 
+                              (GdkRectangle-x r)
+                              (GdkRectangle-y r)
+                              (GdkRectangle-width r)
+                              (GdkRectangle-height r)))
+        (gdk_gc_unref gc)))))
 
 (define (handle-value-changed-h gtk ignored)
   (let ([wx (gtk->wx gtk)])
@@ -118,6 +136,10 @@
              on-size register-as-child get-top-win)
 
     (define is-combo? (memq 'combo style))
+    (define has-border? (or (memq 'border style)
+                            (memq 'control-border style)))
+
+    (define margin (if has-border? 1 0))
 
     (define-values (client-gtk gtk hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box)
       (cond
@@ -133,6 +155,8 @@
                 [hscroll (gtk_hscrollbar_new hadj)]
                 [vscroll (gtk_vscrollbar_new vadj)]
                 [resize-box (gtk_drawing_area_new)])
+            (when has-border?
+              (gtk_container_set_border_width h margin))
             (gtk_box_pack_start h v #t #t 0)
             (gtk_box_pack_start v client-gtk #t #t 0)
             (gtk_box_pack_start h v2 #f #f 0)
@@ -148,11 +172,27 @@
             (gtk_widget_show h2)
             (gtk_widget_show resize-box)
             (gtk_widget_show client-gtk)
-            (values client-gtk h hadj vadj h2 v2 resize-box)))]
+            (unless (memq 'hscroll style)
+              (gtk_widget_hide hscroll)
+              (gtk_widget_hide resize-box))
+            (unless (memq 'vscroll style)
+              (gtk_widget_hide v2))
+            (values client-gtk h hadj vadj 
+                    (and (memq 'hscroll style) h2)
+                    (and (memq 'vscroll style) v2)
+                    (and (memq 'hscroll style) (memq 'vscroll style) resize-box))))]
        [is-combo?
         (let* ([gtk (gtk_combo_box_entry_new_text)]
                [orig-entry (gtk_bin_get_child gtk)])
           (values orig-entry gtk #f #f #f #f #f))]
+       [has-border?
+        (let ([client-gtk (gtk_drawing_area_new)]
+              [h (gtk_hbox_new #f 0)])
+          (gtk_box_pack_start h client-gtk #t #t 0)
+          (gtk_container_set_border_width h margin)
+          (connect-expose-border h)
+          (gtk_widget_show client-gtk)
+          (values client-gtk h #f #f #f #f #f))]
        [else
         (let ([client-gtk (gtk_drawing_area_new)])
           (values client-gtk client-gtk #f #f #f #f #f))]))
@@ -192,7 +232,7 @@
                                      (GtkRequisition-height r)
                                      (GtkRequisition-height r))))
 
-    (g_signal_connect client-gtk "expose-event" handle_expose)
+    (connect-expose client-gtk)
     (connect-key-and-mouse client-gtk)
     (connect-focus client-gtk)
     (gtk_widget_add_events client-gtk (bitwise-ior GDK_KEY_PRESS_MASK
@@ -217,10 +257,8 @@
     (define/override (get-client-gtk) client-gtk)
     (define/override (handles-events?) #t)
 
-    ;; For the moment, the client area always starts at the 
-    ;; control area's top left
     (define/override (get-client-delta)
-      (values 0 0))
+      (values margin margin))
 
     ;; Avoid multiple queued paints:
     (define paint-queued? #f)
@@ -272,7 +310,14 @@
       (when vscroll-gtk
         (if v?
             (gtk_widget_show vscroll-gtk)
-            (gtk_widget_hide vscroll-gtk))))
+            (gtk_widget_hide vscroll-gtk)))
+      (when (and hscroll-gtk vscroll-gtk)
+        (cond
+         [(and v? h?)
+          (gtk_widget_show resize-box)]
+         [(and v? (not h?))
+          ;; remove corner 
+          (gtk_widget_hide resize-box)])))
 
     (define/public (set-scrollbars h-step v-step
                                    h-len v-len
@@ -369,4 +414,5 @@
     (def/public-unimplemented view-start)
     (define/public (set-resize-corner on?) (void))
     
-    (def/public-unimplemented get-virtual-size)))
+    (define/public (get-virtual-size xb yb) (set-box! xb 10) (set-box! yb 10))))
+

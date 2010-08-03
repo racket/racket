@@ -30,23 +30,24 @@
   #:mixins (FocusResponder KeyMouseResponder) 
   [wx]
   (-a _void (drawRect: [_NSRect r])
-     (let ([bg (send wx get-canvas-background-for-clearing)])
-        (when bg
-          (let ([ctx (tell NSGraphicsContext currentContext)])
-            (tellv ctx saveGraphicsState)
-            (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
-                  [adj (lambda (v) (/ v 255.0))])
-              (CGContextSetRGBFillColor cg
-                                        (adj (color-red bg))
-                                        (adj (color-blue bg))
-                                        (adj (color-green bg))
-                                        1.0)
-              (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
-                                                 (make-NSSize 32000 32000))))
-            (tellv ctx restoreGraphicsState))))
-      (send wx queue-paint)
-      ;; ensure that `nextEventMatchingMask:' returns
-      (post-dummy-event))
+      (unless (send wx reject-partial-update r)
+        (let ([bg (send wx get-canvas-background-for-clearing)])
+          (when bg
+            (let ([ctx (tell NSGraphicsContext currentContext)])
+              (tellv ctx saveGraphicsState)
+              (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
+                    [adj (lambda (v) (/ v 255.0))])
+                (CGContextSetRGBFillColor cg
+                                          (adj (color-red bg))
+                                          (adj (color-blue bg))
+                                          (adj (color-green bg))
+                                          1.0)
+                (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
+                                                   (make-NSSize 32000 32000))))
+              (tellv ctx restoreGraphicsState))))
+        (send wx queue-paint)
+        ;; ensure that `nextEventMatchingMask:' returns
+        (post-dummy-event)))
   (-a _void (viewWillMoveToWindow: [_id w])
       (when wx
         (queue-window-event wx (lambda () (send wx fix-dc)))))
@@ -54,6 +55,37 @@
       (when wx (send wx do-scroll 'horizontal scroller)))
   (-a _void (onVScroll: [_id scroller])
       (when wx (send wx do-scroll 'vertical scroller))))
+
+(define-objc-class FrameView NSView 
+  []
+  (-a _void (drawRect: [_NSRect r])
+      (let ([ctx (tell NSGraphicsContext currentContext)])
+        (tellv ctx saveGraphicsState)
+        (let ([cg (tell #:type _CGContextRef ctx graphicsPort)])
+          (CGContextSetRGBFillColor cg 0 0 0 1.0)
+          (CGContextFillRect cg r))
+        (tellv ctx restoreGraphicsState))))
+
+(define-cocoa NSSetFocusRingStyle (_fun _int -> _void))
+(define-cocoa NSRectFill (_fun _NSRect -> _void))
+
+(define-objc-class FocusView NSView 
+  [on?]
+  (-a _void (setFocusState: [_BOOL is-on?])
+      (set! on? is-on?))
+  (-a _void (drawRect: [_NSRect r])
+      (when on?
+        (let ([ctx (tell NSGraphicsContext currentContext)])
+          (tellv ctx saveGraphicsState)
+          (NSSetFocusRingStyle 0)
+          (let ([r (tell #:type _NSRect self bounds)])
+            (NSRectFill (make-NSRect (make-NSPoint
+                                      (+ (NSPoint-x (NSRect-origin r)) 2)
+                                      (+ (NSPoint-y (NSRect-origin r)) 2))
+                                     (make-NSSize
+                                      (- (NSSize-width (NSRect-size r)) 4)
+                                      (- (NSSize-height (NSRect-size r)) 4)))))
+          (tellv ctx restoreGraphicsState)))))
 
 (define-objc-class MyComboBox NSComboBox
   #:mixins (FocusResponder KeyMouseResponder) 
@@ -104,14 +136,26 @@
              is-shown-to-root?
              move get-x get-y
              on-size
-             register-as-child)
+             register-as-child
+             get-size get-position)
 
     (define vscroll-ok? (and (memq 'vscroll style) #t))
     (define vscroll? vscroll-ok?)
     (define hscroll-ok? (and (memq 'hscroll style) #t))
     (define hscroll? hscroll-ok?)
 
+    (define-values (x-margin y-margin)
+      (cond
+       [(memq 'control-border style) (values 3 3)]
+       [(memq 'border style) (values 1 1)]
+       [else (values 0 0)]))
+
     (define canvas-style style)
+
+    (define/override (focus-is-on on?)
+      (when (memq 'control-border canvas-style)
+        (tellv cocoa setFocusState: #:type _BOOL on?)
+        (tellv cocoa setNeedsDisplay: #:type _BOOL #t)))
 
     (define is-visible? #f)
 
@@ -148,16 +192,22 @@
      [parent parent]
      [cocoa
       (as-objc-allocation
-       (tell (tell NSView alloc) 
+       (tell (tell (cond
+                    [(memq 'control-border style) FocusView]
+                    [(memq 'border style) FrameView]
+                    [else NSView])
+                   alloc) 
              initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint x y)
-                                                        (make-NSSize w h))))]
+                                                        (make-NSSize (max w (* 2 x-margin))
+                                                                     (max h (* 2 y-margin))))))]
      [no-show? (memq 'deleted style)])
 
     (define cocoa (get-cocoa))
 
     (define content-cocoa
       (let ([r (make-NSRect (make-NSPoint 0 0)
-                            (make-NSSize w h))])
+                            (make-NSSize (max 0 (- w (* 2 x-margin)))
+                                         (max 0 (- h (* 2 y-margin)))))])
         (as-objc-allocation
          (tell (tell (if is-combo? MyComboBox MyView) alloc) 
                initWithFrame: #:type _NSRect r))))
@@ -213,30 +263,33 @@
       (when tr
         (tellv content-cocoa removeTrackingRect: #:type _NSInteger tr)
         (set! tr #f))
-      (let ([sz (make-NSSize (- w (if vscroll? scroll-width 0))
-                             (- h (if hscroll? scroll-width 0)))]
-            [pos (make-NSPoint 0 (if hscroll? scroll-width 0))])
+      (let ([sz (make-NSSize (- w (if vscroll? scroll-width 0) x-margin x-margin)
+                             (- h (if hscroll? scroll-width 0) y-margin y-margin))]
+            [pos (make-NSPoint x-margin (+ (if hscroll? scroll-width 0) y-margin))])
         (tellv content-cocoa setFrame: #:type _NSRect (make-NSRect pos sz))
         (set! tr (tell #:type _NSInteger
                        content-cocoa
-                       addTrackingRect: #:type _NSRect (make-NSRect (make-NSPoint 0 0) sz)
+                       addTrackingRect: #:type _NSRect (make-NSRect (make-NSPoint x-margin y-margin) sz)
                        owner: content-cocoa
                        userData: #f
                        assumeInside: #:type _BOOL #f)))
       (when v-scroller
         (tellv (scroller-cocoa v-scroller) setFrame: #:type _NSRect
                (make-NSRect
-                (make-NSPoint (- w scroll-width)
-                              (if hscroll?
-                                  scroll-width
-                                  0))
+                (make-NSPoint (- w scroll-width x-margin)
+                              (+ (if hscroll?
+                                     scroll-width
+                                     0)
+                                 y-margin))
                 (make-NSSize scroll-width
-                             (- h (if hscroll? scroll-width 0))))))
+                             (max 0 (- h (if hscroll? scroll-width 0)
+                                       x-margin x-margin))))))
       (when h-scroller
         (tellv (scroller-cocoa h-scroller) setFrame: #:type _NSRect
                (make-NSRect
-                (make-NSPoint 0 0)
-                (make-NSSize (- w (if vscroll? scroll-width 0))
+                (make-NSPoint x-margin y-margin)
+                (make-NSSize (max 0 (- w (if vscroll? scroll-width 0)
+                                       x-margin x-margin))
                              scroll-width))))
       (fix-dc)
       (on-size 0 0))
@@ -262,11 +315,10 @@
            [(and vscroll? (not v?))
             (tell #:type _void (scroller-cocoa v-scroller) removeFromSuperview)])
           (set! vscroll? v?)
-          (let ([r (tell #:type _NSRect cocoa frame)])
-            (do-set-size (NSPoint-x (NSRect-origin r))
-                         (NSPoint-y (NSRect-origin r))
-                         (NSSize-width (NSRect-size r))
-                         (NSSize-height (NSRect-size r)))))))
+          (let ([x (box 0)] [y (box 0)] [w (box 0)] [h (box 0)])
+            (get-position x y)
+            (get-size w h)
+            (do-set-size (unbox x) (unbox y) (unbox w) (unbox h))))))
 
     (define/public (set-scrollbars h-step v-step
                                    h-len v-len
@@ -309,12 +361,14 @@
             (as-objc-allocation
              (tell (tell NSScroller alloc) initWithFrame: 
                    #:type _NSRect (make-NSRect
-                                   (make-NSPoint (- w scroll-width)
-                                                 (if hscroll?
-                                                     scroll-width
-                                                     0))
+                                   (make-NSPoint (- w scroll-width x-margin)
+                                                 (+ (if hscroll?
+                                                        scroll-width
+                                                        0)
+                                                    y-margin))
                                    (make-NSSize scroll-width
-                                                (max (- h (if hscroll? scroll-width 0))
+                                                (max (- h (if hscroll? scroll-width 0)
+                                                        y-margin y-margin)
                                                      (+ scroll-width 10))))))
             1
             1)))
@@ -324,8 +378,9 @@
             (as-objc-allocation
              (tell (tell NSScroller alloc) initWithFrame: 
                    #:type _NSRect (make-NSRect
-                                   (make-NSPoint 0 0)
-                                   (make-NSSize (max (- w (if vscroll? scroll-width 0))
+                                   (make-NSPoint x-margin y-margin)
+                                   (make-NSSize (max (- w (if vscroll? scroll-width 0)
+                                                        x-margin x-margin)
                                                      (+ scroll-width 10))
                                                 scroll-width))))
             1
@@ -400,6 +455,25 @@
           (and (not (memq 'transparent canvas-style)) 
                (not (memq 'no-autoclear canvas-style)) 
                bg-col)))
+
+    (define/public (reject-partial-update r)
+      ;; Called in the event-pump thread.
+      ;; A transparent canvas cannot handle a partial update.
+      (and (or 
+            ;; Multiple clipping rects?
+            (let ([i (malloc _NSInteger)]
+                  [r (malloc 'atomic _pointer)])
+              (tellv content-cocoa getRectsBeingDrawn: #:type _pointer r 
+                     count: #:type _pointer i)
+              ((ptr-ref i _NSInteger) . > . 1))
+            ;; Single clipping not whole area?
+            (let ([s1 (NSRect-size (tell #:type _NSRect content-cocoa frame))]
+                  [s2 (NSRect-size r)])
+              (or ((NSSize-width s2) . < . (NSSize-width s1))
+                  ((NSSize-height s2) . < . (NSSize-height s1)))))
+           (begin
+             (queue-window-event this (lambda () (refresh)))
+             #t)))
 
     (define/public (do-scroll direction scroller)
       ;; Called from the Cocoa handler thread

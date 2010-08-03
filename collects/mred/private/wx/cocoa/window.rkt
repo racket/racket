@@ -28,14 +28,18 @@
       #t]
   [-a _BOOL (becomeFirstResponder)
       (and (super-tell becomeFirstResponder)
-           (queue-window-event wx (lambda ()
-                                    (send wx on-set-focus)))
-           #t)]
+           (begin
+             (send wx focus-is-on #t)
+             (queue-window-event wx (lambda ()
+                                      (send wx on-set-focus)))
+             #t))]
   [-a _BOOL (resignFirstResponder)
       (and (super-tell resignFirstResponder)
-           (queue-window-event wx (lambda ()
-                                    (send wx on-kill-focus)))
-           #t)])
+           (begin
+             (send wx focus-is-on #f)
+             (queue-window-event wx (lambda ()
+                                      (send wx on-kill-focus)))
+             #t))])
 
 (define-objc-mixin (KeyMouseResponder Superclass)
   [wx]
@@ -168,6 +172,8 @@
 
     (unless no-show?
       (show #t)) 
+
+    (define/public (focus-is-on on?) (void))
 
     (define/public (get-cocoa) cocoa)
     (define/public (get-cocoa-content) cocoa)

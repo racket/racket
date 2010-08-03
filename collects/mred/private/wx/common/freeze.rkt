@@ -63,10 +63,12 @@
            '("\n")))))
 
 ;; FIXME: waiting 200msec is not a good enough rule.
-(define (constrained-reply es thunk default [should-give-up?
-                                             (let ([now (current-inexact-milliseconds)])
-                                               (lambda ()
-                                                 ((current-inexact-milliseconds) . > . (+ now 200))))])
+(define (constrained-reply es thunk default 
+                           [should-give-up?
+                            (let ([now (current-inexact-milliseconds)])
+                              (lambda ()
+                                ((current-inexact-milliseconds) . > . (+ now 200))))]
+                           #:fail-result [fail-result default])
   (let ([b (freezer-box)])
     (cond
      [(not b)
@@ -76,7 +78,7 @@
       #;
       (internal-error (format "constrained-reply not within an unfreeze point for ~s"
                               thunk))
-      default]
+      fail-result]
      [(not (eq? (current-thread) (eventspace-handler-thread es)))
       (internal-error "wrong eventspace for constrained event handling\n")
       default]

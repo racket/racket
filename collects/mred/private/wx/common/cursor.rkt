@@ -15,7 +15,8 @@
     (case-args 
      args
      [([(symbol-in arrow bullseye cross hand ibeam watch blank
-                   size-n/s size-e/w size-ne/sw size-nw/se) 
+                   size-n/s size-e/w size-ne/sw size-nw/se
+                   arrow+watch) 
         sym])
       (or (hash-ref standards sym #f)
           (let ([c (new cursor-driver%)])
