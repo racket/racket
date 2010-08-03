@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/parse
-         syntax/id-table racket/dict
+         syntax/id-table racket/dict scheme/flonum
          (for-template scheme/base scheme/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)
@@ -59,6 +59,11 @@
 ;; note: none of the unary operations have types where non-float arguments
 ;;  can result in float (as opposed to real) results
 (define-syntax-class float-arg-expr
+  ;; we can convert literals right away
+  (pattern (quote n)
+           #:when (exact-integer? (syntax->datum #'n))
+           #:with opt
+           (datum->syntax #'here (->fl (syntax->datum #'n))))
   (pattern e:fixnum-expr
            #:with opt #'(unsafe-fx->fl e.opt))
   (pattern e:int-expr

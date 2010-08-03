@@ -1,6 +1,6 @@
 #lang typed/scheme
 (require racket/unsafe/ops)
-(let* ((unboxed-gensym-1 (unsafe-fx->fl 2))
+(let* ((unboxed-gensym-1 (unsafe-fx->fl (unsafe-fxquotient 2 1)))
        (unboxed-gensym-2 1.0+2.0i)
        (unboxed-gensym-3 (unsafe-flreal-part unboxed-gensym-2))
        (unboxed-gensym-4 (unsafe-flimag-part unboxed-gensym-2))
