@@ -271,6 +271,7 @@
 (define begin0-sequence-type-num 100)
 (define module-type-num 103)
 (define prefix-type-num 105)
+(define free-id-info-type-num 154)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -444,6 +445,14 @@
       (cons num-lifts
             (cons (list->vector toplevels)
                   (list->vector stxs)))
+      out)]))
+
+(define (out-free-id-info a-free-id-info out)
+  (match a-free-id-info
+    [(struct free-id-info (mpi0 s0 mpi1 s1 p0 p1 p2 insp?))
+     (out-marshaled
+      free-id-info-type-num
+      (vector mpi0 s0 mpi1 s1 p0 p1 p2 insp?)
       out)]))
 
 (define-struct module-decl (content))
@@ -954,6 +963,7 @@
     [(prefix? expr) (out-prefix expr out)]
     [(global-bucket? expr) (out-toplevel expr out)]
     [(module-variable? expr) (out-toplevel expr out)]
+    [(free-id-info? expr) (out-free-id-info expr out)]
     [else (out-form expr out)]))
 
 (define (out-value expr out)

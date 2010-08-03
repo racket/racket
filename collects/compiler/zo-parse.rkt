@@ -70,6 +70,11 @@
        ; XXX Why not leave them as vectors and change the contract?
        (make-prefix i (vector->list tv) (vector->list sv))])))
 
+(define read-free-id-info
+  (match-lambda
+    [(vector mpi0 symbol0 mpi1 symbol1 num0 num1 num2 bool0) ; I have no idea what these mean
+     (make-free-id-info mpi0 symbol0 mpi1 symbol1 num0 num1 num2 bool0)]))
+
 (define (read-unclosed-procedure v)
   (define CLOS_HAS_REST 1)
   (define CLOS_HAS_REF_ARGS 2)
@@ -313,6 +318,7 @@
     [(100) 'begin0-sequence-type]
     [(103) 'module-type]
     [(105) 'resolve-prefix-type]
+    [(154) 'free-id-info-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers
@@ -333,7 +339,8 @@
     (cons 'case-lambda-sequence-type read-case-lambda)
     (cons 'begin0-sequence-type read-sequence)
     (cons 'module-type read-module)
-    (cons 'resolve-prefix-type read-resolve-prefix))))
+    (cons 'resolve-prefix-type read-resolve-prefix)
+    (cons 'free-id-info-type read-free-id-info))))
 
 (define (get-reader type)
   (or (hash-ref type-readers type #f)
