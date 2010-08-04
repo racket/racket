@@ -75,13 +75,32 @@
    #:first-order (λ (ctc) (λ (x) #f)) ;; WRONG
    #:stronger (λ (this that) #f))) ;; WRONG
 
-;; find-ordering : (listof arg) -> (listof (cons number arg))
+;; find-ordering : (listof arg) -> (values (listof arg) (listof number)) 
+;; sorts the arguments according to the dependency order.
+;; returns them in the reverse of that order, ie expressions that need
+;; to be evaluted first come later in the list.
 (define-for-syntax (find-ordering args)
-  (values (reverse args)
-          (reverse
-           (for/list ([arg (in-list args)]
-                      [i (in-naturals)])
-             i))))
+  
+  (define (comes-before? x y)
+    (cond
+      [(depends-on? (car x) (car y)) #t]
+      [(depends-on? (car y) (car x)) #f]
+      [else (< (cdr x) (cdr y))]))
+  
+  (define (depends-on? arg1 arg2)
+    (and (arg-vars arg2)
+         (ormap (λ (x) (free-identifier=? x (arg-var arg1)))
+                (arg-vars arg2))))
+  
+  (let* ([numbered (for/list ([arg (in-list args)]
+                              [i (in-naturals)])
+                     (cons arg i))]
+         [sorted
+          (sort 
+           numbered
+           (λ (x y) (not (comes-before? x y))))])
+    (values (map car sorted)
+            (map cdr sorted))))
 
 ;; args/vars->arglist : (listof arg?) (vectorof identifier?) -> syntax
 ;; (vector-length vars) = (length args)

@@ -2,23 +2,32 @@
 (require racket/contract
          racket/pretty)
 
-#;
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i ([x number?] [y (x) (<=/c x)]) any))))
-
-(pretty-print
- (syntax->datum (expand
-                 #'(->i ([x number?] [y number?] [z (x y) (if (<= x y) (<=/c x) (<=/c y))]) any))))
-
+                 #'(->i ([x number?]
+                         [y (x z) (between/c x z)]
+                         [z number?])
+                        any))))
 
 #;
-((contract (->i ([x number?] [y (x) (<=/c x)]) any)
-           (λ (x y) (+ x y))
+(pretty-print
+ (syntax->datum (expand
+                 #'(->i ([x number?]
+                         [y (x z) (between/c x z)]
+                         [z number?])
+                        any))))
+
+
+((contract (->i ([x number?]
+                 [y (x z) (between/c x z)]
+                 [z number?])
+                any)
+           (λ (x y z) (+ x y z))
            'pos 'neg)
- -1 -1)
+ 1 2 3)
+;; => 6
 
-
+#|
 ;; timing tests:
 
 (define f1
@@ -48,7 +57,7 @@
 
 'f1 (tme f1)
 'f2 (tme f2)
-
+|#
 
 #|
 test cases:
@@ -158,5 +167,13 @@ test cases:
      [y (x) number?])
 ;; => no syntax error
 
+((contract (->i ([x number?]
+                 [y (x z) (between/c x z)]
+                 [z number?])
+                any)
+           (λ (x y z) (+ x y z))
+           'pos 'neg)
+ 1 2 3)
+;; => 6
 
 |#
