@@ -19,15 +19,22 @@
 
 (provide (rename-out [->i/m ->i]))
 
-;; arg-ctcs     : (listof contract)
-;; arg-dep-ctcs : (-> ??? (listof contract))
-;; rng-ctcs     : (listof contract)
-;; rng-dep-ctcs : (-> ??? (listof contract))
+;; arg-ctcs      : (listof contract)
+;; arg-dep-ctcs  : (-> ??? (listof contract))
+;; indy-arg-ctcs : (listof contract)
+;; rng-ctcs      : (listof contract)
+;; rng-dep-ctcs  : (-> ??? (listof contract))
+;; indy-rng-ctcs : (listof contract)
 ;; mandatory-args, opt-args : number
 ;; mandatory-kwds, opt-kwds : (listof keyword?) sorted by keyword<?
 ;; rest? : boolean
+;; here : quoted-spec for use in assigning indy blame
 ;; mk-wrapper : creates the a wrapper function that implements the contract checking
-(struct ->i (arg-ctcs indy-arg-ctcs arg-dep-ctcs rng-ctcs indy-rng-ctcs rng-dep-ctcs mandatory-args opt-args mandatory-kwds opt-kwds rest? here mk-wrapper)
+(struct ->i (arg-ctcs arg-dep-ctcs indy-arg-ctcs
+                      rng-ctcs rng-dep-ctcs indy-rng-ctcs
+                      mandatory-args opt-args mandatory-kwds opt-kwds rest?
+                      here
+                      mk-wrapper)
   #:property prop:contract
   (build-contract-property
    #:projection
@@ -158,17 +165,23 @@
 (define-for-syntax (maybe-generate-temporary x)
   (and x (car (generate-temporaries (list x)))))
 
-(define-for-syntax (mk-wrapper-func an-istx)
+(define-for-syntax (mk-wrapper-func an-istx used-indy-vars)
   (let-values ([(ordered-args arg-indicies) (find-ordering (istx-args an-istx))])
     
     (let ([wrapper-args (list->vector (generate-temporaries (map arg-var (istx-args an-istx))))]
           [indy-args (generate-temporaries (map arg-var ordered-args))]
           [arg-proj-vars (list->vector (generate-temporaries (map arg-var (istx-args an-istx))))]
           
-          ;; WRONG: need to remove unused indy projections
           ;; this list is parallel to arg-proj-vars (so use arg-indicies to find the right ones in the loop below)
-          ;; but it contains #fs in places where we don't need the indy projections
-          [indy-arg-proj-vars (list->vector (map maybe-generate-temporary (map (λ (x) (and (not (arg-vars x)) (arg-var x))) (istx-args an-istx))))])
+          ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
+          ;; argument is not dependened on anywhere)
+          [indy-arg-proj-vars (list->vector (map (λ (x) (maybe-generate-temporary
+                                                         (and (not (arg-vars x))
+                                                              (free-identifier-mapping-get used-indy-vars 
+                                                                                           (arg-var x)
+                                                                                           (λ () #f))
+                                                              (arg-var x)))) 
+                                                 (istx-args an-istx)))])
       
       (define (arg-to-indy-var var)
         (let loop ([iargs indy-args]
@@ -182,12 +195,16 @@
                (cond
                  [(free-identifier=? var arg) iarg]
                  [else (loop (cdr iargs) (cdr args))]))])))
-      
+            
       #`(λ (blame swapped-blame indy-dom-blame indy-rng-blame chk ctc
                   ;; first the non-dependent arg projections
-                  #,@(filter values (map (λ (arg arg-proj-var) (and (not (arg-vars arg)) arg-proj-var)) (istx-args an-istx) (vector->list arg-proj-vars)))
+                  #,@(filter values (map (λ (arg arg-proj-var) (and (not (arg-vars arg)) arg-proj-var))
+                                         (istx-args an-istx)
+                                         (vector->list arg-proj-vars)))
                   ;; then the dependent arg projections
-                  #,@(filter values (map (λ (arg arg-proj-var) (and (arg-vars arg) arg-proj-var)) (istx-args an-istx) (vector->list arg-proj-vars)))
+                  #,@(filter values (map (λ (arg arg-proj-var) (and (arg-vars arg) arg-proj-var))
+                                         (istx-args an-istx)
+                                         (vector->list arg-proj-vars)))
                   ;; then the non-dependent indy projections
                   #,@(filter values (vector->list indy-arg-proj-vars)))
           (λ (val)
@@ -208,19 +225,25 @@
                                  #,wrapper-arg
                                  #,stx)
                            stx))
-                     #`(let (
-                             ;; WRONG! can avoid creating this thing if it isn't used elsewhere.
-                             [#,indy-arg 
-                              #,(add-unsupplied-check
-                                 (if (arg-vars arg)
-                                     #`(un-dep (#,arg-proj-var #,@(map arg-to-indy-var (arg-vars arg))) #,wrapper-arg indy-dom-blame)
-                                     #`(#,indy-arg-proj-var #,wrapper-arg)))]
-                             [#,wrapper-arg 
-                              #,(add-unsupplied-check
-                                 (if (arg-vars arg)
-                                     #`(un-dep (#,arg-proj-var #,@(map arg-to-indy-var (arg-vars arg))) #,wrapper-arg swapped-blame)
-                                     #`(#,arg-proj-var #,wrapper-arg)))])
-                         #,body))))
+                     
+                     (let ([indy-binding
+                            ;; if indy-arg-proj-var is #f, that means that we don't need that binding here, so skip it
+                            (if indy-arg-proj-var
+                                (list 
+                                 #`[#,indy-arg 
+                                    #,(add-unsupplied-check
+                                       (if (arg-vars arg)
+                                           #`(un-dep (#,arg-proj-var #,@(map arg-to-indy-var (arg-vars arg))) #,wrapper-arg indy-dom-blame)
+                                           #`(#,indy-arg-proj-var #,wrapper-arg)))])
+                                (list))])
+                       
+                       #`(let (#,@indy-binding
+                               [#,wrapper-arg 
+                                #,(add-unsupplied-check
+                                   (if (arg-vars arg)
+                                       #`(un-dep (#,arg-proj-var #,@(map arg-to-indy-var (arg-vars arg))) #,wrapper-arg swapped-blame)
+                                       #`(#,arg-proj-var #,wrapper-arg)))])
+                           #,body)))))
              ctc))))))
 
 (define (un-dep ctc obj blame)
@@ -244,27 +267,40 @@
 (define-syntax (->i/m stx)
   (let* ([an-istx (parse-->i stx)]
          [used-indy-vars (used-indy-vars an-istx)]
-         [wrapper-func (mk-wrapper-func an-istx)])
-    ;(printf "used-indy-vars:") (free-identifier-mapping-for-each used-indy-vars (λ (x y) (printf " ~a" x))) (printf "\n")
-    #`(->i (list #,@(filter values (map (λ (arg) (and (not (arg-vars arg)) (arg-ctc arg)))
-                                        (istx-args an-istx))))
-           ;; WRONG! this needs to be a subset of the previous list (and to generate a let to share appropriately)
-           (list #,@(filter values (map (λ (arg) (and (not (arg-vars arg)) (arg-ctc arg)))
-                                        (istx-args an-istx))))
+         [wrapper-func (mk-wrapper-func an-istx used-indy-vars)])
+    (with-syntax ([(arg-exp-xs ...) 
+                   (generate-temporaries (filter values (map (λ (arg) (and (not (arg-vars arg)) (arg-var arg)))
+                                                             (istx-args an-istx))))]
+                  [(arg-exps ...)
+                   (filter values (map (λ (arg) (and (not (arg-vars arg)) (arg-ctc arg)))
+                                       (istx-args an-istx)))])
+      #`(let ([arg-exp-xs arg-exps] ...)
+          (->i 
+           ;; all of the non-dependent argument contracts
+           (list arg-exp-xs ...)
+           ;; all of the dependent argument contracts
            (list #,@(filter values (map (λ (arg) (and (arg-vars arg) #`(λ #,(arg-vars arg) #,(arg-ctc arg))))
                                         (istx-args an-istx))))
+           ;; then the non-dependent argument contracts that are themselves dependend on
+           (list #,@(filter values
+                            (map (λ (arg indy-id) 
+                                   (and (free-identifier-mapping-get used-indy-vars (arg-var arg) (λ () #f))
+                                        indy-id))
+                                 (filter (λ (arg) (not (arg-vars arg))) (istx-args an-istx))
+                                 (syntax->list #'(arg-exp-xs ...)))))
            
-           #,(if (istx-ress an-istx)
-                 #`(list #,@(filter values (map (λ (arg) (and (not (res-vars arg)) (res-ctc arg)))
-                                                (istx-ress an-istx))))
-                 #''())
-           ;; WRONG! this needs to be a subset of the previuos (and to generate a let to share appropriately)
+           
            #,(if (istx-ress an-istx)
                  #`(list #,@(filter values (map (λ (arg) (and (not (res-vars arg)) (res-ctc arg)))
                                                 (istx-ress an-istx))))
                  #''())
            #,(if (istx-ress an-istx) 
                  #`(list #,@(filter values (map (λ (arg) (and (res-vars arg) #`(λ #,(res-vars arg) #,(res-ctc arg))))
+                                                (istx-ress an-istx))))
+                 #''())
+           ;; WRONG! this needs to be a subset of the previuos^2 (and to generate a let to share appropriately)
+           #,(if (istx-ress an-istx)
+                 #`(list #,@(filter values (map (λ (arg) (and (not (res-vars arg)) (res-ctc arg)))
                                                 (istx-ress an-istx))))
                  #''())
            
@@ -280,4 +316,4 @@
                     keyword<?)
            #,(and (istx-rst an-istx) #t)
            (quote-module-path)
-           #,wrapper-func)))
+           #,wrapper-func)))))

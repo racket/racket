@@ -2,60 +2,71 @@
 (require racket/contract
          racket/pretty)
 
+#;
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i ([f (-> number? number?)] 
-                         [y (f) (<=/c (begin (printf "f: ~s\n" f) (f 'not-a-number)))])
+                 #'(->i ([f number?] 
+                         [y (f) (<=/c f)])
                         any))))
 
-((contract (->i ([f (-> number? number?)] 
-                 [y (f) (<=/c (begin (printf "f: ~s\n" f) (f 'not-a-number)))])
+#;
+((contract (->i ([f number?] 
+                 [y (f) (<=/c f)])
                 any)
-           (λ (f y) (f 'another-non-number) 'final-result)
+           (λ (x y) (+ x y))
            'pos 'neg)
- (λ (x) (* x x))
- -10)
-
-#;
-(define (coerce-proj x)
-  ...)
-
-#;
-(build-->i 
- (list number?)
- (list (λ (x pos neg blame info) (coerce-proj (<=/c x) pos neg blame info)))
- (λ (x/c y/proc)  ;; <= arguments are in strange order: first the non-dependent things, then the dependent things
-   (λ (pos neg blame info)
-     (let ([here ...])
-       (let ([x/proj (x/c neg pos blame info)]
-             [x/proj/i (x/c here pos blame info)])
-         (λ (f)
-           (λ (x y)
-             (let ([x (x/proj x)]
-                   [xi (x/proj/i x)])
-               (let ([y (y/proc xi neg pos blame info)]
-                     [y (y/proc xi here pos blame info)])
-                 (f x y))))))))))
-
-#;
-(build-->i 
- (list number?)
- (list (λ (x) (coerce-proj (<=/c x))))
- (λ (proj-x proj-x/i y/proc here pos neg blame info) 
-   ;; λ arguments are in strange order: first the non-dependent things,
-   ;;   then the dependent things
-   (λ (f)
-     (λ (x y)
-       (let ([x (x/proj x)]
-             [xi (x/proj/i x)])
-         (let ([y (y/proc xi neg pos blame info)]
-               [yi (y/proc xi here pos blame info)])
-           (f x y)))))))
-
-;(pretty-print (syntax->datum (expand #'(-> number? (<=/c 10) any))))
-;(pretty-print (syntax->datum (expand #'(->* () (#:fst number? #:snd boolean?) any))))
+ -1 -1)
 
 
+(define f0 (λ (x y) (+ x y)))
+
+(define f1
+  (contract (-> number? (<=/c 0) any)
+            (λ (x y) (+ x y))
+            'pos 'neg))
+
+(define f2
+  (contract (->i ([x number?] [y (<=/c 0)]) any)
+            (λ (x y) (+ x y))
+            'pos 'neg))
+
+(define f3
+  (contract (->i ([x number?] [y (x) (<=/c x)]) any)
+            (λ (x y) (+ x y))
+            'pos 'neg))
+
+(define f4
+  (contract (->d ([x number?] [y (<=/c 0)]) any)
+            (λ (x y) (+ x y))
+            'pos 'neg))
+
+(define f5
+  (contract (->d ([x number?] [y (<=/c x)]) any)
+            (λ (x y) (+ x y))
+            'pos 'neg))
+
+
+(define (tme f)
+  (time
+   (let loop ([n 100000])
+     (unless (zero? n)
+       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
+       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
+       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
+       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
+       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
+       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
+       (loop (- n 1))))))
+
+'ignore: (tme f1)
+
+'f0 (tme f0)
+
+'f1 (tme f1)
+'f2 (tme f2)
+'f3 (tme f3)
+'f4 (tme f4)
+'f5 (tme f5)
 
 #|
 test cases:
