@@ -312,7 +312,7 @@ code does the parsing and validation of the syntax.
                     (values '() leftover)]
                    [(dep-range)
                     (values '() leftover)]
-                   [(dep-range #:post-cond expr)
+                   [(dep-range #:post expr)
                     (values '() leftover)]
                    [((opts ...) . rest)
                     (values #'(opts ...) #'rest)]
@@ -346,8 +346,10 @@ code does the parsing and validation of the syntax.
                    [_ (values #f leftover)])]
                 [(pre-cond leftover)
                  (syntax-case leftover ()
-                   [(#:pre-cond pre-cond . leftover)
-                    (values #'pre-cond #'leftover)]
+                   [(#:pre (id ...) pre-cond . leftover)
+                    (begin
+                      (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
+                      (values #'pre-cond #'leftover))]
                    [_ (values #f leftover)])]
                 [(range leftover) 
                  (syntax-case leftover ()
@@ -356,17 +358,20 @@ code does the parsing and validation of the syntax.
                     (raise-syntax-error #f "expected a range expression, but found nothing" stx leftover)])]
                 [(post-cond leftover) 
                  (syntax-case leftover ()
-                   [(#:post-cond post-cond . leftover)
+                   [(#:post (id ...) post-cond . leftover)
                     (begin
+                      (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                       (syntax-case range (any)
-                        [any (raise-syntax-error #f "cannot have a #:post-cond with any as the range" stx #'post-cond)]
+                        [any (raise-syntax-error #f "cannot have a #:post with any as the range" stx #'post-cond)]
                         [_ (void)])
                       (values #'post-cond #'leftover))]
                    [_ (values #f leftover)])])
     (syntax-case leftover ()
       [() 
        (values raw-mandatory-doms raw-optional-doms id/rest-id pre-cond range post-cond)]
-      [_ 
+      [(a . b)
+       (raise-syntax-error #f "bad syntax" stx #'a)]
+      [_
        (raise-syntax-error #f "bad syntax" stx)])))
 
 ;(define (ensure-no-cycles istx)

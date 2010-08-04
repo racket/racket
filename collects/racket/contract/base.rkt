@@ -4,7 +4,7 @@
 ;; the PLT code base where appropriate.
 
 (require "private/arrow.rkt"
-         "private/arr-i.rkt"
+         "private/arr-i-old.rkt"
          "private/base.rkt"
          "private/misc.rkt"
          "private/provide.rkt"
@@ -24,7 +24,7 @@
              check-procedure
              check-procedure/more
              make-contracted-function)
- (all-from-out "private/arr-i.rkt")
+ (all-from-out "private/arr-i-old.rkt")
  (except-out (all-from-out "private/misc.rkt")
              check-between/c
              check-unary-between/c)

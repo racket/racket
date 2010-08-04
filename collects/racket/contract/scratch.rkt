@@ -2,30 +2,24 @@
 (require racket/contract
          racket/pretty)
 
+(->i ([x number?]) [res any/c] #:post () #t)
+
+#;
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i ([x number?]
-                         [y (x z) (between/c x z)]
-                         [z number?])
-                        any))))
+                 #'(->i () #:pre-cond #f any #:post-cond #f))))
 
 #;
 (pretty-print
  (syntax->datum (expand
-                 #'(->i ([x number?]
-                         [y (x z) (between/c x z)]
-                         [z number?])
-                        any))))
+                 #'(->i () [x integer?]))))
 
 
-((contract (->i ([x number?]
-                 [y (x z) (between/c x z)]
-                 [z number?])
-                any)
-           (λ (x y z) (+ x y z))
-           'pos 'neg)
- 1 2 3)
-;; => 6
+#;
+((contract (->i () #:pre-cond #f any)
+           (λ () 1)
+           'pos 'neg))
+;; => 1
 
 #|
 ;; timing tests:

@@ -29,7 +29,7 @@
                     (values '() leftover)]
                    [(dep-range)
                     (values '() leftover)]
-                   [(dep-range #:post-cond expr)
+                   [(dep-range #:post expr)
                     (values '() leftover)]
                    [((opts ...) . rest)
                     (values #'(opts ...) #'rest)]
@@ -50,7 +50,7 @@
                    [_ (values #f leftover)])]
                 [(pre-cond leftover)
                  (syntax-case leftover ()
-                   [(#:pre-cond pre-cond . leftover)
+                   [(#:pre (id ...) pre-cond . leftover)
                     (values #'pre-cond #'leftover)]
                    [_ (values #f leftover)])]
                 [(range leftover) 
@@ -60,10 +60,10 @@
                     (raise-syntax-error #f "expected a range expression, but found nothing" stx)])]
                 [(post-cond leftover) 
                  (syntax-case leftover ()
-                   [(#:post-cond post-cond . leftover)
+                   [(#:post (id ...) post-cond . leftover)
                     (begin
                       (syntax-case range (any)
-                        [any (raise-syntax-error #f "cannot have a #:post-cond with any as the range" stx #'post-cond)]
+                        [any (raise-syntax-error #f "cannot have a #:post with any as the range" stx #'post-cond)]
                         [_ (void)])
                       (values #'post-cond #'leftover))]
                    [_ (values #f leftover)])])
@@ -132,11 +132,11 @@
         [(pair? stx)
          (when (and (syntax? (car stx))
                     (eq? (syntax-e (car stx))
-                         '#:pre-cond))
+                         '#:pre))
            (set! pre (car stx)))
          (when (and (syntax? (car stx))
                     (eq? (syntax-e (car stx))
-                         '#:post-cond))
+                         '#:post))
            (set! post (car stx)))
          (loop (cdr stx))]
         [else (void)]))
@@ -388,7 +388,7 @@
                        (unless (apply (->d-pre-cond ->d-stct) dep-pre-args)
                          (raise-blame-error (blame-swap blame)
                                             val
-                                            "#:pre-cond violation~a"
+                                            "#:pre violation~a"
                                             (build-values-string ", argument" dep-pre-args))))
                      (call-with-immediate-continuation-mark
                       ->d-tail-key
@@ -413,7 +413,7 @@
                                   (unless (apply (->d-post-cond ->d-stct) dep-post-args)
                                     (raise-blame-error blame
                                                        val
-                                                       "#:post-cond violation~a~a"
+                                                       "#:post violation~a~a"
                                                        (build-values-string ", argument" dep-pre-args)
                                                        (build-values-string (if (null? dep-pre-args)
                                                                               ", result"
@@ -571,7 +571,7 @@
                   (list '#:rest (next-id) '...)
                   '())
               ,@(if (->d-pre-cond ctc)
-                  (list '#:pre-cond '...)
+                  (list '#:pre '...)
                   (list))
               ,(let ([range (->d-range ctc)])
                  (cond
@@ -590,7 +590,7 @@
                   [else
                    `(values ,@(map (λ (x) `(,(next-id) ...)) range))]))
               ,@(if (->d-post-cond ctc)
-                  (list '#:post-cond '...)
+                  (list '#:post '...)
                   (list)))))
 
    #:first-order (λ (ctc) (λ (x) #f))

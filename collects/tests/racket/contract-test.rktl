@@ -1412,6 +1412,14 @@
    '->d-arity10
    '(contract (->d () (#:x [x integer?]) any) (λ (#:x [x 1]) 1) 'pos 'neg))
     
+  (test/spec-passed
+   '->d-pp0
+   '((contract (->d ([x number?]) () #:pre (= x 1) [result number?] #:post (= x 1))
+               (λ (x) x)
+               'pos
+               'neg)
+     1))
+  
   (test/pos-blame
    '->d-pp1
    '((contract (->d ([x number?]) () #:pre-cond (= x 1) [result number?] #:post-cond (= x 2))
@@ -2182,7 +2190,7 @@
     
   (test/pos-blame
    '->i-pp1
-   '((contract (->i ([x number?]) () #:pre-cond (= x 1) [result number?] #:post-cond (= x 2))
+   '((contract (->i ([x number?]) () #:pre (x) (= x 1) [result number?] #:post (x) (= x 2))
                (λ (x) x)
                'pos
                'neg)
@@ -2190,7 +2198,7 @@
   
   (test/neg-blame
    '->i-pp2
-   '((contract (->i ([x number?]) () #:pre-cond (= x 1) [result number?] #:post-cond (= x 2))
+   '((contract (->i ([x number?]) () #:pre (x) (= x 1) [result number?] #:post (x) (= x 2))
                (λ (x) x)
                'pos
                'neg)
@@ -2198,7 +2206,7 @@
   
   (test/pos-blame
    '->i-pp3
-   '((contract (->i ([x number?]) () #:pre-cond (= x 1) [result number?] #:post-cond (= result 2))
+   '((contract (->i ([x number?]) () #:pre (x) (= x 1) [result number?] #:post (result) (= result 2))
                (λ (x) x)
                'pos
                'neg)
@@ -2206,7 +2214,7 @@
   
   (test/spec-passed
    '->i-pp3.5
-   '((contract (->i ([x number?]) () #:pre-cond (= x 1) [result number?] #:post-cond (= result 2))
+   '((contract (->i ([x number?]) () #:pre (x) (= x 1) [result number?] #:post (result) (= result 2))
                (λ (x) 2)
                'pos
                'neg)
@@ -2214,7 +2222,7 @@
   
   (test/neg-blame
    '->i-pp4
-   '((contract (->i ([x number?]) () #:pre-cond (= x 1) any)
+   '((contract (->i ([x number?]) () #:pre (x) (= x 1) any)
                (λ (x) x)
                'pos
                'neg)
@@ -2222,7 +2230,7 @@
   
   (test/neg-blame
    '->i-pp5
-   '((contract (->i ([x number?]) () #:pre-cond (= x 1) (values [z number?] [y number?]) #:post-cond (= x y z 3))
+   '((contract (->i ([x number?]) () #:pre (x) (= x 1) (values [z number?] [y number?]) #:post (x y z) (= x y z 3))
                (λ (x) (values 4 5))
                'pos
                'neg)
@@ -2230,7 +2238,7 @@
   
   (test/pos-blame
    '->i-pp6
-   '((contract (->i ([x number?]) () #:pre-cond (= x 1) (values [z number?] [y number?]) #:post-cond (= z y 3))
+   '((contract (->i ([x number?]) () #:pre (x) (= x 1) (values [z number?] [y number?]) #:post (z y) (= z y 3))
                (λ (x) (values 4 5))
                'pos
                'neg)
@@ -2238,7 +2246,7 @@
 
   (test/pos-blame
    '->i-pp-r1
-   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre-cond (= x 1) [result number?] #:post-cond (= x 2))
+   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre (x) (= x 1) [result number?] #:post (x) (= x 2))
                (λ (x . rst) x)
                'pos
                'neg)
@@ -2246,7 +2254,7 @@
   
   (test/neg-blame
    '->i-pp-r2
-   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre-cond (= x 1)  [result number?] #:post-cond (= x 2))
+   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre (x) (= x 1)  [result number?] #:post (x) (= x 2))
                (λ (x . rst) x)
                'pos
                'neg)
@@ -2254,7 +2262,7 @@
   
   (test/pos-blame
    '->i-pp-r3
-   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre-cond (= x 1) [result number?] #:post-cond (= result 2))
+   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre (x) (= x 1) [result number?] #:post (result) (= result 2))
                (λ (x . rst) x)
                'pos
                'neg)
@@ -2262,7 +2270,7 @@
   
   (test/spec-passed
    '->i-pp-r3.5
-   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre-cond (= x 1) [result number?] #:post-cond (= result 2))
+   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre (x) (= x 1) [result number?] #:post (result) (= result 2))
                (λ (x . rst) 2)
                'pos
                'neg)
@@ -2270,7 +2278,7 @@
   
   (test/neg-blame
    '->i-pp-r4
-   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre-cond (= x 1) any)
+   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre (x) (= x 1) any)
                (λ (x . rst) x)
                'pos
                'neg)
@@ -2278,7 +2286,7 @@
   
   (test/neg-blame
    '->i-pp-r5
-   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre-cond (= x 1) (values [z number?] [y number?]) #:post-cond (= x y z 3))
+   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre (x) (= x 1) (values [z number?] [y number?]) #:post (x y z) (= x y z 3))
                (λ (x . rst) (values 4 5))
                'pos
                'neg)
@@ -2286,7 +2294,7 @@
   
   (test/pos-blame
    '->i-pp-r6
-   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre-cond (= x 1) (values [z number?] [y number?]) #:post-cond (= z x y 3))
+   '((contract (->i ([x number?]) () #:rest [rst any/c] #:pre (x) (= x 1) (values [z number?] [y number?]) #:post (x y z) (= z x y 3))
                (λ (x . rst) (values 4 5))
                'pos
                'neg)
@@ -2296,7 +2304,7 @@
    '->i-protect-shared-state
    '(let ([x 1])
       ((contract (let ([save #f]) 
-                   (-> (->i () () #:pre-cond (set! save x) [range any/c] #:post-cond (= save x))
+                   (-> (->i () () #:pre (x) (set! save x) [range any/c] #:post (x) (= save x))
                        any))
                  (λ (t) (t))
                  'pos
@@ -2320,42 +2328,42 @@
 
   (test/spec-passed
    '->i-optopt3
-   '((contract (->i ([x number?]) #:pre-cond #t any)
+   '((contract (->i ([x number?]) #:pre () #t any)
                (λ (x) x)
                'pos 'neg)
      1))
   
   (test/spec-passed
    '->i-optopt4
-   '((contract (->i ([x number?]) #:rest [rst any/c] #:pre-cond #t any)
+   '((contract (->i ([x number?]) #:rest [rst any/c] #:pre () #t any)
                (λ (x . y) x)
                'pos 'neg)
      1))
   
   (test/spec-passed
    '->i-optopt5
-   '((contract (->i ([x number?]) #:rest [rst any/c] #:pre-cond #t [res any/c] #:post-cond #t)
+   '((contract (->i ([x number?]) #:rest [rst any/c] #:pre () #t [res any/c] #:post () #t)
                (λ (x . y) x)
                'pos 'neg)
      1))
   
   (test/spec-passed
    '->i-optopt6
-   '((contract (->i ([x number?]) #:rest [rst any/c] [res any/c] #:post-cond #t)
+   '((contract (->i ([x number?]) #:rest [rst any/c] [res any/c] #:post () #t)
                (λ (x . y) x)
                'pos 'neg)
      1))
   
   (test/spec-passed
    '->i-optopt7
-   '((contract (->i ([x number?]) #:pre-cond #t [res any/c] #:post-cond #t)
+   '((contract (->i ([x number?]) #:pre () #t [res any/c] #:post () #t)
                (λ (x . y) x)
                'pos 'neg)
      1))
   
   (test/spec-passed
    '->i-optopt8
-   '((contract (->i ([x number?]) [res any/c] #:post-cond #t)
+   '((contract (->i ([x number?]) [res any/c] #:post () #t)
                (λ (x . y) x)
                'pos 'neg)
      1))
@@ -2368,7 +2376,7 @@
   
   (test/spec-passed
    '->i-binding1
-   '((contract (->i ([x number?]) () #:rest [rest any/c] [range any/c] #:post-cond (equal? rest '(2 3 4)))
+   '((contract (->i ([x number?]) () #:rest [rest any/c] [range any/c] #:post (rest) (equal? rest '(2 3 4)))
                (λ (x . y) y)
                'pos
                'neg)
@@ -2376,7 +2384,7 @@
   
   (test/spec-passed
    '->i-binding2
-   '((contract (->i ([x number?]) () #:rest [rest any/c] [range any/c] #:post-cond (equal? x 1))
+   '((contract (->i ([x number?]) () #:rest [rest any/c] [range any/c] #:post (x) (equal? x 1))
                (λ (x . y) y)
                'pos
                'neg)
@@ -2390,8 +2398,9 @@
       ((contract (->i ([x number?] [y number?] #:z [z number?] #:w [w number?]) 
                       ([a number?] [b number?] #:c [c number?] #:d [d number?])
                       #:rest [rest any/c] 
-                      #:pre-cond (equal? (list x y z w a b c d rest p q r)
-                                         (list 1 2 3 4 5 6 7 8 '(z) 'p 'q 'r))
+                      #:pre (x y z w a b c d rest)
+                      (equal? (list x y z w a b c d rest p q r)
+                              (list 1 2 3 4 5 6 7 8 '(z) 'p 'q 'r))
                       (values [p number?] [q number?] [r number?]))
                  (λ (x y #:z z #:w w [a 101] [b 102] #:c [c 103] #:d [d 104] . rest)
                    (values 11 12 13))
@@ -2405,8 +2414,8 @@
                     ([a number?] [b number?] #:c [c number?] #:d [d number?])
                     #:rest [rest any/c] 
                     (values [p number?] [q number?] [r number?])
-                    #:post-cond (equal? (list x y z w a b c d rest p q r)
-                                        (list 1 2 3 4 5 6 7 8 '(z) 11 12 13)))
+                    #:post (equal? (list x y z w a b c d rest p q r)
+                                   (list 1 2 3 4 5 6 7 8 '(z) 11 12 13)))
                (λ (x y #:z z #:w w [a 101] [b 102] #:c [c 103] #:d [d 104] . rest)
                  (values 11 12 13))
                'pos
@@ -2421,10 +2430,11 @@
       ((contract (->i ([x number?] [y number?] #:z [z number?] #:w [w number?]) 
                       ([a number?] [b number?] #:c [c number?] #:d [d number?])
                       #:rest [rest any/c] 
-                      #:pre-cond (equal? (list x y z w a b c d rest p q r)
-                                         (list 1 2 3 4 
-                                               the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg
-                                               '() 'p 'q 'r))
+                      #:pre (x y z w a b c d rest)
+                      (equal? (list x y z w a b c d rest p q r)
+                              (list 1 2 3 4 
+                                    the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg
+                                    '() 'p 'q 'r))
                       (values [p number?] [q number?] [r number?]))
                  (λ (x y #:z z #:w w [a 101] [b 102] #:c [c 103] #:d [d 104] . rest)
                    (values 11 12 13))
@@ -2438,10 +2448,10 @@
                     ([a number?] [b number?] #:c [c number?] #:d [d number?])
                     #:rest [rest any/c] 
                     (values [p number?] [q number?] [r number?])
-                    #:post-cond (equal? (list x y z w a b c d rest p q r)
-                                        (list 1 2 3 4
-                                              the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg
-                                              '() 11 12 13)))
+                    #:post (equal? (list x y z w a b c d rest p q r)
+                                   (list 1 2 3 4
+                                         the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg
+                                         '() 11 12 13)))
                (λ (x y #:z z #:w w [a 101] [b 102] #:c [c 103] #:d [d 104] . rest)
                  (values 11 12 13))
                'pos
@@ -2455,7 +2465,7 @@
                     ([a number?])
                     #:rest [rest any/c] 
                     [_ any/c]
-                    #:post-cond (equal? (list a rest) (list the-unsupplied-arg '())))
+                    #:post (equal? (list a rest) (list the-unsupplied-arg '())))
                (λ ([a 1] . rest) 1)
                'pos
                'neg)))
@@ -4964,7 +4974,7 @@
 
   (test/spec-passed
    'object-contract-->i-pp1
-   '(send (contract (object-contract (m (->i ([x number?]) () #:pre-cond #t [unused (x) (<=/c x)] #:post-cond #t)))
+   '(send (contract (object-contract (m (->i ([x number?]) () #:pre () #t [unused (x) (<=/c x)] #:post () #t)))
                     (new (class object% (define/public m (lambda (x) (- x 1))) (super-new)))
                     'pos
                     'neg)
@@ -4973,7 +4983,7 @@
   
   (test/spec-passed
    'object-contract-->i-pp1b
-   '(send (contract (object-contract (m (->i ([x number?]) () #:pre-cond #t [unused (x) (<=/c x)] #:post-cond #t)))
+   '(send (contract (object-contract (m (->i ([x number?]) () #:pre () #t [unused (x) (<=/c x)] #:post () #t)))
                     (new (class object%
                            (define/public m (case-lambda [(x) (- x 1)]
                                                          [(x y) y]))
@@ -4985,7 +4995,7 @@
 
   (test/pos-blame 
    'object-contract-->i-pp2
-   '(send (contract (object-contract (m (->i ([x number?]) () #:pre-cond #t [unused (x) (<=/c x)] #:post-cond #t)))
+   '(send (contract (object-contract (m (->i ([x number?]) () #:pre () #t [unused (x) (<=/c x)] #:post () #t)))
                     (new (class object% (define/public m (lambda (x) (+ x 1))) (super-new)))
                     'pos
                     'neg)
@@ -4994,7 +5004,7 @@
   
   (test/pos-blame 
    'object-contract-->i-pp2b
-   '(send (contract (object-contract (m (->i ([x number?]) () #:pre-cond #t [unused (x) (<=/c x)] #:post-cond #t)))
+   '(send (contract (object-contract (m (->i ([x number?]) () #:pre () #t [unused (x) (<=/c x)] #:post () #t)))
                     (new (class object% 
                            (define/public m (case-lambda [(x) (+ x 1)]))
                            (super-new)))
@@ -5005,7 +5015,7 @@
   
   (test/spec-passed
    'object-contract-->i-pp3
-   '(send (contract (object-contract (m (->i () () #:rest [rst (listof number?)] #:pre-cond #t [unused any/c] #:post-cond #t)))
+   '(send (contract (object-contract (m (->i () () #:rest [rst (listof number?)] #:pre () #t [unused any/c] #:post () #t)))
                     (new (class object% (define/public m (lambda w 1)) (super-new)))
                     'pos
                     'neg)
@@ -5014,7 +5024,7 @@
   
   (test/neg-blame
    'object-contract-->i-pp4
-   '(send (contract (object-contract (m (->i () () #:rest [rst (listof number?)] #:pre-cond #t [unused any/c] #:post-cond #t)))
+   '(send (contract (object-contract (m (->i () () #:rest [rst (listof number?)] #:pre () #t [unused any/c] #:post () #t)))
                     (new (class object% (define/public m (lambda w 1)) (super-new)))
                     'pos 
                     'neg)
@@ -5023,7 +5033,7 @@
     
   (test/spec-passed
    'object-contract-->i-pp5
-   '(send (contract (object-contract (m (->i () () #:pre-cond #t any)))
+   '(send (contract (object-contract (m (->i () () #:pre () #t any)))
                     (new (class object% (define/public m (lambda () 1)) (super-new)))
                     'pos
                     'neg)
@@ -5031,7 +5041,7 @@
   
   (test/spec-passed
    'object-contract-->i-pp6
-   '(send (contract (object-contract (m (->i () () #:pre-cond #t (values [x number?] [y (x) (>=/c x)]) #:post-cond #t)))
+   '(send (contract (object-contract (m (->i () () #:pre () #t (values [x number?] [y (x) (>=/c x)]) #:post () #t)))
                     (new (class object% (define/public m (lambda () (values 1 2))) (super-new)))
                     'pos
                     'neg)
@@ -5039,7 +5049,7 @@
   
   (test/pos-blame
    'object-contract-->i-pp7
-   '(send (contract (object-contract (m (->i () () #:pre-cond #t (values [x number?] [y (>=/c x)]) #:post-cond #t)))
+   '(send (contract (object-contract (m (->i () () #:pre () #t (values [x number?] [y (>=/c x)]) #:post () #t)))
                     (new (class object% (define/public m (lambda () (values 2 1))) (super-new)))
                     'pos
                     'neg)
@@ -5049,9 +5059,9 @@
    'object-contract-->i-pp/this-1
    '(send (contract (object-contract (m (->i ()
                                              ()
-                                             #:pre-cond (= 1 (get-field f this))
+                                             #:pre () (= 1 (get-field f this))
                                              [result-x any/c]
-                                             #:post-cond (= 2 (get-field f this)))))
+                                             #:post () (= 2 (get-field f this)))))
                     (new (class object% (field [f 2]) (define/public m (lambda () (set! f 3))) (super-new)))
                     'pos
                     'neg)
@@ -5060,9 +5070,9 @@
   (test/pos-blame
    'object-contract-->i-pp/this-2
    '(send (contract (object-contract (m (->i () ()
-                                             #:pre-cond (= 1 (get-field f this))
+                                             #:pre () (= 1 (get-field f this))
                                              [result-x any/c]
-                                             #:post-cond (= 2 (get-field f this)))))
+                                             #:post () (= 2 (get-field f this)))))
                     (new (class object% (field [f 1]) (define/public m (lambda () (set! f 3))) (super-new)))
                     'pos
                     'neg)
@@ -5071,9 +5081,9 @@
   (test/spec-passed
    'object-contract-->i-pp/this-3
    '(send (contract (object-contract (m (->i () ()
-                                             #:pre-cond (= 1 (get-field f this))
+                                             #:pre () (= 1 (get-field f this))
                                               [result-x any/c]
-                                              #:post-cond (= 2 (get-field f this)))))
+                                              #:post () (= 2 (get-field f this)))))
                     (new (class object% (field [f 1]) (define/public m (lambda () (set! f 2))) (super-new)))
                     'pos
                     'neg)
@@ -5083,9 +5093,9 @@
    'object-contract-->i-pp/this-4
    '(send (contract (object-contract (m (->i () ()
                                              #:rest [rest-id any/c]
-                                             #:pre-cond (= 1 (get-field f this))
+                                             #:pre () (= 1 (get-field f this))
                                              [result-x any/c]
-                                             #:post-cond (= 2 (get-field f this)))))
+                                             #:post () (= 2 (get-field f this)))))
                     (new (class object% (field [f 2]) (define/public m (lambda args (set! f 3))) (super-new)))
                     'pos
                     'neg)
@@ -5095,9 +5105,9 @@
    'object-contract-->i-pp/this-5
    '(send (contract (object-contract (m (->i () ()
                                              #:rest [rest-id any/c]
-                                             #:pre-cond (= 1 (get-field f this))
+                                             #:pre () (= 1 (get-field f this))
                                              [result-x any/c]
-                                             #:post-cond (= 2 (get-field f this)))))
+                                             #:post () (= 2 (get-field f this)))))
                     (new (class object% (field [f 1]) (define/public m (lambda args (set! f 3))) (super-new)))
                     'pos
                     'neg)
@@ -5107,9 +5117,9 @@
    'object-contract-->i-pp/this-6
    '(send (contract (object-contract (m (->i () ()
                                              #:rest [rest-id any/c]
-                                             #:pre-cond (= 1 (get-field f this))
+                                             #:pre () (= 1 (get-field f this))
                                              [result-x any/c]
-                                             #:post-cond (= 2 (get-field f this)))))
+                                             #:post () (= 2 (get-field f this)))))
                     (new (class object% (field [f 1]) (define/public m (lambda args (set! f 2))) (super-new)))
                     'pos
                     'neg)
@@ -8352,18 +8362,18 @@ so that propagation occurs.
   (test-name '(->d ([x ...] #:y [y ...]) ([z ...] #:w [w ...]) any) (->d ([x integer?] #:y [y integer?]) ([z integer?] #:w [w integer?]) any))
   (test-name '(->d () () (values [x ...] [y ...])) (->d () () (values [x number?] [y number?])))
   (test-name '(->d () () [x ...]) (->d () () [q number?]))
-  (test-name '(->d () () #:pre-cond ... [x ...]) (->d () () #:pre-cond #t [q number?]))
-  (test-name '(->d () () #:pre-cond ... [x ...] #:post-cond ...) (->d () () #:pre-cond #t [q number?] #:post-cond #t))
-  (test-name '(->d () () [x ...] #:post-cond ...) (->d () () [q number?] #:post-cond #t))
+  (test-name '(->d () () #:pre ... [x ...]) (->d () () #:pre #t [q number?]))
+  (test-name '(->d () () #:pre ... [x ...] #:post ...) (->d () () #:pre #t [q number?] #:post #t))
+  (test-name '(->d () () [x ...] #:post ...) (->d () () [q number?] #:post #t))
   
 #| ->i FIXME
   (test-name '(->i () () any) (->i () () any))
   (test-name '(->i ([x integer?] #:y [y integer?]) ([z integer?] #:w [w integer?]) any) (->i ([x integer?] #:y [y integer?]) ([z integer?] #:w [w integer?]) any))
   (test-name '(->i () () (values [x ...] [y ...])) (->i () () (values [x number?] [y number?])))
   (test-name '(->i () () [x ...]) (->i () () [q number?]))
-  (test-name '(->i () () #:pre-cond ... [x ...]) (->i () () #:pre-cond #t [q number?]))
-  (test-name '(->i () () #:pre-cond ... [x ...] #:post-cond ...) (->i () () #:pre-cond #t [q number?] #:post-cond #t))
-  (test-name '(->i () () [x ...] #:post-cond ...) (->i () () [q number?] #:post-cond #t))
+  (test-name '(->i () () #:pre ... [x ...]) (->i () () #:pre () #t [q number?]))
+  (test-name '(->i () () #:pre ... [x ...] #:post ...) (->i () () #:pre () #t [q number?] #:post () #t))
+  (test-name '(->i () () [x ...] #:post ...) (->i () () [q number?] #:post () #t))
 |#
   
   (test-name '(case->) (case->))

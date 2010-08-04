@@ -231,6 +231,7 @@
             (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
             (make-contracted-function
              (λ #,(args/vars->arglist (istx-args an-istx) wrapper-args)
+               ;; WRONG: need to include the pre- and post-condition checking somewhere in here.
                #,(for/fold ([body (args/vars->callsite #'val (istx-args an-istx) wrapper-args)])
                    ([indy-arg (in-list indy-args)]
                     [arg (in-list ordered-args)]
@@ -267,7 +268,7 @@
              ctc))))))
 
 (define (un-dep ctc obj blame)
-   ;; WRONG (well, just need to avoid calling coerce-contract if 'ctc' is something simple)
+  ;; WRONG (well, just need to avoid calling coerce-contract if 'ctc' is something simple)
   (let ([ctc (coerce-contract '->i ctc)])
     (((contract-projection ctc) blame) obj)))
 
@@ -293,8 +294,20 @@
                                                              (istx-args an-istx))))]
                   [(arg-exps ...)
                    (filter values (map (λ (arg) (and (not (arg-vars arg)) (arg-ctc arg)))
-                                       (istx-args an-istx)))])
-      #`(let ([arg-exp-xs arg-exps] ...)
+                                       (istx-args an-istx)))]
+                  
+                  [(res-exp-xs ...) 
+                   (if (istx-ress an-istx)
+                       (generate-temporaries (filter values (map (λ (res) (and (not (res-vars res)) (res-var res)))
+                                                                 (istx-ress an-istx))))
+                       '())]
+                  [(res-exps ...)
+                   (if (istx-ress an-istx)
+                       (filter values (map (λ (res) (and (not (res-vars res)) (res-ctc res)))
+                                           (istx-ress an-istx)))
+                       '())])
+      #`(let ([arg-exp-xs arg-exps] ...
+              [res-exp-xs res-exps] ...)
           (->i 
            ;; all of the non-dependent argument contracts
            (list arg-exp-xs ...)
@@ -311,17 +324,15 @@
            
            
            #,(if (istx-ress an-istx)
-                 #`(list #,@(filter values (map (λ (arg) (and (not (res-vars arg)) (res-ctc arg)))
-                                                (istx-ress an-istx))))
+                 #`(list res-exp-xs ...)
                  #''())
            #,(if (istx-ress an-istx) 
                  #`(list #,@(filter values (map (λ (arg) (and (res-vars arg) #`(λ #,(res-vars arg) (opt/c #,(res-ctc arg)))))
                                                 (istx-ress an-istx))))
                  #''())
-           ;; WRONG! this needs to be a subset of the previuos^2 (and to generate a let to share appropriately)
+           ;; WRONG! this needs to be a subset of the previuos^2 
            #,(if (istx-ress an-istx)
-                 #`(list #,@(filter values (map (λ (arg) (and (not (res-vars arg)) (res-ctc arg)))
-                                                (istx-ress an-istx))))
+                 #`(list res-exp-xs ...)
                  #''())
            
            #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) (not (arg-optional? arg))))

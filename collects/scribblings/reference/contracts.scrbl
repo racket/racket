@@ -517,13 +517,13 @@ symbols, and that return a symbol.
  [optional-dependent-dom id+ctc
                          (code:line keyword id+ctc)]
  [dependent-rest (code:line) (code:line #:rest id+ctc)]
- [pre-condition (code:line) (code:line #:pre-cond boolean-expr)]
+ [pre-condition (code:line) (code:line #:pre (id ...) boolean-expr)]
  [dependent-range any
                   id+ctc
                   un+ctc
                   (values id+ctc ...)
                   (values un+ctc ...)]
- [post-condition (code:line) (code:line #:post-cond boolean-expr)]
+ [post-condition (code:line) (code:line #:post (id ...) boolean-expr)]
  [id+ctc [id contract-expr]
          [id (id ...) contract-expr]]
  [un+ctc [_ contract-expr]
@@ -542,14 +542,19 @@ The first subforms of a @racket[->i] contract covers the
 mandatory and the second (optional) subform covers the optional
 arguments. Following that is an
 optional rest-args contract, and an optional
-pre-condition. The @racket[dep-range] non-terminal covers
-the possible post-condition contracts. If it is
+pre-condition. The pre-condition is specified with
+the @racket[#:pre] keyword, and must be followed
+with the argument variables that it depends on.
+
+The @racket[dep-range] non-terminal covers
+the possible result contracts. If it is
 @racket[any], then any result (or results) are
 allowed. Otherwise, the result contract can be a name and a
 result contract, or a multiple values return and, in either
 of the last two cases, it may be optionally followed by a
 post-condition (the post-condition expression is not allowed
-if the range is @racket[any]).
+if the range is @racket[any]). Like the pre-condition, the
+post-condition must specify the variables that it depends on.
 
 Each of the @racket[id]s on an argument (including the rest
 argument) is visible in the pre- and post-conditions sub-expressions of
@@ -601,7 +606,7 @@ called @racket[the-unsupplied-arg] value.
 ([mandatory-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
  [optional-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
  [dependent-rest (code:line) (code:line #:rest id rest-expr)]
- [pre-condition (code:line) (code:line #:pre-cond boolean-expr)]
+ [pre-condition (code:line) (code:line #:pre boolean-expr) (code:line #:pre-cond boolean-expr)]
  [dependent-range any
                   [_ range-expr]
                   (values [_ range-expr] ...)
@@ -617,12 +622,15 @@ This contract is similar to @racket[->i], but is ``lax'', meaning
 that it does not enforce contracts internally. For example, using
 this contract
 @racketblock[(->d ([f (-> integer? integer?)])
-                  #:pre-cond
+                  #:pre
                   (zero? (f #f))
                   any)]
 will allow @racket[f] to be called with @racket[#f], trigger whatever bad
 behavior the author of @scheme[f] was trying to prohibit by insisting that
 @racket[f]'s contract accept ony integers.
+
+The @racket[#:pre-cond] and @racket[#:post-cond] keywords are synonyms for
+@racket[#:pre] and @racket[#:post] and are provided for backwards compatibility.
 
 }
   
