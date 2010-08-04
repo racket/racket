@@ -3,6 +3,7 @@
 (require "arrow.rkt"
          "prop.rkt"
          "guts.rkt"
+         "opt.rkt"
          unstable/location
          (for-syntax racket/base
                      racket/stxparam-exptime
@@ -279,7 +280,7 @@
            ;; all of the non-dependent argument contracts
            (list arg-exp-xs ...)
            ;; all of the dependent argument contracts
-           (list #,@(filter values (map (λ (arg) (and (arg-vars arg) #`(λ #,(arg-vars arg) #,(arg-ctc arg))))
+           (list #,@(filter values (map (λ (arg) (and (arg-vars arg) #`(λ #,(arg-vars arg) (opt/c #,(arg-ctc arg)))))
                                         (istx-args an-istx))))
            ;; then the non-dependent argument contracts that are themselves dependend on
            (list #,@(filter values
@@ -295,7 +296,7 @@
                                                 (istx-ress an-istx))))
                  #''())
            #,(if (istx-ress an-istx) 
-                 #`(list #,@(filter values (map (λ (arg) (and (res-vars arg) #`(λ #,(res-vars arg) #,(res-ctc arg))))
+                 #`(list #,@(filter values (map (λ (arg) (and (res-vars arg) #`(λ #,(res-vars arg) (opt/c #,(res-ctc arg)))))
                                                 (istx-ress an-istx))))
                  #''())
            ;; WRONG! this needs to be a subset of the previuos^2 (and to generate a let to share appropriately)

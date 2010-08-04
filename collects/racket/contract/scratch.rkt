@@ -5,44 +5,30 @@
 #;
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i ([f number?] 
-                         [y (f) (<=/c f)])
-                        any))))
+                 #'(->i ([x number?] [y (x) (<=/c x)]) any))))
+
+(pretty-print
+ (syntax->datum (expand
+                 #'(->i ([x number?] [y number?] [z (x y) (if (<= x y) (<=/c x) (<=/c y))]) any))))
+
 
 #;
-((contract (->i ([f number?] 
-                 [y (f) (<=/c f)])
-                any)
+((contract (->i ([x number?] [y (x) (<=/c x)]) any)
            (λ (x y) (+ x y))
            'pos 'neg)
  -1 -1)
 
 
-(define f0 (λ (x y) (+ x y)))
+;; timing tests:
 
 (define f1
-  (contract (-> number? (<=/c 0) any)
-            (λ (x y) (+ x y))
+  (contract (-> number? number? (or/c (<=/c 1) (<=/c 2)) any)
+            (λ (x y z) (+ x y z))
             'pos 'neg))
 
 (define f2
-  (contract (->i ([x number?] [y (<=/c 0)]) any)
-            (λ (x y) (+ x y))
-            'pos 'neg))
-
-(define f3
-  (contract (->i ([x number?] [y (x) (<=/c x)]) any)
-            (λ (x y) (+ x y))
-            'pos 'neg))
-
-(define f4
-  (contract (->d ([x number?] [y (<=/c 0)]) any)
-            (λ (x y) (+ x y))
-            'pos 'neg))
-
-(define f5
-  (contract (->d ([x number?] [y (<=/c x)]) any)
-            (λ (x y) (+ x y))
+  (contract (->i ([x number?] [y number?] [z (x y) (or/c (<=/c x) (<=/c y))]) any)
+            (λ (x y z) (+ x y z))
             'pos 'neg))
 
 
@@ -50,23 +36,19 @@
   (time
    (let loop ([n 100000])
      (unless (zero? n)
-       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
-       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
-       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
-       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
-       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
-       (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) (f -1 -1) 
+       (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) 
+       (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) 
+       (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) 
+       (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) 
+       (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) 
+       (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) (f -1 -1 -1) 
        (loop (- n 1))))))
 
 'ignore: (tme f1)
 
-'f0 (tme f0)
-
 'f1 (tme f1)
 'f2 (tme f2)
-'f3 (tme f3)
-'f4 (tme f4)
-'f5 (tme f5)
+
 
 #|
 test cases:
