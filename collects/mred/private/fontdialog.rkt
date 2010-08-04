@@ -52,7 +52,9 @@
 	       [sip (make-object check-box% "Size in Pixels" p4 refresh-sample)]
 	       [sym (make-object check-box% "Map as Symbol" p4 refresh-sample)]
 	       [size (make-object slider% "Size:" 4 127 p2 refresh-sample 12)]
-	       [sample (make-object text-field% "Sample" f void "The quick brown fox jumped over the lazy dog" '(multiple))]
+	       [sample (make-object text-field% "Sample" f void 
+                                    "The quick brown fox jumped over the lazy dog\n(\u3bb (x) x)\n" 
+                                    '(multiple))]
 	       [edit (send sample get-editor)]
 	       [done (lambda (ok) (lambda (b e) (set! ok? ok) (send f show #f)))]
 	       [get-font (lambda () (let ([face (send face get-string-selection)])

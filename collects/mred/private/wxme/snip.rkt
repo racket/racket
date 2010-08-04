@@ -444,15 +444,7 @@
                       [real? left] [real? top] [real? bottom] [real? right] 
                       [real? dx] [real? dy] [symbol? caret])
     (unless (has-flag? s-flags INVISIBLE)
-      (send dc draw-text (replace-nuls (substring s-buffer s-dtext (+ s-dtext s-count))) x y #f)
-      (when (eq? (system-type) 'unix)
-        (when (send s-style get-underlined)
-          (let ([descent (send s-style get-text-descent dc)]
-                [h (send s-style get-text-height dc)])
-            (let ([y (if (descent . >= . 2)
-                         (+ y (- h (/ descent 2)))
-                         (+ y (- h descent)))])
-              (send dc draw-line x y (+ x str-w) y)))))))
+      (send dc draw-text (replace-nuls (substring s-buffer s-dtext (+ s-dtext s-count))) x y #f)))
 
   (def/override (split [exact-nonnegative-integer? position] [box? first] [box? second])
     (let ([count s-count])

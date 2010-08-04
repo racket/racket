@@ -20,7 +20,7 @@
 
 (define (fixup p p-new)
   (printf "Fixing ~s\n" p-new)
-  (system (format "install_name_tool -id ~a ~a" p-new (file-name-from-path p-new)))
+  (system (format "install_name_tool -id ~a ~a" (file-name-from-path p-new) p-new))
   (for-each (lambda (s)
               (system (format "install_name_tool -change ~a @loader_path/~a ~a" 
                               (format "~a/~a.dylib" from s)

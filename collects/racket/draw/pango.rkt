@@ -47,9 +47,12 @@
 (define PangoLayout (_cpointer 'PangoLayout))
 (define PangoFontDescription (_cpointer 'PangoFontDescription))
 (define PangoFontFamily (_cpointer 'PangoFontFamily))
+(define PangoFont (_cpointer 'PangoFont))
 (define PangoFontMap (_cpointer 'PangoFontMap))
 (define PangoAttrList (_cpointer 'PangoAttrList))
 (define PangoAttribute (_cpointer 'PangoAttribute))
+(define PangoLanguage (_cpointer 'PangoLanguage))
+(define PangoCoverage (_cpointer 'PangoCoverage))
 
 (define-cstruct _PangoRectangle ([x _int]
                                  [y _int]
@@ -88,6 +91,16 @@
 (define-pango pango_font_family_get_name (_fun PangoFontFamily -> _string)) ;; not an allocator
 (define-pango pango_font_family_is_monospace (_fun PangoFontFamily -> _bool))
 
+(define-pango pango_language_get_default (_fun -> PangoLanguage))
+(define-pango pango_font_map_load_font (_fun PangoFontMap PangoContext PangoFontDescription -> (_or-null PangoFont)))
+(define-pango pango_coverage_unref (_fun PangoCoverage -> _void)
+  #:wrap (deallocator))
+(define-pango pango_font_get_coverage (_fun PangoFont PangoLanguage -> PangoCoverage)
+  #:wrap (allocator pango_coverage_unref))
+(define-pango pango_coverage_get (_fun PangoCoverage _int -> _int))
+
+(define-pango pango_layout_get_unknown_glyphs_count (_fun PangoLayout -> _int))
+
 (define-pango pango_attr_list_unref (_fun PangoAttrList -> _void)
   #:wrap (deallocator))
 (define-pango pango_attr_list_new (_fun -> PangoAttrList)
@@ -99,6 +112,8 @@
 (define-pango pango_attribute_destroy (_fun PangoAttribute -> _void)
   #:wrap (deallocator))
 (define-pango pango_attr_underline_new (_fun _int -> PangoAttribute)
+  #:wrap (allocator pango_attribute_destroy))
+(define-pango pango_attr_fallback_new (_fun _bool -> PangoAttribute)
   #:wrap (allocator pango_attribute_destroy))
 
 (define-pango pango_layout_set_attributes (_fun PangoLayout PangoAttrList -> _void))

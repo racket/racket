@@ -921,28 +921,59 @@
               [x (if rotate? 0.0 x)]
               [y (if rotate? 0.0 y)])
           (if combine?
-              (let ([layout (pango_layout_new context)])
-                (pango_layout_set_font_description layout desc)
-                (when attrs (pango_layout_set_attributes layout attrs))
-                (pango_layout_set_text layout s)
-                (when draw?
-                  (cairo_move_to cr x y)
-                  (pango_cairo_show_layout cr layout))
-                (begin0
-                 (if draw?
-                     (void)
-                     (let ([logical (make-PangoRectangle 0 0 0 0)])
-                       (pango_layout_get_extents layout #f logical)
-                       (values (if blank?
-                                   0.0
-                                   (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))
-                               (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))
-                               (integral (/ (- (PangoRectangle-height logical)
-                                               (pango_layout_get_baseline layout))
-                                            (exact->inexact PANGO_SCALE)))
-                               0.0)))
-                 (g_object_unref layout)
-                 (when rotate? (cairo_restore cr))))
+              (let loop ([s s] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
+                (cond
+                 [(not s)
+                  (when rotate? (cairo_restore cr))
+                  (values w h d a)]
+                 [else
+                  (let ([layout (pango_layout_new context)]
+                        [next-s #f])
+                    (pango_layout_set_font_description layout desc)
+                    (when attrs (pango_layout_set_attributes layout attrs))
+                    (pango_layout_set_text layout s)
+                    (let ([next-s
+                           (if (zero? (pango_layout_get_unknown_glyphs_count layout))
+                               #f
+                               ;; look for the first character in the string without a glyph
+                               (let ([ok-count
+                                      (let ([len (string-length s)])
+                                        (let loop ([lo 0] [hi (sub1 len)] [i (quotient len 2)])
+                                          (cond
+                                           [(= lo hi) lo]
+                                           [else
+                                            (pango_layout_set_text layout (substring s lo i))
+                                            (if (zero? (pango_layout_get_unknown_glyphs_count layout))
+                                                ;; ok so far, so look higher
+                                                (if (= i lo)
+                                                    lo
+                                                    (loop i hi (+ i (quotient (- hi i) 2))))
+                                                ;; still not ok; look lower
+                                                (loop lo i (+ lo (quotient (- i lo) 2))))])))])
+                                 (pango_layout_set_text layout (substring s 0 (max 1 ok-count)))
+                                 (when (zero? ok-count)
+                                   ;; find a face that works for the long character:
+                                   (install-alternate-face layout font desc attrs))
+                                 (substring s (max 1 ok-count))))])
+                      (when draw?
+                        (cairo_move_to cr (+ x w) y)
+                        (pango_cairo_show_layout cr layout))
+                      (cond
+                       [(and draw? (not next-s))
+                        (g_object_unref layout)
+                        (void)]
+                       [else
+                        (let ([logical (make-PangoRectangle 0 0 0 0)])
+                          (pango_layout_get_extents layout #f logical)
+                          (let ([nw (if blank?
+                                        0.0
+                                        (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))]
+                                [nh (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))]
+                                [nd (integral (/ (- (PangoRectangle-height logical)
+                                                    (pango_layout_get_baseline layout))
+                                                 (exact->inexact PANGO_SCALE)))]
+                                [na 0.0])
+                            (loop next-s (+ w nw) (max h nh) (max d nd) (max a na))))])))]))
               (let ([logical (make-PangoRectangle 0 0 0 0)])
                 (begin0
                  (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
@@ -955,10 +986,12 @@
                                                 (pango_layout_set_font_description layout desc)
                                                 (when attrs (pango_layout_set_attributes layout attrs))
                                                 (pango_layout_set_text layout (string ch))
+                                                (unless (zero? (pango_layout_get_unknown_glyphs_count layout))
+                                                  ;; No good glyph; look for an alternate face
+                                                  (install-alternate-face layout font desc attrs))
                                                 (hash-set! layouts key layout)
                                                 layout)))])
                      (pango_cairo_update_layout cr layout)
-                     ;; (cairo_show_glyphs cr (make-cairo_glyph_t 65 x y) 1)
                      (when draw?
                        (cairo_move_to cr (+ x w) y)
                        (pango_cairo_show_layout cr layout))
@@ -971,6 +1004,29 @@
                            [la 0.0])
                        (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la)))))
                  (when rotate? (cairo_restore cr))))))))
+
+
+    (define/private (install-alternate-face layout font desc attrs)
+      (or
+       (for/or ([face (in-list (get-face-list))])
+         (let ([desc (get-pango (make-object font%
+                                             (send font get-point-size)
+                                             face
+                                             (send font get-family)
+                                             (send font get-style)
+                                             (send font get-weight)
+                                             (send font get-underlined)
+                                             (send font get-smoothing)
+                                             (send font get-size-in-pixels)))])
+           (and desc
+                (let ([attrs (send font get-pango-attrs)])
+                  (pango_layout_set_font_description layout desc)
+                  (when attrs (pango_layout_set_attributes layout attrs))
+                  (zero? (pango_layout_get_unknown_glyphs_count layout))))))
+       (begin
+         ;; put old desc & attrs back
+         (pango_layout_set_font_description layout desc)
+         (when attrs (pango_layout_set_attributes layout attrs)))))
     
     (def/public (get-char-width)
       10.0)
@@ -1138,7 +1194,20 @@
         (send tmp-dc set-bitmap #f)
         tmp-bm))
 
-    (def/public (glyph-exists? [char? c]) #t)
+    (def/public (glyph-exists? [char? c])
+      (with-cr
+       #f
+       cr
+       (let ([desc (get-pango font)])
+         (unless context
+           (set! context (pango_cairo_create_context cr)))
+         (let ([layout (pango_layout_new context)])
+           (pango_layout_set_font_description layout desc)
+           (pango_layout_set_text layout (string c))
+           (pango_cairo_update_layout cr layout)
+           (begin0
+            (zero? (pango_layout_get_unknown_glyphs_count layout))
+            (g_object_unref layout))))))
     
     )
   dc%)
