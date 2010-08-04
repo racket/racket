@@ -1221,7 +1221,10 @@ Scheme_Object *scheme_place_bi_peer_channel_create(Scheme_Object *orig) {
 
 static Scheme_Object *scheme_place_channel(int argc, Scheme_Object *args[]) {
   if (argc == 0) {
-    return scheme_place_bi_channel_create();
+    Scheme_Place_Bi_Channel *ch;
+    ch = scheme_place_bi_channel_create();
+    scheme_place_bi_channel_set_signal((Scheme_Object *) ch);
+    return ch;
   }
   else {
     scheme_wrong_count_m("place-channel", 0, 0, argc, args, 0);
@@ -1232,14 +1235,17 @@ static Scheme_Object *scheme_place_channel(int argc, Scheme_Object *args[]) {
 static Scheme_Object *scheme_place_channel_receiver_channel(int argc, Scheme_Object *args[]) {
   if (argc == 1) {
     if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_bi_channel_type)) {
-      return scheme_place_bi_peer_channel_create(args[0]);
+      Scheme_Place_Bi_Channel *ch;
+      ch = scheme_place_bi_peer_channel_create(args[0]);
+      scheme_place_bi_channel_set_signal((Scheme_Object *) ch);
+      return ch;
     }
     else {
-      scheme_wrong_type("place-channel->receive-channel", "place-channel?", 0, argc, args);
+      scheme_wrong_type("place-channel->receiver-channel", "place-channel?", 0, argc, args);
     }
   }
   else {
-    scheme_wrong_count_m("place-channel-send", 1, 1, argc, args, 0);
+    scheme_wrong_count_m("place-channel->receiver-channel", 1, 1, argc, args, 0);
   }
   return scheme_true;
 }
