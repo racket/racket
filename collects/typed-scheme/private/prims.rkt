@@ -451,7 +451,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (syntax-parse clauses
            [(head:for-clause next:for-clause ... #:when rest ...)
             (syntax-property
-             (quasisyntax/loc clauses
+             (quasisyntax/loc stx
                (for
                 (head.expand next.expand ...)
                 #,(loop #'(#:when rest ...))))
@@ -459,18 +459,18 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #'Void)]
            [(head:for-clause ...) ; we reached the end
             (syntax-property
-             (quasisyntax/loc clauses
+             (quasisyntax/loc stx
                (for
                 (head.expand ...)
                 #,@body))
              'type-ascription
              #'Void)]
            [(#:when guard) ; we end on a #:when clause
-            (quasisyntax/loc clauses
+            (quasisyntax/loc stx
               (when guard
                 #,@body))]
            [(#:when guard rest ...)
-            (quasisyntax/loc clauses
+            (quasisyntax/loc stx
               (when guard
                 #,(loop #'(rest ...))))])))]))
 
