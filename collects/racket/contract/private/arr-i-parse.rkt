@@ -407,4 +407,5 @@ code does the parsing and validation of the syntax.
  (struct-out istx)
  (struct-out res)
  (struct-out arg)
- (struct-out rst))
+ (struct-out rst)
+ (struct-out pre/post))

@@ -33,6 +33,7 @@
 ;; mk-wrapper : creates the a wrapper function that implements the contract checking
 (struct ->i (arg-ctcs arg-dep-ctcs indy-arg-ctcs
                       rng-ctcs rng-dep-ctcs indy-rng-ctcs
+                      pre/post-procs
                       mandatory-args opt-args mandatory-kwds opt-kwds rest?
                       here
                       mk-wrapper)
@@ -65,7 +66,8 @@
                         (check-procedure/more val mtd? (->i-mandatory-args ctc) (->i-mandatory-kwds ctc) (->i-opt-kwds ctc) blame)
                         (check-procedure val mtd? (->i-mandatory-args ctc) (->i-opt-args ctc) (->i-mandatory-kwds ctc) (->i-opt-kwds ctc) blame)))
                   ctc
-                  (append partial-doms
+                  (append (->i-pre/post-procs ctc)
+                          partial-doms
                           (->i-arg-dep-ctcs ctc)
                           partial-indy-doms
                           partial-rngs
@@ -185,6 +187,20 @@
 (define-for-syntax (maybe-generate-temporary x)
   (and x (car (generate-temporaries (list x)))))
 
+(define (check-pre bool val blame)
+  (unless bool
+    (raise-blame-error blame val "#:pre condition violation")))
+
+(define-for-syntax (add-pre-cond an-istx arg-to-indy-var call-stx)
+  (cond
+    [(istx-pre an-istx)
+     #`(begin (check-pre (pre-proc #,@(map arg-to-indy-var (pre/post-vars (istx-pre an-istx))))
+                         val
+                         swapped-blame)
+              #,call-stx)]
+    [else
+     call-stx]))
+
 (define-for-syntax (mk-wrapper-func an-istx used-indy-vars)
   (let-values ([(ordered-args arg-indicies) (find-ordering (istx-args an-istx))])
     
@@ -194,7 +210,7 @@
           
           ;; this list is parallel to arg-proj-vars (so use arg-indicies to find the right ones in the loop below)
           ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
-          ;; argument is not dependened on anywhere)
+          ;; argument is not dependened on by anything)
           [indy-arg-proj-vars (list->vector (map (λ (x) (maybe-generate-temporary
                                                          (and (not (arg-vars x))
                                                               (free-identifier-mapping-get used-indy-vars 
@@ -217,6 +233,11 @@
                  [else (loop (cdr iargs) (cdr args))]))])))
             
       #`(λ (blame swapped-blame indy-dom-blame indy-rng-blame chk ctc
+                  
+                  ;; the pre- and post-condition procs
+                  #,@(if (istx-pre an-istx) (list #'pre-proc) '())
+                  #,@(if (istx-post an-istx) (list #'post-proc) '())
+                  
                   ;; first the non-dependent arg projections
                   #,@(filter values (map (λ (arg arg-proj-var) (and (not (arg-vars arg)) arg-proj-var))
                                          (istx-args an-istx)
@@ -231,8 +252,8 @@
             (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
             (make-contracted-function
              (λ #,(args/vars->arglist (istx-args an-istx) wrapper-args)
-               ;; WRONG: need to include the pre- and post-condition checking somewhere in here.
-               #,(for/fold ([body (args/vars->callsite #'val (istx-args an-istx) wrapper-args)])
+               ;; WRONG: need to include the post-condition checking somewhere in here.
+               #,(for/fold ([body (add-pre-cond an-istx arg-to-indy-var (args/vars->callsite #'val (istx-args an-istx) wrapper-args))])
                    ([indy-arg (in-list indy-args)]
                     [arg (in-list ordered-args)]
                     [arg-index arg-indicies]
@@ -278,6 +299,12 @@
       (when (arg-vars an-arg)
         (for ([var (in-list (arg-vars an-arg))])
           (free-identifier-mapping-put! vars var #t))))
+    (when (istx-pre an-istx)
+      (for ([var (in-list (pre/post-vars (istx-pre an-istx)))])
+        (free-identifier-mapping-put! vars var #t)))
+    (when (istx-post an-istx)
+      (for ([var (in-list (pre/post-vars (istx-post an-istx)))])
+        (free-identifier-mapping-put! vars var #t)))
     (when (istx-ress an-istx)
       (for ([a-res (in-list (istx-ress an-istx))])
         (when (res-vars a-res)
@@ -334,6 +361,14 @@
            #,(if (istx-ress an-istx)
                  #`(list res-exp-xs ...)
                  #''())
+           
+           #,(let ([func (λ (pre/post) #`(λ #,(pre/post-vars pre/post) #,(pre/post-exp pre/post)))])
+               #`(list #,@(if (istx-pre an-istx)
+                              (list (func (istx-pre an-istx)))
+                              '())
+                       #,@(if (istx-post an-istx)
+                              (list (func (istx-post an-istx)))
+                              '())))
            
            #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) (not (arg-optional? arg))))
                                          (istx-args an-istx))))

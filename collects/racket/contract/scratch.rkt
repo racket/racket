@@ -2,25 +2,20 @@
 (require racket/contract
          racket/pretty)
 
-#;
-(->i ([x number?]) [res any/c] #:post () #t)
-
-#;
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i () #:pre-cond #f any #:post-cond #f))))
+                 #'(->i ([f (-> number? number?)]) #:pre (f) (= (f #f) 11) any))))
 
 #;
 (pretty-print
  (syntax->datum (expand
                  #'(->i () [x integer?]))))
 
-
-#;
-((contract (->i () #:pre-cond #f any)
-           (λ () 1)
-           'pos 'neg))
-;; => 1
+((contract (->i ([f (-> number? number?)]) #:pre (f) (= (f #f) 11) any)
+           (λ (x) 1)
+           'pos 'neg) 
+ (λ (n) (+ n 1)))
+;; => indy violation, during pre-condition checking
 
 #|
 ;; timing tests:
@@ -181,5 +176,11 @@ test cases:
            'pos 'neg)
  1 2 3)
 ;; => 6
+
+((contract (->i ([x number?]) #:pre () (= 1 2) any)
+           (λ (x) 1)
+           'pos 'neg) 2)
+;; => pre-condition violation
+
 
 |#
