@@ -19,7 +19,7 @@ at least theoretically.
  ;; timing
  start-timing do-time  
  ;; logging
- printf/log
+ printf/log show-input?
  ;; struct printing
  custom-printer define-struct/printer
  ;; provide macros
@@ -27,6 +27,7 @@ at least theoretically.
 
 (define optimize? (make-parameter #f))
 (define-for-syntax enable-contracts? #f)
+(define show-input? (make-parameter #f))
 
 ;; fancy require syntax
 (define-syntax (define-requirer stx)

@@ -3,6 +3,7 @@
 (require (rename-in "utils/utils.rkt" [infer r:infer])
          (except-in syntax/parse id)
          unstable/mutated-vars
+         racket/pretty
          scheme/base
          (private type-contract)
          (types utils convenience)
@@ -51,6 +52,8 @@
                      [type-name-references null])
         (do-time "Initialized Envs")
         (let ([fully-expanded-stx (local-expand stx expand-ctxt null)])
+          (when (show-input?)
+            (pretty-print (syntax->datum fully-expanded-stx)))
           (do-time "Local Expand Done")
           (parameterize ([mutated-vars (find-mutated-vars fully-expanded-stx)]
                          [orig-module-stx (or (orig-module-stx) orig-stx)]
