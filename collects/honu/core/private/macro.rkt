@@ -86,23 +86,52 @@
     [else (list)]))
 
 (define-for-syntax (fix-template stx)
-  (syntax-parse stx #:literals (honu-:)
-    [(variable:identifier honu-: class:identifier rest ...)
-     (with-syntax ([(rest* ...) (fix-template #'(rest ...))])
-       (datum->syntax stx (cons #'(~var variable class #:attr-name-separator "_")
-                                #'(rest* ...))
-                      stx)
-       #;
-       #'((~var variable class) rest* ...))]
-    [(one rest ...)
-     (with-syntax ([one* (fix-template #'one)]
-                   [(rest* ...) (fix-template #'(rest ...))])
-       (datum->syntax stx (cons #'one*
-                                #'(rest* ...))
-                      stx)
-       #;
-       #'(one* rest* ...))]
-    [else stx]))
+  (define (fix-classes stx)
+    (syntax-parse stx #:literals (honu-:)
+      [(variable:identifier honu-: class:identifier rest ...)
+       (with-syntax ([(rest* ...) (fix-template #'(rest ...))])
+         (datum->syntax stx (cons #'(~var variable class #:attr-name-separator "_")
+                                  #'(rest* ...))
+                        stx)
+         #;
+         #'((~var variable class) rest* ...))]
+      [(one rest ...)
+       (with-syntax ([one* (fix-template #'one)]
+                     [(rest* ...) (fix-template #'(rest ...))])
+         (datum->syntax stx (cons #'one*
+                                  #'(rest* ...))
+                        stx)
+         #;
+         #'(one* rest* ...))]
+      [else stx]))
+  ;; removes commas from a pattern
+  (define (fix-commas stx)
+    (syntax-parse stx
+      #:literals (honu-comma
+                   [ellipses ...])
+      [(a honu-comma ellipses rest ...)
+       (with-syntax ([a* (fix-commas #'a)]
+                     [(rest* ...) (fix-commas #'(rest ...))])
+         (datum->syntax stx
+                        `((~seq ,#'a* (~optional |,|)) ... ,@#'(rest* ...))
+                        stx stx)
+         #;
+         (datum->syntax stx
+                        (cons
+                          #'a*
+                          (cons
+                            #'(... ...)
+                            #'(rest* ...)))
+                        stx stx))]
+      [(z rest ...)
+       (with-syntax ([z* (fix-commas #'z)]
+                     [(rest* ...) (fix-commas #'(rest ...))])
+         (datum->syntax stx
+                        (cons #'z* #'(rest* ...))
+                        stx stx))]
+      [else stx]))
+  (define all-fixes (compose fix-commas fix-classes))
+  (all-fixes stx))
 
 #|
 (define-for-syntax (fix-template stx)
@@ -466,11 +495,25 @@
 
 (define foobar 0)
 
-
 (define-honu-syntax honu-macro
   (lambda (stx ctx)
     (define-splicing-syntax-class patterns
                          #:literal-sets ([cruft #:phase (syntax-local-phase-level)])
+      #;
+      [pattern (~seq x ...)
+               #:with (template ...) '()
+               #:with (code ...) '()
+               #:with (fixed ...) '()
+               #:when (begin
+                        (printf "Trying to parse ~a\n" (syntax->datum #'(x ...)))
+                        #f)]
+      #;
+      [pattern (~seq (#%braces template ...)
+                     (#%braces code ...))
+               #:with (fixed ...) '()
+               #:when (begin
+                        (printf "Got template as ~a. Code is ~a\n" (syntax->datum #'(template ...)) (syntax->datum #'(code ...)))
+                        #f)]
       [pattern (~seq (#%braces template ...)
                      (#%braces code ...))
                #:with (fixed ...) (fix-template #'(template ...))])
@@ -495,7 +538,7 @@
                                [your-braces (datum->syntax #'name '#%braces #'name)]
                                #;
                                [your-parens (datum->syntax #'name '#%parens #'name)])
-
+                   ;;(printf "Ok macro3 go!\n")
                    #;
                    #'(define-honu-syntax name
                        (lambda (stx ctx)
@@ -517,6 +560,7 @@
                                  (lambda (stx ctx)
                                    #;
                                    (printf "Executing macro `~a' on input `~a'\n" 'name (syntax->datum stx))
+                                   (printf "~a pattern is ~a\n" 'name '(pattern.fixed ... ...))
                                    (syntax-parse stx
                                      #:literal-sets ([cruft #:at name])
                                      #:literals (foobar literals ...)

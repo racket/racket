@@ -149,7 +149,7 @@
                     #f)]
 
   [pattern (~seq (~var e (expression-simple context))
-                 (~var dx (debug-here (format "call 1 ~a" #'e)))
+                 (~var dx (debug-here (format "call 1 ~a" (syntax->datum #'e))))
                  (#%parens 
                   (~seq (~var dz (debug-here (format "call 2")))
                         (~var arg (ternary context))
@@ -346,7 +346,7 @@
 (define-splicing-syntax-class (ternary context)
                               #:literals (honu-? honu-:)
                               [pattern (~seq (~var condition (expression-1 context))
-                                             (~var x1 (debug-here (format "ternary 1 ~a\n" #'condition.result)))
+                                             (~var x1 (debug-here (format "ternary 1 ~a\n" (syntax->datum #'condition.result))))
                                              (~optional (~seq honu-? (~var on-true (ternary context))
                                                               honu-: (~var on-false (ternary context))))
                                              (~var x2 (debug-here "ternary 2"))

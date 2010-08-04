@@ -2,8 +2,8 @@
 
 provide function;
 macro function ()
-  { _ name:identifier (args:identifier ...) { body ... } }
+  { _ name:identifier (args:identifier , ...) { body ... } }
   { #sx scheme:syntax #sx(define (name_result args_result ...)
                          (honu-unparsed-begin body ...)) }
-  { _ (args:identifier ...) { body ... }}
+  { _ (args:identifier , ...) { body ... }}
   { #sx scheme:syntax #sx(lambda (args_result ...) (honu-unparsed-begin body ...)) }

@@ -4,7 +4,7 @@ require (forSyntax "struct-patterns.honu");
 
 provide struct;
 macro struct () {
-  _ name {field:structField ...} ;
+  _ name {field:structField, ...} ;
 } {
   schemeSyntax#sx(honu-struct name (field_name_result ...))
 }
