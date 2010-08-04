@@ -1,13 +1,13 @@
 #lang racket/base
-(require syntax/private/boundmap
+(require (rename-in syntax/private/boundmap
+                    ;; the private version of the library 
+                    ;; (the one without contracts)
+                    ;; has these old, wrong names in it.
+                    [make-module-identifier-mapping make-free-identifier-mapping]
+                    [module-identifier-mapping-get free-identifier-mapping-get]
+                    [module-identifier-mapping-put! free-identifier-mapping-put!])
          (for-template racket/base
                        "guts.rkt"))
-;; the private version of the library 
-;; (the one without contracts)
-;; has these old, wrong names in it.
-(define make-free-identifier-mapping make-module-identifier-mapping)
-(define free-identifier-mapping-get module-identifier-mapping-get)
-(define free-identifier-mapping-put! module-identifier-mapping-put!)
 
 #|
 
@@ -54,7 +54,7 @@ code does the parsing and validation of the syntax.
 
 (define (parse-->i stx)
   (let-values ([(raw-mandatory-doms raw-optional-doms
-                 id/rest-id pre-cond range post-cond)
+                                    id/rest-id pre-cond range post-cond)
                 (pull-out-pieces stx)])
     (let ([candidate
            (istx (append (parse-doms stx #f raw-mandatory-doms)

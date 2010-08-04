@@ -3,15 +3,15 @@
          racket/pretty)
 
 (pretty-print
- (syntax->datum (expand 
+ (syntax->datum (expand-once
                  #'(->i ([f (-> number? number?)] 
-                         [y (f) (<=/c (f 0))])
+                         [y (f) (<=/c (begin (printf "f: ~s\n" f) (f 'not-a-number)))])
                         any))))
 
 ((contract (->i ([f (-> number? number?)] 
-                 [y (f) (<=/c (f 'not-a-number))])
+                 [y (f) (<=/c (begin (printf "f: ~s\n" f) (f 'not-a-number)))])
                 any)
-           (λ (f y) 'final-result)
+           (λ (f y) (f 'another-non-number) 'final-result)
            'pos 'neg)
  (λ (x) (* x x))
  -10)
