@@ -791,22 +791,23 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         new_so = vec;
       }
       break;
+
     case scheme_structure_type:
       {
         Scheme_Structure *st = (Scheme_Structure*)so;
-        Scheme_Structure *nst;
+        Scheme_Serialized_Structure *nst;
         Scheme_Struct_Type *stype = st->stype;
         Scheme_Struct_Type *ptype = stype->parent_types[stype->name_pos - 1];
-        long i;
+        Scheme_Object *nprefab_key;
         long size = stype->num_slots;
         int local_slots = stype->num_slots - (ptype ? ptype->num_slots : 0);
+        int i = 0;
 
         if (!stype->prefab_key) {
           scheme_log_abort("cannot copy non prefab structure");
           abort();
         }
         {
-          int i = 0;
           for (i = 0; i < local_slots; i++) {
             if (!stype->immutables || stype->immutables[i] != 1) {
               scheme_log_abort("cannot copy mutable prefab structure");
@@ -814,7 +815,27 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
             }
           }
         }
+        nprefab_key = scheme_places_deep_copy_worker(stype->prefab_key, ht);
+        nst = (Scheme_Serialized_Structure*) scheme_make_serialized_struct_instance(nprefab_key, size);
+        for (i = 0; i <size ; i++) {
+          Scheme_Object *tmp;
+          tmp = scheme_places_deep_copy_worker((Scheme_Object*) st->slots[i], ht);
+          nst->slots[i] = tmp;
+        }
+        new_so = (Scheme_Object*) nst;
+      }
+      break;
 
+    case scheme_serialized_structure_type:
+      {
+        Scheme_Serialized_Structure *st = (Scheme_Serialized_Structure*)so;
+        Scheme_Struct_Type *stype;
+        Scheme_Structure *nst;
+        long size;
+        int i = 0;
+      
+        size = st->num_slots;
+        stype = scheme_lookup_prefab_type(SCHEME_CDR(st->prefab_key), size);
         nst = (Scheme_Structure*) scheme_make_blank_prefab_struct_instance(stype);
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
@@ -824,6 +845,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         new_so = (Scheme_Object*)nst;
       }
       break;
+
     case scheme_resolved_module_path_type:
     default:
       scheme_log_abort("cannot copy object");
@@ -1093,6 +1115,9 @@ void force_hash_worker(Scheme_Object *so, Scheme_Hash_Table *ht)
         Scheme_Struct_Type *stype = st->stype;
         long i;
         long size = stype->num_slots;
+
+        if (stype->prefab_key)
+          force_hash_worker((Scheme_Object*)stype->prefab_key, ht);
         
         for (i = 0; i <size ; i++) {
           force_hash_worker((Scheme_Object*) st->slots[i], ht);

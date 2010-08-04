@@ -2000,6 +2000,23 @@ Scheme_Object *scheme_make_blank_prefab_struct_instance(Scheme_Struct_Type *styp
   return (Scheme_Object *)inst;
 }
 
+#ifdef MZ_USE_PLACES
+Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *prefab_key, int num_slots)
+{
+  Scheme_Serialized_Structure *inst;
+
+  inst = (Scheme_Serialized_Structure *)
+    scheme_malloc_tagged(sizeof(Scheme_Serialized_Structure) 
+			 + ((num_slots - 1) * sizeof(Scheme_Object *)));
+  
+  inst->so.type = scheme_serialized_structure_type;
+  inst->num_slots = num_slots;
+  inst->prefab_key = prefab_key;
+
+  return (Scheme_Object *)inst;
+}
+#endif
+
 Scheme_Object *scheme_make_prefab_struct_instance(Scheme_Struct_Type *stype,
                                                          Scheme_Object *vec)
 {
@@ -5209,6 +5226,9 @@ START_XFORM_SKIP;
 static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_structure_type, mark_struct_val);
+#ifdef MZ_USE_PLACES  
+  GC_REG_TRAV(scheme_serialized_structure_type, mark_serialized_struct_val);
+#endif
   GC_REG_TRAV(scheme_proc_struct_type, mark_struct_val);
   GC_REG_TRAV(scheme_struct_type_type, mark_struct_type_val);
   GC_REG_TRAV(scheme_struct_property_type, mark_struct_property);

@@ -692,6 +692,16 @@ typedef struct Scheme_Structure
   Scheme_Object *slots[1];
 } Scheme_Structure;
 
+#ifdef MZ_USE_PLACES
+typedef struct Scheme_Serialized_Structure
+{
+  Scheme_Object so;
+  Scheme_Object *prefab_key;
+  int num_slots;
+  Scheme_Object *slots[1];
+} Scheme_Serialized_Structure;
+#endif
+
 typedef struct Struct_Proc_Info {
   MZTAG_IF_REQUIRED
   Scheme_Struct_Type *struct_type;
@@ -747,6 +757,9 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
 					Scheme_Object *uninit_val,
 					char *immutable_pos_list);
 Scheme_Object *scheme_prefab_struct_key(Scheme_Object *s);
+#ifdef MZ_USE_PLACES
+Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *s, int num_slots);
+#endif
 
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 

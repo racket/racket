@@ -1907,6 +1907,25 @@ END sema;
 
 START struct;
 
+#ifdef MZ_USE_PLACES
+mark_serialized_struct_val {
+  Scheme_Serialized_Structure *s = (Scheme_Serialized_Structure *)p;
+  int num_slots = s->num_slots;
+
+ mark:
+  int i;
+
+  gcMARK2(s->prefab_key, gc);
+  
+  for(i = num_slots; i--; )
+    gcMARK2(s->slots[i], gc);
+
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Serialized_Structure) 
+		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+}
+#endif
+
 mark_struct_val {
   Scheme_Structure *s = (Scheme_Structure *)p;
   int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;
