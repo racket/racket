@@ -63,3 +63,25 @@
                                               (~or rest:annotated-star-rest rest:annotated-dots-rest)))
            #:with ann-formals #'(n.ann-name ... . rest.ann-name)
            #:with (arg-ty ...) #'(n.ty ... . rest.formal-ty)))
+
+(define-syntax-class opt-lambda-annotated-formal
+  #:description "annotated variable, potentially with a default value"
+  #:opaque
+  #:attributes (name ty ann-name)
+  (pattern [:annotated-name])
+  (pattern [n:annotated-name val]
+           #:with name #'n.name
+           #:with ty #'n.name
+           #:with ann-name #'(n.ann-name val)))
+
+(define-syntax-class opt-lambda-annotated-formals
+  #:attributes (ann-formals (arg-ty 1))
+  #:literals (:)
+  (pattern (n:opt-lambda-annotated-formal ...)
+           #:with ann-formals #'(n.ann-name ...)
+           #:with (arg-ty ...) #'(n.ty ...))
+  (pattern (n:opt-lambda-annotated-formal ...
+            (~describe "dotted or starred type"
+                       (~or rest:annotated-star-rest rest:annotated-dots-rest)))
+           #:with ann-formals #'(n.ann-name ... . rest.ann-name)
+           #:with (arg-ty ...) #'(n.ty ... . rest.formal-ty)))
