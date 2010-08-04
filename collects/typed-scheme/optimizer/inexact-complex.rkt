@@ -255,7 +255,32 @@
            #:with imag-binding (cadr (syntax->list #'unboxed-info))
            #:with (bindings ...) #'())
   
-  ;; else, do the unboxing here  
+  ;; else, do the unboxing here
+
+  ;; we can unbox literals right away
+  (pattern (quote n)
+           #:when (let ((x (syntax->datum #'n)))
+                    (and (number? x)
+                         (not (eq? (imag-part x) 0))))
+           #:with real-binding (unboxed-gensym)
+           #:with imag-binding (unboxed-gensym)
+           #:with (bindings ...)
+           (let ((n (syntax->datum #'n)))
+             #`(((real-binding) #,(datum->syntax
+                                   #'here
+                                   (exact->inexact (real-part n))))
+                ((imag-binding) #,(datum->syntax
+                                   #'here
+                                   (exact->inexact (imag-part n)))))))
+  (pattern (quote n)
+           #:when (real? (syntax->datum #'n))
+           #:with real-binding (unboxed-gensym)
+           #:with imag-binding #f
+           #:with (bindings ...)
+           #`(((real-binding) #,(datum->syntax
+                                 #'here
+                                 (exact->inexact (syntax->datum #'n))))))
+  
   (pattern e:expr
            #:when (isoftype? #'e -InexactComplex)
            #:with e* (unboxed-gensym)
