@@ -2,6 +2,7 @@
 (require racket/contract
          racket/pretty)
 
+#;
 (->i ([x number?]) [res any/c] #:post () #t)
 
 #;
@@ -116,6 +117,14 @@ test cases:
      any)
 ; => unknown dependent variable
 
+
+(->i ([x number?]) #:pre (y) #t any)
+;; => unknown dependent variable
+
+
+(->i ([x number?]) #:pre (x) #t [res any/c] #:post (y) #t)
+;; => unknown dependent variable
+
 (->i ([x (y) number?])
      [y number?])
 ; => domain cannot depend on a range variable
@@ -124,6 +133,9 @@ test cases:
      #:rest [x (y) number?]
      [y number?])
 ; => domain cannot depend on a range variable
+
+(->i ([x number?]) #:pre (res) #t [res any/c] #:post (x) #t)
+;; => pre cannot depend on a range variables
 
 (->i ([x (x) number?])
      any)

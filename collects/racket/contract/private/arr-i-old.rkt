@@ -29,7 +29,7 @@
                     (values '() leftover)]
                    [(dep-range)
                     (values '() leftover)]
-                   [(dep-range #:post expr)
+                   [(dep-range #:post . more)
                     (values '() leftover)]
                    [((opts ...) . rest)
                     (values #'(opts ...) #'rest)]

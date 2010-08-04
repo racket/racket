@@ -2304,7 +2304,7 @@
    '->i-protect-shared-state
    '(let ([x 1])
       ((contract (let ([save #f]) 
-                   (-> (->i () () #:pre (x) (set! save x) [range any/c] #:post (x) (= save x))
+                   (-> (->i () () #:pre () (set! save x) [range any/c] #:post () (= save x))
                        any))
                  (λ (t) (t))
                  'pos
@@ -2414,8 +2414,9 @@
                     ([a number?] [b number?] #:c [c number?] #:d [d number?])
                     #:rest [rest any/c] 
                     (values [p number?] [q number?] [r number?])
-                    #:post (equal? (list x y z w a b c d rest p q r)
-                                   (list 1 2 3 4 5 6 7 8 '(z) 11 12 13)))
+                    #:post (x y z w a b c d)
+					(equal? (list x y z w a b c d rest p q r)
+							(list 1 2 3 4 5 6 7 8 '(z) 11 12 13)))
                (λ (x y #:z z #:w w [a 101] [b 102] #:c [c 103] #:d [d 104] . rest)
                  (values 11 12 13))
                'pos
@@ -2448,10 +2449,11 @@
                     ([a number?] [b number?] #:c [c number?] #:d [d number?])
                     #:rest [rest any/c] 
                     (values [p number?] [q number?] [r number?])
-                    #:post (equal? (list x y z w a b c d rest p q r)
-                                   (list 1 2 3 4
-                                         the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg
-                                         '() 11 12 13)))
+                    #:post (x y z w a b c d rest)
+					(equal? (list x y z w a b c d rest p q r)
+							(list 1 2 3 4
+								  the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg the-unsupplied-arg
+								  '() 11 12 13)))
                (λ (x y #:z z #:w w [a 101] [b 102] #:c [c 103] #:d [d 104] . rest)
                  (values 11 12 13))
                'pos
@@ -2465,7 +2467,7 @@
                     ([a number?])
                     #:rest [rest any/c] 
                     [_ any/c]
-                    #:post (equal? (list a rest) (list the-unsupplied-arg '())))
+                    #:post (a) (equal? (list a rest) (list the-unsupplied-arg '())))
                (λ ([a 1] . rest) 1)
                'pos
                'neg)))

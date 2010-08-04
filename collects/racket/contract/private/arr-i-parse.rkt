@@ -19,9 +19,9 @@ code does the parsing and validation of the syntax.
 
 ;; args : (listof arg?)
 ;; rst  : (or/c #f rst?)
-;; pre  : (or/c stx[expr] #f)
+;; pre  : (or/c pre/post? #f)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
-;; post : (or/c stx[expr] #f)
+;; post : (or/c pre/post? #f)
 (struct istx (args rst pre ress post))
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
 ;;       but only temporarily; in that case, a syntax error
@@ -51,6 +51,10 @@ code does the parsing and validation of the syntax.
 ;; vars : (or/c #f (listof identifier?))
 ;; ctc  : syntax[expr]
 (struct rst (var vars ctc))
+
+;; vars : (listof identifier?)
+;; exp  : syntax[expr]
+(struct pre/post (vars exp))
 
 (define (parse-->i stx)
   (let-values ([(raw-mandatory-doms raw-optional-doms
@@ -99,12 +103,15 @@ code does the parsing and validation of the syntax.
                               stx var))))
     
     ;; not-range-bound : (listof identifier[used-by-an-arg]) -> void
-    (define (not-range-bound arg-vars)
+    (define (not-range-bound arg-vars arg?)
       (when (istx-ress istx)
         (for ([arg-var (in-list arg-vars)])
           (when (ormap (λ (a-res) (free-identifier=? (res-var a-res) arg-var))
                        (istx-ress istx))
-            (raise-syntax-error #f "an argument cannot depend on a result"
+            (raise-syntax-error #f
+                                (if arg? 
+                                    "an argument cannot depend on a result"
+                                    "the #:pre condition cannot depend on a result")
                                 stx arg-var)))))
     
     ;; no dups in the domains
@@ -134,7 +141,7 @@ code does the parsing and validation of the syntax.
     ;; no dups in the rest var
     (when (istx-rst istx)
       (when (rst-vars (istx-rst istx))
-        (not-range-bound (rst-vars (istx-rst istx))))
+        (not-range-bound (rst-vars (istx-rst istx)) #t))
       (no-var-dups (rst-var (istx-rst istx))))
     
     ;; dependent arg variables are all bound, but not to a range variable
@@ -142,13 +149,24 @@ code does the parsing and validation of the syntax.
       (let ([a-vars (arg-vars an-arg)])
         (when a-vars
           (ensure-bound a-vars)
-          (not-range-bound a-vars))))
+          (not-range-bound a-vars #t))))
     
+    ;; pre-condition variables are all bound, but not to a range variable
+    (when (istx-pre istx)
+      (let ([vars (pre/post-vars (istx-pre istx))])
+        (ensure-bound vars)
+        (not-range-bound vars #f)))
+
     ;; dependent range variables are all bound.
     (when (istx-ress istx)
       (for ([a-res (in-list (istx-ress istx))])
         (when (res-vars a-res)
-          (ensure-bound (res-vars a-res)))))))
+          (ensure-bound (res-vars a-res)))))
+    
+    ;; post-condition variables are all bound
+    (when (istx-post istx)
+      (let ([vars (pre/post-vars (istx-post istx))])
+        (ensure-bound vars)))))
 
 (define (ensure-no-cycles stx istx)
   (let ([neighbors (make-free-identifier-mapping)]
@@ -312,7 +330,7 @@ code does the parsing and validation of the syntax.
                     (values '() leftover)]
                    [(dep-range)
                     (values '() leftover)]
-                   [(dep-range #:post expr)
+                   [(dep-range #:post . stuff)
                     (values '() leftover)]
                    [((opts ...) . rest)
                     (values #'(opts ...) #'rest)]
@@ -349,11 +367,15 @@ code does the parsing and validation of the syntax.
                    [(#:pre (id ...) pre-cond . leftover)
                     (begin
                       (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
-                      (values #'pre-cond #'leftover))]
+                      (values (pre/post (syntax->list #'(id ...)) #'pre-cond) #'leftover))]
                    [_ (values #f leftover)])]
                 [(range leftover) 
                  (syntax-case leftover ()
-                   [(range . leftover) (values #'range #'leftover)]
+                   [(range . leftover) 
+                    (not (keyword? (syntax-e #'range)))
+                    (values #'range #'leftover)]
+                   [(a . b)
+                    (raise-syntax-error #f "expected a range expression" stx #'a)]
                    [()
                     (raise-syntax-error #f "expected a range expression, but found nothing" stx leftover)])]
                 [(post-cond leftover) 
@@ -364,7 +386,7 @@ code does the parsing and validation of the syntax.
                       (syntax-case range (any)
                         [any (raise-syntax-error #f "cannot have a #:post with any as the range" stx #'post-cond)]
                         [_ (void)])
-                      (values #'post-cond #'leftover))]
+                      (values (pre/post (syntax->list #'(id ...)) #'post-cond) #'leftover))]
                    [_ (values #f leftover)])])
     (syntax-case leftover ()
       [() 
