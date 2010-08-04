@@ -30,9 +30,8 @@
     (let loop ([t* t])
       (match t*
         [(Value: '()) (-lst Univ)]
-	[(Value: 0) -Nat]
+	[(Value: 0) -Integer]
         [(List: ts) (-lst (apply Un ts))]
-        [(? (lambda (t) (subtype t -Nat))) -Nat]
         [(? (lambda (t) (subtype t -Integer))) -Integer]
         [(? (lambda (t) (subtype t -Flonum))) -Flonum]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]

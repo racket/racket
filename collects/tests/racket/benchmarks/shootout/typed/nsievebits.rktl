@@ -7,7 +7,7 @@
 
 (require scheme/cmdline)
 
-(: make-bit-vector (Natural -> Bytes))
+(: make-bit-vector (Integer -> Bytes))
 (define (make-bit-vector size)
   (let* ((len (quotient (+ size 7) 8))
          (res (make-bytes len #b11111111)))
@@ -16,7 +16,7 @@
         (bytes-set! res (- len 1) (- (arithmetic-shift 1 off) 1))))
     res))
 
-(: bit-vector-ref (Bytes Natural -> Boolean))
+(: bit-vector-ref (Bytes Integer -> Boolean))
 (define (bit-vector-ref vec i)
   (let ((byte (arithmetic-shift i -3))
         (off (bitwise-and i #x7)))
@@ -24,7 +24,7 @@
          (not (zero? (bitwise-and (bytes-ref vec byte)
                                   (arithmetic-shift 1 off)))))))
 
-(: bit-vector-set! (Bytes Natural Boolean -> Void))
+(: bit-vector-set! (Bytes Integer Boolean -> Void))
 (define (bit-vector-set! vec i x)
   (let ((byte (arithmetic-shift i -3))
         (off (bitwise-and i #x7)))
@@ -36,23 +36,23 @@
                       (bitwise-ior val mask)
                       (bitwise-and val (bitwise-not mask)))))))
 
-(: nsievebits (Natural -> Natural))
+(: nsievebits (Integer -> Integer))
 (define (nsievebits m)
   (let ((a (make-bit-vector m)))
-    (: clear (Natural -> Void))
+    (: clear (Integer -> Void))
     (define (clear i)
       (do: : Void
-           ([j : Natural (+ i i) (+ j i)])
+           ([j : Integer (+ i i) (+ j i)])
            ((>= j m))
         (bit-vector-set! a j #f)))
-    (let: ([c : Natural 0])
+    (let: ([c : Integer 0])
       (do ([i 2 (add1 i)])
           ((>= i m) c)
         (when (bit-vector-ref a i)
           (clear i)
           (set! c (add1 c)))))))
 
-(: string-pad (String Natural -> String))
+(: string-pad (String Integer -> String))
 (define (string-pad s len)
   (string-append (make-string (- len (string-length s)) #\space)
                  s))
@@ -65,7 +65,7 @@
             (string-pad (number->string m) 8)
             (string-pad (number->string count) 8))))
 
-(: main (Natural -> Void))
+(: main (Integer -> Void))
 (define (main n)
   (when (>= n 0) (test n))
   (when (>= n 1) (test (assert (- n 1) exact-nonnegative-integer?)))
