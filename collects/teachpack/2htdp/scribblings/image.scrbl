@@ -129,6 +129,170 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
                  (isosceles-triangle 60 330 "solid" "lightseagreen")]
 }
 
+@subsection{General Triangles}
+
+To create a general triangle given known sides and angles the following
+family of functions are useful: @scheme[triangle/sss], 
+@scheme[triangle/ass], @scheme[triangle/sas], @scheme[triangle/ssa], 
+@scheme[triangle/sss], @scheme[triangle/sss], and, @scheme[triangle/sss].
+They all construct a triangle oriented as follows:
+
+@image["triangle-xxx.png"]
+
+@defproc*[([(triangle/sss [side-length-a (and/c real? (not/c negative?))] 
+                          [side-length-b (and/c real? (not/c negative?))] 
+                          [side-length-c (and/c real? (not/c negative?))] 
+                          [mode mode?]
+                          [color image-color?])
+            image?]
+           [(triangle/sss [side-length-a (and/c real? (not/c negative?))]
+                          [side-length-b (and/c real? (not/c negative?))]
+                          [side-length-c (and/c real? (not/c negative?))]
+                          [outline-mode (or/c 'outline "outline")]
+                          [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+ Creates a triangle where the side lengths a, b, and, c are given by @scheme[side-length-a],
+ @scheme[side-length-b], and, @scheme[side-length-c] respectively.
+ 
+ @mode/color-text
+ 
+ @image-examples[(triangle/sss 200 300 400 "solid" "seagreen")
+                 (triangle/sss 400 300 100 "solid" "aquamarine")
+                 (triangle/sss 300 400 500 "solid" "lightseagreen")]
+}
+
+@defproc*[([(triangle/ass [angle-a angle?] 
+                          [side-length-b (and/c real? (not/c negative?))] 
+                          [side-length-c (and/c real? (not/c negative?))] 
+                          [mode mode?]
+                          [color image-color?])
+            image?]
+           [(triangle/ass [angle-a angle?]
+                          [side-length-b (and/c real? (not/c negative?))]
+                          [side-length-c (and/c real? (not/c negative?))]
+                          [outline-mode (or/c 'outline "outline")]
+                          [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+ Creates a triangle where the angle A and side length a and b, are given by @scheme[angle-a],
+ @scheme[side-length-b], and, @scheme[side-length-c] respectively.
+ 
+ @mode/color-text
+ 
+ @image-examples[(triangle/ass 10  300 500 "solid" "seagreen")
+                 (triangle/ass 90  300 500 "solid" "aquamarine")
+                 (triangle/ass 130 300 500 "solid" "lightseagreen")]
+}
+
+@defproc*[([(triangle/sas [side-length-a (and/c real? (not/c negative?))] 
+                          [angle-b angle?] 
+                          [side-length-c (and/c real? (not/c negative?))] 
+                          [mode mode?]
+                          [color image-color?])
+            image?]
+           [(triangle/sas [side-length-a (and/c real? (not/c negative?))]
+                          [angle-b angle?]
+                          [side-length-c (and/c real? (not/c negative?))]
+                          [outline-mode (or/c 'outline "outline")]
+                          [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+ Creates a triangle where the side length a, angle B, and, side length c given by @scheme[side-length-a],
+ @scheme[angle-b], and, @scheme[side-length-c] respectively.
+ 
+ @mode/color-text
+ 
+ @image-examples[(triangle/sas 300  10 500 "solid" "seagreen")
+                 (triangle/sas 300  90 500 "solid" "aquamarine")
+                 (triangle/sas 300 130 500 "solid" "lightseagreen")]
+}
+
+@defproc*[([(triangle/ssa [side-length-a (and/c real? (not/c negative?))] 
+                          [side-length-b (and/c real? (not/c negative?))] 
+                          [angle-c angle?] 
+                          [mode mode?]
+                          [color image-color?])
+            image?]
+           [(triangle/ssa [side-length-a (and/c real? (not/c negative?))]
+                          [side-length-b (and/c real? (not/c negative?))]
+                          [angle-c angle?]
+                          [outline-mode (or/c 'outline "outline")]
+                          [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+ Creates a triangle where the side length a, side length b, and, angle c given by @scheme[side-length-a],
+ @scheme[side-length-b], and, @scheme[angle-c] respectively.
+ 
+ @mode/color-text
+ 
+ @image-examples[(triangle/ssa 300 500  10 "solid" "seagreen")
+                 (triangle/ssa 300 500  90 "solid" "aquamarine")
+                 (triangle/ssa 300 500 130 "solid" "lightseagreen")]
+}
+@defproc*[([(triangle/aas [angle-a angle?] 
+                          [angle-b angle?] 
+                          [side-length-c (and/c real? (not/c negative?))] 
+                          [mode mode?]
+                          [color image-color?])
+            image?]
+           [(triangle/aas [angle-a angle?]
+                          [angle-b angle?]
+                          [side-length-c (and/c real? (not/c negative?))]
+                          [outline-mode (or/c 'outline "outline")]
+                          [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+ Creates a triangle where the angle A, angle B, and, side length c given by @scheme[angle-a],
+ @scheme[angle-b], and, @scheme[side-length-c] respectively.
+ 
+ @mode/color-text
+ 
+ @image-examples[(triangle/aas  10 40 200 "solid" "seagreen")
+                 (triangle/aas  90 40 200 "solid" "aquamarine")
+                 (triangle/aas 130 40 200 "solid" "lightseagreen")]
+}
+
+@defproc*[([(triangle/asa [angle-a angle?] 
+                          [side-length-b (and/c real? (not/c negative?))] 
+                          [angle-c angle?] 
+                          [mode mode?]
+                          [color image-color?])
+            image?]
+           [(triangle/asa [angle-a angle?]
+                          [side-length-b (and/c real? (not/c negative?))]
+                          [angle-c angle?]
+                          [outline-mode (or/c 'outline "outline")]
+                          [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+ Creates a triangle where the angle A, side length b, and, angle C given by @scheme[angle-a],
+ @scheme[side-length-b], and, @scheme[angle-c] respectively.
+ 
+ @mode/color-text
+ 
+ @image-examples[(triangle/asa  10 200 40 "solid" "seagreen")
+                 (triangle/asa  90 200 40 "solid" "aquamarine")
+                 (triangle/asa 130 200 40 "solid" "lightseagreen")]
+}
+
+@defproc*[([(triangle/saa [side-length-a (and/c real? (not/c negative?))] 
+                          [angle-b angle?] 
+                          [angle-c angle?] 
+                          [mode mode?]
+                          [color image-color?])
+            image?]
+           [(triangle/saa [side-length-a (and/c real? (not/c negative?))]
+                          [angle-b angle?]
+                          [angle-c angle?]
+                          [outline-mode (or/c 'outline "outline")]
+                          [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+ Creates a triangle where the side length a, angle B, and, angle C given by @scheme[side-length-a],
+ @scheme[angle-b], and, @scheme[angle-c] respectively.
+ 
+ @mode/color-text
+ 
+ @image-examples[(triangle/saa 200  10 40 "solid" "seagreen")
+                 (triangle/saa 200  90 40 "solid" "aquamarine")
+                 (triangle/saa 200 130 40 "solid" "lightseagreen")]
+}
+                     
+                     
 
 @defproc*[([(square [side-len (and/c real? (not/c negative?))]
                     [mode mode?]
