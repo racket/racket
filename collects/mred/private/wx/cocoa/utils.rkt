@@ -13,7 +13,8 @@
          define-mz
          as-objc-allocation
          retain release
-         with-autorelease)
+         with-autorelease
+         clean-menu-label)
 
 (define cocoa-lib (ffi-lib (format "/System/Library/Frameworks/Cocoa.framework/Cocoa")))
 (define cf-lib (ffi-lib (format "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")))
@@ -46,3 +47,6 @@
     (begin0
      (thunk)
      (release pool))))
+
+(define (clean-menu-label str)
+  (regexp-replace* #rx"&(.)" str "\\1"))

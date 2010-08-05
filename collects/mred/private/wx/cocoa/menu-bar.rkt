@@ -1,14 +1,13 @@
 #lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
+         (only-in racket/list take drop)
          "../../syntax.rkt"
          "utils.rkt"
          "types.rkt"
          "const.rkt"
          "queue.rkt")
-(unsafe!)
-(objc-unsafe!)
 
 (provide menu-bar%)
 
@@ -113,7 +112,6 @@
 (defclass menu-bar% object%
   (define menus null)
 
-  (def/public-unimplemented set-label-top)
   (def/public-unimplemented number)
   (def/public-unimplemented enable-top)
 
@@ -130,7 +128,9 @@
   (public [append-menu append])
   (define (append-menu menu title)
     (set! menus (append menus (list (cons menu title))))
-    (send menu set-parent this))
+    (send menu set-parent this)
+    (when (eq? current-mb this)
+      (send menu install cocoa-mb title)))
 
   (define/public (install)
     (let loop ()
@@ -147,6 +147,15 @@
     (set! top-wx top))
   (define/public (get-top-window)
     top-wx)
+
+  (define/public (set-label-top pos str)
+    (set! menus (append
+                 (take menus pos)
+                 (list (cons (car (list-ref menus pos)) str))
+                 (drop menus (add1 pos))))
+    (when (eq? current-mb this)
+      (tellv (tell cocoa-mb itemAtIndex: #:type _NSInteger 1)
+             setTitle: #:type _NSString (clean-menu-label str))))
 
   (define/public (do-on-menu-click)
     (let ([es (send top-wx get-eventspace)])
