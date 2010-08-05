@@ -592,10 +592,10 @@
     "13d2f555f6a.png")
    (list '(triangle/ass 10 60 100 "solid" "seagreen") 'image "11de2af7edc.png")
    (list
-    '(triangle/sss 60 80 100 "solid" "lightseagreen")
+    '(triangle/sss 80 80 40 "solid" "lightseagreen")
     'image
-    "17bcc9ddde9.png")
-   (list '(triangle/sss 80 60 20 "solid" "aquamarine") 'image "20e0d5dcf9.png")
+    "1828ba0c75d.png")
+   (list '(triangle/sss 80 40 60 "solid" "aquamarine") 'image "1fe0d5def9.png")
    (list '(triangle/sss 40 60 80 "solid" "seagreen") 'image "ed23c3c3ed.png")
    (list
     '(isosceles-triangle 60 330 "solid" "lightseagreen")

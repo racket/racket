@@ -280,8 +280,8 @@ They all construct a triangle oriented as follows:
  @mode/color-text
  
  @image-examples[(triangle/sss 40 60 80 "solid" "seagreen")
-                 (triangle/sss 80 60 20 "solid" "aquamarine")
-                 (triangle/sss 60 80 100 "solid" "lightseagreen")]
+                 (triangle/sss 80 40 60 "solid" "aquamarine")
+                 (triangle/sss 80 80 40 "solid" "lightseagreen")]
 }
 
 @defproc*[([(triangle/ass [angle-a angle?] 
