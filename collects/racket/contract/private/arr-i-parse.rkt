@@ -132,7 +132,7 @@ code does the parsing and validation of the syntax.
             (raise-syntax-error
              #f
              "either all or none of the dependent range variables must be _"
-             stx #f (map res-var (istx-ress istx)))))))
+             stx #f (map arg/res-var (istx-ress istx)))))))
     
     ;; no dups in the rest var
     (when (istx-rst istx)
@@ -400,7 +400,6 @@ code does the parsing and validation of the syntax.
  (struct-out istx)
  (struct-out arg/res)
  (struct-out arg)
- (struct-out res)
  (struct-out lres)
  (struct-out eres)
  (struct-out rst)

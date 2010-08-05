@@ -4,18 +4,18 @@
 
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i ([f (-> number? number?)]) #:pre (f) (= (f #f) 11) any))))
+                 #'(->i ([f (-> number? number?)]) [res number?]))))
 
 #;
 (pretty-print
  (syntax->datum (expand
                  #'(->i () [x integer?]))))
 
-((contract (->i ([f (-> number? number?)]) #:pre (f) (= (f #f) 11) any)
-           (λ (x) 1)
-           'pos 'neg) 
- (λ (n) (+ n 1)))
-;; => indy violation, during pre-condition checking
+((contract (->i ([f (-> number? number?)]) [res number?] #:post (res) (= res 11))
+             (λ (f) 2)
+             'pos 'neg) 
+   (λ (n) (+ n 1)))
+;; => pos violation (#:post condition)
 
 #|
 ;; timing tests:
@@ -181,6 +181,20 @@ test cases:
            (λ (x) 1)
            'pos 'neg) 2)
 ;; => pre-condition violation
+
+
+((contract (->i ([f (-> number? number?)]) [res number?])
+             (λ (f) (f 1))
+             'pos 'neg) 
+   (λ (n) (+ n 1)))
+;; => 2
+
+
+((contract (->i ([f (-> number? number?)]) [res number?])
+             (λ (f) #f)
+             'pos 'neg) 
+   (λ (n) (+ n 1)))
+;; => pos violation
 
 
 |#
