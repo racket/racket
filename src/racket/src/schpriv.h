@@ -3499,18 +3499,6 @@ void scheme_done_with_process_id(int pid, int is_group);
 # endif
 #endif
 
-typedef struct Scheme_Place_Bi_Channel {
-  Scheme_Object so;
-  Scheme_Object *sendch;
-  Scheme_Object *recvch;
-} Scheme_Place_Bi_Channel;
-
-typedef struct Scheme_Place {
-  Scheme_Object so;
-  void *proc_thread;
-  Scheme_Object *channel;
-} Scheme_Place;
-
 typedef struct Scheme_Place_Async_Channel {
   Scheme_Object so;
   int in;
@@ -3523,6 +3511,18 @@ typedef struct Scheme_Place_Async_Channel {
   Scheme_Object **msgs;
   void *wakeup_signal;
 } Scheme_Place_Async_Channel;
+
+typedef struct Scheme_Place_Bi_Channel {
+  Scheme_Object so;
+  Scheme_Place_Async_Channel *sendch;
+  Scheme_Place_Async_Channel *recvch;
+} Scheme_Place_Bi_Channel;
+
+typedef struct Scheme_Place {
+  Scheme_Object so;
+  void *proc_thread;
+  Scheme_Object *channel;
+} Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();
 void scheme_place_instance_destroy();
