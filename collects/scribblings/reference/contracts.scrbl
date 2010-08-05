@@ -574,17 +574,29 @@ the parenthesized list at all.
 
 In general, an empty parenthesized list is (nearly) semantically
 equivalent to not adding a list at all, except that the former
-is more expensive than the latter. (Also, the contract
-expressions are evaluated at different times. If the empty sequence is there, 
-the contract expression is evaluated each time the function
-is called. Without the empty sequence, the contract expression is
-evaluated when the @racket[->i] expression itself is evaluated).
+is more expensive than the latter. 
 
-If all of the identifier positions of the range contract are
+The contract expressions are not evaluated in the order that they are
+listed, for three reasons. First, the if there is no dependency for a given
+contract expression (on either a result or an input), then the contract
+expression is evaluated at the time that the @racket[->i] expression is
+evaluated rather than the time when the function is called (or returns, in the case
+of the result contract expressions).
+Those, non-dependent contract expressions are evaluated in the order listed
+in the program text.
+Second, the dependent contract subexpressions are evaluated when the
+contracted function is called (or returns), in an order
+that satisfies the dependencies. That is, if one of the arguments depends
+on another one, the dependent one is evaluated first (so that the argument,
+with its contract checked, is available for the other).
+When there is no dependency between two arguments (or results)
+then the one that appears earlier in the source text is evaluated first.
+Finally, if all of the identifier positions of the range contract are
 @racket[_]s (underscores), then the range contract
 expressions are evaluated when the function is called (and
-the underscore is not bound in the range). Otherwise the
-range expressions are evaluated when the function returns.
+the underscore is not bound in the range), after the argument
+contracts are evaluated and checked. (Otherwise the
+range expressions are evaluated when the function returns.)
 
 If there are optional arguments that are not supplied, then 
 the corresponding variables will be bound to a special value
