@@ -371,7 +371,7 @@ mz-tests := (tests: "racket/" "info.rkt" "utils/" "match/" "eli-tester.rkt")
 ;; ============================================================================
 ;; Source definitions
 
-mz-src := (+ (- (src: "README" "Makefile.in" "configure" "lt/" "racket/"
+mz-src := (+ (- (src: "README" "Makefile.in" "configure" "lt/" "racket/" "utils/"
                       (cond win => "worksp/{README|mzconfig.h}"
                                    "worksp/{racket|libracket|libmzgc|gc2}/"
                                    "worksp/{mzstart|starters}/"
@@ -389,7 +389,7 @@ mr-src := (src: "gracket/" "mred/" "wxcommon/"
 foreign-src := (src: "foreign/{Makefile.in|README}"
                      "foreign/{foreign.*|rktc-utils.rkt}"
                      (cond win  => "foreign/libffi_msvc"
-                           else => "foreign/gcc"))
+                           else => "foreign/libffi"))
 
 ;; ============================================================================
 ;; Binary definitions (`in-binary-tree' is used with binary trees, these
