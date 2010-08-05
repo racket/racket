@@ -62,6 +62,8 @@
              [callback cb]
              [no-show? (memq 'deleted style)])
 
+  (connect-key-and-mouse button-gtk)
+
   (gtk_combo_box_set_active gtk 0)
 
   (set-auto-size)

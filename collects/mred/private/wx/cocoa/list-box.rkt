@@ -22,6 +22,7 @@
 (import-protocol NSTableViewDataSource)
 
 (define-objc-class MyTableView NSTableView
+  #:mixins (FocusResponder KeyMouseResponder)
   [wx]
   [-a _id (preparedCellAtColumn: [_NSInteger column] row: [_NSInteger row])
       (tell (tell NSCell alloc) initTextCell: #:type _NSString (send wx get-row row))]

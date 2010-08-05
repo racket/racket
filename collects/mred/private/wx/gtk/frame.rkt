@@ -52,14 +52,14 @@
 (define-gtk gtk_window_set_geometry_hints (_fun _GtkWindow _GtkWidget _GdkGeometry-pointer _int -> _void))
 
 
-(define (handle-delete gtk)
-  (let ([wx (gtk->wx gtk)])
-    (queue-window-event wx (lambda () 
-                             (when (send wx on-close)
-                               (send wx direct-show #f))))))
-(define handle_delete
-  (function-ptr handle-delete
-                (_fun #:atomic? #t _GtkWidget -> _gboolean)))
+(define-signal-handler connect-delete "delete-event"
+  (_fun _GtkWidget -> _gboolean)
+  (lambda (gtk)
+    (let ([wx (gtk->wx gtk)])
+      (queue-window-event wx (lambda () 
+                               (unless (other-modal? wx)
+                                 (when (send wx on-close)
+                                   (send wx direct-show #f))))))))
 
 (define-signal-handler connect-configure "configure-event"
   (_fun _GtkWidget _GdkEventConfigure-pointer -> _gboolean)
@@ -121,7 +121,7 @@
 
     (set-size x y w h)
 
-    (g_signal_connect gtk "delete_event" handle_delete)
+    (connect-delete gtk)
     (connect-configure gtk)
 
     (when label
@@ -158,6 +158,9 @@
 
     (define dc-lock (and (eq? 'windows (system-type)) (make-semaphore 1)))
     (define/public (get-dc-lock) dc-lock)
+
+    (define/override (get-dialog-level) 0)
+    (define/public (frame-relative-dialog-status win) #f)
 
     (define/override (center dir wrt)
       (let ([w-box (box 0)]

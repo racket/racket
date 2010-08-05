@@ -19,7 +19,7 @@
 (import-class NSPopUpButton)
 
 (define-objc-class MyPopUpButton NSPopUpButton 
-  #:mixins (FocusResponder)
+  #:mixins (FocusResponder KeyMouseResponder)
   [wx]
   (-a _void (clicked: [_id sender])
       (queue-window-event wx (lambda () (send wx clicked)))))

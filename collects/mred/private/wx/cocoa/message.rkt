@@ -4,10 +4,11 @@
          ffi/objc
          racket/draw/bitmap
           "../../syntax.rkt"
-         "item.rkt"
-         "utils.rkt"
-         "types.rkt"
-         "image.rkt")
+          "window.rkt"
+          "item.rkt"
+          "utils.rkt"
+          "types.rkt"
+          "image.rkt")
 (unsafe!)
 (objc-unsafe!)
 
@@ -29,6 +30,14 @@
               objectForKey:
               #:type _NSString
               "NSApplicationPath")))
+
+(define-objc-class MyTextField NSTextField
+  #:mixins (FocusResponder KeyMouseResponder)
+  [wx])
+
+(define-objc-class MyImageView NSImageView
+  #:mixins (FocusResponder KeyMouseResponder)
+  [wx])
 
 (defclass message% item%
   (init parent label
@@ -59,9 +68,9 @@
                            [cocoa
                             (if (string? label)
                                 (as-objc-allocation
-                                 (tell (tell NSTextField alloc) init))
+                                 (tell (tell MyTextField alloc) init))
                                 (as-objc-allocation
-                                 (tell (tell NSImageView alloc) init)))])
+                                 (tell (tell MyImageView alloc) init)))])
                       (cond
                        [(string? label)
                         (init-font cocoa font)

@@ -5,6 +5,7 @@
          "../../syntax.rkt"
          "../common/event.rkt"
          "../common/freeze.rkt"
+         "../common/queue.rkt"
          "keycode.rkt"
          "queue.rkt"
          "utils.rkt"
@@ -107,7 +108,8 @@
   (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)
   (lambda (gtk event)
     (unless (gtk_widget_is_focus gtk)
-      (gtk_widget_grab_focus gtk))
+      (unless (other-modal? (gtk->wx gtk))
+        (gtk_widget_grab_focus gtk)))
     (do-button-event gtk event #f #f)))
 
 (define-signal-handler connect-button-release "button-release-event"
@@ -335,6 +337,8 @@
 
     (define/public (get-top-win) (send parent get-top-win))
 
+    (define/public (get-dialog-level) (send parent get-dialog-level))
+
     (define/public (get-size xb yb)
       (set-box! xb save-w)
       (set-box! yb save-h))
@@ -365,11 +369,13 @@
     (define/public (handles-events?) #f)
     (define/public (dispatch-on-char e just-pre?) 
       (cond
+       [(other-modal? this) #t]
        [(call-pre-on-char this e) #t]
        [just-pre? #f]
        [else (when enabled? (on-char e)) #t]))
     (define/public (dispatch-on-event e just-pre?) 
       (cond
+       [(other-modal? this) #t]
        [(call-pre-on-event this e) #t]
        [just-pre? #f]
        [else (when enabled? (on-event e)) #t]))

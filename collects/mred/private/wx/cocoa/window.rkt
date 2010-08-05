@@ -8,6 +8,7 @@
          "types.rkt"
          "keycode.rkt"
          "../common/event.rkt"
+         "../common/queue.rkt"
          "../../syntax.rkt"
          "../common/freeze.rkt")
 (unsafe!)
@@ -180,6 +181,10 @@
     (define/public (get-cocoa-window) (send parent get-cocoa-window))
     (define/public (get-wx-window) (send parent get-wx-window))
 
+    (define/public (get-dialog-level) 
+      ;; called in event-pump thread
+      (send parent get-dialog-level))
+
     (define/public (make-graphics-context)
       (and parent
            (send parent make-graphics-context)))
@@ -294,11 +299,13 @@
 
     (define/public (dispatch-on-char e just-pre?) 
       (cond
+       [(other-modal? this) #t]
        [(call-pre-on-char this e) #t]
        [just-pre? #f]
        [else (when enabled? (on-char e)) #t]))
     (define/public (dispatch-on-event e just-pre?) 
       (cond
+       [(other-modal? this) #t]
        [(call-pre-on-event this e) #t]
        [just-pre? #f]
        [else (when enabled? (on-event e)) #t]))

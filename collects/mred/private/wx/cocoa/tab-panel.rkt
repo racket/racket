@@ -18,6 +18,7 @@
 (import-protocol NSTabViewDelegate)
 
 (define-objc-class MyTabView NSTabView
+  #:mixins (FocusResponder KeyMouseResponder)
   #:protocols (NSTabViewDelegate)
   [wx]
   (-a _void (tabView: [_id cocoa] didSelectTabViewItem: [_id item-cocoa])

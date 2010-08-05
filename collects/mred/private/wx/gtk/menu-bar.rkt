@@ -3,6 +3,7 @@
          scheme/foreign
           "../../syntax.rkt"
           "../common/freeze.rkt"
+          "../common/queue.rkt"
           "widget.rkt"
           "utils.rkt"
           "types.rkt")
@@ -49,7 +50,17 @@
     (define/public (get-top-window) (send parent get-top-window))
     (super-new)))
 
+(define-signal-handler connect-menu-key-press "key-press-event"
+  (_fun _GtkWidget _GdkEventKey-pointer -> _gboolean)
+  (lambda (gtk event)
+    (let ([wx (gtk->wx gtk)])
+      (other-modal? wx))))
 
+(define-signal-handler connect-menu-button-press "button-press-event"
+  (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)
+  (lambda (gtk event)
+    (let ([wx (gtk->wx gtk)])
+      (other-modal? wx))))
 
 (defclass menu-bar% widget%
   (define menus null)
@@ -59,11 +70,17 @@
 
   (define/public (get-gtk) gtk)
 
+  (connect-menu-key-press gtk)
+  (connect-menu-button-press gtk)
+
   (define top-wx #f)
   (define/public (set-top-window top)
     (set! top-wx top))
   (define/public (get-top-window)
     top-wx)
+
+  (define/public (get-dialog-level) 
+    (send top-wx get-dialog-level))
 
   (define/public (set-label-top pos str)
     (let ([l (list-ref menus pos)])

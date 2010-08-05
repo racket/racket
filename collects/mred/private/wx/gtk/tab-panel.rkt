@@ -86,6 +86,8 @@
                [extra-gtks (list client-gtk)]
                [no-show? (memq 'deleted style)])
 
+    (connect-key-and-mouse gtk)
+
     (set-auto-size)
 
     (define callback void)

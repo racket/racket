@@ -27,16 +27,20 @@
 (define empty-mb (new menu-bar%))
 (define root-fake-frame #f)
 
+(define dialog-level-counter 0)
+
 (define-objc-mixin (MyWindowMethods Superclass)
   [wx]
   [-a _scheme (getEventspace)
       (send wx get-eventspace)]
-  [-a _BOOL (canBecomeKeyWindow) #t]
+  [-a _BOOL (canBecomeKeyWindow)
+      (not (other-modal? wx))]
   [-a _BOOL (canBecomeMainWindow) #t]
   [-a _BOOL (windowShouldClose: [_id win])
       (queue-window-event wx (lambda ()
-                               (when (send wx on-close)
-                                 (send wx direct-show #f))))
+                               (unless (other-modal? wx)
+                                 (when (send wx on-close)
+                                   (send wx direct-show #f)))))
       #f]
   [-a _void (windowDidResize: [_id notification])
       (when wx
@@ -149,7 +153,21 @@
        (tell NSGraphicsContext graphicsContextWithWindow: cocoa)))
 
     (define is-a-dialog? is-dialog?)
+    (define dialog-level 0)
     (define/public (frame-is-dialog?) is-a-dialog?)
+    (define/public (frame-relative-dialog-status win) 
+      ;; called in event-pump thread
+      (cond
+       [is-a-dialog? (let ([dl (send win get-dialog-level)])
+                       (cond
+                        [(= dl dialog-level) 'same]
+                        [(dl . > . dialog-level) #f]
+                        [else 'other]))]
+       [else #f]))
+    
+    (define/override (get-dialog-level) 
+      ;; called in event-pump thread
+      dialog-level)
 
     (define/public (clean-up)
       ;; When a window is resized, then any drawing that is in flight
@@ -171,25 +189,32 @@
            (set! front #f)
            (send empty-mb install))
          (if on?
-             (if (and is-a-dialog?
-                      (let ([p (get-parent)])
-                        (and p 
-                             (not (send p get-sheet)))))
-                 (let ([p (get-parent)])
-                   (send p set-sheet this)
-                   (tell (tell NSApplication sharedApplication)
-                         beginSheet: cocoa
-                         modalForWindow: (send p get-cocoa)
-                         modalDelegate: #f
-                         didEndSelector: #:type _SEL #f
-                         contextInfo: #f))
-                 (tellv cocoa makeKeyAndOrderFront: #f))
              (begin
                (when is-a-dialog?
+                 (set! dialog-level-counter (add1 dialog-level-counter))
+                 (set! dialog-level dialog-level-counter))
+               (if (and is-a-dialog?
+                        (let ([p (get-parent)])
+                          (and p 
+                               (not (send p get-sheet)))))
+                   (let ([p (get-parent)])
+                     (send p set-sheet this)
+                     (tell (tell NSApplication sharedApplication)
+                           beginSheet: cocoa
+                           modalForWindow: (send p get-cocoa)
+                           modalDelegate: #f
+                           didEndSelector: #:type _SEL #f
+                           contextInfo: #f))
+                   (tellv cocoa makeKeyAndOrderFront: #f)))
+             (begin
+               (when is-a-dialog?
+                 (set! dialog-level 0)
                  (let ([p (get-parent)])
                    (when (and p
                               (eq? this (send p get-sheet)))
-                     (send p set-sheet #f))))
+                     (send p set-sheet #f)
+                     (tell (tell NSApplication sharedApplication)
+                           endSheet: cocoa))))
                (tellv cocoa orderOut: #f)
                (let ([next
                       (let* ([pool (tell (tell NSAutoreleasePool alloc) init)]
@@ -316,7 +341,7 @@
     (define/public (set-modified on?)
       ;; Use standardWindowButton: ...
       (void))
-
+    
     (define/public (create-status-line) (void))
     (define/public (set-status-text s) (void))
     (def/public-unimplemented status-line-exists?)

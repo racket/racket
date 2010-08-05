@@ -22,7 +22,7 @@
 (import-class NSSlider)
 
 (define-objc-class MySlider NSSlider
-  #:mixins (FocusResponder)
+  #:mixins (FocusResponder KeyMouseResponder)
   [wx]
   (-a _void (changed: [_id sender])
       (queue-window-event wx (lambda () (send wx changed)))

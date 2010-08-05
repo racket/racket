@@ -558,7 +558,8 @@
     ;; parse keywords
     (let loop ()
       (let ([k (and (pair? xs) (pair? (cdr xs)) (car xs))])
-        (when (keyword? (syntax-e k))
+        (when (and (syntax? k)
+                   (keyword? (syntax-e k)))
           (kwd-set! k (cadr xs))
           (set! xs (cddr xs))
           (loop))))

@@ -24,7 +24,7 @@
 (define MIN-BUTTON-WIDTH 72)
 
 (define-objc-class MyButton NSButton
-  #:mixins (FocusResponder)
+  #:mixins (FocusResponder KeyMouseResponder)
   [wx]
   (-a _void (clicked: [_id sender])
       (queue-window-event wx (lambda () (send wx clicked)))))

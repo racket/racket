@@ -48,6 +48,8 @@
        (real? (vector-ref v 4))
        (real? (vector-ref v 5))))
 
+(define substitute-fonts? (memq (system-type) '(macosx)))
+
 ;; dc-backend : interface
 ;;
 ;; This is the interface that the backend specific code must implement
@@ -933,7 +935,8 @@
                     (when attrs (pango_layout_set_attributes layout attrs))
                     (pango_layout_set_text layout s)
                     (let ([next-s
-                           (if (zero? (pango_layout_get_unknown_glyphs_count layout))
+                           (if (or (not substitute-fonts?)
+                                   (zero? (pango_layout_get_unknown_glyphs_count layout)))
                                #f
                                ;; look for the first character in the string without a glyph
                                (let ([ok-count
@@ -953,7 +956,7 @@
                                  (pango_layout_set_text layout (substring s 0 (max 1 ok-count)))
                                  (when (zero? ok-count)
                                    ;; find a face that works for the long character:
-                                   (install-alternate-face layout font desc attrs))
+                                   (install-alternate-face (string-ref s 0) layout font desc attrs context))
                                  (substring s (max 1 ok-count))))])
                       (when draw?
                         (cairo_move_to cr (+ x w) y)
@@ -986,9 +989,10 @@
                                                 (pango_layout_set_font_description layout desc)
                                                 (when attrs (pango_layout_set_attributes layout attrs))
                                                 (pango_layout_set_text layout (string ch))
-                                                (unless (zero? (pango_layout_get_unknown_glyphs_count layout))
+                                                (unless (or (not substitute-fonts?)
+                                                            (zero? (pango_layout_get_unknown_glyphs_count layout)))
                                                   ;; No good glyph; look for an alternate face
-                                                  (install-alternate-face layout font desc attrs))
+                                                  (install-alternate-face ch layout font desc attrs context))
                                                 (hash-set! layouts key layout)
                                                 layout)))])
                      (pango_cairo_update_layout cr layout)
@@ -1006,9 +1010,11 @@
                  (when rotate? (cairo_restore cr))))))))
 
 
-    (define/private (install-alternate-face layout font desc attrs)
+    (define/private (install-alternate-face ch layout font desc attrs context)
       (or
-       (for/or ([face (in-list (get-face-list))])
+       (for/or ([face (in-list 
+                       ;; Hack: prefer Lucida Grande
+                       (cons "Lucida Grande" (get-face-list)))])
          (let ([desc (get-pango (make-object font%
                                              (send font get-point-size)
                                              face
@@ -1198,7 +1204,8 @@
       (with-cr
        #f
        cr
-       (let ([desc (get-pango font)])
+       (let ([desc (get-pango font)]
+             [attrs (send font get-pango-attrs)])
          (unless context
            (set! context (pango_cairo_create_context cr)))
          (let ([layout (pango_layout_new context)])
@@ -1206,7 +1213,10 @@
            (pango_layout_set_text layout (string c))
            (pango_cairo_update_layout cr layout)
            (begin0
-            (zero? (pango_layout_get_unknown_glyphs_count layout))
+            (or (zero? (pango_layout_get_unknown_glyphs_count layout))
+                (and substitute-fonts?
+                     (install-alternate-face c layout font desc attrs context)
+                     (zero? (pango_layout_get_unknown_glyphs_count layout))))
             (g_object_unref layout))))))
     
     )

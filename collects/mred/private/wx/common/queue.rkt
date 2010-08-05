@@ -2,6 +2,7 @@
 (require ffi/unsafe
          racket/draw/utils
          ffi/unsafe/atomic
+         racket/class
          "rbtree.rkt"
          "../../lock.rkt"
          "handlers.rkt")
@@ -35,6 +36,7 @@
 
          register-frame-shown
          get-top-level-windows
+         other-modal?
 
          queue-quit-event)
 
@@ -329,8 +331,19 @@
                                           'frame-remove)))
 
 (define (get-top-level-windows)
+  ;; called in event-pump thread
   (hash-map (eventspace-frames-hash (current-eventspace))
             (lambda (k v) k)))
+
+(define (other-modal? win)
+  ;; called in event-pump thread
+  (let loop ([frames (get-top-level-windows)]) 
+    (and (pair? frames)
+         (let ([status (send (car frames) frame-relative-dialog-status win)])
+           (case status
+             [(#f) (loop (cdr frames))]
+             [(same) #f]
+             [(other) #t])))))
 
 (define (queue-quit-event)
   ;; called in event-pump thread

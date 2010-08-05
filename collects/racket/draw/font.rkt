@@ -194,5 +194,9 @@
 
 (define (get-face-list [mode 'all])
   (map pango_font_family_get_name
-       (pango_font_map_list_families
-        (pango_cairo_font_map_get_default))))
+       (let ([fams (pango_font_map_list_families
+                    (pango_cairo_font_map_get_default))])
+         (if (eq? mode 'mono)
+             (filter pango_font_family_is_monospace fams)
+             fams))))
+

@@ -14,6 +14,10 @@
 
 (import-class NSBox)
 
+(define-objc-class MyBox NSBox
+  #:mixins (FocusResponder KeyMouseResponder)
+  [wx])
+
 (defclass group-panel% (panel-mixin window%)
   (init parent
         x y w h
@@ -24,7 +28,7 @@
   (super-new [parent parent]
              [cocoa
               (let ([cocoa (as-objc-allocation
-                            (tell (tell NSBox alloc) init))])
+                            (tell (tell MyBox alloc) init))])
                 (when label
                   (tellv cocoa setTitle: #:type _NSString label)
                   (tellv cocoa sizeToFit))
