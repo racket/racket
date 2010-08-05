@@ -163,8 +163,6 @@
         (tellv cocoa setFocusState: #:type _BOOL on?)
         (tellv cocoa setNeedsDisplay: #:type _BOOL #t)))
 
-    (define is-visible? #f)
-
     ;; Avoid multiple queued paints:
     (define paint-queued? #f)
     ;; To handle paint requests that happen while on-paint
@@ -178,7 +176,7 @@
         (set! paint-queued? #t)
         (queue-window-event this (lambda () 
                                    (set! paint-queued? #f)
-                                   (when is-visible?
+                                   (when (is-shown-to-root?)
                                      (set! now-drawing? #t)
                                      (fix-dc)
                                      (on-paint)
@@ -268,7 +266,6 @@
     (define tr 0)
 
     (define/override (show on?)
-      (set! is-visible? on?)
       ;; FIXME: what if we're in the middle of an on-paint?
       (super show on?))
 

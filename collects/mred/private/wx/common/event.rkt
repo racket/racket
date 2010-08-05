@@ -91,8 +91,7 @@
   (init-properties [[(symbol-in button check-box choice
                                 list-box list-box-dclick text-field
                                 text-field-enter slider radio-box
-                                menu-popdown menu-popdown-none tab-panel
-                                menu) 
+                                menu-popdown menu-popdown-none tab-panel) 
                      event-type]
                     ;; FIXME: should have no default
                     'button])

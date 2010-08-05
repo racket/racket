@@ -7,6 +7,7 @@
          "const.rkt"
          "types.rkt"
          "../common/queue.rkt"
+         "../common/handlers.rkt"
          "../../lock.rkt"
          "../common/freeze.rkt")
 (unsafe!)
@@ -37,8 +38,13 @@
       (queue-quit-event)
       0]
   [-a _BOOL (openPreferences: [_id app])
-      (log-error "prefs")
-      #t])
+      (queue-prefs-event)
+      #t]
+  [-a _BOOL (validateMenuItem: [_id menuItem])
+      (if (ptr-equal? (selector openPreferences:) 
+                      (tell #:type _SEL menuItem action))
+          (not (eq? (application-pref-handler) nothing-application-pref-handler))
+          (super-tell #:type _BOOL validateMenuItem: menuItem))])
 
 (tellv app finishLaunching)
 

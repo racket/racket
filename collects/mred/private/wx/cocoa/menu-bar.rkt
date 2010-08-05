@@ -72,18 +72,20 @@
                    (tellv mb addItem: item)
                    (tellv item release)))])
   (let ([apple (tell (tell NSMenu alloc) initWithTitle: #:type _NSString "")])
-    (let ([std (lambda (title sel [shortcut ""] [mods #f])
+    (let ([std (lambda (title sel [shortcut ""] [mods #f] [delegate? #f])
                  (let ([item (tell (tell NSMenuItem alloc) 
                                    initWithTitle: #:type _NSString title
                                    action: #:type _SEL sel
                                    keyEquivalent: #:type _NSString shortcut)])
                    (when mods
                      (tellv item setKeyEquivalentModifierMask: #:type _NSInteger mods))
-                   (tellv item setTarget: app)
+                   (tellv item setTarget: (if delegate?
+                                              (tell app delegate)
+                                              app))
                    (tellv apple addItem: item)
                    (tellv item release)))])
       (std (format "About ~a" app-name) (selector orderFrontStandardAboutPanel:))
-      (std "Preferences..."  (selector openPreferences:))
+      (std "Preferences..."  (selector openPreferences:) "," #f #t)
       (tellv apple addItem: (tell NSMenuItem separatorItem))
       (let ([services (tell (tell NSMenu alloc) initWithTitle: #:type _NSString "Services")])
         (tellv app setServicesMenu: services)

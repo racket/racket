@@ -38,7 +38,8 @@
          get-top-level-windows
          other-modal?
 
-         queue-quit-event)
+         queue-quit-event
+         queue-prefs-event)
 
 ;; ------------------------------------------------------------
 ;; This module must be instantiated only once:
@@ -348,3 +349,7 @@
 (define (queue-quit-event)
   ;; called in event-pump thread
   (queue-event main-eventspace (application-quit-handler) 'med))
+
+(define (queue-prefs-event)
+  ;; called in event-pump thread
+  (queue-event main-eventspace (application-pref-handler) 'med))
