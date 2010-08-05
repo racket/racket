@@ -68,6 +68,28 @@
           (CGContextStrokePath cg))
         (tellv ctx restoreGraphicsState))))
 
+(define-objc-class CornerlessFrameView NSView 
+  []
+  (-a _void (drawRect: [_NSRect r])
+      (let ([ctx (tell NSGraphicsContext currentContext)])
+        (tellv ctx saveGraphicsState)
+        (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
+              [r (tell #:type _NSRect self bounds)])
+          (CGContextSetRGBFillColor cg 0 0 0 1.0)
+          (let* ([l (NSPoint-x (NSRect-origin r))]
+                 [t (NSPoint-y (NSRect-origin r))]
+                 [b (+ t (NSSize-height (NSRect-size r)))]
+                 [r (+ l (NSSize-width (NSRect-size r)))])
+            (CGContextAddLines cg
+                               (vector
+                                (make-NSPoint r (+ t scroll-width))
+                                (make-NSPoint r b)
+                                (make-NSPoint l b)
+                                (make-NSPoint l t)
+                                (make-NSPoint (- r scroll-width) t))))
+          (CGContextStrokePath cg))
+        (tellv ctx restoreGraphicsState))))
+
 (define-cocoa NSSetFocusRingStyle (_fun _int -> _void))
 (define-cocoa NSRectFill (_fun _NSRect -> _void))
 
@@ -136,6 +158,7 @@
              get-eventspace
              make-graphics-context
              is-shown-to-root?
+             is-shown-to-before-root?
              move get-x get-y
              on-size
              register-as-child
@@ -199,7 +222,9 @@
        (tell (tell (cond
                     [is-combo? NSView]
                     [(memq 'control-border style) FocusView]
-                    [(memq 'border style) FrameView]
+                    [(memq 'border style) (if (memq 'vscroll style)
+                                              CornerlessFrameView
+                                              FrameView)]
                     [else NSView])
                    alloc) 
              initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint x y)
@@ -236,19 +261,22 @@
     (define/public (get-dc) dc)
 
     (define/public (fix-dc)
-      (let ([p (tell #:type _NSPoint content-cocoa 
-                     convertPoint: #:type _NSPoint (make-NSPoint 0 0)
-                     toView: #f)]
-            [xb (box 0)]
-            [yb (box 0)])
-        (get-client-size xb yb)
-        (send dc reset-bounds 
-              (+ (NSPoint-x p) (if is-combo? 2 0))
-              (- (NSPoint-y p) (if is-combo? 22 0))
-              (max 1 (- (unbox xb) (if is-combo? 22 0)))
-              (unbox yb)
-              (if auto-scroll? (scroll-pos h-scroller) 0)
-              (if auto-scroll? (scroll-pos v-scroller) 0))))
+      (when (dc . is-a? . dc%)
+        (if (is-shown-to-before-root?)
+            (let ([p (tell #:type _NSPoint content-cocoa 
+                           convertPoint: #:type _NSPoint (make-NSPoint 0 0)
+                           toView: #f)]
+                  [xb (box 0)]
+                  [yb (box 0)])
+              (get-client-size xb yb)
+              (send dc reset-bounds 
+                    (+ (NSPoint-x p) (if is-combo? 2 0))
+                    (- (NSPoint-y p) (if is-combo? 22 0))
+                    (max 1 (- (unbox xb) (if is-combo? 22 0)))
+                    (unbox yb)
+                    (if auto-scroll? (scroll-pos h-scroller) 0)
+                    (if auto-scroll? (scroll-pos v-scroller) 0)))
+            (send dc reset-bounds  0 0 0 0 0 0))))
 
     (define/override (get-client-size xb yb)
       (super get-client-size xb yb)
@@ -267,7 +295,8 @@
 
     (define/override (show on?)
       ;; FIXME: what if we're in the middle of an on-paint?
-      (super show on?))
+      (super show on?)
+      (fix-dc))
 
     (define/private (do-set-size x y w h)
       (super set-size x y w h)

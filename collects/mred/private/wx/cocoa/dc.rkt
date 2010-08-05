@@ -15,7 +15,8 @@
          CGContextSetRGBFillColor
          CGContextFillRect
          CGContextAddRect
-         CGContextStrokePath)
+         CGContextStrokePath
+         CGContextAddLines)
 
 (define _CGContextRef (_cpointer 'CGContextRef))
 (define-appserv CGContextTranslateCTM (_fun _CGContextRef _CGFloat _CGFloat -> _void))
@@ -24,6 +25,7 @@
 (define-appserv CGContextSetRGBFillColor (_fun _CGContextRef _CGFloat _CGFloat _CGFloat _CGFloat -> _void))
 (define-appserv CGContextFillRect (_fun _CGContextRef _NSRect -> _void))
 (define-appserv CGContextAddRect (_fun _CGContextRef _NSRect -> _void))
+(define-appserv CGContextAddLines (_fun _CGContextRef (v : (_vector i _NSPoint)) (_long = (vector-length v)) -> _void))
 (define-appserv CGContextStrokePath (_fun _CGContextRef -> _void))
 (define-appserv CGContextConvertPointToUserSpace (_fun  _CGContextRef _NSPoint -> _NSPoint))
 (define-appserv CGContextConvertSizeToUserSpace (_fun  _CGContextRef _NSSize -> _NSSize))

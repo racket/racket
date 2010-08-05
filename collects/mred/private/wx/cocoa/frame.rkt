@@ -240,6 +240,8 @@
     (define/override (is-shown-to-root?)
       (is-shown?))
 
+    (define/override (is-shown-to-before-root?) #t)
+
     (define/override (is-parent-enabled-to-root?)
       #t)
 

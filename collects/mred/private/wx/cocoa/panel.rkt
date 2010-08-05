@@ -44,6 +44,10 @@
                 (if on?
                     (cons child children)
                     (remq child children))))))
+
+    (define/override (show on?)
+      (super show on?)
+      (fix-dc))
     
     (def/public-unimplemented on-paint)
     (define/public (set-item-cursor x y) (void))

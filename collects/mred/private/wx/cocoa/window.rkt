@@ -213,6 +213,10 @@
       (and (is-shown?)
            (send parent is-shown-to-root?)))
 
+    (define/public (is-shown-to-before-root?)
+      (and (is-shown?)
+           (send parent is-shown-to-before-root?)))
+
     (define enabled? #t)
     (define/public (is-enabled-to-root?)
       (and (is-window-enabled?) (is-parent-enabled-to-root?)))
