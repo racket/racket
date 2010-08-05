@@ -13601,10 +13601,10 @@ static void check_stack(void)
 
     if (q == stack_cache_pop_code) {
       if (!pos)
-	*(long *)0x0 = 1;
+	abort();
       else {
 	if (stack_cache_stack[pos].stack_frame != (void *)(((void **)p) + RETURN_ADDRESS_OFFSET)) {
-	  *(long *)0X0 = 1;
+	  abort();
 	}
 	--pos;
       }

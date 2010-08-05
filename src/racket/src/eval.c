@@ -12840,7 +12840,6 @@ static Scheme_Object *write_syntax(Scheme_Object *obj)
     case scheme_begin0_sequence_type:
       break;
     default:
-      *(long *)0x0 = 1;
       break;
     }
   }
