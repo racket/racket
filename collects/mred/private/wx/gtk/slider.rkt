@@ -7,7 +7,8 @@
          "types.rkt"
          "window.rkt"
          "const.rkt"
-         "../common/event.rkt")
+         "../common/event.rkt"
+         "../../lock.rkt")
 (unsafe!)
 
 (provide slider%)
@@ -53,17 +54,23 @@
   (connect-changed gtk)
   
   (define callback cb)
+  (define ignore-click? #f)
   (define/public (queue-changed)
     ;; Called in event-dispatch thread
     (gtk_range_set_value gtk (floor (gtk_range_get_value gtk)))
-    (queue-window-event 
-     this
-     (lambda ()
-       (callback this (new control-event%
-                           [event-type 'slider]
-                           [time-stamp (current-milliseconds)])))))
+    (unless ignore-click?
+      (queue-window-event 
+       this
+       (lambda ()
+         (callback this (new control-event%
+                             [event-type 'slider]
+                             [time-stamp (current-milliseconds)]))))))
 
   (define/public (set-value v)
-    (gtk_range_set_value gtk v))
+    (as-entry
+     (lambda ()
+       (set! ignore-click? #t)
+       (gtk_range_set_value gtk v)
+       (set! ignore-click? #f))))
   (define/public (get-value)
     (inexact->exact (floor (gtk_range_get_value gtk)))))

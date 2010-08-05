@@ -7,7 +7,9 @@
          "types.rkt"
          "utils.rkt"
          "window.rkt"
-         "../common/event.rkt")
+         "combo.rkt"
+         "../common/event.rkt"
+         "../common/queue.rkt")
 (unsafe!)
 
 (provide choice%)
@@ -19,9 +21,6 @@
 (define-gtk gtk_combo_box_remove_text (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_combo_box_set_active (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_combo_box_get_active (_fun _GtkWidget -> _int))
-
-(define-gtk gtk_container_foreach (_fun _GtkWidget (_fun _GtkWidget -> _void) _pointer -> _void))
-(define-gtk gtk_container_forall (_fun _GtkWidget (_fun _GtkWidget -> _void) _pointer -> _void))
 
 (define-signal-handler connect-changed "changed"
   (_fun _GtkWidget -> _void)
@@ -43,18 +42,7 @@
 
   ;; Hack to access the combobox's private child, where is
   ;;  where the keyboard focus goes.
-  (define button-gtk
-    (let ([all null]
-          [ext null])
-      (gtk_container_forall gtk (lambda (c) (set! all (cons c all))) #f)
-      (gtk_container_foreach gtk (lambda (c) (set! ext (cons c ext))) #f)
-      (for-each (lambda (e)
-                  (set! all (filter (lambda (a) (not (ptr-equal? a e)))
-                                    all)))
-                ext)
-      (unless (= 1 (length all))
-        (error "expected Gtk combobox to have one private child"))
-      (car all)))
+  (define button-gtk (extract-combo-button gtk))
 
   (super-new [parent parent]
              [gtk gtk]
@@ -62,14 +50,13 @@
              [callback cb]
              [no-show? (memq 'deleted style)])
 
-  (connect-key-and-mouse button-gtk)
-
   (gtk_combo_box_set_active gtk 0)
 
   (set-auto-size)
 
   (connect-changed gtk)
   (connect-focus button-gtk)
+  (connect-combo-key-and-mouse button-gtk)
 
   (define callback cb)
   (define/public (clicked)
@@ -94,13 +81,18 @@
   (define/public (clear)
     (as-entry
      (lambda ()
+       (set! ignore-clicked? #t)
        (for ([i (in-range count)])
          (gtk_combo_box_remove_text gtk 0))
-       (set! count 0))))
-  (define/public (append l)
+       (set! count 0)
+       (set! ignore-clicked? #f))))
+  (public [-append append])
+  (define (-append l)
     (as-entry
      (lambda ()
+       (set! ignore-clicked? #t)
        (set! count (add1 count))
        (gtk_combo_box_append_text gtk l)
        (when (= count 1)
-         (set-selection 0))))))
+         (set-selection 0))
+       (set! ignore-clicked? #f)))))

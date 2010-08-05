@@ -29,6 +29,7 @@
 
          connect-focus
          connect-key-and-mouse
+         do-button-event
 
          (struct-out GtkRequisition) _GtkRequisition-pointer
          (struct-out GtkAllocation) _GtkAllocation-pointer)
@@ -96,7 +97,7 @@
                    [y 0]
                    [time-stamp (GdkEventKey-time event)]
                    [caps-down (bit? modifiers GDK_LOCK_MASK)])])
-      (if (send wx handles-events?)
+      (if (send wx handles-events? gtk)
           (begin
             (queue-window-event wx (lambda () (send wx dispatch-on-char k #f)))
             #t)
@@ -132,10 +133,10 @@
   (lambda (gtk event)
     (do-button-event gtk event #f #t)))
 
-(define (connect-key-and-mouse gtk)
+(define (connect-key-and-mouse gtk [skip-press? #f])
   (connect-key-press gtk)
   (connect-button-press gtk)
-  (connect-button-release gtk)
+  (unless skip-press? (connect-button-release gtk))
   (connect-pointer-motion gtk)
   (connect-enter gtk)
   (connect-leave gtk))
@@ -201,7 +202,7 @@
                                       (if crossing? GdkEventCrossing-time GdkEventButton-time))
                                   event)]
                      [caps-down (bit? modifiers GDK_LOCK_MASK)])])
-        (if (send wx handles-events?)
+        (if (send wx handles-events? gtk)
             (begin
               (queue-window-event wx (lambda ()
                                        (send wx dispatch-on-event m #f)))
@@ -366,7 +367,7 @@
     (define/public (on-set-focus) (void))
     (define/public (on-kill-focus) (void))
 
-    (define/public (handles-events?) #f)
+    (define/public (handles-events? gtk) #f)
     (define/public (dispatch-on-char e just-pre?) 
       (cond
        [(other-modal? this) #t]

@@ -12,7 +12,8 @@
          "window.rkt"
          "client-window.rkt"
          "widget.rkt"
-         "dc.rkt")
+         "dc.rkt"
+         "combo.rkt")
 
 (provide canvas%)
 
@@ -108,19 +109,20 @@
                               (GdkRectangle-height r)))
         (gdk_gc_unref gc)))))
 
-(define (handle-value-changed-h gtk ignored)
-  (let ([wx (gtk->wx gtk)])
-    (queue-window-event wx (lambda () (send wx do-scroll 'horizontal))))
-  #t)
-(define handle_value_changed_h
-  (function-ptr handle-value-changed-h (_fun #:atomic? #t _GtkWidget _pointer -> _void)))
+(define-signal-handler connect-value-changed-h "value-changed"
+  (_fun _GtkWidget -> _void)
+  (lambda (gtk)
+    (do-value-changed gtk 'horizontal)))
 
-(define (handle-value-changed-v gtk ignored)
+(define-signal-handler connect-value-changed-v "value-changed"
+  (_fun _GtkWidget -> _void)
+  (lambda (gtk)
+    (do-value-changed gtk 'vertical)))
+
+(define (do-value-changed gtk dir)
   (let ([wx (gtk->wx gtk)])
-    (queue-window-event wx (lambda () (send wx do-scroll 'vertical))))
+    (queue-window-event wx (lambda () (send wx do-scroll dir))))
   #t)
-(define handle_value_changed_v
-  (function-ptr handle-value-changed-v (_fun #:atomic? #t _GtkWidget _pointer -> _void)))
 
 (define-gtk gtk_entry_get_type (_fun -> _GType))
 
@@ -145,7 +147,9 @@
     (define virtual-height #f)
     (define virtual-width #f)
 
-    (define-values (client-gtk gtk hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box)
+    (define-values (client-gtk gtk 
+                               hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box
+                               combo-button-gtk)
       (cond
        [(or (memq 'hscroll style)
             (memq 'vscroll style))
@@ -184,11 +188,12 @@
             (values client-gtk h hadj vadj 
                     (and (memq 'hscroll style) h2)
                     (and (memq 'vscroll style) v2)
-                    (and (memq 'hscroll style) (memq 'vscroll style) resize-box))))]
+                    (and (memq 'hscroll style) (memq 'vscroll style) resize-box)
+                    #f)))]
        [is-combo?
         (let* ([gtk (gtk_combo_box_entry_new_text)]
                [orig-entry (gtk_bin_get_child gtk)])
-          (values orig-entry gtk #f #f #f #f #f))]
+          (values orig-entry gtk #f #f #f #f #f (extract-combo-button gtk)))]
        [has-border?
         (let ([client-gtk (gtk_drawing_area_new)]
               [h (gtk_hbox_new #f 0)])
@@ -196,10 +201,10 @@
           (gtk_container_set_border_width h margin)
           (connect-expose-border h)
           (gtk_widget_show client-gtk)
-          (values client-gtk h #f #f #f #f #f))]
+          (values client-gtk h #f #f #f #f #f #f))]
        [else
         (let ([client-gtk (gtk_drawing_area_new)])
-          (values client-gtk client-gtk #f #f #f #f #f))]))
+          (values client-gtk client-gtk #f #f #f #f #f #f))]))
 
     (super-new [parent parent]
                [gtk gtk]
@@ -209,7 +214,9 @@
                                null
                                (if hscroll-adj
                                    (list client-gtk hscroll-adj vscroll-adj)
-                                   (list client-gtk)))])
+                                   (if combo-button-gtk
+                                       (list client-gtk combo-button-gtk)
+                                       (list client-gtk))))])
     
     (set-size x y w h)
 
@@ -248,18 +255,18 @@
                                                    GDK_LEAVE_NOTIFY_MASK))
     (set-gtk-object-flags! client-gtk (bitwise-ior (get-gtk-object-flags client-gtk)
                                                    GTK_CAN_FOCUS))
+    (when combo-button-gtk
+      (connect-combo-key-and-mouse combo-button-gtk))
 
-    (when hscroll-adj
-      (g_signal_connect hscroll-adj "value-changed" handle_value_changed_h))
-    (when vscroll-adj
-      (g_signal_connect vscroll-adj "value-changed" handle_value_changed_v))
+    (when hscroll-adj (connect-value-changed-h hscroll-adj))
+    (when vscroll-adj (connect-value-changed-v vscroll-adj))
 
     (define/override (direct-update?) #f)
 
     (define/public (get-dc) dc)
 
     (define/override (get-client-gtk) client-gtk)
-    (define/override (handles-events?) #t)
+    (define/override (handles-events? gtk) (not (ptr-equal? gtk combo-button-gtk)))
 
     (define/override (get-client-delta)
       (values margin margin))

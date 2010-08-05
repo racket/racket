@@ -17,7 +17,6 @@
 
          g_object_set_data
          g_object_get_data
-         g_signal_connect
 
          g_object_new
 
@@ -81,9 +80,9 @@
 (define-gobj g_object_set_data (_fun _GtkWidget _string _pointer -> _void))
 (define-gobj g_object_get_data (_fun _GtkWidget _string -> _pointer))
 
-(define-gobj g_signal_connect_data (_fun _gpointer _string _fpointer (_pointer = #f) _fnpointer _int -> _ulong))
-(define (g_signal_connect obj s proc)
-  (g_signal_connect_data obj s proc #f 0))
+(define-gobj g_signal_connect_data (_fun _gpointer _string _fpointer _pointer _fnpointer _int -> _ulong))
+(define (g_signal_connect obj s proc user-data)
+  (g_signal_connect_data obj s proc user-data #f 0))
 
 (define-gobj g_object_get (_fun _GtkWidget (_string = "window") 
 				[w : (_ptr o _GdkWindow)]
@@ -114,5 +113,5 @@
     (define handler-proc proc)
     (define handler_function
       (function-ptr handler-proc (_fun #:atomic? #t . args)))
-    (define (connect-name gtk)
-      (g_signal_connect gtk signal-name handler_function))))
+    (define (connect-name gtk [user-data #f])
+      (g_signal_connect gtk signal-name handler_function user-data))))
