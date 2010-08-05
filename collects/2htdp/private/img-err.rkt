@@ -114,7 +114,8 @@
      (if (string? arg)
          (string->symbol arg)
          arg)]
-    [(width height radius radius1 radius2 side-length side-length1 side-length2)
+    [(width height radius radius1 radius2 side-length side-length1 side-length2
+            side-a side-b side-c)
      (check-arg fn-name
                 (and (real? arg)
                      (not (negative? arg)))
@@ -153,7 +154,7 @@
                 'step-count
                 i arg)
      arg]
-    [(angle angle1 angle2)
+    [(angle angle1 angle2 angle-a angle-b angle-c)
      (check-arg fn-name
                 (angle? arg)
                 'angle\ in\ degrees

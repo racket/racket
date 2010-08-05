@@ -89,6 +89,13 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          star-polygon
          radial-star
          triangle
+         triangle/sss
+         triangle/ssa
+         triangle/sas
+         triangle/ass
+         triangle/aas
+         triangle/asa
+         triangle/saa
          isosceles-triangle
          right-triangle
          line

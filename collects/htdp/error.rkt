@@ -4,7 +4,7 @@
 ;; --------------------------------------------------------------------------
 (provide check-arg check-arity check-proc check-result 
          check-list-list check-color
-         check-fun-res
+         check-fun-res check-dependencies
          natural?
          find-non tp-exn? number->ord)
 
@@ -23,6 +23,11 @@
     (define r (apply f x))
     (check-result (object-name f) pred? type r)
     r))
+
+;; check-dependencies : Symbol x Boolean x FormatString x Any* -> Void
+(define (check-dependencies pname condition fmt . args)
+  (unless condition
+    (tp-error pname (apply format fmt args))))
 
 #| Tests ------------------------------------------------------------------
   (not (find-non list? '((1 2 3) (a b c))))
