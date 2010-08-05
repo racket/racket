@@ -4,18 +4,16 @@
 
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i ([f (-> number? number?)]) [res number?]))))
+                 #'(->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]))))
 
 #;
 (pretty-print
  (syntax->datum (expand
                  #'(->i () [x integer?]))))
 
-((contract (->i ([f (-> number? number?)]) [res number?] #:post (res) (= res 11))
-             (λ (f) 2)
-             'pos 'neg) 
-   (λ (n) (+ n 1)))
-;; => pos violation (#:post condition)
+
+((contract (->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda (#:x [x 1] . w) (cons x w)) 'pos 'neg)  2 3)
+;; => '(1 2 3)
 
 #|
 ;; timing tests:
@@ -196,5 +194,19 @@ test cases:
    (λ (n) (+ n 1)))
 ;; => pos violation
 
+((contract (->i ([x integer?]) () #:rest [rst (listof number?)] [r any/c]) (lambda w w) 'pos 'neg) 1 2)
+;; => '(1 2)
+
+((contract (->i (#:x [x integer?]) () #:rest [rst (listof number?)] [r any/c]) (lambda (#:x x . w) (cons x w)) 'pos 'neg) #:x 1 2)
+;; => '(1 2)
+
+((contract (->i () ([x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda w w) 'pos 'neg) 1 2)
+;; => '(1 2)
+
+((contract (->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda (#:x [x 1] . w) (cons x w)) 'pos 'neg) #:x 2 3)
+;; => '(2 3)
+
+((contract (->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda (#:x [x 1] . w) (cons x w)) 'pos 'neg)  2 3)
+;; => '(1 2 3)
 
 |#

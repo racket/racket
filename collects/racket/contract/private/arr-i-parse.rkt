@@ -18,7 +18,7 @@ code does the parsing and validation of the syntax.
 |#
 
 ;; args : (listof arg?)
-;; rst  : (or/c #f rst?)
+;; rst  : (or/c #f arg/res?)
 ;; pre  : (or/c pre/post? #f)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (or/c pre/post? #f)
@@ -29,11 +29,11 @@ code does the parsing and validation of the syntax.
 
 ;; var  : identifier?
 ;; vars : (or/c #f (listof identifier?))
-;; optional? : boolean?
-(struct arg/res (var vars ctc) #:constructor-name ___do-not-use-this-constructor)
+;; ctc  : syntax[expr]
+(struct arg/res (var vars ctc))
 
 ;; kwd  : (or/c #f syntax[kwd])
-;; ctc  : syntax[expr]
+;; optional? : boolean?
 (struct arg arg/res (kwd optional?))
 
 ;; these represent res contracts that came from _s (and thus should be evaluated early)
@@ -41,12 +41,6 @@ code does the parsing and validation of the syntax.
 
 ;; these represent res contracts that do not come from _s (and thus should be evaluated later)
 (struct lres arg/res ())
-
-
-;; var  : identifier?
-;; vars : (or/c #f (listof identifier?))
-;; ctc  : syntax[expr]
-(struct rst (var vars ctc))
 
 ;; vars : (listof identifier?)
 ;; exp  : syntax[expr]
@@ -136,9 +130,9 @@ code does the parsing and validation of the syntax.
     
     ;; no dups in the rest var
     (when (istx-rst istx)
-      (when (rst-vars (istx-rst istx))
-        (not-range-bound (rst-vars (istx-rst istx)) #t))
-      (no-var-dups (rst-var (istx-rst istx))))
+      (when (arg/res-vars (istx-rst istx))
+        (not-range-bound (arg/res-vars (istx-rst istx)) #t))
+      (no-var-dups (arg/res-var (istx-rst istx))))
     
     ;; dependent arg variables are all bound, but not to a range variable
     (for ([an-arg (in-list (istx-args istx))])
@@ -196,11 +190,11 @@ code does the parsing and validation of the syntax.
     (let ([a-rst (istx-rst istx)])
       (when a-rst
         (cond
-          [(rst-vars a-rst)
-           (for ([nvar (in-list (rst-vars a-rst))])
-             (link (rst-var a-rst) nvar))]
+          [(arg/res-vars a-rst)
+           (for ([nvar (in-list (arg/res-vars a-rst))])
+             (link (arg/res-var a-rst) nvar))]
           [else
-           (no-links (rst-var a-rst))])))
+           (no-links (arg/res-var a-rst))])))
            
     (for ([var (in-list sp)])
       (let loop ([var var]
@@ -333,14 +327,14 @@ code does the parsing and validation of the syntax.
                    [(#:rest [id rest-expr] . leftover)
                     (begin
                       (check-id stx #'id)
-                      (values (rst #'id #f #'rest-expr)
+                      (values (arg/res #'id #f #'rest-expr)
                               #'leftover))]
                    [(#:rest [id (id2 ...) rest-expr] . leftover)
                     (begin
                       (check-id stx #'id)
                       (for-each (λ (x) (check-id stx x))
                                 (syntax->list #'(id2 ...)))
-                      (values (rst #'id 
+                      (values (arg/res #'id 
                                    (syntax->list #'(id2 ...))
                                    #'rest-expr)
                               #'leftover))]
@@ -402,5 +396,4 @@ code does the parsing and validation of the syntax.
  (struct-out arg)
  (struct-out lres)
  (struct-out eres)
- (struct-out rst)
  (struct-out pre/post))
