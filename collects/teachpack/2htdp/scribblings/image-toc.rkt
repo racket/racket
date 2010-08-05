@@ -641,6 +641,81 @@
    (list '(square 50 "outline" "darkmagenta") 'image "89a0d469a7.png")
    (list '(square 40 "solid" "slateblue") 'image "d417a51b4.png")
    (list
+    '(triangle/saa 200 130 40 "solid" "lightseagreen")
+    'image
+    "6f8f1b6543.png")
+   (list
+    '(triangle/saa 200 90 40 "solid" "aquamarine")
+    'image
+    "2d67c4219ef.png")
+   (list '(triangle/saa 200 10 40 "solid" "seagreen") 'image "206013002a2.png")
+   (list
+    '(triangle/asa 130 200 40 "solid" "lightseagreen")
+    'image
+    "eb983f1874.png")
+   (list
+    '(triangle/asa 90 200 40 "solid" "aquamarine")
+    'image
+    "2271196b15b.png")
+   (list '(triangle/asa 10 200 40 "solid" "seagreen") 'image "22fbf40600e.png")
+   (list
+    '(triangle/aas 130 40 200 "solid" "lightseagreen")
+    'image
+    "3a33de5a32.png")
+   (list
+    '(triangle/aas 90 40 200 "solid" "aquamarine")
+    'image
+    "3c0f55df6a.png")
+   (list '(triangle/aas 10 40 200 "solid" "seagreen") 'image "292cf6346d5.png")
+   (list
+    '(triangle/ssa 300 500 130 "solid" "lightseagreen")
+    'image
+    "1ce2f057282.png")
+   (list
+    '(triangle/ssa 300 500 90 "solid" "aquamarine")
+    'image
+    "1aea72997cc.png")
+   (list
+    '(triangle/ssa 300 500 10 "solid" "seagreen")
+    'image
+    "16c877168cb.png")
+   (list
+    '(triangle/sas 300 130 500 "solid" "lightseagreen")
+    'image
+    "e2d39b3ee5.png")
+   (list
+    '(triangle/sas 300 90 500 "solid" "aquamarine")
+    'image
+    "28fbf34134c.png")
+   (list
+    '(triangle/sas 300 10 500 "solid" "seagreen")
+    'image
+    "185481b843d.png")
+   (list
+    '(triangle/ass 130 300 500 "solid" "lightseagreen")
+    'image
+    "11f41037210.png")
+   (list
+    '(triangle/ass 90 300 500 "solid" "aquamarine")
+    'image
+    "1c2ca686e5c.png")
+   (list
+    '(triangle/ass 10 300 500 "solid" "seagreen")
+    'image
+    "2a876662e0e.png")
+   (list
+    '(triangle/sss 300 400 500 "solid" "lightseagreen")
+    'image
+    "e2d39b92b5.png")
+   (list
+    '(triangle/sss 400 300 100 "solid" "aquamarine")
+    'image
+    "28083dbe539.png")
+   (list
+    '(triangle/sss 200 300 400 "solid" "seagreen")
+    'image
+    "2a3953f3712.png")
+   (list
     '(isosceles-triangle 60 330 "solid" "lightseagreen")
     'image
     "138792ad221.png")
