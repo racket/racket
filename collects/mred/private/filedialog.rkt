@@ -50,11 +50,13 @@
 				  (string? (cadr p))))
 			   filters))
 	(raise-type-error who "list of 2-string lists" filters))
+      (printf "parent window: ~a ~a\n" parent (and parent (mred->wx parent)))
       (let* ([std? (memq 'common style)]
              [style (if std? (remq 'common style) style)])
         (if (or std? 
-                #t ; for now, always use the manually constructed dialog
-                (eq? (system-type) 'unix))
+                ;#t ; for now, always use the manually constructed dialog
+                ;; the platform dialog is only available for Gtk
+                (not (eq? (system-type) 'unix)))
           (send (new path-dialog%
                   [put?      put?]
                   [dir?      dir?]
@@ -71,6 +73,8 @@
           (let ([s (wx:file-selector
                     message directory filename extension
                     ;; file types:
+                    filters
+                    #;
                     (apply string-append
                            (map (lambda (s) (format "~a|~a|" (car s) (cadr s)))
                                 filters))

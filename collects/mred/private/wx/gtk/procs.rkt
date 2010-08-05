@@ -4,8 +4,10 @@
          "../../lock.rkt"
          racket/class
          racket/draw
+         racket/match
          "types.rkt"
          "utils.rkt"
+         "widget.rkt"
          "../common/handlers.rkt")
 
 (provide
@@ -60,7 +62,6 @@
  get-the-clipboard
  show-print-setup
  can-show-print-setup?)
-
 
 (define-unimplemented special-control-key)
 (define-unimplemented special-option-key)
@@ -121,7 +122,99 @@
 (define (begin-busy-cursor) (as-entry (lambda () (set! busy-count (sub1 busy-count)))))
 
 (define-unimplemented is-color-display?)
-(define-unimplemented file-selector)
+
+(define _GtkFileChooserDialog (_cpointer 'GtkFileChooserDialog))
+(define _GtkFileChooser (_cpointer 'GtkFileChooser))
+(define _GtkFileChooserAction 
+  (_enum (list 'open 'save 'select-folder 'create-folder)))
+
+(define _GtkResponse
+  (_enum 
+   '(none = -1
+     reject = -2
+     accept = -3
+     delete-event = -4
+     ok = -5
+     cancel = -6
+     close = -7
+     yes = -8
+     no = -9
+     apply = -10
+     help = -11)
+   _fixint))
+(define _GtkDialog (_cpointer 'GtkDialog))
+;; FIXME: really there are varargs here, but we don't need them for
+;; our purposes
+(define-gtk gtk_file_chooser_dialog_new 
+  (_fun _string (_or-null _GtkWindow) 
+        _GtkFileChooserAction
+        _string _GtkResponse
+        _string _GtkResponse
+        (_or-null _pointer)
+        -> _GtkFileChooserDialog))
+;; FIXME - should really be _GtkDialog but no subtyping
+(define-gtk gtk_dialog_run (_fun _GtkFileChooserDialog -> _int))
+;; FIXME ;; these should really be _GtkFileChooser but no subtyping
+(define-gtk gtk_file_chooser_get_filename 
+  (_fun _GtkFileChooserDialog -> _gpath/free))
+(define-gtk gtk_file_chooser_get_filenames
+  (_fun _GtkFileChooserDialog -> (_GSList _gpath/free)))
+(define-gtk gtk_file_chooser_set_current_name
+  (_fun _GtkFileChooserDialog _path -> _void))
+(define-gtk gtk_file_chooser_set_current_folder
+  (_fun _GtkFileChooserDialog _path -> _void))
+(define-gtk gtk_file_chooser_set_select_multiple
+  (_fun _GtkFileChooserDialog _gboolean -> _void))
+
+(define _GtkFileFilter (_cpointer 'GtkFileFilter))
+(define-gtk gtk_file_filter_new (_fun -> _GtkFileFilter))
+(define-gtk gtk_file_filter_set_name
+  (_fun _GtkFileFilter _string -> _void))
+(define-gtk gtk_file_filter_add_pattern
+  (_fun _GtkFileFilter _string -> _void))
+
+(define-gtk gtk_file_chooser_add_filter
+  (_fun _GtkFileChooserDialog _GtkFileFilter -> _void))
+
+(define (file-selector message directory filename 
+                       extension ;; always ignored
+                       filters style parent)
+  (define type (car style)) ;; the rest of `style' is irrelevant on Gtk
+  (define dlg (gtk_file_chooser_dialog_new 
+               message (and parent (send parent get-gtk))
+               (case type
+                 [(dir) 'select-directory]
+                 [(put) 'save]
+                 [else 'open])
+               "gtk-cancel" 'cancel
+               ;; no stock names for "Select"
+               (case type
+                 [(dir) "Choose"]
+                 [(put) "gtk-save"]
+                 [(get) "gtk-open"]
+                 [(multi) "Choose"])
+               'accept
+               #f))
+  (when (eq? 'multi type)
+    (gtk_file_chooser_set_select_multiple dlg #t))
+  (when filename
+    (gtk_file_chooser_set_current_name dlg filename))
+  (when directory
+    (gtk_file_chooser_set_current_folder dlg directory))
+  (for ([f (in-list filters)])
+    (match f
+      [(list name glob)
+       (let ([ff (gtk_file_filter_new)])
+         (gtk_file_filter_set_name ff name)
+         (gtk_file_filter_add_pattern ff glob)
+         (gtk_file_chooser_add_filter dlg ff))]))
+  (define ans (and (= -3 (gtk_dialog_run dlg))
+                   (if (eq? type 'multi)           
+                       (gtk_file_chooser_get_filenames dlg)
+                       (gtk_file_chooser_get_filename dlg))))
+  (gtk_widget_destroy dlg)
+  ans)
+
 (define (id-to-menu-item i) i)
 (define-unimplemented get-the-x-selection)
 (define-unimplemented get-the-clipboard)

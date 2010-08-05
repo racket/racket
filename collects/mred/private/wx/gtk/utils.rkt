@@ -1,6 +1,7 @@
 #lang scheme/base
 (require ffi/unsafe
          ffi/unsafe/define
+         (only-in '#%foreign ctype-c->scheme)
          "../common/utils.rkt"
          "types.rkt")
 
@@ -14,6 +15,10 @@
 
          g_object_ref
          g_object_unref
+
+         g_free
+         _gpath/free
+         _GSList
 
          g_object_set_data
          g_object_get_data
@@ -77,6 +82,8 @@
 (define-gobj g_object_ref (_fun _pointer -> _void))
 (define-gobj g_object_unref (_fun _pointer -> _void))
 
+(define-gobj g_free (_fun _pointer -> _void))
+
 (define-gobj g_object_set_data (_fun _GtkWidget _string _pointer -> _void))
 (define-gobj g_object_get_data (_fun _GtkWidget _string -> _pointer))
 
@@ -115,3 +122,37 @@
       (function-ptr handler-proc (_fun #:atomic? #t . args)))
     (define (connect-name gtk [user-data #f])
       (g_signal_connect gtk signal-name handler_function user-data))))
+
+
+(define _gpath/free
+  (make-ctype _pointer
+              path->bytes ; a Racket bytes can be used as a pointer
+              (lambda (x)
+                (let ([b (bytes->path (make-byte-string x))])
+                  (g_free x)
+                  b))))
+
+(define-cstruct _g-slist
+  ([data _pointer]
+   [next (_or-null _g-slist-pointer)]))
+
+(define-gobj g_slist_free (_fun _g-slist-pointer -> _void))
+;; This should probably be provided by Racket
+(define make-byte-string
+  (get-ffi-obj 'scheme_make_byte_string #f (_fun _pointer -> _racket)))
+
+(define (_GSList elem)
+  (make-ctype (_or-null _g-slist-pointer)
+              (lambda (l)
+                (let L ([l l])
+                  (if (null? l) 
+                      #f
+                      (make-g-slist (car l) (L (cdr l))))))
+              (lambda (gl)
+                (begin0
+                 (let L ([gl gl])
+                   (if (not gl) 
+                       null
+                       (cons ((ctype-c->scheme elem) (g-slist-data gl))
+                             (L (g-slist-next gl)))))
+                 (g_slist_free gl)))))

@@ -13,6 +13,7 @@
 
          gtk_widget_show
          gtk_widget_hide
+         gtk_widget_destroy
 
          gtk_vbox_new
          gtk_hbox_new
@@ -21,6 +22,9 @@
 
 (define-gtk gtk_widget_show (_fun _GtkWidget -> _void))
 (define-gtk gtk_widget_hide (_fun _GtkWidget -> _void))
+
+(define-gtk gtk_widget_destroy (_fun _pointer -> _void))
+
 
 (define-gtk gtk_vbox_new (_fun _gboolean _int -> _GtkWidget))
 (define-gtk gtk_hbox_new (_fun _gboolean _int -> _GtkWidget))
