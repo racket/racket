@@ -97,7 +97,7 @@
     (inherit get-gtk set-size on-size
              pre-on-char pre-on-event
              get-client-delta get-size
-             get-parent)
+             get-parent get-eventspace)
 
     (define gtk (gtk_window_new GTK_WINDOW_TOPLEVEL))
     (when (memq 'no-caption style)
@@ -207,9 +207,23 @@
       (set-top-position x y)
       (gtk_window_resize gtk (max 1 w) (max 1 h)))
 
+    (define/override (show on?)
+      (when (and on?
+                 (eventspace-shutdown? (get-eventspace)))
+        (error (string->symbol
+                (format "show method in ~a"
+                        (if (frame-relative-dialog-status this)
+                            'dialog%
+                            'frame%)))
+               "eventspace has been shutdown"))
+      (super show on?))
+
     (define/override (direct-show on?)
       (super direct-show on?)
       (register-frame-shown this on?))
+
+    (define/public (destroy)
+      (direct-show #f))
 
     (define/override (on-client-size w h)
       (on-size w h))

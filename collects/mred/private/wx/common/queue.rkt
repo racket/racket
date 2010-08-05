@@ -114,7 +114,7 @@
 ;; ------------------------------------------------------------
 ;; Eventspaces
 
-(define-struct eventspace (handler-thread queue-proc frames-hash done-evt)
+(define-struct eventspace (handler-thread queue-proc frames-hash done-evt [shutdown? #:mutable] done-sema)
   #:property prop:evt (lambda (v)
                         (wrap-evt (eventspace-done-evt v)
                                   (lambda (_) v))))
@@ -138,117 +138,141 @@
          [(< am bm) -1]
          [else 1]))))
 
+
+(define-mz scheme_add_managed (_fun _racket ; custodian
+                                    _racket ; object
+                                    (_fun #:atomic? #t _racket _pointer -> _void)
+                                    _pointer ; data
+                                    _int ; strong?
+                                    -> _pointer))
+
+(define (shutdown-eventspace! e ignored-data)
+  (unless (eventspace-shutdown? e)
+    (set-eventspace-shutdown?! e #t)
+    (semaphore-post (eventspace-done-sema e))
+    (for ([f (in-list (get-top-level-windows e))])
+      (send f destroy))))
+
 (define (make-eventspace* th)
   (let ([done-sema (make-semaphore 1)]
         [frames (make-hasheq)])
-    (make-eventspace th
-                     (let ([count 0])
-                       (let ([lo (mcons #f #f)]
-                             [med (mcons #f #f)]
-                             [hi (mcons #f #f)]
-                             [timer (box '())]
-                             [timer-counter 0]
-                             [newly-posted-sema (make-semaphore)])
-                         (let* ([check-done
-                                 (lambda ()
-                                   (if (or (positive? count)
-                                           (positive? (hash-count frames))
-                                           (not (null? (unbox timer))))
-                                       (semaphore-try-wait? done-sema)
-                                       (semaphore-post done-sema)))]
-                                [enqueue (lambda (v q)
-                                           (set! count (add1 count))
-                                           (check-done)
-                                           (let ([p (mcons v #f)])
-                                             (if (mcdr q)
-                                                 (set-mcdr! (mcdr q) p)
-                                                 (set-mcar! q p))
-                                             (set-mcdr! q p)))]
-                                [first (lambda (q)
-                                         (and (mcar q)
-                                              (wrap-evt
-                                               always-evt
-                                               (lambda (_)
-                                                 (start-atomic)
-                                                 (set! count (sub1 count))
-                                                 (check-done)
-                                                 (let ([result (mcar (mcar q))])
-                                                   (set-mcar! q (mcdr (mcar q)))
-                                                   (unless (mcar q)
-                                                     (set-mcdr! q #f))
-                                                   (end-atomic)
-                                                   result)))))]
-                                [remove-timer
-                                 (lambda (v timer)
-                                   (set-box! timer (rbtree-remove 
+    (let ([e
+           (make-eventspace th
+                            (let ([count 0])
+                              (let ([lo (mcons #f #f)]
+                                    [med (mcons #f #f)]
+                                    [hi (mcons #f #f)]
+                                    [timer (box '())]
+                                    [timer-counter 0]
+                                    [newly-posted-sema (make-semaphore)])
+                                (let* ([check-done
+                                        (lambda ()
+                                          (if (or (positive? count)
+                                                  (positive? (hash-count frames))
+                                                  (not (null? (unbox timer))))
+                                              (semaphore-try-wait? done-sema)
+                                              (semaphore-post done-sema)))]
+                                       [enqueue (lambda (v q)
+                                                  (set! count (add1 count))
+                                                  (check-done)
+                                                  (let ([p (mcons v #f)])
+                                                    (if (mcdr q)
+                                                        (set-mcdr! (mcdr q) p)
+                                                        (set-mcar! q p))
+                                                    (set-mcdr! q p)))]
+                                       [first (lambda (q)
+                                                (and (mcar q)
+                                                     (wrap-evt
+                                                      always-evt
+                                                      (lambda (_)
+                                                        (start-atomic)
+                                                        (set! count (sub1 count))
+                                                        (check-done)
+                                                        (let ([result (mcar (mcar q))])
+                                                          (set-mcar! q (mcdr (mcar q)))
+                                                          (unless (mcar q)
+                                                            (set-mcdr! q #f))
+                                                          (end-atomic)
+                                                          result)))))]
+                                       [remove-timer
+                                        (lambda (v timer)
+                                          (set-box! timer (rbtree-remove 
+                                                           timed-compare
+                                                           v
+                                                           (unbox timer)))
+                                          (check-done))])
+                                  (case-lambda
+                                   [(v)
+                                    ;; Enqueue
+                                    (start-atomic)
+                                    (let ([val (cdr v)])
+                                      (case (car v)
+                                        [(lo) (enqueue val lo)]
+                                        [(med) (enqueue val med)]
+                                        [(hi) (enqueue val hi)]
+                                        [(timer-add) 
+                                         (set! timer-counter (add1 timer-counter))
+                                         (set-timed-id! val timer-counter)
+                                         (set-box! timer
+                                                   (rbtree-insert
                                                     timed-compare
-                                                    v
+                                                    val
                                                     (unbox timer)))
-                                   (check-done))])
-                           (case-lambda
-                            [(v)
-                             ;; Enqueue
-                             (start-atomic)
-                             (let ([val (cdr v)])
-                               (case (car v)
-                                 [(lo) (enqueue val lo)]
-                                 [(med) (enqueue val med)]
-                                 [(hi) (enqueue val hi)]
-                                 [(timer-add) 
-                                  (set! timer-counter (add1 timer-counter))
-                                  (set-timed-id! val timer-counter)
-                                  (set-box! timer
-                                            (rbtree-insert
-                                             timed-compare
-                                             val
-                                             (unbox timer)))
-                                  (check-done)]
-                                 [(timer-remove) (remove-timer val timer)]
-                                 [(frame-add) (hash-set! frames val #t) (check-done)]
-                                 [(frame-remove) (hash-remove! frames val) (check-done)]))
-                             (semaphore-post newly-posted-sema)
-                             (set! newly-posted-sema (make-semaphore))
-                             (check-done)
-                             (end-atomic)]
-                            [()
-                             ;; Dequeue as evt
-                             (start-atomic)
-                             (let ([timer-first-ready
-                                    (lambda (timer)
-                                      (let ([rb (unbox timer)])
-                                        (and (not (null? rb))
-                                             (let* ([v (rbtree-min (unbox timer))]
-                                                    [evt (timed-alarm-evt v)])
-                                               (and (sync/timeout 0 evt)
-                                                    ;; It's ready
+                                         (check-done)]
+                                        [(timer-remove) (remove-timer val timer)]
+                                        [(frame-add) (hash-set! frames val #t) (check-done)]
+                                        [(frame-remove) (hash-remove! frames val) (check-done)]))
+                                    (semaphore-post newly-posted-sema)
+                                    (set! newly-posted-sema (make-semaphore))
+                                    (check-done)
+                                    (end-atomic)]
+                                   [()
+                                    ;; Dequeue as evt
+                                    (start-atomic)
+                                    (let ([timer-first-ready
+                                           (lambda (timer)
+                                             (let ([rb (unbox timer)])
+                                               (and (not (null? rb))
+                                                    (let* ([v (rbtree-min (unbox timer))]
+                                                           [evt (timed-alarm-evt v)])
+                                                      (and (sync/timeout 0 evt)
+                                                           ;; It's ready
+                                                           (wrap-evt
+                                                            always-evt
+                                                            (lambda (_)
+                                                              (start-atomic)
+                                                              (remove-timer v timer)
+                                                              (end-atomic)
+                                                              (timed-val v))))))))]
+                                          [timer-first-wait
+                                           (lambda (timer)
+                                             (let ([rb (unbox timer)])
+                                               (and (not (null? rb))
                                                     (wrap-evt
-                                                     always-evt
-                                                     (lambda (_)
-                                                       (start-atomic)
-                                                       (remove-timer v timer)
-                                                       (end-atomic)
-                                                       (timed-val v))))))))]
-                                   [timer-first-wait
-                                    (lambda (timer)
-                                      (let ([rb (unbox timer)])
-                                        (and (not (null? rb))
-                                             (wrap-evt
-                                              (timed-alarm-evt (rbtree-min (unbox timer)))
-                                              (lambda (_) #f)))))])
-                               (let ([e (choice-evt
-                                         (wrap-evt (semaphore-peek-evt newly-posted-sema)
-                                                   (lambda (_) #f))
-                                         (or (first hi)
-                                             (timer-first-ready timer)
-                                             (first med)
-                                             (first lo)
-                                             (timer-first-wait timer)
-                                             ;; nothing else ready...
-                                             never-evt))])
-                                 (end-atomic)
-                                 e))]))))
-                     frames
-                     (semaphore-peek-evt done-sema))))
+                                                     (timed-alarm-evt (rbtree-min (unbox timer)))
+                                                     (lambda (_) #f)))))])
+                                      (let ([e (choice-evt
+                                                (wrap-evt (semaphore-peek-evt newly-posted-sema)
+                                                          (lambda (_) #f))
+                                                (or (first hi)
+                                                    (timer-first-ready timer)
+                                                    (first med)
+                                                    (first lo)
+                                                    (timer-first-wait timer)
+                                                    ;; nothing else ready...
+                                                    never-evt))])
+                                        (end-atomic)
+                                        e))]))))
+                            frames
+                            (semaphore-peek-evt done-sema)
+                            #f
+                            done-sema)])
+      (scheme_add_managed (current-custodian) 
+                          e
+                          shutdown-eventspace!
+                          #f
+                          1)
+      e)))
 
 (define main-eventspace (make-eventspace* (current-thread)))
 (define current-eventspace (make-parameter main-eventspace))
@@ -308,7 +332,6 @@
         (sync e)]))]))
 
 (define event-dispatch-handler (make-parameter void))
-(define (eventspace-shutdown? e) #f)
 (define (main-eventspace? e)
   (eq? e main-eventspace))
 
@@ -331,9 +354,9 @@
                                           'frame-add
                                           'frame-remove)))
 
-(define (get-top-level-windows)
+(define (get-top-level-windows [e (current-eventspace)])
   ;; called in event-pump thread
-  (hash-map (eventspace-frames-hash (current-eventspace))
+  (hash-map (eventspace-frames-hash e)
             (lambda (k v) k)))
 
 (define (other-modal? win)

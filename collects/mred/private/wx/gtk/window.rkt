@@ -248,7 +248,8 @@
           [add-to-parent? #t])
 
     (super-new [gtk gtk]
-               [extra-gtks extra-gtks])
+               [extra-gtks extra-gtks]
+               [parent parent])
 
     (define save-x 0)
     (define save-y 0)

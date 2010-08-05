@@ -169,6 +169,9 @@
                            (send parent get-eventspace)
                            (current-eventspace)))
 
+    (when (eventspace-shutdown? eventspace)
+      (error '|GUI object initialization| "the eventspace has been shutdown"))
+
     (set-ivar! cocoa wx this)
 
     (unless no-show?

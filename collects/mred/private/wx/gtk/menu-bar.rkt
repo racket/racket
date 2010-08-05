@@ -63,6 +63,8 @@
       (other-modal? wx))))
 
 (defclass menu-bar% widget%
+  (inherit install-widget-parent)
+
   (define menus null)
 
   (define gtk (gtk_menu_bar_new))
@@ -75,7 +77,8 @@
 
   (define top-wx #f)
   (define/public (set-top-window top)
-    (set! top-wx top))
+    (set! top-wx top)
+    (install-widget-parent top))
   (define/public (get-top-window)
     top-wx)
 

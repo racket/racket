@@ -2,6 +2,7 @@
 (require scheme/foreign
          scheme/class
          "../../syntax.rkt"
+         "../common/queue.rkt"
          "queue.rkt"
          "utils.rkt"
          "types.rkt")
@@ -30,11 +31,20 @@
 (define widget%
   (class object%
     (init gtk
-          [extra-gtks null])
-    (init-field [eventspace (current-eventspace)])
+          [extra-gtks null]
+          [parent #f])
+    (init-field [eventspace (if parent
+                                (send parent get-eventspace)
+                                (current-eventspace))])
+
+    (when (eventspace-shutdown? eventspace)
+      (error '|GUI object initialization| "the eventspace has been shutdown"))
 
     (define/public (get-eventspace) eventspace)
     (define/public (direct-update?) #t)
+
+    (define/public (install-widget-parent p)
+      (set! eventspace (send p get-eventspace)))
     
     (super-new)
 

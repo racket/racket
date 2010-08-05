@@ -75,6 +75,8 @@
         callback
         font)
 
+  (inherit install-widget-parent)
+
   (define cb callback)
   
   (define gtk (gtk_menu_new))
@@ -88,7 +90,8 @@
 
   (define parent #f)
   (define/public (set-parent p)
-    (set! parent p))
+    (set! parent p)
+    (install-widget-parent p))
   (define/public (get-top-parent)
     ;; Maybe be called in Gtk event-handler thread
     (and parent
@@ -187,7 +190,8 @@
           (let ([item (new menu-item-handler% 
                            [gtk item-gtk]
                            [menu this]
-                           [menu-item i])])
+                           [menu-item i]
+                           [parent this])])
             (set! items (append items (list (list item item-gtk label chckable?))))
             (adjust-shortcut item-gtk label)))
       (gtk_menu_shell_append gtk item-gtk)

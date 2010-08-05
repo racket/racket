@@ -98,6 +98,7 @@
     (init [is-dialog? #f])
 
     (inherit get-cocoa get-parent
+             get-eventspace
              pre-on-char pre-on-event)
 
     (super-new [parent parent]
@@ -232,7 +233,16 @@
          (register-frame-shown this on?))))
 
     (define/override (show on?)
+      (when on?
+        (when (eventspace-shutdown? (get-eventspace))
+          (error (string->symbol
+                  (format "show method in ~a" (if is-a-dialog? 'dialog% 'frame%)))
+                 "the eventspace hash been shutdown")))
       (direct-show on?))
+
+    (define/public (destroy)
+      (when child-sheet (send child-sheet destroy))
+      (direct-show #f))
 
     (define/override (is-shown?)
       (tell #:type _bool cocoa isVisible))
