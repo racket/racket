@@ -271,9 +271,9 @@
            #:when (syntax->datum #'unboxed-info)
            ;; partition of the arguments
            #:with ((to-unbox ...) (boxed ...)) #'unboxed-info
-           #:with (real-params ...) (map (lambda (x) (unboxed-gensym 'unboxed-real-))
+           #:with (real-params ...) (map (lambda (x) (unboxed-gensym "unboxed-real-"))
                                          (syntax->list #'(to-unbox ...)))
-           #:with (imag-params ...) (map (lambda (x) (unboxed-gensym 'unboxed-imag-))
+           #:with (imag-params ...) (map (lambda (x) (unboxed-gensym "unboxed-imag-"))
                                          (syntax->list #'(to-unbox ...)))
            #:with res
            (begin

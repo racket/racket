@@ -31,13 +31,20 @@
 ;; we keep the real and imaginary parts unboxed as long as we stay within
 ;; complex operations
 (define-syntax-class unboxed-inexact-complex-opt-expr
+
+  ;; special handling of reals inside complex operations
+  (pattern e:float-coerce-expr
+           #:with real-binding (unboxed-gensym 'unboxed-float-)
+           #:with imag-binding #f
+           #:with (bindings ...)
+           #`(((real-binding) e.opt)))
   
   (pattern (#%plain-app (~and op (~literal +))
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            (begin (log-optimization "unboxed binary inexact complex" #'op)
                   #`(#,@(append (syntax->list #'(c1.bindings ... c2.bindings ... cs.bindings ... ...))
@@ -60,8 +67,8 @@
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            (begin (log-optimization "unboxed binary inexact complex" #'op)
                   #`(#,@(append (syntax->list #'(c1.bindings ... c2.bindings ... cs.bindings ... ...))
@@ -87,8 +94,8 @@
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            (begin (log-optimization "unboxed binary inexact complex" #'op)
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
@@ -102,10 +109,10 @@
                                      [o2 (car li)]
                                      [e1 (cdr lr)]
                                      [e2 (cdr li)]
-                                     [rs (append (map (lambda (x) (unboxed-gensym))
+                                     [rs (append (map (lambda (x) (unboxed-gensym "unboxed-real-"))
                                                       (syntax->list #'(cs.real-binding ...)))
                                                  (list #'real-binding))]
-                                     [is (append (map (lambda (x) (unboxed-gensym))
+                                     [is (append (map (lambda (x) (unboxed-gensym "unboxed-imag-"))
                                                       (syntax->list #'(cs.imag-binding ...)))
                                                  (list #'imag-binding))]
                                      [res '()])
@@ -135,8 +142,8 @@
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with reals (map (lambda (x) (if (syntax->datum x) x #'0.0))
                              (syntax->list #'(c1.real-binding c2.real-binding cs.real-binding ...)))
            #:with imags (map (lambda (x) (if (syntax->datum x) x #'0.0))
@@ -150,10 +157,10 @@
                                    [o2 (car (syntax->list #'imags))]
                                    [e1 (cdr (syntax->list #'reals))]
                                    [e2 (cdr (syntax->list #'imags))]
-                                   [rs (append (map (lambda (x) (unboxed-gensym))
+                                   [rs (append (map (lambda (x) (unboxed-gensym "unboxed-real-"))
                                                     (syntax->list #'(cs.real-binding ...)))
                                                (list #'real-binding))]
-                                   [is (append (map (lambda (x) (unboxed-gensym))
+                                   [is (append (map (lambda (x) (unboxed-gensym "unboxed-imag-"))
                                                     (syntax->list #'(cs.imag-binding ...)))
                                                (list #'imag-binding))]
                                    [ds (map (lambda (x) (unboxed-gensym))
@@ -203,7 +210,7 @@
 
   (pattern (#%plain-app (~and op (~literal conjugate)) c:unboxed-inexact-complex-opt-expr)
            #:with real-binding #'c.real-binding
-           #:with imag-binding (unboxed-gensym)
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            (begin (log-optimization "unboxed unary inexact complex" #'op)
                   #`(#,@(append (syntax->list #'(c.bindings ...))
@@ -228,8 +235,8 @@
   (pattern (#%plain-app (~and op (~or (~literal make-rectangular)
                                       (~literal unsafe-make-flrectangular)))
                         real:float-coerce-expr imag:float-coerce-expr)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            (begin (log-optimization "make-rectangular elimination" #'op)
                   #'(((real-binding) real.opt)
@@ -238,8 +245,8 @@
                         r:float-coerce-expr theta:float-coerce-expr)
            #:with magnitude    (unboxed-gensym)
            #:with angle        (unboxed-gensym)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            (begin (log-optimization "make-rectangular elimination" #'op)
                   #'(((magnitude)    r.opt)
@@ -262,8 +269,8 @@
            #:when (let ((x (syntax->datum #'n)))
                     (and (number? x)
                          (not (eq? (imag-part x) 0))))
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            (let ((n (syntax->datum #'n)))
              #`(((real-binding) #,(datum->syntax
@@ -274,7 +281,7 @@
                                    (exact->inexact (imag-part n)))))))
   (pattern (quote n)
            #:when (real? (syntax->datum #'n))
-           #:with real-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding #f
            #:with (bindings ...)
            #`(((real-binding) #,(datum->syntax
@@ -284,23 +291,17 @@
   (pattern e:expr
            #:when (isoftype? #'e -InexactComplex)
            #:with e* (unboxed-gensym)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            #`(((e*) #,((optimize) #'e))
               ((real-binding) (unsafe-flreal-part e*))
               ((imag-binding) (unsafe-flimag-part e*))))
-  ;; special handling of reals
-  (pattern e:float-coerce-expr
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding #f
-           #:with (bindings ...)
-           #`(((real-binding) e.opt)))
   (pattern e:expr
            #:when (isoftype? #'e -Number) ; complex, maybe exact, maybe not
            #:with e* (unboxed-gensym)
-           #:with real-binding (unboxed-gensym)
-           #:with imag-binding (unboxed-gensym)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            #`(((e*) #,((optimize) #'e))
               ((real-binding) (exact->inexact (real-part e*)))
