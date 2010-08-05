@@ -464,6 +464,153 @@
       (ellipse 60 30 "solid" "purple"))
     'image
     "4e85791a5.png")
+   (list
+    '(underlay
+      (rectangle 90 80 "solid" "mediumseagreen")
+      (polygon
+       (list
+        (make-posn 0 0)
+        (make-posn 50 0)
+        (make-posn 0 50)
+        (make-posn 50 50))
+       "outline"
+       (make-pen "darkslategray" 10 "solid" "projecting" "miter")))
+    'image
+    "29b31e5fe3a.png")
+   (list
+    '(underlay
+      (rectangle 80 80 "solid" "mediumseagreen")
+      (polygon
+       (list
+        (make-posn 0 0)
+        (make-posn 50 0)
+        (make-posn 0 50)
+        (make-posn 50 50))
+       "outline"
+       (make-pen "darkslategray" 10 "solid" "round" "round")))
+    'image
+    "1aaa434b462.png")
+   (list
+    '(polygon
+      (list
+       (make-posn 0 0)
+       (make-posn 0 40)
+       (make-posn 20 40)
+       (make-posn 20 60)
+       (make-posn 40 60)
+       (make-posn 40 20)
+       (make-posn 20 20)
+       (make-posn 20 0))
+      "solid"
+      "plum")
+    'image
+    "150e1d5e9f.png")
+   (list
+    '(polygon
+      (list
+       (make-posn 0 0)
+       (make-posn -10 20)
+       (make-posn 60 0)
+       (make-posn -10 -20))
+      "solid"
+      "burlywood")
+    'image
+    "25354f2b84e.png")
+   (list '(regular-polygon 20 8 "solid" "red") 'image "268c974b9ab.png")
+   (list '(regular-polygon 40 4 "outline" "blue") 'image "957fe78565.png")
+   (list '(regular-polygon 50 3 "outline" "red") 'image "1325a6e7bdb.png")
+   (list '(radial-star 32 30 40 "outline" "black") 'image "1fdee89ec7d.png")
+   (list
+    '(radial-star 8 8 64 "solid" "darkslategray")
+    'image
+    "296a50fddcd.png")
+   (list
+    '(star-polygon 20 10 3 "solid" "cornflowerblue")
+    'image
+    "2cc717fb347.png")
+   (list '(star-polygon 40 7 3 "outline" "darkred") 'image "2330a222ac0.png")
+   (list '(star-polygon 40 5 2 "solid" "seagreen") 'image "24410dd26db.png")
+   (list '(star 40 "solid" "gray") 'image "b32ce6fcc5.png")
+   (list '(rhombus 80 150 "solid" "mediumpurple") 'image "24365c877d4.png")
+   (list '(rhombus 40 45 "solid" "magenta") 'image "5ec4a0cb1f.png")
+   (list '(rectangle 20 40 "solid" "blue") 'image "16a631adf1e.png")
+   (list '(rectangle 40 20 "outline" "black") 'image "10735f73f78.png")
+   (list '(square 50 "outline" "darkmagenta") 'image "89a0d469a7.png")
+   (list '(square 40 "solid" "slateblue") 'image "d417a51b4.png")
+   (list
+    '(triangle/saa 40 130 40 "solid" "lightseagreen")
+    'image
+    "29111c62eed.png")
+   (list
+    '(triangle/saa 200 90 40 "solid" "aquamarine")
+    'image
+    "2d67c4219ef.png")
+   (list '(triangle/saa 200 10 40 "solid" "seagreen") 'image "206013002a2.png")
+   (list
+    '(triangle/asa 130 40 40 "solid" "lightseagreen")
+    'image
+    "13eea8b3b80.png")
+   (list
+    '(triangle/asa 90 200 40 "solid" "aquamarine")
+    'image
+    "2271196b15b.png")
+   (list '(triangle/asa 10 200 40 "solid" "seagreen") 'image "22fbf40600e.png")
+   (list
+    '(triangle/aas 130 40 40 "solid" "lightseagreen")
+    'image
+    "1f26a552687.png")
+   (list
+    '(triangle/aas 90 40 200 "solid" "aquamarine")
+    'image
+    "3c0f55df6a.png")
+   (list '(triangle/aas 10 40 200 "solid" "seagreen") 'image "292cf6346d5.png")
+   (list
+    '(triangle/ssa 60 100 130 "solid" "lightseagreen")
+    'image
+    "12edc94e350.png")
+   (list
+    '(triangle/ssa 60 100 90 "solid" "aquamarine")
+    'image
+    "2c71196b3ab.png")
+   (list '(triangle/ssa 60 100 10 "solid" "seagreen") 'image "c8e97cf30.png")
+   (list
+    '(triangle/sas 60 130 100 "solid" "lightseagreen")
+    'image
+    "a02df8e22.png")
+   (list
+    '(triangle/sas 60 90 100 "solid" "aquamarine")
+    'image
+    "f233eb8f49.png")
+   (list '(triangle/sas 60 10 100 "solid" "seagreen") 'image "25525fabc0.png")
+   (list
+    '(triangle/ass 130 60 100 "solid" "lightseagreen")
+    'image
+    "2a40f482a67.png")
+   (list
+    '(triangle/ass 90 60 100 "solid" "aquamarine")
+    'image
+    "13d2f555f6a.png")
+   (list '(triangle/ass 10 60 100 "solid" "seagreen") 'image "11de2af7edc.png")
+   (list
+    '(triangle/sss 60 80 100 "solid" "lightseagreen")
+    'image
+    "17bcc9ddde9.png")
+   (list '(triangle/sss 80 60 20 "solid" "aquamarine") 'image "20e0d5dcf9.png")
+   (list '(triangle/sss 40 60 80 "solid" "seagreen") 'image "ed23c3c3ed.png")
+   (list
+    '(isosceles-triangle 60 330 "solid" "lightseagreen")
+    'image
+    "138792ad221.png")
+   (list
+    '(isosceles-triangle 60 30 "solid" "aquamarine")
+    'image
+    "d47072011e.png")
+   (list
+    '(isosceles-triangle 200 170 "solid" "seagreen")
+    'image
+    "2dde939d6dc.png")
+   (list '(right-triangle 36 48 "solid" "black") 'image "1a0088e3819.png")
+   (list '(triangle 40 "solid" "tan") 'image "aeddf66d5d.png")
    (list '(bitmap icons/b-run.png) 'image "13aef4074e9.png")
    (list '(bitmap icons/stop-16x16.png) 'image "72aef3dc67.png")
    (list
@@ -567,168 +714,6 @@
    (list '(line 30 -20 "red") 'image "12948ac080d.png")
    (list '(line -30 20 "red") 'image "69aaaa680d.png")
    (list '(line 30 30 "black") 'image "8e1ebaaf82.png")
-   (list
-    '(underlay
-      (rectangle 90 80 "solid" "mediumseagreen")
-      (polygon
-       (list
-        (make-posn 0 0)
-        (make-posn 50 0)
-        (make-posn 0 50)
-        (make-posn 50 50))
-       "outline"
-       (make-pen "darkslategray" 10 "solid" "projecting" "miter")))
-    'image
-    "29b31e5fe3a.png")
-   (list
-    '(underlay
-      (rectangle 80 80 "solid" "mediumseagreen")
-      (polygon
-       (list
-        (make-posn 0 0)
-        (make-posn 50 0)
-        (make-posn 0 50)
-        (make-posn 50 50))
-       "outline"
-       (make-pen "darkslategray" 10 "solid" "round" "round")))
-    'image
-    "1aaa434b462.png")
-   (list
-    '(polygon
-      (list
-       (make-posn 0 0)
-       (make-posn 0 40)
-       (make-posn 20 40)
-       (make-posn 20 60)
-       (make-posn 40 60)
-       (make-posn 40 20)
-       (make-posn 20 20)
-       (make-posn 20 0))
-      "solid"
-      "plum")
-    'image
-    "150e1d5e9f.png")
-   (list
-    '(polygon
-      (list
-       (make-posn 0 0)
-       (make-posn -10 20)
-       (make-posn 60 0)
-       (make-posn -10 -20))
-      "solid"
-      "burlywood")
-    'image
-    "25354f2b84e.png")
-   (list '(radial-star 32 30 40 "outline" "black") 'image "1fdee89ec7d.png")
-   (list
-    '(radial-star 8 8 64 "solid" "darkslategray")
-    'image
-    "296a50fddcd.png")
-   (list
-    '(star-polygon 20 10 3 "solid" "cornflowerblue")
-    'image
-    "2cc717fb347.png")
-   (list '(star-polygon 40 7 3 "outline" "darkred") 'image "2330a222ac0.png")
-   (list '(star-polygon 40 5 2 "solid" "seagreen") 'image "24410dd26db.png")
-   (list '(star 40 "solid" "gray") 'image "b32ce6fcc5.png")
-   (list '(regular-polygon 20 8 "solid" "red") 'image "268c974b9ab.png")
-   (list '(regular-polygon 40 4 "outline" "blue") 'image "957fe78565.png")
-   (list '(regular-polygon 50 3 "outline" "red") 'image "1325a6e7bdb.png")
-   (list '(rhombus 80 150 "solid" "mediumpurple") 'image "24365c877d4.png")
-   (list '(rhombus 40 45 "solid" "magenta") 'image "5ec4a0cb1f.png")
-   (list '(rectangle 20 40 "solid" "blue") 'image "16a631adf1e.png")
-   (list '(rectangle 40 20 "outline" "black") 'image "10735f73f78.png")
-   (list '(square 50 "outline" "darkmagenta") 'image "89a0d469a7.png")
-   (list '(square 40 "solid" "slateblue") 'image "d417a51b4.png")
-   (list
-    '(triangle/saa 200 130 40 "solid" "lightseagreen")
-    'image
-    "6f8f1b6543.png")
-   (list
-    '(triangle/saa 200 90 40 "solid" "aquamarine")
-    'image
-    "2d67c4219ef.png")
-   (list '(triangle/saa 200 10 40 "solid" "seagreen") 'image "206013002a2.png")
-   (list
-    '(triangle/asa 130 200 40 "solid" "lightseagreen")
-    'image
-    "eb983f1874.png")
-   (list
-    '(triangle/asa 90 200 40 "solid" "aquamarine")
-    'image
-    "2271196b15b.png")
-   (list '(triangle/asa 10 200 40 "solid" "seagreen") 'image "22fbf40600e.png")
-   (list
-    '(triangle/aas 130 40 200 "solid" "lightseagreen")
-    'image
-    "3a33de5a32.png")
-   (list
-    '(triangle/aas 90 40 200 "solid" "aquamarine")
-    'image
-    "3c0f55df6a.png")
-   (list '(triangle/aas 10 40 200 "solid" "seagreen") 'image "292cf6346d5.png")
-   (list
-    '(triangle/ssa 300 500 130 "solid" "lightseagreen")
-    'image
-    "1ce2f057282.png")
-   (list
-    '(triangle/ssa 300 500 90 "solid" "aquamarine")
-    'image
-    "1aea72997cc.png")
-   (list
-    '(triangle/ssa 300 500 10 "solid" "seagreen")
-    'image
-    "16c877168cb.png")
-   (list
-    '(triangle/sas 300 130 500 "solid" "lightseagreen")
-    'image
-    "e2d39b3ee5.png")
-   (list
-    '(triangle/sas 300 90 500 "solid" "aquamarine")
-    'image
-    "28fbf34134c.png")
-   (list
-    '(triangle/sas 300 10 500 "solid" "seagreen")
-    'image
-    "185481b843d.png")
-   (list
-    '(triangle/ass 130 300 500 "solid" "lightseagreen")
-    'image
-    "11f41037210.png")
-   (list
-    '(triangle/ass 90 300 500 "solid" "aquamarine")
-    'image
-    "1c2ca686e5c.png")
-   (list
-    '(triangle/ass 10 300 500 "solid" "seagreen")
-    'image
-    "2a876662e0e.png")
-   (list
-    '(triangle/sss 300 400 500 "solid" "lightseagreen")
-    'image
-    "e2d39b92b5.png")
-   (list
-    '(triangle/sss 400 300 100 "solid" "aquamarine")
-    'image
-    "28083dbe539.png")
-   (list
-    '(triangle/sss 200 300 400 "solid" "seagreen")
-    'image
-    "2a3953f3712.png")
-   (list
-    '(isosceles-triangle 60 330 "solid" "lightseagreen")
-    'image
-    "138792ad221.png")
-   (list
-    '(isosceles-triangle 60 30 "solid" "aquamarine")
-    'image
-    "d47072011e.png")
-   (list
-    '(isosceles-triangle 200 170 "solid" "seagreen")
-    'image
-    "2dde939d6dc.png")
-   (list '(right-triangle 36 48 "solid" "black") 'image "1a0088e3819.png")
-   (list '(triangle 40 "solid" "tan") 'image "aeddf66d5d.png")
    (list '(ellipse 20 40 "solid" "blue") 'image "25451dd2997.png")
    (list '(ellipse 40 20 "outline" "black") 'image "8cb34e62d4.png")
    (list '(circle 20 "solid" "blue") 'image "54d58bf7f6.png")
