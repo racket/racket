@@ -12,9 +12,8 @@
                  (lambda (x) #t)
                  (lambda (x y) #t)))))
   (void)
-  (let*-values (((unboxed-gensym-1) '0.0+0.0i)
-                ((unboxed-gensym-2) (unsafe-flreal-part unboxed-gensym-1))
-                ((unboxed-gensym-3) (unsafe-flimag-part unboxed-gensym-1)))
+  (let*-values (((unboxed-gensym-1) 0.0)
+                ((unboxed-gensym-2) 0.0))
     ((letrec-values
       (((for-loop)
         (lambda (unboxed-real-1 unboxed-imag-2 pos)
@@ -38,7 +37,7 @@
                     (unsafe-make-flrectangular unboxed-real-1 unboxed-imag-2)))
               (unsafe-make-flrectangular unboxed-real-1 unboxed-imag-2)))))
       for-loop)
+     unboxed-gensym-1
      unboxed-gensym-2
-     unboxed-gensym-3
      init)))
 (void)

@@ -13,5 +13,4 @@
          place-channel-recv
          place-channel?
          place?
-         place-channel-send/recv
-         place-channel->receiver-channel)
+         place-channel-send/recv)

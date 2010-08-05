@@ -88,6 +88,13 @@
   (pattern (~seq [k:keyword t:expr])
            #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
 
+(define-syntax-class non-keyword-ty
+  (pattern (k e:expr ...)
+           #:when (not (keyword? (syntax->datum #'k))))
+  (pattern t:expr
+           #:when (and (not (keyword? (syntax->datum #'t)))
+                       (not (syntax->list #'t)))))
+
 (define-syntax-class path-elem
   #:description "path element"
   #:literals (car cdr)
@@ -214,7 +221,7 @@
        (add-type-name-reference #'kw)
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
-      [(dom:expr ... rest:expr ddd:star kws:keyword-tys ... (~and kw t:->) rng)
+      [(dom:non-keyword-ty ... rest:non-keyword-ty ddd:star kws:keyword-tys ... (~and kw t:->) rng)
        (add-type-name-reference #'kw)
        (make-Function
         (list (make-arr
@@ -222,7 +229,7 @@
                (parse-values-type #'rng)
                #:rest (parse-type #'rest)
                #:kws (attribute kws.Keyword))))]
-      [(dom:expr ... rest:expr :ddd/bound (~and kw t:->) rng)
+      [(dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound (~and kw t:->) rng)
        (add-type-name-reference #'kw)
        (let* ([bnd (syntax-e #'bound)])
          (unless (bound-index? bnd)
@@ -236,7 +243,7 @@
                           (extend-tvars (list bnd)
                             (parse-type #'rest))
                           bnd))))]
-      [(dom:expr ... rest:expr _:ddd (~and kw t:->) rng)
+      [(dom:non-keyword-ty ... rest:non-keyword-ty _:ddd (~and kw t:->) rng)
        (add-type-name-reference #'kw)
        (let ([var (infer-index stx)])
          (make-Function
@@ -251,7 +258,7 @@
       (->* (map parse-type (syntax->list #'(dom ...)))
            (parse-values-type #'rng))]     |#
       ;; use expr to rule out keywords
-      [(dom:expr ... kws:keyword-tys ... (~and kw t:->) rng)
+      [(dom:non-keyword-ty ... kws:keyword-tys ... (~and kw t:->) rng)
        (add-type-name-reference #'kw)
       (let ([doms (for/list ([d (syntax->list #'(dom ...))])
                     (parse-type d))])

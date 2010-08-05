@@ -232,8 +232,20 @@
            #:with imag-binding (unboxed-gensym)
            #:with (bindings ...)
            (begin (log-optimization "make-rectangular elimination" #'op)
-                  #`(((real-binding) real.opt)
+                  #'(((real-binding) real.opt)
                      ((imag-binding) imag.opt))))
+  (pattern (#%plain-app (~and op (~literal make-polar))
+                        r:float-coerce-expr theta:float-coerce-expr)
+           #:with magnitude    (unboxed-gensym)
+           #:with angle        (unboxed-gensym)
+           #:with real-binding (unboxed-gensym)
+           #:with imag-binding (unboxed-gensym)
+           #:with (bindings ...)
+           (begin (log-optimization "make-rectangular elimination" #'op)
+                  #'(((magnitude)    r.opt)
+                     ((angle)        theta.opt)
+                     ((real-binding) (unsafe-fl* magnitude (unsafe-flcos angle)))
+                     ((imag-binding) (unsafe-fl* magnitude (unsafe-flsin angle))))))
 
   ;; if we see a variable that's already unboxed, use the unboxed bindings
   (pattern v:id
@@ -243,7 +255,32 @@
            #:with imag-binding (cadr (syntax->list #'unboxed-info))
            #:with (bindings ...) #'())
   
-  ;; else, do the unboxing here  
+  ;; else, do the unboxing here
+
+  ;; we can unbox literals right away
+  (pattern (quote n)
+           #:when (let ((x (syntax->datum #'n)))
+                    (and (number? x)
+                         (not (eq? (imag-part x) 0))))
+           #:with real-binding (unboxed-gensym)
+           #:with imag-binding (unboxed-gensym)
+           #:with (bindings ...)
+           (let ((n (syntax->datum #'n)))
+             #`(((real-binding) #,(datum->syntax
+                                   #'here
+                                   (exact->inexact (real-part n))))
+                ((imag-binding) #,(datum->syntax
+                                   #'here
+                                   (exact->inexact (imag-part n)))))))
+  (pattern (quote n)
+           #:when (real? (syntax->datum #'n))
+           #:with real-binding (unboxed-gensym)
+           #:with imag-binding #f
+           #:with (bindings ...)
+           #`(((real-binding) #,(datum->syntax
+                                 #'here
+                                 (exact->inexact (syntax->datum #'n))))))
+  
   (pattern e:expr
            #:when (isoftype? #'e -InexactComplex)
            #:with e* (unboxed-gensym)
@@ -307,6 +344,16 @@
            #:with opt
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
+
+  (pattern (~and exp (#%plain-app (~and op (~literal make-polar)) r theta))
+           #:when (isoftype? #'exp -InexactComplex)
+           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+           #:with opt
+           (begin (log-optimization "make-polar" #'op)
+                  (reset-unboxed-gensym)
+                  #'(let*-values (exp*.bindings ...)
+                      (unsafe-make-flrectangular exp*.real-binding
+                                                 exp*.imag-binding))))
 
   (pattern (~and e (#%plain-app op:id args:expr ...))
            #:with unboxed-info (dict-ref unboxed-funs-table #'op #f)

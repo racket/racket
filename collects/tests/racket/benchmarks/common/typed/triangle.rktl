@@ -13,28 +13,28 @@
 
 ;;; TRIANG -- Board game benchmark.
 
-(: *board* (Vectorof Natural))
+(: *board* (Vectorof Integer))
 (define *board* (make-vector 16 1))
-(: *sequence* (Vectorof Natural))
+(: *sequence* (Vectorof Integer))
 (define *sequence* (make-vector 14 0))
-(: *a* (Vectorof Natural))
+(: *a* (Vectorof Integer))
 (define *a* (make-vector 37))
-(: *b* (Vectorof Natural))
+(: *b* (Vectorof Integer))
 (define *b* (make-vector 37))
-(: *c* (Vectorof Natural))
+(: *c* (Vectorof Integer))
 (define *c* (make-vector 37))
-(: *answer* (Listof (Listof Natural)))
+(: *answer* (Listof (Listof Integer)))
 (define *answer* '())
-(: *final* (Listof Natural))
+(: *final* (Listof Integer))
 (define *final* '())
 
-(: last-position ( -> Natural))
+(: last-position ( -> Integer))
 (define (last-position)
   (do ((i 1 (+ i 1)))
       ((or (= i 16) (= 1 (vector-ref *board* i)))
        (if (= i 16) 0 i))))
 
-(: ttry (Natural Natural -> Any))
+(: ttry (Integer Integer -> Any))
 (define (ttry i depth)
   (cond ((= depth 14)
          (let ((lp (last-position)))
@@ -59,27 +59,27 @@
          (vector-set! *board* (vector-ref *c* i) 0) '())
         (else #f)))
 
-(: gogogo (Natural -> Any))
+(: gogogo (Integer -> Any))
 (define (gogogo i)
   (let ((*answer* '())
         (*final* '()))
     (ttry i 1)))
  
-(for-each (lambda: ((i : Natural) (x : Natural)) (vector-set! *a* i x))
+(for-each (lambda: ((i : Integer) (x : Integer)) (vector-set! *a* i x))
           '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
             21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36)
           '(1 2 4 3 5 6 1 3 6 2 5 4 11 12
             13 7 8 4 4 7 11 8 12 13 6 10
             15 9 14 13 13 14 15 9 10
              6 6))
-(for-each (lambda: ((i : Natural) (x : Natural)) (vector-set! *b* i x))
+(for-each (lambda: ((i : Integer) (x : Integer)) (vector-set! *b* i x))
           '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
             21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36)
           '(2 4 7 5 8 9 3 6 10 5 9 8
             12 13 14 8 9 5 2 4 7 5 8
             9 3 6 10 5 9 8 12 13 14
             8 9 5 5))
-(for-each (lambda: ((i : Natural) (x : Natural)) (vector-set! *c* i x))
+(for-each (lambda: ((i : Integer) (x : Integer)) (vector-set! *c* i x))
           '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
             21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36)
           '(4 7 11 8 12 13 6 10 15 9 14 13
@@ -89,7 +89,7 @@
  
 ;;; call:  (gogogo 22))
  
-(time (let: loop : 'done ((n : Natural 1000000))
+(time (let: loop : 'done ((n : Integer 1000000))
         (if (zero? n)
             'done
             (begin

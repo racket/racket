@@ -27,6 +27,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (require "../utils/utils.rkt"
          racket/base
+         mzlib/etc
 	 (for-syntax 
           syntax/parse
 	  syntax/private/util
@@ -173,6 +174,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
                            'typechecker:plambda
                            #'(tvars ...))))]))
 
+(define-syntax (popt-lambda: stx)
+  (syntax-parse stx
+    [(popt-lambda: (tvars:id ...) formals . body)
+     (quasisyntax/loc stx
+       (#%expression
+        #,(syntax-property (syntax/loc stx (opt-lambda: formals . body))
+                           'typechecker:plambda
+                           #'(tvars ...))))]))
+
 (define-syntax (pdefine: stx)
   (syntax-parse stx #:literals (:)
     [(pdefine: (tvars:id ...) (nm:id . formals:annotated-formals) : ret-ty . body)
@@ -222,6 +232,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(case-lambda: [formals:annotated-formals . body] ...)
      (syntax/loc stx (case-lambda [formals.ann-formals . body] ...))]))
+
+(define-syntax (opt-lambda: stx)
+  (syntax-parse stx
+    [(opt-lambda: formals:opt-lambda-annotated-formals . body)
+     (syntax/loc stx (opt-lambda formals.ann-formals . body))]))
 
 (define-syntaxes (let-internal: let*: letrec:)
   (let ([mk (lambda (form)
@@ -436,7 +451,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (syntax-parse clauses
            [(head:for-clause next:for-clause ... #:when rest ...)
             (syntax-property
-             (quasisyntax/loc clauses
+             (quasisyntax/loc stx
                (for
                 (head.expand next.expand ...)
                 #,(loop #'(#:when rest ...))))
@@ -444,18 +459,18 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #'Void)]
            [(head:for-clause ...) ; we reached the end
             (syntax-property
-             (quasisyntax/loc clauses
+             (quasisyntax/loc stx
                (for
                 (head.expand ...)
                 #,@body))
              'type-ascription
              #'Void)]
            [(#:when guard) ; we end on a #:when clause
-            (quasisyntax/loc clauses
+            (quasisyntax/loc stx
               (when guard
                 #,@body))]
            [(#:when guard rest ...)
-            (quasisyntax/loc clauses
+            (quasisyntax/loc stx
               (when guard
                 #,(loop #'(rest ...))))])))]))
 
