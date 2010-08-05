@@ -3,18 +3,51 @@
          racket/pretty)
 
 (pretty-print
- (syntax->datum (expand-once
-                 #'(->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]))))
+ (syntax->datum 
+  (expand-once
+   #'(->i ([b (box/c integer?)]) 
+          [res (b) (λ (x) #f)]))))
+
+(pretty-print
+ (syntax->datum 
+  (expand-once
+   #'(->i ([b (box/c integer?)]) 
+          [res (λ (x) #f)]))))
+
 
 #;
 (pretty-print
  (syntax->datum (expand
                  #'(->i () [x integer?]))))
 
+(with-handlers ((values values))
+  ((contract (->i ([b any/c]) 
+                  [res (b) (λ (x) #f)])
+             (lambda (b) 1)
+             'pos 'neg)
+   1))
 
-((contract (->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda (#:x [x 1] . w) (cons x w)) 'pos 'neg)  2 3)
-;; => '(1 2 3)
 
+(with-handlers ((values values))
+  ((contract (->i ([b (box/c integer?)]) 
+                  [_ (b)
+                     (let ([v (unbox b)])
+                       (λ (x) 
+                         #f))])
+             (lambda (b) (set-box! b (+ (unbox b) 1)))
+             'pos 'neg)
+   (box 0)))
+
+(with-handlers ((values values))
+  ((contract (->i ([b (box/c integer?)]) 
+                  [res (b)
+                       (let ([v (unbox b)])
+                         (λ (x) 
+                           #f))])
+             (lambda (b) (set-box! b (+ (unbox b) 1)))
+             'pos 'neg)
+   (box 0)))
+;; => pos violation
 #|
 ;; timing tests:
 

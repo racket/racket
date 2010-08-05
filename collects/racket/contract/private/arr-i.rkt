@@ -75,7 +75,7 @@
                           partial-rngs
                           (->i-rng-dep-ctcs ctc)
                           partial-indy-rngs))))))
-   #:name (λ (ctc) '->i) ;; WRONG
+   #:name (λ (ctc) '(->i ...)) ;; WRONG
    #:first-order (λ (ctc) (λ (x) #f)) ;; WRONG
    #:stronger (λ (this that) #f))) ;; WRONG
 
@@ -253,7 +253,7 @@
 ;; adds nested lets that bind the wrapper-args and the indy-arg-vars to projected values, with 'body' in the body of the let
 ;; also handles adding code to checki to see if usupplied args are present (skipping the contract check, if so)
 ;; WRONG: need to rename the variables in this function from "arg" to "arg/res"
-(define-for-syntax (add-wrapper-let body 
+(define-for-syntax (add-wrapper-let body swapped-blame?
                                     ordered-args arg-indicies
                                     arg-proj-vars indy-arg-proj-vars 
                                     wrapper-args indy-arg-vars
@@ -286,20 +286,31 @@
                         arg
                         wrapper-arg
                         (if (arg/res-vars arg)
-                            #`(un-dep (#,arg-proj-var #,@(map arg/res-to-indy-var (arg/res-vars arg))) #,wrapper-arg indy-dom-blame)
+                            #`(un-dep (#,arg-proj-var #,@(map arg/res-to-indy-var (arg/res-vars arg))) #,wrapper-arg 
+                                      #,(if swapped-blame?
+                                            #'indy-dom-blame
+                                            #'indy-rng-blame))
                             #`(#,indy-arg-proj-var #,wrapper-arg)))])
                  (list))])
-        
         #`(let (#,@indy-binding
                 [#,wrapper-arg 
                  #,(add-unsupplied-check
                     arg
                     wrapper-arg
-                    (if (arg/res-vars arg)
-                        #`(un-dep (#,arg-proj-var #,@(map arg/res-to-indy-var (arg/res-vars arg))) #,wrapper-arg swapped-blame)
-                        #`(#,arg-proj-var #,wrapper-arg)))])
+                    (cond
+                      [(and (eres? arg) (arg/res-vars arg))
+                       #`(un-dep #,(arg/res-var arg) #,wrapper-arg
+                                 #,(if swapped-blame?
+                                       #'swapped-blame
+                                       #'blame))]
+                      [(arg/res-vars arg)
+                       #`(un-dep (#,arg-proj-var #,@(map arg/res-to-indy-var (arg/res-vars arg))) #,wrapper-arg 
+                                 #,(if swapped-blame?
+                                       #'swapped-blame
+                                       #'blame))]
+                      [else
+                       #`(#,arg-proj-var #,wrapper-arg)]))])
             #,body)))))
-
 
 (define-for-syntax (add-result-checks an-istx
                                       ordered-ress res-indicies
@@ -313,6 +324,7 @@
 
          #,(add-wrapper-let 
             (add-post-cond an-istx arg/res-to-indy-var #`(values #,@(vector->list wrapper-ress)))
+            #f
             ordered-ress res-indicies
             res-proj-vars indy-res-proj-vars 
             wrapper-ress indy-res-vars
@@ -320,6 +332,17 @@
     [else
      arg-call-stx]))
 
+(define-for-syntax (add-eres-lets an-istx res-proj-vars arg/res-to-indy-var stx)
+  (cond
+    [(ormap eres? (istx-ress an-istx))
+     (with-syntax ([(vars ...) (map arg/res-var (istx-ress an-istx))]
+                   [(rhs ...) (map (λ (res-proj-var res)
+                                     #`(#,res-proj-var #,@(map arg/res-to-indy-var (arg/res-vars res))))
+                                   (vector->list res-proj-vars)
+                                   (istx-ress an-istx))])
+       #`(let ([vars rhs] ...) #,stx))]
+    [else stx]))
+  
 (define-for-syntax (mk-wrapper-func an-istx used-indy-vars)
   (let ([args+rst (append (istx-args an-istx)
                           (if (istx-rst an-istx)
@@ -414,13 +437,18 @@
                     (add-pre-cond 
                      an-istx 
                      arg/res-to-indy-var 
-                     (add-result-checks
+                     (add-eres-lets
                       an-istx
-                      ordered-ress res-indicies
-                      res-proj-vars indy-res-proj-vars
-                      wrapper-ress indy-res-vars
+                      res-proj-vars
                       arg/res-to-indy-var
-                      (args/vars->callsite #'val (istx-args an-istx) (istx-rst an-istx) wrapper-args))) 
+                      (add-result-checks
+                       an-istx
+                       ordered-ress res-indicies
+                       res-proj-vars indy-res-proj-vars
+                       wrapper-ress indy-res-vars
+                       arg/res-to-indy-var
+                       (args/vars->callsite #'val (istx-args an-istx) (istx-rst an-istx) wrapper-args))))
+                    #t
                     ordered-args arg-indicies
                     arg-proj-vars indy-arg-proj-vars 
                     wrapper-args indy-arg-vars
