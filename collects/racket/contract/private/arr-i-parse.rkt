@@ -27,24 +27,20 @@ code does the parsing and validation of the syntax.
 ;;       but only temporarily; in that case, a syntax error
 ;;       is signaled and the istx struct is not used afterwards
 
-
-;; kwd  : (or/c #f syntax[kwd])
 ;; var  : identifier?
 ;; vars : (or/c #f (listof identifier?))
 ;; optional? : boolean?
-;; ctc  : syntax[expr]
-(struct arg (kwd var vars optional? ctc))
+(struct arg/res (var vars ctc) #:constructor-name ___do-not-use-this-constructor)
 
-;; var  : identifier?
-;; vars : (or/c #f (listof identifier?))
+;; kwd  : (or/c #f syntax[kwd])
 ;; ctc  : syntax[expr]
-(struct res (var vars ctc) #:constructor-name ___do-not-use-this-constructor)
+(struct arg arg/res (kwd optional?))
 
 ;; these represent res contracts that came from _s (and thus should be evaluated early)
-(struct eres res ())
+(struct eres arg/res ())
 
-;; these represent res contracts that came from _s (and thus should be evaluated later)
-(struct lres res ())
+;; these represent res contracts that do not come from _s (and thus should be evaluated later)
+(struct lres arg/res ())
 
 
 ;; var  : identifier?
@@ -106,7 +102,7 @@ code does the parsing and validation of the syntax.
     (define (not-range-bound arg-vars arg?)
       (when (istx-ress istx)
         (for ([arg-var (in-list arg-vars)])
-          (when (ormap (λ (a-res) (free-identifier=? (res-var a-res) arg-var))
+          (when (ormap (λ (a-res) (free-identifier=? (arg/res-var a-res) arg-var))
                        (istx-ress istx))
             (raise-syntax-error #f
                                 (if arg? 
@@ -118,7 +114,7 @@ code does the parsing and validation of the syntax.
     (for ([dom (in-list (istx-args istx))])
       (when (arg-kwd dom)
         (no-kwd-dups (arg-kwd dom)))
-      (no-var-dups (arg-var dom)))
+      (no-var-dups (arg/res-var dom)))
     
     ;; no dups in the ranges
     (when (istx-ress istx)
@@ -130,7 +126,7 @@ code does the parsing and validation of the syntax.
              (set! any-eres? #t)]
             [else 
              (set! all-eres? #f)
-             (no-var-dups (res-var res))]))
+             (no-var-dups (arg/res-var res))]))
         (when any-eres?
           (unless all-eres?
             (raise-syntax-error
@@ -146,7 +142,7 @@ code does the parsing and validation of the syntax.
     
     ;; dependent arg variables are all bound, but not to a range variable
     (for ([an-arg (in-list (istx-args istx))])
-      (let ([a-vars (arg-vars an-arg)])
+      (let ([a-vars (arg/res-vars an-arg)])
         (when a-vars
           (ensure-bound a-vars)
           (not-range-bound a-vars #t))))
@@ -160,8 +156,8 @@ code does the parsing and validation of the syntax.
     ;; dependent range variables are all bound.
     (when (istx-ress istx)
       (for ([a-res (in-list (istx-ress istx))])
-        (when (res-vars a-res)
-          (ensure-bound (res-vars a-res)))))
+        (when (arg/res-vars a-res)
+          (ensure-bound (arg/res-vars a-res)))))
     
     ;; post-condition variables are all bound
     (when (istx-post istx)
@@ -183,22 +179,19 @@ code does the parsing and validation of the syntax.
       (set! sp (cons from sp))
       (free-identifier-mapping-put! neighbors from '()))
     
-    (for ([an-arg (in-list (istx-args istx))])
-      (cond
-        [(arg-vars an-arg)
-         (for ([nvar (in-list (arg-vars an-arg))])
-           (link (arg-var an-arg) nvar))]
-        [else
-         (no-links (arg-var an-arg))]))
+    (define (handle-arg/ress arg/ress)
+      (for ([a-res (in-list arg/ress)])
+        (cond
+          [(arg/res-vars a-res)
+           (for ([nvar (in-list (arg/res-vars a-res))])
+             (link (arg/res-var a-res) nvar))]
+          [else
+           (no-links (arg/res-var a-res))])))
+    
+    (handle-arg/ress (istx-args istx))
     
     (when (istx-ress istx)
-      (for ([a-res (in-list (istx-ress istx))])
-        (cond
-          [(res-vars a-res)
-           (for ([nvar (in-list (res-vars a-res))])
-             (link (res-var a-res) nvar))]
-          [else
-           (no-links (res-var a-res))])))
+      (handle-arg/ress (istx-ress istx)))
     
     (let ([a-rst (istx-rst istx)])
       (when a-rst
@@ -246,25 +239,25 @@ code does the parsing and validation of the syntax.
        (keyword? (syntax-e #'kwd))
        (begin
          (check-id stx #'id)
-         (cons (arg #'kwd #'id #f optional? #'ctc-expr)
+         (cons (arg #'id #f #'ctc-expr #'kwd optional?)
                (loop #'rest)))]
       [(kwd [id (id2 ...) ctc-expr] . rest)
        (keyword? (syntax-e #'kwd))
        (begin
          (check-id stx #'id)
          (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-         (cons (arg #'kwd #'id (syntax->list #'(id2 ...)) optional? #'ctc-expr)
+         (cons (arg #'id (syntax->list #'(id2 ...)) #'ctc-expr #'kwd optional?)
                (loop #'rest)))]
       [([id ctc-expr] . rest)
        (begin
          (check-id stx #'id)
-         (cons (arg #f #'id #f optional? #'ctc-expr)
+         (cons (arg #'id #f #'ctc-expr #f optional?)
                (loop #'rest)))]
       [([id (id2 ...) ctc-expr] . rest)
        (begin
          (check-id stx #'id)
          (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-         (cons (arg #f #'id (syntax->list #'(id2 ...)) optional? #'ctc-expr)
+         (cons (arg #'id (syntax->list #'(id2 ...)) #'ctc-expr #f optional?)
                (loop #'rest)))]
       [() '()]
       [(a . rest)
@@ -405,7 +398,10 @@ code does the parsing and validation of the syntax.
 (provide
  parse-->i
  (struct-out istx)
- (struct-out res)
+ (struct-out arg/res)
  (struct-out arg)
+ (struct-out res)
+ (struct-out lres)
+ (struct-out eres)
  (struct-out rst)
  (struct-out pre/post))
