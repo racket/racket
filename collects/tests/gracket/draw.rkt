@@ -967,7 +967,7 @@
                       (send dc clear)
 
 		      (send dc set-alpha current-alpha)
-                      (send dc set-rotation current-rotation)
+                      (send dc set-rotation (- current-rotation))
                       (send dc set-initial-matrix (if current-skew?
                                                       (vector 1 0 0.2 1 3 0)
                                                       (vector 1 0 0 1 0 0)))

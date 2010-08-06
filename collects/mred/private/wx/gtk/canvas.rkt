@@ -312,15 +312,13 @@
 
     (define/private (reset-dc)
       (send dc reset-backing-retained)
-      (if auto-scroll?
-          (send dc reset-dc 
-                (if virtual-width
-                    (gtk_adjustment_get_value hscroll-adj)
-                    0)
-                (if virtual-height
-                    (gtk_adjustment_get_value vscroll-adj)
-                    0))
-          (void)))
+      (send dc set-auto-scroll
+            (if virtual-width
+                (gtk_adjustment_get_value hscroll-adj)
+                0)
+            (if virtual-height
+                (gtk_adjustment_get_value vscroll-adj)
+                0)))
 
     (define/override (internal-on-client-size w h)
       (reset-dc))

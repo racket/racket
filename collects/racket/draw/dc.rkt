@@ -245,8 +245,11 @@
     (define scroll-dy 0.0)
 
     (define/override (set-auto-scroll dx dy)
-      (set! scroll-dx (- dx))
-      (set! scroll-dy (- dy)))
+      (unless (and (= scroll-dx (- dx))
+                   (= scroll-dy (- dy)))
+        (set! scroll-dx (- dx))
+        (set! scroll-dy (- dy))
+        (reset-matrix)))
 
     (def/public (set-scale [real? sx] [real? sy])
       (unless (and (equal? scale-x sx)
@@ -974,7 +977,7 @@
                       (cond
                        [(and draw? (not next-s))
                         (g_object_unref layout)
-                        (void)]
+                        (when rotate? (cairo_restore cr))]
                        [else
                         (let ([logical (make-PangoRectangle 0 0 0 0)])
                           (pango_layout_get_extents layout #f logical)

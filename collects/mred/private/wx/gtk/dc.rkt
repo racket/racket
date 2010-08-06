@@ -33,29 +33,7 @@
         (values (unbox xb) (unbox yb))))
 
     (define/override (queue-backing-flush)
-      (send canvas queue-backing-flush))
-
-    (define suspend-count 0)
-    (define req #f)
-
-    (define/override (suspend-flush) 
-      (as-entry
-       (lambda ()
-         #;
-         (when (zero? suspend-count)
-           (set! req (request-flush-delay (send canvas get-cocoa-window))))
-         (set! suspend-count (add1 suspend-count))
-         (super suspend-flush))))
-
-    (define/override (resume-flush) 
-      (as-entry
-       (lambda ()
-         (set! suspend-count (sub1 suspend-count))
-         #;
-         (when (and (zero? suspend-count) req)
-           (cancel-flush-delay req)
-           (set! req #f))
-         (super resume-flush))))))
+      (send canvas queue-backing-flush))))
 
 (define (do-backing-flush canvas dc win)
   (send dc on-backing-flush

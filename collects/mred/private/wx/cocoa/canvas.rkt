@@ -264,7 +264,10 @@
 
     (define/public (fix-dc [refresh? #t])
       (when (dc . is-a? . dc%)
-        (send dc reset-backing-retained))
+        (send dc reset-backing-retained)
+        (send dc set-auto-scroll
+              (if auto-scroll? (scroll-pos h-scroller) 0)
+              (if auto-scroll? (scroll-pos v-scroller) 0)))
       (when refresh? (refresh)))
 
     (define/override (get-client-size xb yb)

@@ -29,7 +29,8 @@
   (class (dc-mixin bitmap-dc-backend%)
     (inherit call-with-cr-lock
              internal-get-bitmap
-             internal-set-bitmap)
+             internal-set-bitmap
+             reset-cr)
 
     (super-new)
 
@@ -91,6 +92,7 @@
               (internal-set-bitmap bm #t))
             (let ([cr (super get-cr)])
               (set! retained-cr cr)
+              (reset-cr cr)
               cr))))
 
     (define/override (release-cr cr)
