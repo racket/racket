@@ -89,7 +89,8 @@
   ;; opt/i : id opt/info syntax ->
   ;;         syntax syntax-list syntax-list (union syntax #f) (union syntax #f)
   (define (opt/i opt/info stx)
-    (syntax-case stx (if)
+    ;; the case dispatch here must match what top-level-unknown? is doing
+    (syntax-case stx ()
       [(ctc arg ...)
        (and (identifier? #'ctc) (opter #'ctc))
        ((opter #'ctc) opt/i opt/info stx)]
@@ -112,8 +113,30 @@
       [else
        (opt/unknown opt/i opt/info stx)]))
   
+  ;; top-level-unknown? : syntax -> boolean
+  ;; this must match what the function above is doing
+  (define (top-level-unknown? stx)
+    (syntax-case stx ()
+      [(ctc arg ...)
+       (and (identifier? #'ctc) (opter #'ctc))
+       #f]
+      [argless-ctc
+       (and (identifier? #'argless-ctc) (opter #'argless-ctc))
+       #f]
+      [(f arg ...)
+       (and (identifier? #'f) 
+            (syntax-parameter-value #'define/opt-recursive-fn)
+            (free-identifier=? (syntax-parameter-value #'define/opt-recursive-fn)
+                               #'f))
+       #f]
+      [else
+       #t]))
+  
   (syntax-case stx ()
-    [(_ e) #'(opt/c e ())]
+    [(_ e) 
+     (if (top-level-unknown? #'e)
+         #'e
+         #'(opt/c e ()))]
     [(_ e (opt-recursive-args ...))
      (let*-values ([(info) (make-opt/info #'ctc
                                           #'val
