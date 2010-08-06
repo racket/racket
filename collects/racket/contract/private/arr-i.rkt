@@ -306,7 +306,8 @@
                     wrapper-arg
                     (cond
                       [(and (eres? arg) (arg/res-vars arg))
-                       #`(un-dep #,(arg/res-var arg) #,wrapper-arg
+                       #`(un-dep #,(eres-eid arg) 
+                                 #,wrapper-arg
                                  #,(if swapped-blame?
                                        #'swapped-blame
                                        #'blame))]
@@ -341,14 +342,13 @@
 
 (define-for-syntax (add-eres-lets an-istx res-proj-vars arg/res-to-indy-var stx)
   (cond
-    ;; WRONG: this needs to use its own, new set of variables
     [(and (istx-ress an-istx)
-          (ormap eres? (istx-ress an-istx)))
+          (andmap eres? (istx-ress an-istx)))
      (for/fold ([body stx])
        ([an-arg/res (in-list (reverse (istx-ress an-istx)))]
         [res-proj-var (in-vector res-proj-vars (- (vector-length res-proj-vars) 1) -1 -1)])
        (if (arg/res-vars an-arg/res)
-           #`(let ([#,(arg/res-var an-arg/res) (#,res-proj-var #,@(map arg/res-to-indy-var (arg/res-vars an-arg/res)))])
+           #`(let ([#,(eres-eid an-arg/res) (#,res-proj-var #,@(map arg/res-to-indy-var (arg/res-vars an-arg/res)))])
                #,body)
            body))]
     [else stx]))

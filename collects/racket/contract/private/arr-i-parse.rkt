@@ -37,7 +37,9 @@ code does the parsing and validation of the syntax.
 (struct arg arg/res (kwd optional?))
 
 ;; these represent res contracts that came from _s (and thus should be evaluated early)
-(struct eres arg/res ())
+;; eid : identifier?  --- extra variable to be bound to the result 
+;;                    --- of evaluating the result contract early
+(struct eres arg/res (eid))
 
 ;; these represent res contracts that do not come from _s (and thus should be evaluated later)
 (struct lres arg/res ())
@@ -264,30 +266,38 @@ code does the parsing and validation of the syntax.
                    [[id ctc] 
                     (begin
                       (check-id stx #'id)
-                      ((if (free-identifier=? #'_ #'id) eres lres)
-                       #'id #f #'ctc))]
+                      (if (free-identifier=? #'_ #'id) 
+                          (eres #'id #f #'ctc (car (generate-temporaries '(eres))))
+                          (lres #'id #f #'ctc)))]
                    [[id (id2 ...) ctc]
                     (begin
                       (check-id stx #'id)
                       (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-                      ((if (free-identifier=? #'_ #'id) eres lres)
-                       #'id (syntax->list #'(id2 ...)) #'ctc))]
-                   [x (raise-syntax-error #f "expected binding pair" stx #'x)]))
+                      (if (free-identifier=? #'_ #'id) 
+                          (eres #'id (syntax->list #'(id2 ...)) #'ctc (car (generate-temporaries '(eres))))
+                          (lres #'id (syntax->list #'(id2 ...)) #'ctc)))]
+                   [(a ...)
+                    (let ([len (length (syntax->list #'(a ...)))])
+                      (unless (or (= 2 len) (= 3 len))
+                        (raise-syntax-error #f "wrong number of pieces in range portion of the contract, expected id+ctc" stx #'x))
+                      (raise-syntax-error #f "expected id+ctc in range portion of contract" stx #'x))]
+                   [x 
+                    (raise-syntax-error #f "expected id+ctc in range portion of contract" stx #'x)]))
           (syntax->list #'(ctc-pr ...)))]
     [any #f]
     [[_ ctc]
      (begin
-       (check-id stx #'id)
-       (list (eres #'id #f #'ctc)))]
+      (printf "eres.1\n")
+      (list (eres #'id #f #'ctc (car (generate-temporaries '(eres))))))]
     [[id ctc]
      (begin
        (check-id stx #'id)
        (list (lres #'id #f #'ctc)))]
     [[_ (id2 ...) ctc] 
      (begin
-       (check-id stx #'id)
+       (printf "eres.2\n")
        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-       (list (eres #'id (syntax->list #'(id2 ...)) #'ctc)))]
+       (list (eres #'id (syntax->list #'(id2 ...)) #'ctc (car (generate-temporaries '(eres))))))]
     [[id (id2 ...) ctc] 
      (begin
        (check-id stx #'id)

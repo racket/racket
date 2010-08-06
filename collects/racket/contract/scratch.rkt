@@ -1,25 +1,45 @@
 #lang racket/base
 (require racket/contract
-         racket/pretty
-         racket/class)
+         racket/pretty)
 
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i ([b (box/c integer?)])
-                        [_ (b)
-                           (let ((old (unbox b)))
-                             (and/c void? 
-                                    (λ (new) (= old (unbox b)))))]))))
+                 #'(->i ([i (box/c (listof integer?))])
+                        (values [_ (i)
+                                   (begin 
+                                     (set-box! i (cons 1 (unbox i)))
+                                     (λ (x) 
+                                       (set-box! i (cons 4 (unbox i)))
+                                       #t))]
+                                [_ (i)
+                                   (begin 
+                                     (set-box! i (cons 2 (unbox i)))
+                                     (λ (x) 
+                                       (set-box! i (cons 5 (unbox i)))
+                                       #t))])))))
 
-((contract (->i ([b (box/c integer?)])
-                [_ (b)
-                   (let ((old (unbox b)))
-                     (and/c void? 
-                            (λ (new) (= old (unbox b)))))])
-           (λ (b) (set-box! b (+ (unbox b) 1)))
-           (quote pos)
-           (quote neg))
- (box 1))
+
+(let ([b (box '())])
+  ((contract (->i ([i (box/c (listof integer?))])
+                  (values [_ (i)
+                             (begin 
+                               (set-box! i (cons 1 (unbox i)))
+                               (λ (x) 
+                                 (set-box! i (cons 4 (unbox i)))
+                                 #t))]
+                          [_ (i)
+                             (begin 
+                               (set-box! i (cons 2 (unbox i)))
+                               (λ (x) 
+                                 (set-box! i (cons 5 (unbox i)))
+                                 #t))]))
+             (λ (i) 
+               (set-box! i (cons 3 (unbox i)))
+               (values 2 2))
+             (quote pos)
+             (quote neg))
+   b)
+  (unbox b))
 ;; ==> 
 
 #|
@@ -215,5 +235,29 @@ test cases:
 
 ((contract (->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda (#:x [x 1] . w) (cons x w)) 'pos 'neg)  2 3)
 ;; => '(1 2 3)
+
+(let ([b (box '())])
+  ((contract (->i ([i (box/c (listof integer?))])
+                  (values [_ (i)
+                             (begin 
+                               (set-box! i (cons 1 (unbox i)))
+                               (λ (x) 
+                                 (set-box! i (cons 4 (unbox i)))
+                                 #t))]
+                          [_ (i)
+                             (begin 
+                               (set-box! i (cons 2 (unbox i)))
+                               (λ (x) 
+                                 (set-box! i (cons 5 (unbox i)))
+                                 #t))]))
+             (λ (i) 
+               (set-box! i (cons 3 (unbox i)))
+               (values 2 2))
+             (quote pos)
+             (quote neg))
+   b)
+  (unbox b))
+
+;; => '(5 4 3 2 1)
 
 |#
