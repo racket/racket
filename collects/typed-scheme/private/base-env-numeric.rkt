@@ -397,6 +397,7 @@
                     (-Real -Real . -> . N))]
 [expt (cl->* (-Nat -Nat . -> . -Nat)
              (-Integer -Nat . -> . -Integer)
+             (-Integer -Integer . -> . -ExactRational)
              (-Real -Integer . -> . -Real)
              (-InexactComplex -InexactComplex . -> . -InexactComplex)
              (N N . -> . N))]
