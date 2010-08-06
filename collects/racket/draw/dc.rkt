@@ -49,6 +49,7 @@
        (real? (vector-ref v 5))))
 
 (define substitute-fonts? (memq (system-type) '(macosx)))
+(define substitute-mapping (make-hasheq))
 
 ;; dc-backend : interface
 ;;
@@ -1026,8 +1027,17 @@
     (define/private (install-alternate-face ch layout font desc attrs context)
       (or
        (for/or ([face (in-list 
-                       ;; Hack: prefer Lucida Grande
-                       (cons "Lucida Grande" (get-face-list)))])
+                       (let ([v (hash-ref substitute-mapping (char->integer ch) #f)])
+                         (cond
+                          [(string? v) 
+                           ;; found previously
+                           (list v)]
+                          [v 
+                           ;; failed to find previously
+                           null]
+                          [else
+                           ;; Hack: prefer Lucida Grande
+                           (cons "Lucida Grande" (get-face-list))])))])
          (let ([desc (get-pango (make-object font%
                                              (send font get-point-size)
                                              face
@@ -1041,8 +1051,12 @@
                 (let ([attrs (send font get-pango-attrs)])
                   (pango_layout_set_font_description layout desc)
                   (when attrs (pango_layout_set_attributes layout attrs))
-                  (zero? (pango_layout_get_unknown_glyphs_count layout))))))
+                  (and (zero? (pango_layout_get_unknown_glyphs_count layout))
+                       (begin
+                         (hash-set! substitute-mapping (char->integer ch) face)
+                         #t))))))
        (begin
+         (hash-set! substitute-mapping (char->integer ch) #t)
          ;; put old desc & attrs back
          (pango_layout_set_font_description layout desc)
          (when attrs (pango_layout_set_attributes layout attrs)))))
