@@ -74,6 +74,9 @@ MA 02111-1307, USA. */
 #endif
 #endif
 
+/* To avoid unnecessary compiler dependencies, always defined: */
+#define _FORCE_INLINES
+
 #ifdef _SHORT_LIMB
 typedef unsigned int		mp_limb_t;
 typedef int			mp_limb_signed_t;
