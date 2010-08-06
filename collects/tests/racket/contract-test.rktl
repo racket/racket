@@ -30,6 +30,13 @@
     (test #t 
           'contract-error-test 
           (contract-eval `(with-handlers ((exn? (λ (x) (and (,exn-ok? x) #t)))) ,exp))))
+
+  (define (contract-syntax-error-test name exp [reg #rx""])
+    (test #t
+	  name
+	  (contract-eval `(with-handlers ((exn:fail:syntax? 
+					   (lambda (x) (and (regexp-match ,reg (exn-message x)) #t))))
+					 (eval ',exp)))))
   
   ;; test/spec-passed : symbol sexp -> void
   ;; tests a passing specification
@@ -1769,6 +1776,131 @@
 ;                  
 ;                  
 
+
+  
+  (test/spec-passed
+   '->i-stx-1
+   '(->i ([x (y) number?]
+	  [y number?])
+	 any))
+
+  (test/spec-passed
+   '->i-stx-2
+   (->i ()
+	(values [x (y) number?]
+		[y number?])))
+
+  (test/spec-passed
+   '->i-stx-3
+   (->i ()
+	#:rest [x number?]
+	[y (x) number?]))
+
+  (contract-syntax-error-test
+   '->i-stx4
+   '(->i (#:kwd1 [x number?]
+		 #:kwd2 [x number?])
+	 (values [y number?]
+		 [z number?])))
+
+  (contract-syntax-error-test
+   '->i-stx5
+   #'(->i (#:kwd1 [w number?]
+		  #:kwd1 [x number?])
+	  (values [y number?]
+		  [z number?])))
+
+  (contract-syntax-error-test
+   '->i-stx6
+   #'(->i (#:kwd1 [w number?]
+		  #:kwd2 [x number?])
+	  (values [y number?]
+		  [w number?])))
+
+  (contract-syntax-error-test
+   '->i-stx7
+   #'(->i (#:kwd1 [w number?]
+		  #:kwd2 [x number?])
+	  (values [y number?]
+		  [y number?])))
+
+  (contract-syntax-error-test
+   '->i-stx8
+   #'(->i (#:kwd1 [w number?]
+		  #:kwd2 [x number?])
+	  (values [y number?]
+		  [w number?])))
+
+  (contract-syntax-error-test
+   '->i-stx10
+   #'(->i (#:kwd1 [x number?]
+		  #:kwd2 [y number?])
+	  [x number?]))
+
+  (contract-syntax-error-test
+   '->i-stx11
+   #'(->i (#:kwd1 [x number?]
+		  #:kwd2 [y number?])
+	  #:rest [x any/c]
+	  any))
+
+  (contract-syntax-error-test
+   '->i-stx12
+   #'(let ([c integer?])
+       (->i ((arg any/c)) () (values (_ (arg) c) (x (arg) c) (_ (arg) c)))))
+
+  (contract-syntax-error-test
+   '->i-stx13
+   #'(->i ([x (y) number?])
+	  any))
+
+  (contract-syntax-error-test
+   '->i-stx14
+   #'(->i ([x number?]) #:pre (y) #t any))
+
+  (contract-syntax-error-test
+   '->i-stx15
+   #'(->i ([x number?]) #:pre (x) #t [res any/c] #:post (y) #t))
+
+  (contract-syntax-error-test
+   '->i-stx16
+   #'(->i ([x (y) number?])
+	  [y number?]))
+
+  (contract-syntax-error-test
+   '->i-stx17
+   #'(->i ()
+	  #:rest [x (y) number?]
+	  [y number?]))
+
+  (contract-syntax-error-test
+   '->i-stx18
+   #'(->i ([x number?]) #:pre (res) #t [res any/c] #:post (x) #t))
+
+  (contract-syntax-error-test
+   '->i-stx19
+   #'(->i ([x (x) number?])
+	  any))
+
+  (contract-syntax-error-test
+   '->i-stx20
+   #'(->i ([x (y) number?]
+	   [y (x) number?])
+	  any))
+
+  (contract-syntax-error-test
+   '->i-stx21
+   #'(->i ([in number?])
+	  (values [x (y) number?]
+		  [y (z) number?]
+		  [z (x) number?])))
+
+  (contract-syntax-error-test
+   '->i-stx22
+   #'(->i ()
+	  #:rest [x (x) number?]
+	  any))
+
   (test/spec-passed
    '->i1
    '((contract (->i () () [x number?]) (lambda () 1) 'pos 'neg)))
@@ -2148,6 +2280,89 @@
                'neg)
      #f))
   
+  (test/spec-passed/result
+   '->i34
+   '((contract (->i ([x number?]
+		     [y (x z) (between/c x z)]
+		     [z number?])
+		    any)
+	       (λ (x y z) (+ x y z))
+	       'pos 'neg)
+     1 2 3)
+   6)
+
+  (test/neg-blame
+   '->i35
+   '((contract (->i ([x number?]) #:pre () (= 1 2) any)
+	       (λ (x) 1)
+	       'pos 'neg) 2))
+
+  (test/spec-passed/result
+   '->i36
+   '((contract (->i ([f (-> number? number?)]) [res number?])
+	       (λ (f) (f 1))
+	       'pos 'neg) 
+     (λ (n) (+ n 1)))
+   2)
+
+  (test/pos-blame
+   '->i37
+   '((contract (->i ([f (-> number? number?)]) [res number?])
+	       (λ (f) #f)
+	       'pos 'neg) 
+     (λ (n) (+ n 1))))
+  
+  (test/spec-passed/result
+   '->i38
+   '((contract (->i ([x integer?]) () #:rest [rst (listof number?)] [r any/c]) (lambda w w) 'pos 'neg) 
+     1 2)
+   '(1 2))
+
+  (test/spec-passed/result
+   '->i39
+   '((contract (->i (#:x [x integer?]) () #:rest [rst (listof number?)] [r any/c]) (lambda (#:x x . w) (cons x w)) 'pos 'neg) #:x 1 2)
+   '(1 2))
+
+  (test/spec-passed/result
+   '->i40
+   '((contract (->i () ([x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda w w) 'pos 'neg) 1 2)
+   '(1 2))
+
+  (test/spec-passed/result
+   '->i41
+   '((contract (->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda (#:x [x 1] . w) (cons x w)) 'pos 'neg) #:x 2 3)
+   '(2 3))
+
+  (test/spec-passed/result
+   '->i42
+   '((contract (->i () (#:x [x integer?]) #:rest [rst (listof number?)] [r any/c]) (lambda (#:x [x 1] . w) (cons x w)) 'pos 'neg)  2 3)
+   '(1 2 3))
+
+  (test/spec-passed/result
+   '->i43
+   '(let ([b (box '())])
+      ((contract (->i ([i (box/c (listof integer?))])
+		      (values [_ (i)
+				 (begin 
+				   (set-box! i (cons 1 (unbox i)))
+				   (λ (x) 
+				      (set-box! i (cons 4 (unbox i)))
+				      #t))]
+			      [_ (i)
+				 (begin 
+				   (set-box! i (cons 2 (unbox i)))
+				   (λ (x) 
+				      (set-box! i (cons 5 (unbox i)))
+				      #t))]))
+		 (λ (i) 
+		    (set-box! i (cons 3 (unbox i)))
+		    (values 2 2))
+		 (quote pos)
+		 (quote neg))
+       b)
+      (unbox b))
+   '(5 4 3 2 1))
+
   (test/pos-blame
    '->i-arity1
    '(contract (->i ([x number?]) () any) (λ () 1) 'pos 'neg))
