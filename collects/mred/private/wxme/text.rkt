@@ -5042,16 +5042,23 @@
 
                       (send dc set-clipping-rect (- left x) (- top y) width height)
 
-                      (do-redraw dc top bottom left right (- y) (- x) show-caret show-xsel? bg-color)
+                      (send dc suspend-flush)
 
-                      (send dc set-clipping-region rgn)
+                      (dynamic-wind
+                          void
+                          (lambda ()
+                            (do-redraw dc top bottom left right (- y) (- x) show-caret show-xsel? bg-color))
+                          (lambda ()
+                            (send dc set-clipping-region rgn)
+                            
+                            (send dc set-brush brush)
+                            (send dc set-pen pen)
+                            (send dc set-font font)
+                            (send dc set-text-foreground fg)
+                            (send dc set-text-background bg)
+                            (send dc set-text-mode bgmode)
 
-                      (send dc set-brush brush)
-                      (send dc set-pen pen)
-                      (send dc set-font font)
-                      (send dc set-text-foreground fg)
-                      (send dc set-text-background bg)
-                      (send dc set-text-mode bgmode))))))
+                            (send dc resume-flush))))))))
 
           (end-sequence-lock)))]))
   

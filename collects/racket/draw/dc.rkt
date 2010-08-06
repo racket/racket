@@ -458,6 +458,9 @@
     (def/public (get-text-background) text-bg)
     (def/public (get-background) bg)
 
+    (def/public (suspend-flush) (void))
+    (def/public (resume-flush) (void))
+
     (def/public (set-text-mode [(symbol-in solid transparent) mode])
       (set! text-mode mode))
     (def/public (get-text-mode) text-mode)

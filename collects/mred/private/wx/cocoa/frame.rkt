@@ -55,12 +55,14 @@
       (when wx
         (set! front wx)
         (send wx install-mb)
+        (send wx notify-responder #t)
         (queue-window-event wx (lambda ()
                                  (send wx on-activate #t))))]
   [-a _void (windowDidResignMain: [_id notification])
       (when wx
         (when (eq? front wx) (set! front #f))
         (send empty-mb install)
+        (send wx notify-responder #f)
         (queue-window-event wx (lambda ()
                                  (send wx on-activate #f))))])
 
@@ -150,6 +152,8 @@
     (define/override (get-wx-window) this)
 
     (define/override (make-graphics-context)
+      (tell cocoa graphicsContext)
+      #;
       (as-objc-allocation
        (tell NSGraphicsContext graphicsContextWithWindow: cocoa)))
 
@@ -256,6 +260,28 @@
       #t)
 
     (define/override (is-view?) #f)
+
+    (define is-main? #f)
+    (define first-responder #f)
+
+    (define/public (notify-responder on?)
+      (set! is-main? on?)
+      (when first-responder
+        (do-notify-responder first-responder on?)))
+
+    (define/private (do-notify-responder wx on?)
+      (send wx focus-is-on on?)
+      (queue-window-event wx
+                          (if on?
+                              (lambda () (send wx on-set-focus))
+                              (lambda () (send wx on-kill-focus)))))
+
+    (define/override (is-responder wx on?)
+      (if on?
+          (set! first-responder wx)
+          (set! first-responder #f))
+      (when is-main?
+        (do-notify-responder wx on?)))
 
     (define/public (flip-screen y)
       (let ([f (tell #:type _NSRect (tell cocoa screen) frame)])

@@ -1,16 +1,19 @@
 #lang racket/base
-(require ffi/unsafe/objc
+(require racket/class
          ffi/unsafe
-         racket/class
-         "utils.rkt"
-         "types.rkt"
+         ffi/unsafe/objc
          racket/draw/cairo
-         racket/draw/dc
          racket/draw/local
+         "types.rkt"
+         "utils.rkt"
+         "window.rkt"
+         "../../lock.rkt"
          "../common/queue.rkt"
-         "../../syntax.rkt")
+         "../common/backing-dc.rkt")
 
 (provide dc%
+         do-backing-flush
+
          _CGContextRef
          CGContextSetRGBFillColor
          CGContextFillRect
@@ -19,79 +22,79 @@
          CGContextAddLines)
 
 (define _CGContextRef (_cpointer 'CGContextRef))
+(define-appserv CGContextSynchronize (_fun _CGContextRef -> _void))
 (define-appserv CGContextTranslateCTM (_fun _CGContextRef _CGFloat _CGFloat -> _void))
 (define-appserv CGContextScaleCTM (_fun _CGContextRef _CGFloat _CGFloat -> _void))
-(define-appserv CGContextFlush (_fun _CGContextRef -> _void))
+(define-appserv CGContextSaveGState (_fun _CGContextRef -> _void))
+(define-appserv CGContextRestoreGState (_fun _CGContextRef -> _void))
 (define-appserv CGContextSetRGBFillColor (_fun _CGContextRef _CGFloat _CGFloat _CGFloat _CGFloat -> _void))
 (define-appserv CGContextFillRect (_fun _CGContextRef _NSRect -> _void))
 (define-appserv CGContextAddRect (_fun _CGContextRef _NSRect -> _void))
 (define-appserv CGContextAddLines (_fun _CGContextRef (v : (_vector i _NSPoint)) (_long = (vector-length v)) -> _void))
 (define-appserv CGContextStrokePath (_fun _CGContextRef -> _void))
-(define-appserv CGContextConvertPointToUserSpace (_fun  _CGContextRef _NSPoint -> _NSPoint))
-(define-appserv CGContextConvertSizeToUserSpace (_fun  _CGContextRef _NSSize -> _NSSize))
-
-(define dc-backend%
-  (class* default-dc-backend% (dc-backend<%>)
-    (init context dx dy width height -get-virtual-size)
-    (super-new)
-
-    (inherit reset-cr set-auto-scroll)
-
-    (define the-context context) ;; retain as long as we need `cg'
-    (define cg (tell #:type _CGContextRef context graphicsPort))
-
-    (define old-dx 0)
-    (define old-dy 0)
-
-    (define/private (set-bounds dx dy width height)
-      (set! old-dx dx)
-      (set! old-dy (+ dy height))
-      (CGContextTranslateCTM cg old-dx old-dy)
-      (CGContextScaleCTM cg 1 -1)
-      (let ([surface (cairo_quartz_surface_create_for_cg_context cg width height)])
-        (set! cr (cairo_create surface))
-        (cairo_surface_destroy surface))
-      (set! clip-width width)
-      (set! clip-height height)
-      (reset-clip cr))
-
-    (define clip-width width)
-    (define clip-height height)
-
-    (define/override (reset-clip cr)
-      (super reset-clip cr)
-      (let ([m (make-cairo_matrix_t 0 0 0 0 0 0)])
-        (cairo_get_matrix cr m)
-        (cairo_set_matrix cr (make-cairo_matrix_t 1 0 0 1 0 0))
-        (cairo_rectangle cr 0 0 clip-width clip-height)
-        (cairo_clip cr)
-        (cairo_set_matrix cr m)))
-
-    (define cr #f)
-    (set-bounds dx dy width height)
-
-    (define/public (reset-bounds dx dy width height auto-dx auto-dy)
-      (let ([old-cr cr])
-        (when old-cr
-          (set! cr #f)
-          (cairo_destroy old-cr)))
-      (set-auto-scroll auto-dx auto-dy)
-      (CGContextScaleCTM cg 1 -1)
-      (CGContextTranslateCTM cg (- old-dx) (- old-dy))
-      (set-bounds dx dy width height)
-      (reset-cr cr))
-
-    (define get-virtual-size -get-virtual-size)
-    (def/override (get-size)
-      (let-values ([(w h) (get-virtual-size)])
-        (values (exact->inexact w)
-                (exact->inexact h))))
-
-    (define/override (get-cr) cr)
-    
-    (define/override (flush-cr)
-      (add-event-boundary-sometimes-callback! cg CGContextFlush))))
 
 (define dc%
-  (dc-mixin dc-backend%))
+  (class backing-dc%
+    (init [(cnvs canvas)])
+    (define canvas cnvs)
 
+    (super-new)
+
+    (define/override (get-backing-size xb yb)
+      (send canvas get-backing-size xb yb))
+
+    (define/override (get-size)
+      (let ([xb (box 0)]
+            [yb (box 0)])
+        (send canvas get-virtual-size xb yb)
+        (values (unbox xb) (unbox yb))))
+
+    (define/override (queue-backing-flush)
+      (send canvas queue-backing-flush))
+
+    (define suspend-count 0)
+    (define req #f)
+
+    (define/override (suspend-flush) 
+      (as-entry
+       (lambda ()
+         (when (zero? suspend-count)
+           (set! req (request-flush-delay (send canvas get-cocoa-window))))
+         (set! suspend-count (add1 suspend-count))
+         (super suspend-flush))))
+
+    (define/override (resume-flush) 
+      (as-entry
+       (lambda ()
+         (set! suspend-count (sub1 suspend-count))
+         (when (and (zero? suspend-count) req)
+           (cancel-flush-delay req)
+           (set! req #f))
+         (super resume-flush))))))
+
+(define (do-backing-flush canvas dc ctx dx dy)
+  (tellv ctx saveGraphicsState)
+  (begin0
+   (send dc on-backing-flush
+         (lambda (bm)
+           (let ([w (box 0)]
+                 [h (box 0)])
+             (send canvas get-client-size w h)
+             (let ([cg (tell #:type _CGContextRef ctx graphicsPort)])
+               (unless (send canvas is-flipped?)
+                 (CGContextTranslateCTM cg 0 (unbox h))
+                 (CGContextScaleCTM cg 1 -1))
+               (CGContextTranslateCTM cg dx dy)
+               (let* ([surface (cairo_quartz_surface_create_for_cg_context cg (unbox w) (unbox h))]
+                      [cr (cairo_create surface)])
+                 (cairo_surface_destroy surface)
+                 (let ([s (cairo_get_source cr)])
+                   (cairo_pattern_reference s)
+                   (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
+                   (cairo_new_path cr)
+                   (cairo_rectangle cr 0 0 (unbox w) (unbox h))
+                   (cairo_fill cr)
+                   (cairo_set_source cr s)
+                   (cairo_pattern_destroy s))
+                 (cairo_destroy cr))))))
+   (tellv ctx restoreGraphicsState)))

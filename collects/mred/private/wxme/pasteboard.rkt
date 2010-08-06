@@ -1340,18 +1340,25 @@
                         [bgmode (send dc get-text-mode)]
                         [rgn (send dc get-clipping-region)])
 
+                    (send dc suspend-flush)
+
                     (send dc set-clipping-rect (- left x) (- top y) width height)
-
-                    (draw dc (- x) (- y) left top width height show-caret bg-color)
-
-                    (send dc set-clipping-region rgn)
-
-                    (send dc set-brush brush)
-                    (send dc set-pen pen)
-                    (send dc set-font font)
-                    (send dc set-text-foreground fg)
-                    (send dc set-text-background bg)
-                    (send dc set-text-mode bgmode)))))
+                    
+                    (dynamic-wind
+                        void
+                        (lambda ()
+                          (draw dc (- x) (- y) left top width height show-caret bg-color))
+                        (lambda ()
+                          (send dc set-clipping-region rgn)
+                          
+                          (send dc set-brush brush)
+                          (send dc set-pen pen)
+                          (send dc set-font font)
+                          (send dc set-text-foreground fg)
+                          (send dc set-text-background bg)
+                          (send dc set-text-mode bgmode)
+                          
+                          (send dc resume-flush)))))))
 
           (end-sequence-lock)))]))
   ;; ----------------------------------------

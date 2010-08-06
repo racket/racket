@@ -7,6 +7,7 @@
          "const.rkt"
          "types.rkt"
          "keycode.rkt"
+         "../../lock.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
          "../../syntax.rkt"
@@ -15,9 +16,13 @@
 (objc-unsafe!)
 
 (provide window%
-         queue-window-event
+
          FocusResponder
-         KeyMouseResponder)
+         KeyMouseResponder
+
+         queue-window-event
+         request-flush-delay
+         cancel-flush-delay)
 
 (define-local-member-name flip-client)
 
@@ -30,16 +35,12 @@
   [-a _BOOL (becomeFirstResponder)
       (and (super-tell becomeFirstResponder)
            (begin
-             (send wx focus-is-on #t)
-             (queue-window-event wx (lambda ()
-                                      (send wx on-set-focus)))
+             (send wx is-responder wx #t)
              #t))]
   [-a _BOOL (resignFirstResponder)
       (and (super-tell resignFirstResponder)
            (begin
-             (send wx focus-is-on #f)
-             (queue-window-event wx (lambda ()
-                                      (send wx on-kill-focus)))
+             (send wx is-responder wx #f)
              #t))])
 
 (define-objc-mixin (KeyMouseResponder Superclass)
@@ -177,7 +178,11 @@
     (unless no-show?
       (show #t)) 
 
-    (define/public (focus-is-on on?) (void))
+    (define/public (focus-is-on on?)
+      (void))
+
+    (define/public (is-responder wx on?)
+      (send parent is-responder wx on?))
 
     (define/public (get-cocoa) cocoa)
     (define/public (get-cocoa-content) cocoa)
@@ -384,5 +389,37 @@
     
     (def/public-unimplemented centre)))
 
+
+;; ----------------------------------------
+
 (define (queue-window-event win thunk)
   (queue-event (send win get-eventspace) thunk))
+
+(define depth 0)
+
+(define (request-flush-delay cocoa-win)
+  (as-entry
+   (lambda ()
+     (let ([req (box cocoa-win)])
+       (set! depth (add1 depth))
+       (tellv cocoa-win disableFlushWindow)
+       (add-event-boundary-sometimes-callback! 
+        req
+        (lambda (v) 
+          ;; in atomic mode
+          (when (unbox req) 
+            (set-box! req #f)
+            (set! depth (sub1 depth))
+            (tellv cocoa-win enableFlushWindow)
+            (tellv cocoa-win flushWindow))))
+       req))))
+
+(define (cancel-flush-delay req)
+  (as-entry
+   (lambda ()
+     (let ([cocoa-win (unbox req)])
+       (when cocoa-win
+         (set-box! req #f)
+         (set! depth (sub1 depth))
+         (tellv cocoa-win enableFlushWindow)
+         (remove-event-boundary-callback! req))))))

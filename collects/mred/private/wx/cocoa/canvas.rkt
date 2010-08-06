@@ -12,6 +12,7 @@
          "dc.rkt"
          "queue.rkt"
          "item.rkt"
+         "../common/backing-dc.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
          "../../syntax.rkt"
@@ -26,26 +27,29 @@
 
 (import-protocol NSComboBoxDelegate)
 
+;; Called when a canvas has no backing store ready
+(define (clear-background wx)
+  (let ([bg (send wx get-canvas-background-for-clearing)])
+    (when bg
+      (let ([ctx (tell NSGraphicsContext currentContext)])
+        (tellv ctx saveGraphicsState)
+        (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
+              [adj (lambda (v) (/ v 255.0))])
+          (CGContextSetRGBFillColor cg
+                                    (adj (color-red bg))
+                                    (adj (color-blue bg))
+                                    (adj (color-green bg))
+                                    1.0)
+          (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
+                                             (make-NSSize 32000 32000))))
+        (tellv ctx restoreGraphicsState)))))
+
 (define-objc-class MyView NSView 
   #:mixins (FocusResponder KeyMouseResponder) 
   [wx]
   (-a _void (drawRect: [_NSRect r])
-      (unless (send wx reject-partial-update r)
-        (let ([bg (send wx get-canvas-background-for-clearing)])
-          (when bg
-            (let ([ctx (tell NSGraphicsContext currentContext)])
-              (tellv ctx saveGraphicsState)
-              (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
-                    [adj (lambda (v) (/ v 255.0))])
-                (CGContextSetRGBFillColor cg
-                                          (adj (color-red bg))
-                                          (adj (color-blue bg))
-                                          (adj (color-green bg))
-                                          1.0)
-                (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
-                                                   (make-NSSize 32000 32000))))
-              (tellv ctx restoreGraphicsState))))
-        (send wx queue-paint)
+      (unless (send wx paint-or-queue-paint)
+        (clear-background wx)
         ;; ensure that `nextEventMatchingMask:' returns
         (post-dummy-event)))
   (-a _void (viewWillMoveToWindow: [_id w])
@@ -117,24 +121,11 @@
   [wx]
   (-a _void (drawRect: [_NSRect r])
       (super-tell #:type _void drawRect: #:type _NSRect r)
-      (unless (send wx during-menu-click?)
-        (let ([bg (send wx get-canvas-background-for-clearing)])
-          (when bg
-            (let ([ctx (tell NSGraphicsContext currentContext)])
-              (tellv ctx saveGraphicsState)
-              (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
-                    [adj (lambda (v) (/ v 255.0))])
-                (CGContextSetRGBFillColor cg
-                                          (adj (color-red bg))
-                                          (adj (color-blue bg))
-                                          (adj (color-green bg))
-                                          1.0)
-                (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
-                                                   (make-NSSize 32000 32000))))
-              (tellv ctx restoreGraphicsState))))
-        (send wx queue-paint)
-        ;; ensure that `nextEventMatchingMask:' returns
-        (post-dummy-event)))
+      (unless (send wx paint-or-queue-paint)
+        (unless (send wx during-menu-click?)
+          (clear-background wx)
+          ;; ensure that `nextEventMatchingMask:' returns
+          (post-dummy-event))))
   (-a _void (comboBoxWillPopUp: [_id notification])
       (send wx starting-combo))
   (-a _void (comboBoxWillDismiss: [_id notification])
@@ -154,7 +145,7 @@
           [ignored-name #f]
           [gl-config #f])
 
-    (inherit get-cocoa
+    (inherit get-cocoa get-cocoa-window
              get-eventspace
              make-graphics-context
              is-shown-to-root?
@@ -173,47 +164,61 @@
     (define virtual-height #f)
     (define virtual-width #f)
 
+    (define is-combo? (memq 'combo style))
+    (define has-control-border? (and (not is-combo?)
+                                     (memq 'control-border style)))
+
     (define-values (x-margin y-margin x-sb-margin y-sb-margin)
       (cond
-       [(memq 'control-border style) (values 3 3 3 3)]
+       [has-control-border? (values 3 3 3 3)]
        [(memq 'border style) (values 1 1 0 0)]
        [else (values 0 0 0 0)]))
 
     (define canvas-style style)
 
     (define/override (focus-is-on on?)
-      (when (memq 'control-border canvas-style)
+      (when has-control-border?
         (tellv cocoa setFocusState: #:type _BOOL on?)
-        (tellv cocoa setNeedsDisplay: #:type _BOOL #t)))
+        (tellv cocoa setNeedsDisplay: #:type _BOOL #t))
+      (super focus-is-on on?))
 
     ;; Avoid multiple queued paints:
     (define paint-queued? #f)
-    ;; To handle paint requests that happen while on-paint
-    ;;  is being called already:
-    (define now-drawing? #f)
-    (define refresh-after-drawing? #f)
 
     (define/public (queue-paint)
       ;; can be called from any thread, including the event-pump thread
       (unless paint-queued?
         (set! paint-queued? #t)
-        (queue-window-event this (lambda () 
-                                   (set! paint-queued? #f)
-                                   (when (is-shown-to-root?)
-                                     (set! now-drawing? #t)
-                                     (fix-dc)
-                                     (on-paint)
-                                     (set! now-drawing? #f)
-                                     (when refresh-after-drawing?
-                                       (set! refresh-after-drawing? #f)
-                                       (refresh)))))))
+        (let ([req (request-flush-delay (get-cocoa-window))])
+          (queue-window-event this (lambda () 
+                                     (set! paint-queued? #f)
+                                     (when (is-shown-to-root?)
+                                       (send dc reset-backing-retained) ; start with a clean slate
+                                       (let ([bg (get-canvas-background)])
+                                         (when bg 
+                                           (let ([old-bg (send dc get-background)])
+                                             (send dc set-background bg)
+                                             (send dc clear)
+                                             (send dc set-background old-bg))))
+                                       (on-paint)
+                                       (queue-backing-flush)
+                                       (cancel-flush-delay req)))))))
+
+    (define/public (paint-or-queue-paint)
+      (or (do-backing-flush this dc (tell NSGraphicsContext currentContext)
+                            (if is-combo? 2 0) (if is-combo? 2 0))
+          (begin
+            (queue-paint)
+            #f)))
+
     (define/override (refresh)
       ;; can be called from any thread, including the event-pump thread
+      (queue-paint))
+
+    (define/public (queue-backing-flush)
       (tellv content-cocoa setNeedsDisplay: #:type _BOOL #t))
 
     (define/override (get-cocoa-content) content-cocoa)
-
-    (define is-combo? (memq 'combo style))
 
     (super-new 
      [parent parent]
@@ -221,7 +226,7 @@
       (as-objc-allocation
        (tell (tell (cond
                     [is-combo? NSView]
-                    [(memq 'control-border style) FocusView]
+                    [has-control-border? FocusView]
                     [(memq 'border style) (if (memq 'vscroll style)
                                               CornerlessFrameView
                                               FrameView)]
@@ -249,34 +254,18 @@
       (tellv content-cocoa setDelegate: content-cocoa)
       (install-control-font content-cocoa #f))
 
-    (define dc (make-object dc% (make-graphics-context) 0 0 10 10
-                            (lambda ()
-                              (let ([w (box 0)]
-                                    [h (box 0)])
-                                (get-virtual-size w h)
-                                (values (unbox w) (unbox h))))))
+    (define dc (make-object dc% this))
+
+    (send dc start-backing-retained)
 
     (queue-paint)
     
     (define/public (get-dc) dc)
 
-    (define/public (fix-dc)
+    (define/public (fix-dc [refresh? #t])
       (when (dc . is-a? . dc%)
-        (if (is-shown-to-before-root?)
-            (let ([p (tell #:type _NSPoint content-cocoa 
-                           convertPoint: #:type _NSPoint (make-NSPoint 0 0)
-                           toView: #f)]
-                  [xb (box 0)]
-                  [yb (box 0)])
-              (get-client-size xb yb)
-              (send dc reset-bounds 
-                    (+ (NSPoint-x p) (if is-combo? 2 0))
-                    (- (NSPoint-y p) (if is-combo? 22 0))
-                    (max 1 (- (unbox xb) (if is-combo? 22 0)))
-                    (unbox yb)
-                    (if auto-scroll? (scroll-pos h-scroller) 0)
-                    (if auto-scroll? (scroll-pos v-scroller) 0)))
-            (send dc reset-bounds  0 0 0 0 0 0))))
+        (send dc reset-backing-retained))
+      (when refresh? (refresh)))
 
     (define/override (get-client-size xb yb)
       (super get-client-size xb yb)
@@ -532,13 +521,9 @@
                                                bg-col))
     (define/public (set-canvas-background col) (set! bg-col col))
     (define/public (get-canvas-background-for-clearing) 
-      (if now-drawing?
-          (begin
-            (set! refresh-after-drawing? #t)
-            #f)
-          (and (not (memq 'transparent canvas-style)) 
-               (not (memq 'no-autoclear canvas-style)) 
-               bg-col)))
+      (and (not (memq 'transparent canvas-style)) 
+           (not (memq 'no-autoclear canvas-style)) 
+           bg-col))
 
     (define/public (reject-partial-update r)
       ;; Called in the event-pump thread.
@@ -656,6 +641,14 @@
 
     (define/public (set-resize-corner on?)
       (void))
+
+    (define/public (get-backing-size xb yb)
+      (get-client-size xb yb)
+      (when is-combo?
+        (set-box! xb (- (unbox xb) 22))))
+
+    (define/public (is-flipped?)
+      (tell #:type _BOOL (get-cocoa-content) isFlipped))
 
     (define/public (get-virtual-size xb yb)
       (get-client-size xb yb)

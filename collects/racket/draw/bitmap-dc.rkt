@@ -32,11 +32,13 @@
         (set! c (cairo_create (send bm get-cairo-surface)))
         (set! b&w? (not (send bm is-color?)))))
 
-    (define/public (internal-set-bitmap v)
-      (call-with-cr-lock
-       (lambda ()
-         (do-set-bitmap v #t)
-         (when c (reset-cr c)))))
+    (define/public (internal-set-bitmap v [direct? #f])
+      (if direct?
+          (do-set-bitmap v #t)
+          (call-with-cr-lock
+           (lambda ()
+             (do-set-bitmap v #t)
+             (when c (reset-cr c))))))
 
     (define/public (internal-get-bitmap) bm)
 

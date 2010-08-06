@@ -3,21 +3,27 @@
          racket/draw/dc
          racket/draw/bitmap-dc
          racket/draw/bitmap
-         racket/draw/local)
+         racket/draw/local
+         "../../lock.rkt"
+         "queue.rkt")
 
 (provide backing-dc%
          
          ;; scoped method names:
          get-backing-size
-         flush-backing
-         start-on-paint
-         end-on-paint)
+         queue-backing-flush
+         on-backing-flush
+         start-backing-retained
+         end-backing-retained
+         reset-backing-retained)
 
 (define-local-member-name
   get-backing-size
-  flush-backing
-  start-on-paint
-  end-on-paint)
+  queue-backing-flush
+  on-backing-flush
+  start-backing-retained
+  end-backing-retained
+  reset-backing-retained)
 
 (define backing-dc%
   (class (dc-mixin bitmap-dc-backend%)
@@ -32,47 +38,83 @@
       (set-box! xb 1)
       (set-box! yb 1))
 
-    ;; override this method to push the bitmap to
-    ;;  the device that it backs
-    (define/public (flush-backing bm)
+    ;; override this method to set up a callback to
+    ;;  `on-backing-flush' when the backing store can be rendered
+    ;;  to the screen
+    (define/public (queue-backing-flush)
       (void))
 
-    (define on-paint-cr #f)
+    (define retained-cr #f)
+    (define retained-counter 0)
+    (define needs-flush? #f)
 
-    (define/public (start-on-paint)
+    ;; called with a procedure that is applied to a bitmap;
+    ;;  returns #f if there's nothing to flush
+    (define/public (on-backing-flush proc)
+      (cond
+       [(not retained-cr) #f]
+       [(positive? retained-counter) 
+        (proc (internal-get-bitmap)) 
+        #t]
+       [else 
+        (reset-backing-retained proc)
+        #t]))
+
+    (define/public (reset-backing-retained [proc void])
+      (let ([cr retained-cr])
+        (when cr
+          (let ([bm (internal-get-bitmap)])
+            (set! retained-cr #f)
+            (internal-set-bitmap #f #t)
+            (super release-cr retained-cr)
+            (proc bm)
+            (release-backing-bitmap bm)))))
+
+    (define/public (start-backing-retained)
       (call-with-cr-lock
        (lambda () 
-         (if on-paint-cr 
-             (log-error "nested start-on-paint")
-             (set! on-paint-cr (get-cr))))))
+         (set! retained-counter (add1 retained-counter)))))
 
-    (define/public (end-on-paint)
+    (define/public (end-backing-retained)
       (call-with-cr-lock
        (lambda () 
-         (if (not on-paint-cr)
+         (if (zero? retained-counter)
              (log-error "unbalanced end-on-paint")
-             (let ([cr on-paint-cr])
-               (set! on-paint-cr #f)
-               (release-cr cr))))))
+             (set! retained-counter (sub1 retained-counter))))))
 
     (define/override (get-cr)
-      (or on-paint-cr
+      (or retained-cr
           (let ([w (box 0)]
                 [h (box 0)])
-            (get-backing-size)
+            (get-backing-size w h)
             (let ([bm (get-backing-bitmap (unbox w) (unbox h))])
-              (internal-set-bitmap bm))
-            (super get-cr))))
+              (internal-set-bitmap bm #t))
+            (let ([cr (super get-cr)])
+              (set! retained-cr cr)
+              cr))))
 
     (define/override (release-cr cr)
-      (unless (eq? cr on-paint-cr)
-        (let ([bm (internal-get-bitmap)])
-          (internal-set-bitmap #f)
-          (flush-backing bm)
-          (release-backing-bitmap bm))))))
+      (when (zero? flush-suspends)
+        (queue-backing-flush)))
+
+    (define flush-suspends 0)
+
+    (define/override (suspend-flush) 
+      (as-entry
+       (lambda ()
+         ;; if not suspended currently, sleep to encourage any
+         ;; existing flush requests to complete
+         (when (zero? flush-suspends) (sleep))
+         (set! flush-suspends (add1 flush-suspends)))))
+    (define/override (resume-flush)  
+      (as-entry
+       (lambda ()
+         (set! flush-suspends (sub1 flush-suspends))
+         (when (zero? flush-suspends)
+           (queue-backing-flush)))))))
 
 (define (get-backing-bitmap w h)
   (make-object bitmap% w h #f #t))
 
 (define (release-backing-bitmap bm)
-  (send bm release-bitma-storage))
+  (send bm release-bitmap-storage))
