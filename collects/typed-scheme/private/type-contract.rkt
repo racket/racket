@@ -55,9 +55,11 @@
 (define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t] #:flat [flat? #f])
   (define vars (make-parameter '()))
   (let/ec exit
-    (let loop ([ty ty] [pos? #t] [from-typed? from-typed?] [structs-seen null])
-      (define (t->c t #:seen [structs-seen structs-seen]) (loop t pos? from-typed? structs-seen))
-      (define (t->c/neg t #:seen [structs-seen structs-seen]) (loop t (not pos?) (not from-typed?) structs-seen))
+    (let loop ([ty ty] [pos? #t] [from-typed? from-typed?] [structs-seen null] [flat? flat?])
+      (define (t->c t #:seen [structs-seen structs-seen] #:flat [flat? flat?])
+        (loop t pos? from-typed? structs-seen flat?))
+      (define (t->c/neg t #:seen [structs-seen structs-seen] #:flat [flat? flat?])
+        (loop t (not pos?) (not from-typed?) structs-seen flat?))
       (define (t->c/fun f #:method [method? #f])
         (match f
           [(Function: (list (top-arr:))) #'procedure?]
@@ -128,9 +130,9 @@
              #'(or/c . cnts)))]
         [(and t (Function: _)) (t->c/fun t)]
         [(Vector: t)
-         #`(vectorof #,(t->c t))]
+         #`(vectorof #,(t->c t #:flat #t))]
         [(Box: t)
-         #`(box/c #,(t->c t))]
+         #`(box/c #,(t->c t #:flat #t))]
         [(Pair: t1 t2)
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
@@ -177,7 +179,8 @@
                            [cnt-name nm]
                            [(fld-cnts ...)
                             (for/list ([fty flds]
-                                       [f-acc acc-ids])
+                                       [f-acc acc-ids]
+                                       [m? mut?])
                               #`(((contract-projection
                                    #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec)) structs-seen)))
                                   blame)
@@ -196,7 +199,7 @@
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [(Param: in out) #`(parameter/c #,(t->c out))]
-	[(Hashtable: k v) #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care)]
+	[(Hashtable: k v) #`(hash/c #,(t->c k #:flat #t) #,(t->c v #:flat #t) #:immutable 'dont-care)]
         [else          
          (exit (fail))]))))
 
