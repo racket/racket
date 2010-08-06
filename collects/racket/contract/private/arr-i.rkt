@@ -146,21 +146,28 @@
   (let ([opts? (ormap arg-optional? args)]) 
     (cond
       [(and opts? (ormap arg-kwd args))
-       (let ([arg->var (make-hash)]
-             [kwd-args (filter arg-kwd args)]
-             [non-kwd-args (filter (λ (x) (not (arg-kwd x))) args)])
+       (let* ([arg->var (make-hash)]
+              [kwd-args (filter arg-kwd args)]
+              [non-kwd-args (filter (λ (x) (not (arg-kwd x))) args)])
+         
          (for ([arg (in-list args)]
                [var (in-vector vars)])
            (hash-set! arg->var arg var))
-         ;; has both optional and keyword args
-         #`(keyword-apply/no-unsupplied 
-            #,fn 
-            '#,(map arg-kwd kwd-args)
-            (list #,@(map (λ (arg) (hash-ref arg->var arg)) kwd-args))
-            #,(if rst
-                  #'rest-args
-                  #'#f)
-            #,@(map (λ (arg) (hash-ref arg->var arg)) non-kwd-args)))]
+         
+         (let ([sorted-kwd/arg-pairs 
+                (sort
+                 (map (λ (arg) (cons (arg-kwd arg) (hash-ref arg->var arg))) kwd-args)
+                 (λ (x y) (keyword<? (syntax-e (car x)) (syntax-e (car y)))))])
+           
+           ;; has both optional and keyword args
+           #`(keyword-apply/no-unsupplied 
+              #,fn 
+              '#,(map car sorted-kwd/arg-pairs)
+              (list #,@(map cdr sorted-kwd/arg-pairs))
+              #,(if rst
+                    #'rest-args
+                    #'#f)
+              #,@(map (λ (arg) (hash-ref arg->var arg)) non-kwd-args))))]
       [opts?
        ;; has optional args, but no keyword args
        #`(apply/no-unsupplied #,fn
@@ -565,10 +572,10 @@
                                          (istx-args an-istx))))
            #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) (arg-optional? arg)))
                                          (istx-args an-istx))))
-           '#,(sort (filter values (map (λ (arg) (and (not (arg-optional? arg)) (arg-kwd arg)))
+           '#,(sort (filter values (map (λ (arg) (and (not (arg-optional? arg)) (arg-kwd arg) (syntax-e (arg-kwd arg))))
                                         (istx-args an-istx))) 
                     keyword<?)
-           '#,(sort (filter values (map (λ (arg) (and (arg-optional? arg) (arg-kwd arg)))
+           '#,(sort (filter values (map (λ (arg) (and (arg-optional? arg) (arg-kwd arg) (syntax-e (arg-kwd arg))))
                                         (istx-args an-istx))) 
                     keyword<?)
            #,(and (istx-rst an-istx) #t)

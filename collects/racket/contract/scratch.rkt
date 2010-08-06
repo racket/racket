@@ -1,53 +1,27 @@
 #lang racket/base
 (require racket/contract
-         racket/pretty)
+         racket/pretty
+         racket/class)
 
 (pretty-print
- (syntax->datum 
-  (expand-once
-   #'(->i ([b (box/c integer?)]) 
-          [res (b) (λ (x) #f)]))))
+ (syntax->datum (expand-once
+                 #'(->i ([b (box/c integer?)])
+                        [_ (b)
+                           (let ((old (unbox b)))
+                             (and/c void? 
+                                    (λ (new) (= old (unbox b)))))]))))
 
-(pretty-print
- (syntax->datum 
-  (expand-once
-   #'(->i ([b (box/c integer?)]) 
-          [res (λ (x) #f)]))))
+((contract (->i ([b (box/c integer?)])
+                [_ (b)
+                   (let ((old (unbox b)))
+                     (and/c void? 
+                            (λ (new) (= old (unbox b)))))])
+           (λ (b) (set-box! b (+ (unbox b) 1)))
+           (quote pos)
+           (quote neg))
+ (box 1))
+;; ==> 
 
-
-#;
-(pretty-print
- (syntax->datum (expand
-                 #'(->i () [x integer?]))))
-
-(with-handlers ((values values))
-  ((contract (->i ([b any/c]) 
-                  [res (b) (λ (x) #f)])
-             (lambda (b) 1)
-             'pos 'neg)
-   1))
-
-
-(with-handlers ((values values))
-  ((contract (->i ([b (box/c integer?)]) 
-                  [_ (b)
-                     (let ([v (unbox b)])
-                       (λ (x) 
-                         #f))])
-             (lambda (b) (set-box! b (+ (unbox b) 1)))
-             'pos 'neg)
-   (box 0)))
-
-(with-handlers ((values values))
-  ((contract (->i ([b (box/c integer?)]) 
-                  [res (b)
-                       (let ([v (unbox b)])
-                         (λ (x) 
-                           #f))])
-             (lambda (b) (set-box! b (+ (unbox b) 1)))
-             'pos 'neg)
-   (box 0)))
-;; => pos violation
 #|
 ;; timing tests:
 
