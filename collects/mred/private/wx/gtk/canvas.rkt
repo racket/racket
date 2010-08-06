@@ -4,6 +4,8 @@
          racket/draw
          ffi/unsafe/alloc
          racket/draw/color
+         racket/draw/local
+         "../common/backing-dc.rkt"
          "../../syntax.rkt"
          "../common/event.rkt"
          "utils.rkt"
@@ -86,11 +88,11 @@
   (_fun _GtkWidget _GdkEventExpose-pointer -> _gboolean)
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
-      (let ([gc (send wx get-canvas-background-for-clearing)])      
-        (when gc
-          (gdk_draw_rectangle (g_object_get_window gtk) gc #t
-                              0 0 32000 32000)))
-      (send wx queue-paint))
+      (unless (send wx paint-or-queue-paint)
+        (let ([gc (send wx get-canvas-background-for-clearing)])      
+          (when gc
+            (gdk_draw_rectangle (g_object_get_window gtk) gc #t
+                                0 0 32000 32000)))))
     #t))
 
 (define-signal-handler connect-expose-border "expose-event"
@@ -220,18 +222,7 @@
     
     (set-size x y w h)
 
-    (define dc (new dc% 
-                    [gtk client-gtk]
-                    [get-client-size (lambda ()
-                                       (let ([w (box 0)]
-                                             [h (box 0)])
-                                         (get-virtual-size w h)
-                                         (values (unbox w) (unbox h))))]
-		    [window-lock (send (get-top-win) get-dc-lock)]
-                    [get-window (lambda (client-gtk)
-                                  (if is-combo?
-                                      (get-subwindow client-gtk)
-                                      (g_object_get_window client-gtk)))]))
+    (define dc (new dc% [canvas this]))
 
     (gtk_widget_realize gtk)
     (gtk_widget_realize client-gtk)
@@ -287,15 +278,27 @@
         (queue-window-event this (lambda () 
                                    (set! paint-queued? #f)
                                    (set! now-drawing? #t)
+                                   (send dc reset-backing-retained) ; clean slate
                                    (on-paint)
                                    (set! now-drawing? #f)
                                    (when refresh-after-drawing?
                                      (set! refresh-after-drawing? #f)
                                      (refresh))))))
 
+    (define/public (paint-or-queue-paint)
+      (or (do-backing-flush this dc (if is-combo?
+                                        (get-subwindow client-gtk)
+                                        (g_object_get_window client-gtk)))
+          (begin
+            (queue-paint)
+            #f)))
+
     (define/public (on-paint) (void))
 
     (define/override (refresh)
+      (queue-paint))
+
+    (define/public (queue-backing-flush)
       (gtk_widget_queue_draw client-gtk))
     
     (define/public (reset-child-dcs)
@@ -305,7 +308,10 @@
       (register-as-child parent on?)
       (when on? (reset-child-dcs)))
 
+    (send dc start-backing-retained)
+
     (define/private (reset-dc)
+      (send dc reset-backing-retained)
       (if auto-scroll?
           (send dc reset-dc 
                 (if virtual-width
@@ -314,7 +320,7 @@
                 (if virtual-height
                     (gtk_adjustment_get_value vscroll-adj)
                     0))
-          (send dc reset-dc 0 0)))
+          (void)))
 
     (define/override (internal-on-client-size w h)
       (reset-dc))

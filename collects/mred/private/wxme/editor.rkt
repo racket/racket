@@ -63,7 +63,8 @@
   (define/public (set-last-used v) (set! last-used v))
 
   (define/public (ready-offscreen width height)
-    (if (or (width . > . RIDICULOUS-SIZE)
+    (if (or #t ; disable on all  platforms
+            (width . > . RIDICULOUS-SIZE)
             (height . > . RIDICULOUS-SIZE)
             (eq? (system-type) 'macosx))
         #f

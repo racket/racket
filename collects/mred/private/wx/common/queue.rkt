@@ -93,6 +93,8 @@
 (define (add-event-boundary-callback! v proc) 
   (hash-set! boundary-ht v proc))
 (define (add-event-boundary-sometimes-callback! v proc) 
+  (when (zero? (hash-count sometimes-boundary-ht))
+    (set! last-time (current-inexact-milliseconds)))
   (hash-set! sometimes-boundary-ht v proc))
 
 (define (remove-event-boundary-callback! v) 

@@ -4,64 +4,72 @@
          "utils.rkt"
          "types.rkt"
 	 "../../lock.rkt"
+         "../common/backing-dc.rkt"
          racket/draw/cairo
          racket/draw/dc
          racket/draw/local
          ffi/unsafe/alloc)
 
-(provide dc% reset-dc)
+(provide dc%
+         do-backing-flush)
 
 (define-gdk gdk_cairo_create (_fun _pointer -> _cairo_t)
   #:wrap (allocator cairo_destroy))
 
-(define-local-member-name
-  reset-dc)
+(define dc%
+  (class backing-dc%
+    (init [(cnvs canvas)])
+    (define canvas cnvs)
 
-(define dc-backend%
-  (class default-dc-backend%
-    (init-field gtk
-                get-client-size
-		window-lock
-                [get-window g_object_get_window])
-    (inherit reset-cr set-auto-scroll)
+    (super-new)
 
-    (define c #f)
-
-    (define/override (get-cr)
-      (or c
-          (let ([w (get-window gtk)])
-            (and w
-		 (begin
-		   ;; Under Windows, creating a Cairo context within
-		   ;; a frame inteferes with any other Cairo context 
-		   ;; within the same frame. So we use a lock to 
-		   ;; serialize drawing to different contexts.
-		   (when window-lock (semaphore-wait window-lock))
-                   (set! c (gdk_cairo_create w))
-		   (reset-cr c)
-		   c)))))
-
-    (define/override (release-cr cr)
-      (when window-lock
-	(cairo_destroy c)
-	(set! c #f)
-	(semaphore-post window-lock)))
-
-    (define/public (reset-dc scroll-dx scroll-dy)
-      ;; FIXME: ensure that the dc is not in use
-      (as-entry
-       (lambda ()
-         (when c
-           (cairo_destroy c)
-           (set! c #f))
-         (set-auto-scroll scroll-dx scroll-dy))))
+    (define/override (get-backing-size xb yb)
+      (send canvas get-client-size xb yb))
 
     (define/override (get-size)
-      (let-values ([(w h) (get-client-size)])
-      (values (exact->inexact w)
-              (exact->inexact h))))
-    
-    (super-new)))
+      (let ([xb (box 0)]
+            [yb (box 0)])
+        (send canvas get-virtual-size xb yb)
+        (values (unbox xb) (unbox yb))))
 
-(define dc%
-  (dc-mixin dc-backend%))
+    (define/override (queue-backing-flush)
+      (send canvas queue-backing-flush))
+
+    (define suspend-count 0)
+    (define req #f)
+
+    (define/override (suspend-flush) 
+      (as-entry
+       (lambda ()
+         #;
+         (when (zero? suspend-count)
+           (set! req (request-flush-delay (send canvas get-cocoa-window))))
+         (set! suspend-count (add1 suspend-count))
+         (super suspend-flush))))
+
+    (define/override (resume-flush) 
+      (as-entry
+       (lambda ()
+         (set! suspend-count (sub1 suspend-count))
+         #;
+         (when (and (zero? suspend-count) req)
+           (cancel-flush-delay req)
+           (set! req #f))
+         (super resume-flush))))))
+
+(define (do-backing-flush canvas dc win)
+  (send dc on-backing-flush
+        (lambda (bm)
+          (let ([w (box 0)]
+                [h (box 0)])
+            (send canvas get-client-size w h)
+            (let ([cr (gdk_cairo_create win)])
+              (let ([s (cairo_get_source cr)])
+                (cairo_pattern_reference s)
+                (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
+                (cairo_new_path cr)
+                (cairo_rectangle cr 0 0 (unbox w) (unbox h))
+                (cairo_fill cr)
+                (cairo_set_source cr s)
+                (cairo_pattern_destroy s))
+              (cairo_destroy cr))))))
