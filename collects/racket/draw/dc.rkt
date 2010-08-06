@@ -55,6 +55,10 @@
 ;; This is the interface that the backend specific code must implement
 (define dc-backend<%>
   (interface ()
+    ;; call-with-cr-lock : (-> any) -> any
+    ;;
+    ;; Calls a thunk while holding the lock on the cairo context.
+
     ;; get-cr : -> cairo_t or #f
     ;;
     ;; Gets a cairo_t created in a backend specific manner.
@@ -125,6 +129,12 @@
 (define default-dc-backend%
   (class* object% (dc-backend<%>)
 
+    (define lock (make-semaphore 1))
+    (define/public (call-with-cr-lock thunk)
+      (call-with-semaphore
+       lock
+       thunk))
+
     (define/public (get-cr) #f)
     (define/public (release-cr cr) (void))
     (define/public (end-cr) (void))
@@ -177,13 +187,10 @@
 
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing reset-clip
-             collapse-bitmap-b&w?)
-
-    (define lock (make-semaphore 1))
+             collapse-bitmap-b&w? call-with-cr-lock)
 
     (define-syntax-rule (with-cr default cr . body)
-      (call-with-semaphore
-       lock
+      (call-with-cr-lock
        (lambda ()
          (let ([cr (get-cr)])
            (if cr 

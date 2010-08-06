@@ -10,6 +10,11 @@
   ;; bitmap%
   get-cairo-surface
   get-cairo-alpha-surface
+  release-bitmap-storage
+
+  ;; bitmap-dc%
+  internal-get-bitmap
+  internal-set-bitmap
 
   ;; dc%
   in-cairo-context
@@ -26,6 +31,7 @@
   get-ps-pango
 
   ;; dc-backend<%>
+  call-with-cr-lock
   get-cr
   end-cr
   reset-cr

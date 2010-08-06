@@ -184,7 +184,7 @@
     (def/public (get-loaded-mask) loaded-mask)
     (def/public (set-loaded-mask [(make-or-false bitmap%) m]) (set! loaded-mask m))
 
-    (define/private (release-s)
+    (define/public (release-bitmap-storage)
       (drop-alpha-s)
       (when s
         (let ([s2 s])
@@ -201,7 +201,7 @@
     (def/public (load-bitmap [(make-alts path-string? input-port?) in]
                              [kind-symbol? [kind 'unknown]]
                              [(make-or-false color%) [bg #f]])
-      (release-s)
+      (release-bitmap-storage)
       (set!-values (s b&w?) (do-load-bitmap in kind bg))
       (set! width (if s (cairo_image_surface_get_width s) 0))
       (set! height (if s (cairo_image_surface_get_height s) 0)))
