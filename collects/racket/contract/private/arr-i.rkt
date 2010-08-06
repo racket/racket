@@ -77,7 +77,7 @@
                           partial-indy-rngs))))))
    #:name (λ (ctc) '(->i ...)) ;; WRONG
    #:first-order (λ (ctc) (λ (x) #f)) ;; WRONG
-   #:stronger (λ (this that) #f))) ;; WRONG
+   #:stronger (λ (this that) (eq? this that)))) ;; WRONG
 
 ;; find-ordering : (listof arg) -> (values (listof arg) (listof number)) 
 ;; sorts the arguments according to the dependency order.
@@ -328,8 +328,9 @@
                                       arg-call-stx)
   (cond
     [(istx-ress an-istx)
+     ;; WRONG! needs to preserve tail recursion? .... well ->d does anyways.
      #`(let-values ([#,(vector->list wrapper-ress)  #,arg-call-stx])
-
+         
          #,(add-wrapper-let 
             (add-post-cond an-istx arg/res-to-indy-var #`(values #,@(vector->list wrapper-ress)))
             #f
@@ -442,27 +443,30 @@
             (λ (val)
               (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
               (make-contracted-function
-               (λ #,(args/vars->arglist an-istx wrapper-args)
-                 #,(add-wrapper-let 
-                    (add-pre-cond 
-                     an-istx 
-                     arg/res-to-indy-var 
-                     (add-eres-lets
-                      an-istx
-                      res-proj-vars
-                      arg/res-to-indy-var
-                      (add-result-checks
-                       an-istx
-                       ordered-ress res-indicies
-                       res-proj-vars indy-res-proj-vars
-                       wrapper-ress indy-res-vars
-                       arg/res-to-indy-var
-                       (args/vars->callsite #'val (istx-args an-istx) (istx-rst an-istx) wrapper-args))))
-                    #t
-                    ordered-args arg-indicies
-                    arg-proj-vars indy-arg-proj-vars 
-                    wrapper-args indy-arg-vars
-                    arg/res-to-indy-var))
+               #,(syntax-property
+                  #`(λ #,(args/vars->arglist an-istx wrapper-args)
+                      #,(add-wrapper-let 
+                         (add-pre-cond 
+                          an-istx 
+                          arg/res-to-indy-var 
+                          (add-eres-lets
+                           an-istx
+                           res-proj-vars
+                           arg/res-to-indy-var
+                           (add-result-checks
+                            an-istx
+                            ordered-ress res-indicies
+                            res-proj-vars indy-res-proj-vars
+                            wrapper-ress indy-res-vars
+                            arg/res-to-indy-var
+                            (args/vars->callsite #'val (istx-args an-istx) (istx-rst an-istx) wrapper-args))))
+                         #t
+                         ordered-args arg-indicies
+                         arg-proj-vars indy-arg-proj-vars 
+                         wrapper-args indy-arg-vars
+                         arg/res-to-indy-var))
+                  'inferred-name
+                  (syntax-local-name))
                ctc)))))))
 
 (define (un-dep ctc obj blame)

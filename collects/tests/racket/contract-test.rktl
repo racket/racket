@@ -2506,7 +2506,7 @@
                  'pos
                  'neg))
       x)
-   '(ctc body))
+   '(body ctc))
   
   (test/spec-passed/result
    '->i-underscore4
@@ -2523,6 +2523,17 @@
                'pos 'neg)
      1 2 3 4 5)
    '(1 2 3 4 5))
+  
+  (test/spec-passed/result
+   '->i-underscore6
+   '(let ([x '()])
+      ((contract (->i ([a integer?]) () [_ (a) (begin (set! x (cons 'ctc x)) any/c)])
+                 (λ (a) (set! x (cons 'body x)))
+                 'pos
+                 'neg)
+       11)
+      x)
+   '(body ctc))
   
 ;                                               
 ;                                               
@@ -9033,73 +9044,6 @@ so that propagation occurs.
                                'neg)])
              (f 3))
            (c)))
-  
-  (ctest 2
-         'tail-arrow-i1
-         (let ([c (counter)])
-           (letrec ([x 5]
-                    [f 
-                     (contract (->i ([arg any/c]) () (values [_ (arg) c] [_ (arg) c]))
-                               (λ (_ignored) (if (zero? x) (values x x) (begin (set! x (- x 1)) (f _ignored))))
-                               'pos
-                               'neg)])
-             (f 'ignored))
-           (c)))
-  
-  
-  ;; this one is just like the one two above.
-  (ctest 4
-         'tail-arrow-i2/changing-args
-         (let ([c (counter)])
-           (letrec ([f 
-                     (contract (->i ([arg any/c]) () [rng (arg) c])
-                               (λ (x) (if (zero? x) x (f (- x 1))))
-                               'pos
-                               'neg)])
-             (f 3))
-           (c)))
-  
-  (ctest 1
-         'tail-arrow-i2
-         (let ([c (counter)])
-           (letrec ([x 3]
-                    [f 
-                     (contract (->i ([arg any/c]) () [rng (arg) c])
-                               (λ (ignored) (if (zero? x) x (begin (set! x (- x 1)) (f ignored))))
-                               'pos
-                               'neg)])
-             (f 3))
-           (c)))
-  
-  ;; the tail-call optimization cannot handle two different
-  ;; contracts on the stack one after the other one, so this
-  ;; returns '(4 4) instead of '(1 1) (which would indicate
-  ;; the optimization had happened).
-  (ctest '(4 4)
-         'tail->i-mut-rec
-         (letrec ([odd-count 0]
-                  [pos-count 0]
-                  [count-odd?
-                   (λ (x)
-                     (set! odd-count (+ odd-count 1))
-                     (odd? x))]
-                  [count-positive? 
-                   (λ (x)
-                     (set! pos-count (+ pos-count 1))
-                     (positive? x))]
-                  [returns-odd
-                   (contract (->i ([x any/c]) () [_ count-odd?])
-                             (λ (x) (returns-pos x))
-                             'pos
-                             'neg)]
-                  [returns-pos
-                   (contract (->i ([x any/c]) () [_ count-positive?])
-                             (λ (x) (if (zero? x) 1 (returns-odd (- x 1))))
-                             'pos
-                             'neg)])
-           (returns-odd 3)
-           (list odd-count pos-count)))
-  
   
   (ctest 2
          'case->-regular

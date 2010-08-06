@@ -4,43 +4,9 @@
 
 (pretty-print
  (syntax->datum (expand-once
-                 #'(->i ([i (box/c (listof integer?))])
-                        (values [_ (i)
-                                   (begin 
-                                     (set-box! i (cons 1 (unbox i)))
-                                     (λ (x) 
-                                       (set-box! i (cons 4 (unbox i)))
-                                       #t))]
-                                [_ (i)
-                                   (begin 
-                                     (set-box! i (cons 2 (unbox i)))
-                                     (λ (x) 
-                                       (set-box! i (cons 5 (unbox i)))
-                                       #t))])))))
+                 #'(->i () (res integer?)))))
 
-
-(let ([b (box '())])
-  ((contract (->i ([i (box/c (listof integer?))])
-                  (values [_ (i)
-                             (begin 
-                               (set-box! i (cons 1 (unbox i)))
-                               (λ (x) 
-                                 (set-box! i (cons 4 (unbox i)))
-                                 #t))]
-                          [_ (i)
-                             (begin 
-                               (set-box! i (cons 2 (unbox i)))
-                               (λ (x) 
-                                 (set-box! i (cons 5 (unbox i)))
-                                 #t))]))
-             (λ (i) 
-               (set-box! i (cons 3 (unbox i)))
-               (values 2 2))
-             (quote pos)
-             (quote neg))
-   b)
-  (unbox b))
-;; ==> 
+;; ==> ???
 
 #|
 ;; timing tests:

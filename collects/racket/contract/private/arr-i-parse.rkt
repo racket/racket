@@ -286,16 +286,13 @@ code does the parsing and validation of the syntax.
           (syntax->list #'(ctc-pr ...)))]
     [any #f]
     [[_ ctc]
-     (begin
-      (printf "eres.1\n")
-      (list (eres #'id #f #'ctc (car (generate-temporaries '(eres))))))]
+     (list (eres #'id #f #'ctc (car (generate-temporaries '(eres)))))]
     [[id ctc]
      (begin
        (check-id stx #'id)
        (list (lres #'id #f #'ctc)))]
     [[_ (id2 ...) ctc] 
      (begin
-       (printf "eres.2\n")
        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
        (list (eres #'id (syntax->list #'(id2 ...)) #'ctc (car (generate-temporaries '(eres))))))]
     [[id (id2 ...) ctc] 
