@@ -54,7 +54,9 @@ Typed Racket's optimizer can optimize the latter program to use
 former program.
 
 Thus, to get the most of Typed Racket's optimizer, you should use the
-@racket[Float] type when possible.
+@racket[Float] type when possible. For similar reasons, you should use
+floating-point literals instead of exact literals when doing
+floating-point computations.
 
 On a similar note, the @racket[Inexact-Complex] type is preferable to
 the @racket[Complex] type for the same reason. Typed Racket can keep
@@ -68,6 +70,21 @@ represent
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{complex numbers}
 as two
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{real numbers}.
+As with floating-point literals,
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
+"inexact numbers"]{inexact}
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
+"complex numbers"]{complex}
+literals (such as @racket[1.0+1.0i]) should be preferred over exact
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
+"complex numbers"]{complex}
+literals (such as @racket[1+1i]). Note that both parts of a literal must be
+present and
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
+"inexact numbers"]{inexact}
+for the literal to be of type
+@racket[Inexact-Complex]; @racket[0.0+1.0i] is of type
+@racket[Inexact-Complex] but @racket[+1.0i] is not.
 To get the most of
 Typed Racket's optimizer, you should also favor rectangular
 coordinates over polar coordinates.
