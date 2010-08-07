@@ -50,7 +50,6 @@
 				  (string? (cadr p))))
 			   filters))
 	(raise-type-error who "list of 2-string lists" filters))
-      (printf "parent window: ~a ~a\n" parent (and parent (mred->wx parent)))
       (let* ([std? (memq 'common style)]
              [style (if std? (remq 'common style) style)])
         (if (or std? 

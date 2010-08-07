@@ -3,7 +3,7 @@
          scheme/foreign
           "../../syntax.rkt"
          "item.rkt"
-         "utils.rkt"
+         (except-in "utils.rkt" _GSList)
          "types.rkt"
          "widget.rkt"
          "window.rkt"

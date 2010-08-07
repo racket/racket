@@ -8,7 +8,8 @@
          "types.rkt"
          "utils.rkt"
          "widget.rkt"
-         "../common/handlers.rkt")
+         "../common/handlers.rkt"
+         "../common/queue.rkt")
 
 (provide
  special-control-key
@@ -123,7 +124,7 @@
 
 (define-unimplemented is-color-display?)
 
-(define _GtkFileChooserDialog (_cpointer 'GtkFileChooserDialog))
+(define _GtkFileChooserDialog _GtkWidget)
 (define _GtkFileChooser (_cpointer 'GtkFileChooser))
 (define _GtkFileChooserAction 
   (_enum (list 'open 'save 'select-folder 'create-folder)))
@@ -142,7 +143,6 @@
      apply = -10
      help = -11)
    _fixint))
-(define _GtkDialog (_cpointer 'GtkDialog))
 ;; FIXME: really there are varargs here, but we don't need them for
 ;; our purposes
 (define-gtk gtk_file_chooser_dialog_new 
@@ -208,12 +208,28 @@
          (gtk_file_filter_set_name ff name)
          (gtk_file_filter_add_pattern ff glob)
          (gtk_file_chooser_add_filter dlg ff))]))
-  (define ans (and (= -3 (gtk_dialog_run dlg))
+  (define ans (and (= -3 (show-dialog dlg))
                    (if (eq? type 'multi)           
                        (gtk_file_chooser_get_filenames dlg)
                        (gtk_file_chooser_get_filename dlg))))
   (gtk_widget_destroy dlg)
   ans)
+
+(define response-sema (make-semaphore))
+(define response-val #f)
+
+(define-signal-handler connect-response "response"
+  (_fun _GtkWidget _int -> _void)
+  (lambda (gtk id)
+    (set! response-val id)
+    (semaphore-post response-sema)))
+
+(define (show-dialog dlg-gtk)
+  (connect-response dlg-gtk)
+  (gtk_widget_show dlg-gtk)
+  (yield response-sema)
+  (gtk_widget_hide dlg-gtk)
+  response-val)
 
 (define (id-to-menu-item i) i)
 (define-unimplemented get-the-x-selection)
