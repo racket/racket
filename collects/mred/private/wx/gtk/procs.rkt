@@ -4,12 +4,11 @@
          "../../lock.rkt"
          racket/class
          racket/draw
-         racket/match
+         "filedialog.rkt"
          "types.rkt"
          "utils.rkt"
          "widget.rkt"
-         "../common/handlers.rkt"
-         "../common/queue.rkt")
+         "../common/handlers.rkt")
 
 (provide
  special-control-key
@@ -81,7 +80,10 @@
 (define (set-dialogs . args) (void))
 (define (set-executer e) (void))
 (define-unimplemented send-event)
-(define-unimplemented file-creator-and-type)
+(define file-creator-and-type
+  (case-lambda
+   [(path cr ty) (void)]
+   [(path) (values #"????" #"????")]))
 (define (begin-refresh-sequence) (void))
 (define (end-refresh-sequence) (void))
 (define-unimplemented run-printout)
@@ -123,113 +125,6 @@
 (define (begin-busy-cursor) (as-entry (lambda () (set! busy-count (sub1 busy-count)))))
 
 (define-unimplemented is-color-display?)
-
-(define _GtkFileChooserDialog _GtkWidget)
-(define _GtkFileChooser (_cpointer 'GtkFileChooser))
-(define _GtkFileChooserAction 
-  (_enum (list 'open 'save 'select-folder 'create-folder)))
-
-(define _GtkResponse
-  (_enum 
-   '(none = -1
-     reject = -2
-     accept = -3
-     delete-event = -4
-     ok = -5
-     cancel = -6
-     close = -7
-     yes = -8
-     no = -9
-     apply = -10
-     help = -11)
-   _fixint))
-;; FIXME: really there are varargs here, but we don't need them for
-;; our purposes
-(define-gtk gtk_file_chooser_dialog_new 
-  (_fun _string (_or-null _GtkWindow) 
-        _GtkFileChooserAction
-        _string _GtkResponse
-        _string _GtkResponse
-        (_or-null _pointer)
-        -> _GtkFileChooserDialog))
-;; FIXME - should really be _GtkDialog but no subtyping
-(define-gtk gtk_dialog_run (_fun _GtkFileChooserDialog -> _int))
-;; FIXME ;; these should really be _GtkFileChooser but no subtyping
-(define-gtk gtk_file_chooser_get_filename 
-  (_fun _GtkFileChooserDialog -> _gpath/free))
-(define-gtk gtk_file_chooser_get_filenames
-  (_fun _GtkFileChooserDialog -> (_GSList _gpath/free)))
-(define-gtk gtk_file_chooser_set_current_name
-  (_fun _GtkFileChooserDialog _path -> _void))
-(define-gtk gtk_file_chooser_set_current_folder
-  (_fun _GtkFileChooserDialog _path -> _void))
-(define-gtk gtk_file_chooser_set_select_multiple
-  (_fun _GtkFileChooserDialog _gboolean -> _void))
-
-(define _GtkFileFilter (_cpointer 'GtkFileFilter))
-(define-gtk gtk_file_filter_new (_fun -> _GtkFileFilter))
-(define-gtk gtk_file_filter_set_name
-  (_fun _GtkFileFilter _string -> _void))
-(define-gtk gtk_file_filter_add_pattern
-  (_fun _GtkFileFilter _string -> _void))
-
-(define-gtk gtk_file_chooser_add_filter
-  (_fun _GtkFileChooserDialog _GtkFileFilter -> _void))
-
-(define (file-selector message directory filename 
-                       extension ;; always ignored
-                       filters style parent)
-  (define type (car style)) ;; the rest of `style' is irrelevant on Gtk
-  (define dlg (gtk_file_chooser_dialog_new 
-               message (and parent (send parent get-gtk))
-               (case type
-                 [(dir) 'select-directory]
-                 [(put) 'save]
-                 [else 'open])
-               "gtk-cancel" 'cancel
-               ;; no stock names for "Select"
-               (case type
-                 [(dir) "Choose"]
-                 [(put) "gtk-save"]
-                 [(get) "gtk-open"]
-                 [(multi) "Choose"])
-               'accept
-               #f))
-  (when (eq? 'multi type)
-    (gtk_file_chooser_set_select_multiple dlg #t))
-  (when filename
-    (gtk_file_chooser_set_current_name dlg filename))
-  (when directory
-    (gtk_file_chooser_set_current_folder dlg directory))
-  (for ([f (in-list filters)])
-    (match f
-      [(list name glob)
-       (let ([ff (gtk_file_filter_new)])
-         (gtk_file_filter_set_name ff name)
-         (gtk_file_filter_add_pattern ff glob)
-         (gtk_file_chooser_add_filter dlg ff))]))
-  (define ans (and (= -3 (show-dialog dlg))
-                   (if (eq? type 'multi)           
-                       (gtk_file_chooser_get_filenames dlg)
-                       (gtk_file_chooser_get_filename dlg))))
-  (gtk_widget_destroy dlg)
-  ans)
-
-(define response-sema (make-semaphore))
-(define response-val #f)
-
-(define-signal-handler connect-response "response"
-  (_fun _GtkWidget _int -> _void)
-  (lambda (gtk id)
-    (set! response-val id)
-    (semaphore-post response-sema)))
-
-(define (show-dialog dlg-gtk)
-  (connect-response dlg-gtk)
-  (gtk_widget_show dlg-gtk)
-  (yield response-sema)
-  (gtk_widget_hide dlg-gtk)
-  response-val)
 
 (define (id-to-menu-item i) i)
 (define-unimplemented get-the-x-selection)

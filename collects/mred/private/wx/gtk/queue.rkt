@@ -62,6 +62,7 @@
 
 (define-mz scheme_get_fdset (_fun _pointer _int -> _pointer))
 (define-mz scheme_fdset (_fun _pointer _int -> _void))
+(define-mz scheme_set_wakeup_time (_fun _pointer _double -> _void))
 
 (define (install-wakeup fds)
   (pre-event-sync #t)
@@ -70,7 +71,9 @@
                                  timeout
                                  poll-fds
                                  poll-fd-count)])
-    ;; FIXME: use the `timeout' result
+    (let ([to (ptr-ref timeout _int)])
+      (when (to . >= . 0)
+        (scheme_set_wakeup_time fds (+ (current-inexact-milliseconds) to))))
     (if (n . > . poll-fd-count)
         (begin
           (set! poll-fds (malloc _GPollFD n))

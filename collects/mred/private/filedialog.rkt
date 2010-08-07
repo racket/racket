@@ -53,9 +53,8 @@
       (let* ([std? (memq 'common style)]
              [style (if std? (remq 'common style) style)])
         (if (or std? 
-                ;#t ; for now, always use the manually constructed dialog
-                ;; the platform dialog is only available for Gtk
-                (not (eq? (system-type) 'unix)))
+                ;; no Cocoa dialog, yet:
+                (eq? (system-type) 'macosx))
           (send (new path-dialog%
                   [put?      put?]
                   [dir?      dir?]
