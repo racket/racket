@@ -492,10 +492,12 @@
       (let ([n (between/c-low ctc)]
             [m (between/c-high ctc)])
         (cond
-         [(= n -inf.0) `(<=/c ,m)]
-         [(= m +inf.0) `(>=/c ,n)]
-         [(= n m) `(=/c ,n)]
-         [else `(between/c ,n ,m)])))
+          [(and (= n -inf.0) (= m +inf.0))
+           `(between/c ,n ,m)]
+          [(= n -inf.0) `(<=/c ,m)]
+          [(= m +inf.0) `(>=/c ,n)]
+          [(= n m) `(=/c ,n)]
+          [else `(between/c ,n ,m)])))
 
    #:stronger
    (λ (this that)

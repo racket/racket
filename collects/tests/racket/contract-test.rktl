@@ -8655,6 +8655,7 @@ so that propagation occurs.
   (test-name '(</c 5) (</c 5))
   (test-name '(>/c 5) (>/c 5))
   (test-name '(between/c 5 6) (between/c 5 6))
+  (test-name '(between/c -inf.0 +inf.0) (between/c -inf.0 +inf.0))
   (test-name '(integer-in 0 10) (integer-in 0 10))
   (test-name '(real-in 1 10) (real-in 1 10))
   (test-name '(string-len/c 3) (string-len/c 3))
