@@ -5,6 +5,8 @@
 
 (provide (protect-out start-atomic
                       end-atomic
+                      start-breakable-atomic
+                      end-breakable-atomic
                       call-as-atomic
                       call-as-nonatomic))
 

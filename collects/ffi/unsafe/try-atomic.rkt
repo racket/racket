@@ -23,18 +23,18 @@
 ;; computation in non-atomic mode.
 (define (call-as-nonatomic-retry-point thunk)
   (let ([b (box null)])
-    (parameterize ([freezer-box b])
-      ;; In atomic mode:
-      (call-as-atomic thunk))
-    ;; Out of atomic mode:
-    (let ([l (unbox b)])
-      (for ([k (in-list (reverse l))])
-        (call-with-continuation-prompt ; to catch aborts
-         (lambda ()
-           (call-with-continuation-prompt
-            k
-            freeze-tag)))))
-    (void)))
+    (begin0
+     (parameterize ([freezer-box b])
+       ;; In atomic mode:
+       (call-as-atomic thunk))
+     ;; Retries out of atomic mode:
+     (let ([l (unbox b)])
+       (for ([k (in-list (reverse l))])
+         (call-with-continuation-prompt ; to catch aborts
+          (lambda ()
+            (call-with-continuation-prompt
+             k
+             freeze-tag))))))))
 
 (define (can-try-atomic?) (and (freezer-box) #t))
 
@@ -56,14 +56,13 @@
       default]
      [else
       ;; try to do some work:
-      (let* ([prev #f]
-             [ready? #f]
+      (let* ([ready? #f]
              [handler (lambda ()
                         (when (and ready? (should-give-up?))
                           (scheme_call_with_composable_no_dws
                            (lambda (proc)
                              (set-box! b (cons proc (unbox b)))
-                             (scheme_restore_on_atomic_timeout prev)
+                             (scheme_restore_on_atomic_timeout #f)
                              (scheme_abort_continuation_no_dws
                               freeze-tag
                               (lambda () default)))
@@ -79,12 +78,12 @@
                (lambda ()
                  (call-with-continuation-prompt ; to catch aborts
                   (lambda ()
-                    (set! prev (scheme_set_on_atomic_timeout handler))
-                    (when prev (log-error "uh oh"))
+                    (when (scheme_set_on_atomic_timeout handler)
+                      (error 'try-atomic "internal error: nested handlers?!"))
                     (set! ready? #t)
                     (thunk))))
                freeze-tag))
             (lambda ()
-              (scheme_restore_on_atomic_timeout prev))))
+              (scheme_restore_on_atomic_timeout #f))))
          (hash-remove! saved-ptrs handler)))])))
 
