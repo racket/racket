@@ -140,15 +140,17 @@
          [(< am bm) -1]
          [else 1]))))
 
+(define current-cb-box (make-parameter #f))
 
 (define-mz scheme_add_managed (_fun _racket ; custodian
                                     _racket ; object
-                                    (_fun #:atomic? #t _racket _pointer -> _void)
-                                    _pointer ; data
+                                    (_fun #:atomic? #t #:keep (lambda (v) (set-box! (current-cb-box) v))
+                                          _racket _racket -> _void)
+                                    _racket ; data
                                     _int ; strong?
                                     -> _pointer))
 
-(define (shutdown-eventspace! e ignored-data)
+(define (shutdown-eventspace! e ignored)
   (unless (eventspace-shutdown? e)
     (set-eventspace-shutdown?! e #t)
     (semaphore-post (eventspace-done-sema e))
@@ -268,12 +270,14 @@
                             frames
                             (semaphore-peek-evt done-sema)
                             #f
-                            done-sema)])
-      (scheme_add_managed (current-custodian) 
-                          e
-                          shutdown-eventspace!
-                          #f
-                          1)
+                            done-sema)]
+          [cb-box (box #f)])
+      (parameterize ([current-cb-box cb-box])
+        (scheme_add_managed (current-custodian) 
+                            e
+                            shutdown-eventspace!
+                            cb-box ; retain callback until it's called
+                            1))
       e)))
 
 (define main-eventspace (make-eventspace* (current-thread)))

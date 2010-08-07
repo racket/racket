@@ -108,7 +108,7 @@
       => (lambda (e)
            (let ([evt (gdk_event_copy evt)])
              (queue-event e (lambda () 
-                              (call-as-unfreeze-point
+                              (call-as-nonatomic-retry-point
                                (lambda ()
                                  (gtk_main_do_event evt)
                                  (gdk_event_free evt)))))))]

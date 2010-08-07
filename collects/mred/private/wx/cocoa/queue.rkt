@@ -228,7 +228,7 @@
                       (begin
                         (retain evt)
                         (queue-event e (lambda () 
-                                         (call-as-unfreeze-point
+                                         (call-as-nonatomic-retry-point
                                           (lambda ()
                                             (tellv app sendEvent: evt)
                                             (release evt))))))

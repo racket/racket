@@ -4,10 +4,7 @@
 
 (provide (protect-out as-entry
                       as-exit
-                      entry-point
-
-                      inside-lock?
-                      any-lock?))
+                      entry-point))
 
 ;; We need atomic mode for a couple of reasons:
 ;;
@@ -33,87 +30,9 @@
 ;; handler might try to use GUI elements from a different thread, or
 ;; other such things, leading to deadlock.
 
-(define monitor-owner #f)
+(define as-entry call-as-atomic)
 
-;; An exception may be constructed while we're entered:
-(define entered-err-string-handler
-  (lambda (s n)
-    (as-exit
-     (lambda ()
-       ((error-value->string-handler) s n)))))
-
-(define old-paramz #f)
-(define old-break-paramz #f)
-
-(define exited-key (gensym 'as-exit))
-(define lock-tag (make-continuation-prompt-tag 'lock))
-
-(define (as-entry f)
-  (cond
-   [(eq? monitor-owner (current-thread))
-    ;; Need to increment atomicity level for cooperation with
-    ;; freezing speculative computations (in mred/private/wx/common/freeze)
-    (dynamic-wind
-        start-atomic
-        f
-        end-atomic)]
-   [else
-    (with-continuation-mark 
-        exited-key 
-        #f
-      (call-with-continuation-prompt
-       (lambda ()
-         (dynamic-wind
-             (lambda () 
-               (start-atomic)  
-               (set! monitor-owner (current-thread)))
-             (lambda () 
-               (set! old-paramz (current-parameterization))
-               (set! old-break-paramz (current-break-parameterization))
-               (parameterize ([error-value->string-handler entered-err-string-handler])
-                 (parameterize-break 
-                  #f
-                  (call-with-exception-handler
-                   (lambda (exn)
-                     ;; Get out of atomic region before letting
-                     ;;  an exception handler work
-                     (if (continuation-mark-set-first #f exited-key)
-                         exn ; defer to previous exn handler
-                         (abort-current-continuation
-                          lock-tag
-                          (lambda () (raise exn)))))
-                   f))))
-             (lambda ()
-               (set! monitor-owner #f)
-               (set! old-paramz #f)
-               (set! old-break-paramz #f)
-               (end-atomic))))
-       lock-tag
-       (lambda (t) (t))))]))
-
-(define (as-exit f)
-  (unless (eq? monitor-owner (current-thread)) (error 'monitor-exit "not in monitored area for ~e" f))
-  (let ([paramz old-paramz]
-        [break-paramz old-break-paramz])
-    (with-continuation-mark 
-        exited-key 
-        #t ; disables special exception handling
-      (call-with-parameterization
-       paramz
-       (lambda ()
-         (call-with-break-parameterization
-          break-paramz
-          (lambda ()
-            (dynamic-wind
-                (lambda ()		
-                  (set! monitor-owner #f)	 
-                  (end-atomic))
-                f
-                (lambda ()
-                  (set! old-paramz paramz)
-                  (set! old-break-paramz break-paramz)
-                  (start-atomic)
-                  (set! monitor-owner (current-thread)))))))))))
+(define as-exit call-as-nonatomic)
 
 (define-syntax entry-point 
   (lambda (stx)
@@ -126,8 +45,3 @@
        (syntax (case-lambda 
                 [vars (as-entry (lambda () body1 body ...))]
                 ...))])))
-
-;; For debugging: 
-(define (inside-lock?) (eq? monitor-owner (current-thread)))
-(define (any-lock?) (and monitor-owner #t))
-
