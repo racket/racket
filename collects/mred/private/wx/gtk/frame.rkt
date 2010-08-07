@@ -22,7 +22,7 @@
 
 (define-gtk gtk_window_new (_fun _int -> _GtkWidget))
 (define-gtk gtk_window_set_title (_fun _GtkWindow _string -> _void))
-(define-gtk gtk_fixed_new (_fun _gboolean _int -> _GtkWidget))
+(define-gtk gtk_fixed_new (_fun -> _GtkWidget))
 (define-gtk gtk_fixed_move (_fun _GtkWidget _GtkWidget _int _int -> _void))
 (define-gtk gtk_window_get_size (_fun _GtkWidget (w : (_ptr o _int)) (h : (_ptr o _int))
                                       -> _void
@@ -93,7 +93,7 @@
           x y w h
           style)
     (init [is-dialog? #f])
-   
+
     (inherit get-gtk set-size on-size
              pre-on-char pre-on-event
              get-client-delta get-size
@@ -104,7 +104,7 @@
     (when (memq 'no-caption style)
       (gtk_window_set_decorated gtk #f))
     (define vbox-gtk (gtk_vbox_new #f 0))
-    (define panel-gtk (gtk_fixed_new #f 10))
+    (define panel-gtk (gtk_fixed_new))
     (gtk_container_add gtk vbox-gtk)
     (gtk_box_pack_end vbox-gtk panel-gtk #t #t 0)
     (gtk_widget_show vbox-gtk)
@@ -142,7 +142,11 @@
         ;; better assumptions about the client size and more
         ;; quickly converge to the right size of the frame
         ;; based on its content
-        (adjust-client-delta 0 h)))
+        (adjust-client-delta 0 h))
+      ;; Hack: calls back into the mred layer to re-compute
+      ;;  sizes. By calling this early enough, the frame won't 
+      ;;  grow if it doesn't have to grow to accomodate the menu bar.
+      (send this resized))
 
     (define saved-enforcements (vector 0 0 -1 -1))
 
