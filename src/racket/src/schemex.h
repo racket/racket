@@ -751,6 +751,7 @@ int (*scheme_fdisset)(void *fd, int pos);
 void (*scheme_add_fd_handle)(void *h, void *fds, int repost);
 void (*scheme_add_fd_eventmask)(void *fds, int mask);
 void (*scheme_collapse_win_fd)(void *fds);
+void (*scheme_set_wakeup_time)(void *fds, double end_time);
 void (*scheme_security_check_file)(const char *who, const char *filename, int guards);
 void (*scheme_security_check_file_link)(const char *who, const char *filename, const char *content);
 void (*scheme_security_check_network)(const char *who, const char *host, int port, int client);

@@ -221,6 +221,7 @@ THREAD_LOCAL_DECL(int scheme_active_but_sleeping = 0);
 THREAD_LOCAL_DECL(static int thread_ended_with_activity);
 THREAD_LOCAL_DECL(int scheme_no_stack_overflow);
 THREAD_LOCAL_DECL(static int needs_sleep_cancelled);
+THREAD_LOCAL_DECL(static double needs_sleep_time_end); /* back-door result */
 THREAD_LOCAL_DECL(static int tls_pos = 0);
 /* On swap, put target in a static variable, instead of on the stack,
    so that the swapped-out thread is less likely to have a pointer
@@ -3648,17 +3649,27 @@ static int check_sleep(int need_activity, int sleep_now)
     p = scheme_first_thread;
     while (p) {
       int merge_time = 0;
+      double p_time;
 
       if (p->nestee) {
 	/* nothing */
       } else if (p->block_descriptor == GENERIC_BLOCKED) {
+        needs_sleep_time_end = -1.0;
 	if (p->block_needs_wakeup) {
 	  Scheme_Needs_Wakeup_Fun f = p->block_needs_wakeup;
 	  f(p->blocker, fds);
 	}
-	merge_time = (p->sleep_end > 0.0);
+        p_time = p->sleep_end;
+	merge_time = (p_time > 0.0);
+        if (needs_sleep_time_end > 0.0) {
+          if (!merge_time || (needs_sleep_time_end < p_time)) {
+            p_time = needs_sleep_time_end;
+            merge_time = 1;
+          }
+        }
       } else if (p->block_descriptor == SLEEP_BLOCKED) {
 	merge_time = 1;
+        p_time = p->sleep_end;
       }
 
       if (merge_time) {
@@ -3701,6 +3712,12 @@ static int check_sleep(int need_activity, int sleep_now)
   }
 
   return 0;
+}
+
+void scheme_set_wakeup_time(void *fds, double end_time)
+{
+  /* should be called only during a needs_wakeup callback */
+  needs_sleep_time_end = end_time;
 }
 
 static int post_system_idle()

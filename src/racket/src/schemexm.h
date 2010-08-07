@@ -528,6 +528,7 @@
 #define scheme_add_fd_handle (scheme_extension_table->scheme_add_fd_handle)
 #define scheme_add_fd_eventmask (scheme_extension_table->scheme_add_fd_eventmask)
 #define scheme_collapse_win_fd (scheme_extension_table->scheme_collapse_win_fd)
+#define scheme_set_wakeup_time (scheme_extension_table->scheme_set_wakeup_time)
 #define scheme_security_check_file (scheme_extension_table->scheme_security_check_file)
 #define scheme_security_check_file_link (scheme_extension_table->scheme_security_check_file_link)
 #define scheme_security_check_network (scheme_extension_table->scheme_security_check_network)

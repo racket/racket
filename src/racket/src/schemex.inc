@@ -528,6 +528,7 @@
   scheme_extension_table->scheme_add_fd_handle = scheme_add_fd_handle;
   scheme_extension_table->scheme_add_fd_eventmask = scheme_add_fd_eventmask;
   scheme_extension_table->scheme_collapse_win_fd = scheme_collapse_win_fd;
+  scheme_extension_table->scheme_set_wakeup_time = scheme_set_wakeup_time;
   scheme_extension_table->scheme_security_check_file = scheme_security_check_file;
   scheme_extension_table->scheme_security_check_file_link = scheme_security_check_file_link;
   scheme_extension_table->scheme_security_check_network = scheme_security_check_network;

@@ -229,6 +229,7 @@ typedef struct Thread_Local_Variables {
   int thread_ended_with_activity_;
   int scheme_no_stack_overflow_;
   int needs_sleep_cancelled_;
+  double needs_sleep_time_end_;
   int tls_pos_;
   struct Scheme_Object *the_nested_exn_handler_;
   struct Scheme_Object *cust_closers_;
@@ -522,6 +523,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define thread_ended_with_activity XOA (scheme_get_thread_local_variables()->thread_ended_with_activity_)
 #define scheme_no_stack_overflow XOA (scheme_get_thread_local_variables()->scheme_no_stack_overflow_)
 #define needs_sleep_cancelled XOA (scheme_get_thread_local_variables()->needs_sleep_cancelled_)
+#define needs_sleep_time_end XOA (scheme_get_thread_local_variables()->needs_sleep_time_end_)
 #define tls_pos XOA (scheme_get_thread_local_variables()->tls_pos_)
 #define the_nested_exn_handler XOA (scheme_get_thread_local_variables()->the_nested_exn_handler_)
 #define cust_closers XOA (scheme_get_thread_local_variables()->cust_closers_)

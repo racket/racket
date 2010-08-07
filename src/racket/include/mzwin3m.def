@@ -474,6 +474,7 @@ EXPORTS
  scheme_add_fd_handle
  scheme_add_fd_eventmask
  scheme_collapse_win_fd
+ scheme_set_wakeup_time
  scheme_security_check_file
  scheme_security_check_file_link
  scheme_security_check_network
