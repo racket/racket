@@ -84,6 +84,8 @@ MZ_EXTERN void scheme_end_atomic(void);
 MZ_EXTERN void scheme_end_atomic_no_swap(void);
 MZ_EXTERN void scheme_start_in_scheduler(void);
 MZ_EXTERN void scheme_end_in_scheduler(void);
+MZ_EXTERN void scheme_start_atomic_no_break(void);
+MZ_EXTERN void scheme_end_atomic_can_break(void);
 
 MZ_EXTERN void scheme_out_of_fuel(void);
 

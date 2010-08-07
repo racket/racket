@@ -68,6 +68,8 @@ void (*scheme_end_atomic)(void);
 void (*scheme_end_atomic_no_swap)(void);
 void (*scheme_start_in_scheduler)(void);
 void (*scheme_end_in_scheduler)(void);
+void (*scheme_start_atomic_no_break)(void);
+void (*scheme_end_atomic_can_break)(void);
 void (*scheme_out_of_fuel)(void);
 Scheme_Object *(*scheme_thread)(Scheme_Object *thunk);
 Scheme_Object *(*scheme_thread_w_details)(Scheme_Object *thunk, 

@@ -9,10 +9,18 @@
                       call-as-nonatomic))
 
 (define start-atomic
-  (get-ffi-obj 'scheme_start_atomic #f (_fun -> _void)))
+  (get-ffi-obj 'scheme_start_atomic_no_break #f (_fun -> _void)))
 
 (define end-atomic
+  (get-ffi-obj 'scheme_end_atomic_can_break #f (_fun -> _void)))
+
+(define start-breakable-atomic
+  (get-ffi-obj 'scheme_start_atomic #f (_fun -> _void)))
+
+(define end-breakable-atomic
   (get-ffi-obj 'scheme_end_atomic #f (_fun -> _void)))
+
+;; ----------------------------------------
 
 (define monitor-owner #f)
 
@@ -35,7 +43,9 @@
     (raise-type-error 'call-as-atomic "procedure (arity 0)" f))
   (cond
    [(eq? monitor-owner (current-thread))
-    (f)]
+    ;; Increment atomicity level for cooperation with anything
+    ;; that is sensitive to the current depth of atomicity.
+    (dynamic-wind start-atomic f end-atomic)]
    [else
     (with-continuation-mark 
         exited-key 
@@ -44,7 +54,7 @@
        (lambda ()
          (dynamic-wind
              (lambda () 
-               (start-atomic)  
+               (start-breakable-atomic)
                (set! monitor-owner (current-thread)))
              (lambda () 
                (set! old-paramz (current-parameterization))
@@ -66,7 +76,7 @@
                (set! monitor-owner #f)
                (set! old-paramz #f)
                (set! old-break-paramz #f)
-               (end-atomic))))
+               (end-breakable-atomic))))
        lock-tag
        (lambda (t) (t))))]))
 
@@ -90,10 +100,10 @@
             (dynamic-wind
                 (lambda ()		
                   (set! monitor-owner #f)	 
-                  (end-atomic))
+                  (end-breakable-atomic))
                 f
                 (lambda ()
                   (set! old-paramz paramz)
                   (set! old-break-paramz break-paramz)
-                  (start-atomic)
+                  (start-breakable-atomic)
                   (set! monitor-owner (current-thread)))))))))))

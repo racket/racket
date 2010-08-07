@@ -33,6 +33,8 @@
 #define scheme_end_atomic_no_swap (scheme_extension_table->scheme_end_atomic_no_swap)
 #define scheme_start_in_scheduler (scheme_extension_table->scheme_start_in_scheduler)
 #define scheme_end_in_scheduler (scheme_extension_table->scheme_end_in_scheduler)
+#define scheme_start_atomic_no_break (scheme_extension_table->scheme_start_atomic_no_break)
+#define scheme_end_atomic_can_break (scheme_extension_table->scheme_end_atomic_can_break)
 #define scheme_out_of_fuel (scheme_extension_table->scheme_out_of_fuel)
 #define scheme_thread (scheme_extension_table->scheme_thread)
 #define scheme_thread_w_details (scheme_extension_table->scheme_thread_w_details)

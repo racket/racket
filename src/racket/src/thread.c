@@ -220,6 +220,7 @@ THREAD_LOCAL_DECL(static int have_activity = 0);
 THREAD_LOCAL_DECL(int scheme_active_but_sleeping = 0);
 THREAD_LOCAL_DECL(static int thread_ended_with_activity);
 THREAD_LOCAL_DECL(int scheme_no_stack_overflow);
+THREAD_LOCAL_DECL(int all_breaks_disabled = 0);
 THREAD_LOCAL_DECL(static int needs_sleep_cancelled);
 THREAD_LOCAL_DECL(static double needs_sleep_time_end); /* back-door result */
 THREAD_LOCAL_DECL(static int tls_pos = 0);
@@ -3787,7 +3788,7 @@ static int can_break_param(Scheme_Thread *p)
 
 int scheme_can_break(Scheme_Thread *p)
 {
-  if (!p->suspend_break && !scheme_no_stack_overflow) {
+  if (!p->suspend_break && !all_breaks_disabled && !scheme_no_stack_overflow) {
     return can_break_param(p);
   } else
     return 0;
@@ -4522,6 +4523,12 @@ void scheme_start_atomic(void)
   do_atomic++;
 }
 
+void scheme_start_atomic_no_break(void)
+{
+  scheme_start_atomic();
+  all_breaks_disabled++;
+}
+
 void scheme_end_atomic_no_swap(void)
 {
   --do_atomic;
@@ -4546,6 +4553,14 @@ void scheme_end_atomic(void)
     scheme_thread_block(0.0);
     scheme_current_thread->ran_some = 1;    
   }
+}
+
+void scheme_end_atomic_can_break(void)
+{
+  --all_breaks_disabled;
+  scheme_end_atomic();
+  if (!all_breaks_disabled)
+    scheme_check_break_now();
 }
 
 static void wait_until_suspend_ok(int for_stack)

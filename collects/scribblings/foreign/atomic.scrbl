@@ -11,14 +11,26 @@
 @defproc[(end-atomic) void?]
 )]{
 
-Disables and enables context switches at the level of Racket
-threads. Calls to @scheme[start-atomic] and @scheme[end-atomic] can be
-nested.
+Disables and enables context switches and delivery of break exceptions
+at the level of Racket threads. Calls to @scheme[start-atomic] and
+@scheme[end-atomic] can be nested.
 
 Using @scheme[call-as-atomic] is somewhat safer, in that
 @scheme[call-as-atomic] correctly catches exceptions and re-raises
-them after exiting atomic mode. For simple uses, however,
-@scheme[start-atomic] and @scheme[end-atomic] are faster.}
+them after exiting atomic mode. For simple uses where exceptions need
+not be handled, however, @scheme[start-atomic] and @scheme[end-atomic]
+are faster.}
+
+@deftogether[(
+@defproc[(start-breakable-atomic) void?]
+@defproc[(end-breakable-atomic) void?]
+)]{
+
+Like @racket[start-atomic] and @racket[end-atomic], but the delivery
+of break exceptions is not suspended. Use these only in
+@racket[dynamic-wind] pre- and post thunks or in other contexts where
+breaks are disabled. These variants are not faster than plan
+@racket[start-atomic] and @racket[end-atomic].}
 
 
 @defproc[(call-as-atomic [thunk (-> any)]) any]{
