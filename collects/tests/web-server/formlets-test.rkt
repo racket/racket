@@ -127,7 +127,9 @@
                               (make-request #"GET" (string->url "http://test.com")
                                             empty
                                             (delay bs)
-                                            #f "127.0.0.1" 80 "127.0.0.1")))]
+                                            #f "127.0.0.1" 80 "127.0.0.1")))
+           (define (test-display f)
+             (formlet-display f))]
      (test-suite
       "Input"
       
@@ -209,6 +211,18 @@
       (test-equal? "textarea-input"
                    (test-process (textarea-input) (list (make-binding:form #"input_0" #"value")))
                    "value")
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input))
+                   '((textarea ([name "input_0"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:rows 80))
+                   '((textarea ([name "input_0"] [rows "80"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:cols 80))
+                   '((textarea ([name "input_0"] [cols "80"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:cols 80 #:rows 70))
+                   '((textarea ([name "input_0"] [rows "70"] [cols "80"]) "")))
       
       (test-equal? "to-string"
                    (test-process (to-string (required (text-input))) (list (make-binding:form #"input_0" #"value")))
