@@ -262,7 +262,7 @@
 	    (override*
 	     [on-paint
 	      (case-lambda
-	       [() (on-paint #f)]
+	       [() (time (on-paint #f))]
 	       [(ps?)
 		(let* ([can-dc (get-dc)]
 		       [pen0s (make-object pen% "BLACK" 0 'solid)]

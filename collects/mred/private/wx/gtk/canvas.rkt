@@ -137,7 +137,8 @@
           [gl-config #f])
 
     (inherit get-gtk set-size get-size get-client-size 
-             on-size register-as-child get-top-win)
+             on-size register-as-child get-top-win
+             set-auto-size adjust-client-delta)
 
     (define is-combo? (memq 'combo style))
     (define has-border? (or (memq 'border style)
@@ -251,6 +252,9 @@
 
     (when hscroll-adj (connect-value-changed-h hscroll-adj))
     (when vscroll-adj (connect-value-changed-v vscroll-adj))
+
+    (set-auto-size)
+    (adjust-client-delta margin margin)
 
     (define/override (direct-update?) #f)
 

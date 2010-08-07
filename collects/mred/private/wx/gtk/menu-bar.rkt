@@ -5,6 +5,7 @@
           "../common/freeze.rkt"
           "../common/queue.rkt"
           "widget.rkt"
+          "window.rkt"
           "utils.rkt"
           "types.rkt")
 (unsafe!)
@@ -21,6 +22,8 @@
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_label_set_text_with_mnemonic (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
+
+(define-gtk gtk_widget_set_usize (_fun _GtkWidget _int _int -> _void))
 
 (define (fixup-mneumonic title)
   (regexp-replace*
@@ -76,9 +79,22 @@
   (connect-menu-button-press gtk)
 
   (define top-wx #f)
+
   (define/public (set-top-window top)
     (set! top-wx top)
-    (install-widget-parent top))
+    (install-widget-parent top)
+    ;; return initial size; also, add a menu to make sure there is one,
+    ;; and force the menu bar to be at least that tall always
+    (let ([item (gtk_menu_item_new_with_mnemonic "Xyz")])
+      (gtk_menu_shell_append gtk item)
+      (gtk_widget_show item)
+      (begin0
+       (let ([req (make-GtkRequisition 0 0)])
+         (gtk_widget_size_request gtk req)
+         (gtk_widget_set_usize gtk -1 (GtkRequisition-height req))
+         (GtkRequisition-height req))
+       (gtk_container_remove gtk item))))
+
   (define/public (get-top-window)
     top-wx)
 

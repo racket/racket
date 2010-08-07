@@ -57,6 +57,7 @@
       (set! client-w w)
       (set! client-h h))
 
+    #;
     (define/override (get-client-size xb yb)
       (set-box! xb client-w)
       (set-box! yb client-h))

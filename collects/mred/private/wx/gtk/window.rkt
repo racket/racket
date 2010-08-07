@@ -76,6 +76,16 @@
   (connect-focus-in gtk)
   (connect-focus-out gtk))
 
+(define-signal-handler connect-size-allocate "size-allocate"
+  (_fun _GtkWidget _GtkAllocation-pointer -> _gboolean)
+  (lambda (gtk a)
+    (let ([wx (gtk->wx gtk)])
+      (send wx save-size 
+            (GtkAllocation-x a)
+            (GtkAllocation-y a)
+            (GtkAllocation-width a)
+            (GtkAllocation-height a)))
+    #t))
 ;; ----------------------------------------
 
 (define-signal-handler connect-key-press "key-press-event"
@@ -256,6 +266,8 @@
     (define save-w 0)
     (define save-h 0)
 
+    (connect-size-allocate gtk)
+
     (when add-to-parent?
       (gtk_container_add (send parent get-client-gtk) gtk))
 
@@ -275,9 +287,15 @@
         (unless (= y -11111) (set! save-y y))
         (unless (= w -1) (set! save-w w))
         (unless (= h -1) (set! save-h h))
+        (set! save-w (max save-w client-delta-w))
+        (set! save-h (max save-h client-delta-h))
         (tentative-client-size (+ save-w client-delta-w)
                                (+ save-h client-delta-h))
         (really-set-size gtk save-x save-y save-w save-h)))
+
+    (define/public (save-size x y w h)
+      (set! save-w w)
+      (set! save-h h))
 
     (define/public (really-set-size gtk x y w h)
       (send parent set-child-size gtk x y w h))
@@ -296,13 +314,35 @@
 
     (define client-delta-w 0)
     (define client-delta-h 0)
+    (define min-client-delta-w 0)
+    (define min-client-delta-h 0)
     (define/public (remember-client-size w h)
       ;; Called in the Gtk event-loop thread
-      (set! client-delta-w (max 0 (- save-w w)))
-      (set! client-delta-h (max 0 (- save-h h)))
+      ;(set! client-delta-w (max min-client-delta-w (- save-w w)))
+      ;(set! client-delta-h (max min-client-delta-h (- save-h h)))
       (queue-window-event this (lambda () (on-size 0 0))))
     (define/public (tentative-client-size w h)
       (void))
+
+    (define/public (adjust-client-delta dw dh)
+      (set! client-delta-w dw)
+      (set! client-delta-h dh))
+
+    (define/public (infer-client-delta [w? #t] [h? #t] [sub-h-gtk #f])
+      (let ([req (make-GtkRequisition 0 0)]
+            [creq (make-GtkRequisition 0 0)]
+            [hreq (make-GtkRequisition 0 0)])
+        (gtk_widget_size_request gtk req)
+        (gtk_widget_size_request (get-client-gtk) creq)
+        (when sub-h-gtk
+          (gtk_widget_size_request sub-h-gtk hreq))
+        (when w?
+          (set! client-delta-w (- (GtkRequisition-width req)
+                                  (max (GtkRequisition-width creq)
+                                       (GtkRequisition-width hreq)))))
+        (when h?
+          (set! client-delta-h (- (GtkRequisition-height req)
+                                  (GtkRequisition-height creq))))))
 
     (define/public (set-auto-size)
       (let ([req (make-GtkRequisition 0 0)])
@@ -345,7 +385,9 @@
       (set-box! xb save-w)
       (set-box! yb save-h))
     (define/public (get-client-size xb yb)
-      (get-size xb yb))
+      (get-size xb yb)
+      (set-box! xb (max 0 (- (unbox xb) client-delta-w)))
+      (set-box! yb (max 0 (- (unbox yb) client-delta-h))))
 
     (define enabled? #t)
     (define/pubment (is-enabled-to-root?)

@@ -17,6 +17,7 @@
 (define-gtk gtk_fixed_move (_fun _GtkWidget _GtkWidget _int _int -> _void))
 
 (define-gtk gtk_frame_set_label (_fun _GtkWidget _string -> _void))
+(define-gtk gtk_frame_get_label_widget (_fun _GtkWidget ->  _GtkWidget))
 
 (define group-panel%
   (class (client-size-mixin (panel-mixin window%))
@@ -25,7 +26,8 @@
           style
           label)
     
-    (inherit set-size set-auto-size get-gtk get-height)
+    (inherit set-size set-auto-size infer-client-delta
+             get-gtk get-height)
 
     (define gtk (gtk_frame_new label))
     (define client-gtk (gtk_fixed_new))
@@ -38,16 +40,8 @@
                [extra-gtks (list client-gtk)]
                [no-show? (memq 'deleted style)])
 
+    (infer-client-delta #t #t (gtk_frame_get_label_widget gtk))
     (set-auto-size)
-
-    ;; The delta between the group box height and its
-    ;; client height can go bad if the label is set.
-    ;; Avoid the problem by effectively using the
-    ;; original delta.
-    (define orig-h (get-height))
-    (define/override (get-client-size xb yb)
-      (super get-client-size xb yb)
-      (set-box! yb (- (get-height) orig-h)))
 
     (define/public (set-label s)
       (gtk_frame_set_label gtk s))

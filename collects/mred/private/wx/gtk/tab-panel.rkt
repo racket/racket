@@ -44,13 +44,22 @@
           style
           labels)
     
-    (inherit set-size set-auto-size get-gtk
-             reset-child-dcs)
+    (inherit set-size set-auto-size infer-client-delta get-gtk
+             reset-child-dcs get-height)
 
     (define gtk (gtk_notebook_new))
     ;; Reparented so that it's always in the current page's bin:
     (define client-gtk (gtk_fixed_new))
 
+    (super-new [parent parent]
+               [gtk gtk]
+               [client-gtk client-gtk]
+               [extra-gtks (list client-gtk)]
+               [no-show? (memq 'deleted style)])
+
+    ; Once without tabs to set client-width delta:
+    (infer-client-delta #t #f)
+    
     (define empty-bin-gtk (gtk_hbox_new #f 0))
     (define current-bin-gtk #f)
 
@@ -80,13 +89,10 @@
           (select-bin (page-bin-gtk (car pages)))))
     (gtk_widget_show client-gtk)
     
-    (super-new [parent parent]
-               [gtk gtk]
-               [client-gtk client-gtk]
-               [extra-gtks (list client-gtk)]
-               [no-show? (memq 'deleted style)])
-
     (connect-key-and-mouse gtk)
+
+    ; With tabs to set client-width delta:
+    (infer-client-delta #f #t)
 
     (set-auto-size)
 

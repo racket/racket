@@ -97,7 +97,8 @@
     (inherit get-gtk set-size on-size
              pre-on-char pre-on-event
              get-client-delta get-size
-             get-parent get-eventspace)
+             get-parent get-eventspace
+             adjust-client-delta)
 
     (define gtk (gtk_window_new GTK_WINDOW_TOPLEVEL))
     (when (memq 'no-caption style)
@@ -133,10 +134,15 @@
     (define/public (on-close) (void))
 
     (define/public (set-menu-bar mb)
-      (send mb set-top-window this)
       (let ([mb-gtk (send mb get-gtk)])
         (gtk_box_pack_start vbox-gtk mb-gtk #t #t 0)
-        (gtk_widget_show mb-gtk)))
+        (gtk_widget_show mb-gtk))
+      (let ([h (send mb set-top-window this)])
+        ;; adjust client delta right away, so that we make
+        ;; better assumptions about the client size and more
+        ;; quickly converge to the right size of the frame
+        ;; based on its content
+        (adjust-client-delta 0 h)))
 
     (define saved-enforcements (vector 0 0 -1 -1))
 
