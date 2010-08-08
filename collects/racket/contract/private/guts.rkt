@@ -216,8 +216,7 @@
             [(null? projs) proj]
             [else (loop (cdr projs)
                         (let ([f (car projs)])
-                          (λ (v) (proj (f v)))))]))))))
-
+                          (λ (v) (f (proj v)))))]))))))
 
 (define-struct and/c (ctcs)
   #:omit-define-syntaxes

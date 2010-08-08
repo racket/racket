@@ -3220,8 +3220,8 @@
                  'pos
                  'neg)
        1)
-      x)
-   (reverse '(1 3 4 2)))
+      (reverse x))
+   '(3 1 2 4))
 
   
 ;                                                                                              
