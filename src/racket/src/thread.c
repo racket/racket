@@ -374,7 +374,7 @@ static void make_initial_config(Scheme_Thread *p);
 
 static int do_kill_thread(Scheme_Thread *p);
 static void suspend_thread(Scheme_Thread *p);
-static void wait_until_suspend_ok();
+static void wait_until_suspend_ok(int for_stack);
 
 static int check_sleep(int need_activity, int sleep_now);
 
@@ -3296,7 +3296,7 @@ Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
 
     /* Don't mangle the stack if we're in atomic mode, because that
        probably means a stack-freeze trampoline, etc. */
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(1);
 
     p->ku.k.p1 = thunk;
     p->ku.k.p2 = config;
@@ -3362,7 +3362,7 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 
   SCHEME_USE_FUEL(25);
 
-  wait_until_suspend_ok();
+  wait_until_suspend_ok(0);
 
   np = MALLOC_ONE_TAGGED(Scheme_Thread);
   np->so.type = scheme_thread_type;
@@ -4183,7 +4183,7 @@ void scheme_thread_block(float sleep_time)
   if ((p->running & MZTHREAD_USER_SUSPENDED)
       && !(p->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
     /* This thread was suspended. */
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(0);
     if (!p->next) {
       /* Suspending the main thread... */
       select_thread();
@@ -4330,7 +4330,7 @@ void scheme_thread_block(float sleep_time)
   /* Suspended while I was asleep? */
   if ((p->running & MZTHREAD_USER_SUSPENDED)
       && !(p->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(0);
     if (!p->next)
       scheme_thread_block(0.0); /* main thread handled at top of this function */
     else
@@ -4548,11 +4548,15 @@ void scheme_end_atomic(void)
   }
 }
 
-static void wait_until_suspend_ok()
+static void wait_until_suspend_ok(int for_stack)
 {
   if (do_atomic > atomic_timeout_atomic_level) {
-    scheme_log_abort("attempted to wait for suspend in nested atomic mode");
-    abort();
+    if (for_stack && atomic_timeout_auto_suspend) {
+      /* new-style atomic timeout, where a stack oveflow is ok */
+    } else {
+      scheme_log_abort("attempted to wait for suspend in nested atomic mode");
+      abort();
+    }
   }
 
   while (do_atomic && scheme_on_atomic_timeout) {
@@ -4580,7 +4584,7 @@ void scheme_weak_suspend_thread(Scheme_Thread *r)
     return;
 
   if (r == scheme_current_thread) {
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(0);
   }
   
   if (r->prev) {
@@ -4627,7 +4631,7 @@ void scheme_weak_resume_thread(Scheme_Thread *r)
 
 void scheme_about_to_move_C_stack(void)
 {
-  wait_until_suspend_ok();
+  wait_until_suspend_ok(1);
 }
 
 static Scheme_Object *
@@ -4739,7 +4743,7 @@ void scheme_kill_thread(Scheme_Thread *p)
 {
   if (do_kill_thread(p)) {
     /* Suspend/kill self: */
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(0);
     if (p->suspend_to_kill)
       suspend_thread(p);
     else
@@ -4869,7 +4873,7 @@ static void suspend_thread(Scheme_Thread *p)
     p->running |= MZTHREAD_USER_SUSPENDED;
   } else {
     if (p == scheme_current_thread) {
-      wait_until_suspend_ok();
+      wait_until_suspend_ok(0);
     }
     p->running |= MZTHREAD_USER_SUSPENDED;
     scheme_weak_suspend_thread(p); /* ok if p is scheme_current_thread */
