@@ -36,48 +36,121 @@
                       pre/post-procs
                       mandatory-args opt-args mandatory-kwds opt-kwds rest?
                       here
-                      mk-wrapper)
-  #:property prop:contract
-  (build-contract-property
-   #:projection
-   (λ (ctc) 
-     (let ([arg-ctc-projs (map contract-projection (->i-arg-ctcs ctc))]
-           [indy-arg-ctc-projs (map contract-projection (->i-indy-arg-ctcs ctc))]
-           [rng-ctc-projs (map contract-projection (->i-rng-ctcs ctc))]
-           [indy-rng-ctc-projs (map contract-projection (->i-indy-rng-ctcs ctc))]
-           [func (->i-mk-wrapper ctc)]
-           [has-rest? (->i-rest? ctc)]
-           [here (->i-here ctc)])
-       (λ (blame)
-         (let* ([swapped-blame (blame-swap blame)]
-                [indy-dom-blame (blame-replace-negative swapped-blame here)]
-                [indy-rng-blame (blame-replace-negative blame here)]
-                
-                [partial-doms (map (λ (dom) (dom swapped-blame)) arg-ctc-projs)]
-                [partial-indy-doms (map (λ (dom) (dom indy-dom-blame)) indy-arg-ctc-projs)]
-                
-                [partial-rngs (map (λ (rng) (rng blame)) rng-ctc-projs)]
-                [partial-indy-rngs (map (λ (rng) (rng indy-rng-blame)) indy-rng-ctc-projs)])
-           (apply func
-                  blame
-                  swapped-blame
-                  indy-dom-blame
-                  indy-rng-blame
-                  (λ (val mtd?)
-                    (if has-rest?
-                        (check-procedure/more val mtd? (->i-mandatory-args ctc) (->i-mandatory-kwds ctc) (->i-opt-kwds ctc) blame)
-                        (check-procedure val mtd? (->i-mandatory-args ctc) (->i-opt-args ctc) (->i-mandatory-kwds ctc) (->i-opt-kwds ctc) blame)))
-                  ctc
-                  (append (->i-pre/post-procs ctc)
-                          partial-doms
-                          (->i-arg-dep-ctcs ctc)
-                          partial-indy-doms
-                          partial-rngs
-                          (->i-rng-dep-ctcs ctc)
-                          partial-indy-rngs))))))
-   #:name (λ (ctc) '(->i ...)) ;; WRONG
-   #:first-order (λ (ctc) (λ (x) #f)) ;; WRONG
-   #:stronger (λ (this that) (eq? this that)))) ;; WRONG
+                      mk-wrapper
+                      name-info)
+        #:property prop:contract
+        (build-contract-property
+         #:projection
+         (λ (ctc) 
+           (let ([arg-ctc-projs (map contract-projection (->i-arg-ctcs ctc))]
+                 [indy-arg-ctc-projs (map contract-projection (->i-indy-arg-ctcs ctc))]
+                 [rng-ctc-projs (map contract-projection (->i-rng-ctcs ctc))]
+                 [indy-rng-ctc-projs (map contract-projection (->i-indy-rng-ctcs ctc))]
+                 [func (->i-mk-wrapper ctc)]
+                 [has-rest? (->i-rest? ctc)]
+                 [here (->i-here ctc)])
+             (λ (blame)
+               (let* ([swapped-blame (blame-swap blame)]
+                      [indy-dom-blame (blame-replace-negative swapped-blame here)]
+                      [indy-rng-blame (blame-replace-negative blame here)]
+                      
+                      [partial-doms (map (λ (dom) (dom swapped-blame)) arg-ctc-projs)]
+                      [partial-indy-doms (map (λ (dom) (dom indy-dom-blame)) indy-arg-ctc-projs)]
+                      
+                      [partial-rngs (map (λ (rng) (rng blame)) rng-ctc-projs)]
+                      [partial-indy-rngs (map (λ (rng) (rng indy-rng-blame)) indy-rng-ctc-projs)])
+                 (apply func
+                        blame
+                        swapped-blame
+                        indy-dom-blame
+                        indy-rng-blame
+                        (λ (val mtd?)
+                          (if has-rest?
+                              (check-procedure/more val mtd? (->i-mandatory-args ctc) (->i-mandatory-kwds ctc) (->i-opt-kwds ctc) blame)
+                              (check-procedure val mtd? (->i-mandatory-args ctc) (->i-opt-args ctc) (->i-mandatory-kwds ctc) (->i-opt-kwds ctc) blame)))
+                        ctc
+                        (append (->i-pre/post-procs ctc)
+                                partial-doms
+                                (->i-arg-dep-ctcs ctc)
+                                partial-indy-doms
+                                partial-rngs
+                                (->i-rng-dep-ctcs ctc)
+                                partial-indy-rngs))))))
+         #:name (λ (ctc) 
+                  (define (arg/ress->spec infos ctcs dep-ctcs skip?)
+                    (let loop ([infos infos]
+                               [ctcs ctcs]
+                               [dep-ctcs dep-ctcs])
+                      (cond
+                        [(null? infos) '()]
+                        [else 
+                         (let* ([info (car infos)]
+                                [dep/nodep (list-ref info 0)]
+                                [var (list-ref info 1)]
+                                [vars (list-ref info 2)]
+                                [kwd (list-ref info 3)])
+                           (case dep/nodep
+                             [(nodep)
+                              (if (skip? info)
+                                  (loop (cdr infos) (cdr ctcs) dep-ctcs)
+                                  `(,@(if kwd
+                                          (list kwd)
+                                          (list))
+                                    [,var ,(contract-name (car ctcs))]
+                                    .
+                                    ,(loop (cdr infos) (cdr ctcs) dep-ctcs)))]
+                             [(dep)
+                              (if (skip? info)
+                                  (loop (cdr infos) ctcs (cdr dep-ctcs))
+                                  `(,@(if kwd
+                                          (list kwd)
+                                          (list))
+                                    [,var ,vars ...]
+                                    .
+                                    ,(loop (cdr infos) ctcs (cdr dep-ctcs))))]))])))
+                  (let* ([name-info (->i-name-info ctc)]
+                         [args-info (vector-ref name-info 0)]
+                         [rest-info (vector-ref name-info 1)]
+                         [pre-info  (vector-ref name-info 2)]
+                         [rng-info  (vector-ref name-info 3)]
+                         [post-info (vector-ref name-info 4)])
+                    `(->i ,(arg/ress->spec args-info
+                                           (->i-arg-ctcs ctc)
+                                           (->i-arg-dep-ctcs ctc)
+                                           (λ (x) (list-ref x 4)))
+                          ,@(let ([rests (arg/ress->spec args-info
+                                                         (->i-arg-ctcs ctc)
+                                                         (->i-arg-dep-ctcs ctc)
+                                                         (λ (x) (not (list-ref x 4))))])
+                              (if (null? rests)
+                                  '()
+                                  (list rests)))
+                          ,@(if rest-info
+                                (case (car rest-info)
+                                  [(nodep) `(#:rest [,(list-ref rest-info 1) ,(contract-name (car (reverse (->i-arg-ctcs ctc))))])]
+                                  [(dep) `(#:rest [,(list-ref rest-info 1) ,(list-ref rest-info 2) ...])])
+                                '())
+                          ,@(if pre-info
+                                `(#:pre ,pre-info ...)
+                                '())
+                          ,(cond
+                             [(not rng-info)
+                              'any]
+                             [else
+                              (let ([infos (arg/ress->spec rng-info
+                                                           (->i-rng-ctcs ctc)
+                                                           (->i-rng-dep-ctcs ctc)
+                                                           (λ (x) #f))])
+                                (cond
+                                  [(or (null? infos) (not (null? (cdr infos))))
+                                   `(values ,@infos)]
+                                  [else
+                                   (car infos)]))])
+                          ,@(if post-info
+                                `(#:post ,post-info ...)
+                                '()))))
+         #:first-order (λ (ctc) (λ (x) #f)) ;; WRONG
+         #:stronger (λ (this that) (eq? this that)))) ;; WRONG
 
 ;; find-ordering : (listof arg) -> (values (listof arg) (listof number)) 
 ;; sorts the arguments according to the dependency order.
@@ -587,4 +660,30 @@
                     keyword<?)
            #,(and (istx-rst an-istx) #t)
            (quote-module-path)
-           #,wrapper-func)))))
+           #,wrapper-func
+           '#(#,(for/list ([an-arg (in-list (istx-args an-istx))])
+                  `(,(if (arg/res-vars an-arg) 'dep 'nodep)
+                    ,(syntax-e (arg/res-var an-arg)) 
+                    ,(if (arg/res-vars an-arg)
+                         (map syntax-e (arg/res-vars an-arg))
+                         '())
+                    ,(and (arg-kwd an-arg)
+                          (syntax-e (arg-kwd an-arg)))
+                    ,(arg-optional? an-arg)))
+              #,(if (istx-rst an-istx)
+                    (if (arg/res-vars (istx-rst an-istx))
+                        `(dep ,(syntax-e (arg/res-var (istx-rst an-istx)))
+                              ,(syntax-e (arg/res-vars (istx-rst an-istx))))
+                        `(nodep ,(syntax-e (arg/res-var (istx-rst an-istx)))))
+                    #f)
+              #,(and (istx-pre an-istx) (map syntax-e (pre/post-vars (istx-pre an-istx))))
+              #,(and (istx-ress an-istx)
+                     (for/list ([a-res (in-list (istx-ress an-istx))])
+                       `(,(if (arg/res-vars a-res) 'dep 'nodep)
+                         ,(syntax-e (arg/res-var a-res))
+                         ,(if (arg/res-vars a-res)
+                              (map syntax-e (arg/res-vars a-res))
+                              '())
+                         #f
+                         #f)))
+              #,(and (istx-post an-istx) (map syntax-e (pre/post-vars (istx-post an-istx))))))))))
