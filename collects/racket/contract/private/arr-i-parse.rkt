@@ -49,19 +49,21 @@ code does the parsing and validation of the syntax.
 (struct pre/post (vars exp))
 
 (define (parse-->i stx)
-  (let-values ([(raw-mandatory-doms raw-optional-doms
-                                    id/rest-id pre-cond range post-cond)
-                (pull-out-pieces stx)])
-    (let ([candidate
-           (istx (append (parse-doms stx #f raw-mandatory-doms)
-                         (parse-doms stx #t raw-optional-doms))
-                 id/rest-id
-                 pre-cond
-                 (parse-range stx range)
-                 post-cond)])
-      (ensure-wf-names stx candidate)
-      (ensure-no-cycles stx candidate)
-      candidate)))
+  (if (identifier? stx)
+      (raise-syntax-error #f "expected ->i to follow an open parenthesis" stx)
+      (let-values ([(raw-mandatory-doms raw-optional-doms
+                                        id/rest-id pre-cond range post-cond)
+                    (pull-out-pieces stx)])
+        (let ([candidate
+               (istx (append (parse-doms stx #f raw-mandatory-doms)
+                             (parse-doms stx #t raw-optional-doms))
+                     id/rest-id
+                     pre-cond
+                     (parse-range stx range)
+                     post-cond)])
+          (ensure-wf-names stx candidate)
+          (ensure-no-cycles stx candidate)
+          candidate))))
 
 (define (ensure-wf-names stx istx)
   (let ([km (make-hash)]
