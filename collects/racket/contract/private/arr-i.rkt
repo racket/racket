@@ -589,12 +589,20 @@
          [args+rst (append (istx-args an-istx)
                            (if (istx-rst an-istx)
                                (list (istx-rst an-istx))
-                               '()))])
+                               '()))]
+         [this->i (gensym 'this->i)])
     (with-syntax ([(arg-exp-xs ...) 
                    (generate-temporaries (filter values (map (λ (arg) (and (not (arg/res-vars arg)) (arg/res-var arg)))
                                                              args+rst)))]
                   [(arg-exps ...)
-                   (filter values (map (λ (arg) (and (not (arg/res-vars arg)) (arg/res-ctc arg)))
+                   (filter values (map (λ (arg) (and (not (arg/res-vars arg)) 
+                                                     (syntax-property
+                                                      (syntax-property
+                                                       (arg/res-ctc arg)
+                                                       'racket/contract:negative-position
+                                                       this->i)
+                                                      'racket/contract:contract-on-boundary 
+                                                      (gensym '->i-indy-boundary))))
                                        args+rst))]
                   
                   [(res-exp-xs ...) 
@@ -604,86 +612,118 @@
                        '())]
                   [(res-exps ...)
                    (if (istx-ress an-istx)
-                       (filter values (map (λ (res) (and (not (arg/res-vars res)) (arg/res-ctc res)))
+                       (filter values (map (λ (res) (and (not (arg/res-vars res)) 
+                                                         (syntax-property
+                                                          (syntax-property 
+                                                           (arg/res-ctc res)
+                                                           'racket/contract:positive-position
+                                                           this->i)
+                                                          'racket/contract:contract-on-boundary 
+                                                          (gensym '->i-indy-boundary))))
                                            (istx-ress an-istx)))
                        '())])
+      
       #`(let ([arg-exp-xs arg-exps] ...
               [res-exp-xs res-exps] ...)
-          (->i 
-           ;; all of the non-dependent argument contracts
-           (list arg-exp-xs ...)
-           ;; all of the dependent argument contracts
-           (list #,@(filter values (map (λ (arg) (and (arg/res-vars arg) #`(λ #,(arg/res-vars arg) (opt/c #,(arg/res-ctc arg)))))
-                                        args+rst)))
-           ;; then the non-dependent argument contracts that are themselves dependend on
-           (list #,@(filter values
-                            (map (λ (arg/res indy-id) 
-                                   (and (free-identifier-mapping-get used-indy-vars (arg/res-var arg/res) (λ () #f))
-                                        indy-id))
-                                 (filter (λ (arg/res) (not (arg/res-vars arg/res))) args+rst)
-                                 (syntax->list #'(arg-exp-xs ...)))))
-           
-           
-           #,(if (istx-ress an-istx)
-                 #`(list res-exp-xs ...)
-                 #''())
-           #,(if (istx-ress an-istx) 
-                 #`(list #,@(filter values (map (λ (arg) (and (arg/res-vars arg) #`(λ #,(arg/res-vars arg) (opt/c #,(arg/res-ctc arg)))))
-                                                (istx-ress an-istx))))
-                 #''())
-           #,(if (istx-ress an-istx)
-                 #`(list #,@(filter values
-                                    (map (λ (arg/res indy-id) 
-                                           (and (free-identifier-mapping-get used-indy-vars (arg/res-var arg/res) (λ () #f))
-                                                indy-id))
-                                         (filter (λ (arg/res) (not (arg/res-vars arg/res))) (istx-ress an-istx))
-                                         (syntax->list #'(res-exp-xs ...)))))
-                 #''())
-           
-           #,(let ([func (λ (pre/post) #`(λ #,(pre/post-vars pre/post) #,(pre/post-exp pre/post)))])
-               #`(list #,@(if (istx-pre an-istx)
-                              (list (func (istx-pre an-istx)))
+          #,(syntax-property
+             #`(->i 
+                ;; all of the non-dependent argument contracts
+                (list arg-exp-xs ...)
+                ;; all of the dependent argument contracts
+                (list #,@(filter values (map (λ (arg) 
+                                               (and (arg/res-vars arg)
+                                                    #`(λ #,(arg/res-vars arg)
+                                                        (opt/c #,(syntax-property
+                                                                  (syntax-property 
+                                                                   (arg/res-ctc arg)
+                                                                   'racket/contract:negative-position 
+                                                                   this->i)
+                                                                  'racket/contract:contract-on-boundary 
+                                                                  (gensym '->i-indy-boundary))))))
+                                             args+rst)))
+                ;; then the non-dependent argument contracts that are themselves dependend on
+                (list #,@(filter values
+                                 (map (λ (arg/res indy-id) 
+                                        (and (free-identifier-mapping-get used-indy-vars (arg/res-var arg/res) (λ () #f))
+                                             indy-id))
+                                      (filter (λ (arg/res) (not (arg/res-vars arg/res))) args+rst)
+                                      (syntax->list #'(arg-exp-xs ...)))))
+                
+                
+                #,(if (istx-ress an-istx)
+                      #`(list res-exp-xs ...)
+                      #''())
+                #,(if (istx-ress an-istx) 
+                      #`(list #,@(filter values (map (λ (arg) 
+                                                       (and (arg/res-vars arg)
+                                                            #`(λ #,(arg/res-vars arg)
+                                                                (opt/c #,(syntax-property
+                                                                          (syntax-property 
+                                                                           (arg/res-ctc arg)
+                                                                           'racket/contract:positive-position
+                                                                           this->i)
+                                                                          'racket/contract:contract-on-boundary 
+                                                                          (gensym '->i-indy-boundary))))))
+                                                     (istx-ress an-istx))))
+                      #''())
+                #,(if (istx-ress an-istx)
+                      #`(list #,@(filter values
+                                         (map (λ (arg/res indy-id) 
+                                                (and (free-identifier-mapping-get used-indy-vars (arg/res-var arg/res) (λ () #f))
+                                                     indy-id))
+                                              (filter (λ (arg/res) (not (arg/res-vars arg/res))) (istx-ress an-istx))
+                                              (syntax->list #'(res-exp-xs ...)))))
+                      #''())
+                      
+                #,(let ([func (λ (pre/post) #`(λ #,(pre/post-vars pre/post) #,(pre/post-exp pre/post)))])
+                    #`(list #,@(if (istx-pre an-istx)
+                                   (list (func (istx-pre an-istx)))
+                                   '())
+                            #,@(if (istx-post an-istx)
+                                   (list (func (istx-post an-istx)))
+                                   '())))
+                
+                #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) (not (arg-optional? arg))))
+                                              (istx-args an-istx))))
+                #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) (arg-optional? arg)))
+                                              (istx-args an-istx))))
+                '#,(sort (filter values (map (λ (arg) (and (not (arg-optional? arg)) (arg-kwd arg) (syntax-e (arg-kwd arg))))
+                                             (istx-args an-istx))) 
+                         keyword<?)
+                '#,(sort (filter values (map (λ (arg) (and (arg-optional? arg) (arg-kwd arg) (syntax-e (arg-kwd arg))))
+                                             (istx-args an-istx))) 
+                         keyword<?)
+                #,(and (istx-rst an-istx) #t)
+                (quote-module-path)
+                #,wrapper-func
+                '#(#,(for/list ([an-arg (in-list (istx-args an-istx))])
+                       `(,(if (arg/res-vars an-arg) 'dep 'nodep)
+                         ,(syntax-e (arg/res-var an-arg)) 
+                         ,(if (arg/res-vars an-arg)
+                              (map syntax-e (arg/res-vars an-arg))
                               '())
-                       #,@(if (istx-post an-istx)
-                              (list (func (istx-post an-istx)))
-                              '())))
-           
-           #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) (not (arg-optional? arg))))
-                                         (istx-args an-istx))))
-           #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) (arg-optional? arg)))
-                                         (istx-args an-istx))))
-           '#,(sort (filter values (map (λ (arg) (and (not (arg-optional? arg)) (arg-kwd arg) (syntax-e (arg-kwd arg))))
-                                        (istx-args an-istx))) 
-                    keyword<?)
-           '#,(sort (filter values (map (λ (arg) (and (arg-optional? arg) (arg-kwd arg) (syntax-e (arg-kwd arg))))
-                                        (istx-args an-istx))) 
-                    keyword<?)
-           #,(and (istx-rst an-istx) #t)
-           (quote-module-path)
-           #,wrapper-func
-           '#(#,(for/list ([an-arg (in-list (istx-args an-istx))])
-                  `(,(if (arg/res-vars an-arg) 'dep 'nodep)
-                    ,(syntax-e (arg/res-var an-arg)) 
-                    ,(if (arg/res-vars an-arg)
-                         (map syntax-e (arg/res-vars an-arg))
-                         '())
-                    ,(and (arg-kwd an-arg)
-                          (syntax-e (arg-kwd an-arg)))
-                    ,(arg-optional? an-arg)))
-              #,(if (istx-rst an-istx)
-                    (if (arg/res-vars (istx-rst an-istx))
-                        `(dep ,(syntax-e (arg/res-var (istx-rst an-istx)))
-                              ,(syntax-e (arg/res-vars (istx-rst an-istx))))
-                        `(nodep ,(syntax-e (arg/res-var (istx-rst an-istx)))))
-                    #f)
-              #,(and (istx-pre an-istx) (map syntax-e (pre/post-vars (istx-pre an-istx))))
-              #,(and (istx-ress an-istx)
-                     (for/list ([a-res (in-list (istx-ress an-istx))])
-                       `(,(if (arg/res-vars a-res) 'dep 'nodep)
-                         ,(syntax-e (arg/res-var a-res))
-                         ,(if (arg/res-vars a-res)
-                              (map syntax-e (arg/res-vars a-res))
-                              '())
-                         #f
-                         #f)))
-              #,(and (istx-post an-istx) (map syntax-e (pre/post-vars (istx-post an-istx))))))))))
+                         ,(and (arg-kwd an-arg)
+                               (syntax-e (arg-kwd an-arg)))
+                         ,(arg-optional? an-arg)))
+                   #,(if (istx-rst an-istx)
+                         (if (arg/res-vars (istx-rst an-istx))
+                             `(dep ,(syntax-e (arg/res-var (istx-rst an-istx)))
+                                   ,(syntax-e (arg/res-vars (istx-rst an-istx))))
+                             `(nodep ,(syntax-e (arg/res-var (istx-rst an-istx)))))
+                         #f)
+                   #,(and (istx-pre an-istx) (map syntax-e (pre/post-vars (istx-pre an-istx))))
+                   #,(and (istx-ress an-istx)
+                          (for/list ([a-res (in-list (istx-ress an-istx))])
+                            `(,(if (arg/res-vars a-res) 'dep 'nodep)
+                              ,(syntax-e (arg/res-var a-res))
+                              ,(if (arg/res-vars a-res)
+                                   (map syntax-e (arg/res-vars a-res))
+                                   '())
+                              #f
+                              #f)))
+                   #,(and (istx-post an-istx) (map syntax-e (pre/post-vars (istx-post an-istx))))))
+             'racket/contract:contract 
+             (vector this->i 
+                     ;; the ->i in the original input to this guy
+                     (list (car (syntax-e stx)))
+                     '()))))))
