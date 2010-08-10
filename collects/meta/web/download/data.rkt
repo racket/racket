@@ -82,46 +82,50 @@
 (define -mirrors-
   ;; This is a sequence of
   ;;   (location url reposnisble-name email [techincal-contact])
-  '(("Main download (USA, Massachusetts, Northeastern University)"
+  '(["Main download (USA, Massachusetts, Northeastern University)"
      "http://download.racket-lang.org/installers/"
      "Eli Barzilay"
-     "eli@barzilay.org")
-    ("USA, Illinois (Northwestern University)"
+     "eli@barzilay.org"]
+    ["USA, Illinois (Northwestern University)"
      "http://www.eecs.northwestern.edu/racket/"
      "Robby Findler"
-     "robby@eecs.northwestern.edu")
-    ("USA, Utah (University of Utah)"
+     "robby@eecs.northwestern.edu"]
+    ["USA, Utah (University of Utah)"
      "http://www.cs.utah.edu/plt/installers/"
      "Matthew Flatt"
-     "mflatt@cs.utah.edu")
-    (("Germany (Universität Tübingen)")
+     "mflatt@cs.utah.edu"]
+    ["Canada, Ontario (University of Waterloo)"
+     "http://mirror.csclub.uwaterloo.ca/racket/racket-installers/"
+     "Systems Committee"
+     "syscom@csclub.uwaterloo.ca"]
+    ["Germany (Universität Tübingen)"
      "http://mirror.informatik.uni-tuebingen.de/mirror/racket/"
      "Marcus Crestani"
-     "crestani@informatik.uni-tuebingen.de")
-    ("Belgium (Infogroep, Vrije Universiteit Brussel)"
+     "crestani@informatik.uni-tuebingen.de"]
+    ["Belgium (Infogroep, Vrije Universiteit Brussel)"
      "ftp://infogroep.be/pub/racket/installers/"
      "Infogroep"
-     "research@infogroep.be")
-    ("Turkey, Istanbul (Bilgi University)"
+     "research@infogroep.be"]
+    ["Turkey, Istanbul (Bilgi University)"
      "http://russell.cs.bilgi.edu.tr/racket-installers/"
      "Onur Gungor"
-     "onurgu@cs.bilgi.edu.tr")
+     "onurgu@cs.bilgi.edu.tr"]
     #;
-    ("Austria (Vienna University of Technology)"
+    ["Austria (Vienna University of Technology)"
      "http://gd.tuwien.ac.at/languages/scheme/plt/"
      "Rudolf Ladner"
-     "ladner@zid.tuwien.ac.at")
+     "ladner@zid.tuwien.ac.at"]
     #; ; Scheme guy left
-    ("France (Institut Pasteur)"
+    ["France (Institut Pasteur)"
      "ftp://ftp.pasteur.fr/pub/computing/Scheme/plt-scheme/"
      "Marc Badouin"
      "babafou@pasteur.fr"
-     "Pasteur Institute FTP ftpmain@pasteur.fr")
+     "Pasteur Institute FTP ftpmain@pasteur.fr"]
     #; ; ftp down (permanently?)
-    ("Mexico (Wish Computing)"
+    ["Mexico (Wish Computing)"
      "ftp://morpheus.wish.com.mx/pub/plt/"
      "Francisco Solsona"
-     "solsona@acm.org")
+     "solsona@acm.org"]
     ))
 
 ;; ----------------------------------------------------------------------------
