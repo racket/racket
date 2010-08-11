@@ -180,6 +180,18 @@ Maps @scheme[key] to @scheme[v] in @scheme[hash], overwriting
 any existing mapping for @scheme[key].
 
 @see-also-caveats[]}
+                                     
+@defproc[(hash-set*! [hash (and/c hash? (not/c immutable?))]
+                     [key any/c]
+                     [v any/c]
+                     ...
+                     ...) void?]{
+
+Maps each @scheme[key] to each @scheme[v] in @scheme[hash], overwriting
+any existing mapping for each @scheme[key]. Mappings are added from the left, so
+later mappings overwrite earlier mappings.
+
+@see-also-caveats[]}
 
 
 @defproc[(hash-set [hash (and/c hash? immutable?)]
@@ -190,6 +202,20 @@ any existing mapping for @scheme[key].
 Functionally extends @scheme[hash] by mapping @scheme[key] to
 @scheme[v], overwriting any existing mapping for @scheme[key], and
 returning the extended hash table.
+
+@see-also-mutable-key-caveat[]}
+                                   
+@defproc[(hash-set* [hash (and/c hash? immutable?)]
+                    [key any/c]
+                    [v any/c]
+                    ...
+                    ...)
+          (and/c hash? immutable?)]{
+
+Functionally extends @scheme[hash] by mapping each @scheme[key] to
+@scheme[v], overwriting any existing mapping for each @scheme[key], and
+returning the extended hash table. Mappings are added from the left, so
+later mappings overwrite earlier mappings.
 
 @see-also-mutable-key-caveat[]}
 
