@@ -303,7 +303,18 @@ otherwise the traversal skips a deleted key or uses the remapped key's
 new value.
 
 @see-also-concurrency-caveat[]}
+                        
+@defproc[(hash-domain [hash hash?])
+         (listof any/c)]{
+Returns a list of the keys of @scheme[hash] in an unspecified order.
+                              
+@see-also-concurrency-caveat[]}
 
+@defproc[(hash-range [hash hash?])
+         (listof any/c)]{
+Returns a list of the values of @scheme[hash] in an unspecified order.
+                              
+@see-also-concurrency-caveat[]}
 
 @defproc[(hash-for-each [hash hash?]
                         [proc (any/c any/c . -> . any)])

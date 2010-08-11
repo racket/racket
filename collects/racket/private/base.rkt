@@ -1,6 +1,7 @@
 (module base "pre-base.rkt"
   
-  (#%require "list.rkt"
+  (#%require "hash.rkt"
+             "list.rkt"
              "string.rkt"
              "stxcase-scheme.rkt"
              "qqstx.rkt"
@@ -21,6 +22,7 @@
                               regexp-replace*
                               new-apply-proc)
              struct
+             (all-from "hash.rkt")
              (all-from "list.rkt")
              (all-from-except "string.rkt" 
                               -regexp-replace*)
