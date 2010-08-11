@@ -1014,7 +1014,7 @@ please adhere to these guidelines:
  (enforce-primitives-group-box-label "Початкові прив'язки")
  (enforce-primitives-check-box-label "Заборонити перевизначення початкових прив'язок")
  (automatically-compile "Заповнити каталоги compiled/ (для більш швидкого завантаження)")
- (preserve-stacktrace-information "Зберегти трасування стеку (відключає деякі JIT-оптимізації")
+ (preserve-stacktrace-information "Зберегти трасування стеку (відключає деякі оптимізації"))
  (expression-level-stacktrace "Вираз рівню трасування стеку")
  (function-level-stacktrace "Функція рівню трасування стеку")
 
