@@ -315,6 +315,12 @@ Returns a list of the keys of @scheme[hash] in an unspecified order.
 Returns a list of the values of @scheme[hash] in an unspecified order.
                               
 @see-also-concurrency-caveat[]}
+                        
+@defproc[(hash->list [hash hash?])
+         (listof (cons/c any/c any/c))]{
+Returns a list of the key--value pairs of @scheme[hash] in an unspecified order.
+                              
+@see-also-concurrency-caveat[]}
 
 @defproc[(hash-for-each [hash hash?]
                         [proc (any/c any/c . -> . any)])

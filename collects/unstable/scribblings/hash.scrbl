@@ -67,57 +67,6 @@ applying @scheme[f] (in tail position) if @scheme[h] has no entry for
 
 }
 
-@section{Hash Table Accessors}
-
-@defproc[(hash-equal? [h hash?]) boolean?]{
-
-Reports whether @scheme[h] maps keys according to @scheme[equal?].
-
-@defexamples[
-#:eval (eval/require 'unstable/hash)
-(hash-equal? #hash())
-(hash-equal? #hasheq())
-(hash-equal? #hasheqv())
-]
-
-}
-
-@defproc[(hash-has-key? [h hash?] [k any/c]) boolean?]{
-
-Reports whether @scheme[h] has an entry for @scheme[k].  This function is
-re-exported from @schememodname[scheme/base].  In versions of Racket before
-@scheme[hash-has-key?] was implemented, this module provides its own definition.
-
-@defexamples[
-#:eval (eval/require 'unstable/hash)
-(hash-has-key? (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 2)
-(hash-has-key? (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 4)
-]
-
-}
-
-@defproc[(hash-domain [h hash?]) list?]{
-
-Produces the domain of a hash table as a list of keys.
-
-@defexamples[
-#:eval (eval/require 'unstable/hash)
-(hash-domain (make-immutable-hash '([1 . one] [2 . two] [3 . three])))
-]
-
-}
-
-@defproc[(hash-range [h hash?]) list?]{
-
-Produces the range of a hash table as a list of values.
-
-@defexamples[
-#:eval (eval/require 'unstable/hash)
-(hash-range (make-immutable-hash '([1 . one] [2 . two] [3 . three])))
-]
-
-}
-
 @section{Hash Table Combinations}
 
 @defproc[(hash-union [h0 (and/c hash? hash-can-functional-set?)]

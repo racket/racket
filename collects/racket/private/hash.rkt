@@ -1,10 +1,13 @@
 (module hash "pre-base.rkt"
   (define (hash-domain table)
-    (for/list ([i (in-hash-keys table)]) i))
+    (hash-map table (λ (k v) k)))
   
   (define (hash-range table)
-    (for/list ([i (in-hash-values table)]) i))
+    (hash-map table (λ (k v) v)))
+  
+  (define (hash->list table)
+    (hash-map table cons))
   
   (provide hash-domain
-           hash-range)
-  )
+           hash-range
+           hash->list))
