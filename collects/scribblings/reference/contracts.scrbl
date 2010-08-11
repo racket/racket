@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss")
+@(require "mz.rkt")
 @(require (for-label syntax/modcollapse))
 
 @(define contract-eval
@@ -710,18 +710,17 @@ be blamed using the above contract:
 
 @section{Lazy Data-structure Contracts}
 
-@defform[
-(define-contract-struct id (field-id ...))
-]{
+@defform[(contract-struct id (field-id ...))]{
 
-Like @racket[define-struct], but with two differences: it does not
-define field mutators, and it does define two contract constructors:
+Like @racket[struct], but with two differences: 
+they do not
+define field mutators, and the do define two contract constructors:
 @racket[id]@racketidfont{/c} and @racket[id]@racketidfont{/dc}. The
 first is a procedure that accepts as many arguments as there are
 fields and returns a contract for struct values whose fields match the
 arguments. The second is a syntactic form that also produces contracts
 on the structs, but the contracts on later fields may depend on the
-values of earlier fields. 
+values of earlier fields.
 
 The generated contract combinators are @italic{lazy}: they only verify
 the contract holds for the portion of some data structure that is
@@ -739,21 +738,26 @@ not checked until a selector extracts a field of a struct.
 In each @racket[field-spec] case, the first @racket[field-id]
 specifies which field the contract applies to; the fields must be
 specified in the same order as the original
-@racket[define-contract-struct]. The first case is for when the
+@racket[contract-struct]. The first case is for when the
 contract on the field does not depend on the value of any other
 field. The second case is for when the contract on the field does
 depend on some other fields, and the parenthesized @racket[field-id]s
 indicate which fields it depends on; these dependencies can only be to
-earlier fields.}
+earlier fields.}}
+ 
+@defform[(define-contract-struct id (field-id ...))]{
+  Like @racket[contract-struct], but where the maker's name is @racketidfont["make-"]@racket[id],
+  much like @racket[define-struct].
+}
 
-As an example, consider the following module:
+As an example of lazy contract checking, consider the following module:
 
 @(begin
 #reader scribble/comment-reader
 [racketmod
 racket
 
-(define-contract-struct kons (hd tl))
+(contract-struct kons (hd tl))
   
 ;; @racket[sorted-list/gt : number -> contract]
 ;; produces a contract that accepts
@@ -778,7 +782,7 @@ racket
          (* (kons-hd l) 
             (product (kons-tl l))))]))
  
-(provide kons? make-kons kons-hd kons-tl)
+(provide kons? kons kons-hd kons-tl)
 (provide/contract [product (-> (sorted-list/gt -inf.0) number?)])
 ])
 

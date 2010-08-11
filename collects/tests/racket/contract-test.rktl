@@ -7941,6 +7941,16 @@
                         [tl (hd) (-> (>=/c hd) (>=/c hd))])])
       ((couple-tl (contract c x 'pos 'neg)) -11)))
   
+  (contract-eval '(contract-struct no-define (x)))
+  (test/spec-passed/result
+  'd-c-s43
+  '(no-define-x (no-define 1))
+  '1)
+  (test/spec-passed/result
+  'd-c-s44
+  '(no-define? (no-define 1))
+  '#t)
+
   
 ;                                                                                            
 ;                                                                                            
