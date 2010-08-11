@@ -3513,7 +3513,7 @@ Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_
   while (1) {
     if (pos < info->new_frame)
       break;
-    pos -= info->new_frame;
+    pos -= info->new_frame;    
     delta += info->original_frame;
     info = info->next;
   }
@@ -3626,6 +3626,8 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
     n = SCHEME_VEC_ELS(p)[1];
     if (SCHEME_INT_VAL(n) == pos) {
       n = SCHEME_VEC_ELS(p)[2];
+      if (info->flags & SCHEME_POST_BIND_FRAME)
+        delta += info->new_frame;          
       if (SCHEME_RPAIRP(n)) {
         /* This was a letrec-bound identifier that may or may not be ready,
            but which wasn't replaced with more information. */
@@ -3644,9 +3646,8 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
       if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_unclosed_procedure_type)) {
 	if (!closure_offset)
 	  break;
-	else {
-	  *closure_offset = delta;
-	}
+	else
+          *closure_offset = delta;
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_toplevel_type)) {
         /* Ok */
       } else if (closure_offset) {
@@ -3668,7 +3669,9 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 	pos = SCHEME_LOCAL_POS(n);
 	if (info->flags & SCHEME_LAMBDA_FRAME)
 	  j--; /* because it will get re-added on recur */
-
+        else if (info->flags & SCHEME_POST_BIND_FRAME)
+          info = info->next; /* bindings are relative to next frame */
+        
 	/* Marks local as used; we don't expect to get back
 	   a value, because chaining would normally happen on the 
 	   propagate-call side. Chaining there also means that we 
@@ -3677,6 +3680,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
           if (!*single_use)
             single_use = NULL;
         }
+
 	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL, 0, context, potential_size);
 
 	if (!n) {

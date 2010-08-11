@@ -2671,7 +2671,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         if (nested_count) {
           sub_info = scheme_optimize_info_add_frame(info, nested_count, nested_count, 0);
           sub_info->vclock++;
-          /* We could propagate bound values in sub_info , but relevant inlining
+          /* We could propagate bound values in sub_info, but relevant inlining
              and propagatation has probably already happened when the rator was
              optimized. */
         } else
@@ -3316,8 +3316,7 @@ static Scheme_Object *check_unbox_rotation(Scheme_Object *_app, Scheme_Object *r
           lv->iso.so.type = scheme_compiled_let_value_type;
           lv->count = 1;
           lv->position = 0;
-          new_rand = scheme_optimize_shift(rand, 1, 0);
-          lv->value = new_rand;
+          lv->value = rand;
         
           flags = (int *)scheme_malloc_atomic(sizeof(int));
           flags[0] = (SCHEME_WAS_USED | (1 << SCHEME_USE_COUNT_SHIFT));
@@ -4545,7 +4544,8 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       Scheme_Object *body;
       Scheme_Compiled_Let_Value *lv, *lv2, *prev = NULL;
       int i, *flags, sz;
-
+      int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
+      
       head2 = MALLOC_ONE_TAGGED(Scheme_Let_Header);
       head2->iso.so.type = scheme_compiled_let_void_type;
       head2->count = head->count;
@@ -4568,7 +4568,8 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
 	lv2->position = lv->position;
 	lv2->flags = flags;
 
-	expr = scheme_optimize_clone(dup_ok, lv->value, info, delta, closure_depth + head->count);
+	expr = scheme_optimize_clone(dup_ok, lv->value, info, delta, 
+                                     closure_depth + (post_bind ? 0 : head->count));
 	if (!expr) return NULL;
 	lv2->value = expr;
 
@@ -4747,13 +4748,14 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
       Scheme_Object *body;
       Scheme_Compiled_Let_Value *lv = NULL;
       int i;
+      int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
 
       /* Build let-value change: */
       body = head->body;
       for (i = head->num_clauses; i--; ) {
 	lv = (Scheme_Compiled_Let_Value *)body;
 
-	expr = scheme_optimize_shift(lv->value, delta, after_depth + head->count);
+	expr = scheme_optimize_shift(lv->value, delta, after_depth + (post_bind ? 0 : head->count));
 	lv->value = expr;
 
         body = lv->body;

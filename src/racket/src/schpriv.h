@@ -1073,6 +1073,46 @@ typedef struct {
   struct Resolve_Prefix *prefix;
 } Scheme_Compilation_Top;
 
+/* A `let', `let*', or `letrec' form is compiled to the intermediate
+   format (used during the optimization pass) as a Scheme_Let_Header
+   with a chain of Scheme_Compiled_Let_Value records as its body,
+   where there's one Scheme_Compiled_Let_Value for each binding
+   clause. A `let*' is normally expanded to nested `let's before
+   compilation, but the intermediate format also supposrts `let*',
+   which is useful mostly for converting a simple enough `letrec' form
+   into `let*.
+
+   The body of the `let...' form is the body of the innermost
+   Scheme_Compiled_Let_Value record. Obviously, all N bindings of a
+   `let...' form are pushed onto the virtual stack for the body, but
+   the situation is more complex for the binding right-hand
+   sides. There are three cases:
+
+    * Plain `let': no bindings are pushed, yet. (This is in contrast
+      to the convention for the final bytecode format, where space for
+      the binding is allocated before the right-hand side is
+      evaluated.)
+
+    * `letrec': all bindings are pushed; the first clause is pushed
+      first, etc.
+
+    * `let*' can be like `letrec', but also can have the bindings in
+      reverse order; that is, all bindings are pushed before any
+      right-hand side, but the last binding may be pushed first
+      instead of last.
+*/
+
+typedef struct Scheme_Let_Header {
+  Scheme_Inclhash_Object iso; /* keyex used for recursive */
+  mzshort count;       /* total number of bindings */
+  mzshort num_clauses; /* number of binding clauses */
+  Scheme_Object *body;
+} Scheme_Let_Header;
+
+#define SCHEME_LET_FLAGS(lh) MZ_OPT_HASH_KEY(&lh->iso)
+#define SCHEME_LET_RECURSIVE 0x1
+#define SCHEME_LET_STAR 0x2
+
 typedef struct Scheme_Compiled_Let_Value {
   Scheme_Inclhash_Object iso; /* keyex used for set-starting */
   mzshort count;
@@ -1085,17 +1125,6 @@ typedef struct Scheme_Compiled_Let_Value {
 #define SCHEME_CLV_FLAGS(clv) MZ_OPT_HASH_KEY(&(clv)->iso)
 #define SCHEME_CLV_NO_GROUP_LATER_USES 0x1
 #define SCHEME_CLV_NO_GROUP_USES 0x2
-
-typedef struct Scheme_Let_Header {
-  Scheme_Inclhash_Object iso; /* keyex used for recursive */
-  mzshort count;
-  mzshort num_clauses;
-  Scheme_Object *body;
-} Scheme_Let_Header;
-
-#define SCHEME_LET_FLAGS(lh) MZ_OPT_HASH_KEY(&lh->iso)
-#define SCHEME_LET_RECURSIVE 0x1
-#define SCHEME_LET_STAR 0x2
 
 typedef struct {
   Scheme_Object so;
@@ -2613,6 +2642,7 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_FOR_INTDEF 256
 #define SCHEME_CAPTURE_LIFTED 512
 #define SCHEME_INTDEF_SHADOW 1024
+#define SCHEME_POST_BIND_FRAME 2048
 
 /* Flags used with scheme_static_distance */
 #define SCHEME_ELIM_CONST 1
