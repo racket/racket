@@ -3132,28 +3132,46 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
   is_rec = (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE);
 
-#if 0
   if (!is_rec) {
-    /* (let ([x (let ([y M]) N)]) P) => (let ([y M]) (let ([x N]) P)) */
-    if (head->count == 1) {
-      clv = (Scheme_Compiled_Let_Value *)head->body; /* ([x ...]) */
-      if (SAME_TYPE(SCHEME_TYPE(clv->value), scheme_compiled_let_void_type)) {
-        Scheme_Let_Header *lh = (Scheme_Let_Header *)clv->value; /* (let ([y ...]) ...) */
-        if (!(SCHEME_LET_FLAGS(lh) & SCHEME_LET_RECURSIVE)
-            && (lh->count == 1)) {
-          value = ((Scheme_Compiled_Let_Value *)lh->body)->body; /* = N */
-          ((Scheme_Compiled_Let_Value *)lh->body)->body = (Scheme_Object *)head;
-          clv->value = value;
-          head = lh;
-          form = (Scheme_Obejct *)head;
+    int try_again;
+    do {
+      try_again = 0;
+      /* (let ([x (let~ ([y M]) N)]) P) => (let~ ([y M]) (let ([x N]) P)) */
+      if (post_bind) {
+        if (head->num_clauses == 1) {
+          clv = (Scheme_Compiled_Let_Value *)head->body; /* ([x ...]) */
+          if (SAME_TYPE(SCHEME_TYPE(clv->value), scheme_compiled_let_void_type)) {
+            Scheme_Let_Header *lh = (Scheme_Let_Header *)clv->value; /* (let~ ([y ...]) ...) */
 
-          orig_info = info;
-          info = scheme_optimize_info_add_frame(info, 1, 0, 0);
+            value = clv->body; /* = P */
+            if (lh->count)
+              value = scheme_optimize_shift(value, lh->count, head->count);
+            if (value) {
+              clv->body = value;
+
+              if (!lh->num_clauses) {
+                clv->value = lh->body;
+                lh->body = (Scheme_Object *)head;
+              } else {
+                body = lh->body;
+                for (i = lh->num_clauses - 1; i--; ) {
+                  body = ((Scheme_Compiled_Let_Value *)body)->body;
+                }
+                clv->value = ((Scheme_Compiled_Let_Value *)body)->body; /* N */
+                ((Scheme_Compiled_Let_Value *)body)->body = (Scheme_Object *)head;
+              } 
+               
+              head = lh;
+              form = (Scheme_Object *)head;
+              is_rec = (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE);
+              post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
+              try_again = 1;
+            }
+          }
         }
       }
-    }
+    } while (try_again);
   }
-#endif
 
   split_shift = 0;
   if (is_rec) {
@@ -3201,14 +3219,15 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
   body_info = scheme_optimize_info_add_frame(info, head->count, head->count, 
                                              post_bind ? SCHEME_POST_BIND_FRAME : 0);
-  if (post_bind) {
+  if (post_bind)
     rhs_info = scheme_optimize_info_add_frame(info, 0, 0, 0);
-    if (for_inline)
-      body_info->inline_fuel >>= 1;
-  } else if (split_shift)
+  else if (split_shift)
     rhs_info = scheme_optimize_info_add_frame(body_info, split_shift, 0, 0);
   else
     rhs_info = body_info;
+
+  if (for_inline)
+    body_info->inline_fuel >>= 1;
 
   body = head->body;
   for (i = head->num_clauses; i--; ) {
