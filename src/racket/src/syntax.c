@@ -2723,9 +2723,25 @@ Scheme_Object *bangboxenv_execute(Scheme_Object *data)
 static Scheme_Object *bangboxenv_sfs(Scheme_Object *data, SFS_Info *info)
 {
   Scheme_Object *e;
+  int spos, drop;
+
+  spos = SCHEME_INT_VAL(SCHEME_CAR(data)) + info->stackpos;
+  if (info->pass 
+      && (info->max_used[spos] < info->ip))
+    /* Not used, so don't bother boxing. In fact, the original value
+       might be cleared already, so we wan't legally box anymore. */
+    drop = 1;
+  else
+    drop = 0;
+
   e = scheme_sfs_expr(SCHEME_CDR(data), info, -1);
-  SCHEME_CDR(data) = e;
-  return data;
+
+  if (drop)
+    return e;
+  else {
+    SCHEME_CDR(data) = e;
+    return data;
+  }
 }
 
 static Scheme_Object *bangboxenv_jit(Scheme_Object *data)
