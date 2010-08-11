@@ -1,7 +1,7 @@
 #lang racket
 
 (require slideshow/base slideshow/pict
-         racket/splicing racket/stxparam racket/gui/base
+         racket/splicing racket/stxparam racket/gui/base racket/block
          unstable/define)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
