@@ -2,6 +2,7 @@
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
+         ffi/unsafe/atomic
          setup/dirs
          "cairo.rkt"
          "utils.rkt")
@@ -67,8 +68,31 @@
 (define-glib g_object_unref (_fun _pointer -> _void)
   #:wrap (deallocator))
 
+(define-pangocairo pango_cairo_font_map_get_default (_fun -> PangoFontMap)) ;; not an allocator
+
 (define-pangocairo pango_cairo_create_context (_fun _cairo_t -> PangoContext)
-  #:wrap (allocator g_object_unref))
+  #:wrap (allocator g_object_unref)
+  ;; The convenince function pango_cairo_create_context() is in 1.22 and later
+  #:make-fail (lambda (id)
+                (let ([pango_cairo_font_map_create_context
+                       (get-ffi-obj 'pango_cairo_font_map_create_context pangocairo-lib
+                                    (_fun PangoFontMap -> PangoContext)
+                                    (lambda () #f))]
+                      [pango_cairo_update_context 
+                       (get-ffi-obj 'pango_cairo_update_context pangocairo-lib
+                                    (_fun _cairo_t PangoContext -> _void)
+                                    (lambda () #f))])
+                  (if (and pango_cairo_font_map_create_context
+                           pango_cairo_update_context)
+                      (lambda ()
+                        (lambda (cr)
+                          (call-as-atomic
+                           (lambda ()
+                             (let ([ctx (pango_cairo_font_map_create_context
+                                         (pango_cairo_font_map_get_default))])
+                               (pango_cairo_update_context cr ctx)
+                               ctx)))))
+                      (make-not-available id)))))
 
 (define-pangocairo pango_cairo_create_layout (_fun _cairo_t -> PangoLayout)
   #:wrap (allocator g_object_unref))
@@ -117,8 +141,6 @@
   #:wrap (allocator pango_attribute_destroy))
 
 (define-pango pango_layout_set_attributes (_fun PangoLayout PangoAttrList -> _void))
-
-(define-pangocairo pango_cairo_font_map_get_default (_fun -> PangoFontMap)) ;; not an allocator
 
 (define-pango pango_font_map_list_families (_fun PangoFontMap
                                                  (fams : (_ptr o _pointer))
