@@ -72,7 +72,7 @@ each element in the sequence.
 
 @defthing[empty-seqn sequence?]{ A sequence with no elements. }
 
-@defthing[(seqn->list [s sequence?]) list?]{ Returns a list whose
+@defproc[(seqn->list [s sequence?]) list?]{ Returns a list whose
 elements are the elements of the @scheme[s], which must be a one-valued sequence.
 If @scheme[s] is infinite, this function does not terminate. }
 
