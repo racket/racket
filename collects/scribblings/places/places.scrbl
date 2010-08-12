@@ -14,18 +14,17 @@
 
 @; ----------------------------------------------------------------------
 
-The PLT futures API enables the development of parallel programs which
+The PLT Places API enables the development of parallel programs which
 take advantage of machines with multiple processors, cores, or
 hardware threads.
 
 @defmodule[racket/place]{}
 
-@defproc[(place [module-path module-path?] [start-proc proc?] [place-channel place-channel?]) place?]{
+@defproc[(place [module-path module-path?] [start-proc proc?]) place?]{
   Starts running @racket[start-proc] in parallel. @racket[start-proc] must
-  be a function defined in @racket[module-path].  Each place is created with a racket[place-channel]
-  that permits communication with the place originator.  This initial channel can be overridden with
-  an optional @racket[place-channel] argument.  The @racket[place]
+  be a function defined in @racket[module-path].  The @racket[place]
   procedure returns immediately with a place descriptor value representing the newly constructed place.
+  Each place descriptor value is also a racket[place-channel] that permits communication with the place.  
 }
 
 @defproc[(place-wait [p place?]) exact-integer?]{
@@ -38,12 +37,12 @@ hardware threads.
 }
 
 @defproc[(place-channel) (values place-channel? place-channel?)]{
-  Returns two @racket[place-channel] objects.
+  Returns two @racket[place-channel] endpoint objects.
   
-  One @racket[place-channel] should be used by the current @racket[place] to send 
+  One @racket[place-channel] endpoint should be used by the current @racket[place] to send 
   messages to a destination @racket[place].
 
-  The other @racket[place-channel] should be sent to a destination @racket[place] over
+  The other @racket[place-channel] endpoint should be sent to a destination @racket[place] over
   an existing @racket[place-channel].
 }
 
@@ -65,15 +64,18 @@ hardware threads.
   Returns an immutable message received on channel @racket[ch].
 }
 
-@section[#:tag "example"]{How Do I Keep Those Cores Busy?}
+@section[#:tag "example"]{Basic Example?}
 
-This code launches two places passing 1 and 2 as the initial channels 
-and then waits for the places to complete and return.
+This code launches two places, echos a message to them and then waits for the places to complete and return.
 
 @racketblock[
-    (let ((pls (map (lambda (x) (place "place-worker.ss" 'place-main x))
-                  (list 1 2))))
-       (map place-wait pls))
+(let ([pls (for/list ([i (in-range 2)])
+              (place "place-worker.rkt" 'place-main))])
+   (for ([i (in-range 2)]
+         [p pls])
+      (place-channel-send p i)
+      (printf "~a~n" (place-channel-recv p)))
+   (map place-wait pls))
 ]
 
 This is the code for the place-worker.ss module that each place will execute.
@@ -82,8 +84,8 @@ This is the code for the place-worker.ss module that each place will execute.
 (module place-worker racket
   (provide place-main)
 
-  (define (place-main x)
-   (printf "IN PLACE ~a~n" x)))
+  (define (place-main ch)
+    (place-channel-send ch (format "Hello from place ~a" (place-channel-recv ch)))))
 ]
 
 @section[#:tag "place-channels"]{Place Channels}

@@ -73,7 +73,7 @@ void scheme_init_place(Scheme_Env *env)
   
   plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  PLACE_PRIM_W_ARITY("place",          scheme_place,       1, 3, plenv);
+  PLACE_PRIM_W_ARITY("place",          scheme_place,       2, 2, plenv);
   PLACE_PRIM_W_ARITY("place-sleep",    scheme_place_sleep, 1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",     scheme_place_wait,  1, 1, plenv);
   PLACE_PRIM_W_ARITY("place?",         scheme_place_p,     1, 1, plenv);
@@ -161,29 +161,25 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_data = MALLOC_ONE(Place_Start_Data);
   place_data->ready    = ready;
 
-  if (argc == 2 || argc == 3 ) {
+  if (argc == 2) {
     Scheme_Object *so;
     so = scheme_places_deep_copy_in_master(args[0]);
     place_data->module   = so;
     so = scheme_places_deep_copy_in_master(args[1]);
     place_data->function = so;
     place_data->ready    = ready;
-    if (argc == 2) {
+    
+    /* create channel */
+    {
       Scheme_Place_Bi_Channel *channel;
       channel = scheme_place_bi_channel_create();
       place->channel = (Scheme_Object *) channel;
       channel = scheme_place_bi_peer_channel_create(channel);
       place_data->channel = (Scheme_Object *) channel;
     }
-    else {
-      Scheme_Object *channel;
-      channel = args[2];
-      place_data->channel = channel;
-      place->channel = channel;
-    }
   }
   else {
-    scheme_wrong_count_m("place", 1, 2, argc, args, 0);
+    scheme_wrong_count_m("place", 2, 2, argc, args, 0);
   }
 
   collection_paths = scheme_current_library_collection_paths(0, NULL);
