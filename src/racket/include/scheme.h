@@ -180,6 +180,9 @@ extern "C"
 {
 #endif
 
+/* Allowed by all configurations, currently: */
+#define MZ_CAN_ACCESS_THREAD_LOCAL_DIRECTLY
+
 /*========================================================================*/
 /*                        basic Scheme values                             */
 /*========================================================================*/
@@ -1434,19 +1437,23 @@ typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, long phase_shift,
 
 #define SCHEME_ASSERT(expr,msg) ((expr) ? 1 : (scheme_signal_error(msg), 0))
 
-#ifndef MZ_USE_PLACES
-#define scheme_eval_wait_expr (scheme_current_thread->ku.eval.wait_expr)
-#define scheme_tail_rator (scheme_current_thread->ku.apply.tail_rator)
-#define scheme_tail_num_rands (scheme_current_thread->ku.apply.tail_num_rands)
-#define scheme_tail_rands (scheme_current_thread->ku.apply.tail_rands)
-#define scheme_overflow_reply (scheme_current_thread->overflow_reply)
-
-#define scheme_error_buf *(scheme_current_thread->error_buf)
-#define scheme_jumping_to_continuation (scheme_current_thread->cjs.jumping_to_continuation)
-
-#define scheme_multiple_count (scheme_current_thread->ku.multiple.count)
-#define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
+#ifdef MZ_CAN_ACCESS_THREAD_LOCAL_DIRECTLY
+# define mzSCHEME_CURRENT_THREAD scheme_current_thread
+#else
+# define mzSCHEME_CURRENT_THREAD scheme_get_current_thread()
 #endif
+
+#define scheme_eval_wait_expr (mzSCHEME_CURRENT_THREAD->ku.eval.wait_expr)
+#define scheme_tail_rator (mzSCHEME_CURRENT_THREAD->ku.apply.tail_rator)
+#define scheme_tail_num_rands (mzSCHEME_CURRENT_THREAD->ku.apply.tail_num_rands)
+#define scheme_tail_rands (mzSCHEME_CURRENT_THREAD->ku.apply.tail_rands)
+#define scheme_overflow_reply (mzSCHEME_CURRENT_THREAD->overflow_reply)
+
+#define scheme_error_buf *(mzSCHEME_CURRENT_THREAD->error_buf)
+#define scheme_jumping_to_continuation (mzSCHEME_CURRENT_THREAD->cjs.jumping_to_continuation)
+
+#define scheme_multiple_count (mzSCHEME_CURRENT_THREAD->ku.multiple.count)
+#define scheme_multiple_array (mzSCHEME_CURRENT_THREAD->ku.multiple.array)
 
 #define scheme_setjmpup(b, base, s) scheme_setjmpup_relative(b, base, s, NULL)
 
@@ -1716,14 +1723,14 @@ MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
 
-#ifndef MZ_USE_PLACES
+#ifdef MZ_CAN_ACCESS_THREAD_LOCAL_DIRECTLY
 THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Thread *scheme_current_thread);
 THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Thread *scheme_first_thread);
 #endif
-MZ_EXTERN Scheme_Thread *scheme_get_current_thread();
-MZ_EXTERN long scheme_get_multiple_count();
-MZ_EXTERN Scheme_Object **scheme_get_multiple_array();
-MZ_EXTERN void scheme_set_current_thread_ran_some();
+XFORM_NONGCING MZ_EXTERN Scheme_Thread *scheme_get_current_thread();
+XFORM_NONGCING MZ_EXTERN long scheme_get_multiple_count();
+XFORM_NONGCING MZ_EXTERN Scheme_Object **scheme_get_multiple_array();
+XFORM_NONGCING MZ_EXTERN void scheme_set_current_thread_ran_some();
 
 
 /* Set these global hooks (optionally): */
