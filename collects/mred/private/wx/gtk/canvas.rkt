@@ -129,7 +129,11 @@
 
 (define-gtk gtk_combo_box_set_active (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_combo_box_get_active (_fun _GtkWidget -> _int))
-(define-gtk gtk_combo_box_set_button_sensitivity (_fun _GtkWidget _int -> _void))
+(define-gtk gtk_combo_box_set_button_sensitivity (_fun _GtkWidget _int -> _void)
+  #:fail (lambda () 
+	   ;; Not available? Too bad. A combo-field% will in rare
+	   ;;  cases not be enabled as it should be.
+	   (lambda (w m) (void))))
 (define GTK_SENSITIVITY_ON 1)
 
 (define-signal-handler connect-expose "expose-event"
