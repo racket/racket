@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (only-in "private/list.rkt" split-at))
+
 (provide first second third fourth fifth sixth seventh eighth ninth tenth
 
          last-pair last rest
@@ -106,6 +106,14 @@
     (cond [(zero? n) '()]
           [(pair? list) (cons (car list) (loop (cdr list) (sub1 n)))]
           [else (too-large 'take list0 n0)])))
+
+(define (split-at list0 n0)
+  (unless (exact-nonnegative-integer? n0)
+    (raise-type-error 'split-at "non-negative exact integer" n0))
+  (let loop ([list list0] [n n0] [pfx '()])
+    (cond [(zero? n) (values (reverse pfx) list)]
+          [(pair? list) (loop (cdr list) (sub1 n) (cons (car list) pfx))]
+          [else (too-large 'split-at list0 n0)])))
 
 (define (drop list n)
   ;; could be defined as `list-tail', but this is better for errors anyway

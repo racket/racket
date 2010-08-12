@@ -1,9 +1,7 @@
 
 (module list "pre-base.rkt"
 
-  (provide split-at
-           
-           foldl
+  (provide foldl
            foldr
 
            remv
@@ -26,19 +24,6 @@
            build-list
 
            compose)
-  
-  (define (split-at list0 n0)
-    (unless (exact-nonnegative-integer? n0)
-      (raise-type-error 'split-at "non-negative exact integer" n0))
-    (let loop ([list list0] [n n0] [pfx '()])
-      (cond [(zero? n) (values (reverse pfx) list)]
-            [(pair? list) (loop (cdr list) (sub1 n) (cons (car list) pfx))]
-            [else 
-             (raise-mismatch-error
-              'split-at
-              (format "index ~e too large for list~a: "
-                      n0 (if (list? list0) "" " (not a proper list)"))
-              list0)])))
 
   (#%require (rename "sort.rkt" raw-sort sort)
              (for-syntax "stxcase-scheme.rkt"))

@@ -39,8 +39,9 @@
       [(v s)
        (-seqn-cons (values v) s)]
       [vs*s
-       (define-values (vs sl) (split-at vs*s (sub1 (length vs*s))))
-       (-seqn-cons (apply values vs) (car sl))]))
+       ; XXX double reverse is bad but moving split-at causes a problem I can't figure
+       (define s*vs (reverse vs*s))
+       (-seqn-cons (apply values (reverse (cdr s*vs))) (car s*vs))]))
   
   (define (seqn-first s)
     (define-values (more? next) (sequence-generate s))
