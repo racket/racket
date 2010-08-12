@@ -54,6 +54,7 @@
 (define PangoAttribute (_cpointer 'PangoAttribute))
 (define PangoLanguage (_cpointer 'PangoLanguage))
 (define PangoCoverage (_cpointer 'PangoCoverage))
+(define PangoLayoutIter (_cpointer 'PangoLayoutIter))
 
 (define-cstruct _PangoRectangle ([x _int]
                                  [y _int]
@@ -100,9 +101,22 @@
 (define-pango pango_layout_set_text (_fun PangoLayout [s : _string] [_int = -1] -> _void))
 (define-pangocairo pango_cairo_show_layout (_fun _cairo_t PangoLayout -> _void))
 
+(define-pango pango_layout_iter_free (_fun PangoLayoutIter -> _void)
+  #:wrap (deallocator))
+(define-pango pango_layout_get_iter (_fun PangoLayout -> PangoLayoutIter)
+  #:wrap (allocator pango_layout_iter_free))
+(define-pango pango_layout_iter_get_baseline (_fun PangoLayoutIter -> _int))
+
 (define-pango pango_layout_get_context (_fun PangoLayout -> PangoContext)) ;; not an allocator
 (define-pango pango_layout_get_extents (_fun PangoLayout  _pointer _PangoRectangle-pointer -> _void))
-(define-pango pango_layout_get_baseline (_fun PangoLayout -> _int))
+(define-pango pango_layout_get_baseline (_fun PangoLayout -> _int)
+  ;; The convenince function pango_layout_get_baseline() is in 1.22 and later
+  #:fail (lambda ()
+           (lambda (layout)
+             (let ([iter (pango_layout_get_iter layout)])
+               (begin0
+                (pango_layout_iter_get_baseline iter)
+                (pango_layout_iter_free iter))))))
 
 (define-pango pango_layout_new (_fun PangoContext -> PangoLayout)
   #:wrap (allocator g_object_unref))
