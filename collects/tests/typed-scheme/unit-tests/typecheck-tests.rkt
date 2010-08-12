@@ -640,6 +640,9 @@
                         (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
                                1 w))
               (-polydots (a) ((list -String) (N a) . ->... . N))]
+        [tc-e/t (let ([f (plambda: (a ...) [w : a ... a] w)])
+                  (f 1 "hello" #\c))
+                (-pair -PositiveFixnum (-pair -String (-pair -Char (-val null))))]
         ;; instantiating non-dotted terms
         [tc-e/t (inst (plambda: (a) ([x : a]) x) Integer)
                 (make-Function (list (make-arr* (list -Integer) -Integer
