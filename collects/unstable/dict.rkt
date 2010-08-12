@@ -20,23 +20,6 @@
     dict-has-key?))
 ;; Ryan: Why the with-contract region? Why not provide/contract?
 
-(define dict-ref!
-  (let ()
-    (with-contract
-     dict-ref!
-     ([dict-ref! (-> (and/c dict? dict-mutable?)
-                     any/c
-                     (or/c (-> any/c) any/c)
-                     any/c)])
-     (define (dict-ref! dict key failure)
-       (dict-ref
-        dict key
-        (lambda ()
-          (let* ([value (if (procedure? failure) (failure) failure)])
-            (dict-set! dict key value)
-            value)))))
-    dict-ref!))
-
 (define (dict-empty? dict)
   (= (dict-count dict) 0))
 
@@ -102,18 +85,6 @@
 
 (define (dict-ref/failure dict key failure)
   (dict-ref dict key (lambda () (failure))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Extra Accessors
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (dict-domain dict)
-  (for/list ([i (in-dict-keys dict)]) i))
-
-(define (dict-range dict)
-  (for/list ([i (in-dict-values dict)]) i))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

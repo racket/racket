@@ -72,32 +72,6 @@ and is thus essentially equivalent to a list-based dictionary.
 
 @section{Dictionary Lookup}
 
-@defproc[(dict-ref! [d (and/c dict? dict-mutable?)]
-                    [k any/c]
-                    [v (or/c (-> any/c) any/c)])
-         any/c]{
-
-Looks up key @scheme[k] in dictionary @scheme[d].  If @scheme[d] has no entry
-for @scheme[k], updates @scheme[d] to map @scheme[k] to the result of
-@scheme[(v)] (if @scheme[v] is a procedure) or @scheme[v] (otherwise), and
-returns the new mapping.
-
-@defexamples[
-#:eval (eval/require 'racket/dict 'unstable/dict)
-(define d (make-hash))
-(dict-set! d 1 'one)
-(dict-set! d 2 'two)
-d
-(dict-ref! d 2 'dos)
-d
-(dict-ref! d 3 'tres)
-d
-(dict-ref! d 4 gensym)
-d
-]
-
-}
-
 @defproc[(dict-ref/check [d dict?] [k (lambda (k) (dict-has-key? d k))])
          any/c]{
 
@@ -176,28 +150,6 @@ Reports whether @scheme[d] has an entry for @scheme[k].
 #:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-has-key? '([1 . one] [2 . two] [3 . three]) 2)
 (dict-has-key? '([1 . one] [2 . two] [3 . three]) 4)
-]
-
-}
-
-@defproc[(dict-domain [d dict?]) list?]{
-
-Produces the domain of a dictionary as a list of keys.
-
-@defexamples[
-#:eval (eval/require 'racket/dict 'unstable/dict)
-(dict-domain '([1 . one] [2 . two] [3 . three]))
-]
-
-}
-
-@defproc[(dict-range [d dict?]) list?]{
-
-Produces the range of a dictionary as a list of values.
-
-@defexamples[
-#:eval (eval/require 'racket/dict 'unstable/dict)
-(dict-range '([1 . one] [2 . two] [3 . three]))
 ]
 
 }
