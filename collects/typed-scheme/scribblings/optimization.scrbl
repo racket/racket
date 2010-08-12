@@ -58,6 +58,14 @@ Thus, to get the most of Typed Racket's optimizer, you should use the
 floating-point literals instead of exact literals when doing
 floating-point computations.
 
+When mixing floating-point numbers and exact reals in arithmetic
+operations, the result is not necessarily a @racket[Float]. For
+instance, the result of @racket[(* 2.0 0)] is @racket[0] which is not
+a @racket[Float]. This can result in missed optimizations. To prevent
+this, when mixing floating-point numbers and exact reals, coerce exact
+reals to floating-point numbers using @racket[exact->inexact]. This is
+not necessary when using @racket[+] or @racket[-].
+
 On a similar note, the @racket[Inexact-Complex] type is preferable to
 the @racket[Complex] type for the same reason. Typed Racket can keep
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
