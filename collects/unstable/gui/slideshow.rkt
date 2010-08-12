@@ -305,3 +305,45 @@
          before at after before/at at/after except
          pict-if pict-cond pict-case pict-match
          pict-combine with-pict-combine)
+
+
+;; the following has been added by stamourv
+
+;; borders may be of slightly uneven width, sadly
+(define-values (ellipse/border
+                rectangle/border
+                rounded-rectangle/border)
+  (let ()
+    (define ((mk shape) w h
+             #:color (color "white")
+             #:border-color (border-color "black")
+             #:border-width (border-width 2))
+      (cc-superimpose
+       (colorize (shape w h) border-color)
+       (colorize (shape (- w (* 2 border-width))
+                        (- h (* 2 border-width)))
+                 color)))
+    (values (mk filled-ellipse)
+            (mk filled-rectangle)
+            (mk filled-rounded-rectangle))))
+(define (circle/border d
+                       #:color (color "white")
+                       #:border-color (border-color "black")
+                       #:border-width (border-width 2))
+  (cc-superimpose
+   (colorize (disk d) border-color)
+   (colorize (disk (- d (* 2 border-width)))
+             color)))
+
+(define shape/border-contract
+  (->* [real? real?]
+       [#:color color/c #:border-color color/c #:border-width real?]
+       pict?))
+(provide/contract
+ [ellipse/border shape/border-contract]
+ [rectangle/border shape/border-contract]
+ [rounded-rectangle/border shape/border-contract]
+ [circle/border
+  (->* [real?]
+       [#:color color/c #:border-color color/c #:border-width real?]
+       pict?)])

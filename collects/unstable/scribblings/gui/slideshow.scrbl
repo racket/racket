@@ -311,3 +311,30 @@ Computes the width of one column out of @scheme[n] that takes up a ratio of
 @scheme[r] of the available space (according to @scheme[current-para-width]).
 
 }
+
+@addition{Vincent St-Amour}
+
+@deftogether[(
+@defproc[(ellipse/border [w real?] [h real?]
+                         [#:color color color/c]
+			 [#:border-color border-color color/c]
+			 [#:border-width border-width real?])
+         pict?]
+@defproc[(circle/border [diameter real?]
+                         [#:color color color/c]
+			 [#:border-color border-color color/c]
+			 [#:border-width border-width real?])
+         pict?]
+@defproc[(rectangle/border [w real?] [h real?]
+                         [#:color color color/c]
+			 [#:border-color border-color color/c]
+			 [#:border-width border-width real?])
+         pict?]
+@defproc[(rounded-rectangle/border [w real?] [h real?]
+                         [#:color color color/c]
+			 [#:border-color border-color color/c]
+			 [#:border-width border-width real?])
+         pict?]
+)]{
+These functions create shapes with border of the given color and width.
+}
