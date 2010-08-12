@@ -404,7 +404,35 @@ key and value as separate values for each element).
   p)
 ]}
 
+@defproc[(dict-keys [dict dict?]) list?]{ 
+Returns a list of the keys from
+@scheme[dict] in an unspecified order.
 
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict-keys h)
+]}
+
+@defproc[(dict-values [dict dict?]) list?]{ 
+Returns a list of the values from
+@scheme[dict] in an unspecified order.
+
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict-values h)
+]}
+
+@defproc[(dict->list [dict dict?]) list?]{ 
+Returns a list of the associations from
+@scheme[dict] in an unspecified order.
+
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict->list h)
+]}
 
 @defthing[prop:dict struct-type-property?]{
 

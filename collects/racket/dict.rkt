@@ -29,6 +29,10 @@
          in-dict-keys
          in-dict-values
          in-dict-pairs
+         
+         dict-keys
+         dict-values
+         dict->list
 
          (rename-out [create-custom-hash make-custom-hash]
                      [create-immutable-custom-hash make-immutable-custom-hash])
@@ -458,6 +462,20 @@
 (define (dict-for-each d f)
   (for ([(k v) (in-dict d)])
     (f k v)))
+
+(define (dict-keys d)
+  (for/list ([k (in-dict-keys d)])
+    k))
+
+(define (dict-values d)
+  (for/list ([v (in-dict-values d)])
+    v))
+
+(define (dict->list d)
+  (for/list ([k*v (in-dict-pairs d)])
+    k*v))
+
+
 
 ;; ----------------------------------------
 

@@ -23,6 +23,10 @@
   (test can-remove? dict-can-remove-keys? d)
   (test can-update? dict-can-functional-set? d)
 
+  (test (dict-map d cons) 'dict->list (dict->list d))
+  (test (dict-map d (λ (k v) k)) 'dict-keys (dict-keys d))
+  (test (dict-map d (λ (k v) v)) 'dict-values (dict-values d))
+  
   (test (dict-map d cons) 'in-dict
         (for/list ([(k v) (in-dict d)])
           (cons k v)))
