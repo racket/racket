@@ -64,7 +64,9 @@
 
 (define-unimplemented play-sound)
 
-(define (color-from-user-platform-mode) 'dialog)
+(define (color-from-user-platform-mode) 
+  (and (color-dialog-works?)
+       'dialog))
 
 (define (font-from-user-platform-mode) #f)
 (define-unimplemented get-font-from-user)

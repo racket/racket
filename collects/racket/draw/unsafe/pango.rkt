@@ -133,8 +133,14 @@
 (define-pangocairo pango_cairo_font_map_new (_fun -> PangoFontMap)
   #:wrap (allocator g_object_unref))
 
-(define-pango pango_font_map_create_context (_fun PangoFontMap -> PangoContext)
+(define-pango pango_context_new (_fun -> PangoContext)
   #:wrap (allocator g_object_unref))
+;; pango_font_map_create_context() is in 1.22 and later
+(provide pango_font_map_create_context)
+(define (pango_font_map_create_context fm)
+  (let ([c (pango_context_new)])
+    (pango_context_set_font_map c fm)
+    c))
 (define-pangocairo pango_cairo_update_context (_fun _cairo_t PangoContext -> _void))
 
 ;; The convenince function pango_cairo_create_context() is in 1.22 and later
@@ -180,6 +186,7 @@
 
 (define-pango pango_layout_set_font_description (_fun PangoLayout PangoFontDescription -> _void)) ;; makes a copy
 (define-pango pango_context_get_font_map (_fun PangoContext -> PangoFontMap)) ;; not an allocator
+(define-pango pango_context_set_font_map (_fun PangoContext PangoFontMap -> _void))
 (define-pango pango_font_family_get_name (_fun PangoFontFamily -> _string)) ;; not an allocator
 (define-pango pango_font_family_is_monospace (_fun PangoFontFamily -> _bool))
 
