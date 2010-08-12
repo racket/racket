@@ -212,7 +212,27 @@ result:
 (dict-ref #("apple" "banana") -3 #f)
 ]}
 
+@defproc[(dict-ref! [dict dict?]
+                    [key any/c]
+                    [to-set any/c])
+         any]{
 
+Returns the value for @scheme[key] in @scheme[dict]. If no value
+is found for @scheme[key], then @scheme[to-set] determines the
+result as in @scheme[dict-ref] (i.e., it is either a thunk that computes a value
+or a plain value), and this result is stored in @scheme[dict] for the
+@scheme[key].  (Note that if @scheme[to-set] is a thunk, it is not
+invoked in tail position.)
+
+@examples[
+#:eval dict-eval
+(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'a)
+(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'c 'cabbage)
+(define h (make-hasheq '((a . "apple") (b . "beer"))))
+(dict-ref h 'c)
+(dict-ref! h 'c (λ () 'cabbage))
+(dict-ref h 'c)
+]}
 
 @defproc[(dict-update! [dict (and/c dict? (not/c immutable?))]
                        [key any/c]

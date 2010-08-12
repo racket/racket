@@ -49,7 +49,10 @@
         (err/rt-test (dict-remove d 1))
         (err/rt-test (dict-set d 1 "ONE"))
         (test (void) dict-set! d 1 "ONE")
-        (test "ONE" dict-ref d 1))
+        (test "ONE" dict-ref d 1)
+        (test (void) dict-set*! d 1 (gensym) 1 "TWO")
+        (test "TWO" dict-ref d 1)
+        (test "TWO" dict-ref! d 1 (gensym)))
       (let ([cnt (dict-count d)]
             [smaller (if mutable?
                          (begin
@@ -98,6 +101,14 @@
 
 (try-simple (vector 'zero 'one 'two) #t #f #f)
 (try-simple #hash((1 . one) (#f . 7)) #f #t #t)
+
+(let ([d (make-hasheq '((1 . one) (#f . 7)))])
+  (test 'one dict-ref! d 1 (gensym))
+  (test 'two dict-ref! d 2 'two)
+  (test 'two dict-ref d 2)
+  (test 'three dict-ref! d 3 (λ () 'three))
+  (test 'three dict-ref d 3))
+
 (try-simple #hasheq((1 . one) (#f . 7)) #f #t #t)
 (try-simple (hash-copy #hash((1 . one) (#f . 7))) #t #t #f)
 (try-simple (hash-copy #hasheq((1 . one) (#f . 7))) #t #t #f)

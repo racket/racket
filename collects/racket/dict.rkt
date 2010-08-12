@@ -10,6 +10,7 @@
          dict-can-functional-set?
          
          dict-ref
+         dict-ref!
          dict-set!
          dict-set*!
          dict-set
@@ -229,6 +230,15 @@
       ((get-dict-ref (dict-struct-ref d)) d key default)]
      [else
       (raise-type-error 'dict-ref "dict" 0 d key default)])]))
+
+(define (dict-ref! d key new)
+  (define not-there (gensym))
+  (define v (dict-ref d key not-there))
+  (if (eq? not-there v)
+      (let ([n (if (procedure? new) (new) new)])
+        (dict-set! d key n)
+        n)
+      v))
 
 (define (dict-set! d key val)
   (cond
