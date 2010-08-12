@@ -53,6 +53,7 @@
         (test (void) dict-set! d 1 "ONE")
         (test "ONE" dict-ref d 1)
         (test (void) dict-set*! d 1 (gensym) 1 "TWO")
+        (err/rt-test (dict-set*! d 1) exn:fail?)
         (test "TWO" dict-ref d 1)
         (test "TWO" dict-ref! d 1 (gensym)))
       (let ([cnt (dict-count d)]
@@ -89,9 +90,11 @@
                                    (begin
                                      (err/rt-test (dict-set* smaller 1 val))
                                      (dict-set*! smaller 1 (gensym) 1 val)
+                                     (err/rt-test (dict-set*! smaller 1) exn:fail?)
                                      d)
                                    (begin
                                      (err/rt-test (dict-set*! smaller 1 val))
+                                     (err/rt-test (dict-set* smaller 1) exn:fail?)
                                      (dict-set* smaller 1 (gensym) 1 val)))])
                    (test cnt dict-count bigger)
                    (when (eq? val 'one)
