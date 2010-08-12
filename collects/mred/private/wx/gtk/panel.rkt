@@ -17,7 +17,6 @@
 
 (define (panel-mixin %)
   (class %
-    (inherit register-as-child)
 
     (define lbl-pos 'horizontal)
     (define children null)
@@ -27,7 +26,7 @@
     (define/public (get-label-position) lbl-pos)
     (define/public (set-label-position pos) (set! lbl-pos pos))
 
-    (define/public (reset-child-dcs)
+    (define/override (reset-child-dcs)
       (when (pair? children)
         (for ([child (in-list children)])
           (send child reset-child-dcs))))
@@ -35,10 +34,6 @@
     (define/override (set-size x y w h)
       (super set-size x y w h)
       (reset-child-dcs))
-    
-    (define/override (maybe-register-as-child parent on?)
-      (register-as-child parent on?)
-      (when on? (reset-child-dcs)))
 
     (define/override (register-child child on?)
       (let ([now-on? (and (memq child children) #t)])

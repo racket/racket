@@ -3,6 +3,7 @@
          racket/class
          ffi/unsafe/atomic
          "../../syntax.rkt"
+         "../../lock.rkt"
          "../common/event.rkt"
          "../common/freeze.rkt"
          "../common/queue.rkt"
@@ -370,13 +371,17 @@
 
     (define shown? #f)
     (define/public (direct-show on?)
-      (if on?
-          (gtk_widget_show gtk)
-          (gtk_widget_hide gtk))
-      (set! shown? (and on? #t))
-      (maybe-register-as-child parent on?))
+      (as-entry
+       (lambda ()
+         (if on?
+             (gtk_widget_show gtk)
+             (gtk_widget_hide gtk))
+         (set! shown? (and on? #t))
+         (register-child-in-parent on?)))
+      (when on? (reset-child-dcs)))
     (define/public (show on?)
       (direct-show on?))
+    (define/public (reset-child-dcs) (void))
     (define/public (is-shown?) shown?)
     (define/public (is-shown-to-root?)
       (and shown?
@@ -454,12 +459,11 @@
 
     (define/public (on-size w h) (void))
 
-    (define/public (maybe-register-as-child parent on?)
-      (void))
-    (define/public (register-as-child parent on?)
-      (send parent register-child this on?))
     (define/public (register-child child on?)
       (void))
+    (define/public (register-child-in-parent on?)
+      (when parent
+        (send parent register-child this on?)))
 
     (def/public-unimplemented on-drop-file)
     (def/public-unimplemented get-handle)

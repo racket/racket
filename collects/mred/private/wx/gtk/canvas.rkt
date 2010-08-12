@@ -179,7 +179,7 @@
           [gl-config #f])
 
     (inherit get-gtk set-size get-size get-client-size 
-             on-size register-as-child get-top-win
+             on-size get-top-win
              set-auto-size adjust-client-delta)
 
     (define is-combo? (memq 'combo style))
@@ -347,12 +347,9 @@
     (define/public (queue-backing-flush)
       (gtk_widget_queue_draw client-gtk))
     
-    (define/public (reset-child-dcs)
+    (define/override (reset-child-dcs)
       (when (dc . is-a? . dc%)
         (reset-dc)))
-    (define/override (maybe-register-as-child parent on?)
-      (register-as-child parent on?)
-      (when on? (reset-child-dcs)))
 
     (send dc start-backing-retained)
 

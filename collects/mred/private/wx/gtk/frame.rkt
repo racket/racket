@@ -228,6 +228,15 @@
                "eventspace has been shutdown"))
       (super show on?))
 
+    (define saved-child #f)
+    (define/override (register-child child on?)
+      (unless on? (error 'register-child-in-frame "did not expect #f"))
+      (unless (or (not saved-child) (eq? child saved-child))
+        (error 'register-child-in-frame "expected only one child"))
+      (set! saved-child child))
+    (define/override (register-child-in-parent on?)
+      (void))
+
     (define/override (direct-show on?)
       (super direct-show on?)
       (register-frame-shown this on?))
