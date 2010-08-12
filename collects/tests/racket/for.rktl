@@ -288,4 +288,105 @@
         (list (maker) (maker) (maker)
               (maker) (maker) (maker))))
 
+;; New operators
+(require racket/private/sequence)
+
+(test '(0 1 2) 'seqn->list (seqn->list (in-range 3)))
+(arity-test seqn->list 1 1)
+(err/rt-test (seqn->list 1))
+
+(test '() 'empty-seqn (seqn->list empty-seqn))
+
+; XXX How do I check rest arity?
+(test '(0 1 2) 'seqn-cons (seqn->list (seqn-cons 0 (in-range 1 3))))
+(test '((0 1)) 'seqn-cons 
+      (for/list ([(a b) (seqn-cons 0 1 empty-seqn)])
+        (list a b)))
+
+(arity-test seqn-first 1 1)
+(err/rt-test (seqn-first 1))
+(test 0 'seqn-first (seqn-first (in-naturals)))
+(test #t
+      'seqn-first
+      (equal? (list 0 1)
+              (call-with-values
+               (λ ()
+                 (seqn-first (seqn-cons 0 1 empty-seqn)))
+               (λ args args))))
+
+(arity-test seqn-rest 1 1)
+(test '(1 2) 'seqn-rest (seqn->list (seqn-rest (in-range 3))))
+
+(arity-test seqn-length 1 1)
+(err/rt-test (seqn-length 1))
+(test 3 'seqn-length (seqn-length (in-range 3)))
+(test 3 'seqn-length (seqn-length #hasheq((1 . 'a) (2 . 'b) (3 . 'c))))
+
+(arity-test seqn-ref 2 2)
+(err/rt-test (seqn-ref 2 0))
+(err/rt-test (seqn-ref (in-naturals) -1) exn:fail?)
+(err/rt-test (seqn-ref (in-naturals) 1.0) exn:fail?)
+(test 0 'seqn-ref (seqn-ref (in-naturals) 0))
+(test 1 'seqn-ref (seqn-ref (in-naturals) 1))
+(test 25 'seqn-ref (seqn-ref (in-naturals) 25))
+
+(arity-test seqn-tail 2 2)
+(err/rt-test (seqn-tail (in-naturals) -1) exn:fail?)
+(err/rt-test (seqn-tail (in-naturals) 1.0) exn:fail?)
+(test 4 'seqn-ref (seqn-ref (seqn-tail (in-naturals) 4) 0))
+(test 5 'seqn-ref (seqn-ref (seqn-tail (in-naturals) 4) 1))
+(test 29 'seqn-ref (seqn-ref (seqn-tail (in-naturals) 4) 25))
+
+; XXX Check for rest
+(err/rt-test (seqn-append 1) exn:fail?)
+(err/rt-test (seqn-append (in-naturals) 1) exn:fail?)
+(test '() 'seqn-append (seqn->list (seqn-append)))
+(test 5 'seqn-append (seqn-ref (seqn-append (in-naturals)) 5))
+(test 5 'seqn-append (seqn-ref (seqn-append (in-range 3) (in-range 3 10)) 5))
+
+(arity-test seqn-map 2 2)
+(err/rt-test (seqn-map 2 (in-naturals)) exn:fail?)
+(test '(1 2 3) 'seqn-map (seqn->list (seqn-map add1 (in-range 3))))
+(test 3 'seqn-map (seqn-ref (seqn-map add1 (in-naturals)) 2))
+
+(arity-test seqn-andmap 2 2)
+(err/rt-test (seqn-andmap 2 (in-naturals)))
+(test #t 'seqn-andmap (seqn-andmap even? (seqn-cons 2 empty-seqn)))
+(test #f 'seqn-andmap (seqn-andmap even? (in-naturals)))
+
+(arity-test seqn-ormap 2 2)
+(err/rt-test (seqn-ormap 2 (in-naturals)))
+(test #t 'seqn-ormap (seqn-ormap even? (seqn-cons 2 empty-seqn)))
+(test #f 'seqn-ormap (seqn-ormap even? (seqn-cons 1 empty-seqn)))
+(test #t 'seqn-ormap (seqn-ormap even? (in-naturals)))
+
+(arity-test seqn-for-each 2 2)
+(err/rt-test (seqn-for-each 2 (in-naturals)))
+(test (vector 0 1 2)
+      'seqn-for-each
+      (let ([v (vector #f #f #f)])
+        (seqn-for-each (λ (i) (vector-set! v i i)) (in-range 3))
+        v))
+
+(arity-test seqn-fold 3 3)
+(err/rt-test (seqn-fold 2 (in-naturals) 0))
+(test 6 'seqn-fold (seqn-fold + 0 (in-range 4)))
+
+(arity-test seqn-filter 2 2)
+(err/rt-test (seqn-filter 2 (in-naturals)) exn:fail?)
+(test 4 'seqn-filter (seqn-ref (seqn-filter even? (in-naturals)) 2))
+
+(arity-test seqn-add-between 2 2)
+(test 0 'seqn-add-between (seqn-ref (seqn-add-between (in-naturals) #t) 0))
+(test #t 'seqn-add-between (seqn-ref (seqn-add-between (in-naturals) #t) 1))
+(test 1 'seqn-add-between (seqn-ref (seqn-add-between (in-naturals) #t) 2))
+(test #t 'seqn-add-between (seqn-ref (seqn-add-between (in-naturals) #t) 3))
+
+(arity-test seqn-count 1 1)
+(test 0 'seqn-count (seqn-count empty-seqn))
+(test 1 'seqn-count (seqn-count (in-range 1)))
+(test 10 'seqn-count (seqn-count (in-range 10)))
+(let ([r (random 100)])
+  (test r 'seqn-count (seqn-count (in-range r))))
+
 (report-errs)
