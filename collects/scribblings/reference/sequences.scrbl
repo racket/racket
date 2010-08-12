@@ -2,7 +2,8 @@
 @(require "mz.ss"
           (for-syntax racket/base)
           scribble/scheme
-	  (for-label racket/generator))
+	  (for-label racket/generator
+                     racket/mpair))
 
 @(define generator-eval
    (lambda ()
@@ -27,15 +28,21 @@ built-in datatypes, the sequence datatype includes the following:
 
 @itemize[
 
+ @item{strings (see @secref["strings"])}
+           
+ @item{byte strings (see @secref["bytestrings"])}
+
  @item{lists (see @secref["pairs"])}
+
+ @item{mutable lists (see @secref["mpairs"])}
 
  @item{vectors (see @secref["vectors"])}
 
  @item{hash tables (see @secref["hashtables"])}
 
- @item{strings (see @secref["strings"])}
+ @item{dictionaries (see @secref["dicts"])}
 
- @item{byte strings (see @secref["bytestrings"])}
+ @item{sets (see @secref["sets"])}
 
  @item{input ports (see @secref["ports"])}
 
@@ -166,6 +173,11 @@ element. @speed[in-naturals "integer"]}
 Returns a sequence equivalent to @scheme[lst].
 @info-on-seq["pairs" "lists"]
 @speed[in-list "list"]}
+
+@defproc[(in-mlist [mlst mlist?]) sequence?]{
+Returns a sequence equivalent to @scheme[mlst].
+@info-on-seq["mpairs" "mutable lists"]
+@speed[in-mlist "mutable list"]}
 
 @defproc[(in-vector [vec vector?]
                     [start exact-nonnegative-integer? 0] 

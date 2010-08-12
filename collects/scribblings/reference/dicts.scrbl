@@ -24,6 +24,10 @@ values. The following datatypes are all dictionaries:
 
 ]
 
+A dictionary can be used as a two-valued sequence (see
+@secref["sequences"]). The associations of the dictionary serve as elements
+of the sequence. See also @scheme[in-dict], @scheme[in-dict-keys], and @scheme[in-dict-values].
+
 @note-lib[racket/dict]
 
 @defproc[(dict? [v any/c]) boolean?]{

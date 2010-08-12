@@ -3,7 +3,8 @@
 
 (Section 'for)
 
-(require scheme/generator)
+(require scheme/generator
+         racket/mpair)
 
 (define-syntax (test-multi-generator stx)
   (syntax-case stx ()
@@ -105,6 +106,8 @@
 
 (test-generator [(a b c)] '(a b c))
 (test-generator [(a b c)] (in-list '(a b c)))
+(test-generator [(a b c)] (mlist 'a 'b 'c))
+(test-generator [(a b c)] (in-mlist (mlist 'a 'b 'c)))
 (test-generator [(a b c)] #(a b c))
 (test-generator [(a b c)] (in-vector #(a b c)))
 (test-generator [(b c d)] (in-vector #(a b c d) 1))
