@@ -82,7 +82,7 @@
 (define-gobj g_object_ref (_fun _pointer -> _void))
 (define-gobj g_object_unref (_fun _pointer -> _void))
 
-(define-gobj g_free (_fun _pointer -> _void))
+(define-glib g_free (_fun _pointer -> _void))
 
 (define-gobj g_object_set_data (_fun _GtkWidget _string _pointer -> _void))
 (define-gobj g_object_get_data (_fun _GtkWidget _string -> _pointer))
@@ -136,7 +136,7 @@
   ([data _pointer]
    [next (_or-null _g-slist-pointer)]))
 
-(define-gobj g_slist_free (_fun _g-slist-pointer -> _void))
+(define-glib g_slist_free (_fun _g-slist-pointer -> _void))
 ;; This should probably be provided by Racket
 (define make-byte-string
   (get-ffi-obj 'scheme_make_byte_string #f (_fun _pointer -> _racket)))
