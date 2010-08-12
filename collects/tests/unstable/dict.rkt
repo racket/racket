@@ -58,10 +58,7 @@
    (test-suite "Accessors"
      (test-suite "dict-empty?"
        (test (check-true (dict-empty? '())))
-       (test (check-false (dict-empty? '([1 . a] [2 . b])))))
-     (test-suite "dict-has-key?"
-       (test-ok (check-equal? (dict-has-key? '([1 . one] [2 . two]) 1) #t))
-       (test-ok (check-equal? (dict-has-key? '([1 . one] [2 . two]) 3) #f))))
+       (test (check-false (dict-empty? '([1 . a] [2 . b]))))))
    (test-suite "Combination"
      (test-suite "dict-union"
        (test-ok (dict-union '([1 . one] [2 . two]) '([3 . three] [4 . four]))

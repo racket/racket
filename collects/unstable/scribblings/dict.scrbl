@@ -142,18 +142,6 @@ Reports whether @scheme[d] is empty (has no keys).
 
 }
 
-@defproc[(dict-has-key? [d dict?] [k any/c]) boolean?]{
-
-Reports whether @scheme[d] has an entry for @scheme[k].
-
-@defexamples[
-#:eval (eval/require 'racket/dict 'unstable/dict)
-(dict-has-key? '([1 . one] [2 . two] [3 . three]) 2)
-(dict-has-key? '([1 . one] [2 . two] [3 . three]) 4)
-]
-
-}
-
 @section{Dictionary Combinations}
 
 @defproc[(dict-union [d0 (and/c dict? dict-can-functional-set?)]

@@ -182,6 +182,21 @@ earlier mappings.
 (dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'b "balistic")
 ]}
 
+@defproc[(dict-has-key? [dict dict?] [key any/c])
+         boolean?]{
+
+Returns @scheme[#t] if @scheme[dict] contains a value for the given
+@scheme[key], @scheme[#f] otherwise.
+
+@examples[
+#:eval dict-eval
+(dict-has-key? #hash((a . "apple") (b . "beer")) 'a)
+(dict-has-key? #hash((a . "apple") (b . "beer")) 'c)
+(dict-has-key? '((a . "apple") (b . "banana")) 'b)
+(dict-has-key? #("apple" "banana") 1)
+(dict-has-key? #("apple" "banana") 3)
+(dict-has-key? #("apple" "banana") -3)
+]}
 
 @defproc[(dict-ref [dict dict?]
                    [key any/c]

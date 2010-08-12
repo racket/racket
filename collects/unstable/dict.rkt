@@ -8,18 +8,6 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dict-has-key?
-  (let ()
-    (with-contract
-     dict-has-key?
-     ([dict-has-key? (-> dict? any/c boolean?)])
-     (define (dict-has-key? dict key)
-       (let/ec return
-         (dict-ref dict key (lambda () (return #f)))
-         #t)))
-    dict-has-key?))
-;; Ryan: Why the with-contract region? Why not provide/contract?
-
 (define (dict-empty? dict)
   (= (dict-count dict) 0))
 
@@ -202,7 +190,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(provide dict/c dict-has-key? dict-ref!)
+(provide dict/c)
 (provide/contract
  [dict-empty? (-> dict? boolean?)]
  [empty-dict
@@ -233,8 +221,6 @@
   (->d ([table dict?] [key any/c]) ()
        #:pre-cond (dict-has-key? table key)
        [_ any/c])]
- [dict-domain (-> dict? list?)]
- [dict-range (-> dict? list?)]
  [dict-union (->* [(and/c dict? dict-can-functional-set?)]
                   [#:combine
                    (-> any/c any/c any/c)

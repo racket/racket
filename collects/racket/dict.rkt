@@ -9,6 +9,7 @@
          dict-can-remove-keys?
          dict-can-functional-set?
          
+         dict-has-key?
          dict-ref
          dict-ref!
          dict-set!
@@ -191,6 +192,10 @@
                (get-dict-set (dict-struct-ref d))
                #t))
       (raise-type-error 'dict-can-functional-set? "dict" d)))
+
+(define (dict-has-key? d k)
+  (define not-there (gensym))
+  (not (eq? not-there (dict-ref d k not-there))))
 
 (define dict-ref
   (case-lambda

@@ -12,7 +12,9 @@
   (test #t dict? d)
 
   (test 'one dict-ref d 1)
+  (test #t dict-has-key? d 1)
   (test 'nope dict-ref d 100 'nope)
+  (test #f dict-has-key? d 100)
   (test 'nope dict-ref d 100 (lambda () 'nope))
   
   (test #t ormap values (dict-map d (lambda (k v) (equal? k orig-one))))
