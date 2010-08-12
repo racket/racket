@@ -355,26 +355,22 @@ v4 todo:
                            (lambda (val)
                              (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
                              (make-contracted-function inner-lambda ctc)))])
-          (values
-           (syntax-property 
-            (syntax 
-             (build--> '->
-                       #f #f
-                       (list dom-ctcs ...) '() #f
-                       (list kwd-ctcs ...) '(kwds ...) '() '()
-                       (list rng-ctcs ...) use-any?
-                       outer-lambda))
-            'racket/contract:contract 
-            (vector this-> 
-                    ;; the -> in the original input to this guy
-                    (list (car (syntax-e stx)))
-                    '()))
-           inner-args/body
-           (syntax (dom-names ... rng-names ...))))))))
+          (syntax-property
+           (syntax
+            (build--> '->
+                      #f #f
+                      (list dom-ctcs ...) '() #f
+                      (list kwd-ctcs ...) '(kwds ...) '() '()
+                      (list rng-ctcs ...) use-any?
+                      outer-lambda))
+           'racket/contract:contract
+           (vector this->
+                   ;; the -> in the original input to this guy
+                   (list (car (syntax-e stx)))
+                   '())))))))
   
 (define-syntax (-> stx) 
-  (let-values ([(stx _1 _2) (->/proc/main stx)])
-    #`(syntax-parameterize ((making-a-method #f)) #,stx)))
+  #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx)))
 
 ;;
 ;; arrow opter
