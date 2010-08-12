@@ -330,19 +330,19 @@ new value.
 
 @see-also-concurrency-caveat[]}
                         
-@defproc[(hash-domain [hash hash?])
+@defproc[(hash-keys [hash hash?])
          (listof any/c)]{
 Returns a list of the keys of @scheme[hash] in an unspecified order.
                               
 See @scheme[hash-map] for information about modifying @scheme[hash]
-during @scheme[hash-domain]. @see-also-concurrency-caveat[]}
+during @scheme[hash-keys]. @see-also-concurrency-caveat[]}
 
-@defproc[(hash-range [hash hash?])
+@defproc[(hash-values [hash hash?])
          (listof any/c)]{
 Returns a list of the values of @scheme[hash] in an unspecified order.
                               
 See @scheme[hash-map] for information about modifying @scheme[hash]
-during @scheme[hash-range]. @see-also-concurrency-caveat[]}
+during @scheme[hash-values]. @see-also-concurrency-caveat[]}
                         
 @defproc[(hash->list [hash hash?])
          (listof (cons/c any/c any/c))]{

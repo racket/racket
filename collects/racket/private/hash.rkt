@@ -1,8 +1,8 @@
 (module hash "pre-base.rkt"
-  (define (hash-domain table)
+  (define (hash-keys table)
     (hash-map table (λ (k v) k)))
   
-  (define (hash-range table)
+  (define (hash-values table)
     (hash-map table (λ (k v) v)))
   
   (define (hash->list table)
@@ -26,8 +26,8 @@
         (hash-set! table (car pairs) (cadr pairs))
         (loop (cddr pairs)))))
   
-  (provide hash-domain
-           hash-range
+  (provide hash-keys
+           hash-values
            hash->list
            hash-set*
            hash-set*!))
