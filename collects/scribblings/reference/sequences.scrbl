@@ -65,9 +65,9 @@ each element in the sequence.
 
 @defthing[empty-seqn sequence?]{ A sequence with no elements. }
 
-@defthing[(seqn->list [s (sequence/c any/c)]) list?]{ Returns a list whose
-elements are the elements of the @scheme[s]. If @scheme[s] is infinite, this
-function does not terminate. }
+@defthing[(seqn->list [s sequence?]) list?]{ Returns a list whose
+elements are the elements of the @scheme[s], which must be a one-valued sequence.
+If @scheme[s] is infinite, this function does not terminate. }
 
 @defproc[(seqn-cons [v any/c]
                     ...
@@ -103,37 +103,37 @@ Returns a sequence equivalent to @scheme[s], except the first @scheme[i] element
 Returns a sequence that contains all elements of each sequence in the order they appear in the original sequences. The
 new sequence is constructed lazily. }
                    
-@defproc[(seqn-map [f (-> any/c ..._0 (values any/c ..._1))]
-                   [s (sequence/c any/c ..._0)])
-         (sequence/c any/c ..._1)]{
+@defproc[(seqn-map [f procedure?]
+                   [s sequence?])
+         sequence?]{
 Returns a sequence that contains @scheme[f] applied to each element of @scheme[s]. The new sequence is constructed lazily. }
                                   
-@defproc[(seqn-andmap [f (-> any/c ..._0 boolean?)]
-                      [s (sequence/c any/c ..._0)])
+@defproc[(seqn-andmap [f (-> any/c ... boolean?)]
+                      [s sequence?])
          boolean?]{
 Returns @scheme[#t] if @scheme[f] returns a true result on every element of @scheme[s]. If @scheme[s] is infinite and @scheme[f] never
 returns a false result, this function does not terminate. }
                                   
-@defproc[(seqn-ormap [f (-> any/c ..._0 boolean?)]
-                     [s (sequence/c any/c ..._0)])
+@defproc[(seqn-ormap [f (-> any/c ... boolean?)]
+                     [s sequence?])
          boolean?]{
 Returns @scheme[#t] if @scheme[f] returns a true result on some element of @scheme[s]. If @scheme[s] is infinite and @scheme[f] never
 returns a true result, this function does not terminate. }
 
-@defproc[(seqn-for-each [f (-> any/c ..._0 any)]
-                   [s (sequence/c any/c ..._0)])
+@defproc[(seqn-for-each [f (-> any/c ... any)]
+                   [s sequence?])
          (void)]{
 Applies @scheme[f] to each element of @scheme[s]. If @scheme[s] is infinite, this function does not terminate. }
                 
-@defproc[(seqn-fold [f (-> any/c any/c ..._0 any/c)]
+@defproc[(seqn-fold [f (-> any/c any/c ... any/c)]
                     [i any/c]
-                    [s (sequence/c any/c ..._0)])
+                    [s sequence?])
          (void)]{
 Folds @scheme[f] over each element of @scheme[s] with @scheme[i] as the initial accumulator. If @scheme[s] is infinite, this function does not terminate. }
                 
 @defproc[(seqn-filter [f (-> any/c ..._0 boolean?)]
-                      [s (sequence/c any/c ..._0)])
-         (sequence/c any/c ..._0)]{
+                      [s sequence?])
+         sequence?]{
 Returns a sequence whose elements are the elements of @scheme[s] for which @scheme[f] returns a true result. Although the new sequence is constructed
 lazily, if @scheme[s] has an infinite number of elements where @scheme[f] returns a false result in between two elements where @scheme[f] returns a true result
 then operations on this sequence will not terminate during that infinite sub-sequence. }
