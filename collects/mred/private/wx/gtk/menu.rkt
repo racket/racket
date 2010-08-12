@@ -21,7 +21,6 @@
 (define-gtk gtk_accel_map_add_entry (_fun _string _uint _int -> _void))
 (define-gtk gtk_check_menu_item_set_active (_fun _GtkWidget _gboolean -> _void))
 (define-gtk gtk_check_menu_item_get_active (_fun _GtkWidget -> _gboolean))
-(define-gtk gtk_menu_item_set_label  (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_label_set_text_with_mnemonic (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))

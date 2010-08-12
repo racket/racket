@@ -30,7 +30,10 @@
          get-gtk-object-flags
          set-gtk-object-flags!
 
-         define-signal-handler)
+         define-signal-handler
+
+	 ;; for declaring derived structures:
+	 _GtkObject)
 
 (define gdk-lib 
   (case (system-type)

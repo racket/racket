@@ -7,6 +7,7 @@
          racket/draw/local
          "../common/backing-dc.rkt"
          "../../syntax.rkt"
+	 "../../lock.rkt"
          "../common/event.rkt"
          "utils.rkt"
          "const.rkt"
@@ -21,6 +22,15 @@
 
 ;; ----------------------------------------
 
+(define-gobj g_object_freeze_notify (_fun _GtkWidget -> _void))
+(define-gobj g_object_thaw_notify (_fun _GtkWidget -> _void))
+
+(define-gobj g_object_set_double (_fun _GtkWidget _string _double* (_pointer = #f) -> _void)
+  #:c-id g_object_set)
+(define-gobj g_object_get_double (_fun _GtkWidget _string (r : (_ptr o _double)) (_pointer = #f) 
+				       -> _void -> r)
+  #:c-id g_object_get)
+
 (define-gtk gtk_drawing_area_new (_fun -> _GtkWidget))
 
 (define-gtk gtk_combo_box_entry_new_text (_fun -> _GtkWidget))
@@ -33,15 +43,47 @@
 
 (define _GtkAdjustment _GtkWidget) ; no, actually a GtkObject
 (define-gtk gtk_adjustment_new (_fun _double* _double* _double* _double* _double* _double* -> _GtkAdjustment))
-(define-gtk gtk_adjustment_configure (_fun _GtkAdjustment _double* _double* _double* _double* _double* _double* -> _void))
+(define-gtk gtk_adjustment_configure (_fun _GtkAdjustment _double* _double* _double* _double* _double* _double* -> _void)
+  #:fail (lambda ()
+	   ;; This by-hand version doesn't produce quite the same notifications.
+	   (lambda (gtk value lower upper step-inc page-inc page-size)
+	     (as-entry
+	      (lambda ()
+		(g_object_freeze_notify gtk)
+		(g_object_set_double gtk "lower" lower)
+		(g_object_set_double gtk "upper" upper)
+		(g_object_set_double gtk "step-increment" step-inc)
+		(g_object_set_double gtk "page-increment" page-inc)
+		(g_object_set_double gtk "page-size" page-size)
+		(let ([value (max lower (min value (- upper page-size)))])
+		  (gtk_adjustment_set_value gtk value))
+		(g_object_thaw_notify gtk))))))
 (define-gtk gtk_adjustment_get_value (_fun _GtkAdjustment -> _double*))
 (define-gtk gtk_adjustment_set_value (_fun _GtkAdjustment _double* -> _void))
-(define-gtk gtk_adjustment_get_upper (_fun _GtkAdjustment -> _double*))
-(define-gtk gtk_adjustment_set_upper (_fun _GtkAdjustment _double* -> _void))
-(define-gtk gtk_adjustment_get_page_size (_fun _GtkAdjustment -> _double*))
-(define-gtk gtk_adjustment_set_page_size (_fun _GtkAdjustment _double* -> _void))
-(define-gtk gtk_adjustment_get_page_increment (_fun _GtkAdjustment -> _double*))
-(define-gtk gtk_adjustment_set_page_increment (_fun _GtkAdjustment _double* -> _void))
+(define-gtk gtk_adjustment_get_upper (_fun _GtkAdjustment -> _double*)
+  #:fail (lambda ()
+	   (lambda (gtk)
+	     (g_object_get_double gtk "upper"))))
+(define-gtk gtk_adjustment_set_upper (_fun _GtkAdjustment _double* -> _void)
+  #:fail (lambda ()
+	   (lambda (gtk upper)
+	     (g_object_set_double gtk "upper" upper))))
+(define-gtk gtk_adjustment_get_page_size (_fun _GtkAdjustment -> _double*)
+  #:fail (lambda ()
+	   (lambda (gtk)
+	     (g_object_get_double gtk "page-size"))))
+(define-gtk gtk_adjustment_set_page_size (_fun _GtkAdjustment _double* -> _void)
+  #:fail (lambda ()
+	   (lambda (gtk page-size)
+	     (g_object_set_double gtk "page-size" page-size))))
+(define-gtk gtk_adjustment_get_page_increment (_fun _GtkAdjustment -> _double*)
+  #:fail (lambda ()
+	   (lambda (gtk)
+	     (g_object_get_double gtk "page-increment"))))
+(define-gtk gtk_adjustment_set_page_increment (_fun _GtkAdjustment _double* -> _void)
+  #:fail (lambda ()
+	   (lambda (gtk page-inc)
+	     (g_object_set_double gtk "page-increment" page-inc))))
 
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
@@ -69,7 +111,7 @@
 (define-gdk gdk_window_get_children (_fun _pointer -> _GList-pointer/null))
 (define-gdk gdk_window_hide (_fun _pointer -> _void))
 (define (get-subwindow gtk)
-  (let* ([win (g_object_get_window gtk)]
+  (let* ([win (widget-window gtk)]
          [subs (gdk_window_get_children win)])
     (if subs
         (GList-data subs)
@@ -91,14 +133,14 @@
       (unless (send wx paint-or-queue-paint)
         (let ([gc (send wx get-canvas-background-for-clearing)])      
           (when gc
-            (gdk_draw_rectangle (g_object_get_window gtk) gc #t
+            (gdk_draw_rectangle (widget-window gtk) gc #t
                                 0 0 32000 32000)))))
     #t))
 
 (define-signal-handler connect-expose-border "expose-event"
   (_fun _GtkWidget _GdkEventExpose-pointer -> _gboolean)
   (lambda (gtk event)
-    (let* ([win (g_object_get_window gtk)]
+    (let* ([win (widget-window gtk)]
            [gc (gdk_gc_new win)]
            [gray #x8000])
       (when gc
@@ -292,7 +334,7 @@
     (define/public (paint-or-queue-paint)
       (or (do-backing-flush this dc (if is-combo?
                                         (get-subwindow client-gtk)
-                                        (g_object_get_window client-gtk)))
+                                        (widget-window client-gtk)))
           (begin
             (queue-paint)
             #f)))
@@ -446,7 +488,7 @@
           (if clear-bg?
               (let ([conv (lambda (x) (bitwise-ior x (arithmetic-shift x 8)))])
                 (unless gc
-                  (let ([w (g_object_get_window gtk)])
+                  (let ([w (widget-window gtk)])
                     (set! gc (gdk_gc_new w))))
                 (gdk_gc_set_rgb_fg_color gc (make-GdkColor 0
                                                            (conv (color-red bg-col))

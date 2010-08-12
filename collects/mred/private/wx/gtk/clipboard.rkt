@@ -19,6 +19,18 @@
 (define _GtkDisplay _pointer)
 (define _GtkSelectionData (_cpointer 'GtkSelectionData))
 
+;; Recent versions of Gtk provide function calls to
+;;  access data, but use structure when the functions are
+;;  not available
+(define-cstruct _GtkSelectionDataT ([selection _GdkAtom]
+				    [target _GdkAtom]
+				    [type _GdkAtom]
+				    [format _int]
+				    [data _pointer]
+				    [length _int]
+				    [display _GtkDisplay]))
+				  
+
 (define-gdk gdk_atom_intern (_fun _string _gboolean -> _GdkAtom))
 
 (define-gtk gtk_clipboard_get (_fun _GdkAtom -> _GtkClipboard))
@@ -34,8 +46,10 @@
                                          -> _void))
 (define-gtk gtk_clipboard_wait_for_contents (_fun _GtkClipboard _GdkAtom -> (_or-null _GtkSelectionData)))
 (define-gtk gtk_selection_data_free (_fun _GtkSelectionData -> _void))
-(define-gtk gtk_selection_data_get_length (_fun _GtkSelectionData -> _int))
-(define-gtk gtk_selection_data_get_data (_fun _GtkSelectionData -> _pointer))
+(define-gtk gtk_selection_data_get_length (_fun _GtkSelectionData -> _int)
+  #:fail (lambda () GtkSelectionDataT-length))
+(define-gtk gtk_selection_data_get_data (_fun _GtkSelectionData -> _pointer)
+  #:fail (lambda () GtkSelectionDataT-data))
 (define-gtk gtk_clipboard_wait_for_text (_fun _GtkClipboard -> _string))
 
 (define-cstruct _GtkTargetEntry ([target _pointer]

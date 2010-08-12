@@ -32,7 +32,9 @@
          do-button-event
 
          (struct-out GtkRequisition) _GtkRequisition-pointer
-         (struct-out GtkAllocation) _GtkAllocation-pointer)
+         (struct-out GtkAllocation) _GtkAllocation-pointer
+
+	 widget-window)
 
 ;; ----------------------------------------
 
@@ -57,6 +59,20 @@
 (define-gtk gtk_widget_grab_focus (_fun _GtkWidget -> _void))
 (define-gtk gtk_widget_is_focus (_fun _GtkWidget -> _gboolean))
 (define-gtk gtk_widget_set_sensitive (_fun _GtkWidget _gboolean -> _void))
+
+(define-cstruct _GtkWidgetT ([obj _GtkObject]
+			     [private_flags _uint16]
+			     [state _byte]
+			     [saved_state _byte]
+			     [name _pointer]
+			     [style _pointer]
+			     [req _GtkRequisition]
+			     [alloc _GtkAllocation]
+			     [window _GdkWindow]
+			     [parent _GtkWidget]))
+
+(define (widget-window gtk)
+  (GtkWidgetT-window (cast gtk _GtkWidget _GtkWidgetT-pointer)))
 
 ;; ----------------------------------------
 
