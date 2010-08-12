@@ -110,6 +110,33 @@ h
 v
 ]}
 
+@defproc[(dict-set*! [dict (and/c dict? (not/c immutable?))]
+                     [key any/c]
+                     [v any/c]
+                     ...
+                     ...) void?]{
+
+Maps each @scheme[key] to each @scheme[v] in @scheme[dict], overwriting any
+existing mapping for each @scheme[key]. The update can fail with a
+@scheme[exn:fail:contract] exception if @scheme[dict] is not mutable
+or if any @scheme[key] is not an allowed key for the dictionary (e.g., not
+an exact integer in the appropriate range when @scheme[dict] is a
+@tech{vector}). The update takes place from the left, so later mappings overwrite
+earlier mappings.
+
+@examples[
+#:eval dict-eval
+(define h (make-hash))
+(dict-set*! h 'a "apple" 'b "banana")
+h
+(define v1 (vector #f #f #f))
+(dict-set*! v1 0 "apple" 1 "banana")
+v1
+(define v2 (vector #f #f #f))
+(dict-set*! v2 0 "apple" 0 "banana")
+v2
+]}
+
 
 @defproc[(dict-set [dict (and/c dict? immutable?)]
                    [key any/c]
@@ -129,6 +156,30 @@ dictionary.
 (dict-set #hash((a . "apple") (b . "beer")) 'b "banana")
 (dict-set '() 'a "apple")
 (dict-set '((a . "apple") (b . "beer")) 'b "banana")
+]}
+
+@defproc[(dict-set* [dict (and/c dict? immutable?)]
+                    [key any/c]
+                    [v any/c]
+                    ...
+                    ...)
+          (and/c dict? immutable?)]{
+
+Functionally extends @scheme[dict] by mapping each @scheme[key] to
+each @scheme[v], overwriting any existing mapping for each @scheme[key], and
+returning an extended dictionary. The update can fail with a
+@scheme[exn:fail:contract] exception if @scheme[dict] does not support
+functional extension or if any @scheme[key] is not an allowed key for the
+dictionary. The update takes place from the left, so later mappings overwrite
+earlier mappings.
+
+@examples[
+#:eval dict-eval
+(dict-set* #hash() 'a "apple" 'b "beer")
+(dict-set* #hash((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
+(dict-set* '() 'a "apple" 'b "beer")
+(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
+(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'b "balistic")
 ]}
 
 

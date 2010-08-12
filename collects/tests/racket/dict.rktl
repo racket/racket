@@ -77,6 +77,23 @@
                        (test #t equal? d bigger)))))])
           (try-add smaller "ONE")
           (try-add d "ONE")
+          (try-add d 'one))
+        (let ([try-add
+               (lambda (d val)
+                 (let ([bigger (if mutable?
+                                   (begin
+                                     (err/rt-test (dict-set* smaller 1 val))
+                                     (dict-set*! smaller 1 (gensym) 1 val)
+                                     d)
+                                   (begin
+                                     (err/rt-test (dict-set*! smaller 1 val))
+                                     (dict-set* smaller 1 (gensym) 1 val)))])
+                   (test cnt dict-count bigger)
+                   (when (eq? val 'one)
+                     (unless (pair? d)
+                       (test #t equal? d bigger)))))])
+          (try-add smaller "ONE")
+          (try-add d "ONE")
           (try-add d 'one)))))
 
 (try-simple (vector 'zero 'one 'two) #t #f #f)

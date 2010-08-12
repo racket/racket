@@ -11,7 +11,9 @@
          
          dict-ref
          dict-set!
+         dict-set*!
          dict-set
+         dict-set*
          dict-update!
          dict-update
          dict-remove!
@@ -242,6 +244,14 @@
    [else
     (raise-type-error 'dict-set! "dict" 0 d key val)]))
 
+(define (dict-set*! d . pairs)
+  (unless (even? (length pairs))
+    (error 'dict-set*! "expected an even number of association elements, but received an odd number: ~e" pairs))
+  (let loop ([pairs pairs])
+    (unless (null? pairs)
+      (dict-set! d (car pairs) (cadr pairs))
+      (loop (cddr pairs)))))
+
 (define (dict-set d key val)
   (cond
    [(hash? d) (hash-set d key val)]
@@ -263,6 +273,16 @@
           (raise-type-error 'dict-set "functional-update dict" 0 d key val)))]
    [else
     (raise-type-error 'dict-set "dict" 0 d key val)]))
+
+(define (dict-set* d . pairs)
+    (unless (even? (length pairs))
+      (error 'dict-set* "expected an even number of association elements, but received an odd number: ~e" pairs))
+    (let loop ([d d]
+               [pairs pairs])
+      (if (null? pairs)
+          d
+          (loop (dict-set d (car pairs) (cadr pairs))
+                (cddr pairs)))))
 
 (define dict-update!
   (case-lambda
