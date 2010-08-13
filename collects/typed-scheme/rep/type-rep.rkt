@@ -330,11 +330,14 @@
 
 ;; in : Type
 ;; out : Type
-(dt Param ([in Type/c] [out Type/c]) [#:key 'parameter])
+(dt Param ([in Type/c] [out Type/c]) 
+    [#:key 'parameter]
+    [#:frees (λ (f) (combine-frees (list (f out) (flip-variances (f in)))))])
 
 ;; key : Type
 ;; value : Type
-(dt Hashtable ([key Type/c] [value Type/c]) [#:key 'hash])
+(dt Hashtable ([key Type/c] [value Type/c]) [#:key 'hash]
+    [#:frees (λ (f) (combine-frees (list (make-invariant (f key)) (make-invariant (f value)))))])
 
 ;; parent : Type
 ;; pred : Identifier
