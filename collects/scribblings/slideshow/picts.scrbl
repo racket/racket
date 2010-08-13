@@ -297,7 +297,7 @@ argument for consistency with the other functions.}
                       [#:start-pull start-pull real? 1/4]
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
-                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                      [#:color color (or/c #f string? (is-a?/c color%)) #f]
                       [#:under? under? any/c #f])
             pict?]
            [(pin-arrow-line [arrow-size real?] [pict pict?]
@@ -310,7 +310,7 @@ argument for consistency with the other functions.}
                       [#:start-pull start-pull real? 1/4]
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
-                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                      [#:color color (or/c #f string? (is-a?/c color%)) #f]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
 		      [#:hide-arrowhead? any/c #f])
@@ -325,7 +325,7 @@ argument for consistency with the other functions.}
                       [#:start-pull start-pull real? 1/4]
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
-                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                      [#:color color (or/c #f string? (is-a?/c color%)) #f]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
 		      [#:hide-arrowhead? any/c #f])
