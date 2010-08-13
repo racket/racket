@@ -27,15 +27,7 @@ parsed as determined by the @racketidfont{read} and
 
 For example, suppose that file @filepath{five.rkt} contains
 
-@racketmod[
-#:file "five.rkt"
-racket/base
-
-(provide read read-syntax)
-
-(define (read in) (list (read-string 5 in)))
-(define (read-syntax src in) (list (read-string 5 in)))
-]
+@racketmodfile["five.rkt"]
 
 Then, the program
 
@@ -84,7 +76,7 @@ space.
 A @racketmetafont{#reader} form can be used in the @tech{REPL}, too:
 
 @interaction[
-(eval:alts @#,(elem @racketmetafont{#reader}@racket["five.rkt"]@tt{abcde}) #reader"five.rkt"abcde)
+(eval:alts '@#,(elem @racketmetafont{#reader}@racket["five.rkt"]@tt{abcde}) '#reader"five.rkt"abcde)
 ]
 
 @; ----------------------------------------------------------------------

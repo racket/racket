@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@begin[(require "utils.rkt" scribble/eval
+@begin[(require "utils.rkt" scribble/eval scriblib/footnote
                 racket/sandbox)
        (require (for-label (only-meta-in 0 typed/racket)
                            racket/list srfi/14
@@ -231,16 +231,6 @@ recursive type in the body @racket[t]}
 
 @defform[(Option t)]{Either @racket[t] of @racket[#f]}
 
-Other types cannot be written by the programmer, but are used
-internally and may appear in error messages.
-
-@defform/none[(struct:n (t ...))]{is the type of structures named
-@racket[n] with field types @racket[t].  There may be multiple such
-types with the same printed representation.}
-@defform/none[<n>]{is the printed representation of a reference to the
-type variable @racket[n]}
-
-
 @section[#:tag "special-forms"]{Special Form Reference}
 
 Typed Racket provides a variety of special forms above and beyond
@@ -397,7 +387,7 @@ corresponding to @racket[define-struct].}
 @defform/subs[
 (define-struct/exec: name-spec ([f : t] ...) [e : proc-t])
 ([name-spec name (name parent)])]{
- Like @racket[define-struct:], but defines an procedural structure.  
+ Like @racket[define-struct:], but defines a procedural structure.  
  The procdure @racket[e] is used as the value for @racket[prop:procedure], and must have type @racket[proc-t].}
 
 @subsection{Names for Types}
@@ -606,6 +596,12 @@ have the types ascribed to them; these types are converted to contracts and chec
 
 @section{Optimization in Typed Racket}
 
+@note{
+See
+@secref[#:doc '(lib "typed-scheme/scribblings/ts-guide.scrbl")]{optimization}
+in the guide for tips to get the most out of the optimizer.
+}
+
 Typed Racket provides a type-driven optimizer that rewrites well-typed
 programs to potentially make them faster. It should in no way make
 your programs slower or unsafe.
@@ -615,5 +611,21 @@ want to activate it, you must add the @racket[#:optimize] keyword when
 specifying the language of your program:
 
 @racketmod[typed/racket #:optimize]
+
+@section{Legacy Forms}
+
+The following forms are provided by Typed Racket for backwards
+compatibility.  
+
+@defidform[define-type-alias]{Equivalent to @racket[define-type].}
+@defidform[require/opaque-type]{Similar to using the @racket[opaque]
+keyword with @racket[require/typed].}
+@defidform[require-typed-struct]{Similar to using the @racket[struct]
+keyword with @racket[require/typed].}
+
+@(defmodulelang* (typed-scheme)
+                 #:use-sources (typed-scheme/typed-scheme
+                 typed-scheme/private/prims))
+Equivalent to the @racketmod[typed/racket/base] language.
 
 }

@@ -29,6 +29,7 @@
              (rename *in-range in-range)
              (rename *in-naturals in-naturals)
              (rename *in-list in-list)
+             (rename *in-mlist in-mlist)
              (rename *in-vector in-vector)
              (rename *in-string in-string)
              (rename *in-bytes in-bytes)
@@ -318,6 +319,7 @@
   (define (sequence? v)
     (or (do-sequence? v)
         (list? v)
+        (mpair? v)
         (vector? v)
         (string? v)
         (bytes? v)
@@ -329,6 +331,7 @@
     (cond
       [(do-sequence? v) ((do-sequence-ref v 0))]
       [(list? v) (:list-gen v)]
+      [(mpair? v) (:mlist-gen v)]
       [(vector? v) (:vector-gen v 0 (vector-length v) 1)]
       [(string? v) (:string-gen v 0 (string-length v) 1)]
       [(bytes? v) (:bytes-gen v 0 (bytes-length v) 1)]
@@ -378,9 +381,15 @@
   (define (in-list l)
     ;; (unless (list? l) (raise-type-error 'in-list "list" l))
     (make-do-sequence (lambda () (:list-gen l))))
-
+  
   (define (:list-gen l)
     (values car cdr l pair? void void))
+  
+  (define (in-mlist l)
+    (make-do-sequence (lambda () (:mlist-gen l))))
+
+  (define (:mlist-gen l)
+    (values mcar mcdr l mpair? void void))
 
   (define (check-ranges who start stop step)
     (unless (exact-nonnegative-integer? start) (raise-type-error who "exact non-negative integer" start))
@@ -1072,6 +1081,31 @@
              #t
              ;; loop args -- ok to use unsafe-cdr, since car passed
              ((unsafe-cdr lst)))]]
+        [_ #f])))
+  
+  (define-sequence-syntax *in-mlist
+    (lambda () #'in-mlist)
+    (lambda (stx)
+      (syntax-case stx ()
+        [[(id) (_ lst-expr)]
+         #'[(id)
+            (:do-in
+             ;;outer bindings
+             ([(lst) lst-expr])
+             ;; outer check
+             (void) ; (unless (list? lst) (in-list lst))
+             ;; loop bindings
+             ([lst lst])
+             ;; pos check
+             (not (null? lst))
+             ;; inner bindings
+             ([(id) (mcar lst)])
+             ;; pre guard
+             #t
+             ;; post guard
+             #t
+             ;; loop args 
+             ((mcdr lst)))]]
         [_ #f])))
 
   (define-for-syntax (vector-like-gen vector?-id

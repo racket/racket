@@ -38,10 +38,11 @@
 		   "`lib' keyword is not followed by a sequence of string datums"
 		   stx
 		   fn))
-		(build-path (if (null? (cdr l))
-				(collection-path "mzlib")
-				(apply collection-path (cdr l)))
-			    (car l)))]
+                (apply collection-file-path
+                       (car l)
+                       (if (null? (cdr l))
+                           (list "mzlib")
+                           (cdr l))))]
 	     [else
 	      (raise-syntax-error
 	       #f

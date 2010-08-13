@@ -786,6 +786,8 @@
 
   (define (doc:setup-scribblings latex-dest auto-start-doc?)
     (scr:call 'setup-scribblings
+              (parallel-workers)
+              name-str
               (if no-specific-collections? #f (map cc-path ccs-to-compile))
               latex-dest auto-start-doc? (make-user)
               (lambda (what go alt) (record-error what "Building docs" go alt))
@@ -981,7 +983,7 @@
 
   (when (make-docs)
     ;; Double-check that "setup/scribble" is present.
-    (when (file-exists? (build-path (collection-path "setup") "scribble.rkt"))
+    (when (file-exists? (collection-file-path "scribble.rkt" "setup"))
       (make-docs-step)))
   (when (doc-pdf-dest) (doc-pdf-dest-step))
 

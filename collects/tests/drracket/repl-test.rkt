@@ -1194,7 +1194,7 @@ This produces an ACK message
         (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
       (wait-for-execute)
       
-      (let* ([execute-text-end (- (get-int-pos) 1)] ;; subtract one to skip last newline
+      (let* ([execute-text-end (max 0 (- (get-int-pos) 1))] ;; subtract one to skip last newline
              [received-execute
               (fetch-output drscheme-frame execute-text-start execute-text-end)])
         

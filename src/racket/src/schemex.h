@@ -68,6 +68,8 @@ void (*scheme_end_atomic)(void);
 void (*scheme_end_atomic_no_swap)(void);
 void (*scheme_start_in_scheduler)(void);
 void (*scheme_end_in_scheduler)(void);
+void (*scheme_start_atomic_no_break)(void);
+void (*scheme_end_atomic_can_break)(void);
 void (*scheme_out_of_fuel)(void);
 Scheme_Object *(*scheme_thread)(Scheme_Object *thunk);
 Scheme_Object *(*scheme_thread_w_details)(Scheme_Object *thunk, 
@@ -751,6 +753,7 @@ int (*scheme_fdisset)(void *fd, int pos);
 void (*scheme_add_fd_handle)(void *h, void *fds, int repost);
 void (*scheme_add_fd_eventmask)(void *fds, int mask);
 void (*scheme_collapse_win_fd)(void *fds);
+void (*scheme_set_wakeup_time)(void *fds, double end_time);
 void (*scheme_security_check_file)(const char *who, const char *filename, int guards);
 void (*scheme_security_check_file_link)(const char *who, const char *filename, const char *content);
 void (*scheme_security_check_network)(const char *who, const char *host, int port, int client);

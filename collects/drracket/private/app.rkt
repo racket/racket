@@ -70,10 +70,11 @@
 
 (define (get-plt-bitmap)
   (make-object bitmap%
-    (build-path (collection-path "icons")
-                (if (< (get-display-depth) 8)
-                    "pltbw.gif"
-                    "plt-logo-red-shiny.png"))))
+    (build-path (collection-file-path
+                 (if (< (get-display-depth) 8)
+                     "pltbw.gif"
+                     "plt-logo-red-shiny.png")
+                 "icons"))))
 
 
 

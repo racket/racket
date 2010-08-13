@@ -1,12 +1,47 @@
 #lang scribble/doc
 @(require scribble/manual
           "utils.ss"
+          scribble/bnf
           (for-label scribble/bnf))
 
 @title[#:tag "bnf"]{BNF Grammars}
 
 @defmodule[scribble/bnf]{The @racket[scribble/bnf] library
 provides utilities for typesetting grammars.}
+
+For example,
+
+@verbatim[#:indent 2]|{
+@(let ([open @litchar{(}]
+       [close @litchar{)}])
+   @BNF[(list @nonterm{expr}
+              @nonterm{id}
+              @BNF-seq[open @kleeneplus[@nonterm{expr}] close]
+              @BNF-seq[open @litchar{lambda}
+                        open @kleenestar[@nonterm{id}] close
+                        @nonterm{expr} close]
+              @nonterm{val})
+        (list @nonterm{val} 
+              @BNF-alt[@nonterm{number} @nonterm{primop}])
+        (list @nonterm{id}
+              @elem{any name except for @litchar{lambda}})])
+}|
+
+produces the output
+
+@(let ([open @litchar{(}]
+       [close @litchar{)}])
+   @BNF[(list @nonterm{expr}
+              @nonterm{id}
+              @BNF-seq[open @kleeneplus[@nonterm{expr}] close]
+              @BNF-seq[open @litchar{lambda}
+                        open @kleenestar[@nonterm{id}] close
+                        @nonterm{expr} close]
+            @nonterm{val})
+      (list @nonterm{val} 
+            @BNF-alt[@nonterm{number} @nonterm{primop}])
+        (list @nonterm{id}
+              @elem{any name except for @litchar{lambda}})])
 
 See also @racket[racketgrammar].
 

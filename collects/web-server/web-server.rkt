@@ -3,7 +3,9 @@
          net/tcp-sig
          (prefix-in raw: net/tcp-unit)
          racket/unit
+         racket/async-channel
          racket/contract
+         unstable/contract
          web-server/dispatchers/dispatch
          web-server/private/dispatch-server-sig
          web-server/private/dispatch-server-unit
@@ -14,24 +16,27 @@
 (provide/contract
  [serve
   (->* (#:dispatch dispatcher/c)
-       (#:tcp@ (unit/c (import) (export tcp^))
-        #:port number?
+       (#:confirmation-channel (or/c false/c async-channel?)
+        #:tcp@ (unit/c (import) (export tcp^))
+        #:port tcp-listen-port?
         #:listen-ip (or/c false/c string?)
         #:max-waiting number?
         #:initial-connection-timeout number?)
        (-> void))]
  [serve/ports
   (->* (#:dispatch dispatcher/c)
-       (#:tcp@ (unit/c (import) (export tcp^))
-        #:ports (listof number?)
+       (#:confirmation-channel (or/c false/c async-channel?)
+        #:tcp@ (unit/c (import) (export tcp^))
+        #:ports (listof tcp-listen-port?)
         #:listen-ip (or/c false/c string?)
         #:max-waiting number?
         #:initial-connection-timeout number?)
        (-> void))]
  [serve/ips+ports
   (->* (#:dispatch dispatcher/c)
-       (#:tcp@ (unit/c (import) (export tcp^))
-        #:ips+ports (listof (cons/c (or/c false/c string?) (listof number?)))
+       (#:confirmation-channel (or/c false/c async-channel?)
+        #:tcp@ (unit/c (import) (export tcp^))
+        #:ips+ports (listof (cons/c (or/c false/c string?) (listof tcp-listen-port?)))
         #:max-waiting number?
         #:initial-connection-timeout number?)
        (-> void))]
@@ -43,6 +48,7 @@
 
 (define (serve
          #:dispatch dispatch
+         #:confirmation-channel [confirmation-channel #f]
          #:tcp@ [tcp@ raw:tcp@]
          #:port [port 80]
          #:listen-ip [listen-ip #f]
@@ -60,10 +66,11 @@
     (import dispatch-server-config^)
     (export dispatch-server^))
 
-  (serve))
+  (serve #:confirmation-channel confirmation-channel))
 
 (define (serve/ports
          #:dispatch dispatch
+         #:confirmation-channel [confirmation-channel #f]
          #:tcp@ [tcp@ raw:tcp@]
          #:ports [ports (list 80)]
          #:listen-ip [listen-ip #f]
@@ -72,6 +79,7 @@
   (define shutdowns
     (map (lambda (port)
            (serve #:dispatch dispatch
+                  #:confirmation-channel confirmation-channel
                   #:tcp@ tcp@
                   #:port port
                   #:listen-ip listen-ip
@@ -83,6 +91,7 @@
 
 (define (serve/ips+ports
          #:dispatch dispatch
+         #:confirmation-channel [confirmation-channel #f]
          #:tcp@ [tcp@ raw:tcp@]
          #:ips+ports [ips+ports (list (cons #f (list 80)))]
          #:max-waiting [max-waiting 40]
@@ -91,6 +100,7 @@
     (map (match-lambda
            [(list-rest listen-ip ports)
             (serve #:dispatch dispatch
+                   #:confirmation-channel confirmation-channel
                    #:tcp@ tcp@
                    #:ports ports
                    #:listen-ip listen-ip

@@ -164,8 +164,8 @@
                               ;; Last chance: check for a "defaults" collection:
                               ;; (error here in case there's no "defaults"
                               ;;  bails out through above `with-handlers')
-                              (build-path (collection-path "defaults")
-                                          "racket-prefs.rktd"))))))]
+                              (collection-file-path "racket-prefs.rktd"
+                                                    "defaults"))))))]
              [prefs (with-pref-params
                      (lambda ()
                        (with-input-from-file pref-file read)))])

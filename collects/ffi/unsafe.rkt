@@ -434,7 +434,7 @@
 (define* (_cprocedure itypes otype
                       #:abi         [abi     #f]
                       #:wrapper     [wrapper #f]
-                      #:keep        [keep    #f]
+                      #:keep        [keep    #t]
                       #:atomic?     [atomic? #f]
                       #:async-apply [async-apply   #f]
                       #:save-errno  [errno   #f])

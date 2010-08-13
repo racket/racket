@@ -2363,8 +2363,44 @@
   (check-all-bad hash-iterate-key)
   (check-all-bad hash-iterate-value))
 
+(test (list 1 2 3) hash-keys #hasheq((1 . a)(2 . b)(3 . c)))
+(test (list 'a 'b 'c) hash-values #hasheq((1 . a)(2 . b)(3 . c)))
+(test (list (cons 1 'a) (cons 2 'b) (cons 3 'c)) hash->list #hasheq((1 . a)(2 . b)(3 . c)))
+
+(err/rt-test (hash-set*! im-t 1 2) exn:fail?)
+(err/rt-test (hash-set* (make-hasheq null) 1 2) exn:fail?)
+(err/rt-test (hash-set* im-t 1 2 3) exn:fail?)
+(err/rt-test (hash-set*! (make-hasheq null) 1 2 3) exn:fail?)
+
+(test #t equal? (hash-set* (hasheq 1 'a 3 'b)) (hasheq 1 'a 3 'b))
+(test #t equal? (hasheq 1 2 3 4) 
+      (hash-set* (hasheq 1 'a 3 'b)
+                 1 (gensym)
+                 1 2
+                 3 (gensym)
+                 3 4))
+(test #t equal? (make-hasheq (list (cons 1 'a) (cons 3 'b))) 
+      (let ([ht (make-hasheq (list (cons 1 'a) (cons 3 'b)))])
+        (hash-set*! ht)
+        ht))
+(test #t equal? (make-hasheq (list (cons 1 2) (cons 3 'b))) 
+      (let ([ht (make-hasheq (list (cons 1 'a) (cons 3 'b)))])
+        (hash-set*! ht
+                    1 2)
+        ht))
+(test #t equal? (make-hasheq (list (cons 1 2) (cons 3 4))) 
+      (let ([ht (make-hasheq (list (cons 1 'a) (cons 3 'b)))])
+        (hash-set*! ht
+                    1 (gensym)
+                    1 2
+                    3 (gensym)
+                    3 4)
+        ht))
+
 (arity-test make-immutable-hash 1 1)
 (arity-test make-immutable-hasheq 1 1)
+(arity-test hash-keys 1 1)
+(arity-test hash-values 1 1)
 (arity-test hash-count 1 1)
 (arity-test hash-ref 2 3)
 (arity-test hash-set! 3 3)

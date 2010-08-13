@@ -1,12 +1,20 @@
 #lang racket/base
 
-(provide vector-copy vector-map vector-map! vector-append
+(provide vector-set*! vector-copy vector-map vector-map! vector-append
          vector-take vector-drop vector-split-at
          vector-take-right vector-drop-right vector-split-at-right
          vector-filter vector-filter-not
          vector-count vector-argmin vector-argmax
          vector-member vector-memq vector-memv)
 (require racket/unsafe/ops)
+
+(define (vector-set*! v . pairs)
+  (unless (even? (length pairs))
+    (error 'vector-set*! "expected an even number of association elements, but received an odd number: ~e" pairs))
+  (let loop ([pairs pairs])
+    (unless (null? pairs)
+      (vector-set! v (car pairs) (cadr pairs))
+      (loop (cddr pairs)))))
 
 ;; unchecked version of `vector-copy'
 ;; used at the implementation of many functions in this file

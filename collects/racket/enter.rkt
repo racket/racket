@@ -81,7 +81,13 @@
         (orig path name))))
 
 (define (get-timestamp path)
-  (file-or-directory-modify-seconds path #f (lambda () -inf.0)))
+  (let ([v (file-or-directory-modify-seconds path #f (lambda () -inf.0))])
+    (if (and (equal? v -inf.0)
+             (regexp-match? #rx#"[.]rkt$" (path->bytes path)))
+        (file-or-directory-modify-seconds (path-replace-suffix path #".ss")
+                                          #f 
+                                          (lambda () -inf.0))
+        v)))
 
 (define (check-latest mod)
   (let ([mpi (module-path-index-join mod #f)]

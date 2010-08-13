@@ -24,6 +24,10 @@ values. The following datatypes are all dictionaries:
 
 ]
 
+A dictionary can be used as a two-valued sequence (see
+@secref["sequences"]). The associations of the dictionary serve as elements
+of the sequence. See also @scheme[in-dict], @scheme[in-dict-keys], and @scheme[in-dict-values].
+
 @note-lib[racket/dict]
 
 @defproc[(dict? [v any/c]) boolean?]{
@@ -110,6 +114,33 @@ h
 v
 ]}
 
+@defproc[(dict-set*! [dict (and/c dict? (not/c immutable?))]
+                     [key any/c]
+                     [v any/c]
+                     ...
+                     ...) void?]{
+
+Maps each @scheme[key] to each @scheme[v] in @scheme[dict], overwriting any
+existing mapping for each @scheme[key]. The update can fail with a
+@scheme[exn:fail:contract] exception if @scheme[dict] is not mutable
+or if any @scheme[key] is not an allowed key for the dictionary (e.g., not
+an exact integer in the appropriate range when @scheme[dict] is a
+@tech{vector}). The update takes place from the left, so later mappings overwrite
+earlier mappings.
+
+@examples[
+#:eval dict-eval
+(define h (make-hash))
+(dict-set*! h 'a "apple" 'b "banana")
+h
+(define v1 (vector #f #f #f))
+(dict-set*! v1 0 "apple" 1 "banana")
+v1
+(define v2 (vector #f #f #f))
+(dict-set*! v2 0 "apple" 0 "banana")
+v2
+]}
+
 
 @defproc[(dict-set [dict (and/c dict? immutable?)]
                    [key any/c]
@@ -131,6 +162,45 @@ dictionary.
 (dict-set '((a . "apple") (b . "beer")) 'b "banana")
 ]}
 
+@defproc[(dict-set* [dict (and/c dict? immutable?)]
+                    [key any/c]
+                    [v any/c]
+                    ...
+                    ...)
+          (and/c dict? immutable?)]{
+
+Functionally extends @scheme[dict] by mapping each @scheme[key] to
+each @scheme[v], overwriting any existing mapping for each @scheme[key], and
+returning an extended dictionary. The update can fail with a
+@scheme[exn:fail:contract] exception if @scheme[dict] does not support
+functional extension or if any @scheme[key] is not an allowed key for the
+dictionary. The update takes place from the left, so later mappings overwrite
+earlier mappings.
+
+@examples[
+#:eval dict-eval
+(dict-set* #hash() 'a "apple" 'b "beer")
+(dict-set* #hash((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
+(dict-set* '() 'a "apple" 'b "beer")
+(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
+(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'b "balistic")
+]}
+
+@defproc[(dict-has-key? [dict dict?] [key any/c])
+         boolean?]{
+
+Returns @scheme[#t] if @scheme[dict] contains a value for the given
+@scheme[key], @scheme[#f] otherwise.
+
+@examples[
+#:eval dict-eval
+(dict-has-key? #hash((a . "apple") (b . "beer")) 'a)
+(dict-has-key? #hash((a . "apple") (b . "beer")) 'c)
+(dict-has-key? '((a . "apple") (b . "banana")) 'b)
+(dict-has-key? #("apple" "banana") 1)
+(dict-has-key? #("apple" "banana") 3)
+(dict-has-key? #("apple" "banana") -3)
+]}
 
 @defproc[(dict-ref [dict dict?]
                    [key any/c]
@@ -161,7 +231,27 @@ result:
 (dict-ref #("apple" "banana") -3 #f)
 ]}
 
+@defproc[(dict-ref! [dict dict?]
+                    [key any/c]
+                    [to-set any/c])
+         any]{
 
+Returns the value for @scheme[key] in @scheme[dict]. If no value
+is found for @scheme[key], then @scheme[to-set] determines the
+result as in @scheme[dict-ref] (i.e., it is either a thunk that computes a value
+or a plain value), and this result is stored in @scheme[dict] for the
+@scheme[key].  (Note that if @scheme[to-set] is a thunk, it is not
+invoked in tail position.)
+
+@examples[
+#:eval dict-eval
+(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'a)
+(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'c 'cabbage)
+(define h (make-hasheq '((a . "apple") (b . "beer"))))
+(dict-ref h 'c)
+(dict-ref! h 'c (λ () 'cabbage))
+(dict-ref h 'c)
+]}
 
 @defproc[(dict-update! [dict (and/c dict? (not/c immutable?))]
                        [key any/c]
@@ -404,7 +494,35 @@ key and value as separate values for each element).
   p)
 ]}
 
+@defproc[(dict-keys [dict dict?]) list?]{ 
+Returns a list of the keys from
+@scheme[dict] in an unspecified order.
 
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict-keys h)
+]}
+
+@defproc[(dict-values [dict dict?]) list?]{ 
+Returns a list of the values from
+@scheme[dict] in an unspecified order.
+
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict-values h)
+]}
+
+@defproc[(dict->list [dict dict?]) list?]{ 
+Returns a list of the associations from
+@scheme[dict] in an unspecified order.
+
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict->list h)
+]}
 
 @defthing[prop:dict struct-type-property?]{
 

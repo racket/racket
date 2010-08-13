@@ -663,9 +663,12 @@
             (code-for-one-id/new-name stx id reflect-id ctrct user-rename-id #f #t)]
            [(stx id reflect-id ctrct user-rename-id mangle-for-maker?)
             (code-for-one-id/new-name id reflect-id ctrct user-rename-id mangle-for-maker? #t)]
-           [(stx id reflect-id ctrct user-rename-id mangle-for-maker? provide?)
-            (let ([no-need-to-check-ctrct? (a:known-good-contract? ctrct)]
-                  [ex-id (or reflect-id id)])
+           [(stx id reflect-id ctrct/no-prop user-rename-id mangle-for-maker? provide?)
+            (let ([no-need-to-check-ctrct? (a:known-good-contract? ctrct/no-prop)]
+                  [ex-id (or reflect-id id)]
+                  [ctrct (syntax-property ctrct/no-prop
+                                          'racket/contract:contract-on-boundary
+                                          (gensym 'provide/contract-boundary))])
               (with-syntax ([id-rename ((if mangle-for-maker? 
                                             a:mangle-id-for-maker
                                             a:mangle-id)

@@ -1,36 +1,33 @@
-(module inexact-complex-div typed/scheme #:optimize
+(module inexact-complex-div typed/scheme
   (require racket/unsafe/ops)
-  (let* ((unboxed-gensym-1 1.0+2.0i)
-         (unboxed-gensym-2 (unsafe-flreal-part unboxed-gensym-1))
-         (unboxed-gensym-3 (unsafe-flimag-part unboxed-gensym-1))
-         (unboxed-gensym-4 2.0+4.0i)
-         (unboxed-gensym-5 (unsafe-flreal-part unboxed-gensym-4))
-         (unboxed-gensym-6 (unsafe-flimag-part unboxed-gensym-4))
-         (unboxed-gensym-7 3.0+6.0i)
-         (unboxed-gensym-8 (unsafe-flreal-part unboxed-gensym-7))
-         (unboxed-gensym-9 (unsafe-flimag-part unboxed-gensym-7))
-         (unboxed-gensym-14 (unsafe-fl+ (unsafe-fl* unboxed-gensym-5 unboxed-gensym-5)
-                                        (unsafe-fl* unboxed-gensym-6 unboxed-gensym-6)))
-         (unboxed-gensym-12 (unsafe-fl/ (unsafe-fl+ (unsafe-fl* unboxed-gensym-2
-                                                                unboxed-gensym-5)
-                                                    (unsafe-fl* unboxed-gensym-3
-                                                                unboxed-gensym-6))
-                                        unboxed-gensym-14))
-         (unboxed-gensym-13 (unsafe-fl/ (unsafe-fl- (unsafe-fl* unboxed-gensym-3
-                                                                unboxed-gensym-5)
-                                                    (unsafe-fl* unboxed-gensym-2
-                                                                unboxed-gensym-6))
-                                        unboxed-gensym-14))
-         (unboxed-gensym-15 (unsafe-fl+ (unsafe-fl* unboxed-gensym-8 unboxed-gensym-8)
-                                        (unsafe-fl* unboxed-gensym-9 unboxed-gensym-9)))
-         (unboxed-gensym-10 (unsafe-fl/ (unsafe-fl+ (unsafe-fl* unboxed-gensym-12
-                                                                unboxed-gensym-8)
-                                                    (unsafe-fl* unboxed-gensym-13
-                                                                unboxed-gensym-9))
-                                        unboxed-gensym-15))
-         (unboxed-gensym-11 (unsafe-fl/ (unsafe-fl- (unsafe-fl* unboxed-gensym-13
-                                                                unboxed-gensym-8)
-                                                    (unsafe-fl* unboxed-gensym-12
-                                                                unboxed-gensym-9))
-                                        unboxed-gensym-15)))
-    (unsafe-make-flrectangular unboxed-gensym-10 unboxed-gensym-11)))
+  (let* ((unboxed-real-1 1.0)
+         (unboxed-imag-2 2.0)
+         (unboxed-real-3 2.0)
+         (unboxed-imag-4 4.0)
+         (unboxed-real-5 3.0)
+         (unboxed-imag-6 6.0)
+         (unboxed-gensym-11 (unsafe-fl+ (unsafe-fl* unboxed-real-3 unboxed-real-3)
+                                        (unsafe-fl* unboxed-imag-4 unboxed-imag-4)))
+         (unboxed-real-9 (unsafe-fl/ (unsafe-fl+ (unsafe-fl* unboxed-real-1
+                                                             unboxed-real-3)
+                                                 (unsafe-fl* unboxed-imag-2
+                                                             unboxed-imag-4))
+                                     unboxed-gensym-11))
+         (unboxed-imag-10 (unsafe-fl/ (unsafe-fl- (unsafe-fl* unboxed-imag-2
+                                                              unboxed-real-3)
+                                                  (unsafe-fl* unboxed-real-1
+                                                              unboxed-imag-4))
+                                      unboxed-gensym-11))
+         (unboxed-gensym-12 (unsafe-fl+ (unsafe-fl* unboxed-real-5 unboxed-real-5)
+                                        (unsafe-fl* unboxed-imag-6 unboxed-imag-6)))
+         (unboxed-real-7 (unsafe-fl/ (unsafe-fl+ (unsafe-fl* unboxed-real-9
+                                                             unboxed-real-5)
+                                                 (unsafe-fl* unboxed-imag-10
+                                                             unboxed-imag-6))
+                                     unboxed-gensym-12))
+         (unboxed-imag-8 (unsafe-fl/ (unsafe-fl- (unsafe-fl* unboxed-imag-10
+                                                             unboxed-real-5)
+                                                 (unsafe-fl* unboxed-real-9
+                                                             unboxed-imag-6))
+                                     unboxed-gensym-12)))
+    (unsafe-make-flrectangular unboxed-real-7 unboxed-imag-8)))

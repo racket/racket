@@ -49,7 +49,10 @@
 	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
 	   test-engine/scheme-tests
 	   scheme/class
-	   (only lang/private/teachprims beginner-equal? beginner-equal~?))
+           "../posn.rkt"
+	   (only lang/private/teachprims
+                 beginner-equal? beginner-equal~?
+                 advanced-cons advanced-list*))
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
 		      syntax/kerncase
@@ -113,13 +116,13 @@
   (define-for-syntax (stepper-ignore-checker stx)
     (stepper-syntax-property stx 'stepper-skipto '(syntax-e cdr syntax-e cdr car)))
 
-  (define-for-syntax (map-with-index proc list)
-    (let loop ([i 0] [list list] [rev-result '()])
-      (if (null? list)
+  (define-for-syntax (map-with-index proc . lists)
+    (let loop ([i 0] [lists lists] [rev-result '()])
+      (if (null? (car lists))
 	  (reverse rev-result)
 	  (loop (+ 1 i)
-		(cdr list)
-		(cons (proc i (car list)) rev-result)))))
+		(map cdr lists)
+		(cons (apply proc i (map car lists)) rev-result)))))
 
   ;; build-struct-names is hard to handle
   (define-for-syntax (make-struct-names name fields stx)
@@ -203,11 +206,13 @@
 			      advanced-when
 			      advanced-unless
 			      advanced-define-struct
+                              advanced-define-datatype
 			      advanced-let
 			      advanced-recur
 			      advanced-begin
 			      advanced-begin0
 			      advanced-case
+                              advanced-match
 			      advanced-shared
 			      advanced-delay)
 
@@ -777,7 +782,8 @@
 						(append getter-names setter-names)
 						getter-names))]
 		    [proc-names (cdr to-define-names)])
-	       (with-syntax ([compile-info (build-struct-expand-info name fields #f (not setters?) #t null null)])
+	       (with-syntax ([compile-info (build-struct-expand-info name fields #f (not setters?) #t null null)]
+                             [(field_/no-loc ...) (map (λ (x) (datum->syntax x (syntax->datum x) #f)) (syntax->list #'(field_ ...)))])
 		 (let-values ([(defn0 bind-names)
 			       (wrap-func-definitions 
 				first-order? 
@@ -850,16 +856,28 @@
 							       ;; give `check-struct-wraps!' access
 							       (make-inspector)))
 
-					   #,@(map-with-index (lambda (i name)
-								#`(define (#,name r)
-								    (raw-generic-access r #,i) ; error checking
-								    (check-struct-wraps! r)
-								    (raw-generic-access r #,i)))
-							      getter-names)
-					   #,@(map-with-index (lambda (i name)
-								#`(define (#,name r v)
-								    (raw-generic-mutate r #,i v)))
-							      setter-names)
+					   #,@(map-with-index (lambda (i name field-name)
+								#`(define #,name
+                                                                    (let ([raw (make-struct-field-accessor
+                                                                                raw-generic-access
+                                                                                #,i
+                                                                                '#,field-name)])
+                                                                      (lambda (r)
+                                                                        (raw r) ; error checking
+                                                                        (check-struct-wraps! r)
+                                                                        (raw r)))))
+							      getter-names
+                                                              fields)
+					   #,@(map-with-index (lambda (i name field-name)
+								#`(define #,name 
+                                                                    (let ([raw (make-struct-field-mutator
+                                                                                raw-generic-mutate
+                                                                                #,i
+                                                                                '#,field-name)])
+                                                                      (lambda (r v)
+                                                                        (raw r v)))))
+							      setter-names
+                                                              fields)
 					   (define #,predicate-name raw-predicate)
 					   (define #,constructor-name raw-constructor)
 
@@ -869,11 +887,11 @@
 						 #`(define (#,parametric-signature-name field_ ...)
 						     (signature
 						      (combined (at name_ (predicate raw-predicate))
-								(at field_ (signature:property getter-name field_)) ...)))
+								(at field_ (signature:property getter-name field_/no-loc)) ...)))
 						 #`(define (#,parametric-signature-name field_ ...)
 						     (make-struct-wrap-signature 'name_
 										type-descriptor
-										(list field_ ...)
+										(list field_/no-loc ...)
 										#'name_)))
 
 					   (values #,signature-name #,parametric-signature-name proc-name ...)))
@@ -930,6 +948,109 @@
 
     (define (intermediate-define-struct/proc stx)
       (do-define-struct stx #f #f))
+    
+    (define (advanced-define-datatype/proc stx)
+      (unless (or (ok-definition-context)
+                  (identifier? stx))
+        (teach-syntax-error
+         'define-datatype
+         stx
+         #f
+         "found a definition that is not at the top level"))
+      
+      (syntax-case stx ()
+        
+        ;; First, check for a datatype name:
+	[(_ name . __)
+	 (not (identifier/non-kw? (syntax name)))
+	 (teach-syntax-error
+	  'define-datatype
+	  stx
+	  (syntax name)
+	  "expected a datatype type name after `define-datatype', but found ~a"
+	  (something-else/kw (syntax name)))]
+        
+        [(_ name (variant field ...) ...)
+         
+         (let ([find-duplicate
+                (λ (stxs fail-k)
+                  (define ht (make-hash-table))
+                  (for-each
+                   (λ (s)
+                     (define sym (syntax-e s))
+                     (when (hash-table-get ht sym (λ () #f))
+                       (fail-k s))
+                     (hash-table-put! ht sym #t))
+                   (syntax->list stxs)))])
+           (for-each 
+            (λ (v)
+              (unless (identifier/non-kw? v)
+                (teach-syntax-error
+                 'define-datatype
+                 stx
+                 v
+                 "expected a variant name, found ~a"
+                 (something-else/kw v))))
+            (syntax->list #'(variant ...)))
+           (find-duplicate #'(variant ...)
+                           (λ (v-stx)
+                             (define v (syntax-e v-stx))
+                             (teach-syntax-error
+                              'define-datatype
+                              stx
+                              v-stx
+                              "found a variant name that was used more than once: ~a"
+                              v)))              
+           
+           (for-each
+            (λ (vf)
+              (with-syntax ([(variant field ...) vf])
+                (for-each
+                 (λ (f)
+                   (unless (identifier? f)
+                     (teach-syntax-error
+                      'define-datatype
+                      stx
+                      f
+                      "in variant `~a': expected a field name, found ~a"
+                      (syntax-e #'variant)
+                      (something-else f))))
+                 (syntax->list #'(field ...)))
+                (find-duplicate #'(field ...)
+                                (λ (f-stx)
+                                  (teach-syntax-error
+                                   'define-datatype
+                                   stx
+                                   f-stx
+                                   "in variant `~a': found a field name that was used more than once: ~a"
+                                   (syntax-e #'variant)
+                                   (syntax-e f-stx))))))
+            (syntax->list #'((variant field ...) ...))))
+         
+         (with-syntax ([(name? variant? ...)
+                        (map (lambda (stx)
+                               (datum->syntax stx (string->symbol (format "~a?" (syntax->datum stx)))))
+                             (syntax->list #'(name variant ...)))])
+           (syntax/loc stx
+              (begin (advanced-define (name? x)
+                                      (or (variant? x) ...))
+                     (advanced-define-struct variant (field ...))
+                     ...)))]
+        [(_ name_ (variant field ...) ... something . rest)
+	 (teach-syntax-error
+	  'define-datatype
+	  stx
+	  (syntax something)
+	  "expected a variant after the datatype type name in `define-datatype', ~
+         but found ~a"
+	  (something-else (syntax something)))]
+	[(_)
+	 (teach-syntax-error
+	  'define-datatype
+	  stx
+	  #f
+	  "expected a datatype type name after `define-datatype', but nothing's there")]
+	[_else (bad-use-error 'define-datatype stx)]))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; application (beginner and intermediate)
@@ -2416,6 +2537,133 @@
 		(with-syntax ([clauses clauses])
 		  (syntax/loc stx (case v-expr . clauses)))))]
 	   [_else (bad-use-error 'case stx)]))))
+    
+    ;; match (advanced)
+    (define (advanced-match/proc stx)
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_)
+	    (teach-syntax-error
+	     'match
+	     stx
+	     #f
+	     "expected an expression after `match', but nothing's there")]
+	   [(_ expr)
+	    (teach-syntax-error
+	     'match
+	     stx
+	     #f
+	     "expected a pattern--answer clause after the expression following `match', but nothing's there")]
+	   [(_ v-expr clause ...)
+	    (let ([clauses (syntax->list (syntax (clause ...)))])
+	      (for-each
+	       (lambda (clause)
+		 (syntax-case clause ()
+		   [(pattern answer ...)
+		    (let ([pattern (syntax pattern)]
+			  [answers (syntax->list (syntax (answer ...)))])
+		      (check-single-expression 'match
+					       "for the answer in a `match' clause"
+					       clause
+					       answers
+					       null))]
+		   [()
+		    (teach-syntax-error
+		     'match
+		     stx
+		     clause
+		     "expected a pattern--answer clause, but found an empty clause")]
+		   [_else
+		    (teach-syntax-error
+		     'match
+		     stx
+		     clause
+		     "expected a pattern--answer clause, but found ~a"
+		     (something-else clause))]))
+	       clauses)
+              
+              (letrec
+                  ([check-and-translate-qqp
+                    (λ (qqp)
+                      (syntax-case qqp (intermediate-unquote intermediate-unquote-splicing)
+                        [(intermediate-unquote p)
+                         (quasisyntax/loc qqp
+                           (unquote #,(check-and-translate-p #'p)))]
+                        [(intermediate-unquote-splicing p)
+                         (quasisyntax/loc qqp
+                           (unquote-splicing #,(check-and-translate-p #'p)))]
+                        [(qqpi ...)
+                         (quasisyntax/loc qqp
+                           (#,@(map check-and-translate-qqp (syntax->list #'(qqpi ...)))))]
+                        [_
+                         qqp]))]
+                    [check-and-translate-p
+                    (λ (p)
+                      (syntax-case p (struct posn true false empty intermediate-quote intermediate-quasiquote advanced-cons list advanced-list* vector box)
+                        [true
+                         (syntax/loc p
+                           #t)]
+                        [false
+                         (syntax/loc p
+                           #f)]
+                        [empty
+                         (syntax/loc p
+                           (list))]
+                        [(intermediate-quote qp)
+                         (syntax/loc p
+                           (quote qp))]
+                        [(intermediate-quasiquote qqp)
+                         (quasisyntax/loc p
+                           (quasiquote #,(check-and-translate-qqp #'qqp)))]
+                        [(advanced-cons p1 p2)
+                         (quasisyntax/loc p
+                           (cons #,(check-and-translate-p #'p1)
+                                 #,(check-and-translate-p #'p2)))]
+                        [(list pi ...)
+                         (quasisyntax/loc p
+                           (list #,@(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(advanced-list* pi ...)
+                         (quasisyntax/loc p
+                           (list* #,@(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(struct posn (pi ...))
+                         (quasisyntax/loc p
+                           (struct posn-id #,(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(struct struct-id (pi ...))
+                         (quasisyntax/loc p
+                           (struct struct-id #,(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(vector pi ...)
+                         (quasisyntax/loc p
+                           (vector #,@(map check-and-translate-p (syntax->list #'(pi ...)))))]
+                        [(box p1)
+                         (quasisyntax/loc p
+                           (box #,(check-and-translate-p #'p1)))]
+                        [_
+                         (let ([v (syntax->datum p)])
+                           (if (or (and (symbol? v)
+                                        (not (member v '(true false empty))))
+                                   (number? v)
+                                   (string? v)
+                                   (char? v))
+                               p
+                               (teach-syntax-error
+                                'match
+                                stx
+                                p
+                                "expected a pattern, but found ~a"
+                                (something-else p))))]))])
+              (let ([clauses
+                     (map (λ (c)
+                            (syntax-case c ()
+                              [(p e)
+                               (quasisyntax/loc c
+                                 (#,(check-and-translate-p #'p) e))]))
+                          clauses)])
+                (with-syntax ([clauses clauses])
+                  (syntax/loc stx
+                    (match v-expr . clauses))))))]
+           [_else (bad-use-error 'match stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; delay (advanced)

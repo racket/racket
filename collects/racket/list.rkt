@@ -107,19 +107,19 @@
           [(pair? list) (cons (car list) (loop (cdr list) (sub1 n)))]
           [else (too-large 'take list0 n0)])))
 
-(define (drop list n)
-  ;; could be defined as `list-tail', but this is better for errors anyway
-  (unless (exact-nonnegative-integer? n)
-    (raise-type-error 'drop "non-negative exact integer" n))
-  (or (drop* list n) (too-large 'drop list n)))
-
 (define (split-at list0 n0)
   (unless (exact-nonnegative-integer? n0)
     (raise-type-error 'split-at "non-negative exact integer" n0))
   (let loop ([list list0] [n n0] [pfx '()])
     (cond [(zero? n) (values (reverse pfx) list)]
           [(pair? list) (loop (cdr list) (sub1 n) (cons (car list) pfx))]
-          [else (too-large 'take list0 n0)])))
+          [else (too-large 'split-at list0 n0)])))
+
+(define (drop list n)
+  ;; could be defined as `list-tail', but this is better for errors anyway
+  (unless (exact-nonnegative-integer? n)
+    (raise-type-error 'drop "non-negative exact integer" n))
+  (or (drop* list n) (too-large 'drop list n)))
 
 ;; take/drop-right are originally from srfi-1, uses the same lead-pointer trick
 

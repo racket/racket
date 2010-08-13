@@ -645,6 +645,11 @@ path/s is either such a string or a list of them.
 "collects/drracket/private/profile-drs.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/drracket/private/rep.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/drracket/private/stick-figures.rkt" drdr:command-line (mzc *)
+"collects/drracket/private/syncheck/annotate.rkt" drdr:command-line (gracket *)
+"collects/drracket/private/syncheck/colors.rkt" drdr:command-line (gracket *)
+"collects/drracket/private/syncheck/contract-traversal.rkt" drdr:command-line (gracket *)
+"collects/drracket/private/syncheck/gui.rkt" drdr:command-line (gracket *)
+"collects/drracket/private/syncheck/traversals.rkt" drdr:command-line (gracket *)
 "collects/drracket/private/syncheck-debug.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/drracket/private/text.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/drracket/private/tools-drs.rkt" drdr:command-line (gracket *)
@@ -1226,7 +1231,7 @@ path/s is either such a string or a list of them.
 "collects/scribble/text" responsible (eli)
 "collects/scribble/tools/drracket-buttons.rkt" drdr:command-line (gracket-text *)
 "collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line (gracket-text * "skip")
-"collects/scribblings" responsible (mflatt eli robby mathias)
+"collects/scribblings" responsible (mflatt eli robby matthias)
 "collects/scribblings/framework/standard-menus.scrbl" drdr:command-line #f
 "collects/scribblings/guide/contracts-examples/6.rkt" drdr:command-line (racket "-f" *)
 "collects/scribblings/guide/read.scrbl" drdr:command-line #f
@@ -1363,6 +1368,7 @@ path/s is either such a string or a list of them.
 "collects/tests/aligned-pasteboard/test2.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/compiler" responsible (jay)
 "collects/tests/compiler/regression.rkt" responsible (mflatt)
+"collects/tests/compiler/zo-test-worker.rkt" drdr:command-line #f
 "collects/tests/compiler/zo-test.rkt" drdr:command-line (racket "-t" * "--" "-I" "-S" "-t" "60" "-v" "-R") drdr:random #t
 "collects/tests/datalog" responsible (jay)
 "collects/tests/deinprogramm" responsible (sperber)
@@ -1471,7 +1477,7 @@ path/s is either such a string or a list of them.
 "collects/tests/plot/run-tests.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
-"collects/tests/racket/advanced.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/advanced.rktl" drdr:command-line (racket "-f" *) drdr:timeout 180
 "collects/tests/racket/all.rktl" drdr:command-line #f
 "collects/tests/racket/async-channel.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/awk.rktl" drdr:command-line #f
@@ -1532,7 +1538,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/meteor.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/nbody-generic.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/nbody-vec-generic.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/nbody-vec-unsafe.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/nbody-vec.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/nbody.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/nestedloop.rkt" drdr:command-line (racket "-t" * "--" "2")
@@ -1545,7 +1550,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/recursive.rkt" drdr:command-line (racket "-t" * "--" "2")
 "collects/tests/racket/benchmarks/shootout/run.rkt" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/spectralnorm-generic.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/spectralnorm-unsafe.rkt" drdr:command-line (racket * "5")
 "collects/tests/racket/benchmarks/shootout/spectralnorm.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/spellcheck.rkt" drdr:command-line (mzc *)
 "collects/tests/racket/benchmarks/shootout/strcat.rkt" drdr:command-line (racket "-t" * "--" "25")
@@ -1591,9 +1595,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/typed/mandelbrot-generic.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/mandelbrot-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "15")
 "collects/tests/racket/benchmarks/shootout/typed/mandelbrot-optimizing.rkt" drdr:command-line (racket "-t" * "--" "15")
-"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-unsafe-non-optimizing.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-unsafe-optimizing.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-unsafe.rktl" drdr:command-line (racket * "3")
 "collects/tests/racket/benchmarks/shootout/typed/mandelbrot.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/matrix.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/meteor-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
@@ -1610,9 +1611,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/typed/nbody-vec-generic.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/nbody-vec-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/typed/nbody-vec-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-unsafe-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-unsafe-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-unsafe.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/nbody-vec.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/nbody.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/nestedloop-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
@@ -1649,9 +1647,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/typed/spectralnorm-generic.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/spectralnorm-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/typed/spectralnorm-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-unsafe-non-optimizing.rkt" drdr:command-line (racket * "5")
-"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-unsafe-optimizing.rkt" drdr:command-line (racket * "5")
-"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-unsafe.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/spectralnorm.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/spellcheck-non-optimizing.rkt" drdr:command-line (mzc *)
 "collects/tests/racket/benchmarks/shootout/typed/spellcheck-optimizing.rkt" drdr:command-line (mzc *)
@@ -1683,7 +1678,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/compat.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/compile.rktl" drdr:command-line #f
 "collects/tests/racket/contmark.rktl" drdr:command-line #f
-"collects/tests/racket/contract-mzlib-test.rktl" drdr:command-line #f
+"collects/tests/racket/contract-mzlib-test.rktl" responsible (robby) drdr:command-line (racket "-qr" *)
 "collects/tests/racket/contract-opt-tests.rkt" drdr:command-line (racket "-f" *)
 "collects/tests/racket/contract-test.rktl" responsible (robby) drdr:command-line #f
 "collects/tests/racket/control.rktl" drdr:command-line (racket "-f" *)
@@ -1787,7 +1782,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/struct.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/structlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/stx.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/subprocess.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/subprocess.rktl" drdr:command-line (racket "-f" *) drdr:random #t
 "collects/tests/racket/sync.rktl" drdr:command-line #f
 "collects/tests/racket/syntax-tests.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/syntax.rktl" drdr:command-line #f

@@ -107,6 +107,10 @@
 (define -Keyword (make-Base 'Keyword #'keyword?))
 (define -Char (make-Base 'Char #'char?))
 (define -Thread (make-Base 'Thread #'thread?))
+(define -Resolved-Module-Path (make-Base 'Resolved-Module-Path #'resolved-module-path?))
+(define -Module-Path (make-Base 'Module-Path #'module-path?))
+(define -Module-Path-Index (make-Base 'Module-Path-Index #'module-path-index?))
+(define -Compiled-Module-Expression (make-Base 'Compiled-Module-Expression #'compiled-module-expression?))
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag?))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set?))
 (define -Path (make-Base 'Path #'path?))
@@ -150,13 +154,17 @@
 ;; Numeric hierarchy
 (define -Number (make-Base 'Number #'number?))
 
-;; a complex number can't have an inexact imaginary part and an exact real part
-(define -InexactComplex (make-Base 'InexactComplex #'(and/c number? (lambda (x) (inexact-real? (imag-part x))))))
+(define -InexactComplex (make-Base 'InexactComplex
+                                   #'(and/c number?
+                                            (lambda (x)
+                                              (and (inexact-real? (imag-part x))
+                                                   (inexact-real? (real-part x)))))))
 
 (define -Flonum (make-Base 'Flonum #'inexact-real?))
-(define -NonnegativeFlonum (make-Base 'Nonnegative-Flonum #'(and/c inexact-real?
-                                                                   (or/c positive? zero?)
-                                                                   (lambda (x) (not (eq? x -0.0))))))
+(define -NonnegativeFlonum (make-Base 'Nonnegative-Flonum
+                                      #'(and/c inexact-real?
+                                               (or/c positive? zero?)
+                                               (lambda (x) (not (eq? x -0.0))))))
 
 (define -ExactRational 
   (make-Base 'Exact-Rational #'(and/c number? rational? exact?)))
@@ -176,7 +184,7 @@
 (define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))
 (define -Nat -ExactNonnegativeInteger)
 
-(define -Byte -Integer)
+(define -Byte -NonnegativeFixnum)
 
 
 

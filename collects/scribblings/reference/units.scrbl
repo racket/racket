@@ -280,7 +280,7 @@ in the unit is the result of the @scheme[invoke-unit] expression.
 
 Each supplied @scheme[tagged-sig-spec] takes bindings from the
 surrounding context and turns them into imports for the invoked unit.
-The unit need not declare an imports for evey provided
+The unit need not declare an import for every provided
 @scheme[tagged-sig-spec], but one @scheme[tagged-sig-spec] must be
 provided for each declared import of the unit. For each variable
 identifier in each provided @scheme[tagged-sig-spec], the value of the

@@ -1,13 +1,13 @@
 #lang scheme/base
 
 (require syntax/parse
-         syntax/id-table racket/dict
+         syntax/id-table racket/dict scheme/flonum
          (for-template scheme/base scheme/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)
          (optimizer utils fixnum))
 
-(provide float-opt-expr float-expr int-expr)
+(provide float-opt-expr float-expr int-expr float-coerce-expr)
 
 
 (define (mk-float-tbl generic)
@@ -40,12 +40,30 @@
   (pattern e:expr
            #:when (subtypeof? #'e -Integer)
            #:with opt ((optimize) #'e)))
+(define-syntax-class real-expr
+  (pattern e:expr
+           #:when (subtypeof? #'e -Real)
+           #:with opt ((optimize) #'e)))
+
+
+;; generates coercions to floats
+(define-syntax-class float-coerce-expr
+  (pattern e:float-arg-expr
+           #:with opt #'e.opt)
+  (pattern e:real-expr
+           #:with opt #'(exact->inexact e.opt)))
+
 
 ;; if the result of an operation is of type float, its non float arguments
 ;; can be promoted, and we can use unsafe float operations
 ;; note: none of the unary operations have types where non-float arguments
 ;;  can result in float (as opposed to real) results
 (define-syntax-class float-arg-expr
+  ;; we can convert literals right away
+  (pattern (quote n)
+           #:when (exact-integer? (syntax->datum #'n))
+           #:with opt
+           (datum->syntax #'here (->fl (syntax->datum #'n))))
   (pattern e:fixnum-expr
            #:with opt #'(unsafe-fx->fl e.opt))
   (pattern e:int-expr
@@ -68,13 +86,22 @@
            #:with opt
            (begin (log-optimization "binary float" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
-  (pattern (~and res (#%plain-app (~var op (float-op binary-float-comps))
-                                  f1:float-expr
-                                  f2:float-expr
-                                  fs:float-expr ...))
+  (pattern (#%plain-app (~var op (float-op binary-float-comps))
+                        f1:float-expr
+                        f2:float-expr
+                        fs:float-expr ...)
            #:with opt
            (begin (log-optimization "binary float comp" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
+
+  (pattern (#%plain-app (~and op (~literal -)) f:float-expr)
+           #:with opt
+           (begin (log-optimization "unary float" #'op)
+                  #'(unsafe-fl- 0.0 f.opt)))
+  (pattern (#%plain-app (~and op (~literal /)) f:float-expr)
+           #:with opt
+           (begin (log-optimization "unary float" #'op)
+                  #'(unsafe-fl/ 1.0 f.opt)))
   
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-expr)
@@ -85,4 +112,9 @@
   (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-expr)
            #:with opt
            (begin (log-optimization "float to float" #'op)
-                  #'f.opt)))
+                  #'f.opt))
+
+  (pattern (#%plain-app (~and op (~literal zero?)) f:float-expr)
+           #:with opt
+           (begin (log-optimization "float zero?" #'op)
+                  #'(unsafe-fl= f.opt 0.0))))

@@ -60,7 +60,7 @@
 ; Given the size of a vector and a procedure which
 ; sends indices to desired vector elements, create
 ; and return the vector.
-(: proc->vector (All (X) (Natural (Natural -> X) -> (Vectorof X))))
+(: proc->vector (All (X) (Integer (Integer -> X) -> (Vectorof X))))
 (define proc->vector
   (lambda (size f)
     '(assert (and (integer? size)
@@ -100,21 +100,21 @@
 (define vec-map
     (lambda (vec proc)
 	(proc->vector (vector-length vec)
-	    (lambda: ((i : Natural))
+	    (lambda: ((i : Integer))
 		(proc (vector-ref vec i))))))
 
 ; Given limit, return the list 0, 1, ..., limit-1.
-(: giota (Natural -> (Listof Natural)))
+(: giota (Integer -> (Listof Integer)))
 (define giota
     (lambda (limit)
 	'(assert (and (integer? limit)
 		(exact? limit)
 		(>= limit 0))
 	    limit)
-	(let: _-*- : (Listof Natural)
-              ((limit : Natural
+	(let: _-*- : (Listof Integer)
+              ((limit : Integer
                       limit)
-               (res : (Listof Natural)
+               (res : (Listof Integer)
                     '()))
 	    (if (zero? limit)
 		res
@@ -124,7 +124,7 @@
 			(cons limit res)))))))
 
 ; Fold over the integers [0, limit).
-(: gnatural-fold (All (X) (Natural (Natural X -> X) X -> X)))
+(: gnatural-fold (All (X) (Integer (Integer X -> X) X -> X)))
 (define gnatural-fold
     (lambda (limit folder state)
 	'(assert (and (integer? limit)
@@ -141,7 +141,7 @@
 		state))))
 
 ; Iterate over the integers [0, limit).
-(: gnatural-for-each (Natural (Natural -> Any) -> Void))
+(: gnatural-for-each (Integer (Integer -> Any) -> Void))
 (define gnatural-for-each
     (lambda (limit proc!)
 	'(assert (and (integer? limit)
@@ -151,12 +151,12 @@
 	'(assert (procedure? proc!)
 	    proc!)
 	(do: : Void
-             ((i : Natural 0
+             ((i : Integer 0
                  (+ i 1)))
              ((= i limit))
 	    (proc! i))))
 
-(: natural-for-all? (Natural (Natural -> Boolean) -> Boolean))
+(: natural-for-all? (Integer (Integer -> Boolean) -> Boolean))
 (define natural-for-all?
     (lambda (limit ok?)
 	'(assert (and (integer? limit)
@@ -171,7 +171,7 @@
 		(and (ok? i)
 		    (_-*- (+ i 1)))))))
 
-(: natural-there-exists? (Natural (Natural -> Boolean) -> Boolean))
+(: natural-there-exists? (Integer (Integer -> Boolean) -> Boolean))
 (define natural-there-exists?
     (lambda (limit ok?)
 	'(assert (and (integer? limit)
@@ -329,10 +329,10 @@
 ;	3->2, 2->3
 ;	...
 (: make-minimal? (All (State)
-                      (Natural ->
-                               (Natural
+                      (Integer ->
+                               (Integer
                                 Graph
-                                ((Vectorof Natural)
+                                ((Vectorof Integer)
                                  Boolean
                                  (Boolean -> Boolean)
                                  -> Boolean)
@@ -344,10 +344,10 @@
 		(exact? max-size)
 		(>= max-size 0))
 	    max-size)
-	(let: ((iotas : (Vectorof (Listof Natural))
+	(let: ((iotas : (Vectorof (Listof Integer))
                       (proc->vector (+ max-size 1)
                                     giota))
-               (perm : (Vectorof Natural)
+               (perm : (Vectorof Integer)
                      (make-vector max-size 0)))
 	    (lambda (size graph folder state)
 		'(assert (and (integer? size)
@@ -361,10 +361,10 @@
 		    folder)
 		(fold-over-perm-tree
                  (vector-ref iotas size)
-                 (lambda: ((perm-x : Natural)
-                           (x : Natural)
+                 (lambda: ((perm-x : Integer)
+                           (x : Integer)
                            (state : Boolean)
-                           (deeper : (Natural Boolean
+                           (deeper : (Integer Boolean
                                               -> Boolean))
                            (accross : (Boolean
                                        -> Boolean)))
@@ -380,7 +380,7 @@
                             (else
                              (error "can't happen"))))
                  0
-                 (lambda: ((leaf-depth : Natural)
+                 (lambda: ((leaf-depth : Integer)
                            (state : Boolean)
                            (accross : (Boolean -> Boolean)))
                    '(assert (eqv? leaf-depth size)
@@ -392,7 +392,7 @@
 ; Given a graph, a partial permutation vector, the next input and the next
 ; output, return 'less, 'equal or 'more depending on the lexicographic
 ; comparison between the permuted and un-permuted graph.
-(: cmp-next-vertex (Graph (Vectorof Natural) Natural Natural
+(: cmp-next-vertex (Graph (Vectorof Integer) Integer Integer
                           -> (U 'less 'equal 'more)))
 (define cmp-next-vertex
     (lambda (graph perm x perm-x)
@@ -430,7 +430,7 @@
 
 ;;; ==== rdg.ss ====
 
-(define-type RDG (Vectorof (Listof Natural)))
+(define-type RDG (Vectorof (Listof Integer)))
 
 ; Fold over rooted directed graphs with bounded out-degree.
 ; Size is the number of vertices (including the root).  Max-out is the
@@ -440,7 +440,7 @@
 ; a list of the vertices j for which there is an edge from i to j.
 ; The last vertex is the root.
 (: fold-over-rdg (All (State) (Exact-Positive-Integer
-                               Natural
+                               Integer
                                (RDG State -> State)
                                State
                                -> State)))
@@ -456,20 +456,20 @@
 	    max-out)
 	'(assert (procedure? folder)
 	    folder)
-	(let*: ((root : Natural
+	(let*: ((root : Integer
 		    (- size 1))
 		(edge? : Graph
 		    (proc->vector size
-			(lambda: ((from : Natural))
+			(lambda: ((from : Integer))
 			    (ann (make-vector size #f)
                                  (Vectorof Boolean)))))
 		(edges : RDG
 		    (make-vector size '()))
-		(out-degrees : (Vectorof Natural)
+		(out-degrees : (Vectorof Integer)
 		    (make-vector size 0))
-		(minimal-folder : (Natural
+		(minimal-folder : (Integer
                                    Graph
-                                   ((Vectorof Natural)
+                                   ((Vectorof Integer)
                                     Boolean
                                     (Boolean -> Boolean)
                                     -> Boolean)
@@ -478,22 +478,22 @@
                     ;; make-minimal?'s type says it can return #f, but it won't
 		    (or (make-minimal? root)
                         (error "can't happen")))
-		(non-root-minimal? : (Natural -> Boolean)
+		(non-root-minimal? : (Integer -> Boolean)
 		    (let ((cont
-				(lambda: ((perm : (Vectorof Natural))
+				(lambda: ((perm : (Vectorof Integer))
                                           (state : Boolean)
                                           (accross : (Boolean -> Boolean)))
 				    '(assert (eq? state #t)
 					state)
 				    (accross #t))))
-			(lambda: ((size : Natural))
+			(lambda: ((size : Integer))
 			    (minimal-folder size
                                             edge?
                                             cont
                                             #t))))
 		(root-minimal? : ( -> Boolean)
 		    (let ((cont
-				(lambda: ((perm : (Vectorof Natural))
+				(lambda: ((perm : (Vectorof Integer))
                                           (state : Boolean)
                                           (accross : (Boolean -> Boolean)))
 				    '(assert (eq? state #t)
@@ -511,7 +511,7 @@
                                             cont
                                             #t)))))
 	    (let: _-*- : State
-		((vertex : Natural
+		((vertex : Integer
                          0)
 		    (state : State
                            state))
@@ -533,11 +533,11 @@
 				(from-root
 				    (vector-ref edge? root)))
 			    (let: _-*- : State
-				((v : Natural
+				((v : Integer
 					0)
-                                 (outs : Natural
+                                 (outs : Integer
                                        0)
-                                 (efr : (Listof Natural)
+                                 (efr : (Listof Integer)
                                       '())
                                  (efrr : (Listof (Vectorof Boolean))
                                        '())
@@ -568,7 +568,7 @@
 					(vector-set! edges root efr)
 					(folder
 					    (proc->vector size
-						(lambda: ((i : Natural))
+						(lambda: ((i : Integer))
 						    (vector-ref edges i)))
 					    state))
 				    (else
@@ -658,32 +658,32 @@
 
 ; Given a vector which maps vertex to out-going-edge list,
 ; return a vector  which gives reachability.
-(: make-reach? (Natural RDG -> Graph))
+(: make-reach? (Integer RDG -> Graph))
 (define make-reach?
     (lambda (size vertex->out)
 	(let ((res
 		    (proc->vector size
-			(lambda: ((v : Natural))
+			(lambda: ((v : Integer))
 			    (let: ((from-v : (Vectorof Boolean)
                                            (make-vector size #f)))
 				(vector-set! from-v v #t)
 				(for-each
-				    (lambda: ((x : Natural))
+				    (lambda: ((x : Integer))
 					(vector-set! from-v x #t))
 				    (vector-ref vertex->out v))
 				from-v)))))
 	    (gnatural-for-each size
-		(lambda: ((m : Natural))
+		(lambda: ((m : Integer))
 		    (let ((from-m
 				(vector-ref res m)))
 			(gnatural-for-each size
-			    (lambda: ((f : Natural))
+			    (lambda: ((f : Integer))
 				(let ((from-f
 					    (vector-ref res f)))
 				    (if (vector-ref from-f m); [wdc - was when]
                                        (begin
 					(gnatural-for-each size
-					    (lambda: ((t : Natural))
+					    (lambda: ((t : Integer))
 						(if (vector-ref from-m t)
                                                    (begin ; [wdc - was when]
 						    (vector-set! from-f t #t))
@@ -707,7 +707,7 @@
 (let ((input (with-input-from-file "input.txt" read)))
   (time
    (let: loop : (Listof RDG)
-         ((n : Natural 45) (v : (Listof RDG) '()))
+         ((n : Integer 45) (v : (Listof RDG) '()))
      (if (zero? n)
          v
          (loop (- n 1)

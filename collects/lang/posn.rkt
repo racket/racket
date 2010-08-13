@@ -4,6 +4,7 @@
 
 ;; The posn struct for the teaching languages
 (provide struct:posn make-posn posn? posn-x posn-y set-posn-x! set-posn-y!
+         (rename-out (posn posn-id))
 	 (rename-out (posn-signature posn)))
 
 (struct posn (x y) #:mutable #:transparent)

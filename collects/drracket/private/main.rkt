@@ -36,10 +36,11 @@
     ;; avoid building the mask unless we use it
     (define todays-icon
       (make-object bitmap% 
-        (build-path (collection-path "icons")
-                    (case (date-week-day (seconds->date (current-seconds)))
-                      [(6 0) "plt-logo-red-shiny.png"]
-                      [else "plt-logo-red-diffuse.png"]))
+        (collection-file-path 
+         (case (date-week-day (seconds->date (current-seconds)))
+           [(6 0) "plt-logo-red-shiny.png"]
+           [else "plt-logo-red-diffuse.png"])
+         "icons")
         'png/mask))
     
     (define todays-icon-bw-mask 
@@ -93,6 +94,8 @@
                                '("Racket (.scm)" "*.scm")
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
+
+(drr:set-default 'drracket:language-dialog:hierlist-default #f (λ (x) (or (not x) (and (list? x) (andmap string? x)))))
 
 (drr:set-default 'drracket:create-executable-gui-type 'stand-alone (λ (x) (memq x '(launcher stand-alone distribution))))
 (drr:set-default 'drracket:create-executable-gui-base 'racket (λ (x) (memq x '(racket gracket))))

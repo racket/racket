@@ -274,7 +274,7 @@
              (build-path coll-dir icon-spec)]
             [(and (list? icon-spec)
                   (andmap string? icon-spec))
-             (build-path (apply collection-path (cdr icon-spec)) (car icon-spec))]
+             (apply collection-file-path icon-spec)]
             [else #f])]
          [tool-bitmap
           (and icon-path
@@ -327,7 +327,7 @@
   (syntax-case stx ()
     [(_ body tool-name)
      (let ()
-       (define tool-lib-src (build-path (collection-path "drracket") "tool-lib.rkt"))
+       (define tool-lib-src (collection-file-path "tool-lib.rkt" "drracket"))
        
        (define full-sexp
          (call-with-input-file tool-lib-src

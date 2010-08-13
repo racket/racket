@@ -195,7 +195,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; let loop
 
-(define (let-loop-check form lp actuals args body expected)
+(define (let-loop-check form lam lp actuals args body expected)
   (syntax-parse #`(#,args #,body #,actuals) 
     #:literals (#%plain-app if null? pair? null)
     [((val acc ...)
@@ -216,7 +216,7 @@
                   [t ann-ts])
          (tc-expr/check a (ret t)))
        ;; then check that the function typechecks with the inferred types
-       (tc/rec-lambda/check form args body lp ts expected)
+       (add-typeof-expr lam (tc/rec-lambda/check form args body lp ts expected))
        expected)]
     ;; special case `for/list'
     [((val acc ...)
@@ -234,7 +234,7 @@
                       [(tc-result1: (and t (Listof: _))) t]
                       [_ #f])
                     (generalize (-val '())))])
-       (tc/rec-lambda/check form args body lp (cons acc-ty ts) expected)
+       (add-typeof-expr lam (tc/rec-lambda/check form args body lp (cons acc-ty ts) expected))
        expected)]
     ;; special case when argument needs inference
     [(_ body* _)
@@ -246,7 +246,7 @@
                        (begin (check-below (tc-expr/t ac) infer-t)
                               infer-t)
                        (generalize (tc-expr/t ac)))))])
-       (tc/rec-lambda/check form args body lp ts expected)
+       (add-typeof-expr lam (tc/rec-lambda/check form args body lp ts expected))
        expected)]))
 
 
@@ -565,11 +565,11 @@
        [(tc-result1: t) (tc-error/expr #:return (ret (Un))
                                        "Cannot apply expression of type ~a, since it is not a function type" t)])]
     ;; even more special case for match
-    [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
+    [(#%plain-app (letrec-values ([(lp) (~and lam (#%plain-lambda args . body))]) lp*) . actuals)
      #:fail-unless expected #f 
      #:fail-unless (not (andmap type-annotation (syntax->list #'(lp . args)))) #f
      #:fail-unless (free-identifier=? #'lp #'lp*) #f
-     (let-loop-check form #'lp #'actuals #'args #'body expected)]
+     (let-loop-check form #'lam #'lp #'actuals #'args #'body expected)]
     ;; special cases for classes
     [(#%plain-app make-object cl . args)     
      (check-do-make-object #'cl #'args #'() #'())]

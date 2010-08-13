@@ -355,7 +355,20 @@ In more detail, patterns match as follows:
 
 @; ----------------------------------------------------------------------
 
-@section{Combined Matching Forms}
+@section{Additional Matching Forms}
+
+@defform/subs[(match* (val-expr ...+) clause* ...)
+	      ([clause* [(pat ...+) expr ...+]
+			[(pat ...+) (=> id) expr ...+]])]{
+Matches a sequence of values against each clause in order, matching
+only when all patterns in a clause match.  Each clause must have the
+same number of patterns as the number of @racket[val-expr]s. 
+
+@examples[#:eval match-eval
+(match* (1 2 3)
+ [(_ (? number?) x) (add1 x)])
+]
+}
 
 @defform[(match-lambda clause ...)]{
 

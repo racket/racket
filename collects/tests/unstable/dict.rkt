@@ -35,13 +35,6 @@
                (dict-set! table 2 'b)
                (check/dict table '([1 . a] [2 . b]))))))
    (test-suite "Lookup"
-     (test-suite "dict-ref!"
-       (test-ok (define d (make-hash))
-                (check-equal? (dict-ref! d 1 'one) 'one)
-                (check-equal? (dict-ref! d 1 'uno) 'one)
-                (check-equal? (dict-ref! d 2 (lambda () 'two)) 'two)
-                (check-equal? (dict-ref! d 2 (lambda () 'dos)) 'two))
-       (test-bad (dict-ref! '([1 . one] [2 . two]) 1 'uno)))
      (test-suite "dict-ref/check"
        (test-ok (check-equal? (dict-ref/check '([1 . one] [2 . two]) 1) 'one))
        (test-bad (dict-ref/check '([1 . one] [2 . two]) 3)))
@@ -65,15 +58,7 @@
    (test-suite "Accessors"
      (test-suite "dict-empty?"
        (test (check-true (dict-empty? '())))
-       (test (check-false (dict-empty? '([1 . a] [2 . b])))))
-     (test-suite "dict-has-key?"
-       (test-ok (check-equal? (dict-has-key? '([1 . one] [2 . two]) 1) #t))
-       (test-ok (check-equal? (dict-has-key? '([1 . one] [2 . two]) 3) #f)))
-     (test-suite "dict-domain"
-       (test-ok (check-equal? (dict-domain '([1 . one] [2 . two])) '(1 2))))
-     (test-suite "dict-range"
-       (test-ok (check-equal? (dict-range '([1 . one] [2 . two]))
-                              '(one two)))))
+       (test (check-false (dict-empty? '([1 . a] [2 . b]))))))
    (test-suite "Combination"
      (test-suite "dict-union"
        (test-ok (dict-union '([1 . one] [2 . two]) '([3 . three] [4 . four]))

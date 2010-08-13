@@ -2723,9 +2723,25 @@ Scheme_Object *bangboxenv_execute(Scheme_Object *data)
 static Scheme_Object *bangboxenv_sfs(Scheme_Object *data, SFS_Info *info)
 {
   Scheme_Object *e;
+  int spos, drop;
+
+  spos = SCHEME_INT_VAL(SCHEME_CAR(data)) + info->stackpos;
+  if (info->pass 
+      && (info->max_used[spos] < info->ip))
+    /* Not used, so don't bother boxing. In fact, the original value
+       might be cleared already, so we wan't legally box anymore. */
+    drop = 1;
+  else
+    drop = 0;
+
   e = scheme_sfs_expr(SCHEME_CDR(data), info, -1);
-  SCHEME_CDR(data) = e;
-  return data;
+
+  if (drop)
+    return e;
+  else {
+    SCHEME_CDR(data) = e;
+    return data;
+  }
 }
 
 static Scheme_Object *bangboxenv_jit(Scheme_Object *data)
@@ -3055,12 +3071,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   int i, j, pos, is_rec, not_simply_let_star = 0, undiscourage, split_shift, skip_opts = 0;
   int size_before_opt, did_set_value;
   int remove_last_one = 0, inline_fuel, rev_bind_order;
+  int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
 
 # define pos_EARLIER(a, b) (rev_bind_order ? ((a) > (b)) : ((a) < (b)))
 
   if (context & OPT_CONTEXT_BOOLEAN) {
     /* Special case: (let ([x M]) (if x x N)), where x is not in N,
-       to (if M #t #f), since we're in a test position. */
+       to (if M #t N), since we're in a test position. */
     if (!(SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) && (head->count == 1) && (head->num_clauses == 1)) {
       clv = (Scheme_Compiled_Let_Value *)head->body;
       if (SAME_TYPE(SCHEME_TYPE(clv->body), scheme_branch_type)
@@ -3077,16 +3094,28 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           b3->so.type = scheme_branch_type;
           b3->test = clv->value;
           b3->tbranch = scheme_true;
-          b3->fbranch = b->fbranch;
+          if (post_bind) {
+            /* still need a `let' around N: */
+            b3->fbranch = (Scheme_Object *)head;
+            clv->value = scheme_false;
+            clv->flags[0] = 0; /* variable now unused */
+            clv->body = b->fbranch;
+          } else {
+            b3->fbranch = b->fbranch;
+          }
 
-          sub_info = scheme_optimize_info_add_frame(info, 1, 0, 0);
+          if (post_bind)
+            sub_info = info;
+          else
+            sub_info = scheme_optimize_info_add_frame(info, 1, 0, 0);
 	
           form = scheme_optimize_expr((Scheme_Object *)b3, sub_info, context);
 
-          info->single_result = sub_info->single_result;
-          info->preserves_marks = sub_info->preserves_marks;
-
-          scheme_optimize_info_done(sub_info);
+          if (!post_bind) {
+            info->single_result = sub_info->single_result;
+            info->preserves_marks = sub_info->preserves_marks;
+            scheme_optimize_info_done(sub_info);
+          }
 
           return form;
         }
@@ -3102,8 +3131,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     if (SAME_TYPE(SCHEME_TYPE(clv->body), scheme_local_type)
         && (((Scheme_Local *)clv->body)->position == 0)) {
       if (worth_lifting(clv->value)) {
-        if (for_inline) {
-	  /* Just drop the inline-introduced let */
+        if (post_bind) {
+	  /* Just drop the let */
 	  return scheme_optimize_expr(clv->value, info, context);
 	} else {
 	  info = scheme_optimize_info_add_frame(info, 1, 0, 0);
@@ -3118,6 +3147,47 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   }
 
   is_rec = (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE);
+
+  if (!is_rec) {
+    int try_again;
+    do {
+      try_again = 0;
+      /* (let ([x (let~ ([y M]) N)]) P) => (let~ ([y M]) (let ([x N]) P)) */
+      if (post_bind) {
+        if (head->num_clauses == 1) {
+          clv = (Scheme_Compiled_Let_Value *)head->body; /* ([x ...]) */
+          if (SAME_TYPE(SCHEME_TYPE(clv->value), scheme_compiled_let_void_type)) {
+            Scheme_Let_Header *lh = (Scheme_Let_Header *)clv->value; /* (let~ ([y ...]) ...) */
+
+            value = clv->body; /* = P */
+            if (lh->count)
+              value = scheme_optimize_shift(value, lh->count, head->count);
+            if (value) {
+              clv->body = value;
+
+              if (!lh->num_clauses) {
+                clv->value = lh->body;
+                lh->body = (Scheme_Object *)head;
+              } else {
+                body = lh->body;
+                for (i = lh->num_clauses - 1; i--; ) {
+                  body = ((Scheme_Compiled_Let_Value *)body)->body;
+                }
+                clv->value = ((Scheme_Compiled_Let_Value *)body)->body; /* N */
+                ((Scheme_Compiled_Let_Value *)body)->body = (Scheme_Object *)head;
+              } 
+               
+              head = lh;
+              form = (Scheme_Object *)head;
+              is_rec = (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE);
+              post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
+              try_again = 1;
+            }
+          }
+        }
+      }
+    } while (try_again);
+  }
 
   split_shift = 0;
   if (is_rec) {
@@ -3163,14 +3233,17 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     }
   }
 
-  body_info = scheme_optimize_info_add_frame(info, head->count, head->count, 0);
-  if (for_inline) {
-    rhs_info = scheme_optimize_info_add_frame(info, 0, head->count, 0);
-    body_info->inline_fuel >>= 1;
-  } else if (split_shift)
+  body_info = scheme_optimize_info_add_frame(info, head->count, head->count, 
+                                             post_bind ? SCHEME_POST_BIND_FRAME : 0);
+  if (post_bind)
+    rhs_info = scheme_optimize_info_add_frame(info, 0, 0, 0);
+  else if (split_shift)
     rhs_info = scheme_optimize_info_add_frame(body_info, split_shift, 0, 0);
   else
     rhs_info = body_info;
+
+  if (for_inline)
+    body_info->inline_fuel >>= 1;
 
   body = head->body;
   for (i = head->num_clauses; i--; ) {
@@ -3416,9 +3489,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           value = NULL;
         else {
           /* Convert value back to a pre-optimized local coordinates.
-             This must be done with respect to body_info, not
-             rhs_info, because we attach the value to body_info: */
-          value = scheme_optimize_reverse(body_info, vpos, 1);
+             Unless post_bind, this must be done with respect to
+             body_info, not rhs_info, because we attach the value to
+             body_info: */
+          value = scheme_optimize_reverse(post_bind ? rhs_info : body_info, vpos, 1);
           
           /* Double-check that the value is ready, because we might be
              nested in the RHS of a `letrec': */
@@ -3449,7 +3523,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           if (cnt == 1) {
             /* used only once; we may be able to shift the expression to the use
                site, instead of binding to a temporary */
-            last_once_used = scheme_make_once_used(value, pos, body_info->vclock, last_once_used);
+            last_once_used = scheme_make_once_used(value, pos, rhs_info->vclock, last_once_used);
             if (!first_once_used) first_once_used = last_once_used;
             scheme_optimize_propagate(body_info, pos, (Scheme_Object *)last_once_used, 1);
           }
@@ -3604,7 +3678,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     body = pre_body->body;
   }
 
-  if (for_inline) {
+  if (post_bind) {
     body_info->size = rhs_info->size;
     body_info->vclock = rhs_info->vclock;
   }
@@ -3715,6 +3789,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             value = body;
             extract_depth = head->count;
             rhs_info = body_info;
+            post_bind = 0;
           }
         }
       }
@@ -3724,7 +3799,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       value = scheme_optimize_clone(1, value, rhs_info, 0, 0);
 
       if (value) {
-        sub_info = scheme_optimize_info_add_frame(info, extract_depth, 0, 0);
+        sub_info = scheme_optimize_info_add_frame(info, post_bind ? 0 : extract_depth, 0, 0);
         sub_info->inline_fuel = 0;
         value = scheme_optimize_expr(value, sub_info, context);
         info->single_result = sub_info->single_result;
@@ -3830,7 +3905,7 @@ static Scheme_Object *drop_zero_value_return(Scheme_Object *expr)
 Scheme_Object *
 scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 {
-  Resolve_Info *linfo, *val_linfo;
+  Resolve_Info *linfo, *val_linfo = NULL;
   Scheme_Let_Header *head = (Scheme_Let_Header *)form;
   Scheme_Compiled_Let_Value *clv, *pre_body;
   Scheme_Let_Value *lv, *last = NULL;
@@ -3844,6 +3919,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
   int max_let_depth = 0;
   int resolve_phase, num_skips;
   Scheme_Object **lifted_recs;
+  int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
 
   /* Find body: */
   body = head->body;
@@ -3966,20 +4042,26 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 	/* First `i+1' bindings now exist "at runtime", except those skipped. */
 	/* The mapping is complicated because we now push in the order of 
 	   the variables, but it may have been compiled using the inverse order. */
-	frame_size = i + 1 - skip_count;
-        linfo = scheme_resolve_info_extend(info, frame_size, head->count, i + 1);
-	for (j = i, k = 0; j >= 0; j--) {
-          if (lifts_frame_size != frame_size) {
-            /* We need to shift coordinates for any lifted[j] that is a
-               converted procedure. */
+        frame_size = i + 1 - skip_count;
+        if (lifts_frame_size != frame_size) {
+          /* We need to shift coordinates for any lifted[j] that is a
+             converted procedure. */
+          for (j = i, k = 0; j >= 0; j--) {
             shift_lift(lifted[j], frame_size, lifts_frame_size);
           }
-          n = (rev_bind_order ? (head->count - j - 1) : j);
-	  if (skips[j])
-	    scheme_resolve_info_add_mapping(linfo, n, -1, flonums[j], lifted[j]);
-	  else
-	    scheme_resolve_info_add_mapping(linfo, n, k++, flonums[j], lifted[j]);
-	}
+        }
+        if (post_bind) {
+          linfo = scheme_resolve_info_extend(info, frame_size, 0, 0);
+        } else {
+          linfo = scheme_resolve_info_extend(info, frame_size, head->count, i + 1);
+          for (j = i, k = 0; j >= 0; j--) {
+            n = (rev_bind_order ? (head->count - j - 1) : j);
+            if (skips[j])
+              scheme_resolve_info_add_mapping(linfo, n, -1, flonums[j], lifted[j]);
+            else
+              scheme_resolve_info_add_mapping(linfo, n, k++, flonums[j], lifted[j]);
+          }
+        }
         lifts_frame_size = frame_size;
 
         if (skips[i]) {
@@ -4153,6 +4235,11 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       linfo = scheme_resolve_info_extend(info, head->count - num_skips, head->count, head->count);
       lifted_recs = NULL;
     }
+    
+    if (post_bind)
+      val_linfo = scheme_resolve_info_extend(info, head->count - num_skips, 0, 0);
+    else
+      val_linfo = linfo;
 
     /* Build mapping of compile-time indices to run-time indices, shuffling
        letrecs to fall together in the shallowest part. Also determine
@@ -4231,7 +4318,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
             old_lift = lifted_recs[rpos];
             old_convert_count = get_convert_arg_count(old_lift);
 
-            lift = scheme_resolve_closure_compilation(clv->value, linfo, 1, 1, 1, 
+            lift = scheme_resolve_closure_compilation(clv->value, val_linfo, 1, 1, 1, 
                                                       (resolve_phase ? NULL : old_lift));
 
             if (is_closed_reference(lift)
@@ -4275,7 +4362,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
             Scheme_Object *lift;
             lift = lifted_recs[rpos];
             if (is_closed_reference(lift)) {
-              (void)scheme_resolve_closure_compilation(clv->value, linfo, 1, 1, 0, lift);
+              (void)scheme_resolve_closure_compilation(clv->value, val_linfo, 1, 1, 0, lift);
               /* lift is the final result; this result might be
                  referenced in the body of closures already, or in
                  not-yet-closed functions.  If no one uses the result
@@ -4283,7 +4370,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
                  GCed. */
               clv->value = NULL; /* inidicates that there's nothing more to do with the expr */
             } else {
-              lift = scheme_resolve_closure_compilation(clv->value, linfo, 1, 1, 2, NULL);
+              lift = scheme_resolve_closure_compilation(clv->value, val_linfo, 1, 1, 2, NULL);
               /* need to resolve one more time for the body of the lifted function */
             }
             scheme_resolve_info_adjust_mapping(linfo, opos, rpos, 0, lift);
@@ -4298,7 +4385,6 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
   }
 
   extra_alloc = 0;
-  val_linfo = linfo;
 
   if (num_rec_procs) {
     if (!lifted_recs) {
@@ -4498,6 +4584,9 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 
   if (info->max_let_depth < linfo->max_let_depth + head->count - num_skips + extra_alloc)
     info->max_let_depth = linfo->max_let_depth + head->count - num_skips + extra_alloc;
+  if (val_linfo)
+    if (info->max_let_depth < val_linfo->max_let_depth + head->count - num_skips + extra_alloc)
+      info->max_let_depth = val_linfo->max_let_depth + head->count - num_skips + extra_alloc;
   
   return first;
 }
@@ -4509,13 +4598,14 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 {
   Scheme_Object *bindings, *l, *binding, *name, **names, *forms, *defname;
   int num_clauses, num_bindings, i, j, k, m, pre_k;
-  Scheme_Comp_Env *frame, *env;
+  Scheme_Comp_Env *frame, *env, *rhs_env;
   Scheme_Compile_Info *recs;
   Scheme_Object *first = NULL;
   Scheme_Compiled_Let_Value *last = NULL, *lv;
   DupCheckRecord r;
   int rec_env_already = rec[drec].env_already;
   int rev_bind_order = recursive;
+  int post_bind = !recursive && !star;
 
   i = scheme_stx_proper_list_length(form);
   if (i < 3)
@@ -4593,6 +4683,10 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       frame_already = frame;
   }
   env = frame;
+  if (post_bind)
+    rhs_env = scheme_no_defines(origenv);
+  else
+    rhs_env = env;
 
   recs = MALLOC_N_RT(Scheme_Compile_Info, (num_clauses + 1));
 
@@ -4691,7 +4785,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       rhs = SCHEME_STX_CDR(binding);
       rhs = SCHEME_STX_CAR(rhs);
       rhs = scheme_add_env_renames(rhs, env, origenv);
-      ce = scheme_compile_expr(rhs, env, recs, i);
+      ce = scheme_compile_expr(rhs, rhs_env, recs, i);
       lv->value = ce;
     } else {
       Scheme_Object *rhs;

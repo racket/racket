@@ -80,11 +80,6 @@
 (define-struct loc (x y))
 ;; board = (vector-of (vector-of (union #f (make-loc n1 n2))))
 
-;; need to make sure that the bitmap divides nicely
-;;(define bitmap (make-object bitmap% (build-path (collection-path "games" "slidey") "11.jpg")))
-;;(define board-width 6)
-;;(define board-height 5)
-
 (define (board-for-each board f)
   (let loop ([i (vector-length board)])
     (unless (zero? i)
@@ -287,7 +282,7 @@
 (define slidey-canvas
   (make-object slidey-canvas%
     (make-object bitmap%
-      (build-path (collection-path "games" "slidey") "11.jpg"))
+      (build-path (collection-file-path "11.jpg" "games" "slidey")))
     6 6 p))
 (define bp (make-object horizontal-panel% f))
 (send bp stretchable-height #f)

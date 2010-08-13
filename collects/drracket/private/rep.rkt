@@ -482,7 +482,7 @@ TODO
   (define file-icon
     (let ([bitmap
            (make-object bitmap%
-             (build-path (collection-path "icons") "file.gif"))])
+             (collection-file-path "file.gif" "icons"))])
       (if (send bitmap ok?)
           (make-object image-snip% bitmap)
           (make-object string-snip% "[open file]"))))

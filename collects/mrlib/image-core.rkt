@@ -947,32 +947,13 @@ the mask bitmap and the original bitmap are all together in a single bytes!
         (color-blue color))))
 
 
-(define pen-ht (make-hash))
-
 (define (pen->pen-obj/cache pen)
-  (cond
-    [(and (equal? 'round (pen-join pen))
-          (equal? 'round (pen-cap pen)))
-     (send the-pen-list find-or-create-pen 
-           (pen-color pen)
-           (pen-width pen)
-           (pen-style pen))]
-    [else
-     (let* ([wb/f (hash-ref pen-ht pen #f)]
-            [pen-obj/f (and (weak-box? wb/f) (weak-box-value wb/f))])
-       (or pen-obj/f
-           (let ([pen-obj (pen->pen-obj pen)])
-             (hash-set! pen-ht pen (make-weak-box pen-obj))
-             pen-obj)))]))
-
-(define (pen->pen-obj pen)
-  (let ([ans (make-object pen% 
-               (pen-color pen)
-               (pen-width pen)
-               (pen-style pen))])
-    (send ans set-cap (pen-cap pen))
-    (send ans set-join (pen-join pen))
-    ans))
+  (send the-pen-list find-or-create-pen 
+        (pen-color pen)
+        (pen-width pen)
+        (pen-style pen)
+        (pen-cap pen)
+        (pen-join pen)))
        
 (define (to-img arg)
   (cond
@@ -1020,7 +1001,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          [update 
           (λ (i)
             (let ([o (vector-ref v i)])
-              (let ([nv (call-with-values (λ () (bitmap->bytes o)) vector)])
+              (let ([nv (and o 
+                             (call-with-values (λ () (bitmap->bytes o)) vector))])
                 (vector-set! v i nv))))])
     (update 1)
     (update 2)

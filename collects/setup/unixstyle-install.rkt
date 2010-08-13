@@ -400,8 +400,8 @@
     ;; a place where it would not be usable.
     (when (and (directory-exists? "src") move?) (rm "src"))
     ;; part of the distribution:
-    (when (file-exists? "readme.txt")
-      (do-tree "readme.txt" (make-path (dir: 'doc) "readme.txt")))
+    (when (file-exists? "README")
+      (do-tree "README" (make-path (dir: 'doc) "README")))
     ;; nothing should be left now if this was a move
     (when (and move? (not (null? (ls))))
       (error (format "leftovers in source tree: ~s" (ls))))

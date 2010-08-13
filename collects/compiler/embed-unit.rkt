@@ -133,8 +133,7 @@
     (define (prepare-macosx-mred exec-name dest aux variant)
       (let* ([name (let-values ([(base name dir?) (split-path dest)])
                      (path-replace-suffix name #""))]
-             [src (build-path (collection-path "launcher")
-                              "Starter.app")]
+             [src (collection-file-path "Starter.app" "launcher")]
              [creator (let ([c (assq 'creator aux)])
                         (or (and c
                                  (cdr c))
@@ -919,10 +918,11 @@
                                                                                                    `(lib ,(car s) ,@(reverse (cdr s)))))))
                                                                                        p)])
                                                                             (ss<->rkt
-                                                                             (build-path (if (null? (cddr p))
-                                                                                             (collection-path "mzlib")
-                                                                                             (apply collection-path (cddr p)))
-                                                                                         (cadr p))))]
+                                                                             (apply collection-file-path
+                                                                                    (cadr p)
+                                                                                    (if (null? (cddr p))
+                                                                                        (list "mzlib")
+                                                                                        (cddr p)))))]
                                                                          [else p])])
                                                                  (and p
                                                                       (path->bytes 

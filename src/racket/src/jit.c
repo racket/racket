@@ -13577,7 +13577,7 @@ typedef void *(*Get_Stack_Proc)();
 # define RETURN_ADDRESS_OFFSET 1
 #endif
 
-#define CACHE_STACK_MIN_TRIGGER 1024
+#define CACHE_STACK_MIN_TRIGGER 128
 
 #define USE_STACK_CHECK 0
 
@@ -13601,10 +13601,10 @@ static void check_stack(void)
 
     if (q == stack_cache_pop_code) {
       if (!pos)
-	*(long *)0x0 = 1;
+	abort();
       else {
 	if (stack_cache_stack[pos].stack_frame != (void *)(((void **)p) + RETURN_ADDRESS_OFFSET)) {
-	  *(long *)0X0 = 1;
+	  abort();
 	}
 	--pos;
       }
@@ -13635,7 +13635,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_context_t cx;
   unw_cursor_t c;
-  int manual_unw;
+  int manual_unw = 0;
   unw_word_t stack_addr;
 #else
   Get_Stack_Proc gs;

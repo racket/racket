@@ -116,12 +116,23 @@ For a text field, the most useful methods of a @scheme[text%] object
 }
 
 
+@defmethod[(get-field-background) (is-a?/c color%)]{
+
+Gets the background color of the field's editable area.}
+
+
 @defmethod[(get-value)
            string?]{
 
 Returns the text currently in the text field.
 
 }
+
+
+@defmethod[(set-field-background [color (is-a?/c color%)])
+           void?]{
+
+Sets the background color of the field's editable area.}
 
 
 @defmethod[(set-value [val string?])

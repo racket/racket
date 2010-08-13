@@ -235,27 +235,24 @@
 
 [* (apply cl->*
           (append (for/list ([t (list -Pos -Nat -Integer -ExactRational -NonnegativeFlonum -Flonum)]) (->* (list) t t))
-                  (list (->* (list -Pos) -NonnegativeFlonum -NonnegativeFlonum))
-                  (list (->* (list -NonnegativeFlonum) -Pos -NonnegativeFlonum))
-                  (list (->* (list -Pos) -Flonum -Flonum))
-                  (list (->* (list -Flonum) -Pos -Flonum))
+                  (list (->* (list) (Un -Pos -NonnegativeFlonum) -NonnegativeFlonum))
+                  (list (->* (list) (Un -Pos -Flonum) -Flonum))
                   (list (->* (list) -Real -Real))
-                  (list (->* (list) -InexactComplex -InexactComplex))
+                  (list (->* (list) (Un -InexactComplex -Flonum) -InexactComplex))
                   (list (->* (list) N N))))]
 [+ (apply cl->*
           (append (list (->* (list -Pos) -Nat -Pos))
-                  (list (->* (list -Nat) -Pos -Pos))
+                  (list (->* (list -Nat -Pos) -Nat -Pos))
                   (for/list ([t (list -Nat -Integer -ExactRational -NonnegativeFlonum -Flonum)]) (->* (list) t t))
-                  (list (->* (list -Nat) -NonnegativeFlonum -NonnegativeFlonum))
-                  (list (->* (list -NonnegativeFlonum) -Nat -NonnegativeFlonum))
                   ;; special cases for promotion to inexact, not exhaustive
                   ;; valid for + and -, but not for * and /, since (* <float> 0) is exact 0 (i.e. not a float)
+                  (list (->* (list) (Un -Nat -NonnegativeFlonum) -NonnegativeFlonum))
                   (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list) -Real -Real))
-                  (list (->* (list -Real) -InexactComplex -InexactComplex))
-                  (list (->* (list -InexactComplex) -Real -InexactComplex))
-                  (list (->* (list) -InexactComplex -InexactComplex))
+                  (list (->* (list) (Un -Real -InexactComplex) -InexactComplex))
+                  (list (->* (list -InexactComplex) N -InexactComplex))
+                  (list (->* (list N -InexactComplex) N -InexactComplex))
                   (list (->* (list) N N))))]
 
 [- (apply cl->*
@@ -264,9 +261,9 @@
                   (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list -Real) -Real -Real))
-                  (list (->* (list -Real) -InexactComplex -InexactComplex))
-                  (list (->* (list -InexactComplex) -Real -InexactComplex))
-                  (list (->* (list -InexactComplex) -InexactComplex -InexactComplex))
+                  (list (->* (list) (Un -Real -InexactComplex) -InexactComplex))
+                  (list (->* (list -InexactComplex) N -InexactComplex))
+                  (list (->* (list N -InexactComplex) N -InexactComplex))
                   (list (->* (list N) N N))))]
 [/ (apply cl->*
           (append (list (->* (list -Integer) -Integer -ExactRational))
@@ -275,6 +272,7 @@
                   ;; only exact 0 as first argument can cause the result of a division involving inexacts to be exact
                   (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real) -Real -Real))
+                  (list (->* (list (Un -Flonum -InexactComplex)) (Un -Real -InexactComplex) -InexactComplex))
                   (list (->* (list -InexactComplex) -InexactComplex -InexactComplex))
                   (list (->* (list N) N N))))]
 
@@ -340,7 +338,9 @@
                          (-Nat -Nat . -> . -Nat)
                          (-Integer -Integer . -> . -Integer))]
 [bitwise-and (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
+                    ((list -Integer) -NonnegativeFixnum . ->* . -NonnegativeFixnum)
                     (null -Fixnum . ->* . -Fixnum)
+                    ((list -Integer) -Fixnum . ->* . -Fixnum)
                     (null -Nat . ->* . -Nat)
                     (null -Integer . ->* . -Integer))]
 [bitwise-ior (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
@@ -397,6 +397,7 @@
                     (-Real -Real . -> . N))]
 [expt (cl->* (-Nat -Nat . -> . -Nat)
              (-Integer -Nat . -> . -Integer)
+             (-Integer -Integer . -> . -ExactRational)
              (-Real -Integer . -> . -Real)
              (-InexactComplex -InexactComplex . -> . -InexactComplex)
              (N N . -> . N))]

@@ -33,6 +33,8 @@
   scheme_extension_table->scheme_end_atomic_no_swap = scheme_end_atomic_no_swap;
   scheme_extension_table->scheme_start_in_scheduler = scheme_start_in_scheduler;
   scheme_extension_table->scheme_end_in_scheduler = scheme_end_in_scheduler;
+  scheme_extension_table->scheme_start_atomic_no_break = scheme_start_atomic_no_break;
+  scheme_extension_table->scheme_end_atomic_can_break = scheme_end_atomic_can_break;
   scheme_extension_table->scheme_out_of_fuel = scheme_out_of_fuel;
   scheme_extension_table->scheme_thread = scheme_thread;
   scheme_extension_table->scheme_thread_w_details = scheme_thread_w_details;
@@ -528,6 +530,7 @@
   scheme_extension_table->scheme_add_fd_handle = scheme_add_fd_handle;
   scheme_extension_table->scheme_add_fd_eventmask = scheme_add_fd_eventmask;
   scheme_extension_table->scheme_collapse_win_fd = scheme_collapse_win_fd;
+  scheme_extension_table->scheme_set_wakeup_time = scheme_set_wakeup_time;
   scheme_extension_table->scheme_security_check_file = scheme_security_check_file;
   scheme_extension_table->scheme_security_check_file_link = scheme_security_check_file_link;
   scheme_extension_table->scheme_security_check_network = scheme_security_check_network;

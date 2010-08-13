@@ -29,7 +29,17 @@ same line as @hash-lang[], with only whitespace between
   #lang scribble/sigplan @10pt
 }|
 
-The @racket[10pt] and @racket[preprint] options can be
+@defidform[nocopyright]{
+
+Enables the @tt{nocopyright} option. Use @racket[nocopyright] only on the
+same line as @hash-lang[], with only whitespace between
+@racketmodname[scribble/sigplan] and @racket[nocopyright]:
+
+@verbatim[#:indent 2]|{
+  #lang scribble/sigplan @nocopyright
+}|}
+
+The @racket[10pt], @racket[preprint], and @racket[nocopyright] options can be
 used together and may appear in any order.
 }
 

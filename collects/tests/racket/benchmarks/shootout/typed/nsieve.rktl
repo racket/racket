@@ -9,7 +9,7 @@
 
 (require scheme/cmdline)
 
-(: nsieve (Natural -> Natural))
+(: nsieve (Integer -> Integer))
 (define (nsieve m)
   (let: ((a : (Vectorof Boolean) (make-vector m #t)))
     (let loop ((i 2) (n 0))
@@ -24,9 +24,9 @@
               (loop (+ 1 i) n))
           n))))
 
-(: string-pad (String Natural -> String))
+(: string-pad (String Integer -> String))
 (define (string-pad s len)
-  (string-append (make-string (assert (- len (string-length s)) exact-nonnegative-integer?) #\space)
+  (string-append (make-string (- len (string-length s)))
                  s))
 
 (: test (Natural -> Void))
@@ -37,7 +37,7 @@
             (string-pad (number->string m) 8)
             (string-pad (number->string count) 8))))
 
-(: main (Natural -> Void))
+(: main (Integer -> Void))
 (define (main n)
   (when (>= n 0) (test n))
   (when (>= n 1) (test (assert (- n 1) exact-nonnegative-integer?)))

@@ -35,22 +35,22 @@
   (->* () () #:rest (listof pre-content?)
        content?)])
 
-(provide preprint 10pt
+(provide preprint 10pt nocopyright
          include-abstract)
 
-(define-syntax (preprint stx)
-  (raise-syntax-error #f
-                      "option must appear on the same line as `#lang scribble/sigplan'"
-                      stx))
-(define-syntax (10pt stx)
-  (raise-syntax-error #f
-                      "option must appear on the same line as `#lang scribble/sigplan'"
-                      stx))
+(define-syntax-rule (defopts name ...)
+  (begin (define-syntax (name stx)
+           (raise-syntax-error #f
+                               "option must appear on the same line as `#lang scribble/sigplan'"
+                               stx))
+         ...
+         (provide name ...)))
+(defopts preprint 10pt nocopyright)
 
 (define sigplan-extras
   (let ([abs (lambda (s)
                (path->main-collects-relative
-                (build-path (collection-path "scribble") "sigplan" s)))])
+                (collection-file-path s "scribble" "sigplan")))])
     (list
      (make-css-addition (abs "sigplan.css"))
      (make-tex-addition (abs "sigplan.tex")))))

@@ -9,9 +9,13 @@
          dict-can-remove-keys?
          dict-can-functional-set?
          
+         dict-has-key?
          dict-ref
+         dict-ref!
          dict-set!
+         dict-set*!
          dict-set
+         dict-set*
          dict-update!
          dict-update
          dict-remove!
@@ -29,6 +33,10 @@
          in-dict-keys
          in-dict-values
          in-dict-pairs
+         
+         dict-keys
+         dict-values
+         dict->list
 
          (rename-out [create-custom-hash make-custom-hash]
                      [create-immutable-custom-hash make-immutable-custom-hash])
@@ -185,6 +193,10 @@
                #t))
       (raise-type-error 'dict-can-functional-set? "dict" d)))
 
+(define (dict-has-key? d k)
+  (define not-there (gensym))
+  (not (eq? not-there (dict-ref d k not-there))))
+
 (define dict-ref
   (case-lambda
    [(d key)
@@ -224,6 +236,15 @@
      [else
       (raise-type-error 'dict-ref "dict" 0 d key default)])]))
 
+(define (dict-ref! d key new)
+  (define not-there (gensym))
+  (define v (dict-ref d key not-there))
+  (if (eq? not-there v)
+      (let ([n (if (procedure? new) (new) new)])
+        (dict-set! d key n)
+        n)
+      v))
+
 (define (dict-set! d key val)
   (cond
    [(hash? d) (hash-set! d key val)]
@@ -237,6 +258,14 @@
           (raise-type-error 'dict-set! "mutable dict" 0 d key val)))]
    [else
     (raise-type-error 'dict-set! "dict" 0 d key val)]))
+
+(define (dict-set*! d . pairs)
+  (unless (even? (length pairs))
+    (error 'dict-set*! "expected an even number of association elements, but received an odd number: ~e" pairs))
+  (let loop ([pairs pairs])
+    (unless (null? pairs)
+      (dict-set! d (car pairs) (cadr pairs))
+      (loop (cddr pairs)))))
 
 (define (dict-set d key val)
   (cond
@@ -259,6 +288,16 @@
           (raise-type-error 'dict-set "functional-update dict" 0 d key val)))]
    [else
     (raise-type-error 'dict-set "dict" 0 d key val)]))
+
+(define (dict-set* d . pairs)
+    (unless (even? (length pairs))
+      (error 'dict-set* "expected an even number of association elements, but received an odd number: ~e" pairs))
+    (let loop ([d d]
+               [pairs pairs])
+      (if (null? pairs)
+          d
+          (loop (dict-set d (car pairs) (cadr pairs))
+                (cddr pairs)))))
 
 (define dict-update!
   (case-lambda
@@ -458,6 +497,20 @@
 (define (dict-for-each d f)
   (for ([(k v) (in-dict d)])
     (f k v)))
+
+(define (dict-keys d)
+  (for/list ([k (in-dict-keys d)])
+    k))
+
+(define (dict-values d)
+  (for/list ([v (in-dict-values d)])
+    v))
+
+(define (dict->list d)
+  (for/list ([k*v (in-dict-pairs d)])
+    k*v))
+
+
 
 ;; ----------------------------------------
 

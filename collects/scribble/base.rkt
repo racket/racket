@@ -285,7 +285,7 @@
 
  [image (->* ((or/c path-string? (cons/c 'collects (listof bytes?))))
              (#:scale real?
-                      #:suffixes (listof #rx"^[.]"))
+                      #:suffixes (listof (and/c string? #rx"^[.]")))
              #:rest (listof content?)
              image-element?)])
 

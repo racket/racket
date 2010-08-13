@@ -1,11 +1,10 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
 (require racket/unsafe/ops)
 ((lambda: ((t : Integer))
-          (let* ((unboxed-gensym-1 (exact->inexact (sin (* t 6.28))))
-                 (unboxed-gensym-2 0.0+0.0i)
-                 (unboxed-gensym-3 (unsafe-flreal-part unboxed-gensym-2))
-                 (unboxed-gensym-4 (unsafe-flimag-part unboxed-gensym-2))
-                 (unboxed-gensym-5 (unsafe-fl+ unboxed-gensym-1 unboxed-gensym-3))
-                 (unboxed-gensym-6 unboxed-gensym-4))
-            (unsafe-make-flrectangular unboxed-gensym-5 unboxed-gensym-6)))
+          (let* ((unboxed-float-1 (exact->inexact (sin (* t 6.28))))
+                 (unboxed-real-2 0.0)
+                 (unboxed-imag-3 0.0)
+                 (unboxed-real-4 (unsafe-fl+ unboxed-float-1 unboxed-real-2))
+                 (unboxed-imag-5 unboxed-imag-3))
+            (unsafe-make-flrectangular unboxed-real-4 unboxed-imag-5)))
  1)

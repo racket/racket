@@ -1,21 +1,23 @@
 #lang racket
-(require web-server/private/util
+(require racket/async-channel
+         web-server/private/util
+         unstable/contract
          web-server/private/connection-manager)
 
 (define-signature dispatch-server^
   ((contracted
-    [serve (-> (-> void))]
+    [serve (->* () (#:confirmation-channel (or/c false/c async-channel?)) (-> void))]
     [serve-ports (input-port? output-port? . -> . (-> void))])))
 
 (define-signature dispatch-server-config^
   ((contracted
-    [port port-number?]
+    [port tcp-listen-port?]
     [listen-ip (or/c string? false/c)]
     [max-waiting integer?]
     [initial-connection-timeout integer?]
     [read-request
      (connection? 
-      port-number?
+      tcp-listen-port?
       (input-port? . -> . (values string? string?))
       . -> .
       (values any/c boolean?))]

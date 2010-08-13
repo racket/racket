@@ -30,7 +30,6 @@
       ("nbody-generic" "3000000")
       ("nbody-vec" "3000000")
       ("nbody-vec-generic" "3000000")
-      ("nbody-vec-unsafe" "3000000")
       ("nestedloop" "33")
       ("nothing" "")
       ("nsieve" "12")

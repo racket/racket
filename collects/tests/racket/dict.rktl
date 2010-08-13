@@ -12,7 +12,9 @@
   (test #t dict? d)
 
   (test 'one dict-ref d 1)
+  (test #t dict-has-key? d 1)
   (test 'nope dict-ref d 100 'nope)
+  (test #f dict-has-key? d 100)
   (test 'nope dict-ref d 100 (lambda () 'nope))
   
   (test #t ormap values (dict-map d (lambda (k v) (equal? k orig-one))))
@@ -23,6 +25,10 @@
   (test can-remove? dict-can-remove-keys? d)
   (test can-update? dict-can-functional-set? d)
 
+  (test (dict-map d cons) 'dict->list (dict->list d))
+  (test (dict-map d (λ (k v) k)) 'dict-keys (dict-keys d))
+  (test (dict-map d (λ (k v) v)) 'dict-values (dict-values d))
+  
   (test (dict-map d cons) 'in-dict
         (for/list ([(k v) (in-dict d)])
           (cons k v)))
@@ -45,7 +51,11 @@
         (err/rt-test (dict-remove d 1))
         (err/rt-test (dict-set d 1 "ONE"))
         (test (void) dict-set! d 1 "ONE")
-        (test "ONE" dict-ref d 1))
+        (test "ONE" dict-ref d 1)
+        (test (void) dict-set*! d 1 (gensym) 1 "TWO")
+        (err/rt-test (dict-set*! d 1) exn:fail?)
+        (test "TWO" dict-ref d 1)
+        (test "TWO" dict-ref! d 1 (gensym)))
       (let ([cnt (dict-count d)]
             [smaller (if mutable?
                          (begin
@@ -73,10 +83,37 @@
                        (test #t equal? d bigger)))))])
           (try-add smaller "ONE")
           (try-add d "ONE")
+          (try-add d 'one))
+        (let ([try-add
+               (lambda (d val)
+                 (let ([bigger (if mutable?
+                                   (begin
+                                     (err/rt-test (dict-set* smaller 1 val))
+                                     (dict-set*! smaller 1 (gensym) 1 val)
+                                     (err/rt-test (dict-set*! smaller 1) exn:fail?)
+                                     d)
+                                   (begin
+                                     (err/rt-test (dict-set*! smaller 1 val))
+                                     (err/rt-test (dict-set* smaller 1) exn:fail?)
+                                     (dict-set* smaller 1 (gensym) 1 val)))])
+                   (test cnt dict-count bigger)
+                   (when (eq? val 'one)
+                     (unless (pair? d)
+                       (test #t equal? d bigger)))))])
+          (try-add smaller "ONE")
+          (try-add d "ONE")
           (try-add d 'one)))))
 
 (try-simple (vector 'zero 'one 'two) #t #f #f)
 (try-simple #hash((1 . one) (#f . 7)) #f #t #t)
+
+(let ([d (make-hasheq '((1 . one) (#f . 7)))])
+  (test 'one dict-ref! d 1 (gensym))
+  (test 'two dict-ref! d 2 'two)
+  (test 'two dict-ref d 2)
+  (test 'three dict-ref! d 3 (λ () 'three))
+  (test 'three dict-ref d 3))
+
 (try-simple #hasheq((1 . one) (#f . 7)) #f #t #t)
 (try-simple (hash-copy #hash((1 . one) (#f . 7))) #t #t #f)
 (try-simple (hash-copy #hasheq((1 . one) (#f . 7))) #t #t #f)

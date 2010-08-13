@@ -42,10 +42,29 @@
                                      [phase (or/c 0 1)])) ; direct access to exported id
 
 ;; Syntax object
+(define ((alist/c k? v?) l)
+  (let loop ([l l])
+    (match l
+      [(list) #t]
+      [(list* (? k?) (? v?) l)
+       (loop l)]
+      [_ #f])))
+
+(define mark-map? 
+  (alist/c number? module-path-index?)
+  #;(hash/c number? module-path-index?))
+(define-form-struct certificate ())
+(define-form-struct (certificate:nest certificate)
+  ([nested mark-map?]
+   [map  mark-map?]))
+(define-form-struct (certificate:ref certificate)
+  ([val any/c]
+   [map  mark-map?]))
+
 (define-form-struct wrap ())
 (define-form-struct wrapped ([datum any/c] 
                              [wraps (listof wrap?)] 
-                             [certs (or/c list? #f)]))
+                             [certs (or/c certificate? #f)]))
 
 ;; In stxs of prefix:
 (define-form-struct stx ([encoded wrapped?]))
@@ -150,9 +169,27 @@
 ;; Top-level `require'
 (define-form-struct (req form) ([reqs stx?] [dummy toplevel?]))
 
-(define-form-struct (lexical-rename wrap) ([bool1 boolean?] ; this needs a name
+
+(define-form-struct free-id-info ([path0 module-path-index?]
+                                  [symbol0 symbol?]
+                                  [path1 module-path-index?]
+                                  [symbol1 symbol?]
+                                  [phase0 (or/c exact-integer? #f)]
+                                  [phase1 (or/c exact-integer? #f)]
+                                  [phase2 (or/c exact-integer? #f)]
+                                  [use-current-inspector? boolean?]))
+
+(define-form-struct (lexical-rename wrap) ([has-free-id-renames? boolean?]
                                            [bool2 boolean?] ; this needs a name
-                                           [alist any/c])) ; should be (listof (cons/c symbol? symbol?))
+                                           [alist (listof 
+                                                   (cons/c symbol?
+                                                           (or/c
+                                                            symbol?
+                                                            (cons/c
+                                                             symbol?
+                                                             (or/c
+                                                              (cons/c symbol? (or/c symbol? #f))
+                                                              free-id-info?)))))])) 
 (define-form-struct (phase-shift wrap) ([amt exact-integer?] [src (or/c module-path-index? #f)] [dest (or/c module-path-index? #f)]))
 (define-form-struct (wrap-mark wrap) ([val exact-integer?]))
 (define-form-struct (prune wrap) ([sym any/c]))
@@ -160,8 +197,8 @@
 (define-form-struct all-from-module ([path module-path-index?] 
                                      [phase (or/c exact-integer? #f)] 
                                      [src-phase any/c] ; should be (or/c exact-integer? #f)
-                                     [exceptions list?] ; should be (listof symbol?)
-                                     [prefix any/c])) ; should be (or/c symbol? #f)
+                                     [exceptions (or/c (listof (or/c symbol? number?)) #f)] ; should be (listof symbol?)
+                                     [prefix (or/c (vector/c (or/c symbol? #f)) #f)])) ; should be (or/c symbol? #f)
 
 (define-form-struct nominal-path ())
 (define-form-struct (simple-nominal-path nominal-path) ([value module-path-index?]))
@@ -202,6 +239,8 @@
 (define-form-struct (mark-barrier wrap) ([value symbol?]))
 
 (provide/contract (struct indirect ([v (or/c closure? #f)])))
+
+
 
 
 

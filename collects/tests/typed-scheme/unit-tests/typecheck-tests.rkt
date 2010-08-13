@@ -154,10 +154,10 @@
         [tc-e (void) -Void]
         [tc-e (void 3 4) -Void]
         [tc-e (void #t #f '(1 2 3)) -Void]
-        [tc-e/t #(3 4 5) (make-HeterogenousVector (list -Nat -Nat -Nat))]
+        [tc-e/t #(3 4 5) (make-HeterogenousVector (list -Integer -Integer -Integer))]
         [tc-e/t '(2 3 4) (-lst* -PositiveFixnum -PositiveFixnum -PositiveFixnum)]
         [tc-e/t '(2 3 #t) (-lst* -PositiveFixnum -PositiveFixnum (-val #t))]
-        [tc-e/t #(2 3 #t) (make-HeterogenousVector (list -Nat -Nat (-val #t)))]
+        [tc-e/t #(2 3 #t) (make-HeterogenousVector (list -Integer -Integer (-val #t)))]
         [tc-e/t '(#t #f) (-lst* (-val #t) (-val #f))]
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
@@ -640,6 +640,9 @@
                         (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
                                1 w))
               (-polydots (a) ((list -String) (N a) . ->... . N))]
+        [tc-e/t (let ([f (plambda: (a ...) [w : a ... a] w)])
+                  (f 1 "hello" #\c))
+                (-pair -PositiveFixnum (-pair -String (-pair -Char (-val null))))]
         ;; instantiating non-dotted terms
         [tc-e/t (inst (plambda: (a) ([x : a]) x) Integer)
                 (make-Function (list (make-arr* (list -Integer) -Integer

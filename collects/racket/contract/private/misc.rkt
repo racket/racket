@@ -86,7 +86,7 @@
     [(_ ([name ctc ...] ...))
      (raise-syntax-error 'flat-rec-contract "expected at least one body expression" stx)]))
 
-(define or/c
+(define/subexpression-pos-prop or/c
   (case-lambda 
     [() (make-none/c '(or/c))]
     [raw-args
@@ -385,7 +385,7 @@
 
 (define false/c #f)
 
-(define (string-len/c n)
+(define/final-prop (string-len/c n)
   (unless (number? n)
     (error 'string-len/c "expected a number as argument, got ~e" n))
   (flat-named-contract 
@@ -394,7 +394,7 @@
      (and (string? x)
           ((string-length x) . < . n)))))
 
-(define (symbols . ss)
+(define/final-prop (symbols . ss)
   (unless ((length ss) . >= . 1)
     (error 'symbols "expected at least one argument"))
   (unless (andmap symbol? ss)
@@ -409,7 +409,7 @@
           (null? x) (keyword? x) (number? x)
           (void? x) (eq? x undefined)))))
 
-(define (one-of/c . elems)
+(define/final-prop (one-of/c . elems)
   (unless (andmap atomic-value? elems)
     (error 'one-of/c "expected chars, symbols, booleans, null, keywords, numbers, void, or undefined, got ~e"
            elems))
@@ -492,10 +492,12 @@
       (let ([n (between/c-low ctc)]
             [m (between/c-high ctc)])
         (cond
-         [(= n -inf.0) `(<=/c ,m)]
-         [(= m +inf.0) `(>=/c ,n)]
-         [(= n m) `(=/c ,n)]
-         [else `(between/c ,n ,m)])))
+          [(and (= n -inf.0) (= m +inf.0))
+           `(between/c ,n ,m)]
+          [(= n -inf.0) `(<=/c ,m)]
+          [(= m +inf.0) `(>=/c ,n)]
+          [(= n m) `(=/c ,n)]
+          [else `(between/c ,n ,m)])))
 
    #:stronger
    (λ (this that)
@@ -519,13 +521,13 @@
          (unless (real? x)
            (error 'sym "expected a real number, got ~e" x)))]))
 
-(define (=/c x) 
+(define/final-prop (=/c x) 
   (check-unary-between/c '=/c x)
   (make-between/c x x))
-(define (<=/c x) 
+(define/final-prop (<=/c x) 
   (check-unary-between/c '<=/c x)
   (make-between/c -inf.0 x))
-(define (>=/c x)
+(define/final-prop (>=/c x)
   (check-unary-between/c '>=/c x)
   (make-between/c x +inf.0))
 (define (check-between/c x y)
@@ -533,7 +535,7 @@
     (error 'between/c "expected a real number as first argument, got ~e, other arg ~e" x y))
   (unless (real? y)
     (error 'between/c "expected a real number as second argument, got ~e, other arg ~e" y x)))
-(define (between/c x y)
+(define/final-prop (between/c x y)
   (check-between/c x y)
   (make-between/c x y))
 
@@ -682,7 +684,7 @@
           (exact? x)
           (x . >= . 0)))))
 
-(define (integer-in start end)
+(define/final-prop (integer-in start end)
   (unless (and (integer? start)
                (exact? start)
                (integer? end)
@@ -695,7 +697,7 @@
           (exact? x)
           (<= start x end)))))
 
-(define (real-in start end)
+(define/final-prop (real-in start end)
   (unless (and (real? start)
                (real? end))
     (error 'real-in "expected two real numbers as arguments, got ~e and ~e" start end))
@@ -705,7 +707,7 @@
      (and (real? x)
           (<= start x end)))))
 
-(define (not/c f)
+(define/final-prop (not/c f)
   (let* ([ctc (coerce-flat-contract 'not/c f)]
          [pred (flat-contract-predicate ctc)])
     (build-flat-contract
@@ -753,14 +755,15 @@
                                             'type-name val))
                        (fill-name p-app val))))))))))]))
 
-(define listof
-  (*-immutableof list? for-each map andmap list listof))
+(define listof-func (*-immutableof list? for-each map andmap list listof))
+(define/subexpression-pos-prop (listof x) (listof-func x))
 
 (define (non-empty-list? x) (and (pair? x) (list? (cdr x))))
-(define non-empty-listof
+(define non-empty-listof-func
   (*-immutableof non-empty-list? for-each map andmap non-empty-list non-empty-listof))
+(define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
-(define (immutable-vector? val) (and (immutable? val) (vector? val)))
+(define/final-prop (immutable-vector? val) (and (immutable? val) (vector? val)))
 
 (define vector-immutableof
   (*-immutableof immutable-vector?
@@ -770,7 +773,7 @@
                  immutable-vector
                  vector-immutableof))
 
-(define (vectorof p)
+(define/subexpression-pos-prop (vectorof p)
   (let* ([ctc (coerce-flat-contract 'vectorof p)]
          [pred (flat-contract-predicate ctc)])
     (build-flat-contract
@@ -779,7 +782,7 @@
        (and (vector? v)
             (andmap pred (vector->list v)))))))
 
-(define (vector/c . args)
+(define/subexpression-pos-prop (vector/c . args)
   (let* ([ctcs (coerce-flat-contracts 'vector/c args)]
          [largs (length args)]
          [procs (map flat-contract-predicate ctcs)])
@@ -792,7 +795,7 @@
                     procs
                     (vector->list v)))))))
 
-(define (box/c pred)
+(define/final-prop (box/c pred)
   (let* ([ctc (coerce-flat-contract 'box/c pred)]
          [p? (flat-contract-predicate ctc)])
     (build-flat-contract
@@ -978,7 +981,8 @@
                                          [i (in-naturals)])
                                 (p (selector-name v i)))))))))))))]))
 
-(define cons/c (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
+(define cons/c-main-function (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
+(define/subexpression-pos-prop (cons/c a b) (cons/c-main-function a b))
 (define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))
 (define vector-immutable/c (*-immutable/c vector?
                                           vector-immutable
@@ -1030,7 +1034,7 @@
   (syntax-case stx (cons/c)
     [(_ hdp tlp) (opt/cons-ctc #'hdp #'tlp)]))
 
-(define (list/c . args)
+(define/subexpression-pos-prop (list/c . args)
   (let* ([args (coerce-contracts 'list/c args)])
     (if (andmap flat-contract? args)
       (flat-list/c args)
@@ -1101,7 +1105,7 @@
                  (for/list ([arg/c (in-list args)] [v (in-list x)])
                    (((contract-projection arg/c) b) v))))))))
 
-(define (syntax/c ctc-in)
+(define/subexpression-pos-prop (syntax/c ctc-in)
   (let ([ctc (coerce-contract 'syntax/c ctc-in)])
     (build-flat-contract
      (build-compound-type-name 'syntax/c ctc)
@@ -1110,7 +1114,7 @@
          (and (syntax? val)
               (pred (syntax-e val))))))))
 
-(define promise/c
+(define/subexpression-pos-prop promise/c
   (λ (ctc-in)
     (let* ([ctc (coerce-contract 'promise/c ctc-in)]
            [ctc-proc (contract-projection ctc)])
@@ -1197,7 +1201,7 @@
      (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))]))
 
 
-(define (parameter/c x)
+(define/subexpression-pos-prop (parameter/c x)
   (make-parameter/c (coerce-contract 'parameter/c x)))
 
 (define-struct parameter/c (ctc)

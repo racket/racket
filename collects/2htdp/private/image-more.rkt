@@ -900,9 +900,115 @@
   (check-mode/color-combination 'triangle 3 mode color)
   (make-polygon/star side-length 3 mode color values))
 
+; excess : R+ R+ -> R
+;  compute the Euclidean excess
+;  Note: If the excess is 0, the the C is 90 deg.
+;        If the excess is negative, then C is obtuse.
+;        If the excess is positive, then C is acuse.
+(define (excess a b c)
+  (+ (sqr a) (sqr b) (- (sqr c))))
+
+; polar->posn : R+ R -> (posn R R)
+;  return a position with x and y coordinates
+(define (polar->posn radius angle)
+  (make-posn (* radius (cos angle))
+             (* radius (sin angle))))
+
+; cos-rel : R R R -> R+
+;   return c^2 = a^2 + b^2 - 2ab cos(C)
+(define (cos-rel a b C)
+  (+ (sqr a) (sqr b) (* -2 a b (cos C))))
+
+; sin-rel : R R R -> R
+;  return the side b
+(define (sin-rel A a B)
+  (/ (* a (sin B)) (sin A)))
+
+; last-angle : R R -> R
+;   return pi-(A+B)
+(define (last-angle A B)
+  (- pi A B))
+
+(define (radians degree)
+  (* (/ degree 180.0) pi))
+
+
+(define (triangle/sss side-a side-b side-c mode color)
+  (define (triangle-vertices/sss a b c)
+    (let ([A (acos (/ (excess b c a) (* 2 b c)))])
+      (list (make-posn 0 0)
+            (make-posn c 0)
+            (polar->posn b A))))
+  (check-dependencies 'triangle/sss
+                      (and (>= (+ side-a side-b) side-c) 
+                           (>= (+ side-a side-c) side-b) 
+                           (>= (+ side-b side-c) side-a))
+                      "the given side lengths will not form a triangle ~a, ~a, and, ~a."
+                      side-a side-b side-c)
+  (polygon (triangle-vertices/sss side-a side-b side-c) mode color))
+
+(define/chk (triangle/ass angle-a side-b side-c mode color)
+  (define (triangle-vertices/ass A b c)
+    (list (make-posn 0 0) (make-posn c 0) (polar->posn b A)))
+  (polygon (triangle-vertices/ass angle-a side-b side-c) mode color))
+
+(define/chk (triangle/sas side-a angle-b side-c mode color)
+  (define (triangle-vertices/sas a B c)
+    (let ([b^2 (cos-rel a c B)])
+      (check-dependencies 'triangle/sas
+                          "the given side, angle, and, side will not form a triangle ~a, ~a, and, ~a."
+                          side-a angle-b side-c)
+      (let* ([b (sqrt b^2)]
+             [A (acos (/ (excess b c a) (* 2 b c)))])
+        (list (make-posn 0 0) (make-posn c 0) (polar->posn b A)))))
+  (polygon (triangle-vertices/sas side-a (radians angle-b) side-c) mode color))
+(define/chk (triangle/ssa side-a side-b angle-c mode color)
+  (define (triangle-vertices/ssa a b C)
+    (let ([c^2 (cos-rel a b C)])
+      (check-dependencies 'triangle/ssa 
+                          (positive? c^2)
+                          "the given side, side, and, angle will not form a triangle ~a, ~a, and, ~a."
+                          side-a side-b angle-c)
+      (let*([c (sqrt c^2)]
+            [A (acos (/ (excess b c a) (* 2 b c)))])
+        (list (make-posn 0 0)
+              (make-posn c 0)
+              (polar->posn b A)))))
+  (polygon (triangle-vertices/ssa side-a side-b (radians angle-c)) mode color))
+
+(define/chk (triangle/aas angle-a angle-b side-c mode color)
+  (define (triangle-vertices/aas A B c)
+    (let* ([C (last-angle A B)]
+           [b (sin-rel C c B)])
+      (list (make-posn 0 0) (make-posn c 0) (polar->posn b A))))
+  (polygon (triangle-vertices/aas (radians angle-a) (radians angle-b) side-c) mode color))
+
+(define/chk (triangle/asa angle-a side-b angle-c mode color)
+  (define (triangle-vertices/asa A b C)
+    (let* ([B (last-angle A C)]
+           [c (sin-rel B b C)])
+      (list (make-posn 0 0) (make-posn c 0) (polar->posn b A))))
+  (polygon (triangle-vertices/asa (radians angle-a) side-b (radians angle-c)) mode color))
+
+(define/chk (triangle/saa side-a angle-b angle-c mode color)
+  (define (triangle-vertices/saa a B C)
+    (let* ([A (last-angle B C)]
+           [b (sin-rel A a B)]
+           [c (sin-rel A a C)])
+      (list (make-posn 0 0)
+            (make-posn c 0)
+            (polar->posn b A))))
+  (polygon (triangle-vertices/saa side-a (radians angle-b) (radians angle-c)) mode color))
+
+
+
 (define/chk (regular-polygon side-length side-count mode color)
   (check-mode/color-combination 'regular-polygon 4 mode color)
   (make-polygon/star side-length side-count mode color values))
+
+
+
+
 
 (define/chk (star-polygon side-length side-count step-count mode color)
   (check-mode/color-combination 'star-polygon 5 mode color)
@@ -1111,6 +1217,14 @@
          polygon
          regular-polygon
          triangle 
+         triangle/sss
+         triangle/ssa
+         triangle/sas
+         triangle/ass
+         triangle/aas
+         triangle/asa
+         triangle/saa
+
          isosceles-triangle
          right-triangle
          star

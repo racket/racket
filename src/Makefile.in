@@ -56,6 +56,13 @@ both:
 
 SETUP_ARGS = -X "$(DESTDIR)$(collectsdir)" -N "raco setup" -l- setup $(PLT_SETUP_OPTIONS) $(PLT_ISO) @INSTALL_SETUP_FLAGS@
 
+# Pass compile and link flags to `make install' for use by any
+#  collection-setup actions (currently in "plot") that compile
+#  and link C code:
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@
+LDFLAGS = @LDFLAGS@
+WITH_ENV_VARS = env CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" 
+
 install:
 	$(MAKE) install-@MAIN_VARIANT@
 
@@ -112,7 +119,7 @@ install-3m-common:
 
 install-3m:
 	$(MAKE) install-3m-common
-	racket/racket@MMM@ $(SETUP_ARGS)
+	$(WITH_ENV_VARS) racket/racket@MMM@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-3m:
@@ -135,7 +142,7 @@ install-cgc-common:
 
 install-cgc:
 	$(MAKE) install-cgc-common
-	racket/racket@CGC@ $(SETUP_ARGS)
+	$(WITH_ENV_VARS) racket/racket@CGC@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-cgc:
@@ -158,7 +165,7 @@ install-both-common:
 
 install-both:
 	$(MAKE) install-both-common
-	racket/racket@MAIN_VARIANT@ $(SETUP_ARGS)
+	$(WITH_ENV_VARS) racket/racket@MAIN_VARIANT@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-both:

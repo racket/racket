@@ -1157,10 +1157,10 @@
       ((if gui? make-mred-launcher make-mzscheme-launcher)
        (list
         (path->string
-         (build-path (collection-path "drracket" "private") 
-                     (if gui? 
-                         "launcher-mred-bootstrap.rkt"
-                         "launcher-mz-bootstrap.rkt")))
+         (collection-file-path (if gui? 
+                                   "launcher-mred-bootstrap.rkt"
+                                   "launcher-mz-bootstrap.rkt")
+                               "drracket" "private"))
         (condense-scheme-code-string (format "~s" init-code))
         (path->string program-filename)
         (format "~s" module-language-spec)

@@ -71,7 +71,7 @@
                                  ;; We need to recur first, just to expand out any dotted usages of this.
                                  (let ([expanded (sb dty)])
                                    (for/fold ([t (make-Value null)])
-                                     ([img images])
+                                     ([img (reverse images)])
                                      (make-Pair (substitute img name expanded) t)))
                                  (make-ListDots (sb dty) dbound))]
                  [#:ValuesDots types dty dbound

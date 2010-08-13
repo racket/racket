@@ -31,10 +31,8 @@
 (define special-state #f)
 (define normal-bitmap #f) ; set by load-magic-images
 
-(define icons-bitmap
-  (let ([icons (collection-path "icons")])
-    (lambda (name)
-      (make-object bitmap% (build-path icons name)))))
+(define (icons-bitmap name)
+  (make-object bitmap% (collection-file-path name "icons")))
 
 (define-struct magic-image (chars filename [bitmap #:mutable]))
 
@@ -100,7 +98,7 @@
 (start-splash
  (cond
    [(and valentines-day? high-color?)
-    (build-path (collection-path "icons") "heart.png")]
+    (collection-file-path "heart.png" "icons")]
    [(and (or prince-kuhio-day? kamehameha-day?) high-color?)
     (set-splash-progress-bar? #f)
     (let ([size ((dynamic-require 'drracket/private/palaka 'palaka-pattern-size) 4)])
@@ -108,17 +106,17 @@
               size 
               size))]
    [texas-independence-day?
-    (build-path (collection-path "icons") "texas-plt-bw.gif")]
+    (collection-file-path "texas-plt-bw.gif" "icons")]
    [(and halloween? high-color?)
-    (build-path (collection-path "icons") "PLT-pumpkin.png")]
+    (collection-file-path "PLT-pumpkin.png" "icons")]
    [(and high-color? weekend?)
-    (build-path (collection-path "icons") "plt-logo-red-shiny.png")]
+    (collection-file-path "plt-logo-red-shiny.png" "icons")]
    [high-color?
-    (build-path (collection-path "icons") "plt-logo-red-diffuse.png")]
+    (collection-file-path "plt-logo-red-diffuse.png" "icons")]
    [(= (get-display-depth) 1)
-    (build-path (collection-path "icons") "pltbw.gif")]
+    (collection-file-path "pltbw.gif" "icons")]
    [else
-    (build-path (collection-path "icons") "plt-flat.gif")])
+    (collection-file-path "plt-flat.gif" "icons")])
  "DrRacket"
  99)
 

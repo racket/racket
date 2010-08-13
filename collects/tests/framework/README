@@ -13,9 +13,9 @@ gracket to exit in order to pass, this governor is required.
 
 To run a test use:
 
-   framework-test <test.ss> ...
+   framework-test <test.rkt> ...
 
-where <test.ss> is the name of one of the tests below.  Alternatively,
+where <test.rkt> is the name of one of the tests below.  Alternatively,
 pass no command-line arguments to run all of the tests.
 
 Some of the tests in this file are not yet present in the
@@ -26,17 +26,17 @@ OS X: you will have to click on the newly started gracket
 processes in the doc while the test suite runs or it will
 signal failures when there aren't any.
 
-- load: |# load.ss #|
+- load: |# load.rkt #|
 
   | This tests that the advertised ways of loading the framework at
   | it's components all work.
 
-- exit: |# exit.ss #|
+- exit: |# exit.rkt #|
 
   | This tests that exit:exit really exits and that the exit callbacks
   | are actually run.
 
-- preferences: |# prefs.ss #|
+- preferences: |# prefs.rkt #|
 
   | This tests that preferences are saved and restored correctly, both
   | immediately and across reboots of gracket.
@@ -48,20 +48,20 @@ signal failures when there aren't any.
   | Each test assumes that the others pass; this may yield strange
   | error messages when one fails.
 
-  - frames: |# frame.ss #|
-  - canvases: |# canvas.ss #|
-  - texts: |# text.ss #|
-  - pasteboards: |# pasteboard.ss #|
+  - frames: |# frame.rkt #|
+  - canvases: |# canvas.rkt #|
+  - texts: |# text.rkt #|
+  - pasteboards: |# pasteboard.rkt #|
 
-- keybindings: |# keys.ss #|
+- keybindings: |# keys.rkt #|
 
   | This tests the misc (non-scheme) keybindings
 
-- searching: |# search.ss #|
+- searching: |# search.rkt #|
 
   | This tests the search results
 
-- group tests: |# group-test.ss #|
+- group tests: |# group-test.rkt #|
 
   | make sure that mred:the-frame-group records frames correctly.
   | fake user input expected.
@@ -75,15 +75,15 @@ signal failures when there aren't any.
 
   | Tests the scheme: section
 
-  |# scheme.ss #|
+  |# scheme.rkt #|
 
 - |# (interactive #| tests
 
   | these tests require intervention by people. Clicking and whatnot
 
-  - panel:single |# panel.ss #|
+  - panel:single |# panel.rkt #|
 
-  - garbage collection: |# mem.ss #|
+  - garbage collection: |# mem.rkt #|
 
     | These tests will create objects in various configurations and
     | make sure that they are garbage collected

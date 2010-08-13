@@ -17,7 +17,8 @@
 
 (define figure-style-extras
   (let ([abs (lambda (s)
-               (build-path (collection-path "scriblib") s))])
+               (path->main-collects-relative
+                (collection-file-path s "scriblib")))])
     (list (make-css-addition (abs "figure.css"))
           (make-tex-addition (abs "figure.tex")))))
 

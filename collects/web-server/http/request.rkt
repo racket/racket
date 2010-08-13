@@ -1,6 +1,7 @@
 #lang racket
 (require net/url
          net/uri-codec
+         unstable/contract
          web-server/private/util
          web-server/private/connection-manager
          web-server/http/request-structs)
@@ -8,7 +9,7 @@
 (provide/contract
  [rename ext:read-request read-request
          (connection? 
-          port-number?
+          tcp-listen-port?
           (input-port? . -> . (values string? string?))
           . -> .
           (values request? boolean?))])

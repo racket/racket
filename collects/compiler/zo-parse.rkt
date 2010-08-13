@@ -26,8 +26,6 @@
 
   I think parse-module-path-index was only used for debugging, so it is short-circuited now
 
- collects/browser/compiled/browser_scrbl.zo (eg) contains a all-from-module that looks like: (#<module-path-index> 0 (1363072) . #f) --- that doesn't seem to match the spec
-
 |#
 ;; ----------------------------------------
 ;; Bytecode unmarshalers for various forms
@@ -71,6 +69,11 @@
       [`(,i ,tv . ,sv)
        ; XXX Why not leave them as vectors and change the contract?
        (make-prefix i (vector->list tv) (vector->list sv))])))
+
+(define read-free-id-info
+  (match-lambda
+    [(vector mpi0 symbol0 mpi1 symbol1 num0 num1 num2 bool0) ; I have no idea what these mean
+     (make-free-id-info mpi0 symbol0 mpi1 symbol1 num0 num1 num2 bool0)]))
 
 (define (read-unclosed-procedure v)
   (define CLOS_HAS_REST 1)
@@ -315,6 +318,7 @@
     [(100) 'begin0-sequence-type]
     [(103) 'module-type]
     [(105) 'resolve-prefix-type]
+    [(154) 'free-id-info-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers
@@ -335,7 +339,8 @@
     (cons 'case-lambda-sequence-type read-case-lambda)
     (cons 'begin0-sequence-type read-sequence)
     (cons 'module-type read-module)
-    (cons 'resolve-prefix-type read-resolve-prefix))))
+    (cons 'resolve-prefix-type read-resolve-prefix)
+    (cons 'free-id-info-type read-free-id-info))))
 
 (define (get-reader type)
   (or (hash-ref type-readers type #f)
@@ -498,6 +503,25 @@
 
 ;; ----------------------------------------
 ;; Syntax unmarshaling
+(define (decode-mark-map alist)
+  alist
+  #;(let loop ([alist alist]
+             [ht (make-immutable-hasheq empty)])
+    (match alist
+      [(list) ht]
+      [(list* (? number? key) (? module-path-index? val) alist)
+       (loop alist (hash-set ht key val))])))
+
+(define (decode-marks cp ms)
+  (match ms
+    [#f #f]
+    [(list* #f (? number? symref) alist)
+     (make-certificate:ref
+      (vector-ref (cport-symtab cp) symref)
+      (decode-mark-map alist))]
+    [(list* (? list? nested) alist)
+     (make-certificate:nest (decode-mark-map nested) (decode-mark-map alist))]))
+
 (define (decode-stx cp v)
   (if (integer? v)
       (unmarshal-stx-get/decode cp v decode-stx)
@@ -508,7 +532,8 @@
                         [`(,datum . ,wraps) (values #f datum wraps)]
                         [else (error 'decode-wraps "bad datum+wrap: ~e" v)])])
           (let* ([wraps (decode-wraps cp encoded-wraps)]
-                 [add-wrap (lambda (v) (make-wrapped v wraps cert-marks))])
+                 [marks (decode-marks cp cert-marks)]
+                 [add-wrap (lambda (v) (make-wrapped v wraps marks))])
             (cond
               [(pair? v)
                (if (eq? #t (car v))
@@ -567,7 +592,7 @@
                  [(integer? a) 
                   (unmarshal-stx-get/decode cp a (lambda (cp v) (aloop v)))]
                  ; A mark (not actually a number as the C says, but a (list <num>)
-                 [(and (pair? a) (null? (cdr a)) (number? (car a)))
+                 [(and (pair? a) (number? (car a)))
                   (make-wrap-mark (car a))]
                  
                  [(vector? a) 
@@ -594,31 +619,23 @@
                          (make-module-rename phase 
                                              (if kind 'marked 'normal)
                                              set-id
-                                             (let ([results (map (lambda (u)
-                                                                   ; u = (list path phase . src-phase)
-                                                                   ; or u = (list path phase src-phase exn ... . prefix)
-                                                                   (let ([just-phase? (let ([v (cddr u)])
-                                                                                        (or (number? v) (not v)))])
-                                                                     (let-values ([(exns prefix)
-                                                                                   (if just-phase?
-                                                                                       (values null #f)
-                                                                                       (let loop ([u (if just-phase? null (cdddr u))]
-                                                                                                  [a null])
-                                                                                         (if (pair? u)
-                                                                                             (loop (cdr u) (cons (car u) a))
-                                                                                             (values (reverse a) u))))])
-                                                                       (make-all-from-module
-                                                                        (parse-module-path-index cp (car u))
-                                                                        (cadr u)
-                                                                        (if just-phase?
-                                                                            (cddr u)
-                                                                            (caddr u))
-                                                                        exns
-                                                                        prefix))))
-                                                                 unmarshals)])
-                                               #;(printf "~nunmarshals: ~S~n" unmarshals)
-                                               #;(printf "~nunmarshal results: ~S~n" results)
-                                               results)
+                                             (map (local [(define (phase? v)
+                                                            (or (number? v) (not v)))]
+                                                    (match-lambda
+                                                      [(list* path (? phase? phase) (? phase? src-phase) 
+                                                              (list exn ...) prefix)
+                                                       (make-all-from-module
+                                                        (parse-module-path-index cp path)
+                                                        phase src-phase exn (vector prefix))]
+                                                      [(list* path (? phase? phase) (list exn ...) (? phase? src-phase))
+                                                       (make-all-from-module
+                                                        (parse-module-path-index cp path)
+                                                        phase src-phase exn #f)]
+                                                      [(list* path (? phase? phase) (? phase? src-phase))
+                                                       (make-all-from-module
+                                                        (parse-module-path-index cp path)
+                                                        phase src-phase #f #f)]))
+                                                  unmarshals)
                                              (decode-renames renames)
                                              mark-renames
                                              (and plus-kern? 'plus-kern)))]
@@ -933,7 +950,7 @@
 
 ;; path -> bytes
 ;; implementes read.c:read_compiled
-(define (zo-parse port)
+(define (zo-parse [port (current-input-port)])
   (begin-with-definitions    
     ;; skip the "#~"
     (unless (equal? #"#~" (read-bytes 2 port))

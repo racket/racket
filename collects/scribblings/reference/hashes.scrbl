@@ -180,6 +180,18 @@ Maps @scheme[key] to @scheme[v] in @scheme[hash], overwriting
 any existing mapping for @scheme[key].
 
 @see-also-caveats[]}
+                                     
+@defproc[(hash-set*! [hash (and/c hash? (not/c immutable?))]
+                     [key any/c]
+                     [v any/c]
+                     ...
+                     ...) void?]{
+
+Maps each @scheme[key] to each @scheme[v] in @scheme[hash], overwriting
+any existing mapping for each @scheme[key]. Mappings are added from the left, so
+later mappings overwrite earlier mappings.
+
+@see-also-caveats[]}
 
 
 @defproc[(hash-set [hash (and/c hash? immutable?)]
@@ -190,6 +202,20 @@ any existing mapping for @scheme[key].
 Functionally extends @scheme[hash] by mapping @scheme[key] to
 @scheme[v], overwriting any existing mapping for @scheme[key], and
 returning the extended hash table.
+
+@see-also-mutable-key-caveat[]}
+                                   
+@defproc[(hash-set* [hash (and/c hash? immutable?)]
+                    [key any/c]
+                    [v any/c]
+                    ...
+                    ...)
+          (and/c hash? immutable?)]{
+
+Functionally extends @scheme[hash] by mapping each @scheme[key] to
+@scheme[v], overwriting any existing mapping for each @scheme[key], and
+returning the extended hash table. Mappings are added from the left, so
+later mappings overwrite earlier mappings.
 
 @see-also-mutable-key-caveat[]}
 
@@ -303,7 +329,27 @@ otherwise the traversal skips a deleted key or uses the remapped key's
 new value.
 
 @see-also-concurrency-caveat[]}
+                        
+@defproc[(hash-keys [hash hash?])
+         (listof any/c)]{
+Returns a list of the keys of @scheme[hash] in an unspecified order.
+                              
+See @scheme[hash-map] for information about modifying @scheme[hash]
+during @scheme[hash-keys]. @see-also-concurrency-caveat[]}
 
+@defproc[(hash-values [hash hash?])
+         (listof any/c)]{
+Returns a list of the values of @scheme[hash] in an unspecified order.
+                              
+See @scheme[hash-map] for information about modifying @scheme[hash]
+during @scheme[hash-values]. @see-also-concurrency-caveat[]}
+                        
+@defproc[(hash->list [hash hash?])
+         (listof (cons/c any/c any/c))]{
+Returns a list of the key--value pairs of @scheme[hash] in an unspecified order.
+                              
+See @scheme[hash-map] for information about modifying @scheme[hash]
+during @scheme[hash->list]. @see-also-concurrency-caveat[]}
 
 @defproc[(hash-for-each [hash hash?]
                         [proc (any/c any/c . -> . any)])

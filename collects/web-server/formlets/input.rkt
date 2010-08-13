@@ -122,9 +122,9 @@
 ; XXX button
 
 (define (multiselect-input l
-                       #:multiple? [multiple? #t]
-                       #:selected? [selected? (λ (x) #f)]
-                       #:display [display (λ (x) x)])
+                           #:multiple? [multiple? #t]
+                           #:selected? [selected? (λ (x) #f)]
+                           #:display [display (λ (x) x)])
   (define value->element (make-hasheq))
   (define i 0)
   (define (remember! e)
@@ -161,46 +161,56 @@
   (cross
    (pure first)
    (multiselect-input l
-                  #:multiple? #f
-                  #:selected? selected?
-                  #:display display)))
+                      #:multiple? #f
+                      #:selected? selected?
+                      #:display display)))
 
-(define (textarea-input)
-  (to-string 
-   (required 
+(define (textarea-input
+         #:rows [rows #f]
+         #:cols [cols #f])
+  (to-string
+   (required
     (make-input
      (lambda (n)
        (list 'textarea
-             (list (list 'name n))
+             (list* (list 'name n)
+                    (append
+                     (filter list?
+                             (list (and rows (list 'rows (number->string rows)))
+                                   (and cols (list 'cols (number->string cols)))))))
              ""))))))
 
 (provide/contract
  [multiselect-input (->* (sequence?)
                          (#:multiple? boolean?
-                          #:selected? (any/c . -> . boolean?)
-                          #:display (any/c . -> . pretty-xexpr/c))
+                                      #:selected? (any/c . -> . boolean?)
+                                      #:display (any/c . -> . pretty-xexpr/c))
                          (formlet/c (listof any/c)))]
  [select-input (->* (sequence?)
                     (#:selected? (any/c . -> . boolean?)
-                     #:display (any/c . -> . pretty-xexpr/c))
+                                 #:display (any/c . -> . pretty-xexpr/c))
                     (formlet/c any/c))]
- [textarea-input (-> (formlet/c string?))]
+ [textarea-input (()
+                  (#:rows number?
+                   #:cols number?)
+                  . ->* .
+                  (formlet/c string?))]
  [text-input (() 
-        (#:value (or/c false/c bytes?)
-                 #:size (or/c false/c exact-nonnegative-integer?)
-                 #:max-length (or/c false/c exact-nonnegative-integer?)
-                 #:read-only? boolean?
-                 #:attributes (listof (list/c symbol? string?)))
-        . ->* . 
-        (formlet/c (or/c false/c binding?)))]
+              (#:value (or/c false/c bytes?)
+                       #:size (or/c false/c exact-nonnegative-integer?)
+                       #:max-length (or/c false/c exact-nonnegative-integer?)
+                       #:read-only? boolean?
+                       #:attributes (listof (list/c symbol? string?)))
+              . ->* . 
+              (formlet/c (or/c false/c binding?)))]
  [password-input (() 
-            (#:value (or/c false/c bytes?)
-                     #:size (or/c false/c exact-nonnegative-integer?)
-                     #:max-length (or/c false/c exact-nonnegative-integer?)
-                     #:read-only? boolean?
-                     #:attributes (listof (list/c symbol? string?)))
-            . ->* . 
-            (formlet/c (or/c false/c binding?)))]
+                  (#:value (or/c false/c bytes?)
+                           #:size (or/c false/c exact-nonnegative-integer?)
+                           #:max-length (or/c false/c exact-nonnegative-integer?)
+                           #:read-only? boolean?
+                           #:attributes (listof (list/c symbol? string?)))
+                  . ->* . 
+                  (formlet/c (or/c false/c binding?)))]
  [checkbox ((bytes? boolean?)
             (#:attributes (listof (list/c symbol? string?)))
             . ->* .

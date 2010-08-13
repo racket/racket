@@ -14,12 +14,6 @@
 (define (hash-ref/failure table key failure)
   (hash-ref table key (lambda () (failure))))
 
-(define (hash-domain table)
-  (for/list ([i (in-hash-keys table)]) i))
-
-(define (hash-range table)
-  (for/list ([i (in-hash-values table)]) i))
-
 (define ((hash-duplicate-error name) key value1 value2)
   (error name "duplicate values for key ~e: ~e and ~e" key value1 value2))
 
@@ -55,8 +49,6 @@
   (->d ([table hash?] [key any/c]) ()
        #:pre-cond (hash-has-key? table key)
        [_ any/c])]
- [hash-domain (-> hash? list?)]
- [hash-range (-> hash? list?)]
  [hash-union (->* [(and/c hash? immutable?)]
                   [#:combine
                    (-> any/c any/c any/c)

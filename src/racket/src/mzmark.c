@@ -4669,6 +4669,53 @@ static int mark_alarm_FIXUP(void *p, struct NewGC *gc) {
 
 #ifdef MARKS_FOR_STRUCT_C
 
+#ifdef MZ_USE_PLACES
+static int mark_serialized_struct_val_SIZE(void *p, struct NewGC *gc) {
+  Scheme_Serialized_Structure *s = (Scheme_Serialized_Structure *)p;
+  int num_slots = s->num_slots;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Serialized_Structure) 
+		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+}
+
+static int mark_serialized_struct_val_MARK(void *p, struct NewGC *gc) {
+  Scheme_Serialized_Structure *s = (Scheme_Serialized_Structure *)p;
+  int num_slots = s->num_slots;
+
+  int i;
+
+  gcMARK2(s->prefab_key, gc);
+  
+  for(i = num_slots; i--; )
+    gcMARK2(s->slots[i], gc);
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Serialized_Structure) 
+		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+}
+
+static int mark_serialized_struct_val_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Serialized_Structure *s = (Scheme_Serialized_Structure *)p;
+  int num_slots = s->num_slots;
+
+  int i;
+
+  gcFIXUP2(s->prefab_key, gc);
+  
+  for(i = num_slots; i--; )
+    gcFIXUP2(s->slots[i], gc);
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Serialized_Structure) 
+		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
+}
+
+#define mark_serialized_struct_val_IS_ATOMIC 0
+#define mark_serialized_struct_val_IS_CONST_SIZE 0
+
+#endif
+
 static int mark_struct_val_SIZE(void *p, struct NewGC *gc) {
   Scheme_Structure *s = (Scheme_Structure *)p;
   int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;

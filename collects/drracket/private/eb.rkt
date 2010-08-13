@@ -8,7 +8,7 @@
   (define main-size 260)
   (define pi (atan 0 -1))
   
-  (define eli (make-object bitmap% (build-path (collection-path "icons") "eli-purple.jpg")))
+  (define eli (make-object bitmap% (collection-file-path "eli-purple.jpg" "icons")))
   (define bitmap (make-object bitmap% main-size main-size))
   (define bdc (make-object bitmap-dc% bitmap))
   
@@ -56,7 +56,7 @@
     (with-handlers ([exn:fail? (lambda (x)
                                  (printf "~s\n" (exn-message x))
                                  #f)])
-      (let ([b (make-object bitmap% (build-path (collection-path "icons") "recycle.gif"))])
+      (let ([b (make-object bitmap% (collection-file-path "recycle.gif" "icons"))])
         (cond
           [(send b ok?)
            (let ([gbdc (make-object bitmap-dc% b)]

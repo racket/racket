@@ -58,6 +58,10 @@ message that comes from @cpp{dlopen("foo.so")} which will look like
 the file is not found.  In such cases try to specify a full or
 relative path (containing slashes, e.g., @filepath{./foo.so}).}
 
+Note! Because of the way the operating system performs dynamic binding,
+loaded libraries are associated with Racket or DrRacket for the
+duration of the process; re-evaluating ffi-lib and/or hitting the "Run" button
+will not force a re-load of the corresponding library.
 
 @defproc[(get-ffi-obj [objname (or/c string? bytes? symbol?)]
                       [lib (or/c ffi-lib? path-string? #f)]

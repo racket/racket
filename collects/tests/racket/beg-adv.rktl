@@ -77,6 +77,7 @@
 (htdp-test #t 'a3? (a3? (make-a3 1 2 3)))
 (htdp-test #f 'a1? (a1? (make-a3 1 2 3)))
 (htdp-test #f 'a3? (a3? (make-a1 1)))
+(htdp-err/rt-test (a1-b 10) #rx"a1-b")
 
 (htdp-syntax-test #'cond)
 (htdp-syntax-test #'(cond))
@@ -397,10 +398,3 @@
 (htdp-err/rt-test (error "several numbers " 1 " 2 " 3 " 4")
                   #rx"^several numbers 1 2 3 4$")
 
-(htdp-top (require scheme/match))
-(htdp-test 17 'match (match 'x ['x 17]))
-(htdp-test 'x 'match (match 'x ['y 17][z z]))
-(htdp-test 2 'match (match (list 1 2 3) [(cons a (cons b c)) b]))
-(htdp-test 3 'match (match (list 1 2 3) [(list a b c) c]))
-(htdp-test (list 2 3) 'match (match (list 1 2 3) [(cons a c) c]))
-(htdp-top-pop 1)

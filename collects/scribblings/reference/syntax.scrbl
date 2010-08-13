@@ -2039,7 +2039,14 @@ Like @racket[define], except that the binding is at @tech{phase level}
 expression for the binding is also at @tech{phase level} 1. (See
 @secref["id-model"] for information on @tech{phase levels}.)
 Evaluation of @racket[expr] side is @racket[parameterize]d to set
-@racket[current-namespace] as in @racket[let-syntax].}
+@racket[current-namespace] as in @racket[let-syntax].
+
+Within a module, bindings introduced by @racket[define-for-syntax]
+must appear before their uses or in the same
+@racket[define-for-syntax] form (i.e., the @racket[define-for-syntax]
+form must be expanded before the use is expanded). In particular,
+mutually recursive functions bound by @racket[define-for-syntax] must
+be defined by the same @racket[define-for-syntax] form.
 
 @defexamples[#:eval (syntax-eval)
 (define-for-syntax helper 2)
@@ -2073,7 +2080,7 @@ bound (at @tech{phase level} 1).}
   (printf "foo1 is ~a foo2 is ~a\n" foo1 foo2)
   #'2)
 (bar) 
-]
+]}
 
 @; ----------------------------------------------------------------------
 

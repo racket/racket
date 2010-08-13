@@ -8,6 +8,7 @@
 (provide place
          place-sleep
          place-wait 
+         place-channel
          place-channel-send
          place-channel-recv
          place-channel?

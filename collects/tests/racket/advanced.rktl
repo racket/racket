@@ -285,6 +285,10 @@
 (htdp-test #t 'hash-eqv?
            (hash-eqv? (make-hasheqv (list (list 'a 1)))))
 
+;; Check set...! error message:
+(htdp-top (define-struct a1 (b)))
+(htdp-err/rt-test (set-a1-b! 1 2) #rx"set-a1-b!")
+(htdp-top-pop 1)
 
 ;; Simulate set! in the repl
 (module my-advanced-module (lib "htdp-advanced.rkt" "lang")
@@ -299,6 +303,145 @@
   (eval #'(set! s-x 12))
   (eval #'(set! s? 12))
   (eval #'(set! set-s-x! 12)))
+
+;; define-datatype
+
+(htdp-syntax-test #'define-datatype #rx"define-datatype: found a use of `define-datatype' that does not follow an open parenthesis")
+(htdp-syntax-test #'(define-datatype) #rx"define-datatype: expected a datatype type name after `define-datatype', but nothing's there")
+(htdp-syntax-test #'(define-datatype dt 10) #rx"define-datatype: expected a variant after the datatype type name in `define-datatype', but found a number")
+(htdp-syntax-test #'(define-datatype dt [v1] 10) #rx"define-datatype: expected a variant after the datatype type name in `define-datatype', but found a number")
+(htdp-syntax-test #'(define-datatype dt v1) #rx"define-datatype: expected a variant after the datatype type name in `define-datatype', but found something else")
+(htdp-syntax-test #'(define-datatype dt [v1 f1 f1]) #rx"define-datatype: in variant `v1': found a field name that was used more than once: f1")
+(htdp-syntax-test #'(define-datatype dt [10]) #rx"define-datatype: expected a variant name, found a number")
+(htdp-syntax-test #'(define-datatype dt [(v1)]) #rx"define-datatype: expected a variant name, found something else")
+(htdp-syntax-test #'(define-datatype dt [v1 10]) #rx"define-datatype: in variant `v1': expected a field name, found a number")
+(htdp-syntax-test #'(define-datatype dt [v1] [v1]) #rx"define-datatype: found a variant name that was used more than once: v1")
+(htdp-syntax-test #'(define-datatype posn [v1]) #rx"posn\\?: this name has a built-in meaning and cannot be re-defined")
+(htdp-syntax-test #'(define-datatype dt [posn]) #rx"posn: this name has a built-in meaning and cannot be re-defined")
+(htdp-syntax-test #'(define-datatype lambda [v1]) #rx"define-datatype: expected a datatype type name after `define-datatype', but found a keyword")
+(htdp-syntax-test #'(define-datatype dt [lambda]) #rx"define-datatype: expected a variant name, found a keyword")
+(htdp-syntax-test #'(define-datatype (dt)) #rx"define-datatype: expected a datatype type name after `define-datatype', but found something else")
+(htdp-syntax-test #'(+ 1 (define-datatype dt [v1])) #rx"define-datatype: found a definition that is not at the top level")
+
+(htdp-top (define-datatype dt))
+(htdp-test #f 'dt? (dt? 1))
+(htdp-top-pop 1)
+
+(htdp-top (define x 5))
+(htdp-syntax-test #'(define-datatype x [v1]) #rx"x: this name was defined previously and cannot be re-defined")
+(htdp-syntax-test #'(define-datatype dt [x]) #rx"x: this name was defined previously and cannot be re-defined")
+(htdp-top-pop 1)
+
+(htdp-top (define-datatype a
+            [a0]
+            [a1 b]
+            [a3 b c d]))
+(htdp-test #t 'a0? (a0? (make-a0)))
+(htdp-test #t 'a? (a? (make-a0)))
+(htdp-test #t 'a1? (a1? (make-a1 1)))
+(htdp-test #t 'a? (a? (make-a1 1)))
+(htdp-test #t 'a3? (a3? (make-a3 1 2 3)))
+(htdp-test #t 'a? (a? (make-a3 1 2 3)))
+(htdp-test #f 'a1? (a1? (make-a3 1 2 3)))
+(htdp-test #f 'a3? (a3? (make-a1 1)))
+(htdp-test #f 'a? (a? 1))
+(htdp-top-pop 1)
+
+;; match
+
+(htdp-syntax-test #'match #rx"match: found a use of `match' that does not follow an open parenthesis")
+(htdp-syntax-test #'(match) #rx"match: expected an expression after `match', but nothing's there")
+(htdp-syntax-test #'(match 1) #rx"match: expected a pattern--answer clause after the expression following `match', but nothing's there")
+
+(htdp-syntax-test #'(match 1 10) #rx"match: expected a pattern--answer clause, but found a number")
+(htdp-syntax-test #'(match 1 x) #rx"match: expected a pattern--answer clause, but found something else")
+(htdp-syntax-test #'(match 1 []) #rx"match: expected a pattern--answer clause, but found an empty clause")
+(htdp-syntax-test #'(match 1 [x]) #rx"expected an expression for the answer in a `match' clause, but nothing's there")
+(htdp-syntax-test #'(match 1 [x 10 10]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+(htdp-syntax-test #'(match 1 [x 10 x]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+
+(htdp-syntax-test #'(match 1 [x 10] 10) #rx"match: expected a pattern--answer clause, but found a number")
+(htdp-syntax-test #'(match 1 [x 10] x) #rx"match: expected a pattern--answer clause, but found something else")
+(htdp-syntax-test #'(match 1 [x 10] []) #rx"match: expected a pattern--answer clause, but found an empty clause")
+(htdp-syntax-test #'(match 1 [x 10] [x]) #rx"expected an expression for the answer in a `match' clause, but nothing's there")
+(htdp-syntax-test #'(match 1 [x 10] [x 10 10]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+(htdp-syntax-test #'(match 1 [x 10] [x 10 x]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+
+(define-syntax-rule (htdp-match/v res pat expr val)
+  (htdp-test res 'pat (match expr [pat val] [else #f])))
+(define-syntax-rule (htdp-match res pat expr)
+  (htdp-match/v res pat expr #t))
+
+(htdp-match #t true true)
+(htdp-match #f true false)
+(htdp-match #f true 1)
+
+(htdp-match #f false true)
+(htdp-match #t false false)
+(htdp-match #f false 1)
+
+(htdp-match #t empty empty)
+(htdp-match #f empty 1)
+
+(htdp-match #t 1 1)
+(htdp-match #t '1 1)
+(htdp-match #t `1 1)
+(htdp-match #f 1 2)
+
+(htdp-match #t "foo" "foo")
+(htdp-match #t '"foo" "foo")
+(htdp-match #t `"foo" "foo")
+(htdp-match #f "foo" "bar")
+
+(htdp-match #t #\a #\a)
+(htdp-match #t '#\a #\a)
+(htdp-match #t `#\a #\a)
+(htdp-match #f #\a #\b)
+
+(htdp-match #t 'a 'a)
+(htdp-match #f 'a 'b)
+
+(htdp-match #t '(a b) (list 'a 'b))
+(htdp-match #t ''a ''a)
+(htdp-match #t '`a '`a)
+(htdp-match #t ',a ',a)
+(htdp-match #t ',@a ',@a)
+
+(htdp-match #t `(a b) (list 'a 'b))
+(htdp-match #t `'a ''a)
+(htdp-match #t ``a '`a)
+
+(htdp-match #t (cons a b) (list 1))
+(htdp-match #f (cons 1 2) 1)
+(htdp-match #t (list a b) (list 1 2))
+(htdp-match #f (list a b) (list 1))
+(htdp-match #t (list* a b) (list 1))
+(htdp-match #f (list* a b) empty)
+
+(htdp-match #t (vector x y) (vector 1 2))
+(htdp-match #f (vector x x) (vector 1 2))
+(htdp-match #t (vector _ _) (vector 1 2))
+(htdp-match #f (vector x y) (vector 1))
+
+(htdp-match #t (box x) (box 1))
+(htdp-match #f (box x) 1)
+
+(htdp-match/v 1 a 1 a)
+
+(htdp-top (define-struct my-posn (x y)))
+(htdp-match/v 3 (struct my-posn (x y)) (make-my-posn 1 2) (+ x y))
+(htdp-top-pop 1)
+
+(htdp-match/v 3 (struct posn (x y)) (make-posn 1 2) (+ x y))
+(htdp-match/v 3 (cons (struct posn (x y)) empty) (cons (make-posn 1 2) empty) (+ x y))
+(htdp-match/v 3 (list* (struct posn (x y)) empty) (list* (make-posn 1 2) empty) (+ x y))
+(htdp-match/v 3 (list (struct posn (x y))) (list (make-posn 1 2)) (+ x y))
+(htdp-match/v 3 (vector (struct posn (x y))) (vector (make-posn 1 2)) (+ x y))
+(htdp-match/v 3 (box (struct posn (x y))) (box (make-posn 1 2)) (+ x y))
+
+(htdp-match/v 3 `,(struct posn (x y)) (make-posn 1 2) (+ x y))
+(htdp-match/v 1 `(a ,b) (list 'a 1) b)
+(htdp-match/v 1 `(a ,@(list b)) (list 'a 1) b)
 
 ;; ----------------------------------------
 

@@ -5,6 +5,7 @@
          scribble/html-properties
          scribble/latex-properties
          racket/promise
+         setup/main-collects
          "private/counter.ss")
 
 (provide note
@@ -12,7 +13,8 @@
 
 (define footnote-style-extras
   (let ([abs (lambda (s)
-               (build-path (collection-path "scriblib") s))])
+               (path->main-collects-relative
+                (collection-file-path s "scriblib")))])
     (list (make-css-addition (abs "footnote.css"))
           (make-tex-addition (abs "footnote.tex")))))
 

@@ -15,6 +15,10 @@ Contract for non-empty strings.
 Equivalent to @racket[(between/c 1 65535)].
 }
 
+@defthing[tcp-listen-port? contract?]{
+Equivalent to @racket[(between/c 0 65535)].
+}
+
 @defthing[path-element? contract?]{
 Equivalent to @racket[(or/c path-string? (symbols 'up 'same))].
 }

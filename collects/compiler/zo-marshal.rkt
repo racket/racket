@@ -1,24 +1,19 @@
-#lang scheme/base
+#lang racket/base
 (require compiler/zo-structs
-         scheme/port
-         scheme/match
-         scheme/contract
-         scheme/local
-         scheme/list
-         scheme/dict)
+         unstable/struct
+         racket/port
+         racket/vector
+         racket/match
+         racket/contract
+         racket/local
+         racket/list
+         racket/dict
+         racket/function)
 
 (provide/contract
  [zo-marshal (compilation-top? . -> . bytes?)]
  [zo-marshal-to (compilation-top? output-port? . -> . void?)])
 
-#| Unresolved Issues
-  
-  Less sharing occurs than in the C implementation, creating much larger files
-
-  protect-quote caused some things to be sent to write. But there are some things (like paths) that can be read and passed to protect-quote that cannot be 'read' in after 'write', so we turned it off
-|#
-
-(define current-wrapped-ht (make-parameter #f))
 (define (zo-marshal top)
   (define bs (open-output-bytes))
   (zo-marshal-to top bs)
@@ -27,224 +22,131 @@
 (define (zo-marshal-to top outp)
   (match top
     [(struct compilation-top (max-let-depth prefix form))
-     (define encountered (make-hasheq))
      (define shared (make-hasheq))
      (define wrapped (make-hasheq))
-     (define (visit v)
-       (if (hash-ref shared v #f)
-           #f
-           (if (hash-ref encountered v #f)
+     (define (shared-obj-pos v)
+       (hash-ref shared v #f))
+     (define (share! v)
+       (hash-set! shared v (add1 (hash-count shared))))
+     (define ct 
+       (list* max-let-depth prefix (protect-quote form)))
+     
+     ; Compute what objects are in ct multiple times (by equal?)
+     (local [(define encountered (make-hasheq))
+             (define (encountered? v)
+               (hash-ref encountered v #f))
+             (define (encounter! v)
+               (hash-set! encountered v #t))
+             (define (visit! v)
+               (cond
+                 [(shared-obj-pos v)
+                  #f]
+                 [(encountered? v)
+                  (share! v)
+                  #f]
+                 [else
+                  (encounter! v)
+                  ; All closures MUST be in the symbol table
+                  (when (closure? v)
+                    (share! v))
+                  #t]))]
+       (traverse wrapped visit! ct))
+     
+     ; Hash tables aren't sorted, so we need to order them
+     (define in-order-shareds 
+       (sort (hash-map shared (lambda (k v) (cons v k)))
+             <
+             #:key car))
+     
+     (define (write-all outp)
+       ; As we are writing the symbol table entry for v,
+       ; the writing code will attempt to see if v is shared and
+       ; insert a symtable reference, which would be wrong.
+       ; So, the first time it is encountered while writing,
+       ; we should pretend it ISN'T shared, so it is actually written.
+       ; However, subsequent times (or for other shared values)
+       ; we defer to the normal 'shared-obj-pos'
+       (define (shared-obj-pos/modulo-v v)
+         (define skip? #t)
+         (lambda (v2)
+           (if (and skip? (eq? v v2))
                (begin
-                 (hash-set! shared v (add1 (hash-count shared)))
+                 (set! skip? #f)
                  #f)
-               (begin
-                 (hash-set! encountered v #t)
-                 (when (closure? v)
-                   (hash-set! shared v (add1 (hash-count shared))))
-                 #t))))
-     (define (v-skipping v)
-       (define skip? #t)
-       (lambda (v2)
-         (if (and skip? (eq? v v2))
-             (begin
-               (set! skip? #f)
-               #f)
-             (hash-ref shared v2 #f))))
-     (parameterize ([current-wrapped-ht wrapped])
-       (traverse-prefix prefix visit)
-       (traverse-form form visit))
-     (local [(define in-order-shareds 
-               (sort (hash-map shared (lambda (k v) (cons v k)))
-                     <
-                     #:key car))
-             (define (write-all outp)
-               (define offsets
-                 (for/list ([k*v (in-list in-order-shareds)])
-                   (define v (cdr k*v))
-                   (begin0
-                     (file-position outp)
-                     (out-anything v (make-out outp (v-skipping v) wrapped)))))
-               (define post-shared (file-position outp))
-               (out-data (list* max-let-depth prefix (protect-quote form)) 
-                         (make-out outp (lambda (v) (hash-ref shared v #f)) wrapped))
-               (values offsets post-shared (file-position outp)))
-             (define counting-p (open-output-nowhere))
-             (define-values (offsets post-shared all-forms-length)
-               (write-all counting-p))
-             (define all-short? (post-shared . < . #xFFFF))
-             (define version-bs (string->bytes/latin-1 (version)))]
-       (write-bytes #"#~" outp)
-       (write-bytes (bytes (bytes-length version-bs)) outp)
-       (write-bytes version-bs outp)
-       (write-bytes (int->bytes (add1 (hash-count shared))) outp)
-       (write-bytes (bytes (if all-short? 1 0)) outp)
-       (for ([o (in-list offsets)])
-         (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
-       (write-bytes (int->bytes post-shared) outp)
-       (write-bytes (int->bytes all-forms-length) outp)
-       (write-all outp)
-       (void))]))
-
-;; ----------------------------------------
-
-(define (traverse-prefix a-prefix visit)
-  (match a-prefix
-    [(struct prefix (num-lifts toplevels stxs))
-     (for-each (lambda (stx) (traverse-toplevel stx visit)) toplevels)
-     (for-each (lambda (stx) (traverse-stx stx visit)) stxs)]))
-
-(define (traverse-module mod-form visit)
-  (match mod-form
-    [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported 
-                       max-let-depth dummy lang-info internal-context))
-     (traverse-data name visit)
-     (traverse-data srcname visit)
-     (traverse-data self-modidx visit)
-     (traverse-prefix prefix visit)
-     (for-each (lambda (f) (map (lambda (v) (traverse-data v visit)) (cdr f))) requires)
-     (for-each (lambda (f) (traverse-form f visit)) body)
-     (for-each (lambda (f) (traverse-form f visit)) syntax-body)
-     (traverse-data lang-info visit)
-     (traverse-data internal-context visit)]))
-
-(define (traverse-toplevel tl visit)
-  (match tl
-    [#f (void)]
-    [(? symbol?) (traverse-data tl visit)]
-    [(struct global-bucket (name)) 
-     (void)]
-    [(struct module-variable (modidx sym pos phase))
-     (visit tl)
-     (let-values ([(p b) (module-path-index-split modidx)])
-       (if (symbol? p)
-           (traverse-data p visit)
-           (traverse-data modidx visit)))
-     (traverse-data sym visit)]))
-
-(define (traverse-wrapped w visit)
-  (define ew (hash-ref! (current-wrapped-ht) w (lambda () (encode-wrapped w))))
-  (traverse-data ew visit))
-
-(define (traverse-stx s visit)
-  (when s
-    (traverse-wrapped (stx-encoded s) visit)))
-
-
-(define (traverse-form form visit)
-  (match form
-    [(? mod?)
-     (traverse-module form visit)]
-    [(struct def-values (ids rhs))
-     (traverse-expr rhs visit)]
-    [(struct def-syntaxes (ids rhs prefix max-let-depth))
-     (traverse-prefix prefix visit)
-     (traverse-expr rhs visit)]
-    [(struct def-for-syntax (ids rhs prefix max-let-depth))
-     (traverse-prefix prefix visit)
-     (traverse-expr rhs visit)]
-    [(struct seq (forms))
-     (for-each (lambda (f) (traverse-form f visit)) forms)]
-    [(struct splice (forms))
-     (for-each (lambda (f) (traverse-form f visit)) forms)]
-    [else
-     (traverse-expr form visit)]))
-
-(define (traverse-expr expr visit)
-  (match expr
-    [(struct toplevel (depth pos const? ready?))
-     (void)]
-    [(struct topsyntax (depth pos midpt))
-     (void)]
-    [(struct primval (id))
-     (void)]
-    [(struct assign (id rhs undef-ok?))
-     (traverse-expr rhs visit)]
-    [(struct localref (unbox? offset clear? other-clears? flonum?))
-     (void)]
-    [(? lam?)
-     (traverse-lam expr visit)]
-    [(struct case-lam (name lams))
-     (traverse-data name visit)
-     (for-each (lambda (lam) (traverse-lam lam visit)) lams)]
-    [(struct let-one (rhs body flonum? unused?))
-     (traverse-expr rhs visit)
-     (traverse-expr body visit)]
-    [(struct let-void (count boxes? body))
-     (traverse-expr body visit)]
-    [(struct let-rec (procs body))
-     (for-each (lambda (lam) (traverse-lam lam visit)) procs)
-     (traverse-expr body visit)]
-    [(struct install-value (count pos boxes? rhs body))
-     (traverse-expr rhs visit)
-     (traverse-expr body visit)]
-    [(struct boxenv (pos body))
-     (traverse-expr body visit)]
-    [(struct branch (test then else))
-     (traverse-expr test visit)
-     (traverse-expr then visit)
-     (traverse-expr else visit)]
-    [(struct application (rator rands))
-     (traverse-expr rator visit)
-     (for-each (lambda (rand) (traverse-expr rand visit)) rands)]
-    [(struct apply-values (proc args-expr))
-     (traverse-expr proc visit)
-     (traverse-expr args-expr visit)]
-    [(struct seq (exprs))
-     (for-each (lambda (expr) (traverse-form expr visit)) exprs)]
-    [(struct beg0 (exprs))
-     (for-each (lambda (expr) (traverse-expr expr visit)) exprs)]
-    [(struct with-cont-mark (key val body))
-     (traverse-expr key visit)
-     (traverse-expr val visit)
-     (traverse-expr body visit)]
-    [(struct closure (lam gen-id))
-     (traverse-lam expr visit)]
-    [(struct indirect (val))
-     (traverse-expr val visit)]
-    [else (traverse-data expr visit)]))
-
-(define (traverse-data expr visit)
-  (cond
-    [(or (symbol? expr)
-         (keyword? expr)
-         (string? expr)
-         (bytes? expr)
-         (path? expr))
-     (visit expr)]
-    [(module-path-index? expr)
-     (visit expr)
-     (let-values ([(name base) (module-path-index-split expr)])
-       (traverse-data name visit)
-       (traverse-data base visit))]
-    [(pair? expr)
-     (traverse-data (car expr) visit)
-     (traverse-data (cdr expr) visit)]
-    [(vector? expr)
-     (for ([e (in-vector expr)])
-       (traverse-data e visit))]
-    [(box? expr)
-     (traverse-data (unbox expr) visit)]
-    [(stx? expr)
-     (traverse-stx expr visit)]
-    [(wrapped? expr)
-     (traverse-wrapped expr visit)]
-    [(hash? expr)
-     (when (visit expr)
-       (for ([(k v) (in-hash expr)])
-         (traverse-data k visit)
-         (traverse-data v visit)))]
-    [else
+               (shared-obj-pos v2))))
+       ; Write the symbol table, computing offsets as we go
+       (define offsets
+         (for/list ([k*v (in-list in-order-shareds)])
+           (define v (cdr k*v))
+           (begin0
+             (file-position outp)
+             (out-anything v (make-out outp (shared-obj-pos/modulo-v v) wrapped)))))
+       ; Compute where we ended
+       (define post-shared (file-position outp))
+       ; Write the entire ctop
+       (out-data ct 
+                 (make-out outp shared-obj-pos wrapped))
+       (values offsets post-shared (file-position outp)))
+     
+     ; Compute where the symbol table ends
+     (define counting-p (open-output-nowhere))
+     (define-values (offsets post-shared all-forms-length)
+       (write-all counting-p))
+     
+     ; Write the compiled form header
+     (write-bytes #"#~" outp)
+     
+     ; Write the version (notice that it isn't the same as out-string)
+     (define version-bs (string->bytes/latin-1 (version)))
+     (write-bytes (bytes (bytes-length version-bs)) outp)
+     (write-bytes version-bs outp)
+     
+     ; Write the symbol table information (size, offsets)
+     (define symtabsize (add1 (hash-count shared)))
+     (write-bytes (int->bytes symtabsize) outp)
+     (define all-short? (post-shared . < . #xFFFF))
+     (write-bytes (bytes (if all-short? 1 0)) outp)
+     (for ([o (in-list offsets)])
+       (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
+     
+     ; Post-shared is where the ctop actually starts
+     (write-bytes (int->bytes post-shared) outp)
+     ; This is where the file should end
+     (write-bytes (int->bytes all-forms-length) outp)
+     ; Write the symbol table then the ctop
+     (write-all outp)
      (void)]))
 
-(define (traverse-lam expr visit)
-  (match expr
-    [(struct indirect (val)) (traverse-lam val visit)]
-    [(struct closure (lam gen-id))
-     (when (visit expr)
-       (traverse-lam lam visit))]
-    [(struct lam (name flags num-params param-types rest? closure-map closure-types max-let-depth body))
-     (traverse-data name visit)
-     (traverse-expr body visit)]))
+(define (traverse wrapped-ht visit! expr)
+  (when (visit! expr)
+    (match expr
+      [(? wrapped? w)
+       (define encoded-w
+         (hash-ref! wrapped-ht w (lambda () (encode-wrapped w))))
+       (traverse wrapped-ht visit! encoded-w)]
+      [(? prefab-struct-key)
+       (map (curry traverse wrapped-ht visit!) (struct->list expr))]
+      [(cons l r) 
+       (traverse wrapped-ht visit! l) 
+       (traverse wrapped-ht visit! r)]
+      [(? vector?) 
+       (for ([v (in-vector expr)]) 
+         (traverse wrapped-ht visit! v))]
+      [(? hash?) 
+       (for ([(k v) (in-hash expr)]) 
+         (traverse wrapped-ht visit! k) 
+         (traverse wrapped-ht visit! v))]
+      [(? module-path-index?) 
+       (define-values (name base) (module-path-index-split expr))
+       (traverse wrapped-ht visit! name)
+       (traverse wrapped-ht visit! base)]
+      [(box v)
+       (traverse wrapped-ht visit! v)]
+      [(protected-symref v)
+       (traverse wrapped-ht visit! v)]
+      [(quoted v)
+       (traverse wrapped-ht visit! v)]
+      [else (void)])))
 
 ;; ----------------------------------------
 
@@ -263,6 +165,7 @@
 (define begin0-sequence-type-num 100)
 (define module-type-num 103)
 (define prefix-type-num 105)
+(define free-id-info-type-num 154)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -307,7 +210,7 @@
   CPT_MODULE_VAR
   CPT_PATH
   CPT_CLOSURE
-  CPT_DELAY_REF
+  CPT_DELAY_REF ; XXX unused, but appears to be same as CPT_SYMREF
   CPT_PREFAB
   CPT_LET_ONE_UNUSED)
 
@@ -436,6 +339,14 @@
       (cons num-lifts
             (cons (list->vector toplevels)
                   (list->vector stxs)))
+      out)]))
+
+(define (out-free-id-info a-free-id-info out)
+  (match a-free-id-info
+    [(struct free-id-info (mpi0 s0 mpi1 s1 p0 p1 p2 insp?))
+     (out-marshaled
+      free-id-info-type-num
+      (vector mpi0 s0 mpi1 s1 p0 p1 p2 insp?)
       out)]))
 
 (define-struct module-decl (content))
@@ -576,12 +487,14 @@
                     (list* path phase export-name (encode-nominal-path nominal-path) nominal-export-name)])))
   encoded-bindings)
 
-(define (encode-all-from-module all)
-  (match all
-    [(struct all-from-module (path phase src-phase exceptions prefix))
-     (if (and (empty? exceptions) (not prefix))
-         (list* path phase src-phase)
-         (list* path phase src-phase (append exceptions prefix)))]))
+(define encode-all-from-module
+  (match-lambda
+    [(struct all-from-module (path phase src-phase #f #f))
+      (list* path phase src-phase)]
+    [(struct all-from-module (path phase src-phase exns #f))
+     (list* path phase exns src-phase)]
+    [(struct all-from-module (path phase src-phase exns (vector prefix)))
+     (list* path phase src-phase exns prefix)]))
 
 (define (encode-wraps wraps)
   (for/list ([wrap (in-list wraps)])
@@ -618,17 +531,68 @@
       [(struct wrap-mark (val))
        (list val)])))
 
+(define (encode-mark-map mm)
+  mm
+  #;(for/fold ([l empty])
+    ([(k v) (in-hash ht)])
+    (list* k v l)))
+
+(define-struct protected-symref (val))
+
+(define encode-certs
+  (match-lambda
+    [(struct certificate:nest (m1 m2))
+     (list* (encode-mark-map m1) (encode-mark-map m2))]
+    [(struct certificate:ref (val m))
+     (list* #f (make-protected-symref val) (encode-mark-map m))]))
+
 (define (encode-wrapped w)
   (match w
     [(struct wrapped (datum wraps certs))
-     (vector
-      (cons
-       datum
-       (encode-wraps wraps))
-      certs)]))
+     (let* ([enc-datum
+             (match datum
+               [(cons a b) 
+                (let ([p (cons (encode-wrapped a)
+                               (let bloop ([b b])
+                                 (match b
+                                   ['() null]
+                                   [(cons b1 b2)
+                                    (cons (encode-wrapped b1)
+                                          (bloop b2))]
+                                   [else
+                                    (encode-wrapped b)])))]
+                      ; XXX Cylic list error possible
+                      [len (let loop ([datum datum][len 0])
+                             (cond
+                               [(null? datum) #f]
+                               [(pair? datum) (loop (cdr datum) (add1 len))]
+                               [else len]))])
+                  ;; for improper lists, we need to include the length so the 
+                  ;; parser knows where the end of the improper list is
+                  (if len
+                      (cons len p) 
+                      p))]
+               [(box x)
+                (box (encode-wrapped x))]
+               [(? vector? v)
+                (vector-map encode-wrapped v)]
+               [(? prefab-struct-key)
+                (define l (vector->list (struct->vector datum)))
+                (apply
+                 make-prefab-struct
+                 (car l)
+                 (map encode-wrapped (cdr l)))]
+               [_ datum])]
+            [p (cons enc-datum
+                     (encode-wraps wraps))])
+       (if certs
+           (vector p (encode-certs certs))
+           p))]))
 
 (define (lookup-encoded-wrapped w out)
-  (hash-ref (out-encoded-wraps out) w))
+  (hash-ref (out-encoded-wraps out) w
+            (lambda ()
+              (error 'lookup-encoded-wrapped "Cannot find encoded version of wrap: ~e" w))))
 
 (define (out-wrapped w out)
   (out-data (lookup-encoded-wrapped w out) out))
@@ -647,11 +611,11 @@
      (out-module form out)]
     [(struct def-values (ids rhs))
      (out-syntax DEFINE_VALUES_EXPD
-                 (list->vector (cons rhs ids))
+                 (list->vector (cons (protect-quote rhs) ids))
                  out)]
     [(struct def-syntaxes (ids rhs prefix max-let-depth))
      (out-syntax DEFINE_SYNTAX_EXPD
-                 (list->vector (list* rhs
+                 (list->vector (list* (protect-quote rhs)
                                       prefix
                                       max-let-depth
                                       *dummy*
@@ -659,7 +623,7 @@
                  out)]
     [(struct def-for-syntax (ids rhs prefix max-let-depth))
      (out-syntax DEFINE_FOR_SYNTAX_EXPD
-                 (list->vector (list* rhs
+                 (list->vector (list* (protect-quote rhs)
                                       prefix
                                       max-let-depth
                                       *dummy*
@@ -745,9 +709,9 @@
                     out)]
     [(struct let-one (rhs body flonum? unused?))
      (out-byte (cond
-                [flonum? CPT_LET_ONE_FLONUM]
-                [unused? CPT_LET_ONE_UNUSED]
-                [else CPT_LET_ONE])
+                 [flonum? CPT_LET_ONE_FLONUM]
+                 [unused? CPT_LET_ONE_UNUSED]
+                 [else CPT_LET_ONE])
                out)
      (out-expr (protect-quote rhs) out)
      (out-expr (protect-quote body) out)]
@@ -893,10 +857,15 @@
     [(prefix? expr) (out-prefix expr out)]
     [(global-bucket? expr) (out-toplevel expr out)]
     [(module-variable? expr) (out-toplevel expr out)]
+    [(free-id-info? expr) (out-free-id-info expr out)]
     [else (out-form expr out)]))
 
 (define (out-value expr out)
   (cond
+    [(protected-symref? expr)
+     (let* ([val (protected-symref-val expr)]
+            [val-ref ((out-shared-index out) val)])
+       (out-value val-ref out))]
     [(and (symbol? expr) (not (symbol-interned? expr)))
      (out-as-bytes expr 
                    #:before-length (if (symbol-unreadable? expr) 0 1)
@@ -996,6 +965,7 @@
                       (print-contents-as-proper)
                       (out-data null out)))
            (if (len . < . (- CPT_SMALL_LIST_END CPT_SMALL_LIST_START))
+               ; XXX If len = 1 (or maybe = 2?) then this could by CPT_PAIR
                (begin (out-byte (+ CPT_SMALL_LIST_START len) out)
                       (print-contents-as-improper))
                (begin (out-byte CPT_LIST out)
@@ -1042,26 +1012,31 @@
     [(stx? expr)
      (out-stx expr out)]
     [(wrapped? expr)
-     (out-wrapped expr out)]      
+     (out-wrapped expr out)]
+    [(prefab-struct-key expr)
+     => (lambda (key)
+          (define pre-v (struct->vector expr))
+          (vector-set! pre-v 0 key)
+          (out-byte CPT_PREFAB out)
+          (out-data pre-v out))]
     [else
      (out-byte CPT_QUOTE out)
-     (let ([s (open-output-bytes)])
-       (write (if (quoted? expr) 
-                  (quoted-v expr)
-                  expr) s)
-       (out-byte CPT_ESCAPE out)
-       (let ([bstr (get-output-bytes s)])
-         (out-number (bytes-length bstr) out)
-         (out-bytes bstr out)))]))
+     (if (quoted? expr)
+         (out-data (quoted-v expr) out)
+         (let ([s (open-output-bytes)])
+           (write expr s)
+           (out-byte CPT_ESCAPE out)
+           (let ([bstr (get-output-bytes s)])
+             (out-number (bytes-length bstr) out)
+             (out-bytes bstr out))))]))
 
 
-(define-struct quoted (v) #:prefab)
+(define-struct quoted (v))
 
 (define (protect-quote v)
-  v
-  #;(if (or (list? v) (vector? v) (box? v) (hash? v))
-        (make-quoted v)
-        v))
+  (if (or (pair? v) (vector? v) (prefab-struct-key v) (box? v) (hash? v) (svector? v))
+      (make-quoted v)
+      v))
 
 
 (define-struct svector (vec))

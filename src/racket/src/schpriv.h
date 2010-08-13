@@ -421,17 +421,6 @@ THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
 #endif
 
 #ifdef MZ_USE_PLACES
-THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_current_thread);
-THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_first_thread);
-#define scheme_eval_wait_expr (scheme_current_thread->ku.eval.wait_expr)
-#define scheme_tail_rator (scheme_current_thread->ku.apply.tail_rator)
-#define scheme_tail_num_rands (scheme_current_thread->ku.apply.tail_num_rands)
-#define scheme_tail_rands (scheme_current_thread->ku.apply.tail_rands)
-#define scheme_overflow_reply (scheme_current_thread->overflow_reply)
-#define scheme_error_buf *(scheme_current_thread->error_buf)
-#define scheme_jumping_to_continuation (scheme_current_thread->cjs.jumping_to_continuation)
-#define scheme_multiple_count (scheme_current_thread->ku.multiple.count)
-#define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
 extern mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(extern mz_proc_thread *proc_thread_self);
 #endif
@@ -692,6 +681,16 @@ typedef struct Scheme_Structure
   Scheme_Object *slots[1];
 } Scheme_Structure;
 
+#ifdef MZ_USE_PLACES
+typedef struct Scheme_Serialized_Structure
+{
+  Scheme_Object so;
+  Scheme_Object *prefab_key;
+  int num_slots;
+  Scheme_Object *slots[1];
+} Scheme_Serialized_Structure;
+#endif
+
 typedef struct Struct_Proc_Info {
   MZTAG_IF_REQUIRED
   Scheme_Struct_Type *struct_type;
@@ -746,6 +745,10 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
 					int num_islots,
 					Scheme_Object *uninit_val,
 					char *immutable_pos_list);
+Scheme_Object *scheme_prefab_struct_key(Scheme_Object *s);
+#ifdef MZ_USE_PLACES
+Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *s, int num_slots);
+#endif
 
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
@@ -1059,6 +1062,46 @@ typedef struct {
   struct Resolve_Prefix *prefix;
 } Scheme_Compilation_Top;
 
+/* A `let', `let*', or `letrec' form is compiled to the intermediate
+   format (used during the optimization pass) as a Scheme_Let_Header
+   with a chain of Scheme_Compiled_Let_Value records as its body,
+   where there's one Scheme_Compiled_Let_Value for each binding
+   clause. A `let*' is normally expanded to nested `let's before
+   compilation, but the intermediate format also supposrts `let*',
+   which is useful mostly for converting a simple enough `letrec' form
+   into `let*.
+
+   The body of the `let...' form is the body of the innermost
+   Scheme_Compiled_Let_Value record. Obviously, all N bindings of a
+   `let...' form are pushed onto the virtual stack for the body, but
+   the situation is more complex for the binding right-hand
+   sides. There are three cases:
+
+    * Plain `let': no bindings are pushed, yet. (This is in contrast
+      to the convention for the final bytecode format, where space for
+      the binding is allocated before the right-hand side is
+      evaluated.)
+
+    * `letrec': all bindings are pushed; the first clause is pushed
+      first, etc.
+
+    * `let*' can be like `letrec', but also can have the bindings in
+      reverse order; that is, all bindings are pushed before any
+      right-hand side, but the last binding may be pushed first
+      instead of last.
+*/
+
+typedef struct Scheme_Let_Header {
+  Scheme_Inclhash_Object iso; /* keyex used for recursive */
+  mzshort count;       /* total number of bindings */
+  mzshort num_clauses; /* number of binding clauses */
+  Scheme_Object *body;
+} Scheme_Let_Header;
+
+#define SCHEME_LET_FLAGS(lh) MZ_OPT_HASH_KEY(&lh->iso)
+#define SCHEME_LET_RECURSIVE 0x1
+#define SCHEME_LET_STAR 0x2
+
 typedef struct Scheme_Compiled_Let_Value {
   Scheme_Inclhash_Object iso; /* keyex used for set-starting */
   mzshort count;
@@ -1071,17 +1114,6 @@ typedef struct Scheme_Compiled_Let_Value {
 #define SCHEME_CLV_FLAGS(clv) MZ_OPT_HASH_KEY(&(clv)->iso)
 #define SCHEME_CLV_NO_GROUP_LATER_USES 0x1
 #define SCHEME_CLV_NO_GROUP_USES 0x2
-
-typedef struct Scheme_Let_Header {
-  Scheme_Inclhash_Object iso; /* keyex used for recursive */
-  mzshort count;
-  mzshort num_clauses;
-  Scheme_Object *body;
-} Scheme_Let_Header;
-
-#define SCHEME_LET_FLAGS(lh) MZ_OPT_HASH_KEY(&lh->iso)
-#define SCHEME_LET_RECURSIVE 0x1
-#define SCHEME_LET_STAR 0x2
 
 typedef struct {
   Scheme_Object so;
@@ -2599,6 +2631,7 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_FOR_INTDEF 256
 #define SCHEME_CAPTURE_LIFTED 512
 #define SCHEME_INTDEF_SHADOW 1024
+#define SCHEME_POST_BIND_FRAME 2048
 
 /* Flags used with scheme_static_distance */
 #define SCHEME_ELIM_CONST 1
@@ -3485,18 +3518,6 @@ void scheme_done_with_process_id(int pid, int is_group);
 # endif
 #endif
 
-typedef struct Scheme_Place_Bi_Channel {
-  Scheme_Object so;
-  Scheme_Object *sendch;
-  Scheme_Object *recvch;
-} Scheme_Place_Bi_Channel;
-
-typedef struct Scheme_Place {
-  Scheme_Object so;
-  void *proc_thread;
-  Scheme_Object *channel;
-} Scheme_Place;
-
 typedef struct Scheme_Place_Async_Channel {
   Scheme_Object so;
   int in;
@@ -3509,6 +3530,18 @@ typedef struct Scheme_Place_Async_Channel {
   Scheme_Object **msgs;
   void *wakeup_signal;
 } Scheme_Place_Async_Channel;
+
+typedef struct Scheme_Place_Bi_Channel {
+  Scheme_Object so;
+  Scheme_Place_Async_Channel *sendch;
+  Scheme_Place_Async_Channel *recvch;
+} Scheme_Place_Bi_Channel;
+
+typedef struct Scheme_Place {
+  Scheme_Object so;
+  void *proc_thread;
+  Scheme_Object *channel;
+} Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();
 void scheme_place_instance_destroy();

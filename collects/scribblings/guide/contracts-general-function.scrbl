@@ -12,7 +12,8 @@
 The @racket[->] contract constructor works for functions that take a
 fixed number of arguments and where the result contract is independent
 of the input arguments. To support other kinds of functions, Racket
-supplies additional contract constructors, notable @racket[->].
+supplies additional contract constructors, notably @racket[->*] and 
+@racket[->d].
 
 @ctc-section[#:tag "optional"]{Optional Arguments}
 

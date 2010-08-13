@@ -466,7 +466,8 @@
         'noalt 'nocontrol 'nometa 'noshift))
 
 (define valid-key-symbols
-  (list 'start 'cancel 'clear 'shift 'control 'menu 'pause 'capital
+  (list 'escape ;; just trying this for the heck of it -- JBC, 2010-08-13
+        'start 'cancel 'clear 'shift 'control 'menu 'pause 'capital
         'prior 'next 'end 'home 'left 'up 'right 'down 'select 'print
         'execute 'snapshot 'insert 'help 'numpad0 'numpad1 'numpad2
         'numpad3 'numpad4 'numpad5 'numpad6 'numpad7 'numpad8 'numpad9

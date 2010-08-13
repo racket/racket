@@ -224,11 +224,13 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *scheduled_kills_;
   int do_atomic_;
   int missed_context_switch_;
+  int all_breaks_disabled_;
   int have_activity_;
   int scheme_active_but_sleeping_;
   int thread_ended_with_activity_;
   int scheme_no_stack_overflow_;
   int needs_sleep_cancelled_;
+  double needs_sleep_time_end_;
   int tls_pos_;
   struct Scheme_Object *the_nested_exn_handler_;
   struct Scheme_Object *cust_closers_;
@@ -517,11 +519,13 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheduled_kills XOA (scheme_get_thread_local_variables()->scheduled_kills_)
 #define do_atomic XOA (scheme_get_thread_local_variables()->do_atomic_)
 #define missed_context_switch XOA (scheme_get_thread_local_variables()->missed_context_switch_)
+#define all_breaks_disabled XOA (scheme_get_thread_local_variables()->all_breaks_disabled_)
 #define have_activity XOA (scheme_get_thread_local_variables()->have_activity_)
 #define scheme_active_but_sleeping XOA (scheme_get_thread_local_variables()->scheme_active_but_sleeping_)
 #define thread_ended_with_activity XOA (scheme_get_thread_local_variables()->thread_ended_with_activity_)
 #define scheme_no_stack_overflow XOA (scheme_get_thread_local_variables()->scheme_no_stack_overflow_)
 #define needs_sleep_cancelled XOA (scheme_get_thread_local_variables()->needs_sleep_cancelled_)
+#define needs_sleep_time_end XOA (scheme_get_thread_local_variables()->needs_sleep_time_end_)
 #define tls_pos XOA (scheme_get_thread_local_variables()->tls_pos_)
 #define the_nested_exn_handler XOA (scheme_get_thread_local_variables()->the_nested_exn_handler_)
 #define cust_closers XOA (scheme_get_thread_local_variables()->cust_closers_)

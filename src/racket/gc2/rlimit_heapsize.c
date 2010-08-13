@@ -10,11 +10,7 @@ static size_type determine_max_heap_size(void)
 {
   struct rlimit rlim;
 
-# ifdef OS_X
-  getrlimit(RLIMIT_RSS, &rlim);
-# else  
-  getrlimit(RLIMIT_DATA, &rlim);
-# endif
+  getrlimit(RLIMIT_AS, &rlim);
 
   return (rlim.rlim_cur == RLIM_INFINITY) ? (unsigned long)-1 : rlim.rlim_cur;
 }

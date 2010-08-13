@@ -467,7 +467,7 @@ For example the text-mode stream
     @section[#:tag "poetry"]{Of Mice and Cookies}
     See @secref["milk"].
 
-    @section[#:tag "milk"]{@italic{Important} Stuff About Milk}
+    @section[#:tag "milk"]{@italic{Important} Milk Supplies}
     @figure["straw" @elem{A straw}]{@image["straw.png"]}
   }|
 

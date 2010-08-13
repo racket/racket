@@ -7,7 +7,8 @@
          (types abbrev type-table utils subtype)
          (rep type-rep))
 
-(provide log-optimization *log-optimizations?* *log-optimizatons-to-log-file?* *optimization-log-file*
+(provide log-optimization *log-optimizations?* *log-optimizatons-to-log-file?*
+         *optimization-log-file* *show-optimized-code*
          subtypeof? isoftype?
          mk-unsafe-tbl
          n-ary->binary
@@ -25,6 +26,8 @@
               (syntax->datum stx)
               kind)
       #t))
+;; if set to #t, the optimizer will dump its result to stdout before compilation
+(define *show-optimized-code* #f)
 
 ;; is the syntax object s's type a subtype of t?
 (define (subtypeof? s t)
@@ -52,9 +55,9 @@
 ;; necessary to have predictable symbols to add in the hand-optimized versions
 ;; of the optimizer tests (which check for equality of expanded code)
 (define *unboxed-gensym-counter* 0)
-(define (unboxed-gensym)
+(define (unboxed-gensym [name 'unboxed-gensym-])
   (set! *unboxed-gensym-counter* (add1 *unboxed-gensym-counter*))
-  (format-unique-id #'here "unboxed-gensym-~a" *unboxed-gensym-counter*))
+  (format-unique-id #'here "~a~a" name *unboxed-gensym-counter*))
 (define (reset-unboxed-gensym)
   (set! *unboxed-gensym-counter* 0))
 

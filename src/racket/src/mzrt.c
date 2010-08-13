@@ -170,7 +170,7 @@ void *mzrt_thread_stub(void *data){
 
   res = start_proc(start_proc_data);
 
-  if (proc_thread_self->refcount)
+  if (!--proc_thread_self->refcount)
     free(proc_thread_self);
 
   scheme_done_os_thread();

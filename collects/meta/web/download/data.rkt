@@ -1,7 +1,8 @@
 #lang racket/base
 
 (define -versions+dates-
-  '(["5.0"   "June 2010"]
+  '(["5.0.1" "August 2010"]
+    ["5.0"   "June 2010"]
     ["4.2.5" "April 2010"]
     ["4.2.4" "January 2010"]
     ["4.2.3" "December 2009"]

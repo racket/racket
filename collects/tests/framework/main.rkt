@@ -48,7 +48,10 @@
  "framework-test" (current-command-line-arguments) command-line-flags
  (lambda (collected . files)
    (when (null? files) (set! batch? #t))
-   (let ([files (filter (lambda (x) (member x all-files)) files)])
+   (let* ([throwouts (remove* all-files files)]
+          [files (remove* throwouts files)])
+     (when (not (null? throwouts))
+       (debug-printf admin "  ignoring files that don't occur in all-files: ~s\n" throwouts))
      (set! files-to-process
            (cond [all?   all-files]
                  [batch? (remove* interactive-files all-files)]

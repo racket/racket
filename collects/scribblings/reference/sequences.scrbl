@@ -2,7 +2,8 @@
 @(require "mz.ss"
           (for-syntax racket/base)
           scribble/scheme
-	  (for-label racket/generator))
+	  (for-label racket/generator
+                     racket/mpair))
 
 @(define generator-eval
    (lambda ()
@@ -27,15 +28,21 @@ built-in datatypes, the sequence datatype includes the following:
 
 @itemize[
 
+ @item{strings (see @secref["strings"])}
+           
+ @item{byte strings (see @secref["bytestrings"])}
+
  @item{lists (see @secref["pairs"])}
+
+ @item{mutable lists (see @secref["mpairs"])}
 
  @item{vectors (see @secref["vectors"])}
 
  @item{hash tables (see @secref["hashtables"])}
 
- @item{strings (see @secref["strings"])}
+ @item{dictionaries (see @secref["dicts"])}
 
- @item{byte strings (see @secref["bytestrings"])}
+ @item{sets (see @secref["sets"])}
 
  @item{input ports (see @secref["ports"])}
 
@@ -63,6 +70,89 @@ each element in the sequence.
 @defproc[(sequence? [v any/c]) boolean?]{ Return @scheme[#t] if
 @scheme[v] can be used as a sequence, @scheme[#f] otherwise.}
 
+@defthing[empty-seqn sequence?]{ A sequence with no elements. }
+
+@defproc[(seqn->list [s sequence?]) list?]{ Returns a list whose
+elements are the elements of the @scheme[s], which must be a one-valued sequence.
+If @scheme[s] is infinite, this function does not terminate. }
+
+@defproc[(seqn-cons [v any/c]
+                    ...
+                    [s sequence?])
+         sequence?]{
+Returns a sequence whose first element is @scheme[(values v ...)] and whose
+remaining elements are the same as @scheme[s].
+}
+                   
+@defproc[(seqn-first [s sequence?])
+         (values any/c ...)]{
+Returns the first element of @scheme[s].}
+
+@defproc[(seqn-rest [s sequence?])
+         sequence?]{
+Returns a sequence equivalent to @scheme[s], except the first element is omitted.}
+                   
+@defproc[(seqn-length [s sequence?])
+         exact-nonnegative-integer?]{
+Returns the number of elements of @scheme[s]. If @scheme[s] is infinite, this
+function does not terminate. }
+
+@defproc[(seqn-ref [s sequence?] [i exact-nonnegative-integer?])
+         (values any/c ...)]{
+Returns the @scheme[i]th element of @scheme[s].}
+                            
+@defproc[(seqn-tail [s sequence?] [i exact-nonnegative-integer?])
+         sequence?]{
+Returns a sequence equivalent to @scheme[s], except the first @scheme[i] elements are omitted.}
+
+@defproc[(seqn-append [s sequence?] ...)
+         sequence?]{
+Returns a sequence that contains all elements of each sequence in the order they appear in the original sequences. The
+new sequence is constructed lazily. }
+                   
+@defproc[(seqn-map [f procedure?]
+                   [s sequence?])
+         sequence?]{
+Returns a sequence that contains @scheme[f] applied to each element of @scheme[s]. The new sequence is constructed lazily. }
+                                  
+@defproc[(seqn-andmap [f (-> any/c ... boolean?)]
+                      [s sequence?])
+         boolean?]{
+Returns @scheme[#t] if @scheme[f] returns a true result on every element of @scheme[s]. If @scheme[s] is infinite and @scheme[f] never
+returns a false result, this function does not terminate. }
+                                  
+@defproc[(seqn-ormap [f (-> any/c ... boolean?)]
+                     [s sequence?])
+         boolean?]{
+Returns @scheme[#t] if @scheme[f] returns a true result on some element of @scheme[s]. If @scheme[s] is infinite and @scheme[f] never
+returns a true result, this function does not terminate. }
+
+@defproc[(seqn-for-each [f (-> any/c ... any)]
+                   [s sequence?])
+         (void)]{
+Applies @scheme[f] to each element of @scheme[s]. If @scheme[s] is infinite, this function does not terminate. }
+                
+@defproc[(seqn-fold [f (-> any/c any/c ... any/c)]
+                    [i any/c]
+                    [s sequence?])
+         (void)]{
+Folds @scheme[f] over each element of @scheme[s] with @scheme[i] as the initial accumulator. If @scheme[s] is infinite, this function does not terminate. }
+                
+@defproc[(seqn-filter [f (-> any/c ... boolean?)]
+                      [s sequence?])
+         sequence?]{
+Returns a sequence whose elements are the elements of @scheme[s] for which @scheme[f] returns a true result. Although the new sequence is constructed
+lazily, if @scheme[s] has an infinite number of elements where @scheme[f] returns a false result in between two elements where @scheme[f] returns a true result
+then operations on this sequence will not terminate during that infinite sub-sequence. }
+                                  
+@defproc[(seqn-add-between [s sequence?] [e any/c])
+         sequence?]{
+Returns a sequence whose elements are the elements of @scheme[s] except in between each is @scheme[e]. The new sequence is constructed lazily. }
+                   
+@defproc[(seqn-count [s sequence?])
+         exact-nonnegative-integer?]{
+Returns the number of elements in @scheme[s]. If @scheme[s] is infinite, this function does not terminate. }
+                  
 @defproc*[([(in-range [end number?]) sequence?]
            [(in-range [start number?] [end number?] [step number? 1]) sequence?])]{
 Returns a sequence whose elements are numbers. The single-argument
@@ -83,6 +173,11 @@ element. @speed[in-naturals "integer"]}
 Returns a sequence equivalent to @scheme[lst].
 @info-on-seq["pairs" "lists"]
 @speed[in-list "list"]}
+
+@defproc[(in-mlist [mlst mlist?]) sequence?]{
+Returns a sequence equivalent to @scheme[mlst].
+@info-on-seq["mpairs" "mutable lists"]
+@speed[in-mlist "mutable list"]}
 
 @defproc[(in-vector [vec vector?]
                     [start exact-nonnegative-integer? 0] 

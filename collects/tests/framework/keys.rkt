@@ -80,16 +80,32 @@
   (test-canonicalize 11 "esc;s:a" "esc;s:a")
   (test-canonicalize 12 "s:a;esc" "s:a;esc")
   
+  
+  ;; a key-spec is (make-key-spec buff-spec buff-spec (listof ?) (listof ?) (listof ?))
+  ;; a key-spec represents a test case for a key; 'before' contains the
+  ;; content of a buffer, and 'after' represents the desired content of the
+  ;; buffer after the keypress.  The keypress(es) in question are specified
+  ;; independently for the three platforms by the respective 'macos', 'unix',
+  ;; and 'windows' fields.
   (define-struct key-spec (before after macos unix windows))
+  
+  ;; an abstraction to use when all platforms have the same sequence of keys
+  (define (make-key-spec/allplatforms before after keys)
+    (make-key-spec before after keys keys keys))
+  
+  ;; a buff-spec is (make-buff-spec string nat nat)
+  ;; a buff-spec represents a buffer state; the content of the buffer,
+  ;; and the start and end of the highlighted region.
   (define-struct buff-spec (string start end))
   
+  ;; the keybindings test cases applied to frame:text% editors
   (define global-specs
     (list
      (make-key-spec (make-buff-spec "abc" 1 1)
                     (make-buff-spec "abc" 2 2)
-                    (list '(#\f control) '(right))
-                    (list '(#\f control) '(right))
-                    (list '(#\f control) '(right)))))
+                    (list '((#\f control)) '((right)))
+                    (list '((#\f control)) '((right)))
+                    (list '((#\f control)) '((right))))))
   
   (define (build-open-bracket-spec str pos char)
     (make-key-spec (make-buff-spec str pos pos)
@@ -99,22 +115,23 @@
                                    (substring str pos (string-length str)))
                     (+ pos 1)
                     (+ pos 1))
-                   (list (list #\[))
-                   (list (list #\[))
-                   (list (list #\[))))
+                   (list (list (list #\[)))
+                   (list (list (list #\[)))
+                   (list (list (list #\[)))))
   
+  ;; the keybindings test cases applied to scheme:text% editors
   (define scheme-specs
     (list 
      (make-key-spec (make-buff-spec "(abc (def))" 4 4)
                     (make-buff-spec "(abc (def))" 10 10)
-                    (list '(right alt))
-                    (list '(right alt))
-                    (list '(right alt)))
+                    (list '((right alt)))
+                    (list '((right alt)))
+                    (list '((right alt))))
      (make-key-spec (make-buff-spec "'(abc (def))" 1 1)
                     (make-buff-spec "'(abc (def))" 12 12)
-                    (list '(right alt))
-                    (list '(right alt))
-                    (list '(right alt)))
+                    (list '((right alt)))
+                    (list '((right alt)))
+                    (list '((right alt))))
      #|
      (make-key-spec (make-buff-spec "'(abc (def))" 0 0)
                     (make-buff-spec "'(abc (def))" 12 12)
@@ -159,36 +176,105 @@
      (build-open-bracket-spec "(let ([])(" 10 #\()
      (build-open-bracket-spec "(local " 7 #\[)
      (build-open-bracket-spec "(local []" 9 #\()
+     ;; test to show that multi-keystrokes works:
+     (make-key-spec/allplatforms
+      (make-buff-spec "" 0 0) 
+      (make-buff-spec "zx" 2 2)
+      (list '((#\z) (#\x))))
+     ;; remove-enclosing-parens :
+     (make-key-spec/allplatforms
+      (make-buff-spec "(abc def)" 1 1)
+      (make-buff-spec "abc" 0 0)
+      (list '((#\c control) (#\o control))))
+     ;; (is this the desired behavior?):
+     (make-key-spec/allplatforms
+      (make-buff-spec "(abc def)" 2 3)
+      (make-buff-spec "bc" 0 0)
+      (list '((#\c control) (#\o control))))
+     ;; insert-()-pair :
+     (make-key-spec
+      (make-buff-spec "abc" 0 0)
+      (make-buff-spec "()abc" 1 1)
+      (list '((escape) (#\()))
+      (list '((#\( meta)))
+      (list '((escape) (#\())))
+     (make-key-spec
+      (make-buff-spec "abc" 0 2)
+      (make-buff-spec "(ab)c" 1 1)
+      (list '((escape) (#\()))
+      (list '((#\( meta)))
+      (list '((escape) (#\())))
+     ;; toggle-square-round-parens :
+     ; () -> []
+     (make-key-spec/allplatforms
+      (make-buff-spec "(a)" 0 0)
+      (make-buff-spec "[a]" 0 0)
+      (list '((#\c control) (#\[ control))))
+     ; [] -> ()
+     (make-key-spec/allplatforms
+      (make-buff-spec "[a]" 0 0)
+      (make-buff-spec "(a)" 0 0)
+      (list '((#\c control) (#\[ control))))
+     ; enclosed sexps
+     (make-key-spec/allplatforms
+      (make-buff-spec "[a (def )b]" 0 0)
+      (make-buff-spec "(a (def )b)" 0 0)
+      (list '((#\c control) (#\[ control))))
+     ; extra preceding whitespace
+     (make-key-spec/allplatforms
+      (make-buff-spec "  \n [a (def )b]" 0 0)
+      (make-buff-spec "  \n (a (def )b)" 0 0)
+      (list '((#\c control) (#\[ control))))
+     ; cursor not at beginning of buffer
+     (make-key-spec/allplatforms
+      (make-buff-spec "  \n [a (def )b]" 1 1)
+      (make-buff-spec "  \n (a (def )b)" 1 1)
+      (list '((#\c control) (#\[ control))))
+     ; intervening non-paren sexp
+     (make-key-spec/allplatforms
+      (make-buff-spec "  \nf [a (def )b]" 1 1)
+      (make-buff-spec "  \nf [a (def )b]" 1 1)
+      (list '((#\c control) (#\[ control))))
+     ;; at end of buffer (hence sexp-forward returns #f):
+     (make-key-spec/allplatforms
+      (make-buff-spec "[a]" 3 3)
+      (make-buff-spec "[a]" 3 3)
+      (list '((#\c control) (#\[ control))))
      ))
   
   (send-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
   (send-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))
   (wait-for-frame "dummy to trick frame group")
   
+  ;; test-key : key-spec -> 
+  ;;   evaluates a test case represented as a key-spec
   (define (test-key key-spec)
-    (let* ([keys ((case (system-type)
-                    [(macos macosx) key-spec-macos]
-                    [(unix) key-spec-unix]
-                    [(windows) key-spec-windows])
-                  key-spec)]
+    (let* ([key-sequences 
+            ((case (system-type)
+               [(macos macosx) key-spec-macos]
+               [(unix) key-spec-unix]
+               [(windows) key-spec-windows])
+             key-spec)]
            [before (key-spec-before key-spec)]
            [after (key-spec-after key-spec)]
-           [process-key
-            (lambda (key)
+           [process-key-sequence
+            (lambda (key-sequence)
               (let ([text-expect (buff-spec-string after)]
                     [start-expect (buff-spec-start after)]
                     [end-expect (buff-spec-end after)])
-                (test key
+                (test key-sequence
                       (lambda (x) (equal? x (vector text-expect start-expect end-expect)))
                       `(let* ([text (send (get-top-level-focus-window) get-editor)])
                          (send text erase)
                          (send text insert ,(buff-spec-string before))
                          (send text set-position ,(buff-spec-start before) ,(buff-spec-end before))
-                         (test:keystroke ',(car key) ',(cdr key))
+                         ,@(map (lambda (key) `(test:keystroke ',(car key) ',(cdr key)))
+                                key-sequence)
                          (vector (send text get-text)
                                  (send text get-start-position)
                                  (send text get-end-position))))))])
-      (for-each process-key keys)))
+      (for-each process-key-sequence key-sequences)))
+  
   
   (define (test-specs frame-name frame-class specs)
     (send-sexp-to-mred `(send (make-object ,frame-class ,frame-name) show #t))
@@ -196,7 +282,7 @@
     (for-each test-key specs)
     (send-sexp-to-mred `(send (get-top-level-focus-window) close)))
   
-  (test-specs "global keybingings test" 'frame:text% global-specs)
+  (test-specs "global keybindings test" 'frame:text% global-specs)
   (test-specs "scheme mode keybindings test" 
               '(class frame:editor%
                  (define/override (get-editor%) scheme:text%)

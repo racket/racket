@@ -144,10 +144,10 @@ THREAD_LOCAL_DECL(Scheme_Thread *scheme_current_thread = NULL);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_main_thread = NULL);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_first_thread = NULL);
 
-Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
-long scheme_get_multiple_count() { return scheme_current_thread->ku.multiple.count; }
-Scheme_Object **scheme_get_multiple_array() { return scheme_current_thread->ku.multiple.array; }
-void scheme_set_current_thread_ran_some() { scheme_current_thread->ran_some = 1; }
+XFORM_NONGCING Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
+XFORM_NONGCING long scheme_get_multiple_count() { return scheme_current_thread->ku.multiple.count; }
+XFORM_NONGCING Scheme_Object **scheme_get_multiple_array() { return scheme_current_thread->ku.multiple.array; }
+XFORM_NONGCING void scheme_set_current_thread_ran_some() { scheme_current_thread->ran_some = 1; }
 
 THREAD_LOCAL_DECL(Scheme_Thread_Set *scheme_thread_set_top);
 
@@ -208,6 +208,7 @@ HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
 HOOK_SHARED_OK int (*scheme_check_for_break)(void);
 HOOK_SHARED_OK void (*scheme_on_atomic_timeout)(void);
 HOOK_SHARED_OK static int atomic_timeout_auto_suspend;
+HOOK_SHARED_OK static int atomic_timeout_atomic_level;
 
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
@@ -219,7 +220,9 @@ THREAD_LOCAL_DECL(static int have_activity = 0);
 THREAD_LOCAL_DECL(int scheme_active_but_sleeping = 0);
 THREAD_LOCAL_DECL(static int thread_ended_with_activity);
 THREAD_LOCAL_DECL(int scheme_no_stack_overflow);
+THREAD_LOCAL_DECL(int all_breaks_disabled = 0);
 THREAD_LOCAL_DECL(static int needs_sleep_cancelled);
+THREAD_LOCAL_DECL(static double needs_sleep_time_end); /* back-door result */
 THREAD_LOCAL_DECL(static int tls_pos = 0);
 /* On swap, put target in a static variable, instead of on the stack,
    so that the swapped-out thread is less likely to have a pointer
@@ -372,7 +375,7 @@ static void make_initial_config(Scheme_Thread *p);
 
 static int do_kill_thread(Scheme_Thread *p);
 static void suspend_thread(Scheme_Thread *p);
-static void wait_until_suspend_ok();
+static void wait_until_suspend_ok(int for_stack);
 
 static int check_sleep(int need_activity, int sleep_now);
 
@@ -3294,7 +3297,7 @@ Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
 
     /* Don't mangle the stack if we're in atomic mode, because that
        probably means a stack-freeze trampoline, etc. */
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(1);
 
     p->ku.k.p1 = thunk;
     p->ku.k.p2 = config;
@@ -3360,7 +3363,7 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 
   SCHEME_USE_FUEL(25);
 
-  wait_until_suspend_ok();
+  wait_until_suspend_ok(0);
 
   np = MALLOC_ONE_TAGGED(Scheme_Thread);
   np->so.type = scheme_thread_type;
@@ -3647,17 +3650,27 @@ static int check_sleep(int need_activity, int sleep_now)
     p = scheme_first_thread;
     while (p) {
       int merge_time = 0;
+      double p_time;
 
       if (p->nestee) {
 	/* nothing */
       } else if (p->block_descriptor == GENERIC_BLOCKED) {
+        needs_sleep_time_end = -1.0;
 	if (p->block_needs_wakeup) {
 	  Scheme_Needs_Wakeup_Fun f = p->block_needs_wakeup;
 	  f(p->blocker, fds);
 	}
-	merge_time = (p->sleep_end > 0.0);
+        p_time = p->sleep_end;
+	merge_time = (p_time > 0.0);
+        if (needs_sleep_time_end > 0.0) {
+          if (!merge_time || (needs_sleep_time_end < p_time)) {
+            p_time = needs_sleep_time_end;
+            merge_time = 1;
+          }
+        }
       } else if (p->block_descriptor == SLEEP_BLOCKED) {
 	merge_time = 1;
+        p_time = p->sleep_end;
       }
 
       if (merge_time) {
@@ -3700,6 +3713,12 @@ static int check_sleep(int need_activity, int sleep_now)
   }
 
   return 0;
+}
+
+void scheme_set_wakeup_time(void *fds, double end_time)
+{
+  /* should be called only during a needs_wakeup callback */
+  needs_sleep_time_end = end_time;
 }
 
 static int post_system_idle()
@@ -3769,7 +3788,7 @@ static int can_break_param(Scheme_Thread *p)
 
 int scheme_can_break(Scheme_Thread *p)
 {
-  if (!p->suspend_break && !scheme_no_stack_overflow) {
+  if (!p->suspend_break && !all_breaks_disabled && !scheme_no_stack_overflow) {
     return can_break_param(p);
   } else
     return 0;
@@ -4165,7 +4184,7 @@ void scheme_thread_block(float sleep_time)
   if ((p->running & MZTHREAD_USER_SUSPENDED)
       && !(p->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
     /* This thread was suspended. */
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(0);
     if (!p->next) {
       /* Suspending the main thread... */
       select_thread();
@@ -4275,14 +4294,16 @@ void scheme_thread_block(float sleep_time)
     do_swap_thread();
   } else if (do_atomic && scheme_on_atomic_timeout
              && (atomic_timeout_auto_suspend < 2)) {
-    if (atomic_timeout_auto_suspend) {
-      atomic_timeout_auto_suspend++;
-      scheme_fuel_counter = p->engine_weight;
-      scheme_jit_stack_boundary = scheme_stack_boundary;
+    if (do_atomic <= atomic_timeout_atomic_level) {
+      if (atomic_timeout_auto_suspend) {
+        atomic_timeout_auto_suspend++;
+        scheme_fuel_counter = p->engine_weight;
+        scheme_jit_stack_boundary = scheme_stack_boundary;
+      }
+      scheme_on_atomic_timeout();
+      if (atomic_timeout_auto_suspend > 1)
+        --atomic_timeout_auto_suspend;
     }
-    scheme_on_atomic_timeout();
-    if (atomic_timeout_auto_suspend > 1)
-      --atomic_timeout_auto_suspend;
   } else {
     /* If all processes are blocked, check for total process sleeping: */
     if (p->block_descriptor != NOT_BLOCKED) {
@@ -4310,7 +4331,7 @@ void scheme_thread_block(float sleep_time)
   /* Suspended while I was asleep? */
   if ((p->running & MZTHREAD_USER_SUSPENDED)
       && !(p->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(0);
     if (!p->next)
       scheme_thread_block(0.0); /* main thread handled at top of this function */
     else
@@ -4502,6 +4523,12 @@ void scheme_start_atomic(void)
   do_atomic++;
 }
 
+void scheme_start_atomic_no_break(void)
+{
+  scheme_start_atomic();
+  all_breaks_disabled++;
+}
+
 void scheme_end_atomic_no_swap(void)
 {
   --do_atomic;
@@ -4528,8 +4555,25 @@ void scheme_end_atomic(void)
   }
 }
 
-static void wait_until_suspend_ok()
+void scheme_end_atomic_can_break(void)
 {
+  --all_breaks_disabled;
+  scheme_end_atomic();
+  if (!all_breaks_disabled)
+    scheme_check_break_now();
+}
+
+static void wait_until_suspend_ok(int for_stack)
+{
+  if (do_atomic > atomic_timeout_atomic_level) {
+    if (for_stack && atomic_timeout_auto_suspend) {
+      /* new-style atomic timeout, where a stack oveflow is ok */
+    } else {
+      scheme_log_abort("attempted to wait for suspend in nested atomic mode");
+      abort();
+    }
+  }
+
   while (do_atomic && scheme_on_atomic_timeout) {
     scheme_on_atomic_timeout();
   }
@@ -4541,8 +4585,10 @@ Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Time
 
   old = scheme_on_atomic_timeout;
   scheme_on_atomic_timeout = p;
-  if (p)
+  if (p) {
     atomic_timeout_auto_suspend = 1;
+    atomic_timeout_atomic_level = do_atomic;
+  }
 
   return old;
 }
@@ -4553,7 +4599,7 @@ void scheme_weak_suspend_thread(Scheme_Thread *r)
     return;
 
   if (r == scheme_current_thread) {
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(0);
   }
   
   if (r->prev) {
@@ -4600,7 +4646,7 @@ void scheme_weak_resume_thread(Scheme_Thread *r)
 
 void scheme_about_to_move_C_stack(void)
 {
-  wait_until_suspend_ok();
+  wait_until_suspend_ok(1);
 }
 
 static Scheme_Object *
@@ -4712,7 +4758,7 @@ void scheme_kill_thread(Scheme_Thread *p)
 {
   if (do_kill_thread(p)) {
     /* Suspend/kill self: */
-    wait_until_suspend_ok();
+    wait_until_suspend_ok(0);
     if (p->suspend_to_kill)
       suspend_thread(p);
     else
@@ -4842,7 +4888,7 @@ static void suspend_thread(Scheme_Thread *p)
     p->running |= MZTHREAD_USER_SUSPENDED;
   } else {
     if (p == scheme_current_thread) {
-      wait_until_suspend_ok();
+      wait_until_suspend_ok(0);
     }
     p->running |= MZTHREAD_USER_SUSPENDED;
     scheme_weak_suspend_thread(p); /* ok if p is scheme_current_thread */
@@ -7924,6 +7970,7 @@ static void froz_run_new(FrozenTramp * volatile froz, int run_msecs)
     Scheme_Frozen_Stack_Proc do_f;
     scheme_start_atomic();
     scheme_on_atomic_timeout = suspend_froz_progress;
+    atomic_timeout_atomic_level = -1;
     do_f = froz->do_f;
     do_f(froz->do_data);
   }
@@ -7981,6 +8028,7 @@ int scheme_frozen_run_some(Scheme_Frozen_Stack_Proc do_f, void *do_data, int run
         froz->continue_until = msecs + run_msecs;
 	scheme_start_atomic();
 	scheme_on_atomic_timeout = suspend_froz_progress;
+        atomic_timeout_atomic_level = -1;
 	if (!scheme_setjmp(froz->progress_base)) {
 #ifdef MZ_PRECISE_GC
 	  froz->fixup_var_stack_chain = &__gc_var_stack__;

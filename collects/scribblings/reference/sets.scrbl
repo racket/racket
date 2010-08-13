@@ -8,13 +8,15 @@ A @deftech{set} represents a set of distinct elements. For a given
 set, elements are equivalent via @scheme[equal?], @scheme[eqv?], or
 @scheme[eq?]. Two sets are @scheme[equal?] when they use the same
 element-comparison procedure (@scheme[equal?], @scheme[eqv?], or
-@scheme[eq?]) and have equivalent elements. A set can be used as a
-@tech{sequence} (see @secref["sequences"]).
+@scheme[eq?]) and have equivalent elements.
+
+A set can be used as a single-valued sequence (see
+@secref["sequences"]). The elements of the set serve as elements
+of the sequence. See also @scheme[in-set].
 
 Operations on sets that contain elements that are mutated are
 unpredictable in much the same way that @tech{hash table} operations are
 unpredictable when keys are mutated.
-
 
 @note-lib[racket/set]
 

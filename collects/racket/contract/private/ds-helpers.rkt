@@ -3,9 +3,10 @@
          build-func-params
          build-clauses
          build-enforcer-clauses
-         generate-arglists)
+         generate-arglists
+         (struct-out contract-struct-transformer))
 
-(require "opt-guts.rkt")
+(require racket/struct-info "opt-guts.rkt")
 (require (for-template racket/base))
 
 #|
@@ -382,3 +383,7 @@ which are then called when the contract's fields are explored
      (for-each
       (λ (id) (unless (identifier? id) (raise-syntax-error 'struct/dc "expected identifier" stx id)))
       (syntax->list (syntax (id ...))))]))
+
+(struct contract-struct-transformer (info proc)
+  #:property prop:struct-info (λ (ctc) (contract-struct-transformer-info ctc))
+  #:property prop:procedure 1)

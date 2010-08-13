@@ -24,10 +24,18 @@
 (err/rt-test (vector-ref #(4 5 6) -1))
 (err/rt-test (vector-ref #(4 5 6) 2.0))
 (err/rt-test (vector-ref #(4 5 6) "2"))
-(test '#(0 ("Sue" "Sue") "Anna") 'vector-set
+(test '#(0 ("Sue" "Sue") "Anna") 'vector-set!
 	(let ((vec (vector 0 '(2 2 2 2) "Anna")))
 	  (vector-set! vec 1 '("Sue" "Sue"))
 	  vec))
+(test '#(0 1 2) 'vector-set*!
+      (let ([vec (vector #f #f #f)])
+        (vector-set*! vec
+                      0 (gensym) 0 0
+                      1 (gensym) 1 1
+                      2 (gensym) 2 2)
+        vec))
+
 (test '#(hi hi) make-vector 2 'hi)
 (test '#() make-vector 0)
 (test '#() make-vector 0 'a)
@@ -39,6 +47,7 @@
 (err/rt-test (make-vector -1 'a))
 (err/rt-test (make-vector 1000000000000000000000 'a) exn:fail:out-of-memory?)
 (arity-test vector-set! 3 3)
+(err/rt-test (vector-set*! #() 0 'x 1) exn:fail?)
 (err/rt-test (vector-set! #() 0 'x) exn:application:mismatch?)
 (err/rt-test (vector-set! #(1 2 3) -1 'x))
 (err/rt-test (vector-set! #(1 2 3) 3 'x) exn:application:mismatch?)

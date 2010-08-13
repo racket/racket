@@ -594,7 +594,7 @@ handlers, our web application is fairly functional.
 
 We have an application that's functionally complete, but is visual
 lacking.  Let's try to improve its appearance.  One way we can do this
-is to use a cascading style sheet.  A style sheet can visual panache
+is to use a cascading style sheet.  A style sheet can add visual panache
 to our web pages.  For example, if we'd like to turn all of our
 paragraphs green, we might add the following style declaration within
 our response.

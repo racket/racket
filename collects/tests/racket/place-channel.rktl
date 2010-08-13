@@ -21,9 +21,7 @@
           (let ([x (place-channel-recv ch)])
             body)))]))
 
-  (define-syntax pcrss
-    (syntax-rules ()
-      [(_ ch body ...) (begin (pcrs ch body) ...)]))
+  (define-syntax-rule (pcrss ch body ...) (begin (pcrs ch body) ...))
 
   (define (place-main ch)
     (pcrss ch
@@ -32,33 +30,33 @@
       (cons (car x) 'b)
       (list (car x) 'b (cadr x))
       (vector (vector-ref x 0) 'b (vector-ref x 1))
-      #s((bozo 1 building 2) 6 'gubber 'no)
-  ))
+      #s((abuilding 1 building 2) 6 'utah 'no))
+    (define pc1 (place-channel-recv ch))
+    (pcrss pc1 (string-append x "-ok")))
 )
 END
 "pct1.ss")
 
-(define (pcsr ch x)
-  (place-channel-send ch x)
-  (place-channel-recv ch))
-
-(define-syntax pcsrs
-    (syntax-rules ()
-      [(_ ch (send expect) ...) (begin (test expect pcsr ch send) ...)]))
+(define-syntax-rule (pc-send-recv-test ch (send expect) ...) 
+  (begin (test expect place-channel-send/recv ch send) ...))
 
 
 (define-struct building (rooms location) #:prefab)
 (define-struct (house building) (occupied ) #:prefab)
-(define h1 (make-house 5 'factory 'no))
+(define h1 (make-house 5 'factory 'yes))
 
 
 (let ([pl (place "pct1.ss" 'place-main)])
-  (pcsrs pl
+  (pc-send-recv-test pl
     (1 2 )
     ("Hello" "Hello-ok")
     ((cons 'a 'a) (cons 'a 'b))
     ((list 'a 'a) (list 'a 'b 'a))
     (#(a a) #(a b a))
-    (h1 #s((bozo 1 building 2) 6 'gubber 'no))
-))
+    (h1 #s((abuilding 1 building 2) 6 'utah 'no)))
+  (define-values (pc1 pc2) (place-channel))
+  (place-channel-send pl pc2)
+  (test "Testing-ok" place-channel-send/recv pc1 "Testing")
+  (place-wait pl)
+)
 

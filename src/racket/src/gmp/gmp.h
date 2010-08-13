@@ -66,12 +66,16 @@ MA 02111-1307, USA. */
 #endif
 
 #ifndef _EXTERN_INLINE
-#ifdef __GNUC__
+/* __GNUC__ case disabled to avoid unnecessary compiler dependencies */
+#if defined(__GNUC__) && 0
 #define _EXTERN_INLINE extern __inline__
 #else
-#define _EXTERN_INLINE static
+#define _EXTERN_INLINE static __gmp_inline
 #endif
 #endif
+
+/* To avoid unnecessary compiler dependencies, always defined: */
+#define _FORCE_INLINES
 
 #ifdef _SHORT_LIMB
 typedef unsigned int		mp_limb_t;
@@ -283,8 +287,8 @@ extern __gmp_const int mp_bits_per_limb;
 #if defined (__cplusplus)
 extern "C" {
 #endif
-mp_limb_t mpn_add _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_srcptr,mp_size_t));
-mp_limb_t mpn_add_1 _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t));
+_EXTERN_INLINE mp_limb_t mpn_add _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_srcptr,mp_size_t));
+_EXTERN_INLINE mp_limb_t mpn_add_1 _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t));
 mp_limb_t mpn_add_n _PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
 mp_limb_t mpn_add_nc _PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t, mp_limb_t));
 
@@ -353,8 +357,8 @@ mp_size_t mpn_set_str _PROTO ((mp_ptr, __gmp_const unsigned char *, size_t, int)
 void mpn_sqr_n _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
 void mpn_sqr_basecase _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
 mp_size_t mpn_sqrtrem _PROTO ((mp_ptr, mp_ptr, mp_srcptr, mp_size_t));
-mp_limb_t mpn_sub _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_srcptr,mp_size_t));
-mp_limb_t mpn_sub_1 _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t));
+_EXTERN_INLINE mp_limb_t mpn_sub _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_srcptr,mp_size_t));
+_EXTERN_INLINE mp_limb_t mpn_sub_1 _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t));
 mp_limb_t mpn_sub_n _PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
 mp_limb_t mpn_sub_nc _PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t, mp_limb_t));
 mp_limb_t mpn_submul_1 _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t));
