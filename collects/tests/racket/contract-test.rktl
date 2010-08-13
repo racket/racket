@@ -182,6 +182,7 @@
   (test/no-error '(->* ((flat-contract integer?)) () #:rest (flat-contract integer?) 
                        (values (flat-contract integer?) (flat-contract boolean?))))
   (test/no-error '(->* ((flat-contract integer?)) () #:rest (flat-contract integer?) any))
+  (test/no-error '(->* ((flat-contract integer?)) () #:pre #t (flat-contract integer?) #:post #t))
   
   (test/no-error '(->d ([x integer?]) ([y integer?]) any))
   (test/no-error '(->d ([x integer?]) ([y integer?]) (values [a number?] [b boolean?])))
@@ -727,7 +728,56 @@
                'pos
                'neg)
      1 "zz" #:x #f #:y #\d))
-  
+
+
+  (test/spec-passed
+   '->*-pre/post-1
+   '((contract (->* () () integer? #:post #t)
+			  (λ () 1)
+			  'pos
+			  'neg)))
+
+  (test/pos-blame
+   '->*-pre/post-2
+   '((contract (->* () () integer? #:post #t)
+			   (λ () 'not-an-int)
+			   'pos
+			   'neg)))
+
+  (test/spec-passed
+   '->*-pre/post-3
+   '((contract (->* () () (values integer? boolean?) #:post #t)
+			   (λ () (values 1 #t))
+			   'pos
+			   'neg)))
+
+  (test/pos-blame
+   '->*-pre/post-4
+   '((contract (->* () () (values integer? boolean?) #:post #t)
+			   (λ () (values 1 'not-a-boolean))
+			   'pos
+			   'neg)))
+
+  (test/neg-blame
+   '->*-pre/post-5
+   '((contract (->* () () #:pre #f integer? #:post #t)
+			   (λ () 1)
+			   'pos
+			   'neg)))
+
+  (test/pos-blame
+   '->*-pre/post-6
+   '((contract (->* () () #:pre #t integer? #:post #f)
+			   (λ () 1)
+			   'pos
+			   'neg)))
+
+  (test/neg-blame
+   '->*-pre/post-7
+   '((contract (->* () () #:pre #f integer? #:post #f)
+			   (λ () 1)
+			   'pos
+			   'neg)))
   
 ;               
 ;               
@@ -8586,16 +8636,23 @@ so that propagation occurs.
   (test-name '(-> integer? boolean? #:x string? any) (-> integer? #:x string? boolean? any))
   
   (test-name '(->* (integer?) (string?) #:rest any/c (values char? any/c))
-             (->* (integer?) (string?) #:rest any/c (values char? any/c)))
+              (->* (integer?) (string?) #:rest any/c (values char? any/c)))
   (test-name '(->* (integer? char?) (boolean?) any) (->* (integer? char?) (boolean?) any))
   (test-name '(->* (integer? char? #:z string?) (integer?) any) (->* (#:z string? integer? char?) (integer?) any))
   (test-name '(->* (integer? char? #:z string?) (boolean? #:i number?) any) (->* (#:z string? integer? char?) (boolean? #:i number?) any))
   (test-name '(->* (integer? char? #:z string?) (boolean? #:i number?) #:rest (listof integer?) any) 
-             (->* (#:z string? integer? char?) (boolean? #:i number?) #:rest (listof integer?) any))
+              (->* (#:z string? integer? char?) (boolean? #:i number?) #:rest (listof integer?) any))
   (test-name '(->* (integer? char? #:z string?) (boolean? #:i number?) (values number? boolean? symbol?)) 
-             (->* (#:z string? integer? char?) (boolean? #:i number?) (values number? boolean? symbol?)))
+              (->* (#:z string? integer? char?) (boolean? #:i number?) (values number? boolean? symbol?)))
   (test-name '(->* (integer? char? #:z string?) (boolean? #:i number?) #:rest (listof integer?) (values number? boolean? symbol?)) 
-             (->* (#:z string? integer? char?) (boolean? #:i number?) #:rest (listof integer?) (values number? boolean? symbol?)))
+              (->* (#:z string? integer? char?) (boolean? #:i number?) #:rest (listof integer?) (values number? boolean? symbol?)))
+  
+  (test-name '(->* (integer?) () #:pre ... integer?)
+			  (->* (integer?) () #:pre (= 1 2) integer?))
+  (test-name '(->* (integer?) () integer? #:post ...)
+		 	  (->* (integer?) () integer? #:post #f))
+  (test-name '(->* (integer?) () #:pre ... integer? #:post ...)
+			  (->* (integer?) () #:pre (= 1 2) integer? #:post #f))
   
   (test-name '(->d () () any) (->d () () any))
   (test-name '(->d ([x ...] #:y [y ...]) ([z ...] #:w [w ...]) any) (->d ([x integer?] #:y [y integer?]) ([z integer?] #:w [w integer?]) any))

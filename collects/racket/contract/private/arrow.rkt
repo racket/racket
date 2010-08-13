@@ -102,6 +102,8 @@ v4 todo:
 ;              
 
 
+;; pre : (or/c #f (-> any)) -- checks the pre-condition, if there is one.
+;; post : (or/c #f (-> any)) -- checks the post-condition, if there is one.
 ;; doms : (listof contract)
 ;; optional-doms/c : (listof contract)
 ;; dom-rest : (or/c false/c contract)
@@ -114,7 +116,7 @@ v4 todo:
 ;; func : the wrapper function maker. It accepts a procedure for
 ;;        checking the first-order properties and the contracts
 ;;        and it produces a wrapper-making function.
-(define-struct -> (doms/c optional-doms/c dom-rest/c mandatory-kwds/c mandatory-kwds optional-kwds/c optional-kwds rngs/c rng-any? func)
+(define-struct -> (pre post doms/c optional-doms/c dom-rest/c mandatory-kwds/c mandatory-kwds optional-kwds/c optional-kwds rngs/c rng-any? func)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
@@ -133,7 +135,9 @@ v4 todo:
             [func (->-func ctc)]
             [dom-length (length (->-doms/c ctc))]
             [optionals-length (length (->-optional-doms/c ctc))]
-            [has-rest? (and (->-dom-rest/c ctc) #t)])
+            [has-rest? (and (->-dom-rest/c ctc) #t)]
+            [pre (->-pre ctc)]
+            [post (->-post ctc)])
        (λ (blame)
          (let ([swapped (blame-swap blame)])
            (let ([partial-doms (map (λ (dom) (dom swapped)) doms-proj)]
@@ -147,6 +151,20 @@ v4 todo:
                           (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords blame)
                           (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords blame)))
                     ctc
+                    (if pre 
+                        (λ (val)
+                          (unless (pre)
+                            (raise-blame-error swapped
+                                               val
+                                               "#:pre violation")))
+                        void)
+                    (if post
+                        (λ (val)
+                          (unless (post)
+                            (raise-blame-error blame
+                                               val
+                                               "#:post violation")))
+                        void)
                     (append partial-doms partial-optional-doms 
                             partial-mandatory-kwds partial-optional-kwds
                             partial-ranges)))))))
@@ -161,7 +179,9 @@ v4 todo:
              (->-optional-kwds/c ctc)
              (->-optional-kwds ctc)
              (->-rng-any? ctc)
-             (->-rngs/c ctc)))
+             (->-rngs/c ctc)
+             (->-pre ctc)
+             (->-post ctc)))
 
    #:first-order
    (λ (ctc)
@@ -189,22 +209,25 @@ v4 todo:
            (andmap contract-stronger? (->-rngs/c this) (->-rngs/c that))))))
 
 (define (build--> name
+                  pre post
                   doms/c-or-p optional-doms/c-or-p doms-rest/c-or-p-or-f 
                   mandatory-kwds/c-or-p mandatory-kwds optional-kwds/c-or-p optional-kwds
                   rngs/c-or-p
                   rng-any? func)
   (let ([cc (λ (c-or-p) (coerce-contract name c-or-p))])
     (make--> 
+     pre post
      (map cc doms/c-or-p) (map cc optional-doms/c-or-p) (and doms-rest/c-or-p-or-f (cc doms-rest/c-or-p-or-f))
      (map cc mandatory-kwds/c-or-p) mandatory-kwds (map cc optional-kwds/c-or-p) optional-kwds
      (map cc rngs/c-or-p) rng-any?
      func)))
 
-(define (single-arrow-name-maker doms/c optional-doms/c doms-rest kwds/c kwds optional-kwds/c optional-kwds rng-any? rngs)
+(define (single-arrow-name-maker doms/c optional-doms/c doms-rest kwds/c kwds optional-kwds/c optional-kwds rng-any? rngs pre post)
   (cond
     [(or doms-rest 
          (not (null? optional-kwds))
-         (not (null? optional-doms/c)))
+         (not (null? optional-doms/c))
+         pre post)
      (let ([range
             (cond
               [rng-any? 'any]
@@ -217,9 +240,16 @@ v4 todo:
         '->*
         (apply build-compound-type-name (append doms/c (apply append (map list kwds kwds/c))))
         (apply build-compound-type-name (append optional-doms/c (apply append (map list optional-kwds optional-kwds/c))))
-        (if doms-rest
-            (list '#:rest doms-rest range)
-            (list range))))]
+        (append (if doms-rest
+                    (list '#:rest doms-rest)
+                    (list))
+                (if pre 
+                    (list '#:pre '...)
+                    (list))
+                (list range)
+                (if post
+                    (list '#:post '...)
+                    (list)))))]
     [else
      (let ([rng-name
             (cond
@@ -312,14 +342,16 @@ v4 todo:
                        (syntax (lambda args body))))]
                     [use-any? use-any?])
         (with-syntax ([outer-lambda
-                       #`(lambda (chk ctc dom-names ... kwd-names ... rng-names ...)
-                            (lambda (val)
-                              (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
-                              (make-contracted-function inner-lambda ctc)))])
+                       #`(lambda (chk ctc pre post dom-names ... kwd-names ... rng-names ...)
+                           ;; ignore the pre and post arguments here because -> never fills them in with something useful
+                           (lambda (val)
+                             (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
+                             (make-contracted-function inner-lambda ctc)))])
           (values
            (syntax-property 
             (syntax 
              (build--> '->
+                       #f #f
                        (list dom-ctcs ...) '() #f
                        (list kwd-ctcs ...) '(kwds ...) '() '()
                        (list rng-ctcs ...) use-any?
@@ -504,6 +536,40 @@ v4 todo:
       (when (member (syntax-e (car kwds)) (map syntax-e (cdr kwds)))
         (raise-syntax-error #f "duplicate keyword" stx (car kwds))))))
 
+(define-for-syntax (parse-leftover->* stx leftover)
+  (let*-values ([(rst leftover)
+                 (syntax-case leftover ()
+                   [(#:rest rest-expr . leftover)
+                    (values #'rest-expr #'leftover)]
+                   [_ (values #f leftover)])]
+                [(pre leftover)
+                 (syntax-case leftover ()
+                   [(#:pre pre-expr . leftover)
+                    (values #'pre-expr #'leftover)]
+                   [_ (values #f leftover)])]
+                [(rng leftover)
+                 (syntax-case leftover (any values)
+                   [(any) (values #f #'())]
+                   [(any . more) (raise-syntax-error #f "expected nothing to follow any" stx #'any)]
+                   [((values ctc ...) . leftover)
+                    (values #'(ctc ...) #'leftover)]
+                   [(rng . leftover)
+                    (begin
+                      (when (keyword? (syntax-e #'rng))
+                        (raise-syntax-error #f "expected a range contract" stx #'rng))
+                      (values #'(rng) #'leftover))]
+                   [_
+                    (raise-syntax-error #f "expected a range contract" stx leftover)])]
+                [(post leftover)
+                 (syntax-case leftover ()
+                   [(#:post post-expr . leftover)
+                    (values #'post-expr #'leftover)]
+                   [else
+                    (values #f leftover)])])
+    (syntax-case leftover ()
+      [() (values rst pre rng post)]
+      [x (raise-syntax-error #f "expected the end of the contract" stx #'x)])))
+
 ;; ->*/proc/main : syntax -> (values syntax[contract-record] syntax[args/lambda-body] syntax[names])
 (define-for-syntax (->*/proc/main stx)
   (syntax-case* stx (->* any) module-or-top-identifier=?
@@ -544,23 +610,18 @@ v4 todo:
                          [(rev-optional-dom-proj ...) (reverse (syntax->list #'(optional-dom-proj ...)))])
              
              
-             (let-values ([(rest-ctc rng-ctc)
+             (let-values ([(rest-ctc pre rng-ctc post)
                            ;; rest-ctc (or/c #f syntax) -- #f means no rest contract, syntax is the contract
                            ;; rng-ctc (or/c #f syntax) -- #f means `any', syntax is a sequence of result values
-                           (syntax-case #'rst (any values)
-                             [(any) (values #f #f)]
-                             [(#:rest rest-expr any) (values #'rest-expr #f)]
-                             [((values res-ctc ...)) (values #f #'(res-ctc ...))]
-                             [(#:rest rest-expr (values res-ctc ...)) (values #'rest-expr #'(res-ctc ...))]
-                             [(res-ctc) (values #f #'(res-ctc))]
-                             [(#:rest rest-expr res-ctc) (values #'rest-expr #'(res-ctc))]
-                             [_ (raise-syntax-error #f "bad syntax" stx)])])
+                           (parse-leftover->* stx #'rst)])
                (with-syntax ([(rng-proj ...) (generate-temporaries (or rng-ctc '()))]
                              [(rng ...) (generate-temporaries (or rng-ctc '()))]
                              [(this-parameter ...)
                               (make-this-parameters (car (generate-temporaries '(this))))])
                  #`(build-->
                     '->*
+                    #,(if pre #`(λ () #,pre) #'#f)
+                    #,(if post #`(λ () #,post) #'#f)
                     (list mandatory-dom ...)
                     (list optional-dom ...)
                     #,rest-ctc
@@ -573,15 +634,17 @@ v4 todo:
                             #'(list rng-ctc ...))
                           #''())
                     #,(if rng-ctc #f #t)
-                    (λ (chk ctc
-                            mandatory-dom-proj ...  
-                            #,@(if rest-ctc
-                                   #'(rest-proj)
-                                   #'())
-                            optional-dom-proj ... 
-                            mandatory-dom-kwd-proj ... 
-                            optional-dom-kwd-proj ... 
-                            rng-proj ...)
+                    (λ (chk 
+                        ctc
+                        pre post
+                        mandatory-dom-proj ...  
+                        #,@(if rest-ctc
+                               #'(rest-proj)
+                               #'())
+                        optional-dom-proj ... 
+                        mandatory-dom-kwd-proj ... 
+                        optional-dom-kwd-proj ... 
+                        rng-proj ...)
                       (λ (f)
                         (chk f #,(and (syntax-parameter-value #'making-a-method) #t))
                         (make-contracted-function
@@ -608,14 +671,21 @@ v4 todo:
                                                                opt-args
                                                                (cons (rev-optional-dom-proj rev-optional-dom-arg) opt-args))]
                                                ...)
+                                   (pre f)
                                    #,(let ([call 
                                             (if (null? (syntax->list #'(rev-sorted-dom-kwd ...)))
                                                 #'(apply f this-parameter ... (mandatory-dom-proj mandatory-dom-arg) ... opt-args)
                                                 #'(keyword-apply f this-parameter ... kwds kwd-args (mandatory-dom-proj mandatory-dom-arg) ... opt-args))])
-                                       (if rng-ctc
-                                           #`(apply-projections ((rng rng-proj) ...)
-                                                                #,call)
-                                           call))))))
+                                       (cond
+                                         [(and rng-ctc post)
+                                          #`(let-values ([(rng ...) #,call])
+                                              (begin0 (values (rng-proj rng) ...)
+                                                      (post f)))]
+                                         [rng-ctc
+                                          #`(apply-projections ((rng rng-proj) ...)
+                                                               #,call)]
+                                         [else
+                                          call]))))))
                          ctc))))))))))]))
            
 (define-syntax (->* stx) #`(syntax-parameterize ((making-a-method #f)) #,(->*/proc/main stx)))
@@ -638,7 +708,7 @@ v4 todo:
 ;                     
 
 ;; parses everything after the mandatory and optional doms in a ->d contract
-(define-for-syntax (parse-leftover stx leftover)
+(define-for-syntax (parse-leftover->d stx leftover)
   (let*-values ([(raw-optional-doms leftover)
                  (syntax-case leftover ()
                    [(kwd . leftover2)
@@ -744,7 +814,7 @@ v4 todo:
     [(_ (raw-mandatory-doms ...)
         .
         leftover)
-     (let-values ([(raw-optional-doms id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)])
+     (let-values ([(raw-optional-doms id/rest pre-cond range post-cond) (parse-leftover->d stx #'leftover)])
        (with-syntax ([(([mandatory-regular-id mandatory-doms] ... ) ([mandatory-kwd (mandatory-kwd-id mandatory-kwd-dom)] ...)) 
                       (verify-->d-structure stx (split-doms stx '->d #'(raw-mandatory-doms ...)))]
                      [(([optional-regular-id optional-doms] ... ) ([optional-kwd (optional-kwd-id optional-kwd-dom)] ...))

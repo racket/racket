@@ -474,23 +474,27 @@ each value must match its respective contract.}
 
 
 @defform*/subs[#:literals (any values)
-          [(->* (mandatory-dom ...) (optional-dom ...) rest range)]
+          [(->* (mandatory-dom ...) (optional-dom ...) rest pre range post)]
           ([mandatory-dom dom-expr (code:line keyword dom-expr)]
            [optional-dom dom-expr (code:line keyword dom-expr)]
+           [pre (code:line) (code:line #:pre pre-cond-expr)]
            [rest (code:line) (code:line #:rest rest-expr)]
-           [range range-expr (values range-expr ...) any])]{
+           [range range-expr (values range-expr ...) any]
+           [post (code:line) (code:line #:post post-cond-expr)])]{
 
-The @racket[->*] contract combinator produces contracts for
-functions that accept optional arguments (either keyword or
-positional) and/or arbitrarily many arguments. The first
-clause of a @racket[->*] contract describes the mandatory
-arguments, and is similar to the argument description of a
-@racket[->] contract. The second clause describes the
-optional arguments. The last clause describes the range of
-the function. It can either be @racket[any] or a
-sequence of contracts, indicating that the function must
-return multiple values. If present, the @racket[rest-expr]
-contract governs the arguments in the rest parameter.
+The @racket[->*] contract combinator produces contracts for functions
+that accept optional arguments (either keyword or positional) and/or
+arbitrarily many arguments. The first clause of a @racket[->*]
+contract describes the mandatory arguments, and is similar to the
+argument description of a @racket[->] contract. The second clause
+describes the optional arguments. The range of description can either
+be @racket[any] or a sequence of contracts, indicating that the
+function must return multiple values. If present, the
+@racket[rest-expr] contract governs the arguments in the rest
+parameter.  The @racket[pre-cond-expr] and @racket[post-cond-expr]
+expressions are checked as the function is called and returns,
+respectively, and allow checking of the environment without an
+explicit connection to an argument (or a result).
 
 As an example, the contract 
 @racketblock[(->* () (boolean? #:x integer?) #:rest (listof symbol?) symbol?)] 
