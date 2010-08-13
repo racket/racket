@@ -1857,6 +1857,7 @@ path/s is either such a string or a list of them.
 "collects/tests/stepper/undefined.rktl" drdr:command-line #f
 "collects/tests/stepper/world-test.rktl" drdr:command-line #f
 "collects/tests/stepper/write-display.rktl" drdr:command-line #f
+"collects/tests/stress" responsible (jay)
 "collects/tests/stxparse" responsible (ryanc)
 "collects/tests/stxparse/stxclass.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/syntax-color" responsible (mflatt)
