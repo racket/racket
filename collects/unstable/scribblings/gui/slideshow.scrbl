@@ -338,3 +338,63 @@ Computes the width of one column out of @scheme[n] that takes up a ratio of
 )]{
 These functions create shapes with border of the given color and width.
 }
+
+@addition{Scott Owens}
+
+@defproc[(blank-line) pict?]{
+Adds a blank line of the current font size's height.
+}
+
+@deftogether[(
+@defproc[(pin-label-line [label pict?] [pict pict?]
+                         [src-pict pict-path?]
+			 [src-coord-fn (-> pict-path? (values real? real?))]
+                         [dest-pict pict-path?]
+			 [dest-coord-fn (-> pict-path? (values real? real?))]
+			 [#:start-angle start-angle (or/c real? #f)]
+			 [#:end-angle end-angle (or/c real? #f)]
+			 [#:start-pull start-pull real?]
+			 [#:end-pull end-pull real?]
+			 [#:line-width line-width (or/c real? #f)]
+			 [#:color color (or/c #f string? (is-a?/c color%))]
+			 [#:under? under? any/c]
+			 [#:x-adjust x-adjust real?]
+			 [#:y-adjust y-adjust real?])
+	 pict?]
+@defproc[(pin-arrow-label-line [label pict?] [arrow-size real?] [pict pict?]
+                         [src-pict pict-path?]
+			 [src-coord-fn (-> pict-path? (values real? real?))]
+                         [dest-pict pict-path?]
+			 [dest-coord-fn (-> pict-path? (values real? real?))]
+			 [#:start-angle start-angle (or/c real? #f)]
+			 [#:end-angle end-angle (or/c real? #f)]
+			 [#:start-pull start-pull real?]
+			 [#:end-pull end-pull real?]
+			 [#:line-width line-width (or/c real? #f)]
+			 [#:color color (or/c #f string? (is-a?/c color%))]
+			 [#:under? under? any/c]
+			 [#:hide-arrowhead? hide-arrowhead? any/c]
+			 [#:x-adjust x-adjust real?]
+			 [#:y-adjust y-adjust real?])
+	 pict?]
+@defproc[(pin-arrows-label-line [label pict?] [arrow-size real?] [pict pict?]
+                         [src-pict pict-path?]
+			 [src-coord-fn (-> pict-path? (values real? real?))]
+                         [dest-pict pict-path?]
+			 [dest-coord-fn (-> pict-path? (values real? real?))]
+			 [#:start-angle start-angle (or/c real? #f)]
+			 [#:end-angle end-angle (or/c real? #f)]
+			 [#:start-pull start-pull real?]
+			 [#:end-pull end-pull real?]
+			 [#:line-width line-width (or/c real? #f)]
+			 [#:color color (or/c #f string? (is-a?/c color%))]
+			 [#:under? under? any/c]
+			 [#:hide-arrowhead? hide-arrowhead? any/c]
+			 [#:x-adjust x-adjust real?]
+			 [#:y-adjust y-adjust real?])
+	 pict?]
+)]{
+These functions behave like @racket[pin-line], @racket[pin-arrow-line]
+and @racket[pin-arrows-line] with the addition of a label attached to
+the line.
+}

@@ -1,7 +1,8 @@
 #lang racket
 
 (require slideshow/base slideshow/pict
-         racket/splicing racket/stxparam racket/gui/base racket/block
+         racket/splicing racket/stxparam racket/gui/base
+         racket/block racket/class
          unstable/define)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -347,3 +348,117 @@
   (->* [real?]
        [#:color color/c #:border-color color/c #:border-width real?]
        pict?)])
+
+
+;; the following has been written by Scott Owens
+;; and updated and added by stamourv
+
+(define (blank-line)
+  (blank 0 (current-font-size)))
+
+(define (label-line label pict src-pict src-coord-fn dest-pict dest-coord-fn
+                    #:x-adjust (x-adjust 0) #:y-adjust (y-adjust 0))
+  (let-values (((src-x src-y) (src-coord-fn pict src-pict))
+               ((dest-x dest-y) (dest-coord-fn pict dest-pict)))
+    (let* ((src (make-rectangular src-x src-y))
+           (dest (make-rectangular dest-x dest-y))
+           (adjust (make-rectangular x-adjust y-adjust))
+           (v (- dest src))
+           (h2 (pict-height label)))
+      ;; Ensure that the src is left of dest
+      (when (< (real-part v) 0)
+        (set! v (- v))
+        (set! src dest))
+      (let ((p (+ src
+                  ;; Move the label to sit atop the line.
+                  (/ (* h2 -i v) (magnitude v) 2)
+                  ;; Center the label in the line.
+                  (/ (- v (make-rectangular (pict-width label)
+                                            (pict-height label)))
+                     2)
+                  adjust)))
+        (pin-over
+         pict
+         (real-part p)
+         (imag-part p)
+         label)))))
+
+(define (pin-label-line label pict
+                        src-pict src-coord-fn
+                        dest-pict dest-coord-fn
+                        #:start-angle (start-angle #f)
+                        #:end-angle (end-angle #f)
+                        #:start-pull (start-pull 1/4)
+                        #:end-pull (end-pull 1/4)
+                        #:line-width (line-width #f)
+                        #:color (color #f)
+                        #:under? (under? #f)
+                        #:x-adjust (x-adjust 0)
+                        #:y-adjust (y-adjust 0))
+  (label-line
+   label
+   (pin-line
+    pict src-pict src-coord-fn dest-pict dest-coord-fn
+    #:start-angle start-angle #:end-angle end-angle
+    #:start-pull start-pull #:end-pull end-pull
+    #:line-width line-width #:color color #:under? under?)
+   src-pict src-coord-fn dest-pict dest-coord-fn
+   #:x-adjust x-adjust #:y-adjust y-adjust))
+
+(define-values (pin-arrow-label-line
+                pin-arrows-label-line)
+  (let ()
+    (define ((mk fn)
+             label arrow-size pict
+             src-pict src-coord-fn
+             dest-pict dest-coord-fn
+             #:start-angle (start-angle #f)
+             #:end-angle (end-angle #f)
+             #:start-pull (start-pull 1/4)
+             #:end-pull (end-pull 1/4)
+             #:line-width (line-width #f)
+             #:color (color #f)
+             #:under? (under? #f)
+             #:solid? (solid? #t)
+             #:hide-arrowhead? (hide-arrowhead? #f)
+             #:x-adjust (x-adjust 0)
+             #:y-adjust (y-adjust 0))
+      (label-line
+       label
+       (fn
+        arrow-size pict src-pict src-coord-fn dest-pict dest-coord-fn
+        #:start-angle start-angle #:end-angle end-angle
+        #:start-pull start-pull #:end-pull end-pull
+        #:line-width line-width #:color color #:under? under?
+        #:hide-arrowhead? hide-arrowhead?)
+       src-pict src-coord-fn dest-pict dest-coord-fn
+       #:x-adjust x-adjust #:y-adjust y-adjust))
+    (values (mk pin-arrow-line)
+            (mk pin-arrows-line))))
+(define pin-arrow-label-line-contract
+  (->* [pict? real? pict?
+        pict-path? (-> pict? pict-path? (values real? real?))
+        pict-path? (-> pict? pict-path? (values real? real?))]
+       [#:start-angle (or/c real? #f) #:end-angle (or/c real? #f)
+        #:start-pull real? #:end-pull real?
+        #:line-width (or/c real? #f)
+        #:color (or/c #f string? (is-a?/c color%))
+        #:under? any/c #:hide-arrowhead? any/c
+        #:x-adjust real? #:y-adjust real?]
+       pict?))
+
+(provide/contract
+ [blank-line (-> pict?)]
+ [pin-label-line
+  (->* [pict? pict?
+        pict-path? (-> pict? pict-path? (values real? real?))
+        pict-path? (-> pict? pict-path? (values real? real?))]
+       [#:start-angle (or/c real? #f) #:end-angle (or/c real? #f)
+        #:start-pull real? #:end-pull real?
+        #:line-width (or/c real? #f)
+        #:color (or/c #f string? (is-a?/c color%))
+        #:under? any/c
+        #:x-adjust real? #:y-adjust real?]
+       pict?)]
+ [pin-arrow-label-line pin-arrow-label-line-contract]
+ [pin-arrows-label-line pin-arrow-label-line-contract])
