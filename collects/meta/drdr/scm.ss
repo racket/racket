@@ -1,6 +1,7 @@
 #lang scheme
 (require "svn.ss"
          "path-utils.ss"
+         "dirstruct.ss"
          net/url
          scheme/system)
 (provide
@@ -146,11 +147,19 @@
           [to string?])]
  [get-scm-commit-msg (exact-nonnegative-integer? path-string? . -> . git-push?)])
 
+(define (git-push-previous-commit gp)
+  (define start (git-push-start-commit gp))
+  (parameterize ([current-directory (plt-repository)])
+    (system/output-port 
+     #:k (λ (port) (read-line port))
+     (git-path)
+     "--no-pager" "log" "--format=format:%P" start "-1")))  
 (define (git-push-start-commit gp)
   (git-commit-hash (last (git-push-commits gp))))
 (define (git-push-end-commit gp)
   (git-commit-hash (first (git-push-commits gp))))
 (provide/contract
+ [git-push-previous-commit (git-push? . -> . string?)]
  [git-push-start-commit (git-push? . -> . string?)]
  [git-push-end-commit (git-push? . -> . string?)])
 

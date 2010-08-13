@@ -106,7 +106,7 @@
   (define end-commit (git-push-end-commit log))
   (if (string=? start-commit end-commit)
       (format "http://github.com/plt/racket/commit/~a" end-commit)
-      (format "http://github.com/plt/racket/compare/~a...~a" start-commit end-commit)))
+      (format "http://github.com/plt/racket/compare/~a...~a" (git-push-previous-commit log) end-commit)))
   
 (define (format-commit-msg)
   (define pth (revision-commit-msg (current-rev)))
@@ -116,11 +116,14 @@
   (define bdate/s (timestamp "checkout-done"))
   (define bdate/e (timestamp "integrated"))
   (match (read-cache* pth)
-    [(struct git-push (num author commits))
+    [(and gp (struct git-push (num author commits)))
+     (define start-commit (git-push-start-commit gp))
+     (define end-commit (git-push-end-commit gp))
      `(table ([class "data"])
              (tr ([class "author"]) (td "Author:") (td ,author))
              (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
              (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
+             (tr ([class "hash"]) (td "Diff:") (td (a ([href ,(log->url gp)]) ,(substring start-commit 0 8) ".." ,(substring end-commit 0 8))))
              ,@(append-map
                 (match-lambda
                   [(struct git-merge (hash author date msg from to))
