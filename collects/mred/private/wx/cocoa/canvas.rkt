@@ -28,37 +28,48 @@
 (import-protocol NSComboBoxDelegate)
 
 ;; Called when a canvas has no backing store ready
-(define (clear-background wx)
-  (let ([bg (send wx get-canvas-background-for-clearing)])
-    (when bg
-      (let ([ctx (tell NSGraphicsContext currentContext)])
-        (tellv ctx saveGraphicsState)
-        (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
-              [adj (lambda (v) (/ v 255.0))])
-          (CGContextSetRGBFillColor cg
-                                    (adj (color-red bg))
-                                    (adj (color-blue bg))
-                                    (adj (color-green bg))
-                                    1.0)
-          (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
-                                             (make-NSSize 32000 32000))))
-        (tellv ctx restoreGraphicsState)))))
+(define (clear-background wxb)
+  (let ([wx (->wx wxb)])
+    (when wx
+      (let ([bg (send wx get-canvas-background-for-clearing)])
+        (when bg
+          (let ([ctx (tell NSGraphicsContext currentContext)])
+            (tellv ctx saveGraphicsState)
+            (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
+                  [adj (lambda (v) (/ v 255.0))])
+              (CGContextSetRGBFillColor cg
+                                        (adj (color-red bg))
+                                        (adj (color-blue bg))
+                                        (adj (color-green bg))
+                                        1.0)
+              (CGContextFillRect cg (make-NSRect (make-NSPoint 0 0)
+                                                 (make-NSSize 32000 32000))))
+            (tellv ctx restoreGraphicsState)))))))
 
 (define-objc-class MyView NSView 
   #:mixins (FocusResponder KeyMouseResponder) 
-  [wx]
+  [wxb]
   (-a _void (drawRect: [_NSRect r])
-      (unless (send wx paint-or-queue-paint)
-        (clear-background wx)
-        ;; ensure that `nextEventMatchingMask:' returns
-        (post-dummy-event)))
+      (when wxb
+        (let ([wx (->wx wxb)])
+          (when wx
+            (unless (send wx paint-or-queue-paint)
+              (clear-background wxb)
+              ;; ensure that `nextEventMatchingMask:' returns
+              (post-dummy-event))))))
   (-a _void (viewWillMoveToWindow: [_id w])
-      (when wx
-        (queue-window-event wx (lambda () (send wx fix-dc)))))
+      (when wxb
+        (let ([wx (->wx wxb)])
+          (when wx
+            (queue-window-event wx (lambda () (send wx fix-dc)))))))
   (-a _void (onHScroll: [_id scroller])
-      (when wx (send wx do-scroll 'horizontal scroller)))
+      (when wxb 
+        (let ([wx (->wx wxb)])
+          (when wx (send wx do-scroll 'horizontal scroller)))))
   (-a _void (onVScroll: [_id scroller])
-      (when wx (send wx do-scroll 'vertical scroller))))
+      (when wxb 
+        (let ([wx (->wx wxb)])
+          (when wx (send wx do-scroll 'vertical scroller))))))
 
 (define-objc-class FrameView NSView 
   []
@@ -118,22 +129,30 @@
 (define-objc-class MyComboBox NSComboBox
   #:mixins (FocusResponder KeyMouseResponder) 
   #:protocols (NSComboBoxDelegate)
-  [wx]
+  [wxb]
   (-a _void (drawRect: [_NSRect r])
       (super-tell #:type _void drawRect: #:type _NSRect r)
-      (unless (send wx paint-or-queue-paint)
-        (unless (send wx during-menu-click?)
-          (clear-background wx)
-          ;; ensure that `nextEventMatchingMask:' returns
-          (post-dummy-event))))
+      (let ([wx (->wx wxb)])
+        (when wx
+          (unless (send wx paint-or-queue-paint)
+            (unless (send wx during-menu-click?)
+              (clear-background wxb)
+              ;; ensure that `nextEventMatchingMask:' returns
+              (post-dummy-event))))))
   (-a _void (comboBoxWillPopUp: [_id notification])
-      (send wx starting-combo))
+      (let ([wx (->wx wxb)])
+        (when wx
+          (send wx starting-combo))))
   (-a _void (comboBoxWillDismiss: [_id notification])
-      (send wx ending-combo))
+      (let ([wx (->wx wxb)])
+        (when wx
+          (send wx ending-combo))))
   (-a _void (viewWillMoveToWindow: [_id w])
-      (when wx
-        (queue-window-event wx (lambda () (send wx fix-dc))))))
-
+      (when wxb
+        (let ([wx (->wx wxb)])
+          (when wx
+            (queue-window-event wx (lambda () (send wx fix-dc))))))))
+  
 (define-struct scroller (cocoa [range #:mutable] [page #:mutable]))
 (define scroll-width (tell #:type _CGFloat NSScroller scrollerWidth))
 
@@ -247,7 +266,7 @@
          (tell (tell (if is-combo? MyComboBox MyView) alloc) 
                initWithFrame: #:type _NSRect r))))
     (tell #:type _void cocoa addSubview: content-cocoa)
-    (set-ivar! content-cocoa wx this)
+    (set-ivar! content-cocoa wxb (->wxb this))
 
     (when is-combo?
       (tellv content-cocoa setEditable: #:type _BOOL #f)

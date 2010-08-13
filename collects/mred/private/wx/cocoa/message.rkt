@@ -33,11 +33,11 @@
 
 (define-objc-class MyTextField NSTextField
   #:mixins (FocusResponder KeyMouseResponder)
-  [wx])
+  [wxb])
 
 (define-objc-class MyImageView NSImageView
   #:mixins (FocusResponder KeyMouseResponder)
-  [wx])
+  [wxb])
 
 (defclass message% item%
   (init parent label

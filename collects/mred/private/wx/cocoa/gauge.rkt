@@ -19,7 +19,7 @@
 
 (define-objc-class MyProgressIndicator NSProgressIndicator
   #:mixins ()
-  [wx])
+  [wxb])
 
 (defclass gauge% item%
   (init parent

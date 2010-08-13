@@ -41,11 +41,12 @@
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
-      (let ([frame (send wx get-top-window)])
-        (when frame
-          (constrained-reply (send frame get-eventspace)
-                             (lambda () (send frame on-menu-click))
-                             (void)))))))
+      (when wx
+        (let ([frame (send wx get-top-window)])
+          (when frame
+            (constrained-reply (send frame get-eventspace)
+                               (lambda () (send frame on-menu-click))
+                               (void))))))))
 
 (define top-menu%
   (class widget%
@@ -57,13 +58,15 @@
   (_fun _GtkWidget _GdkEventKey-pointer -> _gboolean)
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
-      (other-modal? wx))))
+      (or (not wx)
+          (other-modal? wx)))))
 
 (define-signal-handler connect-menu-button-press "button-press-event"
   (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
-      (other-modal? wx))))
+      (or (not wx)
+          (other-modal? wx)))))
 
 (defclass menu-bar% widget%
   (inherit install-widget-parent)

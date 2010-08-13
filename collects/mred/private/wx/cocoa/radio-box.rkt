@@ -25,9 +25,9 @@
 
 (define-objc-class MyMatrix NSMatrix
   #:mixins (FocusResponder KeyMouseResponder)
-  [wx]
+  [wxb]
   (-a _void (clicked: [_id sender])
-      (queue-window-event wx (lambda () (send wx clicked)))))
+      (queue-window*-event wxb (lambda (wx) (send wx clicked)))))
 
 (define-objc-class MyImageButtonCell NSButtonCell
   [img]

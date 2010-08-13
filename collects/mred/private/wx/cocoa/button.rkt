@@ -25,9 +25,9 @@
 
 (define-objc-class MyButton NSButton
   #:mixins (FocusResponder KeyMouseResponder)
-  [wx]
+  [wxb]
   (-a _void (clicked: [_id sender])
-      (queue-window-event wx (lambda () (send wx clicked)))))
+      (queue-window*-event wxb (lambda (wx) (send wx clicked)))))
 
 (defclass core-button% item%
   (init parent cb label x y w h style font
@@ -99,9 +99,11 @@
                         (tellv button-cocoa setFrame: #:type _NSRect
                                (make-NSRect (make-NSPoint 0 0)
                                             (make-NSSize new-width new-height)))
-                        (set-ivar! button-cocoa wx this)
+                        (set-ivar! button-cocoa wxb (->wxb this))
                         cocoa))
                     button-cocoa))
+
+  (define we (make-will-executor))
 
   (super-new [parent parent]
              [cocoa cocoa]

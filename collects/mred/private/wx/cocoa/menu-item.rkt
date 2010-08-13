@@ -14,8 +14,11 @@
 (import-class NSMenuItem)
 
 (define-objc-class MyMenuItem NSMenuItem
-  [wx]
-  (-a _void (selected: [_id sender]) (send wx selected)))
+  [wxb]
+  (-a _void (selected: [_id sender]) 
+      (let ([wx (->wx wxb)])
+        (when wx
+          (send wx selected)))))
 
 
 (defclass menu-item% object%
@@ -51,7 +54,7 @@
                           initWithTitle: #:type _NSString (regexp-replace #rx"\t.*" label "")
                           action: #:type _SEL #f
                           keyEquivalent: #:type _NSString "")])
-          (set-ivar! item wx this)
+          (set-ivar! item wxb (->wxb this))
           (tellv menu addItem: item)
           (tellv item setEnabled: #:type _BOOL enabled?)
           (tellv item setTarget: item)

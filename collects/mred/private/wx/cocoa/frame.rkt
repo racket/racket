@@ -30,49 +30,56 @@
 (define dialog-level-counter 0)
 
 (define-objc-mixin (MyWindowMethods Superclass)
-  [wx]
+  [wxb]
   [-a _scheme (getEventspace)
-      (send wx get-eventspace)]
+      (let ([wx (->wx wxb)])
+        (and wx (send wx get-eventspace)))]
   [-a _BOOL (canBecomeKeyWindow)
-      (not (other-modal? wx))]
+      (let ([wx (->wx wxb)])
+        (and wx
+             (not (other-modal? wx))))]
   [-a _BOOL (canBecomeMainWindow) #t]
   [-a _BOOL (windowShouldClose: [_id win])
-      (queue-window-event wx (lambda ()
-                               (unless (other-modal? wx)
-                                 (when (send wx on-close)
-                                   (send wx direct-show #f)))))
+      (queue-window*-event wxb (lambda (wx)
+                                 (unless (other-modal? wx)
+                                   (when (send wx on-close)
+                                     (send wx direct-show #f)))))
       #f]
   [-a _void (windowDidResize: [_id notification])
-      (when wx
-        (queue-window-event wx (lambda ()
-                                 (send wx on-size 0 0)
-                                 (send wx clean-up))))]
+      (when wxb
+        (queue-window*-event wxb (lambda (wx)
+                                   (send wx on-size 0 0)
+                                   (send wx clean-up))))]
   [-a _void (windowDidMove: [_id notification])
-      (when wx
-        (queue-window-event wx (lambda ()
-                                 (send wx on-size 0 0))))]
+      (when wxb
+        (queue-window*-event wxb (lambda (wx)
+                                   (send wx on-size 0 0))))]
   [-a _void (windowDidBecomeMain: [_id notification])
-      (when wx
-        (set! front wx)
-        (send wx install-mb)
-        (send wx notify-responder #t)
-        (queue-window-event wx (lambda ()
-                                 (send wx on-activate #t))))]
+      (when wxb
+        (let ([wx (->wx wxb)])
+          (when wx
+            (set! front wx)
+            (send wx install-mb)
+            (send wx notify-responder #t)
+            (queue-window-event wx (lambda ()
+                                     (send wx on-activate #t))))))]
   [-a _void (windowDidResignMain: [_id notification])
-      (when wx
-        (when (eq? front wx) (set! front #f))
-        (send empty-mb install)
-        (send wx notify-responder #f)
-        (queue-window-event wx (lambda ()
-                                 (send wx on-activate #f))))])
+      (when wxb
+        (let ([wx (->wx wxb)])
+          (when wx
+            (when (eq? front wx) (set! front #f))
+            (send empty-mb install)
+            (send wx notify-responder #f)
+            (queue-window-event wx (lambda ()
+                                     (send wx on-activate #f))))))])
 
 (define-objc-class MyWindow NSWindow
   #:mixins (FocusResponder KeyMouseResponder MyWindowMethods)
-  [wx])
+  [wxb])
 
 (define-objc-class MyPanel NSPanel
   #:mixins (FocusResponder KeyMouseResponder MyWindowMethods)
-  [wx])
+  [wxb])
 
 (set-front-hook! (lambda () (values front
                                     (and front (send front get-eventspace)))))

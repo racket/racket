@@ -23,13 +23,15 @@
 
 (define-objc-class MySlider NSSlider
   #:mixins (FocusResponder KeyMouseResponder)
-  [wx]
+  [wxb]
   (-a _void (changed: [_id sender])
-      (queue-window-event wx (lambda () (send wx changed)))
-      (constrained-reply
-       (send wx get-eventspace)
-       (lambda () (let loop () (pre-event-sync #t) (when (yield) (loop))))
-       (void))))
+      (let ([wx (->wx wxb)])
+        (when wx
+          (queue-window-event wx (lambda () (send wx changed)))
+          (constrained-reply
+           (send wx get-eventspace)
+           (lambda () (let loop () (pre-event-sync #t) (when (yield) (loop))))
+           (void))))))
 
 (defclass slider% item%
   (init parent cb

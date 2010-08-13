@@ -23,23 +23,29 @@
 
 (define-objc-class MyTableView NSTableView
   #:mixins (FocusResponder KeyMouseResponder)
-  [wx]
+  [wxb]
   [-a _id (preparedCellAtColumn: [_NSInteger column] row: [_NSInteger row])
-      (tell (tell NSCell alloc) initTextCell: #:type _NSString (send wx get-row row))]
+      (let ([wx (->wx wxb)])
+        (tell (tell NSCell alloc) initTextCell: #:type _NSString 
+              (if wx (send wx get-row row) "???")))]
   [-a _void (doubleClicked: [_id sender])
-      (queue-window-event wx (lambda () (send wx clicked 'list-box-dclick)))]
+      (queue-window*-event wxb (lambda (wx) (send wx clicked 'list-box-dclick)))]
   [-a _void (tableViewSelectionDidChange: [_id aNotification])
-      (queue-window-event wx (lambda () (send wx clicked 'list-box)))])
+      (queue-window*-event wxb (lambda (wx) (send wx clicked 'list-box)))])
 
 (define-objc-class MyDataSource NSObject
   #:protocols (NSTableViewDataSource)
-  [wx]
+  [wxb]
   [-a _NSInteger (numberOfRowsInTableView: [_id view])
-      (send wx number)]
+      (let ([wx (->wx wxb)])
+        (send wx number))]
   [-a _NSString (tableView: [_id aTableView]
                             objectValueForTableColumn: [_id aTableColumn]
                             row: [_NSInteger rowIndex])
-      (send wx get-row rowIndex)])
+      (let ([wx (->wx wxb)])
+        (if wx
+            (send wx get-row rowIndex)
+            "???"))])
 
 (define (remove-nth data i)
   (cond
@@ -55,7 +61,7 @@
 
   (define source (as-objc-allocation
                   (tell (tell MyDataSource alloc) init)))
-  (set-ivar! source wx this)
+  (set-ivar! source wxb (->wxb this))
 
   (define items choices)
   (define data (map (lambda (x) (box #f)) choices))
@@ -73,7 +79,7 @@
                                  (tell (tell NSTableColumn alloc) initWithIdentifier: content-cocoa)))
                          (init-font content-cocoa font)
                          content-cocoa))
-  (set-ivar! content-cocoa wx this)
+  (set-ivar! content-cocoa wxb (->wxb this))
 
   (tellv cocoa setDocumentView: content-cocoa)
   (tellv cocoa setHasVerticalScroller: #:type _BOOL #t)

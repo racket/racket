@@ -17,11 +17,12 @@
   (_fun _GtkWidget _GtkAllocation-pointer -> _gboolean)
   (lambda (gtk a)
     (let ([wx (gtk->wx gtk)])
-      (send wx save-client-size 
-            (GtkAllocation-x a)
-            (GtkAllocation-y a)
-            (GtkAllocation-width a)
-            (GtkAllocation-height a)))
+      (when wx
+        (send wx save-client-size 
+              (GtkAllocation-x a)
+              (GtkAllocation-y a)
+              (GtkAllocation-width a)
+              (GtkAllocation-height a))))
     #t))
 
 (define (client-size-mixin %)

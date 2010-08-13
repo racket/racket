@@ -121,7 +121,8 @@
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
-      (send wx combo-maybe-clicked))))
+      (when wx
+        (send wx combo-maybe-clicked)))))
 
 (define-gtk gtk_combo_box_set_active (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_combo_box_get_active (_fun _GtkWidget -> _int))
@@ -130,11 +131,12 @@
   (_fun _GtkWidget _GdkEventExpose-pointer -> _gboolean)
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
-      (unless (send wx paint-or-queue-paint)
-        (let ([gc (send wx get-canvas-background-for-clearing)])      
-          (when gc
-            (gdk_draw_rectangle (widget-window gtk) gc #t
-                                0 0 32000 32000)))))
+      (when wx
+        (unless (send wx paint-or-queue-paint)
+          (let ([gc (send wx get-canvas-background-for-clearing)])      
+            (when gc
+              (gdk_draw_rectangle (widget-window gtk) gc #t
+                                  0 0 32000 32000))))))
     #t))
 
 (define-signal-handler connect-expose-border "expose-event"
@@ -165,7 +167,8 @@
 
 (define (do-value-changed gtk dir)
   (let ([wx (gtk->wx gtk)])
-    (queue-window-event wx (lambda () (send wx do-scroll dir))))
+    (when wx
+      (queue-window-event wx (lambda () (send wx do-scroll dir)))))
   #t)
 
 (define-gtk gtk_entry_get_type (_fun -> _GType))

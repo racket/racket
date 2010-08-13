@@ -56,18 +56,20 @@
   (_fun _GtkWidget -> _gboolean)
   (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
-      (queue-window-event wx (lambda () 
-                               (unless (other-modal? wx)
-                                 (when (send wx on-close)
-                                   (send wx direct-show #f))))))))
+      (when wx
+        (queue-window-event wx (lambda () 
+                                 (unless (other-modal? wx)
+                                   (when (send wx on-close)
+                                     (send wx direct-show #f)))))))))
 
 (define-signal-handler connect-configure "configure-event"
   (_fun _GtkWidget _GdkEventConfigure-pointer -> _gboolean)
   (lambda (gtk a)
     (let ([wx (gtk->wx gtk)])
-      (send wx remember-size 
-            (GdkEventConfigure-width a)
-            (GdkEventConfigure-height a)))
+      (when wx
+        (send wx remember-size 
+              (GdkEventConfigure-width a)
+              (GdkEventConfigure-height a))))
     #f))
 
 (define-cstruct _GdkEventWindowState ([type _int]
@@ -81,9 +83,10 @@
   (_fun _GtkWidget _GdkEventWindowState-pointer -> _gboolean)
   (lambda (gtk evt)
     (let ([wx (gtk->wx gtk)])
-      (send wx on-window-state 
-            (GdkEventWindowState-changed_mask evt)
-            (GdkEventWindowState-new_window_state evt)))
+      (when wx
+        (send wx on-window-state 
+              (GdkEventWindowState-changed_mask evt)
+              (GdkEventWindowState-new_window_state evt))))
     #f))
 
 (define frame%

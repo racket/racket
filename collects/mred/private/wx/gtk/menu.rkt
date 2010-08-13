@@ -36,13 +36,15 @@
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
-      (send wx do-on-select))))
+      (when wx
+        (send wx do-on-select)))))
 
 (define-signal-handler connect-menu-deactivate "deactivate"
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
-      (send wx do-no-selected))))
+      (when wx
+        (send wx do-no-selected)))))
 
 (define menu-item-handler%
   (class widget%

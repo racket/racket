@@ -20,9 +20,9 @@
 (define-objc-class MyTabView NSTabView
   #:mixins (FocusResponder KeyMouseResponder)
   #:protocols (NSTabViewDelegate)
-  [wx]
+  [wxb]
   (-a _void (tabView: [_id cocoa] didSelectTabViewItem: [_id item-cocoa])
-      (queue-window-event wx (lambda () (send wx do-callback)))))
+      (queue-window*-event wxb (lambda (wx) (send wx do-callback)))))
 
 (defclass tab-panel% (panel-mixin window%)
   (init parent

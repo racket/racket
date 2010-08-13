@@ -26,7 +26,8 @@
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
-      (send wx queue-changed))))
+      (when wx
+        (send wx queue-changed)))))
 
 (defclass slider% item%
   (init parent cb

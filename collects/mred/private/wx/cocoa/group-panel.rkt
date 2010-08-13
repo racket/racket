@@ -16,7 +16,7 @@
 
 (define-objc-class MyBox NSBox
   #:mixins (FocusResponder KeyMouseResponder)
-  [wx])
+  [wxb])
 
 (defclass group-panel% (panel-mixin window%)
   (init parent

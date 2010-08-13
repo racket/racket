@@ -52,14 +52,16 @@
     
     (super-new)
 
-    (let ([cell (malloc-immobile-cell this)])
+    (let ([cell (malloc-immobile-cell (make-weak-box this))])
       (g_object_set_data gtk "wx" cell)
       (for ([gtk (in-list extra-gtks)])
         (g_object_set_data gtk "wx" cell)))))
 
 (define (gtk->wx gtk)
   (let ([ptr (g_object_get_data gtk "wx")])
-    (and ptr (ptr-ref ptr _scheme))))
+    (and ptr 
+         (let ([wb (ptr-ref ptr _scheme)])
+           (and wb (weak-box-value wb))))))
 
 (set-widget-hook! (lambda (gtk)
                     (let loop ([gtk gtk])

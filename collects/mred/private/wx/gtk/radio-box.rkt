@@ -31,7 +31,8 @@
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
     (let ([wx (gtk->wx gtk)])
-      (send wx queue-clicked))))
+      (when wx
+        (send wx queue-clicked)))))
 
 (defclass radio-box% item%
   (init parent cb label

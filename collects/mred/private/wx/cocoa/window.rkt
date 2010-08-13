@@ -21,6 +21,7 @@
          KeyMouseResponder
 
          queue-window-event
+         queue-window*-event
          request-flush-delay
          cancel-flush-delay)
 
@@ -29,30 +30,30 @@
 ;; ----------------------------------------
 
 (define-objc-mixin (FocusResponder Superclass)
-  [wx]
+  [wxb]
   [-a _BOOL (acceptsFirstResponder)
       #t]
   [-a _BOOL (becomeFirstResponder)
       (and (super-tell becomeFirstResponder)
-           (begin
-             (send wx is-responder wx #t)
+           (let ([wx (->wx wxb)])
+             (when wx (send wx is-responder wx #t))
              #t))]
   [-a _BOOL (resignFirstResponder)
       (and (super-tell resignFirstResponder)
-           (begin
-             (send wx is-responder wx #f)
+           (let ([wx (->wx wxb)])
+             (when wx (send wx is-responder wx #f))
              #t))])
 
 (define-objc-mixin (KeyMouseResponder Superclass)
-  [wx]
+  [wxb]
   [-a _void (mouseDown: [_id event]) 
-      (unless (do-mouse-event wx event 'left-down #t #f #f 'right-down)
+      (unless (do-mouse-event wxb event 'left-down #t #f #f 'right-down)
         (super-tell #:type _void mouseDown: event))]
   [-a _void (mouseUp: [_id event]) 
-      (unless (do-mouse-event wx event 'left-up #f #f #f 'right-up)
+      (unless (do-mouse-event wxb event 'left-up #f #f #f 'right-up)
         (super-tell #:type _void mouseUp: event))]
   [-a _void (mouseDragged: [_id event]) 
-      (unless (do-mouse-event wx event 'motion #t #f #f)
+      (unless (do-mouse-event wxb event 'motion #t #f #f)
         (super-tell #:type _void mouseDragged: event))]
   [-a _void (mouseMoved: [_id event]) 
       ;; This event is sent to the first responder, instead of the
@@ -69,94 +70,102 @@
                 (loop (tell hit superview))))))]
   [-a _BOOL (doMouseMoved: [_id event]) 
       ;; called by mouseMoved:
-      (do-mouse-event wx event 'motion #f #f #f)]
+      (do-mouse-event wxb event 'motion #f #f #f)]
   [-a _void (mouseEntered: [_id event]) 
-      (unless (do-mouse-event wx event 'enter #f #f #f)
+      (unless (do-mouse-event wxb event 'enter #f #f #f)
         (super-tell #:type _void mouseEntered: event))]
   [-a _void (mouseExited: [_id event]) 
-      (unless (do-mouse-event wx event 'leave #f #f #f)
+      (unless (do-mouse-event wxb event 'leave #f #f #f)
         (super-tell #:type _void mouseExited: event))]
   [-a _void (rightMouseDown: [_id event]) 
-      (unless (do-mouse-event wx event 'right-down #f #f #t)
+      (unless (do-mouse-event wxb event 'right-down #f #f #t)
         (super-tell #:type _void rightMouseDown: event))]
   [-a _void (rightMouseUp: [_id event]) 
-      (unless (do-mouse-event wx event 'right-up #f #f #f)
+      (unless (do-mouse-event wxb event 'right-up #f #f #f)
         (super-tell #:type _void rightMouseUp: event))]
   [-a _void (rightMouseDragged: [_id event]) 
-      (unless (do-mouse-event wx event 'motion #f #f #t)
+      (unless (do-mouse-event wxb event 'motion #f #f #t)
         (super-tell #:type _void rightMouseDragged: event))]
   [-a _void (otherMouseDown: [_id event]) 
-      (unless (do-mouse-event wx event 'middle-down #f #t #f)
+      (unless (do-mouse-event wxb event 'middle-down #f #t #f)
         (super-tell #:type _void otherMouseDown: event))]
   [-a _void (otherMouseUp: [_id event]) 
-      (unless (do-mouse-event wx event 'middle-up #f #f #f)
+      (unless (do-mouse-event wxb event 'middle-up #f #f #f)
         (super-tell #:type _void otherMouseUp: event))]
   [-a _void (otherMouseDragged: [_id event]) 
-      (unless (do-mouse-event wx event 'motion #f #t #f)
+      (unless (do-mouse-event wxb event 'motion #f #t #f)
         (super-tell #:type _void otherMouseDragged: event))]
   
   [-a _void (keyDown: [_id event])
-      (unless (do-key-event wx event)
+      (unless (do-key-event wxb event)
         (super-tell #:type _void keyDown: event))]
   [-a _void (insertText: [_NSString str])
-      (queue-window-event wx (lambda ()
-                               (send wx key-event-as-string str)))])
+      (let ([wx (->wx wxb)])
+        (when wx
+          (queue-window-event wx (lambda ()
+                                   (send wx key-event-as-string str)))))])
 
-(define (do-key-event wx event)
-  (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
-         [bit? (lambda (m b) (positive? (bitwise-and m b)))]
-         [pos (tell #:type _NSPoint event locationInWindow)]
-         [str (tell #:type _NSString event characters)])
-    (let-values ([(x y) (send wx window-point-to-view pos)])
-      (let ([k (new key-event%
-                    [key-code (or
-                               (map-key-code (tell #:type _ushort event keyCode))
-                               (if (string=? "" str)
-                                   #\nul
-                                   (string-ref str 0)))]
-                    [shift-down (bit? modifiers NSShiftKeyMask)]
-                    [control-down (bit? modifiers NSControlKeyMask)]
-                    [meta-down (bit? modifiers NSCommandKeyMask)]
-                    [alt-down (bit? modifiers NSAlternateKeyMask)]
-                    [x (->long x)]
-                    [y (->long y)]
-                    [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
-                    [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-        (if (send wx definitely-wants-event? k)
-            (begin
-              (queue-window-event wx (lambda ()
-                                       (send wx dispatch-on-char k #f)))
-              #t)
-            (constrained-reply (send wx get-eventspace)
-                               (lambda () (send wx dispatch-on-char k #t))
-                               #t))))))
+(define (do-key-event wxb event)
+  (let ([wx (->wx wxb)])
+    (and
+     wx
+     (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
+            [bit? (lambda (m b) (positive? (bitwise-and m b)))]
+            [pos (tell #:type _NSPoint event locationInWindow)]
+            [str (tell #:type _NSString event characters)])
+       (let-values ([(x y) (send wx window-point-to-view pos)])
+         (let ([k (new key-event%
+                       [key-code (or
+                                  (map-key-code (tell #:type _ushort event keyCode))
+                                  (if (string=? "" str)
+                                      #\nul
+                                      (string-ref str 0)))]
+                       [shift-down (bit? modifiers NSShiftKeyMask)]
+                       [control-down (bit? modifiers NSControlKeyMask)]
+                       [meta-down (bit? modifiers NSCommandKeyMask)]
+                       [alt-down (bit? modifiers NSAlternateKeyMask)]
+                       [x (->long x)]
+                       [y (->long y)]
+                       [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                       [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+           (if (send wx definitely-wants-event? k)
+               (begin
+                 (queue-window-event wx (lambda ()
+                                          (send wx dispatch-on-char k #f)))
+                 #t)
+               (constrained-reply (send wx get-eventspace)
+                                  (lambda () (send wx dispatch-on-char k #t))
+                                  #t))))))))
 
-(define (do-mouse-event wx event kind l? m? r? [ctl-kind kind])
-  (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
-         [bit? (lambda (m b) (positive? (bitwise-and m b)))]
-         [pos (tell #:type _NSPoint event locationInWindow)])
-    (let-values ([(x y) (send wx window-point-to-view pos)]
-                 [(control-down) (bit? modifiers NSControlKeyMask)])
-      (let ([m (new mouse-event%
-                    [event-type (if control-down ctl-kind kind)]
-                    [left-down (and l? (not control-down))]
-                    [middle-down m?]
-                    [right-down (or r? (and l? control-down))]
-                    [x (->long x)]
-                    [y (->long y)]
-                    [shift-down (bit? modifiers NSShiftKeyMask)]
-                    [meta-down (bit? modifiers NSCommandKeyMask)]
-                    [alt-down (bit? modifiers NSAlternateKeyMask)]
-                    [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
-                    [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-        (if (send wx definitely-wants-event? m)
-            (begin
-              (queue-window-event wx (lambda ()
-                                       (send wx dispatch-on-event m #f)))
-              #t)
-            (constrained-reply (send wx get-eventspace)
-                               (lambda () (send wx dispatch-on-event m #t))
-                               #t))))))
+(define (do-mouse-event wxb event kind l? m? r? [ctl-kind kind])
+  (let ([wx (->wx wxb)])
+    (and
+     wx
+     (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
+            [bit? (lambda (m b) (positive? (bitwise-and m b)))]
+            [pos (tell #:type _NSPoint event locationInWindow)])
+       (let-values ([(x y) (send wx window-point-to-view pos)]
+                    [(control-down) (bit? modifiers NSControlKeyMask)])
+         (let ([m (new mouse-event%
+                       [event-type (if control-down ctl-kind kind)]
+                       [left-down (and l? (not control-down))]
+                       [middle-down m?]
+                       [right-down (or r? (and l? control-down))]
+                       [x (->long x)]
+                       [y (->long y)]
+                       [shift-down (bit? modifiers NSShiftKeyMask)]
+                       [meta-down (bit? modifiers NSCommandKeyMask)]
+                       [alt-down (bit? modifiers NSAlternateKeyMask)]
+                       [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                       [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+           (if (send wx definitely-wants-event? m)
+               (begin
+                 (queue-window-event wx (lambda ()
+                                          (send wx dispatch-on-event m #f)))
+                 #t)
+               (constrained-reply (send wx get-eventspace)
+                                  (lambda () (send wx dispatch-on-event m #t))
+                                  #t))))))))
 
 (define window%
   (class object%
@@ -173,7 +182,7 @@
     (when (eventspace-shutdown? eventspace)
       (error '|GUI object initialization| "the eventspace has been shutdown"))
 
-    (set-ivar! cocoa wx this)
+    (set-ivar! cocoa wxb (->wxb this))
 
     (unless no-show?
       (show #t)) 
@@ -392,8 +401,13 @@
 
 ;; ----------------------------------------
 
-(define (queue-window-event win thunk)
-  (queue-event (send win get-eventspace) thunk))
+(define (queue-window-event wx thunk)
+  (queue-event (send wx get-eventspace) thunk))
+
+(define (queue-window*-event wxb proc)
+  (let ([wx (->wx wxb)])
+    (when wx
+      (queue-event (send wx get-eventspace) (lambda () (proc wx))))))
 
 (define depth 0)
 

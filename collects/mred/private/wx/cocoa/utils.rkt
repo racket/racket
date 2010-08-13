@@ -14,7 +14,9 @@
          as-objc-allocation
          retain release
          with-autorelease
-         clean-menu-label)
+         clean-menu-label
+         ->wxb
+         ->wx)
 
 (define cocoa-lib (ffi-lib (format "/System/Library/Frameworks/Cocoa.framework/Cocoa")))
 (define cf-lib (ffi-lib (format "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")))
@@ -50,3 +52,9 @@
 
 (define (clean-menu-label str)
   (regexp-replace* #rx"&(.)" str "\\1"))
+
+(define (->wxb wx)
+  (make-weak-box wx))
+
+(define (->wx wxb)
+  (weak-box-value wxb))

@@ -35,7 +35,8 @@
   (_fun _GtkWidget _pointer _int -> _void)
   (lambda (gtk ignored i)
     (let ([wx (gtk->wx gtk)])
-      (send wx page-changed i))))
+      (when wx
+        (send wx page-changed i)))))
 
 (define tab-panel%
   (class (client-size-mixin (panel-mixin window%))
