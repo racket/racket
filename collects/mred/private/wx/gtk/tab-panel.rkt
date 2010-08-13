@@ -114,7 +114,8 @@
       (gtk_widget_unref client-gtk))
 
     (define/public (page-changed i)
-      (unless (null? pages)
+      ; range check works around spurious callbacks:
+      (when (< -1 i (length pages))
         (swap-in (page-bin-gtk (list-ref pages i)))
         (queue-window-event this (lambda () (do-callback)))))
     (connect-changed gtk)

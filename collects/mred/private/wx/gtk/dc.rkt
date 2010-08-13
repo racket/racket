@@ -23,18 +23,29 @@
 (define-gdk gdk_cairo_create (_fun _pointer -> _cairo_t)
   #:wrap (allocator cairo_destroy))
 
+(define-cstruct _GdkVisual-rec ([type-instance _pointer]
+				[ref_count _uint]
+				[qdata _pointer]
+				[type _int]
+				[depth _int]))
+(define-gdk gdk_visual_get_system (_fun -> _GdkVisual-rec-pointer))
+
 (define x11-bitmap%
   (class bitmap%
     (init w h gdk-win)
     (super-make-object (make-alternate-bitmap-kind w h))
 
-    (define pixmap (gdk_pixmap_new gdk-win w h (if gdk-win -1 24)))
+    (define pixmap (gdk_pixmap_new gdk-win w h 
+				   (if gdk-win 
+				       -1
+				       (GdkVisual-rec-depth
+					(gdk_visual_get_system)))))
     (define s
       (cairo_xlib_surface_create (gdk_x11_display_get_xdisplay
                                   (gdk_drawable_get_display pixmap))
                                  (gdk_x11_drawable_get_xid pixmap)
-                                 (gdk_x11_visual_get_xvisual
-                                  (gdk_drawable_get_visual pixmap))
+				 (gdk_x11_visual_get_xvisual
+				  (gdk_drawable_get_visual pixmap))
                                  w
                                  h))
 
