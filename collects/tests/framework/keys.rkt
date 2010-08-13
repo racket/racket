@@ -192,13 +192,17 @@
       (make-buff-spec "bc" 0 0)
       (list '((#\c control) (#\o control))))
      ;; insert-()-pair :
-     (make-key-spec/allplatforms
+     (make-key-spec
       (make-buff-spec "abc" 0 0)
       (make-buff-spec "()abc" 1 1)
+      (list '((escape) (#\()))
+      (list '((#\( meta)))
       (list '((escape) (#\())))
-     (make-key-spec/allplatforms
+     (make-key-spec
       (make-buff-spec "abc" 0 2)
       (make-buff-spec "(ab)c" 1 1)
+      (list '((escape) (#\()))
+      (list '((#\( meta)))
       (list '((escape) (#\())))
      ;; toggle-square-round-parens :
      ; () -> []
