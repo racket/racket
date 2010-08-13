@@ -385,11 +385,14 @@
 (test 1 'seqn-add-between (seqn-ref (seqn-add-between (in-naturals) #t) 2))
 (test #t 'seqn-add-between (seqn-ref (seqn-add-between (in-naturals) #t) 3))
 
-(arity-test seqn-count 1 1)
-(test 0 'seqn-count (seqn-count empty-seqn))
-(test 1 'seqn-count (seqn-count (in-range 1)))
-(test 10 'seqn-count (seqn-count (in-range 10)))
-(let ([r (random 100)])
-  (test r 'seqn-count (seqn-count (in-range r))))
+(arity-test seqn-count 2 2)
+(test 0 'seqn-count (seqn-count even? empty-seqn))
+(test 1 'seqn-count (seqn-count even? (in-range 1)))
+(test 5 'seqn-count (seqn-count even? (in-range 10)))
+(let* ([r (random 100)]
+       [a (if (even? r)
+              (/ r 2)
+              (ceiling (/ r 2)))])
+  (test a 'seqn-count (seqn-count even? (in-range r))))
 
 (report-errs)

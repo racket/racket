@@ -149,9 +149,9 @@ then operations on this sequence will not terminate during that infinite sub-seq
          sequence?]{
 Returns a sequence whose elements are the elements of @scheme[s] except in between each is @scheme[e]. The new sequence is constructed lazily. }
                    
-@defproc[(seqn-count [s sequence?])
+@defproc[(seqn-count [f procedure?] [s sequence?])
          exact-nonnegative-integer?]{
-Returns the number of elements in @scheme[s]. If @scheme[s] is infinite, this function does not terminate. }
+Returns the number of elements in @scheme[s] for which @scheme[f] returns a true result. If @scheme[s] is infinite, this function does not terminate. }
                   
 @defproc*[([(in-range [end number?]) sequence?]
            [(in-range [start number?] [end number?] [step number? 1]) sequence?])]{

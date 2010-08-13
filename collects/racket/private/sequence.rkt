@@ -222,11 +222,15 @@
         (λ _ #t)
         (λ _ #t)))))
   
-  (define (seqn-count s)
+  (define (seqn-count f s)
+    (unless (procedure? f)
+      (error 'seqn-count "expects a procedure as the first argument, given ~e" f))
     (define-values (more? next) (sequence-generate s))
     (let loop ([n 0])
       (if (more?)
-          (begin (next) (loop (add1 n)))
+          (if (call-with-values next f)
+              (loop (add1 n))
+              (loop n))
           n)))
   
   (provide empty-seqn
