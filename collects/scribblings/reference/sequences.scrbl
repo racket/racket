@@ -138,7 +138,7 @@ Applies @scheme[f] to each element of @scheme[s]. If @scheme[s] is infinite, thi
          (void)]{
 Folds @scheme[f] over each element of @scheme[s] with @scheme[i] as the initial accumulator. If @scheme[s] is infinite, this function does not terminate. }
                 
-@defproc[(seqn-filter [f (-> any/c ..._0 boolean?)]
+@defproc[(seqn-filter [f (-> any/c ... boolean?)]
                       [s sequence?])
          sequence?]{
 Returns a sequence whose elements are the elements of @scheme[s] for which @scheme[f] returns a true result. Although the new sequence is constructed
