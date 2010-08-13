@@ -474,11 +474,12 @@ each value must match its respective contract.}
 
 
 @defform*/subs[#:literals (any values)
-          [(->* (mandatory-dom ...) (optional-dom ...) rest pre range post)]
+          [(->* (mandatory-dom ...) optional-doms rest pre range post)]
           ([mandatory-dom dom-expr (code:line keyword dom-expr)]
+           [optional-doms (code:line) (optional-dom ...)] 
            [optional-dom dom-expr (code:line keyword dom-expr)]
-           [pre (code:line) (code:line #:pre pre-cond-expr)]
            [rest (code:line) (code:line #:rest rest-expr)]
+           [pre (code:line) (code:line #:pre pre-cond-expr)]
            [range range-expr (values range-expr ...) any]
            [post (code:line) (code:line #:post post-cond-expr)])]{
 
