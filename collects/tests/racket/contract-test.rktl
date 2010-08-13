@@ -778,6 +778,26 @@
 			   (λ () 1)
 			   'pos
 			   'neg)))
+
+   (test/spec-passed
+   '->*-opt-optional1
+   '((contract (->* () integer?) (lambda () 1) 'pos 'neg)))
+
+   (test/spec-passed
+   '->*-opt-optional2
+   '((contract (->* () (values boolean? integer?)) (lambda () (values #t 1)) 'pos 'neg)))
+
+   (test/spec-passed
+   '->*-opt-optional3
+   '((contract (->* () #:rest any/c integer?) (lambda x 1) 'pos 'neg)))
+
+   (test/spec-passed
+   '->*-opt-optional4
+   '((contract (->* () #:pre #t integer?) (lambda x 1) 'pos 'neg)))
+
+   (test/spec-passed
+   '->*-opt-optional5
+   '((contract (->* () integer? #:post #t) (lambda x 1) 'pos 'neg)))
   
 ;               
 ;               
@@ -8647,11 +8667,11 @@ so that propagation occurs.
   (test-name '(->* (integer? char? #:z string?) (boolean? #:i number?) #:rest (listof integer?) (values number? boolean? symbol?)) 
               (->* (#:z string? integer? char?) (boolean? #:i number?) #:rest (listof integer?) (values number? boolean? symbol?)))
   
-  (test-name '(->* (integer?) () #:pre ... integer?)
+  (test-name '(->* (integer?) #:pre ... integer?)
 			  (->* (integer?) () #:pre (= 1 2) integer?))
-  (test-name '(->* (integer?) () integer? #:post ...)
+  (test-name '(->* (integer?) integer? #:post ...)
 		 	  (->* (integer?) () integer? #:post #f))
-  (test-name '(->* (integer?) () #:pre ... integer? #:post ...)
+  (test-name '(->* (integer?) #:pre ... integer? #:post ...)
 			  (->* (integer?) () #:pre (= 1 2) integer? #:post #f))
   
   (test-name '(->d () () any) (->d () () any))

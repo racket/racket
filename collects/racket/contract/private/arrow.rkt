@@ -239,8 +239,12 @@ v4 todo:
         build-compound-type-name 
         '->*
         (apply build-compound-type-name (append doms/c (apply append (map list kwds kwds/c))))
-        (apply build-compound-type-name (append optional-doms/c (apply append (map list optional-kwds optional-kwds/c))))
-        (append (if doms-rest
+        (append (let ([opts
+                       (apply build-compound-type-name (append optional-doms/c (apply append (map list optional-kwds optional-kwds/c))))])
+                  (if (null? opts)
+                      '()
+                      (list opts)))
+                (if doms-rest
                     (list '#:rest doms-rest)
                     (list))
                 (if pre 
@@ -537,7 +541,20 @@ v4 todo:
         (raise-syntax-error #f "duplicate keyword" stx (car kwds))))))
 
 (define-for-syntax (parse-leftover->* stx leftover)
-  (let*-values ([(rst leftover)
+  (let*-values ([(raw-optional-doms leftover)
+                 (syntax-case leftover ()
+                   [(kwd . rst)
+                    (keyword? (syntax-e #'kwd))
+                    (values #'() leftover)]
+                   [(rng #:post . rst)
+                    (values #'() leftover)]
+                   [(rng)
+                    (values #'() leftover)]
+                   [((raw-optional-dom ...) . leftover)
+                    (values #'(raw-optional-dom ...) #'leftover)]
+                   [_ 
+                    (values #'() leftover)])]
+                [(rst leftover)
                  (syntax-case leftover ()
                    [(#:rest rest-expr . leftover)
                     (values #'rest-expr #'leftover)]
@@ -567,53 +584,53 @@ v4 todo:
                    [else
                     (values #f leftover)])])
     (syntax-case leftover ()
-      [() (values rst pre rng post)]
+      [() (values raw-optional-doms rst pre rng post)]
       [x (raise-syntax-error #f "expected the end of the contract" stx #'x)])))
 
 ;; ->*/proc/main : syntax -> (values syntax[contract-record] syntax[args/lambda-body] syntax[names])
 (define-for-syntax (->*/proc/main stx)
   (syntax-case* stx (->* any) module-or-top-identifier=?
-    [(->* (raw-mandatory-dom ...) (raw-optional-dom ...) . rst)
-     (with-syntax ([((mandatory-dom ...) ((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...))
-                    (split-doms stx '->* #'(raw-mandatory-dom ...))]
-                   [((optional-dom ...) ((optional-dom-kwd optional-dom-kwd-ctc) ...))
-                    (split-doms stx '->* #'(raw-optional-dom ...))])
-       ;(check-duplicate-kwds stx (syntax->list #'(mandatory-dom-kwd ... optional-dom-kwd ...)))
-       (with-syntax ([(mandatory-dom-proj ...) (generate-temporaries #'(mandatory-dom ...))]
-                     [(mandatory-dom-arg ...) (generate-temporaries #'(mandatory-dom ...))]
-                     [(mandatory-dom-kwd-proj ...) (generate-temporaries #'(mandatory-dom-kwd ...))]
-                     [(mandatory-dom-kwd-arg ...) (generate-temporaries #'(mandatory-dom-kwd ...))]
-                     
-                     [(optional-dom-proj ...) (generate-temporaries #'(optional-dom ...))]
-                     [(optional-dom-arg ...) (generate-temporaries #'(optional-dom ...))]
-                     [(optional-dom-kwd-proj ...) (generate-temporaries #'(optional-dom-kwd ...))]
-                     [(optional-dom-kwd-arg ...) (generate-temporaries #'(optional-dom-kwd ...))])
-         (with-syntax ([(mandatory-dom-kwd/var-seq ...) (apply append 
-                                                               (map list
-                                                                    (syntax->list #'(mandatory-dom-kwd ...)) 
-                                                                    (syntax->list #'(mandatory-dom-kwd-arg ...))))]
-                       [(optional-dom-kwd/var-seq ...) (apply append 
-                                                              (map list 
-                                                                   (syntax->list #'(optional-dom-kwd ...)) 
-                                                                   (syntax->list #'([optional-dom-kwd-arg unspecified-dom] ...))))]
-                       [(mandatory-dom-kwd-proj-apps ...) (apply append 
+    [(->* (raw-mandatory-dom ...) . rst)
+     (let-values ([(raw-optional-doms rest-ctc pre rng-ctc post)
+                   ;; rest-ctc (or/c #f syntax) -- #f means no rest contract, syntax is the contract
+                   ;; rng-ctc (or/c #f syntax) -- #f means `any', syntax is a sequence of result values
+                   (parse-leftover->* stx #'rst)])
+       (with-syntax ([((mandatory-dom ...) ((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...))
+                      (split-doms stx '->* #'(raw-mandatory-dom ...))]
+                     [((optional-dom ...) ((optional-dom-kwd optional-dom-kwd-ctc) ...))
+                      (split-doms stx '->* raw-optional-doms)])
+         ;(check-duplicate-kwds stx (syntax->list #'(mandatory-dom-kwd ... optional-dom-kwd ...)))
+         (with-syntax ([(mandatory-dom-proj ...) (generate-temporaries #'(mandatory-dom ...))]
+                       [(mandatory-dom-arg ...) (generate-temporaries #'(mandatory-dom ...))]
+                       [(mandatory-dom-kwd-proj ...) (generate-temporaries #'(mandatory-dom-kwd ...))]
+                       [(mandatory-dom-kwd-arg ...) (generate-temporaries #'(mandatory-dom-kwd ...))]
+                       
+                       [(optional-dom-proj ...) (generate-temporaries #'(optional-dom ...))]
+                       [(optional-dom-arg ...) (generate-temporaries #'(optional-dom ...))]
+                       [(optional-dom-kwd-proj ...) (generate-temporaries #'(optional-dom-kwd ...))]
+                       [(optional-dom-kwd-arg ...) (generate-temporaries #'(optional-dom-kwd ...))])
+           (with-syntax ([(mandatory-dom-kwd/var-seq ...) (apply append 
                                                                  (map list
                                                                       (syntax->list #'(mandatory-dom-kwd ...)) 
-                                                                      (syntax->list #'((mandatory-dom-kwd-proj mandatory-dom-kwd-arg) ...))))]
-                       [((sorted-dom-kwd sorted-dom-kwd-arg sorted-dom-kwd-proj) ...) 
-                        (sort-keywords stx (syntax->list
-                                            #'((mandatory-dom-kwd mandatory-dom-kwd-arg mandatory-dom-kwd-proj) ...
-                                               (optional-dom-kwd optional-dom-kwd-arg optional-dom-kwd-proj) ...)))])
-           (with-syntax ([((rev-sorted-dom-kwd rev-sorted-dom-kwd-arg rev-sorted-dom-kwd-proj) ...)
-                          (reverse (syntax->list #'((sorted-dom-kwd sorted-dom-kwd-arg sorted-dom-kwd-proj) ...)))]
-                         [(rev-optional-dom-arg ...) (reverse (syntax->list #'(optional-dom-arg ...)))]
-                         [(rev-optional-dom-proj ...) (reverse (syntax->list #'(optional-dom-proj ...)))])
-             
-             
-             (let-values ([(rest-ctc pre rng-ctc post)
-                           ;; rest-ctc (or/c #f syntax) -- #f means no rest contract, syntax is the contract
-                           ;; rng-ctc (or/c #f syntax) -- #f means `any', syntax is a sequence of result values
-                           (parse-leftover->* stx #'rst)])
+                                                                      (syntax->list #'(mandatory-dom-kwd-arg ...))))]
+                         [(optional-dom-kwd/var-seq ...) (apply append 
+                                                                (map list 
+                                                                     (syntax->list #'(optional-dom-kwd ...)) 
+                                                                     (syntax->list #'([optional-dom-kwd-arg unspecified-dom] ...))))]
+                         [(mandatory-dom-kwd-proj-apps ...) (apply append 
+                                                                   (map list
+                                                                        (syntax->list #'(mandatory-dom-kwd ...)) 
+                                                                        (syntax->list #'((mandatory-dom-kwd-proj mandatory-dom-kwd-arg) ...))))]
+                         [((sorted-dom-kwd sorted-dom-kwd-arg sorted-dom-kwd-proj) ...) 
+                          (sort-keywords stx (syntax->list
+                                              #'((mandatory-dom-kwd mandatory-dom-kwd-arg mandatory-dom-kwd-proj) ...
+                                                 (optional-dom-kwd optional-dom-kwd-arg optional-dom-kwd-proj) ...)))])
+             (with-syntax ([((rev-sorted-dom-kwd rev-sorted-dom-kwd-arg rev-sorted-dom-kwd-proj) ...)
+                            (reverse (syntax->list #'((sorted-dom-kwd sorted-dom-kwd-arg sorted-dom-kwd-proj) ...)))]
+                           [(rev-optional-dom-arg ...) (reverse (syntax->list #'(optional-dom-arg ...)))]
+                           [(rev-optional-dom-proj ...) (reverse (syntax->list #'(optional-dom-proj ...)))])
+               
+               
                (with-syntax ([(rng-proj ...) (generate-temporaries (or rng-ctc '()))]
                              [(rng ...) (generate-temporaries (or rng-ctc '()))]
                              [(this-parameter ...)
