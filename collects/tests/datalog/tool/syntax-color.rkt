@@ -24,6 +24,7 @@
    (test-color "123var" 'identifier)
    (test-color "(" 'parenthesis)
    (test-color ")" 'parenthesis)
+   (test-color "!=" 'parenthesis)
    (test-color "=" 'parenthesis)
    (test-color "?" 'parenthesis)
    (test-color "~" 'parenthesis)
