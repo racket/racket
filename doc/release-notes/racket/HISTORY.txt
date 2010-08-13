@@ -1,3 +1,6 @@
+Added ->i to the contract library, improved ->*, adding #:pre and
+ #:post, as well as making the optional arguments clause optional.
+
 Version 5.0.1.2
 Added collection-file-path and collection splicing at the file
 level
