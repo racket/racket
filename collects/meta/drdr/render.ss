@@ -264,7 +264,9 @@
                                               `(span ([class "commandline"]) ,s))
                                             command-line)
                                        " ")))
-                            (tr (td "Duration:") (td ,(format-duration-ms dur)))
+                            (tr (td "Duration:") (td ,(format-duration-ms dur)
+                                                     nbsp (a ([href ,(format "/data~a" (path-add-suffix the-base-path #".timing"))])
+                                                             "(timing data)")))
                             (tr (td "Timeout:") (td ,(if (timeout? log) checkmark-entity "")))
                             (tr (td "Exit Code:") (td ,(if (exit? log) (number->string (exit-code log)) "")))
                             (tr (td " ") (td (a ([href ,scm-url]) "View File"))))
@@ -524,6 +526,9 @@
                and right of the image move between panes.}
             @p{The legend at the bottom of the graph shows the current pane, as well as the push number and any timing information from that push.}
             @p{Click on the graph to jump to the DrDr page for a specific push.}
+            
+            @h1{What is the timing data format?}
+            @p{The timing files are a list of S-expressions. Their grammar is: @code{(push duration ((cpu real gc) ...))} where @code{push} is an integer, @code{duration} is an inexact millisecond, and @code{cpu}, @code{real}, and @code{gc} are parsed from the @code{time-apply} function.}
 
             @h1{Why are some pushes missing?}
             @p{Some pushes are missing because they only modify branches. Only pushes that change the @code{master} branch are tested.}
