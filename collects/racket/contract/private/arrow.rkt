@@ -615,9 +615,6 @@ v4 todo:
                                        (if rng-ctc
                                            #`(apply-projections ((rng rng-proj) ...)
                                                                 #,call)
-                                           #;
-                                           #`(let-values ([(rng ...) #,call])
-                                               (values (rng-proj rng) ...))
                                            call))))))
                          ctc))))))))))]))
            
@@ -1361,18 +1358,6 @@ v4 todo:
 ;                       
 ;                       
 ;                       
-
-#;
-(define-syntax (apply-projection stx)
-  (syntax-case stx ()
-    [(_ f v) #'(f v)]))
-
-#;
-(define-syntax (apply-projections stx)
-  (syntax-case stx ()
-    [(_ ((x f) ...) e) 
-     #'(let-values ([(x ...) e])
-         (values (f x) ...))]))
 
 (define-syntax (apply-projections stx)
   (syntax-case stx ()
