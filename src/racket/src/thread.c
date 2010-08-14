@@ -4565,10 +4565,12 @@ void scheme_end_atomic_can_break(void)
 
 static void wait_until_suspend_ok(int for_stack)
 {
-  if (do_atomic > atomic_timeout_atomic_level) {
-    if (for_stack && atomic_timeout_auto_suspend) {
-      /* new-style atomic timeout, where a stack oveflow is ok */
-    } else {
+  if (scheme_on_atomic_timeout && atomic_timeout_auto_suspend) {
+    /* new-style atomic timeout */
+    if (for_stack) {
+      /* a stack overflow is ok for the new-style timeout */
+      return;
+    } else if (do_atomic > atomic_timeout_atomic_level) {
       scheme_log_abort("attempted to wait for suspend in nested atomic mode");
       abort();
     }
@@ -4588,6 +4590,8 @@ Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Time
   if (p) {
     atomic_timeout_auto_suspend = 1;
     atomic_timeout_atomic_level = do_atomic;
+  } else {
+    atomic_timeout_auto_suspend = 0;
   }
 
   return old;
