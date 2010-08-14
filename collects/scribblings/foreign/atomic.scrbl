@@ -27,10 +27,11 @@ are faster.}
 )]{
 
 Like @racket[start-atomic] and @racket[end-atomic], but the delivery
-of break exceptions is not suspended. Use these only in
-@racket[dynamic-wind] pre- and post thunks or in other contexts where
-breaks are disabled. These variants are not faster than plan
-@racket[start-atomic] and @racket[end-atomic].}
+of break exceptions is not suspended. To ensure that a call to
+@racket[start-atomic] is reliably paired with a call to
+@racket[end-atomic], use @racket[dynamic-wind] pre- and post thunks or
+some other context where breaks are disabled. These variants are not
+faster than plan @racket[start-atomic] and @racket[end-atomic].}
 
 
 @defproc[(call-as-atomic [thunk (-> any)]) any]{
