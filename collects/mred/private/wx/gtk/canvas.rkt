@@ -47,17 +47,16 @@
   #:fail (lambda ()
 	   ;; This by-hand version doesn't produce quite the same notifications.
 	   (lambda (gtk value lower upper step-inc page-inc page-size)
-	     (as-entry
-	      (lambda ()
-		(g_object_freeze_notify gtk)
-		(g_object_set_double gtk "lower" lower)
-		(g_object_set_double gtk "upper" upper)
-		(g_object_set_double gtk "step-increment" step-inc)
-		(g_object_set_double gtk "page-increment" page-inc)
-		(g_object_set_double gtk "page-size" page-size)
-		(let ([value (max lower (min value (- upper page-size)))])
-		  (gtk_adjustment_set_value gtk value))
-		(g_object_thaw_notify gtk))))))
+	     (atomically
+              (g_object_freeze_notify gtk)
+              (g_object_set_double gtk "lower" lower)
+              (g_object_set_double gtk "upper" upper)
+              (g_object_set_double gtk "step-increment" step-inc)
+              (g_object_set_double gtk "page-increment" page-inc)
+              (g_object_set_double gtk "page-size" page-size)
+              (let ([value (max lower (min value (- upper page-size)))])
+                (gtk_adjustment_set_value gtk value))
+              (g_object_thaw_notify gtk)))))
 (define-gtk gtk_adjustment_get_value (_fun _GtkAdjustment -> _double*))
 (define-gtk gtk_adjustment_set_value (_fun _GtkAdjustment _double* -> _void))
 (define-gtk gtk_adjustment_get_upper (_fun _GtkAdjustment -> _double*)
@@ -348,6 +347,7 @@
       (queue-paint))
 
     (define/public (queue-backing-flush)
+      ;; called atomically (not expecting exceptions)
       (gtk_widget_queue_draw client-gtk))
     
     (define/override (reset-child-dcs)

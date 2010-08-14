@@ -538,6 +538,7 @@
         (cairo_stroke cr2)
         (cairo_destroy cr2)
         (let* ([p (cairo_pattern_create_for_surface s)])
+          (cairo_surface_destroy s)
           (cairo_pattern_set_extend p CAIRO_EXTEND_REPEAT)
           (cairo_set_source cr p)
           (cairo_pattern_destroy p))))

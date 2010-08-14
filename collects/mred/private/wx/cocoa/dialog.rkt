@@ -14,11 +14,10 @@
 
   (define/override (direct-show on?)
     (unless on?
-      (as-entry
-       (lambda ()
-         (when close-sema
-           (semaphore-post close-sema)
-           (set! close-sema #f)))))
+      (atomically
+       (when close-sema
+         (semaphore-post close-sema)
+         (set! close-sema #f))))
     (super direct-show on?))
 
   ;; #t result avoids children sheets
@@ -26,11 +25,10 @@
 
   (define/override (show on?)
     (if on?
-        (let ([s (as-entry
-                  (lambda ()
-                    (let ([s (or close-sema (make-semaphore))])
-                      (unless close-sema (set! close-sema s))
-                      s)))])
+        (let ([s (atomically
+                  (let ([s (or close-sema (make-semaphore))])
+                    (unless close-sema (set! close-sema s))
+                    s))])
           (super show on?)
           (yield s)
           (void))

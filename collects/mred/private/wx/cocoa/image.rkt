@@ -60,26 +60,25 @@
     (let ([mask (send bm get-loaded-mask)])
       (when mask
         (send mask get-argb-pixels 0 0 w h str #t)))
-    (as-entry
-     (lambda ()
-       (let ([rgba (scheme_make_sized_byte_string (malloc (* w h 4) 'raw) (* w h 4) 0)])
-         (memcpy rgba str (sub1 (* w h 4)))
-         (let* ([cs (CGColorSpaceCreateDeviceRGB)]
-                [provider (CGDataProviderCreateWithData #f rgba (* w h 4) free-it)]
-                [image (CGImageCreate w
-                                      h
-                                      8
-                                      32
-                                      (* 4 w)
-                                      cs
-                                      (bitwise-ior kCGImageAlphaFirst
-                                                   kCGBitmapByteOrder32Big)
-                                      provider ; frees `rgba'
-                                      #f
-                                      #f
-                                      0)])
-           (CGDataProviderRelease provider)
-           (CGColorSpaceRelease cs)
-           (tell (tell NSImage alloc) 
-                 initWithCGImage: #:type _CGImageRef image
-                 size: #:type _NSSize (make-NSSize w h))))))))
+    (atomically
+     (let ([rgba (scheme_make_sized_byte_string (malloc (* w h 4) 'raw) (* w h 4) 0)])
+       (memcpy rgba str (sub1 (* w h 4)))
+       (let* ([cs (CGColorSpaceCreateDeviceRGB)]
+              [provider (CGDataProviderCreateWithData #f rgba (* w h 4) free-it)]
+              [image (CGImageCreate w
+                                    h
+                                    8
+                                    32
+                                    (* 4 w)
+                                    cs
+                                    (bitwise-ior kCGImageAlphaFirst
+                                                 kCGBitmapByteOrder32Big)
+                                    provider ; frees `rgba'
+                                    #f
+                                    #f
+                                    0)])
+         (CGDataProviderRelease provider)
+         (CGColorSpaceRelease cs)
+         (tell (tell NSImage alloc) 
+               initWithCGImage: #:type _CGImageRef image
+               size: #:type _NSSize (make-NSSize w h)))))))

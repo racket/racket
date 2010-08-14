@@ -50,27 +50,26 @@
         (values (unbox xb) (unbox yb))))
 
     (define/override (queue-backing-flush)
+      ;; called atomically (not expecting exceptions)
       (send canvas queue-backing-flush))
 
     (define suspend-count 0)
     (define req #f)
 
     (define/override (suspend-flush) 
-      (as-entry
-       (lambda ()
-         (when (zero? suspend-count)
-           (set! req (request-flush-delay (send canvas get-cocoa-window))))
-         (set! suspend-count (add1 suspend-count))
-         (super suspend-flush))))
+      (atomically
+       (when (zero? suspend-count)
+         (set! req (request-flush-delay (send canvas get-cocoa-window))))
+       (set! suspend-count (add1 suspend-count))
+       (super suspend-flush)))
 
     (define/override (resume-flush) 
-      (as-entry
-       (lambda ()
-         (set! suspend-count (sub1 suspend-count))
-         (when (and (zero? suspend-count) req)
-           (cancel-flush-delay req)
-           (set! req #f))
-         (super resume-flush))))))
+      (atomically
+       (set! suspend-count (sub1 suspend-count))
+       (when (and (zero? suspend-count) req)
+         (cancel-flush-delay req)
+         (set! req #f))
+       (super resume-flush)))))
 
 (define (do-backing-flush canvas dc ctx dx dy)
   (tellv ctx saveGraphicsState)

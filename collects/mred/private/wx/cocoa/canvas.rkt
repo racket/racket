@@ -235,6 +235,7 @@
       (queue-paint))
 
     (define/public (queue-backing-flush)
+      ;; called atomically (not expecting exceptions)
       (tellv content-cocoa setNeedsDisplay: #:type _BOOL #t))
 
     (define/override (get-cocoa-content) content-cocoa)

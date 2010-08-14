@@ -412,28 +412,26 @@
 (define depth 0)
 
 (define (request-flush-delay cocoa-win)
-  (as-entry
-   (lambda ()
-     (let ([req (box cocoa-win)])
-       (set! depth (add1 depth))
-       (tellv cocoa-win disableFlushWindow)
-       (add-event-boundary-sometimes-callback! 
-        req
-        (lambda (v) 
-          ;; in atomic mode
-          (when (unbox req) 
-            (set-box! req #f)
-            (set! depth (sub1 depth))
-            (tellv cocoa-win enableFlushWindow)
-            (tellv cocoa-win flushWindow))))
-       req))))
+  (atomically
+   (let ([req (box cocoa-win)])
+     (set! depth (add1 depth))
+     (tellv cocoa-win disableFlushWindow)
+     (add-event-boundary-sometimes-callback! 
+      req
+      (lambda (v) 
+        ;; in atomic mode
+        (when (unbox req) 
+          (set-box! req #f)
+          (set! depth (sub1 depth))
+          (tellv cocoa-win enableFlushWindow)
+          (tellv cocoa-win flushWindow))))
+     req)))
 
 (define (cancel-flush-delay req)
-  (as-entry
-   (lambda ()
-     (let ([cocoa-win (unbox req)])
-       (when cocoa-win
-         (set-box! req #f)
-         (set! depth (sub1 depth))
-         (tellv cocoa-win enableFlushWindow)
-         (remove-event-boundary-callback! req))))))
+  (atomically
+   (let ([cocoa-win (unbox req)])
+     (when cocoa-win
+       (set-box! req #f)
+       (set! depth (sub1 depth))
+       (tellv cocoa-win enableFlushWindow)
+       (remove-event-boundary-callback! req)))))

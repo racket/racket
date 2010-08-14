@@ -380,13 +380,12 @@
 
     (define shown? #f)
     (define/public (direct-show on?)
-      (as-entry
-       (lambda ()
-         (if on?
-             (gtk_widget_show gtk)
-             (gtk_widget_hide gtk))
-         (set! shown? (and on? #t))
-         (register-child-in-parent on?)))
+      (atomically
+       (if on?
+           (gtk_widget_show gtk)
+           (gtk_widget_hide gtk))
+       (set! shown? (and on? #t))
+       (register-child-in-parent on?))
       (when on? (reset-child-dcs)))
     (define/public (show on?)
       (direct-show on?))

@@ -39,18 +39,17 @@
     (let ([mask (send bm get-loaded-mask)])
       (when mask
         (send mask get-argb-pixels 0 0 w h str #t)))
-    (as-entry
-     (lambda ()
-       (let ([rgba (scheme_make_sized_byte_string (malloc (* w h 4) 'raw) (* w h 4) 0)])
-         (memcpy rgba (ptr-add str 1) (sub1 (* w h 4)))
-         (for ([i (in-range 0 (* w h 4) 4)])
-           (bytes-set! rgba (+ i 3) (bytes-ref str i)))
-         (gdk_pixbuf_new_from_data rgba
-                                   0
-                                   #t
-                                   8
-                                   w
-                                   h
-                                   (* w 4)
-                                   free-it
-                                   #f))))))
+    (atomically
+     (let ([rgba (scheme_make_sized_byte_string (malloc (* w h 4) 'raw) (* w h 4) 0)])
+       (memcpy rgba (ptr-add str 1) (sub1 (* w h 4)))
+       (for ([i (in-range 0 (* w h 4) 4)])
+         (bytes-set! rgba (+ i 3) (bytes-ref str i)))
+       (gdk_pixbuf_new_from_data rgba
+                                 0
+                                 #t
+                                 8
+                                 w
+                                 h
+                                 (* w 4)
+                                 free-it
+                                 #f)))))

@@ -24,11 +24,10 @@
   (inherit get-gtk)
 
   (define/public (set-value v)
-    (as-entry
-     (lambda ()
-       (set! no-clicked? #t)
-       (gtk_toggle_button_set_active (get-gtk) v)
-       (set! no-clicked? #f))))
+    (atomically
+     (set! no-clicked? #t)
+     (gtk_toggle_button_set_active (get-gtk) v)
+     (set! no-clicked? #f)))
 
   (define no-clicked? #f)
   (define/override (queue-clicked)

@@ -33,6 +33,7 @@
         (values (unbox xb) (unbox yb))))
 
     (define/override (queue-backing-flush)
+      ;; called atomically (not expecting exceptions)
       (send canvas queue-backing-flush))))
 
 (define (do-backing-flush canvas dc win)

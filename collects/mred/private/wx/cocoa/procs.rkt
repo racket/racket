@@ -114,9 +114,9 @@
   (tellv NSCursor setHiddenUntilMouseMoves: #:type _BOOL #t))
 
 (define busy-count 0)
-(define (end-busy-cursor) (as-entry (lambda () (set! busy-count (add1 busy-count)))))
+(define (end-busy-cursor) (atomically (set! busy-count (add1 busy-count))))
 (define (is-busy?) (positive? busy-count))
-(define (begin-busy-cursor) (as-entry (lambda () (set! busy-count (sub1 busy-count)))))
+(define (begin-busy-cursor) (atomically (set! busy-count (sub1 busy-count))))
 
 (define (get-display-depth) 32)
 (define-unimplemented is-color-display?)

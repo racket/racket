@@ -41,7 +41,7 @@
 
     ;; override this method to set up a callback to
     ;;  `on-backing-flush' when the backing store can be rendered
-    ;;  to the screen
+    ;;  to the screen; called atomically (expecting no exceptions)
     (define/public (queue-backing-flush)
       (void))
 
@@ -102,18 +102,13 @@
     (define flush-suspends 0)
 
     (define/override (suspend-flush) 
-      (as-entry
-       (lambda ()
-         ;; if not suspended currently, sleep to encourage any
-         ;; existing flush requests to complete
-         (when (zero? flush-suspends) (sleep))
-         (set! flush-suspends (add1 flush-suspends)))))
+      (atomically
+       (set! flush-suspends (add1 flush-suspends))))
     (define/override (resume-flush)  
-      (as-entry
-       (lambda ()
-         (set! flush-suspends (sub1 flush-suspends))
-         (when (zero? flush-suspends)
-           (queue-backing-flush)))))))
+      (atomically 
+       (set! flush-suspends (sub1 flush-suspends))
+       (when (zero? flush-suspends)
+         (queue-backing-flush))))))
 
 (define (get-backing-bitmap w h)
   (make-object bitmap% w h #f #t))

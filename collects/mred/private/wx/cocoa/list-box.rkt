@@ -106,16 +106,15 @@
   (define/public (get-selection)
     (tell #:type _NSInteger content-cocoa selectedRow))
   (define/public (get-selections)
-    (as-entry
-     (lambda ()
-       (with-autorelease
-        (let ([v (tell content-cocoa selectedRowIndexes)])
-          (begin0
-           (let loop ([i (tell #:type _NSInteger v firstIndex)])
-             (cond
-              [(= i NSNotFound) null]
-              [else (cons i (loop (tell #:type _NSInteger v 
-                                        indexGreaterThanIndex: #:type _NSInteger i)))]))))))))
+    (atomically
+     (with-autorelease
+      (let ([v (tell content-cocoa selectedRowIndexes)])
+        (begin0
+         (let loop ([i (tell #:type _NSInteger v firstIndex)])
+           (cond
+            [(= i NSNotFound) null]
+            [else (cons i (loop (tell #:type _NSInteger v 
+                                      indexGreaterThanIndex: #:type _NSInteger i)))])))))))
     
   (define/private (visible-range)
     (tell #:type _NSRange content-cocoa 
@@ -158,13 +157,12 @@
 
   (define/public (select i [on? #t] [extend? #t])
     (if on?
-        (as-entry
-         (lambda ()
-           (with-autorelease
-            (let ([index (tell (tell NSIndexSet alloc) initWithIndex: #:type _NSUInteger i)])
-              (tellv content-cocoa 
-                     selectRowIndexes: index
-                     byExtendingSelection: #:type _BOOL extend?)))))
+        (atomically
+         (with-autorelease
+          (let ([index (tell (tell NSIndexSet alloc) initWithIndex: #:type _NSUInteger i)])
+            (tellv content-cocoa 
+                   selectRowIndexes: index
+                   byExtendingSelection: #:type _BOOL extend?))))
         (tellv content-cocoa deselectRow: #:type _NSInteger i)))
   (define/public (set-selection i)
     (select i #t #f))

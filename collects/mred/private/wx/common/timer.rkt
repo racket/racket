@@ -16,10 +16,10 @@
   (define current-once? (and just-once? #t))
   (define cb #f)
   (def/public (interval) current-interval)
-  (def/public (start [(integer-in 0 1000000000) msec] [any? [once? #f]])
+  (define/private (do-start msec once?)
     (as-entry
      (lambda ()
-       (stop)
+       (do-stop)
        (set! current-interval msec)
        (set! current-once? (and once? #t))
        (letrec ([new-cb
@@ -31,17 +31,19 @@
                                            (lambda ()
                                              (unless once?
                                                (when (eq? cb new-cb)
-                                                 (start msec #f))))))))])
+                                                 (do-start msec #f))))))))])
          (set! cb new-cb)
          (add-timer-callback new-cb)))))
-  (def/public (stop)
+  (def/public (start [(integer-in 0 1000000000) msec] [any? [once? #f]])
+    (do-start msec once?))
+  (define/private (do-stop)
     (as-entry
      (lambda ()
        (when cb
          (remove-timer-callback cb)
          (set! cb #f)))))
+  (def/public (stop) (do-stop))
   (def/public (notify) (notify-cb) (void))
   (super-new)
   (when ival
     (start ival just-once?)))
-

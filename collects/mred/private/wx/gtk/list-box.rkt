@@ -160,30 +160,28 @@
       (gtk_tree_path_free p)))
 
   (define/public (set choices)
-    (as-entry
-     (lambda ()
-       (set! ignore-click? #t)
-       (clear)
-       (set! items choices)
-       (set! data (map (lambda (x) (box #f)) choices))
-       (reset-content)
-       (set! ignore-click? #f))))
+    (atomically
+     (set! ignore-click? #t)
+     (clear)
+     (set! items choices)
+     (set! data (map (lambda (x) (box #f)) choices))
+     (reset-content)
+     (set! ignore-click? #f)))
 
   (define/public (get-selections)
-    (as-entry
-     (lambda ()
-       (let ([list (gtk_tree_selection_get_selected_rows selection #f)])
-         (if list
-             (let ([v null])
-               (g_list_foreach list 
-                               (lambda (t) 
-                                 (set! v (cons (ptr-ref (gtk_tree_path_get_indices t) _int)
-                                               v)))
-                               #f)
-               (g_list_foreach list gtk_tree_path_free #f)
-               (g_list_free list)
-               (reverse v))
-             null)))))
+    (atomically
+     (let ([list (gtk_tree_selection_get_selected_rows selection #f)])
+       (if list
+           (let ([v null])
+             (g_list_foreach list 
+                             (lambda (t) 
+                               (set! v (cons (ptr-ref (gtk_tree_path_get_indices t) _int)
+                                             v)))
+                             #f)
+             (g_list_foreach list gtk_tree_path_free #f)
+             (g_list_free list)
+             (reverse v))
+           null))))
   (define/public (get-selection)
     (let ([l (get-selections)])
       (if (null? l)
@@ -191,14 +189,13 @@
           (car l))))
 
   (define/private (get-visible-range)
-    (as-entry
-     (lambda ()
-       (let-values ([(sp ep) (gtk_tree_view_get_visible_range client-gtk)])
-         (begin0
-          (values (if sp (ptr-ref (gtk_tree_path_get_indices sp) _int) 0)
-                  (if ep (ptr-ref (gtk_tree_path_get_indices ep) _int) 0))
-          (when sp (gtk_tree_path_free sp))
-          (when ep (gtk_tree_path_free ep)))))))
+    (atomically
+     (let-values ([(sp ep) (gtk_tree_view_get_visible_range client-gtk)])
+       (begin0
+        (values (if sp (ptr-ref (gtk_tree_path_get_indices sp) _int) 0)
+                (if ep (ptr-ref (gtk_tree_path_get_indices ep) _int) 0))
+        (when sp (gtk_tree_path_free sp))
+        (when ep (gtk_tree_path_free ep))))))
 
   (define/public (get-first-item)
     (let-values ([(start end) (get-visible-range)])
@@ -219,18 +216,17 @@
        (gtk_tree_path_free p))))
 
   (define/public (select i [on? #t] [extend? #t])
-    (as-entry
-     (lambda ()
-       (set! ignore-click? #t)
-       (let ([p (gtk_tree_path_new_from_indices i -1)])
-         (if on?
-             (begin
-               (unless extend?
-                 (gtk_tree_selection_unselect_all selection))
-               (gtk_tree_selection_select_path selection p))
-             (gtk_tree_selection_unselect_path selection p))
-         (gtk_tree_path_free p))
-       (set! ignore-click? #f))))
+    (atomically
+     (set! ignore-click? #t)
+     (let ([p (gtk_tree_path_new_from_indices i -1)])
+       (if on?
+           (begin
+             (unless extend?
+               (gtk_tree_selection_unselect_all selection))
+             (gtk_tree_selection_select_path selection p))
+           (gtk_tree_selection_unselect_path selection p))
+       (gtk_tree_path_free p))
+     (set! ignore-click? #f)))
 
   (define/public (set-selection i)
     (select i #t #f))
@@ -248,15 +244,14 @@
 
   (public [append* append])
   (define (append* s [v #f])
-    (as-entry
-     (lambda ()
-       (set! ignore-click? #t)
-       (set! items (append items (list s)))
-       (set! data (append data (list (box v))))
-       (let ([iter (make-GtkTreeIter 0 #f #f #f)])
-         (gtk_list_store_append store iter #f)
-         (gtk_list_store_set store iter 0 s -1))
-       (maybe-init-select)
-       (set! ignore-click? #f))))
+    (atomically
+     (set! ignore-click? #t)
+     (set! items (append items (list s)))
+     (set! data (append data (list (box v))))
+     (let ([iter (make-GtkTreeIter 0 #f #f #f)])
+       (gtk_list_store_append store iter #f)
+       (gtk_list_store_set store iter 0 s -1))
+     (maybe-init-select)
+     (set! ignore-click? #f)))
 
-  (reset-content))
+  (atomically (reset-content)))

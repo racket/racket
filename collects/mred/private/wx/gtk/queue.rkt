@@ -3,7 +3,7 @@
          ffi/unsafe
          "utils.rkt"
          "types.rkt"
-         racket/draw/lock
+         "../../lock.rkt"
          "../common/queue.rkt"
          "../common/freeze.rkt"
          "const.rkt")
@@ -131,5 +131,5 @@
   (thread (lambda ()
             (let loop ()
               (sync queue-evt)
-              (as-entry dispatch-all-ready)
+              (atomically (dispatch-all-ready))
               (loop)))))

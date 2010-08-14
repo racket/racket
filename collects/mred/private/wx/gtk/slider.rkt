@@ -68,10 +68,9 @@
                              [time-stamp (current-milliseconds)]))))))
 
   (define/public (set-value v)
-    (as-entry
-     (lambda ()
-       (set! ignore-click? #t)
-       (gtk_range_set_value gtk v)
-       (set! ignore-click? #f))))
+    (atomically
+     (set! ignore-click? #t)
+     (gtk_range_set_value gtk v)
+     (set! ignore-click? #f)))
   (define/public (get-value)
     (inexact->exact (floor (gtk_range_get_value gtk)))))

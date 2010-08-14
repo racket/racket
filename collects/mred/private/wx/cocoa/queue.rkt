@@ -245,7 +245,7 @@
   (thread (lambda ()
             (let loop ()
               (sync queue-evt)
-              (as-entry dispatch-all-ready)
+              (atomically (dispatch-all-ready))
               (loop)))))
 
 (set-check-queue!

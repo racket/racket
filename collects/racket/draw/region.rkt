@@ -1,12 +1,12 @@
 #lang scheme/base
 (require scheme/class
+         ffi/unsafe/atomic
          "syntax.ss"
          "local.ss"
          "cairo.ss"
          "dc-path.ss"
          "dc-intf.ss"
-         "point.ss"
-         "lock.ss")
+         "point.ss")
 
 (provide region%)
 
@@ -152,25 +152,34 @@
 
     (def/public (in-region? [real? x]
                             [real? y])
-      (as-entry
-       (lambda ()
-         (unless temp-cr
-           (set! temp-cr
-                 (cairo_create
-                  (cairo_image_surface_create CAIRO_FORMAT_A8 1 1))))
-         (let-values ([(x y)
-                       (if matrix
-                           ;; need to use the DC's current transformation
-                           (let ([m (send dc get-clipping-matrix)])
-                             (values (+ (* x (vector-ref m 0))
-                                        (* y (vector-ref m 2))
-                                        (vector-ref m 4))
-                                     (+ (* x (vector-ref m 1))
-                                        (* y (vector-ref m 3))
-                                        (vector-ref m 5))))
-                           ;; no transformation needed
-                           (values x y))])
-           (install-region temp-cr #t (lambda (cr v) (and v (cairo_in_fill temp-cr x y))))))))
+      (let ([cr (call-as-atomic
+                 (lambda ()
+                   (cond
+                    [temp-cr 
+                     (begin0 temp-cr (set! temp-cr #f))]
+                    [else
+                     (let ([s (cairo_image_surface_create CAIRO_FORMAT_A8 1 1)])
+                       (begin0
+                        (cairo_create s)
+                        (cairo_surface_destroy s)))])))])
+        (let-values ([(x y)
+                      (if matrix
+                          ;; need to use the DC's current transformation
+                          (let ([m (send dc get-clipping-matrix)])
+                            (values (+ (* x (vector-ref m 0))
+                                       (* y (vector-ref m 2))
+                                       (vector-ref m 4))
+                                    (+ (* x (vector-ref m 1))
+                                       (* y (vector-ref m 3))
+                                       (vector-ref m 5))))
+                          ;; no transformation needed
+                          (values x y))])
+          (begin0 
+           (install-region cr #t (lambda (cr v) (and v (cairo_in_fill cr x y))))
+           (call-as-atomic
+            (cond
+             [temp-cr (cairo_destroy cr)]
+             [else (set! temp-cr cr)]))))))
 
     (def/public (set-arc [real? x]
                          [real? y]

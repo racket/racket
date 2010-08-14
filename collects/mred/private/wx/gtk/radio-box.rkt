@@ -102,17 +102,16 @@
   (define/override (set-focus)
     (button-focus (max 0 (set-selection))))
   (define/public (set-selection i)
-    (as-entry
-     (lambda ()
-       (set! no-clicked? #t)
-       (if (= i -1)
-           (when (pair? radio-gtks)
-             (unless dummy-gtk 
-               (set! dummy-gtk (gtk_radio_button_new
-                                (gtk_radio_button_get_group (car radio-gtks)))))
-             (gtk_toggle_button_set_active dummy-gtk #t))
-           (gtk_toggle_button_set_active (list-ref radio-gtks i) #t))
-       (set! no-clicked? #f))))
+    (atomically
+     (set! no-clicked? #t)
+     (if (= i -1)
+         (when (pair? radio-gtks)
+           (unless dummy-gtk 
+             (set! dummy-gtk (gtk_radio_button_new
+                              (gtk_radio_button_get_group (car radio-gtks)))))
+           (gtk_toggle_button_set_active dummy-gtk #t))
+         (gtk_toggle_button_set_active (list-ref radio-gtks i) #t))
+     (set! no-clicked? #f)))
 
   (define/public (get-selection)
     (or (for/or ([radio-gtk (in-list radio-gtks)]
