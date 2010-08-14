@@ -324,7 +324,6 @@
       
       (define (handler re-raise)
         (lambda (e)
-          (printf "breaking ..\n")
           (disable-images-button)
           (stop! (if re-raise e (send world get)))))
       
