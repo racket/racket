@@ -383,6 +383,12 @@ code does the parsing and validation of the syntax.
                         [any (raise-syntax-error #f "cannot have a #:post with any as the range" stx #'post-cond)]
                         [_ (void)])
                       (values (pre/post (syntax->list #'(id ...)) #'post-cond) #'leftover))]
+                   [(#:post a b . stuff)
+                    (begin
+                      (raise-syntax-error #f "expected a sequence of variables to follow #:post" stx #'a))]
+                   [(#:post a)
+                    (begin
+                      (raise-syntax-error #f "expected a sequence of variables and an expression to follow #:post" stx #'a))]
                    [_ (values #f leftover)])])
     (syntax-case leftover ()
       [() 
