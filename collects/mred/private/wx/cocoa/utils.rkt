@@ -41,11 +41,12 @@
 
 (import-class NSAutoreleasePool)
 
-(define-syntax-rule (with-autorelease expr)
-  (call-with-autorelease (lambda () expr)))
+;; Use `with-autorelease' and `call-with-autorelease' 
+;; in atomic mode
+(define-syntax-rule (with-autorelease expr ...)
+  (call-with-autorelease (lambda () expr ...)))
 (define (call-with-autorelease thunk)
-  (let ([pool (as-objc-allocation
-               (tell (tell NSAutoreleasePool alloc) init))])
+  (let ([pool (tell (tell NSAutoreleasePool alloc) init)])
     (begin0
      (thunk)
      (release pool))))

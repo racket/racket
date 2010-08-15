@@ -50,10 +50,11 @@
   (define/public (install menu)
     (if submenu
         (send submenu install menu label)
-        (let ([item (tell (tell MyMenuItem alloc) 
-                          initWithTitle: #:type _NSString (regexp-replace #rx"\t.*" label "")
-                          action: #:type _SEL #f
-                          keyEquivalent: #:type _NSString "")])
+        (let ([item (as-objc-allocation
+                     (tell (tell MyMenuItem alloc) 
+                           initWithTitle: #:type _NSString (regexp-replace #rx"\t.*" label "")
+                           action: #:type _SEL #f
+                           keyEquivalent: #:type _NSString ""))])
           (set-ivar! item wxb (->wxb this))
           (tellv menu addItem: item)
           (tellv item setEnabled: #:type _BOOL enabled?)
@@ -78,6 +79,6 @@
                                   NSCommandKeyMask))])
                 (tellv item setKeyEquivalent: #:type _NSString s)
                 (tellv item setKeyEquivalentModifierMask: #:type _NSUInteger mods))))
-          (tellv item release))))
+          (release item))))
 
   (super-new))

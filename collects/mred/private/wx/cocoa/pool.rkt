@@ -11,4 +11,7 @@
 
 (import-class NSAutoreleasePool)
 
+;; This pool manages all objects that would otherwise not
+;; have a pool, which makes them stick around until the
+;; process exits.
 (define pool (tell (tell NSAutoreleasePool alloc) init))

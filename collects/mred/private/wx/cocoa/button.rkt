@@ -79,11 +79,12 @@
                                          (send label get-width))]
                            [new-height (max (NSSize-height (NSRect-size frame))
                                             (send label get-height))])
-                      (let ([cocoa (tell (tell NSView alloc)
-                                         initWithFrame: #:type _NSRect
-                                         (make-NSRect (NSRect-origin frame)
-                                                      (make-NSSize new-width
-                                                                   new-height)))]
+                      (let ([cocoa (as-objc-allocation
+                                    (tell (tell NSView alloc)
+                                          initWithFrame: #:type _NSRect
+                                          (make-NSRect (NSRect-origin frame)
+                                                       (make-NSSize new-width
+                                                                    new-height))))]
                             [image-cocoa (as-objc-allocation
                                           (tell (tell NSImageView alloc) init))])
                         (tellv cocoa addSubview: button-cocoa)

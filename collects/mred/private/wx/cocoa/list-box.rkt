@@ -26,8 +26,10 @@
   [wxb]
   [-a _id (preparedCellAtColumn: [_NSInteger column] row: [_NSInteger row])
       (let ([wx (->wx wxb)])
-        (tell (tell NSCell alloc) initTextCell: #:type _NSString 
-              (if wx (send wx get-row row) "???")))]
+        (tell
+         (tell (tell NSCell alloc) initTextCell: #:type _NSString 
+               (if wx (send wx get-row row) "???"))
+         autorelease))]
   [-a _void (doubleClicked: [_id sender])
       (queue-window*-event wxb (lambda (wx) (send wx clicked 'list-box-dclick)))]
   [-a _void (tableViewSelectionDidChange: [_id aNotification])
@@ -70,8 +72,8 @@
   (define cocoa (as-objc-allocation
                  (tell (tell NSScrollView alloc) init)))
   (define content-cocoa (let ([content-cocoa 
-                              (as-objc-allocation
-                               (tell (tell MyTableView alloc) init))])
+                               (as-objc-allocation
+                                (tell (tell MyTableView alloc) init))])
                          (tellv content-cocoa setDelegate: content-cocoa)
                          (tellv content-cocoa setDataSource: source)
                          (tellv content-cocoa addTableColumn:

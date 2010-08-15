@@ -230,8 +230,10 @@
                         (queue-event e (lambda () 
                                          (call-as-nonatomic-retry-point
                                           (lambda ()
-                                            (tellv app sendEvent: evt)
-                                            (release evt))))))
+                                            ;; in atomic mode
+                                            (with-autorelease
+                                             (tellv app sendEvent: evt)
+                                             (release evt)))))))
                       (tellv app sendEvent: evt)))
                 #t)))
      (tellv pool release))))

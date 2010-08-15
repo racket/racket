@@ -43,7 +43,8 @@
   (inherit get-cocoa)
 
   (super-new [parent parent]
-             [cocoa (let ([cocoa (tell (tell MySlider alloc) init)]
+             [cocoa (let ([cocoa (as-objc-allocation
+                                  (tell (tell MySlider alloc) init))]
                           [vert? (memq 'vertical style)])
                       (tellv cocoa setMinValue: #:type _double* lo)
                       (tellv cocoa setMaxValue: #:type _double* hi)
@@ -53,7 +54,7 @@
                       (tellv cocoa setFrame: #:type _NSRect (make-NSRect 
                                                              (make-NSPoint 0 0)
                                                              (make-NSSize (if vert? 24 32)
-                                                                          (if vert? 32 24))))
+                                                                          (if vert? 64 24))))
                       (tellv cocoa setContinuous: #:type _BOOL #t)
                       ; (tellv cocoa sizeToFit)
                       cocoa)]

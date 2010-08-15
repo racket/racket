@@ -1,6 +1,7 @@
 #lang scheme/base
 (require ffi/objc
          scheme/foreign
+         "../../lock.rkt"
          "utils.rkt")
 (unsafe!)
 (objc-unsafe!)
@@ -51,9 +52,10 @@
                                       (hash-set! strings v s)
                                       s)))
                               (lambda (v)
-                                (with-autorelease
+                                (atomically
+                                 (with-autorelease
                                   (let ([s (tell #:type _bytes v UTF8String)])
-                                    (bytes->string/utf-8 s))))))
+                                    (bytes->string/utf-8 s)))))))
 
 (define NSNotFound (if 64-bit?
                        #x7fffffffffffffff

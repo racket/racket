@@ -67,17 +67,17 @@
       (unless (memq 'deleted style)
         (send (area-parent) add-child this))
       (define horiz? (is-horiz? style parent))
-      (define p (make-sub horiz? proxy this 'left valign))
+      (define p (make-sub horiz? proxy this (if horiz? 'left 'center) valign))
 
       (define l (make-label label proxy p font))
       (define/public (set-label s) (when l (send l set-label s)))
       (define/public (get-label) (and l (send l get-label)))
 
       (define/public (get-p) p)
-      (define/public (set-c v) 
+      (define/public (set-c v sx? sy?) 
         (set! c v)
-        (send c stretchable-in-x #t)
-        (send c stretchable-in-y #t)
+        (send c stretchable-in-x sx?)
+        (send c stretchable-in-y sy?)
         (send c skip-subwindow-events? #t))))
 
   ;; ----------------------------------------
@@ -100,7 +100,7 @@
 
       (define c (make-object wx-internal-choice% mred proxy (get-p) cb label x y w h choices 
                              (filter-style style) font))
-      (set-c c)
+      (set-c c #t #f)
 
       (bounce 
        c
@@ -158,7 +158,7 @@
 
       (define c (make-object wx-internal-list-box% mred proxy (get-p) cb label kind x y w h choices 
                              (filter-style style) font label-font))
-      (set-c c)
+      (set-c c #t #t)
 
       (bounce
        c
@@ -231,7 +231,7 @@
 
       (define c (make-object wx-internal-radio-box% mred proxy (get-p) cb label x y w h choices 
                              major (filter-style style) font))
-      (set-c c)
+      (set-c c #t #t)
 
       (define/override enable
         (case-lambda
@@ -306,7 +306,9 @@
       
       (define c (make-object wx-internal-gauge% mred proxy (get-p) label range
                              (filter-style style) font))
-      (set-c c)
+      (set-c c 
+             (memq 'horizontal style)
+             (memq 'vertical style))
 
       (bounce 
        c
@@ -362,7 +364,10 @@
 
       (define c (make-object wx-internal-slider% mred proxy (get-p) func label value min-val max-val
                              (filter-style style) font))
-      (set-c c)
+      
+      (set-c c 
+             (memq 'horizontal style)
+             (memq 'vertical style))
       
       (bounce 
        c

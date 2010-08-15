@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/foreign
+         racket/math
          ffi/objc
           "../../syntax.rkt"
          "item.rkt"
@@ -18,7 +19,7 @@
 (import-class NSProgressIndicator)
 
 (define-objc-class MyProgressIndicator NSProgressIndicator
-  #:mixins ()
+  #:mixins (KeyMouseResponder)
   [wxb])
 
 (defclass gauge% item%
@@ -31,16 +32,22 @@
   (inherit get-cocoa)
 
   (super-new [parent parent]
-             [cocoa (let ([cocoa (tell (tell MyProgressIndicator alloc) init)])
+             [cocoa (let ([cocoa (as-objc-allocation
+                                  (tell (tell MyProgressIndicator alloc) init))])
                       (tellv cocoa setIndeterminate: #:type _BOOL #f)
                       (tellv cocoa setMaxValue: #:type _double* rng)
                       (tellv cocoa setDoubleValue: #:type _double* 0.0)
-                      #;
-                      (tellv cocoa setFrame: #:type _NSRect (make-NSRect 
-                                                             (make-NSPoint 0 0)
-                                                             (make-NSSize (if vert? 24 32)
-                                                                          (if vert? 32 24))))
                       (tellv cocoa sizeToFit)
+                      (when (memq 'vertical style)
+                        (let ([r (tell #:type _NSRect cocoa frame)])
+                          (printf "height ~s\n" (NSSize-height (NSRect-size r)))
+                          (tellv cocoa setFrame: 
+                                 #:type _NSRect (make-NSRect
+                                                 (NSRect-origin r)
+                                                 (make-NSSize
+                                                  (NSSize-height (NSRect-size r))
+                                                  (NSSize-width (NSRect-size r)))))
+                          (tellv cocoa rotateByAngle: #:type _CGFloat -90)))
                       cocoa)]
              [callback void]
              [no-show? (memq 'deleted style)])
