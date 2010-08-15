@@ -25,16 +25,18 @@
   (let ([b (box null)])
     (begin0
      (parameterize ([freezer-box b])
-       ;; In atomic mode:
-       (call-as-atomic thunk))
+       ;; In atomic mode (but not using call-as-atomic, because we
+       ;; don't want to change the exception handler, etc.)
+       (start-atomic)
+       (begin0 
+        (thunk)
+        (end-atomic)))
      ;; Retries out of atomic mode:
      (let ([l (unbox b)])
        (for ([k (in-list (reverse l))])
-         (call-with-continuation-prompt ; to catch aborts
-          (lambda ()
-            (call-with-continuation-prompt
-             k
-             freeze-tag))))))))
+         (call-with-continuation-prompt
+          k
+          freeze-tag))))))
 
 (define (can-try-atomic?) (and (freezer-box) #t))
 
@@ -67,23 +69,39 @@
                               freeze-tag
                               (lambda () default)))
                            freeze-tag)
-                          (void)))])
+                          (void)))]
+             [done? #f])
         (hash-set! saved-ptrs handler #t)
-        (begin0
-         (parameterize ([freezer-box #f])
-           (dynamic-wind
-            void
-            (lambda ()
-              (call-with-continuation-prompt ; for composable continuation
-               (lambda ()
-                 (call-with-continuation-prompt ; to catch aborts
-                  (lambda ()
-                    (when (scheme_set_on_atomic_timeout handler)
-                      (error 'try-atomic "internal error: nested handlers?!"))
-                    (set! ready? #t)
-                    (thunk))))
-               freeze-tag))
-            (lambda ()
-              (scheme_restore_on_atomic_timeout #f))))
-         (hash-remove! saved-ptrs handler)))])))
+        (parameterize ([freezer-box #f])
+          (let/ec esc ;; esc + dynamic-wind prevents escape via alternate prompt tags
+            (dynamic-wind
+             void
+             (lambda ()
+               (call-with-continuation-prompt ; for composable continuation
+                (lambda ()
+                  (call-with-continuation-prompt ; to catch aborts
+                   (lambda ()
+                     (when (scheme_set_on_atomic_timeout handler)
+                       (error 'try-atomic "internal error: nested handlers?!"))
+                     (set! ready? #t)
+                     (begin0
+                      (thunk)
+                      (set! done? #t)))
+                   (default-continuation-prompt-tag)
+                   (lambda args
+                     (set! done? #t)
+                     ;; re-abort later...
+                     (set-box! b (cons (lambda ()
+                                         (apply abort-current-continuation 
+                                                (default-continuation-prompt-tag)
+                                                args))
+                                       (unbox b))))))
+                freeze-tag
+                (lambda (thunk)
+                  (set! done? #t)
+                  (thunk))))
+             (lambda ()
+               (hash-remove! saved-ptrs handler)
+               (scheme_restore_on_atomic_timeout #f)
+               (unless done? (esc (void))))))))])))
 

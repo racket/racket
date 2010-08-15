@@ -12,11 +12,11 @@ or if some external event causes the attempt to be abandoned.}
 
 @defproc[(call-as-nonatomic-retry-point [thunk (-> any)]) any]{
 
-Calls @racket[thunk] in atomic mode (see @racket[call-as-atomic])
-while allowing @racket[thunk] to use @racket[try-atomic]. Any
-incomplete computations started with @racket[try-atomic] are run
-non-atomically after @racket[thunk] returns. The result of
-@racket[thunk] is used as the result of
+Calls @racket[thunk] in atomic mode (see @racket[start-atomic] and
+@racket[end-atomic]) while allowing @racket[thunk] to use
+@racket[try-atomic]. Any incomplete computations started with
+@racket[try-atomic] are run non-atomically after @racket[thunk]
+returns. The result of @racket[thunk] is used as the result of
 @racket[call-as-nonatomic-retry-point].}
 
 
@@ -46,4 +46,12 @@ returned.
 The @racket[give-up-proc] callback is polled only at points where the
 level of atomic-mode nesting (see @racket[start-atomic],
 @racket[start-breakable-atomic], and @racket[call-as-atomic]) is the
-same as at the point of calling @racket[try-atomic].}
+same as at the point of calling @racket[try-atomic].
+
+If @racket[thunk] aborts the current continuation using
+@racket[(default-continuation-prompt-tag)], the abort is suspended the
+resumed by the enclosing
+@racket[call-as-nonatomic-retry-point]. Escapes to the context of the
+call to @racket[thunk] using any other prompt tag or continuation are
+blocked (using @racket[dynamic-wind]) and simply return
+@racket[(void)] from @racket[thunk].}
