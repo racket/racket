@@ -79,6 +79,7 @@
                                     0)])
          (CGDataProviderRelease provider)
          (CGColorSpaceRelease cs)
-         (tell (tell NSImage alloc) 
-               initWithCGImage: #:type _CGImageRef image
-               size: #:type _NSSize (make-NSSize w h)))))))
+         (as-objc-allocation
+          (tell (tell NSImage alloc) 
+                initWithCGImage: #:type _CGImageRef image
+                size: #:type _NSSize (make-NSSize w h))))))))

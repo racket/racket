@@ -7,6 +7,7 @@
          "const.rkt"
          "types.rkt"
          "keycode.rkt"
+         "pool.rkt"
          "../../lock.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
@@ -128,6 +129,12 @@
                        [y (->long y)]
                        [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
                        [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+           (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
+             (when (and (string? alt-str)
+                        (= 1 (string-length alt-str)))
+               (let ([alt-code (string-ref alt-str 0)])
+                 (unless (equal? alt-code (send k get-key-code))
+                   (send k set-other-altgr-key-code alt-code)))))
            (if (send wx definitely-wants-event? k)
                (begin
                  (queue-window-event wx (lambda ()
@@ -175,6 +182,8 @@
 
     (super-new)
 
+    (queue-autorelease-flush)
+
     (define eventspace (if parent
                            (send parent get-eventspace)
                            (current-eventspace)))
@@ -211,10 +220,15 @@
 
     (define/public (get-eventspace) eventspace)
 
+    (define is-on? #f)
     (define/public (show on?)
-      (if on?
-          (tellv (send parent get-cocoa-content) addSubview: cocoa)
-          (tellv cocoa removeFromSuperview))
+      (atomically
+       (unless (eq? (and on? #t) is-on?)
+         (if on?
+             (tellv (send parent get-cocoa-content) addSubview: cocoa)
+             (with-autorelease
+              (tellv cocoa removeFromSuperview)))
+         (set! is-on? (and on? #t))))
       (maybe-register-as-child parent on?))
     (define/public (maybe-register-as-child parent on?)
       (void))

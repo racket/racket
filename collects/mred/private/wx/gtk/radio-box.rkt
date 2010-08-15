@@ -52,12 +52,13 @@
                                          [(string? lbl)
                                           (gtk_radio_button_new_with_mnemonic #f (mnemonic-string lbl))]
                                          [(send lbl ok?)
-                                          (let ([radio-gtk (gtk_radio_button_new #f)]
-                                                [image-gtk (gtk_image_new_from_pixbuf 
-                                                            (bitmap->pixbuf lbl))])
-                                            (gtk_container_add radio-gtk image-gtk)
-                                            (gtk_widget_show image-gtk)
-                                            radio-gtk)]
+                                          (let ([pixbuf (bitmap->pixbuf lbl)])
+                                            (let ([radio-gtk (gtk_radio_button_new #f)]
+                                                  [image-gtk (gtk_image_new_from_pixbuf pixbuf)])
+                                              (release-pixbuf pixbuf)
+                                              (gtk_container_add radio-gtk image-gtk)
+                                              (gtk_widget_show image-gtk)
+                                              radio-gtk))]
                                          [else
                                           (gtk_radio_button_new_with_mnemonic #f "<bad bitmap>")])])
                          (gtk_box_pack_start gtk radio-gtk #t #t 0)

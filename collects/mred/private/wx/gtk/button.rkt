@@ -2,6 +2,7 @@
 (require scheme/foreign
          scheme/class
           "../../syntax.rkt"
+          "../../lock.rkt"
          "item.rkt"
          "utils.rkt"
          "types.rkt"
@@ -43,16 +44,19 @@
   (super-new [parent parent]
              [gtk (cond
                    [(or (string? label) (not label))
-                    (gtk_new_with_mnemonic (or (mnemonic-string label) ""))]
+                    (as-gtk-allocation
+                     (gtk_new_with_mnemonic (or (mnemonic-string label) "")))]
                    [(send label ok?)
-                    (let ([gtk (gtk_new)]
-                          [image-gtk (gtk_image_new_from_pixbuf 
-                                      (bitmap->pixbuf label))])
-                      (gtk_container_add gtk image-gtk)
-                      (gtk_widget_show image-gtk)
-                      gtk)]
+                    (let ([pixbuf (bitmap->pixbuf label)])
+                      (atomically
+                       (let ([gtk (as-gtk-allocation (gtk_new))]
+                             [image-gtk (gtk_image_new_from_pixbuf pixbuf)])
+                         (release-pixbuf pixbuf)
+                         (gtk_container_add gtk image-gtk)
+                         (gtk_widget_show image-gtk)
+                         gtk)))]
                    [else
-                    (gtk_new_with_mnemonic "<bad>")])]
+                    (as-gtk-allocation (gtk_new_with_mnemonic "<bad>"))])]
              [callback cb]
              [no-show? (memq 'deleted style)])
   (define gtk (get-gtk))
@@ -82,11 +86,13 @@
      [(string? s)
       (gtk_button_set_label gtk (mnemonic-string s))]
      [else
-      (let ([image-gtk (gtk_image_new_from_pixbuf 
-                        (bitmap->pixbuf s))])
-        (gtk_container_remove gtk (gtk_bin_get_child gtk))
-        (gtk_container_add gtk image-gtk)
-        (gtk_widget_show image-gtk))]))
+      (let ([pixbuf (bitmap->pixbuf s)])
+        (atomically
+         (let ([image-gtk (gtk_image_new_from_pixbuf pixbuf)])
+           (release-pixbuf pixbuf)
+           (gtk_container_remove gtk (gtk_bin_get_child gtk))
+           (gtk_container_add gtk image-gtk)
+           (gtk_widget_show image-gtk))))]))
 
   (define/public (set-border on?)
     (gtk_window_set_default (get-window-gtk) (if on? gtk #f))))

@@ -1,6 +1,7 @@
 #lang scheme/base
 (require ffi/unsafe
          ffi/unsafe/define
+         ffi/unsafe/alloc
          (only-in '#%foreign ctype-c->scheme)
          "../common/utils.rkt"
          "types.rkt")
@@ -15,6 +16,9 @@
 
          g_object_ref
          g_object_unref
+
+         as-gtk-allocation
+         as-gtk-window-allocation
 
          g_free
          _gpath/free
@@ -82,8 +86,23 @@
 (define-ffi-definer define-gdk gdk-lib)
 (define-ffi-definer define-gdk_pixbuf gdk_pixbuf-lib)
 
-(define-gobj g_object_ref (_fun _pointer -> _void))
+(define-gobj g_object_ref (_fun _pointer -> _pointer))
 (define-gobj g_object_unref (_fun _pointer -> _void))
+(define-gobj g_object_ref_sink (_fun _pointer -> _pointer))
+
+(define-gtk gtk_widget_destroy (_fun _GtkWidget -> _void))
+
+(define gtk-destroy ((deallocator) (lambda (v)
+                                     (gtk_widget_destroy v)
+                                     (g_object_unref v))))
+(define gtk-allocator (allocator gtk-destroy))
+
+(define-syntax-rule (as-gtk-allocation expr)
+  ((gtk-allocator (lambda () (let ([v expr])
+                               (g_object_ref_sink v)
+                               v)))))
+(define-syntax-rule (as-gtk-window-allocation expr)
+  ((gtk-allocator (lambda () expr))))
 
 (define-glib g_free (_fun _pointer -> _void))
 

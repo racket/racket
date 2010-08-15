@@ -79,6 +79,7 @@
         subtype: #:type _short 0
         data1: #:type _NSInteger 0
         data2: #:type _NSInteger 0))
+(retain wake-evt)
 (define (post-dummy-event)
   (tell #:type _void app postEvent: wake-evt atStart: #:type _BOOL YES))
 
@@ -248,6 +249,7 @@
             (let loop ()
               (sync queue-evt)
               (atomically (dispatch-all-ready))
+              (queue-autorelease-flush)
               (loop)))))
 
 (set-check-queue!

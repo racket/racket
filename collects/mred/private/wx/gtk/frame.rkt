@@ -2,6 +2,7 @@
 (require scheme/foreign
          scheme/class
          "../../syntax.rkt"
+         "../../lock.rkt"
          "utils.rkt"
          "const.rkt"
          "types.rkt"
@@ -103,13 +104,17 @@
              get-parent get-eventspace
              adjust-client-delta)
 
-    (define gtk (gtk_window_new GTK_WINDOW_TOPLEVEL))
+    (define gtk (as-gtk-window-allocation
+                 (gtk_window_new GTK_WINDOW_TOPLEVEL)))
     (when (memq 'no-caption style)
-      (gtk_window_set_decorated gtk #f))
-    (define vbox-gtk (gtk_vbox_new #f 0))
-    (define panel-gtk (gtk_fixed_new))
-    (gtk_container_add gtk vbox-gtk)
-    (gtk_box_pack_end vbox-gtk panel-gtk #t #t 0)
+      (gtk_window_set_decorated gtk #f))    
+    (define-values (vbox-gtk panel-gtk)
+      (atomically
+       (let ([vbox-gtk (gtk_vbox_new #f 0)]
+             [panel-gtk (gtk_fixed_new)])
+         (gtk_container_add gtk vbox-gtk)
+         (gtk_box_pack_end vbox-gtk panel-gtk #t #t 0)
+         (values vbox-gtk panel-gtk))))
     (gtk_widget_show vbox-gtk)
     (gtk_widget_show panel-gtk)
 

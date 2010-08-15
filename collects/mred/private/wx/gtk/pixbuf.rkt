@@ -1,6 +1,7 @@
 #lang racket
 (require racket/class
          ffi/unsafe
+         ffi/unsafe/alloc
          racket/draw
          "../../lock.rkt"
          "../common/bstr.rkt"
@@ -10,9 +11,12 @@
 
 (provide _GdkPixbuf
          bitmap->pixbuf
-         gtk_image_new_from_pixbuf)
+         gtk_image_new_from_pixbuf
+         release-pixbuf)
 
 (define _GdkPixbuf (_cpointer 'GdkPixbuf))
+
+(define release-pixbuf ((deallocator) g_object_unref))
 
 (define-gtk gtk_image_new_from_pixbuf (_fun _GdkPixbuf -> _GtkWidget))
 (define-gdk_pixbuf gdk_pixbuf_new_from_data (_fun _pointer ; data
@@ -24,7 +28,9 @@
 						  _int ; rowstride
 						  _fpointer ; destroy
 						  _pointer  ; destroy data
-						  -> _GdkPixbuf))
+						  -> _GdkPixbuf)
+  #:wrap (allocator release-pixbuf))
+
 (define free-it (ffi-callback free
                               (list _pointer)
                               _void

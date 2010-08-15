@@ -302,9 +302,17 @@
   ((eventspace-queue-proc eventspace) (cons level thunk)))
 
 (define (handle-event thunk)
-  (call-with-continuation-barrier
-   (lambda ()
-     (call-with-continuation-prompt thunk))))
+  (let/ec esc
+    (let ([done? #f])
+      (dynamic-wind
+       void
+       (lambda ()
+         (call-with-continuation-barrier
+          (lambda ()
+            (call-with-continuation-prompt thunk)))
+         (set! done? #t))
+       (lambda ()
+         (unless done? (esc (void))))))))
 
 (define yield
   (case-lambda
