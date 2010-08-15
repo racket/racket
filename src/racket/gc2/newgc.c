@@ -2854,7 +2854,8 @@ void GC_dump_with_traces(int flags,
 {
   NewGC *gc = GC_get_GC();
   mpage *page;
-  int i;
+  int i, num_immobiles;
+  GC_Immobile_Box *ib;
   static unsigned long counts[MAX_DUMP_TAG], sizes[MAX_DUMP_TAG];
 
   reset_object_traces();
@@ -2934,6 +2935,10 @@ void GC_dump_with_traces(int flags,
     }
   }
 
+  num_immobiles = 0;
+  for (ib = gc->immobile_boxes; ib; ib = ib->next)
+    num_immobiles++;
+
   GCPRINT(GCOUTF, "Begin Racket3m\n");
   for (i = 0; i < MAX_DUMP_TAG; i++) {
     if (counts[i]) {
@@ -2998,6 +3003,7 @@ void GC_dump_with_traces(int flags,
   GCWARN((GCOUTF,"# of minor collections: %li\n", gc->num_minor_collects));
   GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
   GCWARN((GCOUTF,"# of traced ephemerons: %i\n", gc->num_last_seen_ephemerons));
+  GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));
 
   if (flags & GC_DUMP_SHOW_TRACE) {
     print_traced_objects(path_length_limit, get_type_name, get_xtagged_name, print_tagged_value);

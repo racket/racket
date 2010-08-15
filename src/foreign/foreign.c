@@ -1964,7 +1964,9 @@ static Scheme_Object *foreign_free(int argc, Scheme_Object *argv[])
 #define MYNAME "malloc-immobile-cell"
 static Scheme_Object *foreign_malloc_immobile_cell(int argc, Scheme_Object *argv[])
 {
-  return scheme_make_foreign_external_cpointer(scheme_malloc_immobile_box(argv[0]));
+  void *p;
+  p = scheme_malloc_immobile_box(argv[0]);
+  return scheme_make_foreign_external_cpointer(p); /* <- beware: macro duplicates `p' */
 }
 #undef MYNAME
 

@@ -1387,7 +1387,9 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
 
 /* (malloc-immobile-cell v) */
 @cdefine[malloc-immobile-cell 1]{
-  return scheme_make_foreign_external_cpointer(scheme_malloc_immobile_box(argv[0]));
+  void *p;
+  p = scheme_malloc_immobile_box(argv[0]);
+  return scheme_make_foreign_external_cpointer(p); /* <- beware: macro duplicates `p' */
 }
 
 /* (free-immobile-cell b) */
