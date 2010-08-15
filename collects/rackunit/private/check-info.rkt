@@ -24,7 +24,11 @@
 
 ;; (continuation-mark-set -> (listof check-info))
 (define (check-info-stack marks)
-  (apply append (continuation-mark-set->list marks check-info-mark)))
+  (let ([ht (make-hash)])
+    (for ([x (in-list (apply append (continuation-mark-set->list marks check-info-mark)))]
+          [i (in-naturals)])
+      (hash-set! ht (check-info-name x) (cons i x)))
+    (map cdr (sort (hash-map ht (λ (k v) v)) < #:key car))))
 
 ;; with-check-info* : (list-of check-info) thunk -> any
 (define (with-check-info* info thunk)
