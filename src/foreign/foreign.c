@@ -1176,6 +1176,9 @@ END_XFORM_SKIP;
 #define scheme_make_foreign_cpointer(x) \
   ((x==NULL)?scheme_false:scheme_make_cptr(x,NULL))
 
+#define scheme_make_foreign_offset_cpointer(x, delta) \
+  ((delta == 0) ? scheme_make_foreign_cpointer(x) : scheme_make_offset_cptr(x,delta,NULL))
+
 #define scheme_make_foreign_external_cpointer(x) \
   ((x==NULL)?scheme_false:scheme_make_external_cptr(x,NULL))
 
@@ -1266,7 +1269,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     case FOREIGN_scheme: return REF_CTYPE(Scheme_Object*);
     case FOREIGN_fpointer: return (REF_CTYPE(void*));
     case FOREIGN_struct:
-           return scheme_make_foreign_cpointer(W_OFFSET(src, delta));
+           return scheme_make_foreign_offset_cpointer(src, delta);
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
   return NULL; /* hush the compiler */
