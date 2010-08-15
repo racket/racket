@@ -98,11 +98,14 @@ For example, the following checks all fail:
 ]
 
 
-@defproc[(check-exn (exn-predicate (-> any (or/c #t #f))) (thunk (-> any)) (message string? ""))
+@defproc[(check-exn (exn-predicate (or/c (-> any (or/c #t #f)) regexp?)) (thunk (-> any)) (message string? ""))
          #t]{
-
-Checks that @racket[thunk] raises an exception for which
-@racket[exn-predicate] returns @racket[#t].  The optional
+Checks that @racket[thunk] raises an exception and that
+either @racket[exn-predicate] returns @racket[#t] if it is a function,
+or that it matches the message in the exception if @racket[exn-predicate]
+is a regexp. In the latter case, the exception raised must be
+an @racket[exn:fail?].
+The optional
 @racket[message] is included in the output if the check
 fails.  A common error is to use an expression instead of a
 function of no arguments for @racket[thunk].  Remember that
@@ -111,14 +114,13 @@ checks are conceptually functions.}
 Here are two example, one showing a test that succeeds, and one showing a common error:
 
 @racketblock[
-  (check-exn exn? 
+  (check-exn exn:fail? 
              (lambda ()
                (raise (make-exn "Hi there"
                                 (current-continuation-marks)))))
   (code:comment "Forgot to wrap the expression in a thunk.  Don't do this!")
-  (check-exn exn?
-             (raise (make-exn "Hi there"
-                              (current-continuation-marks))))
+  (check-exn exn:fail?
+             (error 'hi "there"))
 ]
 
 @defproc[(check-not-exn (thunk (-> any)) (message string? "")) #t]{

@@ -195,32 +195,35 @@
               #t
               (fail-check)))))]))
 
-(define-check (check-exn pred thunk)
-  (let/ec succeed
-    (with-handlers
-        (;; catch the exception we are looking for and
-         ;; succeed
-         [pred
-          (lambda (exn) (succeed #t))]
-         ;; rethrow check failures if we aren't looking
-         ;; for them
-         [exn:test:check?
-          (lambda (exn)
-            (refail-check exn))]
-         ;; catch any other exception and raise an check
-         ;; failure
-         [exn:fail?
-          (lambda (exn)
-            (with-check-info*
-             (list
-              (make-check-message "Wrong exception raised")
-              (make-check-info 'exn-message (exn-message exn))
-              (make-check-info 'exn exn))
-             (lambda () (fail-check))))])
-      (thunk))
-    (with-check-info*
-     (list (make-check-message "No exception raised"))
-     (lambda () (fail-check)))))
+(define-check (check-exn raw-pred thunk)
+  (let ([pred (if (regexp? raw-pred)
+                  (λ (x) (and (exn:fail? x) (regexp-match raw-pred (exn-message x))))
+                  raw-pred)])
+    (let/ec succeed
+      (with-handlers
+          (;; catch the exception we are looking for and
+           ;; succeed
+           [pred
+            (lambda (exn) (succeed #t))]
+           ;; rethrow check failures if we aren't looking
+           ;; for them
+           [exn:test:check?
+            (lambda (exn)
+              (refail-check exn))]
+           ;; catch any other exception and raise an check
+           ;; failure
+           [exn:fail?
+            (lambda (exn)
+              (with-check-info*
+               (list
+                (make-check-message "Wrong exception raised")
+                (make-check-info 'exn-message (exn-message exn))
+                (make-check-info 'exn exn))
+               (lambda () (fail-check))))])
+        (thunk))
+      (with-check-info*
+       (list (make-check-message "No exception raised"))
+       (lambda () (fail-check))))))
 
 (define-check (check-not-exn thunk)
   (with-handlers
