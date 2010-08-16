@@ -332,13 +332,18 @@
       (gtk_widget_set_size_request child-gtk w h)
       (gtk_widget_size_allocate child-gtk (make-GtkAllocation x y w h)))
 
+    (define on-size-queued? #f)
     (define/public (remember-size w h)
       ;; called in event-pump thread
       (unless (and (= save-w w)
                    (= save-h h))
         (set! save-w w)
         (set! save-h h)
-        (queue-window-event this (lambda () (on-size w h)))))
+        (unless on-size-queued?
+          (set! on-size-queued? #t)
+          (queue-window-event this (lambda () 
+                                     (set! on-size-queued? #f)
+                                     (on-size w h))))))
 
     (define client-delta-w 0)
     (define client-delta-h 0)
@@ -348,7 +353,8 @@
       ;; Called in the Gtk event-loop thread
       ;(set! client-delta-w (max min-client-delta-w (- save-w w)))
       ;(set! client-delta-h (max min-client-delta-h (- save-h h)))
-      (queue-window-event this (lambda () (on-size 0 0))))
+      #;(queue-window-event this (lambda () (on-size 0 0)))
+      (void))
     (define/public (tentative-client-size w h)
       (void))
 

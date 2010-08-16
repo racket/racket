@@ -41,6 +41,8 @@
 (define-gtk gtk_hscrollbar_new (_fun _pointer -> _GtkWidget))
 (define-gtk gtk_vscrollbar_new (_fun _pointer -> _GtkWidget))
 
+(define-gtk gtk_widget_set_double_buffered (_fun _GtkWidget _gboolean -> _void))
+
 (define _GtkAdjustment _GtkWidget) ; no, actually a GtkObject
 (define-gtk gtk_adjustment_new (_fun _double* _double* _double* _double* _double* _double* -> _GtkAdjustment))
 (define-gtk gtk_adjustment_configure (_fun _GtkAdjustment _double* _double* _double* _double* _double* _double* -> _void)
@@ -282,6 +284,7 @@
                                      (GtkRequisition-height r))))
 
     (connect-expose client-gtk)
+    #;(gtk_widget_set_double_buffered client-gtk #f)
     (connect-key-and-mouse client-gtk)
     (connect-focus client-gtk)
     (gtk_widget_add_events client-gtk (bitwise-ior GDK_KEY_PRESS_MASK
@@ -329,6 +332,12 @@
                                    (set! paint-queued? #f)
                                    (set! now-drawing? #t)
                                    (send dc reset-backing-retained) ; clean slate
+                                   (let ([bg (get-canvas-background)])
+                                     (when bg 
+                                       (let ([old-bg (send dc get-background)])
+                                         (send dc set-background bg)
+                                         (send dc clear)
+                                         (send dc set-background old-bg))))
                                    (on-paint)
                                    (set! now-drawing? #f)
                                    (when refresh-after-drawing?

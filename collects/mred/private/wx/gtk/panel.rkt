@@ -64,4 +64,4 @@
 
     (define/override (set-child-size child-gtk x y w h)
       (gtk_fixed_move gtk child-gtk x y)
-      (super set-child-size child-gtk x y w h))))
+      (gtk_widget_set_size_request child-gtk w h))))

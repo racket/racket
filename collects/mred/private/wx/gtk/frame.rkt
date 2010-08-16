@@ -136,8 +136,9 @@
     (when label
       (gtk_window_set_title gtk label))
 
-    (define/public (set-child-position child-gtk x y)
-      (gtk_fixed_move panel-gtk child-gtk x y))
+    (define/override (set-child-size child-gtk x y w h)
+      (gtk_fixed_move panel-gtk child-gtk x y)
+      (gtk_widget_set_size_request child-gtk w h))
 
     (define/public (on-close) (void))
 
@@ -255,7 +256,7 @@
       (direct-show #f))
 
     (define/override (on-client-size w h)
-      (on-size w h))
+      (void))
 
     (define/augment (is-enabled-to-root?) #t)
 
