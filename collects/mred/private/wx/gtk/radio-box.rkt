@@ -44,26 +44,28 @@
   (inherit set-auto-size
            on-set-focus)
 
-  (define gtk (if (memq 'horizontal style)
-                  (gtk_hbox_new #f 0)
-                  (gtk_vbox_new #f 0)))
+  (define gtk (as-gtk-allocation
+               (if (memq 'horizontal style)
+                   (gtk_hbox_new #f 0)
+                   (gtk_vbox_new #f 0))))
   (define radio-gtks (for/list ([lbl (in-list labels)])
-                       (let ([radio-gtk (cond
-                                         [(string? lbl)
-                                          (gtk_radio_button_new_with_mnemonic #f (mnemonic-string lbl))]
-                                         [(send lbl ok?)
-                                          (let ([pixbuf (bitmap->pixbuf lbl)])
-                                            (let ([radio-gtk (gtk_radio_button_new #f)]
-                                                  [image-gtk (gtk_image_new_from_pixbuf pixbuf)])
-                                              (release-pixbuf pixbuf)
-                                              (gtk_container_add radio-gtk image-gtk)
-                                              (gtk_widget_show image-gtk)
-                                              radio-gtk))]
-                                         [else
-                                          (gtk_radio_button_new_with_mnemonic #f "<bad bitmap>")])])
-                         (gtk_box_pack_start gtk radio-gtk #t #t 0)
-                         (gtk_widget_show radio-gtk)
-                         radio-gtk)))
+                       (atomically
+                        (let ([radio-gtk (cond
+                                          [(string? lbl)
+                                           (gtk_radio_button_new_with_mnemonic #f (mnemonic-string lbl))]
+                                          [(send lbl ok?)
+                                           (let ([pixbuf (bitmap->pixbuf lbl)])
+                                             (let ([radio-gtk (gtk_radio_button_new #f)]
+                                                   [image-gtk (gtk_image_new_from_pixbuf pixbuf)])
+                                               (release-pixbuf pixbuf)
+                                               (gtk_container_add radio-gtk image-gtk)
+                                               (gtk_widget_show image-gtk)
+                                               radio-gtk))]
+                                          [else
+                                           (gtk_radio_button_new_with_mnemonic #f "<bad bitmap>")])])
+                          (gtk_box_pack_start gtk radio-gtk #t #t 0)
+                          (gtk_widget_show radio-gtk)
+                          radio-gtk))))
   (for ([radio-gtk (in-list (cdr radio-gtks))])
     (let ([g (gtk_radio_button_get_group (car radio-gtks))])
       (gtk_radio_button_set_group radio-gtk g)))
@@ -108,8 +110,9 @@
      (if (= i -1)
          (when (pair? radio-gtks)
            (unless dummy-gtk 
-             (set! dummy-gtk (gtk_radio_button_new
-                              (gtk_radio_button_get_group (car radio-gtks)))))
+             (set! dummy-gtk (as-gtk-allocation
+                              (gtk_radio_button_new
+                               (gtk_radio_button_get_group (car radio-gtks))))))
            (gtk_toggle_button_set_active dummy-gtk #t))
          (gtk_toggle_button_set_active (list-ref radio-gtks i) #t))
      (set! no-clicked? #f)))

@@ -35,7 +35,7 @@
         choices style font)
   (inherit get-gtk set-auto-size)
 
-  (define gtk (gtk_combo_box_new_text))
+  (define gtk (as-gtk-allocation (gtk_combo_box_new_text)))
   (define count (length choices))
 
   (for ([l (in-list choices)])

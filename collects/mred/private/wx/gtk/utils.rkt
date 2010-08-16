@@ -17,6 +17,10 @@
          g_object_ref
          g_object_unref
 
+         gobject-ref
+         gobject-unref
+         as-gobject-allocation
+
          as-gtk-allocation
          as-gtk-window-allocation
 
@@ -89,6 +93,14 @@
 (define-gobj g_object_ref (_fun _pointer -> _pointer))
 (define-gobj g_object_unref (_fun _pointer -> _void))
 (define-gobj g_object_ref_sink (_fun _pointer -> _pointer))
+
+(define gobject-unref ((deallocator) g_object_unref))
+(define gobject-ref ((allocator gobject-unref) g_object_ref))
+
+(define-syntax-rule (as-gobject-allocation expr)
+  ((gobject-allocator (lambda () expr))))
+
+(define gobject-allocator (allocator gobject-unref))
 
 (define-gtk gtk_widget_destroy (_fun _GtkWidget -> _void))
 

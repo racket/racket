@@ -75,7 +75,7 @@
   (define items choices)
   (define data (map (lambda (c) (box #f)) choices))
 
-  (define store (gtk_list_store_new 1 G_TYPE_STRING))
+  (define store (as-gobject-allocation (gtk_list_store_new 1 G_TYPE_STRING)))
   (define (reset-content)
     (let ([iter (make-GtkTreeIter 0 #f #f #f)])
       (for ([s (in-list items)])
@@ -88,23 +88,23 @@
                (pair? data))
       (set-selection 0)))
     
-  (define column
-    (let ([renderer (gtk_cell_renderer_text_new)])
-      (gtk_tree_view_column_new_with_attributes
-       "column"
-       renderer
-       "text"
-       0
-       #f)))
-
-  (define gtk (gtk_scrolled_window_new #f #f))
+  (define gtk (as-gtk-allocation (gtk_scrolled_window_new #f #f)))
   (gtk_scrolled_window_set_policy gtk GTK_POLICY_NEVER GTK_POLICY_ALWAYS)
 
   (define client-gtk
-    (let* ([client-gtk (gtk_tree_view_new_with_model store)])
-      (gtk_tree_view_set_headers_visible client-gtk #f)
-      (gtk_tree_view_append_column client-gtk column)
-      client-gtk))
+    (atomically
+     (let* ([client-gtk (gtk_tree_view_new_with_model store)]
+            [column (let ([renderer (gtk_cell_renderer_text_new)])
+                      (gtk_tree_view_column_new_with_attributes
+                       "column"
+                       renderer
+                       "text"
+                       0
+                       #f))])
+       (gobject-unref store)
+       (gtk_tree_view_set_headers_visible client-gtk #f)
+       (gtk_tree_view_append_column client-gtk column)
+       client-gtk)))
 
   (gtk_container_add gtk client-gtk)
   (gtk_widget_show client-gtk)
@@ -139,11 +139,12 @@
                                [time-stamp (current-milliseconds)])))))))
 
   (define/private (get-iter i)
-    (let ([iter (make-GtkTreeIter 0 #f #f #f)]
-          [p (gtk_tree_path_new_from_indices i -1)])
-      (gtk_tree_model_get_iter store iter p)
-      (gtk_tree_path_free p)
-      iter))
+    (atomically
+     (let ([iter (make-GtkTreeIter 0 #f #f #f)]
+           [p (gtk_tree_path_new_from_indices i -1)])
+       (gtk_tree_model_get_iter store iter p)
+       (gtk_tree_path_free p)
+       iter)))
 
   (def/public-unimplemented get-label-font)
 
@@ -155,9 +156,10 @@
     (gtk_list_store_set store (get-iter i) 0 s -1))
 
   (define/public (set-first-visible-item i)
-    (let ([p (gtk_tree_path_new_from_indices i -1)])
-      (gtk_tree_view_scroll_to_cell client-gtk p #f #t 0.0 0.0)
-      (gtk_tree_path_free p)))
+    (atomically
+     (let ([p (gtk_tree_path_new_from_indices i -1)])
+       (gtk_tree_view_scroll_to_cell client-gtk p #f #t 0.0 0.0)
+       (gtk_tree_path_free p))))
 
   (define/public (set choices)
     (atomically
@@ -210,10 +212,11 @@
   (define/public (get-data i) (unbox (list-ref data i)))
 
   (define/public (selected? i)
-    (let ([p (gtk_tree_path_new_from_indices i -1)])
-      (begin0
-       (gtk_tree_selection_path_is_selected selection p)
-       (gtk_tree_path_free p))))
+    (atomically
+     (let ([p (gtk_tree_path_new_from_indices i -1)])
+       (begin0
+        (gtk_tree_selection_path_is_selected selection p)
+        (gtk_tree_path_free p)))))
 
   (define/public (select i [on? #t] [extend? #t])
     (atomically

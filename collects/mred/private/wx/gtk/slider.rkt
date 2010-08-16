@@ -39,9 +39,10 @@
   (inherit get-gtk set-auto-size)
 
   (super-new [parent parent]
-             [gtk (if (memq 'vertical style)
-                      (gtk_vscale_new #f)
-                      (gtk_hscale_new #f))]
+             [gtk (as-gtk-allocation
+                   (if (memq 'vertical style)
+                       (gtk_vscale_new #f)
+                       (gtk_hscale_new #f)))]
              [callback cb]
              [no-show? (memq 'deleted style)])
   (define gtk (get-gtk))

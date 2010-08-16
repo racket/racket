@@ -4,6 +4,7 @@
          "widget.rkt"
          "window.rkt"
           "../../syntax.rkt"
+          "../../lock.rkt"
          "types.rkt"
          "const.rkt"
          "utils.rkt"
@@ -80,7 +81,7 @@
 
   (define cb callback)
   
-  (define gtk (gtk_menu_new))
+  (define gtk (as-gtk-allocation (gtk_menu_new)))
   (define/public (get-gtk) gtk)
 
   (super-new [gtk gtk])
@@ -175,34 +176,36 @@
   
   (public [append-item append])
   (define (append-item i label help-str-or-submenu chckable?)
-    (let ([item-gtk ((if chckable?
-                         gtk_check_menu_item_new_with_mnemonic
-                         gtk_menu_item_new_with_mnemonic)
-                     (fixup-mneumonic label))])
-      (if (help-str-or-submenu . is-a? . menu%)
-          (let ([submenu help-str-or-submenu])
-            (let ([gtk (send submenu get-gtk)])
-              (g_object_ref gtk)
-              (gtk_menu_item_set_submenu item-gtk gtk)
-              (send submenu set-parent this)
-              (send submenu set-self-item i
-                    (lambda () (gtk_menu_item_set_submenu item-gtk #f)))
-              (set! items (append items (list (list submenu item-gtk label chckable?))))))
-          (let ([item (new menu-item-handler% 
-                           [gtk item-gtk]
-                           [menu this]
-                           [menu-item i]
-                           [parent this])])
-            (set! items (append items (list (list item item-gtk label chckable?))))
-            (adjust-shortcut item-gtk label)))
-      (gtk_menu_shell_append gtk item-gtk)
-      (gtk_widget_show item-gtk)))
+    (atomically
+     (let ([item-gtk ((if chckable?
+                          gtk_check_menu_item_new_with_mnemonic
+                          gtk_menu_item_new_with_mnemonic)
+                      (fixup-mneumonic label))])
+       (if (help-str-or-submenu . is-a? . menu%)
+           (let ([submenu help-str-or-submenu])
+             (let ([gtk (send submenu get-gtk)])
+               (g_object_ref gtk)
+               (gtk_menu_item_set_submenu item-gtk gtk)
+               (send submenu set-parent this)
+               (send submenu set-self-item i
+                     (lambda () (gtk_menu_item_set_submenu item-gtk #f)))
+               (set! items (append items (list (list submenu item-gtk label chckable?))))))
+           (let ([item (new menu-item-handler% 
+                            [gtk item-gtk]
+                            [menu this]
+                            [menu-item i]
+                            [parent this])])
+             (set! items (append items (list (list item item-gtk label chckable?))))
+             (adjust-shortcut item-gtk label)))
+       (gtk_menu_shell_append gtk item-gtk)
+       (gtk_widget_show item-gtk))))
 
   (define/public (append-separator)
-    (let ([item-gtk (gtk_separator_menu_item_new)])
-      (set! items (append items (list (list (new separator-item-handler%) item-gtk #f #f))))
-      (gtk_menu_shell_append gtk item-gtk)
-      (gtk_widget_show item-gtk)))
+    (atomically
+     (let ([item-gtk (gtk_separator_menu_item_new)])
+       (set! items (append items (list (list (new separator-item-handler%) item-gtk #f #f))))
+       (gtk_menu_shell_append gtk item-gtk)
+       (gtk_widget_show item-gtk))))
 
   (def/public-unimplemented select)
   (def/public-unimplemented get-font)

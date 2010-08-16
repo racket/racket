@@ -2,6 +2,7 @@
 (require scheme/class
          scheme/foreign
           "../../syntax.rkt"
+          "../../lock.rkt"
           "../common/freeze.rkt"
           "../common/queue.rkt"
           "widget.rkt"
@@ -73,7 +74,7 @@
 
   (define menus null)
 
-  (define gtk (gtk_menu_bar_new))
+  (define gtk (as-gtk-allocation (gtk_menu_bar_new)))
   (super-new [gtk gtk])
 
   (define/public (get-gtk) gtk)
@@ -88,15 +89,16 @@
     (install-widget-parent top)
     ;; return initial size; also, add a menu to make sure there is one,
     ;; and force the menu bar to be at least that tall always
-    (let ([item (gtk_menu_item_new_with_mnemonic "Xyz")])
-      (gtk_menu_shell_append gtk item)
-      (gtk_widget_show item)
-      (begin0
-       (let ([req (make-GtkRequisition 0 0)])
-         (gtk_widget_size_request gtk req)
-         (gtk_widget_set_usize gtk -1 (GtkRequisition-height req))
-         (GtkRequisition-height req))
-       (gtk_container_remove gtk item))))
+    (atomically
+     (let ([item (gtk_menu_item_new_with_mnemonic "Xyz")])
+       (gtk_menu_shell_append gtk item)
+       (gtk_widget_show item)
+       (begin0
+        (let ([req (make-GtkRequisition 0 0)])
+          (gtk_widget_size_request gtk req)
+          (gtk_widget_set_usize gtk -1 (GtkRequisition-height req))
+          (GtkRequisition-height req))
+        (gtk_container_remove gtk item)))))
 
   (define/public (get-top-window)
     top-wx)
@@ -129,12 +131,13 @@
   (public [append-menu append])
   (define (append-menu menu title)
     (send menu set-parent this)
-    (let* ([item (gtk_menu_item_new_with_mnemonic (fixup-mneumonic title))]
-           [item-wx (new top-menu% [parent this] [gtk item])])
-      (connect-select item)
-      (set! menus (append menus (list (list item menu item-wx))))
-      (let ([gtk (send menu get-gtk)])
-        (g_object_ref gtk)
-        (gtk_menu_item_set_submenu item gtk))
-      (gtk_menu_shell_append gtk item)
-      (gtk_widget_show item))))
+    (atomically
+     (let* ([item (gtk_menu_item_new_with_mnemonic (fixup-mneumonic title))]
+            [item-wx (new top-menu% [parent this] [gtk item])])
+       (connect-select item)
+       (set! menus (append menus (list (list item menu item-wx))))
+       (let ([gtk (send menu get-gtk)])
+         (g_object_ref gtk)
+         (gtk_menu_item_set_submenu item gtk))
+       (gtk_menu_shell_append gtk item)
+       (gtk_widget_show item)))))

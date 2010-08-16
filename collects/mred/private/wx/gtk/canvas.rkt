@@ -135,7 +135,8 @@
           (let ([gc (send wx get-canvas-background-for-clearing)])      
             (when gc
               (gdk_draw_rectangle (widget-window gtk) gc #t
-                                  0 0 32000 32000))))))
+                                  0 0 32000 32000)
+              (gdk_gc_unref gc))))))
     #t))
 
 (define-signal-handler connect-expose-border "expose-event"
@@ -197,61 +198,62 @@
     (define-values (client-gtk gtk 
                                hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box
                                combo-button-gtk)
-      (cond
-       [(or (memq 'hscroll style)
-            (memq 'vscroll style))
-        (let* ([client-gtk (gtk_drawing_area_new)]
-               [hadj (gtk_adjustment_new 0.0 0.0 1.0 1.0 1.0 1.0)]
-               [vadj (gtk_adjustment_new 0.0 0.0 1.0 1.0 1.0 1.0)])
-          (let ([h (gtk_hbox_new #f 0)]
-                [v (gtk_vbox_new #f 0)]
-                [v2 (gtk_vbox_new #f 0)]
-                [h2 (gtk_vbox_new #f 0)]
-                [hscroll (gtk_hscrollbar_new hadj)]
-                [vscroll (gtk_vscrollbar_new vadj)]
-                [resize-box (gtk_drawing_area_new)])
-            (when has-border?
-              (gtk_container_set_border_width h margin))
-            (gtk_box_pack_start h v #t #t 0)
-            (gtk_box_pack_start v client-gtk #t #t 0)
-            (gtk_box_pack_start h v2 #f #f 0)
-            (gtk_box_pack_start v2 vscroll #t #t 0)
-            (gtk_box_pack_start v h2 #f #f 0)
-            (gtk_box_pack_start h2 hscroll #t #t 0)
-            (gtk_box_pack_start v2 resize-box #f #f 0)
-            (gtk_widget_show hscroll)
-            (gtk_widget_show vscroll)
-            (gtk_widget_show h)
-            (gtk_widget_show v)
-            (gtk_widget_show v2)
-            (gtk_widget_show h2)
-            (gtk_widget_show resize-box)
-            (gtk_widget_show client-gtk)
-            (unless (memq 'hscroll style)
-              (gtk_widget_hide hscroll)
-              (gtk_widget_hide resize-box))
-            (unless (memq 'vscroll style)
-              (gtk_widget_hide v2))
-            (values client-gtk h hadj vadj 
-                    (and (memq 'hscroll style) h2)
-                    (and (memq 'vscroll style) v2)
-                    (and (memq 'hscroll style) (memq 'vscroll style) resize-box)
-                    #f)))]
-       [is-combo?
-        (let* ([gtk (gtk_combo_box_entry_new_text)]
-               [orig-entry (gtk_bin_get_child gtk)])
-          (values orig-entry gtk #f #f #f #f #f (extract-combo-button gtk)))]
-       [has-border?
-        (let ([client-gtk (gtk_drawing_area_new)]
-              [h (gtk_hbox_new #f 0)])
-          (gtk_box_pack_start h client-gtk #t #t 0)
-          (gtk_container_set_border_width h margin)
-          (connect-expose-border h)
-          (gtk_widget_show client-gtk)
-          (values client-gtk h #f #f #f #f #f #f))]
-       [else
-        (let ([client-gtk (gtk_drawing_area_new)])
-          (values client-gtk client-gtk #f #f #f #f #f #f))]))
+      (atomically ;; need to connect all children to gtk to avoid leaks
+       (cond
+        [(or (memq 'hscroll style)
+             (memq 'vscroll style))
+         (let* ([client-gtk (gtk_drawing_area_new)]
+                [hadj (gtk_adjustment_new 0.0 0.0 1.0 1.0 1.0 1.0)]
+                [vadj (gtk_adjustment_new 0.0 0.0 1.0 1.0 1.0 1.0)])
+           (let ([h (as-gtk-allocation (gtk_hbox_new #f 0))]
+                 [v (gtk_vbox_new #f 0)]
+                 [v2 (gtk_vbox_new #f 0)]
+                 [h2 (gtk_vbox_new #f 0)]
+                 [hscroll (gtk_hscrollbar_new hadj)]
+                 [vscroll (gtk_vscrollbar_new vadj)]
+                 [resize-box (gtk_drawing_area_new)])
+             (when has-border?
+               (gtk_container_set_border_width h margin))
+             (gtk_box_pack_start h v #t #t 0)
+             (gtk_box_pack_start v client-gtk #t #t 0)
+             (gtk_box_pack_start h v2 #f #f 0)
+             (gtk_box_pack_start v2 vscroll #t #t 0)
+             (gtk_box_pack_start v h2 #f #f 0)
+             (gtk_box_pack_start h2 hscroll #t #t 0)
+             (gtk_box_pack_start v2 resize-box #f #f 0)
+             (gtk_widget_show hscroll)
+             (gtk_widget_show vscroll)
+             (gtk_widget_show h)
+             (gtk_widget_show v)
+             (gtk_widget_show v2)
+             (gtk_widget_show h2)
+             (gtk_widget_show resize-box)
+             (gtk_widget_show client-gtk)
+             (unless (memq 'hscroll style)
+               (gtk_widget_hide hscroll)
+               (gtk_widget_hide resize-box))
+             (unless (memq 'vscroll style)
+               (gtk_widget_hide v2))
+             (values client-gtk h hadj vadj 
+                     (and (memq 'hscroll style) h2)
+                     (and (memq 'vscroll style) v2)
+                     (and (memq 'hscroll style) (memq 'vscroll style) resize-box)
+                     #f)))]
+        [is-combo?
+         (let* ([gtk (as-gtk-allocation (gtk_combo_box_entry_new_text))]
+                [orig-entry (gtk_bin_get_child gtk)])
+           (values orig-entry gtk #f #f #f #f #f (extract-combo-button gtk)))]
+        [has-border?
+         (let ([client-gtk (gtk_drawing_area_new)]
+               [h (as-gtk-allocation (gtk_hbox_new #f 0))])
+           (gtk_box_pack_start h client-gtk #t #t 0)
+           (gtk_container_set_border_width h margin)
+           (connect-expose-border h)
+           (gtk_widget_show client-gtk)
+           (values client-gtk h #f #f #f #f #f #f))]
+        [else
+         (let ([client-gtk (as-gtk-allocation (gtk_drawing_area_new))])
+           (values client-gtk client-gtk #f #f #f #f #f #f))])))
 
     (super-new [parent parent]
                [gtk gtk]
@@ -481,15 +483,15 @@
                                                bg-col))
     (define/public (set-canvas-background col) (set! bg-col col))
     (define/public (get-canvas-background-for-clearing) 
+      ;; called in event-dispatch mode
       (if now-drawing?
           (begin
             (set! refresh-after-drawing? #t)
             #f)
           (if clear-bg?
-              (let ([conv (lambda (x) (bitwise-ior x (arithmetic-shift x 8)))])
-                (unless gc
-                  (let ([w (widget-window gtk)])
-                    (set! gc (gdk_gc_new w))))
+              (let* ([conv (lambda (x) (bitwise-ior x (arithmetic-shift x 8)))]
+                     [w (widget-window gtk)]
+                     [gc (gdk_gc_new w)])
                 (gdk_gc_set_rgb_fg_color gc (make-GdkColor 0
                                                            (conv (color-red bg-col))
                                                            (conv (color-green bg-col))

@@ -57,7 +57,7 @@
     (inherit set-size get-gtk)
     
     (super-new [parent parent]
-               [gtk (gtk_fixed_new)] ; (gtk_alignment_new 0.0 0.0 1.0 1.0)]
+               [gtk (as-gtk-allocation (gtk_fixed_new))]
                [no-show? (memq 'deleted style)])
     
     (define gtk (get-gtk))

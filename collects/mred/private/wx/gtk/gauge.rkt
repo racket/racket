@@ -15,6 +15,9 @@
 
 (define-gtk gtk_progress_bar_new (_fun _pointer -> _GtkWidget))
 (define-gtk gtk_progress_bar_set_fraction (_fun _GtkWidget _double* -> _void))
+(define-gtk gtk_progress_bar_set_orientation (_fun _GtkWidget _int -> _void))
+
+(define GTK_PROGRESS_BOTTOM_TO_TOP 2)
 
 (defclass gauge% item%
   (init parent
@@ -26,9 +29,12 @@
   (inherit get-gtk set-auto-size)
 
   (super-new [parent parent]
-             [gtk (gtk_progress_bar_new #f)]
+             [gtk (as-gtk-allocation (gtk_progress_bar_new #f))]
              [no-show? (memq 'deleted style)])
   (define gtk (get-gtk))
+
+  (when (memq 'vertical style)
+    (gtk_progress_bar_set_orientation gtk GTK_PROGRESS_BOTTOM_TO_TOP))
 
   (set-auto-size)
 
