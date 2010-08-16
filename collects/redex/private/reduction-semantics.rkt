@@ -1845,8 +1845,9 @@
                       [_ #f]))
                   (syntax->list (syntax/loc stx (name ...)))))
      (with-syntax ([((r-rhs ...) ...) (map (lambda (rhss) (map (λ (x) (rewrite-side-conditions/check-errs
-                                                                       (language-id-nts #'lang 'extend-language)
-                                                                       'extend-language
+                                                                       (append (language-id-nts #'lang 'define-extended-language)
+                                                                               (syntax->datum #'(name ...)))
+                                                                       'define-extended-language
                                                                        #f
                                                                        x))
                                                                (syntax->list rhss)))
@@ -1877,7 +1878,7 @@
     [(_ lang (name rhs ...) ...)
      (begin
        (unless (identifier? #'lang)
-         (error 'extend-language "expected the name of a language" stx #'lang))
+         (error 'define-extended-language "expected the name of a language" stx #'lang))
        (for-each
         (lambda (name)
           (unless (syntax-case name ()
@@ -1889,7 +1890,7 @@
                      (identifier? #'name)
                      #t]
                     [else #f])
-            (raise-syntax-error 'extend-language "expected a name or a non-empty sequence of names" stx name)))
+            (raise-syntax-error 'define-extended-language "expected a name or a non-empty sequence of names" stx name)))
         (syntax->list (syntax (name ...)))))]
     [(_ lang x ...)
      (for-each
@@ -1898,7 +1899,7 @@
           [(name rhs ...)
            (void)]
           [_
-           (raise-syntax-error 'extend-language "malformed non-terminal" stx x)]))
+           (raise-syntax-error 'define-extended-language "malformed non-terminal" stx x)]))
       (syntax->list (syntax (x ...))))]))
 
 (define extend-nt-ellipses '(....))
@@ -1908,7 +1909,7 @@
 ;; lists of symbols in the nt-name field.
 (define (do-extend-language old-lang new-nts new-pict-infos)
   (unless (compiled-lang? old-lang)
-    (error 'extend-language "expected a language as first argument, got ~e" old-lang))
+    (error 'define-extended-language "expected a language as first argument, got ~e" old-lang))
   
   (let ([old-nts (compiled-lang-lang old-lang)]
         [old-ht (make-hasheq)]
@@ -1929,7 +1930,7 @@
                   ;; error checking
                   (when (and (ormap not primary-names)
                              (ormap symbol? primary-names))
-                    (error 'extend-language "new language extends old non-terminal ~a and also adds new shortcut ~a"
+                    (error 'define-extended-language "new language extends old non-terminal ~a and also adds new shortcut ~a"
                            (ormap (λ (x y) (and (symbol? x) y)) primary-names names)
                            (ormap (λ (x y) (and (not x) y)) primary-names names)))
                   
@@ -1942,7 +1943,7 @@
                           [(null? primary-names) void]
                           [else 
                            (unless (eq? main-primary (car primary-names))
-                             (error 'extend-language
+                             (error 'define-extended-language
                                     (string-append 
                                      "new language does not have the same non-terminal aliases as the old,"
                                      " non-terminal ~a was not in the same group as ~a in the old language")
@@ -1957,7 +1958,7 @@
                       [(ormap (λ (rhs) (member (rhs-pattern rhs) extend-nt-ellipses))
                               (nt-rhs nt))
                        (unless (hash-ref old-ht (nt-name nt) #f)
-                         (error 'extend-language
+                         (error 'define-extended-language
                                 "the language extends the ~s non-terminal, but that non-terminal is not in the old language"
                                 (nt-name nt)))
                        (hash-set! new-ht 

@@ -99,7 +99,22 @@
                                             (define-language x (e ....))
                                             12)))
         '("...."))
- 
+  
+
+  (let ()
+    ; error message shows correct form name
+    (test-syn-err
+     (let ()
+       (define-language L)
+       (define-extended-language M L
+         (z () (1 y_1)))
+       (void))
+     #rx"define-extended-language:.*underscore")
+    ; non-terminals added by extension can have underscores
+    (define-extended-language L base-grammar
+      (z () (1 z_1 z_1)))
+    (test (redex-match L z (term (1 () (1 () ())))) #f))
+  
   ;; test multiple variable non-terminals
   (let ()
     (define-language lang
@@ -224,7 +239,7 @@
               main
               [(X Y Z) q])
             (void)))
-        "extend-language: new language extends old non-terminal X and also adds new shortcut Z")
+        "define-extended-language: new language extends old non-terminal X and also adds new shortcut Z")
   
   (test (with-handlers ([exn? exn-message])
           (let () 
@@ -235,7 +250,7 @@
               main
               [(X P) q])
             (void)))
-        "extend-language: new language does not have the same non-terminal aliases as the old, non-terminal P was not in the same group as X in the old language")
+        "define-extended-language: new language does not have the same non-terminal aliases as the old, non-terminal P was not in the same group as X in the old language")
   
   ;; underscores in literals
   (let ()
