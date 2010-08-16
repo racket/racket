@@ -345,7 +345,7 @@
 		    (set! last-height correct-h)
 		    (set! already-trying? #t)
 		    (enforce-size -1 -1 -1 -1 1 1)
-		    (set-size -1 -1 correct-w correct-h)
+		    (set-size -11111 -11111 correct-w correct-h)
 		    (enforce-size min-w min-h
 				  (if sx? -1 min-w) (if sy? -1 min-h)
 				  1 1)

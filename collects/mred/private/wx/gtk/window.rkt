@@ -287,10 +287,12 @@
                [extra-gtks extra-gtks]
                [parent parent])
 
-    (define save-x 0)
-    (define save-y 0)
+    (define save-x (get-unset-pos))
+    (define save-y (get-unset-pos))
     (define save-w 0)
     (define save-h 0)
+
+    (define/public (get-unset-pos) 0)
 
     (connect-size-allocate gtk)
 
@@ -399,8 +401,8 @@
 
     (unless no-show? (show #t))
 
-    (define/public (get-x) save-x)
-    (define/public (get-y) save-y)
+    (define/public (get-x) (if (= save-x -11111) 0 save-x))
+    (define/public (get-y) (if (= save-y -11111) 0 save-y))
     (define/public (get-width) save-w)
     (define/public (get-height) save-h)
 

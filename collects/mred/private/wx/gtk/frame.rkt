@@ -180,6 +180,8 @@
     (define/override (get-dialog-level) 0)
     (define/public (frame-relative-dialog-status win) #f)
 
+    (define/override (get-unset-pos) -11111)
+
     (define/override (center dir wrt)
       (let ([w-box (box 0)]
             [h-box (box 0)]
