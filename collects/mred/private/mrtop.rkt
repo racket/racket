@@ -136,7 +136,7 @@
         [do-set-status-text (lambda (s)
                               (send status-message set-label s))])
       (sequence 
-	(super-init (lambda () (set! wx (mk-wx finish)) wx) (lambda () wx-panel) mismatches label parent arrow-cursor))))
+	(super-init (lambda () (set! wx (mk-wx finish)) wx) (lambda () mid-panel) mismatches label parent arrow-cursor))))
 
 
   (define frame%
