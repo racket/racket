@@ -1566,7 +1566,7 @@ before the pattern compiler is invoked.
             (cons (loop (car exp))
                   (loop (cdr exp)))]
            [(eq? the-not-hole exp)
-            the-hole]
+            the-not-hole]
            [(eq? the-hole exp)
             (if done?
                 exp

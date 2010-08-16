@@ -99,9 +99,7 @@
                                             (define-language x (e ....))
                                             12)))
         '("...."))
-  
-
-  
+ 
   ;; test multiple variable non-terminals
   (let ()
     (define-language lang
@@ -897,6 +895,17 @@
                (where number_i 2)))
          '())
         '(()))
+  
+  (test (apply-reduction-relation
+         (reduction-relation
+          empty-language
+          (--> (in-hole (name E
+                              (in-hole ((hide-hole hole) hole)
+                                       hole))
+                        number)
+               (in-hole E ,(add1 (term number)))))
+         (term (hole 2)))
+        (list (term (hole 3))))
   
   (test (apply-reduction-relation/tag-with-names
          (reduction-relation 
