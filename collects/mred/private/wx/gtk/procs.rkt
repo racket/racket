@@ -64,7 +64,7 @@
  can-show-print-setup?)
 
 (define-unimplemented special-control-key)
-(define-unimplemented special-option-key)
+(define (special-option-key on?) (void))
 (define-unimplemented get-color-from-user)
 (define-unimplemented get-font-from-user)
 (define (get-panel-background) (make-object color% "gray"))

@@ -86,7 +86,7 @@
 
       (uncaught-exception-handler
        (lambda (x)
-	 (show-error x)
+         (show-error x)
 	 ((error-escape-handler))))
 
       ;; Install std bindings global for file dialog, etc.

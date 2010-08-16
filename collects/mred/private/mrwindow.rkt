@@ -21,7 +21,9 @@
 	   window<%>
 	   (protect window%-keywords)
 	   subwindow<%>
-	   (protect make-window%))
+	   (protect make-window%)
+           
+           (protect set-get-outer-panel))
 
   (define area<%>
     (interface ()
@@ -36,6 +38,9 @@
     [stretchable-width no-val]
     [stretchable-height no-val])
 
+  (define-local-member-name
+    set-get-outer-panel)
+
   (define area%
     (class100* mred% (area<%>) (mk-wx get-wx-pan mismatches prnt
 				      ;; for keyword use:
@@ -49,15 +54,16 @@
 	  (unless (eq? min-height no-val) (check-non#f-dimension cwho min-height)))
 	(mismatches))
       (private-field 
-       [get-wx-panel get-wx-pan]
+       [get-wx-outer-panel get-wx-pan]
        [parent prnt])
       (public
+        [set-get-outer-panel (lambda (get-wx-outer-pan) (set! get-wx-outer-panel get-wx-outer-pan))]
 	[get-parent (lambda () parent)]
 	[get-top-level-window (entry-point (lambda () (wx->mred (send wx get-top-level))))]
-	[(minw min-width) (param get-wx-panel min-width)]
-	[(minh min-height) (param get-wx-panel min-height)]
-	[(sw stretchable-width) (param get-wx-panel stretchable-in-x)]
-	[(sh stretchable-height) (param get-wx-panel stretchable-in-y)]
+	[(minw min-width) (param get-wx-outer-panel min-width)]
+	[(minh min-height) (param get-wx-outer-panel min-height)]
+	[(sw stretchable-width) (param get-wx-outer-panel stretchable-in-x)]
+	[(sh stretchable-height) (param get-wx-outer-panel stretchable-in-y)]
 	[get-graphical-min-size (entry-point (lambda () 
 					       (if (wx . is-a? . wx-basic-panel<%>)
 						   (apply values (send wx get-graphical-min-size))

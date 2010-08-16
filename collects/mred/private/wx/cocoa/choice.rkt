@@ -35,7 +35,7 @@
               (let ([cocoa 
                      (as-objc-allocation
                       (tell (tell MyPopUpButton alloc) 
-                            initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint x y)
+                            initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                                        (make-NSSize w h))
                             pullsDown: #:type _BOOL #f))])
                 (for ([lbl (in-list choices)]

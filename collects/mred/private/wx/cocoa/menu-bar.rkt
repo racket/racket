@@ -4,6 +4,7 @@
          ffi/unsafe/objc
          (only-in racket/list take drop)
          "../../syntax.rkt"
+         "../../lock.rkt"
          "utils.rkt"
          "types.rkt"
          "const.rkt"
@@ -109,28 +110,38 @@
     (tellv app setMainMenu: cocoa-mb)
     (set! the-apple-menu apple)))
 
+(tellv cocoa-mb setAutoenablesItems: #:type _BOOL #f)
+
 (defclass menu-bar% object%
   (define menus null)
 
   (def/public-unimplemented number)
-  (def/public-unimplemented enable-top)
+  (define/public (enable-top pos on?)
+    (set-box! (cddr (list-ref menus pos)) on?)
+    (when (eq? current-mb this)
+      (tellv (tell cocoa-mb itemAtIndex: #:type _NSInteger (add1 pos))
+             setEnabled: #:type _BOOL on?)))
 
   (define/public (delete which pos)
-    (set! menus (let loop ([menus menus]
-                           [pos pos])
-                  (cond
-                   [(null? menus) menus]
-                   [(zero? pos) (cdr menus)]
-                   [else (cons (car menus)
-                               (loop (cdr menus)
-                                     pos))]))))
+    (atomically
+     (when (eq? current-mb this)
+       (tellv cocoa-mb removeItem: 
+              (tell cocoa-mb itemAtIndex: #:type _NSInteger (add1 pos))))
+     (set! menus (let loop ([menus menus]
+                            [pos pos])
+                   (cond
+                    [(null? menus) menus]
+                    [(zero? pos) (cdr menus)]
+                    [else (cons (car menus)
+                                (loop (cdr menus)
+                                      (sub1 pos)))])))))
 
   (public [append-menu append])
   (define (append-menu menu title)
-    (set! menus (append menus (list (cons menu title))))
+    (set! menus (append menus (list (list* menu title (box #t)))))
     (send menu set-parent this)
     (when (eq? current-mb this)
-      (send menu install cocoa-mb title)))
+      (send menu install cocoa-mb title #t)))
 
   (define/public (install)
     (let loop ()
@@ -138,7 +149,7 @@
         (tellv cocoa-mb removeItem: (tell cocoa-mb itemAtIndex: #:type _NSInteger 1))
         (loop)))
     (for-each (lambda (menu)
-                (send (car menu) install cocoa-mb (cdr menu)))
+                (send (car menu) install cocoa-mb (cadr menu) (unbox (cddr menu))))
               menus)
     (set! current-mb this))
 
@@ -151,7 +162,8 @@
   (define/public (set-label-top pos str)
     (set! menus (append
                  (take menus pos)
-                 (list (cons (car (list-ref menus pos)) str))
+                 (let ([i (list-ref menus pos)])
+                   (list (cons (car i) (cons str (cddr i)))))
                  (drop menus (add1 pos))))
     (when (eq? current-mb this)
       (tellv (tell cocoa-mb itemAtIndex: #:type _NSInteger 1)

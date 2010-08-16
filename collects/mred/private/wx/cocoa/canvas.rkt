@@ -252,7 +252,7 @@
                                               FrameView)]
                     [else NSView])
                    alloc) 
-             initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint x y)
+             initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                         (make-NSSize (max w (* 2 x-margin))
                                                                      (max h (* 2 y-margin))))))]
      [no-show? (memq 'deleted style)])

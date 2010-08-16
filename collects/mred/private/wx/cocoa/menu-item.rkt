@@ -49,7 +49,7 @@
 
   (define/public (install menu)
     (if submenu
-        (send submenu install menu label)
+        (send submenu install menu label enabled?)
         (let ([item (as-objc-allocation
                      (tell (tell MyMenuItem alloc) 
                            initWithTitle: #:type _NSString (regexp-replace #rx"\t.*" label "")

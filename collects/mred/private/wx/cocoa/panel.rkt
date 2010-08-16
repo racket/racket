@@ -62,6 +62,6 @@
              [cocoa
               (as-objc-allocation
                (tell (tell NSView alloc)
-                     initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint x y)
+                     initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                                 (make-NSSize w h))))]
              [no-show? (memq 'deleted style)]))

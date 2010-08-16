@@ -974,7 +974,7 @@
                                    (install-alternate-face (string-ref s 0) layout font desc attrs context))
                                  (substring s (max 1 ok-count))))])
                       (when draw?
-                        (cairo_move_to cr (+ x w) y)
+                        (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
                         (pango_cairo_show_layout cr layout))
                       (cond
                        [(and draw? (not next-s))
@@ -1012,7 +1012,7 @@
                                                 layout)))])
                      (pango_cairo_update_layout cr layout)
                      (when draw?
-                       (cairo_move_to cr (+ x w) y)
+                       (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
                        (pango_cairo_show_layout cr layout))
                      (pango_layout_get_extents layout #f logical)
                      (let ([lw (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))]

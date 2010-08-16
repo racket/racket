@@ -41,7 +41,7 @@
         (tellv cocoa addTabViewItem: item)
         item)))
   (let ([sz (tell #:type _NSSize cocoa minimumSize)])
-    (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x y) sz)))
+    (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-init-point x y) sz)))
   (tellv cocoa setDelegate: cocoa)
   
   (define content-cocoa 

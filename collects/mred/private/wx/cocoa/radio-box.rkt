@@ -73,7 +73,7 @@
               (let ([cocoa
                      (as-objc-allocation
                       (tell (tell MyMatrix alloc) 
-                            initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint x y)
+                            initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                                        (make-NSSize w h))
                             mode: #:type _int NSRadioModeMatrix
                             cellClass: (if (andmap string? labels)

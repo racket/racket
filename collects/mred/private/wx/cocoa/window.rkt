@@ -24,7 +24,8 @@
          queue-window-event
          queue-window*-event
          request-flush-delay
-         cancel-flush-delay)
+         cancel-flush-delay
+         make-init-point)
 
 (define-local-member-name flip-client)
 
@@ -313,8 +314,10 @@
         (set-box! h (->long (NSSize-height s)))))
 
     (define/public (set-size x y w h)
-      (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
-                                                         (make-NSSize w h))))
+      (let ([x (if (= x -11111) 0 x)]
+            [y (if (= y -11111) 0 y)])
+        (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
+                                                           (make-NSSize w h)))))
     (define/public (move x y)
       (set-size x y (get-width) (get-height)))
 
@@ -449,3 +452,11 @@
        (set! depth (sub1 depth))
        (tellv cocoa-win enableFlushWindow)
        (remove-event-boundary-callback! req)))))
+
+(define (make-init-point x y)
+  (make-NSPoint (if (= x -11111)
+                    0
+                    x)
+                (if (= y -11111)
+                    0
+                    y)))

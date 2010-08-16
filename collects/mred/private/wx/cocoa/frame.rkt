@@ -92,12 +92,6 @@
                             (and front
                                  (send front get-eventspace)))))
 
-(define (init-pos x y)
-  (if (and (= x -11111)
-           (= y -11111))
-      (values 0 0)
-      (values x y)))
-
 (define frame%
   (class window%
     (init parent
@@ -108,7 +102,8 @@
 
     (inherit get-cocoa get-parent
              get-eventspace
-             pre-on-char pre-on-event)
+             pre-on-char pre-on-event
+             get-x get-y)
 
     (super-new [parent parent]
                [cocoa
@@ -116,13 +111,12 @@
                                       is-dialog? 
                                       parent
                                       (not (send parent frame-is-dialog?)))]
-                      [init-rect (let-values ([(x y) (init-pos x y)])
-                                   (make-NSRect (make-NSPoint x y)
-                                                (make-NSSize (max 30 w) 
-                                                             (max (if (memq 'no-caption style)
-                                                                      0
-                                                                      22)
-                                                                  h))))])
+                      [init-rect (make-NSRect (make-init-point x y)
+                                              (make-NSSize (max 30 w) 
+                                                           (max (if (memq 'no-caption style)
+                                                                    0
+                                                                    22)
+                                                                h)))])
                   (let ([c (as-objc-allocation
                             (tell (tell (if is-sheet?
                                             MyPanel
@@ -150,6 +144,8 @@
                [no-show? #t])
     (define cocoa (get-cocoa))
     (tellv cocoa setDelegate: cocoa)
+
+    (move -11111 (if (= y -11111) 0 y))
 
     (tellv cocoa setAcceptsMouseMovedEvents: #:type _BOOL #t)
 
@@ -319,7 +315,9 @@
                                (make-NSSize w h))
                display: #:type _BOOL #t)))
     (define/override (move x y)
-      (tellv cocoa setFrameTopLeftPoint: #:type _NSPoint (make-NSPoint x (flip-screen y))))
+      (let ([x (if (= x -11111) (get-x) x)]
+            [y (if (= y -11111) (get-y) y)])
+        (tellv cocoa setFrameTopLeftPoint: #:type _NSPoint (make-NSPoint x (flip-screen y)))))
 
     (define/override (center dir wrt)
       (let ([f (tell #:type _NSRect cocoa frame)]
@@ -366,7 +364,7 @@
 
     (define/public (on-activate on?) (void))
 
-    (define/public (set-icon bm1 bm2 mode) (void)) ;; FIXME
+    (define/public (set-icon bm1 bm2 [mode 'both]) (void)) ;; FIXME
 
     (define/override (call-pre-on-event w e)
       (pre-on-event w e))

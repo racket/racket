@@ -39,7 +39,7 @@
     (let ([cocoa 
            (as-objc-allocation
             (tell (tell MyButton alloc) 
-                  initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint x y)
+                  initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                              (make-NSSize w h))))])
       (when button-type
         (tellv cocoa setButtonType: #:type _int button-type))

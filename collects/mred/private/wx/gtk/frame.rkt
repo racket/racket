@@ -260,7 +260,7 @@
 
     (define/augment (is-enabled-to-root?) #t)
 
-    (define/public (set-icon bm mask mode) (void)) ;; FIXME
+    (define/public (set-icon bm mask [mode 'both]) (void)) ;; FIXME
     
     (define/override (call-pre-on-event w e)
       (pre-on-event w e))

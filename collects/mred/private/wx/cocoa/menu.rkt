@@ -49,9 +49,10 @@
                       (tellv cocoa-menu addItem: (tell NSMenuItem separatorItem))))
                 items)))
 
-  (define/public (install cocoa-parent label)
+  (define/public (install cocoa-parent label enabled?)
     (create-menu label)
-    (tellv cocoa-parent addItem: cocoa))
+    (tellv cocoa-parent addItem: cocoa)
+    (tellv cocoa setEnabled: #:type _BOOL enabled?))
 
   (define popup-box #f)
 

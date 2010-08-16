@@ -49,7 +49,7 @@
   (define basic-top-level-window%
     (class100* (make-area-container-window% (make-window% #t (make-container% area%))) (top-level-window<%>) 
 	       (mk-wx mismatches label parent)
-      (inherit show)
+      (inherit show set-get-outer-panel)
       (rename [super-set-label set-label])
       (private
 	[wx-object->proxy
@@ -131,12 +131,15 @@
 		  top-level))])
       (public
         [do-create-status-line (lambda ()
-                                 (set! status-message (make-object wx-message% this this mid-panel "" -1 -1 null #f))
-                                 (send status-message stretchable-in-x #t))]
+                                 (unless status-message
+                                   (set! status-message (make-object wx-message% this this mid-panel "" -1 -1 null #f))
+                                   (send status-message stretchable-in-x #t)))]
         [do-set-status-text (lambda (s)
-                              (send status-message set-label s))])
+                              (when status-message
+                                (send status-message set-label s)))])
       (sequence 
-	(super-init (lambda () (set! wx (mk-wx finish)) wx) (lambda () mid-panel) mismatches label parent arrow-cursor))))
+	(super-init (lambda () (set! wx (mk-wx finish)) wx) (lambda () wx-panel) mismatches label parent arrow-cursor)
+        (set-get-outer-panel (lambda () mid-panel)))))
 
 
   (define frame%
