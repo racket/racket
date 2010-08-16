@@ -118,6 +118,9 @@
           2
           0))
 
+    (define/override (can-combine-text? sz)
+      #t)
+
     (super-new)))
 
 (define post-script-dc% (dc-mixin dc-backend%))

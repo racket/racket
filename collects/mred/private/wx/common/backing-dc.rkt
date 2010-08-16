@@ -15,7 +15,8 @@
          on-backing-flush
          start-backing-retained
          end-backing-retained
-         reset-backing-retained)
+         reset-backing-retained
+         get-bitmap%)
 
 (define-local-member-name
   get-backing-size
@@ -23,7 +24,8 @@
   on-backing-flush
   start-backing-retained
   end-backing-retained
-  reset-backing-retained)
+  reset-backing-retained
+  get-bitmap%)
 
 (define backing-dc%
   (class (dc-mixin bitmap-dc-backend%)
@@ -83,12 +85,14 @@
              (log-error "unbalanced end-on-paint")
              (set! retained-counter (sub1 retained-counter))))))
 
+    (define/public (get-bitmap%) bitmap%)
+
     (define/override (get-cr)
       (or retained-cr
           (let ([w (box 0)]
                 [h (box 0)])
             (get-backing-size w h)
-            (let ([bm (get-backing-bitmap (unbox w) (unbox h))])
+            (let ([bm (get-backing-bitmap (get-bitmap%) (unbox w) (unbox h))])
               (internal-set-bitmap bm #t))
             (let ([cr (super get-cr)])
               (set! retained-cr cr)
@@ -110,7 +114,7 @@
        (when (zero? flush-suspends)
          (queue-backing-flush))))))
 
-(define (get-backing-bitmap w h)
+(define (get-backing-bitmap bitmap% w h)
   (make-object bitmap% w h #f #t))
 
 (define (release-backing-bitmap bm)

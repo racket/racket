@@ -33,12 +33,40 @@
 (define-appserv CGContextAddLines (_fun _CGContextRef (v : (_vector i _NSPoint)) (_long = (vector-length v)) -> _void))
 (define-appserv CGContextStrokePath (_fun _CGContextRef -> _void))
 
+(define quartz-bitmap%
+  (class object%
+    (init w h b&w? alpha?)
+    (super-new)
+    (define s
+      (cairo_quartz_surface_create CAIRO_FORMAT_ARGB32
+                                   w
+                                   h))
+
+    (define/public (ok?) #t)
+    (define/public (is-color?) #t)
+
+    (define width w)
+    (define height h)
+    (define/public (get-width) width)
+    (define/public (get-height) height)
+    
+    (define/public (get-cairo-surface) s)
+
+    (define/public (release-bitmap-storage)
+      (atomically
+       (cairo_surface_destroy s)
+       (set! s #f)))))
+
 (define dc%
   (class backing-dc%
     (init [(cnvs canvas)])
     (define canvas cnvs)
 
     (super-new)
+
+    ;; Use a quartz bitmap so that text looks good:
+    (define/override (get-bitmap%) quartz-bitmap%)
+    (define/override (can-combine-text? sz) #t)
 
     (define/override (get-backing-size xb yb)
       (send canvas get-backing-size xb yb))

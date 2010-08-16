@@ -39,4 +39,5 @@
   init-cr-matrix
   get-font-metrics-key
   install-color
-  dc-adjust-smoothing)
+  dc-adjust-smoothing
+  can-combine-text?)

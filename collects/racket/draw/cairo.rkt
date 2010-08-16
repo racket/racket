@@ -52,6 +52,10 @@
 (define-cairo cairo_surface_destroy (_fun _cairo_surface_t -> _void)
   #:wrap (deallocator))
 
+(define-cairo cairo_quartz_surface_create
+  (_fun _int _uint _uint -> _cairo_surface_t)
+  #:make-fail make-not-available
+  #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_quartz_surface_create_for_cg_context
   (_fun _CGContextRef _uint _uint -> _cairo_surface_t)
   #:make-fail make-not-available

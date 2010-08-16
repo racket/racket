@@ -125,7 +125,14 @@
     ;; set-auto-scroll : real real -> void
     ;;
     ;; used by a back-end to install canvas scrolling
-    set-auto-scroll))
+    set-auto-scroll
+
+    ;; can-combine-text? : real -> bool
+    ;;
+    ;; Return #t if text at given font size (already scaled)
+    ;;  looks good when drawn all at once (which allows kerning,
+    ;;  but may be spaced weirdly)
+    can-combine-text?))
 
 (define default-dc-backend%
   (class* object% (dc-backend<%>)
@@ -174,6 +181,9 @@
 
     (define/public (set-auto-scroll dx dy) (void))
 
+    (define/public (can-combine-text? sz)
+      (sz . > . 32.0))
+
     (super-new)))
 
 (define hilite-color (send the-color-database find-color "black"))
@@ -188,7 +198,8 @@
 
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing reset-clip
-             collapse-bitmap-b&w? call-with-cr-lock)
+             collapse-bitmap-b&w? call-with-cr-lock
+             can-combine-text?)
 
     (define-syntax-rule (with-cr default cr . body)
       (call-with-cr-lock
@@ -937,7 +948,8 @@
               [integral round]
               [x (if rotate? 0.0 x)]
               [y (if rotate? 0.0 y)])
-          (if combine?
+          (if (and combine?
+                   (can-combine-text? (* scale-y (send font get-point-size))))
               (let loop ([s s] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
                 (cond
                  [(not s)
