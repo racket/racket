@@ -233,12 +233,13 @@ beginning of each line.
 
 The @racket[str]s are @emph{not} decoded with @racket[decode-content],
 so @racket[(verbatim "---")] renders with three hyphens instead of an
-em-dash. Beware, however, that @litchar["@"] for a @racket[verbatim]
-call performs some processing before delivering arguments to
-@racket[verbatim]. The @racket[verbatim] form is typically used with
-@litchar["|{"]...@litchar["}|"] or similar brackets to disable
-@litchar["@"] notation within the @racket[verbatim] argument, like
-this:
+em-dash. Beware, however, that @emph{reading}
+@litchar["@"]@racket[verbatim] converts @litchar["@"] syntax
+within the argument, and such reading occurs well before
+arguments to @racket[verbatim] are delivered at run-time. To disable simple
+@litchar["@"] notation within the @racket[verbatim] argument,
+@racket[verbatim] is typically used with
+@litchar["|{"]...@litchar["}|"] or similar brackets, like this:
 
 @verbatim[#:indent 2]|{
  @verbatim|{
@@ -253,8 +254,8 @@ which renders as
 }|
 
 Even with @litchar["|{"]...@litchar["}|"], beware that consistent
-leading whitespace is removed; see @secref["alt-body-syntax"] for more
-information.
+leading whitespace is removed by the parser; see
+@secref["alt-body-syntax"] for more information.
 
 See also @racket[literal].}
 
