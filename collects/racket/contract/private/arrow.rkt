@@ -105,6 +105,194 @@ v4 todo:
 ;              
 ;              
 
+(define (matches-arity-exactly? val contract-arity contract-req-kwds contract-opt-kwds)
+  (and (equal? (procedure-arity val) contract-arity)
+       (let-values ([(vr va) (procedure-keywords val)])
+         (and va (equal? vr contract-req-kwds) (equal? va contract-opt-kwds)))))
+
+(define-for-syntax (create-chaperone blame val pre post this-args doms opt-doms dom-rest req-kwds opt-kwds rngs)
+  (with-syntax ([blame blame]
+                [val val])
+    (with-syntax ([(pre ...) 
+                   (if pre
+                       (list #`(unless #,pre
+                                 (raise-blame-error (blame-swap blame) val "#:pre condition")))
+                       null)]
+                  [(post ...)
+                   (if post
+                       (list #`(unless #,post
+                                 (raise-blame-error blame val "#:post condition")))
+                       null)])
+      (with-syntax ([(this-param ...) this-args]
+                    [([dom-ctc dom-x] ...) 
+                     (for/list ([d (in-list doms)])
+                       (list d (gensym 'dom)))]
+                    [([opt-dom-ctc opt-dom-x] ...)
+                     (for/list ([d (in-list opt-doms)])
+                       (list d (gensym 'opt-dom)))]
+                    [(rest-ctc rest-x) (list dom-rest (gensym 'rest))]
+                    [([req-kwd req-kwd-ctc req-kwd-x] ...)
+                     (for/list ([d (in-list req-kwds)]) 
+                       (list (car d) (cadr d) (gensym 'req-kwd)))]
+                    [([opt-kwd opt-kwd-ctc opt-kwd-x] ...)
+                     (for/list ([d (in-list opt-kwds)])
+                       (list (car d) (cadr d) (gensym 'opt-kwds)))]
+                    [(rng-checker ...)
+                     (if rngs
+                         (with-syntax ([rng-len (length rngs)]
+                                       [([rng-ctc rng-x] ...) (for/list ([r (in-list rngs)])
+                                                                (list r (gensym 'rng)))])
+                           (list #`(λ rngs
+                                     (unless (= (length rngs) rng-len)
+                                       (raise-blame-error blame val 
+                                                          "expected ~a value(s), returned ~a value(s)"
+                                                          rng-len (length rngs)))
+                                     post ...
+                                     (apply (λ (rng-x ...) (values (rng-ctc rng-x) ...)) rngs))))
+                         null)])
+        (let* ([min-method-arity (length doms)]
+               [max-method-arity (+ min-method-arity (length opt-doms))]
+               [min-arity (+ (length this-args) min-method-arity)]
+               [max-arity (+ min-arity (length opt-doms))]
+               [req-keywords (map (λ (p) (syntax-e (car p))) req-kwds)]
+               [opt-keywords (map (λ (p) (syntax-e (car p))) opt-kwds)])
+          (with-syntax ([args-len
+                         (if (= min-method-arity min-arity)
+                             #'(length args)
+                             #'(sub1 (length args)))]
+                        [arity-string
+                         (if dom-rest
+                             (format "at least ~a non-keyword argument~a" min-method-arity (if (= min-method-arity 1) "" "s"))
+                             (if (= min-method-arity max-method-arity)
+                                 (format "~a non-keyword argument~a" min-method-arity (if (= min-method-arity 1) "" "s"))
+                                 (format "~a to ~a non-keyword arguments" min-method-arity max-method-arity)))]
+                        [arity-checker
+                         (if dom-rest
+                             #`(>= (length args) #,min-arity)
+                             (if (= min-arity max-arity)
+                                 #`(= (length args) #,min-arity)
+                                 #`(and (>= (length args) #,min-arity) (<= (length args) #,max-arity))))]
+                        [basic-lambda-name (gensym 'basic-lambda)]
+                        [basic-lambda
+                         (cond
+                           [dom-rest
+                            #'(λ (this-param ... dom-x ... [opt-dom-x unspecified-dom] ... . rest-x)
+                                pre ...
+                                (apply values rng-checker ... this-param ... (dom-ctc dom-x) ... 
+                                       (append (if (eq? unspecified-dom opt-dom-x) null (list (opt-dom-ctc opt-dom-x))) ...
+                                               (rest-ctc rest-x))))]
+                           [else
+                            #'(λ (this-param ... dom-x ... [opt-dom-x unspecified-dom] ...)
+                                pre ...
+                                (apply values rng-checker ... this-param ... (dom-ctc dom-x) ...
+                                       (append (if (eq? unspecified-dom opt-dom-x) null (list (opt-dom-ctc opt-dom-x))) ...)))])]
+                        [kwd-lambda-name (gensym 'kwd-lambda)]
+                        [kwd-lambda
+                         (with-syntax ([(kwd-param ...)
+                                        (apply append
+                                               (map list
+                                                    (syntax->list #'(req-kwd ... opt-kwd ...))
+                                                    (syntax->list #'(req-kwd-x ... [opt-kwd-x unspecified-dom] ...))))]
+                                       [kwd-stx
+                                        (let* ([req-stxs
+                                                (map (λ (s) (λ (r) #`(cons #,s #,r)))
+                                                     (syntax->list #'((req-kwd-ctc req-kwd-x) ...)))]
+                                               [opt-stxs 
+                                                (map (λ (x c) (λ (r) #`(let ([r #,r]) (if (eq? unspecified-dom #,x) r (cons (#,c #,x) r)))))
+                                                     (syntax->list #'(opt-kwd-x ...))
+                                                     (syntax->list #'(opt-kwd-ctc ...)))]
+                                               [reqs (map cons req-keywords req-stxs)]
+                                               [opts (map cons opt-keywords opt-stxs)]
+                                               [all-together-now (append reqs opts)]
+                                               [put-in-reverse (sort all-together-now (λ (k1 k2) (keyword<? k2 k1)) #:key car)])
+                                          (for/fold ([s #'null])
+                                            ([tx (in-list (map cdr put-in-reverse))])
+                                            (tx s)))])
+                           (if dom-rest
+                               #`(λ (dom-x ... [opt-dom-x unspecified-dom] ... kwd-param ... . rest-x)
+                                   pre ...
+                                   (let ([kwd-args kwd-stx])
+                                     (if (null? kwd-args)
+                                         (apply values rng-checker ...
+                                                this-param ... (dom-ctc dom-x) ... 
+                                                (append (if (eq? unspecified-dom opt-dom-x) null (list (opt-dom-ctc opt-dom-x))) ...
+                                                        (rest-ctc rest-x)))
+                                         (apply values rng-checker ...
+                                                kwd-args
+                                                this-param ... (dom-ctc dom-x) ... 
+                                                (append (if (eq? unspecified-dom opt-dom-x) null (list (opt-dom-ctc opt-dom-x))) ...
+                                                        (rest-ctc rest-x))))))
+                               #`(λ (dom-x ... [opt-dom-x unspecified-dom] ... kwd-param ...)
+                                   pre ...
+                                   (let ([kwd-args kwd-stx])
+                                     (if (null? kwd-args)
+                                         (apply values rng-checker ...
+                                                this-param ... (dom-ctc dom-x) ...
+                                                (append (if (eq? unspecified-dom opt-dom-x) null (list (opt-dom-ctc opt-dom-x))) ...))
+                                         (apply values rng-checker ...
+                                                kwd-args
+                                                this-param ... (dom-ctc dom-x) ...
+                                                (append (if (eq? unspecified-dom opt-dom-x) null (list (opt-dom-ctc opt-dom-x))) ...)))))))])
+            (with-syntax ([basic-checker-name (gensym 'basic-checker)]
+                          [basic-checker
+                           (if (null? req-keywords)
+                               #'(λ args
+                                   (unless arity-checker
+                                     (raise-blame-error blame val
+                                                        "received ~a argument~a, expected ~a"
+                                                        args-len (if (= args-len 1) "" "s") arity-string))
+                                   (apply basic-lambda-name args))
+                               #'(λ args
+                                   (raise-blame-error (blame-swap blame) val
+                                                      "expected required keyword ~a"
+                                                      (quote #,(car req-keywords)))))]
+                          [kwd-checker
+                           (if (and (null? req-keywords) (null? opt-keywords))
+                               #'(λ (kwds kwd-args . args)
+                                   (raise-blame-error (blame-swap blame) val
+                                                      "expected no keywords"))
+                               #'(λ (kwds kwd-args . args)
+                                   (unless arity-checker
+                                     (raise-blame-error blame val
+                                                        "received ~a argument~a, expected ~a"
+                                                        args-len (if (= args-len 1) "" "s") arity-string))
+                                   (unless (memq (quote req-kwd) kwds)
+                                     (raise-blame-error blame val
+                                                        "expected keyword argument ~a"
+                                                        (quote req-kwd))) ...
+                                   (let ([all-kwds (list (quote req-kwd) ... (quote opt-kwd) ...)])
+                                     (for/list ([k (in-list kwds)])
+                                       (unless (memq k all-kwds)
+                                         (raise-blame-error blame val
+                                                            "received unexpected keyword argument ~a"
+                                                            k))))
+                                   (keyword-apply kwd-lambda-name kwds kwd-args args)))]
+                          [contract-arity
+                           (cond
+                             [dom-rest #`(make-arity-at-least #,min-arity)]
+                             [(= min-arity max-arity) min-arity]
+                             [else (cons #'list (build-list (add1 (- max-arity min-arity)) (λ (n) (+ min-arity n))))])])
+              (cond
+                [(and (null? req-keywords) (null? opt-keywords))
+                 #'(let ([basic-lambda-name basic-lambda])
+                     (if (matches-arity-exactly? val contract-arity null null)
+                         basic-lambda-name
+                         (let-values ([(vr va) (procedure-keywords val)]
+                                      [(basic-checker-name) basic-checker])
+                           (if (or (not va) (pair? vr) (pair? va))
+                               (make-keyword-procedure kwd-checker basic-checker-name)
+                               basic-checker-name))))]
+                [(pair? req-keywords)
+                 #'(let ([kwd-lambda-name kwd-lambda])
+                     (if (matches-arity-exactly? val contract-arity (list 'req-kwd ...) (list 'opt-kwd ...))
+                         kwd-lambda-name
+                         (make-keyword-procedure kwd-checker basic-checker)))]
+                [else
+                 #'(let ([basic-lambda-name basic-lambda]
+                         [kwd-lambda-name kwd-lambda])
+                     (if (matches-arity-exactly? val contract-arity null (list 'opt-kwd ...))
+                         kwd-lambda-name
+                         (make-keyword-procedure kwd-checker basic-checker)))]))))))))
 
 ;; pre : (or/c #f (-> any)) -- checks the pre-condition, if there is one.
 ;; post : (or/c #f (-> any)) -- checks the post-condition, if there is one.
@@ -120,97 +308,97 @@ v4 todo:
 ;; func : the wrapper function maker. It accepts a procedure for
 ;;        checking the first-order properties and the contracts
 ;;        and it produces a wrapper-making function.
-(define-struct -> (pre post doms/c optional-doms/c dom-rest/c mandatory-kwds/c mandatory-kwds optional-kwds/c optional-kwds rngs/c rng-any? func)
-  #:omit-define-syntaxes
+(define-struct base-> (pre post doms/c optional-doms/c dom-rest/c mandatory-kwds/c mandatory-kwds optional-kwds/c optional-kwds rngs/c rng-any? func))
+
+(define ((->-proj wrapper) ctc) 
+  (let* ([doms-proj (map contract-projection
+                         (if (base->-dom-rest/c ctc)
+                             (append (base->-doms/c ctc) (list (base->-dom-rest/c ctc)))
+                             (base->-doms/c ctc)))]
+         [doms-optional-proj (map contract-projection (base->-optional-doms/c ctc))]
+         [rngs-proj (map contract-projection (base->-rngs/c ctc))]
+         [mandatory-kwds-proj (map contract-projection (base->-mandatory-kwds/c ctc))]
+         [optional-kwds-proj (map contract-projection (base->-optional-kwds/c ctc))]
+         [mandatory-keywords (base->-mandatory-kwds ctc)]
+         [optional-keywords (base->-optional-kwds ctc)]
+         [func (base->-func ctc)]
+         [dom-length (length (base->-doms/c ctc))]
+         [optionals-length (length (base->-optional-doms/c ctc))]
+         [has-rest? (and (base->-dom-rest/c ctc) #t)]
+         [pre (base->-pre ctc)]
+         [post (base->-post ctc)])
+    (λ (blame)
+      (let ([swapped (blame-swap blame)])
+        (let ([partial-doms (map (λ (dom) (dom swapped)) doms-proj)]
+              [partial-optional-doms (map (λ (dom) (dom swapped)) doms-optional-proj)]
+              [partial-ranges (map (λ (rng) (rng blame)) rngs-proj)]
+              [partial-mandatory-kwds (map (λ (kwd) (kwd swapped)) mandatory-kwds-proj)]
+              [partial-optional-kwds (map (λ (kwd) (kwd swapped)) optional-kwds-proj)])
+          (apply func
+                 wrapper
+                 blame
+                 (λ (val mtd?)
+                   (if has-rest?
+                       (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords blame)
+                       (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords blame)))
+                 ctc
+                 (append partial-doms partial-optional-doms 
+                         partial-mandatory-kwds partial-optional-kwds
+                         partial-ranges)))))))
+
+(define (->-name ctc)
+  (single-arrow-name-maker 
+   (base->-doms/c ctc)
+   (base->-optional-doms/c ctc)
+   (base->-dom-rest/c ctc)
+   (base->-mandatory-kwds/c ctc)
+   (base->-mandatory-kwds ctc)
+   (base->-optional-kwds/c ctc)
+   (base->-optional-kwds ctc)
+   (base->-rng-any? ctc)
+   (base->-rngs/c ctc)
+   (base->-pre ctc)
+   (base->-post ctc)))
+
+(define (->-first-order ctc)
+  (λ (x)
+    (let ([l (length (base->-doms/c ctc))])
+      (and (procedure? x) 
+           (if (base->-dom-rest/c ctc)
+               (procedure-accepts-and-more? x l)
+               (procedure-arity-includes? x l))
+           (keywords-match (base->-mandatory-kwds ctc) (base->-optional-kwds ctc) x)
+           #t))))
+
+(define (->-stronger? this that)
+  (and (base->? that)
+       (= (length (base->-doms/c that)) (length (base->-doms/c this)))
+       (andmap contract-stronger? (base->-doms/c that) (base->-doms/c this))
+       
+       (equal? (base->-mandatory-kwds this) (base->-mandatory-kwds that))
+       (andmap contract-stronger? (base->-mandatory-kwds/c that) (base->-mandatory-kwds/c this))
+       
+       (equal? (base->-optional-kwds this) (base->-optional-kwds that))
+       (andmap contract-stronger? (base->-optional-kwds/c that) (base->-optional-kwds/c this))
+       
+       (= (length (base->-rngs/c that)) (length (base->-rngs/c this)))
+       (andmap contract-stronger? (base->-rngs/c this) (base->-rngs/c that))))
+
+(define-struct (chaperone-> base->) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection (->-proj chaperone-procedure)
+   #:name ->-name
+   #:first-order ->-first-order
+   #:stronger ->-stronger?))
+
+(define-struct (proxy-> base->) ()
   #:property prop:contract
   (build-contract-property
-   #:projection
-   (λ (ctc) 
-     (let* ([doms-proj (map contract-projection
-                            (if (->-dom-rest/c ctc)
-                                (append (->-doms/c ctc) (list (->-dom-rest/c ctc)))
-                                (->-doms/c ctc)))]
-            [doms-optional-proj (map contract-projection (->-optional-doms/c ctc))]
-            [rngs-proj (map contract-projection (->-rngs/c ctc))]
-            [mandatory-kwds-proj (map contract-projection (->-mandatory-kwds/c ctc))]
-            [optional-kwds-proj (map contract-projection (->-optional-kwds/c ctc))]
-            [mandatory-keywords (->-mandatory-kwds ctc)]
-            [optional-keywords (->-optional-kwds ctc)]
-            [func (->-func ctc)]
-            [dom-length (length (->-doms/c ctc))]
-            [optionals-length (length (->-optional-doms/c ctc))]
-            [has-rest? (and (->-dom-rest/c ctc) #t)]
-            [pre (->-pre ctc)]
-            [post (->-post ctc)])
-       (λ (blame)
-         (let ([swapped (blame-swap blame)])
-           (let ([partial-doms (map (λ (dom) (dom swapped)) doms-proj)]
-                 [partial-optional-doms (map (λ (dom) (dom swapped)) doms-optional-proj)]
-                 [partial-ranges (map (λ (rng) (rng blame)) rngs-proj)]
-                 [partial-mandatory-kwds (map (λ (kwd) (kwd swapped)) mandatory-kwds-proj)]
-                 [partial-optional-kwds (map (λ (kwd) (kwd swapped)) optional-kwds-proj)])
-             (apply func
-                    (λ (val mtd?)
-                      (if has-rest?
-                          (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords blame)
-                          (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords blame)))
-                    ctc
-                    (if pre 
-                        (λ (val)
-                          (unless (pre)
-                            (raise-blame-error swapped
-                                               val
-                                               "#:pre violation")))
-                        void)
-                    (if post
-                        (λ (val)
-                          (unless (post)
-                            (raise-blame-error blame
-                                               val
-                                               "#:post violation")))
-                        void)
-                    (append partial-doms partial-optional-doms 
-                            partial-mandatory-kwds partial-optional-kwds
-                            partial-ranges)))))))
-
-   #:name
-   (λ (ctc) (single-arrow-name-maker 
-             (->-doms/c ctc)
-             (->-optional-doms/c ctc)
-             (->-dom-rest/c ctc)
-             (->-mandatory-kwds/c ctc)
-             (->-mandatory-kwds ctc)
-             (->-optional-kwds/c ctc)
-             (->-optional-kwds ctc)
-             (->-rng-any? ctc)
-             (->-rngs/c ctc)
-             (->-pre ctc)
-             (->-post ctc)))
-
-   #:first-order
-   (λ (ctc)
-      (λ (x)
-         (let ([l (length (->-doms/c ctc))])
-           (and (procedure? x) 
-                (if (->-dom-rest/c ctc)
-                  (procedure-accepts-and-more? x l)
-                  (procedure-arity-includes? x l))
-                (keywords-match (->-mandatory-kwds ctc) (->-optional-kwds ctc) x)
-                #t))))
-   #:stronger
-   (λ (this that)
-      (and (->? that)
-           (= (length (->-doms/c that)) (length (->-doms/c this)))
-           (andmap contract-stronger? (->-doms/c that) (->-doms/c this))
-           
-           (equal? (->-mandatory-kwds this) (->-mandatory-kwds that))
-           (andmap contract-stronger? (->-mandatory-kwds/c that) (->-mandatory-kwds/c this))
-           
-           (equal? (->-optional-kwds this) (->-optional-kwds that))
-           (andmap contract-stronger? (->-optional-kwds/c that) (->-optional-kwds/c this))
-           
-           (= (length (->-rngs/c that)) (length (->-rngs/c this)))
-           (andmap contract-stronger? (->-rngs/c this) (->-rngs/c that))))))
+   #:projection (->-proj proxy-procedure)
+   #:name ->-name
+   #:first-order ->-first-order
+   #:stronger ->-stronger?))
 
 (define (build--> name
                   pre post
@@ -219,12 +407,24 @@ v4 todo:
                   rngs/c-or-p
                   rng-any? func)
   (let ([cc (λ (c-or-p) (coerce-contract name c-or-p))])
-    (make--> 
-     pre post
-     (map cc doms/c-or-p) (map cc optional-doms/c-or-p) (and doms-rest/c-or-p-or-f (cc doms-rest/c-or-p-or-f))
-     (map cc mandatory-kwds/c-or-p) mandatory-kwds (map cc optional-kwds/c-or-p) optional-kwds
-     (map cc rngs/c-or-p) rng-any?
-     func)))
+    (let ([doms/c (map cc doms/c-or-p)]
+          [opt-doms/c (map cc optional-doms/c-or-p)]
+          [rest/c (and doms-rest/c-or-p-or-f (cc doms-rest/c-or-p-or-f))]
+          [kwds/c (map cc mandatory-kwds/c-or-p)]
+          [opt-kwds/c (map cc optional-kwds/c-or-p)]
+          [rngs/c (map cc rngs/c-or-p)])
+      (if (and (andmap chaperone-contract? doms/c)
+               (andmap chaperone-contract? opt-doms/c)
+               (or (not rest/c) (chaperone-contract? rest/c))
+               (andmap chaperone-contract? kwds/c)
+               (andmap chaperone-contract? opt-kwds/c)
+               (or rng-any? (andmap chaperone-contract? rngs/c)))
+          (make-chaperone-> pre post doms/c opt-doms/c rest/c
+                            kwds/c mandatory-kwds opt-kwds/c optional-kwds
+                            rngs/c rng-any? func)
+          (make-proxy-> pre post doms/c opt-doms/c rest/c
+                        kwds/c mandatory-kwds opt-kwds/c optional-kwds
+                        rngs/c rng-any? func)))))
 
 (define (single-arrow-name-maker doms/c optional-doms/c doms-rest kwds/c kwds optional-kwds/c optional-kwds rng-any? rngs pre post)
   (cond
@@ -286,41 +486,40 @@ v4 todo:
            (syntax-case* #'last-one (-> any values) module-or-top-identifier=?
              [any
               (with-syntax ([(ignored) (generate-temporaries (syntax (rng)))])
-                (values (syntax (dom-ctc ...))
+                (values (syntax (this-parameter ...))
+                        (syntax (dom-ctc ...))
                         (syntax (ignored))
                         (syntax (dom-kwd-ctc-id ...))
                         (syntax (doms ...))
                         (syntax (any/c))
                         (syntax (dom-kwd-ctc ...))
                         (syntax (dom-kwd ...))
-                        (syntax ((this-parameter ... args ... keyword-formal-parameters ...)
-                                 (val this-parameter ... (dom-ctc args) ... keyword-call/ctc ...)))
+                        (syntax (this-parameter ... args ... keyword-formal-parameters ...))
                         #t))]
              [(values rngs ...)
               (with-syntax ([(rng-x ...) (generate-temporaries (syntax (rngs ...)))]
                             [(rng-ctc ...) (generate-temporaries (syntax (rngs ...)))])
-                (values (syntax (dom-ctc ...))
+                (values (syntax (this-parameter ...))
+                        (syntax (dom-ctc ...))
                         (syntax (rng-ctc ...))
                         (syntax (dom-kwd-ctc-id ...))
                         (syntax (doms ...))
                         (syntax (rngs ...))
                         (syntax (dom-kwd-ctc ...))
                         (syntax (dom-kwd ...))
-                        (syntax ((this-parameter ... args ... keyword-formal-parameters ...)
-                                 (apply-projections ((rng-x rng-ctc) ...)
-                                                    (val this-parameter ... (dom-ctc args) ... keyword-call/ctc ...))))
+                        (syntax (this-parameter ... args ... keyword-formal-parameters ...))
                         #f))]
              [rng
               (with-syntax ([(rng-ctc) (generate-temporaries (syntax (rng)))])
-                (values (syntax (dom-ctc ...))
+                (values (syntax (this-parameter ...))
+                        (syntax (dom-ctc ...))
                         (syntax (rng-ctc))
                         (syntax (dom-kwd-ctc-id ...))
                         (syntax (doms ...))
                         (syntax (rng))
                         (syntax (dom-kwd-ctc ...))
                         (syntax (dom-kwd ...))
-                        (syntax ((this-parameter ... args ... keyword-formal-parameters ...)
-                                 (apply-projection rng-ctc (val  this-parameter ... (dom-ctc args) ... keyword-call/ctc ...))))
+                        (syntax (this-parameter ... args ... keyword-formal-parameters ...))
                         #f))]))))]))
 
 (define-for-syntax (maybe-a-method/name stx)
@@ -330,44 +529,48 @@ v4 todo:
 
 ;; ->/proc/main : syntax -> (values syntax[contract-record] syntax[args/lambda-body] syntax[names])
 (define-for-syntax (->/proc/main stx)
-  (let-values ([(dom-names rng-names kwd-names dom-ctcs rng-ctcs kwd-ctcs kwds inner-args/body use-any?) (->-helper stx)]
+  (let-values ([(this-params dom-names rng-names kwd-names dom-ctcs rng-ctcs kwd-ctcs kwds args use-any?) (->-helper stx)]
                [(this->) (gensym 'this->)])
-    (with-syntax ([(args body) inner-args/body])
-      (with-syntax ([(dom-names ...) dom-names]
-                    [(rng-names ...) rng-names]
-                    [(kwd-names ...) kwd-names]
-                    [(dom-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:negative-position this->)) 
-                                         (syntax->list dom-ctcs))]
-                    [(rng-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:positive-position this->))
-                                         (syntax->list rng-ctcs))]
-                    [(kwd-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:negative-position this->))
-                                         (syntax->list kwd-ctcs))]
-                    [(kwds ...) kwds]
-                    [inner-lambda 
-                     (maybe-a-method/name
-                      (add-name-prop
-                       (syntax-local-infer-name stx)
-                       (syntax (lambda args body))))]
-                    [use-any? use-any?])
-        (with-syntax ([outer-lambda
-                       #`(lambda (chk ctc pre post dom-names ... kwd-names ... rng-names ...)
-                           ;; ignore the pre and post arguments here because -> never fills them in with something useful
-                           (lambda (val)
-                             (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
-                             (make-contracted-function inner-lambda ctc)))])
-          (syntax-property
-           (syntax
-            (build--> '->
-                      #f #f
-                      (list dom-ctcs ...) '() #f
-                      (list kwd-ctcs ...) '(kwds ...) '() '()
-                      (list rng-ctcs ...) use-any?
-                      outer-lambda))
-           'racket/contract:contract
-           (vector this->
-                   ;; the -> in the original input to this guy
-                   (list (car (syntax-e stx)))
-                   '())))))))
+    (with-syntax ([(this-params ...) this-params]
+                  [(dom-names ...) dom-names]
+                  [(rng-names ...) rng-names]
+                  [(kwd-names ...) kwd-names]
+                  [(dom-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:negative-position this->)) 
+                                       (syntax->list dom-ctcs))]
+                  [(rng-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:positive-position this->))
+                                       (syntax->list rng-ctcs))]
+                  [(kwd-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:negative-position this->))
+                                       (syntax->list kwd-ctcs))]
+                  [(kwds ...) kwds]
+                  [use-any? use-any?])
+      (with-syntax ([outer-lambda
+                     #`(lambda (wrapper blame chk ctc dom-names ... kwd-names ... rng-names ...)
+                         (lambda (val)
+                           (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
+                           (wrapper
+                            val
+                            #,(create-chaperone 
+                               #'blame #'val #f #f
+                               (syntax->list #'(this-params ...))
+                               (syntax->list #'(dom-names ...)) null #f
+                               (map list (syntax->list #'(kwds ...))
+                                    (syntax->list #'(kwd-names ...)))
+                               null
+                               (if (syntax->datum #'use-any?) #f (syntax->list #'(rng-names ...))))
+                            proxy-prop:contracted ctc)))])
+        (syntax-property
+         (syntax
+          (build--> '->
+                    #f #f
+                    (list dom-ctcs ...) '() #f
+                    (list kwd-ctcs ...) '(kwds ...) '() '()
+                    (list rng-ctcs ...) use-any?
+                    outer-lambda))
+         'racket/contract:contract
+         (vector this->
+                 ;; the -> in the original input to this guy
+                 (list (car (syntax-e stx)))
+                 '()))))))
   
 (define-syntax (-> stx) 
   #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx)))
@@ -651,9 +854,10 @@ v4 todo:
                             #'(list rng-ctc ...))
                           #''())
                     #,(if rng-ctc #f #t)
-                    (λ (chk 
+                    (λ (wrapper
+                        blame
+                        chk 
                         ctc
-                        pre post
                         mandatory-dom-proj ...  
                         #,@(if rest-ctc
                                #'(rest-proj)
@@ -664,47 +868,21 @@ v4 todo:
                         rng-proj ...)
                       (λ (f)
                         (chk f #,(and (syntax-parameter-value #'making-a-method) #t))
-                        (make-contracted-function
-                         #,(maybe-a-method/name
-                            (add-name-prop
-                             (syntax-local-infer-name stx)
-                             #`(λ (this-parameter ...
-                                   mandatory-dom-arg ... 
-                                   [optional-dom-arg unspecified-dom] ... 
-                                   mandatory-dom-kwd/var-seq ... 
-                                   optional-dom-kwd/var-seq ...
-                                   #,@(if rest-ctc #'rest #'()))
-                                 (let*-values ([(kwds kwd-args) (values '() '())]
-                                               [(kwds kwd-args) (if (eq? unspecified-dom rev-sorted-dom-kwd-arg)
-                                                                    (values kwds kwd-args)
-                                                                    (values (cons 'rev-sorted-dom-kwd kwds)
-                                                                            (cons (rev-sorted-dom-kwd-proj rev-sorted-dom-kwd-arg)
-                                                                                  kwd-args)))] 
-                                               ...
-                                               [(opt-args) #,(if rest-ctc 
-                                                                 #'(rest-proj rest)
-                                                                 #''())]
-                                               [(opt-args) (if (eq? unspecified-dom rev-optional-dom-arg)
-                                                               opt-args
-                                                               (cons (rev-optional-dom-proj rev-optional-dom-arg) opt-args))]
-                                               ...)
-                                   (pre f)
-                                   #,(let ([call 
-                                            (if (null? (syntax->list #'(rev-sorted-dom-kwd ...)))
-                                                #'(apply f this-parameter ... (mandatory-dom-proj mandatory-dom-arg) ... opt-args)
-                                                #'(keyword-apply f this-parameter ... kwds kwd-args (mandatory-dom-proj mandatory-dom-arg) ... opt-args))])
-                                       (cond
-                                         [(and rng-ctc post)
-                                          #`(let-values ([(rng ...) #,call])
-                                              (begin0 (values (rng-proj rng) ...)
-                                                      (post f)))]
-                                         [rng-ctc
-                                          #`(apply-projections ((rng rng-proj) ...)
-                                                               #,call)]
-                                         [else
-                                          call]))))))
-                         ctc))))))))))]))
-           
+                        (wrapper 
+                         f
+                         #,(create-chaperone 
+                            #'blame #'f pre post
+                            (syntax->list #'(this-parameter ...))
+                            (syntax->list #'(mandatory-dom-proj ...))
+                            (syntax->list #'(optional-dom-proj ...))
+                            (if rest-ctc #'rest-proj #f)
+                            (map list (syntax->list #'(mandatory-dom-kwd ...))
+                                 (syntax->list #'(mandatory-dom-kwd-proj ...)))
+                            (map list (syntax->list #'(optional-dom-kwd ...))
+                                 (syntax->list #'(optional-dom-kwd-proj ...)))
+                            (if rng-ctc (syntax->list #'(rng-proj ...)) #f))
+                         proxy-prop:contracted ctc))))))))))]))
+
 (define-syntax (->* stx) #`(syntax-parameterize ((making-a-method #f)) #,(->*/proc/main stx)))
 
 

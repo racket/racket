@@ -8928,17 +8928,24 @@ so that propagation occurs.
   (ctest #f flat-contract?      (hash/c number? (hash/c number? number?)))
   
   ;; Hash contracts with proxy range contracts
-  (ctest #t contract?           (hash/c number? (-> number? number?) #:immutable #f))
-  (ctest #f chaperone-contract? (hash/c number? (-> number? number?) #:immutable #f))
-  (ctest #f flat-contract?      (hash/c number? (-> number? number?) #:immutable #f))
+  (contract-eval
+   '(define trivial-proxy-ctc
+      (make-contract
+       #:name 'trivial-proxy-ctc
+       #:first-order values
+       #:projection (λ (b) values))))
 
-  (ctest #t contract?           (hash/c number? (-> number? number?) #:immutable #t))
-  (ctest #f chaperone-contract? (hash/c number? (-> number? number?) #:immutable #t))
-  (ctest #f flat-contract?      (hash/c number? (-> number? number?) #:immutable #t))
+  (ctest #t contract?           (hash/c number? trivial-proxy-ctc #:immutable #f))
+  (ctest #f chaperone-contract? (hash/c number? trivial-proxy-ctc #:immutable #f))
+  (ctest #f flat-contract?      (hash/c number? trivial-proxy-ctc #:immutable #f))
   
-  (ctest #t contract?           (hash/c number? (-> number? number?)))
-  (ctest #f chaperone-contract? (hash/c number? (-> number? number?)))
-  (ctest #f flat-contract?      (hash/c number? (-> number? number?)))
+  (ctest #t contract?           (hash/c number? trivial-proxy-ctc #:immutable #t))
+  (ctest #f chaperone-contract? (hash/c number? trivial-proxy-ctc #:immutable #t))
+  (ctest #f flat-contract?      (hash/c number? trivial-proxy-ctc #:immutable #t))
+  
+  (ctest #t contract?           (hash/c number? trivial-proxy-ctc))
+  (ctest #f chaperone-contract? (hash/c number? trivial-proxy-ctc))
+  (ctest #f flat-contract?      (hash/c number? trivial-proxy-ctc))
   
   ;; Make sure that proxies cannot be used as the domain contract in hash/c.
   (contract-error-test
@@ -8946,7 +8953,7 @@ so that propagation occurs.
            (make-contract
             #:name 'proxy-ctc
             #:first-order values
-            #:higher-order (λ (b) values))])
+            #:projection (λ (b) values))])
       (hash/c proxy-ctc proxy-ctc))
    exn:fail?)
   
@@ -8966,13 +8973,13 @@ so that propagation occurs.
   (ctest #t chaperone-contract? (box/c (box/c number?) #:immutable #t))
   (ctest #f flat-contract?      (box/c (box/c number?) #:immutable #t))
 
-  (ctest #t contract?           (box/c (-> number? number?)))
-  (ctest #f chaperone-contract? (box/c (-> number? number?)))
-  (ctest #f flat-contract?      (box/c (-> number? number?)))
+  (ctest #t contract?           (box/c trivial-proxy-ctc))
+  (ctest #f chaperone-contract? (box/c trivial-proxy-ctc))
+  (ctest #f flat-contract?      (box/c trivial-proxy-ctc))
 
-  (ctest #t contract?           (box/c (-> number? number?) #:immutable #t))
-  (ctest #f chaperone-contract? (box/c (-> number? number?) #:immutable #t))
-  (ctest #f flat-contract?      (box/c (-> number? number?) #:immutable #t))
+  (ctest #t contract?           (box/c trivial-proxy-ctc #:immutable #t))
+  (ctest #f chaperone-contract? (box/c trivial-proxy-ctc #:immutable #t))
+  (ctest #f flat-contract?      (box/c trivial-proxy-ctc #:immutable #t))
 
   (ctest #t contract? 1)
   (ctest #t contract? (-> 1 1))
