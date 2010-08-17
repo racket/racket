@@ -821,10 +821,9 @@ arguments would have stepped.
 }
 
 @defproc[(reduction-relation->rule-names [r reduction-relation?])
-         (listof (union false/c symbol?))]{
+         (listof symbol?)]{
 
-Returns the names of all of the reduction relation's clauses
-(or false if there is no name for a given clause).
+Returns the names of the reduction relation's named clauses.
 }
 
 @defform[(compatible-closure reduction-relation lang non-terminal)]{
