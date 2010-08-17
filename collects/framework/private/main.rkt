@@ -76,7 +76,7 @@
                          '("local")
                          (λ (x) (and (list? x) (andmap string? x))))
 (preferences:set-default 'framework:square-bracket:letrec
-                         (let ([fors '("for" "for/list" "for/hash" "for/and" "for/or" "for/first" "for/last")])
+                         (let ([fors '("for" "for/fold" "for/list" "for/hash" "for/and" "for/or" "for/first" "for/last")])
                            (append fors
                                    (map (λ (x) (regexp-replace #rx"for" x "for*"))
                                         fors)
