@@ -1421,7 +1421,12 @@
                    [full-path (build-path (path-only (current-output-file))
                                           filename)])
               (parameterize ([on-separate-page-ok #f])
-                (with-output-to-file full-path #:exists 'truncate/replace
+                ;; We use 'replace instead of the usual 'truncate/replace
+                ;;  to avoid problems where a filename changes only in case,
+                ;;  in which case some platforms will see the old file
+                ;;  as matching the new name, while others don't. Replacing
+                ;;  the file syncs the case with the current uses.
+                (with-output-to-file full-path #:exists 'replace
                   (lambda () (render-one-part d ri full-path number)))
                 null))
             (parameterize ([on-separate-page-ok #t])
