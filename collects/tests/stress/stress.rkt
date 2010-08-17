@@ -2,6 +2,9 @@
 (provide stress
          fit)
 
+; fit : string number (number -> any) #:slices number -> void
+; Run f with slices different numbers between 0 and max, then print the summary
+; timing with label
 (define (fit label max f #:slices [slices 20])
   (fit-display
    label
@@ -27,6 +30,9 @@
   (custodian-shutdown-all exp-cust)
   (values cpu real gc))
 
+; stress : number [string expr ...] ...
+; Runs trials-expr different instances of each (begin expr ...) averaging the 
+; timing and displaying them sorted by cpu time
 (define-syntax-rule (stress trials-expr [label body ...] ...)
   (stress* trials-expr
            (cons label (λ () body ...))
