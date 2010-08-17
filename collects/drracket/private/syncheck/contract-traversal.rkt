@@ -26,7 +26,7 @@
     (add-to-map stx 'racket/contract:function-contract arrow-map)
     (syntax-case stx ()
       [(a . b) (loop #'a) (loop #'b)]
-      [else (void)]))
+      [_ (void)]))
   
   ;; fill in the coloring-plans table for boundary contracts
   (for ([(start-k start-val) (in-hash boundary-start-map)])
@@ -128,6 +128,14 @@
                           (for ((rhs (in-list (module-identifier-mapping-get binding-inits binder))))
                             (ploop rhs polarity))))
                       (call-give-up))))]
+           [const
+            (let ([val (syntax-e #'const)])
+              (or (boolean? val)
+                  (number? val)
+                  (string? val)
+                  (char? val)
+                  (regexp? val)))
+            (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
            [(#%plain-lambda (id) expr ...)
             (identifier? #'id)
             (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
@@ -165,7 +173,7 @@
            [(set! a b)
             (call-give-up)]
            [(quote stuff)
-            (call-give-up)]
+            (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
            [(quote-syntax stuff)
             (call-give-up)]
            [(with-continuation-mark a b c)
@@ -175,7 +183,12 @@
            [(#%top . id)
             (call-give-up)]
            [(#%variable-reference ignored ...)
-            (call-give-up)])]))))
+            (call-give-up)]
+           [_ 
+            (begin
+              #;(error 'contract-traversal.rkt "unknown thing: ~s\n" stx)
+              (call-give-up))
+              ])]))))
 
 ;; add-to-map : syntax any hash[any -> (listof stx)]
 ;; looks at stx's property prop and updates map,
