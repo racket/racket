@@ -1170,14 +1170,14 @@ v4 todo:
 
 (define ->d-tail-key (gensym '->d-tail-key))
 
-(define (->d-proj ->d-stct)
-  (let* ([opt-count (length (->d-optional-dom-ctcs ->d-stct))]
-         [mandatory-count (+ (length (->d-mandatory-dom-ctcs ->d-stct)) 
-                             (if (->d-mtd? ->d-stct) 1 0))]
+(define ((->d-proj wrap-procedure) ->d-stct)
+  (let* ([opt-count (length (base-->d-optional-dom-ctcs ->d-stct))]
+         [mandatory-count (+ (length (base-->d-mandatory-dom-ctcs ->d-stct)) 
+                             (if (base-->d-mtd? ->d-stct) 1 0))]
          [non-kwd-ctc-count (+ mandatory-count opt-count)]
          [arity 
           (cond
-            [(->d-rest-ctc ->d-stct)
+            [(base-->d-rest-ctc ->d-stct)
              (make-arity-at-least mandatory-count)]
             [else
              (let loop ([i 0])
@@ -1189,150 +1189,131 @@ v4 todo:
     (λ (blame)
       (let ([this->d-id (gensym '->d-tail-key)])
         (λ (val)
-          (if (->d-rest-ctc ->d-stct)
+          (if (base-->d-rest-ctc ->d-stct)
               (check-procedure/more val
-                                    (->d-mtd? ->d-stct)
-                                    (length (->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
-                                    (->d-mandatory-keywords ->d-stct)
-                                    (->d-optional-keywords ->d-stct)
+                                    (base-->d-mtd? ->d-stct)
+                                    (length (base-->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
+                                    (base-->d-mandatory-keywords ->d-stct)
+                                    (base-->d-optional-keywords ->d-stct)
                                     blame)
               (check-procedure val
-                               (->d-mtd? ->d-stct)
-                               (length (->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
-                               (length (->d-optional-dom-ctcs ->d-stct)) ; optionals-length
-                               (->d-mandatory-keywords ->d-stct)
-                               (->d-optional-keywords ->d-stct)
+                               (base-->d-mtd? ->d-stct)
+                               (length (base-->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
+                               (length (base-->d-optional-dom-ctcs ->d-stct)) ; optionals-length
+                               (base-->d-mandatory-keywords ->d-stct)
+                               (base-->d-optional-keywords ->d-stct)
                                blame))
-          (let ([kwd-proc
-                 (λ (kwd-args kwd-arg-vals . raw-orig-args)
-                   (let* ([orig-args (if (->d-mtd? ->d-stct)
-                                         (cdr raw-orig-args)
-                                         raw-orig-args)]
-                          [this (and (->d-mtd? ->d-stct) (car raw-orig-args))]
-                          [dep-pre-args
-                           (build-dep-ctc-args non-kwd-ctc-count raw-orig-args (->d-rest-ctc ->d-stct)
-                                               (->d-keywords ->d-stct) kwd-args kwd-arg-vals)]
-                          [thunk
-                           (λ ()
-                             (keyword-apply
-                              val
-                              kwd-args
-                              
-                              ;; contracted keyword arguments
-                              (let loop ([all-kwds (->d-keywords ->d-stct)]
-                                         [kwd-ctcs (->d-keyword-ctcs ->d-stct)] 
-                                         [building-kwd-args kwd-args]
-                                         [building-kwd-arg-vals kwd-arg-vals])
-                                (cond
-                                  [(or (null? building-kwd-args) (null? all-kwds)) '()]
-                                  [else (if (eq? (car all-kwds)
-                                                 (car building-kwd-args))
-                                            (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) (blame-swap blame))
-                                                  (loop (cdr all-kwds) (cdr kwd-ctcs) (cdr building-kwd-args) (cdr building-kwd-arg-vals)))
-                                            (loop (cdr all-kwds) (cdr kwd-ctcs) building-kwd-args building-kwd-arg-vals))]))
-                              
-                              (append
-                               ;; this parameter (if necc.)
-                               (if (->d-mtd? ->d-stct)
-                                   (list (car raw-orig-args))
-                                   '())
-                               
-                               ;; contracted ordinary arguments
-                               (let loop ([args orig-args]
-                                          [non-kwd-ctcs (append (->d-mandatory-dom-ctcs ->d-stct)
-                                                                (->d-optional-dom-ctcs ->d-stct))])
-                                 (cond
-                                   [(null? args) 
-                                    (if (->d-rest-ctc ->d-stct)
-                                        (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args '() (blame-swap blame))
-                                        '())]
-                                   [(null? non-kwd-ctcs) 
-                                    (if (->d-rest-ctc ->d-stct)
-                                        (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args args (blame-swap blame))
-                                        
-                                        ;; ran out of arguments, but don't have a rest parameter.
-                                        ;; procedure-reduce-arity (or whatever the new thing is
-                                        ;; going to be called) should ensure this doesn't happen.
-                                        (error 'shouldnt\ happen))]
-                                   [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) (blame-swap blame))
-                                               (loop (cdr args)
-                                                     (cdr non-kwd-ctcs)))])))))]
-                          [rng (let ([rng (->d-range ->d-stct)])
+          (wrap-procedure
+           val
+           (make-keyword-procedure
+            (λ (kwd-args kwd-arg-vals . raw-orig-args)
+              (let* ([orig-args (if (base-->d-mtd? ->d-stct)
+                                    (cdr raw-orig-args)
+                                    raw-orig-args)]
+                     [this (and (base-->d-mtd? ->d-stct) (car raw-orig-args))]
+                     [dep-pre-args
+                      (build-dep-ctc-args non-kwd-ctc-count raw-orig-args (base-->d-rest-ctc ->d-stct)
+                                          (base-->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
+                (when (base-->d-pre-cond ->d-stct)
+                  (unless (apply (base-->d-pre-cond ->d-stct) dep-pre-args)
+                    (raise-blame-error (blame-swap blame)
+                                       val
+                                       "#:pre violation~a"
+                                       (build-values-string ", argument" dep-pre-args))))
+                (apply 
+                 values
+                 
+                 (append
+                  
+                  (let ([rng (let ([rng (base-->d-range ->d-stct)])
                                  (cond
                                    [(not rng) #f]
                                    [(box? rng) 
                                     (map (λ (val) (apply val dep-pre-args))
                                          (unbox rng))]
                                    [else rng]))]
-                          [rng-underscore? (box? (->d-range ->d-stct))])
-                     (when (->d-pre-cond ->d-stct)
-                       (unless (apply (->d-pre-cond ->d-stct) dep-pre-args)
-                         (raise-blame-error (blame-swap blame)
-                                            val
-                                            "#:pre violation~a"
-                                            (build-values-string ", argument" dep-pre-args))))
-                     (call-with-immediate-continuation-mark
-                      ->d-tail-key
-                      (λ (first-mark)
-                        (cond
-                          [(and rng
-                                (not (and first-mark
-                                          (eq? this->d-id (car first-mark))
-                                          (andmap eq? raw-orig-args (cdr first-mark)))))
-                           (call-with-values
-                            (λ ()
-                              (with-continuation-mark ->d-tail-key (cons this->d-id raw-orig-args)
-                                (thunk)))
-                            (λ orig-results
-                              (let* ([range-count (length rng)]
-                                     [post-args (append orig-results raw-orig-args)]
-                                     [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
-                                     [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count
-                                                                        post-args (->d-rest-ctc ->d-stct)
-                                                                        (->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
-                                (when (->d-post-cond ->d-stct)
-                                  (unless (apply (->d-post-cond ->d-stct) dep-post-args)
+                        [rng-underscore? (box? (base-->d-range ->d-stct))])
+                    (if rng
+                        (list (λ orig-results
+                                (let* ([range-count (length rng)]
+                                       [post-args (append orig-results raw-orig-args)]
+                                       [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
+                                       [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count
+                                                                          post-args (base-->d-rest-ctc ->d-stct)
+                                                                          (base-->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
+                                  (when (base-->d-post-cond ->d-stct)
+                                    (unless (apply (base-->d-post-cond ->d-stct) dep-post-args)
+                                      (raise-blame-error blame
+                                                         val
+                                                         "#:post violation~a~a"
+                                                         (build-values-string ", argument" dep-pre-args)
+                                                         (build-values-string (if (null? dep-pre-args)
+                                                                                  ", result"
+                                                                                  "\n result")
+                                                                              orig-results))))
+                                  
+                                  (unless (= range-count (length orig-results))
                                     (raise-blame-error blame
                                                        val
-                                                       "#:post violation~a~a"
-                                                       (build-values-string ", argument" dep-pre-args)
-                                                       (build-values-string (if (null? dep-pre-args)
-                                                                              ", result"
-                                                                              "\n result")
-                                                                            orig-results))))
-                                
-                                (unless (= range-count (length orig-results))
-                                  (raise-blame-error blame
-                                                     val
-                                                     "expected ~a results, got ~a"
-                                                     range-count
-                                                     (length orig-results)))
-                                (apply
-                                 values
-                                 (let loop ([results orig-results]
-                                            [result-contracts rng])
+                                                       "expected ~a results, got ~a"
+                                                       range-count
+                                                       (length orig-results)))
+                                  (apply
+                                   values
+                                   (let loop ([results orig-results]
+                                              [result-contracts rng])
+                                     (cond
+                                       [(null? result-contracts) '()]
+                                       [else
+                                        (cons
+                                         (invoke-dep-ctc (car result-contracts)
+                                                         (if rng-underscore? #f dep-post-args)
+                                                         (car results)
+                                                         blame)
+                                         (loop (cdr results) (cdr result-contracts)))]))))))
+                        null))
+                  
+                  ;; contracted keyword arguments
+                  (let ([kwd-res (let loop ([all-kwds (base-->d-keywords ->d-stct)]
+                                            [kwd-ctcs (base-->d-keyword-ctcs ->d-stct)] 
+                                            [building-kwd-args kwd-args]
+                                            [building-kwd-arg-vals kwd-arg-vals])
                                    (cond
-                                     [(null? result-contracts) '()]
-                                     [else
-                                      (cons
-                                       (invoke-dep-ctc (car result-contracts)
-                                                       (if rng-underscore? #f dep-post-args)
-                                                       (car results)
-                                                       blame)
-                                       (loop (cdr results) (cdr result-contracts)))]))))))]
-                          [else
-                           (thunk)])))))])
-            (make-contracted-function
-             (procedure-reduce-keyword-arity
-              (make-keyword-procedure kwd-proc
-                                      ((->d-name-wrapper ->d-stct)
-                                       (λ args
-                                         (apply kwd-proc '() '() args))))
-              
-              arity 
-              (->d-mandatory-keywords ->d-stct)
-              (->d-keywords ->d-stct))
-             ->d-stct)))))))
+                                     [(or (null? building-kwd-args) (null? all-kwds)) '()]
+                                     [else (if (eq? (car all-kwds)
+                                                    (car building-kwd-args))
+                                               (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) (blame-swap blame))
+                                                     (loop (cdr all-kwds) (cdr kwd-ctcs) (cdr building-kwd-args) (cdr building-kwd-arg-vals)))
+                                               (loop (cdr all-kwds) (cdr kwd-ctcs) building-kwd-args building-kwd-arg-vals))]))])
+                    (if (null? kwd-res) null (list kwd-res)))
+                  
+                  
+                  ;; this parameter (if necc.)
+                  (if (base-->d-mtd? ->d-stct)
+                      (list (car raw-orig-args))
+                      '())
+                  
+                  ;; contracted ordinary arguments
+                  (let loop ([args orig-args]
+                             [non-kwd-ctcs (append (base-->d-mandatory-dom-ctcs ->d-stct)
+                                                   (base-->d-optional-dom-ctcs ->d-stct))])
+                    (cond
+                      [(null? args) 
+                       (if (base-->d-rest-ctc ->d-stct)
+                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args '() (blame-swap blame))
+                           '())]
+                      [(null? non-kwd-ctcs) 
+                       (if (base-->d-rest-ctc ->d-stct)
+                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args args (blame-swap blame))
+                           
+                           ;; ran out of arguments, but don't have a rest parameter.
+                           ;; procedure-reduce-arity (or whatever the new thing is
+                           ;; going to be called) should ensure this doesn't happen.
+                           (error 'shouldnt\ happen))]
+                      [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) (blame-swap blame))
+                                  (loop (cdr args)
+                                        (cdr non-kwd-ctcs)))])))))))
+           proxy-prop:contracted ->d-stct))))))
 
 (define (build-values-string desc dep-pre-args)
   (cond
@@ -1396,14 +1377,73 @@ v4 todo:
                              (append mandatory-kwds optional-kwds)
                              (append mandatory-kwd-dom-ctcs optional-kwd-dom-ctcs))
                         (λ (x y) (keyword<? (car x) (car y))))])
-    (make-->d mtd?
-              mandatory-dom-ctcs optional-dom-ctcs
-              (map cdr kwd/ctc-pairs)
-              rest-ctc pre-cond range post-cond
-              (map car kwd/ctc-pairs)
-              mandatory-kwds
-              optional-kwds
-              name-wrapper)))
+    (make-proxy-->d mtd?
+                    mandatory-dom-ctcs optional-dom-ctcs
+                    (map cdr kwd/ctc-pairs)
+                    rest-ctc pre-cond range post-cond
+                    (map car kwd/ctc-pairs)
+                    mandatory-kwds
+                    optional-kwds
+                    name-wrapper)))
+
+(define (->d-name ctc) 
+  (let* ([counting-id 'x]
+         [ids '(x y z w)]
+         [next-id
+          (λ ()
+            (cond
+              [(pair? ids)
+               (begin0 (car ids)
+                       (set! ids (cdr ids)))]
+              [(null? ids)
+               (begin0 
+                 (string->symbol (format "~a0" counting-id))
+                 (set! ids 1))]
+              [else
+               (begin0 
+                 (string->symbol (format "~a~a" counting-id ids))
+                 (set! ids (+ ids 1)))]))])
+    `(->d (,@(map (λ (x) `(,(next-id) ...)) (base-->d-mandatory-dom-ctcs ctc))
+           ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (base-->d-mandatory-keywords ctc))))
+          (,@(map (λ (x) `(,(next-id) ...)) (base-->d-optional-dom-ctcs ctc))
+           ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (base-->d-optional-keywords ctc))))
+          ,@(if (base-->d-rest-ctc ctc)
+                (list '#:rest (next-id) '...)
+                '())
+          ,@(if (base-->d-pre-cond ctc)
+                (list '#:pre '...)
+                (list))
+          ,(let ([range (base-->d-range ctc)])
+             (cond
+               [(not range) 'any]
+               [(box? range)
+                (let ([range (unbox range)])
+                  (cond
+                    [(and (not (null? range))
+                          (null? (cdr range)))
+                     `[_ ...]]
+                    [else
+                     `(values ,@(map (λ (x) `(_ ...)) range))]))]
+               [(and (not (null? range))
+                     (null? (cdr range)))
+                `[,(next-id) ...]]
+               [else
+                `(values ,@(map (λ (x) `(,(next-id) ...)) range))]))
+          ,@(if (base-->d-post-cond ctc)
+                (list '#:post '...)
+                (list)))))
+
+(define (->d-first-order ctc)
+  (let* ([mtd? (base-->d-mtd? ctc)]
+         [dom-length (length (base-->d-mandatory-dom-ctcs ctc))]
+         [optionals (length (base-->d-optional-dom-ctcs ctc))]
+         [mandatory-kwds (base-->d-mandatory-keywords ctc)]
+         [optional-kwds (base-->d-optional-keywords ctc)])
+    (λ (val)
+      (if (base-->d-rest-ctc ctc)
+          (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds #f)
+          (check-procedure val mtd? dom-length optionals mandatory-kwds optional-kwds #f)))))
+(define (->d-stronger? this that) (eq? this that))
 
 ;; in the struct type descriptions "d???" refers to the arguments (domain) of the function that
 ;; is under the contract, and "dr???" refers to the arguments & the results of the function that 
@@ -1411,84 +1451,33 @@ v4 todo:
 ;; the `box' in the range only serves to differentiate between range contracts that depend on
 ;; both the domain and the range from those that depend only on the domain (and thus, those
 ;; that can be applied early)
-(define-struct ->d (mtd?                ;; boolean; indicates if this is a contract on a method, for error reporing purposes.
-                    mandatory-dom-ctcs  ;; (listof (-> d??? ctc))
-                    optional-dom-ctcs   ;; (listof (-> d??? ctc))
-                    keyword-ctcs        ;; (listof (-> d??? ctc))
-                    rest-ctc            ;; (or/c false/c (-> d??? ctc))
-                    pre-cond            ;; (-> d??? boolean)
-                    range               ;; (or/c false/c (listof (-> dr??? ctc)) (box (listof (-> r??? ctc))))
-                    post-cond           ;; (-> dr??? boolean)
-                    keywords            ;; (listof keywords) -- sorted by keyword<
-                    mandatory-keywords  ;; (listof keywords) -- sorted by keyword<
-                    optional-keywords   ;; (listof keywords) -- sorted by keyword<
-                    name-wrapper)       ;; (-> proc proc) 
-  
-  #:omit-define-syntaxes
+(define-struct base-->d (mtd?                ;; boolean; indicates if this is a contract on a method, for error reporing purposes.
+                         mandatory-dom-ctcs  ;; (listof (-> d??? ctc))
+                         optional-dom-ctcs   ;; (listof (-> d??? ctc))
+                         keyword-ctcs        ;; (listof (-> d??? ctc))
+                         rest-ctc            ;; (or/c false/c (-> d??? ctc))
+                         pre-cond            ;; (-> d??? boolean)
+                         range               ;; (or/c false/c (listof (-> dr??? ctc)) (box (listof (-> r??? ctc))))
+                         post-cond           ;; (-> dr??? boolean)
+                         keywords            ;; (listof keywords) -- sorted by keyword<
+                         mandatory-keywords  ;; (listof keywords) -- sorted by keyword<
+                         optional-keywords   ;; (listof keywords) -- sorted by keyword<
+                         name-wrapper))      ;; (-> proc proc) 
 
+;; Factored out in case there are ever chaperone ->d contracts.
+;; However, to do that, you'd either a) have to somehow check
+;; that the subcontracts are chaperones or b) allow contract
+;; application-time failures if the subpieces did not convert
+;; appropriately.  b) might be okay, but we should think about
+;; it first.  At the very least, the projection function would
+;; need to add checks in the appropriate places.
+(define-struct (proxy-->d base-->d) ()
   #:property prop:contract
   (build-contract-property
-   #:projection ->d-proj
-   #:name
-   (λ (ctc) 
-      (let* ([counting-id 'x]
-             [ids '(x y z w)]
-             [next-id
-              (λ ()
-                 (cond
-                  [(pair? ids)
-                   (begin0 (car ids)
-                           (set! ids (cdr ids)))]
-                  [(null? ids)
-                   (begin0 
-                     (string->symbol (format "~a0" counting-id))
-                     (set! ids 1))]
-                  [else
-                   (begin0 
-                     (string->symbol (format "~a~a" counting-id ids))
-                     (set! ids (+ ids 1)))]))])
-        `(->d (,@(map (λ (x) `(,(next-id) ...)) (->d-mandatory-dom-ctcs ctc))
-               ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (->d-mandatory-keywords ctc))))
-              (,@(map (λ (x) `(,(next-id) ...)) (->d-optional-dom-ctcs ctc))
-               ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (->d-optional-keywords ctc))))
-              ,@(if (->d-rest-ctc ctc)
-                  (list '#:rest (next-id) '...)
-                  '())
-              ,@(if (->d-pre-cond ctc)
-                  (list '#:pre '...)
-                  (list))
-              ,(let ([range (->d-range ctc)])
-                 (cond
-                  [(not range) 'any]
-                  [(box? range)
-                   (let ([range (unbox range)])
-                     (cond
-                      [(and (not (null? range))
-                            (null? (cdr range)))
-                       `[_ ...]]
-                      [else
-                       `(values ,@(map (λ (x) `(_ ...)) range))]))]
-                  [(and (not (null? range))
-                        (null? (cdr range)))
-                   `[,(next-id) ...]]
-                  [else
-                   `(values ,@(map (λ (x) `(,(next-id) ...)) range))]))
-              ,@(if (->d-post-cond ctc)
-                  (list '#:post '...)
-                  (list)))))
-
-   #:first-order (λ (ctc)
-                   (λ (val)
-                     (let* ([mtd? (->d-mtd? ctc)]
-                            [dom-length (length (->d-mandatory-dom-ctcs ctc))]
-                            [optionals (length (->d-optional-dom-ctcs ctc))]
-                            [mandatory-kwds (->d-mandatory-keywords ctc)]
-                            [optional-kwds (->d-optional-keywords ctc)])
-                       (if (->d-rest-ctc ctc)
-                           (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds #f)
-                           (check-procedure val mtd? dom-length optionals mandatory-kwds optional-kwds #f)))))
-   #:stronger (λ (this that) (eq? this that))))
-
+   #:projection (->d-proj proxy-procedure)
+   #:name ->d-name
+   #:first-order ->d-first-order
+   #:stronger ->d-stronger?))
 
 ;                                               
 ;                                               
