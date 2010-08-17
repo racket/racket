@@ -1339,15 +1339,15 @@
   ; section header
   (test-engine-check-failures "Check-Fehler:")
   ; section header
-  (test-engine-signature-violations "Vertragsverletzungen:")
+  (test-engine-signature-violations "Signaturverletzungen:")
 
   ; part of one phrase "signature <at line ...> to blame: procedure <at line ...>
-  (test-engine-signature "Vertrag")
+  (test-engine-signature "Signatur")
   (test-engine-to-blame "verantwortlich: Prozedur")
 
-  (test-engine-no-signature-violations "Keine Vertragsverletzungen.")
-  (test-engine-1-signature-violation "1 Vertragsverletzung.")
-  (test-engine-n-signature-violations "~a Vertragsverletzungen.")
+  (test-engine-no-signature-violations "Keine Signaturverletzungen.")
+  (test-engine-1-signature-violation "1 Signaturverletzung.")
+  (test-engine-n-signature-violations "~a Signaturverletzungen.")
 
   ; as in got <value>, signature <at ...>
   (test-engine-got "bekam")
