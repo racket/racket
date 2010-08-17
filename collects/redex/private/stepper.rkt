@@ -217,7 +217,8 @@ todo:
                [(or (not reds-choice)
                     (zero? (send reds-choice get-selection)))
                 #f]
-               [else (list-ref reduction-names (- (send reds-choice get-selection) 1))])])
+               [else (symbol->string
+                      (list-ref reduction-names (- (send reds-choice get-selection) 1)))])])
         (let loop ([next-node click-target]
                    [new-nodes (list)]
                    [cutoff (if looking-for
@@ -235,8 +236,7 @@ todo:
                   (cond
                     [(send (car new-children) in-cycle?)
                      (reverse (cons new-children new-nodes))]
-                    [(equal? (find-reduction-label next-node (car new-children))
-                             looking-for)
+                    [(member looking-for (find-reduction-label next-node (car new-children)))
                      (reverse (cons new-children new-nodes))]
                     [else
                      (loop (car new-children)
