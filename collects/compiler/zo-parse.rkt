@@ -732,7 +732,23 @@
                             [read-decimal-as-inexact #t]
                             [read-accept-dot #t]
                             [read-accept-infix-dot #t]
-                            [read-accept-quasiquote #t])
+                            [read-accept-quasiquote #t]
+                            ;; Use a readtable for special path support in escaped:
+                            [current-readtable
+                             (make-readtable 
+                              #f
+                              #\^ 
+                              'dispatch-macro
+                              (lambda (char port src line col pos)
+                                (let ([b (read port)])
+                                  (unless (bytes? b)
+                                    (error 'read-escaped-path
+                                           "expected a byte string after #^"))
+                                  (let ([p (bytes->path b)])
+                                    (if (and (relative-path? p)
+                                             (current-load-relative-directory))
+                                        (build-path (current-load-relative-directory) p)
+                                        p)))))])
                (read/recursive (open-input-bytes s))))]
           [(reference)
            (make-primval (read-compact-number cp))]
