@@ -4595,6 +4595,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       v = port->symtab[l];
       if (!v) {
         long save_pos = port->pos;
+        /* avoid cycles if marshaled form is broken: */
+        port->symtab[l] = scheme_false;
         port->pos = port->shared_offsets[l - 1];
         v = read_compact(port, 0);
         port->pos = save_pos;
