@@ -3,12 +3,28 @@
          compiler/zo-marshal
          tests/eli-tester)
 
+(define (read-compiled-bytes bs)
+  (parameterize ([read-accept-compiled #t])
+    (read (open-input-bytes bs))))
+
 (define (roundtrip ct)
   (define bs (zo-marshal ct))
-  (test bs
-        (zo-parse (open-input-bytes bs)) => ct))
+  (test #:failure-prefix (format "~S" ct)
+        (test bs
+              (zo-parse (open-input-bytes bs)) => ct
+              (read-compiled-bytes bs))))
 
 (test
+ (roundtrip 
+  (compilation-top 0 
+                   (prefix 0 empty empty)
+                   (current-directory)))
+ 
+ (roundtrip 
+  (compilation-top 0 
+                   (prefix 0 empty empty)
+                   (list (current-directory))))
+ 
  (local [(define (hash-test make-hash-placeholder)
            (roundtrip 
             (compilation-top 0 
@@ -19,17 +35,6 @@
                                (make-reader-graph ht)))))]
    (hash-test make-hash-placeholder)
    (hash-test make-hasheq-placeholder)
-   (hash-test make-hasheqv-placeholder))
- 
- 
- (roundtrip 
-  (compilation-top 0 
-                   (prefix 0 empty empty)
-                   (current-directory)))
- 
- (roundtrip 
-  (compilation-top 0 
-                   (prefix 0 empty empty)
-                   (list (current-directory)))))
+   (hash-test make-hasheqv-placeholder)))
 
 

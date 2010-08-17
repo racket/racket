@@ -709,10 +709,11 @@
   (let loop ([need-car 0] [proper #f])
     (begin-with-definitions
       (define ch (cp-getc cp))
-      (define-values (cpt-start cpt-tag) (let ([x (cpt-table-lookup ch)])
-                                           (unless x
-                                             (error 'read-compact "unknown code : ~a" ch))
-                                           (values (car x) (cdr x))))
+      (define-values (cpt-start cpt-tag) 
+        (let ([x (cpt-table-lookup ch)])
+          (unless x
+            (error 'read-compact "unknown code : ~a" ch))
+          (values (car x) (cdr x))))
       (define v 
         (case cpt-tag
           [(delayed)
@@ -1004,8 +1005,12 @@
     
     (define cp (make-cport 0 shared-size port size* rst-start symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
     
-    (for/list ([i (in-range 1 symtabsize)])
+    (for ([i (in-range 1 symtabsize)])
       (read-sym cp i))
+    
+    #;(for ([i (in-naturals)]
+          [v (in-vector (cport-symtab cp))])
+      (printf "~a: ~s~n~n" i (placeholder-get v)))
     (set-cport-pos! cp shared-size)
     (make-reader-graph
      (read-marshalled 'compilation-top-type cp))))
