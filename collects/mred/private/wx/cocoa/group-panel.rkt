@@ -15,7 +15,7 @@
 (import-class NSBox)
 
 (define-objc-class MyBox NSBox
-  #:mixins (FocusResponder KeyMouseResponder)
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb])
 
 (defclass group-panel% (panel-mixin window%)
@@ -37,6 +37,8 @@
 
   (define/override (get-cocoa-content) 
     (tell (get-cocoa) contentView))
+  (define/override (get-cocoa-cursor-content) 
+    (get-cocoa))
 
   (define/public (set-label l)
     (tellv (get-cocoa) setTitle: #:type _NSString l)))

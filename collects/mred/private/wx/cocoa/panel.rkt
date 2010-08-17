@@ -14,6 +14,10 @@
 
 (import-class NSView)
 
+(define-objc-class MyPanelView NSView
+  #:mixins (CursorDisplayer)
+  [wxb])
+
 (define (panel-mixin %)
   (class %
     (inherit register-as-child)
@@ -61,7 +65,7 @@
   (super-new [parent parent]
              [cocoa
               (as-objc-allocation
-               (tell (tell NSView alloc)
+               (tell (tell MyPanelView alloc)
                      initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                                 (make-NSSize w h))))]
              [no-show? (memq 'deleted style)]))

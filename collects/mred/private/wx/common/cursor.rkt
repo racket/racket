@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/draw
+         "local.rkt"
          (only-in "../platform.rkt" cursor-driver%)
           "../../syntax.rkt")
 
@@ -31,6 +32,8 @@
         (send c set-image image mask hot-spot-x hot-spot-y)
         c)]
      (init-name 'cursor%)))
+
+  (define/public (get-driver) driver)
 
   (def/public (ok?) (send driver ok?))
   (super-new))

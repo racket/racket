@@ -47,7 +47,7 @@
             (tellv ctx restoreGraphicsState)))))))
 
 (define-objc-class MyView NSView 
-  #:mixins (FocusResponder KeyMouseResponder) 
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer) 
   [wxb]
   (-a _void (drawRect: [_NSRect r])
       (when wxb
@@ -127,7 +127,7 @@
           (tellv ctx restoreGraphicsState)))))
 
 (define-objc-class MyComboBox NSComboBox
-  #:mixins (FocusResponder KeyMouseResponder) 
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer) 
   #:protocols (NSComboBoxDelegate)
   [wxb]
   (-a _void (drawRect: [_NSRect r])
@@ -172,7 +172,8 @@
              move get-x get-y
              on-size
              register-as-child
-             get-size get-position)
+             get-size get-position
+             set-focus)
 
     (define vscroll-ok? (and (memq 'vscroll style) #t))
     (define vscroll? vscroll-ok?)
@@ -607,6 +608,10 @@
     
     (define/override (definitely-wants-event? e) 
       ;; Called in Cocoa event-handling mode
+      (when (and is-combo?
+                 (e . is-a? . mouse-event%)
+                 (send e button-down? 'left))
+        (set-focus))
       (or (not is-combo?)
           (e . is-a? . key-event%)
           (not (send e button-down? 'left))
@@ -669,6 +674,9 @@
       (get-client-size xb yb)
       (when is-combo?
         (set-box! xb (- (unbox xb) 22))))
+
+    (define/override (get-cursor-width-delta)
+      (if is-combo? 22 0))
 
     (define/public (is-flipped?)
       (tell #:type _BOOL (get-cocoa-content) isFlipped))

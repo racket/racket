@@ -39,9 +39,6 @@
                 file-selector
                 is-color-display?
                 get-display-depth
-                begin-busy-cursor
-                is-busy?
-                end-busy-cursor
                 has-x-selection?
                 hide-cursor
                 bell

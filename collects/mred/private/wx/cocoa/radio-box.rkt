@@ -24,7 +24,7 @@
 (define NSListModeMatrix 2)
 
 (define-objc-class MyMatrix NSMatrix
-  #:mixins (FocusResponder KeyMouseResponder)
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (clicked: [_id sender])
       (queue-window*-event wxb (lambda (wx) (send wx clicked)))))

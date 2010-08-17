@@ -19,7 +19,7 @@
 (import-class NSProgressIndicator)
 
 (define-objc-class MyProgressIndicator NSProgressIndicator
-  #:mixins (KeyMouseResponder)
+  #:mixins (KeyMouseResponder CursorDisplayer)
   [wxb])
 
 (defclass gauge% item%

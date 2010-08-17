@@ -4158,8 +4158,8 @@ module browser threading seems wrong.
         (define/override (on-event evt)
           (let-values ([(w h) (get-client-size)])
             (let ([new-inside?
-                   (and (<= 0 (send evt get-x) w)
-                        (<= 0 (send evt get-y) h))]
+                   (and (< 0 (send evt get-x) w)
+                        (< 0 (send evt get-y) h))]
                   [old-inside? inside?])
               (set! inside? new-inside?)
               (cond

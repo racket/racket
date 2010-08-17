@@ -5,4 +5,8 @@
 
 (define-local-member-name
   ;; clipboard-client%:
-  get-client-eventspace)
+  get-client-eventspace
+
+  ;; cursor%
+  get-driver)
+

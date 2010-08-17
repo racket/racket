@@ -22,7 +22,7 @@
 (import-protocol NSTableViewDataSource)
 
 (define-objc-class MyTableView NSTableView
-  #:mixins (FocusResponder KeyMouseResponder)
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   [-a _id (preparedCellAtColumn: [_NSInteger column] row: [_NSInteger row])
       (let ([wx (->wx wxb)])

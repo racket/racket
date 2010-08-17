@@ -8,6 +8,8 @@
          "types.rkt"
          "keycode.rkt"
          "pool.rkt"
+         "cursor.rkt"
+         "../common/local.rkt"
          "../../lock.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
@@ -20,6 +22,7 @@
 
          FocusResponder
          KeyMouseResponder
+         CursorDisplayer
 
          queue-window-event
          queue-window*-event
@@ -106,6 +109,13 @@
         (when wx
           (queue-window-event wx (lambda ()
                                    (send wx key-event-as-string str)))))])
+
+(define-objc-mixin (CursorDisplayer Superclass)
+  [wxb]
+  [-a _void (resetCursorRects)
+      (let ([wx (->wx wxb)])
+        (when wx
+          (send wx reset-cursor-rects)))])
 
 (define (do-key-event wxb event)
   (let ([wx (->wx wxb)])
@@ -205,6 +215,7 @@
 
     (define/public (get-cocoa) cocoa)
     (define/public (get-cocoa-content) cocoa)
+    (define/public (get-cocoa-cursor-content) (get-cocoa-content))
     (define/public (get-cocoa-window) (send parent get-cocoa-window))
     (define/public (get-wx-window) (send parent get-wx-window))
 
@@ -314,8 +325,8 @@
         (set-box! h (->long (NSSize-height s)))))
 
     (define/public (set-size x y w h)
-      (let ([x (if (= x -11111) 0 x)]
-            [y (if (= y -11111) 0 y)])
+      (let ([x (if (= x -11111) (get-x) x)]
+            [y (if (= y -11111) (get-y) y)])
         (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
                                                            (make-NSSize w h)))))
     (define/public (move x y)
@@ -409,8 +420,28 @@
       
     (def/public-unimplemented fit)
 
-    (define/public (set-cursor c) (void))
-
+    (define cursor-handle #f)
+    (define/public (set-cursor c)
+      (let ([h (if c
+                   (send (send c get-driver) get-handle)
+                   #f)])
+        (unless (eq? h cursor-handle)
+          (atomically
+           (set! cursor-handle h)
+           (tellv (get-cocoa-window) invalidateCursorRectsForView: (get-cocoa-cursor-content))))))
+    (define/public (reset-cursor-rects)
+      ;; called in event-pump thread
+      (when cursor-handle
+        (let ([content (get-cocoa-cursor-content)])
+          (let* ([r (tell #:type _NSRect content frame)]
+                 [r (make-NSRect (make-NSPoint 0 0)
+                                 (make-NSSize
+                                  (- (NSSize-width (NSRect-size r))
+                                     (get-cursor-width-delta))
+                                  (NSSize-height (NSRect-size r))))])
+            (tellv content addCursorRect: #:type _NSRect r cursor: cursor-handle)))))
+    (define/public (get-cursor-width-delta) 0)
+    
     (define/public (gets-focus?) #f)
     
     (def/public-unimplemented centre)))

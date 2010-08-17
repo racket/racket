@@ -34,4 +34,7 @@
          eventspace-handler-thread
          queue-callback
          middle-queue-key
-         get-top-level-windows)
+         get-top-level-windows
+         begin-busy-cursor
+         is-busy?
+         end-busy-cursor)

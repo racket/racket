@@ -32,11 +32,11 @@
               "NSApplicationPath")))
 
 (define-objc-class MyTextField NSTextField
-  #:mixins (FocusResponder KeyMouseResponder)
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb])
 
 (define-objc-class MyImageView NSImageView
-  #:mixins (FocusResponder KeyMouseResponder)
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb])
 
 (defclass message% item%

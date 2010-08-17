@@ -22,7 +22,7 @@
 (import-class NSSlider)
 
 (define-objc-class MySlider NSSlider
-  #:mixins (FocusResponder KeyMouseResponder)
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (changed: [_id sender])
       (let ([wx (->wx wxb)])

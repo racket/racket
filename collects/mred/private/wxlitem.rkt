@@ -56,7 +56,7 @@
   
   (define wx-label-panel%
     (class wx-horizontal-panel% 
-      (init proxy parent label style font valign)
+      (init proxy parent label style font halign valign)
       (inherit area-parent)
       (define c #f)
 
@@ -67,7 +67,7 @@
       (unless (memq 'deleted style)
         (send (area-parent) add-child this))
       (define horiz? (is-horiz? style parent))
-      (define p (make-sub horiz? proxy this (if horiz? 'left 'center) valign))
+      (define p (make-sub horiz? proxy this (if horiz? 'left halign) valign))
 
       (define l (make-label label proxy p font))
       (define/public (set-label s) (when l (send l set-label s)))
@@ -96,7 +96,7 @@
       (init mred proxy parent cb label x y w h choices style font)
       (inherit stretchable-in-y stretchable-in-x get-p set-c)
 
-      (super-init proxy parent label style font 'center)
+      (super-init proxy parent label style font 'left 'center)
 
       (define c (make-object wx-internal-choice% mred proxy (get-p) cb label x y w h choices 
                              (filter-style style) font))
@@ -154,7 +154,7 @@
       (init mred proxy parent cb label kind x y w h choices style font label-font)
       (inherit get-p set-c)
 
-      (super-init proxy parent label style font 'top)
+      (super-init proxy parent label style font 'left 'top)
 
       (define c (make-object wx-internal-list-box% mred proxy (get-p) cb label kind x y w h choices 
                              (filter-style style) font label-font))
@@ -227,7 +227,7 @@
       (init mred proxy parent cb label x y w h choices major style font)
       (inherit stretchable-in-y stretchable-in-x get-p set-c)
 
-      (super-init proxy parent label style font 'center)
+      (super-init proxy parent label style font 'left 'center)
 
       (define c (make-object wx-internal-radio-box% mred proxy (get-p) cb label x y w h choices 
                              major (filter-style style) font))
@@ -302,7 +302,7 @@
       (init mred proxy parent label range style font)
       (inherit stretchable-in-y stretchable-in-x get-p set-c)
       
-      (super-init proxy parent label style font 'center)
+      (super-init proxy parent label style font 'center 'center)
       
       (define c (make-object wx-internal-gauge% mred proxy (get-p) label range
                              (filter-style style) font))
@@ -360,7 +360,7 @@
       (init mred proxy parent func label value min-val max-val style font)
       (inherit stretchable-in-y stretchable-in-x get-p set-c)
 
-      (super-init proxy parent label style font 'center)
+      (super-init proxy parent label style font 'center 'center)
 
       (define c (make-object wx-internal-slider% mred proxy (get-p) func label value min-val max-val
                              (filter-style style) font))

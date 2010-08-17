@@ -2069,7 +2069,7 @@
 			   f
 			   (lambda (b e)
 			     (send f set-cursor (make-object cursor% s)))))
-	    '(arrow bullseye cross hand ibeam watch arrow-watch blank size-n/s size-e/w size-ne/sw size-nw/se))
+	    '(arrow bullseye cross hand ibeam watch blank size-n/s size-e/w size-ne/sw size-nw/se))
   (send f show #t))
 
 

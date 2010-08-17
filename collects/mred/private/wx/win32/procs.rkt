@@ -42,9 +42,6 @@
  display-size
  bell
  hide-cursor
- end-busy-cursor
- is-busy?
- begin-busy-cursor
  get-display-depth
  is-color-display?
  file-selector

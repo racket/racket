@@ -18,7 +18,7 @@
 (import-protocol NSTabViewDelegate)
 
 (define-objc-class MyTabView NSTabView
-  #:mixins (FocusResponder KeyMouseResponder)
+  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   #:protocols (NSTabViewDelegate)
   [wxb]
   (-a _void (tabView: [_id cocoa] didSelectTabViewItem: [_id item-cocoa])
@@ -51,6 +51,7 @@
   (tell #:type _void cocoa addSubview: content-cocoa)
 
   (define/override (get-cocoa-content) content-cocoa)
+  (define/override (get-cocoa-cursor-content) cocoa)
   (define/override (set-size x y w h)
     (super set-size x y w h)
     (tellv content-cocoa setFrame: #:type _NSRect (tell #:type _NSRect cocoa contentRect)))

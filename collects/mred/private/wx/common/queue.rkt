@@ -26,6 +26,7 @@
          eventspace-shutdown?
          main-eventspace?
          eventspace-handler-thread
+         eventspace-wait-cursor-count
 
          queue-callback
          middle-queue-key
@@ -39,7 +40,11 @@
          other-modal?
 
          queue-quit-event
-         queue-prefs-event)
+         queue-prefs-event
+
+         begin-busy-cursor
+         end-busy-cursor
+         is-busy?)
 
 ;; ------------------------------------------------------------
 ;; This module must be instantiated only once:
@@ -116,7 +121,13 @@
 ;; ------------------------------------------------------------
 ;; Eventspaces
 
-(define-struct eventspace (handler-thread queue-proc frames-hash done-evt [shutdown? #:mutable] done-sema)
+(define-struct eventspace (handler-thread 
+                           queue-proc 
+                           frames-hash 
+                           done-evt 
+                           [shutdown? #:mutable] 
+                           done-sema 
+                           [wait-cursor-count #:mutable])
   #:property prop:evt (lambda (v)
                         (wrap-evt (eventspace-done-evt v)
                                   (lambda (_) v))))
@@ -270,7 +281,8 @@
                             frames
                             (semaphore-peek-evt done-sema)
                             #f
-                            done-sema)]
+                            done-sema
+                            0)]
           [cb-box (box #f)])
       (parameterize ([current-cb-box cb-box])
         (scheme_add_managed (current-custodian) 
@@ -390,3 +402,25 @@
 (define (queue-prefs-event)
   ;; called in event-pump thread
   (queue-event main-eventspace (application-pref-handler) 'med))
+
+(define (begin-busy-cursor) 
+  (let ([e (current-eventspace)])
+    (atomically 
+     (set-eventspace-wait-cursor-count!
+      e
+      (add1 (eventspace-wait-cursor-count e)))
+     (when (= (eventspace-wait-cursor-count e) 1)
+       (for ([e (in-list (get-top-level-windows))])
+         (send e set-wait-cursor-mode #t))))))
+
+(define (end-busy-cursor) 
+  (let ([e (current-eventspace)])
+    (atomically 
+     (set-eventspace-wait-cursor-count!
+      e
+      (sub1 (eventspace-wait-cursor-count e)))
+     (when (zero? (eventspace-wait-cursor-count e))
+       (for ([e (in-list (get-top-level-windows))])
+         (send e set-wait-cursor-mode #f))))))
+
+(define (is-busy?) (positive? (eventspace-wait-cursor-count (current-eventspace))))

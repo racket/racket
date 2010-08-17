@@ -289,6 +289,9 @@
     (define/public (set-status-text s) (void))
     (def/public-unimplemented status-line-exists?)
 
+    (define/public (set-wait-cursor-mode on?)
+      (void))
+
     (define maximized? #f)
     
     (define/public (is-maximized?)

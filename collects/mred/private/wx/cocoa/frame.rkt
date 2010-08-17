@@ -9,6 +9,7 @@
          "window.rkt"
          "queue.rkt"
          "menu-bar.rkt"
+         "cursor.rkt"
          "../../syntax.rkt"
          "../common/queue.rkt"
          "../../lock.rkt")
@@ -59,6 +60,7 @@
         (let ([wx (->wx wxb)])
           (when wx
             (set! front wx)
+            (send wx install-wait-cursor)
             (send wx install-mb)
             (send wx notify-responder #t)
             (queue-window-event wx (lambda ()
@@ -67,7 +69,9 @@
       (when wxb
         (let ([wx (->wx wxb)])
           (when wx
-            (when (eq? front wx) (set! front #f))
+            (when (eq? front wx) 
+              (set! front #f)
+              (send wx uninstall-wait-cursor))
             (send empty-mb install)
             (send wx notify-responder #f)
             (queue-window-event wx (lambda ()
@@ -237,8 +241,11 @@
                   [next (tellv next makeKeyWindow)]
                   [root-fake-frame (send root-fake-frame install-mb)]
                   [else (void)]))))
-         (register-frame-shown this on?))))
-
+         (register-frame-shown this on?)
+         (when on?
+           (let ([b (eventspace-wait-cursor-count (get-eventspace))])
+             (set-wait-cursor-mode (not (zero? b))))))))
+    
     (define/override (show on?)
       (when on?
         (when (eventspace-shutdown? (get-eventspace))
@@ -267,6 +274,17 @@
     (define is-main? #f)
     (define first-responder #f)
 
+    (define saved-child #f)
+    (define/override (register-child child on?)
+      (unless on? (error 'register-child-in-frame "did not expect #f"))
+      (unless (or (not saved-child) (eq? child saved-child))
+        (error 'register-child-in-frame "expected only one child"))
+      (set! saved-child child))
+
+    (define/override (set-cursor c)
+      (when saved-child
+        (send saved-child set-cursor c)))
+
     (define/public (notify-responder on?)
       (set! is-main? on?)
       (when first-responder
@@ -285,6 +303,23 @@
           (set! first-responder #f))
       (when is-main?
         (do-notify-responder wx on?)))
+
+    (define/public (install-wait-cursor)
+      (when (positive? (eventspace-wait-cursor-count (get-eventspace)))
+        (tellv (get-wait-cursor-handle) set)))
+
+    (define/public (uninstall-wait-cursor)
+      (when (positive? (eventspace-wait-cursor-count (get-eventspace)))
+        (tellv arrow-cursor-handle set)))
+
+    (define/public (set-wait-cursor-mode on?)
+      (if on?
+          (tell cocoa disableCursorRects)
+          (tell cocoa enableCursorRects))
+      (when (eq? this front)
+        (if on?
+            (install-wait-cursor)
+            (uninstall-wait-cursor))))
 
     (define/public (flip-screen y)
       (let ([f (tell #:type _NSRect (tell cocoa screen) frame)])
