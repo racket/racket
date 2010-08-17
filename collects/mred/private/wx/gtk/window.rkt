@@ -7,6 +7,7 @@
          "../common/event.rkt"
          "../common/freeze.rkt"
          "../common/queue.rkt"
+         "../common/local.rkt"
          "keycode.rkt"
          "queue.rkt"
          "utils.rkt"
@@ -160,11 +161,13 @@
 (define-signal-handler connect-enter "enter-notify-event"
   (_fun _GtkWidget _GdkEventCrossing-pointer -> _gboolean)
   (lambda (gtk event)
+    (let ([wx (gtk->wx gtk)]) (when wx (send wx enter-window)))
     (do-button-event gtk event #f #t)))
 
 (define-signal-handler connect-leave "leave-notify-event"
   (_fun _GtkWidget _GdkEventCrossing-pointer -> _gboolean)
   (lambda (gtk event)
+    (let ([wx (gtk->wx gtk)]) (when wx (send wx leave-window)))
     (do-button-event gtk event #f #t)))
 
 (define (connect-key-and-mouse gtk [skip-press? #f])
@@ -441,8 +444,24 @@
     (define/public (set-focus)
       (gtk_widget_grab_focus (get-client-gtk)))
 
+    (define cursor-handle #f)
     (define/public (set-cursor v)
-      (void))
+      (set! cursor-handle (and v
+                               (send (send v get-driver) get-handle)))
+      (check-window-cursor this))
+    (define/public (enter-window)
+      (set-window-cursor this #f))
+    (define/public (leave-window)
+      (when parent
+        (send parent enter-window)))
+    (define/public (set-window-cursor in-win c)
+      (set-parent-window-cursor in-win (or c cursor-handle)))
+    (define/public (set-parent-window-cursor in-win c)
+      (when parent
+        (send parent set-window-cursor in-win c)))
+    (define/public (check-window-cursor win)
+      (when parent
+        (send parent check-window-cursor win)))
 
     (define/public (on-set-focus) (void))
     (define/public (on-kill-focus) (void))

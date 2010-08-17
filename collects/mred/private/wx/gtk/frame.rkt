@@ -10,6 +10,7 @@
          "client-window.rkt"
          "widget.rkt"
          "procs.rkt"
+         "cursor.rkt"
          "../common/queue.rkt")
 (unsafe!)
 
@@ -38,6 +39,8 @@
 (define-gtk gtk_window_set_gravity (_fun _GtkWindow _int -> _void))
 
 (define-gtk gtk_window_resize (_fun _GtkWidget _int _int -> _void))
+
+(define-gdk gdk_window_set_cursor (_fun _GdkWindow _pointer -> _void))
 
 (define-cstruct _GdkGeometry ([min_width _int]
                               [min_height _int]
@@ -289,9 +292,30 @@
     (define/public (set-status-text s) (void))
     (def/public-unimplemented status-line-exists?)
 
+    (define waiting-cursor? #f)
     (define/public (set-wait-cursor-mode on?)
-      (void))
+      (set! waiting-cursor? on?)
+      (send in-window enter-window))
 
+    (define current-cursor-handle #f)
+    (define in-window #f)
+    (define/override (set-parent-window-cursor in-win c)
+      (set! in-window in-win)
+      (let ([c (if waiting-cursor?
+                   (get-watch-cursor-handle)
+                   c)])
+        (unless (eq? c current-cursor-handle)
+          (atomically
+           (set! current-cursor-handle c)
+           (gdk_window_set_cursor (widget-window (get-gtk)) (if (eq? c (get-arrow-cursor-handle))
+                                                                #f
+                                                                c))))))
+    (define/override (enter-window) (void))
+    (define/override (leave-window) (void))
+
+    (define/override (check-window-cursor win)
+      (send in-window enter-window))
+      
     (define maximized? #f)
     
     (define/public (is-maximized?)
