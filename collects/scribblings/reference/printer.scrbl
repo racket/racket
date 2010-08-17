@@ -453,14 +453,32 @@ For the purposes of printing enclosing datatypes, a keyword is
 
 @section{Printing Regular Expressions}
 
-Regexp values in all modes (@scheme[write], @scheme[display], and
-@scheme[print]) starting with @litchar{#px} (for
-@scheme[pregexp]-based regexps) or @litchar{#rx} (for
-@scheme[regexp]-based regexps) followed by the @scheme[write] form of
-the regexp's source string or byte string.
+Regexp values @scheme[write], @scheme[display], and @scheme[print]
+starting with @litchar{#px} (for @scheme[pregexp]-based regexps) or
+@litchar{#rx} (for @scheme[regexp]-based regexps) followed by the
+@scheme[write] form of the regexp's source string or byte string.
 
 For the purposes of printing enclosing datatypes, a regexp value is
 @tech{quotable}.
+
+
+@section[#:tag "print-path"]{Printing Paths}
+
+Paths @scheme[write] and @scheme[print] as @litchar{#<path:....>}. A
+path @racket[display]s the same as the string produced by
+@racket[path->string]. For the purposes of printing enclosing
+datatypes, a path counts as @tech{quotable}.
+
+Although a path can be converted to a string with
+@racket[path->string] or to a byte string with @racket[path->bytes],
+neither is clearly the right choice for printing a path and reading it
+back. If the path value is meant to be moved among platforms, then a
+string is probably the right choice, despite the potential for losing
+information when converting a path to a string. For a path that is
+intended to be re-read on the same platform, a byte string is probably
+the right choice, since it preserves information in an unportable
+way. Paths do not print in a readable way so that programmers are not
+mislead into thinking that either choice is always appropriate.
 
 
 @section[#:tag "print-unreadable"]{Printing Unreadable Values}
@@ -475,3 +493,52 @@ to the value itself. If @racket[print-unreadable] is set to
 
 For the purposes of printing enclosing datatypes, a value that prints
 unreadably nevertheless counts as @tech{quotable}.
+
+
+@section[#:tag "print-compiled"]{Printing Compiled Code}
+
+Compiled code as produced by @racket[compile] prints using
+@litchar{#~}. Compiled code printed with @litchar{#~} is essentially
+assembly code for Racket, and reading such an form produces a compiled
+form when the @racket[read-accept-compiled] parameter is set to
+@racket[#t].
+
+When a compiled form contains syntax object constants, the
+@litchar{#~}-marshaled form drops source-location information and
+properties (@secref["stxprops"]) for the @tech{syntax objects}.
+
+Compiled code parsed from @litchar{#~} may contain references to
+unexported or protected bindings from a module. At read time, such
+references are associated with the current code inspector (see
+@racket[current-code-inspector]), and the code will only execute if
+that inspector controls the relevant module invocation (see
+@secref["modprotect"]).
+
+A compiled-form object may contain @tech{uninterned} symbols (see
+@secref["symbols"]) that were created by @racket[gensym] or
+@racket[string->uninterned-symbol]. When the compiled object is read
+via @litchar{#~}, each uninterned symbol in the original form is
+mapped to a new uninterned symbol, where multiple instances of a
+single symbol are consistently mapped to the same new symbol. The
+original and new symbols have the same printed
+representation. @tech{Unreadable symbols}, which are typically
+generated indirectly during expansion and compilation, are saved and
+restored consistently through @litchar{#~}.
+
+Due to the restrictions on @tech{uninterned} symbols in @litchar{#~},
+do not use @racket[gensym] or @racket[string->uninterned-symbol] to
+construct an identifier for a top-level or module binding. Instead,
+generate distinct identifiers either with
+@racket[generate-temporaries] or by applying the result of
+@racket[make-syntax-introducer] to an existing identifier; those
+functions will lead to top-level and module bindings with
+@tech{unreadable symbol}ic names.
+
+Finally, a compiled form may contain path literals. Although paths are
+not normally printed in a way that can be read back in, path literals
+can be written and read as part of compiled code. The
+@racket[current-write-relative-directory] parameter is used to convert
+the path to a relative path as is it written, and then
+@racket[current-load-relative-directory] parameter is used to convert
+any relative path back as it is read. The relative-path conversion
+applies on reading whether the path was originally relative or not.

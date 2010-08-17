@@ -85,6 +85,8 @@ typedef struct Scheme_Print_Params {
   char honu_mode;
   Scheme_Object *inspector;
 
+  char printing_quoted;
+
   /* Used during `display' and `write': */
   char *print_buffer;
   long print_position;
@@ -971,6 +973,7 @@ print_to_string(Scheme_Object *obj,
   params.print_port = port;
   params.print_syntax = 0;
   params.depth_delta = NULL;
+  params.printing_quoted = 0;
 
   /* Getting print params can take a while, and they're irrelevant
      for simple things like displaying numbers. So try a shortcut: */
@@ -1680,8 +1683,8 @@ static void cannot_print(PrintParams *pp, int notdisplay,
 			 int compact)
 {
   scheme_raise_exn(MZEXN_FAIL,
-		   (compact
-		    ? "%s: cannot marshal constant that is embedded in compiled code: %V"
+		   ((compact || pp->printing_quoted)
+		    ? "%s: cannot marshal value that is embedded in compiled code: %V"
 		    : "%s: printing disabled for unreadable value: %V"),
 		   notdisplay ? "write" : "display",
 		   obj);
@@ -2343,7 +2346,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	Scheme_Object *idx;
 	int l;
 	
-	idx = get_symtab_idx(mt, obj);
+        idx = get_symtab_idx(mt, obj);
 	if (idx) {
           print_symtab_ref(pp, idx);
 	} else {
@@ -2351,10 +2354,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  
 	  dir = scheme_get_param(scheme_current_config(),
 				 MZCONFIG_WRITE_DIRECTORY);
-	  if (SCHEME_PATHP(dir)) {
+	  if (SCHEME_PATHP(dir))
 	    obj = scheme_extract_relative_to(obj, dir);
-	  }
-
+          
 	  print_compact(pp, CPT_PATH);
 
 	  l = SCHEME_PATH_LEN(obj);
@@ -2363,6 +2365,24 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
           symtab_set(pp, mt, orig_obj);
 	}
+      } else if (!compact && pp->printing_quoted) {
+        /* An unlikely case: we're in escaped mode for printing a constant;
+           use a special escape, which is recognized only when reading
+           an escaped S-expression, to write a path: */
+        Scheme_Object *dir;
+
+        dir = scheme_get_param(scheme_current_config(),
+                               MZCONFIG_WRITE_DIRECTORY);
+        if (SCHEME_PATHP(dir))
+          obj = scheme_extract_relative_to(obj, dir);
+
+        print_utf8_string(pp, "#^", 0, 2);
+        obj = scheme_make_sized_byte_string(SCHEME_PATH_VAL(obj),
+                                            SCHEME_PATH_LEN(obj),
+                                            1);
+        print(obj, notdisplay, compact, ht, mt, pp);
+
+        closed = 1;
       } else if (!pp->print_unreadable) {
 	cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
@@ -2653,7 +2673,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (SCHEME_STXP(obj))
     {
-      if (compact) {
+      if (compact && !pp->printing_quoted) {
 	print_compact(pp, CPT_STX);
 	
 	/* "2" in scheme_syntax_to_datum() call preserves wraps. */
@@ -2838,7 +2858,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       Scheme_Hash_Table *q_ht;
       Scheme_Object *v;
-      int counter = 1, qpht, qpb;
+      int counter = 1, qpht, qpb, qpu;
 
       v = SCHEME_PTR_VAL(obj);
 
@@ -2865,7 +2885,15 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 #endif
       }
 
+      /* Avoid all unprintable values, whether or not we stay in compact mode. */
+      qpu = pp->print_unreadable;
+      pp->print_unreadable = 0;
+      pp->printing_quoted = 1;
+
       compact = print(v, notdisplay, 1, q_ht, mt, pp);
+
+      pp->printing_quoted = 0;
+      pp->print_unreadable = qpu;
 
       pp->print_hash_table = qpht;
       pp->print_box = qpb;

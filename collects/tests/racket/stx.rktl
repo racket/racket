@@ -1436,5 +1436,26 @@
 (test #t list? @simp@tst)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check marshaling of compiled code to disallow
+;;  unreadable values in a hash-table literal
+
+;; cyclic hash table as a bad "constant":
+(err/rt-test (let ([s (open-output-bytes)])
+               (write (compile `(quote ,(let ([ht (make-hasheq)])
+                                          (hash-set! ht #'bad ht)
+                                          ht)))
+                      s)
+               (get-output-bytes s))
+             exn:fail?)
+;; non-cyclic variant:
+(err/rt-test (let ([s (open-output-bytes)])
+               (write (compile `(quote ,(let ([ht (make-hasheq)])
+                                          (hash-set! ht #'bad 10)
+                                          ht)))
+                      s)
+               (get-output-bytes s))
+             exn:fail?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

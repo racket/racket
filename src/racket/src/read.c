@@ -181,6 +181,7 @@ typedef struct ReadParams {
   Readtable *table;
   Scheme_Object *magic_sym, *magic_val;
   Scheme_Object *delay_load_info;
+  Scheme_Object *read_relative_path;
 } ReadParams;
 
 #define THREAD_FOR_LOCALS scheme_current_thread
@@ -1392,6 +1393,43 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	    }
 	  }
 	  break;
+        case '^':
+          if (params->read_relative_path) {
+            ch = scheme_getc_special_ok(port);
+            if (ch == '#') {
+              ch = scheme_getc_special_ok(port);
+              if (ch == '"') {
+                Scheme_Object *str;
+                long sline = 0, scol = 0, spos = 0;
+
+		scheme_tell_all(port, &sline, &scol, &spos);
+
+                str = read_string(1, 0, port, stxsrc, sline, scol, spos, ht, indentation, params, 1);
+
+                str->type = SCHEME_PLATFORM_PATH_KIND;
+
+                if (scheme_is_relative_path(SCHEME_PATH_VAL(str), SCHEME_PATH_LEN(str), SCHEME_PLATFORM_PATH_KIND)) {
+                  if (SCHEME_PATHP(params->read_relative_path)) {
+                    Scheme_Object *a[2];
+                    a[0] = params->read_relative_path;
+                    a[1] = str;
+                    str = scheme_build_path(2, a);
+                  }
+                }
+
+                return str;
+              }
+            } else {
+              scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation,
+                              "read: bad syntax `#^#%c'",
+                              ch);
+            }
+          } else {
+            scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation,
+                            "read: bad syntax `#^%c'",
+                            ch);
+          }
+          break;
 	case '|':
 	  if (!params->honu_mode) {
 	    /* FIXME: integer overflow possible */
@@ -2336,6 +2374,7 @@ _internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cant_fai
   params.can_read_dot = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CAN_READ_INFIX_DOT);
   params.can_read_infix_dot = SCHEME_TRUEP(v);
+  params.read_relative_path = NULL;
   if (!delay_load_info)
     delay_load_info = scheme_get_param(config, MZCONFIG_DELAY_LOAD_INFO);
   if (SCHEME_TRUEP(delay_load_info))
@@ -4536,9 +4575,10 @@ static Scheme_Object *read_compact_escape(CPort *port)
   params.skip_zo_vers_check = 0;
   params.table = NULL;
 
+  params.read_relative_path = port->relto;
+
   return read_inner(ep, NULL, port->ht, scheme_null, &params, 0);
 }
-
 
 static Scheme_Object *read_compact(CPort *port, int use_stack);
 
@@ -4595,8 +4635,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       v = port->symtab[l];
       if (!v) {
         long save_pos = port->pos;
-        /* avoid cycles if marshaled form is broken: */
-        port->symtab[l] = scheme_false;
+        port->symtab[l] = scheme_false; /* avoid cycles if marshaled form is broken: */
         port->pos = port->shared_offsets[l - 1];
         v = read_compact(port, 0);
         port->pos = save_pos;
@@ -4958,6 +4997,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
                                      (Scheme_Object *)port->delay_info);
           } else {
             long save_pos = port->pos;
+            port->symtab[l] = scheme_false; /* avoid cycles if marshaled form is broken: */
             port->pos = port->shared_offsets[l - 1];
             v = read_compact(port, 0);
             port->pos = save_pos;
@@ -5412,6 +5452,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 
   return result;
 }
+
 
 THREAD_LOCAL_DECL(static Scheme_Load_Delay *clear_bytes_chain);
 

@@ -2076,6 +2076,7 @@ mark_read_params {
   gcMARK2(rp->magic_sym, gc);
   gcMARK2(rp->magic_val, gc);
   gcMARK2(rp->delay_load_info, gc);
+  gcMARK2(rp->read_relative_path, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }

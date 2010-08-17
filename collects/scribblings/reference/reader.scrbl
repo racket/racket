@@ -122,7 +122,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#!}]{may start a reader extension; see @secref["parse-reader"]}
   @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["parse-quote"]}
   @dispatch[@litchar{#,}]{starts an syntax [splicing] unquote; see @secref["parse-quote"]}
-  @dispatch[@litchar{#~}]{starts compiled code; see @racket[current-compile]}
+  @dispatch[@litchar{#~}]{starts compiled code; see @secref["print-compiled"]}
 
   @dispatch[@cilitchar{#i}]{starts a number; see @secref["parse-number"]}
   @dispatch[@cilitchar{#e}]{starts a number; see @secref["parse-number"]}

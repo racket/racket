@@ -8,7 +8,9 @@
          racket/local
          racket/list
          racket/dict
-         racket/function)
+         racket/function
+         racket/pretty
+         racket/path)
 
 (provide/contract
  [zo-marshal (compilation-top? . -> . bytes?)]
@@ -901,6 +903,7 @@
                    CPT_BYTE_STRING
                    #f
                    out)]
+    #;
     [(path? expr)
      (out-as-bytes expr 
                    path->bytes
@@ -1024,7 +1027,20 @@
      (if (quoted? expr)
          (out-data (quoted-v expr) out)
          (let ([s (open-output-bytes)])
-           (write expr s)
+           ;; print `expr' to a string, but print paths
+           ;; in a special way
+           (parameterize ([pretty-print-size-hook
+                           (lambda (v mode port)
+                             (and (path? v)
+                                  (let ([v (make-relative v)])
+                                    (+ 2 (let ([p (open-output-bytes)])
+                                           (write (path->bytes v) p)
+                                           (bytes-length (get-output-bytes p)))))))]
+                          [pretty-print-print-hook
+                           (lambda (v mode port)
+                             (display "#^" port)
+                             (write (path->bytes (make-relative v)) port))])
+             (pretty-write expr s))
            (out-byte CPT_ESCAPE out)
            (let ([bstr (get-output-bytes s)])
              (out-number (bytes-length bstr) out)
@@ -1040,6 +1056,12 @@
 
 
 (define-struct svector (vec))
+
+(define (make-relative v)
+  (let ([r (current-write-relative-directory)])
+    (if r
+        (find-relative-path r v)
+        v)))
 
 ;; ----------------------------------------
 

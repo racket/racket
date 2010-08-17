@@ -5078,6 +5078,7 @@ static int mark_read_params_MARK(void *p, struct NewGC *gc) {
   gcMARK2(rp->magic_sym, gc);
   gcMARK2(rp->magic_val, gc);
   gcMARK2(rp->delay_load_info, gc);
+  gcMARK2(rp->read_relative_path, gc);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
@@ -5088,6 +5089,7 @@ static int mark_read_params_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(rp->magic_sym, gc);
   gcFIXUP2(rp->magic_val, gc);
   gcFIXUP2(rp->delay_load_info, gc);
+  gcFIXUP2(rp->read_relative_path, gc);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }

@@ -251,7 +251,7 @@ object within @litchar{#<syntax}...@litchar{>} (after the
                                             (or/c (and/c path-string? complete-path?) #f)
                                             (or/c (and/c path? complete-path?) #f)]{
 
-A parameter that is used when writing compiled code that contains
+A parameter that is used when writing compiled code (see @secref["print-compiled"]) that contains
 pathname literals, including source-location pathnames for procedure
 names. When not @racket[#f], paths that syntactically extend the
 parameter's value are converted to relative paths; when the resulting
