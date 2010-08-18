@@ -48,10 +48,9 @@
      (format-external e)]))
 (define (format-questions ls)
   (v-concat
-   (append (map (lambda (l)
-                  (h-append (format-question l) dot))
-                ls)
-           (list line))))
+   (map (lambda (l)
+          (h-append (format-question l) dot))
+        ls)))
 (define (format-clause c)
   (if (empty? (clause-body c))
       (format-literal (clause-head c))
