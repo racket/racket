@@ -12,7 +12,7 @@
 
 (Section 'pretty)
 
-(require mzlib/pretty)
+(require racket/pretty)
 
 (print-as-expression #f)
 
@@ -326,5 +326,93 @@
 (test #t 'use-regression? use-regression?)
 
 (print-as-expression #t)
+
+;; ----------------------------------------
+
+;; Test custom-write hooks through a re-implementation
+;; of the transparent-struct printer:
+
+(define (print-constructed port mode name . fields)
+  (define (print-sub val port)
+    (cond
+     [(integer? mode) (print val port mode)]
+     [mode (write val port)]
+     [else (display val port)]))
+  (display "(" port)
+  (let-values ([(l c p) (port-next-location port)])
+    (write name port)
+    (if (not (pretty-printing))
+        ;; Not pretty-printing --- simple
+        (for ([val (in-list fields)])
+          (display " " port)
+          (print-sub val port))
+        ;; Pretty-printing. First try simple:
+        (unless ((let/ec esc
+                   (letrec ([sub-port (make-tentative-pretty-print-output-port 
+                                       port
+                                       (pretty-print-columns)
+                                       (lambda ()
+                                         (esc (lambda ()
+                                                (tentative-pretty-print-port-cancel sub-port)
+                                                #f))))])
+                     (for ([val (in-list fields)])
+                       (display " " sub-port)
+                       (print-sub val sub-port))
+                     (lambda ()
+                       (tentative-pretty-print-port-transfer sub-port port)
+                       #t))))
+          ;; Simple attempt overflowed the line, so print with newlines.
+          (for ([val (in-list fields)])
+            (pretty-print-newline port (pretty-print-columns))
+            (let-values ([(l2 c2 p2) (port-next-location port)])
+              (display (make-string (max 0 (- c c2)) #\space) port))
+            (print-sub val port)))))
+  (display ")" port))
+
+(let ()
+  (struct duo (a b)
+    #:property prop:custom-print-quotable 'never
+    #:property prop:custom-write (lambda (v port mode)
+                                   (print-constructed port
+                                                      mode 
+                                                      'DUO
+                                                      (duo-a v)
+                                                      (duo-b v))))
+  (let ([try-print
+         (lambda (print v cols expect)
+           (let ([s (open-output-string)])
+             (parameterize ([pretty-print-columns cols])
+               (print v s))
+             (test expect get-output-string s)))])
+    
+    (try-print pretty-print 'a 40 "'a\n")
+    (try-print pretty-print "a" 40 "\"a\"\n")
+
+    (try-print pretty-print (duo 1 2) 40 "(DUO 1 2)\n")
+    (try-print pretty-write (duo 1 2) 40 "(DUO 1 2)\n")
+    (try-print pretty-display (duo 1 2) 40 "(DUO 1 2)\n")
+
+    (try-print print (duo "a" 'b) 40 "(DUO \"a\" 'b)")
+    (try-print pretty-print (duo "a" 'b) 40 "(DUO \"a\" 'b)\n")
+    (try-print write (duo "a" 'b) 40 "(DUO \"a\" b)")
+    (try-print pretty-write (duo "a" 'b) 40 "(DUO \"a\" b)\n")
+    (try-print display (duo "a" 'b) 40 "(DUO a b)")
+    (try-print pretty-display (duo "a" 'b) 40 "(DUO a b)\n")
+
+    (try-print pretty-print (duo "abcdefghijklmno" 'b) 20 "(DUO\n \"abcdefghijklmno\"\n 'b)\n")
+    (try-print pretty-write (duo "abcdefghijklmno" 'b) 20 "(DUO\n \"abcdefghijklmno\"\n b)\n")
+    (try-print pretty-display (duo "abcdefghijklmno" 'b) 20 "(DUO\n abcdefghijklmno\n b)\n")
+
+    (try-print pretty-print (list (duo "abcdefghijklmno" 'b)) 20 "(list\n (DUO\n  \"abcdefghijklmno\"\n  'b))\n")
+    (try-print pretty-write (list (duo "abcdefghijklmno" 'b)) 20 "((DUO\n  \"abcdefghijklmno\"\n  b))\n")
+    (try-print pretty-display (list (duo "abcdefghijklmno" 'b)) 20 "((DUO\n  abcdefghijklmno\n  b))\n")
+
+    (let ([val (list (duo '(a b c d e)
+                          '(1 2 3 4 5)))])
+      (try-print pretty-print val 10 "(list\n (DUO\n  '(a\n    b\n    c\n    d\n    e)\n  '(1\n    2\n    3\n    4\n    5)))\n")
+      (try-print pretty-write val 10 "((DUO\n  (a\n   b\n   c\n   d\n   e)\n  (1\n   2\n   3\n   4\n   5)))\n")
+      (try-print pretty-display val 10 "((DUO\n  (a\n   b\n   c\n   d\n   e)\n  (1\n   2\n   3\n   4\n   5)))\n"))))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -354,7 +354,8 @@ port. The @scheme[width] argument should be a target column width,
 usually obtained from @scheme[pretty-print-columns], possibly
 decremented to leave room for a terminator. The
 @scheme[overflow-thunk] procedure is called if more than
-@scheme[width] items are printed to the port; it can escape from the
+@scheme[width] items are printed to the port or if a newline is
+printed to the port via @racket[pretty-print-newline]; it can escape from the
 recursive print through a continuation as a short cut, but
 @scheme[overflow-thunk] can also return, in which case it is called
 every time afterward that additional output is written to the port.
