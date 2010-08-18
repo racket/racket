@@ -49,6 +49,7 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
   if (si->si_code != SEGV_ACCERR) { /*SEGV_MAPERR*/
     if (c == SEGV_MAPERR) {
       printf("SIGSEGV MAPERR si_code %i fault on addr %p\n", c, p);
+      printf("This often means %p isn't getting marked, and was prematurely freed\n", p);
     }
     if (c == 0) {
       /* I have no idea why this happens on linux */

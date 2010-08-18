@@ -1,7 +1,7 @@
 #ifndef GCLIST_H
 #define GCLIST_H
 
-/* design take form the linux double linked list implementation in include/linux/list.h  */
+/* design taken from the linux double linked list implementation in include/linux/list.h  */
 
 typedef struct GCList {
   struct GCList *next;

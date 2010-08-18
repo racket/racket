@@ -656,6 +656,12 @@ static size_t round_to_apage_size(size_t sizeb)
   return sizeb;
 }
 
+#if 0
+static inline size_t size_in_apages(mpage *page) {
+  return (page->size_class > 1) ? (round_to_apage_size(page->size) / APAGE_SIZE) : 1;
+}
+#endif
+
 static mpage *malloc_mpage()
 {
   mpage *page;
@@ -2467,6 +2473,31 @@ long GC_get_memory_use(void *o)
 /* Garbage collection proper ... and all the mess therein                    */
 /*****************************************************************************/
 
+static void promote_marked_gen0_big_page(NewGC *gc, mpage *page) {
+  page->generation = 1;
+
+  /* remove page */
+  if(page->prev) page->prev->next = page->next; else
+    gc->gen0.big_pages = page->next;
+  if(page->next) page->next->prev = page->prev;
+  
+  GCVERBOSEPAGE(gc, "MOVING BIG PAGE TO GEN1", page);
+
+  backtrace_new_page(gc, page);
+
+  /* add to gen1 */
+  page->next = gc->gen1_pages[PAGE_BIG]; 
+  page->prev = NULL;
+  if(page->next) page->next->prev = page;
+  gc->gen1_pages[PAGE_BIG] = page;
+
+  /* if we're doing memory accounting, then we need to make sure the
+     btc_mark is right */
+#ifdef NEWGC_BTC_ACCOUNT
+  BTC_set_btc_mark(gc, BIG_PAGE_TO_OBJHEAD(page));
+#endif
+}
+
 /* We use two mark routines to handle propagation. Why two? The first is the
    one that we export out, and it does a metric crapload of work. The second
    we use internally, and it doesn't do nearly as much. */
@@ -2474,6 +2505,9 @@ long GC_get_memory_use(void *o)
 /* This is the first mark routine. It's a bit complicated. */
 void GC_mark2(const void *const_p, struct NewGC *gc)
 {
+#ifdef MZ_USE_PLACES
+  int is_a_master_page = 0;
+#endif
   mpage *page;
   void *p = (void*)const_p;
 
@@ -2490,6 +2524,11 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       GCDEBUG((DEBUGOUTF,"Not marking %p (no page)\n",p));
       return;
     }
+#ifdef MZ_USE_PLACES
+    else {
+      is_a_master_page = 1;      
+    }
+#endif
   }
 
   /* toss this over to the BTC mark routine if we're doing accounting */
@@ -2513,29 +2552,13 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       page->size_class = 3;
 
       /* if this is in the nursery, we want to move it out of the nursery */
-      if(!page->generation) {
-        page->generation = 1;
-
-        /* remove page */
-        if(page->prev) page->prev->next = page->next; else
-          gc->gen0.big_pages = page->next;
-        if(page->next) page->next->prev = page->prev;
-        
-        GCVERBOSEPAGE(gc, "MOVING BIG PAGE TO GEN1", page);
-
-        backtrace_new_page(gc, page);
-
-        /* add to gen1 */
-        page->next = gc->gen1_pages[PAGE_BIG]; 
-        page->prev = NULL;
-        if(page->next) page->next->prev = page;
-        gc->gen1_pages[PAGE_BIG] = page;
-
-        /* if we're doing memory accounting, then we need to make sure the
-           btc_mark is right */
-#ifdef NEWGC_BTC_ACCOUNT
-        BTC_set_btc_mark(gc, BIG_PAGE_TO_OBJHEAD(page));
+#ifdef MZ_USE_PLACES
+      if(!page->generation && !is_a_master_page) 
+#else
+      if(!page->generation) 
 #endif
+      {
+        promote_marked_gen0_big_page(gc, page);
       }
 
       page->marked_on = 1;
@@ -2764,6 +2787,19 @@ static void propagate_marks(NewGC *gc)
     propagate_marks_worker(gc, mark_table, p);
   }
 }
+#ifdef MZ_USE_PLACES
+static void promote_marked_gen0_big_pages(NewGC *gc) {
+  mpage *page;
+  mpage *next;
+
+  for (page = gc->gen0.big_pages; page ; page = next) {
+    next = page->next;
+    if (page->marked_on) {
+      promote_marked_gen0_big_page(gc, page);
+    }
+  }
+}
+#endif
 
 void *GC_resolve(void *p)
 {
@@ -3930,6 +3966,10 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
   if (premaster_or_place_gc(gc))
 #endif
     GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
+#ifdef MZ_USE_PLACES
+  if (postmaster_and_master_gc(gc))
+    promote_marked_gen0_big_pages(gc);
+#endif
 
   TIME_STEP("stacked");
 
