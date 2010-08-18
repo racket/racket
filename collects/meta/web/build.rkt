@@ -34,7 +34,7 @@ exec "$exe" "$0" "$@"
   (unless (directory-exists? dir)
     (printf "Creating \"~a\"\n" dir) (make-directory dir))
   (set! output-dir dir)]
- [("-f")
+ [("-f" "--force")
   "avoid warning about directory cleanup"
   (set! warn? #f)]
  [("-d" "--dist")
