@@ -152,18 +152,110 @@
                    (test-process (make-input* (lambda (n) n)) empty)
                    empty)
       
-      ; XXX  Do we need to test "input" ?
+      ; XXX input process
+      ; XXX input output
       
       (test-equal? "text-input"
                    (->cons (test-process (text-input) (list (make-binding:form #"input_0" #"value"))))
                    (cons #"input_0" #"value"))
+      ; XXX output
+      
       (test-equal? "password-input"
                    (->cons (test-process (password-input) (list (make-binding:form #"input_0" #"value"))))
                    (cons #"input_0" #"value"))
+      ; XXX output
+      
       (test-equal? "checkbox"
                    (->cons (test-process (checkbox #"start" #t) (list (make-binding:form #"input_0" #"value"))))
                    (cons #"input_0" #"value"))
+      ; XXX output
       
+      ; XXX radio process
+      ; XXX radio output
+      
+      ; XXX submit process
+      ; XXX submit output
+      
+      ; XXX reset process
+      ; XXX reset output
+      
+      ; XXX file-upload process
+      ; XXX file-upload output
+      
+      ; XXX hidden process
+      ; XXX hidden output
+      
+      ; BUTTON element
+      ; XXX test-process
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me"))
+                   '((button ((name "input_0") (type "button")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:disabled #t))
+                   '((button ((name "input_0") (type "button") (disabled "true")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:disabled #f))
+                   '((button ((name "input_0") (type "button")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:value #"b1"))
+                   '((button ((name "input_0") (type "button") (value "b1")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:disabled #t #:value #"b2"))
+                   '((button
+                      ((name "input_0") (type "button") (disabled "true") (value "b2"))
+                      "click me")))
+      
+      ; IMG elements
+      ; XXX test-process
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1"))
+                   '((img ((name "input_0") (src "http://h.d.com/1") (alt "pic")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:height 12))
+                   '((img ((name "input_0") (src "http://h.d.com/1") (alt "pic") (height "12")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:longdesc #"longer desc"))
+                   '((img
+                      ((name "input_0")
+                       (src "http://h.d.com/1")
+                       (alt "pic")
+                       (longdesc "longer desc")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:usemap #"#map"))
+                   '((img
+                      ((name "input_0") (src "http://h.d.com/1") (alt "pic") (usemap "#map")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:width 50))
+                   '((img ((name "input_0") (src "http://h.d.com/1") (alt "pic") (width "50")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:height 12 #:longdesc #"longer desc" #:usemap #"#map" #:width 50))
+                   '((img
+                      ((name "input_0")
+                       (src "http://h.d.com/1")
+                       (alt "pic")
+                       (height "12")
+                       (longdesc "longer desc")
+                       (usemap "#map")
+                       (width "50")))))
+      
+      ; TEXTAREA element
+      (test-equal? "textarea-input"
+                   (binding:form-value (test-process (textarea-input) (list (make-binding:form #"input_0" #"value"))))
+                   #"value")
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input))
+                   '((textarea ([name "input_0"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:rows 80))
+                   '((textarea ([name "input_0"] [rows "80"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:cols 80))
+                   '((textarea ([name "input_0"] [cols "80"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:cols 80 #:rows 70))
+                   '((textarea ([name "input_0"] [rows "70"] [cols "80"]) "")))
+      
+      ; multiselect      
       (test-equal? "multiselect-input"
                    (test-process (multiselect-input (list 1 2 3))
                                  (list (make-binding:form #"input_0" #"0")))
@@ -177,9 +269,9 @@
                    (test-process (multiselect-input (list 1 2 3))
                                  empty)
                    empty)
+      ; XXX output
       
-      ; XXX check output
-      
+      ; select
       (test-equal? "select-input"
                    (test-process (select-input (list 1 2 3))
                                  (list (make-binding:form #"input_0" #"0")))
@@ -194,6 +286,7 @@
                 (lambda ()
                   (test-process (select-input (list 1 2 3))
                                 empty)))
+      ; XXX output     
       
       (test-equal? "required" 
                    (test-process (required (text-input)) (list (make-binding:form #"input_0" #"value")))
@@ -209,61 +302,6 @@
       (test-equal? "default"
                    (test-process (default #"def" (text-input)) empty)
                    #"def")
-      
-      ; TEXTAREA element
-      (test-equal? "textarea-input"
-                   (test-process (textarea-input) (list (make-binding:form #"input_0" #"value")))
-                   "value")
-      (test-equal? "textarea-input"
-                   (test-display (textarea-input))
-                   '((textarea ([name "input_0"]) "")))
-      (test-equal? "textarea-input"
-                   (test-display (textarea-input #:rows 80))
-                   '((textarea ([name "input_0"] [rows "80"]) "")))
-      (test-equal? "textarea-input"
-                   (test-display (textarea-input #:cols 80))
-                   '((textarea ([name "input_0"] [cols "80"]) "")))
-      (test-equal? "textarea-input"
-                   (test-display (textarea-input #:cols 80 #:rows 70))
-                   '((textarea ([name "input_0"] [rows "70"] [cols "80"]) "")))
-      
-      ; BUTTON element
-      ; XXX test-process
-      (test-equal? "button"
-                   (test-display (button #"button" #"click me"))
-                   '((button ([type "button"]) "click me")))
-      (test-equal? "button"
-                   (test-display (button #"button" #"click me" #:disabled #t))
-                   '((button ([type "button"] [disabled "true"]) "click me")))
-      (test-equal? "button"
-                   (test-display (button #"button" #"click me" #:value #"b1"))
-                   '((button ([type "button"] [value "b1"]) "click me")))
-      (test-equal? "button"
-                   (test-display (button #"button" #"click me" #:disabled #t #:value #"b2"))
-                   '((button ([type "button"] [disabled "true"] [value "b2"]) "click me")))
-      
-      
-      ; IMG elements
-      ; XXX test-process
-      (test-equal? "img"
-                   (test-display (img #"pic" #"http://h.d.com/1"))
-                   '((img ([alt "pic"] [src "http://h.d.com/1"]))))
-      (test-equal? "img"
-                   (test-display (img #"pic" #"http://h.d.com/1" #:height 12))
-                   '((img ([alt "pic"] [src "http://h.d.com/1"] [height "12"]))))
-      (test-equal? "img"
-                   (test-display (img #"pic" #"http://h.d.com/1" #:longdesc #"longer desc"))
-                   '((img ([alt "pic"] [src "http://h.d.com/1"] [longdesc "longer desc"]))))
-      (test-equal? "img"
-                   (test-display (img #"pic" #"http://h.d.com/1" #:usemap #"#map"))
-                   '((img ([alt "pic"] [src "http://h.d.com/1"] [usemap "#map"]))))
-      (test-equal? "img"
-                   (test-display (img #"pic" #"http://h.d.com/1" #:width 50))
-                   '((img ([alt "pic"] [src "http://h.d.com/1"] [width "50"]))))
-      (test-equal? "img"
-                   (test-display (img #"pic" #"http://h.d.com/1" #:height 12 #:longdesc #"longer desc" #:usemap #"#map" #:width 50))
-                   '((img ([alt "pic"] [src "http://h.d.com/1"] [height "12"] [longdesc "longer desc"] [usemap "#map"] [width "50"]))))
-      
       
       (test-equal? "to-string"
                    (test-process (to-string (required (text-input))) (list (make-binding:form #"input_0" #"value")))

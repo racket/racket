@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "web-server.rkt")
 @(require (for-label web-server/servlet
+                     racket/list
                      xml))
 
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
@@ -286,7 +287,6 @@ These @tech{formlet}s are the main combinators for form input.
 }
                                              
 @defproc[(text-input [#:value value (or/c false/c bytes?) #f]
-                     [#:name name (or/c false/c bytes?) #f]
                      [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                      [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
                      [#:read-only? read-only? boolean? #f]
@@ -296,7 +296,6 @@ These @tech{formlet}s are the main combinators for form input.
 }
                                                                                         
 @defproc[(password-input [#:value value (or/c false/c bytes?) #f]
-                         [#:name name (or/c false/c bytes?) #f]
                          [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                          [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
                          [#:read-only? read-only? boolean? #f]
@@ -307,13 +306,12 @@ These @tech{formlet}s are the main combinators for form input.
                                             
 @defproc[(textarea-input [#:rows rows (or/c false/c number?) #f]
                          [#:cols cols (or/c false/c number?) #f])
-        (formlet/c string?)]{
+        (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an TEXTAREA element with attributes given in the arguments.
 }
                                             
 @defproc[(checkbox [value bytes?]
                    [checked? boolean?]
-                   [#:name name (or/c false/c bytes?) #f]
                    [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with the CHECKBOX type and the attributes given in the arguments.
@@ -321,34 +319,29 @@ These @tech{formlet}s are the main combinators for form input.
                                              
 @defproc[(radio [value bytes?] 
                 [checked? boolean?]
-                [#:name name (or/c false/c bytes?) #f]
                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with the RADIO type and the attributes given in the arguments.
 }
                                              
 @defproc[(submit [value bytes?]         
-                 [#:name name (or/c false/c bytes?) #f]
                  [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with the SUBMIT type and the attributes given in the arguments.
 }
                                              
 @defproc[(reset [value bytes?]
-                [#:name name (or/c false/c bytes?) #f]
                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with the RESET type and the attributes given in the arguments.
 }
 
-@defproc[(file-upload [#:name name (or/c false/c bytes?) #f]
-               [#:attributes attrs (listof (list/c symbol? string?)) empty])
+@defproc[(file-upload [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with the FILE type and the attributes given in the arguments.
 }
                                              
-@defproc[(hidden [#:name name (or/c false/c bytes?) #f]
-                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
+@defproc[(hidden [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with HIDDEN type and the attributes given in the arguments.
 }
