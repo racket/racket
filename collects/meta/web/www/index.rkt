@@ -223,10 +223,13 @@
                 (x A)}})
     )))
 
+(define blurb "Racket is a programming language")
+
 (provide index)
 (define index
   (page #:link-title "About" #:window-title "Racket"
-        #:extra-headers (delay more.css)
+        #:extra-headers @list{@meta[name: 'description content: blurb]
+                              @(delay more.css)}
     @div[class: 'whatpane]{
       @span{@span[class: 'whatb]{Racket} is a programming language.}}
     (div class: 'aboutpane
