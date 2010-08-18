@@ -19,6 +19,13 @@
 (define about-frame%
   (class (drracket:frame:basics-mixin (frame:standard-menus-mixin frame:basic%))
     (init-field main-text)
+    (inherit close)
+    (define/override (on-subwindow-char receiver event)
+      (cond
+        [(equal? (send event get-key-code) 'escape)
+         (close)]
+        [else
+         (super on-subwindow-char receiver event)]))
     (define/private (edit-menu:do const)
       (send main-text do-edit-operation const))
     [define/override file-menu:create-revert? (λ () #f)]
