@@ -20,8 +20,16 @@
 
 ;; eq? has the type of equal?, and l is an alist (with conses!)
 ;; props is a list of known propositions
-(r:d-s/c env ([l (and/c (not/c dict-mutable?) dict?)]) #:transparent)
-(r:d-s/c (prop-env env) ([props (listof Filter/c)]) #:transparent)
+(r:d-s/c env ([l (and/c (not/c dict-mutable?) dict?)]) 
+         #:transparent
+         #:property prop:custom-write
+         (lambda (e prt mode)
+           (fprintf prt "(env ~a)" (dict-map (env-l e) list))))
+(r:d-s/c (prop-env env) ([props (listof Filter/c)])
+         #:transparent
+         #:property prop:custom-write
+         (lambda (e prt mode)
+           (fprintf prt "(env ~a ~a)" (dict-map (env-l e) list) (prop-env-props e))))
 
 (define (mk-env orig dict)
   (match orig
