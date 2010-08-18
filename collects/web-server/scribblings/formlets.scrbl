@@ -341,7 +341,7 @@ These @tech{formlet}s are the main combinators for form input.
  This @tech{formlet} renders using an INPUT element with the FILE type and the attributes given in the arguments.
 }
                                              
-@defproc[(hidden [#:attributes attrs (listof (list/c symbol? string?)) empty])
+@defproc[(hidden [value bytes?] [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with HIDDEN type and the attributes given in the arguments.
 }
@@ -353,7 +353,7 @@ These @tech{formlet}s are the main combinators for form input.
               [#:usemap map (or/c false/c bytes?) #f]
               [#:width width (or/c false/c exact-nonnegative-integer?) #f]
               [#:attributes attrs (listof (list/c symbol? string?)) empty])
-      (formlet/c string?)]{
+      (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an IMG element with the attributes given in the arguments.   
 }
                           

@@ -131,9 +131,10 @@
    #:type "file"
    #:attributes attrs))
 
-(define (hidden #:attributes [attrs empty])
+(define (hidden value #:attributes [attrs empty])
   (input
    #:type "hidden"
+   #:value value
    #:attributes attrs))
 
 (define (button type text
@@ -266,7 +267,7 @@
                (#:attributes (listof (list/c symbol? string?)))
                . ->* .
                (formlet/c (or/c false/c binding?)))]
- [hidden (()
+ [hidden ((bytes?)
           (#:attributes (listof (list/c symbol? string?)))
           . ->* .
           (formlet/c (or/c false/c binding?)))]
@@ -277,7 +278,7 @@
                  #:width (or/c false/c exact-nonnegative-integer?)
                  #:attributes (listof (list/c symbol? string?)))
        . ->* .
-       (formlet/c string?))]
+       (formlet/c (or/c false/c binding?)))]
  [button ((bytes? bytes?)
           (#:disabled boolean?
                       #:value (or/c false/c bytes?)
