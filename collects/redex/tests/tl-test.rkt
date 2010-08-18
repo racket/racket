@@ -959,6 +959,25 @@
          '((2 3) (4 5)))
         (list (list "mult" '((2 3) 20))))
   
+  (test (apply-reduction-relation/tag-with-names
+         (reduction-relation
+          grammar
+          (--> any
+               (number_i number_i*)
+               (where (number_0 ... number_i number_i+1 ...) any)
+               (where (number_0* ... number_i* number_i+1* ...) any)
+               pick-two
+               (computed-name
+                (format "(~s, ~s)"
+                        (length (term (number_0 ...)))
+                        (length (term (number_0* ...)))))))
+         '(9 7))
+        '(("(0, 0)" (9 9)) ("(0, 1)" (9 7)) ("(1, 0)" (7 9)) ("(1, 1)" (7 7))))
+  
+  (test (apply-reduction-relation/tag-with-names
+         (reduction-relation grammar (--> 1 2 (computed-name 3))) 1)
+        '(("3" 2)))
+  
   (test (apply-reduction-relation
          (union-reduction-relations
           (reduction-relation empty-language
@@ -1399,6 +1418,22 @@
          1)
         '(3 2))
   
+  (test (apply-reduction-relation
+         (extend-reduction-relation
+          (reduction-relation empty-language (--> 1 2 (computed-name 1)))
+          empty-language
+          (--> 1 3 (computed-name 1)))
+         1)
+        '(3 2))
+  
+  (test (apply-reduction-relation
+         (extend-reduction-relation
+          (reduction-relation empty-language (--> 1 2 (computed-name 1) x))
+          empty-language
+          (--> 1 3 (computed-name 1) x))
+         1)
+        '(3))
+  
   (let ()
     (define-language e1
       (e 1))
@@ -1484,6 +1519,13 @@
           (--> q r y)
           (--> r p x)))
         '(a b c z y x))
+  
+  (test (reduction-relation->rule-names
+         (reduction-relation
+          empty-language
+          (--> x y a (computed-name "x to y"))
+          (--> y z (computed-name "y to z"))))
+        '(a))
   
   (test (reduction-relation->rule-names
          (extend-reduction-relation

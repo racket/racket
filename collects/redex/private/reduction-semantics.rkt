@@ -175,7 +175,7 @@
 (define-syntax (fresh stx) (raise-syntax-error 'fresh "used outside of reduction-relation"))
 (define-syntax (with stx) (raise-syntax-error 'with "used outside of reduction-relation"))
 
-(define (apply-reduction-relation/tag-with-names p v)
+(define (apply-reduction-relation/tagged p v)
   (let loop ([procs (reduction-relation-procs p)]
              [acc '()])
     (cond
@@ -184,7 +184,8 @@
        (loop (cdr procs)
              ((car procs) v v values acc))])))
 
-(define (apply-reduction-relation p v) (map cadr (apply-reduction-relation/tag-with-names p v)))
+(define (apply-reduction-relation/tag-with-names p v) (map cdr (apply-reduction-relation/tagged p v)))
+(define (apply-reduction-relation p v) (map caddr (apply-reduction-relation/tagged p v)))
 
 (define-for-syntax (extract-pattern-binds lhs)
   (let loop ([lhs lhs])
@@ -420,20 +421,23 @@
   (define (rule->lws rule)
     (syntax-case rule ()
       [(arrow lhs rhs stuff ...)
-       (let-values ([(label scs/withs fvars)
+       (let-values ([(label computed-label scs/withs fvars)
                      (let loop ([stuffs (syntax->list #'(stuff ...))]
                                 [label #f]
+                                [computed-label #f]
                                 [scs/withs null]
                                 [fvars null])
                        (cond
-                         [(null? stuffs) (values label (reverse scs/withs) (reverse fvars))]
+                         [(null? stuffs) (values label computed-label (reverse scs/withs) (reverse fvars))]
                          [else
                           (syntax-case (car stuffs) (where where/hidden
                                                            side-condition side-condition/hidden
-                                                           fresh variable-not-in)
+                                                           fresh variable-not-in
+                                                           computed-name)
                             [(fresh xs ...) 
                              (loop (cdr stuffs)
                                    label
+                                   computed-label
                                    scs/withs
                                    (append 
                                     (reverse (map (λ (x)
@@ -460,28 +464,38 @@
                             [(where x e)
                              (loop (cdr stuffs)
                                    label
+                                   computed-label
                                    (cons #`(cons #,(to-lw/proc #'x) #,(to-lw/proc #'e))
                                          scs/withs)
                                    fvars)]
                             [(where/hidden x e)
-                             (loop (cdr stuffs) label scs/withs fvars)]
+                             (loop (cdr stuffs) label computed-label scs/withs fvars)]
                             [(side-condition sc)
                              (loop (cdr stuffs)
                                    label
+                                   computed-label
                                    (cons (to-lw/uq/proc #'sc) scs/withs)
                                    fvars)]
                             [(side-condition/hidden sc)
-                             (loop (cdr stuffs) label scs/withs fvars)]
+                             (loop (cdr stuffs) label computed-label scs/withs fvars)]
                             [x
                              (identifier? #'x)
                              (loop (cdr stuffs)
                                    #''x
+                                   computed-label
                                    scs/withs
                                    fvars)]
                             [x
                              (string? (syntax-e #'x))
                              (loop (cdr stuffs)
-                                   #'x
+                                   #'(string->symbol x)
+                                   computed-label
+                                   scs/withs
+                                   fvars)]
+                            [(computed-name e)
+                             (loop (cdr stuffs)
+                                   label
+                                   #'e
                                    scs/withs
                                    fvars)])]))])
          (with-syntax ([(scs/withs ...) scs/withs]
@@ -494,6 +508,8 @@
                              #,(to-lw/proc #'lhs)
                              #,(to-lw/proc #'rhs)
                              #,label
+                             #,(and computed-label 
+                                    (to-lw/proc #`,#,computed-label))
                              (list scs/withs ...
                                    #,@(map (λ (bind-id bind-pat)
                                              #`(cons #,(to-lw/proc bind-id)
@@ -721,7 +737,7 @@
   (define (do-leaf stx orig-name lang name-table from to extras lang-id)
     (let* ([lang-nts (language-id-nts lang-id orig-name)]
            [rw-sc (λ (pat) (rewrite-side-conditions/check-errs lang-nts orig-name #t pat))])
-      (let-values ([(name sides/withs/freshs) (process-extras stx orig-name name-table extras)])
+      (let-values ([(name computed-name sides/withs/freshs) (process-extras stx orig-name name-table extras)])
         (let*-values ([(names names/ellipses) (extract-names lang-nts orig-name #t from)]
                       [(body-code)
                        (bind-withs orig-name 
@@ -730,7 +746,8 @@
                                    lang-nts
                                    sides/withs/freshs
                                    'flatten
-                                   #`(list (term #,to))
+                                   #`(list (cons #,(or computed-name #'none)
+                                                 (term #,to)))
                                    names names/ellipses)]
                       [(test-case-body-code)
                        ;; this contains some redundant code
@@ -782,7 +799,12 @@
                                             (cover-case case-id c))))
                                       (relation-coverage))
                                      (loop (cdr mtchs) 
-                                           (map/mt (λ (x) (list name (f x))) really-matched acc))]
+                                           (map/mt (λ (x) (list name
+                                                                (if (none? (car x)) 
+                                                                    name
+                                                                    (format "~a" (car x)))
+                                                                (f (cdr x)))) 
+                                                   really-matched acc))]
                                     [else 
                                      (loop (cdr mtchs) acc)]))]))
                            other-matches)))))
@@ -794,12 +816,13 @@
   (define (process-extras stx orig-name name-table extras)
     (let* ([the-name #f]
            [the-name-stx #f]
+           [computed-name-stx #f]
            [sides/withs/freshs 
             (let loop ([extras extras])
               (cond
                 [(null? extras) '()]
                 [else
-                 (syntax-case (car extras) (fresh)
+                 (syntax-case (car extras) (fresh computed-name)
                    [name 
                     (or (identifier? (car extras))
                         (string? (syntax-e (car extras))))
@@ -865,9 +888,17 @@
                     (or (free-identifier=? #'-where #'where)
                         (free-identifier=? #'-where #'where/hidden))
                     (raise-syntax-error orig-name "malformed where clause" stx (car extras))]
+                   [(computed-name e)
+                    (if computed-name-stx
+                        (raise-syntax-errors orig-name "expected at most one computed-name clause"
+                                             stx (list computed-name-stx #'e))
+                        (set! computed-name-stx #'e))
+                    (loop (cdr extras))]
+                   [(computed-name . _)
+                    (raise-syntax-error orig-name "malformed computed-name clause" stx (car extras))]
                    [_
                     (raise-syntax-error orig-name "unknown extra" stx (car extras))])]))])
-      (values the-name sides/withs/freshs)))
+      (values the-name computed-name-stx sides/withs/freshs)))
   
 
   
@@ -2252,6 +2283,7 @@
 (provide language-nts
          apply-reduction-relation
          apply-reduction-relation/tag-with-names
+         apply-reduction-relation/tagged
          apply-reduction-relation*
          variable-not-in
          variables-not-in)

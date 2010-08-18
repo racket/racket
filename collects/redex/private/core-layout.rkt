@@ -38,6 +38,7 @@
          with-atomic-rewriter
          STIX?
          white-bracket-sizing
+         apply-rewrites
          
          ;; for test suite
          build-lines

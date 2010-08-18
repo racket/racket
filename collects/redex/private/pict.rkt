@@ -97,7 +97,9 @@
                             (hash-set! ht (rule-pict-label rp) rp))
                           (reduction-relation-lws rr))
                 (map (lambda (label)
-                       (hash-ref ht label
+                       (hash-ref ht (if (string? label)
+                                        (string->symbol label)
+                                        label)
                                  (lambda ()
                                    (error what
                                           "no rule found for label: ~e"
@@ -124,6 +126,15 @@
                     (tp (rule-pict-lhs rp))
                     (tp (rule-pict-rhs rp))
                     (rule-pict-label rp)
+                    (and (rule-pict-computed-label rp)
+                         (let ([rewritten (apply-rewrites (rule-pict-computed-label rp))])
+                           (and (not (and (rule-pict-label rp)
+                                          (let has-unq? ([x rewritten])
+                                            (and (lw? x)
+                                                 (or (lw-unq? x)
+                                                     (and (list? (lw-e x))
+                                                          (ormap has-unq? (lw-e x))))))))
+                                (tp rewritten))))
                     (map (lambda (v) 
                            (if (pair? v)
                                (cons (tp (car v)) (tp (cdr v)))
@@ -332,17 +343,22 @@
                        max-w))
 
 (define (rp->pict-label rp)
-  (if (rule-pict-label rp)
-      (let ([m (regexp-match #rx"^([^_]*)(?:_([^_]*)|)$" 
-                             (format "~a" (rule-pict-label rp)))])
-        (hbl-append
-         ((current-text) " [" (label-style) (label-font-size))
-         ((current-text) (cadr m) (label-style) (label-font-size))
-         (if (caddr m)
-             ((current-text) (caddr m) `(subscript . ,(label-style)) (label-font-size))
-             (blank))
-         ((current-text) "]" (label-style) (label-font-size))))
-      (blank)))
+  (define (bracket label)
+    (hbl-append
+     ((current-text) " [" (label-style) (label-font-size))
+     label
+     ((current-text) "]" (label-style) (label-font-size))))
+  (cond [(rule-pict-computed-label rp) => bracket]
+        [(rule-pict-label rp)
+         (let ([m (regexp-match #rx"^([^_]*)(?:_([^_]*)|)$" 
+                                (format "~a" (rule-pict-label rp)))])
+           (bracket
+            (hbl-append
+             ((current-text) (cadr m) (label-style) (label-font-size))
+             (if (caddr m)
+                 ((current-text) (caddr m) `(subscript . ,(label-style)) (label-font-size))
+                 (blank)))))]
+        [else (blank)]))
 
 (define (add-between i l)
   (cond
