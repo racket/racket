@@ -179,8 +179,8 @@
   (lambda (title* more-headers)
     (head "\n" (title title*)
           "\n" headers
-          "\n" more-headers
-          (and more-headers (list "\n" more-headers)))))
+          (and more-headers (list "\n" more-headers))
+          "\n")))
 
 (define (make-resources icon logo style)
   (let* ([favicon     (html-favicon-maker icon)]
