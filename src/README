@@ -1,5 +1,5 @@
 This is the source code distribution for Racket.  For license
-information, please see the file racket/notes/COPYING.LIB.
+information, please see the file racket/doc/release-notes/COPYING.LIB.
 
 Compiled binaries, documentation, and up-to-date information are
 available at http://racket-lang.org/; pre-compiled nightly builds are
