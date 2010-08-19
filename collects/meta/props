@@ -1461,6 +1461,7 @@ path/s is either such a string or a list of them.
 "collects/tests/mysterx/mystests.rktl" drdr:command-line #f
 "collects/tests/mzcom" responsible (mflatt)
 "collects/tests/mzcom/test.rktl" drdr:command-line #f
+"collects/tests/net" responsible (jay eli)
 "collects/tests/net/url-port.rkt" responsible (jay)
 "collects/tests/plai" responsible (jay)
 "collects/tests/plai/gc/bad-mutators/mut-1.rkt" drdr:command-line #f
