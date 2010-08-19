@@ -62,7 +62,7 @@
     @nested{Matthias is also known to say, "I have bug reports, therefore I exist." All software
             has mistakes. If they are not known, then the software is not being used. Robby writes,
             "It is the way  we choose to fight our bugs that determines our character, not their
-            presence or abscence." Read these guidelines in that light.}
+            presence or absence." Read these guidelines in that light.}
 
     @div[class: 'faqsection]{
                              
