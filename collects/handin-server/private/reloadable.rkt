@@ -23,9 +23,20 @@
 (provide auto-reload-value)
 (define module-times (make-hash))
 (define (auto-reload-value modspec valname)
-  (let* ([path (resolve-module-path modspec #f)]
+  (let* ([path (resolve-module-path modspec #f)] ; HACK: set!ed below
          [last (hash-ref module-times path #f)]
-         [cur  (file-or-directory-modify-seconds path)])
+         [cur  (file-or-directory-modify-seconds 
+                path
+                #f
+                (lambda () 
+                  (if (regexp-match #rx#"[.]rkt$" (path->bytes path))
+                      (file-or-directory-modify-seconds 
+                       (begin
+                         (set! path (path-replace-suffix path #".ss"))
+                         path)
+                       #f
+                       (lambda () +inf.0))
+                      +inf.0)))])
     (unless (equal? cur last)
       (hash-set! module-times path cur)
       (reload-module modspec path))
