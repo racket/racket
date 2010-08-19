@@ -20,7 +20,7 @@
   (printf "~a: baseline = ~a\n" label baseline)
   (for ([v (in-list l)])
     (match-define (vector n val) v)
-    (printf "\t~a: ~ax\n" n (/ val baseline))))
+    (printf "\t~a: ~ax\n" n (exact->inexact (/ val baseline)))))
 
 (define (isolate trial-n thunk)
   (define exp-cust (make-custodian))
