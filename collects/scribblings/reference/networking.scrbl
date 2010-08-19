@@ -228,21 +228,25 @@ connections, so @racket[tcp-abandon-port] is equivalent to
                         [port-numbers? any/c #f]) 
          (or/c (values string? string?)
                (values string? (integer-in 1 65535) 
-                       string? (integer-in 1 65535)))]{
+                       string? (integer-in 0 65535)))]{
 
 Returns two strings when @racket[port-numbers?] is @racket[#f] (the
 default). The first string is the Internet address for the local
-machine a viewed by the given @tech{TCP port}'s connection. (For most
-machines, the answer corresponds to the current machine's only
-Internet address, but when a machine serves multiple addresses, the
-result is connection-specific.) The second string is the Internet
-address for the other end of the connection.
+machine a viewed by the given @tech{TCP port}'s connection or for the
+TCP listener. (For most machines, the answer corresponds to the
+current machine's only Internet address, but when a machine serves
+multiple addresses, the result is connection-specific or
+listener-specific.) If a listener is given and it has no specific
+host, the first string result is @racket["0.0.0.0"]. The second string
+is the Internet address for the other end of the connection, or always
+@racket["0.0.0.0"] for a listener.
 
 If @racket[port-numbers?] is true, then four results are returned: a
 string for the local machine's address, an exact integer between
 @racket[1] and @racket[65535] for the local machine's port number, a
 string for the remote machine's address, and an exact integer between
-@racket[1] and @racket[65535] for the remote machine's port number.
+@racket[1] and @racket[65535] for the remote machine's port number or
+@racket[0] for a listener.
 
 If the given port has been closed, the @exnraise[exn:fail:network].}
 
@@ -568,8 +572,8 @@ content is not modified if the event is not chosen.)}
 @defproc[(udp-addresses [udp-port udp?]
                         [port-numbers? any/c #f]) 
          (or/c (values string? string?)
-               (values string? (integer-in 1 65535) 
-                       string? (integer-in 1 65535)))]{
+               (values string? (integer-in 0 65535) 
+                       string? (integer-in 0 65535)))]{
 
 Returns two strings when @racket[port-numbers?] is @racket[#f] (the
 default). The first string is the Internet address for the local
@@ -581,8 +585,10 @@ address for the other end of the connection.
 
 If @racket[port-numbers?] is true, then four results are returned: a
 string for the local machine's address, an exact integer between
-@racket[1] and @racket[65535] for the local machine's port number, a
+@racket[1] and @racket[65535] for the local machine's port number 
+or @racket[0] if the socket is unbound, a
 string for the remote machine's address, and an exact integer between
-@racket[1] and @racket[65535] for the remote machine's port number.
+@racket[1] and @racket[65535] for the remote machine's port number 
+or @racket[0] if the socket is unconnected.
 
 If the given port has been closed, the @exnraise[exn:fail:network].}
