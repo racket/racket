@@ -149,8 +149,7 @@ We should also test deep continuations.
          (continuation-mark-set->list (current-continuation-marks) 'x))))
 
 ;Tests for current-future
-(check-equal? '() (current-future)) 
-(check-equal? #t (null? (current-future)))
+(check-equal? #f (current-future)) 
 (check-equal? #t (equal? (current-future) (current-future)))
 
 (let ([f (future (λ () (current-future)))]) 

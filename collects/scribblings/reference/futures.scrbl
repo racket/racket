@@ -66,6 +66,13 @@ in parallel. See also @guidesecref["effective-futures"].
 (let ([f (future (lambda () (+ 1 2)))])
   (list (+ 3 4) (touch f)))
 ]}
+  
+  
+@defproc[(current-future) any]{
+  Returns the descriptor for the future that is evaluating the current thunk.
+  If not currently running inside a future thunk (or 
+  futures are disabled), returns @racket[#f].
+}
 
 
 @defproc[(future? [v any/c]) boolean?]{
