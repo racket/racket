@@ -691,7 +691,8 @@ static int is_builtin_modname(Scheme_Object *modname)
 {
   return (SAME_OBJ(modname, kernel_modname)
           || SAME_OBJ(modname, unsafe_modname)
-          || SAME_OBJ(modname, flfxnum_modname));
+          || SAME_OBJ(modname, flfxnum_modname)
+          || SAME_OBJ(modname, futures_modname));
 }
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)

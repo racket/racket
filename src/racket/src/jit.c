@@ -42,9 +42,7 @@
 
 #include "schpriv.h"
 #include "schmach.h"
-#ifdef MZ_USE_FUTURES
-# include "future.h"
-#endif
+#include "future.h"
 #ifdef MZ_USE_DWARF_LIBUNWIND
 # include "unwind/libunwind.h"
 #endif
@@ -8267,7 +8265,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     mz_rs_sync();
     JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
     mz_prepare(0);
-    mz_finish(current_future);
+    mz_finish(scheme_current_future);
     jit_retval(JIT_R0);
     return 1;
   } else if (!for_branch) {

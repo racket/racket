@@ -46,7 +46,7 @@ typedef struct future_t {
   int no_retval;
 } future_t;
 
-Scheme_Object *future(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
 {
   future_t *ft;
 
@@ -124,7 +124,9 @@ static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
   return scheme_make_integer(1);
 }
 
-Scheme_Object *current_future(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_current_future(int argc, Scheme_Object *argv[])
+  XFORM_SKIP_PROC
+/* Called from any thread (either runtime or future) */
 {
   return scheme_false;
 }
@@ -134,9 +136,9 @@ Scheme_Object *current_future(int argc, Scheme_Object *argv[])
 void scheme_init_futures(Scheme_Env *newenv)
 {
   FUTURE_PRIM_W_ARITY("future?",          future_p,         1, 1, newenv);
-  FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("future",           scheme_future,    1, 1, newenv);
   FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  0, 0, newenv);
-  FUTURE_PRIM_W_ARITY("current-future",   current_future,   0, 0, newenv);
+  FUTURE_PRIM_W_ARITY("current-future",   scheme_current_future,   0, 0, newenv);
   FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
 
   scheme_finish_primitive_module(newenv);
@@ -148,6 +150,10 @@ void scheme_init_futures(Scheme_Env *newenv)
 }
 
 void scheme_init_futures_once()
+{
+}
+
+void scheme_init_futures_per_place()
 {
 }
 
@@ -311,7 +317,7 @@ void scheme_init_futures(Scheme_Env *newenv)
   scheme_add_global_constant(
                              "future", 
                              scheme_make_prim_w_arity(
-                                                      future, 
+                                                      scheme_future, 
                                                       "future", 
                                                       1, 
                                                       1), 
@@ -336,7 +342,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                              newenv);
 
   p = scheme_make_immed_prim( 
-                              current_future, 
+                              scheme_current_future, 
                               "current-future", 
                               0, 
                               0);
@@ -582,7 +588,7 @@ void scheme_future_gc_pause()
 /* Primitive implementations                                          */
 /**********************************************************************/
 
-Scheme_Object *future(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
 /* Called in runtime thread */
 {
   Scheme_Future_State *fs = scheme_future_state;
@@ -795,7 +801,8 @@ Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
   return scheme_make_integer(cpucount);
 }
 
-Scheme_Object *current_future(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_current_future(int argc, Scheme_Object *argv[])
+  XFORM_SKIP_PROC
 /* Called from any thread (either runtime or future) */
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;

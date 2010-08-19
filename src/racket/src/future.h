@@ -1,6 +1,8 @@
 #ifndef SCHEME_FUTURES_H
 #define SCHEME_FUTURES_H
 
+#ifdef MZ_USE_FUTURES
+
 #ifndef UNIT_TEST
 #include "schpriv.h"
 typedef Scheme_Object*(*prim_t)(int, Scheme_Object**);
@@ -141,9 +143,6 @@ void scheme_future_continue_after_gc();
 void scheme_check_future_work();
 void scheme_future_gc_pause();
 
-Scheme_Object *future(int argc, Scheme_Object *argv[]);
-Scheme_Object *current_future(int argc, Scheme_Object *argv[]);
-
 #ifdef UNIT_TEST
 //These forwarding decls only need to be here to make 
 //primitives visible to test cases written in C
@@ -151,5 +150,11 @@ extern int future_begin_invoke(void *code);
 extern Scheme_Object *touch(int argc, Scheme_Object **argv);
 extern Scheme_Object *future_touch(int futureid);
 #endif
+
+#endif /* MZ_USE_FUTURES */
+
+/* always defined: */
+Scheme_Object *scheme_future(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_current_future(int argc, Scheme_Object *argv[]);
 
 #endif
