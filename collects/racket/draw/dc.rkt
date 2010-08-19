@@ -132,7 +132,13 @@
     ;; Return #t if text at given font size (already scaled)
     ;;  looks good when drawn all at once (which allows kerning,
     ;;  but may be spaced weirdly)
-    can-combine-text?))
+    can-combine-text?
+
+    ;; can-mask-bitmap? : -> bool
+    ;;
+    ;; Return #t if bitmap drawing with a mask is supported.
+    ;; It's not supported for PostScirpt output, for example.
+    can-mask-bitmap?))
 
 (define default-dc-backend%
   (class* object% (dc-backend<%>)
@@ -184,6 +190,9 @@
     (define/public (can-combine-text? sz)
       (sz . > . 32.0))
 
+    (define/public (can-mask-bitmap?)
+      #t)
+
     (super-new)))
 
 (define hilite-color (send the-color-database find-color "black"))
@@ -199,7 +208,7 @@
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing reset-clip
              collapse-bitmap-b&w? call-with-cr-lock
-             can-combine-text?)
+             can-combine-text? can-mask-bitmap?)
 
     (define-syntax-rule (with-cr default cr . body)
       (call-with-cr-lock
@@ -1127,7 +1136,10 @@
                                                                style black 1.0 alpha-mask)])
                             (values tmp-bm 0 0)))
                         ;; no change to source
-                        (values src src-x src-y))])
+                        (values src src-x src-y))]
+                   [(mask) (if mask
+                               (and (can-mask-bitmap?) mask)
+                               #f)])
         (let ([black? (or (not color)
                           (and (= 0 (color-red color))
                                (= 0 (color-green color))

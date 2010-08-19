@@ -40,4 +40,5 @@
   get-font-metrics-key
   install-color
   dc-adjust-smoothing
-  can-combine-text?)
+  can-combine-text?
+  can-mask-bitmap?)

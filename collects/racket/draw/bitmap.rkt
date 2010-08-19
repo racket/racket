@@ -607,12 +607,9 @@
           (cairo_surface_mark_dirty s)))
       (cond
        [(and set-alpha?
-             (not alpha-channel?)
-             loaded-mask
-             (= width (send loaded-mask get-width))
-             (= height (send loaded-mask get-height)))
-        ;; Set alphas in mask bitmap:
-        (send loaded-mask set-alphas-as-mask x y w h bstr (* 4 w) 0)]))
+             (not alpha-channel?))
+        ;; Set alphas:
+        (set-alphas-as-mask x y w h bstr (* 4 w) 0)]))
     
     (define/public (get-alphas-as-mask x y w h bstr)
       (let ([data (cairo_image_surface_get_data (if (or b&w? alpha-channel?)

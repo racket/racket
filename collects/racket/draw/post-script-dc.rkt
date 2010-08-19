@@ -120,6 +120,9 @@
 
     (define/override (can-combine-text? sz)
       #t)
+    
+    (define/override (can-mask-bitmap?)
+      #f)
 
     (super-new)))
 
