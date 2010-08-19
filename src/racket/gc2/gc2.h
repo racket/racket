@@ -405,10 +405,6 @@ GC2_EXTERN void GC_write_barrier(void *p);
    Explicit write barrier to ensure that a write-barrier signal is not
    triggered by a memory write.
 */
-GC2_EXTERN void GC_switch_in_master_gc();
-/*
-   Makes the current thread the master GC thread.
-*/
 GC2_EXTERN void GC_switch_out_master_gc();
 /*
    Makes the current GC the master GC.
