@@ -6,8 +6,8 @@
 @itemize[
 @item{Rename (or make a copy of) the @filepath{handin-client}
 collection directory.  The new name should describe your class
-uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
-2010 at the University of Utah.}
+uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
+1410 at the University of Utah.}
 
 @item{Edit the first three definitions of @filepath{info.ss} in your
   renamed client collection:
@@ -48,7 +48,7 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
   private.  (See @secref{server-setup}.)}
 
 @item{To create an installable package, run
-  @commandline{mzc --collection-plt <name>.plt <name>} where @tt{<name>}
+  @commandline{raco pack --collect <name>.plt <name>} where @tt{<name>}
   is the name that you chose for your directory (i.e., whatever you
   changed @filepath{handin-client} to).
 
@@ -59,7 +59,7 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
   variable.  For example, if your customized collection directory is
   called @filepath{cs1} and it is located at
   @filepath{/home/joe/intro/cs1}, then you can run
-  @commandline{PLTCOLLECTS=/home/joe/intro: mzc --collection-plt cs1.plt cs1}
+  @commandline{PLTCOLLECTS=/home/joe/intro: raco pack --collect cs1.plt cs1}
   (Don't forget the colon at the end of the @envvar{PLTCOLLECTS} value;
   it is important!)
 

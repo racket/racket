@@ -36,10 +36,7 @@
   @scheme[server:port], @scheme[tools], @scheme[tool-names], and
   @scheme[tool-icons].}
 
-@item{Run @commandline{setup-plt -l handin-client}
-
-  NOTE: Under Windows, the executable is @exec{Setup PLT} instead of
-  @exec{setup-plt}.
+@item{Run @commandline{raco setup -l handin-client}
 
   NOTE: The command line arguments are optional, it restricts the
   setup work to the specified collection.}

@@ -63,7 +63,10 @@ Keywords for configuring @scheme[check:]:
 
 @item{@indexed-scheme[:language]---the language that is used for
   evaluating submissions, same as the @scheme[_language] argument for
-  @scheme[make-evaluator] (see @schememodname[handin-server/sandbox]).
+  @scheme[make-evaluator] (see @schememodname[handin-server/sandbox]),
+  except that if the value ls @racket[(list 'module _spec)],
+  then @racket[make-module-evaluator] is used with @racket[_spec] 
+  as its @racket[#:language] argument.
   There is no default for this, so it must be set or an error is
   raised.  (See @scheme[call-with-evaluator/submission] for further
   details.)}
