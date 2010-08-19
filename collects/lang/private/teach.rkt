@@ -771,7 +771,7 @@
 	   (let-values ([(struct: constructor-name predicate-name getter-names setter-names)
 			 (make-struct-names name fields stx)]
 			[(field-count) (length fields)]
-			[(signature-name) (gensym (syntax->datum name))]
+			[(signature-name) (car (generate-temporaries (list name)))]
 			[(parametric-signature-name) 
 			 (datum->syntax name
 					(string->symbol
@@ -907,9 +907,18 @@
 							 #:super struct:struct-info
 							 ;; support `signature'
 							 #:property 
-							 prop:procedure
-							 (lambda (_ stx)
-							   #'#,signature-name))
+                                                         prop:procedure
+                                                         (lambda (_ stx)
+                                                           (syntax-case stx ()
+                                                             [(self . args)
+                                                              (raise-syntax-error
+                                                               #f
+                                                               (string-append
+                                                                "cannot use a signature name after an"
+                                                                " open parenthesis for a function call")
+                                                               stx
+                                                               #'self)]
+                                                             [_ #'#,signature-name])))
 						       ;; support `shared'
 						       (make-info (lambda () compile-info))))
 						 'stepper-skip-completely
