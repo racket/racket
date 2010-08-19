@@ -141,6 +141,7 @@ READ_ONLY static Scheme_Object *kernel_symbol;
 READ_ONLY static Scheme_Object *kernel_modidx;
 READ_ONLY static Scheme_Module *kernel;
 READ_ONLY static Scheme_Object *flfxnum_modname;
+READ_ONLY static Scheme_Object *futures_modname;
 READ_ONLY static Scheme_Object *unsafe_modname;
 
 /* global read-only phase wraps */
@@ -362,6 +363,7 @@ void scheme_init_module(Scheme_Env *env)
   REGISTER_SO(kernel_modidx);
   REGISTER_SO(unsafe_modname);
   REGISTER_SO(flfxnum_modname);
+  REGISTER_SO(futures_modname);
   kernel_symbol = scheme_intern_symbol("#%kernel");
   kernel_modname = scheme_intern_resolved_module_path(kernel_symbol);
   kernel_modidx = scheme_make_modidx(scheme_make_pair(quote_symbol,
@@ -371,7 +373,8 @@ void scheme_init_module(Scheme_Env *env)
   (void)scheme_hash_key(kernel_modidx);
   unsafe_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%unsafe"));
   flfxnum_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%flfxnum"));
-
+  futures_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%futures"));
+  
   REGISTER_SO(module_symbol);
   REGISTER_SO(module_begin_symbol);
   module_symbol = scheme_intern_symbol("module");
@@ -649,6 +652,39 @@ int scheme_is_unsafe_modname(Scheme_Object *modname)
 int scheme_is_flfxnum_modname(Scheme_Object *modname)
 {
   return SAME_OBJ(modname, flfxnum_modname);
+}
+
+int scheme_is_futures_modname(Scheme_Object *modname)
+{
+  return SAME_OBJ(modname, futures_modname);
+}
+
+Scheme_Module *get_special_module(Scheme_Object *name)
+{
+  if (SAME_OBJ(name, kernel_modname))
+    return kernel;
+  else if (SAME_OBJ(name, unsafe_modname))
+    return scheme_get_unsafe_env()->module;
+  else if (SAME_OBJ(name, flfxnum_modname))
+    return scheme_get_flfxnum_env()->module;
+  else if (SAME_OBJ(name, futures_modname))
+    return scheme_get_futures_env()->module;
+  else
+    return NULL;
+}
+
+Scheme_Env *get_special_modenv(Scheme_Object *name)
+{
+  if (SAME_OBJ(name, kernel_modname))
+    return scheme_get_kernel_env();
+  else if (SAME_OBJ(name, flfxnum_modname))
+    return scheme_get_flfxnum_env();
+  else if (SAME_OBJ(name, futures_modname))
+    return scheme_get_futures_env();
+  else if (SAME_OBJ(name, unsafe_modname))
+    return scheme_get_unsafe_env();
+  else
+    return NULL;
 }
 
 static int is_builtin_modname(Scheme_Object *modname) 
@@ -1880,7 +1916,8 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
   code_insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
   if (!SAME_OBJ(name, kernel_modname)
-      && !SAME_OBJ(name, flfxnum_modname)) {
+      && !SAME_OBJ(name, flfxnum_modname)
+      && !SAME_OBJ(name, futures_modname)) {
     if (SAME_OBJ(name, unsafe_modname))
       menv2 = scheme_get_unsafe_env();
     else
@@ -2538,13 +2575,8 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
               idx = SCHEME_CAR(l);
               name = scheme_module_resolve(idx, 0);
               
-              if (SAME_OBJ(name, kernel_modname))
-                im = kernel;
-              else if (SAME_OBJ(name, unsafe_modname))
-                im = scheme_get_unsafe_env()->module;
-              else if (SAME_OBJ(name, flfxnum_modname))
-                im = scheme_get_flfxnum_env()->module;
-              else
+              im = get_special_module(name);
+              if (!im)
                 im = (Scheme_Module *)scheme_hash_get(menv->module_registry->loaded, name);
               
               add_simple_require_renames(NULL, rns, NULL, im, idx, shift, NULL, 0);
@@ -2639,13 +2671,8 @@ static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[
     name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false),
                                  (argc > 1) ? SCHEME_TRUEP(argv[1]) : 0);
 
-  if (SAME_OBJ(name, kernel_modname))
-    m = kernel;
-  else if (SAME_OBJ(name, unsafe_modname))
-    m = scheme_get_unsafe_env()->module;
-  else if (SAME_OBJ(name, flfxnum_modname))
-    m = scheme_get_flfxnum_env()->module;
-  else {
+  m = get_special_module(name);
+  if (!m) {
     env = scheme_get_env(NULL);
     m = (Scheme_Module *)scheme_hash_get(env->module_registry->loaded, name);
   }
@@ -3033,13 +3060,8 @@ static Scheme_Object *module_export_protected_p(int argc, Scheme_Object **argv)
   name = argv[1];
 
   env = scheme_get_env(NULL);
-  if (SAME_OBJ(modname, kernel_modname))
-    mv = (Scheme_Object *)kernel;
-  else if (SAME_OBJ(modname, unsafe_modname))
-    mv = (Scheme_Object *)scheme_get_unsafe_env()->module;
-  else if (SAME_OBJ(modname, flfxnum_modname))
-    mv = (Scheme_Object *)scheme_get_flfxnum_env()->module;
-  else
+  mv = (Scheme_Object *)get_special_module(modname);
+  if (!mv)
     mv = scheme_hash_get(env->module_registry->loaded, modname);
   if (!mv) {
     scheme_arg_mismatch("module-provide-protected?",
@@ -3328,15 +3350,10 @@ void scheme_clear_modidx_cache(void)
 
 static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const char *who)
 {
-  if (name == kernel_modname)
-    return kernel;
-  else if (name == unsafe_modname)
-    return scheme_get_unsafe_env()->module;
-  else if (name == flfxnum_modname)
-    return scheme_get_flfxnum_env()->module;
-  else {
-    Scheme_Module *m;
+  Scheme_Module *m;
 
+  m = get_special_module(name);
+  if (!m) {
     m = (Scheme_Module *)scheme_hash_get(env->module_registry->loaded, name);
 
     if (!m) {
@@ -3354,9 +3371,9 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
 		       name, mred_note);
       return NULL;
     }
-
-    return m;
   }
+  
+  return m;
 }
 
 static void setup_accessible_table(Scheme_Module *m)
@@ -3414,15 +3431,15 @@ static void setup_accessible_table(Scheme_Module *m)
 
 Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, int rev_mod_phase)
 {
-  if ((name == kernel_modname) && !rev_mod_phase)
-    return scheme_get_kernel_env();
-  else if ((name == unsafe_modname) && !rev_mod_phase)
-    return scheme_get_unsafe_env();
-  else if ((name == flfxnum_modname) && !rev_mod_phase)
-    return scheme_get_flfxnum_env();
-  else {
+  Scheme_Env *menv;
+
+  if (!rev_mod_phase)
+    menv = get_special_modenv(name);
+  else
+    menv = NULL;
+
+  if (!menv) {
     Scheme_Object *chain;
-    Scheme_Env *menv;
 
     chain = env->modchain;
     if (rev_mod_phase && chain) {
@@ -3440,9 +3457,9 @@ Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, int rev_m
     
     if (rev_mod_phase && menv)
       menv = menv->exp_env;
-
-    return menv;
   }
+
+  return menv;
 }
 
 static void check_certified(Scheme_Object *stx, Scheme_Object *certs, 
@@ -3759,7 +3776,8 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
 
   if (SAME_OBJ(modname, kernel_modname)
       || SAME_OBJ(modname, unsafe_modname)
-      || SAME_OBJ(modname, flfxnum_modname))
+      || SAME_OBJ(modname, flfxnum_modname)
+      || SAME_OBJ(modname, futures_modname))
     return -1;
 
   m = module_load(modname, env, NULL);
@@ -3784,8 +3802,9 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Sch
     name = SCHEME_STX_SYM(name);
     return scheme_lookup_in_table(kenv->syntax, (char *)name);
   } else if (SAME_OBJ(modname, unsafe_modname)
-             || SAME_OBJ(modname, flfxnum_modname)) {
-    /* no unsafe or flfxnum syntax */
+             || SAME_OBJ(modname, flfxnum_modname)
+             || SAME_OBJ(modname, futures_modname)) {
+    /* no unsafe, flfxnum, or futures syntax */
     return NULL;
   } else {
     Scheme_Env *menv;
@@ -5177,13 +5196,8 @@ module_execute(Scheme_Object *data)
 
   env = scheme_environment_from_dummy(m->dummy);
 
-  if (SAME_OBJ(m->modname, kernel_modname))
-    old_menv = scheme_get_kernel_env();
-  else if (SAME_OBJ(m->modname, flfxnum_modname))
-    old_menv = scheme_get_flfxnum_env();
-  else if (SAME_OBJ(m->modname, unsafe_modname))
-    old_menv = scheme_get_unsafe_env();
-  else
+  old_menv = get_special_modenv(m->modname);
+  if (!old_menv)
     old_menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), m->modname);
 
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
@@ -5916,7 +5930,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (SAME_OBJ(m->modname, kernel_modname)
       || SAME_OBJ(m->modname, unsafe_modname)
-      || SAME_OBJ(m->modname, flfxnum_modname)) {
+      || SAME_OBJ(m->modname, flfxnum_modname)
+      || SAME_OBJ(m->modname, futures_modname)) {
     /* Too confusing. Give it a different name while compiling. */
     Scheme_Object *k2;
     const char *kname;
@@ -5924,6 +5939,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       kname = "#%kernel";
     else if (SAME_OBJ(m->modname, flfxnum_modname))
       kname = "#%flfxnum";
+    else if (SAME_OBJ(m->modname, futures_modname))
+      kname = "#%futures";
     else
       kname = "#%unsafe";
     k2 = scheme_intern_resolved_module_path(scheme_make_symbol(kname)); /* uninterned! */
@@ -9248,13 +9265,16 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
 
   name = scheme_module_resolve(idx, 0);
 
-  if (SAME_OBJ(kernel_modname, name)) {
-    me = kernel->me;
-  } else if (SAME_OBJ(unsafe_modname, name)) {
-    me = scheme_get_unsafe_env()->module->me;
-  } else if (SAME_OBJ(flfxnum_modname, name)) {
-    me = scheme_get_flfxnum_env()->module->me;
-  } else {
+  {
+    Scheme_Module *mod;
+    mod = get_special_module(name);
+    if (mod) 
+      me = mod->me;
+    else
+      me = NULL;
+  }
+
+  if (!me) {
     if (!export_registry) {
       env = scheme_get_env(scheme_current_config());
       export_registry = env->module_registry->exports;
