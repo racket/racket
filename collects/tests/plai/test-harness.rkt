@@ -19,8 +19,8 @@
     (->string (test (num 5) (id 'x)))
     =>
     (if abridged?
-        "(bad #(struct:num 5) #(struct:id x))\n"
-        "(bad (num 5) #(struct:num 5) #(struct:id x) \"at line ??\")\n")
+        "(bad (num 5) (id 'x))\n"
+        "(bad (num 5) (num 5) (id 'x) \"at line ??\")\n")
     
     (->string (test 1 (+ 1 0)))
     =>
@@ -48,8 +48,8 @@
     =>
     (if catch?
         (if abridged?
-            "(exception \"/: division by zero\" <no-expected-value>)\n"
-            "(exception (/ 1 0) \"/: division by zero\" <no-expected-value> \"at line ??\")\n")
+            "(exception \"/: division by zero\" '<no-expected-value>)\n"
+            "(exception (/ 1 0) \"/: division by zero\" '<no-expected-value> \"at line ??\")\n")
         (error '/ "division by zero"))
     
     (->string (test (error "zamboni") 347))
@@ -81,36 +81,36 @@
     (if errors?
         ""
         (if abridged?
-            "(good 0 zero?)\n"
-            "(good 0 0 zero? \"at line ??\")\n"))
+            "(good 0 'zero?)\n"
+            "(good 0 0 'zero? \"at line ??\")\n"))
     
     (->string (test/pred 1 zero?))
     =>
     (if abridged?
-        "(bad 1 zero?)\n"
-        "(bad 1 1 zero? \"at line ??\")\n")
+        "(bad 1 'zero?)\n"
+        "(bad 1 1 'zero? \"at line ??\")\n")
     
     (->string (test/pred 1 (error 'pred)))
     =>
     (if catch?
         (if abridged?
-            "(pred-exception \"error: pred\" <no-expected-value>)\n"
-            "(pred-exception 1 \"error: pred\" <no-expected-value> \"at line ??\")\n")
+            "(pred-exception \"error: pred\" '<no-expected-value>)\n"
+            "(pred-exception 1 \"error: pred\" '<no-expected-value> \"at line ??\")\n")
         (error 'pred))
     
     (->string (test/pred 1 (lambda (n) (/ 1 0))))
     =>
     (if catch?
         (if abridged?
-            "(pred-exception \"/: division by zero\" <no-expected-value>)\n"
-            "(pred-exception 1 \"/: division by zero\" <no-expected-value> \"at line ??\")\n")
+            "(pred-exception \"/: division by zero\" '<no-expected-value>)\n"
+            "(pred-exception 1 \"/: division by zero\" '<no-expected-value> \"at line ??\")\n")
         (error '/ "division by zero"))
     
     (->string (test/pred "a" string->number))
     =>
     (if abridged?
-        "(bad \"a\" string->number)\n"
-        "(bad \"a\" \"a\" string->number \"at line ??\")\n")
+        "(bad \"a\" 'string->number)\n"
+        "(bad \"a\" \"a\" 'string->number \"at line ??\")\n")
     
     (->string (test/exn (error "zamboni") "zamboni"))
     =>
@@ -140,8 +140,8 @@
     =>
     (if catch?
         (if abridged?
-            "(exception \"/: division by zero\" <no-expected-value>)\n"
-            "(exception (/ 1 0) \"/: division by zero\" <no-expected-value> \"at line ??\")\n")
+            "(exception \"/: division by zero\" '<no-expected-value>)\n"
+            "(exception (/ 1 0) \"/: division by zero\" '<no-expected-value> \"at line ??\")\n")
         (error '/ "division by zero"))
     
     (->string (test/regexp (error "zamboni") "zam"))
@@ -169,12 +169,11 @@
         "(bad 5 5 \"zam\" \"at line ??\")\n")
     
     (->string (test/regexp (/ 1 0) "divis"))
-    =>
-    (if catch?
-        (if abridged?
-            "(exception \"/: division by zero\" <no-expected-value>)\n"
-            "(exception (/ 1 0) \"/: division by zero\" <no-expected-value> \"at line ??\")\n")
-        (error '/ "division by zero"))
+    =>(if catch?
+          (if abridged?
+              "(exception \"/: division by zero\" '<no-expected-value>)\n"
+              "(exception (/ 1 0) \"/: division by zero\" '<no-expected-value> \"at line ??\")\n")
+          (error '/ "division by zero"))
     
     )))
 
