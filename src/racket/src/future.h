@@ -141,6 +141,8 @@ void scheme_future_continue_after_gc();
 void scheme_check_future_work();
 void scheme_future_gc_pause();
 
+Scheme_Object *current_future(int argc, Scheme_Object *argv[]);
+
 #ifdef UNIT_TEST
 //These forwarding decls only need to be here to make 
 //primitives visible to test cases written in C

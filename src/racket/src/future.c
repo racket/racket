@@ -60,6 +60,11 @@ static Scheme_Object *future(int argc, Scheme_Object *argv[])
   return (Scheme_Object *)ft;
 }
 
+static Scheme_Object *current_future(int argc, Scheme_Object *argv[]) 
+{
+  return scheme_make_null();
+}
+
 static Scheme_Object *touch(int argc, Scheme_Object *argv[])
 {
   future_t * volatile ft;
@@ -137,6 +142,7 @@ void scheme_init_futures(Scheme_Env *env)
   FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
   FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
   FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  0, 0, newenv);
+  FUTURE_PRIM_W_ARITY("current-future",   current_future,   0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -296,7 +302,7 @@ typedef struct future_thread_params_t {
 /* Invoked by the runtime on startup to make primitives known */
 void scheme_init_futures(Scheme_Env *env)
 {
-  Scheme_Object *v;
+  Scheme_Object *v, *p;
   Scheme_Env *newenv;
 
   futures_init();
@@ -340,6 +346,24 @@ void scheme_init_futures(Scheme_Env *env)
                                                       1, 
                                                       1), 
                              newenv);
+  /*
+  scheme_add_global_constant(
+                              "current-future", 
+                              scheme_make_prim_w_arity(
+                                                        current_future, 
+                                                        "current-future", 
+                                                        0, 
+                                                        0), 
+                              newenv);
+  */
+
+  p = scheme_make_immed_prim( 
+                              current_future, 
+                              "current-future", 
+                              0, 
+                              0);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("current-future", p, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -623,6 +647,15 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
   mzrt_mutex_unlock(fs->future_mutex);
 
   return (Scheme_Object*)ft;
+}
+
+Scheme_Object *current_future(int argc, Scheme_Object *argv[])
+{
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  if (NULL == fts || NULL == fts->current_ft)
+    return scheme_make_null();
+ 
+  return (Scheme_Object*)(fts->current_ft);
 }
 
 

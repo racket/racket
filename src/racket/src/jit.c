@@ -8231,7 +8231,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 /* de-sync's; for branch, sync'd before */
 {
   Scheme_Object *rator = app->args[0];
-
+  
   if (!SCHEME_PRIMP(rator))
     return 0;
 
@@ -8259,6 +8259,14 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     return 1;
   } else if (IS_NAMED_PRIM(rator, ">=")) {
     generate_nary_arith(jitter, app, 0, 1, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "current-future")) { 
+    printf("current-future\n");
+    mz_rs_sync();
+    JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+    mz_prepare(0);
+    mz_finish(current_future);
+    jit_retval(JIT_R0);
     return 1;
   } else if (!for_branch) {
     if (IS_NAMED_PRIM(rator, "vector-set!")
