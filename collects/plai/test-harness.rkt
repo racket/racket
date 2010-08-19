@@ -68,7 +68,8 @@
           #t))
     (set! plai-all-test-results (cons result plai-all-test-results))
     (when print?
-      (write result) (newline))
+      (apply printf "(~s ~s ~v ~v ~s)" result)
+      (newline))
     (when (and halt-on-errors? error?)
       (raise (make-exn:test (string->immutable-string (format "test failed: ~s" result))
                             (current-continuation-marks))))))
