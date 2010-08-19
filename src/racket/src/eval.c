@@ -6577,8 +6577,9 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
       } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
         if (scheme_is_rename_transformer(SCHEME_PTR_VAL(val))) {
           /* It's a rename. Look up the target name and try again. */
-          name = scheme_stx_cert(scheme_rename_transformer_id(SCHEME_PTR_VAL(val)), 
-                                 scheme_false, menv, name, NULL, 1);
+          name = scheme_transfer_srcloc(scheme_stx_cert(scheme_rename_transformer_id(SCHEME_PTR_VAL(val)), 
+                                                        scheme_false, menv, name, NULL, 1),
+                                        name);
           menv = NULL;
           SCHEME_USE_FUEL(1);
         } else {
@@ -6782,7 +6783,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
 	  new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
-	  find_name = new_name;
+	  find_name = scheme_transfer_srcloc(new_name, find_name);
 	  SCHEME_USE_FUEL(1);
 	  menv = NULL;
 	  protected = 0;
@@ -6899,7 +6900,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
 	  new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
-	  find_name = new_name;
+          find_name = scheme_transfer_srcloc(new_name, find_name);
 	  SCHEME_USE_FUEL(1);
 	  menv = NULL;
 	} else
@@ -6986,7 +6987,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	  new_name = scheme_stx_track(new_name, find_name, find_name);
 	}
 	new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
-	find_name = new_name;
+        find_name = scheme_transfer_srcloc(new_name, find_name);
 	SCHEME_USE_FUEL(1);
 	menv = NULL;
       } else

@@ -8855,6 +8855,40 @@ static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv)
   return scheme_stx_track(argv[0], argv[1], argv[2]);
 }
 
+Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from)
+{
+  if (!SAME_OBJ(((Scheme_Stx *)from)->srcloc, empty_srcloc)) {
+    Scheme_Stx *stx = (Scheme_Stx *)to;
+    Scheme_Object *wraps, *modinfo_cache;
+    Scheme_Object *certs;
+    long lazy_prefix;
+
+    wraps = stx->wraps;
+    if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+      modinfo_cache = NULL;
+      lazy_prefix = stx->u.lazy_prefix;
+    } else {
+      modinfo_cache = stx->u.modinfo_cache;
+      lazy_prefix = 0;
+    }
+    certs = stx->certs;
+
+    stx = (Scheme_Stx *)scheme_make_stx(stx->val, 
+                                        ((Scheme_Stx *)from)->srcloc,
+                                        stx->props);
+
+    stx->wraps = wraps;
+    if (modinfo_cache)
+      stx->u.modinfo_cache = modinfo_cache;
+    else
+      stx->u.lazy_prefix = lazy_prefix; /* same as NULL modinfo if no SUBSTX */
+    stx->certs = certs;
+
+    return (Scheme_Object *)stx;
+  } else
+    return to;
+}
+
 static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], Scheme_Object *p)
 {
   Scheme_Object *r, *delta;

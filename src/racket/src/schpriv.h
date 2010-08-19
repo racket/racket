@@ -1023,6 +1023,8 @@ XFORM_NONGCING Scheme_Object *scheme_phase_index_symbol(int src_phase_index);
 Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht);
 void scheme_populate_pt_ht(struct Scheme_Module_Phase_Exports * pt);
 
+Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from);
+
 /*========================================================================*/
 /*                   syntax run-time structures                           */
 /*========================================================================*/

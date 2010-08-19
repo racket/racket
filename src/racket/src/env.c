@@ -4711,7 +4711,8 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
     v = SCHEME_PTR_VAL(v);
     if (scheme_is_rename_transformer(v)) {
       sym = scheme_rename_transformer_id(v);
-      sym = scheme_stx_cert(sym, scheme_false, menv, sym, NULL, 1);
+      sym = scheme_transfer_srcloc(scheme_stx_cert(sym, scheme_false, menv, sym, NULL, 1),
+                                   v);
       renamed = 1;
       menv = NULL;
       SCHEME_USE_FUEL(1);
