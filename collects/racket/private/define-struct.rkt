@@ -40,13 +40,15 @@
                                               proc)))))
 
   (define-for-syntax (self-ctor-transformer orig stx)
-    (with-syntax ([orig orig])
-      (syntax-case stx ()
-        [(_ arg ...) (datum->syntax stx
-                                    (syntax-e (syntax (orig arg ...)))
-                                    stx
-                                    stx)]
-        [_ (syntax orig)])))
+    (define (transfer-srcloc orig stx)
+      (datum->syntax orig (syntax-e orig) stx orig))
+    (syntax-case stx ()
+      [(self arg ...) (datum->syntax stx
+                                     (cons (transfer-srcloc orig #'self)
+                                           (syntax-e (syntax (arg ...))))
+                                     stx
+                                     stx)]
+      [_ (transfer-srcloc orig stx)]))
   
   (define-values-for-syntax (make-self-ctor-struct-info)
     (letrec-values ([(struct: make- ? ref set!)
