@@ -8264,7 +8264,6 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     generate_nary_arith(jitter, app, 0, 1, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "current-future")) { 
-    printf("current-future\n");
     mz_rs_sync();
     JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
     mz_prepare(0);

@@ -60,11 +60,6 @@ static Scheme_Object *future(int argc, Scheme_Object *argv[])
   return (Scheme_Object *)ft;
 }
 
-static Scheme_Object *current_future(int argc, Scheme_Object *argv[]) 
-{
-  return scheme_make_null();
-}
-
 static Scheme_Object *touch(int argc, Scheme_Object *argv[])
 {
   future_t * volatile ft;
@@ -127,6 +122,11 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[])
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 {
   return scheme_make_integer(1);
+}
+
+Scheme_Object *current_future(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_null();
 }
 
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
@@ -197,7 +197,6 @@ void scheme_init_futures_once()
 static Scheme_Object *future(int argc, Scheme_Object *argv[]);
 static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
-static Scheme_Object *current_future(int argc, Scheme_Object *argv[]);
 static void futures_init(void);
 static void init_future_thread(struct Scheme_Future_State *fs, int i);
 
@@ -298,13 +297,7 @@ typedef struct future_thread_params_t {
 /* Invoked by the runtime on startup to make primitives known */
 void scheme_init_futures(Scheme_Env *newenv)
 {
-  Scheme_Object *v, *p;
-  Scheme_Env *newenv;
-
-  futures_init();
-
-  v = scheme_intern_symbol("#%futures");
-  newenv = scheme_primitive_module(v, env);
+  Scheme_Object *p;
 
   scheme_add_global_constant(
                              "future?", 
@@ -342,16 +335,6 @@ void scheme_init_futures(Scheme_Env *newenv)
                                                       1, 
                                                       1), 
                              newenv);
-  /*
-  scheme_add_global_constant(
-                              "current-future", 
-                              scheme_make_prim_w_arity(
-                                                        current_future, 
-                                                        "current-future", 
-                                                        0, 
-                                                        0), 
-                              newenv);
-  */
 
   p = scheme_make_immed_prim( 
                               current_future, 
@@ -360,15 +343,6 @@ void scheme_init_futures(Scheme_Env *newenv)
                               0);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("current-future", p, newenv);
-
-  scheme_add_global_constant(
-                             "current-future", 
-                             scheme_make_prim_w_arity(
-                                                      current_future, 
-                                                      "current-future", 
-                                                      0, 
-                                                      0), 
-                             newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -397,6 +371,13 @@ void futures_init(void)
   REGISTER_SO(fs->future_queue_end);
   REGISTER_SO(fs->future_waiting_atomic);
   REGISTER_SO(jit_future_storage);
+
+  /* Create a 'dummy' future thread state object for the runtime 
+      thread, so that current-future will work even for 
+      thunks that are touched before fetched by a worker thread 
+      and are executed on the runtime thread */ 
+  scheme_future_thread_state = (Scheme_Future_Thread_State*)malloc(sizeof(Scheme_Future_Thread_State));
+  memset(scheme_future_thread_state, 0, sizeof(Scheme_Future_Thread_State));
   
   mzrt_mutex_create(&fs->future_mutex);
   mzrt_sema_create(&fs->future_pending_sema, 0);
@@ -659,16 +640,6 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
   return (Scheme_Object*)ft;
 }
 
-Scheme_Object *current_future(int argc, Scheme_Object *argv[])
-{
-  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
-  if (NULL == fts || NULL == fts->current_ft)
-    return scheme_make_null();
- 
-  return (Scheme_Object*)(fts->current_ft);
-}
-
-
 int future_ready(Scheme_Object *obj)
 /* Called in runtime thread by Scheme scheduler */
 {
@@ -709,6 +680,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 /* Called in runtime thread */
 {
   Scheme_Future_State *fs = scheme_future_state;
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   Scheme_Object *retval = NULL;
   future_t *ft;
 
@@ -731,9 +703,11 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
     ft->status = RUNNING;
     mzrt_mutex_unlock(fs->future_mutex);
 
+    fts->current_ft = ft;
     retval = scheme_apply_multi(ft->orig_lambda, 0, NULL);
     send_special_result(ft, retval);
 
+    fts->current_ft = NULL;
     mzrt_mutex_lock(fs->future_mutex);
     ft->work_completed = 1;
     ft->retval = retval;
@@ -823,9 +797,13 @@ Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 }
 
 Scheme_Object *current_future(int argc, Scheme_Object *argv[])
-/* Called in runtime thread */
+/* Called from any thread (either runtime or future) */
 {
-  return scheme_false;
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  if (NULL == fts || NULL == fts->current_ft)
+    return scheme_make_null();
+ 
+  return (Scheme_Object*)(fts->current_ft);
 }
 
 /* Entry point for a worker thread allocated for

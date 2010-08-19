@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require scheme/future
+(require scheme/future 
+         scheme/list 
          rackunit)
 
 #|Need to add expressions which raise exceptions inside a 
@@ -146,4 +147,59 @@ We should also test deep continuations.
                                       'x)
          (continuation-mark-set->list (touch f2) 'x)
          (continuation-mark-set->list (current-continuation-marks) 'x))))
+
+;Tests for current-future
+(check-equal? '() (current-future)) 
+(check-equal? #t (null? (current-future)))
+(check-equal? #t (equal? (current-future) (current-future)))
+
+(let ([f (future (λ () (current-future)))]) 
+  (check-equal? #t (equal? f (touch f))))
+
+;Where futures might be touched before ever making it 
+;to a worker kernel thread
+(let ([f1 (future (λ () (current-future)))]
+      [f2 (future (λ () (current-future)))]) 
+  (check-equal? #t (equal? f1 (touch f1))) 
+  (check-equal? #f (equal? f2 (touch f1)))
+  (check-equal? #t (equal? f2 (touch f2)))
+  (check-equal? #f (equal? (touch f2) (touch f1)))
+  (check-equal? #f (equal? (current-future) (touch f1))) 
+  (check-equal? #f (equal? (current-future) (touch f2))))
+
+;Where futures are pretty much guaranteed to be running 
+;on a worker thread
+(let ([f1 (future (λ () (current-future)))]
+      [f2 (future (λ () (current-future)))]) 
+  (sleep 3)
+  (check-equal? #t (equal? f1 (touch f1))) 
+  (check-equal? #f (equal? f2 (touch f1)))
+  (check-equal? #t (equal? f2 (touch f2)))
+  (check-equal? #f (equal? (touch f2) (touch f1)))
+  (check-equal? #f (equal? (current-future) (touch f1))) 
+  (check-equal? #f (equal? (current-future) (touch f2))))
+
+;Preceding current-future with an obvious blocking call
+(let ([f1 (future (λ () (sleep 1) (current-future)))]
+      [f2 (future (λ () (sleep 1) (current-future)))]) 
+  (check-equal? #t (equal? f1 (touch f1))) 
+  (check-equal? #f (equal? f2 (touch f1)))
+  (check-equal? #t (equal? f2 (touch f2)))
+  (check-equal? #f (equal? (touch f2) (touch f1)))
+  (check-equal? #f (equal? (current-future) (touch f1))) 
+  (check-equal? #f (equal? (current-future) (touch f2))))            
+              
+(let* ([fs (build-list 20 (λ (n) (future (λ () (current-future)))))]
+       [retvalfs (map touch fs)]) 
+  (check-equal? 20 (length (remove-duplicates retvalfs))))
+  
+              
+              
+              
+              
+              
+              
+              
+              
+              
 
