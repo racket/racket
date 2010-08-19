@@ -1,5 +1,5 @@
-#lang scheme
-(require '#%flfxnum)
+#lang racket/base
+(require '#%flfxnum (for-syntax racket/base))
 
 (provide fl+ fl- fl* fl/
          flabs flsqrt flexp fllog
