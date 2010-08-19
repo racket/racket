@@ -59,10 +59,10 @@
                  @li{automated tests, and}
                  @li{automated stress tests.}}}
     
-    @nested{Code that is not externally documented is not usable.}
-    @nested{Code that is not internally documented is not maintainable.}
-    @nested{Code that is not tested is not trustworthy.}
-    @nested{Code that is not stressed is not reliable.}
+    @nested{Matthias is also known to say, "I have bug reports, therefore I exist." All software
+            has mistakes. If they are not known, then the software is not being used. Robby writes,
+            "It is the way  we choose to fight our bugs that determines our character, not their
+            presence or abscence." Read these guidelines in that light.}
 
     @div[class: 'faqsection]{
                              
@@ -70,11 +70,10 @@
       @p*{As long as your code fulfills its promises and meets each of these
           criteria, you can push incrementally.
           @~
-          For example, I may be working on adding an exhaustive queue library to
-          Racket. I imagine supporting 30 different functions across 5 different
-          queue implementations. I don't have to wait to push until all 150 function
-          implementations are documented, tested, and stressed. Instead, I can push
-          whenever I provide documentation and tests for a new set of functions.
+          For example, I may be working on adding an exhaustive queue library to Racket.
+          I imagine supporting 30 different functions across 5 different queue implementations,
+          for a total of 150 functions.  If I have just 30 of these documented, tested, and
+          stressed, then it's fine for me to push.
           @~
           It is better to make a little bit of progress on each of functionality, tests,
           and documentation than lots of functionality with no tests or documentation.}}
@@ -111,9 +110,29 @@
         existing tests fail.}}
        
       @@FAQ['oldcode]{When changing code without an existing test suite...}{
-       @p*{Your first task when changing old code is to build an adequate test suite
-           to ensure you do not introduce new mistakes as you attempt to improve it.
-           Thank you for improving the world for future generations!}}
+       @p*{"Primum non nocere"
+           @~
+           If there is no existing test suite, you have no idea whether changes are introducing
+           any new mistakes or breaking intended functionality.
+           @~
+           You should make a reasonable effort
+           to put in a test case or two for the specific functionality that you're adding or modifying.
+           If there is no test suite and you aren't sure how to build one, then ask, see what
+           responses you get, and go from there.
+           @~
+           In the special case that you found a mistake and are fixing it, there
+           should be a way to observe that mistake and you should be able to turn
+           that into a test case. If you cannot, you have a few options:
+           @ul{ @li{Add an end-to-end test that may have to be verified by a human.
+                    For example, it might be hard to test Slideshow, so you could
+                    create a slide set and describe what it should look like so
+                    future maintainers to verify when @em{they} make changes.}
+                @li{Add functionality to the library to expose properties that reveal
+                    the bug. For example, you may be able to add a few accessors to
+                    Slideshow slides to enable an automated test suite.} }
+           @~
+           As we slowly increase the number of tests across the system, this problem
+           will go away for future generations.}}
       
       @heading{Stress Tests}
       
