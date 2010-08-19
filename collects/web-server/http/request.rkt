@@ -7,6 +7,7 @@
          web-server/http/request-structs)
 
 (provide/contract
+ [read-headers (-> input-port? (listof header?))]
  [rename ext:read-request read-request
          (connection? 
           tcp-listen-port?

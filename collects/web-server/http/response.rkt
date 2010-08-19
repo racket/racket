@@ -13,6 +13,7 @@
          web-server/private/util)
 
 (provide/contract
+ [print-headers (output-port? (listof header?) . -> . void)]
  [rename ext:output-response output-response (connection? response/c . -> . void)]
  [rename ext:output-response/method output-response/method (connection? response/c bytes? . -> . void)]
  [rename ext:output-file output-file (connection? path-string? bytes? bytes? (or/c pair? false/c) . -> . void)])
