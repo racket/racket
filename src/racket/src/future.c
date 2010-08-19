@@ -46,7 +46,7 @@ typedef struct future_t {
   int no_retval;
 } future_t;
 
-static Scheme_Object *future(int argc, Scheme_Object *argv[])
+Scheme_Object *future(int argc, Scheme_Object *argv[])
 {
   future_t *ft;
 
@@ -126,7 +126,7 @@ static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 
 Scheme_Object *current_future(int argc, Scheme_Object *argv[])
 {
-  return scheme_make_null();
+  return scheme_false;
 }
 
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
@@ -194,7 +194,6 @@ void scheme_init_futures_once()
 #define LOG_RTCALL_INT_POBJ_OBJ_OBJ(a,b,c) LOG3("(%d, %p, %p)", a, b, c)
 #define LOG_RTCALL_ENV_ENV_VOID(a,b) LOG2("(%p, %p)", a, b) 
 
-static Scheme_Object *future(int argc, Scheme_Object *argv[]);
 static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
 static void futures_init(void);
@@ -801,7 +800,7 @@ Scheme_Object *current_future(int argc, Scheme_Object *argv[])
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   if (NULL == fts || NULL == fts->current_ft)
-    return scheme_make_null();
+    return scheme_false;
  
   return (Scheme_Object*)(fts->current_ft);
 }

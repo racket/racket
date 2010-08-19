@@ -141,6 +141,7 @@ void scheme_future_continue_after_gc();
 void scheme_check_future_work();
 void scheme_future_gc_pause();
 
+Scheme_Object *future(int argc, Scheme_Object *argv[]);
 Scheme_Object *current_future(int argc, Scheme_Object *argv[]);
 
 #ifdef UNIT_TEST
