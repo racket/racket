@@ -52,9 +52,13 @@
       #t)
     (define (tcp-abandon-port p)
       (ssl-abandon-port (hash-ref port->ssl p p)))
-    (define (tcp-addresses p . more)
-      (apply ssl-addresses (hash-ref port->ssl p p) more))
-    ;; unused
+    (define (tcp-addresses p [port-numbers? #f])
+      (if (void? p) ;; from listen!
+          (if port-numbers?
+              (values "localhost" "0.0.0.0" 1 1)
+              (values "localhost" "0.0.0.0"))
+          (ssl-addresses (hash-ref port->ssl p p) port-numbers?)))
+    ;; prevent the server from actually listening:
     (define tcp-close void)
     (define tcp-listen void)
     (define tcp-listener? void?)
