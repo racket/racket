@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "web-server.rkt")
 @(require (for-label web-server/servlet
+                     racket/list
                      xml))
 
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
@@ -277,7 +278,7 @@ These @tech{formlet}s are the main combinators for form input.
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} is rendered with @racket[render], which is passed the input name, and results in the
  extracted @racket[binding].
-}
+}                                           
                                              
 @defproc[(make-input* [render (string? . -> . xexpr/c)])
          (formlet/c (listof binding?))]{
@@ -302,20 +303,69 @@ These @tech{formlet}s are the main combinators for form input.
         (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with the PASSWORD type and the attributes given in the arguments.
 }
-
+                                            
 @defproc[(textarea-input [#:rows rows (or/c false/c number?) #f]
                          [#:cols cols (or/c false/c number?) #f])
-        (formlet/c string?)]{
- This @tech{formlet} renders using an TEXTAREA element.
+        (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an TEXTAREA element with attributes given in the arguments.
 }
                                             
 @defproc[(checkbox [value bytes?]
                    [checked? boolean?]
                    [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} renders using a INPUT elemen with the CHECKBOX type and the attributes given in the arguments.
+ This @tech{formlet} renders using an INPUT element with the CHECKBOX type and the attributes given in the arguments.
 }
                                              
+@defproc[(radio [value bytes?] 
+                [checked? boolean?]
+                [#:attributes attrs (listof (list/c symbol? string?)) empty])
+         (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an INPUT element with the RADIO type and the attributes given in the arguments.
+}
+                                             
+@defproc[(submit [value bytes?]         
+                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
+         (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an INPUT element with the SUBMIT type and the attributes given in the arguments.
+}
+                                             
+@defproc[(reset [value bytes?]
+                [#:attributes attrs (listof (list/c symbol? string?)) empty])
+         (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an INPUT element with the RESET type and the attributes given in the arguments.
+}
+
+@defproc[(file-upload [#:attributes attrs (listof (list/c symbol? string?)) empty])
+         (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an INPUT element with the FILE type and the attributes given in the arguments.
+}
+                                             
+@defproc[(hidden [value bytes?] [#:attributes attrs (listof (list/c symbol? string?)) empty])
+         (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an INPUT element with HIDDEN type and the attributes given in the arguments.
+}
+                                             
+@defproc[(img [alt bytes?] 
+              [src bytes?]
+              [#:height height (or/c false/c exact-nonnegative-integer?) #f]
+              [#:longdesc ldesc (or/c false/c bytes?) #f]
+              [#:usemap map (or/c false/c bytes?) #f]
+              [#:width width (or/c false/c exact-nonnegative-integer?) #f]
+              [#:attributes attrs (listof (list/c symbol? string?)) empty])
+      (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an IMG element with the attributes given in the arguments.   
+}
+                          
+@defproc[(button [type bytes?]
+                 [button-text bytes?]
+                 [#:disabled disabled boolean? #f]
+                 [#:value value (or/c false/c bytes?) #f]
+                 [#:attributes attrs (listof (list/c symbol? string?)) empty])
+         (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using a BUTTON element with the attributes given in the arguments. @racket[button-text] is the text that will appear on the button when rendered.
+}      
+                                                             
 @defproc[(multiselect-input [l sequence?]
                             [#:multiple? multiple? boolean? #t]
                             [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]

@@ -175,7 +175,7 @@
 (define-syntax (fresh stx) (raise-syntax-error 'fresh "used outside of reduction-relation"))
 (define-syntax (with stx) (raise-syntax-error 'with "used outside of reduction-relation"))
 
-(define (apply-reduction-relation/tag-with-names p v)
+(define (apply-reduction-relation/tagged p v)
   (let loop ([procs (reduction-relation-procs p)]
              [acc '()])
     (cond
@@ -184,7 +184,8 @@
        (loop (cdr procs)
              ((car procs) v v values acc))])))
 
-(define (apply-reduction-relation p v) (map cadr (apply-reduction-relation/tag-with-names p v)))
+(define (apply-reduction-relation/tag-with-names p v) (map cdr (apply-reduction-relation/tagged p v)))
+(define (apply-reduction-relation p v) (map caddr (apply-reduction-relation/tagged p v)))
 
 (define-for-syntax (extract-pattern-binds lhs)
   (let loop ([lhs lhs])
@@ -420,20 +421,23 @@
   (define (rule->lws rule)
     (syntax-case rule ()
       [(arrow lhs rhs stuff ...)
-       (let-values ([(label scs/withs fvars)
+       (let-values ([(label computed-label scs/withs fvars)
                      (let loop ([stuffs (syntax->list #'(stuff ...))]
                                 [label #f]
+                                [computed-label #f]
                                 [scs/withs null]
                                 [fvars null])
                        (cond
-                         [(null? stuffs) (values label (reverse scs/withs) (reverse fvars))]
+                         [(null? stuffs) (values label computed-label (reverse scs/withs) (reverse fvars))]
                          [else
                           (syntax-case (car stuffs) (where where/hidden
                                                            side-condition side-condition/hidden
-                                                           fresh variable-not-in)
+                                                           fresh variable-not-in
+                                                           computed-name)
                             [(fresh xs ...) 
                              (loop (cdr stuffs)
                                    label
+                                   computed-label
                                    scs/withs
                                    (append 
                                     (reverse (map (λ (x)
@@ -460,28 +464,38 @@
                             [(where x e)
                              (loop (cdr stuffs)
                                    label
+                                   computed-label
                                    (cons #`(cons #,(to-lw/proc #'x) #,(to-lw/proc #'e))
                                          scs/withs)
                                    fvars)]
                             [(where/hidden x e)
-                             (loop (cdr stuffs) label scs/withs fvars)]
+                             (loop (cdr stuffs) label computed-label scs/withs fvars)]
                             [(side-condition sc)
                              (loop (cdr stuffs)
                                    label
+                                   computed-label
                                    (cons (to-lw/uq/proc #'sc) scs/withs)
                                    fvars)]
                             [(side-condition/hidden sc)
-                             (loop (cdr stuffs) label scs/withs fvars)]
+                             (loop (cdr stuffs) label computed-label scs/withs fvars)]
                             [x
                              (identifier? #'x)
                              (loop (cdr stuffs)
                                    #''x
+                                   computed-label
                                    scs/withs
                                    fvars)]
                             [x
                              (string? (syntax-e #'x))
                              (loop (cdr stuffs)
-                                   #'x
+                                   #'(string->symbol x)
+                                   computed-label
+                                   scs/withs
+                                   fvars)]
+                            [(computed-name e)
+                             (loop (cdr stuffs)
+                                   label
+                                   #'e
                                    scs/withs
                                    fvars)])]))])
          (with-syntax ([(scs/withs ...) scs/withs]
@@ -494,6 +508,8 @@
                              #,(to-lw/proc #'lhs)
                              #,(to-lw/proc #'rhs)
                              #,label
+                             #,(and computed-label 
+                                    (to-lw/proc #`,#,computed-label))
                              (list scs/withs ...
                                    #,@(map (λ (bind-id bind-pat)
                                              #`(cons #,(to-lw/proc bind-id)
@@ -721,7 +737,7 @@
   (define (do-leaf stx orig-name lang name-table from to extras lang-id)
     (let* ([lang-nts (language-id-nts lang-id orig-name)]
            [rw-sc (λ (pat) (rewrite-side-conditions/check-errs lang-nts orig-name #t pat))])
-      (let-values ([(name sides/withs/freshs) (process-extras stx orig-name name-table extras)])
+      (let-values ([(name computed-name sides/withs/freshs) (process-extras stx orig-name name-table extras)])
         (let*-values ([(names names/ellipses) (extract-names lang-nts orig-name #t from)]
                       [(body-code)
                        (bind-withs orig-name 
@@ -730,7 +746,8 @@
                                    lang-nts
                                    sides/withs/freshs
                                    'flatten
-                                   #`(list (term #,to))
+                                   #`(list (cons #,(or computed-name #'none)
+                                                 (term #,to)))
                                    names names/ellipses)]
                       [(test-case-body-code)
                        ;; this contains some redundant code
@@ -782,7 +799,12 @@
                                             (cover-case case-id c))))
                                       (relation-coverage))
                                      (loop (cdr mtchs) 
-                                           (map/mt (λ (x) (list name (f x))) really-matched acc))]
+                                           (map/mt (λ (x) (list name
+                                                                (if (none? (car x)) 
+                                                                    name
+                                                                    (format "~a" (car x)))
+                                                                (f (cdr x)))) 
+                                                   really-matched acc))]
                                     [else 
                                      (loop (cdr mtchs) acc)]))]))
                            other-matches)))))
@@ -794,12 +816,13 @@
   (define (process-extras stx orig-name name-table extras)
     (let* ([the-name #f]
            [the-name-stx #f]
+           [computed-name-stx #f]
            [sides/withs/freshs 
             (let loop ([extras extras])
               (cond
                 [(null? extras) '()]
                 [else
-                 (syntax-case (car extras) (fresh)
+                 (syntax-case (car extras) (fresh computed-name)
                    [name 
                     (or (identifier? (car extras))
                         (string? (syntax-e (car extras))))
@@ -865,9 +888,17 @@
                     (or (free-identifier=? #'-where #'where)
                         (free-identifier=? #'-where #'where/hidden))
                     (raise-syntax-error orig-name "malformed where clause" stx (car extras))]
+                   [(computed-name e)
+                    (if computed-name-stx
+                        (raise-syntax-errors orig-name "expected at most one computed-name clause"
+                                             stx (list computed-name-stx #'e))
+                        (set! computed-name-stx #'e))
+                    (loop (cdr extras))]
+                   [(computed-name . _)
+                    (raise-syntax-error orig-name "malformed computed-name clause" stx (car extras))]
                    [_
                     (raise-syntax-error orig-name "unknown extra" stx (car extras))])]))])
-      (values the-name sides/withs/freshs)))
+      (values the-name computed-name-stx sides/withs/freshs)))
   
 
   
@@ -1845,8 +1876,9 @@
                       [_ #f]))
                   (syntax->list (syntax/loc stx (name ...)))))
      (with-syntax ([((r-rhs ...) ...) (map (lambda (rhss) (map (λ (x) (rewrite-side-conditions/check-errs
-                                                                       (language-id-nts #'lang 'extend-language)
-                                                                       'extend-language
+                                                                       (append (language-id-nts #'lang 'define-extended-language)
+                                                                               (syntax->datum #'(name ...)))
+                                                                       'define-extended-language
                                                                        #f
                                                                        x))
                                                                (syntax->list rhss)))
@@ -1877,7 +1909,7 @@
     [(_ lang (name rhs ...) ...)
      (begin
        (unless (identifier? #'lang)
-         (error 'extend-language "expected the name of a language" stx #'lang))
+         (error 'define-extended-language "expected the name of a language" stx #'lang))
        (for-each
         (lambda (name)
           (unless (syntax-case name ()
@@ -1889,7 +1921,7 @@
                      (identifier? #'name)
                      #t]
                     [else #f])
-            (raise-syntax-error 'extend-language "expected a name or a non-empty sequence of names" stx name)))
+            (raise-syntax-error 'define-extended-language "expected a name or a non-empty sequence of names" stx name)))
         (syntax->list (syntax (name ...)))))]
     [(_ lang x ...)
      (for-each
@@ -1898,7 +1930,7 @@
           [(name rhs ...)
            (void)]
           [_
-           (raise-syntax-error 'extend-language "malformed non-terminal" stx x)]))
+           (raise-syntax-error 'define-extended-language "malformed non-terminal" stx x)]))
       (syntax->list (syntax (x ...))))]))
 
 (define extend-nt-ellipses '(....))
@@ -1908,7 +1940,7 @@
 ;; lists of symbols in the nt-name field.
 (define (do-extend-language old-lang new-nts new-pict-infos)
   (unless (compiled-lang? old-lang)
-    (error 'extend-language "expected a language as first argument, got ~e" old-lang))
+    (error 'define-extended-language "expected a language as first argument, got ~e" old-lang))
   
   (let ([old-nts (compiled-lang-lang old-lang)]
         [old-ht (make-hasheq)]
@@ -1929,7 +1961,7 @@
                   ;; error checking
                   (when (and (ormap not primary-names)
                              (ormap symbol? primary-names))
-                    (error 'extend-language "new language extends old non-terminal ~a and also adds new shortcut ~a"
+                    (error 'define-extended-language "new language extends old non-terminal ~a and also adds new shortcut ~a"
                            (ormap (λ (x y) (and (symbol? x) y)) primary-names names)
                            (ormap (λ (x y) (and (not x) y)) primary-names names)))
                   
@@ -1942,7 +1974,7 @@
                           [(null? primary-names) void]
                           [else 
                            (unless (eq? main-primary (car primary-names))
-                             (error 'extend-language
+                             (error 'define-extended-language
                                     (string-append 
                                      "new language does not have the same non-terminal aliases as the old,"
                                      " non-terminal ~a was not in the same group as ~a in the old language")
@@ -1957,7 +1989,7 @@
                       [(ormap (λ (rhs) (member (rhs-pattern rhs) extend-nt-ellipses))
                               (nt-rhs nt))
                        (unless (hash-ref old-ht (nt-name nt) #f)
-                         (error 'extend-language
+                         (error 'define-extended-language
                                 "the language extends the ~s non-terminal, but that non-terminal is not in the old language"
                                 (nt-name nt)))
                        (hash-set! new-ht 
@@ -2251,6 +2283,7 @@
 (provide language-nts
          apply-reduction-relation
          apply-reduction-relation/tag-with-names
+         apply-reduction-relation/tagged
          apply-reduction-relation*
          variable-not-in
          variables-not-in)

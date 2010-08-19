@@ -679,12 +679,15 @@ all non-GUI portions of Redex) and also exported by
               ([domain (code:line) (code:line #:domain @#,ttpattern)]
                [main-arrow (code:line) (code:line #:arrow arrow)]
                [reduction-case (--> @#,ttpattern @#,tttterm extras ...)]
-               [extras name
+               [extras rule-name
                        (fresh fresh-clause ...)
                        (side-condition racket-expression)
                        (where tl-pat @#,tttterm)
                        (side-condition/hidden racket-expression)
                        (where/hidden tl-pat @#,tttterm)]
+               [rule-name identifier
+                          string 
+                          (computed-name racket-expression)]
                [fresh-clause var ((var1 ...) (var2 ...))]
                [tl-pat identifier (tl-pat-ele ...)]
                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
@@ -697,8 +700,25 @@ refers to the @racket[language], and binds variables in the
 
 Following the @|pattern| and @|tterm| can be the name of the
 reduction rule, declarations of some fresh variables, and/or
-some side-conditions. The name can either be a literal
-name (identifier), or a literal string. 
+some side-conditions.
+
+The rule's name (used in @seclink["Typesetting" "typesetting"],
+the @racket[stepper], @racket[traces], and 
+@racket[apply-reduction-relation/tag-with-names]) can be given
+as a literal (an identifier or a string) or as an expression
+that computes a name using the values of the bound pattern
+variables (much like the rule's right-hand side). Some operations
+require literal names, so a rule definition may provide both
+a literal name and a computed name. In particular, only rules that include
+a literal name may be replaced using @racket[extend-reduction-relation],
+used as breakpoints in the @racket[stepper], and selected using
+@racket[render-reduction-relation-rules]. The output of 
+@racket[apply-reduction-relation/tag-with-names], @racket[traces], and
+the @racket[stepper] prefers the computed name, if it exists. Typesetting
+a rule with a computed name shows the expression that computes the name
+only when the rule has no literal name or when it would not typeset in 
+pink due to @racket[with-unquote-rewriter]s in the context; otherwise,
+the literal name (or nothing) is shown.
 
 The fresh variables clause generates variables that do not
 occur in the term being matched. If the @racket[fresh-clause] is a
@@ -821,10 +841,9 @@ arguments would have stepped.
 }
 
 @defproc[(reduction-relation->rule-names [r reduction-relation?])
-         (listof (union false/c symbol?))]{
+         (listof symbol?)]{
 
-Returns the names of all of the reduction relation's clauses
-(or false if there is no name for a given clause).
+Returns the names of the reduction relation's named clauses.
 }
 
 @defform[(compatible-closure reduction-relation lang non-terminal)]{

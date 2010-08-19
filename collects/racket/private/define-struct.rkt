@@ -83,6 +83,11 @@
         (raise-type-error name "inspector or #f" what)))
     what)
 
+  (define (check-reflection-name name what)
+    (unless (symbol? what)
+      (raise-type-error name "symbol" what))
+    what)
+
   (define-syntax (define-struct* stx)
     (syntax-case stx ()
       [(_ . rest)
@@ -203,6 +208,7 @@
                            (#:mutable . #f)
                            (#:guard . #f)
                            (#:constructor-name . #f)
+                           (#:reflection-name . #f)
                            (#:only-constructor? . #f)
                            (#:omit-define-values . #f)
                            (#:omit-define-syntaxes . #f))]
@@ -271,6 +277,13 @@
                 (extend-config (extend-config config '#:constructor-name (cadr p))
                                '#:only-constructor?
                                (eq? '#:constructor-name (syntax-e (car p))))
+                nongen?)]
+         [(eq? '#:reflection-name (syntax-e (car p)))
+          (check-exprs 1 p "expression")
+          (when (lookup config '#:reflection-name)
+            (bad "multiple" "#:reflection-name keys" (car p)))
+          (loop (cddr p)
+                (extend-config config '#:reflection-name (cadr p))
                 nongen?)]
          [(eq? '#:prefab (syntax-e (car p)))
           (when (lookup config '#:inspector)
@@ -364,7 +377,8 @@
                          (car field-stxes))]
                        [else
                         (loop (cdr fields) (cdr field-stxes) #f)]))])
-               (let*-values ([(inspector super-expr props auto-val guard ctor-name ctor-only? mutable?
+               (let*-values ([(inspector super-expr props auto-val guard ctor-name ctor-only? 
+                                         reflect-name-expr mutable?
                                          omit-define-values? omit-define-syntaxes?)
                               (let ([config (parse-props #'fm (syntax->list #'(prop ...)) super-id)])
                                 (values (lookup config '#:inspector)
@@ -374,6 +388,7 @@
                                         (lookup config '#:guard)
                                         (lookup config '#:constructor-name)
                                         (lookup config '#:only-constructor?)
+                                        (lookup config '#:reflection-name)
                                         (lookup config '#:mutable)
                                         (lookup config '#:omit-define-values)
                                         (lookup config '#:omit-define-syntaxes)))]
@@ -423,7 +438,10 @@
                                           (and super-expr
                                                #`(check-struct-type 'fm #,super-expr)))]
                        [prune (lambda (stx) (identifier-prune-lexical-context stx
-                                                                              (list (syntax-e stx) '#%top)))])
+                                                                              (list (syntax-e stx) '#%top)))]
+                       [reflect-name-expr (if reflect-name-expr
+                                              (quasisyntax (check-reflection-name 'fm #,reflect-name-expr))
+                                              (quasisyntax '#,id))])
                    (let ([run-time-defns
                           (lambda ()
                             (quasisyntax/loc stx
@@ -438,7 +456,7 @@
                                                                                [else (cons #`[(_ #,(field-id (car fields))) #'#,pos]
                                                                                            (loop (cdr fields) (add1 pos)))]))
                                                                          [(_ name) (raise-syntax-error #f "no such field" stx #'name)]))])
-                                                (make-struct-type '#,id
+                                                (make-struct-type #,reflect-name-expr
                                                                   #,super-struct:
                                                                   #,(- (length fields) auto-count)
                                                                   #,auto-count

@@ -4,5 +4,3 @@ perm(c, a).
 perm(b, a).
 perm(b, c).
 perm(c, b).
-
-

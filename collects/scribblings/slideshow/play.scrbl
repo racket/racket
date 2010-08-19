@@ -66,7 +66,9 @@ slide that would be registered with a timeout is instead skipped.}
 
 
 @defproc[(play-n [gen* (() (listof (real-in 0.0 1.0)) . ->* . pict?)]
-                 [#:steps steps exact-positive-integer? 10]
+                 [#:steps steps (or/c exact-positive-integer?
+                                      (improper-listof exact-positive-integer?))
+                          10]
                  [#:delay delay-secs real? 0.05]
                  [#:skip-first? skip-first? any/c #f]
                  [#:skip-last? skip-last? any/c #f]
@@ -110,7 +112,15 @@ If @racket[skip-first?] is @racket[#t], then the very first slide of
 the sequence is skipped. Similarly, if @racket[skip-last?] is
 @racket[#t], then the last slide of the sequence is skipped.
 
-The @racket[steps], @racket[delay-msecs], @racket[title],
+The @racket[steps] argument controls how many steps happen in each
+phase on the animation. If it is a number, then that number is used for
+each phase. If it is a pair of two numbers, then the first number is used
+for the first phase, and the second number is used for the rest of the
+phases. Similarly, if it is @racket[(cons num_1 (cons num_2 num_3))],
+@racket[num_1] and @racket[num_2] are used for the first two phases
+and @racket[num_3] is used for the rest.
+
+The @racket[delay-msecs], @racket[title],
 @racket[name], and @racket[layout] arguments are passed on to
 @racket[play] for each of the @math{n} segments of animation.}
 

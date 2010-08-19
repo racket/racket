@@ -14,4 +14,3 @@ path(d, d).
 path(d, c).
 path(d, b).
 path(d, a).
-

@@ -101,6 +101,19 @@
         '("...."))
   
 
+  (let ()
+    ; error message shows correct form name
+    (test-syn-err
+     (let ()
+       (define-language L)
+       (define-extended-language M L
+         (z () (1 y_1)))
+       (void))
+     #rx"define-extended-language:.*underscore")
+    ; non-terminals added by extension can have underscores
+    (define-extended-language L base-grammar
+      (z () (1 z_1 z_1)))
+    (test (redex-match L z (term (1 () (1 () ())))) #f))
   
   ;; test multiple variable non-terminals
   (let ()
@@ -226,7 +239,7 @@
               main
               [(X Y Z) q])
             (void)))
-        "extend-language: new language extends old non-terminal X and also adds new shortcut Z")
+        "define-extended-language: new language extends old non-terminal X and also adds new shortcut Z")
   
   (test (with-handlers ([exn? exn-message])
           (let () 
@@ -237,7 +250,7 @@
               main
               [(X P) q])
             (void)))
-        "extend-language: new language does not have the same non-terminal aliases as the old, non-terminal P was not in the same group as X in the old language")
+        "define-extended-language: new language does not have the same non-terminal aliases as the old, non-terminal P was not in the same group as X in the old language")
   
   ;; underscores in literals
   (let ()
@@ -898,6 +911,17 @@
          '())
         '(()))
   
+  (test (apply-reduction-relation
+         (reduction-relation
+          empty-language
+          (--> (in-hole (name E
+                              (in-hole ((hide-hole hole) hole)
+                                       hole))
+                        number)
+               (in-hole E ,(add1 (term number)))))
+         (term (hole 2)))
+        (list (term (hole 3))))
+  
   (test (apply-reduction-relation/tag-with-names
          (reduction-relation 
           grammar
@@ -934,6 +958,25 @@
           [(--> (M_1 a) (M_1 b)) (==> a b)])
          '((2 3) (4 5)))
         (list (list "mult" '((2 3) 20))))
+  
+  (test (apply-reduction-relation/tag-with-names
+         (reduction-relation
+          grammar
+          (--> any
+               (number_i number_i*)
+               (where (number_0 ... number_i number_i+1 ...) any)
+               (where (number_0* ... number_i* number_i+1* ...) any)
+               pick-two
+               (computed-name
+                (format "(~s, ~s)"
+                        (length (term (number_0 ...)))
+                        (length (term (number_0* ...)))))))
+         '(9 7))
+        '(("(0, 0)" (9 9)) ("(0, 1)" (9 7)) ("(1, 0)" (7 9)) ("(1, 1)" (7 7))))
+  
+  (test (apply-reduction-relation/tag-with-names
+         (reduction-relation grammar (--> 1 2 (computed-name 3))) 1)
+        '(("3" 2)))
   
   (test (apply-reduction-relation
          (union-reduction-relations
@@ -1375,6 +1418,22 @@
          1)
         '(3 2))
   
+  (test (apply-reduction-relation
+         (extend-reduction-relation
+          (reduction-relation empty-language (--> 1 2 (computed-name 1)))
+          empty-language
+          (--> 1 3 (computed-name 1)))
+         1)
+        '(3 2))
+  
+  (test (apply-reduction-relation
+         (extend-reduction-relation
+          (reduction-relation empty-language (--> 1 2 (computed-name 1) x))
+          empty-language
+          (--> 1 3 (computed-name 1) x))
+         1)
+        '(3))
+  
   (let ()
     (define-language e1
       (e 1))
@@ -1460,6 +1519,13 @@
           (--> q r y)
           (--> r p x)))
         '(a b c z y x))
+  
+  (test (reduction-relation->rule-names
+         (reduction-relation
+          empty-language
+          (--> x y a (computed-name "x to y"))
+          (--> y z (computed-name "y to z"))))
+        '(a))
   
   (test (reduction-relation->rule-names
          (extend-reduction-relation

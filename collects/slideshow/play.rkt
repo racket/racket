@@ -72,7 +72,8 @@
   (let ([n (procedure-arity mid)])
     (let loop ([post (vector->list (make-vector n))]
                [pre null]
-               [skip? skip-first?])
+               [skip? skip-first?]
+               [Ns N])
       (if (null? post)
           (unless skip-last?
             (slide #:title (if (procedure? title) (apply title pre) title)
@@ -89,12 +90,12 @@
                                (apply name (append pre (list n) (cdr post))))
                              name)
                   #:layout layout 
-                  #:steps N
+                  #:steps (if (pair? Ns) (car Ns) Ns)
                   #:delay secs
                   #:skip-first? skip?
                   (lambda (n)
                     (apply mid (append pre (list n) (cdr post)))))
-            (loop (cdr post) (cons 1.0 pre) #f))))))
+            (loop (cdr post) (cons 1.0 pre) #f (if (pair? Ns) (cdr Ns) Ns)))))))
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

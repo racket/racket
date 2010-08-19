@@ -22,6 +22,10 @@ to demonstrate various different uses of PLT Redex:
   with function contracts, (eager) pair contracts, 
   and a few numeric predicates
 
+  delim-cont: The model from Flatt, Yu, Findler, and Felleisen's ICFP
+  '07 paper "Adding Delimited and Composable Control to a Production
+  Programming Environment"
+
   letrec.rkt: shows how to model letrec with a store and
   some infinite looping terms
 

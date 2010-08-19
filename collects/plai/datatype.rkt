@@ -143,14 +143,7 @@
                 #:transparent
                 #:omit-define-syntaxes
                 #:mutable
-                #:property
-                prop:custom-write
-                (lambda (v port write?)
-                  ((if write? write display)
-                   (list 'variant
-                         (variant-field v)
-                         ...)
-                   port)))
+                #:reflection-name 'variant)
               ...
               (define variant? 
                 (flat-named-contract 'variant? variant*?))

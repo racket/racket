@@ -6767,7 +6767,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       mz_runstack_unskipped(jitter, 1);
 
-      mz_rs_sync_fail_branch();
+      mz_rs_sync();
 
       __START_TINY_JUMPS__(1);
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
@@ -6814,6 +6814,8 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       CHECK_LIMIT();
 
       mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
 
       /* check for chaperone: */
       __START_TINY_JUMPS__(1);
@@ -8027,6 +8029,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
+      mz_rs_sync();
       __START_TINY_JUMPS__(1);
       if (!unsafe)
         ref3 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
@@ -10987,6 +10990,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* R0 is argument */
   unbox_code = jit_get_ip().ptr;
   mz_prolog(JIT_R1);
+  JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(1);
   jit_pusharg_p(JIT_R0);
   (void)mz_finish(ts_scheme_unbox);
@@ -10999,6 +11003,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* R0 is box, R1 is value */
   set_box_code = jit_get_ip().ptr;
   mz_prolog(JIT_R2);
+  JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(2);
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);

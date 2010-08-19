@@ -248,6 +248,7 @@ void scheme_init_place(Scheme_Env *env);
 void scheme_init_places_once();
 void scheme_init_futures(Scheme_Env *env);
 void scheme_init_futures_once();
+void scheme_init_futures_per_place();
 
 void scheme_init_print_buffers_places(void);
 void scheme_init_string_places(void);
@@ -2208,14 +2209,16 @@ typedef struct {
 
 typedef struct Scheme_Native_Closure_Data {
   Scheme_Inclhash_Object iso; /* type tag only set when needed, but flags always needed */
-  Scheme_Closed_Prim *code;
+  Scheme_Closed_Prim *code; /* When not yet JITted, this is = to scheme_on_demand_jit_code */
   union {
     void *tail_code;                       /* For non-case-lambda */
     mzshort *arities;                      /* For case-lambda */
   } u;
   void *arity_code;
   mzshort max_let_depth; /* In bytes instead of words */
-  mzshort closure_size;
+  mzshort closure_size; /* if this is negative, then this is a
+                           case-lambda, and the real size is
+                           (-closure-size)-1 */
   union {
     struct Scheme_Closure_Data *orig_code; /* For not-yet-JITted non-case-lambda */
     Scheme_Object *name;
@@ -2282,6 +2285,7 @@ int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o);
 Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o);
+Scheme_Object *scheme_extract_futures(Scheme_Object *o);
 
 Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
 				      Scheme_Comp_Env *upto);
@@ -3053,6 +3057,7 @@ Scheme_Env *scheme_get_kernel_env();
 int scheme_is_kernel_env();
 Scheme_Env *scheme_get_unsafe_env();
 Scheme_Env *scheme_get_flfxnum_env();
+Scheme_Env *scheme_get_futures_env();
 
 void scheme_install_initial_module_set(Scheme_Env *env);
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
@@ -3066,6 +3071,7 @@ Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o);
 int scheme_is_kernel_modname(Scheme_Object *modname);
 int scheme_is_unsafe_modname(Scheme_Object *modname);
 int scheme_is_flfxnum_modname(Scheme_Object *modname);
+int scheme_is_futures_modname(Scheme_Object *modname);
 
 void scheme_clear_modidx_cache(void);
 void scheme_clear_shift_cache(void);

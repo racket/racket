@@ -17,6 +17,7 @@ todo:
          scheme/gui/base
          scheme/list
          scheme/class
+         scheme/set
          framework
          mrlib/graph
          scheme/contract
@@ -217,7 +218,8 @@ todo:
                [(or (not reds-choice)
                     (zero? (send reds-choice get-selection)))
                 #f]
-               [else (list-ref reduction-names (- (send reds-choice get-selection) 1))])])
+               [else (symbol->string
+                      (list-ref reduction-names (- (send reds-choice get-selection) 1)))])])
         (let loop ([next-node click-target]
                    [new-nodes (list)]
                    [cutoff (if looking-for
@@ -235,8 +237,7 @@ todo:
                   (cond
                     [(send (car new-children) in-cycle?)
                      (reverse (cons new-children new-nodes))]
-                    [(equal? (find-reduction-label next-node (car new-children))
-                             looking-for)
+                    [(member looking-for (find-reduction-label next-node (car new-children) #f))
                      (reverse (cons new-children new-nodes))]
                     [else
                      (loop (car new-children)
@@ -367,7 +368,7 @@ todo:
       
       (when red-name-message
         (let ([label (map (λ (x) (if x (format "[~a]" x) "≪unknown≫"))
-                          (find-reduction-label parent child))])
+                          (find-reduction-label parent child #t))])
           (cond
             [(null? label) (void)]
             [(null? (cdr label))
@@ -379,11 +380,13 @@ todo:
               (map (λ (x) (format " and ~a" x))
                    (cdr label)))]))))
     
-    (define (find-reduction-label parent child)
+    (define (find-reduction-label parent child computed?)
       (let ([children (send parent get-children)])
         (and children
              (let loop ([children children]
-                        [red-names (send parent get-successor-names)])
+                        [red-names (if computed?
+                                       (send parent get-successor-computed-names)
+                                       (send parent get-successor-names))])
                (cond
                  [(null? children) #f]
                  [else
@@ -481,32 +484,31 @@ todo:
       ;; (listof (listof string))
       ;; one list element for each successor, one nested list element for each reduction that applied (typically 1)
       (define successor-names #f)
+      (define successor-computed-names #f)
       (define/public (get-successors)
         (unless successors
-          (let ([names/succs (apply-reduction-relation/tag-with-names red term)]
-                [ht (make-hash)])
-            (for-each (λ (name/succ)
-                        (let ([name (car name/succ)]
-                              [succ (cadr name/succ)])
-                          (hash-set! ht succ (cons name (hash-ref ht succ '())))))
-                      names/succs)
-            (let ([merged-names/succs
-                   (let loop ([succs (map cadr names/succs)])
-                     (cond
-                       [(null? succs) null]
-                       [else
-                        (let ([succ (car succs)])
-                          (if (hash-ref ht succ)
-                              (cons (begin0 (list (hash-ref ht succ) succ)
-                                            (hash-set! ht succ #f))
-                                    (loop (cdr succs)))
-                              (loop (cdr succs))))]))])
-              (set! successor-names (map car merged-names/succs))
-              (set! successors (map cadr merged-names/succs)))))
+          (let-values ([(succs names comp-names)
+                        (for/fold ([succs (set)]
+                                   [names #hash()]
+                                   [comp-names #hash()])
+                          ([reduction (apply-reduction-relation/tagged red term)])
+                          (let ([name (first reduction)]
+                                [comp-name (second reduction)]
+                                [succ (third reduction)]
+                                [add (λ (x) (λ (xs) (cons x xs)))])
+                            (values (set-add succs succ)
+                                    (hash-update names succ (add name) '())
+                                    (hash-update comp-names succ (add comp-name) '()))))])
+            (set! successors (set-map succs values))
+            (set! successor-names (map (λ (s) (hash-ref names s)) successors))
+            (set! successor-computed-names (map (λ (s) (hash-ref comp-names s)) successors))))
         successors)
       (define/public (get-successor-names)
         (get-successors) ;; force the variables to be defined
         successor-names)
+      (define/public (get-successor-computed-names)
+        (get-successors) ;; force the variables to be defined
+        successor-computed-names)
       
       (define/public (move-path)
         (change-path this))

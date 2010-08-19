@@ -131,18 +131,13 @@ static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
-void scheme_init_futures(Scheme_Env *env)
+void scheme_init_futures(Scheme_Env *newenv)
 {
-  Scheme_Env *newenv;
-  
-  newenv = scheme_primitive_module(scheme_intern_symbol("#%futures"), 
-                                   env);
-
   FUTURE_PRIM_W_ARITY("future?",          future_p,         1, 1, newenv);
   FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
-  FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
   FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  0, 0, newenv);
   FUTURE_PRIM_W_ARITY("current-future",   current_future,   0, 0, newenv);
+  FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -202,6 +197,7 @@ void scheme_init_futures_once()
 static Scheme_Object *future(int argc, Scheme_Object *argv[]);
 static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
+static Scheme_Object *current_future(int argc, Scheme_Object *argv[]);
 static void futures_init(void);
 static void init_future_thread(struct Scheme_Future_State *fs, int i);
 
@@ -300,7 +296,7 @@ typedef struct future_thread_params_t {
 /**********************************************************************/
 
 /* Invoked by the runtime on startup to make primitives known */
-void scheme_init_futures(Scheme_Env *env)
+void scheme_init_futures(Scheme_Env *newenv)
 {
   Scheme_Object *v, *p;
   Scheme_Env *newenv;
@@ -365,6 +361,15 @@ void scheme_init_futures(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("current-future", p, newenv);
 
+  scheme_add_global_constant(
+                             "current-future", 
+                             scheme_make_prim_w_arity(
+                                                      current_future, 
+                                                      "current-future", 
+                                                      0, 
+                                                      0), 
+                             newenv);
+
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
 }
@@ -372,6 +377,11 @@ void scheme_init_futures(Scheme_Env *env)
 void scheme_init_futures_once()
 {
   init_cpucount();
+}
+
+void scheme_init_futures_per_place()
+{
+  futures_init();
 }
 
 void futures_init(void)
@@ -810,6 +820,12 @@ Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 /* Called in runtime thread */
 {
   return scheme_make_integer(cpucount);
+}
+
+Scheme_Object *current_future(int argc, Scheme_Object *argv[])
+/* Called in runtime thread */
+{
+  return scheme_false;
 }
 
 /* Entry point for a worker thread allocated for

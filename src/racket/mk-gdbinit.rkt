@@ -216,6 +216,10 @@ define psoq
         set $scharp = $scharp + 4
       end
     end
+    if ( $OT == <<scheme_byte_string_type>>)
+      printf "scheme_byte_string_type "
+      p (char *)((Scheme_Simple_Object *)$O)->u.byte_str_val.string_val
+    end
     if ( $OT == <<scheme_unix_path_type>>)
       printf "scheme_unix_path_type "
       p (char *)((Scheme_Simple_Object *)$O)->u.byte_str_val.string_val

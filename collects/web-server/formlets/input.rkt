@@ -9,6 +9,7 @@
 ; Low-level
 (define (next-name i)
   (values (format "input_~a" i) (add1 i)))
+
 (define (make-input* render)
   (lambda (i)
     (let-values ([(w i) (next-name i)])
@@ -19,6 +20,7 @@
                            #:when (bytes=? wb (binding-id b)))
                   b))
               i))))
+
 (define (make-input render)
   (lambda (i)
     (let-values ([(w i) (next-name i)])
@@ -47,8 +49,8 @@
  #;[binding:form/default (bytes? . -> . (formlet/c (binding? . -> . bytes?)))])
 
 ; HTML Spec
-(define (text-or-password 
-         #:password? password?
+(define (input
+         #:type [type "text"]
          #:value [value #f]
          #:size [size #f]
          #:max-length [max-length #f]
@@ -58,8 +60,7 @@
    (lambda (n)
      (list 'input
            (list* (list 'name n)
-                  (list 'type 
-                        (if password? "password" "text"))
+                  (list 'type type)
                   (append
                    (filter list?
                            (list (and value (list 'value (bytes->string/utf-8 value)))
@@ -74,8 +75,8 @@
          #:max-length [max-length #f]
          #:read-only? [read-only? #f]
          #:attributes [attrs empty])
-  (text-or-password 
-   #:password? #f
+  (input
+   #:type "text"
    #:value value
    #:size size
    #:max-length max-length
@@ -88,8 +89,8 @@
          #:max-length [max-length #f]
          #:read-only? [read-only? #f]
          #:attributes [attrs empty])
-  (text-or-password 
-   #:password? #t
+  (input
+   #:type "password"
    #:value value
    #:size size
    #:max-length max-length
@@ -98,28 +99,79 @@
 
 (define (checkbox value checked?
                   #:attributes [attrs empty])
+  (input
+   #:type "checkbox"
+   #:value value
+   #:attributes
+   (if checked? (append (list (list 'checked "true")) attrs) attrs)))
+
+(define (radio value checked?
+               #:attributes [attrs empty])
+  (input
+   #:type "radio"
+   #:attributes
+   (if checked? (append (list (list 'checked "true")) attrs) attrs)))
+
+(define (submit value
+                #:attributes [attrs empty])
+  (input
+   #:type "submit"
+   #:value value
+   #:attributes attrs))
+
+(define (reset value
+               #:attributes [attrs empty])
+  (input
+   #:type "reset"
+   #:value value
+   #:attributes attrs))
+
+(define (file-upload #:attributes [attrs empty])
+  (input
+   #:type "file"
+   #:attributes attrs))
+
+(define (hidden value #:attributes [attrs empty])
+  (input
+   #:type "hidden"
+   #:value value
+   #:attributes attrs))
+
+(define (button type text
+                #:disabled [disabled #f]
+                #:value [value #f]
+                #:attributes [attrs empty])
   (make-input
-   (lambda (n)
-     (list 'input
+   (λ (n)
+     (list 'button
            (list* (list 'name n)
-                  (list 'type "checkbox")
-                  (list 'value (bytes->string/utf-8 value))
-                  (append (if checked? (list (list 'checked "true")) empty)
-                          attrs))))))
+                  (list 'type (bytes->string/utf-8 type))
+                  (append 
+                   (filter list?
+                           (list (and disabled (list 'disabled (if disabled "true" "false")))
+                                 (and value (list 'value (bytes->string/utf-8 value)))))
+                   attrs))
+           (bytes->string/utf-8 text)))))
 
-; XXX radio
-
-; XXX submit
-
-; XXX reset
-
-; XXX file
-
-; XXX hidden
-
-; XXX image
-
-; XXX button
+(define (img alt src
+             #:height [height #f]
+             #:longdesc [ldesc #f]
+             #:usemap [map #f]
+             #:width [width #f]
+             #:attributes [attrs empty])
+  (make-input
+   (λ (n)
+     (list 'img
+           (list* (list 'name n)
+                  (list 'src (bytes->string/utf-8 src))
+                  (list 'alt (bytes->string/utf-8 alt))
+                  (append
+                   (filter list?
+                           (list (and height (list 'height (number->string height)))
+                                 (and ldesc (list 'longdesc (bytes->string/utf-8 ldesc)))
+                                 (and map (list 'usemap (bytes->string/utf-8 map)))
+                                 (and width (list 'width (number->string width)))))
+                   attrs))))))
 
 (define (multiselect-input l
                            #:multiple? [multiple? #t]
@@ -167,34 +219,18 @@
 
 (define (textarea-input
          #:rows [rows #f]
-         #:cols [cols #f])
-  (to-string
-   (required
-    (make-input
-     (lambda (n)
-       (list 'textarea
-             (list* (list 'name n)
-                    (append
-                     (filter list?
-                             (list (and rows (list 'rows (number->string rows)))
-                                   (and cols (list 'cols (number->string cols)))))))
-             ""))))))
+         #:cols [cols #f])   
+  (make-input
+   (lambda (n)
+     (list 'textarea
+           (list* (list 'name n)
+                  (append
+                   (filter list?
+                           (list (and rows (list 'rows (number->string rows)))
+                                 (and cols (list 'cols (number->string cols)))))))                      
+           ""))))
 
 (provide/contract
- [multiselect-input (->* (sequence?)
-                         (#:multiple? boolean?
-                                      #:selected? (any/c . -> . boolean?)
-                                      #:display (any/c . -> . pretty-xexpr/c))
-                         (formlet/c (listof any/c)))]
- [select-input (->* (sequence?)
-                    (#:selected? (any/c . -> . boolean?)
-                                 #:display (any/c . -> . pretty-xexpr/c))
-                    (formlet/c any/c))]
- [textarea-input (()
-                  (#:rows number?
-                   #:cols number?)
-                  . ->* .
-                  (formlet/c string?))]
  [text-input (() 
               (#:value (or/c false/c bytes?)
                        #:size (or/c false/c exact-nonnegative-integer?)
@@ -214,7 +250,57 @@
  [checkbox ((bytes? boolean?)
             (#:attributes (listof (list/c symbol? string?)))
             . ->* .
-            (formlet/c (or/c false/c binding?)))])
+            (formlet/c (or/c false/c binding?)))]
+ [radio ((bytes? boolean?)
+         (#:attributes (listof (list/c symbol? string?)))
+         . ->* .
+         (formlet/c (or/c false/c binding?)))]
+ [submit ((bytes?)         
+          (#:attributes (listof (list/c symbol? string?)))
+          . ->* .
+          (formlet/c (or/c false/c binding?)))]
+ [reset ((bytes?)
+         (#:attributes (listof (list/c symbol? string?)))
+         . ->* .
+         (formlet/c (or/c false/c binding?)))]
+ [file-upload (()
+               (#:attributes (listof (list/c symbol? string?)))
+               . ->* .
+               (formlet/c (or/c false/c binding?)))]
+ [hidden ((bytes?)
+          (#:attributes (listof (list/c symbol? string?)))
+          . ->* .
+          (formlet/c (or/c false/c binding?)))]
+ [img ((bytes? bytes?)
+       (#:height (or/c false/c exact-nonnegative-integer?)
+                 #:longdesc (or/c false/c bytes?)
+                 #:usemap (or/c false/c bytes?)
+                 #:width (or/c false/c exact-nonnegative-integer?)
+                 #:attributes (listof (list/c symbol? string?)))
+       . ->* .
+       (formlet/c (or/c false/c binding?)))]
+ [button ((bytes? bytes?)
+          (#:disabled boolean?
+                      #:value (or/c false/c bytes?)
+                      #:attributes (listof (list/c symbol? string?)))
+          . ->* .
+          (formlet/c (or/c false/c binding?)))]
+ [multiselect-input ((sequence?)
+                     (#:multiple? boolean?
+                                  #:selected? (any/c . -> . boolean?)
+                                  #:display (any/c . -> . pretty-xexpr/c))
+                     . ->* .
+                     (formlet/c (listof any/c)))]
+ [select-input ((sequence?)
+                (#:selected? (any/c . -> . boolean?)
+                             #:display (any/c . -> . pretty-xexpr/c))
+                . ->* .
+                (formlet/c any/c))]
+ [textarea-input (()
+                  (#:rows number?
+                          #:cols number?)
+                  . ->* .
+                  (formlet/c (or/c false/c binding?)))])
 
 ; High-level
 (define (required f)

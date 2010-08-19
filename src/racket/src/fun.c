@@ -4182,7 +4182,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   if ((c == argc) || (c == (argc + 1))) {
     if (c > argc) {
       post = argv2[0];
-      memmove(argv2, argv2 + 1, sizeof(Scheme_Object*)*c);
+      memmove(argv2, argv2 + 1, sizeof(Scheme_Object*)*argc);
     } else
       post = NULL;
     for (i = 0; i < argc; i++) {
@@ -4229,10 +4229,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       return scheme_tail_apply(px->prev, c, argv2);
     }
   } else {
-    /* Last element is a filter for the result(s) */
+    /* First element is a filter for the result(s) */
     if (!SCHEME_PROCP(post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure chaperone: %V: expected <procedure> as last result, produced: %V",
+                       "procedure chaperone: %V: expected <procedure> as first result, produced: %V",
                        px->redirects,
                        post);
     if (auto_val) {

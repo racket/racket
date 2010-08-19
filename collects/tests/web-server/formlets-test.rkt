@@ -152,16 +152,217 @@
                    (test-process (make-input* (lambda (n) n)) empty)
                    empty)
       
+      ; text
       (test-equal? "text-input"
                    (->cons (test-process (text-input) (list (make-binding:form #"input_0" #"value"))))
                    (cons #"input_0" #"value"))
+      (test-equal? "text-input"
+                   (test-display (text-input))
+                   '((input ((name "input_0") (type "text")))))
+      (test-equal? "text-input"
+                   (test-display (text-input #:value #"test"))
+                   '((input ((name "input_0") (type "text") (value "test")))))
+      (test-equal? "text-input"
+                   (test-display (text-input #:size 20))
+                   '((input ((name "input_0") (type "text") (size "20")))))
+      (test-equal? "text-input"
+                   (test-display (text-input #:max-length 20))
+                   '((input ((name "input_0") (type "text") (maxlength "20")))))
+      (test-equal? "text-input"
+                   (test-display (text-input #:read-only? #t))
+                   '((input ((name "input_0") (type "text") (readonly "true")))))
+      (test-equal? "text-input"
+                   (test-display (text-input #:read-only? #f))
+                   '((input ((name "input_0") (type "text")))))
+      (test-equal? "text-input"
+                   (test-display (text-input #:attributes '([test "Test"])))
+                   '((input ((name "input_0") (type "text") (test "Test")))))
+      
+      ; password
       (test-equal? "password-input"
                    (->cons (test-process (password-input) (list (make-binding:form #"input_0" #"value"))))
                    (cons #"input_0" #"value"))
+      (test-equal? "password-input"
+                   (test-display (password-input))
+                   '((input ((name "input_0") (type "password")))))
+      (test-equal? "password-input"
+                   (test-display (password-input #:value #"test"))
+                   '((input ((name "input_0") (type "password") (value "test")))))
+      (test-equal? "password-input"
+                   (test-display (password-input #:size 20))
+                   '((input ((name "input_0") (type "password") (size "20")))))
+      (test-equal? "password-input"
+                   (test-display (password-input #:max-length 20))
+                   '((input ((name "input_0") (type "password") (maxlength "20")))))
+      (test-equal? "password-input"
+                   (test-display (password-input #:read-only? #t))
+                   '((input ((name "input_0") (type "password") (readonly "true")))))
+      (test-equal? "password-input"
+                   (test-display (password-input #:read-only? #f))
+                   '((input ((name "input_0") (type "password")))))
+      (test-equal? "password-input"
+                   (test-display (password-input #:attributes '([test "Test"])))
+                   '((input ((name "input_0") (type "password") (test "Test")))))
+      
+      ; TEXTAREA element
+      (test-equal? "textarea-input"
+                   (binding:form-value (test-process (textarea-input) (list (make-binding:form #"input_0" #"value"))))
+                   #"value")
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input))
+                   '((textarea ([name "input_0"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:rows 80))
+                   '((textarea ([name "input_0"] [rows "80"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:cols 80))
+                   '((textarea ([name "input_0"] [cols "80"]) "")))
+      (test-equal? "textarea-input"
+                   (test-display (textarea-input #:cols 80 #:rows 70))
+                   '((textarea ([name "input_0"] [rows "70"] [cols "80"]) "")))
+      
+      ; checkbox
       (test-equal? "checkbox"
                    (->cons (test-process (checkbox #"start" #t) (list (make-binding:form #"input_0" #"value"))))
                    (cons #"input_0" #"value"))
+      (test-equal? "checkbox"
+                   (test-display (checkbox #"start" #t))
+                   '((input
+                      ((name "input_0") (type "checkbox") (value "start") (checked "true")))))
+      (test-equal? "checkbox"
+                   (test-display (checkbox #"start" #f))
+                   '((input ((name "input_0") (type "checkbox") (value "start")))))
+      (test-equal? "checkbox"
+                   (test-display (checkbox #"start" #t #:attributes '([test "Test"])))
+                   '((input
+                      ((name "input_0")
+                       (type "checkbox")
+                       (value "start")
+                       (checked "true")
+                       (test "Test")))))
       
+      ; radio
+      (test-equal? "radio"
+                   (->cons (test-process (radio #"start" #t) (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "radio"
+                   (test-display (radio #"start" #t))
+                   '((input ((name "input_0") (type "radio") (checked "true")))))
+      (test-equal? "radio"
+                   (test-display (radio #"start" #f))
+                   '((input ((name "input_0") (type "radio")))))
+      (test-equal? "radio"
+                   (test-display (radio #"start" #t #:attributes '([test "Test"])))
+                   '((input ((name "input_0") (type "radio") (checked "true") (test "Test")))))
+      
+      ; submit
+      (test-equal? "submit"
+                   (->cons (test-process (submit #"start") (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "submit"
+                   (test-display (submit #"start"))
+                   '((input ((name "input_0") (type "submit") (value "start")))))
+      (test-equal? "submit"
+                   (test-display (submit #"start" #:attributes '([test "Test"])))
+                   '((input ((name "input_0") (type "submit") (value "start") (test "Test")))))
+      
+      ; reset
+      (test-equal? "reset"
+                   (->cons (test-process (reset #"start") (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "reset"
+                   (test-display (reset #"start"))
+                   '((input ((name "input_0") (type "reset") (value "start")))))
+      (test-equal? "reset"
+                   (test-display (reset #"start" #:attributes '([test "Test"])))
+                   '((input ((name "input_0") (type "reset") (value "start") (test "Test")))))
+      
+      ; file-upload
+      (test-equal? "file-upload"
+                   (->cons (test-process (file-upload) (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "file-upload"
+                   (test-display (file-upload))
+                   '((input ((name "input_0") (type "file")))))
+      (test-equal? "file-upload"
+                   (test-display (file-upload #:attributes '([test "Test"])))
+                   '((input ((name "input_0") (type "file") (test "Test")))))
+      
+      ; hidden
+      (test-equal? "hidden"
+                   (->cons (test-process (hidden #"start") (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "hidden"
+                   (test-display (hidden #"start"))
+                   '((input ((name "input_0") (type "hidden") (value "start")))))
+      (test-equal? "hidden"
+                   (test-display (hidden #"start" #:attributes '([test "Test"])))
+                   '((input ((name "input_0") (type "hidden") (value "start") (test "Test")))))
+      
+      ; IMG elements
+      (test-equal? "img"
+                   (->cons (test-process (img #"start" #"a") (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1"))
+                   '((img ((name "input_0") (src "http://h.d.com/1") (alt "pic")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:attributes '([test "Test"])))
+                   '((img ((name "input_0") (src "http://h.d.com/1") (alt "pic") (test "Test")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:height 12))
+                   '((img ((name "input_0") (src "http://h.d.com/1") (alt "pic") (height "12")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:longdesc #"longer desc"))
+                   '((img
+                      ((name "input_0")
+                       (src "http://h.d.com/1")
+                       (alt "pic")
+                       (longdesc "longer desc")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:usemap #"#map"))
+                   '((img
+                      ((name "input_0") (src "http://h.d.com/1") (alt "pic") (usemap "#map")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:width 50))
+                   '((img ((name "input_0") (src "http://h.d.com/1") (alt "pic") (width "50")))))
+      (test-equal? "img"
+                   (test-display (img #"pic" #"http://h.d.com/1" #:height 12 #:longdesc #"longer desc" #:usemap #"#map" #:width 50))
+                   '((img
+                      ((name "input_0")
+                       (src "http://h.d.com/1")
+                       (alt "pic")
+                       (height "12")
+                       (longdesc "longer desc")
+                       (usemap "#map")
+                       (width "50")))))
+      
+      ; BUTTON element
+      (test-equal? "button"
+                   (->cons (test-process (button #"start" #"a") (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me"))
+                   '((button ((name "input_0") (type "button")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:attributes '([test "Test"])))
+                   '((button ((name "input_0") (type "button") (test "Test")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:disabled #t))
+                   '((button ((name "input_0") (type "button") (disabled "true")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:disabled #f))
+                   '((button ((name "input_0") (type "button")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:value #"b1"))
+                   '((button ((name "input_0") (type "button") (value "b1")) "click me")))
+      (test-equal? "button"
+                   (test-display (button #"button" #"click me" #:disabled #t #:value #"b2"))
+                   '((button
+                      ((name "input_0") (type "button") (disabled "true") (value "b2"))
+                      "click me")))
+      
+      ; multiselect      
       (test-equal? "multiselect-input"
                    (test-process (multiselect-input (list 1 2 3))
                                  (list (make-binding:form #"input_0" #"0")))
@@ -175,9 +376,43 @@
                    (test-process (multiselect-input (list 1 2 3))
                                  empty)
                    empty)
+      (test-equal? "multiselect-input"
+                   (test-display (multiselect-input (list 1 2 3)))
+                   '((select
+                      ((multiple "true") (name "input_0"))
+                      (option ((value "0")) 1)
+                      (option ((value "1")) 2)
+                      (option ((value "2")) 3))))
+      (test-equal? "multiselect-input"
+                   (test-display (multiselect-input (list 1 2 3) #:multiple? #t))
+                   '((select
+                      ((multiple "true") (name "input_0"))
+                      (option ((value "0")) 1)
+                      (option ((value "1")) 2)
+                      (option ((value "2")) 3))))
+      (test-equal? "multiselect-input"
+                   (test-display (multiselect-input (list 1 2 3) #:multiple? #f))
+                   '((select
+                      ((name "input_0"))
+                      (option ((value "0")) 1)
+                      (option ((value "1")) 2)
+                      (option ((value "2")) 3))))
+      (test-equal? "multiselect-input"
+                   (test-display (multiselect-input (list 1 2 3) #:selected? even?))
+                   '((select
+                      ((multiple "true") (name "input_0"))
+                      (option ((value "0")) 1)
+                      (option ((value "1") (selected "true")) 2)
+                      (option ((value "2")) 3))))
+      (test-equal? "multiselect-input"
+                   (test-display (multiselect-input (list 1 2 3) #:display number->string))
+                   '((select
+                      ((multiple "true") (name "input_0"))
+                      (option ((value "0")) "1")
+                      (option ((value "1")) "2")
+                      (option ((value "2")) "3"))))
       
-      ; XXX check output
-      
+      ; select
       (test-equal? "select-input"
                    (test-process (select-input (list 1 2 3))
                                  (list (make-binding:form #"input_0" #"0")))
@@ -192,6 +427,27 @@
                 (lambda ()
                   (test-process (select-input (list 1 2 3))
                                 empty)))
+      (test-equal? "select-input"
+                   (test-display (select-input (list 1 2 3)))
+                   '((select
+                      ((name "input_0"))
+                      (option ((value "0")) 1)
+                      (option ((value "1")) 2)
+                      (option ((value "2")) 3))))
+      (test-equal? "select-input"
+                   (test-display (select-input (list 1 2 3) #:selected? even?))
+                   '((select
+                      ((name "input_0"))
+                      (option ((value "0")) 1)
+                      (option ((value "1") (selected "true")) 2)
+                      (option ((value "2")) 3))))
+      (test-equal? "select-input"
+                   (test-display (select-input (list 1 2 3) #:display number->string))
+                   '((select
+                      ((name "input_0"))
+                      (option ((value "0")) "1")
+                      (option ((value "1")) "2")
+                      (option ((value "2")) "3")))) 
       
       (test-equal? "required" 
                    (test-process (required (text-input)) (list (make-binding:form #"input_0" #"value")))
@@ -207,22 +463,6 @@
       (test-equal? "default"
                    (test-process (default #"def" (text-input)) empty)
                    #"def")
-      
-      (test-equal? "textarea-input"
-                   (test-process (textarea-input) (list (make-binding:form #"input_0" #"value")))
-                   "value")
-      (test-equal? "textarea-input"
-                   (test-display (textarea-input))
-                   '((textarea ([name "input_0"]) "")))
-      (test-equal? "textarea-input"
-                   (test-display (textarea-input #:rows 80))
-                   '((textarea ([name "input_0"] [rows "80"]) "")))
-      (test-equal? "textarea-input"
-                   (test-display (textarea-input #:cols 80))
-                   '((textarea ([name "input_0"] [cols "80"]) "")))
-      (test-equal? "textarea-input"
-                   (test-display (textarea-input #:cols 80 #:rows 70))
-                   '((textarea ([name "input_0"] [rows "70"] [cols "80"]) "")))
       
       (test-equal? "to-string"
                    (test-process (to-string (required (text-input))) (list (make-binding:form #"input_0" #"value")))

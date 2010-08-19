@@ -6828,6 +6828,9 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                      && scheme_extract_flfxnum(var)) {
             return scheme_extract_flfxnum(var);
           } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
+                     && scheme_extract_futures(var)) {
+            return scheme_extract_futures(var);
+          } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
                      || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type))
 	    return scheme_register_toplevel_in_prefix(var, env, rec, drec, 
                                                       scheme_is_imported(var, env));

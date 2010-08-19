@@ -26,6 +26,7 @@
                               (code:line #:prefab)
                               (code:line #:constructor-name constructor-id)
                               (code:line #:extra-constructor-name constructor-id)
+                              (code:line #:reflection-name symbol-expr)
                               #:omit-define-syntaxes
                               #:omit-define-values]
                [field-option #:mutable
@@ -133,6 +134,13 @@ includes @racket[constructor-id] as an export. If
 and it is not the same as @racket[id], then @racket[id] does not serve
 as a constructor, and @racket[object-name] on the constructor produces
 the symbolic form of @racket[constructor-id].
+
+If @racket[#:reflection-name symbol-expr] is provided, then
+@racket[symbol-expr] must produce a symbol that is used to identify
+the structure type in reflective operations such as
+@racket[struct-type-info]. It corresponds to the first argument of
+@racket[make-struct-type]. Structure printing uses the reflective
+name, as do the various procedures that are bound by @racket[struct].
 
 If the @racket[#:omit-define-syntaxes] option is supplied, then
 @racket[id] is not bound as a transformer. If the
