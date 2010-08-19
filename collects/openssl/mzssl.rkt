@@ -45,7 +45,9 @@
 
 	   ssl-listener?
 	   ssl-addresses
-	   ssl-abandon-port)
+	   ssl-abandon-port
+
+           ssl-port?)
 
   (unsafe!)
 
@@ -938,17 +940,19 @@
       (let ([p (ephemeron-value v)])
 	(values (car p) (cdr p)))))
 
-  (define (ssl-addresses p . more)
+  (define (ssl-addresses p [port-numbers? #f])
     (let-values ([(mzssl input?) (lookup 'ssl-addresses "SSL port" p)])
-      (apply tcp-addresses
-             (if input? (mzssl-i mzssl) (mzssl-o mzssl))
-             more)))
+      (tcp-addresses (if input? (mzssl-i mzssl) (mzssl-o mzssl))
+                     port-numbers?)))
 
   (define (ssl-abandon-port p)
     (let-values ([(mzssl input?) (lookup 'ssl-abandon-port "SSL output port" p)])
       (when input?
 	(raise-type-error 'ssl-abandon-port "SSL output port" p))
       (set-mzssl-shutdown-on-close?! mzssl #f)))
+
+  (define (ssl-port? v)
+    (and (hash-ref ssl-ports v #f) #t))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL listen

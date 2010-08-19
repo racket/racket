@@ -175,6 +175,24 @@ The @scheme[ssl-accept/enable-break] procedure is analogous to
 @scheme[tcp-accept/enable-break].}
 
 
+@defproc[(ssl-abandon-port [in (and/c ssl-port? output-port?)]) void?]{
+
+Analogous to @racket[tcp-abandon-port].}
+
+
+@defproc[(ssl-addresses [p ssl-port?][port-numbers? any/c #f]) void?]{
+
+Analogous to @racket[tcp-addresses].}
+
+
+@defproc[(ssl-port? [v any/c]) boolean?]{
+
+Returns @racket[#t] of @racket[v] is an SSL port produced by
+@racket[ssl-connect], @racket[ssl-connect/enable-break],
+@racket[ssl-accept], @racket[ssl-accept/enable-break], or
+@racket[ports->ssl-ports].}
+
+
 @defproc[(ssl-make-server-context (protocol symbol?))
          ssl-server-context?]{
 
@@ -184,6 +202,7 @@ Like @scheme[ssl-make-client-context], but creates a server context.}
 
 Returns @scheme[#t] if @scheme[v] is a value produced by
 @scheme[ssl-make-server-context], @scheme[#f] otherwise.}
+
 
 @; ----------------------------------------------------------------------
 
