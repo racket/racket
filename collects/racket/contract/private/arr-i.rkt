@@ -449,8 +449,7 @@
             ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
             ;; argument is not dependened on by anything)
             [indy-arg-proj-vars (list->vector (map (λ (x) (maybe-generate-temporary
-                                                           (and (not (arg/res-vars x))
-                                                                (free-identifier-mapping-get used-indy-vars 
+                                                           (and (free-identifier-mapping-get used-indy-vars 
                                                                                              (arg/res-var x)
                                                                                              (λ () #f))
                                                                 (arg/res-var x)))) 
@@ -465,7 +464,7 @@
             ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
             ;; result is not dependened on by anything)
             [indy-res-proj-vars (list->vector (map (λ (x) (maybe-generate-temporary
-                                                           (and (not (arg/res-vars x))
+                                                           (and #;(not (arg/res-vars x))
                                                                 (free-identifier-mapping-get used-indy-vars 
                                                                                              (arg/res-var x)
                                                                                              (λ () #f))
@@ -492,15 +491,17 @@
                     #,@(if (istx-post an-istx) (list #'post-proc) '())
                     
                     ;; first the non-dependent arg projections
-                    #,@(filter values (map (λ (arg arg-proj-var) (and (not (arg/res-vars arg)) arg-proj-var))
+                    #,@(filter values (map (λ (arg/res arg-proj-var) (and (not (arg/res-vars arg/res)) arg-proj-var))
                                            args+rst
                                            (vector->list arg-proj-vars)))
                     ;; then the dependent arg projections
-                    #,@(filter values (map (λ (arg arg-proj-var) (and (arg/res-vars arg) arg-proj-var))
+                    #,@(filter values (map (λ (arg/res arg-proj-var) (and (arg/res-vars arg/res) arg-proj-var))
                                            args+rst
                                            (vector->list arg-proj-vars)))
                     ;; then the non-dependent indy arg projections
-                    #,@(filter values (vector->list indy-arg-proj-vars))
+                    #,@(filter values (map (λ (arg/res arg-proj-var) (and (not (arg/res-vars arg/res)) arg-proj-var))
+                                           args+rst
+                                           (vector->list indy-arg-proj-vars)))
                     
                     
                     ;; then the non-dependent res projections
@@ -512,7 +513,10 @@
                                            (or (istx-ress an-istx) '())
                                            (vector->list res-proj-vars)))
                     ;; then the non-dependent indy res projections
-                    #,@(filter values (vector->list indy-res-proj-vars)))
+                    #,@(filter values (map (λ (arg/res res-proj-var) (and (not (arg/res-vars arg/res)) res-proj-var))
+                                           (or (istx-ress an-istx) '())
+                                           (vector->list indy-res-proj-vars))))
+
             (λ (val)
               (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
               (make-contracted-function
@@ -547,7 +551,7 @@
   (let ([ctc (coerce-contract '->i ctc)])
     (((contract-projection ctc) blame) obj)))
 
-(define-for-syntax (used-indy-vars an-istx)
+(define-for-syntax (mk-used-indy-vars an-istx)
   (let ([vars (make-free-identifier-mapping)])
     
     ;; add in regular arguments' uses
@@ -584,7 +588,7 @@
 
 (define-syntax (->i/m stx)
   (let* ([an-istx (parse-->i stx)]
-         [used-indy-vars (used-indy-vars an-istx)]
+         [used-indy-vars (mk-used-indy-vars an-istx)]
          [wrapper-func (mk-wrapper-func an-istx used-indy-vars)]
          [args+rst (append (istx-args an-istx)
                            (if (istx-rst an-istx)

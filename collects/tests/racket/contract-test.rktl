@@ -2433,6 +2433,48 @@
       (unbox b))
    '(5 4 3 2 1))
 
+  (test/spec-passed/result
+   '->i44
+   '((contract (->i ([x () any/c])
+					[y any/c]
+					#:post (x) x)
+			   (lambda (x) x)
+			   'pos
+			   'neg)
+	 #t)
+   '#t)
+
+  (test/pos-blame
+   '->i45
+   '((contract (->i ([x () any/c])
+					[y any/c]
+					#:post (x) x)
+			   (lambda (x) x)
+			   'pos
+			   'neg)
+	 #f))
+
+  (test/spec-passed/result
+   '->i46
+   '((contract (->i ([x any/c])
+					[y () any/c]
+					#:post (y) y)
+			   (lambda (x) x)
+			   'pos
+			   'neg)
+	 #t)
+   '#t)
+
+  (test/pos-blame
+   '->i47
+   '((contract (->i ([x any/c])
+					[y () any/c]
+					#:post (y) y)
+			   (lambda (x) x)
+			   'pos
+			   'neg)
+	 #f))
+
   (test/pos-blame
    '->i-arity1
    '(contract (->i ([x number?]) () any) (λ () 1) 'pos 'neg))
