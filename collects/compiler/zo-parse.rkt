@@ -1,9 +1,11 @@
 #lang scheme/base
-(require mzlib/etc 
+(require mzlib/etc
+         racket/function
          scheme/match
          scheme/list
          unstable/struct
-         compiler/zo-structs)
+         compiler/zo-structs
+         racket/dict)
 
 (provide zo-parse)
 (provide (all-from-out compiler/zo-structs))
@@ -29,6 +31,8 @@
 |#
 ;; ----------------------------------------
 ;; Bytecode unmarshalers for various forms
+
+(define debug-symrefs #f)
 
 (define (read-toplevel v)
   (define SCHEME_TOPLEVEL_CONST #x01)
@@ -503,157 +507,172 @@
 
 ;; ----------------------------------------
 ;; Syntax unmarshaling
+(define (make-memo) (make-weak-hash))
+(define (with-memo* mt arg thnk)
+  (hash-ref! mt arg thnk))
+(define-syntax-rule (with-memo mt arg body ...)
+  (with-memo* mt arg (λ () body ...)))
+
 (define (decode-mark-map alist)
-  alist
-  #;(let loop ([alist alist]
-             [ht (make-immutable-hasheq empty)])
-    (match alist
-      [(list) ht]
-      [(list* (? number? key) (? module-path-index? val) alist)
-       (loop alist (hash-set ht key val))])))
+  alist)
 
+(define marks-memo (make-memo))
 (define (decode-marks cp ms)
-  (match ms
-    [#f #f]
-    [(list* #f (? number? symref) alist)
-     (make-certificate:ref
-      (vector-ref (cport-symtab cp) symref)
-      (decode-mark-map alist))]
-    [(list* (? list? nested) alist)
-     (make-certificate:nest (decode-mark-map nested) (decode-mark-map alist))]))
+  (with-memo marks-memo ms
+    (match ms
+      [#f #f]
+      [(list* #f (? number? symref) alist)
+       (make-certificate:ref
+        (symtab-lookup cp symref)
+        (decode-mark-map alist))]
+      [(list* (? list? nested) alist)
+       (make-certificate:nest (decode-mark-map nested) (decode-mark-map alist))])))
 
+(define stx-memo (make-memo))
+; XXX More memo use
 (define (decode-stx cp v)
-  (if (integer? v)
-      (unmarshal-stx-get/decode cp v decode-stx)
-      (let loop ([v v])
-        (let-values ([(cert-marks v encoded-wraps)
-                      (match v
-                        [`#((,datum . ,wraps) ,cert-marks) (values cert-marks datum wraps)]
-                        [`(,datum . ,wraps) (values #f datum wraps)]
-                        [else (error 'decode-wraps "bad datum+wrap: ~.s" v)])])
-          (let* ([wraps (decode-wraps cp encoded-wraps)]
-                 [marks (decode-marks cp cert-marks)]
-                 [add-wrap (lambda (v) (make-wrapped v wraps marks))])
-            (cond
-              [(pair? v)
-               (if (eq? #t (car v))
-                   ;; Share decoded wraps with all nested parts.
-                   (let loop ([v (cdr v)])
-                     (cond
-                       [(pair? v) 
-                        (let ploop ([v v])
+  (with-memo stx-memo v
+    (if (integer? v)
+        (unmarshal-stx-get/decode cp v decode-stx) 
+        (let loop ([v v])
+          (let-values ([(cert-marks v encoded-wraps)
+                        (match v
+                          [`#((,datum . ,wraps) ,cert-marks) (values cert-marks datum wraps)]
+                          [`(,datum . ,wraps) (values #f datum wraps)]
+                          [else (error 'decode-wraps "bad datum+wrap: ~.s" v)])])
+            (let* ([wraps (decode-wraps cp encoded-wraps)]
+                   [marks (decode-marks cp cert-marks)]
+                   [wrapped-memo (make-memo)]
+                   [add-wrap (lambda (v) (with-memo wrapped-memo v (make-wrapped v wraps marks)))])
+              (cond
+                [(pair? v)
+                 (if (eq? #t (car v))
+                     ;; Share decoded wraps with all nested parts.
+                     (let loop ([v (cdr v)])
+                       (cond
+                         [(pair? v) 
+                          (let ploop ([v v])
+                            (cond
+                              [(null? v) null]
+                              [(pair? v) (add-wrap (cons (loop (car v)) (ploop (cdr v))))]
+                              [else (loop v)]))]
+                         [(box? v) (add-wrap (box (loop (unbox v))))]
+                         [(vector? v)
+                          (add-wrap (list->vector (map loop (vector->list v))))]
+                         [(prefab-struct-key v)
+                          => (lambda (k)
+                               (add-wrap
+                                (apply
+                                 make-prefab-struct 
+                                 k
+                                 (map loop (struct->list v)))))]
+                         [else (add-wrap v)]))
+                     ;; Decode sub-elements that have their own wraps:
+                     (let-values ([(v counter) (if (exact-integer? (car v))
+                                                   (values (cdr v) (car v))
+                                                   (values v -1))])
+                       (add-wrap
+                        (let ploop ([v v][counter counter])
                           (cond
                             [(null? v) null]
-                            [(pair? v) (add-wrap (cons (loop (car v)) (ploop (cdr v))))]
-                            [else (loop v)]))]
-                       [(box? v) (add-wrap (box (loop (unbox v))))]
-                       [(vector? v)
-                        (add-wrap (list->vector (map loop (vector->list v))))]
-                       [(prefab-struct-key v)
-                        => (lambda (k)
-                             (add-wrap
-                              (apply
-                               make-prefab-struct 
-                               k
-                               (map loop (struct->list v)))))]
-                       [else (add-wrap v)]))
-                   ;; Decode sub-elements that have their own wraps:
-                   (let-values ([(v counter) (if (exact-integer? (car v))
-                                                 (values (cdr v) (car v))
-                                                 (values v -1))])
-                     (add-wrap
-                      (let ploop ([v v][counter counter])
-                        (cond
-                          [(null? v) null]
-                          [(or (not (pair? v)) (zero? counter)) (loop v)]
-                          [(pair? v) (cons (loop (car v))
-                                           (ploop (cdr v) (sub1 counter)))])))))]
-              [(box? v) (add-wrap (box (loop (unbox v))))]
-              [(vector? v)
-               (add-wrap (list->vector (map loop (vector->list v))))]
-              [(prefab-struct-key v)
-               => (lambda (k)
-                    (add-wrap
-                     (apply
-                      make-prefab-struct 
-                      k
-                      (map loop (struct->list v)))))]
-              [else (add-wrap v)]))))))
+                            [(or (not (pair? v)) (zero? counter)) (loop v)]
+                            [(pair? v) (cons (loop (car v))
+                                             (ploop (cdr v) (sub1 counter)))])))))]
+                [(box? v) (add-wrap (box (loop (unbox v))))]
+                [(vector? v)
+                 (add-wrap (list->vector (map loop (vector->list v))))]
+                [(prefab-struct-key v)
+                 => (lambda (k)
+                      (add-wrap
+                       (apply
+                        make-prefab-struct 
+                        k
+                        (map loop (struct->list v)))))]
+                [else (add-wrap v)])))))))
 
+(define wrape-memo (make-memo))
+(define (decode-wrape cp a)
+  (define (aloop a) (decode-wrape cp a))
+  (with-memo wrape-memo a
+    ; A wrap-elem is either
+    (cond
+      ; A reference 
+      [(integer? a) 
+       (unmarshal-stx-get/decode cp a (lambda (cp v) (aloop v)))]
+      ; A mark (not actually a number as the C says, but a (list <num>)
+      [(and (pair? a) (number? (car a)))
+       (make-wrap-mark (car a))]
+      
+      [(vector? a) 
+       (make-lexical-rename (vector-ref a 0) (vector-ref a 1)
+                            (let ([top (+ (/ (- (vector-length a) 2) 2) 2)])
+                              (let loop ([i 2])
+                                (if (= i top)
+                                    null
+                                    (cons (cons (vector-ref a i)
+                                                (vector-ref a (+ (- top 2) i)))
+                                          (loop (+ i 1)))))))]
+      [(pair? a)
+       (let-values ([(plus-kern? a) (if (eq? (car a) #t)
+                                        (values #t (cdr a))
+                                        (values #f a))])
+         (match a
+           [`(,phase ,kind ,set-id ,maybe-unmarshals . ,renames)
+            (let-values ([(unmarshals renames mark-renames)
+                          (if (vector? maybe-unmarshals)
+                              (values null maybe-unmarshals renames)
+                              (values maybe-unmarshals
+                                      (car renames)
+                                      (cdr renames)))])
+              (make-module-rename phase 
+                                  (if kind 'marked 'normal)
+                                  set-id
+                                  (map (curry decode-all-from-module cp) unmarshals)
+                                  (decode-renames renames)
+                                  mark-renames
+                                  (and plus-kern? 'plus-kern)))]
+           [else (error "bad module rename: ~e" a)]))]
+      [(boolean? a)
+       (make-top-level-rename a)]
+      [(symbol? a)
+       (make-mark-barrier a)]
+      [(box? a)
+       (match (unbox a)
+         [(list (? symbol?) ...) (make-prune (unbox a))]
+         [`#(,amt ,src ,dest #f) 
+          (make-phase-shift amt 
+                            (parse-module-path-index cp src)
+                            (parse-module-path-index cp dest))]
+         [else (error 'parse "bad phase shift: ~e" a)])]
+      [else (error 'decode-wraps "bad wrap element: ~e" a)])))
+
+(define all-from-module-memo (make-memo))
+(define (decode-all-from-module cp afm)
+  (define (phase? v)
+    (or (number? v) (not v)))
+  (with-memo all-from-module-memo afm
+    (match afm
+      [(list* path (? phase? phase) (? phase? src-phase) 
+              (list exn ...) prefix)
+       (make-all-from-module
+        (parse-module-path-index cp path)
+        phase src-phase exn (vector prefix))]
+      [(list* path (? phase? phase) (list exn ...) (? phase? src-phase))
+       (make-all-from-module
+        (parse-module-path-index cp path)
+        phase src-phase exn #f)]
+      [(list* path (? phase? phase) (? phase? src-phase))
+       (make-all-from-module
+        (parse-module-path-index cp path)
+        phase src-phase #f #f)])))
+
+(define wraps-memo (make-memo))
 (define (decode-wraps cp w)
-  ; A wraps is either a indirect reference or a list of wrap-elems (from stxobj.c:252)
-  (if (integer? w)
-      (unmarshal-stx-get/decode cp w decode-wraps)
-      (map (lambda (a)
-             (let aloop ([a a])
-               ; A wrap-elem is either
-               (cond
-                 ; A reference 
-                 [(integer? a) 
-                  (unmarshal-stx-get/decode cp a (lambda (cp v) (aloop v)))]
-                 ; A mark (not actually a number as the C says, but a (list <num>)
-                 [(and (pair? a) (number? (car a)))
-                  (make-wrap-mark (car a))]
-                 
-                 [(vector? a) 
-                  (make-lexical-rename (vector-ref a 0) (vector-ref a 1)
-                                       (let ([top (+ (/ (- (vector-length a) 2) 2) 2)])
-                                         (let loop ([i 2])
-                                           (if (= i top)
-                                               null
-                                               (cons (cons (vector-ref a i)
-                                                           (vector-ref a (+ (- top 2) i)))
-                                                     (loop (+ i 1)))))))]
-                 [(pair? a)
-                  (let-values ([(plus-kern? a) (if (eq? (car a) #t)
-                                                   (values #t (cdr a))
-                                                   (values #f a))])
-                    (match a
-                      [`(,phase ,kind ,set-id ,maybe-unmarshals . ,renames)
-                       (let-values ([(unmarshals renames mark-renames)
-                                     (if (vector? maybe-unmarshals)
-                                         (values null maybe-unmarshals renames)
-                                         (values maybe-unmarshals
-                                                 (car renames)
-                                                 (cdr renames)))])
-                         (make-module-rename phase 
-                                             (if kind 'marked 'normal)
-                                             set-id
-                                             (map (local [(define (phase? v)
-                                                            (or (number? v) (not v)))]
-                                                    (match-lambda
-                                                      [(list* path (? phase? phase) (? phase? src-phase) 
-                                                              (list exn ...) prefix)
-                                                       (make-all-from-module
-                                                        (parse-module-path-index cp path)
-                                                        phase src-phase exn (vector prefix))]
-                                                      [(list* path (? phase? phase) (list exn ...) (? phase? src-phase))
-                                                       (make-all-from-module
-                                                        (parse-module-path-index cp path)
-                                                        phase src-phase exn #f)]
-                                                      [(list* path (? phase? phase) (? phase? src-phase))
-                                                       (make-all-from-module
-                                                        (parse-module-path-index cp path)
-                                                        phase src-phase #f #f)]))
-                                                  unmarshals)
-                                             (decode-renames renames)
-                                             mark-renames
-                                             (and plus-kern? 'plus-kern)))]
-                      [else (error "bad module rename: ~e" a)]))]
-                 [(boolean? a)
-                  (make-top-level-rename a)]
-                 [(symbol? a)
-                  (make-mark-barrier a)]
-                 [(box? a)
-                  (match (unbox a)
-                    [(list (? symbol?) ...) (make-prune (unbox a))]
-                    [`#(,amt ,src ,dest #f) 
-                     (make-phase-shift amt 
-                                       (parse-module-path-index cp src)
-                                       (parse-module-path-index cp dest))]
-                    [else (error 'parse "bad phase shift: ~e" a)])]
-                 [else (error 'decode-wraps "bad wrap element: ~e" a)])))
-           w)))
+  (with-memo wraps-memo w
+    ; A wraps is either a indirect reference or a list of wrap-elems (from stxobj.c:252)
+    (if (integer? w)
+        (unmarshal-stx-get/decode cp w decode-wraps)
+        (map (curry decode-wrape cp) w))))
 
 (define (in-vector* v n)
   (make-do-sequence
@@ -665,40 +684,48 @@
              (λ _ #t)
              (λ _ #t)))))
 
-(define (decode-renames renames)
-  (define decode-nominal-path
-    (match-lambda
+(define nominal-path-memo (make-memo))
+(define (decode-nominal-path np)
+  (with-memo nominal-path-memo np
+    (match np
       [(cons nominal-path (cons import-phase nominal-phase))
        (make-phased-nominal-path nominal-path import-phase nominal-phase)]
       [(cons nominal-path import-phase)
        (make-imported-nominal-path nominal-path import-phase)]
       [nominal-path
-       (make-simple-nominal-path nominal-path)]))
-  
-  ; XXX Weird test copied from C code. Matthew?
-  (define (nom_mod_p p)
-    (and (pair? p) (not (pair? (cdr p))) (not (symbol? (cdr p))))) 
-  
-  (for/list ([(k v) (in-vector* renames 2)])
-    (cons k 
-          (match v
-            [(list-rest path phase export-name nominal-path nominal-export-name)
-             (make-phased-module-binding path
-                                         phase
-                                         export-name
-                                         (decode-nominal-path nominal-path) 
-                                         nominal-export-name)]
-            [(list-rest path export-name nominal-path nominal-export-name)
-             (make-exported-nominal-module-binding path
-                                                   export-name 
-                                                   (decode-nominal-path nominal-path)
-                                                   nominal-export-name)]
-            [(cons module-path-index (? nom_mod_p nominal-path))
-             (make-nominal-module-binding module-path-index (decode-nominal-path nominal-path))]
-            [(cons module-path-index export-name)
-             (make-exported-module-binding module-path-index export-name)]
-            [module-path-index 
-             (make-simple-module-binding module-path-index)]))))
+       (make-simple-nominal-path nominal-path)])))
+
+; XXX Weird test copied from C code. Matthew?
+(define (nom_mod_p p)
+  (and (pair? p) (not (pair? (cdr p))) (not (symbol? (cdr p))))) 
+
+(define rename-v-memo (make-memo))
+(define (decode-rename-v v)
+  (with-memo rename-v-memo v
+    (match v
+      [(list-rest path phase export-name nominal-path nominal-export-name)
+       (make-phased-module-binding path
+                                   phase
+                                   export-name
+                                   (decode-nominal-path nominal-path) 
+                                   nominal-export-name)]
+      [(list-rest path export-name nominal-path nominal-export-name)
+       (make-exported-nominal-module-binding path
+                                             export-name 
+                                             (decode-nominal-path nominal-path)
+                                             nominal-export-name)]
+      [(cons module-path-index (? nom_mod_p nominal-path))
+       (make-nominal-module-binding module-path-index (decode-nominal-path nominal-path))]
+      [(cons module-path-index export-name)
+       (make-exported-module-binding module-path-index export-name)]
+      [module-path-index 
+       (make-simple-module-binding module-path-index)])))
+
+(define renames-memo (make-memo))
+(define (decode-renames renames)
+  (with-memo renames-memo renames
+    (for/list ([(k v) (in-vector* renames 2)])
+      (cons k (decode-rename-v v)))))
 
 (define (parse-module-path-index cp s)
   s)
@@ -734,7 +761,6 @@
                             [read-accept-dot #t]
                             [read-accept-infix-dot #t]
                             [read-accept-quasiquote #t]
-                            ;; Use a readtable for special path support in escaped:
                             [current-readtable
                              (make-readtable 
                               #f
@@ -910,10 +936,10 @@
              (make-application (read-compact cp)
                                (for/list ([i (in-range c)])
                                  (read-compact cp))))]          
-          [(closure)
+          [(closure) ; XXX The use of indirect may be an artifact from pre-placeholder days
            (let* ([l (read-compact-number cp)]
                   [ind (make-indirect #f)])
-             (placeholder-set! (vector-ref (cport-symtab cp) l) ind)
+             (symtab-write! cp l ind)
              (let* ([v (read-compact cp)]
                     [cl (make-closure v (gensym
                                          (let ([s (lam-name v)])
@@ -941,15 +967,22 @@
   (if decoded?
       v2
       (let ([dv2 (decode-stx cp v2)])
-        (placeholder-set! (vector-ref (cport-symtab cp) pos) dv2)
+        (symtab-write! cp pos dv2)
         (vector-set! (cport-decoded cp) pos #t)
         dv2)))
+
+(define (symtab-write! cp i v)
+  (placeholder-set! (vector-ref (cport-symtab cp) i) v))
+
+(define (symtab-lookup cp i)
+  (when (mark-parameter-first read-sym-mark)
+    (dict-update! debug-symrefs (mark-parameter-first read-sym-mark) (λ (last) (cons i last)) empty))
+  (vector-ref (cport-symtab cp) i))
 
 (require unstable/markparam)
 (define read-sym-mark (mark-parameter))
 (define (read-sym cp i)
-  (define symtab (cport-symtab cp))
-  (define ph (vector-ref symtab i))
+  (define ph (symtab-lookup cp i))
   ; We are reading this already, so return the placeholder
   (if (memq i (mark-parameter-all read-sym-mark))
       ph
@@ -1003,10 +1036,16 @@
     (define symtab 
       (build-vector symtabsize (λ (i) (make-placeholder nr))))
     
+    (set! debug-symrefs (make-vector symtabsize empty))
+    
     (define cp (make-cport 0 shared-size port size* rst-start symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
     
     (for ([i (in-range 1 symtabsize)])
       (read-sym cp i))
+    
+    (for ([i (in-naturals)]
+          [v (in-vector debug-symrefs)])
+      (printf "~a: ~a~n" i v))
     
     #;(for ([i (in-naturals)]
           [v (in-vector (cport-symtab cp))])
