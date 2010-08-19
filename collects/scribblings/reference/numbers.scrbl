@@ -1092,6 +1092,22 @@ Sets the inexact real number in slot @racket[pos] of @racket[vec]. The
 first slot is position @racket[0], and the last slot is one less than
 @racket[(flvector-length vec)].}
 
+@defproc[(in-flvector (v flvector?)) sequence?]{
+
+Produces a sequence that gives the elements of @scheme[v] in order.
+Inside a @scheme[for] form, this can be optimized to step through the
+elements of @scheme[v] efficiently as in @scheme[in-list],
+@scheme[in-vector], etc.}
+
+@deftogether[(
+@defform*[((for/flvector (for-clause ...) body)
+           (for/flvector length-expr (for-clause ...) body))]
+@defform*[((for*/flvector (for-clause ...) body)
+           (for*/flvector length-expr (for-clause ...) body))])]{
+
+Like @scheme[for/vector] or @scheme[for*/vector], but for
+@tech{flvector}s.}
+
                        
 @section{Fixnum Operations}
 

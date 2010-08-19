@@ -185,6 +185,16 @@
                            (open-input-string "1 2 3\n4 5"))])
     (list i j)))
 
+(test '#(1 2 3 4) 'for/vector (for/vector ((i (in-range 4))) (+ i 1)))
+(test '#(1 2 3 4) 'for/vector-fast (for/vector 4 ((i (in-range 4))) (+ i 1)))
+
+(test '#(0 0 0 0 1 2 0 2 4) 'for*/vector (for*/vector ((i (in-range 3))
+                                                       (j (in-range 3)))
+                                           (* i j)))
+(test '#(0 0 0 0 1 2 0 2 4) 'for*/vector-fast (for*/vector 9 ((i (in-range 3))
+                                                              (j (in-range 3)))
+                                                (* i j)))
+
 (test #hash((a . 1) (b . 2) (c . 3)) 'mk-hash
       (for/hash ([v (in-naturals)]
                  [k '(a b c)])

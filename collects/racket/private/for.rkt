@@ -15,6 +15,7 @@
   (#%provide for/fold for*/fold
              for for*
              for/list for*/list
+             for/vector for*/vector
              for/lists for*/lists
              for/and for*/and
              for/or for*/or
@@ -907,6 +908,31 @@
     (lambda (x) `(,#'reverse ,x))
     (lambda (x) x)
     (lambda (x) `(,#'cons ,x ,#'fold-var)))
+
+  (define-syntax for/vector
+    (lambda (stx)
+      (syntax-case stx ()
+        ((for/vector (for-clause ...) body)
+         (syntax/loc stx
+           (list->vector (for/list (for-clause ...) body))))
+        ((for/vector length-expr (for-clause ...) body)
+         (syntax/loc stx
+           (let ((len length-expr))
+             (let ((v (make-vector len)))
+               (for ((i (in-naturals))
+                     for-clause ...)
+                 (vector-set! v i body))
+               v)))))))
+
+  (define-syntax for*/vector
+    (lambda (stx)
+      (syntax-case stx ()
+        ((for*/vector (for-clause ...) body)
+         (syntax/loc stx
+           (list->vector (for*/list (for-clause ...) body))))
+        ((for*/vector length-expr (for-clause ...) body)
+         (syntax/loc stx
+           (for*/vector (for-clause ...) body))))))
 
   (define-for-syntax (do-for/lists for/fold-id stx)
     (syntax-case stx ()

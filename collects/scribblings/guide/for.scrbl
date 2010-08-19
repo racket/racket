@@ -229,6 +229,33 @@ list of lists, instead of one flattened list. Much like
 @racket[#:when], then, the nesting of @racket[for*/list] is more
 useful than the nesting of @racket[for*].
 
+@section{@racket[for/vector] and @racket[for*/vector]}
+
+The @racket[for/vector] form can be used with the same syntax as the
+@racket[for/list] form, but the evaluated @racket[_body]s go into a
+newly-constructed vector instead of a list:
+
+@interaction[
+(for/vector ([i (in-naturals 1)]
+             [chapter '("Intro" "Details" "Conclusion")])
+  (string-append (number->string i) ". " chapter))
+]
+
+The @racket[for*/vector] behaves similarly, but the iterations are
+nested.
+
+The @racket[for/vector] also allows a form where the length
+of the vector to be constructed is supplied in advance.  The resulting
+iteration can be performed more efficiently than plain
+@racket[for/vector]:
+
+@interaction[
+(let ((chapters '("Intro" "Details" "Conclusion")))
+  (for/vector (length chapters) ([i (in-naturals 1)]
+                                 [chapter chapters])
+    (string-append (number->string i) ". " chapter)))
+]
+
 @section{@racket[for/and] and @racket[for/or]}
 
 The @racket[for/and] form combines iteration results with
