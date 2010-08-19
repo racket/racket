@@ -1,44 +1,185 @@
 #lang plai
+(require (prefix-in eli: tests/eli-tester))
 
 (define-type WAE
   [num (n number?)]
   [id (s symbol?)])
 
-(define (go)
-  (test (num 5) (id 'x))
-  
-  (test 1 (+ 1 0))
-  (test 1 1)
-  (test 1 2)
-  (test (/ 1 0) 0)
-  (test (error "zamboni") 347)
-  
-  (test 3.4 3.4000001)
-  (test +inf.0 +inf.0)
-  
-  (test/pred 0 zero?)
-  (test/pred 1 zero?)
-  (test/pred 1 (error 'pred))
-  (test/pred 1 (lambda (n) (/ 1 0)))
-  (test/pred "a" string->number)
-  
-  (test/exn (error "zamboni") "zamboni")
-  (test/exn (error "samboni") "zamboni")
-  (test/exn 5  "zamboni")
-  (test/exn (/ 1 0) "division")
-  
-  (test/regexp (error "zamboni") "zam")
-  (test/regexp (error "samboni") "zam")
-  (test/regexp 5  "zam")
-  (test/regexp (/ 1 0) "divis")
-  )
+(define-syntax-rule (->string e)
+  (regexp-replace "line [0-9]+" (with-output-to-string (λ () e)) "line ??"))
 
-(for ([catch? (in-list (list #t #f))])
-  (plai-catch-test-exn catch?)
-  (for ([errors? (in-list (list #t #f))])
+(define (go catch? errors? abridged?)
+  (eli:test 
+   #:failure-prefix (format "~a / ~a / ~a" catch? errors? abridged?)
+   (eli:test
+    (plai-catch-test-exn catch?)
     (print-only-errors errors?)
-    (for ([abridged? (in-list (list #t #f))])
-      (abridged-test-output abridged?)
-      (with-handlers ([exn? (lambda (x) (printf "~S~n" x))])
-        (go))
-      (newline))))
+    (abridged-test-output abridged?)
+    
+    (->string (test (num 5) (id 'x)))
+    =>
+    (if abridged?
+        "(bad #(struct:num 5) #(struct:id x))\n"
+        "(bad (num 5) #(struct:num 5) #(struct:id x) \"at line ??\")\n")
+    
+    (->string (test 1 (+ 1 0)))
+    =>
+    (if errors?
+        ""
+        (if abridged?
+            "(good 1 1)\n"
+            "(good 1 1 1 \"at line ??\")\n"))
+    
+    (->string (test 1 1))
+    =>
+    (if errors?
+        ""
+        (if abridged?
+            "(good 1 1)\n"
+            "(good 1 1 1 \"at line ??\")\n"))
+    
+    (->string (test 1 2))
+    =>
+    (if abridged?
+        "(bad 1 2)\n"
+        "(bad 1 1 2 \"at line ??\")\n")
+    
+    (->string (test (/ 1 0) 0))
+    =>
+    (if catch?
+        (if abridged?
+            "(exception \"/: division by zero\" <no-expected-value>)\n"
+            "(exception (/ 1 0) \"/: division by zero\" <no-expected-value> \"at line ??\")\n")
+        (error '/ "division by zero"))
+    
+    (->string (test (error "zamboni") 347))
+    =>
+    (if catch?
+        (if abridged?
+            "(exception \"zamboni\" 347)\n"
+            "(exception (error \"zamboni\") \"zamboni\" 347 \"at line ??\")\n")
+        (error "zamboni"))
+    
+    (->string (test 3.4 3.4000001))
+    =>
+    (if errors?
+        ""
+        (if abridged?
+            "(good 3.4 3.4000001)\n"
+            "(good 3.4 3.4 3.4000001 \"at line ??\")\n"))
+    
+    (->string (test +inf.0 +inf.0))
+    =>
+    (if errors?
+        ""
+        (if abridged?
+            "(good +inf.0 +inf.0)\n"
+            "(good +inf.0 +inf.0 +inf.0 \"at line ??\")\n"))
+    
+    (->string (test/pred 0 zero?))
+    =>
+    (if errors?
+        ""
+        (if abridged?
+            "(good 0 zero?)\n"
+            "(good 0 0 zero? \"at line ??\")\n"))
+    
+    (->string (test/pred 1 zero?))
+    =>
+    (if abridged?
+        "(bad 1 zero?)\n"
+        "(bad 1 1 zero? \"at line ??\")\n")
+    
+    (->string (test/pred 1 (error 'pred)))
+    =>
+    (if catch?
+        (if abridged?
+            "(pred-exception \"error: pred\" <no-expected-value>)\n"
+            "(pred-exception 1 \"error: pred\" <no-expected-value> \"at line ??\")\n")
+        (error 'pred))
+    
+    (->string (test/pred 1 (lambda (n) (/ 1 0))))
+    =>
+    (if catch?
+        (if abridged?
+            "(pred-exception \"/: division by zero\" <no-expected-value>)\n"
+            "(pred-exception 1 \"/: division by zero\" <no-expected-value> \"at line ??\")\n")
+        (error '/ "division by zero"))
+    
+    (->string (test/pred "a" string->number))
+    =>
+    (if abridged?
+        "(bad \"a\" string->number)\n"
+        "(bad \"a\" \"a\" string->number \"at line ??\")\n")
+    
+    (->string (test/exn (error "zamboni") "zamboni"))
+    =>
+    (if catch?
+        (if errors?
+            ""
+            (if abridged?
+                "(good \"zamboni\" \"zamboni\")\n"
+                "(good (error \"zamboni\") \"zamboni\" \"zamboni\" \"at line ??\")\n"))
+        (error "zamboni"))
+    
+    (->string (test/exn (error "samboni") "zamboni"))
+    =>
+    (if catch?
+        (if abridged?
+            "(bad \"samboni\" \"zamboni\")\n"
+            "(bad (error \"samboni\") \"samboni\" \"zamboni\" \"at line ??\")\n")
+        (error "samboni"))
+    
+    (->string (test/exn 5 "zamboni"))
+    =>
+    (if abridged?
+        "(bad 5 \"zamboni\")\n"
+        "(bad 5 5 \"zamboni\" \"at line ??\")\n")
+    
+    (->string (test/exn (/ 1 0) "division"))
+    =>
+    (if catch?
+        (if abridged?
+            "(exception \"/: division by zero\" <no-expected-value>)\n"
+            "(exception (/ 1 0) \"/: division by zero\" <no-expected-value> \"at line ??\")\n")
+        (error '/ "division by zero"))
+    
+    (->string (test/regexp (error "zamboni") "zam"))
+    =>
+    (if catch?
+        (if errors?
+            ""
+            (if abridged?
+                "(good \"zamboni\" \"zam\")\n"
+                "(good (error \"zamboni\") \"zamboni\" \"zam\" \"at line ??\")\n"))
+        (error "zamboni"))
+    
+    (->string (test/regexp (error "samboni") "zam"))
+    =>
+    (if catch?
+        (if abridged?
+            "(bad \"samboni\" \"zam\")\n"
+            "(bad (error \"samboni\") \"samboni\" \"zam\" \"at line ??\")\n")
+        (error "samboni"))
+    
+    (->string (test/regexp 5 "zam"))
+    =>
+    (if abridged?
+        "(bad 5 \"zam\")\n"
+        "(bad 5 5 \"zam\" \"at line ??\")\n")
+    
+    (->string (test/regexp (/ 1 0) "divis"))
+    =>
+    (if catch?
+        (if abridged?
+            "(exception \"/: division by zero\" <no-expected-value>)\n"
+            "(exception (/ 1 0) \"/: division by zero\" <no-expected-value> \"at line ??\")\n")
+        (error '/ "division by zero"))
+    
+    )))
+
+(eli:test
+ (for* ([catch? (in-list (list #t #f))]
+        [errors? (in-list (list #t #f))]
+        [abridged? (in-list (list #t #f))])
+   (go catch? errors? abridged?)))
