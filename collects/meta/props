@@ -1900,6 +1900,7 @@ path/s is either such a string or a list of them.
 "collects/tests/xml" responsible (jay)
 "collects/tests/xml/test-clark.rkt" drdr:command-line #f drdr:timeout 300
 "collects/tests/xml/xml-snip-bug.rkt" drdr:command-line (gracket "-t" *)
+"collects/tests/zo-size.rkt" responsible (jay)
 "collects/tex2page" responsible (jay)
 "collects/texpict" responsible (mflatt robby)
 "collects/texpict/balloon.rkt" drdr:command-line (gracket-text "-t" *)
