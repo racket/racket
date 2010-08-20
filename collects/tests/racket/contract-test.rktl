@@ -21,6 +21,10 @@
     (parameterize ([current-namespace contract-namespace])
       (eval x)))
   
+  (define (contract-compile x)
+    (parameterize ([current-namespace contract-namespace])
+      (compile x)))
+  
   (define-syntax (ctest stx)
     (syntax-case stx ()
       [(_ a ...)
@@ -10174,6 +10178,59 @@ so that propagation occurs.
       (eval 'provide/contract34-x))
    10)
   
+
+  ;; The following test is designed to test that source locations for contracts
+  ;; survive compilation and being saved to disk (and thus aren't recorded by 
+  ;; quoted syntax object constant embedded in the expansion).
+  (let ()
+    ;; compile/wash : like compile, but reads and writes the data
+    ;; so that source locations (and other things presumably) get dumped.
+    (define (compile/wash x)
+      (let-values ([(in out) (make-pipe)])
+        (thread
+         (λ () (write (contract-compile x) out)))
+        (parameterize ([read-accept-compiled #t])
+          (read in))))
+      
+    ;; drop-var-info : syntax -> syntax
+    ;; strips the lexical content from the syntax object, but preserves the source locations
+    (define (drop-var-info stx)
+      (let loop ([stx stx])
+        (cond
+          [(syntax? stx)
+           (datum->syntax #f (loop (syntax-e stx)) stx)]
+          [(pair? stx)
+           (cons (loop (car stx))
+                 (loop (cdr stx)))]
+          [else stx])))
+    
+    ;; WARNING: do not add or remove lines between here-line and the two modules
+    ;; below it, unless you also revise the expected result of the test case.
+    (define here-line (syntax-line #'here))
+      
+    (contract-eval
+     (compile/wash
+      (drop-var-info
+       #'(module provide/contract-35/m racket/base
+           (require racket/contract)
+           (define (f x) x)
+           (provide/contract [f (-> integer? integer?)])))))
+      
+    (contract-eval
+     (compile/wash
+      (drop-var-info
+       #'(module provide/contract-35/n racket/base
+           (require 'provide/contract-35/m)
+           (f #f)))))
+    
+      (test (format "/contract-test.rktl:~a.30: "
+                    (+ here-line 8))
+            'provide/contract-compiled-source-locs
+            (with-handlers ((exn:fail? (λ (x) 
+                                         (let ([m (regexp-match #rx"/contract-test.rktl[^ ]* " (exn-message x))])
+                                           (and m (car m))))))
+              
+              (contract-eval '(require 'provide/contract-35/n)))))
   
   (contract-error-test
    #'(begin

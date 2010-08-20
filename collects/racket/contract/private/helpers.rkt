@@ -6,11 +6,15 @@
          nums-up-to
          add-name-prop
          all-but-last
-         known-good-contract?)
+         known-good-contract?
+         update-loc)
 
 (require setup/main-collects
          racket/struct-info
          (for-template racket/base))
+
+(define (update-loc stx loc)
+  (datum->syntax stx (syntax-e stx) loc))
 
 ;; lookup-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
 (define (lookup-struct-info stx provide-stx)

@@ -11,6 +11,7 @@
          "base.rkt"
          racket/contract/exists
          "guts.rkt"
+         (for-syntax unstable/dirs)
          unstable/location
          unstable/srcloc)
 
@@ -80,14 +81,28 @@
                                       [external-id external-id]
                                       [pos-module-source pos-module-source]
                                       [loc-id (identifier-prune-to-source-module id)])
-                          (syntax-local-introduce
-                           (syntax-local-lift-expression
-                            #`(contract contract-id
-                                        id
-                                        pos-module-source
-                                        (first-requiring-module (quote-syntax loc-id) (quote-module-path))
-                                        'external-id
-                                        (quote-srcloc id))))))])
+                          (let ([srcloc-code 
+                                 (with-syntax ([src                      
+                                                (cond
+                                                  [(and
+                                                    (path-string? (syntax-source #'id))
+                                                    (path->directory-relative-string (syntax-source #'id) #:default #f))
+                                                   =>
+                                                   (lambda (rel) rel)]
+                                                  [else (syntax-source #'id)])]
+                                               [line (syntax-line #'id)]
+                                               [col (syntax-column #'id)]
+                                               [pos (syntax-position #'id)]
+                                               [span (syntax-span #'id)])
+                                   #'(make-srcloc 'src 'line 'col 'pos 'span))])
+                            (syntax-local-introduce
+                             (syntax-local-lift-expression
+                              #`(contract contract-id
+                                          id
+                                          pos-module-source
+                                          (first-requiring-module (quote-syntax loc-id) (quote-module-path))
+                                          'external-id
+                                          #,srcloc-code))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
                ;; Expand to a use of the lifted expression:
@@ -696,37 +711,44 @@
                                   #`(and (procedure? id)
                                          (procedure-arity-includes? id #,(length (syntax->list #'(dom ...)))))]
                                  [_ #f])])
-                (with-syntax ([code
-                               (syntax-property
-                                (quasisyntax/loc stx
-                                  (begin
-                                    (define pos-module-source (quote-module-path))
-                                    
-                                    #,@(if no-need-to-check-ctrct?
-                                           (list)
-                                           (list #'(define contract-id 
-                                                     (let ([ex-id ctrct]) ;; let is here to give the right name.
-                                                       (verify-contract 'provide/contract ex-id)))))
-                                    (define-syntax id-rename
-                                      (make-provide/contract-transformer (quote-syntax contract-id)
-                                                                         (quote-syntax id)
-                                                                         (quote-syntax reflect-external-name)
-                                                                         (quote-syntax pos-module-source)))
-                                    
-                                    #,@(if provide?
-                                           (list #`(provide (rename-out [id-rename external-name])))
-                                           null)))
-                                'provide/contract-original-contract
-                                (vector #'external-name #'ctrct))])
-                                
-                  (syntax-local-lift-module-end-declaration
-                   #`(begin 
-                       (unless extra-test
-                         (contract contract-id id pos-module-source 'ignored 'id 
-                                   (quote-srcloc id)))
-                       (void)))
-                  
-                  (syntax (code id-rename))))))]))
+                  (with-syntax ([code
+                                 (syntax-property
+                                  (quasisyntax/loc stx
+                                    (begin
+                                      (define pos-module-source (quote-module-path))
+                                      
+                                      #,@(if no-need-to-check-ctrct?
+                                             (list)
+                                             (list #'(define contract-id 
+                                                       (let ([ex-id ctrct]) ;; let is here to give the right name.
+                                                         (verify-contract 'provide/contract ex-id)))))
+                                      (define-syntax id-rename
+                                        (make-provide/contract-transformer (quote-syntax contract-id)
+                                                                           (a:update-loc
+                                                                            (quote-syntax id)
+                                                                            (vector
+                                                                             #,(syntax-source #'id)
+                                                                             #,(syntax-line #'id)
+                                                                             #,(syntax-column #'id)
+                                                                             #,(syntax-position #'id)
+                                                                             #,(syntax-span #'id)))
+                                                                           (quote-syntax reflect-external-name)
+                                                                           (quote-syntax pos-module-source)))
+                                      
+                                      #,@(if provide?
+                                             (list #`(provide (rename-out [id-rename external-name])))
+                                             null)))
+                                  'provide/contract-original-contract
+                                  (vector #'external-name #'ctrct))])
+                    
+                    (syntax-local-lift-module-end-declaration
+                     #`(begin 
+                         (unless extra-test
+                           (contract contract-id id pos-module-source 'ignored 'id 
+                                     (quote-srcloc id)))
+                         (void)))
+                    
+                    (syntax (code id-rename))))))]))
        
        (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])
          (signal-dup-syntax-error)
