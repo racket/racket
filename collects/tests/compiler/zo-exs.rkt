@@ -9,23 +9,33 @@
 
 (define (roundtrip ct)
   (define bs (zo-marshal ct))
+  (with-output-to-file "test_rkt.zo" (λ () (write-bytes bs)) #:exists 'replace)
   (test #:failure-prefix (format "~S" ct)
         (test bs
               (zo-parse (open-input-bytes bs)) => ct
               (read-compiled-bytes bs))))
 
+(define mpi (module-path-index-join #f #f))
+
 (test
- (roundtrip 
+ #;(roundtrip 
   (compilation-top 0 
                    (prefix 0 empty empty)
                    (current-directory)))
  
- (roundtrip 
+ #;(roundtrip 
   (compilation-top 0 
                    (prefix 0 empty empty)
                    (list (current-directory))))
  
- (local [(define (hash-test make-hash-placeholder)
+ (roundtrip
+  (compilation-top                                            
+      0                                                          
+      (prefix 0 empty empty)
+      (cons #hasheq()
+            #hasheq())))
+ 
+ #;(local [(define (hash-test make-hash-placeholder)
            (roundtrip 
             (compilation-top 0 
                              (prefix 0 empty empty)
