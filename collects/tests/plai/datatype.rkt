@@ -45,7 +45,7 @@
  =>
  1
  
- (regexp-match "\\(exception \\(c1 \\(quote not-a-number\\)\\) \".+/collects/tests/plai/datatype\\.rkt:29\\.17: use broke the contract \\(-> number\\? c1\\?\\) on c1 given to \\\\n  \\(file\\\\n   .+/plt/collects/tests/plai/datatype\\.rkt\\)\\\\n; expected <number\\?>, given: 'not-a-number\" '<no-expected-value> \"at line 49\"\\)"
+ (regexp-match "\\(exception \\(c1 \\(quote not-a-number\\)\\) \".+/collects/tests/plai/datatype\\.rkt:29\\.17: use broke the contract \\(-> number\\? c1\\?\\) on c1 given to \\\\n  \\(file\\\\n   .+/collects/tests/plai/datatype\\.rkt\\)\\\\n; expected <number\\?>, given: 'not-a-number\" '<no-expected-value> \"at line 49\"\\)"
                (with-output-to-string (λ () (test (c1 'not-a-number) (list 5)))))
  
  (regexp-match (regexp-quote "(exception (type-case t (list 1) (c () 1)) \"type-case: expected a value from type t, got: (1)\" '<no-expected-value> \"at line 53\")")
