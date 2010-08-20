@@ -982,6 +982,7 @@ path/s is either such a string or a list of them.
 "collects/make" responsible (mflatt)
 "collects/meta" responsible (eli)
 "collects/meta/build" drdr:command-line #f
+"collects/meta/check-dists.rkt" drdr:timeout 480
 "collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/web/build.rkt" drdr:command-line (racket "-t" * "--" "-o" "build" "-f" "-l")
