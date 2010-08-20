@@ -5435,9 +5435,10 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       delay_info->ut->rp = NULL; /* clean up */
 
   if (*local_ht) {
-    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (unexpected graph structure)");
-    return NULL;
+    result = resolve_references(result, rp->orig_port, NULL,
+                           scheme_make_hash_table(SCHEME_hash_ptr), 
+                           scheme_make_hash_table(SCHEME_hash_ptr), 
+                           0, 0);
   }
 
   if (SAME_TYPE(SCHEME_TYPE(result), scheme_compilation_top_type)) {

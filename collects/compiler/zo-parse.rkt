@@ -1043,10 +1043,10 @@
     (for ([i (in-range 1 symtabsize)])
       (read-sym cp i))
     
-    (for ([i (in-naturals)]
+    #;(for ([i (in-naturals)]
           [v (in-vector debug-symrefs)])
       (printf "~a: ~a~n" i v))
-    
+    #;(printf "SYMBOL TABLE:~n~n")
     #;(for ([i (in-naturals)]
           [v (in-vector (cport-symtab cp))])
       (printf "~a: ~s~n~n" i (placeholder-get v)))

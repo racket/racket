@@ -8,7 +8,9 @@
          racket/local
          racket/list
          racket/dict
-         racket/function)
+         racket/function
+         racket/pretty
+         racket/path)
 
 (provide/contract
  [zo-marshal (compilation-top? . -> . bytes?)]
@@ -305,8 +307,8 @@
                     (list* path phase export-name (encode-nominal-path nominal-path) nominal-export-name)])))
   encoded-bindings)
 
-(define encode-all-from-module
-  (match-lambda
+(define (encode-all-from-module afm)
+  (match afm
     [(struct all-from-module (path phase src-phase #f #f))
      (list* path phase src-phase)]
     [(struct all-from-module (path phase src-phase exns #f))
@@ -814,7 +816,7 @@
                               (lambda (v mode port)
                                 (display "#^" port)
                                 (write (path->bytes (make-relative v)) port))])
-                (pretty-write expr s))
+                (pretty-write v s))
               (out-byte CPT_ESCAPE out)
               (let ([bstr (get-output-bytes s)])
                 (out-number (bytes-length bstr) out)
@@ -985,6 +987,13 @@
 
 
 (define-struct svector (vec))
+
+(define (make-relative v)
+  (let ([r (current-write-relative-directory)])
+    (if r
+        (find-relative-path r v)
+        v)))
+
 
 ;; ----------------------------------------
 
