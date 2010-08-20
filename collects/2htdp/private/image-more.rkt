@@ -57,9 +57,8 @@
                [parent bp]) min-width 100)
     (send f show #t)))
 
-(define (save-image pre-image filename)
-  (let* ([image (to-img pre-image)]
-         [bm (make-object bitmap% 
+(define/chk (save-image image filename)
+  (let* ([bm (make-object bitmap% 
                (inexact->exact (ceiling (+ 1 (get-right image)))) 
                (inexact->exact (ceiling (+ 1 (get-bottom image)))))]
          [bdc (make-object bitmap-dc% bm)])

@@ -1532,7 +1532,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  test that the extra mode check is there
+;;  test errors.
+;;  mostly test that the extra mode check is there
 ;;
 
 (test/exn (rectangle 10 10 "solid" (make-pen "black" 12 "solid" "round" "round"))
@@ -1588,6 +1589,9 @@
           =>
           #rx"^polygon: expected <image-color>")
 
+(test/exn (save-image "tri.png" (triangle 50 "solid" "purple"))
+          =>
+          #rx"^save-image:")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
