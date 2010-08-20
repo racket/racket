@@ -1002,7 +1002,7 @@ If the namespace does not, they are colored the unbound color.
           (syncheck:clear-highlighting))
         
         (define/public (syncheck:clear-error-message)
-          (unless error-report-visible?
+          (when error-report-visible?
             (set! error-report-visible? #f)
             (send report-error-text clear-output-ports)
             (send report-error-text lock #f)
