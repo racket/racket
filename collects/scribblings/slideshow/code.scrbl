@@ -171,7 +171,8 @@ ascent.}
 @defparam[current-keyword-list names (listof string?)]{
 
 A list of strings to color as syntactic-form names. The default
-includes most of the forms provided by @racket[racket/base].}
+includes all of the forms provided by @racketmodname[racket/base] 
+and all of the forms provided by @racketmodname[mzscheme].}
 
 
 @defparam[current-const-list names (listof string?)]{
@@ -184,6 +185,11 @@ A list of strings to color as constant names. The default is
 
 A list of strings to color as literals, in addition to literals such
 as strings. The default is @racket[null].}
+
+@defthing[racket/base-const-list (listof string?)]{
+
+A list of strings that could be used to initialize the
+@racket[current-const-list] parameter.}
 
 @defthing[mzscheme-const-list (listof string?)]{
 

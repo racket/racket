@@ -1,10 +1,11 @@
 (module code mzscheme
   (require "mrpict.ss"
-	   mzlib/class
+	   (prefix r: racket/base)
+           mzlib/class
 	   mzlib/list
            (only scheme/list last)
            mred
-	   mzlib/unit)
+           mzlib/unit)
 
   (provide define-code code^ code-params^ code@)
 
@@ -105,7 +106,8 @@
      current-comment-color current-keyword-color 
      current-base-color current-id-color current-literal-color current-const-color
      current-reader-forms
-     mzscheme-const-list))
+     mzscheme-const-list
+     racket/base-const-list))
 
   (define-signature code-params^
     (current-font-size 
@@ -153,25 +155,33 @@
 	    (to-code-pict p bottom-line)
 	    p))
       
-      (define mzscheme-ns (let ([n (make-namespace)])
-			    (parameterize ([current-namespace n])
-			      (namespace-require/copy 'mzscheme))
-			    n))
-      (define mzscheme-bindings (namespace-mapped-symbols mzscheme-ns))
-      (define mzscheme-vars (filter (lambda (n)
-				      (not (eq? 'nope
-						(namespace-variable-value n #f (lambda () 'nope) mzscheme-ns))))
-				    mzscheme-bindings))
-      
+    (define (get-vars/bindings ns require-spec)  
+      (define ns (let ([n (make-namespace)])
+                   (parameterize ([current-namespace n])
+                     (namespace-require/copy require-spec))
+                   n))
+      (define bindings (namespace-mapped-symbols ns))
+      (define vars (filter (lambda (n)
+                             (not (eq? 'nope
+                                       (namespace-variable-value n #f (lambda () 'nope) ns))))
+                           bindings))
+      (values vars bindings))
+    
+    (define-values (mzscheme-vars mzscheme-bindings) (get-vars/bindings (make-namespace) 'mzscheme))
+    (define-values (racket/base-vars racket/base-bindings) (get-vars/bindings (r:make-base-namespace) 'racket/base))
+    
       (define current-keyword-list 
 	(make-parameter 
 	 (let ([ht (make-hash-table)])
-	   (for-each (lambda (n) (hash-table-put! ht n #f))
+           (for-each (lambda (n) (hash-table-put! ht n #f))
 		     mzscheme-vars)
+           (for-each (lambda (n) (hash-table-put! ht n #f))
+		     racket/base-vars)
 	   (map symbol->string
-		(filter (lambda (n)
+                (filter (lambda (n)
 			  (hash-table-get ht n (lambda () #t)))
-			mzscheme-bindings)))))
+                        (append mzscheme-bindings
+                                racket/base-bindings))))))
       (define current-const-list 
 	(make-parameter '()))
       (define current-literal-list 
@@ -179,6 +189,8 @@
 
       (define mzscheme-const-list
 	(map symbol->string mzscheme-vars))
+      (define racket/base-const-list
+        (map symbol->string racket/base-vars))
 
       (define code-colorize-enabled
 	(make-parameter #t))
