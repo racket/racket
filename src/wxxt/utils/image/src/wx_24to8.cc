@@ -509,8 +509,8 @@ CCELL *create_colorcell(int r1, int g1, int b1,
 /*******************************/
 {
   register int    i,tmp, dist;
-  register CCELL *ptr;
-  register byte  *rp,*gp,*bp;
+  CCELL *ptr;
+  byte  *rp,*gp,*bp;
   int             ir,ig,ib, mindist;
 
   ir = r1 >> (COLOR_DEPTH-C_DEPTH);
@@ -661,7 +661,7 @@ static void map_colortable(byte *r, byte *g, byte *b)
 int wxImage::quant_fsdither()
 /*****************************/
 {
-  register int  *thisptr, *nextptr;
+  int           *thisptr, *nextptr;
   int           *thisline, *nextline, *tmpptr;
   int            r1, g1, b1, r2, g2, b2;
   int            i, j, imax, jmax, oval;

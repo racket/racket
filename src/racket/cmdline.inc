@@ -6,7 +6,7 @@
 
 #define SDESC "Set! works on undefined identifiers"
 
-char *cmdline_exe_hack = 
+char *cmdline_exe_hack = (char *)
   ("[Replace me for EXE hack                                       "
    "                                                              ]");
 
@@ -1219,7 +1219,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
 #ifndef DONT_PARSE_COMMAND_LINE
  show_help:
-  prog =("%s"
+  prog = (char *) ("%s"
          PROGRAM_LC " [<option> ...] <argument> ...\n"
 # ifndef RACKET_CMD_LINE
 #  ifdef wx_x

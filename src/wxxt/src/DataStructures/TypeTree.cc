@@ -161,7 +161,7 @@ char *wxGetTypeName(WXTYPE type)
   wxTypeDef *typ;
 
   if (type == wxTYPE_ANY)
-    return "any";
+    return (char *) "any";
   typ = (wxTypeDef *)wxAllTypes->Get((long)type);
   if (!typ)
     return NULL;

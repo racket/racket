@@ -1470,7 +1470,7 @@ extern char *wxPostScriptFontsToString(void *used_fonts)
       return SCHEME_BYTE_STR_VAL(s);
     }
   }
-  return "";
+  return (char*) "";
 }
 
 /***********************************************************************/

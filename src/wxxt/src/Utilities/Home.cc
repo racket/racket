@@ -36,7 +36,7 @@ char *wxGetUserHome(const char *user)
     struct passwd *who = NULL;
 
     if (user == NULL || *user == '\0') {
-	register char *ptr;
+	char *ptr;
 
 	if ((ptr = getenv("HOME")) != NULL) 
 	    return ptr;

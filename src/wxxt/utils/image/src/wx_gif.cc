@@ -108,7 +108,7 @@ int filesize;
 int wxImage::LoadGIF(char *fname, int /* nc */)
 {
   register byte  ch, ch1;
-  register byte *ptr, *ptr1, *picptr;
+  byte *ptr, *ptr1, *picptr;
   register int   i;
   int            npixels, maxpixels;
 
