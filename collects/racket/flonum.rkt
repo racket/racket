@@ -50,24 +50,26 @@
 (define-syntax for/flvector
   (lambda (stx)
     (syntax-case stx ()
-      ((for/flvector (for-clause ...) body)
+      ((for/flvector (for-clause ...) body ...)
        (syntax/loc stx
-         (list->flvector (for/list (for-clause ...) body))))
-      ((for/flvector len-expr (for-clause ...) body)
+         (list->flvector (for/list (for-clause ...) body ...))))
+      ((for/flvector #:length len-expr (for-clause ...) body ...)
        (syntax/loc stx
-         (let ((flv (make-flvector len-expr)))
-           (for ((i (in-naturals))
-                 for-clause 
-                 ...)
-             (flvector-set! flv i body))
-           flv))))))
+         (let ((len len-expr))
+           (let ((flv (make-flvector len)))
+             (for ((i (in-naturals))
+                   for-clause 
+                   ...)
+               (when (fx>= i len) (error 'for/flvector "too many iterations for vector of length ~a" len))
+               (flvector-set! flv i (begin body ...)))
+             flv)))))))
 
 (define-syntax for*/flvector
   (lambda (stx)
     (syntax-case stx ()
-      ((for*/flvector (for-clause ...) body)
+      ((for*/flvector (for-clause ...) body ...)
        (syntax/loc stx
-         (list->flvector (for*/list (for-clause ...) body))))
-      ((for*/flvector length-expr (for-clause ...) body)
+         (list->flvector (for*/list (for-clause ...) body ...))))
+      ((for*/flvector #:length len-expr (for-clause ...) body ...)
        (syntax/loc stx
-         (for*/flvector (for-clause ...) body))))))
+         (for*/flvector (for-clause ...) body ...))))))

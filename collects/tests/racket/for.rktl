@@ -186,14 +186,32 @@
     (list i j)))
 
 (test '#(1 2 3 4) 'for/vector (for/vector ((i (in-range 4))) (+ i 1)))
-(test '#(1 2 3 4) 'for/vector-fast (for/vector 4 ((i (in-range 4))) (+ i 1)))
+(test '#(1 2 3 4) 'for/vector-fast (for/vector #:length 4 ((i (in-range 4))) (+ i 1)))
 
 (test '#(0 0 0 0 1 2 0 2 4) 'for*/vector (for*/vector ((i (in-range 3))
                                                        (j (in-range 3)))
+                                           (+ i j)
                                            (* i j)))
-(test '#(0 0 0 0 1 2 0 2 4) 'for*/vector-fast (for*/vector 9 ((i (in-range 3))
-                                                              (j (in-range 3)))
+(test '#(0 0 0 0 1 2 0 2 4) 'for*/vector-fast (for*/vector #:length 9 ((i (in-range 3))
+                                                                       (j (in-range 3)))
+                                                (+ i j)
                                                 (* i j)))
+
+;; Test failure when too many iterations
+(test #t 'for/vector-too-many-iters 
+      (with-handlers ((exn:fail? (lambda (exn) #t)))
+        (for/vector #:length 3 ((i (in-range 4))) (+ i 1.0))))
+
+;; Test for many body expressions
+(let* ((v (vector 1.0 2.0 3.0))
+       (v2 (for/vector ((i (in-range 3))) 
+             (vector-set! v i (+ (vector-ref v i) 1.0))
+             (vector-ref v i)))
+       (v3 (for/vector #:length 3 ((i (in-range 3)))
+             (vector-set! v i (+ (vector-ref v i) 1.0))
+             (vector-ref v i))))
+  (test (vector 2.0 3.0 4.0) 'for/vector-many-body v2)
+  (test (vector 3.0 4.0 5.0) 'for/vector-length-many-body v3))
 
 (test #hash((a . 1) (b . 2) (c . 3)) 'mk-hash
       (for/hash ([v (in-naturals)]

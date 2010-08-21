@@ -87,17 +87,19 @@ expression is a list of the results in order.
 ]}
 
 @deftogether[(
-@defform*[((for/vector (for-clause ...) body)
-           (for/vector length-expr (for-clause ...) body))]
-@defform*[((for*/vector (for-clause ...) body)
-           (for*/vector length-expr (for-clause ...) body))])]{
+@defform*[((for/vector (for-clause ...) body ...)
+           (for/vector #:length length-expr (for-clause ...) body ...))]
+@defform*[((for*/vector (for-clause ...) body ...)
+           (for*/vector #:length length-expr (for-clause ...) body ...))])]{
 
-Iterates like @scheme[for] or @scheme[for*], but the values of the
-@scheme[body] expression are placed in a vector whose length is the
-number of iterations.  The optional @scheme[length-expr], if present,
-is evaluated to determine the length of the vector in advance of the
-iteration; if @scheme[length-expr] is provided, the computation is
-more efficient.}
+Iterates like @scheme[for] or @scheme[for*], but last expression in
+the @scheme[body]s must produce a single value, which is placed in the
+corresponding slot of a vector whose length is the number of
+iterations.  The optional @scheme[length-expr], if present, may allow
+the computation to be performed more efficiently by pre-allocating a
+vector of the given length.  It is an error if evaluating the given
+@scheme[length-expr] does not produce a valid length for a vector that
+matches the number of iterations performed by the loop.}
 
 @deftogether[(
 @defform[(for/hash (for-clause ...) body ...+)]

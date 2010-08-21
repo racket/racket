@@ -912,27 +912,28 @@
   (define-syntax for/vector
     (lambda (stx)
       (syntax-case stx ()
-        ((for/vector (for-clause ...) body)
+        ((for/vector (for-clause ...) body ...)
          (syntax/loc stx
-           (list->vector (for/list (for-clause ...) body))))
-        ((for/vector length-expr (for-clause ...) body)
+           (list->vector (for/list (for-clause ...) body ...))))
+        ((for/vector #:length size-expr (for-clause ...) body ...)
          (syntax/loc stx
-           (let ((len length-expr))
+           (let ((len size-expr))
              (let ((v (make-vector len)))
                (for ((i (in-naturals))
                      for-clause ...)
-                 (vector-set! v i body))
+                 (when (>= i len) (error 'for/vector "too many iterations for vector of length ~a" len))
+                 (vector-set! v i (begin body ...)))
                v)))))))
 
   (define-syntax for*/vector
     (lambda (stx)
       (syntax-case stx ()
-        ((for*/vector (for-clause ...) body)
+        ((for*/vector (for-clause ...) body ...)
          (syntax/loc stx
-           (list->vector (for*/list (for-clause ...) body))))
-        ((for*/vector length-expr (for-clause ...) body)
+           (list->vector (for*/list (for-clause ...) body ...))))
+        ((for*/vector #:length len-expr (for-clause ...) body ...)
          (syntax/loc stx
-           (for*/vector (for-clause ...) body))))))
+           (for*/vector (for-clause ...) body ...))))))
 
   (define-for-syntax (do-for/lists for/fold-id stx)
     (syntax-case stx ()

@@ -1104,10 +1104,10 @@ elements of @scheme[v] efficiently as in @scheme[in-list],
 @scheme[in-vector], etc.}
 
 @deftogether[(
-@defform*[((for/flvector (for-clause ...) body)
-           (for/flvector length-expr (for-clause ...) body))]
-@defform*[((for*/flvector (for-clause ...) body)
-           (for*/flvector length-expr (for-clause ...) body))])]{
+@defform*[((for/flvector (for-clause ...) body ...)
+           (for/flvector #:length length-expr (for-clause ...) body ...))]
+@defform*[((for*/flvector (for-clause ...) body ...)
+           (for*/flvector #:length length-expr (for-clause ...) body ...))])]{
 
 Like @scheme[for/vector] or @scheme[for*/vector], but for
 @tech{flvector}s.}

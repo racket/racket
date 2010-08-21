@@ -251,8 +251,8 @@ iteration can be performed more efficiently than plain
 
 @interaction[
 (let ((chapters '("Intro" "Details" "Conclusion")))
-  (for/vector (length chapters) ([i (in-naturals 1)]
-                                 [chapter chapters])
+  (for/vector #:length (length chapters) ([i (in-naturals 1)]
+                                         [chapter chapters])
     (string-append (number->string i) ". " chapter)))
 ]
 
