@@ -334,14 +334,18 @@ See also @racket[verbatim].}
  @exec{setup-plt} and @exec{scribble} to the directory of the main
  document file. The @racket[path] argument also can be a result of
  @racket[path->main-collects-relative].
-
+ 
  The strings in @racket[suffixes] are filtered to those supported by
  given renderer, and then the acceptable suffixes are tried in
  order. The HTML renderer supports @racket[".png"] and
  @racket[".gif"], while the Latex renderer supports @racket[".png"],
  @racket[".pdf"], and @racket[".ps"] (but @racket[".ps"] works only
  when converting Latex output to DVI, and @racket[".png"] and
- @racket[".pdf"] work only for converting Latex output to PDF).}
+ @racket[".pdf"] work only for converting Latex output to PDF).
+ 
+ Note that when the @racket[suffixes] library is non-empty, then 
+ the @racket[path] argument should not have a suffix.
+ }
 
 
 @; ------------------------------------------------------------------------
