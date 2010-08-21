@@ -72,15 +72,15 @@
       (let-values ([(l c p) (port-next-location port)])
         (list src line col pos (and pos (- p pos)))))]))
 
-(define readtable
-  (make-readtable #f #\{ 'dispatch-macro parse-id-type))
+(define (readtable)
+  (make-readtable (current-readtable) #\{ 'dispatch-macro parse-id-type))
 
 (define (*read inp)
-  (parameterize ([current-readtable readtable])
+  (parameterize ([current-readtable (readtable)])
     (read inp)))
 
 (define (*read-syntax src port)
-  (parameterize ([current-readtable readtable])
+  (parameterize ([current-readtable (readtable)])
     (read-syntax src port)))
 
 (provide readtable (rename-out [*read read] [*read-syntax read-syntax]))
