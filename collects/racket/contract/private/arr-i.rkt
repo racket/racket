@@ -366,10 +366,11 @@
                         arg
                         wrapper-arg
                         (if (arg/res-vars arg)
-                            #`(un-dep (#,arg-proj-var #,@(map arg/res-to-indy-var (arg/res-vars arg))) #,wrapper-arg 
-                                      #,(if swapped-blame?
-                                            #'indy-dom-blame
-                                            #'indy-rng-blame))
+                            #`(#,arg-proj-var #,@(map arg/res-to-indy-var (arg/res-vars arg))
+                                              #,wrapper-arg 
+                                              #,(if swapped-blame?
+                                                    #'indy-dom-blame
+                                                    #'indy-rng-blame))
                             #`(#,indy-arg-proj-var #,wrapper-arg)))])
                  (list))])
         #`(let (#,@indy-binding
@@ -385,10 +386,11 @@
                                        #'swapped-blame
                                        #'blame))]
                       [(arg/res-vars arg)
-                       #`(un-dep (#,arg-proj-var #,@(map arg/res-to-indy-var (arg/res-vars arg))) #,wrapper-arg 
-                                 #,(if swapped-blame?
-                                       #'swapped-blame
-                                       #'blame))]
+                       #`(#,arg-proj-var #,@(map arg/res-to-indy-var (arg/res-vars arg))
+                                         #,wrapper-arg 
+                                         #,(if swapped-blame?
+                                               #'swapped-blame
+                                               #'blame))]
                       [else
                        #`(#,arg-proj-var #,wrapper-arg)]))])
             #,body)))))
@@ -464,8 +466,7 @@
             ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
             ;; result is not dependened on by anything)
             [indy-res-proj-vars (list->vector (map (λ (x) (maybe-generate-temporary
-                                                           (and #;(not (arg/res-vars x))
-                                                                (free-identifier-mapping-get used-indy-vars 
+                                                           (and (free-identifier-mapping-get used-indy-vars 
                                                                                              (arg/res-var x)
                                                                                              (λ () #f))
                                                                 (arg/res-var x))))
@@ -636,14 +637,15 @@
                 ;; all of the dependent argument contracts
                 (list #,@(filter values (map (λ (arg) 
                                                (and (arg/res-vars arg)
-                                                    #`(λ #,(arg/res-vars arg)
-                                                        (opt/c #,(syntax-property
-                                                                  (syntax-property 
-                                                                   (arg/res-ctc arg)
-                                                                   'racket/contract:negative-position 
-                                                                   this->i)
-                                                                  'racket/contract:contract-on-boundary 
-                                                                  (gensym '->i-indy-boundary))))))
+                                                    #`(λ (#,@(arg/res-vars arg) val blame)
+                                                        (opt/direct #,(syntax-property
+                                                                       (syntax-property 
+                                                                        (arg/res-ctc arg)
+                                                                        'racket/contract:negative-position 
+                                                                        this->i)
+                                                                       'racket/contract:contract-on-boundary 
+                                                                       (gensym '->i-indy-boundary))
+                                                                    val blame))))
                                              args+rst)))
                 ;; then the non-dependent argument contracts that are themselves dependend on
                 (list #,@(filter values
@@ -660,14 +662,24 @@
                 #,(if (istx-ress an-istx) 
                       #`(list #,@(filter values (map (λ (arg) 
                                                        (and (arg/res-vars arg)
-                                                            #`(λ #,(arg/res-vars arg)
-                                                                (opt/c #,(syntax-property
-                                                                          (syntax-property 
-                                                                           (arg/res-ctc arg)
-                                                                           'racket/contract:positive-position
-                                                                           this->i)
-                                                                          'racket/contract:contract-on-boundary 
-                                                                          (gensym '->i-indy-boundary))))))
+                                                            (if (eres? arg)
+                                                                #`(λ #,(arg/res-vars arg)
+                                                                    (opt/c #,(syntax-property
+                                                                              (syntax-property 
+                                                                               (arg/res-ctc arg)
+                                                                               'racket/contract:positive-position
+                                                                               this->i)
+                                                                              'racket/contract:contract-on-boundary 
+                                                                              (gensym '->i-indy-boundary))))
+                                                                #`(λ (#,@(arg/res-vars arg) val blame)
+                                                                    (opt/direct #,(syntax-property
+                                                                                   (syntax-property 
+                                                                                    (arg/res-ctc arg)
+                                                                                    'racket/contract:positive-position
+                                                                                    this->i)
+                                                                                   'racket/contract:contract-on-boundary 
+                                                                                   (gensym '->i-indy-boundary))
+                                                                                val blame)))))
                                                      (istx-ress an-istx))))
                       #''())
                 #,(if (istx-ress an-istx)
