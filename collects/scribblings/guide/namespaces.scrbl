@@ -126,9 +126,6 @@ argument. More often, the namespace used by a dynamic operation is the
 @deftech{current namespace} as determined by the
 @racket[current-namespace] @tech{parameter}.
 
-@margin-note{See @secref["parameterize"] for an introduction to
-parameters.}
-
 When @racket[eval] is used in a @tech{REPL}, the current namespace is the one
 that the @tech{REPL} uses for evaluating expressions. That's why the
 following interaction successfully accesses @racket[x] via

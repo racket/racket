@@ -33,6 +33,8 @@ evaluate later forms.}
                [namespace namespace? (current-namespace)])
          any]{
 
+@guidealso["namespaces"]
+
 Calls the current @tech{evaluation handler} to evaluate
 @racket[top-level-form]. The @tech{evaluation handler} is called in
 tail position with respect to the @racket[eval] call, and
@@ -154,6 +156,8 @@ resolved using the value of @racket[current-directory].}
 
 
 @defproc[(load [file path-string?]) any]{
+
+@guidealso["namespaces"]
 
 Calls the current @tech{load handler} in tail position. The call is
 @racket[parameterized] to set @racket[current-load-relative-directory]
