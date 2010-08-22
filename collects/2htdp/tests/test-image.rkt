@@ -1354,6 +1354,7 @@
 
 ;; this test case checks to make sure the number of crops doesn't 
 ;; grow when normalizing shapes.
+
 (let* ([an-image 
         (crop
          0 0 50 50
@@ -1369,7 +1370,7 @@
              (ellipse 20 50 'solid 'red)
              (ellipse 30 40 'solid 'black))))))]
        [an-image+crop
-        (crop 40 40 10 10 an-image)])
+        (crop 5 5 10 10 an-image)])
   
   (define (count-crops s)
     (define crops 0)
@@ -1383,6 +1384,13 @@
   (test (+ (count-crops (normalize-shape (image-shape an-image))) 1)
         =>
         (count-crops (normalize-shape (image-shape an-image+crop)))))
+
+(check-exn #rx"crop" (λ () (crop 100 100 10 10 (rectangle 20 20 "solid" "black"))))
+(check-exn #rx"crop" (λ () (crop 9 100 10 10 (rectangle 20 20 "solid" "black"))))
+(check-exn #rx"crop" (λ () (crop 100 9 10 10 (rectangle 20 20 "solid" "black"))))
+(test (crop 20 20 100 100 (rectangle 40 40 "solid" "black"))
+      =>
+      (rectangle 20 20 "solid" "black"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1613,7 +1621,12 @@
          (overlay/xy image coord coord image)
          (underlay image image)
          (underlay/xy image coord coord image)
-         (crop coord coord size size image)
+         (let ([i image])
+           (crop (min (image-width i) coord)
+                 (min (image-height i) coord)
+                 size
+                 size
+                 i))
          (scale/xy factor factor image)
          (scale factor image)
          (rotate angle image)

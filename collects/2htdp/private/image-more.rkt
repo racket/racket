@@ -280,7 +280,19 @@
 ;; crop : number number number number image -> image
 ;; crops an image to be w x h from (x,y)
 (define/chk (crop x1 y1 width height image)
-  (crop/internal x1 y1 width height image))
+  (check-arg 'crop
+             (x1 . <= . (image-width image))
+             (format "number that is smaller than the width (~a)" (image-width image))
+             1
+             x1)
+  (check-arg 'crop
+             (y1 . <= . (image-height image))
+             (format "number that is smaller than the width (~a)" (image-width image))
+             2
+             y1)
+  (let ([w (min width (- (image-width image) x1))]
+        [h (min height (- (image-height image) y1))])
+    (crop/internal x1 y1 w h image)))
 
 (define (crop/internal x1 y1 width height image)
   (let* ([iw (min width (get-right image))]
@@ -999,15 +1011,9 @@
             (polar->posn b A))))
   (polygon (triangle-vertices/saa side-a (radians angle-b) (radians angle-c)) mode color))
 
-
-
 (define/chk (regular-polygon side-length side-count mode color)
   (check-mode/color-combination 'regular-polygon 4 mode color)
   (make-polygon/star side-length side-count mode color values))
-
-
-
-
 
 (define/chk (star-polygon side-length side-count step-count mode color)
   (check-mode/color-combination 'star-polygon 5 mode color)
