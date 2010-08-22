@@ -4294,7 +4294,8 @@ void scheme_thread_block(float sleep_time)
     do_swap_thread();
   } else if (do_atomic && scheme_on_atomic_timeout
              && (atomic_timeout_auto_suspend < 2)) {
-    if (do_atomic <= atomic_timeout_atomic_level) {
+    if (!atomic_timeout_auto_suspend
+        || (do_atomic <= atomic_timeout_atomic_level)) {
       if (atomic_timeout_auto_suspend) {
         atomic_timeout_auto_suspend++;
         scheme_fuel_counter = p->engine_weight;
