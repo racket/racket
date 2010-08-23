@@ -909,31 +909,43 @@
     (lambda (x) x)
     (lambda (x) `(,#'cons ,x ,#'fold-var)))
 
-  (define-syntax for/vector
-    (lambda (stx)
-      (syntax-case stx ()
-        ((for/vector (for-clause ...) body ...)
-         (syntax/loc stx
-           (list->vector (for/list (for-clause ...) body ...))))
-        ((for/vector #:length size-expr (for-clause ...) body ...)
-         (syntax/loc stx
-           (let ((len size-expr))
-             (let ((v (make-vector len)))
-               (for ((i (in-naturals))
-                     for-clause ...)
-                 (when (>= i len) (error 'for/vector "too many iterations for vector of length ~a" len))
-                 (vector-set! v i (begin body ...)))
-               v)))))))
+  (define-syntax (for/vector stx)
+    (syntax-case stx ()
+      ((for/vector (for-clause ...) body ...)
+       (syntax/loc stx
+         (list->vector 
+          (for/list (for-clause ...) body ...))))
+      ((for/vector #:length length-expr (for-clause ...) body ...)
+       (syntax/loc stx
+         (let ((len length-expr))
+           (unless (exact-nonnegative-integer? len)
+             (raise-type-error 'for/vector "exact nonnegative integer" len))
+           (let ((v (make-vector len)))
+             (for/fold ((i 0))
+                 (for-clause ... 
+                             #:when (< i len))
+               (vector-set! v i (begin body ...))
+               (add1 i))
+             v))))))
 
-  (define-syntax for*/vector
-    (lambda (stx)
-      (syntax-case stx ()
-        ((for*/vector (for-clause ...) body ...)
-         (syntax/loc stx
-           (list->vector (for*/list (for-clause ...) body ...))))
-        ((for*/vector #:length len-expr (for-clause ...) body ...)
-         (syntax/loc stx
-           (for*/vector (for-clause ...) body ...))))))
+  (define-syntax (for*/vector stx)
+    (syntax-case stx ()
+      ((for*/vector (for-clause ...) body ...)
+       (syntax/loc stx
+         (list->vector 
+          (for*/list (for-clause ...) body ...))))
+      ((for*/vector #:length length-expr (for-clause ...) body ...)
+       (syntax/loc stx
+         (let ((len length-expr))
+           (unless (exact-nonnegative-integer? len)
+             (raise-type-error 'for*/vector "exact nonnegative integer" len))
+           (let ((v (make-vector len)))
+             (for*/fold ((i 0))
+                 (for-clause ...
+                  #:when (< i len))
+               (vector-set! v i (begin body ...))
+               (add1 i))
+             v))))))
 
   (define-for-syntax (do-for/lists for/fold-id stx)
     (syntax-case stx ()

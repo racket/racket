@@ -244,17 +244,23 @@ newly-constructed vector instead of a list:
 The @racket[for*/vector] behaves similarly, but the iterations are
 nested.
 
-The @racket[for/vector] also allows a form where the length
-of the vector to be constructed is supplied in advance.  The resulting
-iteration can be performed more efficiently than plain
-@racket[for/vector]:
+The @racket[for/vector] and @racket[for*/vector] forms also allow the
+length of the vector to be constructed to be supplied in advance.  The
+resulting iteration can be performed more efficiently than plain
+@racket[for/vector] or @racket[for*/vector]:
 
 @interaction[
 (let ((chapters '("Intro" "Details" "Conclusion")))
   (for/vector #:length (length chapters) ([i (in-naturals 1)]
-                                         [chapter chapters])
+                                          [chapter chapters])
     (string-append (number->string i) ". " chapter)))
 ]
+
+If a length is provided, the iteration stops when the vector is filled
+or the requested iterations are complete, whichever comes first.  If
+the provided length exceeds the requested number of iterations, then
+the remaining slots in the vector are initialized to the default
+argument of @racket[make-vector].
 
 @section{@racket[for/and] and @racket[for/or]}
 

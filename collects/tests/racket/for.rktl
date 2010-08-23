@@ -185,6 +185,7 @@
                            (open-input-string "1 2 3\n4 5"))])
     (list i j)))
 
+;; Basic sanity checks.
 (test '#(1 2 3 4) 'for/vector (for/vector ((i (in-range 4))) (+ i 1)))
 (test '#(1 2 3 4) 'for/vector-fast (for/vector #:length 4 ((i (in-range 4))) (+ i 1)))
 
@@ -197,10 +198,24 @@
                                                 (+ i j)
                                                 (* i j)))
 
-;; Test failure when too many iterations
-(test #t 'for/vector-too-many-iters 
-      (with-handlers ((exn:fail? (lambda (exn) #t)))
-        (for/vector #:length 3 ((i (in-range 4))) (+ i 1.0))))
+;; Test for both length too long and length too short
+(let ((v (make-vector 3)))
+  (vector-set! v 0 0)
+  (vector-set! v 1 1)
+  (let ((w (for/vector #:length 3 ((i (in-range 2))) i)))
+    (test v 'for/vector-short-iter w)))
+
+(let ((v (make-vector 10)))
+  (for* ((i (in-range 3))
+         (j (in-range 3)))
+    (vector-set! v (+ j (* i 3)) (+ i j)))
+  (let ((w (for*/vector #:length 10 ((i (in-range 3)) (j (in-range 3))) (+ i j))))
+    (test v 'for*/vector-short-iter w)))
+
+(test 2 'for/vector-long-iter
+      (vector-length (for/vector #:length 2 ((i (in-range 10))) i)))
+(test 5 'for*/vector-long-iter 
+      (vector-length (for*/vector #:length 5 ((i (in-range 3)) (j (in-range 3))) (+ i j))))
 
 ;; Test for many body expressions
 (let* ((v (vector 1.0 2.0 3.0))

@@ -47,29 +47,40 @@
         (flvector-set! v i x))
       v)))
 
-(define-syntax for/flvector
-  (lambda (stx)
-    (syntax-case stx ()
-      ((for/flvector (for-clause ...) body ...)
-       (syntax/loc stx
-         (list->flvector (for/list (for-clause ...) body ...))))
-      ((for/flvector #:length len-expr (for-clause ...) body ...)
-       (syntax/loc stx
-         (let ((len len-expr))
-           (let ((flv (make-flvector len)))
-             (for ((i (in-naturals))
-                   for-clause 
-                   ...)
-               (when (fx>= i len) (error 'for/flvector "too many iterations for vector of length ~a" len))
-               (flvector-set! flv i (begin body ...)))
-             flv)))))))
+(define-syntax (for/flvector stx)
+  (syntax-case stx ()
+    ((for/flvector (for-clause ...) body ...)
+     (syntax/loc stx
+       (list->flvector 
+        (for/list (for-clause ...) body ...))))
+    ((for/flvector #:length length-expr (for-clause ...) body ...)
+     (syntax/loc stx
+       (let ((len length-expr))
+         (unless (exact-nonnegative-integer? len)
+           (raise-type-error 'for/flvector "exact nonnegative integer" len))
+         (let ((v (make-flvector len)))
+           (for/fold ((i 0))
+               (for-clause ... 
+                #:when (< i len))
+             (flvector-set! v i (begin body ...))
+             (add1 i))
+           v))))))
 
-(define-syntax for*/flvector
-  (lambda (stx)
-    (syntax-case stx ()
-      ((for*/flvector (for-clause ...) body ...)
-       (syntax/loc stx
-         (list->flvector (for*/list (for-clause ...) body ...))))
-      ((for*/flvector #:length len-expr (for-clause ...) body ...)
-       (syntax/loc stx
-         (for*/flvector (for-clause ...) body ...))))))
+(define-syntax (for*/flvector stx)
+  (syntax-case stx ()
+    ((for*/flvector (for-clause ...) body ...)
+     (syntax/loc stx
+       (list->flvector 
+        (for*/list (for-clause ...) body ...))))
+    ((for*/flvector #:length length-expr (for-clause ...) body ...)
+     (syntax/loc stx
+       (let ((len length-expr))
+         (unless (exact-nonnegative-integer? len)
+           (raise-type-error 'for*/flvector "exact nonnegative integer" len))
+         (let ((v (make-flvector len)))
+           (for*/fold ((i 0))
+               (for-clause ...
+                #:when (< i len))
+             (flvector-set! v i (begin body ...))
+             (add1 i))
+           v))))))
