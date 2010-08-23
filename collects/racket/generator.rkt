@@ -113,9 +113,11 @@
   (lambda (stx)
     (syntax-case stx ()
       [((id ...) (_ body0 body ...))
+       (with-syntax ([(stops ...) (syntax-case #'((id stop-value) ...) ()
+                                    [((x v) ...) #'(v ...)])])
        #'[(id ...)
-          (in-producer (generator () body0 body ... stop-value)
-                       stop-value)]])))
+          (in-producer (generator () body0 body ... (values stops ...))
+                       (lambda xs (eq? (car xs) stop-value)))])])))
 
 (define (sequence->generator sequence)
   (generator () (for ([i sequence]) (yield i))))

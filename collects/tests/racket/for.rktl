@@ -242,6 +242,13 @@
       (for/list ([(x i) (in-indexed (in-generator (yield 1) (yield 2) (yield 3)))])
         (list x i)))
 
+(test '[(1 2) (3 4)] 'for*-generator
+      (for*/list ([(n after)
+              (in-generator
+                (yield 1 2)
+                (yield 3 4))])
+            (list n after)))
+
 (let ([helper (lambda (i)
                 (yield (add1 i)))])
   (test '(1 2 3) 'parameterized-yield
