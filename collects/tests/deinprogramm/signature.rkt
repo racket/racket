@@ -349,6 +349,17 @@
 	  (check-equal? count 10)))))
 
    (test-case
+    "mixed wrap"
+    (define-record-procedures-parametric pare pare-of raw-kons pare? (kar kdr))
+    (define sig1 (signature (pare-of integer boolean)))
+    (define sig2 (signature (pare-of boolean integer)))
+    (define sig (signature (mixed sig1 sig2)))
+    (define/signature x sig (raw-kons #t 15))
+    (define/signature y sig (raw-kons #t #t))
+    (check-equal? (kar x) #t)
+    (check-equal? (say-no (kar y)) 'no))
+
+   (test-case
     "wrap equality"
     (define-record-procedures-parametric pare pare-of raw-kons pare? (kar kdr))
     
