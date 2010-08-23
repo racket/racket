@@ -89,8 +89,7 @@
 	     #'(make-type-variable-signature '?id ?stx)
 	     (with-syntax
 		 ((?raise
-		   (syntax/loc #'?stx
-			       (error 'signatures "expected a signature, found ~e" ?id))))
+                   #'(error 'signatures "expected a signature, found ~e" ?id)))
 	       (with-syntax
 		   ((?sig
 		     #'(make-delayed-signature '?name
