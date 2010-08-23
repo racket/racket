@@ -423,8 +423,16 @@
 			 (list (make-srcloc src-editor
 					    line
 					    column
-					    position span)) #f))))
-	    (queue-callback highlight))])))
+					    position span)) #f)
+                   (let ([frame (send current-tab get-frame)])
+                     (unless (send current-tab is-current-tab?)
+                       (let loop ([tabs (send frame get-tabs)] [i 0])
+                         (unless (null? tabs)
+                           (if (eq? (car tabs) current-tab)
+                               (send frame change-to-nth-tab i)
+                               (loop (cdr tabs) (add1 i))))))
+                     (send frame show #t)))))
+            (queue-callback highlight))])))
 
     (define (highlight-check-error srcloc src-editor)
       (let* ([src-pos cadddr]
