@@ -342,9 +342,11 @@
 			 (values thing #f))))
 	 (cond
 	  ((not (procedure? proc))
-	   (signature-violation proc self #f #f))
+	   (signature-violation proc self #f #f)
+	   thing)
 	  ((not (procedure-arity-includes? proc arg-count)) ; #### variable arity
-	   (signature-violation proc self "falsche Anzahl von Parametern" #f))
+	   (signature-violation proc self "falsche Anzahl von Parametern" #f)
+	   thing)
 	  (else
 	   (attach-name
 	    (object-name proc)
