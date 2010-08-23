@@ -1019,8 +1019,8 @@ the parts that fit onto @racket[scene].
                           (scale/xy 1 1/2 (flip-vertical (star 40 "solid" "gray"))))]
 }
 
-@defproc[(crop [x (and/c real? (<=/c (image-width image)))]
-               [y (and/c real? (<=/c (image-height image)))] 
+@defproc[(crop [x (and/c real? (between/c 0 (image-width image)))]
+               [y (and/c real? (between/c 0 (image-height image)))] 
                [width (and/c real? (not/c negative?))]
                [height (and/c real? (not/c negative?))]
                [image image?])
@@ -1029,8 +1029,8 @@ the parts that fit onto @racket[scene].
  Crops @racket[image] to the rectangle with the upper left at the point (@racket[x],@racket[y])
  and with @racket[width] and @racket[height]. 
  
- The @racket[x] and @racket[y] arguments must be smaller than or equal to
- the @racket[width] and @racket[height], respectively.
+ The @racket[x] and @racket[y] arguments must be between 0 and
+ the @racket[width] or @racket[height], respectively.
  
  @image-examples[(crop 0 0 40 40 (circle 40 "solid" "chocolate"))
                  (crop 40 60 40 60 (ellipse 80 120 "solid" "dodgerblue"))

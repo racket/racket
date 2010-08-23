@@ -281,13 +281,13 @@
 ;; crops an image to be w x h from (x,y)
 (define/chk (crop x1 y1 width height image)
   (check-arg 'crop
-             (x1 . <= . (image-width image))
-             (format "number that is smaller than the width (~a)" (image-width image))
+             (<= 0 x1 (image-width image))
+             (format "number that is between 0 than the width (~a)" (image-width image))
              1
              x1)
   (check-arg 'crop
-             (y1 . <= . (image-height image))
-             (format "number that is smaller than the width (~a)" (image-width image))
+             (<= 0 y1 (image-height image))
+             (format "number that is between 0 and the height (~a)" (image-height image))
              2
              y1)
   (let ([w (min width (- (image-width image) x1))]
@@ -295,14 +295,12 @@
     (crop/internal x1 y1 w h image)))
 
 (define (crop/internal x1 y1 width height image)
-  (let* ([iw (min width (get-right image))]
-         [ih (min height (get-bottom image))]
-         [points (rectangle-points iw ih)])
+  (let* ([points (rectangle-points width height)])
     (make-image (make-crop points
                            (make-translate (- x1) (- y1) (image-shape image)))
-                (make-bb iw
-                         ih
-                         (min ih (get-baseline image)))
+                (make-bb width
+                         height
+                         (min height (get-baseline image)))
                 #f)))
 
 ;; place-image : image x y scene -> scene
@@ -432,19 +430,19 @@
                                       (translate-dy simple-shape))))])
          (make-translate dx dy rotated)))]))
 
-(define-struct ltrb (left top right bottom))
+(struct ltrb (left top right bottom) #:transparent)
 (define (union-ltrb ltrb1 ltrb2)
-  (make-ltrb (min (ltrb-left ltrb1) (ltrb-left ltrb2))
-             (min (ltrb-top ltrb1) (ltrb-top ltrb2))
-             (max (ltrb-right ltrb1) (ltrb-right ltrb2))
-             (max (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
+  (ltrb (min (ltrb-left ltrb1) (ltrb-left ltrb2))
+        (min (ltrb-top ltrb1) (ltrb-top ltrb2))
+        (max (ltrb-right ltrb1) (ltrb-right ltrb2))
+        (max (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
 
 ;; only intersection if they already overlap.
 (define (intersect-ltrb ltrb1 ltrb2)
-  (make-ltrb (max (ltrb-left ltrb1) (ltrb-left ltrb2))
-             (max (ltrb-top ltrb1) (ltrb-top ltrb2))
-             (min (ltrb-right ltrb1) (ltrb-right ltrb2))
-             (min (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
+  (ltrb (max (ltrb-left ltrb1) (ltrb-left ltrb2))
+        (max (ltrb-top ltrb1) (ltrb-top ltrb2))
+        (min (ltrb-right ltrb1) (ltrb-right ltrb2))
+        (min (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
 
 (define/contract (normalized-shape-bb shape)
   (-> normalized-shape? ltrb?)
@@ -477,33 +475,33 @@
            [y1 (point-y (line-segment-start simple-shape))]
            [x2 (point-x (line-segment-end simple-shape))]
            [y2 (point-y (line-segment-end simple-shape))])
-       (make-ltrb (min x1 x2)
-                  (min y1 y2)
-                  (+ (max x1 x2) 1)
-                  (+ (max y1 y2) 1)))]
+       (ltrb (min x1 x2)
+             (min y1 y2)
+             (+ (max x1 x2) 1)
+             (+ (max y1 y2) 1)))]
     [(curve-segment? simple-shape)
      (let ([x1 (point-x (curve-segment-start simple-shape))]
            [y1 (point-y (curve-segment-start simple-shape))]
            [x2 (point-x (curve-segment-end simple-shape))]
            [y2 (point-y (curve-segment-end simple-shape))])
-       (make-ltrb (min x1 x2)
-                  (min y1 y2)
-                  (+ (max x1 x2) 1)
-                  (+ (max y1 y2) 1)))]
+       (ltrb (min x1 x2)
+             (min y1 y2)
+             (+ (max x1 x2) 1)
+             (+ (max y1 y2) 1)))]
     [(polygon? simple-shape)
      (points->ltrb (polygon-points simple-shape))]
     [else
      (let ([dx (translate-dx simple-shape)]
            [dy (translate-dy simple-shape)])
        (let-values ([(l t r b) (np-atomic-bb (translate-shape simple-shape))])
-         (make-ltrb (+ l dx)
-                    (+ t dy)
-                    (+ r dx)
-                    (+ b dy))))]))
+         (ltrb (+ l dx)
+               (+ t dy)
+               (+ r dx)
+               (+ b dy))))]))
 
 (define (points->ltrb points)
   (let-values ([(left top right bottom) (points->ltrb-values points)])
-    (make-ltrb left top right bottom)))
+    (ltrb left top right bottom)))
 
 (define/contract (np-atomic-bb atomic-shape)
   (-> np-atomic-shape? (values number? number? number? number?))

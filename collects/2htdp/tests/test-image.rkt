@@ -1388,6 +1388,9 @@
 (check-exn #rx"crop" (λ () (crop 100 100 10 10 (rectangle 20 20 "solid" "black"))))
 (check-exn #rx"crop" (λ () (crop 9 100 10 10 (rectangle 20 20 "solid" "black"))))
 (check-exn #rx"crop" (λ () (crop 100 9 10 10 (rectangle 20 20 "solid" "black"))))
+(check-exn #rx"crop" (λ () (crop -9 9 10 10 (rectangle 20 20 "solid" "black"))))
+(check-exn #rx"crop" (λ () (crop 9 -9 10 10 (rectangle 20 20 "solid" "black"))))
+
 (test (crop 20 20 100 100 (rectangle 40 40 "solid" "black"))
       =>
       (rectangle 20 20 "solid" "black"))
@@ -1622,8 +1625,8 @@
          (underlay image image)
          (underlay/xy image coord coord image)
          (let ([i image])
-           (crop (min (image-width i) coord)
-                 (min (image-height i) coord)
+           (crop (max 0 (min (image-width i) coord))
+                 (max 0 (min (image-height i) coord))
                  size
                  size
                  i))
@@ -1672,15 +1675,6 @@
       (error 'test-image.ss "found differing sizes for ~s:\n  ~s\n  ~s" 
              img-sexp raw-size norm-size))))
 
-(define (test-save/load img fn)
-  (let ([t1 (new text%)]
-        [t2 (new text%)])
-    (send t1 insert img)
-    (send t1 save-file fn)
-    (send t2 load-file fn)
-    (let ([s1 (send t1 find-first-snip)]
-          [s2 (send t2 find-first-snip)])
-      (equal? s1 s2))))
 
 (time
  (redex-check
@@ -1691,17 +1685,57 @@
    (to-img (eval (term image) (namespace-anchor->namespace anchor))))
   #:attempts 1000))
 
-;; this one is commented out because it catches 
-;; a bug where cropping a shape outside of its
-;; bounding box leads to strange, bad behavior.
+(define (test-save/load img fn)
+  (let ([t1 (new text%)]
+        [t2 (new text%)])
+    (send t1 insert img)
+    (send t1 save-file fn)
+    (send t2 load-file fn)
+    (let ([s1 (send t1 find-first-snip)]
+          [s2 (send t2 find-first-snip)])
+      (equal? s1 s2))))
+
+;; scale-down : image -> image
+;; scale image so that it is at most 10000 pixels in area
+(define (scale-down img)
+  (let* ([w (image-width img)]
+         [h (image-height img)]
+         [s (* w h)]
+         [max-s (sqr 100)])
+    (if (< s max-s)
+        img
+        (scale/xy (/ (sqrt max-s) w) 
+                  (/ (sqrt max-s) h)
+                  img))))
+
 #;
 (time
  (let ([fn (make-temporary-file "test-image~a")])
    (redex-check
     2htdp/image
     image
-    (let ([img (to-img (eval (term image) (namespace-anchor->namespace anchor)))])  
-      (unless (test-save/load img fn)  
-        (error 'test-image.rkt "saving and loading this image fails:\n  ~s" (term image))))
+    (let-values ([(ans real cpu gc)
+                  (time-apply
+                   (λ ()
+                     (let ([img (to-img (eval (term image) (namespace-anchor->namespace anchor)))])
+                       (test-save/load (scale-down img) fn)))
+                   '())])
+      (unless (car ans)
+        (error 'test-image.rkt
+               "saving and loading this image fails:\n  ~s"
+               (term image)))
+      (unless (< cpu 2000)
+        (error 'test-image.rkt
+               "saving and loading this image takes too longer than 2 seconds:\n  ~s"
+               (term image))))
     #:attempts 1000)))
+
+;;This expression was found by the below. Its problematic because it has a negative width.
+#;
+(begin
+  (define i
+   (let* ([b (rectangle 17 17 "solid" "black")]
+          [i (overlay/xy b -37 40 b)])
+     (rotate 30 (crop 54 30 20 10 i))))
+  (image-width i) (image-height i) i)
 
