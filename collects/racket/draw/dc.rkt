@@ -1137,6 +1137,19 @@
                             (values tmp-bm 0 0)))
                         ;; no change to source
                         (values src src-x src-y))]
+                   [(clip-mask) (and mask 
+                                     (not (can-mask-bitmap?))
+                                     (let* ([bm-w (floor src-w)]
+                                            [bm-h (floor src-h)]
+                                            [bstr (make-bytes (* bm-w bm-h 4))])
+                                       (send mask get-argb-pixels 
+                                             (inexact->exact (floor msrc-x))
+                                             (inexact->exact (floor msrc-y))
+                                             bm-w
+                                             bm-h
+                                             bstr
+                                             #t)
+                                       bstr))]
                    [(mask) (if mask
                                (and (can-mask-bitmap?) mask)
                                #f)])
@@ -1151,23 +1164,45 @@
                           (send mask is-color?))))
             ;; Need to ensure that the result is still B&W
             (let* ([tmp-bm (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)])
-              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t #f))]
+              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t #f clip-mask))]
            [(and mask
                  (or (not black?)
                      (alpha . < . 1.0)))
             ;; mask plus color or alpha with a color bitmap
             (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 style color alpha #f)])
-              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h msrc-x msrc-y 'solid #f #t mask))]
+              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h msrc-x msrc-y 'solid #f #t mask clip-mask))]
            [else
             ;; Normal combination...
             (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y
-                                    style color black? mask)]))))
+                                    style color black? mask clip-mask)]))))
 
     (define/public (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y 
-                                           style color black? mask)
+                                           style color black? mask clip-mask)
       (with-cr
        (void)
        cr
+       (when clip-mask
+         ;; Implement mask by clipping, because masks are not supported by the
+         ;; dc. We treat an alpha of more than 128 as opaque, and less than 128
+         ;; as transparent.
+         (cairo_save cr)
+         (let ([bm-w (floor src-w)]
+               [bm-h (floor src-h)])
+           (cairo_new_path cr)
+           (for ([j (in-range 0 bm-h)])
+             (let ([start
+                    (for/fold ([start #f]) ([i (in-range 0 bm-w)])
+                      (let ([new-on? ((bytes-ref clip-mask (* 4 (+ (* bm-w j) i))) . > . 128)])
+                        (cond
+                         [(and new-on? start) start]
+                         [new-on? i]
+                         [start
+                          (cairo_rectangle cr (+ start dest-x) (+ j dest-y) (- i start) 1)
+                          #f]
+                         [else #f])))])
+               (when start
+                 (cairo_rectangle cr (+ start dest-x) (+ j dest-y) (- bm-w start) 1))))
+           (cairo_clip cr)))
        (let* ([color (or color black)]
               [a-dest-x (align-x/delta dest-x 0)]
               [a-dest-y (align-y/delta dest-y 0)]
@@ -1212,6 +1247,8 @@
              (cairo_fill cr))
            (install-color cr color alpha)
            (stamp-pattern src a-src-x a-src-y)])
+         (when clip-mask
+           (cairo_restore cr))
          (flush-cr))))
 
     (define/private (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)
