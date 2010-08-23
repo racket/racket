@@ -7,3 +7,4 @@
 (define raco-commands
   '(("scribble" scribble/run "render a Scribble document" #f)))
 
+(define purpose "This collect contains the implementation of scribble.")
