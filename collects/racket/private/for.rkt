@@ -1281,6 +1281,32 @@
                #t
                ;; loop args
                ())])]
+        [[() (_ producer stop more ...)]
+         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
+           #'[()
+              (:do-in
+                ([(producer*) producer] [(more*) more] ...
+                 [(stop?) (let ([s stop])
+                           (if (procedure? s)
+                             s
+                             (lambda (args)
+                               (and (not (null? args))
+                                    (eq? (car args) s)))))])
+               ;; outer check
+               #t
+               ;; loop bindings
+               ()
+               ;; pos check
+               #t
+               ;; inner bindings
+               ([(check) (call-with-values (lambda () (producer* more* ...))
+                                           (lambda vs vs))])
+               ;; pre guard
+               (not (stop? check))
+               ;; post guard
+               #t
+               ;; loop args
+               ())])]
         ;; multiple-values version
         [[(id ...) (_ producer stop more ...)]
          (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])

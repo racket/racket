@@ -112,6 +112,9 @@
      (in-producer (generator () body0 body ... stop-value) stop-value)])
   (lambda (stx)
     (syntax-case stx ()
+      [(() (_ body0 body ...))
+       #'[()
+          (in-producer (generator () body0 body ... stop-value) stop-value)]]
       [((id ...) (_ body0 body ...))
        (with-syntax ([(stops ...) (syntax-case #'((id stop-value) ...) ()
                                     [((x v) ...) #'(v ...)])])

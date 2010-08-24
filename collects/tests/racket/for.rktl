@@ -242,12 +242,19 @@
       (for/list ([(x i) (in-indexed (in-generator (yield 1) (yield 2) (yield 3)))])
         (list x i)))
 
+;; test multiple values for in-generator
 (test '[(1 2) (3 4)] 'for*-generator
       (for*/list ([(n after)
               (in-generator
                 (yield 1 2)
                 (yield 3 4))])
             (list n after)))
+
+;; test 0-ary yields
+(test '(0 1 2) 'no-bind-in-generator
+   (for/list ([() (in-generator (yield) (yield) (yield))]
+              [i (in-naturals)])
+     i))
 
 (let ([helper (lambda (i)
                 (yield (add1 i)))])
