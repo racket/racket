@@ -22,7 +22,7 @@
 
 (define-syntax-rule (define-form-struct* id id+par ([field-id field-contract] ...))
   (begin
-    (define-struct id+par (field-id ...) #:prefab)
+    (define-struct id+par (field-id ...))
     #;(provide (struct-out id))
     (provide/contract
      [struct id ([field-id field-contract] ...)])))
