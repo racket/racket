@@ -21,136 +21,102 @@
   (zo-marshal-to top bs)
   (get-output-bytes bs))
 
-(define (zo-marshal-to top outp)
-  (match top
-    [(struct compilation-top (max-let-depth prefix form))
-     (define shared (make-hash))
-     (define wrapped (make-hash))
-     (define (shared-obj-pos v)
-       (hash-ref shared v #f))
-     (define (share! v)
-       (hash-set! shared v (add1 (hash-count shared))))
-     (define ct 
-       (list* max-let-depth prefix (protect-quote form)))
-     
-     ; Compute what objects are in ct multiple times (by equal?)
-     (local [(define encountered (make-hash))
-             (define (encountered? v)
-               (hash-ref encountered v #f))
-             (define (encounter! v)
-               (hash-set! encountered v #t))
-             (define (visit! v)
-               (cond
-                 [(not (shareable? v))
-                  #t]
-                 [(shared-obj-pos v)
-                  #f]
-                 [(encountered? v)
-                  (share! v)
-                  #f]
-                 [else
-                  (encounter! v)
-                  ; All closures MUST be in the symbol table
-                  (when (closure? v)
-                    (share! v))
-                  #t]))]
-       (traverse wrapped visit! ct))
-     
-     ; Hash tables aren't sorted, so we need to order them
-     (define in-order-shareds 
-       (sort (hash-map shared (lambda (k v) (cons v k)))
-             <
-             #:key car))
-     
-     (define (write-all outp)
-       ; As we are writing the symbol table entry for v,
-       ; the writing code will attempt to see if v is shared and
-       ; insert a symtable reference, which would be wrong.
-       ; So, the first time it is encountered while writing,
-       ; we should pretend it ISN'T shared, so it is actually written.
-       ; However, subsequent times (or for other shared values)
-       ; we defer to the normal 'shared-obj-pos'
-       (define (shared-obj-pos/modulo-v v)
-         (define skip? #t)
-         (lambda (v2)
-           (if (and skip? (eq? v v2))
-               (begin
-                 (set! skip? #f)
-                 #f)
-               (shared-obj-pos v2))))
-       ; Write the symbol table, computing offsets as we go
-       (define offsets
-         (for/list ([k*v (in-list in-order-shareds)])
-           (define v (cdr k*v))
-           (begin0
-             (file-position outp)
-             (out-anything v (make-out outp (shared-obj-pos/modulo-v v) wrapped)))))
-       ; Compute where we ended
-       (define post-shared (file-position outp))
-       ; Write the entire ctop
-       (out-anything ct 
-                     (make-out outp shared-obj-pos wrapped))
-       (values offsets post-shared (file-position outp)))
-     
-     ; Compute where the symbol table ends
-     (define counting-p (open-output-nowhere))
-     (define-values (offsets post-shared all-forms-length)
-       (write-all counting-p))
-     
-     ; Write the compiled form header
-     (write-bytes #"#~" outp)
-     
-     ; Write the version (notice that it isn't the same as out-string)
-     (define version-bs (string->bytes/latin-1 (version)))
-     (write-bytes (bytes (bytes-length version-bs)) outp)
-     (write-bytes version-bs outp)
-     
-     ; Write the symbol table information (size, offsets)
-     (define symtabsize (add1 (hash-count shared)))
-     (write-bytes (int->bytes symtabsize) outp)
-     (define all-short? (post-shared . < . #xFFFF))
-     (write-bytes (bytes (if all-short? 1 0)) outp)
-     (for ([o (in-list offsets)])
-       (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
-     
-     ; Post-shared is where the ctop actually starts
-     (write-bytes (int->bytes post-shared) outp)
-     ; This is where the file should end
-     (write-bytes (int->bytes all-forms-length) outp)
-     ; Write the symbol table then the ctop
-     (write-all outp)
-     (void)]))
+; function -> vector
+; calculates what values show up in the compilation top more than once
+; closures are always included even if they only show up once
+(define (create-symbol-table out-compilation-top)
+  (define encountered (make-hash))
+  (define shared (make-hash))
+  (define (encountered? v)
+    (hash-ref encountered v #f))
+  (define (encounter! v)
+    (hash-set! encountered v #t))
+  (define (shared-obj-pos v)
+    (hash-ref shared v #f))
+  (define (share! v)
+    (hash-set! shared v (add1 (hash-count-shared))))
+  
+  (out-compilation-top 
+   (λ (v)
+     (if (or (closure? v)
+             (and (encountered? v)
+                  (shareable? v)))
+         (share! v)
+         (encounter! v))
+     #f)
+   (open-output-nowhere))
+  
+  (define symbol-table (make-vector (hash-count shared)))
+  (hash-map shared (λ (k v) (vector-set! symbol-table v k)))
+  (values symbol-table shared-obj-pos))
 
-(define (traverse wrapped-ht visit! expr)
-  (when (visit! expr)
-    (match expr
-      [(? wrapped? w)
-       (define encoded-w
-         (hash-ref! wrapped-ht w (lambda () (encode-wrapped w))))
-       (traverse wrapped-ht visit! encoded-w)]
-      [(? prefab-struct-key)
-       (map (curry traverse wrapped-ht visit!) (struct->list expr))]
-      [(cons l r) 
-       (traverse wrapped-ht visit! l) 
-       (traverse wrapped-ht visit! r)]
-      [(? vector?) 
-       (for ([v (in-vector expr)]) 
-         (traverse wrapped-ht visit! v))]
-      [(? hash?) 
-       (for ([(k v) (in-hash expr)]) 
-         (traverse wrapped-ht visit! k) 
-         (traverse wrapped-ht visit! v))]
-      [(? module-path-index?) 
-       (define-values (name base) (module-path-index-split expr))
-       (traverse wrapped-ht visit! name)
-       (traverse wrapped-ht visit! base)]
-      [(box v)
-       (traverse wrapped-ht visit! v)]
-      [(protected-symref v)
-       (traverse wrapped-ht visit! v)]
-      [(quoted v)
-       (traverse wrapped-ht visit! v)]
-      [else (void)])))
+(define (zo-marshal-to top outp) 
+  
+  ; XXX: wraps were encoded in traverse, now needs to be handled when writing
+  (define wrapped (make-hash))
+  
+  ; function output-port -> number
+  ; writes top to outp using shared-obj-pos to determine symref
+  ; returns the file position at the end of the compilation top
+  (define (out-compilation-top shared-obj-pos outp)
+    (define ct
+      (match top
+        [(compilation-top max-let-depth prefix form)
+         (list* max-let-depth prefix (protect-quote form))]))
+    (out-anything ct (make-out outp shared-obj-pos wrapped))
+    (file-position outp))
+  
+  (define-values (symbol-table shared-obj-pos) (create-symbol-table out-compilation-top))
+  
+  ; vector output-port -> (listof number) number
+  ; writes symbol-table to outp
+  ; returns the file positions of each value in the symbol table and the end of the symbol table
+  (define (out-symbol-table symbol-table outp)
+    (define (shared-obj-pos/modulo-v v)
+      (define skip? #t)
+      (λ (v2)
+        (if (and skip? (eq? v v2))
+            (begin
+              (set! skip? #f)
+              #f)
+            (shared-obj-pos v2))))
+    (values
+     (for/list ([v (in-vector symbol-table)])
+       (begin0
+         (file-position outp)
+         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) wrapped))))
+     (file-position outp)))
+  
+  ; Calculate file positions
+  (define counting-port (open-output-nowhere))
+  (define-values (offsets post-shared) (out-symbol-table symbol-table counting-port))
+  (define all-forms-length (out-compilation-top shared-obj-pos counting-port))
+  
+  ; Write the compiled form header
+  (write-bytes #"#~" outp)
+  
+  ; Write the version (notice that it isn't the same as out-string)
+  (define version-bs (string->bytes/latin-1 (version)))
+  (write-bytes (bytes (bytes-length version-bs)) outp)
+  (write-bytes version-bs outp)
+  
+  ; Write the symbol table information (size, offsets)
+  (define symtabsize (add1 (hash-count shared)))
+  (write-bytes (int->bytes symtabsize) outp)
+  (define all-short? (post-shared . < . #xFFFF))
+  (write-bytes (bytes (if all-short? 1 0)) outp)
+  (for ([o (in-list offsets)])
+    (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
+  
+  ; Post-shared is where the ctop actually starts
+  (write-bytes (int->bytes post-shared) outp)
+  ; This is where the file should end
+  (write-bytes (int->bytes all-forms-length) outp)
+  
+  ; Actually write the zo
+  (out-symbol-table symbol-table outp)
+  (out-compilation-top shared-obj-pos outp)
+  (void))
 
 ;; ----------------------------------------
 
