@@ -601,7 +601,8 @@
 [flush-output (->opt [-Output-Port] -Void)]
 [file-stream-buffer-mode (cl-> [(-Port) (Un (-val 'none) (-val 'line) (-val 'block) (-val #f))]
                                [(-Port (Un (-val 'none) (-val 'line) (-val 'block))) -Void])]
-[file-position (-> -Port -Nat)]
+[file-position (cl-> [(-Port) -Nat]
+                     [(-Port -Integer) -Void])]
 
 [force (-poly (a) (-> (-Promise a) a))]
 [regexp-replace*
