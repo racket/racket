@@ -248,10 +248,15 @@
                          (use-compiled-file-paths)))]))
              
              (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
-             (manager-skip-file-handler
-              (λ (p) (file-stamp-in-paths 
-                      p
-                      (cons (CACHE-DIR) (current-library-collection-paths)))))))))
+             (let* ([cd (find-system-path 'collects-dir)]
+                    [no-dirs (list (CACHE-DIR) 
+                                   (if (relative-path? cd)
+                                       (find-executable-path
+                                        (find-system-path 'exec-file)
+                                        cd)
+                                       cd))])
+               (manager-skip-file-handler
+                (λ (p) (file-stamp-in-paths p no-dirs))))))))
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))
