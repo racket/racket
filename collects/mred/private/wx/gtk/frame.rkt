@@ -295,7 +295,8 @@
     (define waiting-cursor? #f)
     (define/public (set-wait-cursor-mode on?)
       (set! waiting-cursor? on?)
-      (send in-window enter-window))
+      (when in-window
+        (send in-window enter-window)))
 
     (define current-cursor-handle #f)
     (define in-window #f)
@@ -314,7 +315,8 @@
     (define/override (leave-window) (void))
 
     (define/override (check-window-cursor win)
-      (send in-window enter-window))
+      (when in-window
+        (send in-window enter-window)))
       
     (define maximized? #f)
     
