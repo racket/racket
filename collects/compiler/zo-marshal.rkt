@@ -425,12 +425,16 @@
 (define (or-pred? v . ps)
   (ormap (lambda (?) (? v)) ps))
 
+
+(define quoting? (make-parameter #f))
+
 (define (shareable? v)
-  (not (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void?)))
+  (not (or quoting? (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void?))))
 
 (define (maybe-same-as-fixnum? v)
   (and (exact-integer? v)
        (and (v . >= . -1073741824) (v . <= . 1073741823))))
+
 
 (define (out-anything v out)
   (out-shared 
@@ -771,7 +775,8 @@
        [else
         (out-byte CPT_QUOTE out)
         (if (quoted? v)
-            (out-anything (quoted-v v) out)
+            (parameterize ([quoting? #t])
+              (out-anything (quoted-v v) out))
             (let ([s (open-output-bytes)])
               (parameterize ([pretty-print-size-hook
                               (lambda (v mode port)
