@@ -604,7 +604,10 @@
                                 [(mpair? (syntax-e c))
                                  (syntax-e c)]
                                 [else c])]
-                            [first-expr? (and expr? (not (struct-proxy? (syntax-e c))) (not no-cons?))]
+                            [first-expr? (and expr? 
+                                              (or (zero? quote-depth)
+                                                  (not (struct-proxy? (syntax-e c))))
+                                              (not no-cons?))]
                             [dotted? #f])
                   (cond
                    [(and (syntax? l)
@@ -1114,10 +1117,10 @@
                         [else 0])]
                [delta (if (and qq (zero? qq))
                           (cond
-                           [(vector? v) 8]
-                           [(struct? v) 1]
-                           [no-cons? 1]
-                           [else 5])
+                           [(vector? v) 8] ; `(vector '
+                           [(struct? v) 1] ; '('
+                           [no-cons? 1]    ; '('
+                           [else 6])       ; `(list '
                           1)]
                [r (let ([l (let loop ([col (+ col delta vec-sz graph-sz)]
                                       [v (cond
