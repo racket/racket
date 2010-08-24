@@ -821,16 +821,20 @@
 												   #`(recur (raw-generic-access r #,i)))
 												 fields))))
 								(cons prop:custom-write
-								      (let ((n (string->symbol (string-append "struct:"
-													      (symbol->string 'name_)))))
-									(lambda (r port write?)
-									  (let ((v (vector n
-											   #,@(map-with-index (lambda (i _)
-														#`(raw-generic-access r #,i))
-													      fields))))
-									    (if write?
-										(write v port)
-										(display v port))))))
+                                                                      ;; Need a transparent-like printer, but hide auto field.
+                                                                      ;; This simplest way to do that is to create an instance
+                                                                      ;; of a transparet structure with the same name and field values.
+                                                                      (let-values ([(struct:plain make-plain plain? plain-ref plain-set)
+                                                                                    (make-struct-type 'name_ #f #,field-count 0 #f null #f)])
+                                                                        (lambda (r port mode)
+									  (let ((v (make-plain
+                                                                                    #,@(map-with-index (lambda (i _)
+                                                                                                         #`(raw-generic-access r #,i))
+                                                                                                       fields))))
+                                                                            (cond
+                                                                             [(eq? mode #t) (write v port)]
+                                                                             [(eq? mode #f) (display v port)]
+                                                                             [else (print v port mode)])))))
 								(cons prop:equal+hash
 								      (list
 								       (lambda (r1 r2 equal?)
