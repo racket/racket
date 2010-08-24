@@ -44,13 +44,16 @@
     (let* ([end (or in-end (send text last-position))]
            [port (open-input-text-editor text start end)])
       (with-handlers ([exn:fail:read:eof? (λ (x) #f)]
-                      [exn:fail:read? (λ (x) #f)])
+                      [exn:fail:read? (λ (x) #t)])
         (let ([first (read port)])
-          (and (not (eof-object? first))
-               (let loop ()
-                 (let ([s (read port)])
-                   (or (eof-object? s)
-                       (loop))))))))))
+          (cond
+            [(eof-object? first) #f]
+            [else
+             (let loop ()
+               (let ([s (read port)])
+                 (cond
+                   [(eof-object? s) #t]
+                   [else (loop)])))]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;

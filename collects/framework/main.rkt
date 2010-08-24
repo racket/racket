@@ -1327,10 +1327,13 @@
                @scheme[end] in @scheme[text] has at least one complete s-expression and
                there are no incomplete s-expressions.  If
                @scheme[end] is @scheme[#f], it defaults to the last position of the
-               @scheme[text].
+               @scheme[text]. The designation ``complete'' is defined to be something that does not
+               cause @racket[read] to raise a @racket[exn:fail:read:eof?] exception,
+               so there may be all kinds of strange read-level (not to speak of parse level) 
+               errors in the expressions.
                
                The implementation of this function creates a port with
-               @scheme[open-input-text-editor] and then uses `read' to parse the
+               @scheme[open-input-text-editor] and then uses @racket[read] to parse the
                range of the buffer.})
  
  (proc-doc/names
