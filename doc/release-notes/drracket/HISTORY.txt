@@ -1,3 +1,9 @@
+   . The "language in the source" language now automatically
+     compiles more files (with the default options). Specifically,
+     files that are in a collections directory are now compiled,
+     unless they are the main system collection (as reported
+     by (find-system-path 'collects-dir).
+
 ------------------------------
         Version 5.0.1
 ------------------------------
