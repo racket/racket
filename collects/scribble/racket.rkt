@@ -1088,8 +1088,7 @@
                             (list (do-syntax-ize (car v) col line ht #f qq #f)
                                   c)
                             (vector #f line col (+ 1 col)
-                                    (+ 1 
-                                       (if (and qq (zero? qq)) 1 0)
+                                    (+ delta
                                        (syntax-span c))))))]
      [(or (list? v)
           (vector? v)
