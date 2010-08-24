@@ -4418,7 +4418,7 @@ static int can_fast_double(int arith, int cmp, int two_args)
     return 1;
 #endif
 #ifdef INLINE_FP_COMP
-  if (!arith
+  if ((!arith && (cmp != 4) && (cmp != -4))
       || ((arith == 9) /* min */ && two_args)
       || ((arith == 10) /* max */ && two_args))
     return 1;
@@ -4920,6 +4920,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         cmp = +/-1 -> >=/<=
         cmp = +/-2 -> >/< or positive/negative?
         cmp = 3 -> bitwise-bit-test?
+        cmp = +/-4 -> even?/odd?
    If rand is NULL, then we're generating part of the fast path for an
    nary arithmatic over a binary operator; the first argument is
    already in R0 (fixnum or min/max) or a floating-point register
@@ -5752,6 +5753,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         }
 
         switch (cmp) {
+        case -4:
+          ref3 = jit_bmci_l(jit_forward(), JIT_R0, 0x2);
+          break;
         case -3:
           if (rand2) {
             if (!unsafe_fx || overflow_refslow) {
@@ -5819,6 +5823,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           } else {
             ref3 = jit_bmci_l(jit_forward(), JIT_R0, 1 << (v+1));
           }
+          break;
+        case 4:
+          ref3 = jit_bmsi_l(jit_forward(), JIT_R0, 0x2);
           break;
         }
       }
@@ -6451,6 +6458,12 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     return 1;
   } else if (IS_NAMED_PRIM(rator, "positive?")) {
     generate_arith(jitter, rator, app->rand, NULL, 1, 0, 2, 0, for_branch, branch_short, 0, 0, NULL);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "even?")) {
+    generate_arith(jitter, rator, app->rand, NULL, 1, 0, 4, 0, for_branch, branch_short, 0, 0, NULL);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "odd?")) {
+    generate_arith(jitter, rator, app->rand, NULL, 1, 0, -4, 0, for_branch, branch_short, 0, 0, NULL);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "exact-nonnegative-integer?")
              || IS_NAMED_PRIM(rator, "exact-positive-integer?")) {

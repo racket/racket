@@ -173,6 +173,14 @@
     (un #f 'negative? 1)
     (un #t 'negative? -1)
 
+    (un #t 'even? 10)
+    (un #f 'even? 11)
+    (un #t 'even? -10)
+
+    (un #f 'odd? 10)
+    (un #t 'odd? 11)
+    (un #f 'odd? -10)
+
     (un #t 'real? 1)
     (un #t 'real? (expt 2 100))
     (un #t 'real? 1.0)

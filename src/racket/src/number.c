@@ -338,16 +338,14 @@ scheme_init_number (Scheme_Env *env)
 						      "inexact?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("odd?", 
-			     scheme_make_folding_prim(scheme_odd_p,
-						      "odd?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("even?", 
-			     scheme_make_folding_prim(even_p,
-						      "even?",
-						      1, 1, 1),
-			     env);
+
+  p = scheme_make_folding_prim(scheme_odd_p, "odd?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("odd?", p, env);
+  
+  p = scheme_make_folding_prim(even_p, "even?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("even?", p, env);
 
   p = scheme_make_folding_prim(scheme_bitwise_and, "bitwise-and", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
