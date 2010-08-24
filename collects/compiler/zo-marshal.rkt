@@ -38,7 +38,7 @@
   (define (shared-obj-pos v)
     (hash-ref shared v #f))
   (define (share! v)
-    (or (hash-ref shared v #f)
+    (or (shared-obj-pos v)
         (let ([pos (add1 (hash-count shared))])
           (hash-set! shared v pos) 
           pos)))
@@ -70,8 +70,8 @@
          (list* max-let-depth prefix (protect-quote form))]))
     (out-anything ct (make-out outp shared-obj-pos wrapped))
     (file-position outp))
+  
   (define-values (symbol-table shared-obj-pos) (create-symbol-table out-compilation-top))
-
   ; vector output-port -> (listof number) number
   ; writes symbol-table to outp
   ; returns the file positions of each value in the symbol table and the end of the symbol table
@@ -79,7 +79,7 @@
     (define (shared-obj-pos/modulo-v v)
       (define skip? #t)
       (λ (v2)
-        (if (and skip? (eq? v v2))
+        (if (and skip? (eq? v v2) (not (closure? v2)))
             (begin
               (set! skip? #f)
               #f)
@@ -102,6 +102,7 @@
   (define version-bs (string->bytes/latin-1 (version)))
   (write-bytes (bytes (bytes-length version-bs)) outp)
   (write-bytes version-bs outp)
+
   
   ; Write the symbol table information (size, offsets)
   (define symtabsize (add1 (vector-length symbol-table)))
