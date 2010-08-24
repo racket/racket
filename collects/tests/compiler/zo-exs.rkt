@@ -18,6 +18,38 @@
 (define mpi (module-path-index-join #f #f))
 
 (test
+ (roundtrip
+  (compilation-top
+    0
+    (prefix 0 (list #f) (list))
+    (mod
+       'simple
+       'simple
+       (module-path-index-join #f #f)
+       (prefix
+          0
+          (list (module-variable 
+                 (module-path-index-join
+                  "modbeg.rkt"
+                  (module-path-index-join
+                   "pre-base.rkt"
+                   (module-path-index-join
+                    "namespace.rkt"
+                    (module-path-index-join "private/base.rkt" (module-path-index-join 'racket/base #f))))) 'print-values 0 0))
+          (list))
+       (list)
+       (list (list 0 (module-path-index-join 'racket/base #f)) (list 1) (list -1) (list #f))
+       (list (apply-values
+              (toplevel 0 0 #f #t)
+              (application
+               (primval 231)
+               (list 1 'a))))
+       (list)
+       (list (list) (list) (list))
+       2
+       (toplevel 0 0 #f #f)
+       #(racket/language-info get-info #f)
+       #t)))
  #;(roundtrip 
   (compilation-top 0 
                    (prefix 0 empty empty)
@@ -28,7 +60,7 @@
                    (prefix 0 empty empty)
                    (list (current-directory))))
  
- (roundtrip
+ #;(roundtrip
   (compilation-top                                            
       0                                                          
       (prefix 0 empty empty)

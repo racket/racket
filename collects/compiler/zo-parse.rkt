@@ -1046,7 +1046,7 @@
     #;(for ([i (in-naturals)]
           [v (in-vector debug-symrefs)])
       (printf "~a: ~a~n" i v))
-    #;(printf "SYMBOL TABLE:~n~n")
+    #;(printf "SYMBOL TABLE(~a):~n~n" symtabsize)
     #;(for ([i (in-naturals)]
           [v (in-vector (cport-symtab cp))])
       (printf "~a: ~s~n~n" i (placeholder-get v)))

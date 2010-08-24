@@ -10,18 +10,21 @@
          racket/dict
          racket/function
          racket/pretty
-         racket/path)
+         racket/path
+         racket/set)
 
 (provide/contract
  [zo-marshal (compilation-top? . -> . bytes?)]
  [zo-marshal-to (compilation-top? output-port? . -> . void?)])
+
+(struct not-ready ())
 
 (define (zo-marshal top)
   (define bs (open-output-bytes))
   (zo-marshal-to top bs)
   (get-output-bytes bs))
 
-; function -> vector
+; ((obj -> (or pos #f)) output-port -> number) -> vector
 ; calculates what values show up in the compilation top more than once
 ; closures are always included even if they only show up once
 (define (create-symbol-table out-compilation-top)
@@ -30,24 +33,26 @@
   (define (encountered? v)
     (hash-ref encountered v #f))
   (define (encounter! v)
-    (hash-set! encountered v #t))
+    (hash-set! encountered v #t) 
+    #f)
   (define (shared-obj-pos v)
     (hash-ref shared v #f))
   (define (share! v)
-    (hash-set! shared v (add1 (hash-count-shared))))
+    (or (hash-ref shared v #f)
+        (let ([pos (add1 (hash-count shared))])
+          (hash-set! shared v pos) 
+          pos)))
   
   (out-compilation-top 
    (λ (v)
      (if (or (closure? v)
-             (and (encountered? v)
-                  (shareable? v)))
+             (encountered? v))
          (share! v)
-         (encounter! v))
-     #f)
+         (encounter! v)))
    (open-output-nowhere))
   
-  (define symbol-table (make-vector (hash-count shared)))
-  (hash-map shared (λ (k v) (vector-set! symbol-table v k)))
+  (define symbol-table (make-vector (hash-count shared) (not-ready)))
+  (hash-map shared (λ (k v) (vector-set! symbol-table (sub1 v) k)))
   (values symbol-table shared-obj-pos))
 
 (define (zo-marshal-to top outp) 
@@ -55,7 +60,7 @@
   ; XXX: wraps were encoded in traverse, now needs to be handled when writing
   (define wrapped (make-hash))
   
-  ; function output-port -> number
+  ; (obj -> (or pos #f)) output-port -> number
   ; writes top to outp using shared-obj-pos to determine symref
   ; returns the file position at the end of the compilation top
   (define (out-compilation-top shared-obj-pos outp)
@@ -65,9 +70,8 @@
          (list* max-let-depth prefix (protect-quote form))]))
     (out-anything ct (make-out outp shared-obj-pos wrapped))
     (file-position outp))
-  
   (define-values (symbol-table shared-obj-pos) (create-symbol-table out-compilation-top))
-  
+
   ; vector output-port -> (listof number) number
   ; writes symbol-table to outp
   ; returns the file positions of each value in the symbol table and the end of the symbol table
@@ -91,7 +95,6 @@
   (define counting-port (open-output-nowhere))
   (define-values (offsets post-shared) (out-symbol-table symbol-table counting-port))
   (define all-forms-length (out-compilation-top shared-obj-pos counting-port))
-  
   ; Write the compiled form header
   (write-bytes #"#~" outp)
   
@@ -101,13 +104,12 @@
   (write-bytes version-bs outp)
   
   ; Write the symbol table information (size, offsets)
-  (define symtabsize (add1 (hash-count shared)))
+  (define symtabsize (add1 (vector-length symbol-table)))
   (write-bytes (int->bytes symtabsize) outp)
   (define all-short? (post-shared . < . #xFFFF))
   (write-bytes (bytes (if all-short? 1 0)) outp)
   (for ([o (in-list offsets)])
     (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
-  
   ; Post-shared is where the ctop actually starts
   (write-bytes (int->bytes post-shared) outp)
   ; This is where the file should end
@@ -686,14 +688,14 @@
         (out-anything (unbox v) out)]
        [(? pair?)
         (define (list-length-before-cycle/improper-end l)
-          (let loop ([len 1] [l (cdr l)])
+          (let loop ([len 1] [l (cdr l)] [seen (set)])
             (cond 
-              [((out-shared-index out) l)
+              [(set-member? seen l)
                (values len #f)]
               [(null? l)
                (values len #t)]
               [(pair? l)
-               (loop (add1 len) (cdr l))]
+               (loop (add1 len) (cdr l) (set-add seen l))]
               [else
                (values len #f)])))
         (define-values (len proper?) (list-length-before-cycle/improper-end v))
@@ -884,8 +886,8 @@
 
 (define (lookup-encoded-wrapped w out)
   (hash-ref (out-encoded-wraps out) w
-            (lambda ()
-              (error 'lookup-encoded-wrapped "Cannot find encoded version of wrap: ~e" w))))
+            (λ ()
+              (encode-wrapped w))))
 
 
 (define (out-lam expr out)  
