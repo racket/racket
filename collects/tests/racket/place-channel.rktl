@@ -32,7 +32,9 @@
       (vector (vector-ref x 0) 'b (vector-ref x 1))
       #s((abuilding 1 building 2) 6 'utah 'no))
     (define pc1 (place-channel-recv ch))
-    (pcrss pc1 (string-append x "-ok")))
+    (pcrss pc1 (string-append x "-ok"))
+    (define pc3 (first (place-channel-recv ch)))
+    (pcrss pc3 (string-append x "-ok3")))
 )
 END
 "pct1.ss")
@@ -57,6 +59,9 @@ END
   (define-values (pc1 pc2) (place-channel))
   (place-channel-send pl pc2)
   (test "Testing-ok" place-channel-send/recv pc1 "Testing")
+  (define-values (pc3 pc4) (place-channel))
+  (place-channel-send pl (list pc4))
+  (test "Testing-ok3" place-channel-send/recv pc3 "Testing")
   (place-wait pl)
 )
 

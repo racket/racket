@@ -1084,6 +1084,7 @@ void force_hash_worker(Scheme_Object *so, Scheme_Hash_Table *ht)
     case scheme_byte_string_type:
     case scheme_unix_path_type:
     case scheme_symbol_type:
+    case scheme_place_bi_channel_type:
       break;
     case scheme_pair_type:
       {
@@ -1117,7 +1118,7 @@ void force_hash_worker(Scheme_Object *so, Scheme_Hash_Table *ht)
       break;
     case scheme_resolved_module_path_type:
     default:
-      scheme_log_abort("cannot copy object");
+      scheme_log_abort("cannot force hash");
       abort();
       break;
   }
