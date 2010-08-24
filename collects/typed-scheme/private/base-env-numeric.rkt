@@ -428,11 +428,9 @@
 [sgn (-Real . -> . -Real)]
 [pi -NonnegativeFlonum]
 [sqr (cl->* (-> -Pos -Pos)
-            (-> -Nat -Nat)
-            (-> -Integer -Integer)
+            (-> -Integer -Nat)
             (-> -ExactRational -ExactRational)
-            (-> -NonnegativeFlonum -NonnegativeFlonum)
-            (-> -Flonum -Flonum)
+            (-> -Flonum -NonnegativeFlonum)
             (-> -Real -Real)
             (-> -InexactComplex -InexactComplex)
             (-> N N))]
