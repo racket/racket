@@ -470,7 +470,7 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("seconds->date",
 			     scheme_make_prim_w_arity(seconds_to_date,
 						      "seconds->date",
-						      1, 1),
+						      1, 2),
 			     env);
 #endif
 
@@ -8770,6 +8770,7 @@ static int month_offsets[12] = { 0, 31, 59, 90,
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 {
   UNBUNDLE_TIME_TYPE lnow;
+  int get_gmt;
   int hour, min, sec, month, day, year, wday, yday, dst;
   long tzoffset;
 #ifdef USE_MACTIME
@@ -8777,7 +8778,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
   DateTimeRec localTime;
 #else
 # ifdef USE_PALMTIME
-# define CHECK_TIME_T UInt32
+#  define CHECK_TIME_T UInt32
   DateTimeType localTime;
 # else
 #  define CHECK_TIME_T time_t
@@ -8793,6 +8794,11 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
     scheme_wrong_type("seconds->date", "exact integer", 0, argc, argv);
     return NULL;
   }
+  
+  if (argc > 1)
+    get_gmt = SCHEME_FALSEP(argv[1]);
+  else
+    get_gmt = 0;
 
   if (scheme_get_time_val(secs, &lnow)
       && ((UNBUNDLE_TIME_TYPE)(now = (CHECK_TIME_T)lnow)) == lnow) {
@@ -8805,7 +8811,10 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 # ifdef USE_PALMTIME
     TimSecondsToDateTime(lnow, &localTime) ;
 # else
-    localTime = localtime(&now);
+    if (get_gmt)
+      localTime = gmtime(&now);
+    else
+      localTime = localtime(&now);
     success = !!localTime;
 # endif
 #endif
@@ -8816,7 +8825,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 #  define mzDOW(localTime) localTime.dayOfWeek - 1
 # else
 #  define mzDOW(localTime) localTime.weekDay
-#endif
+# endif
 
       hour = localTime.hour;
       min = localTime.minute;
@@ -8831,7 +8840,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
       yday = month_offsets[localTime.month - 1] + localTime.day - 1;
       /* If month > 2, is it a leap-year? */
       if (localTime.month > 2) {
-#ifdef USE_MACTIME
+# ifdef USE_MACTIME
         unsigned long ttime;
         DateTimeRec tester;
 
@@ -8845,11 +8854,11 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
         if (tester.month == 2)
           /* It is a leap-year */
           yday++;
-#else
+# else
 	/* PalmOS: */
 	if (DaysInMonth(2, year) > 28)
 	  yday++;
-#endif
+# endif
       }
 
 # ifdef USE_MACTIME
@@ -8882,32 +8891,37 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
       wday = localTime->tm_wday;
       yday = localTime->tm_yday;
 
-      dst = localTime->tm_isdst;
+      if (get_gmt)
+        dst = 0;
+      else
+        dst = localTime->tm_isdst;
 
       tzoffset = 0;
+      if (!get_gmt) {
 # ifdef USE_TIMEZONE_VAR
-      tzoffset = -MSC_IZE(timezone);
+        tzoffset = -MSC_IZE(timezone);
 # endif
 # ifdef USE_TOD_FOR_TIMEZONE
-      {
+        {
 	  struct timezone xtz;
 	  struct timeval xtv;
 	  gettimeofday(&xtv, &xtz);
 	  tzoffset = -(xtz.tz_minuteswest * 60);
-      }
+        }
 # endif
 # ifdef USE_TIMEZONE_VAR_W_DLS
-      tzoffset = -(MSCBOR_IZE(timezone) - (dst ? 3600 : 0));
+        tzoffset = -(MSCBOR_IZE(timezone) - (dst ? 3600 : 0));
 # endif
 # ifdef USE_TIMEZONE_AND_ALTZONE_VAR
-      if (dst)
-	tzoffset = -altzone;
-      else
-	tzoffset = -timezone;
+        if (dst)
+          tzoffset = -altzone;
+        else
+          tzoffset = -timezone;
 # endif
 # ifdef USE_TM_GMTOFF_FIELD
-      tzoffset = localTime->tm_gmtoff;
+        tzoffset = localTime->tm_gmtoff;
 # endif
+      }
 
 #endif
 
