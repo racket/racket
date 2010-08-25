@@ -16,6 +16,7 @@
              (namespace-require ''#%kernel)
              (namespace-require ''#%unsafe)
              (namespace-require ''#%flfxnum)
+             (namespace-require ''#%futures)
              (for/list ([l (namespace-mapped-symbols)])
                (cons l (with-handlers ([exn:fail? (lambda (x) #f)])
                          (compile l))))))]
