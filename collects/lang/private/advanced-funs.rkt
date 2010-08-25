@@ -5,10 +5,10 @@
            mzlib/pretty
            syntax/docprovide
            scheme/promise
-	   scheme/port
+           scheme/port
            "../posn.ss"
            (for-syntax scheme/base))
-
+  
   (define pp
     (let ([pretty-print (lambda (v)
                           (pretty-write v))])
@@ -16,7 +16,7 @@
   
   (provide-and-document
    procedures
-
+   
    ("Numbers: Integers, Rationals, Reals, Complex, Exacts, Inexacts"
     (random (case->
              (integer -> integer)
@@ -33,7 +33,7 @@
     (with-output-to-string (string (-> any) -> any)
       "to produce a string from all write/display/print operations")
     
-
+    
     (print (any -> void)
            "to print the argument as a value to stdout")
     (display (any -> void)
@@ -41,7 +41,7 @@
     (write (any -> void)
            "to print the argument to stdout (in a traditional style that is somewhere between print and display)")
     ((pp pretty-print) (any -> void)
-                  "like write, but with standard newlines and indentation")
+                       "like write, but with standard newlines and indentation")
     (printf (string any ... -> void)
             "to format the rest of the arguments according to the first argument and print it to stdout")
     (newline (-> void)
@@ -67,11 +67,11 @@
    
    ("Misc"
     (gensym (-> symbol?)
-     "to generate a new symbol, different from all symbols in the program")
+            "to generate a new symbol, different from all symbols in the program")
     (sleep (-> positive-number void)
-     "to cause the program to sleep for the given number of seconds")
+           "to cause the program to sleep for the given number of seconds")
     (current-milliseconds (-> exact-integer)
-     "to return the current “time” in fixnum milliseconds (possibly negative)")
+                          "to return the current “time” in fixnum milliseconds (possibly negative)")
     
     (force (delay -> any) "to find the delayed value; see also delay")
     (promise? (any -> boolean) "to determine if a value is delayed")
@@ -109,12 +109,21 @@
           "to determine if a value is a box"))
    
    ("Hash Tables"
-    ((advanced-make-hash make-hash) ((listof (list X Y)) -> (hash X Y))
-               "to construct a hash table from a list of mappings that uses equal? for comparisions")
-    ((advanced-make-hasheq make-hasheq) ((listof (list X Y)) -> (hash X Y))
-               "to construct a hash table from a list of mappings that uses eq? for comparisions")
-    ((advanced-make-hasheqv make-hasheqv) ((listof (list X Y)) -> (hash X Y))
-               "to construct a hash table from a list of mappings that uses eqv? for comparisions")
+    ((advanced-make-hash make-hash) 
+     (case->
+      (-> (hash X Y))
+      ((listof (list X Y)) -> (hash X Y)))
+     "to construct a hash table from an optional list of mappings that uses equal? for comparisions")
+    ((advanced-make-hasheq make-hasheq) 
+     (case->
+      (-> (hash X Y))
+      ((listof (list X Y)) -> (hash X Y)))
+     "to construct a hash table from an optional list of mappings that uses eq? for comparisions")
+    ((advanced-make-hasheqv make-hasheqv)
+     (case->
+      (-> (hash X Y))
+      ((listof (list X Y)) -> (hash X Y)))
+     "to construct a hash table from an optional list of mappings that uses eqv? for comparisions")
     (hash-set! ((hash X Y) X Y -> void)
                "to update a hash table with a new mapping")
     (hash-ref (case->
@@ -132,7 +141,7 @@
                    ((hash X Y) X (Y -> Y) (-> Y) -> void))
                   "to compose hash-ref and hash-set! to update an existing mapping; the third argument is used to compute the new mapping value; the fourth argument is used as the third argument to hash-ref")
     (hash-has-key? ((hash X Y) X -> boolean)
-                  "to determine if a key is associated with a value in a hash table")
+                   "to determine if a key is associated with a value in a hash table")
     (hash-remove! ((hash X Y) X -> void)
                   "to remove an mapping from a hash table")
     (hash-map ((hash X Y) (X Y -> A) -> (listof A))
@@ -140,14 +149,14 @@
     (hash-for-each ((hash X Y) (X Y -> any) -> void)
                    "to apply a function to each mapping of a hash table for effect only")
     (hash-count (hash -> integer)
-                 "to determine the number of keys mapped by a hash table")
+                "to determine the number of keys mapped by a hash table")
     (hash-copy (hash -> hash)
                "to copy a hash table")
     (hash? (any -> boolean)
            "to determine if a value is a hash table")
     (hash-equal? (hash -> boolean)
-           "to determine if a hash table uses equal? for comparisions")
+                 "to determine if a hash table uses equal? for comparisions")
     (hash-eq? (hash -> boolean)
-           "to determine if a hash table uses eq? for comparisions")
+              "to determine if a hash table uses eq? for comparisions")
     (hash-eqv? (hash -> boolean)
-           "to determine if a hash table uses eqv? for comparisions"))))
+               "to determine if a hash table uses eqv? for comparisions"))))

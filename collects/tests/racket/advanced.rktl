@@ -259,6 +259,12 @@
              (begin (hash-update! ht 'b add1 (lambda () 1))
                     (hash-ref ht 'b))))
 (htdp-test #t 'hash?
+           (hash? (make-hash)))
+(htdp-test #t 'hash?
+           (hash? (make-hasheq)))
+(htdp-test #t 'hash?
+           (hash? (make-hasheqv)))
+(htdp-test #t 'hash?
            (hash? (make-hash (list (list 'a 1)))))
 (htdp-test #t 'hash?
            (hash? (make-hasheq (list (list 'a 1)))))

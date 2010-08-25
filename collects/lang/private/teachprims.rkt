@@ -346,15 +346,15 @@ namespace.
     (apply append x)))
 
 (define-teach advanced make-hash
-  (lambda (a)
+  (lambda ([a empty])
     (make-hash (map (lambda (l) (cons (first l) (second l))) a))))
 
 (define-teach advanced make-hasheq
-  (lambda (a)
+  (lambda ([a empty])
     (make-hasheq (map (lambda (l) (cons (first l) (second l))) a))))
 
 (define-teach advanced make-hasheqv
-  (lambda (a)
+  (lambda ([a empty])
     (make-hasheqv (map (lambda (l) (cons (first l) (second l))) a))))
 
 (provide  
