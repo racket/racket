@@ -21,7 +21,7 @@
 		       'up
 		       'up
 		       "collects")])
-    (printf "Setting collection path: ~s~n" p)
+    (printf "Setting collection path: ~s\n" p)
     (current-library-collection-paths 
      (list p))))
 
@@ -63,7 +63,7 @@
                               (make-directory next))
                             (loop next (cdr rel-path)))))))])
         (unless (file-exists? target)
-          (printf "Copying ~a to ~a~n" path target)
+          (printf "Copying ~a to ~a\n" path target)
           (copy-file path target)
           (let ([code (get-module-code path "no-such-dir")])
             (map (lambda (x)
@@ -93,7 +93,7 @@
 (current-library-collection-paths 
  (list (build-path (current-directory) "xform-collects")))
 
-(printf "Compiling xform support...~n")
+(printf "Compiling xform support...\n")
 
 (let ([mk-cm make-compilation-manager-load/use-compiled-handler]
       [old-namespace (current-namespace)])

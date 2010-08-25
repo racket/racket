@@ -133,7 +133,7 @@
 		      (if (not l)
 			  win
 			  l)))])
-	(when noisy? (printf "~a~n" s))
+	(when noisy? (printf "~a\n" s))
 	(send m set-label (substring s 0 (min 200 (string-length s))))))))
 
 (define (add-click-intercept frame panel)
@@ -146,7 +146,7 @@
 	  (make-object menu-item% (format "Click on ~a" win)
 		       m (lambda (i e)
 			   (unless (eq? (send m get-popup-target) win)
-			     (printf "Wrong owner!~n"))))
+			     (printf "Wrong owner!\n"))))
 	  (send win popup-menu m 
 		(inexact->exact (send e get-x))
 		(inexact->exact (send e get-y)))
@@ -160,7 +160,7 @@
 	[cc (make-object cursor% 'cross)])
     (make-object check-box% "Control Bullseye Cursors" panel
 		 (lambda (c e)
-		   (printf "~a~n" e)
+		   (printf "~a\n" e)
 		   (if (send c get-value)
 		       (set! old 
 			     (map (lambda (b) 
@@ -200,7 +200,7 @@
     (override
       [on-demand
        (lambda ()
-	 (printf "Menu item ~a demanded~n" name))])
+	 (printf "Menu item ~a demanded\n" name))])
     (sequence
       (apply super-init name args))))
 
@@ -239,7 +239,7 @@
 							       (memq (send e get-event-type)
 								     '(menu-popdown menu-popdown-none)))
 						    (error "bad event object"))
-						  (printf "popdown ok~n")))]
+						  (printf "popdown ok\n")))]
 				[make-callback 
 				 (let ([id 0])
 				   (lambda ()
@@ -297,7 +297,7 @@
     (sequence
       (apply super-init args)
       (unless (ok?)
-	(printf "bitmap failure: ~s~n" args)))))
+	(printf "bitmap failure: ~s\n" args)))))
 
 (define (active-mixin %)
   (class %
@@ -312,9 +312,9 @@
                [on-subwindow-char (lambda args 
                                     (or (apply pre-on args)
                                         (super on-subwindow-char . args)))]
-               [on-activate (lambda (on?) (printf "active: ~a~n" on?))]
-               [on-move (lambda (x y) (printf "moved: ~a ~a~n" x y))]
-               [on-size (lambda (x y) (printf "sized: ~a ~a~n" x y))])
+               [on-activate (lambda (on?) (printf "active: ~a\n" on?))]
+               [on-move (lambda (x y) (printf "moved: ~a ~a\n" x y))]
+               [on-size (lambda (x y) (printf "sized: ~a ~a\n" x y))])
     (public* [set-info
               (lambda (ep)
                 (set! pre-on (add-pre-note this ep))
@@ -331,10 +331,10 @@
     (override
       [on-superwindow-show
        (lambda (on?)
-	 (printf "~a ~a~n" name (if on? "show" "hide")))]
+	 (printf "~a ~a\n" name (if on? "show" "hide")))]
       [on-superwindow-enable
        (lambda (on?)
-	 (printf "~a ~a~n" name (if on? "on" "off")))])
+	 (printf "~a ~a\n" name (if on? "on" "off")))])
     (sequence
       (apply super-init name args))))
 
@@ -952,7 +952,7 @@
 	     (compare expect v (format "label search: ~a" string))))]
 	[tell-ok
 	 (lambda ()
-	   (printf "ok~n"))])
+	   (printf "ok\n"))])
       (private-field
 	[temp-labels? #f]
 	[use-menubar? #f]
@@ -1180,7 +1180,7 @@
     (unless (memq type types)
       (error (format "bad event type: ~a" type))))
   (unless silent?
-    (printf "Callback Ok~n")))
+    (printf "Callback Ok\n")))
 
 (define (instructions v-panel file)
   (define c (make-object editor-canvas% v-panel))
@@ -1216,7 +1216,7 @@
 			    (lambda (e)
 			      (check-callback-event b b e commands #t))
 			    old-list)
-			   (printf "All Ok~n"))))
+			   (printf "All Ok\n"))))
   (define e (make-object button%
 			 "Disable Test" p
 			 (lambda (c e)
@@ -1227,7 +1227,7 @@
 			     (thread (lambda () (sleep 0.5) (semaphore-post sema)))
 			     (yield sema)
 			     (when hit?
-			       (printf "un-oh~n"))
+			       (printf "un-oh\n"))
 			     (send b enable #t)))))
   (instructions p "button-steps.txt")
   (send f show #t))
@@ -1261,7 +1261,7 @@
 			    (lambda (e)
 			      (check-callback-event cb cb e commands #t))
 			    old-list)
-			   (printf "All Ok~n"))))
+			   (printf "All Ok\n"))))
   (instructions p "checkbox-steps.txt")
   (send f show #t))
 
@@ -1333,7 +1333,7 @@
 		  (lambda (rbe)
 		    (check-callback-event (car rbe) (car rbe) (cdr rbe) commands #t))
 		  old-list)
-		 (printf "All Ok~n")))
+		 (printf "All Ok\n")))
   (instructions p "radiobox-steps.txt")
   (send f show #t))
 
@@ -1360,12 +1360,12 @@
       (cond
        [(eq? (send e get-event-type) 'list-box-dclick)
 	; double-click
-	(printf "Double-click~n")
+	(printf "Double-click\n")
 	(unless (send cx get-selection)
 	  (error "no selection for dclick"))]
        [else
 	; misc multi-selection
-	(printf "Changed: ~a~n" (if list?
+	(printf "Changed: ~a\n" (if list?
 				    (send cx get-selections)
 				    (send cx get-selection)))])
       (check-callback-event c cx e commands #f)))
@@ -1402,7 +1402,7 @@
 	       (make-object button%
 			    "Visible Indices" p
 			    (lambda (b e)
-			      (printf "top: ~a~nvisible count: ~a~n"
+			      (printf "top: ~a\nvisible count: ~a\n"
 				      (send c get-first-visible-item)
 				      (send c number-of-visible-items))))))
   (define cdp (make-object horizontal-panel% p))
@@ -1555,9 +1555,9 @@
 			     (lambda (e)
 			       (check-callback-event c c e commands #t))
 			     old-list)
-			    (printf "content: ~s~n" actual-content)
+			    (printf "content: ~s\n" actual-content)
 			    (when multi?
-			      (printf "selections: ~s~n" (send c get-selections))))))
+			      (printf "selections: ~s\n" (send c get-selections))))))
   (send c stretchable-width #t)
   (instructions p "choice-list-steps.txt")
   (send f show #t))
@@ -1570,7 +1570,7 @@
   (define s (make-object slider% "Slide Me" -1 11 p
 			 (lambda (sl e)
 			   (check-callback-event s sl e commands #f)
-			   (printf "slid: ~a~n" (send s get-value)))
+			   (printf "slid: ~a\n" (send s get-value)))
 			 3))
   (define c (make-object button% "Check" p
 			 (lambda (c e)
@@ -1578,7 +1578,7 @@
 			    (lambda (e)
 			      (check-callback-event s s e commands #t))
 			    old-list)
-			   (printf "All Ok~n"))))
+			   (printf "All Ok\n"))))
   (define (simulate v)
     (let ([e (make-object control-event% 'slider)])
       (send s set-value v)
@@ -1634,13 +1634,13 @@
   (define (handler get-this)
     (lambda (c e)
       (unless (eq? c (get-this))
-	(printf "callback: bad item: ~a~n" c))
+	(printf "callback: bad item: ~a\n" c))
       (let ([t (send e get-event-type)])
 	(cond
 	 [(eq? t 'text-field)
-	  (printf "Changed: ~a~n" (send c get-value))]
+	  (printf "Changed: ~a\n" (send c get-value))]
 	 [(eq? t 'text-field-enter)
-	  (printf "Return: ~a~n" (send c get-value))]))))
+	  (printf "Return: ~a\n" (send c get-value))]))))
 
   (define f (make-frame frame% "Text Test"))
   (define p (make-object vertical-panel% f))
@@ -1701,7 +1701,7 @@
 		     (send f set-status-text s)))]
 		[on-scroll
 		 (lambda (e) 
-		   (when auto? (printf "Hey - on-scroll called for auto scrollbars~n"))
+		   (when auto? (printf "Hey - on-scroll called for auto scrollbars\n"))
 		   (unless incremental? (on-paint)))]
 		[init-auto-scrollbars (lambda x
 					(set! auto? #t)
@@ -1877,7 +1877,7 @@
 			       (let ([c (car (send p get-children))])
 				 (let-values ([(w h) (send c get-size)]
 					      [(cw ch) (send c get-client-size)])
-				   (printf "~a: (~a x ~a) client[~a x ~a] diff<~a x ~a> min{~a x ~a}~n"
+				   (printf "~a: (~a x ~a) client[~a x ~a] diff<~a x ~a> min{~a x ~a}\n"
 					   c w h cw ch
 					   (- w cw) (- h ch)
 					   (send c min-width) (send c min-height)))))
@@ -1962,7 +1962,7 @@
   (make-object button% "Rename" p2 (lambda (b e)
 				     (send p set-item-label (quotient (send p get-number) 2) "Do&nut")))
   (make-object button% "Labels" p2 (lambda (b e)
-				     (printf "~s~n"
+				     (printf "~s\n"
 					     (reverse
 					      (let loop ([i (send p get-number)])
 						(if (zero? i)
@@ -2000,10 +2000,10 @@
 (define (message-boxes parent)
   (define (check expected got)
     (unless (eq? expected got)
-      (fprintf (current-error-port) "bad result: - expected ~e, got ~e~n"
+      (fprintf (current-error-port) "bad result: - expected ~e, got ~e\n"
 	       expected got)))
   (define (big s)
-    (format "~a~n~a~n~a~n~a~n" s
+    (format "~a\n~a\n~a\n~a\n" s
 	    (make-string 500 #\x)
 	    (make-string 500 #\x)
 	    (make-string 500 #\x)))

@@ -29,7 +29,7 @@
 (let ([argv (current-command-line-arguments)])
   (cond [(equal? argv #())
          (let ([exe (make-copy)])
-           (printf "re-launching first time...~n")
+           (printf "re-launching first time...\n")
            (subprocess
             (current-output-port) (current-input-port) (current-error-port)
             exe "--collects" collects-dir
@@ -37,7 +37,7 @@
         [(equal? argv #("patch"))
          (sleep 1) ; time for other process to end
          (patch-files)
-         (printf "re-launching last time...~n")
+         (printf "re-launching last time...\n")
          (subprocess
           (current-output-port) (current-input-port) (current-error-port)
           (build-path (find-console-bin-dir) "racket.exe")
@@ -46,5 +46,5 @@
          (sleep 1) ; time for other process to end
          (delete-directory/files
           (build-path (find-system-path 'temp-dir) "setvers"))
-         (printf "done!~n")]
+         (printf "done!\n")]
         [else (error 'winvers "unknown command line: ~e" argv)]))

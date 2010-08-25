@@ -104,9 +104,9 @@
                     (module m03 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start x)
-                        (begin (printf "Before~n")
+                        (begin (printf "Before\n")
                                (values 1 x)
-                               (printf "After~n")
+                               (printf "After\n")
                                x))))])
        (check = 3 (test `(dispatch-start start 3)))))
     
@@ -118,9 +118,9 @@
                       (provide start)
                       (define (start x)
                         (begin0 x
-                                (printf "Before~n")
+                                (printf "Before\n")
                                 (values 1 x)
-                                (printf "After~n")))))])
+                                (printf "After\n")))))])
        (check = 3 (test `(dispatch-start start 3)))))
     
     (test-case
@@ -132,9 +132,9 @@
                       (define (start x)
                         (let-values ([(_ ans)
                                       (begin0 (values 1 x) 
-                                              (printf "Before~n")
+                                              (printf "Before\n")
                                               x
-                                              (printf "After~n"))])
+                                              (printf "After\n"))])
                           ans))))])
        (check = 3 (test `(dispatch-start start 3))))))
    
@@ -229,18 +229,18 @@
              (cadr
               (call-with-serializable-current-continuation
                (lambda (k)
-                 (let ([ignore (printf "Please send the ~a number.~n" which)])
+                 (let ([ignore (printf "Please send the ~a number.\n" which)])
                    (store-k k))))))
            
            (define (start ignore)
              (let ([result (+ (gn "first") (gn "second"))])
-               (let ([ignore (printf "The answer is: ~s~n" result)])
+               (let ([ignore (printf "The answer is: ~s\n" result)])
                  result)))))         
        (table-01-eval '(require 'm06))         
        (let* ([first-key (table-01-eval '(dispatch-start start 'foo))]
               [second-key (table-01-eval `(dispatch lookup-k '(,first-key 1)))]
               [third-key (table-01-eval `(dispatch lookup-k '(,first-key -7)))])
-         #;(printf "~S~n" (list first-key second-key third-key))
+         #;(printf "~S\n" (list first-key second-key third-key))
          (check = 3 (table-01-eval `(dispatch lookup-k '(,second-key 2))))
          (check = 4 (table-01-eval `(dispatch lookup-k '(,second-key 3))))
          (check-true (zero? (table-01-eval `(dispatch lookup-k '(,second-key -1)))))
@@ -258,12 +258,12 @@
                         (cadr
                          (call-with-serializable-current-continuation
                           (lambda (k)
-                            (let ([ignore (printf "Please send the ~a number.~n" which)])
+                            (let ([ignore (printf "Please send the ~a number.\n" which)])
                               k)))))
                       
                       (define (start ignore)
                         (let ([result (+ (gn "first") (gn "second"))])
-                          (let ([ignore (printf "The answer is: ~s~n" result)])
+                          (let ([ignore (printf "The answer is: ~s\n" result)])
                             result)))))])
        (let* ([first-key (test-m06.1 '(dispatch-start start 'foo))]
               [second-key (test-m06.1 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) 1)))]
@@ -285,12 +285,12 @@
                         (cadr
                          (call-with-serializable-current-continuation
                           (lambda (k)
-                            (let ([ignore (printf "Please send the ~a number.~n" which)])
+                            (let ([ignore (printf "Please send the ~a number.\n" which)])
                               k)))))
                       
                       (define (start ignore)
                         (let ([result (+ (gn #:page "first") (gn #:page "second"))])
-                          (let ([ignore (printf "The answer is: ~s~n" result)])
+                          (let ([ignore (printf "The answer is: ~s\n" result)])
                             result)))))])
        (let* ([first-key (test-m06.2 '(dispatch-start start 'foo))]
               [second-key (test-m06.2 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) 1)))]
@@ -382,7 +382,7 @@
                         (cadr
                          (call-with-serializable-current-continuation
                           (lambda (k)
-                            (let ([ignore (printf "Please send the ~a number.~n" which)])
+                            (let ([ignore (printf "Please send the ~a number.\n" which)])
                               k)))))
                       
                       (define (start ignore)
@@ -391,7 +391,7 @@
                                  [g (let ([n (gn "second")])
                                       (lambda (m) (+ n (f m))))])
                           (let ([result (g (gn "third"))])
-                            (let ([ignore (printf "The answer is: ~s~n" result)])
+                            (let ([ignore (printf "The answer is: ~s\n" result)])
                               result))))))])
        (let* ([k0 (test-m08 '(serialize (dispatch-start start 'foo)))]
               [k1 (test-m08 `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) 1))))]
@@ -416,7 +416,7 @@
                       
                       (define (non-tail-apply f . args)
                         (let ([result (apply f args)])
-                          (printf "result = ~s~n" result)
+                          (printf "result = ~s\n" result)
                           result))))])
        (nta-eval '(module m09 (lib "lang.rkt" "web-server")
                     (require 'nta)
@@ -438,7 +438,7 @@
                       (provide start)
                       (define (nta f arg)
                         (let ([result (f arg)])
-                          (printf "result = ~s~n" result)
+                          (printf "result = ~s\n" result)
                           result))
                       (define (start ignore)
                         (nta (lambda (x) (let/cc k (k x))) 7))))])         
@@ -493,7 +493,7 @@
                         (map
                          (lambda (n) (call-with-serializable-current-continuation
                                       (lambda (k)
-                                        (let ([ignore (printf "n = ~s~n" n)])
+                                        (let ([ignore (printf "n = ~s\n" n)])
                                           k))))
                          (list 1 2 3)))))])
        (check-true (catch-unsafe-context-exn
@@ -519,7 +519,7 @@
                              (cadr
                               (call-with-serializable-current-continuation
                                (lambda (k)
-                                 (let ([ignore (printf "n = ~s~n" n)])
+                                 (let ([ignore (printf "n = ~s\n" n)])
                                    k))))) 7)))))
        (ta-eval '(require 'm14))
        

@@ -16,7 +16,7 @@
                                 key
                                 (+ (hash-ref hash2 key zero) value))))
         (loop (add1 i))))
-    (printf "~s ~s ~s ~s~n"
+    (printf "~s ~s ~s ~s\n"
             (hash-ref hash1 "foo_1")
             (hash-ref hash1 "foo_9999")
             (hash-ref hash2 "foo_1")

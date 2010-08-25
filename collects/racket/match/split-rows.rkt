@@ -30,13 +30,13 @@
         (cond [(Row-unmatch r)
                (split-rows rows (cons (reverse matched-rows) prev-mats))]
               [(and (Struct? p) struct-key (eq? (pat-key p) struct-key))
-               ;; (printf "struct-keys were equal: ~a~n" struct-key)
+               ;; (printf "struct-keys were equal: ~a\n" struct-key)
                (loop/con (cons r matched-rows) prev-mats struct-key rs)]
               [(and (Struct? p) (not struct-key))
-               ;; (printf "no struct-key so far: ~a~n" struct-key)
+               ;; (printf "no struct-key so far: ~a\n" struct-key)
                (loop/con (cons r matched-rows) prev-mats (pat-key p) rs)]
               [(and (CPat? p) (not (Struct? p)))
-               ;; (printf "wasn't a struct: ~a~n" p)
+               ;; (printf "wasn't a struct: ~a\n" p)
                (loop/con (cons r matched-rows) prev-mats struct-key rs)]
               [else (split-rows rows (cons (reverse matched-rows)
                                            prev-mats))]))))
@@ -66,7 +66,7 @@
             [(CPat? p)
              (if (Struct? p)
                (begin
-                 ;; (printf "found a struct: ~a~n" (pat-key r))
+                 ;; (printf "found a struct: ~a\n" (pat-key r))
                  (loop/con (list r) acc (pat-key p) rs))
                (loop/con (list r) acc #f rs))]
             [else (split-rows rs (cons (list r) acc))]))))

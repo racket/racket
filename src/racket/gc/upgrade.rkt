@@ -54,19 +54,19 @@
 			     (hash-table-remove! old k))))
 
 (hash-table-for-each old (lambda (k v)
-			   (printf "Remove ~a~n" k)))
+			   (printf "Remove ~a\n" k)))
 (hash-table-for-each new (lambda (k v)
-			   (printf "Add ~a~n" k)))
+			   (printf "Add ~a\n" k)))
 (hash-table-for-each mod (lambda (k v)
-			   (printf "Changed ~a~n" k)))
+			   (printf "Changed ~a\n" k)))
 (hash-table-for-each plt-mod (lambda (k v)
-			       (printf "PLTSCHEME ~a~n" k)))
+			       (printf "PLTSCHEME ~a\n" k)))
 
 (unless (null? (hash-table-map plt-mod cons))
   (error "!! Cannot continue until PLTSCHEME diffs are managed !!"))
 
 (define (go cmd)
-  (printf "CMD: ~a~n" cmd)
+  (printf "CMD: ~a\n" cmd)
   (when really-git?
     (system cmd)))
 

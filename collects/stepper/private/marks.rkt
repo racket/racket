@@ -138,7 +138,7 @@
    (lookup-first-binding (lambda (id2) (free-identifier=? id id2)) 
                          mark-list 
                          (lambda ()
-                           (error 'lookup-binding "variable not found in environment: ~a~n" (if (syntax? id) 
+                           (error 'lookup-binding "variable not found in environment: ~a\n" (if (syntax? id) 
                                                                                                 (syntax->datum id)
                                                                                                 id))))))
 

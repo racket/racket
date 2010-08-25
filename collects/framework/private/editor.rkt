@@ -242,10 +242,10 @@
            (unless (and (procedure? t)
                         (= 0 (procedure-arity t)))
              (error 'editor:basic::run-after-edit-sequence
-                    "expected procedure of arity zero, got: ~s~n" t))
+                    "expected procedure of arity zero, got: ~s\n" t))
            (unless (or (symbol? sym) (not sym))
              (error 'editor:basic::run-after-edit-sequence
-                    "expected second argument to be a symbol or #f, got: ~s~n"
+                    "expected second argument to be a symbol or #f, got: ~s\n"
                     sym))
            (if (refresh-delayed?)
                (if in-local-edit-sequence?

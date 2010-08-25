@@ -528,7 +528,7 @@ the state transitions / contracts are:
                    (cond
                      [(string? default) string?]
                      [(number? default) number?]
-                     [else (error 'internal-error.set-default "unrecognized default: ~a~n" default)]))
+                     [else (error 'internal-error.set-default "unrecognized default: ~a\n" default)]))
                   (preferences:add-callback 
                    name 
                    (λ (p new-value)

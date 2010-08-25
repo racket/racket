@@ -125,7 +125,7 @@
                           "Select the destination for unpacking"
                           frame)])
                   (unless d
-                    (printf ">>> Cancelled <<<~n"))
+                    (printf ">>> Cancelled <<<\n"))
                   (begin-busy-cursor)
                   d))))
            cleanup-thunk)))))

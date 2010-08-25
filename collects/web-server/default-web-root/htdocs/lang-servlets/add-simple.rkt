@@ -6,11 +6,11 @@
 (define printf void)
 
 (define (gn)
-  (printf "gn ~a~n" (msg))
+  (printf "gn ~a\n" (msg))
   (let* ([req
           (send/suspend/url
            (lambda (k-url)
-             (printf "ssu ~S~n" (msg))
+             (printf "ssu ~S\n" (msg))
              `(html (head (title ,(format "Get ~a number" (msg))))
                     (body
                      (form ([action ,(url->string k-url)]
@@ -24,11 +24,11 @@
                 (binding:form-value
                  (bindings-assq #"number" 
                                 (request-bindings/raw req)))))])
-    (printf "gn ~a ~a~n" (msg) num)
+    (printf "gn ~a ~a\n" (msg) num)
     num))
 
 (define (start initial-request)
-  (printf "after s-s~n")
+  (printf "after s-s\n")
   `(html (head (title "Final Page"))
          (body
           (h1 "Final Page")

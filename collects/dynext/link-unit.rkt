@@ -350,7 +350,7 @@
 			 libs
 			 output-strings)])
 		  (unless quiet? 
-		    (printf "link-extension: ~a~n" command))
+		    (printf "link-extension: ~a\n" command))
 		  (stdio-link (lambda (quiet?)
 				(apply my-process* command))
 			      quiet?)
@@ -393,25 +393,25 @@
 				    (cddr l)]
 				   [else (cons (car l) (loop (cdr l)))]))])
 			  (unless quiet?
-			    (printf "link-extension, dlltool phase: ~a~n" 
+			    (printf "link-extension, dlltool phase: ~a\n" 
 				    (cons dlltool dll-command)))
 			  (stdio-link (lambda (quiet?) 
 					(apply my-process* dlltool dll-command))
 				      quiet?)
 			  (unless quiet?
-			    (printf "link-extension, re-link phase: ~a~n" 
+			    (printf "link-extension, re-link phase: ~a\n" 
 				    command1))
 			  (stdio-link (lambda (quiet?) 
 					(apply my-process* command1))
 				      quiet?)
 			  (unless quiet?
-			    (printf "link-extension, re-dlltool phase: ~a~n" 
+			    (printf "link-extension, re-dlltool phase: ~a\n" 
 				    (cons dlltool dll-command)))
 			  (stdio-link (lambda (quiet?)
 					(apply my-process* dlltool dll-command))
 				      quiet?)
 			  (unless quiet?
-			    (printf "link-extension, last re-link phase: ~a~n" 
+			    (printf "link-extension, last re-link phase: ~a\n" 
 				    command2))
 			  (stdio-link (lambda (quiet?)
 					(apply my-process* command2))

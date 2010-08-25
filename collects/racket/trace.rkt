@@ -93,9 +93,8 @@
                        (lambda (n port offset width)
                          (display
                           (if n
-                              (if (zero? n) first
-                                  (format "~n~a" rest))
-                              (format "~n"))
+                            (if (zero? n) first (format "\n~a" rest))
+                            "\n")
                           port)
                          (if n
                              (if (zero? n)
@@ -119,9 +118,8 @@
                       (lambda (n port offset width)
                         (display
                          (if n
-                             (if (zero? n) first
-                                 (format "~n~a" rest))
-                             (format "~n"))
+                           (if (zero? n) first (format "\n~a" rest))
+                           "\n")
                          port)
                         (if n
                             (if (zero? n)
@@ -139,9 +137,8 @@
                            (lambda (n port offset width)
                              (display
                               (if n
-                                  (if (zero? n) rest
-                                      (format "~n~a" rest))
-                                  (format "~n"))
+                                (if (zero? n) rest (format "\n~a" rest))
+                                "\n")
                               port)
                              (if n
                                  (string-length rest)

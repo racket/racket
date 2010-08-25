@@ -50,12 +50,12 @@
                     [(tc-results: ts fs2 os2) (with-lexical-env env-thn (tc thn (unbox flag+)))]
                     [(tc-results: us fs3 os3) (with-lexical-env env-els (tc els (unbox flag-)))])
          ;(printf "old props: ~a\n" (env-props (lexical-env)))
-         ;(printf "fs+: ~a~n" fs+)
-         ;(printf "fs-: ~a~n" fs-)
-         ;(printf "thn-props: ~a~n" (env-props env-thn))
-         ;(printf "els-props: ~a~n" (env-props env-els))
-         ;(printf "new-thn-props: ~a~n" new-thn-props)
-         ;(printf "new-els-props: ~a~n" new-els-props)
+         ;(printf "fs+: ~a\n" fs+)
+         ;(printf "fs-: ~a\n" fs-)
+         ;(printf "thn-props: ~a\n" (env-props env-thn))
+         ;(printf "els-props: ~a\n" (env-props env-els))
+         ;(printf "new-thn-props: ~a\n" new-thn-props)
+         ;(printf "new-els-props: ~a\n" new-els-props)
 
          ;; record reachability
          (when (not (unbox flag+))

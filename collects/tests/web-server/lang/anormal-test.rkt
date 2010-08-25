@@ -99,7 +99,7 @@
 (define (alpha= expr1 expr2)
   (define r (alpha=/env empty-env empty-env expr1 expr2))
   (unless r
-    (error 'alpha= "Not alpha=:\t~S~n\t~S~n" (syntax->datum expr1) (syntax->datum expr2)))
+    (error 'alpha= "Not alpha=:\t~S\n\t~S\n" (syntax->datum expr1) (syntax->datum expr2)))
   r)
 
 (define normalize-term (make-anormal-term (lambda _ (error 'anormal "No elim-letrec given."))))

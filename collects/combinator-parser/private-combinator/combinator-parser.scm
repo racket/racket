@@ -42,7 +42,7 @@
                   [(res? result) 
                    (fail-type->message (res-msg result))]
                   [(lazy-opts? result)
-                   #;(printf "lazy-opts ~a~n" result)
+                   #;(printf "lazy-opts ~a\n" result)
                    (let* ([finished? (lambda (o)
                                        (cond [(res? o)
                                               (and (not (null? (res-a o)))
@@ -79,7 +79,7 @@
                             (cond
                               [(pair? p-errors)
                                (let ([fails (cons (lazy-opts-errors result) p-errors)])
-                                 #;(printf "~nfails ~a~n~n" fails)
+                                 #;(printf "\nfails ~a\n\n" fails)
                                  (fail-type->message
                                   (make-options-fail (rank-choice (map fail-type-chance fails))
                                                      #f
@@ -91,7 +91,7 @@
                               [(null? p-errors)
                                (fail-type->message (lazy-opts-errors result))]))])))]
                   [(or (choice-res? result) (pair? result))
-                   #;(printf "choice-res or pair? ~a~n" result)
+                   #;(printf "choice-res or pair? ~a\n" result)
                    (let* ([options (if (choice-res? result) (choice-res-matches result) result)]
                           [finished-options (filter (lambda (o) 
                                                       (cond [(res? o) 
@@ -108,10 +108,10 @@
                            (filter res-possible-error 
                                    (map (lambda (a) (if (repeat-res? a) (repeat-res-a a) a))
                                         options))])
-                     #;(printf "length finished-options ~a~n" finished-options)
+                     #;(printf "length finished-options ~a\n" finished-options)
                      (cond 
                        [(not (null? finished-options))
-                        #;(printf "finished an option~n")
+                        #;(printf "finished an option\n")
                         (let ([first-fo (car finished-options)])
                           (car (cond 
                                  [(res? first-fo) (res-a first-fo)]
@@ -122,12 +122,12 @@
                                   (error 'parser-internal-errorcp 
                                          (format "~a" first-fo))])))]
                        #;[(not (null? possible-repeat-errors))
-                        (printf "possible-repeat error~n")
+                        (printf "possible-repeat error\n")
                         (fail-type->message 
                          (car (repeat-res-stop 
                                (sort-repeats possible-repeat-errors))))]
                        [(and (choice-res? result) (fail-type? (choice-res-errors result)))
-                        #;(printf "choice res and choice res errors ~n")
+                        #;(printf "choice res and choice res errors \n")
                         (cond
                           [(and (null? possible-repeat-errors)
                                 (null? possible-errors)) (fail-type->message (choice-res-errors result))]
@@ -143,11 +143,11 @@
                                                  (rank-choice (map fail-type-may-use fails))
                                                  fails)))])]
                        [(not (null? possible-errors))
-                        ;(printf "choice or pair fail~n")
+                        ;(printf "choice or pair fail\n")
                         (fail-type->message
                          (res-possible-error (car (sort-used possible-errors))))]
                        [else
-                        #;(printf "result ~a~n" result)
+                        #;(printf "result ~a\n" result)
                         (let ([used-sort (sort-used options)])
                           (if (and (choice-res? result)
                                    (choice-res-errors result))
@@ -164,7 +164,7 @@
                   [(and (repeat-res? result) (eq? 'out-of-input (repeat-res-stop result)))
                    (res-a (repeat-res-a result))]
                   [(and (repeat-res? result) (fail-type? (repeat-res-stop result)))
-                   ;(printf "repeat-fail~n")
+                   ;(printf "repeat-fail\n")
                    (fail-type->message (repeat-res-stop result))]
                   [else (error 'parser (format "Internal error: received unexpected input ~a" 
                                                result))])])

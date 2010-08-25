@@ -95,7 +95,7 @@
 	      (let ([i set-next-index])
 		(set! set-next-index (add1 set-next-index))
 		(unless (< i (vector-length index-vector))
-		  (printf "grow ~a~n" i)
+		  (printf "grow ~a\n" i)
 		  (let* ([old-iv index-vector]
 			 [old-sv singleton-vector]
 			 [old-size (vector-length index-vector)]

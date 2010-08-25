@@ -79,7 +79,7 @@
       
       (init-field src-stx)
       (when (not (syntax? src-stx))
-        (printf "~a~n" src-stx)
+        (printf "~a\n" src-stx)
         (error 'stx))
       (init-field [cert-stxes (list src-stx)])
       (field (known-value #f))
@@ -701,7 +701,7 @@
                      [f (dynamic-require 'mzscheme (send rator orig-name))])
                  (with-handlers ([exn:fail? (lambda (x) 
 					      (fprintf (current-error-port)
-						       "constant calculation error: ~a~n"
+						       "constant calculation error: ~a\n"
 						       (exn-message x))
 					      this)])
                    (known-single-result
@@ -1583,7 +1583,7 @@
 		   (syntax-position stx))])
 	(fprintf (current-output-port) " "))
       (fprintf (current-output-port) 
-	       "~a: ~.s~n"
+	       "~a: ~.s\n"
 	       msg
 	       (syntax->datum (send exp sexpr)))))
 

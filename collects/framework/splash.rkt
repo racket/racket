@@ -123,12 +123,12 @@
       [(or (path? splash-draw-spec)
            (string? splash-draw-spec))
        (unless (file-exists? splash-draw-spec)
-         (fprintf (current-error-port) "WARNING: bitmap path ~s not found~n" splash-draw-spec)
+         (fprintf (current-error-port) "WARNING: bitmap path ~s not found\n" splash-draw-spec)
          (no-splash))
        
        (set! splash-bitmap (make-object bitmap% splash-draw-spec))
        (unless (send splash-bitmap ok?)
-         (fprintf (current-error-port) "WARNING: bad bitmap ~s~n" splash-draw-spec)
+         (fprintf (current-error-port) "WARNING: bad bitmap ~s\n" splash-draw-spec)
          (no-splash))
        
        (send splash-canvas min-width (send splash-bitmap get-width))

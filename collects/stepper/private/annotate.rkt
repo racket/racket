@@ -77,7 +77,7 @@
 ;                   [elaborated (cadr arg-list)]
 ;                   [eval-result (caddr arg-list)]
 ;                   [collapsed (collapse-let-values (expand stx))])
-;              (printf "~a~n~a~n~a~n~a~n" (syntax->datum collapsed)
+;              (printf "~a\n~a\n~a\n~a\n" (syntax->datum collapsed)
 ;                      elaborated
 ;                      (eval collapsed)
 ;                      eval-result)

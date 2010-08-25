@@ -25,7 +25,7 @@
 	       (Values: (list (Result: rngs _ _) ...)) 
 	       _ _ (list (Keyword: _ _ #t) ...))))
        (apply Un rngs)]
-      [_ (int-err "Internal error in get-result-ty: not a function type: ~n~a" t)]))
+      [_ (int-err "Internal error in get-result-ty: not a function type: \n~a" t)]))
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
       (syntax-parse form
@@ -44,7 +44,7 @@
 		    (Function: (list (arr: (list _) _ _ _ (list (Keyword: _ _ #f) ...)) ...))))
 	      (set! handler-tys (cons (get-result-ty t) handler-tys))]
 	     [(tc-results: t)
-	      (tc-error "Exception handler must be a single-argument function, got ~n~a" t)]))]
+	      (tc-error "Exception handler must be a single-argument function, got \n~a" t)]))]
         [stx
          ;; this is the body of the with-handlers
          #:when (syntax-property form 'typechecker:exn-body)

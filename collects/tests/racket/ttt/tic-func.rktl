@@ -29,10 +29,10 @@
 (define make-move
   (lambda (other-move p/o tag)
     (lambda (states)
-      (printf "~s: processing ~s states of length ~s ~n"
+      (printf "~s: processing ~s states of length ~s \n"
 	tag (length states) (length (car states)))
       (let ((t (print&remove-terminals states)))
-	(printf "terminal states removed: ~s~n"
+	(printf "terminal states removed: ~s\n"
 	  (- (length states) (length t)))
 	(if (null? t) 
 	    (void)
@@ -85,10 +85,10 @@
 	  (define print-state2
 	    (lambda (astate)
 	      (cond
-		((null? astate) (printf "------------~n"))
+		((null? astate) (printf "------------\n"))
 		(else (print-state (cdr astate))
 		  (let ((x (car astate)))
-		    (printf " ~s @ (~s,~s) ~n"
+		    (printf " ~s @ (~s,~s) \n"
 		      (entry-who x) (entry-x x) (entry-y x)))))))
 
 	  (define print-state

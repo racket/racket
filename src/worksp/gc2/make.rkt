@@ -6,7 +6,7 @@
 	 mzlib/process)
 
 (define (system- s)
-  (fprintf (current-error-port) "~a~n" s)
+  (fprintf (current-error-port) "~a\n" s)
   (system s))
 
 (define accounting-gc? #t)
@@ -495,7 +495,7 @@
   (unless (and (file-exists? dest)
 	       (string=? (with-input-from-file src (lambda () (read-string (file-size src))))
 			 (with-input-from-file dest (lambda () (read-string (file-size dest))))))
-    (printf "Updating ~a~n" dest)
+    (printf "Updating ~a\n" dest)
     (when (file-exists? dest) (delete-file dest))
     (copy-file src dest)))
 

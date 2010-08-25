@@ -69,13 +69,13 @@
 ;; resume*: (listof (value -> value)) value -> value
 ;; resume a computation given a value and list of frame procedures
 (define (resume* frames val)
-  #;(printf "~S~n" `(resume ,frames ,val))
+  #;(printf "~S\n" `(resume ,frames ,val))
   (match frames
     [(list)
-     #;(printf "Returning value ~S~n" val)
+     #;(printf "Returning value ~S\n" val)
      (apply values val)]
     [(list-rest frame fs)
-     #;(printf "Frame ~S~n" frame)
+     #;(printf "Frame ~S\n" frame)
      (match frame
        [(vector #f #f #f)
         ; XXX Perhaps I should err?
@@ -106,7 +106,7 @@
 
 ;; rebuild-cms : frames (-> value) -> value
 (define (rebuild-cms frames thunk)
-  #;(printf "~S~n" `(rebuild-cms ,frames ,thunk))
+  #;(printf "~S\n" `(rebuild-cms ,frames ,thunk))
   (match frames
     [(list) 
      (thunk)]

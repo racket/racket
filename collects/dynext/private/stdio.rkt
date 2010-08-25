@@ -27,7 +27,7 @@
 		       (let loop ()
 			 (let ([t (read-line in 'any)])
 			   (unless (eof-object? t)
-			     (unless quiet? (fprintf (dest) "~a~n" t))
+			     (unless quiet? (fprintf (dest) "~a\n" t))
 			     (set-box! box (string-append (unbox box) 
 							  (string #\newline) t))
 			     (loop)))))))]

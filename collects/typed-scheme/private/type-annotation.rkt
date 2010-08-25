@@ -27,10 +27,10 @@
 (define (print-size stx)
   (syntax-case stx ()
     [(a . b) (begin
-               (printf/log "Annotation Sexp Pair ~n")
+               (printf/log "Annotation Sexp Pair \n")
                (print-size #'a)
                (print-size #'b))]      
-    [_ (printf/log "Annotation Sexp ~n" )]))
+    [_ (printf/log "Annotation Sexp \n" )]))
 
 ;; get the type annotation of this syntax
 ;; syntax -> Maybe[Type]
@@ -46,7 +46,7 @@
         (parse-type prop)
         (parse-type/id stx prop)))
   ;(unless let-binding (error 'ohno))
-  ;(printf "in type-annotation:~a~n" (syntax->datum stx))
+  ;(printf "in type-annotation:~a\n" (syntax->datum stx))
   (cond       
     [(syntax-property stx type-label-symbol) => pt]
     [(syntax-property stx type-ascrip-symbol) => pt]
@@ -87,11 +87,11 @@
                      [else #f])))
 
 (define (log/ann stx ty)
-  (printf/log "Required Annotated Variable: ~a ~a~n" (syntax-e stx) ty))
+  (printf/log "Required Annotated Variable: ~a ~a\n" (syntax-e stx) ty))
 (define (log/extra stx ty ty2)
-  (printf/log "Extra Annotated Variable: ~a ~a ~a~n" (syntax-e stx) ty ty2))
+  (printf/log "Extra Annotated Variable: ~a ~a ~a\n" (syntax-e stx) ty ty2))
 (define (log/noann stx ty)
-  (printf/log "Unannotated Variable: ~a ~a~n" (syntax-e stx) ty))
+  (printf/log "Unannotated Variable: ~a ~a\n" (syntax-e stx) ty))
 
 ;; get the type annotation of this identifier, otherwise error
 ;; if #:default is provided, return that instead of error
@@ -146,7 +146,7 @@
   (parameterize ([current-orig-stx stx])
     (unless (subtype e-type ty)
       ;(printf "orig-stx: ~a" (syntax->datum stx*))
-      (tc-error "Body had type:~n~a~nVariable had type:~n~a~n" e-type ty))))
+      (tc-error "Body had type:\n~a\nVariable had type:\n~a\n" e-type ty))))
 
 (define (dotted? stx)
   (cond [(syntax-property stx type-dotted-symbol) => syntax-e]

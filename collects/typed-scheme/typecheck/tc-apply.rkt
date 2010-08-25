@@ -53,7 +53,7 @@
            [(null? doms*)
             (tc-error/expr #:return (ret (Un))
                            (string-append 
-                            "Bad arguments to function in apply:~n"
+                            "Bad arguments to function in apply:\n"
                             (domain-mismatches f-ty doms rests drests rngs arg-tys tail-ty #f)))]
            ;; this case of the function type has a rest argument
            [(and (car rests*)
@@ -87,7 +87,7 @@
                   [(tc-result1: (Poly-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
                    (tc-error/expr #:return (ret (Un))
                                  (string-append 
-                                  "Bad arguments to polymorphic function in apply:~n"
+                                  "Bad arguments to polymorphic function in apply:\n"
                                   (domain-mismatches f-ty doms rests drests rngs arg-tys tail-ty tail-bound)))])]
                ;; the actual work, when we have a * function and a list final argument
                [(and (car rests*)
@@ -141,7 +141,7 @@
                   [(tc-result1: (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
                    (tc-error/expr #:return (ret (Un))
                                  (string-append 
-                                  "Bad arguments to polymorphic function in apply:~n"
+                                  "Bad arguments to polymorphic function in apply:\n"
                                   (domain-mismatches f-ty doms rests drests rngs arg-tys tail-ty tail-bound)))])]
                ;; the actual work, when we have a * function and a list final argument
                [(and (car rests*)
@@ -208,4 +208,4 @@
      (tc-error/expr #:return (ret (Un))
                     "Function has no cases")]
     [(tc-result1: f-ty) (tc-error/expr #:return (ret (Un))
-                         "Type of argument to apply is not a function type: ~n~a" f-ty)]))
+                         "Type of argument to apply is not a function type: \n~a" f-ty)]))

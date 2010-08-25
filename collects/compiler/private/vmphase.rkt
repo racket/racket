@@ -247,7 +247,7 @@
 	      (lambda (ast multi? leaf tail-pos tail? used?)
 		(when (compiler:option:debug)
 		  (zodiac:print-start! (debug:get-port) ast)
-		  (fprintf (debug:get-port) "~a~n" ast))
+		  (fprintf (debug:get-port) "~a\n" ast))
 		(cond
 		 
 		 ;;-----------------------------------------------------------------

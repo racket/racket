@@ -145,7 +145,7 @@
                               (if subpart
                                   (format "~a: " subpart)
                                   "")])
-                            (printf "~a: ~a~a~n" program-name task (apply format formatstr rest))))
+                            (printf "~a: ~a~a\n" program-name task (apply format formatstr rest))))
                           (define (with-record-error cc go fail-k)
                             (with-handlers ([exn:fail?
                                              (lambda (exn)

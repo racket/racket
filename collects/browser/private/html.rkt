@@ -229,7 +229,7 @@
           (with-handlers ([exn:fail?
                            (lambda (x)
                              (message-box "Warning"
-                                          (format "Could not delete file ~s~n~n~a"
+                                          (format "Could not delete file ~s\n\n~a"
                                                   tmp-filename
                                                   (if (exn? x)
                                                       (exn-message x)

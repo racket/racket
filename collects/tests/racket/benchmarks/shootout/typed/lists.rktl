@@ -44,6 +44,6 @@
       (when (> counter 0)
         (set! result (test-lists))
         (loop (- counter 1))))
-    (printf "~s~n" result)))
+    (printf "~s\n" result)))
 
 (main (current-command-line-arguments))

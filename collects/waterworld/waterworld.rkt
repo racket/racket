@@ -192,7 +192,7 @@
     (foldr
      (lambda (s a)
        (if a
-	   (format "~a~n~a"
+	   (format "~a\n~a"
 		   s a)
 	   s))
      #f
@@ -484,12 +484,12 @@
 					 (car assns))))))))]
        [dump-assignment
 	(lambda (assn)
-	  (printf "*** dumping assignment ***~n")
+	  (printf "*** dumping assignment ***\n")
 	  (let loop ([curr assn])
 	    (unless (null? curr)
 		    (let ([loc (caar curr)]
 			  [val (cdar curr)])
-		      (printf "row: ~a col: ~a val: ~a~n"
+		      (printf "row: ~a col: ~a val: ~a\n"
 			      (send loc get-row) 
 			      (send loc get-column) 
 			      val))
@@ -961,18 +961,18 @@
 	  (hash-table-map frontier-table (lambda (k v) k)))]
        [dump-frontier
 	(lambda ()
-	  (printf "Current frontier:~n")
+	  (printf "Current frontier:\n")
 	  (hash-table-for-each frontier-table
 			       (lambda (loc _)
-				 (printf "row: ~a  col: ~a~n"
+				 (printf "row: ~a  col: ~a\n"
 					 (send loc get-row)
 					 (send loc get-column)))))]
        [dump-border
 	(lambda ()
-	  (printf "Current border:~n")
+	  (printf "Current border:\n")
 	  (for-each
 	   (lambda (loc)
-	     (printf "row: ~a  col: ~a~n"
+	     (printf "row: ~a  col: ~a\n"
 		     (send loc get-row)
 		     (send loc get-column)))
 	   (get-revealed-border)))]
@@ -1044,16 +1044,16 @@
 		(delete-file filename))
 	  (with-output-to-file filename
 	    (lambda ()
-	      (printf "(game~n")
-	      (printf "  (rows ~a)~n" rows)
-	      (printf "  (columns ~a)~n" columns)
+	      (printf "(game\n")
+	      (printf "  (rows ~a)\n" rows)
+	      (printf "  (columns ~a)\n" columns)
 	      (printf "  (locations")
 	      (board-for-each
 	       (lambda (loc)
-		 (printf "~n    (location (row ~a) (column ~a) (safe? ~a) (concealed? ~a))" 
+		 (printf "\n    (location (row ~a) (column ~a) (safe? ~a) (concealed? ~a))" 
 			 (send loc get-row) (send loc get-column) 
 			 (send loc get-safe?) (send loc get-concealed?))))
-	      (printf "))~n"))))])
+	      (printf "))\n"))))])
       (super-instantiate ())
       (set-unsafe-count!)
       (reset-pirate-counts!)))
@@ -1201,7 +1201,7 @@
 	       (send board set-size! rs cs))]
 	    [dump-board ; for debugging
 	     (lambda ()
-	       (printf "** board dump **~n")
+	       (printf "** board dump **\n")
 	       (send board 
 		     board-for-each 
 		     (lambda (loc) 
@@ -1209,9 +1209,9 @@
 			     [col (send loc get-column)]
 			     [safe? (send loc get-safe?)]
 			     [concealed? (send loc get-concealed?)])
-			 (printf "row=~a col=~a safe?=~a concealed?=~a~n" 
+			 (printf "row=~a col=~a safe?=~a concealed?=~a\n" 
 				 row col safe? concealed?))))
-	       (printf "** end of dump **~n"))]
+	       (printf "** end of dump **\n"))]
 	    [expose-row-col
 	     (lambda (r c safe? assert)
 	       (send board expose-row-col r c safe? assert #f))]

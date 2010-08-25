@@ -402,7 +402,7 @@
                                          (Row-vars-seen
                                           (car block)))))
                         #'failkv)))]
-    [else (error 'compile "unsupported pattern: ~a~n" first)]))
+    [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
 (define (compile* vars rows esc)
   (define (let/wrap clauses body)

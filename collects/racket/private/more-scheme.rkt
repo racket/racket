@@ -341,7 +341,7 @@
 	 (syntax/loc
 	  stx
 	  (let-values ([(v cpu user gc) (time-apply (lambda () expr1 expr ...) null)])
-	    (printf "cpu time: ~s real time: ~s gc time: ~s~n" cpu user gc)
+	    (printf "cpu time: ~s real time: ~s gc time: ~s\n" cpu user gc)
 	    (apply values v)))])))
 
   (define-syntax (log-it stx)

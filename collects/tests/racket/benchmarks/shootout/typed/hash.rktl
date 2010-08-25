@@ -13,6 +13,6 @@
         (when (hash-ref hash (number->string i) false)
           (set! accum (+ accum 1)))
         (loop (sub1 i))))
-    (printf "~s~n" accum)))
+    (printf "~s\n" accum)))
 
 (main (current-command-line-arguments))

@@ -116,12 +116,12 @@
               [(and (Poly? ty)
                     (not (= (length (syntax->list inst)) (Poly-n ty))))
                (tc-error/expr #:return (Un)
-                              "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                              "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
                               ty (Poly-n ty) (length (syntax->list inst)))]
               [(and (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
                ;; we can provide 0 arguments for the ... var
                (tc-error/expr #:return (Un)
-                              "Wrong number of type arguments to polymorphic type ~a:~nexpected at least: ~a~ngot: ~a"
+                              "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
                               ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
               [(PolyDots? ty)
                ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
@@ -135,7 +135,7 @@
                         (let* ([last-id (syntax-e last-id-stx)]
                                [last-ty (extend-tvars (list last-id) (parse-type last-ty-stx))])
                           (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
-                        (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                        (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
                                        ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
                    [_
                     (instantiate-poly ty (map parse-type (syntax->list inst)))]))]
@@ -210,7 +210,7 @@
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check/internal form expected)
   (parameterize ([current-orig-stx form])
-    ;(printf "form: ~a~n" (syntax-object->datum form))
+    ;(printf "form: ~a\n" (syntax-object->datum form))
     ;; the argument must be syntax
     (unless (syntax? form) 
       (int-err "bad form input to tc-expr: ~a" form))
@@ -243,7 +243,7 @@
          (match-let* ([(tc-result1: id-t) (single-value #'id)]
                       [(tc-result1: val-t) (single-value #'val)])
            (unless (subtype val-t id-t)
-             (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
+             (tc-error/expr "Mutation only allowed with compatible types:\n~a is not a subtype of ~a" val-t id-t))
            (ret -Void))]
         ;; top-level variable reference - occurs at top level
         [(#%top . id) (check-below (tc-id #'id) expected)]
@@ -296,7 +296,7 @@
         [(letrec-values ([(name ...) expr] ...) . body)
          (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]        
         ;; other
-        [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a~n" (syntax->datum form))]
+        [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a\n" (syntax->datum form))]
         ))))
 
 ;; type check form in the current type environment
@@ -355,7 +355,7 @@
        (match-let* ([(tc-result1: id-t) (tc-expr #'id)]
                     [(tc-result1: val-t) (tc-expr #'val)])
          (unless (subtype val-t id-t)
-           (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
+           (tc-error/expr "Mutation only allowed with compatible types:\n~a is not a subtype of ~a" val-t id-t))
          (ret -Void))]        
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
@@ -384,10 +384,10 @@
        (begin (tc-exprs (syntax->list #'es))
               (tc-expr #'e))]
       ;; other
-      [_ (tc-error/expr #:return (ret (Un)) "cannot typecheck unknown form : ~a~n" (syntax->datum form))]))
+      [_ (tc-error/expr #:return (ret (Un)) "cannot typecheck unknown form : ~a\n" (syntax->datum form))]))
   
   (parameterize ([current-orig-stx form])
-    ;(printf "form: ~a~n" (syntax->datum form))
+    ;(printf "form: ~a\n" (syntax->datum form))
     ;; the argument must be syntax
     (unless (syntax? form) 
       (int-err "bad form input to tc-expr: ~a" form))

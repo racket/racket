@@ -42,8 +42,8 @@
                [names (in-list namess)])
               (match r 
                 [(tc-results: ts (FilterSet: fs+ fs-) os)
-                 ;(printf "f+: ~a~n" fs+)
-                 ;(printf "f-: ~a~n" fs-)
+                 ;(printf "f+: ~a\n" fs+)
+                 ;(printf "f-: ~a\n" fs-)
                  (values ts
                          (apply append
                                 (for/list ([n names]
@@ -129,7 +129,7 @@
                   [(tc-results: ts) ts]))
           (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
         [else
-         ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a~n" (syntax-e v))) vs)) names)
+         ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a\n" (syntax-e v))) vs)) names)
          (do-check (lambda (stx e t) (tc-expr/check e t))
                    names (map (λ (l) (ret (map get-type l))) names) form exprs body clauses expected)]))))
 

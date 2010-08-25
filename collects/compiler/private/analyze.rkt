@@ -1165,9 +1165,9 @@
 			  (begin
 			    (when (compiler:option:verbose)
 			      (compiler:warning ast "letrec will be rewritten with set!"))
-			    (debug "rewriting letrec~n")
+			    (debug "rewriting letrec\n")
 			    (let ([new-ast (letrec->let+set! ast)])
-			      (debug "reanalyzing...~n")
+			      (debug "reanalyzing...\n")
 			      (analyze! new-ast env inlined tail? wcm-tail?))))]
 
 		     ;;-----------------------------------------------------
@@ -1288,7 +1288,7 @@
 		       (lambda (why)
 			 '(begin
 			    (zodiac:print-start! (current-output-port) ast) 
-			    (printf "no inlining: ~a~n" (eval why)))
+			    (printf "no inlining: ~a\n" (eval why)))
 			 (let* ([fun (let ([v (analyze!-sv (zodiac:app-fun ast) env inlined)])
 				       (if (zodiac:varref? v)
 					   v

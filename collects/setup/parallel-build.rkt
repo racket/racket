@@ -25,8 +25,8 @@
             ['DONE (void)])
           (when (or (not (zero? (string-length out))) (not (zero? (string-length err))))
             ((collects-queue-printer jobqueue) (current-error-port) "build-output" "~a ~a" cc-name file)
-            (eprintf "STDOUT:~n~a=====~n" out)
-            (eprintf "STDERR:~n~a=====~n" err)))]))
+            (eprintf "STDOUT:\n~a=====\n" out)
+            (eprintf "STDERR:\n~a=====\n" err)))]))
     ;; assigns a collection to each worker to be compiled
     ;; when it runs out of collections, steals work from other workers collections
     (define (get-job jobqueue workerid)
@@ -53,7 +53,7 @@
           (let* ([cc-name (cc-name cc)]
                  [cc-path (cc-path cc)]
                  [full-path (path->string (build-path cc-path file))])
-            ;(printf "JOB ~a ~a ~a ~a~n" workerid cc-name cc-path file)
+            ;(printf "JOB ~a ~a ~a ~a\n" workerid cc-name cc-path file)
             (values (list cc file) (list cc-name (->bytes cc-path) (->bytes file)))))
         (let retry ()
           (define (find-job-in-cc cc id)
@@ -124,7 +124,7 @@
                 (write msg)))
             (let ([cep (current-error-port)])
               (define (pp x)
-                (fprintf cep "COMPILING ~a ~a ~a ~a~n" worker-id name file x))
+                (fprintf cep "COMPILING ~a ~a ~a ~a\n" worker-id name file x))
             (with-handlers ([exn:fail? (lambda (x)
                              (send/resp (list 'ERROR (exn-message x))))])
               (parameterize (

@@ -77,7 +77,7 @@
         [range-regexp           #px#"^([0-9]*)-([0-9]*)$"]
         [range-error            (lambda (header)
                                   (fprintf (current-error-port)
-                                           (format "Bad Range header: ~s. File a Racket bug report!~n"
+                                           (format "Bad Range header: ~s. File a Racket bug report!\n"
                                                    (header-value header)))
                                   #f)])
     (lambda (headers)

@@ -370,7 +370,7 @@
 (define (output-profile-results paths? sort-time?)
   (profiling-enabled #f)
   (error-print-width 50)
-  (printf "Sorting profile data...~n")
+  (printf "Sorting profile data...\n")
   (let* ([sel (if sort-time? cadr car)]
          [counts (sort (filter (lambda (c) (positive? (car c)))
                                (get-profile-results))
@@ -379,8 +379,8 @@
     (for-each
      (lambda (c)
        (set! total (+ total (sel c)))
-       (printf "=========================================================~n")
-       (printf "time = ~a : no. = ~a : ~e in ~s~n"
+       (printf "=========================================================\n")
+       (printf "time = ~a : no. = ~a : ~e in ~s\n"
                (cadr c) (car c) (caddr c) (cadddr c))
        ;; print call paths
        (when paths?
@@ -392,10 +392,10 @@
                (lambda (cm)
                  (printf " <- ~e" (car cm)))
                (cddr cms))
-              (printf "~n")))
+              (printf "\n")))
           (sort (cadddr (cdr c)) (lambda (a b) (> (car a) (car b)))))))
      counts)
-    (printf "Total samples: ~a~n" total)))
+    (printf "Total samples: ~a\n" total)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

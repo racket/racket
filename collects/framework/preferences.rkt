@@ -244,7 +244,7 @@ the state transitions / contracts are:
           (pref-can-init? p))
      (let ([default-okay? (checker default-value)])
        (unless default-okay?
-         (error 'set-default "~s: checker (~s) returns ~s for ~s, expected #t~n"
+         (error 'set-default "~s: checker (~s) returns ~s for ~s, expected #t\n"
                 p checker default-okay? default-value)))
 
      (unless (= (length aliases) (length rewrite-aliases))

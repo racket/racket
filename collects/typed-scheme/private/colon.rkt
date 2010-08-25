@@ -12,11 +12,11 @@
   (define-syntax-class arr
     (pattern x:id
              #:fail-unless (eq? (syntax-e #'x) '->) #f
-             #:fail-unless (printf "id: ~a ~a~n"
+             #:fail-unless (printf "id: ~a ~a\n"
                                    (identifier-binding #'All-kw) 
                                    (identifier-transformer-binding #'All-kw)) 
              #f
-             #:fail-unless (printf "kw: ~a ~a~n"
+             #:fail-unless (printf "kw: ~a ~a\n"
                                    (identifier-binding #'t:All) 
                                    (identifier-transformer-binding #'t:All)) 
              #f

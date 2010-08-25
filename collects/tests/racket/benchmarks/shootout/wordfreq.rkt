@@ -26,7 +26,7 @@
                  t
                  (lambda (word count)
                    (let ((count (number->string count)))
-                     (format"~a~a ~a~%"
+                     (format"~a~a ~a\n"
                             (make-string (- 7 (string-length count)) #\space)
                             count
                             word))))

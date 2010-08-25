@@ -17,7 +17,7 @@
               (write msg)))
           (let ([cep (current-error-port)])
             (define (pp x)
-              (fprintf cep "COMPILING ~a ~a ~a ~a~n" worker-id name file x))
+              (fprintf cep "COMPILING ~a ~a ~a ~a\n" worker-id name file x))
           (with-handlers ([exn:fail? (lambda (x)
                            (send/resp (list 'ERROR (exn-message x))))])
             (parameterize (

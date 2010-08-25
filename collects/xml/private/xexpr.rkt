@@ -50,7 +50,7 @@
                           (raise-blame-error
                            blame
                            val
-                           "Not an Xexpr. ~a~n~nContext:~n~a"
+                           "Not an Xexpr. ~a\n\nContext:\n~a"
                            (exn-message exn)
                            (pretty-format val)))])
          (validate-xexpr val)

@@ -88,7 +88,7 @@
     [(list _ s)
      (string->xexpr (bytes->string/utf-8 s))]
     [_
-     (error 'html "Given ~S~n" bs)]))
+     (error 'html "Given ~S\n" bs)]))
 
 ; This causes infinite loop. I will try putting it in a thread like on the real server
 #;(define (collect d req)
@@ -108,14 +108,14 @@
 
 ; This causes a dead lock, even though the log shows that the channel should sync
 (define (channel-put* c v)
-  (printf "+CHAN ~S PUT: ~S~n" c v)
+  (printf "+CHAN ~S PUT: ~S\n" c v)
   (channel-put c v)
-  (printf "-CHAN ~S PUT: ~S~n" c v))
+  (printf "-CHAN ~S PUT: ~S\n" c v))
 
 (define (channel-get* c)
-  (printf "+CHAN ~S GET~n" c)
+  (printf "+CHAN ~S GET\n" c)
   (let ([v (channel-get c)])
-    (printf "-CHAN ~S GET: ~S~n" c v)
+    (printf "-CHAN ~S GET: ~S\n" c v)
     v))
 
 #;(define (collect d req)

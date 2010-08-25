@@ -381,7 +381,7 @@
             ;; First use of the module. Get code and then get code for imports.
             (begin
               (when verbose?
-                (fprintf (current-error-port) "Getting ~s~n" filename))
+                (fprintf (current-error-port) "Getting ~s\n" filename))
               (let ([code (get-module-code filename
                                            "compiled"
                                            compiler
@@ -413,7 +413,7 @@
                 (cond
                   [(extension? code)
 		   (when verbose?
-		     (fprintf (current-error-port) " using extension: ~s~n" (extension-path code)))
+		     (fprintf (current-error-port) " using extension: ~s\n" (extension-path code)))
                    (set-box! codes
                              (cons (make-mod filename module-path code 
                                              name prefix (string->symbol
@@ -850,7 +850,7 @@
                               (quote ,(map (lambda (m)
                                              (let ([p (extension-path (mod-code m))])
                                                (when verbose?
-                                                 (fprintf (current-error-port) "Recording extension at ~s~n" p))
+                                                 (fprintf (current-error-port) "Recording extension at ~s\n" p))
                                                (list (path->bytes p)
                                                      (mod-full-name m)
                                                      ;; The program name isn't used. It just helps ensures that
@@ -942,7 +942,7 @@
              (unless (or (extension? (mod-code nc))
                          (eq? nc table-mod))
                (when verbose?
-                 (fprintf (current-error-port) "Writing module from ~s~n" (mod-file nc)))
+                 (fprintf (current-error-port) "Writing module from ~s\n" (mod-file nc)))
                (write (compile-using-kernel
                        `(current-module-declare-name 
                          (make-resolved-module-path
@@ -968,7 +968,7 @@
                      outp))))
         (for-each (lambda (f)
                     (when verbose?
-                      (fprintf (current-error-port) "Copying from ~s~n" f))
+                      (fprintf (current-error-port) "Copying from ~s\n" f))
                     (call-with-input-file* f
                       (lambda (i)
                         (copy-port i outp))))
@@ -1071,7 +1071,7 @@
       (check-collects-path 'create-embedding-executable collects-path collects-path-bytes)
       (let ([exe (find-exe mred? variant)])
         (when verbose?
-          (fprintf (current-error-port) "Copying to ~s~n" dest))
+          (fprintf (current-error-port) "Copying to ~s\n" dest))
         (let-values ([(dest-exe orig-exe osx?)
                       (cond
                         [(and mred? (eq? 'macosx (system-type)))
@@ -1162,7 +1162,7 @@
                                                           #:exists 'append)
                                   (values start (file-size dest-exe))))])
                 (when verbose?
-                  (fprintf (current-error-port) "Setting command line~n"))
+                  (fprintf (current-error-port) "Setting command line\n"))
                 (let ([start-s (number->string start)]
                       [end-s (number->string end)])
                   (let ([full-cmdline (append
@@ -1180,7 +1180,7 @@
                                        cmdline)])
                     (when collects-path-bytes
                       (when verbose?
-                        (fprintf (current-error-port) "Setting collection path~n"))
+                        (fprintf (current-error-port) "Setting collection path\n"))
                       (set-collects-path dest-exe collects-path-bytes))
                     (cond
                       [osx?

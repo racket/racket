@@ -22,7 +22,7 @@
 	[(regexp-match #rx"^( +[a-z_A-Z][a-z_A-Z0-9]*,) *(?:/[*] [0-9]* [*]/)? *$" l)
 	 => (lambda (m)
 	      (let ([s (cadr m)])
-		(printf "~a~a~n" 
+		(printf "~a~a\n" 
 			s
 			(format "~a/* ~a */"
 				(make-string (max 0 (- 40 (string-length s))) #\space)
@@ -30,7 +30,7 @@
 	      (set! n (add1 n)))]
 	[(regexp-match #rx"^ +[a-zA-Z_][a-z_A-Z0-9]*," l)
 	 (set! n (add1 n))
-	 (printf "~a~n" l)]
+	 (printf "~a\n" l)]
 	[else
-	 (printf "~a~n" l)]))
+	 (printf "~a\n" l)]))
      lines)))

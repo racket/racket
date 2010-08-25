@@ -192,7 +192,7 @@
                                          (,(xyz-z xyz-white))))])
       (apply values (car (transpose sigmas)))))
   
-  ;; (printf "should be equal to xyz-white: ~n~a~n"
+  ;; (printf "should be equal to xyz-white: \n~a\n"
   ;;    (matrix-multiply pre-matrix `((,sigma-r) (,sigma-g) (,sigma-b))))
   
   (define rgb->xyz-matrix
@@ -203,13 +203,13 @@
   (define xyz->rgb-matrix
     (matrix-invert rgb->xyz-matrix))
   
-  ;;(printf "should be identity: ~n~a~n" (matrix-multiply rgb->xyz-matrix xyz->rgb-matrix))
+  ;;(printf "should be identity: \n~a\n" (matrix-multiply rgb->xyz-matrix xyz->rgb-matrix))
   
   (define (rgb->xyz r g b)
     (apply make-xyz (car (transpose (matrix-multiply rgb->xyz-matrix (transpose `((,r ,g ,b))))))))
   
   ;;(print-struct #t)
-  ;; (printf "should be xyz-white: ~n~a~n" (rgb->xyz 255 255 255))
+  ;; (printf "should be xyz-white: \n~a\n" (rgb->xyz 255 255 255))
   
   (define (xyz->rgb x y z)
     (car (transpose (matrix-multiply xyz->rgb-matrix (transpose `((,x ,y ,z)))))))

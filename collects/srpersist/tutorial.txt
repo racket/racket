@@ -155,10 +155,10 @@ Now we can retrieve the data and print it out:
 
     (with-handlers 
      ([(lambda (exn) (exn-no-data? exn)) 
-       (lambda (exn) (printf "** End of data **~n"))])
+       (lambda (exn) (printf "** End of data **\n"))])
      (let loop ()
        (fetch hstmt)
-       (printf "Name: ~a  Age: ~a~n" 
+       (printf "Name: ~a  Age: ~a\n" 
 	       (read-buffer name-buffer)
 	       (read-buffer age-buffer))
        (loop)))

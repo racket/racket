@@ -58,7 +58,7 @@ string=? ; exec $PLTHOME/bin/racket -agrq $0 "$@"
 	 [wx-stats (string-append spaces name
 				  (repeat 4 spaces number-or-hyphen)
 				  anything)])
-    '(printf "mz-stats: ~s~nwx-stats: ~s~n" mz-stats wx-stats)
+    '(printf "mz-stats: ~s\nwx-stats: ~s\n" mz-stats wx-stats)
     (values (regexp mz-stats)
 	    (regexp wx-stats))))
 

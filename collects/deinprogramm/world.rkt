@@ -194,7 +194,7 @@
 	  (else #f))))
   
   [define (end-of-time s)
-    (printf "end of time: ~a~n" s)
+    (printf "end of time: ~a\n" s)
     (stop-it)
     the-world]
   

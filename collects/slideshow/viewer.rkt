@@ -298,7 +298,7 @@
 	      (send f show #f))
 	    (send f show #f)
 	    (when config:print-slide-seconds?
-	      (printf "Total Time: ~a seconds~n"
+	      (printf "Total Time: ~a seconds\n"
 		      (- (current-seconds) talk-start-seconds)))
 	    ;; In case slides are still building, tell them to stop. We
 	    ;;  prefer not to `exit' directly if we don't have to.
@@ -380,7 +380,7 @@
 					   (sub1 slide-count))))
 	      (when config:print-slide-seconds?
 		(let ([slide-end-seconds (current-seconds)])
-		  (printf "Slide ~a: ~a seconds~n" current-page
+		  (printf "Slide ~a: ~a seconds\n" current-page
 			  (- slide-end-seconds slide-start-seconds))
 		  (set! slide-start-seconds slide-end-seconds)))
 	      ;; Refresh screen, and start transitions from old, if any
@@ -1144,16 +1144,16 @@
 	(send c-frame show #t)
 	(message-box "Instructions"
 		     (format "Keybindings:~
-                     ~n  {Meta,Alt}-q - quit~
-                     ~n  Right, Space, f or n - next slide~
-                     ~n  Left, b - prev slide~
-                     ~n  g - last slide~
-                     ~n  1 - first slide~
-                     ~n  {Meta,Alt}-g - select slide~
-                     ~n  p - show/hide slide number~
-                     ~n  {Meta,Alt}-c - show/hide commentary~
-                     ~n  {Meta,Alt,Shift}-{Right,Left,Up,Down} - move window~
-                     ~nAll bindings work in all windows")))
+                     \n  {Meta,Alt}-q - quit~
+                     \n  Right, Space, f or n - next slide~
+                     \n  Left, b - prev slide~
+                     \n  g - last slide~
+                     \n  1 - first slide~
+                     \n  {Meta,Alt}-g - select slide~
+                     \n  p - show/hide slide number~
+                     \n  {Meta,Alt}-c - show/hide commentary~
+                     \n  {Meta,Alt,Shift}-{Right,Left,Up,Down} - move window~
+                     \nAll bindings work in all windows")))
       
       (define (do-print)
 	(let ([ps-dc (dc-for-text-size)])

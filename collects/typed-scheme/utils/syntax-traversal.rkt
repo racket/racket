@@ -23,8 +23,8 @@
 ;; if it can't find it.
 (define (enclosing-syntaxes-with-source enclosing lookfor src)
   (let loop ([r '()] [stx enclosing])
-    ;(printf "stx is ~a~n" (syntax->datum stx))
-    ;(printf "source is ~a~n" (syntax-source stx))
+    ;(printf "stx is ~a\n" (syntax->datum stx))
+    ;(printf "source is ~a\n" (syntax-source stx))
     (let* ([r (if (and (syntax? stx) (eq? src (syntax-source stx)))
                 (cons stx r)
                 r)]
@@ -47,10 +47,10 @@
 ;; given in `expanded'.
 (define (look-for-in-orig orig expanded lookfor)
   (define src (syntax-source orig))
-  ;(printf "orig : ~a~n" (unwind orig))
-  ;(printf "expanded : ~a~n" expanded)
-  ;(printf "lookfor : ~a~n" (unwind lookfor))
-  ;(printf "src : ~a~n" src)
+  ;(printf "orig : ~a\n" (unwind orig))
+  ;(printf "expanded : ~a\n" expanded)
+  ;(printf "lookfor : ~a\n" (unwind lookfor))
+  ;(printf "src : ~a\n" src)
   (let ([enclosing (enclosing-syntaxes-with-source expanded lookfor src)]
         [syntax-locs (make-hash)])
     ;; find all syntax locations in original code
@@ -62,13 +62,11 @@
      ;; we just might get a lookfor that is already in the original
      (and (eq? src (syntax-source lookfor))
           (hash-ref syntax-locs (syntax-loc lookfor) #f)
-          #;(printf "chose branch one: ~a~n" (hash-ref syntax-locs (syntax-loc lookfor) #f)))
+          #;(printf "chose branch one: ~a\n" (hash-ref syntax-locs (syntax-loc lookfor) #f)))
      
      ;; look for some enclosing expression
      (and enclosing
           (begin0
             (ormap (lambda (enc) (hash-ref syntax-locs (syntax-loc enc) #f))
                    enclosing)
-            #;(printf "chose branch two ~a~n" enclosing))))))
-
-
+            #;(printf "chose branch two ~a\n" enclosing))))))

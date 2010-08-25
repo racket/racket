@@ -127,8 +127,8 @@
    (with-handlers ([(lambda (exn)
                       (exn-with-info? exn))
                     (lambda (exn) 
-                      (printf "Got exn-with-info exception~n")
-                      (printf "Value: ~a~n" (exn-with-info-val exn)))])
+                      (printf "Got exn-with-info exception\n")
+                      (printf "Value: ~a\n" (exn-with-info-val exn)))])
      ...)		      
 
  Applications can call sql-error, get-diag-rec, or get-diag-field
@@ -2607,6 +2607,3 @@
 
   [ODBC 3.5 or greater]
  'sql-c-guid
-
-
-

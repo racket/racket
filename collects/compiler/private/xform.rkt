@@ -459,7 +459,7 @@
                     (let loop ()
                       (let ([l (read-bytes-line (list-ref proc 3) 'any)])
                         (unless (eof-object? l)
-                          (fprintf (current-error-port) "~a~n" l)
+                          (fprintf (current-error-port) "~a\n" l)
                           (loop))))
                     (close-input-port (list-ref proc 3)))))
         
@@ -615,14 +615,14 @@
           ;; Setup GC_variable_stack macro
           (printf (case gc-var-stack-mode
                    [(table)
-                    "#define GC_VARIABLE_STACK (scheme_extension_table->GC_variable_stack)~n"]
+                    "#define GC_VARIABLE_STACK (scheme_extension_table->GC_variable_stack)\n"]
                    [(getspecific)
-                    "#define GC_VARIABLE_STACK (((Thread_Local_Variables *)pthread_getspecific(scheme_thread_local_key))->GC_variable_stack_)~n"]
+                    "#define GC_VARIABLE_STACK (((Thread_Local_Variables *)pthread_getspecific(scheme_thread_local_key))->GC_variable_stack_)\n"]
                    [(function)
-                    "#define GC_VARIABLE_STACK ((scheme_get_thread_local_variables())->GC_variable_stack_)~n"]
+                    "#define GC_VARIABLE_STACK ((scheme_get_thread_local_variables())->GC_variable_stack_)\n"]
                    [(thread-local)
-                    "#define GC_VARIABLE_STACK ((&scheme_thread_locals)->GC_variable_stack_)~n"]
-                   [else "#define GC_VARIABLE_STACK GC_variable_stack~n"]))
+                    "#define GC_VARIABLE_STACK ((&scheme_thread_locals)->GC_variable_stack_)\n"]
+                   [else "#define GC_VARIABLE_STACK GC_variable_stack\n"]))
 
           (if gc-variable-stack-through-funcs?
 	      (begin
@@ -638,11 +638,11 @@
                    (if callee-restore?
                        " SET_GC_VARIABLE_STACK(__gc_var_stack__);"
                        "")
-                   "~n"))
+                   "\n"))
           
           ;; Same, but in a function where the number of registered variables
           ;;  never changes within the procedure (i.e., in nested blocks):
-          (printf "#define PREPARE_VAR_STACK_ONCE(size) PREPARE_VAR_STACK(size); __gc_var_stack__[1] = (void *)size;~n")
+          (printf "#define PREPARE_VAR_STACK_ONCE(size) PREPARE_VAR_STACK(size); __gc_var_stack__[1] = (void *)size;\n")
           
           ;; Full setup to use before a function call, normally used with FUNCCALL:
           (printf (string-append 
@@ -650,7 +650,7 @@
                    (if callee-restore?
                        ""
                        "SET_GC_VARIABLE_STACK(__gc_var_stack__), ")
-                   "__gc_var_stack__[1] = (void *)x)~n"))
+                   "__gc_var_stack__[1] = (void *)x)\n"))
 
           ;; Debugging support:
           (printf "#ifdef MZ_3M_CHECK_VAR_STACK\n")
@@ -662,110 +662,110 @@
 
           ;; Call a function where the number of registered variables can change in
           ;;  nested blocks:          
-          (printf "#define FUNCCALL_each(setup, x) (CHECK_GC_V_S setup, x)~n")
+          (printf "#define FUNCCALL_each(setup, x) (CHECK_GC_V_S setup, x)\n")
           ;; The same, but a "tail" call:
-          (printf "#define FUNCCALL_EMPTY_each(x) (SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]), x)~n")
+          (printf "#define FUNCCALL_EMPTY_each(x) (SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]), x)\n")
           ;; The same, but the number of registered variables for this call is definitely
           ;;  the same as for the previous call:
           (printf (if callee-restore?
-                      "#define FUNCCALL_AGAIN_each(x) (CHECK_GC_V_S x)~n"
-                      "#define FUNCCALL_AGAIN_each(x) FUNCCALL_each(SET_GC_VARIABLE_STACK(__gc_var_stack__), x)~n"))
+                      "#define FUNCCALL_AGAIN_each(x) (CHECK_GC_V_S x)\n"
+                      "#define FUNCCALL_AGAIN_each(x) FUNCCALL_each(SET_GC_VARIABLE_STACK(__gc_var_stack__), x)\n"))
           
           ;; As above, but when the number of registered variables never changes
           ;;  within a procedure:
-          (printf "#define FUNCCALL_once(setup, x) FUNCCALL_AGAIN_each(x)~n")
-          (printf "#define FUNCCALL_EMPTY_once(x) FUNCCALL_EMPTY_each(x)~n")
-          (printf "#define FUNCCALL_AGAIN_once(x) FUNCCALL_AGAIN_each(x)~n")
+          (printf "#define FUNCCALL_once(setup, x) FUNCCALL_AGAIN_each(x)\n")
+          (printf "#define FUNCCALL_EMPTY_once(x) FUNCCALL_EMPTY_each(x)\n")
+          (printf "#define FUNCCALL_AGAIN_once(x) FUNCCALL_AGAIN_each(x)\n")
           
           ;; Register a particular variable locally:
-          (printf "#define PUSH(v, x) (__gc_var_stack__[x+2] = (void *)&(v))~n")
+          (printf "#define PUSH(v, x) (__gc_var_stack__[x+2] = (void *)&(v))\n")
           ;; Register a particular array variable locally:
           (printf (string-append
                    "#define PUSHARRAY(v, l, x) (__gc_var_stack__[x+2] = (void *)0, __gc_var_stack__[x+3] = (void *)&(v), "
-                   "__gc_var_stack__[x+4] = (void *)l)~n"))
+                   "__gc_var_stack__[x+4] = (void *)l)\n"))
           
           ;; Wraps code to setup a block's variables:
-          (printf "#define BLOCK_SETUP_TOP(x) ~a~n" (if per-block-push? "x" "/* skipped */"))
+          (printf "#define BLOCK_SETUP_TOP(x) ~a\n" (if per-block-push? "x" "/* skipped */"))
           ;; Same, but specifically in a function where nested blocks register
           ;;  extra variables:
-          (printf "#define BLOCK_SETUP_each(x) BLOCK_SETUP_TOP(x)~n")
+          (printf "#define BLOCK_SETUP_each(x) BLOCK_SETUP_TOP(x)\n")
           ;; Same, but specifically in a function where nested blocks DO NOT
           ;;  register extra variables:
-          (printf "#define BLOCK_SETUP_once(x) /* no effect */~n")
+          (printf "#define BLOCK_SETUP_once(x) /* no effect */\n")
           
           ;; Wrap a normal return:
           (printf (if callee-restore?
-                      "#define RET_VALUE_START return (__ret__val__ = ~n"
-                      "#define RET_VALUE_START return~n"))
+                      "#define RET_VALUE_START return (__ret__val__ = \n"
+                      "#define RET_VALUE_START return\n"))
           (printf (if callee-restore?
-                      "#define RET_VALUE_END , SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]), __ret__val__)~n"
-                      "#define RET_VALUE_END ~n"))
+                      "#define RET_VALUE_END , SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]), __ret__val__)\n"
+                      "#define RET_VALUE_END \n"))
           ;; Wrap a return where the value is produced by a FUNCCALL_EMPTY expression:
-          (printf "#define RET_VALUE_EMPTY_START return~n")
-          (printf "#define RET_VALUE_EMPTY_END ~n")
+          (printf "#define RET_VALUE_EMPTY_START return\n")
+          (printf "#define RET_VALUE_EMPTY_END \n")
           ;; Replacement for non-value return:
-          (printf "#define RET_NOTHING { SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]); return; }~n")
+          (printf "#define RET_NOTHING { SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]); return; }\n")
           ;; A non-value return inserted at the end of a void-returning function:
-          (printf "#define RET_NOTHING_AT_END RET_NOTHING~n")
+          (printf "#define RET_NOTHING_AT_END RET_NOTHING\n")
           
           ;; Declare a temp variable to hold the return value of the indicated type:
           (printf (if callee-restore?
-                      "#define DECL_RET_SAVE(type) type __ret__val__;~n"
-                      "#define DECL_RET_SAVE(type) /**/~n"))
+                      "#define DECL_RET_SAVE(type) type __ret__val__;\n"
+                      "#define DECL_RET_SAVE(type) /**/\n"))
           
           ;; Value used to initialize pointer variables:
-          (printf "#define NULLED_OUT 0~n")
+          (printf "#define NULLED_OUT 0\n")
           ;; Macro to initialize a pointer array:
-          (printf "#define NULL_OUT_ARRAY(a) memset(a, 0, sizeof(a))~n")
+          (printf "#define NULL_OUT_ARRAY(a) memset(a, 0, sizeof(a))\n")
           ;; Annotation that normally disappears:
-          (printf "#define GC_CAN_IGNORE /**/~n")
-          (printf "#define __xform_nongcing__ /**/~n")
+          (printf "#define GC_CAN_IGNORE /**/\n")
+          (printf "#define __xform_nongcing__ /**/\n")
           ;; Another annotation to protect against GC conversion:
-          (printf "#define HIDE_FROM_XFORM(x) x~n")
-          (printf "#define XFORM_HIDE_EXPR(x) x~n")
-          (printf "#define HIDE_NOTHING_FROM_XFORM() /**/~n")
+          (printf "#define HIDE_FROM_XFORM(x) x\n")
+          (printf "#define XFORM_HIDE_EXPR(x) x\n")
+          (printf "#define HIDE_NOTHING_FROM_XFORM() /**/\n")
           ;; In case a conversion is unnecessary where we have this annotation:
-          (printf "#define START_XFORM_SKIP /**/~n")
-          (printf "#define END_XFORM_SKIP /**/~n")
-          (printf "#define START_XFORM_SUSPEND /**/~n")
-          (printf "#define END_XFORM_SUSPEND /**/~n")
-          (printf "#define XFORM_START_SKIP /**/~n")
-          (printf "#define XFORM_END_SKIP /**/~n")
-          (printf "#define XFORM_START_SUSPEND /**/~n")
-          (printf "#define XFORM_END_SUSPEND /**/~n")
-          (printf "#define XFORM_SKIP_PROC /**/~n")
+          (printf "#define START_XFORM_SKIP /**/\n")
+          (printf "#define END_XFORM_SKIP /**/\n")
+          (printf "#define START_XFORM_SUSPEND /**/\n")
+          (printf "#define END_XFORM_SUSPEND /**/\n")
+          (printf "#define XFORM_START_SKIP /**/\n")
+          (printf "#define XFORM_END_SKIP /**/\n")
+          (printf "#define XFORM_START_SUSPEND /**/\n")
+          (printf "#define XFORM_END_SUSPEND /**/\n")
+          (printf "#define XFORM_SKIP_PROC /**/\n")
           ;; For avoiding warnings:
-          (printf "#define XFORM_OK_PLUS +~n")
-          (printf "#define XFORM_OK_MINUS -~n")
-          (printf "#define XFORM_TRUST_PLUS +~n")
-          (printf "#define XFORM_TRUST_MINUS -~n")
-          (printf "#define XFORM_OK_ASSIGN /**/~n")
-          (printf "~n")
+          (printf "#define XFORM_OK_PLUS +\n")
+          (printf "#define XFORM_OK_MINUS -\n")
+          (printf "#define XFORM_TRUST_PLUS +\n")
+          (printf "#define XFORM_TRUST_MINUS -\n")
+          (printf "#define XFORM_OK_ASSIGN /**/\n")
+          (printf "\n")
 
           ;; C++ cupport:
-          (printf "#define NEW_OBJ(t) new (UseGC) t~n")
-          (printf "#define NEW_ARRAY(t, array) (new (UseGC) t array)~n")
-          (printf "#define NEW_ATOM(t) (new (AtomicGC) t)~n")
-          (printf "#define NEW_PTR(t) (new (UseGC) t)~n")
-          (printf "#define NEW_ATOM_ARRAY(t, array) (new (AtomicGC) t array)~n")
-          (printf "#define NEW_PTR_ARRAY(t, array) (new (UseGC) t* array)~n")
-          (printf "#define DELETE(x) (delete x)~n")
-          (printf "#define DELETE_ARRAY(x) (delete[] x)~n")
+          (printf "#define NEW_OBJ(t) new (UseGC) t\n")
+          (printf "#define NEW_ARRAY(t, array) (new (UseGC) t array)\n")
+          (printf "#define NEW_ATOM(t) (new (AtomicGC) t)\n")
+          (printf "#define NEW_PTR(t) (new (UseGC) t)\n")
+          (printf "#define NEW_ATOM_ARRAY(t, array) (new (AtomicGC) t array)\n")
+          (printf "#define NEW_PTR_ARRAY(t, array) (new (UseGC) t* array)\n")
+          (printf "#define DELETE(x) (delete x)\n")
+          (printf "#define DELETE_ARRAY(x) (delete[] x)\n")
           (printf (if callee-restore?
-                      "#define XFORM_RESET_VAR_STACK /* empty */~n"
-                      "#define XFORM_RESET_VAR_STACK SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]);~n"))
+                      "#define XFORM_RESET_VAR_STACK /* empty */\n"
+                      "#define XFORM_RESET_VAR_STACK SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]);\n"))
           
           (unless pgc-really?
-            (printf "#include \"cgc2.h\"~n"))
+            (printf "#include \"cgc2.h\"\n"))
           
-          (printf "~n"))
+          (printf "\n"))
         
         (when (and pgc? precompiled-header)
-          (printf "#include \"~a\"~n" (let-values ([(base name dir?) (split-path precompiled-header)])
+          (printf "#include \"~a\"\n" (let-values ([(base name dir?) (split-path precompiled-header)])
                                         (path->string name))))
         
         (when palm?
-          (printf "#include \"segmap.h\"~n"))
+          (printf "#include \"segmap.h\"\n"))
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; Structures and constants
@@ -1279,7 +1279,7 @@
                        (display/indent v "));")
                        (newline)
                        (inc-line!))
-                     (printf "#~adefine ~a_COUNT (~a~a)~n" tabbing tag size prev-add)
+                     (printf "#~adefine ~a_COUNT (~a~a)\n" tabbing tag size prev-add)
                      (inc-line!)
                      (printf "#~adefine SETUP_~a(x) " tabbing tag)
                      (cond
@@ -1295,20 +1295,20 @@
                                       (make-string (sub1 indent) #\space))])
                      (case (tok-n v)
                        [(nested)
-                        (printf "#~adefine BLOCK_SETUP(x) BLOCK_SETUP_each(x)~n" tabbing)
-                        (printf "#~adefine FUNCCALL(s, x) FUNCCALL_each(s, x)~n" tabbing)
-                        (printf "#~adefine FUNCCALL_EMPTY(x) FUNCCALL_EMPTY_each(x)~n" tabbing)
-                        (printf "#~adefine FUNCCALL_AGAIN(x) FUNCCALL_AGAIN_each(x)~n" tabbing)]
+                        (printf "#~adefine BLOCK_SETUP(x) BLOCK_SETUP_each(x)\n" tabbing)
+                        (printf "#~adefine FUNCCALL(s, x) FUNCCALL_each(s, x)\n" tabbing)
+                        (printf "#~adefine FUNCCALL_EMPTY(x) FUNCCALL_EMPTY_each(x)\n" tabbing)
+                        (printf "#~adefine FUNCCALL_AGAIN(x) FUNCCALL_AGAIN_each(x)\n" tabbing)]
                        [(no-nested)
-                        (printf "#~adefine BLOCK_SETUP(x) BLOCK_SETUP_once(x)~n" tabbing)
-                        (printf "#~adefine FUNCCALL(s, x) FUNCCALL_once(s, x)~n" tabbing)
-                        (printf "#~adefine FUNCCALL_EMPTY(x) FUNCCALL_EMPTY_once(x)~n" tabbing)
-                        (printf "#~adefine FUNCCALL_AGAIN(x) FUNCCALL_AGAIN_once(x)~n" tabbing)]
+                        (printf "#~adefine BLOCK_SETUP(x) BLOCK_SETUP_once(x)\n" tabbing)
+                        (printf "#~adefine FUNCCALL(s, x) FUNCCALL_once(s, x)\n" tabbing)
+                        (printf "#~adefine FUNCCALL_EMPTY(x) FUNCCALL_EMPTY_once(x)\n" tabbing)
+                        (printf "#~adefine FUNCCALL_AGAIN(x) FUNCCALL_AGAIN_once(x)\n" tabbing)]
                        [(undefine)
-                        (printf "#~aundef BLOCK_SETUP~n" tabbing)
-                        (printf "#~aundef FUNCCALL~n" tabbing)
-                        (printf "#~aundef FUNCCALL_EMPTY~n" tabbing)
-                        (printf "#~aundef FUNCCALL_AGAIN~n" tabbing)])
+                        (printf "#~aundef BLOCK_SETUP\n" tabbing)
+                        (printf "#~aundef FUNCCALL\n" tabbing)
+                        (printf "#~aundef FUNCCALL_EMPTY\n" tabbing)
+                        (printf "#~aundef FUNCCALL_AGAIN\n" tabbing)])
                      (set! line (+ 4 line)))]
                   [(memq (tok-n v) asm-commands)
                    (newline/indent indent)
@@ -1483,7 +1483,7 @@
             
             [(typedef? e)
              (when show-info?
-               (printf "/* TYPEDEF */~n"))
+               (printf "/* TYPEDEF */\n"))
              (if (or (simple-unused-def? e)
                      (unused-struc-typedef? e))
                  null
@@ -1496,7 +1496,7 @@
                (when (eq? (tok-n (car e)) '__xform_nongcing__)
 		 (hash-table-put! non-gcing-functions name #t))
 	       (when show-info?
-                 (printf "/* PROTO ~a */~n" name))
+                 (printf "/* PROTO ~a */\n" name))
                (if (or precompiling-header?
                        (> (hash-table-get used-symbols name) 1)
                        (ormap (lambda (v) (eq? (tok-n v) 'virtual)) e))  ; can't drop virtual methods!
@@ -1509,17 +1509,17 @@
                  (begin
                    (when pgc?
                      (register-struct e))
-                   (when show-info? (printf "/* STRUCT ~a */~n" (tok-n (cadr e)))))
-                 (when show-info? (printf "/* STRUCT DECL */~n")))
+                   (when show-info? (printf "/* STRUCT ~a */\n" (tok-n (cadr e)))))
+                 (when show-info? (printf "/* STRUCT DECL */\n")))
              e]
             [(class-decl? e)
              (if (or (braces? (caddr e))
                      (eq? '|:| (tok-n (caddr e))))
                  (begin
-                   (when show-info? (printf "/* CLASS ~a */~n" (tok-n (cadr e))))
+                   (when show-info? (printf "/* CLASS ~a */\n" (tok-n (cadr e))))
                    (register-class e))
                  (begin
-                   (when show-info? (printf "/* CLASS DECL */~n"))
+                   (when show-info? (printf "/* CLASS DECL */\n"))
                    (let ([name (tok-n (cadr e))])
                      (if (assoc name c++-classes)
                          ;; we already know this class
@@ -1532,7 +1532,7 @@
                (if (skip-function? e)
                    e
                    (begin
-                     (when show-info? (printf "/* FUNCTION ~a */~n" name))
+                     (when show-info? (printf "/* FUNCTION ~a */\n" name))
                      (if (or (positive? suspend-xform)
                              (not pgc?)
                              (and where 
@@ -1550,7 +1550,7 @@
                          ;; or still in headers and probably a simple inlined function
                          (let ([palm-static? (and palm? (eq? 'static (tok-n (car e))))])
                            (when palm?
-                             (fprintf map-port "(~aimpl ~s)~n" 
+                             (fprintf map-port "(~aimpl ~s)\n" 
                                       (if palm-static? "s" "")
                                       name)
                              (call-graph name e))
@@ -1567,7 +1567,7 @@
                             e))
                          (convert-function e name)))))]
             [(var-decl? e)
-             (when show-info? (printf "/* VAR */~n"))
+             (when show-info? (printf "/* VAR */\n"))
              (if (and can-drop-vars?
                       (simple-unused-def? e))
                  null
@@ -1984,7 +1984,7 @@
                                                                tcp_accept_addr))))
                                         (begin
                                           (when show-info?
-                                            (printf "/* ~a: ~a ~a*/~n" 
+                                            (printf "/* ~a: ~a ~a*/\n" 
                                                     comment name
                                                     (cond
                                                       [struct-array?
@@ -2022,7 +2022,7 @@
                                             (log-error "[INST] ~a in ~a: Static instance of class ~a."
                                                        (tok-line (car e)) (tok-file (car e)) base))
                                           (when show-info?
-                                            (printf "/* NP ~a: ~a */~n" 
+                                            (printf "/* NP ~a: ~a */\n" 
                                                     comment name))
                                           (loop (sub1 l) #f pointers (cons (cons name 
                                                                                  (make-non-pointer-type non-ptr-base)) 
@@ -2060,7 +2060,7 @@
           (let loop ([e e])
             (cond
               [(null? (cdr e))
-               (fprintf map-port "(decl ~s)~n" name)
+               (fprintf map-port "(decl ~s)\n" name)
                (list (make-tok (string->symbol (format "SEGOF_~a" name))
                                #f #f)
                      (car e))]
@@ -3449,14 +3449,14 @@
                                                 (not (or (ormap (lambda (var)
                                                                   (and (array-type? (cdr var))
                                                                        '(fprintf (current-error-port)
-                                                                                 "Optwarn [return] ~a in ~a: tail-push blocked by ~s[].~n"
+                                                                                 "Optwarn [return] ~a in ~a: tail-push blocked by ~s[].\n"
                                                                                  (tok-line (car func)) (tok-file (car func))
                                                                                  (car var))))
                                                                 (live-var-info-vars live-vars))
                                                          (ormap (lambda (&-var)
                                                                   (and (assq &-var vars)
                                                                        '(fprintf (current-error-port)
-                                                                                 "Optwarn [return] ~a in ~a: tail-push blocked by &~s.~n"
+                                                                                 "Optwarn [return] ~a in ~a: tail-push blocked by &~s.\n"
                                                                                  (tok-line (car func)) (tok-file (car func))
                                                                                  &-var)))
                                                                 &-vars))))]
@@ -3854,7 +3854,7 @@
                 (call-graph/body name (seq->list (seq-in v)))]
                [(assq (tok-n v) (prototyped))
                 (fprintf map-port
-                         "(call ~s ~s)~n"
+                         "(call ~s ~s)\n"
                          name (tok-n v))]
                [else (void)]))
            e))
@@ -4032,8 +4032,8 @@
         (when precompiling-header?
           (let loop ([i 1])
             (unless (i . > . gentag-count)
-              (printf "#undef XfOrM~a_COUNT~n" i)
-              (printf "#undef SETUP_XfOrM~a~n" i)
+              (printf "#undef XfOrM~a_COUNT\n" i)
+              (printf "#undef SETUP_XfOrM~a\n" i)
               (loop (add1 i)))))
         
         (close-output-port (current-output-port))

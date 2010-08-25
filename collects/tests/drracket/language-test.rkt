@@ -1044,7 +1044,7 @@ the settings above should match r5rs
     (let* ([got (fetch-output/should-be-tested drs)])
       (unless (string=? result got)
         (fprintf (current-error-port)
-                 "FAILED: ~s ~s ~s test~n expected: ~s~n      got: ~s~n"
+                 "FAILED: ~s ~s ~s test\n expected: ~s\n      got: ~s\n"
                  (language) setting-name expression result got)))))
 
 (define (test-hash-bang)
@@ -1058,7 +1058,7 @@ the settings above should match r5rs
     (let* ([got (fetch-output/should-be-tested drs)])
       (unless (string=? "1" got)
         (fprintf (current-error-port)
-                 "FAILED: ~s ~a test~n expected: ~s~n     got: ~s~n"
+                 "FAILED: ~s ~a test\n expected: ~s\n     got: ~s\n"
                  (language) expression result got)))))
 
 (define (fetch-output/should-be-tested . args)
@@ -1095,7 +1095,7 @@ the settings above should match r5rs
                                                               (string-length line1-got))))
                        (regexp-match line1-expect line1-got)))
         (fprintf (current-error-port)
-                 "expected lines: ~n  ~a~n  ~a~ngot lines:~n  ~a~n  ~a~n" 
+                 "expected lines: \n  ~a\n  ~a\ngot lines:\n  ~a\n  ~a\n" 
                  line0-expect line1-expect
                  line0-got line1-got)
         (error 'language-test.rkt "failed get top of repl test")))))
@@ -1144,7 +1144,7 @@ the settings above should match r5rs
 (define (generic-output list? quasi-quote? has-sharing? has-print-printing?)
   (let* ([plain-print-style (if has-print-printing? "print" "write")]
          [drs (wait-for-drscheme-frame)]
-         [expression (format "(define x (list 2))~n(list x x)")]
+         [expression "(define x (list 2))\n(list x x)"]
          [set-output-choice
           (lambda (option show-sharing pretty?)
             (set-language #f)
@@ -1178,7 +1178,7 @@ the settings above should match r5rs
                           (answer got)
                           (whitespace-string=? answer got))
                 (fprintf (current-error-port)
-                         "FAILED ~s ~a, sharing ~a pretty? ~a~n            got ~s~n       expected ~s~n"
+                         "FAILED ~s ~a, sharing ~a pretty? ~a\n            got ~s\n       expected ~s\n"
                          (language) option show-sharing pretty?
                          (shorten got)
                          (if (procedure? answer) (answer) answer)))))])
@@ -1285,11 +1285,11 @@ the settings above should match r5rs
           (lambda (expected)
             (cond
               [(string? expected)
-               "FAILED: ~s ~s expected ~s to produce:\n  ~s\ngot:\n  ~s\ninstead~n"]
+               "FAILED: ~s ~s expected ~s to produce:\n  ~s\ngot:\n  ~s\ninstead\n"]
               [(regexp? expected)
-               "FAILED: ~s ~s expected ~s to match ~s, got ~s instead~n"]
+               "FAILED: ~s ~s expected ~s to match ~s, got ~s instead\n"]
               [(procedure? expected)
-               "FAILED: ~s ~s expected ~s to pass predicate ~s, got ~s~n"]))])
+               "FAILED: ~s ~s expected ~s to pass predicate ~s, got ~s\n"]))])
     (clear-definitions drs)
     (cond
       [(pair? expression) (for-each handle-insertion expression)]

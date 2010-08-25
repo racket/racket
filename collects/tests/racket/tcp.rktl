@@ -17,7 +17,7 @@
 
 (define (tread connect)
   (let-values ([(r w close) (connect)])
-    (printf "Hit return to start reading~n")
+    (printf "Hit return to start reading\n")
     (read-line)
     (let loop ([last -1])
       (let ([v (read r)])
@@ -29,9 +29,9 @@
 	      last)
 	    (begin
 	      (unless (= v (add1 last))
-		(printf "skipped! ~a ~a~n" last v))
+		(printf "skipped! ~a ~a\n" last v))
 	      (when (zero? (modulo v print-mod))
-		(printf "got ~a~n" v))
+		(printf "got ~a\n" v))
 	      (loop v)))))))
 
 (define (twrite connect)
@@ -39,7 +39,7 @@
 	       [(t) (thread (lambda ()
 			      (let loop ()
 				(sleep 1)
-				(printf "tick~n")
+				(printf "tick\n")
 				(loop))))])
     (let ([done (lambda ()
 		  (close-output-port w)
@@ -49,11 +49,11 @@
       (let loop ([n 0])
 	(if (= n max-send)
 	    (begin
-	      (printf "stopped before ~a~n" n)
+	      (printf "stopped before ~a\n" n)
 	      (done))
 	    
 	    (begin
-	      (fprintf w "~s~n" n)
+	      (fprintf w "~s\n" n)
 	      (when (zero? (modulo n print-mod))
-		(printf "sent ~a~n" n))
+		(printf "sent ~a\n" n))
 	      (loop (add1 n))))))))

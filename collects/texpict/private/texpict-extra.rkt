@@ -426,22 +426,22 @@
 	      (let ([tag (car s)])
 		(case tag
 		  [(local)
-		   (format "{~a}~n" (output (cadr s)))]
+		   (format "{~a}\n" (output (cadr s)))]
 		  [(begin)
 		   (apply string-append (map output (cdr s)))]
 		  [(picture)
-		   (format "\\begin{picture}(~a,~a)~n~a\\end{picture}~n"
+		   (format "\\begin{picture}(~a,~a)\n~a\\end{picture}\n"
 			   (cadr s) (caddr s)
 			   (apply string-append (map output (cdddr s))))]
 		  [(color)
-		   (format "\\special{color push ~a}~n~a\\special{color pop}~n"
+		   (format "\\special{color push ~a}\n~a\\special{color pop}\n"
 			   (cadr s) (output (cddr s)))]
 		  [(thickness)
 		   (format "\\~a~a" (cadr s) (output (caddr s)))]
 		  [(put)
-		   (format "\\put(~a,~a){~a}~n" (cadr s) (caddr s) (output (cadddr s)))]
+		   (format "\\put(~a,~a){~a}\n" (cadr s) (caddr s) (output (cadddr s)))]
 		  [(qbezier)
-		   (apply format "\\qbezier~a(~a,~a)(~a,~a)(~a,~a)~n"
+		   (apply format "\\qbezier~a(~a,~a)(~a,~a)(~a,~a)\n"
 			  (if (cadr s)
 			      (format "[~a]" (cadr s))
 			      "")

@@ -290,7 +290,7 @@
 						 ((current-make-compile-input-strings) in)
 						 ((current-make-compile-output-strings) out))])
 				   (unless quiet? 
-				     (printf "compile-extension: ~a~n" command))
+				     (printf "compile-extension: ~a\n" command))
 				   (apply my-process* command)))
 			       quiet?)
 		(error 'compile-extension "can't find an installed C compiler")))))

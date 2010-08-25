@@ -485,7 +485,7 @@
 	      (when (and size warn-size (> size warn-size))
 		(unless (eq? 'yes
 			     (confirm-box "Large Message"
-					  (format "The message is ~s bytes.~nReally download?" size)
+					  (format "The message is ~s bytes.\nReally download?" size)
 					  main-frame))
 		  (status "")
 		  (raise-user-error "download aborted"))))
@@ -1653,7 +1653,7 @@
 				   (when (eq? 'yes
 					      (confirm-box
 					       "Error"
-					       (format "There was an communication error.~nClose the connection?")
+					       (format "There was an communication error.\nClose the connection?")
 					       main-frame))
 				     (force-disconnect/status))))))])
 	  (header-changing-action
@@ -2507,7 +2507,7 @@
                      [slurp-stream (lambda (ent o)
                                      (with-handlers ([exn:fail? (lambda (x)
 								  (fprintf o 
-									   "~n[decode error: ~a]~n"
+									   "\n[decode error: ~a]\n"
 									   (if (exn? x)
 									       (exn-message x)
 									       x)))])

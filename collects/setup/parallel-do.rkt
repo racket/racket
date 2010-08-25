@@ -54,7 +54,7 @@
   (define (kill-worker wrkr)
     (match wrkr
       [(worker id process-handle out in err)
-       (eprintf "KILLING WORKER ~a ~a~n" id wrkr)
+       (eprintf "KILLING WORKER ~a ~a\n" id wrkr)
        (close-output-port in)
        (close-input-port out)
        (subprocess-kill process-handle #t)]))
@@ -70,14 +70,14 @@
       (define (error-threshold x) 
         (if (x . >= . 4)
           (begin 
-            (eprintf "Error count reached ~a, exiting~n" x)
+            (eprintf "Error count reached ~a, exiting\n" x)
             (exit 1))
           #f))
       (letrec ([loop (match-lambda*
                      ;; QUEUE IDLE INFLIGHT COUNT
                      ;; Reached stopat count STOP
                      [(list idle inflight count (? error-threshold error-count)) (void)]
-                     [(list idle inflight (? (lambda (x) (= x stopat))) error-count)  (printf "DONE AT LIMIT~n")]
+                     [(list idle inflight (? (lambda (x) (= x stopat))) error-count)  (printf "DONE AT LIMIT\n")]
                      ;; Send work to idle worker
                      [(list (and (? jobs?) (cons wrkr idle)) inflight count error-count)
                         (let-values ([(job cmd-list) (get-job jobqueue (worker-id wrkr))])
@@ -87,7 +87,7 @@
                             (match wrkr
                               [(worker i s o in e)
                                 (with-handlers* ([exn:fail? (lambda (e) 
-                                                     (printf "MASTER WRITE ERROR - writing to worker: ~a~n" (exn-message e))    
+                                                     (printf "MASTER WRITE ERROR - writing to worker: ~a\n" (exn-message e))    
                                                      (kill-worker wrkr)
                                                      (retry-loop (spawn i) (add1 error-count)))])
                                   (send/msg cmd-list in))])
@@ -102,7 +102,7 @@
                                                      (handle-evt out (λ (e)
                                                                    (let ([msg 
                                                                           (with-handlers* ([exn:fail? (lambda (e) 
-                                                                                                        (printf "MASTER READ ERROR - reading from worker: ~a~n" (exn-message e))    
+                                                                                                        (printf "MASTER READ ERROR - reading from worker: ~a\n" (exn-message e))    
                                                                                                         (kill-worker wrkr)
                                                                                                         (loop (cons (spawn id) idle)
                                                                                                               (remove node-worker inflight)
@@ -125,9 +125,9 @@
       (for ([p workers]) (subprocess-wait (worker-process-handle p))))))
 
 (define (parallel-do-default-error-handler work error-message outstr errstr)
-  (printf "WORKER ERROR ~a~n" error-message)
-  (printf "STDOUT~n~a=====~n" outstr)
-  (printf "STDERR~N~a=====~n" errstr))
+  (printf "WORKER ERROR ~a\n" error-message)
+  (printf "STDOUT\n~a=====\n" outstr)
+  (printf "STDERR\n~a=====\n" errstr))
   
 (define-struct list-queue (queue results create-job-thunk success-thunk failure-thunk) #:transparent
   #:mutable
@@ -171,14 +171,14 @@
         (define (pdo-send msg)
           (with-handlers ([exn:fail?
             (lambda (x)
-                (fprintf orig-err "WORKER SEND MESSAGE ERROR ~a~n" (exn-message x))
+                (fprintf orig-err "WORKER SEND MESSAGE ERROR ~a\n" (exn-message x))
                 (exit 1))])
             (write msg orig-out)
             (flush-output orig-out)))
         (define (pdo-recv)
           (with-handlers ([exn:fail?
             (lambda (x)
-                (fprintf orig-err "WORKER RECEIVE MESSAGE ERROR ~a~n" (exn-message x))
+                (fprintf orig-err "WORKER RECEIVE MESSAGE ERROR ~a\n" (exn-message x))
                 (exit 1))])
           (read)))
         (match (deserialize (fasl->s-exp (pdo-recv)))
@@ -223,8 +223,8 @@
           (with-syntax ([cmdline cmdline]
                         [initial-stdin-data initial-stdin-data])
             #`(begin
-                ;(printf "CMDLINE ~v~n" cmdline)
-                ;(printf "INITIALTHUNK ~v~n" initial-stdin-data)
+                ;(printf "CMDLINE ~v\n" cmdline)
+                ;(printf "INITIALTHUNK ~v\n" initial-stdin-data)
                 (let ([jobqueue (make-list-queue list-of-work null create-job-thunk job-success-thunk job-failure-thunk)])
                   (parallel-do-event-loop initial-stdin-data initalmsg cmdline jobqueue (processor-count) 999999999)
                   (reverse (list-queue-results jobqueue))))))

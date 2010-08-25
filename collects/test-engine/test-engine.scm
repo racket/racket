@@ -89,7 +89,7 @@
     
     (define/public (display-untested-summary port)
       (unless (test-silence)
-        (fprintf port "This program should be tested.~n")))
+        (fprintf port "This program should be tested.\n")))
 
     (define/public (display-disabled-summary port)
       (fprintf port "Tests disabled.\n"))

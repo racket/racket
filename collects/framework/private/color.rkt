@@ -286,7 +286,7 @@ added get-regions
                        (enable-suspend #t)))])
         (unless (eq? 'eof type)
           (enable-suspend #f)
-          #; (printf "~a at ~a to ~a~n" lexeme (+ in-start-pos (sub1 new-token-start))
+          #; (printf "~a at ~a to ~a\n" lexeme (+ in-start-pos (sub1 new-token-start))
                      (+ in-start-pos (sub1 new-token-end)))
           (let ((len (- new-token-end new-token-start)))
             (set-lexer-state-current-pos! ls (+ len (lexer-state-current-pos ls)))
@@ -418,11 +418,11 @@ added get-regions
     
     (define/private (colorer-driver)
       (unless (andmap lexer-state-up-to-date? lexer-states)
-        #;(printf "revision ~a~n" (get-revision-number))
+        #;(printf "revision ~a\n" (get-revision-number))
         (unless (and tok-cor (= rev (get-revision-number)))
           (when tok-cor
             (coroutine-kill tok-cor))
-          #;(printf "new coroutine~n")
+          #;(printf "new coroutine\n")
           (set! tok-cor
                 (coroutine
                  (λ (enable-suspend)
@@ -450,19 +450,19 @@ added get-regions
                                (format "exception in colorer thread: ~s" exn)
                                exn))
                             (set! tok-cor #f))))
-          #;(printf "begin lexing~n")
+          #;(printf "begin lexing\n")
           (when (coroutine-run 10 tok-cor)
             (for-each (lambda (ls)
                         (set-lexer-state-up-to-date?! ls #t))
                       lexer-states)))
-        #;(printf "end lexing~n")
-        #;(printf "begin coloring~n")
+        #;(printf "end lexing\n")
+        #;(printf "begin coloring\n")
         ;; This edit sequence needs to happen even when colors is null
         ;; for the paren highlighter.
         (begin-edit-sequence #f #f)
         (color)
         (end-edit-sequence)
-        #;(printf "end coloring~n")))
+        #;(printf "end coloring\n")))
     
     (define/private (colorer-callback)
       (cond
@@ -643,7 +643,7 @@ added get-regions
     ;; possible.
     (define/private match-parens
       (lambda ([just-clear? #f])
-        ;;(printf "(match-parens ~a)~n" just-clear?)
+        ;;(printf "(match-parens ~a)\n" just-clear?)
         (when (and (not in-match-parens?)
                    ;; Trying to match open parens while the
                    ;; background thread is going slows it down.
@@ -918,21 +918,21 @@ added get-regions
          (let* ((x null)
                 (f (λ (a b c) (set! x (cons (list a b c) x)))))
            (send (lexer-state-tokens ls) for-each f)
-           (printf "tokens: ~.s~n" (reverse x))
+           (printf "tokens: ~.s\n" (reverse x))
            (set! x null)
            (send (lexer-state-invalid-tokens ls) for-each f)
-           (printf "invalid-tokens: ~.s~n" (reverse x))
-           (printf "start-pos: ~a current-pos: ~a invalid-tokens-start ~a~n"
+           (printf "invalid-tokens: ~.s\n" (reverse x))
+           (printf "start-pos: ~a current-pos: ~a invalid-tokens-start ~a\n"
                    (lexer-state-start-pos ls)
                    (lexer-state-current-pos ls)
                    (lexer-state-invalid-tokens-start ls))
-           (printf "parens: ~.s~n" (car (send (lexer-state-parens ls) test)))))
+           (printf "parens: ~.s\n" (car (send (lexer-state-parens ls) test)))))
        lexer-states))
     
     ;; ------------------------- Callbacks to Override ----------------------
     
     (define/override (lock x)
-      ;;(printf "(lock ~a)~n" x)
+      ;;(printf "(lock ~a)\n" x)
       (super lock x)
       (when (and restart-callback (not x))
         (set! restart-callback #f)
@@ -940,25 +940,25 @@ added get-regions
     
     
     (define/override (on-focus on?)
-      ;;(printf "(on-focus ~a)~n" on?)
+      ;;(printf "(on-focus ~a)\n" on?)
       (super on-focus on?)
       (match-parens (not on?)))
     
     (define/augment (after-edit-sequence)
-      ;;(printf "(after-edit-sequence)~n")
+      ;;(printf "(after-edit-sequence)\n")
       (when (has-focus?)
         (match-parens))
       (inner (void) after-edit-sequence))
     
     (define/augment (after-set-position)
-      ;;(printf "(after-set-position)~n")
+      ;;(printf "(after-set-position)\n")
       (unless (local-edit-sequence?)
         (when (has-focus?)
           (match-parens)))
       (inner (void) after-set-position))
     
     (define/augment (after-change-style a b)
-      ;;(printf "(after-change-style)~n")
+      ;;(printf "(after-change-style)\n")
       (unless (get-styles-fixed)
         (unless (local-edit-sequence?)
           (when (has-focus?)
@@ -966,19 +966,19 @@ added get-regions
       (inner (void) after-change-style a b))
     
     (define/augment (on-set-size-constraint)
-      ;;(printf "(on-set-size-constraint)~n")
+      ;;(printf "(on-set-size-constraint)\n")
       (unless (local-edit-sequence?)
         (when (has-focus?)
           (match-parens)))
       (inner (void) on-set-size-constraint))
     
     (define/augment (after-insert edit-start-pos change-length)
-      ;;(printf "(after-insert ~a ~a)~n" edit-start-pos change-length)
+      ;;(printf "(after-insert ~a ~a)\n" edit-start-pos change-length)
       (do-insert/delete edit-start-pos change-length)
       (inner (void) after-insert edit-start-pos change-length))
     
     (define/augment (after-delete edit-start-pos change-length)
-      ;;(printf "(after-delete ~a ~a)~n" edit-start-pos change-length)
+      ;;(printf "(after-delete ~a ~a)\n" edit-start-pos change-length)
       (do-insert/delete edit-start-pos (- change-length))
       (inner (void) after-delete edit-start-pos change-length))
     

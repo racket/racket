@@ -95,7 +95,7 @@
 							     (bytes->string/latin-1 unistr)
 							     ""))))
 				      (value name-delta))])
-			;;(printf "Name: ~a~a = ~a~n" path name (+ rsrc-pos (value data-delta)))
+			;;(printf "Name: ~a~a = ~a\n" path name (+ rsrc-pos (value data-delta)))
 			(let ([full-name (format "~a~a" path name)])
 			  (if (flag data-delta)
 			      (loop (value data-delta) (string-append full-name "."))
@@ -148,14 +148,14 @@
 	    [vdelta image-base])
 	(file-position p pos)
 	(let loop ([delay-pos (dword->integer p)])
-	  (printf "~a ~a~n" delay-pos vdelta)
+	  (printf "~a ~a\n" delay-pos vdelta)
 	  (file-position p (+ delay-pos vdelta))
 	  (dword->integer p) ; skip attributes
 	  (let ([name-pos (dword->integer p)])
-	    (printf "~a ~a~n" name-pos vdelta)
+	    (printf "~a ~a\n" name-pos vdelta)
 	    (file-position p (+ name-pos vdelta))
 	    (let ([name (regexp-match "^[^\0]*" p)])
-	      (printf "~a~n" name))))))))
+	      (printf "~a\n" name))))))))
 
   (define-struct icon (desc data))
   ;; desc is (list width height colors 0 planes bitcount)
@@ -256,7 +256,7 @@
 									   image
 									   (mask->alpha (cvt image) mask))
 								       mask)))))))))])
-			   (unless ico-icon (printf "no! ~a~n" (icon-desc exe-icon)))
+			   (unless ico-icon (printf "no! ~a\n" (icon-desc exe-icon)))
                            (when ico-icon
                              (file-position p (car (icon-data exe-icon)))
                              (display (cdr (icon-data ico-icon)) p)))))
@@ -296,7 +296,7 @@
 					   dword->integer)
 				       p)))
 			       (loop (add1 i)))))])
-	     ;; (printf "~a~n" icons)
+	     ;; (printf "~a\n" icons)
 	     (for-each (lambda (icon)
 			 (set-icon-data!
 			  icon
