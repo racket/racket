@@ -115,7 +115,7 @@
   (manuals)
   @{Returns the list of keywords for the manuals from @scheme[manuals] by
     extracting all of the documented exports of the manuals.  The symbols are
-    meant to be module paths, eg the quoted form of the argument to
+    meant to be module paths, e.g., the quoted form of the argument to
     @scheme[require].
 
     If @scheme[manuals] is false, then all of the documented names are used.})
@@ -131,7 +131,7 @@
   number-snip:make-repeating-decimal-snip
   (number? boolean? . -> . (is-a?/c snip%))
   (num show-prefix?)
-  @{Makes a number snip that shows the decimal expansion for @scheme[number]
+  @{Makes a number snip that shows the decimal expansion for @scheme[number].
     The boolean indicates if a @litchar{#e} prefix appears on the number.
     
     See also @scheme[number-snip:make-fraction-snip].})
@@ -150,14 +150,14 @@
   version:add-spec
   (any/c any/c . -> . void?)
   (spec revision)
-  @{These two values are appended to the version string.  @scheme[write] is
-    used to transform them to strings.  For example:
+  @{The two values are appended to the version string.  @scheme[write] is used
+    to transform them to strings.  For example:
     
     @scheme[(version:add-spec 's 1)]
     
     in version 205 will make the version string be @litchar{205s1}.  The
-    symbols @scheme['f] and @scheme['d] are used internally for framework and
-    drscheme revisions.})
+    symbols @scheme['f] and @scheme['d] were used internally for framework and
+    drscheme revisions in the past.})
 
  (proc-doc/names
   version:version
@@ -397,7 +397,7 @@
       @item{invokes the exit-callbacks, with @scheme[exit:can-exit?] if none of
             the ``can?'' callbacks return @scheme[#f],}
       @item{invokes @scheme[exit:on-exit] and then}
-      @item{queues a callback that calls @scheme[exit] (a mzscheme procedure)
+      @item{queues a callback that calls @scheme[exit] (a racket procedure)
             and (if @scheme[exit] returns) sets the result of
             @scheme[exit:exiting?] back to @scheme[#t].}]})
 
@@ -604,7 +604,7 @@
   (size-pref-sym width height)
   @{Initializes a preference for the @scheme[frame:size-pref] mixin.
     
-    The first argument should be the preferences symbol, and the second an
+    The first argument should be the preferences symbol, and the second and
     third should be the default width and height, respectively.})
 
  (proc-doc/names
@@ -650,7 +650,7 @@
     @scheme[frame:basic-mixin].
     @itemize[
       @item{If it is @scheme[#f], then its value is ignored.}
-      @item{It it is a @scheme[bitmap%], then the @method[frame% set-icon] is
+      @item{If it is a @scheme[bitmap%], then the @method[frame% set-icon] is
             called with the bitmap, the result of invoking the
             @scheme[bitmap% get-loaded-mask] method, and @scheme['both].}
       @item{If it is a pair of bitmaps, then the @method[frame% set-icon]
@@ -718,7 +718,7 @@
   handler:handler-handler
   (handler:handler? . -> . (path? . -> . (is-a?/c frame:editor<%>)))
   (handler)
-  @{Extracs the handler's handling function.})
+  @{Extracts the handler's handling function.})
 
  (proc-doc/names
   handler:insert-format-handler
@@ -1001,7 +1001,7 @@
   keymap:call/text-keymap-initializer
   ((-> any/c) . -> . any/c)
   (thunk-proc)
-  @{Thus function parameterizes the call to @scheme[thunk-proc] by setting the
+  @{This function parameterizes the call to @scheme[thunk-proc] by setting the
     keymap-initialization procedure (see
     @scheme[current-text-keymap-initializer]) to install the framework's
     standard text bindings.})
@@ -1029,7 +1029,7 @@
       @item{@scheme["v"]: paste}
       @item{@scheme["a"]: select all}]
     where each key is prefixed with the menu-shortcut key, based on the
-    platform.  Under unix, the shortcut is @scheme["a:"]; under windows the
+    platform.  Under Unix, the shortcut is @scheme["a:"]; under windows the
     shortcut key is @scheme["c:"] and under MacOS, the shortcut key is
     @scheme["d:"].})
 
@@ -1067,7 +1067,7 @@
   @{This prefixes a key with all of the different meta prefixes and returns a
     list of the prefixed strings.
     
-    takes a keymap, a base key specification, and a function name; it prefixes
+    Takes a keymap, a base key specification, and a function name; it prefixes
     the base key with all ``meta'' combination prefixes, and installs the new
     combinations into the keymap.  For example,
     @scheme[(keymap:send-map-function-meta keymap "a" func)] maps
@@ -1104,9 +1104,7 @@
   keymap:setup-global
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
-  @{This extends a @scheme[keymap%] with the general bindings.
-    
-    This function extends a @scheme[keymap%] with the following functions:
+  @{This function extends a @scheme[keymap%] with the following functions:
     @itemize[
       @item{@mapdesc[ring-bell any] --- Rings the bell (using @scheme[bell])
             and removes the search panel from the frame, if there.}
@@ -1158,7 +1156,7 @@
             the clipboard.}
       @item{@mapdesc[cut-clipboard mouse] --- Cuts the current selection to the
             clipboard.}
-      @item{@mapdesc[paste-clipboard mouse] --- Patses the clipboard to the
+      @item{@mapdesc[paste-clipboard mouse] --- Pastes the clipboard to the
             current selection.}
       @item{@mapdesc[copy-click-region mouse] --- Copies the region between the
             caret and the input mouse event.}
@@ -1170,8 +1168,8 @@
             input mouse event.}
       @item{@mapdesc[select-click-line mouse] --- Selects the line under the
             input mouse event.}
-      @item{@mapdesc[start-macro key] -- Starts building a keyboard macro}
-      @item{@mapdesc[end-macro key] --- Stops building a keyboard macro}
+      @item{@mapdesc[start-macro key] -- Starts recording a keyboard macro}
+      @item{@mapdesc[end-macro key] --- Stops recording a keyboard macro}
       @item{@mapdesc[do-macro key] --- Executes the last keyboard macro}
       @item{@mapdesc[toggle-overwrite key] --- Toggles overwriting mode}]
     
