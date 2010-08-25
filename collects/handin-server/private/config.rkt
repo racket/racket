@@ -74,7 +74,7 @@
     [(hook-file)               (values #f                    path/false   )]
     [(session-timeout)         (values 300                   id           )]
     [(session-memory-limit)    (values 40000000              id           )]
-    [(default-file-name)       (values "handin.scm"          id           )]
+    [(default-file-name)       (values "handin.rkt"          id           )]
     [(max-upload)              (values 500000                id           )]
     [(max-upload-keep)         (values 9                     id           )]
     [(user-regexp)             (values #rx"^[a-z][a-z0-9]+$" rx           )]

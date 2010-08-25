@@ -127,7 +127,7 @@ Keywords for configuring @scheme[check:]:
 
 @item{@indexed-scheme[:output]---the name of the original handin file
   (unrelated to the text-converted files).  Defaults to
-  @filepath{hw.scm}.  (The suffix changes the defaults of
+  @filepath{hw.rkt}.  (The suffix changes the defaults of
   @scheme[:markup-prefix] and @scheme[:prefix-re].)  Can be
   @scheme[#f] for removing the original file after processing.  The
   file is always stored in GRacket's binary format.}
@@ -243,9 +243,9 @@ code.}
     (require net/sendmail)
     (post:
       (define info
-        (format "hw.scm: ~a ~a"
-                (file-size "hw.scm")
-                (file-or-directory-modify-seconds "hw.scm")))
+        (format "hw.rkt: ~a ~a"
+                (file-size "hw.rkt")
+                (file-or-directory-modify-seconds "hw.rkt")))
       (timeout-control 'disable)
       (log-line "Sending a receipt: ~a" info)
       (send-mail-message

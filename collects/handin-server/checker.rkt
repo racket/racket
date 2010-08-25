@@ -379,7 +379,7 @@
                   #''("Maximum points for this assignment: <+100>"))]
             [value-printer* (get ':value-printer #'#f)]
             [coverage?*     (get ':coverage?     #'#f)]
-            [output*        (get ':output        #'"hw.scm")]
+            [output*        (get ':output        #'"hw.rkt")]
             [multi-file*    (get ':multi-file    #'#f)]
             [names-checker* (get ':names-checker #'#f)]
             [user-error-message*
