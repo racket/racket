@@ -529,6 +529,13 @@ y
 (assert y number?)
 (assert y boolean?)]
 
+@defform*/subs[[(with-asserts ([id maybe-pred] ...) body ...+)]
+              ([maybe-pred code:blank
+                           (code:line predicate)])]{
+Guard the body with assertions. If any of the assertions fail, the
+program errors. These assertions behave like @racket[assert].
+}
+
 
 @section{Typed Racket Syntax Without Type Checking}
 
