@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require scheme/match scheme/list scheme/string
          (for-syntax scheme/base scheme/match))
@@ -18,37 +18,33 @@
 
 (define show
   (match-lambda
-    [(list 'values x)        (format "~e" x)]
-    [(list 'values xs ...)   (format "~e" (cons 'values xs))]
+    [(list 'values x)
+     (format "~e" x)]
+    [(list 'values xs ...)
+     (string-append "(values "
+                    (string-join (map (lambda (x) (format "~e" x)) xs) " ")
+                    ")")]
     [(list 'error err val)
-     (cond [(procedure? err) (format "error satisfying ~s" err)]
-           [(regexp? err)    (format "error matching ~s" err)]
-           [err              (format "error: ~a" err)]
-           [else             (format "a raised non-exception ~s" val)])]
-    [x (format "INTERNAL ERROR, unexpected value: ~s" x)]))
+     (cond [(procedure? err) (format "error satisfying ~.s" err)]
+           [(regexp? err)    (format "error matching ~.s" err)]
+           [err              (format "error: ~.a" err)]
+           [else             (format "a raised non-exception ~.s" val)])]
+    [x (format "INTERNAL ERROR, unexpected value: ~.s" x)]))
 
-(define test-context    (make-parameter #f))
-(define failure-format 
+(define test-context (make-parameter #f))
+(define failure-format
   (make-parameter
    (lambda (prefix qe fmt . args)
-     (define prefix-str 
-       (apply string-append 
-              (add-between (reverse (list* "" prefix))
-                           " > ")))
-     (define str 
-       (regexp-replace #rx"\n"
-                       (apply format fmt args)
-                       "\n  "))
-     (format "~atest failure in ~e\n  ~a"
-             prefix-str qe str))))
+     (define str
+       (regexp-replace #rx"\n" (apply format fmt args) "\n  "))
+     (string-join (reverse (cons (format "test failure in ~.s\n  ~a" qe str)
+                                 prefix))
+                  " > "))))
 
 (define (make-failure-message msg)
-  (define str
-    (regexp-replace #rx"\n" msg "\n  "))
-  (define real-msg
-    (format "test failure\n  ~a" str))
-  (lambda (prefix qe fmt . args)
-    real-msg))
+  (define str (regexp-replace #rx"\n" msg "\n  "))
+  (define real-msg (format "test failure\n  ~a" str))
+  (lambda (prefix qe fmt . args) real-msg))
 (define failure-prefix-mark (gensym 'failure-prefix))
 
 (define-syntax (test-thunk stx)
@@ -63,8 +59,8 @@
                        [else "?"])))))
     (with-syntax ([e e] [fmt fmt] [(arg ...) args] [loc loc])
       #'(let* ([form (failure-format)]
-               [prefix
-                (continuation-mark-set->list (current-continuation-marks) failure-prefix-mark)])
+               [prefix (continuation-mark-set->list (current-continuation-marks)
+                                                    failure-prefix-mark)])
           (error 'loc (form prefix 'e fmt arg ...)))))
   (define (t1 x)
     #`(let ([x (safe #,x)])
@@ -73,7 +69,7 @@
                    #'(show x)))))
   (define (t2 x y [eval2? #t])
     #`(let* ([x (safe #,x)]                   [xtag (car x)]
-                                              [y #,(if eval2? #`(safe #,y) y)] [ytag (car y)])
+             [y #,(if eval2? #`(safe #,y) y)] [ytag (car y)])
         (cond
           [(eq? ytag 'values)
            (unless (equal? x y)
@@ -119,15 +115,16 @@
                  [(list* #:failure-prefix msg r)
                   (let ([r (tloop r)])
                     (if (pair? r)
-                        (cons
-                         #`(with-continuation-mark failure-prefix-mark #,msg #,(car r))
-                         (cdr r))
-                        r))]
+                      (cons #`(with-continuation-mark failure-prefix-mark
+                                                      #,msg #,(car r))
+                            (cdr r))
+                      r))]
                  [(list* #:failure-message msg r)
                   (let ([r (tloop r)])
                     (if (pair? r)
                         (cons
-                         #`(parameterize ([failure-format (make-failure-message #,msg)])
+                         #`(parameterize ([failure-format
+                                           (make-failure-message #,msg)])
                              #,(car r))
                          (cdr r))
                         r))]
@@ -188,7 +185,7 @@
  (car '()) => (error "expects argument of type")
  ;; syntax errors
  (if 1) =error> "if: bad syntax"
- 
+
  ;; error (and non-exception raises) predicates
  (+ 1 "2")   =error> exn:fail:contract?
  (+ 1 "2")   =error> (lambda (x) (not (exn:fail:filesystem? x)))
@@ -196,7 +193,7 @@
  (error "1") =error> exn?
  (raise 1)   =error> number?
  (raise "1") =error> string?
- 
+
  ;; test `test' errors
  (test* (/ 0)) =error> "expected: non-#f single value"
  (test* 1 => 2) =error> "expected: 2"
@@ -206,7 +203,7 @@
  (test* #:failure-message "FOO" (/ 0) => 1) =error> "FOO"
  (test* #:failure-message "FOO" (/ 0)) =error> "FOO"
  (test* #:failure-prefix "FOO" (/ 0)) =error> "FOO"
- 
+
  ;; test possitive message
  (let ([o (open-output-bytes)])
    (list (begin (parameterize ([current-output-port o]) (test* 1 => 1))
