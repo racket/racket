@@ -25,12 +25,24 @@ set to @racket['string]. If @racket[eval] is not provided, an
 evaluator is created using @racket[make-base-eval]. See also
 @racket[make-eval-factory].
 
+If the value of @racket[current-print] in the sandbox is changed from
+its default value, or if @racket[print-as-expression] in the sandbox
+is set to @racket[#f], then each evaluation result is formatted to a
+string by applying @racket[(current-print)] to the value (with the
+output port set to a string port). Otherwise, result values are
+typeset using @racket[to-element/no-color].
+
 Uses of @racket[code:comment] and @racketidfont{code:blank} are
 stipped from each @racket[datum] before evaluation.
 
 If a @racket[datum] has the form @racket[(@#,indexed-racket[eval:alts]
 #,(svar show-datum) #,(svar eval-datum))], then @svar[show-datum] is
-typeset, while @svar[eval-datum] is evaluated.}
+typeset, while @svar[eval-datum] is evaluated.
+
+If a @racket[datum] has the form
+@racket[(@#,indexed-racket[eval:check] #,(svar eval-datum) #,(svar
+expect-datum))], then both @svar[eval-datum] and @svar[check-datum]
+are evaluated, and an error is raised if they are not @racket[equal?].}
 
 
 @defform*[[(interaction-eval datum)
@@ -90,8 +102,8 @@ prompt, and with line of space after it.}
 @defproc[(make-base-eval) (any/c . -> . any)]{
 
 Creates an evaluator using @racket[(make-evaluator 'racket/base)],
-setting sandbox parameters to disable limits, set the outputs to
-@racket['string], and not add extra security guards.}
+setting sandbox parameters to disable limits, setting the outputs to
+@racket['string], and not adding extra security guards.}
 
 
 @defproc[(make-base-eval-factory [mod-paths (listof module-path?)]) (-> (any/c . -> . any))]{
@@ -105,7 +117,7 @@ time) and then attached to each evaluator that is created.}
 
 @defproc[(make-eval-factory [mod-paths (listof module-path?)]) (-> (any/c . -> . any))]{
 
-Like @racket[make-base-eval-factor], but each module in @racket[mod-paths] is
+Like @racket[make-base-eval-factory], but each module in @racket[mod-paths] is
 also required into the top-level environment for each generated evaluator.}
 
 
