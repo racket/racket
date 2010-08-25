@@ -2063,10 +2063,15 @@ of digits with deconv-base
                         (define null '())
                         ,@r6-module-bodies))))
        
-       (printf "Running in the Redex model...\n")
+       (printf "Running in the Redex model finding only the first outcome...\n")
        (time (for ([test (in-list redex-exps)])
                (evaluate reductions test #f void
-                         #:only-first-answer? #t))))]
+                         #:only-first-answer? #t)))
+
+       (printf "Running in the Redex model finding all outcomes...\n")
+       (time (for ([test (in-list redex-exps)])
+               (evaluate reductions test #f void
+                         #:only-first-answer? #f))))]
     [else
      (time
       (let ()
