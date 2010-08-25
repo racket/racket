@@ -168,6 +168,7 @@
                                (fp " ~a" i))
                              (fp ")")]
     [(Box: e) (fp "(Boxof ~a)" e)]
+    [(Future: e) (fp "(Futureof ~a)" e)]
     [(Channel: e) (fp "(Channelof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]

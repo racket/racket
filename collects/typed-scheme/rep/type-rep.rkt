@@ -386,6 +386,8 @@
     [#:frees (λ (f) (combine-frees (map f tys)))]
     [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
 
+(dt Future ([t Type/c]) [#:key 'future])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Ugly hack - should use units

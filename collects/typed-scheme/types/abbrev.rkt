@@ -29,6 +29,7 @@
 (define -box make-Box)
 (define -channel make-Channel)
 (define -vec make-Vector)
+(define -future make-Future)
 (define (-seq . args) (make-Sequence args))
 
 (define-syntax *Un

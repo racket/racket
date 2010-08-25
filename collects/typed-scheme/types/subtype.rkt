@@ -393,6 +393,8 @@
 	      ;; subtyping on other stuff
 	      [((Syntax: t) (Syntax: t*))
 	       (subtype* A0 t t*)]
+              [((Future: t) (Future: t*))
+               (subtype* A0 t t*)]
 	      [((Instance: t) (Instance: t*))
 	       (subtype* A0 t t*)]
               [((Class: '() '() (list (and s  (list names  meths )) ...))

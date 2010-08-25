@@ -476,6 +476,9 @@
           ;; syntax is covariant
           [((Syntax: s1) (Syntax: s2))
            (cg s1 s2)]
+          ;; futures are covariant
+          [((Future: s1) (Future: s2))
+           (cg s1 s2)]
           ;; parameters are just like one-arg functions
           [((Param: in1 out1) (Param: in2 out2))
            (cset-meet (cg in2 in1) (cg out1 out2))]

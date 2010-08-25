@@ -5,6 +5,7 @@
  racket
  racket/unsafe/ops
  racket/fixnum
+ racket/future
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  "extra-procs.rkt"
@@ -310,6 +311,9 @@
 [thread-receive (-> Univ)]
 [thread-try-receive (-> Univ)]
 [thread-rewind-receive (-> (-lst Univ) -Void)]
+
+[future (-poly (A) ((-> A) . -> . (-future A)))]
+[touch (-poly (A) ((-future A) . -> . A))]
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]

@@ -62,6 +62,7 @@
 [True (-val #t)]
 [Null (-val null)]
 [Nothing (Un)]
+[Futureof (-poly (a) (-future a))]
 [Pairof (-poly (a b) (-pair a b))]
 [MPairof (-poly (a b) (-mpair a b))]
 [MListof (-poly (a) (-mlst a))]
