@@ -530,7 +530,7 @@
                       (match v
                         [`#((,datum . ,wraps) ,cert-marks) (values cert-marks datum wraps)]
                         [`(,datum . ,wraps) (values #f datum wraps)]
-                        [else (error 'decode-wraps "bad datum+wrap: ~e" v)])])
+                        [else (error 'decode-wraps "bad datum+wrap: ~.s" v)])])
           (let* ([wraps (decode-wraps cp encoded-wraps)]
                  [marks (decode-marks cp cert-marks)]
                  [add-wrap (lambda (v) (make-wrapped v wraps marks))])
