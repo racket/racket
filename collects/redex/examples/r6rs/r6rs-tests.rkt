@@ -2057,17 +2057,20 @@ of digits with deconv-base
        (parameterize ([current-namespace ns])
          (eval `(module r6rs-init r6rs (import (rnrs) (rnrs mutable-pairs (6))))))
 
+       (collect-garbage) (collect-garbage)
        (printf "Running in Racket's R6RS mode...\n")
        (parameterize ([current-namespace ns])
          (time (eval `(module r6rs-big r6rs (import (rnrs) (rnrs mutable-pairs (6)))
                         (define null '())
                         ,@r6-module-bodies))))
        
+       (collect-garbage) (collect-garbage)
        (printf "Running in the Redex model finding only the first outcome...\n")
        (time (for ([test (in-list redex-exps)])
                (evaluate reductions test #f void
                          #:only-first-answer? #t)))
 
+       (collect-garbage) (collect-garbage)
        (printf "Running in the Redex model finding all outcomes...\n")
        (time (for ([test (in-list redex-exps)])
                (evaluate reductions test #f void
