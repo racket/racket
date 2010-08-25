@@ -373,7 +373,8 @@
    #:arbitrary-promise
    (delay (apply arbitrary-one-of =? cases))))
 
-(define-struct procedure-to-blame (proc syntax))
+(define-struct procedure-to-blame (proc syntax)
+  #:property prop:procedure 0)
 
 (define signature-key (gensym 'signature-key))
 
