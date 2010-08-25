@@ -659,7 +659,7 @@
   ;; expected to be used only with identifiers
   (begin (with-handlers ([exn:fail:contract:variable?
                           (lambda (_)
-                            (error* "missing binding: ~e" (->disp 'id)))]
+                            (error* "missing binding: ~.s" (->disp 'id)))]
                          [exn:fail:syntax? void])
            (parameterize ([current-namespace (get-namespace (submission-eval))])
              (namespace-variable-value `id)))
@@ -671,7 +671,7 @@
   ;; expected to be used only with identifiers
   (begin (with-handlers ([exn:fail:contract:variable?
                           (lambda (_)
-                            (error* "missing binding: ~e" (->disp 'id)))]
+                            (error* "missing binding: ~.s" (->disp 'id)))]
                          [exn:fail:syntax?
                           (lambda (_)
                             (error* "bound to a syntax, expecting a value: ~e"
@@ -687,10 +687,10 @@
   (begin (with-handlers ([exn:fail:syntax? void]
                          [exn:fail:contract:variable?
                           (lambda (_)
-                            (error* "missing binding: ~e" (->disp 'id)))])
+                            (error* "missing binding: ~.s" (->disp 'id)))])
            (parameterize ([current-namespace (get-namespace (submission-eval))])
              (namespace-variable-value `id))
-           (error* "bound to a value, expecting a syntax: ~e" (->disp 'id)))
+           (error* "bound to a value, expecting a syntax: ~.s" (->disp 'id)))
          ...))
 
 (provide !procedure* !procedure)
@@ -703,9 +703,9 @@
      (let ([ar  arity]
            [val ((submission-eval) `expr)])
        (unless (procedure? val)
-         (error* "~e is expected to be bound to a procedure" (->disp 'expr)))
+         (error* "~.s is expected to be bound to a procedure" (->disp 'expr)))
        (unless (procedure-arity-includes? val ar)
-         (error* "~e is expected to be bound to a procedure of ~s arguments"
+         (error* "~.s is expected to be bound to a procedure of ~s arguments"
                  (->disp 'expr) ar)))]))
 (define-syntax !procedure
   (syntax-rules ()
@@ -715,7 +715,7 @@
 (provide !integer* !integer)
 (define-syntax-rule (!integer* expr)
   (unless (integer? ((submission-eval) `expr))
-    (error* "~e is expected to be bound to an integer" (->disp 'expr))))
+    (error* "~.s is expected to be bound to an integer" (->disp 'expr))))
 (define-syntax-rule (!integer id)
   (begin (!defined id) (!integer* id)))
 
@@ -727,12 +727,12 @@
   (syntax-rules ()
     [(_ expr)
      (unless ((submission-eval) `expr)
-       (error* "your code failed a test: ~e is false" (->disp 'expr)))]
+       (error* "your code failed a test: ~.s is false" (->disp 'expr)))]
     [(_ expr result) (!test expr result equal?)]
     [(_ expr result equal?)
      (let ([val ((submission-eval) `expr)])
        (unless (equal? result val)
-         (error* "your code failed a test: ~e evaluated to ~e, expecting ~e"
+         (error* "your code failed a test: ~.s evaluated to ~e, expecting ~e"
                  (->disp 'expr) (->disp val) (->disp result))))]))
 
 (provide !test/exn)
