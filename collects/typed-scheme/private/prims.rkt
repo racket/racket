@@ -624,3 +624,22 @@ This file defines two sorts of primitives. All of them are provided into any mod
        [(_ (~var k (param-annotated-name (lambda (s) #`(#,s -> (U))))) . body)
 	(quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
+
+(define-syntax (with-asserts stx)
+  (define-syntax-class with-asserts-clause
+    [pattern [x:id]
+             #:with cond-clause
+             (syntax/loc #'x
+               [(not x)
+                (error "Assertion failed")])]
+    [pattern [x:id pred]
+             #:with cond-clause
+             (syntax/loc #'x
+               [(not (pred x))
+                (error "Assertion failed")])])
+   (syntax-parse stx
+     [(_ (c:with-asserts-clause ...) body:expr ...+)
+      (syntax/loc stx
+        (cond c.cond-clause
+              ...
+              [else body ...]))]))
