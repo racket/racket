@@ -2816,36 +2816,60 @@ static int is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
       int i;
       if (!is_liftable_prim(app->args[0]))
         return 0;
-      if (bind_count >= 0)
-        bind_count += app->num_args;
+      if (0) /* not resolved, yet */
+        if (bind_count >= 0)
+          bind_count += app->num_args;
       for (i = app->num_args + 1; i--; ) {
 	if (!is_liftable(app->args[i], bind_count, fuel - 1, 1))
 	  return 0;
       }
       return 1;
     }
+    break;
   case scheme_application2_type:
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
       if (!is_liftable_prim(app->rator))
         return 0;
-      if (bind_count >= 0)
-        bind_count += 1;
+      if (0) /* not resolved, yet */
+        if (bind_count >= 0)
+          bind_count += 1;
       if (is_liftable(app->rator, bind_count, fuel - 1, 1)
 	  && is_liftable(app->rand, bind_count, fuel - 1, 1))
 	return 1;
     }
+    break;
   case scheme_application3_type:
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
       if (!is_liftable_prim(app->rator))
         return 0;
-      if (bind_count >= 0)
-        bind_count += 2;
+      if (0) /* not resolved, yet */
+        if (bind_count >= 0)
+          bind_count += 2;
       if (is_liftable(app->rator, bind_count, fuel - 1, 1)
 	  && is_liftable(app->rand1, bind_count, fuel - 1, 1)
 	  && is_liftable(app->rand2, bind_count, fuel - 1, 1))
 	return 1;
+    }
+    break;
+  case scheme_compiled_let_void_type:
+    {
+      Scheme_Let_Header *lh = (Scheme_Let_Header *)o;
+      int i;
+      int post_bind = !(SCHEME_LET_FLAGS(lh) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
+
+      if (post_bind) {
+        o = lh->body;
+        for (i = lh->num_clauses; i--; ) {
+          if (!is_liftable(((Scheme_Compiled_Let_Value *)o)->value, bind_count, fuel - 1, as_rator))
+            return 0;
+          o = ((Scheme_Compiled_Let_Value *)o)->body;
+        }
+        if (is_liftable(o, bind_count + lh->count, fuel - 1, as_rator))
+          return 1;
+      }
+      break;
     }
   default:
     if (t > _scheme_compiled_values_types_)
