@@ -32,17 +32,11 @@
 ;; complex operations
 (define-syntax-class unboxed-inexact-complex-opt-expr
 
-  ;; special handling of reals inside complex operations
-  (pattern e:float-coerce-expr
-           #:with real-binding (unboxed-gensym 'unboxed-float-)
-           #:with imag-binding #f
-           #:with (bindings ...)
-           #`(((real-binding) e.opt)))
-  
   (pattern (#%plain-app (~and op (~literal +))
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
+           #:when (isoftype? this-syntax -InexactComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -67,6 +61,7 @@
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
+           #:when (isoftype? this-syntax -InexactComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -94,6 +89,7 @@
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
+           #:when (isoftype? this-syntax -InexactComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -142,6 +138,7 @@
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
+           #:when (isoftype? this-syntax -InexactComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with reals (map (lambda (x) (if (syntax->datum x) x #'0.0))
@@ -209,13 +206,31 @@
                                               res)]))))))))
 
   (pattern (#%plain-app (~and op (~literal conjugate)) c:unboxed-inexact-complex-opt-expr)
+           #:when (isoftype? this-syntax -InexactComplex)
            #:with real-binding #'c.real-binding
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
            (begin (log-optimization "unboxed unary inexact complex" #'op)
                   #`(#,@(append (syntax->list #'(c.bindings ...))
                                 (list #'((imag-binding) (unsafe-fl- 0.0 c.imag-binding)))))))
-
+  
+  (pattern (#%plain-app (~and op (~literal magnitude)) c:unboxed-inexact-complex-opt-expr)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding #f
+           #:with (bindings ...)
+           (begin (log-optimization "unboxed unary inexact complex" #'op)
+                  #`(c.bindings ...
+                     ((real-binding) (unsafe-flsqrt 
+                                      (unsafe-fl+ (unsafe-fl* c.real-binding c.real-binding) 
+                                                  (unsafe-fl* c.imag-binding c.imag-binding)))))))
+  
+  ;; special handling of reals inside complex operations
+  (pattern e:float-coerce-expr
+           #:with real-binding (unboxed-gensym 'unboxed-float-)
+           #:with imag-binding #f
+           #:with (bindings ...)
+           #`(((real-binding) e.opt)))
+  
   (pattern (#%plain-app (~and op (~or (~literal real-part) (~literal unsafe-flreal-part)))
                         c:unboxed-inexact-complex-opt-expr)
            #:with real-binding #'c.real-binding
@@ -319,6 +334,11 @@
 (define-syntax-class inexact-complex-op
   (pattern (~or (~literal +) (~literal -) (~literal *) (~literal /) (~literal conjugate))))
 
+(define-syntax-class inexact-complex->float-op
+  (pattern (~or (~literal magnitude)
+                (~literal real-part) (~literal flreal-part) (~literal unsafe-flreal-part)
+                (~literal imag-part) (~literal flimag-part) (~literal unsafe-flimag-part))))
+
 (define-syntax-class inexact-complex-expr
   (pattern e:expr
            #:when (isoftype? #'e -InexactComplex)
@@ -376,8 +396,7 @@
                   #'(unsafe-make-flrectangular real-binding imag-binding)))
   
   (pattern e:inexact-complex-arith-opt-expr
-           #:with opt
-           #'e.opt))
+           #:with opt #'e.opt))
 
 (define-syntax-class inexact-complex-arith-opt-expr
   (pattern (~and exp (#%plain-app op:inexact-complex-op e:expr ...))
@@ -390,7 +409,19 @@
            (begin (log-optimization "unboxed inexact complex" #'exp)
                   (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
-                      (unsafe-make-flrectangular exp*.real-binding exp*.imag-binding)))))
+                      (unsafe-make-flrectangular exp*.real-binding exp*.imag-binding))))
+  
+  (pattern (~and exp (#%plain-app op:inexact-complex->float-op e:expr ...))
+           #:when (subtypeof? #'exp -Flonum)
+           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+           #:with real-binding #'exp*.real-binding
+           #:with imag-binding #f
+           #:with (bindings ...) #'(exp*.bindings ...)
+           #:with opt
+           (begin (log-optimization "unboxed inexact complex->float" #'exp)
+                  (reset-unboxed-gensym)
+                  #'(let*-values (exp*.bindings ...)
+                      real-binding))))
 
 ;; takes as argument a structure describing which arguments will be unboxed
 ;; and the optimized version of the operator. operators are optimized elsewhere

@@ -24,7 +24,8 @@
          (for ([x (in-range N)])
            (bytes-set! bstr x (mandelbrot-point x y)))
          bstr)))))
-#;
-(for: ([f : (Futureof Bytes) (in-list fs)])
-  (write-bytes (touch f))
-  (newline))
+
+(lambda ()
+  (for: ([f : (Futureof Bytes) (in-list fs)])
+    (write-bytes (touch f))
+    (newline)))
