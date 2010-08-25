@@ -242,9 +242,22 @@
              (list (hash-has-key? ht 'a)
                    (begin (hash-remove! ht 'a)
                           (hash-has-key? ht 'a)))))
+(htdp-err/rt-test
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (list (hash-has-key? ht 'a)
+                   (begin (hash-remove ht 'a)
+                          (hash-has-key? ht 'a)))))
 (htdp-test 2 'hash-set!
            (local [(define ht (make-hash (list (list 'a 1))))]
              (begin (hash-set! ht 'a 2)
+                    (hash-ref ht 'a))))
+(htdp-err/rt-test
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (begin (hash-set ht 'a 2)
+                    (hash-ref ht 'a))))
+(htdp-err/rt-test
+           (local [(define ht (make-hash (list (list 'a 1))))]
+             (begin (hash-update ht 'a add1)
                     (hash-ref ht 'a))))
 (htdp-test 2 'hash-update!
            (local [(define ht (make-hash (list (list 'a 1))))]
@@ -290,6 +303,90 @@
            (hash-eqv? (make-hasheq (list (list 'a 1)))))
 (htdp-test #t 'hash-eqv?
            (hash-eqv? (make-hasheqv (list (list 'a 1)))))
+
+;; immutable tests
+(htdp-test 1 'hash-copy
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))
+                   (define htp (hash-copy ht))]
+             (hash-ref htp 'a)))
+(htdp-test 1 'hash-count (hash-count (make-immutable-hash (list (list 'a 1)))))
+(htdp-test 42 'hash-for-each 
+           (local [(define x 0)
+                   (define (f k v) (set! x 42))]
+             (begin (hash-for-each (make-immutable-hash (list (list 1 2))) f)
+                    x)))
+(htdp-test #t 'hash-has-key? (hash-has-key? (make-immutable-hash (list (list 1 2))) 1))
+(htdp-test #f 'hash-has-key? (hash-has-key? (make-immutable-hash (list (list 1 2))) 2))
+(htdp-test (list #f #f) 'hash-map
+           (hash-map (make-immutable-hash (list (list 1 #t) (list 2 #t)))
+                     (lambda (k v) (not v))))
+(htdp-test 1 'hash-ref (hash-ref (make-immutable-hash (list (list 'a 1))) 'a))
+(htdp-test 2 'hash-ref (hash-ref (make-immutable-hash (list (list 'a 1))) 'b 2))
+(htdp-test 2 'hash-ref (hash-ref (make-immutable-hash (list (list 'a 1))) 'b (lambda () 2)))
+(htdp-err/rt-test
+             (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+               (hash-ref! ht 'a 2)))
+(htdp-err/rt-test 
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+             (list (hash-has-key? ht 'a)
+                   (begin (hash-remove! ht 'a)
+                          (hash-has-key? ht 'a)))))
+(htdp-test (list #t #f) 'hash-remove
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+             (list (hash-has-key? ht 'a)
+                   (hash-has-key? (hash-remove ht 'a) 'a))))
+(htdp-err/rt-test
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+             (begin (hash-set! ht 'a 2)
+                    (hash-ref ht 'a))))
+(htdp-test 2 'hash-set
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+             (hash-ref (hash-set ht 'a 2) 'a)))
+(htdp-err/rt-test
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+             (begin (hash-update! ht 'a add1)
+                    (hash-ref ht 'a))))
+(htdp-test 2 'hash-update
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+             (hash-ref (hash-update ht 'a add1) 'a)))
+(htdp-test 2 'hash-update
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+             (hash-ref (hash-update ht 'b add1 1) 'b)))
+(htdp-test 2 'hash-update
+           (local [(define ht (make-immutable-hash (list (list 'a 1))))]
+             (hash-ref (hash-update ht 'b add1 (lambda () 1)) 'b)))
+(htdp-test #t 'hash?
+           (hash? (make-immutable-hash)))
+(htdp-test #t 'hash?
+           (hash? (make-immutable-hasheq)))
+(htdp-test #t 'hash?
+           (hash? (make-immutable-hasheqv)))
+(htdp-test #t 'hash?
+           (hash? (make-immutable-hash (list (list 'a 1)))))
+(htdp-test #t 'hash?
+           (hash? (make-immutable-hasheq (list (list 'a 1)))))
+(htdp-test #t 'hash?
+           (hash? (make-immutable-hasheqv (list (list 'a 1)))))
+(htdp-test #f 'hash?
+           (hash? 1))
+(htdp-test #t 'hash-equal?
+           (hash-equal? (make-immutable-hash (list (list 'a 1)))))
+(htdp-test #f 'hash-equal?
+           (hash-equal? (make-immutable-hasheq (list (list 'a 1)))))
+(htdp-test #f 'hash-equal?
+           (hash-equal? (make-immutable-hasheqv (list (list 'a 1)))))
+(htdp-test #f 'hash-eq?
+           (hash-eq? (make-immutable-hash (list (list 'a 1)))))
+(htdp-test #t 'hash-eq?
+           (hash-eq? (make-immutable-hasheq (list (list 'a 1)))))
+(htdp-test #f 'hash-eq?
+           (hash-eq? (make-immutable-hasheqv (list (list 'a 1)))))
+(htdp-test #f 'hash-eqv?
+           (hash-eqv? (make-immutable-hash (list (list 'a 1)))))
+(htdp-test #f 'hash-eqv?
+           (hash-eqv? (make-immutable-hasheq (list (list 'a 1)))))
+(htdp-test #t 'hash-eqv?
+           (hash-eqv? (make-immutable-hasheqv (list (list 'a 1)))))
 
 ;; Check set...! error message:
 (htdp-top (define-struct a1 (b)))

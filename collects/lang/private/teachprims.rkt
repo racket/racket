@@ -357,6 +357,18 @@ namespace.
   (lambda ([a empty])
     (make-hasheqv (map (lambda (l) (cons (first l) (second l))) a))))
 
+(define-teach advanced make-immutable-hash
+  (lambda ([a empty])
+    (make-immutable-hash (map (lambda (l) (cons (first l) (second l))) a))))
+
+(define-teach advanced make-immutable-hasheq
+  (lambda ([a empty])
+    (make-immutable-hasheq (map (lambda (l) (cons (first l) (second l))) a))))
+
+(define-teach advanced make-immutable-hasheqv
+  (lambda ([a empty])
+    (make-immutable-hasheqv (map (lambda (l) (cons (first l) (second l))) a))))
+
 (provide  
  false?
  beginner-not
@@ -390,6 +402,9 @@ namespace.
  advanced-make-hash
  advanced-make-hasheq
  advanced-make-hasheqv
+ advanced-make-immutable-hash
+ advanced-make-immutable-hasheq
+ advanced-make-immutable-hasheqv
  cyclic-list?)
 
 ;; -----------------------------------------------------------------------------
