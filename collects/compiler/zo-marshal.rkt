@@ -10,8 +10,7 @@
          racket/dict
          racket/function
          racket/pretty
-         racket/path
-         racket/set)
+         racket/path)
 
 (provide/contract
  [zo-marshal (compilation-top? . -> . bytes?)]
@@ -24,36 +23,8 @@
   (zo-marshal-to top bs)
   (get-output-bytes bs))
 
-; ((obj -> (or pos #f)) output-port -> number) -> vector
-; calculates what values show up in the compilation top more than once
-; closures are always included even if they only show up once
-(define (create-symbol-table out-compilation-top)
-  (define encountered (make-hash))
-  (define shared (make-hash))
-  (define (encountered? v)
-    (hash-ref encountered v #f))
-  (define (encounter! v)
-    (hash-set! encountered v #t) 
-    #f)
-  (define (shared-obj-pos v)
-    (hash-ref shared v #f))
-  (define (share! v)
-    (or (shared-obj-pos v)
-        (let ([pos (add1 (hash-count shared))])
-          (hash-set! shared v pos) 
-          pos)))
-  
-  (out-compilation-top 
-   (λ (v)
-     (if (or (closure? v)
-             (encountered? v))
-         (share! v)
-         (encounter! v)))
-   (open-output-nowhere))
-  
-  (define symbol-table (make-vector (hash-count shared) (not-ready)))
-  (hash-map shared (λ (k v) (vector-set! symbol-table (sub1 v) k)))
-  (values symbol-table shared-obj-pos))
+(define (got-here n)
+  (void) #;(printf "got here: ~a~n" n))
 
 (define (zo-marshal-to top outp) 
   
@@ -71,14 +42,51 @@
     (out-anything ct (make-out outp shared-obj-pos wrapped))
     (file-position outp))
   
-  (define-values (symbol-table shared-obj-pos) (create-symbol-table out-compilation-top))
+  ; -> vector
+  ; calculates what values show up in the compilation top more than once
+  ; closures are always included even if they only show up once
+  (define (create-symbol-table)
+    (define encountered (make-hash))
+    (define shared (make-hash))
+    (define (encountered? v)
+      (hash-ref encountered v #f))
+    (define (encounter! v)
+      (hash-set! encountered v #t) 
+      #f)
+    (define (shared-obj-pos v #:share [share? #t])
+      (hash-ref shared v #f))
+    (define (share! v)
+      (or (shared-obj-pos v)
+          (let ([pos (add1 (hash-count shared))])
+            (hash-set! shared v pos) 
+            pos)))
+    
+    (out-compilation-top 
+     (λ (v #:share [share? #t])
+       (and share?
+            (if (or (closure? v)
+                    (encountered? v))
+            (share! v)
+            (encounter! v))))
+     (open-output-nowhere))
+    
+    (define symbol-table (make-vector (hash-count shared) (not-ready)))
+    (hash-map shared (λ (k v) (vector-set! symbol-table (sub1 v) k)))
+    (values symbol-table shared-obj-pos))
+  
+  (got-here 1)
+  (define-values (symbol-table shared-obj-pos) (create-symbol-table))
+  (got-here 2)
+  #;(for ([v (in-vector symbol-table)])
+    (printf "v = ~a~n" v))
+  
   ; vector output-port -> (listof number) number
   ; writes symbol-table to outp
   ; returns the file positions of each value in the symbol table and the end of the symbol table
   (define (out-symbol-table symbol-table outp)
     (define (shared-obj-pos/modulo-v v)
       (define skip? #t)
-      (λ (v2)
+      (λ (v2 #:share [share? #t])
         (if (and skip? (eq? v v2) (not (closure? v2)))
             (begin
               (set! skip? #f)
@@ -94,7 +102,9 @@
   ; Calculate file positions
   (define counting-port (open-output-nowhere))
   (define-values (offsets post-shared) (out-symbol-table symbol-table counting-port))
+  (got-here 3)
   (define all-forms-length (out-compilation-top shared-obj-pos counting-port))
+  (got-here 4)
   ; Write the compiled form header
   (write-bytes #"#~" outp)
   
@@ -115,10 +125,12 @@
   (write-bytes (int->bytes post-shared) outp)
   ; This is where the file should end
   (write-bytes (int->bytes all-forms-length) outp)
-  
+  (got-here 5)
   ; Actually write the zo
   (out-symbol-table symbol-table outp)
+  (got-here 6)
   (out-compilation-top shared-obj-pos outp)
+  (got-here 7)
   (void))
 
 ;; ----------------------------------------
@@ -430,7 +442,7 @@
 (define quoting? (make-parameter #f))
 
 (define (shareable? v)
-  (not (or quoting? (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void?))))
+  (not (or (quoting?) (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void?))))
 
 (define (maybe-same-as-fixnum? v)
   (and (exact-integer? v)
@@ -631,7 +643,9 @@
               (begin
                 (out-byte CPT_APPLICATION out)
                 (out-number len out)))
-          (for-each (lambda (e) (out-anything (protect-quote e) out))
+          (for-each (lambda (e)
+                      #;(printf "here: ~a~n" e) 
+                      (out-anything (protect-quote e) out))
                     (cons rator rands)))]
        [(struct apply-values (proc args-expr))
         (out-syntax APPVALS_EXPD
@@ -693,14 +707,14 @@
         (out-anything (unbox v) out)]
        [(? pair?)
         (define (list-length-before-cycle/improper-end l)
-          (let loop ([len 1] [l (cdr l)] [seen (set)])
+          (let loop ([len 1] [l (cdr l)])
             (cond 
-              [(set-member? seen l)
+              [((out-shared-index out) l #:share #f)
                (values len #f)]
               [(null? l)
                (values len #t)]
               [(pair? l)
-               (loop (add1 len) (cdr l) (set-add seen l))]
+               (loop (add1 len) (cdr l))]
               [else
                (values len #f)])))
         (define-values (len proper?) (list-length-before-cycle/improper-end v))
@@ -740,7 +754,7 @@
         (out-number (cond
                       [(hash-eqv? v) 2]
                       [(hash-eq? v) 0]
-                      [else 1])
+                      [(hash-equal? v) 1])
                     out)
         (out-number (hash-count v) out)
         (for ([(k v) (in-hash v)])
@@ -891,7 +905,7 @@
 
 
 (define (lookup-encoded-wrapped w out)
-  (hash-ref (out-encoded-wraps out) w
+  (hash-ref! (out-encoded-wraps out) w
             (λ ()
               (encode-wrapped w))))
 
@@ -955,7 +969,7 @@
 (define-struct quoted (v))
 
 (define (protect-quote v)
-  (if (or (pair? v) (vector? v) (prefab-struct-key v) (box? v) (hash? v) (svector? v))
+  (if (or (pair? v) (vector? v) (and (not zo?) (prefab-struct-key v)) (box? v) (hash? v) (svector? v))
       (make-quoted v)
       v))
 

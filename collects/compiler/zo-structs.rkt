@@ -22,17 +22,20 @@
 
 (define-syntax-rule (define-form-struct* id id+par ([field-id field-contract] ...))
   (begin
-    (define-struct id+par (field-id ...))
+    (define-struct id+par (field-id ...) #:prefab)
     #;(provide (struct-out id))
     (provide/contract
      [struct id ([field-id field-contract] ...)])))
+
+(define-struct zo () #:prefab)
+(provide zo?)
 
 (define-syntax define-form-struct
   (syntax-rules ()
     [(_ (id sup) . rest)
      (define-form-struct* id (id sup) . rest)]
     [(_ id . rest)
-     (define-form-struct* id id . rest)]))
+     (define-form-struct* id (id zo) . rest)]))
 
 ;; In toplevels of resove prefix:
 (define-form-struct global-bucket ([name symbol?])) ; top-level binding
@@ -77,7 +80,8 @@
 (define-form-struct (expr form) ())
 
 ;; A static closure can refer directly to itself, creating a cycle
-(define-struct indirect ([v #:mutable]) #:prefab)
+; XXX: this might not be needed anymore with the current sharing model
+(define-struct (indirect zo) ([v #:mutable]) #:prefab)
 
 (define-form-struct compilation-top ([max-let-depth exact-nonnegative-integer?] [prefix prefix?] [code (or/c form? indirect? any/c)])) ; compiled code always wrapped with this
 

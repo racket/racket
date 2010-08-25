@@ -17,8 +17,31 @@
 
 (define mpi (module-path-index-join #f #f))
 
+
 (test
+ #;(roundtrip
+  (compilation-top 0 
+                   (prefix 0 empty empty)
+                   (list 1 (list 2 3) (list 2 3) 4 5)))
  (roundtrip
+  (compilation-top 0 
+                   (prefix 0 empty empty)
+                   (let* ([ph (make-placeholder #f)]
+                          [x (closure 
+                              (lam 'name
+                                   empty
+                                   0 
+                                   empty
+                                   #f
+                                   #()
+                                   empty
+                                   0
+                                   ph)
+                              (gensym))])
+                     (placeholder-set! ph x)
+                     (make-reader-graph x))))
+                     
+ #;(roundtrip
   (compilation-top
     0
     (prefix 0 (list #f) (list))
