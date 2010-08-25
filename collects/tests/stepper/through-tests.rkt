@@ -55,7 +55,7 @@
   (let ([maybe-test (assq name list-of-tests)])
     (if maybe-test
         (run-one-test/helper maybe-test)
-        (error 'run-test "test not found: ~e" name))))
+        (error 'run-test "test not found: ~.s" name))))
 
 (define (run-tests names)
   (ormap/no-shortcut run-test names))

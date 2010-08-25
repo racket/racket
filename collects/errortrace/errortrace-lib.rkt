@@ -356,12 +356,11 @@
               [line (syntax-line stx)]
               [col (syntax-column stx)]
               [pos (syntax-position stx)])
-         (fprintf p "~a~a: ~e~n"
+         (fprintf p "~a~a: ~.s\n"
                   (or file "[unknown source]")
-                  (cond
-                    [line (format ":~a:~a" line col)]
-                    [pos (format "::~a" pos)]
-                    [else ""])
+                  (cond [line (format ":~a:~a" line col)]
+                        [pos (format "::~a" pos)]
+                        [else ""])
                   (syntax->datum stx))
          (loop (- n 1) (cdr l)))])))
 

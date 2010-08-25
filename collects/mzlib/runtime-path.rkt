@@ -85,7 +85,7 @@
                                    (null? (cdr strs)))
                               (list "mzlib")
                               (append (cddr p) (drop-right strs 1)))))]
-                [else (error 'runtime-path "unknown form: ~e" p)])))
+                [else (error 'runtime-path "unknown form: ~.s" p)])))
            paths)))
   
   (define-for-syntax (register-ext-files tag-stx paths)

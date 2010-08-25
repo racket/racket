@@ -331,7 +331,7 @@
                                 #`((if (and in-seen? in-keys?)
                                      #,(if allow-duplicate-keys?
                                          #`seen-keys
-                                         #`(error* 'name "duplicate keyword: ~e"
+                                         #`(error* 'name "duplicate keyword: ~.s"
                                                    (car body*)))
                                      (cons (car body*) seen-keys)))
                                 '()))])
@@ -343,12 +343,12 @@
                           nl
                           #`(if in-keys?
                               #,nl
-                              (error* 'name "unknown keyword: ~e"
+                              (error* 'name "unknown keyword: ~.s"
                                       (car body*)))))]
                  [(not allow-other-keys?)
                   #`(if (memq (car body*) 'keywords)
                       #,nl
-                      (error* 'name "unknown keyword: ~e"
+                      (error* 'name "unknown keyword: ~.s"
                               (car body*)))]
                  [else nl]))]
              [expr
@@ -381,7 +381,7 @@
                       #'next-loop
                       #'(if (pair? (cdr body*))
                           next-loop
-                          (error* 'name "keyword list not balanced: ~e" rest*)))
+                          (error* 'name "keyword list not balanced: ~.s" rest*)))
                   #,(if allow-body?
                       (if (and body (not (identifier? body)))
                         (with-syntax ([name (string->symbol
@@ -395,7 +395,7 @@
                         #'expr)
                       #'(if (null? body*)
                           expr
-                          (error* 'name "expecting a ~s keyword got: ~e"
+                          (error* 'name "expecting a ~s keyword got: ~.s"
                                   'keywords (car body*))))))))))
     ;; ------------------------------------------------------------------------
     ;; generates the loop that turns flags to #t's
@@ -456,7 +456,7 @@
           (syntax/loc stx
             (lambda vars
               (if (and (pair? body) (keyword? (car body)))
-                (error* 'name "unknown keyword: ~e" (car body))
+                (error* 'name "unknown keyword: ~.s" (car body))
                 expr)))))]
      ;; no keys => make a case-lambda for optionals
      [(and (null? keys) (not (or body allow-other-keys?)))

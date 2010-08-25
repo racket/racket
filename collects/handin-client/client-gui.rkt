@@ -273,10 +273,8 @@
        (lambda ()
          (let* ([msg (if (exn? exn)
                        (let ([s (exn-message exn)])
-                         (if (string? s)
-                           s
-                           (format "~e" s)))
-                       (format "~e" exn))]
+                         (if (string? s) s (format "~.s" s)))
+                       (format "~.s" exn))]
                 [retry? (regexp-match #rx"bad username or password for" msg)])
            (custodian-shutdown-all comm-cust)
            (set! committing? #f)
@@ -541,8 +539,8 @@
            (message-box
             "Server Error"
             (if (exn? exn)
-              (let ([s (exn-message exn)]) (if (string? s) s (format "~e" s)))
-              (format "~e" exn))
+              (let ([s (exn-message exn)]) (if (string? s) s (format "~.s" s)))
+              (format "~.s" exn))
             this)
            (set! comm-cust (make-custodian))))))
 

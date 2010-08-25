@@ -423,7 +423,7 @@
        ;; first.
        => (lambda (p)
             (make-cached (apply p (map primitive-spec->filter (cdr spec)))))]
-      [else (error 'primitive-spec->filter "bad spec: ~e" spec)])))
+      [else (error 'primitive-spec->filter "bad spec: ~.s" spec)])))
 
 ;; Toplevel entry point for converting a spec into a tree predicate function.
 (define (spec->filter spec)
@@ -431,7 +431,7 @@
     (if (= 1 (length specs))
       (primitive-spec->filter (car specs))
       (error 'spec->filter
-             "spec `~e' did not expand to a single expression: ~e"
+             "spec `~.s' did not expand to a single expression: ~.s"
              spec specs))))
 
 ;;; ===========================================================================

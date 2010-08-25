@@ -173,7 +173,8 @@ Keywords for configuring @scheme[check:]:
   report an error that occurred during evaluation of the submitted
   code (not during additional tests).  It can be a plain string which
   will be used as the error message, or a string with single a
-  @scheme["~a"] (or @scheme["~e"], @scheme["~s"], @scheme["~v"]) that
+  @scheme["~a"] (or @scheme["~s"], @scheme["~v"], @scheme["~e"],
+  or @scheme["~.a"] etc) that
   will be used as a format string with the actual error message.  The
   default is @scheme["Error in your code --\n~a"].  Useful examples of
   these messages:

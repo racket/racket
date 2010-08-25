@@ -50,7 +50,7 @@
                 (λ (opt/i opt/info stx)
                   expr ...)))
              (void))
-         (error 'define/opter "expected opter name to be an identifier, got ~e" (syntax-e #'for)))]))
+         (error 'define/opter "expected opter name to be an identifier, got ~.s" (syntax-e #'for)))]))
 
 ;;
 ;; opt/recursive-call

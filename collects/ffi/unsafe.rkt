@@ -502,7 +502,7 @@
        (lambda (k)
          (cond [(assq k ks) => cdr]
                [(assq k _fun-keywords) => cadr]
-               [else (error '_fun "internal error: unknown keyword: ~e" k)]))
+               [else (error '_fun "internal error: unknown keyword: ~.s" k)]))
        (lambda (k-stx v [sub k-stx])
          (let ([k (if (syntax? k-stx) (syntax-e k-stx) k-stx)])
            (cond [(assq k ks)

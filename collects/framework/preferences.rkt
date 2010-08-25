@@ -141,7 +141,7 @@ the state transitions / contracts are:
         (let ([default (hash-ref defaults p)])
           (unless ((default-checker default) value)
             (error 'preferences:set
-                   "tried to set preference ~e to ~e but it does not meet test from preferences:set-default"
+                   "tried to set preference ~e to ~e but it does not meet test from `preferences:set-default'"
                    p value))
           (check-callbacks p value)
           (hash-set! preferences p value))]

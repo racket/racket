@@ -441,7 +441,7 @@
             (let ([l (syntax->list c)]
                   [h? highlight?])
               (unless (and l (= 2 (length l)))
-                (error "bad code:redex: ~e" (syntax->datum c)))
+                (error "bad code:redex: ~.s" (syntax->datum c)))
               (advance c init-line!)
               (set! src-col (syntax-column (cadr l)))
               (hash-set! next-col-map src-col dest-col)

@@ -674,7 +674,7 @@
                             (error* "missing binding: ~.s" (->disp 'id)))]
                          [exn:fail:syntax?
                           (lambda (_)
-                            (error* "bound to a syntax, expecting a value: ~e"
+                            (error* "bound to a syntax, expecting a value: ~.s"
                                     (->disp 'id)))])
            (parameterize ([current-namespace (get-namespace (submission-eval))])
              (namespace-variable-value `id)))
@@ -698,7 +698,7 @@
   (syntax-rules ()
     [(_ expr)
      (unless (procedure? ((submission-eval) `expr))
-       (error* "~e is expected to be bound to a procedure" (->disp 'expr)))]
+       (error* "~.s is expected to be bound to a procedure" (->disp 'expr)))]
     [(_ expr arity)
      (let ([ar  arity]
            [val ((submission-eval) `expr)])

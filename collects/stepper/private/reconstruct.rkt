@@ -180,7 +180,7 @@
                                                    ([non-lexical]
                                                     varref)
                                                    (else
-                                                    (error 'varref-skip-step? "unexpected value for stepper-binding-type: ~e for variable: ~e\n"
+                                                    (error 'varref-skip-step? "unexpected value for stepper-binding-type: ~e for variable: ~.s\n"
                                                            (stepper-syntax-property varref 'stepper-binding-type)
                                                            varref))))))))
     
@@ -931,7 +931,7 @@
                                                (apply append (map syntax->list (syntax->list #`(vars ...))))]
                                               [(let-values ([vars . rest] ...) . bodies)
                                                (apply append (map syntax->list (syntax->list #`(vars ...))))]
-                                              [else (error 'reconstruct "expected a let-values as source for a double-break, got: ~e"
+                                              [else (error 'reconstruct "expected a let-values as source for a double-break, got: ~.s"
                                                            (syntax->datum source-expr))])]
                      [innermost-after (mark-as-highlight (recon-source-expr (mark-source (car mark-list)) mark-list null newly-lifted-bindings render-settings))])
                 (list (recon innermost-before (cdr mark-list) #f)

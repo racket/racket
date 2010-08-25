@@ -9,15 +9,15 @@
   (define make-CLOSURE-box
     (syntax-local-lift-expression
      (quasisyntax/loc stx
-       (box (lambda (env) (error 'make-CLOSURE "Closure<~e> not initialized" '#,label))))))
+       (box (lambda (env) (error 'make-CLOSURE "Closure<~.s> not initialized" '#,label))))))
   (define CLOSURE-set-env!-box
     (syntax-local-lift-expression
      (quasisyntax/loc stx
-       (box (lambda (clsr new-env) (error 'CLOSURE-set-env! "Closure<~e> not initialized" '#,label))))))
+       (box (lambda (clsr new-env) (error 'CLOSURE-set-env! "Closure<~.s> not initialized" '#,label))))))
   (define CLOSURE-env-box
     (syntax-local-lift-expression
      (quasisyntax/loc stx
-       (box (lambda (clsr) (error 'CLOSURE-env "Closure<~e> not initialized" '#,label))))))
+       (box (lambda (clsr) (error 'CLOSURE-env "Closure<~.s> not initialized" '#,label))))))
   ; Define the deserializer (req closure struct values under lambdas)
   (define CLOSURE:deserialize-info-id
     (syntax-local-lift-expression

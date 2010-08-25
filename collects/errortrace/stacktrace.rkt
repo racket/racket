@@ -201,7 +201,7 @@
         
         [_else
          (error 'errortrace
-                "unrecognized (non-top-level) expression form: ~e"
+                "unrecognized (non-top-level) expression form: ~.s"
                 (syntax->datum sexpr))])))
   
   (define (profile-annotate-lambda name expr clause bodys-stx phase)
@@ -564,7 +564,7 @@
                                            annotate phase)))])]
          
          [_else
-          (error 'errortrace "unrecognized expression form~a: ~e"
+          (error 'errortrace "unrecognized expression form~a: ~.s"
                  (if top? " at top-level" "")
                  (syntax->datum expr))])
        expr

@@ -81,7 +81,7 @@
   (with-handlers ([void (lambda (exn)
                           (error (if (exn? exn)
                                    (exn-message exn)
-                                   (format "exception: ~e" exn))))])
+                                   (format "exception: ~.s" exn))))])
     (thunk)))
 
 ;; ----------------------------------------
@@ -119,7 +119,7 @@
                   (with-handlers ([void
                                    (lambda (x)
                                      (error
-                                      (format "instructor-supplied test ~a failed with an error: ~e"
+                                      (format "instructor-supplied test ~a failed with an error: ~.s"
                                               (format-history test)
                                               (exn-message x))))])
                     (let ([val (e `(,f ,@(map value-converter args)))])

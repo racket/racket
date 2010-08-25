@@ -259,7 +259,7 @@
   (if (equal? actual expected)
       #t
       (begin (warn error-box 'not-equal?
-                   "~e:\nactual:   ~e =/= \nexpected: ~e\n  here's the diff: ~e" name actual expected (sexp-diff actual expected))
+                   "~.s:\nactual:   ~e =/= \nexpected: ~e\n  here's the diff: ~e" name actual expected (sexp-diff actual expected))
              #f)))
 
 

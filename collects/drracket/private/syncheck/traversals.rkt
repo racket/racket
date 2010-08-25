@@ -420,7 +420,7 @@
               [_
                (begin
                  #;
-                 (printf "unknown stx: ~e datum: ~e source: ~e\n"
+                 (printf "unknown stx: ~.s datum: ~e source: ~e\n"
                          sexp
                          (and (syntax? sexp)
                               (syntax->datum sexp))

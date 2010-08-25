@@ -192,9 +192,9 @@
             (reverse r)
             (let* ([bin (car bins)] [src (get-tag bin)])
               (cond
-                [(not src) (error 'binaries "no type assigned to `~e'" bin)]
+                [(not src) (error 'binaries "no type assigned to `~.s'" bin)]
                 [(not (= 1 (length src)))
-                 (error 'binaries "bad type assignment for `~e': ~e" bin src)]
+                 (error 'binaries "bad type assignment for `~.s': ~.s" bin src)]
                 [else (loop (cdr bins)
                             (if (memq (car src) r) r (cons (car src) r)))])))))
   (dprintf "Scanning full tgzs")
@@ -374,7 +374,7 @@
     (let ([rx (expand-spec spec)])
       (if (and (pair? rx) (null? (cdr rx)) (string? (car rx)))
         (car rx)
-        (error 'filter-bintree "bad value for ~e: ~e" spec rx))))
+        (error 'filter-bintree "bad value for ~.s: ~e" spec rx))))
   (define keep-pattern  (get-pattern 'binary-keep))
   (define throw-pattern (get-pattern 'binary-throw))
   (define keep-rx  (regexpify-spec (string-append "*" keep-pattern  "*")))

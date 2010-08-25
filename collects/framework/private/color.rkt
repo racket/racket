@@ -918,15 +918,15 @@ added get-regions
          (let* ((x null)
                 (f (λ (a b c) (set! x (cons (list a b c) x)))))
            (send (lexer-state-tokens ls) for-each f)
-           (printf "tokens: ~e~n" (reverse x))
+           (printf "tokens: ~.s~n" (reverse x))
            (set! x null)
            (send (lexer-state-invalid-tokens ls) for-each f)
-           (printf "invalid-tokens: ~e~n" (reverse x))
+           (printf "invalid-tokens: ~.s~n" (reverse x))
            (printf "start-pos: ~a current-pos: ~a invalid-tokens-start ~a~n"
                    (lexer-state-start-pos ls)
                    (lexer-state-current-pos ls)
                    (lexer-state-invalid-tokens-start ls))
-           (printf "parens: ~e~n" (car (send (lexer-state-parens ls) test)))))
+           (printf "parens: ~.s~n" (car (send (lexer-state-parens ls) test)))))
        lexer-states))
     
     ;; ------------------------- Callbacks to Override ----------------------

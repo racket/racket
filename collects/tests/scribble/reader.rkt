@@ -871,7 +871,7 @@ END-OF-TESTS
                  [(column=)   syntax-column]
                  [(position=) syntax-position]
                  [(span=)     syntax-span]
-                 [else (error 'syntax-test "unknown test form: ~e" (car y))])
+                 [else (error 'syntax-test "unknown test form: ~.s" (car y))])
                x)
               (cadr y))
              (check-stx x (cddr y))]

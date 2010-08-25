@@ -269,7 +269,7 @@ corresponds to the unplayed move! that's confusing.
              (update-players-dice (past-color past) (past-roll past))
              (send board-pasteboard set-board (past-board past))
              (send board-pasteboard set-highlighted-squares '() '()))]
-          [else (error 'update-gui "unknown viewing index ~e\n" viewing-index)])
+          [else (error 'update-gui "unknown viewing index ~e" viewing-index)])
         (reset-accept/move-buttons)
         (reset-forw-back-buttons))
       

@@ -650,7 +650,7 @@
                           (lambda (exn)
                             (let ([msg (if (exn? exn)
                                          (exn-message exn)
-                                         (format "~e" exn))])
+                                         (format "~.s" exn))])
                               (kill-watcher)
                               (log-line "ERROR: ~a" msg)
                               (write+flush w msg)

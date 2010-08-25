@@ -120,7 +120,7 @@ path/s is either such a string or a list of them.
   ;; script?
   (fprintf (current-error-port) "warning: ~a\n" (apply format fmt args)))
 
-(define (find-prop who pname [error-message "unknown property: ~e"])
+(define (find-prop who pname [error-message "unknown property: ~.s"])
   (if (prop? pname)
     pname ; might happen when `set-prop!' calls `get-prop'
     (or (for/or ([p (in-list known-props)])
@@ -272,7 +272,7 @@ path/s is either such a string or a list of them.
           [(string? x)
            ;; new path, find the node or create if none
            (loop (tree-find x #t) #f)]
-          [(find-prop #f x "bad datum `~e'")
+          [(find-prop #f x "bad datum `~.s'")
            ;; new prop
            (loop (or tree (malformed "initial property has no path")) x)]
           [else (malformed (format  x))])))
@@ -498,7 +498,8 @@ path/s is either such a string or a list of them.
                (error "can't use more than a single `~s'"))
              xs)))))
    (lambda (cmd)
-     (define (bad) (error 'drdr:command-line "bad command-line value: ~e" cmd))
+     (define (bad)
+       (error 'drdr:command-line "bad command-line value: ~.s" cmd))
      (cond [(not cmd) ""]
            [(not (list? cmd)) (bad)]
            [else (string-join (map (lambda (x)

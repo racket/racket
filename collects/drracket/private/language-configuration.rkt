@@ -86,7 +86,7 @@
         (for-each
          (λ (i<%>)
            (unless (is-a? language i<%>)
-             (error 'drracket:language:add-language "expected language ~e to implement ~e, forgot to use drracket:language:get-default-mixin ?" language i<%>)))
+             (error 'drracket:language:add-language "expected language ~e to implement ~e, forgot to use `drracket:language:get-default-mixin'?" language i<%>)))
          (drracket:language:get-language-extensions))
         
         (ensure-no-duplicate-numbers language languages)
@@ -558,7 +558,7 @@
                            (= (length positions) (length numbers))
                            ((length numbers) . >= . 1))
                 (error 'drracket:language
-                       "languages position and numbers must be lists of strings and numbers, respectively, must have the same length,  and must each contain at least one element, got: ~e ~e"
+                       "languages position and numbers must be lists of strings and numbers, respectively, must have the same length, and must each contain at least one element, got: ~e ~e"
                        positions numbers))
               
               (when (null? (cdr positions))

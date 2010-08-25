@@ -843,7 +843,7 @@
             (names (apply append nameses))
             (dup (check-duplicate-identifier names)))
        (when dup
-         (raise-stx-err (format "duplicate binding for ~e" (syntax-e dup))))
+         (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))))
        (quasisyntax/loc stx
          (provide #,@names))))))
 
@@ -1652,7 +1652,7 @@
             (tmp-bindings (map (λ (s) (map tmarker (map car (car s)))) out-sigs))
             (def-table (make-bound-identifier-mapping)))
        (when dup
-         (raise-stx-err (format "duplicate binding for ~e" (syntax-e dup))))
+         (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))))
        (for-each
         (λ (sig new-xs)
           (for-each 

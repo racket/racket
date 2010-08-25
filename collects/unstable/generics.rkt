@@ -173,7 +173,7 @@
                         ...
                         [(_ new-name method-name)
                          (raise-syntax-error 'define/generic
-                                             (format "~e not a method of ~e"
+                                             (format "~.s not a method of ~.s"
                                                      (syntax->datum #'method-name)
                                                      'generics)
                                              stx

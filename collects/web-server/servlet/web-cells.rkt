@@ -35,7 +35,7 @@
   (hash-ref
    (frame-env (current-frame)) i
    (lambda ()
-     (error 'web-cell "Undefined web-cell: ~e" i))))
+     (error 'web-cell "Undefined web-cell: ~.s" i))))
 
 (define (web-cell-shadow wc nv)
   (update-frame!

@@ -1583,7 +1583,7 @@
 		   (syntax-position stx))])
 	(fprintf (current-output-port) " "))
       (fprintf (current-output-port) 
-	       "~a: ~e~n"
+	       "~a: ~.s~n"
 	       msg
 	       (syntax->datum (send exp sexpr)))))
 
