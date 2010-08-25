@@ -2210,19 +2210,22 @@ typedef struct {
 #define ZERO_SIZED_CLOSUREP(closure) !(closure->code->closure_size)
 
 typedef struct Scheme_Native_Closure_Data {
-  Scheme_Inclhash_Object iso; /* type tag only set when needed, but flags always needed */
-  Scheme_Closed_Prim *code; /* When not yet JITted, this is = to scheme_on_demand_jit_code */
+  Scheme_Inclhash_Object iso; /* type tag only set when needed, but
+                                 flags always needed */
+  Scheme_Closed_Prim *code; /* When not yet JITted, this is = to
+                               scheme_on_demand_jit_code */  
   union {
     void *tail_code;                       /* For non-case-lambda */
     mzshort *arities;                      /* For case-lambda */
   } u;
   void *arity_code;
   mzshort max_let_depth; /* In bytes instead of words */
-  mzshort closure_size; /* if this is negative, then this is a
-                           case-lambda, and the real size is
+  mzshort closure_size; /* If this is negative, then this is a
+                           case-lambda, and the number of cases is 
                            (-closure-size)-1 */
   union {
-    struct Scheme_Closure_Data *orig_code; /* For not-yet-JITted non-case-lambda */
+    struct Scheme_Closure_Data *orig_code; /* For not-yet-JITted
+                                              non-case-lambda */
     Scheme_Object *name;
   } u2;
 #ifdef MZ_PRECISE_GC
