@@ -393,20 +393,29 @@ the process may crash or misbehave.
 If an @scheme[async-apply] procedure is provided, then a Racket
 procedure with the generated procedure type can be applied in a
 foreign thread (i.e., an OS-level thread other than the one used to
-run Racket). In that case, @scheme[async-apply] is applied to a thunk
-that encapsulates the specific callback invocation, and the foreign
-thread blocks until the thunk is called and completes; the thunk must
-be called exactly once, and the callback invocation must return
-normally. The @scheme[async-apply] procedure itself is called in an
-unspecified Racket thread and in atomic mode (see @scheme[atomic?]
-above); its job is to arrange for the thunk to be called in a suitable
-context without blocking in any synchronization. (If the callback is
-known to complete quickly, require no synchronization, and work
-independent of the Racket thread in which it runs, then
-@scheme[async-apply] can apply the thunk directly.) Foreign-thread
-detection to trigger @scheme[async-apply] works only when Racket is
-compiled with OS-level thread support, which is the default for many
-platforms.
+run Racket). The call in the foreign thread is transferred to the
+OS-level thread that runs Racket, but the Racket-level thread (in the
+sense of @racket[thread]) is unspecified; the job of
+@scheme[async-apply] is to arrange for the callback procedure to be
+run in a suitable Racket thread. The @scheme[async-apply] function is
+applied to a thunk that encapsulates the specific callback invocation,
+and the foreign OS-level thread blocks until the thunk is called and
+completes; the thunk must be called exactly once, and the callback
+invocation must return normally. The @scheme[async-apply] procedure
+itself is called in atomic mode (see @scheme[atomic?] above). If the
+callback is known to complete quickly, requires no synchronization,
+and works independent of the Racket thread in which it runs, then
+@scheme[async-apply] can apply the thunk directly. Otherwise,
+@racket[async-apply] must arrange for the thunk to be applied in a
+suitable Racket thread sometime after @racket[async-apply] itself
+returns; if the thunk raises an exception or synchronizes within an
+unsuitable Racket-level thread, it can deadlock or otherwise damage
+the Racket process. Foreign-thread detection to trigger
+@scheme[async-apply] works only when Racket is compiled with OS-level
+thread support, which is the default for many platforms. If a callback
+with an @scheme[async-apply] is called from foreign code in the same
+OS-level thread that runs Racket, then the @scheme[async-apply] wrapper is
+not used.
 
 If @scheme[save-errno] is @scheme['posix], then the value of
 @as-index{@tt{errno}} is saved (specific to the current thread)
