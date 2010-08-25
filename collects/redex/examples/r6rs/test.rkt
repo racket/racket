@@ -23,7 +23,7 @@
       (loop (cdr thelist)))))
 (define-struct (exn:fail:duplicate exn:fail) ())
 
-(define (evaluate reductions t progress? [intermediate-state-test void])
+(define (evaluate reductions t progress? [intermediate-state-test void] #:only-first-answer? [only-first-answer? #f])
   (let ([cache (make-hash)]
         [count 0]
         [results (make-hash)])
@@ -48,6 +48,8 @@
           (cond
             [(null? nexts)
              (hash-set! results t #t)]
+            [only-first-answer?
+             (loop (car nexts) (+ depth 1))]
             [else
              (uniq t nexts)
              (for-each (λ (t) (loop t (+ depth 1)))

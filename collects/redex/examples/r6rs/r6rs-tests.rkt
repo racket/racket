@@ -19,10 +19,11 @@
   (make-r6test `(store () ,t)
                (list `(uncaught-exception (make-cond ,err)))))
 
-(define (run-a-test test verbose?)
-  (unless verbose?
-    (printf ".") 
-    (flush-output))
+(define (run-a-test test verbose? quiet?)
+  (unless quiet?
+    (unless verbose?
+      (printf ".") 
+      (flush-output)))
   (let ([t (r6test-test test)]
         [expected (r6test-expected test)])
     (set! test-count (+ test-count 1))
@@ -37,17 +38,17 @@
       (let* ([results (evaluate reductions
                                 t
                                 (or verbose? 'dots)
-                                (verify-p* t))]
-             [rewritten-results (remove-duplicates (map rewrite-actual results))])
-        (for-each (verify-a* t) results)
-        (unless (set-same? expected rewritten-results equal?)
-          (set! failed-tests (+ failed-tests 1))
-          (unless verbose? 
-            (printf "\ntesting ~s ... " t))
-          (printf "TEST FAILED!~nexpected:~a\nrewritten-received:~a\nreceived:~a\n\n"
-                  (combine-in-lines expected)
-                  (combine-in-lines rewritten-results)
-                  (combine-in-lines results)))))))
+                                (verify-p* t))])
+        (let ([rewritten-results (remove-duplicates (map rewrite-actual results))])
+          (for-each (verify-a* t) results)
+          (unless (set-same? expected rewritten-results equal?)
+            (set! failed-tests (+ failed-tests 1))
+            (unless verbose? 
+              (printf "\ntesting ~s ... " t))
+            (printf "TEST FAILED!~nexpected:~a\nrewritten-received:~a\nreceived:~a\n\n"
+                    (combine-in-lines expected)
+                    (combine-in-lines rewritten-results)
+                    (combine-in-lines results))))))))
 
 (define p*-pattern (redex-match lang p*))
 (define a*-pattern (redex-match lang a*))
@@ -681,7 +682,7 @@
    (make-r6test/v '(car ((lambda (x) (cons x null)) 3)) 3)
    (make-r6test/v '((lambda (x) x) 3) 3)
    (make-r6test/v '((lambda (x y) (- x y)) 6 5) 1)
-   (make-r6test/e '((lambda () (+ x y z)) 3 4 5)
+   (make-r6test/e '((lambda () (+ 1 2 3)) 3 4 5)
                   "arity mismatch")
    (make-r6test/v '((lambda (x y z) (+ x y z)) 3 4 5) 12)
    (make-r6test/v '((lambda (x y) (+ x y)) (+ 1 2) (+ 3 4)) 10)
@@ -2018,40 +2019,88 @@ of digits with deconv-base
 
 (define the-tests (apply append (map cadr the-sets)))
 
-(define (main [verbose? #f])
-  (time
-   (let ()
-     (define first? #t)
-     (define (run-a-set name set)
-       (unless first?
-         (if verbose?
-             (printf "\n\n")
-             (printf "\n")))
-       (if verbose?
-           (printf "~a\n~a tests\n\n" 
-                   (apply string (build-list 60 (λ (i) #\-)))
-                   name)
-           (begin (printf "~a tests " name)
-                  (flush-output)))
-       (set! first? #f)
-       (for-each (λ (x) (run-a-test x verbose?)) set))
+(define (main #:verbose? [verbose? #f] #:compare-with-racket? [compare-with-racket? #f])
+  (cond
+    [compare-with-racket?
+     (let ()
+       
+       (struct test-exp (redex racket set))
+       (define redex-exps '())
+       (define r6-module-bodies '())
+       (define missing 0)
      
-     (set! failed-tests 0)
-     (set! verified-terms 0)
-     (test-fns)
-     (for-each (λ (set) (apply run-a-set set)) the-sets)
-     (unless verbose? (printf "\n"))
-     
-     (if (= 0 failed-tests)
-         (printf "~a tests, all passed\n" test-count)
-         (fprintf (current-error-port) "~a tests, ~a tests failed\n" test-count failed-tests))
-     (printf "verified that ~a terms are p*\n" verified-terms)))
-  (when verbose?
-    (collect-garbage) (collect-garbage) (collect-garbage)
-    (printf "mem ~s\n" (current-memory-use))
-    (let ([v (make-vector 10)])
-      (vector-set-performance-stats! v)
-      (printf "ht searches    ~a\nslots searched ~a\n" (vector-ref v 8) (vector-ref v 9)))))
+       (define (no-bads? x)
+         (define bads '(begin0 make-cond))
+         (let loop ([x x])
+           (cond
+             [(pair? x) (and (loop (car x))
+                             (loop (cdr x)))]
+             [(memq x bads) #f]
+             [else #t])))
+       
+       (for ([set (in-list the-sets)]
+             [i (in-naturals)])
+         (for ([test (in-list (cadr set))]
+               [j (in-naturals)])
+           (match (r6test-test test)
+             [(and `(store () ,exp)
+                   (? no-bads?))
+              (set! r6-module-bodies (cons exp r6-module-bodies))
+              (set! redex-exps (cons (r6test-test test) redex-exps))]
+             [_ (set! missing (+ missing 1))])))
+       
+       (printf "Running ~a tests (skipping ~a)\n" (length redex-exps) missing)
+
+       (define ns (make-base-namespace))
+       
+       ;; initialize the namespace by evaluating a dummy module
+       (parameterize ([current-namespace ns])
+         (eval `(module r6rs-init r6rs (import (rnrs) (rnrs mutable-pairs (6))))))
+
+       (printf "Running in Racket's R6RS mode...\n")
+       (parameterize ([current-namespace ns])
+         (time (eval `(module r6rs-big r6rs (import (rnrs) (rnrs mutable-pairs (6)))
+                        (define null '())
+                        ,@r6-module-bodies))))
+       
+       (printf "Running in the Redex model...\n")
+       (time (for ([test (in-list redex-exps)])
+               (evaluate reductions test #f void
+                         #:only-first-answer? #t))))]
+    [else
+     (time
+      (let ()
+        (define first? #t)
+        (define (run-a-set name set)
+          (unless first?
+            (if verbose?
+                (printf "\n\n")
+                (printf "\n")))
+          (if verbose?
+              (printf "~a\n~a tests\n\n" 
+                      (apply string (build-list 60 (λ (i) #\-)))
+                      name)
+              (begin (printf "~a tests " name)
+                     (flush-output)))
+          (set! first? #f)
+          (for-each (λ (x) (run-a-test x verbose? #f compare-with-racket?)) set))
+        
+        (set! failed-tests 0)
+        (set! verified-terms 0)
+        (test-fns)
+        (for-each (λ (set) (apply run-a-set set)) the-sets)
+        (unless verbose? (printf "\n"))
+        
+        (if (= 0 failed-tests)
+            (printf "~a tests, all passed\n" test-count)
+            (fprintf (current-error-port) "~a tests, ~a tests failed\n" test-count failed-tests))
+        (printf "verified that ~a terms are p*\n" verified-terms)))
+     (when verbose?
+       (collect-garbage) (collect-garbage) (collect-garbage)
+       (printf "mem ~s\n" (current-memory-use))
+       (let ([v (make-vector 10)])
+         (vector-set-performance-stats! v)
+         (printf "ht searches    ~a\nslots searched ~a\n" (vector-ref v 8) (vector-ref v 9))))]))
 
 (provide main
          the-tests
