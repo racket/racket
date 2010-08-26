@@ -39,7 +39,8 @@
 
 (provide/contract
  [serve/servlet (((request? . -> . response/c))
-                 (#:command-line? boolean?
+                 (#:connection-close? boolean?
+                  #:command-line? boolean?
                   #:launch-browser? boolean?
                   #:quit? boolean?
                   #:banner? boolean?
@@ -75,6 +76,8 @@
 
 (define (serve/servlet
          start
+         #:connection-close?
+         [connection-close? #f]
          #:command-line?
          [command-line? #f]
          #:launch-browser?
@@ -172,7 +175,8 @@
       #:indices (list "index.html" "index.htm"))
      (lift:make file-not-found-responder)))
   (serve/launch/wait
-   dispatcher   
+   dispatcher  
+   #:connection-close? connection-close?
    #:launch-path (if launch-browser? servlet-path #f) 
    #:banner? banner?   
    #:listen-ip listen-ip

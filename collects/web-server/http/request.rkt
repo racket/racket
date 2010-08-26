@@ -6,26 +6,27 @@
          web-server/private/connection-manager
          web-server/http/request-structs)
 
+(define read-request/c
+  (connection? 
+   tcp-listen-port?
+   (input-port? . -> . (values string? string?))
+   . -> .
+   (values request? boolean?)))
+
 (provide/contract
  [read-headers (-> input-port? (listof header?))]
+ [rename make-ext:read-request make-read-request
+         (->* () (#:connection-close? boolean?) read-request/c)]
  [rename ext:read-request read-request
-         (connection? 
-          tcp-listen-port?
-          (input-port? . -> . (values string? string?))
-          . -> .
-          (values request? boolean?))])
-
-(define (ext:read-request conn host-port port-addresses)
-  (with-handlers ([exn:fail? (lambda (exn)
-                          (kill-connection! conn)
-                          (raise exn))])
-    (read-request conn host-port port-addresses)))
+         read-request/c])
 
 ;; **************************************************
 ;; read-request: connection number (input-port -> string string) -> request boolean?
 ;; read the request line, and the headers, determine if the connection should
 ;; be closed after servicing the request and build a request structure
-(define (read-request conn host-port port-addresses)
+(define ((make-read-request 
+          #:connection-close? [connection-close? #f])
+         conn host-port port-addresses)
   (define ip 
     (connection-i-port conn))
   (define-values (method uri major minor)
@@ -46,8 +47,23 @@
   (values
    (make-request method uri headers bindings/raw-promise raw-post-data
                  host-ip host-port client-ip)
-   (close-connection? headers major minor
-                      client-ip host-ip)))
+   (or connection-close?
+       (close-connection? headers major minor
+                          client-ip host-ip))))
+
+(define (make-ext:read-request 
+         #:connection-close? [connection-close? #f])
+  (define read-request 
+    (make-read-request #:connection-close? connection-close?))
+  (define (ext:read-request conn host-port port-addresses)
+    (with-handlers ([exn:fail?
+                     (lambda (exn)
+                       (kill-connection! conn)
+                       (raise exn))])
+      (read-request conn host-port port-addresses)))
+  ext:read-request)
+
+(define ext:read-request (make-ext:read-request #:connection-close? #f))
 
 ;; **************************************************
 ;; close-connection?
@@ -153,14 +169,14 @@
   (cond
     [(bytes-ci=? #"GET" meth)
      (values (delay
-              (filter (lambda (x) x)
-                     (map (match-lambda
-                            [(list-rest k v)
-                             (if (and (symbol? k) (string? v))
-                                 (make-binding:form (string->bytes/utf-8 (symbol->string k))
-                                                    (string->bytes/utf-8 v))
-                                 #f)])
-                          (url-query uri))))
+               (filter (lambda (x) x)
+                       (map (match-lambda
+                              [(list-rest k v)
+                               (if (and (symbol? k) (string? v))
+                                   (make-binding:form (string->bytes/utf-8 (symbol->string k))
+                                                      (string->bytes/utf-8 v))
+                                   #f)])
+                            (url-query uri))))
              #f)]
     [(bytes-ci=? #"POST" meth)
      (local
@@ -174,17 +190,17 @@
                 ;     I think this is reasonable because the Content-Type said it would have this format
                 (define bs
                   (map (match-lambda
-                        [(struct mime-part (headers contents))
-                         (define rhs (header-value (headers-assq* #"Content-Disposition" headers)))
-                         (match (list (regexp-match #"filename=(\"([^\"]*)\"|([^ ;]*))" rhs)
-                                      (regexp-match #"[^e]name=(\"([^\"]*)\"|([^ ;]*))" rhs))
-                           [(list #f #f)
-                            (network-error 'reading-bindings "Couldn't extract form field name for file upload")]
-                           [(list #f (list _ _ f0 f1))
-                            (make-binding:form (or f0 f1) (apply bytes-append contents))]
-                           [(list (list _ _ f00 f01) (list _ _ f10 f11))
-                            (make-binding:file (or f10 f11) (or f00 f01) headers (apply bytes-append contents))])])
-                      (read-mime-multipart content-boundary in)))
+                         [(struct mime-part (headers contents))
+                          (define rhs (header-value (headers-assq* #"Content-Disposition" headers)))
+                          (match (list (regexp-match #"filename=(\"([^\"]*)\"|([^ ;]*))" rhs)
+                                       (regexp-match #"[^e]name=(\"([^\"]*)\"|([^ ;]*))" rhs))
+                            [(list #f #f)
+                             (network-error 'reading-bindings "Couldn't extract form field name for file upload")]
+                            [(list #f (list _ _ f0 f1))
+                             (make-binding:form (or f0 f1) (apply bytes-append contents))]
+                            [(list (list _ _ f00 f01) (list _ _ f10 f11))
+                             (make-binding:file (or f10 f11) (or f00 f01) headers (apply bytes-append contents))])])
+                       (read-mime-multipart content-boundary in)))
                 (values
                  (delay bs)
                  #f)])]

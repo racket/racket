@@ -124,6 +124,7 @@ and if @racket[serve/servlet] is run in another module.
 
 @defproc[(serve/servlet [start (request? . -> . response/c)]
                         [#:command-line? command-line? boolean? #f]
+                        [#:connection-close? connection-close? boolean? #f]
                         [#:launch-browser? launch-browser? boolean? (not command-line?)]
                         [#:quit? quit? boolean? (not command-line?)]
                         [#:banner? banner? boolean? (not command-line?)]
@@ -204,6 +205,9 @@ and if @racket[serve/servlet] is run in another module.
 
  If @racket[log-file] is given, then it used to log requests using @racket[log-format] as the format. Allowable formats
  are those allowed by @racket[log-format->format].
+ 
+ If @racket[connection-close?] is @racket[#t], then every connection is closed after one
+ request. Otherwise, the client decides based on what HTTP version it uses.
 }
               
 }

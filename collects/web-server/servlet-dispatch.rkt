@@ -36,6 +36,7 @@
                     dispatcher/c)]
  [serve/launch/wait (((semaphore? . -> . dispatcher/c))
                      (#:launch-path (or/c false/c string?)
+                                    #:connection-close? boolean?
                                     #:banner? boolean?
                                     #:listen-ip (or/c false/c string?)
                                     #:port tcp-listen-port?
@@ -86,6 +87,8 @@
 (define (serve/launch/wait
          dispatcher
          
+         #:connection-close?
+         [connection-close? #f]
          #:launch-path
          [launch-path #f]          
          #:banner?
@@ -104,6 +107,7 @@
   (define confirm-ch (make-async-channel 1))
   (define shutdown-server
     (serve #:confirmation-channel confirm-ch
+           #:connection-close? connection-close?
            #:dispatch (dispatcher sema)
            #:listen-ip listen-ip
            #:port port-arg
