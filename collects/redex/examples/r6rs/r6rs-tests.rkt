@@ -19,11 +19,10 @@
   (make-r6test `(store () ,t)
                (list `(uncaught-exception (make-cond ,err)))))
 
-(define (run-a-test test verbose? quiet?)
-  (unless quiet?
-    (unless verbose?
-      (printf ".") 
-      (flush-output)))
+(define (run-a-test test verbose?)
+  (unless verbose?
+    (printf ".") 
+    (flush-output))
   (let ([t (r6test-test test)]
         [expected (r6test-expected test)])
     (set! test-count (+ test-count 1))
@@ -2024,7 +2023,6 @@ of digits with deconv-base
     [compare-with-racket?
      (let ()
        
-       (struct test-exp (redex racket set))
        (define redex-exps '())
        (define r6-module-bodies '())
        (define missing 0)
@@ -2091,7 +2089,7 @@ of digits with deconv-base
               (begin (printf "~a tests " name)
                      (flush-output)))
           (set! first? #f)
-          (for-each (λ (x) (run-a-test x verbose? #f compare-with-racket?)) set))
+          (for-each (λ (x) (run-a-test x verbose?)) set))
         
         (set! failed-tests 0)
         (set! verified-terms 0)
