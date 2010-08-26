@@ -23,7 +23,8 @@
 (define (log-optimization kind stx)
   (if *log-optimizations?*
       (printf "~a line ~a col ~a - ~a - ~a\n"
-              (syntax-source stx) (syntax-line stx) (syntax-column stx)
+              (syntax-source-file-name stx)
+              (syntax-line stx) (syntax-column stx)
               (syntax->datum stx)
               kind)
       #t))
