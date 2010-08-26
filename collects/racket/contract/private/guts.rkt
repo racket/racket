@@ -64,7 +64,7 @@
     (values prop pred (λ (v) (if (pred v) ((get v) v) #f)))))
 
 (define-syntax (any stx)
-  (raise-syntax-error 'any "use of 'any' outside of an arrow contract" stx))
+  (raise-syntax-error 'any "use of 'any' outside the range of an arrow contract" stx))
 
 (define (contract-first-order c)
   (contract-struct-first-order
