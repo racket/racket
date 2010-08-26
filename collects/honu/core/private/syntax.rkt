@@ -9,10 +9,10 @@
      #'(honu-unparsed-expr expr)
      #;
      (begin
-       (printf "honu syntax ~a\n" stx)
+       (debug "honu syntax ~a\n" stx)
        (raise-syntax-error 'honu-syntax "dont call this")
        #'(make-honu-transformer (lambda (stx ctx)
-                                  (printf "honu syntax ~a\n" stx)
+                                  (debug "honu syntax ~a\n" stx)
                                   #'(expr ...))))]))
 
 #;

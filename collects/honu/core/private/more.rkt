@@ -1,21 +1,22 @@
 #lang racket/base
 
-(require "honu-typed-scheme.ss"
-         "literals.ss"
+(require "honu-typed-scheme.rkt"
+         "literals.rkt"
          syntax/parse
          mzlib/trace
-         "syntax.ss"
+         "syntax.rkt"
          (for-syntax syntax/parse
                      syntax/stx
                      racket/list
                      racket/base
-                     "contexts.ss"
-                     "syntax.ss"
+                     "debug.rkt"
+                     "contexts.rkt"
+                     "syntax.rkt"
                      (only-in racket (... scheme-ellipses))
-                     "literals.ss")
-         (for-template "honu-typed-scheme.ss"
-                       "literals.ss"
-                       "syntax.ss"
+                     "literals.rkt")
+         (for-template "honu-typed-scheme.rkt"
+                       "literals.rkt"
+                       "syntax.rkt"
                        (only-in racket ...)
                        ))
 
@@ -28,11 +29,11 @@
   (datum->syntax lexical consed lexical))
 
 (define (replace-commas stuff)
-  ;; (printf "Replace commas with: ~a\n" (syntax->datum stuff))
+  ;; (debug "Replace commas with: ~a\n" (syntax->datum stuff))
   (syntax-parse stuff #:literals (ellipses-comma ellipses-comma*)
     [((ellipses-comma* z ...) thing blah ...)
      #;
-     (printf "Thing ~a and blah ~a replaced ~a\n" #'thing #'(blah ...) (replace-commas #'(thing blah ...)))
+     (debug "Thing ~a and blah ~a replaced ~a\n" #'thing #'(blah ...) (replace-commas #'(thing blah ...)))
      (with-syntax ([(rest ...) (replace-commas #'(thing blah ...))])
        (datum->syntax stuff
                       #'(z ... honu-comma rest ...)
@@ -45,7 +46,7 @@
        #'(z honu-comma rest ...))]
     [((ellipses-comma z) thing blah ...)
      #;
-     (printf "Thing ~a and blah ~a replaced ~a\n" #'thing #'(blah ...) (replace-commas #'(thing blah ...)))
+     (debug "Thing ~a and blah ~a replaced ~a\n" #'thing #'(blah ...) (replace-commas #'(thing blah ...)))
      (with-syntax ([(rest ...) (replace-commas #'(thing blah ...))])
        #;
        (combine-syntax stuff #'z #'honu-comma #'(rest ...))
@@ -109,7 +110,7 @@
 
 (define-syntax (fix-template stuff)
   (define (fix stuff)
-    (printf "Macro fix template for ~a\n" (syntax->datum stuff))
+    (debug "Macro fix template for ~a\n" (syntax->datum stuff))
     (syntax-parse stuff #:literals (ellipses-comma)
       [(any ellipses-comma rest ...)
        (define (addit item)
@@ -168,14 +169,14 @@
 
   (define (replace stuff)
     #|
-    (printf "Replacing ~a\n" (syntax->datum stuff))
-    (printf "Local phase level ~a\n" (syntax-local-phase-level))
-    (printf "Checking..\n")
+    (debug "Replacing ~a\n" (syntax->datum stuff))
+    (debug "Local phase level ~a\n" (syntax-local-phase-level))
+    (debug "Checking..\n")
     (syntax-parse stuff
       [(a b c rest ...)
-       (printf "a: ~a\n" #'a)
-       (printf "b: ~a identifier ~a = , is ~a. honu-comma at ~a\n" #'b (identifier? #'b) (and (identifier? #'b) (free-identifier=? #'b #'honu-comma)) (identifier-binding #'honu-comma))
-       (printf "c: ~a = ... is ~a\n" #'c (and (identifier? #'c) (free-identifier=? #'c #'(... ...))))]
+       (debug "a: ~a\n" #'a)
+       (debug "b: ~a identifier ~a = , is ~a. honu-comma at ~a\n" #'b (identifier? #'b) (and (identifier? #'b) (free-identifier=? #'b #'honu-comma)) (identifier-binding #'honu-comma))
+       (debug "c: ~a = ... is ~a\n" #'c (and (identifier? #'c) (free-identifier=? #'c #'(... ...))))]
       [else (void)])
     |#
     (syntax-parse stuff
@@ -202,14 +203,14 @@
       [else stuff]
       ))
   
-  (printf "Do fix template for ~a\n" (syntax->datum stuff))
+  (debug "Do fix template for ~a\n" (syntax->datum stuff))
   (syntax-parse stuff
     [(_ blah)
      (let ([replaced (replace #'blah)])
-       (printf "Replaced ~a\n" (syntax->datum replaced))
+       (debug "Replaced ~a\n" (syntax->datum replaced))
        (with-syntax ([out2 replaced])
          (let ([x #'(apply-scheme-syntax (replace-commas #'out2))])
-           (printf "Final syntax ~a\n" (syntax->datum x))
+           (debug "Final syntax ~a\n" (syntax->datum x))
            x)))]
     #;
     [(_ blah ...) (fix #'(blah ...))]))
@@ -223,14 +224,14 @@
            (lambda ()
              (define (show-pattern-variables what)
                (cond
-                 [(syntax-pattern-variable? what) (printf "~a is a pattern variable\n") what]
+                 [(syntax-pattern-variable? what) (debug "~a is a pattern variable\n") what]
                  [(stx-pair? what) (for-each show-pattern-variables (syntax->list what))]
-                 [else (printf "~a is *not* a pattern variable\n" what)]))
+                 [else (debug "~a is *not* a pattern variable\n" what)]))
 
              #;
-             (printf "Original code is ~a\n" (syntax->datum #'(expr ...)))
+             (debug "Original code is ~a\n" (syntax->datum #'(expr ...)))
              #;
-             (printf "Expanded is ~a\n" (syntax->datum (expand-syntax-once #'(expr ...))))
+             (debug "Expanded is ~a\n" (syntax->datum (expand-syntax-once #'(expr ...))))
              #;
              (for-each show-pattern-variables (syntax->list #'(expr ...)))
              ;; outer is relative phase 1, inner is relative phase 0
@@ -245,7 +246,7 @@
              (with-syntax ([a #'(fix-template #'(honu-unparsed-begin expr ...))])
                #'a)
 
-             (printf "Making unparsed syntax with `~a'\n" (syntax->datum #'(expr (... ...))))
+             (debug "Making unparsed syntax with `~a'\n" (syntax->datum #'(expr (... ...))))
 
              #;
              (with-syntax ([unparsed (make-unparsed #'(expr ...))])
@@ -274,7 +275,7 @@
 
              #;
              (let ([x #'(fix-template (honu-unparsed-begin expr ...))])
-               (printf "Final syntax ~a\n" (syntax->datum x))
+               (debug "Final syntax ~a\n" (syntax->datum x))
                x)
 
              #;
@@ -299,12 +300,12 @@
          (lambda ()
            (define (show-pattern-variables what)
              (cond
-               [(syntax-pattern-variable? what) (printf "~a is a pattern variable\n") what]
+               [(syntax-pattern-variable? what) (debug "~a is a pattern variable\n") what]
                [(stx-pair? what) (for-each show-pattern-variables (syntax->list what))]
-               [else (printf "~a is *not* a pattern variable\n" what)]))
+               [else (debug "~a is *not* a pattern variable\n" what)]))
 
            (define (make-unparsed code)
-             (printf "Make unparsed in ~a. expression-context? ~a\n" ctx (expression-context? ctx))
+             (debug "Make unparsed in ~a. expression-context? ~a\n" ctx (expression-context? ctx))
              (with-syntax ([(code ...) code])
                (cond
                  [(expression-context? ctx)
@@ -312,9 +313,9 @@
                  [else #'(honu-unparsed-begin code ...)])))
 
            #;
-           (printf "Original code is ~a\n" (syntax->datum #'(expr ...)))
+           (debug "Original code is ~a\n" (syntax->datum #'(expr ...)))
            #;
-           (printf "Expanded is ~a\n" (syntax->datum (expand-syntax-once #'(expr ...))))
+           (debug "Expanded is ~a\n" (syntax->datum (expand-syntax-once #'(expr ...))))
            #;
            (for-each show-pattern-variables (syntax->list #'(expr ...)))
            ;; outer is relative phase 1, inner is relative phase 0
@@ -329,7 +330,7 @@
            (with-syntax ([a #'(fix-template #'(honu-unparsed-begin expr ...))])
              #'a)
 
-           (printf "Making unparsed syntax???\n")
+           (debug "Making unparsed syntax???\n")
            (with-syntax ([unparsed (make-unparsed #'(expr ...))])
              #'(fix-template unparsed))
              
@@ -343,7 +344,7 @@
 
            #;
            (let ([x #'(fix-template (honu-unparsed-begin expr ...))])
-             (printf "Final syntax ~a\n" (syntax->datum x))
+             (debug "Final syntax ~a\n" (syntax->datum x))
              x)
 
            #;

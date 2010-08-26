@@ -175,8 +175,8 @@
                  (lambda (stx ctx)
                    (debug "Try to match against pattern ~a. Literals ~a\n" '(name raw-patterns ... . rrest) '(honu-literal ...))
                    (debug "stx is ~a\n" (syntax->datum stx))
-                   ;; (printf "head is ~a\n" (stx-car stx))
-                   ;; (printf "= is ~a\n" =)
+                   ;; (debug "head is ~a\n" (stx-car stx))
+                   ;; (debug "= is ~a\n" =)
                    (debug "my matcher ~a\n"
                            (syntax-case stx (to set! do honu-end honu-literal ...)
                              [(name q set! v to m do bb (... ...) honu-end) (syntax->datum #'(bb (... ...)))]
@@ -265,9 +265,9 @@
          (loop (cons #'(... ...) ellipses) body (cdr stx))]
         [(and (identifier? (car stx))
               (free-identifier=? (car stx) #'\;))
-         ;; (printf "Found a ; in ~a\n" (syntax->datum stx))
+         ;; (debug "Found a ; in ~a\n" (syntax->datum stx))
          (with-syntax ([all (cdr stx)])
-           ;; (printf "Found a ; -- ~a\n" (syntax->datum #'all))
+           ;; (debug "Found a ; -- ~a\n" (syntax->datum #'all))
            (syntax-parse #'all
                          [((~and x (~not _:stop-class)) ... stop:stop-class y ...)
                           (with-syntax ([(ellipses ...) ellipses]
@@ -313,8 +313,8 @@
     stx
     (let ([stx (reverse (syntax->list stx))])
       ;; (debug-parse stx (ellipses1:ellipses-class ellipses:ellipses-class ... x ...))
-      ;; (printf "stx is ~a\n" stx)
-      ;; (printf "... = ~a\n" (free-identifier=? #'(... ...) (stx-car stx)))
+      ;; (debug "stx is ~a\n" stx)
+      ;; (debug "... = ~a\n" (free-identifier=? #'(... ...) (stx-car stx)))
       (syntax-parse stx
         [(before:not-ellipses-class ... ellipses1:ellipses-class ellipses:ellipses-class ... delimiter:delimiter-class x ...)
          (with-syntax ([(x* ...) (reverse-syntax (pull #'(delimiter x ...)))])
@@ -352,7 +352,7 @@
     (pattern x:id #:when (free-identifier=? #'x #'(... ...))))
   (define-syntax-class delimiter-class
     (pattern x:id #:when (delimiter? #'x)))
-  ;; (printf "unpull ~a\n" (syntax->datum stx))
+  ;; (debug "unpull ~a\n" (syntax->datum stx))
   (syntax-parse stx
                 #:literals (wrapped unwrap)
                 [((~and z (~not (unwrap _ ...))) ... (unwrap (wrapped x ... delimiter:delimiter-class) ...) rest ...)
@@ -409,7 +409,7 @@
                      (with-syntax ([(x* ...) (map do-it (syntax->list #'(x ...)))])
                        #'(x* ...  ellipses1 ellipses ...))]
                     [(x ...) (with-syntax ([(x* ...) (map do-it (syntax->list #'(x ...)))])
-                               (printf "x* is ~a\n" #'(x* ...))
+                               (debug "x* is ~a\n" #'(x* ...))
                                #'(x* ...))]
                     [else stx]))
     (syntax-case stx ()
@@ -440,7 +440,7 @@
 #;
 (define-syntax (honu-unparsed-expr stx)
   (define (fix stx)
-    (printf "Fix ~a\n" (syntax->datum stx))
+    (debug "Fix ~a\n" (syntax->datum stx))
     (syntax-parse stx #:literals (honu-syntax #%parens)
       [(honu-syntax (#%parens x ...) y ...)
        (with-syntax ([(y* ...) (fix #'(y ...))])
@@ -451,7 +451,7 @@
          #'(z* x* ...))]
       [else stx]
       ))
-  (printf "unparsed expr ~a\n" stx)
+  (debug "unparsed expr ~a\n" stx)
   (fix (stx-cdr stx)))
 
 (define-syntax (test2 stx)
@@ -495,7 +495,7 @@
 
 (define foobar 0)
 
-(define-honu-syntax honu-macro
+(define-honu-syntax honu-infix-macro
   (lambda (stx ctx)
     (define-splicing-syntax-class patterns
                          #:literal-sets ([cruft #:phase (syntax-local-phase-level)])
@@ -505,14 +505,14 @@
                #:with (code ...) '()
                #:with (fixed ...) '()
                #:when (begin
-                        (printf "Trying to parse ~a\n" (syntax->datum #'(x ...)))
+                        (debug "Trying to parse ~a\n" (syntax->datum #'(x ...)))
                         #f)]
       #;
       [pattern (~seq (#%braces template ...)
                      (#%braces code ...))
                #:with (fixed ...) '()
                #:when (begin
-                        (printf "Got template as ~a. Code is ~a\n" (syntax->datum #'(template ...)) (syntax->datum #'(code ...)))
+                        (debug "Got template as ~a. Code is ~a\n" (syntax->datum #'(template ...)) (syntax->datum #'(code ...)))
                         #f)]
       [pattern (~seq (#%braces template ...)
                      (#%braces code ...))
@@ -538,7 +538,165 @@
                                [your-braces (datum->syntax #'name '#%braces #'name)]
                                #;
                                [your-parens (datum->syntax #'name '#%parens #'name)])
-                   ;;(printf "Ok macro3 go!\n")
+                   (apply-scheme-syntax
+                   (syntax/loc stx
+                               (define-honu-infix-syntax name
+                                 (lambda (stx ctx)
+                                   #;
+                                   (debug "Executing macro `~a' on input `~a'\n" 'name (syntax->datum stx))
+                                   (debug "~a pattern is ~a\n" 'name '(pattern.fixed ... ...))
+                                   (syntax-parse stx
+                                     #:literal-sets ([cruft #:at name])
+                                     #:literals (foobar literals ...)
+                                     [(pattern.fixed ... rrest (... ...))
+                                      (values
+                                        #;
+                                        (with-syntax ([(real-out (... ...)) #'(code ...)])
+                                          (let ([result (let ()
+                                                          (honu-unparsed-begin #'(real-out (... ...))))])
+                                            (lambda () result)))
+                                        (begin
+                                          (emit-remark "Do macro transformer" (quote-syntax (pattern.code ...)))
+                                          #;
+                                          (debug "Macro transformer `~a'\n" (syntax->datum (quote-syntax (code ...))))
+                                          (let ([result (let ()
+                                                          (honu-unparsed-begin pattern.code ...))])
+                                            (lambda ()
+                                              (emit-remark "Excuting macro " (symbol->string 'name))
+                                              result)))
+                                        #'(rrest (... ...)))]
+                                     ...
+                                     [else (raise-syntax-error 'name "bad syntax")]
+                                     )))))) 
+                 #'rest)])
+    (debug "Executing honu infix macro\n")
+    (syntax-parse stx
+      [out:honu-macro3 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
+
+      #;
+      [(_ (#%parens honu-literal ...)
+          (#%braces (#%braces name pattern ...))
+          (#%braces (#%braces template ...))
+          . rest)
+       (with-syntax ([pulled (pull #'(template ...))]
+                     [(pattern* ...) (map (lambda (stx)
+                                            (if (and (identifier? stx)
+                                                     (not (ormap (lambda (f)
+                                                                   (free-identifier=? stx f))
+                                                                 (syntax->list #'(honu-literal ...))))
+                                                     (not (free-identifier=? stx #'(... ...))))
+                                                (with-syntax ([x stx])
+                                                  #'(~and x (~not (~or honu-literal ...))))
+                                                stx))
+                                          (syntax->list #'(pattern ...)))]
+                     )
+         (values
+           (syntax/loc stx
+          (define-honu-syntax name
+              (lambda (stx ctx)
+                ;; (define-literal-set literals (honu-literal ...))
+                (syntax-parse stx
+                              ;; #:literal-sets (literals)
+                              #:literals (honu-literal ...)
+                  [(name pattern* ... . rrest)
+                   (with-syntax ([(out (... ...)) (unpull #'pulled)])
+                     (define (X) (raise-syntax-error (syntax->datum #'name) "implement for this context"))
+                     (values
+                       (syntax/loc stx (honu-unparsed-expr (honu-syntax (#%parens out (... ...)))))
+                      ;; this is sort of ugly, is there a better way?
+                      #;
+                      (cond
+                        [(type-context? ctx) (X)]
+                        [(type-or-expression-context? ctx) (X)]
+                        [(expression-context? ctx) (syntax/loc stx (honu-unparsed-expr (out (... ...))))]
+                        [(expression-block-context? ctx)
+                         (syntax/loc stx 
+                         (honu-unparsed-begin (honu-syntax #%parens (out (... ...)))))]
+                        [(block-context? ctx)
+                         (syntax/loc stx
+                         (honu-unparsed-begin out (... ...)))]
+                        [(variable-definition-context? ctx) (X)]
+                        [(constant-definition-context? ctx) (X)]
+                        [(function-definition-context? ctx) (X)]
+                        [(prototype-context? ctx) (X)]
+                        [else (syntax/loc stx (honu-syntax (#%parens (out (... ...)))))])
+                      #;
+                      #'(honu-unparsed-begin out (... ...))
+                      #'rrest)
+                     #;
+                     #'(honu-unparsed-block
+                        #f obj 'obj #f ctx
+                        out (... ...))
+                     #;
+                     (values
+                      #;
+                      #'(honu-unparsed-expr out (... ...))
+                      #'(honu-unparsed-block
+                         #f obj 'obj #f ctx
+                         out (... ...) rrest)
+                      #;
+                      #'rrest))]))))
+          #'rest))]
+      [(_ (m x ...)
+          (z y ...)
+          #;
+          (#%braces (#%braces name pattern ...))
+          . rest)
+       (begin
+         (debug "Got literals ~a\n" #'(x ...))
+         (debug "M is ~a, = to #%parens is ~a\n" #'m (free-identifier=? #'#%parens #'m))
+         (debug "Z is ~a, = to #%braces is ~a\n" #'z (free-identifier=? #'#%braces #'z))
+         (debug "Rest is ~a\n" (syntax->datum #'rest))
+         #;
+         (debug "Got name ~a pattern ~a\n" #'name #'(pattern ...))
+         (raise-syntax-error 'honu-macro "f1" stx))]
+      [else (raise-syntax-error 'honu-macro "fail" stx)]
+      )))
+
+(define-honu-syntax honu-macro
+  (lambda (stx ctx)
+    (define-splicing-syntax-class patterns
+                         #:literal-sets ([cruft #:phase (syntax-local-phase-level)])
+      #;
+      [pattern (~seq x ...)
+               #:with (template ...) '()
+               #:with (code ...) '()
+               #:with (fixed ...) '()
+               #:when (begin
+                        (debug "Trying to parse ~a\n" (syntax->datum #'(x ...)))
+                        #f)]
+      #;
+      [pattern (~seq (#%braces template ...)
+                     (#%braces code ...))
+               #:with (fixed ...) '()
+               #:when (begin
+                        (debug "Got template as ~a. Code is ~a\n" (syntax->datum #'(template ...)) (syntax->datum #'(code ...)))
+                        #f)]
+      [pattern (~seq (#%braces template ...)
+                     (#%braces code ...))
+               #:with (fixed ...) (fix-template #'(template ...))])
+    (define-syntax-class honu-macro3
+                         ;; #:literals (#%parens #%braces)
+                         #:literal-sets ([cruft ;;#:at stx
+                                           #:phase (syntax-local-phase-level)
+                                           ])
+      [pattern (_ name (#%parens literals ...)
+                  pattern:patterns ...
+                  . rest)
+               #:with result
+               (list
+                 (with-syntax (
+                               #;
+                               [(fixed ...) (fix-template #'(template ...))]
+                               #;
+                               [first-pattern (stx-car #'(template ...))]
+                               #;
+                               [your-bracket (datum->syntax #'name '#%brackets #'name)]
+                               #;
+                               [your-braces (datum->syntax #'name '#%braces #'name)]
+                               #;
+                               [your-parens (datum->syntax #'name '#%parens #'name)])
+                   ;;(debug "Ok macro3 go!\n")
                    #;
                    #'(define-honu-syntax name
                        (lambda (stx ctx)
@@ -553,14 +711,14 @@
                                 (lambda () result))
                               #'(rrest (... ...)))])))
                    #;
-                   (printf "Original pattern ~a\n" (syntax->datum #'(pattern.fixed ... rrest (... ...))))
+                   (debug "Original pattern ~a\n" (syntax->datum #'(pattern.fixed ... rrest (... ...))))
                    (apply-scheme-syntax
                    (syntax/loc stx
                                (define-honu-syntax name
                                  (lambda (stx ctx)
                                    #;
-                                   (printf "Executing macro `~a' on input `~a'\n" 'name (syntax->datum stx))
-                                   (printf "~a pattern is ~a\n" 'name '(pattern.fixed ... ...))
+                                   (debug "Executing macro `~a' on input `~a'\n" 'name (syntax->datum stx))
+                                   (debug "~a pattern is ~a\n" 'name '(pattern.fixed ... ...))
                                    (syntax-parse stx
                                      #:literal-sets ([cruft #:at name])
                                      #:literals (foobar literals ...)
@@ -574,7 +732,7 @@
                                         (begin
                                           (emit-remark "Do macro transformer" (quote-syntax (pattern.code ...)))
                                           #;
-                                          (printf "Macro transformer `~a'\n" (syntax->datum (quote-syntax (code ...))))
+                                          (debug "Macro transformer `~a'\n" (syntax->datum (quote-syntax (code ...))))
                                           (let ([result (let ()
                                                           (honu-unparsed-begin pattern.code ...))])
                                             (lambda ()
@@ -606,7 +764,7 @@
                                  (values
                                    (honu-unparsed-begin code ...)
                                    (begin
-                                     (printf "inside ~a stx is ~a\n" 'name stx)
+                                     (debug "inside ~a stx is ~a\n" 'name stx)
                                      (syntax-parse stx #:literals (semicolon)
                                        [(_ semicolon rrest (... ...))
                                         #'(rrest (... ...))]))))))
@@ -687,7 +845,7 @@
                                                          #;
                                                          #'rrest))]))))
                                   #'rest))])
-    (printf "Executing honu macro\n")
+    (debug "Executing honu macro\n")
     (syntax-parse stx
       [out:honu-macro1 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
       [out:honu-macro3 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
@@ -763,12 +921,12 @@
           (#%braces (#%braces name pattern ...))
           . rest)
        (begin
-         (printf "Got literals ~a\n" #'(x ...))
-         (printf "M is ~a, = to #%parens is ~a\n" #'m (free-identifier=? #'#%parens #'m))
-         (printf "Z is ~a, = to #%braces is ~a\n" #'z (free-identifier=? #'#%braces #'z))
-         (printf "Rest is ~a\n" (syntax->datum #'rest))
+         (debug "Got literals ~a\n" #'(x ...))
+         (debug "M is ~a, = to #%parens is ~a\n" #'m (free-identifier=? #'#%parens #'m))
+         (debug "Z is ~a, = to #%braces is ~a\n" #'z (free-identifier=? #'#%braces #'z))
+         (debug "Rest is ~a\n" (syntax->datum #'rest))
          #;
-         (printf "Got name ~a pattern ~a\n" #'name #'(pattern ...))
+         (debug "Got name ~a pattern ~a\n" #'name #'(pattern ...))
          (raise-syntax-error 'honu-macro "f1" stx))]
       [else (raise-syntax-error 'honu-macro "fail" stx)]
       )))

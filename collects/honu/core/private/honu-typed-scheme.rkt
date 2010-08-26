@@ -9,19 +9,21 @@
                      syntax/parse/experimental/splicing
                      scheme/splicing
                      macro-debugger/emit
-                     "contexts.ss"
-                     "util.ss"
-                     "ops.ss"
-                     "syntax.ss"
-                     "parse.ss"
-                     "literals.ss"
+                     "debug.rkt"
+                     "contexts.rkt"
+                     "util.rkt"
+                     "ops.rkt"
+                     "syntax.rkt"
+                     "parse.rkt"
+                     "literals.rkt"
                      )
          syntax/parse
-         "literals.ss"
+         "literals.rkt"
+         "debug.rkt"
          ;; "typed-utils.ss"
          )
 
-(require (for-meta 2 scheme/base "util.ss"))
+(require (for-meta 2 scheme/base "util.rkt"))
 (require (for-meta 3 scheme/base))
 
 (provide (all-defined-out))
@@ -262,7 +264,7 @@
         (with-syntax ([top-expr (if (top-block-context? context) 
                                    #'(let ([v code])
                                        (unless (void? v)
-                                         (printf "~s\n" v)))
+                                         (debug "~s\n" v)))
                                    #'code)])
           (combine-k #'(#%expression top-expr)
                      (stx-cdr after-expr))))))
@@ -324,6 +326,13 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       (syntax/loc stx
                  (define-syntax id (make-honu-transformer rhs))))))
 
+(define-syntax (define-honu-infix-syntax stx)
+  (let-values ([(id rhs) (normalize-definition stx #'lambda #f)])
+    (with-syntax ([id id]
+                  [rhs rhs])
+      (syntax/loc stx
+                 (define-syntax id (make-honu-infix-transformer rhs))))))
+
 #;
 (define-honu-syntax honu-provide
   (lambda (stx ctx)
@@ -366,7 +375,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 (define-honu-syntax honu-if
   (lambda (stx ctx)
     (define (parse-complete-block stx)
-      ;; (printf "Parsing complete block ~a\n" (syntax->datum stx))
+      ;; (debug "Parsing complete block ~a\n" (syntax->datum stx))
       (with-syntax ([(exprs ...) (parse-block stx the-expression-block-context)])
         #'(begin exprs ...))
       #;
@@ -383,7 +392,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
                           #f
                           "expected a braced block or a statement"
                           )))])
-        (printf "Result is ~a and ~a\n" a b)
+        (debug "Result is ~a and ~a\n" a b)
         a))
     ;; TODO: move these syntax classes to a module
     (define-syntax-class expr
@@ -396,12 +405,12 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
                                   #:with line #'(honu-unparsed-begin statement ...)
                                   #;
                                   (parse-complete-block #'(statement ...))])
-    ;; (printf "Original syntax ~a\n" (syntax->datum stx))
+    ;; (debug "Original syntax ~a\n" (syntax->datum stx))
     (syntax-parse stx
       #:literals (else)
       [(_ condition:paren-expr on-true:block else on-false:block . rest)
-       ;; (printf "Condition expr is ~a\n" #'condition.expr)
-       ;; (printf "used if with else\n")
+       ;; (debug "Condition expr is ~a\n" #'condition.expr)
+       ;; (debug "used if with else\n")
        (let ([result #'(if condition.result on-true.line on-false.line)])
          (values
            (lambda () result)
@@ -409,7 +418,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
            #;
            (expression-result ctx result (syntax/loc #'rest rest)))]
       [(_ condition:paren-expr on-true:block . rest)
-       ;; (printf "used if with no else\n")
+       ;; (debug "used if with no else\n")
        (let ([result #'(when condition.result on-true.line)])
          (values
            (lambda () result)
@@ -485,7 +494,7 @@ if (foo){
 
 (define (show-top-result v)
   (unless (void? v)
-    (printf "~s\n" v)))
+    (debug "~s\n" v)))
 
 (define-syntax (op-app stx)
     (syntax-case stx (#%parens #%angles)
@@ -501,16 +510,16 @@ if (foo){
                       #'a)]))
   
 (define-syntax (honu-top stx)
-  (printf "Honu ~a\n" (syntax->datum stx))
+  (debug "Honu ~a\n" (syntax->datum stx))
   (raise-syntax-error #f "interactive use is not yet supported"))
 
 (define-syntax (foobar2000 stx)
-  (printf "Called foobar2000 on ~a\n" (syntax->datum stx))
+  (debug "Called foobar2000 on ~a\n" (syntax->datum stx))
   (syntax-case stx ()
-    [(_ x y ...) #'(printf "foobar2000 ~a\n" x)]))
+    [(_ x y ...) #'(debug "foobar2000 ~a\n" x)]))
 
 (define (display2 x y)
-  (printf "~a ~a" x y))
+  (debug "~a ~a" x y))
 
 (define-syntax (honu-unparsed-expr stx)
   (syntax-parse stx
@@ -525,7 +534,7 @@ if (foo){
       [(_ template . rest)
        (values
          (lambda ()
-           (printf "Applying syntax to ~a\n" (quote-syntax template))
+           (debug "Applying syntax to ~a\n" (quote-syntax template))
            (apply-scheme-syntax #'#'template))
          #'rest)])))
 
@@ -535,7 +544,7 @@ if (foo){
       [(_ x:honu-identifier ... semicolon . rest)
        (values
          (lambda ()
-           (printf "Providing ~a\n" #'(x ...))
+           (debug "Providing ~a\n" #'(x ...))
            #'(provide x.x ...))
          #'rest)])))
 
@@ -590,19 +599,19 @@ if (foo){
   (emit-remark "Honu unparsed begin!" stx)
   #;
   (emit-remark "Honu unparsed begin" stx)
-  (printf "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))
+  (debug "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))
   (syntax-case stx ()
     [(_) #'(void)]
     [(_ . body)
      (begin
-       (printf "Body is ~a\n" #'body)
+       (debug "Body is ~a\n" #'body)
      (let-values ([(code rest) (parse-block-one/2 #'body
                                                   the-top-block-context
                                                   #;
                                                   the-expression-context
                                                   #;
                                                   the-top-block-context)])
-                  ;; (printf "Rest is ~a\n" (syntax->datum rest))
+                  ;; (debug "Rest is ~a\n" (syntax->datum rest))
                   (with-syntax ([code code]
                                 [(rest ...) rest])
                     (if (stx-null? #'(rest ...))
@@ -642,13 +651,13 @@ if (foo){
 
 #;
 (define (honu-print arg)
-  (printf "~a\n" arg))
+  (debug "~a\n" arg))
 
 (define-syntax (#%dynamic-honu-module-begin stx)
   (syntax-case stx ()
     [(_ forms ...)
      (begin
-       (printf "Module begin ~a\n" (syntax->datum #'(forms ...)))
+       (debug "Module begin ~a\n" (syntax->datum #'(forms ...)))
        #'(#%plain-module-begin (honu-unparsed-begin forms ...))
        #;
        (with-syntax ([all (syntax-local-introduce #'(provide (all-defined-out)))])

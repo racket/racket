@@ -1,6 +1,7 @@
 #lang scheme
 
 (provide (except-out (all-defined-out) test))
+(require "debug.rkt")
 
 #;
 (provide delim-identifier=?
@@ -64,10 +65,10 @@
                               (map syntax->datum rest))
                       (equal? (syntax->datum expected-delimiter)
                               (syntax->datum hit))))
-        (printf "failure: original ~a until ~a\n" (syntax->datum original) (map syntax->datum (list delimiter)))
-        (printf " before expected ~a actual ~a\n" (syntax->datum expected-before) (map syntax->datum before))
-        (printf " rest expected ~a actual ~a\n" (syntax->datum expected-rest) (map syntax->datum rest))
-        (printf " delimiter expected ~a actual ~a\n" (syntax->datum expected-delimiter) (syntax->datum hit))
+        (debug "failure: original ~a until ~a\n" (syntax->datum original) (map syntax->datum (list delimiter)))
+        (debug " before expected ~a actual ~a\n" (syntax->datum expected-before) (map syntax->datum before))
+        (debug " rest expected ~a actual ~a\n" (syntax->datum expected-rest) (map syntax->datum rest))
+        (debug " delimiter expected ~a actual ~a\n" (syntax->datum expected-delimiter) (syntax->datum hit))
         ))))
 
 (test)

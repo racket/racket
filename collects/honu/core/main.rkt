@@ -161,6 +161,7 @@
            (honu-provide provide)
            (honu-macro-item macroItem)
            (honu-macro macro)
+           (honu-infix-macro infixMacro)
            (honu-identifier identifier)
            (honu-identifier identifier123)
            (honu-require require)

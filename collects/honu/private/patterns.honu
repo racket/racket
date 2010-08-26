@@ -1,0 +1,7 @@
+#lang honu/core
+
+require (forTemplate "keywords.honu");
+
+provide condition_clause;
+
+pattern condition_clause literals (then) (condition_result out_result) [condition:expression then out:expression_comma];
