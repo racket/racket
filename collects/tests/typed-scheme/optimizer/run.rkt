@@ -1,5 +1,5 @@
 #lang racket
-(require racket/runtime-path)
+(require racket/runtime-path racket/sandbox)
 
 ;; since Typed Scheme's optimizer does source to source transformations,
 ;; we compare the expansion of automatically optimized and hand optimized
@@ -23,6 +23,33 @@
                          #'(#f #f #f (#f)))]) ; for cadddr
          (expand (with-input-from-file file read-syntax))))))))
 
+
+;; the first line must be the #lang line
+;; the second line must be #:optimize
+(define (evaluator file #:optimize [optimize? #f])
+  (call-with-trusted-sandbox-configuration
+   (lambda ()
+     (parameterize ([current-load-relative-directory
+                     (build-path here "generic")]
+                    [sandbox-memory-limit #f] ; TR needs memory
+                    [sandbox-output 'string]
+                    [sandbox-namespace-specs
+                     (list (car (sandbox-namespace-specs))
+                           'typed/racket
+                           'typed/scheme)])
+       (let* ((lines (cdr (file->lines file))) ;; drop the #lang line
+              (in    (if optimize?
+                         lines
+                         (cdr lines))) ;; drop the #:optimize
+              (evaluator
+               (make-evaluator 'typed/racket
+                               (foldl (lambda (acc new)
+                                        (string-append new "\n" acc))
+                                      "" in)))
+              (out (get-output evaluator)))
+         (kill-evaluator evaluator)
+         out)))))
+
 (define (test gen)
   (let-values (((base name _) (split-path gen)))
     (or (regexp-match ".*~" name) ; we ignore backup files
@@ -39,13 +66,7 @@
                         #f))
              ;; optimized and non-optimized versions must evaluate to the
              ;; same thing
-             (or (equal? (with-output-to-string
-                           (lambda ()
-                             (dynamic-require gen #f)))
-                         (with-output-to-string
-                           (lambda ()
-                             (let ((non-opt-dir (build-path here "non-optimized")))
-                               (dynamic-require (build-path non-opt-dir name) #f)))))
+             (or (equal? (evaluator gen) (evaluator gen #:optimize #t))
                  (begin (printf "~a failed: result mismatch\n\n" name)
                         #f))))))
 

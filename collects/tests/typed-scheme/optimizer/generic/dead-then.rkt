@@ -1,4 +1,5 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
+#:optimize
 (require racket/unsafe/ops)
 (display (if (number? "eh")
              (+ 2.0 3.0)

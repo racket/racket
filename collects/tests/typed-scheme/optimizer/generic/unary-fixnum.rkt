@@ -1,3 +1,4 @@
-(module unary-fixnum typed/scheme #:optimize
-  (require racket/unsafe/ops)
-  (bitwise-not 4))
+#lang typed/scheme
+#:optimize
+(require racket/unsafe/ops)
+(bitwise-not 4)

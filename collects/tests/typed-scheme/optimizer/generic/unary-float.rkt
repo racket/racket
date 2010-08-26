@@ -1,3 +1,4 @@
-(module float-unary typed/scheme #:optimize
-  (require racket/unsafe/ops)
-  (sin 2.0))
+#lang typed/scheme
+#:optimize
+(require racket/unsafe/ops)
+(sin 2.0)

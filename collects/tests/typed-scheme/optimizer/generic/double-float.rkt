@@ -1,3 +1,4 @@
-(module double-float typed/scheme #:optimize
-  (require racket/unsafe/ops)
-  (+ 2.0 2.0 2.0))
+#lang typed/scheme
+#:optimize
+(require racket/unsafe/ops)
+(+ 2.0 2.0 2.0)

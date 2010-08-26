@@ -1,4 +1,5 @@
-#lang typed/racket/base #:optimize
+#lang typed/racket/base
+#:optimize
 
 (require racket/unsafe/ops)
 

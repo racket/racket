@@ -1,4 +1,5 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
+#:optimize
 (require racket/unsafe/ops)
 (: x (MPairof Integer Float))
 (define x (mcons 1 1.0))

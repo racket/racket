@@ -1,4 +1,5 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
+#:optimize
 
 ;; originally from nucleic3
 ;; cond on substructs, branches were considered dead

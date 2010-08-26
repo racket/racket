@@ -1,4 +1,5 @@
-#lang typed/scheme #:optimize
+#lang typed/scheme
+#:optimize
 (require racket/unsafe/ops)
 (map (lambda: ((x : Inexact-Complex))
               (string-append (real->decimal-string (real-part x) 10)
