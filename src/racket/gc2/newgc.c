@@ -1034,28 +1034,10 @@ inline static size_t gen0_size_in_use(NewGC *gc) {
 
 #define BYTES_MULTIPLE_OF_WORD_TO_WORDS(sizeb) ((sizeb) >> gcLOG_WORD_SIZE)
 
-inline static void *allocate(const size_t request_size, const int type)
+inline unsigned long allocate_slowpath(NewGC *gc, size_t allocate_size, unsigned long newptr)
 {
-  size_t allocate_size;
-  unsigned long newptr;
-
-  if(request_size == 0) return (void *) zero_sized;
-  
-  allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
-  if(allocate_size > MAX_OBJECT_SIZE)  return allocate_big(request_size, type);
-
-  /* ensure that allocation will fit in a gen0 page */
-  newptr = GC_gen0_alloc_page_ptr + allocate_size;
-  ASSERT_VALID_OBJPTR(newptr);
-
+  do {
   /* master always overflows and uses allocate_medium because master allocations can't move */
-  while (OVERFLOWS_GEN0(newptr)) {
-    NewGC *gc = GC_get_GC();
-#ifdef MZ_USE_PLACES
-    if (postmaster_and_master_gc(gc)) {
-      return allocate_medium(request_size, type);
-    }
-#endif
     /* bring page size used up to date */
     gc->gen0.curr_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr);
     gc->gen0.current_size += gc->gen0.curr_alloc_page->size;
@@ -1094,7 +1076,36 @@ inline static void *allocate(const size_t request_size, const int type)
     }
     newptr = GC_gen0_alloc_page_ptr + allocate_size;
     ASSERT_VALID_OBJPTR(newptr);
-  } 
+
+  } while (OVERFLOWS_GEN0(newptr));
+  
+  return newptr;
+}
+
+inline static void *allocate(const size_t request_size, const int type)
+{
+  size_t allocate_size;
+  unsigned long newptr;
+
+  if(request_size == 0) return (void *) zero_sized;
+  
+  allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
+  if(allocate_size > MAX_OBJECT_SIZE)  return allocate_big(request_size, type);
+
+  /* ensure that allocation will fit in a gen0 page */
+  newptr = GC_gen0_alloc_page_ptr + allocate_size;
+  ASSERT_VALID_OBJPTR(newptr);
+
+  /* SLOW PATH: allocate_size overflows current gen0 page */
+  if(OVERFLOWS_GEN0(newptr)) {
+    NewGC *gc = GC_get_GC();
+
+#ifdef MZ_USE_PLACES
+    if (postmaster_and_master_gc(gc)) { return allocate_medium(request_size, type); }
+#endif
+
+    newptr = allocate_slowpath(gc, allocate_size, newptr);
+  }
 
   /* actual Allocation */
   {
