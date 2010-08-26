@@ -1,8 +1,18 @@
 #lang typed/scheme
 (require racket/unsafe/ops)
 (map (lambda: ((x : Inexact-Complex))
-              (string-append (real->decimal-string (unsafe-flreal-part x) 10)
-                             (real->decimal-string (unsafe-flimag-part x) 10)))
+              (string-append (real->decimal-string 
+                              (let* ([unboxed-gensym-1 x]
+                                     [unboxed-real-2 (unsafe-flreal-part unboxed-gensym-1)]
+                                     [unboxed-imag-3 (unsafe-flimag-part unboxed-gensym-1)])
+                                unboxed-real-2)
+                              10)
+                             (real->decimal-string 
+                              (let* ([unboxed-gensym-1 x]
+                                     [unboxed-real-2 (unsafe-flreal-part unboxed-gensym-1)]
+                                     [unboxed-imag-3 (unsafe-flimag-part unboxed-gensym-1)])
+                                unboxed-imag-3)
+                              10)))
      (list
       (let* ((unboxed-float-1 1.0)
              (unboxed-real-2 2.0)

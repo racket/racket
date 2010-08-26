@@ -9,10 +9,10 @@
       (lambda (unboxed-real-1 unboxed-imag-2 l)
         (if (null? l)
             (unsafe-make-flrectangular unboxed-real-1 unboxed-imag-2)
-            (let*-values (((unboxed-float-3) (->fl (unsafe-car l)))
-                          ((unboxed-real-4) (unsafe-fl+ unboxed-real-1 unboxed-float-3))
-                          ((unboxed-imag-5) unboxed-imag-2))
-              (loop unboxed-real-4 unboxed-imag-5
+            (let*-values (((unboxed-float-1) (->fl (unsafe-car l)))
+                          ((unboxed-real-2) (unsafe-fl+ unboxed-real-1 unboxed-float-1))
+                          ((unboxed-imag-3) unboxed-imag-2))
+              (loop unboxed-real-2 unboxed-imag-3
                     (unsafe-cdr l)))))))
     loop)
    unboxed-real-1 unboxed-imag-2 '(1 2 3)))
