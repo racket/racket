@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/parse syntax/id-table scheme/dict
-         "../utils/utils.rkt"
+         "../utils/utils.rkt" racket/unsafe/ops
          (for-template scheme/base scheme/math scheme/flonum scheme/unsafe/ops)
          (types abbrev type-table utils subtype)
          (optimizer utils float fixnum))
@@ -89,7 +89,7 @@
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
-           #:when (isoftype? this-syntax -InexactComplex)
+           #:when (or (isoftype? this-syntax -InexactComplex) (isoftype? this-syntax -Number))
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -138,7 +138,7 @@
                         c1:unboxed-inexact-complex-opt-expr
                         c2:unboxed-inexact-complex-opt-expr
                         cs:unboxed-inexact-complex-opt-expr ...)
-           #:when (isoftype? this-syntax -InexactComplex)
+           #:when (or (isoftype? this-syntax -InexactComplex) (isoftype? this-syntax -Number))
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with reals (map (lambda (x) (if (syntax->datum x) x #'0.0))
@@ -224,19 +224,12 @@
                                       (unsafe-fl+ (unsafe-fl* c.real-binding c.real-binding) 
                                                   (unsafe-fl* c.imag-binding c.imag-binding)))))))
   
-  ;; special handling of reals inside complex operations
-  (pattern e:float-coerce-expr
-           #:with real-binding (unboxed-gensym 'unboxed-float-)
-           #:with imag-binding #f
-           #:with (bindings ...)
-           #`(((real-binding) e.opt)))
-  
   (pattern (#%plain-app (~and op (~or (~literal real-part) (~literal unsafe-flreal-part)))
                         c:unboxed-inexact-complex-opt-expr)
            #:with real-binding #'c.real-binding
            #:with imag-binding #f
            #:with (bindings ...)
-           (begin (log-optimization "unboxed unary inexact complex" #'op)
+           (begin (log-optimization "unboxed unary inexact complex**" #'op)
                   #'(c.bindings ...)))
   (pattern (#%plain-app (~and op (~or (~literal imag-part) (~literal unsafe-flimag-part)))
                         c:unboxed-inexact-complex-opt-expr)
@@ -245,6 +238,16 @@
            #:with (bindings ...)
            (begin (log-optimization "unboxed unary inexact complex" #'op)
                   #'(c.bindings ...)))
+  
+  ;; special handling of reals inside complex operations
+  ;; must be after any cases that we are supposed to handle
+  (pattern e:float-coerce-expr
+           #:with real-binding (unboxed-gensym 'unboxed-float-)
+           #:with imag-binding #f
+           #:when (log-optimization "float-coerce-expr" #'e)
+           #:with (bindings ...)
+           #`(((real-binding) e.opt)))
+    
 
   ;; we can eliminate boxing that was introduced by the user
   (pattern (#%plain-app (~and op (~or (~literal make-rectangular)
@@ -348,15 +351,16 @@
 
   ;; we can optimize taking the real of imag part of an unboxed complex
   ;; hopefully, the compiler can eliminate unused bindings for the other part if it's not used
-  (pattern (#%plain-app (~and op (~or (~literal real-part) (~literal unsafe-flreal-part)
-                                      (~literal imag-part) (~literal unsafe-flimag-part)))
+  (pattern (#%plain-app (~and op (~or (~literal real-part) (~literal flreal-part) (~literal unsafe-flreal-part)
+                                      (~literal imag-part) (~literal flimag-part) (~literal unsafe-flimag-part)))
                         c:inexact-complex-expr)
-           #:with c*:inexact-complex-arith-opt-expr #'c
+           #:with c*:unboxed-inexact-complex-opt-expr #'c
            #:with opt
            (begin (log-optimization "unboxed inexact complex" #'op)
                   (reset-unboxed-gensym)
                   #`(let*-values (c*.bindings ...)
                       #,(if (or (free-identifier=? #'op #'real-part)
+                                (free-identifier=? #'op #'flreal-part)
                                 (free-identifier=? #'op #'unsafe-flreal-part))
                             #'c*.real-binding
                             #'c*.imag-binding))))
@@ -389,17 +393,6 @@
            #:with opt #'e.opt))
 
 (define-syntax-class inexact-complex-arith-opt-expr
-  (pattern (~and exp (#%plain-app op:inexact-complex-op e:expr ...))
-           #:when (isoftype? #'exp -InexactComplex)
-           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
-           #:with real-binding #'exp*.real-binding
-           #:with imag-binding #'exp*.imag-binding
-           #:with (bindings ...) #'(exp*.bindings ...)
-           #:with opt
-           (begin (log-optimization "unboxed inexact complex" #'exp)
-                  (reset-unboxed-gensym)
-                  #'(let*-values (exp*.bindings ...)
-                      (unsafe-make-flrectangular exp*.real-binding exp*.imag-binding))))
   
   (pattern (~and exp (#%plain-app op:inexact-complex->float-op e:expr ...))
            #:when (subtypeof? #'exp -Flonum)
@@ -412,6 +405,18 @@
                   (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
                       real-binding)))
+
+  (pattern (~and exp (#%plain-app op:inexact-complex-op e:expr ...))
+           #:when (isoftype? #'exp -InexactComplex)
+           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+           #:with real-binding #'exp*.real-binding
+           #:with imag-binding #'exp*.imag-binding
+           #:with (bindings ...) #'(exp*.bindings ...)
+           #:with opt
+           (begin (log-optimization "unboxed inexact complex" #'exp)
+                  (reset-unboxed-gensym)
+                  #'(let*-values (exp*.bindings ...)
+                      (unsafe-make-flrectangular exp*.real-binding exp*.imag-binding))))
   
   (pattern v:id
            #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)

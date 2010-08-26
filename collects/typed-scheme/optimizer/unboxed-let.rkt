@@ -161,6 +161,7 @@
       
       ;; can be used in a complex arithmetic expr, can be a direct child
       [exp:inexact-complex-arith-opt-expr
+       #:when (not (identifier? #'exp))
        (or (direct-child-of? v #'exp)
            (ormap rec (syntax->list #'exp)))]
       ;; if the variable gets rebound to something else, we look for unboxing
