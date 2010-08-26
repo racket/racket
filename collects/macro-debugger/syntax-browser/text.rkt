@@ -4,7 +4,7 @@
          racket/gui
          drracket/arrow
          framework/framework
-         unstable/interval-map
+         data/interval-map
          unstable/gui/notify
          "interfaces.rkt")
 

@@ -1,7 +1,6 @@
 #lang scribble/manual
 @(require scribble/eval
-          "utils.rkt"
-          (for-label unstable/skip-list
+          (for-label data/skip-list
                      racket/contract
                      racket/dict
                      racket/base))
@@ -9,12 +8,12 @@
 @title[#:tag "skip-list"]{Skip Lists}
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require unstable/skip-list))
+@(the-eval '(require data/skip-list))
 @(the-eval '(require racket/dict))
 
-@defmodule[unstable/skip-list]
+@defmodule[data/skip-list]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
+@author[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 Skip lists are a simple, efficient data structure for mutable
 dictionaries with totally ordered keys. They were described in the

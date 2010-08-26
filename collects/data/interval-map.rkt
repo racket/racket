@@ -3,7 +3,7 @@
 (require racket/contract
          racket/promise
          racket/dict
-         unstable/skip-list)
+         data/skip-list)
 
 ;; NOTE-1
 ;; I need to be able to split intervals. So I can either have 

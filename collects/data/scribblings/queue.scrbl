@@ -1,12 +1,12 @@
 #lang scribble/manual
-@(require scribble/eval "utils.rkt" (for-label racket unstable/queue))
-@(define qeval (eval/require 'unstable/queue))
+@(require scribble/eval "utils.rkt" (for-label racket data/queue))
+@(define qeval (eval/require 'data/queue))
 
 @title{Imperative Queues}
 
-@defmodule[unstable/queue]
+@defmodule[data/queue]
 
-@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
+@author[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides a simple mutable queue representation,
 first-in/first-out only.  Operations on queues mutate it in a

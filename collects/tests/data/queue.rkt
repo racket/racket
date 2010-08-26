@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require rackunit rackunit/text-ui unstable/queue "helpers.rkt")
+(require rackunit rackunit/text-ui data/queue)
 
 (run-tests
  (test-suite "queue.ss"

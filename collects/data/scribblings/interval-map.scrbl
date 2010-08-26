@@ -1,7 +1,6 @@
 #lang scribble/manual
 @(require scribble/eval
-          "utils.rkt"
-          (for-label unstable/interval-map
+          (for-label data/interval-map
                      racket/contract
                      racket/dict
                      racket/base))
@@ -9,18 +8,18 @@
 @title[#:tag "interval-map"]{Interval Maps}
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require unstable/interval-map))
+@(the-eval '(require data/interval-map))
 @(the-eval '(require racket/dict))
 
-@defmodule[unstable/interval-map]
+@defmodule[data/interval-map]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
+@author[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 An interval-map is a mutable dictionary-like data structure where
 mappings are added by @emph{half-open} intervals and queried by
 discrete points. Interval-maps can be used with any total
 order. Internally, an interval-map uses a skip-list
-(@racketmodname[unstable/skip-list]) of intervals for efficient query
+(@racketmodname[data/skip-list]) of intervals for efficient query
 and update.
 
 Interval-maps implement the dictionary (@racketmodname[racket/dict])
