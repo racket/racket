@@ -43,7 +43,9 @@ define_ts_z_p(GC_malloc_one_small_tagged, FSRC_OTHER)
 define_ts_n_s(scheme_make_native_closure, FSRC_OTHER)
 define_ts_n_s(scheme_make_native_case_closure, FSRC_OTHER)
 define_ts_bsi_v(call_set_global_bucket, FSRC_MARKS)
+#ifndef CAN_INLINE_ALLOC
 define_ts_s_s(scheme_make_envunbox, FSRC_OTHER)
+#endif
 define_ts_s_s(make_global_ref, FSRC_OTHER)
 define_ts_iiS_v(lexical_binding_wrong_return_arity, FSRC_MARKS)
 define_ts_iiS_v(call_wrong_return_arity, FSRC_MARKS)

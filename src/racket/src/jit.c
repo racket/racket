@@ -1574,6 +1574,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #ifdef CAN_INLINE_ALLOC
 THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
 long GC_initial_word(int sizeb);
+long GC_array_initial_word(int sizeb);
 long GC_compute_alloc_size(long sizeb);
 
 static void *retry_alloc_code;
@@ -1673,14 +1674,21 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
   (void)mz_tl_sti_l(tl_GC_gen0_alloc_page_ptr, JIT_R2, JIT_R0);
 
   /* GC header: */
-  a_word = GC_initial_word(amt);
-  jit_movi_l(JIT_R2, a_word);
-  jit_str_l(JIT_V1, JIT_R2);
-
-  /* Scheme_Object header: */
-  a_word = initial_tag_word(ty, immut);
-  jit_movi_l(JIT_R2, a_word);
-  jit_stxi_l(sizeof(long), JIT_V1, JIT_R2);
+  if (ty >= 0) {
+    a_word = GC_initial_word(amt);
+    jit_movi_l(JIT_R2, a_word);
+    jit_str_l(JIT_V1, JIT_R2);
+    
+    /* Scheme_Object header: */
+    a_word = initial_tag_word(ty, immut);
+    jit_movi_l(JIT_R2, a_word);
+    jit_stxi_l(sizeof(long), JIT_V1, JIT_R2);
+  } else {
+    /* an array of pointers */
+    a_word = GC_array_initial_word(amt);
+    jit_movi_l(JIT_R2, a_word);
+    jit_str_l(JIT_V1, JIT_R2);
+  }
 
   CHECK_LIMIT();
   __END_TINY_JUMPS__(1);
@@ -9995,11 +10003,19 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	  pos = mz_remap(SCHEME_INT_VAL(v));
 	  p = SCHEME_CDR(p);
 
+#ifdef CAN_INLINE_ALLOC
+          inline_alloc(jitter, sizeof(Scheme_Object*), -1, 0, 0, 0, 0);
+          CHECK_LIMIT();
+          jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
+	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+          jit_str_p(JIT_R0, JIT_R2);
+#else
 	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
 	  mz_prepare(1);
 	  jit_pusharg_p(JIT_R2);
 	  (void)mz_finish(ts_scheme_make_envunbox);
 	  jit_retval(JIT_R0);
+#endif
 	  jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_R0);
 	  CHECK_LIMIT();
 
@@ -10315,11 +10331,19 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
 	for (i = 0; i < c; i++) {
 	  CHECK_LIMIT();
+#ifdef CAN_INLINE_ALLOC
+          inline_alloc(jitter, sizeof(Scheme_Object*), -1, 0, 0, 0, 0);
+          CHECK_LIMIT();
+          jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
+          (void)jit_movi_p(JIT_R1, scheme_undefined);
+          jit_str_p(JIT_R0, JIT_R1);
+#else
 	  (void)jit_movi_p(JIT_R0, scheme_undefined);
 	  mz_prepare(1);
 	  jit_pusharg_p(JIT_R0);
 	  (void)mz_finish(ts_scheme_make_envunbox);
 	  jit_retval(JIT_R0);
+#endif
 	  jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_R0);
 	}
       }

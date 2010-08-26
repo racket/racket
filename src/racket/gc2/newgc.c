@@ -1230,6 +1230,23 @@ long GC_initial_word(int request_size)
   return w;
 }
 
+long GC_array_initial_word(int request_size)
+{
+  long w = 0;
+  objhead info;
+
+  const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
+
+  memset(&info, 0, sizeof(objhead));
+  info.type = PAGE_ARRAY;
+  
+  info.size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumped us up to the next word boundary */
+
+  memcpy(&w, &info, sizeof(objhead));
+
+  return w;
+}
+
 long GC_alloc_alignment()
 {
   return APAGE_SIZE;
