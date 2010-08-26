@@ -12,7 +12,7 @@
 	(sub1 (loop (sub1 n))))))
 
 (define proc-depth (find-depth (lambda (n) (nontail-loop n (lambda (x) x)))))
-(printf "non-tail loop overflows at ~a~n" proc-depth)
+(printf "non-tail loop overflows at ~a\n" proc-depth)
   
 (test (- proc-depth) 'deep-recursion (nontail-loop proc-depth (lambda (x) x)))
 
@@ -95,7 +95,7 @@
   (read paren-port))
 
 (define read-depth (find-depth read-deep))
-(printf "nested paren read overflows at ~a~n" read-depth)
+(printf "nested paren read overflows at ~a\n" read-depth)
 
 (define deep-list (read-deep read-depth))
 

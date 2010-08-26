@@ -35,7 +35,7 @@
       (let ([s (get-output-bytes p)]
 	    [es (get-output-bytes ep)])
 	(unless (equal? s es)
-	  (error 'try "bad expand ~e~n" e))
+	  (error 'try "bad expand ~e\n" e))
 	; (write (string->list s)) (newline)
 	(let ([e (parameterize ([read-accept-compiled #t])
 		     (read (open-input-bytes s)))])
@@ -67,7 +67,7 @@
 		    (current-module-declare-name))
 		(next-eval x)
 		(begin
-		  ;; (fprintf file ": ~a~n" +)
+		  ;; (fprintf file ": ~a\n" +)
 		  ;; (write x file) (newline file)
 		  (let ([p (open-output-bytes)]
 			[ep (open-output-bytes)]
@@ -78,7 +78,7 @@
 		    (let ([s (get-output-bytes p)]
 			  [es (get-output-bytes ep)])
 		      (unless (equal? s es)
-			'(fprintf (current-error-port) "bad expand (~a,~a) ~e~n" 
+			'(fprintf (current-error-port) "bad expand (~a,~a) ~e\n" 
 				  (bytes-length s) (bytes-length es) x))
 					; (display s file) (newline file)
 		      (let ([e (parameterize ([read-accept-compiled #t])

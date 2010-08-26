@@ -17,8 +17,8 @@
 	   [print-error
 	    (lambda (e)
 	      (if (exn? e)
-		  (fprintf (current-error-port) "~a~n" (exn-message e))
-		  (fprintf (current-error-port) "Exception in init file: ~e~n" e)))]
+		  (fprintf (current-error-port) "~a\n" (exn-message e))
+		  (fprintf (current-error-port) "Exception in init file: ~e\n" e)))]
            [beginize (lambda (l)
                        (string-append
                         "(begin "

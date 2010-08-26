@@ -716,7 +716,7 @@
 						       0 0 w h
 						       mode color)
 						 (set! x (+ x w 10))))
-					     (printf "bad bitmap~n")))])
+					     (printf "bad bitmap\n")))])
 				  ;; BB icon
 				  (do-one bb 'solid black)
 				  (let ([start x])

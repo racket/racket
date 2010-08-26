@@ -105,7 +105,7 @@
       (or (wait-for-drscheme-frame-pred)
           (begin
             (when print-message?
-              (printf "Select DrRacket frame~n"))
+              (printf "Select DrRacket frame\n"))
             (poll-until wait-for-drscheme-frame-pred)))))
   
   ;; wait-for-new-frame : frame [(listof eventspace) = null] -> frame
@@ -529,7 +529,7 @@
                      
                      [else
                       (loop (send snip previous)
-                            (cons (format "{unknown snip: ~e}~n" snip)
+                            (cons (format "{unknown snip: ~e}\n" snip)
                                   strings))])]))))))]))
   
   ;; run-one/sync : (-> A) -> A

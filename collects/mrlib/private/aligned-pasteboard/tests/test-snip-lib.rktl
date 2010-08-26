@@ -8,7 +8,7 @@
  "../aligned-editor-container.ss"
  "test-macro.ss")
 
-;;(printf "running tests for snip-lib.ss~n")
+;;(printf "running tests for snip-lib.ss\n")
 
 ;;snip-width: ((is-a?/c aligned-pasteboard<%>) (is-a?/c snip%) . -> . number?)
 ;;the width of a snip in the given pasteboard
@@ -205,4 +205,4 @@
   
   (send frame show false)
   )
-;;(printf "tests done~n")
+;;(printf "tests done\n")

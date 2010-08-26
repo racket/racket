@@ -125,7 +125,7 @@
                                                                                (- (car gf) good-so-far))])
                                                        
                                                        '(when (and (= depth RECURSION-DEPTH))
-                                                          (fprintf (current-error-port) "Returned goodness: ~a~n"  (car move))
+                                                          (fprintf (current-error-port) "Returned goodness: ~a\n"  (car move))
                                                           (print-board (cadr gf) (current-error-port)))
                                                        
                                                        (let ([g (car move)])
@@ -153,7 +153,7 @@
                           
                           '(when (and (= depth RECURSION-DEPTH))
                              (for-each (lambda (gf)
-                                         (fprintf (current-error-port) "Goodness: ~a~n"  (car gf))
+                                         (fprintf (current-error-port) "Goodness: ~a\n"  (car gf))
                                          (print-board (cadr gf) (current-error-port)))
                                        good-futures))
                           
@@ -263,9 +263,9 @@
             (thread 
              (lambda ()
                (let loop ([iteration 0])
-                 ; (fprintf (current-error-port) "Starting iteration ~a~n" iteration)
+                 ; (fprintf (current-error-port) "Starting iteration ~a\n" iteration)
                  (set! result (f iteration))
-                 '(fprintf (current-error-port) " [finished iteration depth ~a: ~a~a]~n" 
+                 '(fprintf (current-error-port) " [finished iteration depth ~a: ~a~a]\n" 
                            iteration (cadr result) (add1 (cddr result)))
                  (unless (or (pair? (car result)))
                    (loop (add1 iteration)))))))
@@ -282,7 +282,7 @@
       
       (define (go)
         '(begin
-           (fprintf (current-error-port) "Start:~n")
+           (fprintf (current-error-port) "Start:\n")
            (print-board board (current-error-port)))
         (let* ([go (lambda (i) 
                      (set! RECURSION-DEPTH i)
@@ -292,7 +292,7 @@
                            (go depth)
                            (use-up-time go))])
           '(when (pair? (car result))
-             (fprintf (current-error-port) "we ~a~n"
+             (fprintf (current-error-port) "we ~a\n"
                       (if (= (caar result) LOSER-GOODNESS)
                           "lose"
                           "win")))

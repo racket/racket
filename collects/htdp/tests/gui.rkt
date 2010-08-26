@@ -14,7 +14,7 @@
 (define call-back
   (lambda (x)
     (begin
-      (draw-message msg (format "~s ~s~n" (choice-index chc) (text-contents txt)))
+      (draw-message msg (format "~s ~s\n" (choice-index chc) (text-contents txt)))
       (draw-message msg "Bye World"))))
 
 (define (destroy x) (hide-window x))

@@ -480,7 +480,7 @@
          (loop (add1 port-no) (add1 attempts))]
         [else
          (error 'get-next-port
-                "Couldn't find an available port between ~a and ~a~n"
+                "Couldn't find an available port between ~a and ~a\n"
                 starting-at (+ starting-at max-attempts))]))))
 
 ;; the current-server is a (make-parameter (or/c #f a-server))

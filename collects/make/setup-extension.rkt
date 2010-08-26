@@ -91,7 +91,7 @@
                                    variant-dir)]
              [dest-file.so (build-path dest-dir (append-extension-suffix base-file))])
         (make-directory* dest-dir)
-        (printf "  Copying ~a~n       to ~a~n" file.so dest-file.so)
+        (printf "  Copying ~a\n       to ~a\n" file.so dest-file.so)
         (when (file-exists? dest-file.so) 
           (delete-file dest-file.so))
         (copy-file file.so dest-file.so))

@@ -17,7 +17,7 @@
   (export make:collection^)
 
   (define (make-collection collection-name collection-files argv)
-    (printf "building collection ~a: ~a~n" collection-name collection-files)
+    (printf "building collection ~a: ~a\n" collection-name collection-files)
     (let* ([zo-compiler #f]
            [src-dir (current-directory)]
            [sses (sort collection-files

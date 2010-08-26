@@ -93,7 +93,7 @@
 		      (and (exn:fail? x)
 			   (regexp-match "shutdown" (exn-message x))))
 		    (lambda (x)
-		      (printf "got expected error: ~a~n" (exn-message x))
+		      (printf "got expected error: ~a\n" (exn-message x))
 		      'error)])
      (parameterize ([current-eventspace e]) 
        (t)))))

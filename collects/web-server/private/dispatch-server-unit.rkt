@@ -72,7 +72,7 @@
     (new-connection config:initial-connection-timeout
                     ip op (current-custodian) #f))
   (let connection-loop ()
-    #;(printf "C: ~a~n" (connection-id conn))
+    #;(printf "C: ~a\n" (connection-id conn))
     (let-values ([(req close?) (config:read-request conn config:port port-addresses)])
       (set-connection-close?! conn close?)
       (config:dispatch conn req)

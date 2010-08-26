@@ -378,7 +378,7 @@
               [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy
 	      [((Struct: nm (? Type? parent) flds proc _ _ _ _) other) 
-               ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
+               ;(printf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
 	      [((Struct: (== promise-sym) _ (list t) _ _ _ _ _) (Struct: (== promise-sym) _ (list t*) _ _ _ _ _)) (subtype* A0 t t*)]

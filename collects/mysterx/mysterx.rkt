@@ -2450,7 +2450,7 @@
 						 (with-handlers
 						  ([void
 						    (lambda (e)
-						      (printf "~a~n" (exn-message e))
+						      (printf "~a\n" (exn-message e))
 						      (loop))])
 						    (mxprims:get-event browser))]
 						[event (make-object mx-event% prim-event)]

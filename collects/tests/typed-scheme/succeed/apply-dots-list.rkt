@@ -10,14 +10,14 @@
  (let aux ([tests tests]
            [num-passed 0])
    (if (null? tests)
-       (printf "~a tests passed.~n" num-passed)
+       (printf "~a tests passed.\n" num-passed)
        (let ((test (car tests)))
          (let ((actual ((car test)))
                (expected (cadr test))
                (msg (caddr test)))
            (if (equal? actual expected)
                (aux (cdr tests) (+ num-passed 1))
-               (printf "Test failed: ~a. Expected ~a, got ~a.~n"
+               (printf "Test failed: ~a. Expected ~a, got ~a.\n"
                        msg expected actual)))))))
 
 (apply check-all tests) ; Works in untyped, but not in typed

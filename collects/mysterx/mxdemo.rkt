@@ -149,7 +149,7 @@
     (let ([count 0])
       (lambda (ev)
         (when (send ev mousemove?)
-          (printf "mousemove #~a, but who's counting?~n" count)
+          (printf "mousemove #~a, but who's counting?\n" count)
           (set! count (add1 count))))))
   
   (define (today-handler ev)
@@ -198,7 +198,7 @@
         (send ctrldoc find-element "CAPTION" "Caption")
 	(lambda (ev)
 	  (when (send ev keypress?)
-            (printf "ooh that tickles~n"))))
+            (printf "ooh that tickles\n"))))
   
   (for-each
    (lambda (sym-handler)

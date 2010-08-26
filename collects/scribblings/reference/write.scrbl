@@ -142,7 +142,7 @@ supplied than are used by the format string, the
 
 @examples[
 (fprintf (current-output-port)
-         "~a as a string is ~s.~n"
+         "~a as a string is ~s.\n"
          '(3 4) 
          "(3 4)")
 ]}
@@ -163,7 +163,7 @@ Formats to a string. The result is the same as
 ]
 
 @examples[
-(format "~a as a string is ~s.~n" '(3 4) "(3 4)")
+(format "~a as a string is ~s.\n" '(3 4) "(3 4)")
 ]}
 
 @defboolparam[print-pair-curly-braces on?]{

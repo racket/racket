@@ -44,7 +44,7 @@
             (set! failed-tests (+ failed-tests 1))
             (unless verbose? 
               (printf "\ntesting ~s ... " t))
-            (printf "TEST FAILED!~nexpected:~a\nrewritten-received:~a\nreceived:~a\n\n"
+            (printf "TEST FAILED!\nexpected:~a\nrewritten-received:~a\nreceived:~a\n\n"
                     (combine-in-lines expected)
                     (combine-in-lines rewritten-results)
                     (combine-in-lines results))))))))

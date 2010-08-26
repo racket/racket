@@ -30,7 +30,7 @@
      (define-foreign-lib lib name type ... -> _void)]
     [(_ lib name type ...)
      (begin
-       ;; (printf "~a~n" 'name)
+       ;; (printf "~a\n" 'name)
        (provide name)
        (define name
          (get-ffi-obj 'name lib (_fun* type ...) (unavailable 'name))))]))

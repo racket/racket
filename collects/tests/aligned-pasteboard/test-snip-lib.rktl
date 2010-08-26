@@ -7,8 +7,8 @@
  mrlib/private/aligned-pasteboard/aligned-pasteboard
  mrlib/private/aligned-pasteboard/aligned-editor-container)
 
-(printf "running tests for snip-lib.ss~n")
-  
+(printf "running tests for snip-lib.ss\n")
+
 ;;snip-min-width: ((is-a?/c snip%) . -> . number?)
 ;;the width of a snip in the given pasteboard
 (let*

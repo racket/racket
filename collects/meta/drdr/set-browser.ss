@@ -1,6 +1,6 @@
 #lang scheme
 
-(printf "Setting the default browser to something safe...~n")
+(printf "Setting the default browser to something safe...\n")
 
 ; XXX maybe have it call /quit
 (put-preferences 

@@ -44,7 +44,7 @@
 (define (connect/proc call-back)
   (check-proc 'connect call-back 2 '1st "2 arguments")
   (if button
-      (printf "connect: called a second time~n")
+      (printf "connect: called a second time\n")
       (begin 
         (set! button (make-object button% "LookUp" panel call-back '(border)))
         (send query-tf focus)

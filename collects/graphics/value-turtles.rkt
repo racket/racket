@@ -44,7 +44,7 @@
                 [(struct:line) make-line]
                 [(struct:merge) make-tmerge]
                 [(struct:turtles/offset) make-turtles/offset]
-                [else (error 'vec->struc "unknown structure: ~s~n" sexp)])
+                [else (error 'vec->struc "unknown structure: ~s\n" sexp)])
               (map vec->struc (vector-ref sexp 1)))]
       [else sexp]))
   

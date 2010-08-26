@@ -50,7 +50,7 @@
              [val (cdr sig+val)]
              [t (tokenize sig val pos)])
         (when (trace-verbose?)
-          (printf "~s: ~s~n" pos
+          (printf "~s: ~s\n" pos
                   (token-name (position-token-token t))))
         (set! pos (add1 pos))
         t))))

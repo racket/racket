@@ -37,7 +37,7 @@
                        (mk-dest-bin #t)))
 
 (define (prepare exe src)
-  (printf "Making ~a with ~a...~n" exe src)
+  (printf "Making ~a with ~a...\n" exe src)
   (when (file-exists? exe)
     (delete-file exe)))
 

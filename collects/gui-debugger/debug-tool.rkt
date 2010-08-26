@@ -866,7 +866,7 @@
           (define/public (print-to-console v)
             ;; ==drscheme eventspace thread==
             ;; only when a user thread is suspended
-            (do-in-user-thread (lambda () (fprintf (current-error-port) " ### DEBUGGER: ~s~n" v))))
+            (do-in-user-thread (lambda () (fprintf (current-error-port) " ### DEBUGGER: ~s\n" v))))
           
           (define (frame->end-breakpoint-status frame)
             (let/ec k
@@ -1098,7 +1098,7 @@
             (for-each
              (lambda (name/value)
                (let ([name (format "~a" (syntax-e (first name/value)))]
-                     [value (format " => ~s~n" (second name/value))])
+                     [value (format " => ~s\n" (second name/value))])
                  (send variables-text insert name)
                  (send variables-text change-style bold-sd
                        (- (send variables-text last-position) (string-length name))
@@ -1135,7 +1135,7 @@
               (unless already-stopped?
                 (send stack-frames delete 0 (send stack-frames last-position))
                 (for-each (lambda (trimmed-expr)
-                            (send stack-frames insert (format "~a~n" trimmed-expr)))
+                            (send stack-frames insert (format "~a\n" trimmed-expr)))
                           trimmed-exprs))
               (send stack-frames change-style normal-sd 0 (send stack-frames last-position))
               (send stack-frames change-style bold-sd

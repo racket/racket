@@ -35,7 +35,7 @@
    ((mailbox-receive mb 10 error-timeout (want-thnk 24))) => 24  
    ))
 
-(printf "Channel~n")
+(printf "Channel\n")
 (test-it! ch:new-mailbox ch:mailbox? ch:mailbox-send! ch:mailbox-receive)
-(printf "Semaphore~n")
+(printf "Semaphore\n")
 (test-it! sema:new-mailbox sema:mailbox? sema:mailbox-send! sema:mailbox-receive)

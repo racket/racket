@@ -74,7 +74,7 @@ This code launches two places, echos a message to them and then waits for the pl
    (for ([i (in-range 2)]
          [p pls])
       (place-channel-send p i)
-      (printf "~a~n" (place-channel-recv p)))
+      (printf "~a\n" (place-channel-recv p)))
    (map place-wait pls))
 ]
 

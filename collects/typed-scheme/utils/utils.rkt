@@ -115,7 +115,7 @@ at least theoretically.
             (when (last-time)
               (error #f "Timing already started"))
             (last-time (current-process-milliseconds))
-            (printf "Starting ~a at ~a~n" msg (last-time)))])
+            (printf "Starting ~a at ~a\n" msg (last-time)))])
        (syntax-rules ()
          [(_ msg)
           (begin
@@ -125,7 +125,7 @@ at least theoretically.
                    [old (last-time)]
                    [diff (- t old)])
               (last-time t)
-              (printf "Timing ~a at ~a@~a~n" msg diff t)))]))
+              (printf "Timing ~a at ~a@~a\n" msg diff t)))]))
       (values (lambda _ #'(void)) (lambda _ #'(void)))))
 
 ;; custom printing

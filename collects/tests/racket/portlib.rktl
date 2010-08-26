@@ -92,7 +92,7 @@
     (test "anana" read-string 5 in)
     ;; Set up two commits, pick one to succeed:
     (let ([go (lambda (which peek? suspend/kill)
-		(printf "~a ~a ~a~n" which peek? suspend/kill)
+		(printf "~a ~a ~a\n" which peek? suspend/kill)
 		(display "donut" out)
 		(test #"don" peek-bytes 3 0 in)
 		(let* ([r1 '?]
@@ -223,7 +223,7 @@
 					    (max 1 (random (- (bytes-length s) (bytes-length a))))))]
 	 [c (subbytes s (+ (bytes-length a) (bytes-length b)))])
     (define (go-stream close? copy? threads? peek?)
-      (printf "Go stream: ~a ~a ~a ~a~n" close? copy? threads? peek?)
+      (printf "Go stream: ~a ~a ~a ~a\n" close? copy? threads? peek?)
       (let*-values ([(in1 out) (make-pipe-with-specials)]
 		    [(in out1) (if copy?
 				   (make-pipe-with-specials)

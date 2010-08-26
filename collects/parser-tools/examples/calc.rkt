@@ -82,7 +82,7 @@
 	    (lambda ()
 	      (let ((result (calcp (lambda () (calcl ip)))))
 		(when result
-                  (printf "~a~n" result)
+                  (printf "~a\n" result)
                   (one-line))))))
     (one-line)))
 

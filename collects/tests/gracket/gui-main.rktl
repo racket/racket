@@ -8,7 +8,7 @@
 		  f
 		  (begin
 		    (unless printout?
-		      (printf "please select the console~n"))
+		      (printf "please select the console\n"))
 		    (sleep 1/2)
 		    (loop #t)))))]
 	 [wait
@@ -67,9 +67,9 @@
 	 [frame (mred:test:get-active-frame)]
 	 [_ (mred:test:keystroke #\3)]
 	 [autosave-time (+ 10 (mred:get-preference 'mred:autosave-delay))]
-	 [_ (printf "waiting for autosave timeout (~a secs)~n" autosave-time)]
+	 [_ (printf "waiting for autosave timeout (~a secs)\n" autosave-time)]
 	 [_ (sleep autosave-time)]
-	 [_ (printf "finished waiting for autosave timeout~n")]
+	 [_ (printf "finished waiting for autosave timeout\n")]
 	 [_ (unless (file-exists? backup-file)
 	      (error 'autosave "autosave file (~a) not created" backup-file))]
 	 [_ (mred:test:menu-select "File" save-name)]
@@ -80,7 +80,7 @@
 	 [_ (wait-pending)]
 	 [_ (wait (lambda () (eq? (mred:test:get-active-frame) console))
 		  "focus didn't return to the console after closing autosave test frame")])
-    (printf "test finished~n")))
+    (printf "test finished\n")))
 
 ;
 ;  when rewriting, apply this function to: 

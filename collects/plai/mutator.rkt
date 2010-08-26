@@ -265,10 +265,10 @@
           [(result-addr)
            (cond
              [(procedure? result-addr)
-              (printf "Imported procedure~n")
+              (printf "Imported procedure\n")
               result-addr]
              [(location? result-addr)
-              (printf "Value at location ~a:~n" result-addr)
+              (printf "Value at location ~a:\n" result-addr)
               (gc->scheme result-addr)])])))]))
 
 ; Module Begin
@@ -304,7 +304,7 @@
              (when (gui-available?) 
                (if (<= (#%datum . heap-size) 500)
                    (set-ui! (dynamic-require `plai/private/gc-gui 'heap-viz%))
-                   (printf "Large heap; the heap visualizer will not be displayed.~n")))
+                   (printf "Large heap; the heap visualizer will not be displayed.\n")))
              (init-allocator))))]
     [_ (raise-syntax-error 'mutator 
                            "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <module-path> <literal-number>)"

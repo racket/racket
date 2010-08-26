@@ -113,7 +113,7 @@
                                       (let ((next-check (vector-ref next 1)))
                                         (or (>= next-check max-char-num)
                                             (loop (add1 next-check) (cdr nexts))))))))))
-                   (printf "Warning: lexer at ~a can accept the empty string.~n" stx)))
+                   (printf "Warning: lexer at ~a can accept the empty string.\n" stx)))
                (with-syntax ((start-state-stx start)
                              (trans-table-stx trans)
                              (no-lookahead-stx no-look)
@@ -230,7 +230,7 @@
               (lambda (ip)
                 (let ((first-pos (get-position ip))
                       (first-char (peek-char-or-special ip 0)))
-                  ;(printf "(peek-char-or-special port 0) = ~e~n" first-char)
+                  ;(printf "(peek-char-or-special port 0) = ~e\n" first-char)
                   (cond
                     ((eof-object? first-char)
                      (do-match ip first-pos eof-action (read-char-or-special ip)))
@@ -279,7 +279,7 @@
                             (let* ((act (vector-ref actions next-state))
                                    (next-length-bytes (+ (char-utf-8-length char) length-bytes))
                                    (next-char (peek-char-or-special ip next-length-bytes)))
-                              #;(printf "(peek-char-or-special port ~e) = ~e~n"
+                              #;(printf "(peek-char-or-special port ~e) = ~e\n"
                                       next-length-bytes next-char)
                               (lexer-loop next-state 
                                           next-char
@@ -312,13 +312,13 @@
 	 (position-offset first-pos)
 	 (- (position-offset end-pos) (position-offset first-pos)))))
     (let ((match (read-string longest-match-length lb)))
-      ;(printf "(read-string ~e port) = ~e~n" longest-match-length match)
+      ;(printf "(read-string ~e port) = ~e\n" longest-match-length match)
       (do-match lb first-pos longest-match-action match)))
       
   (define file-path (make-parameter #f))
                    
   (define (do-match ip first-pos action value)
-    #;(printf "(action ~a ~a ~a ~a)~n" 
+    #;(printf "(action ~a ~a ~a ~a)\n" 
             (position-offset first-pos) (position-offset (get-position ip)) value ip)
     (action first-pos (get-position ip) value ip))
   

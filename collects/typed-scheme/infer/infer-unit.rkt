@@ -525,7 +525,7 @@
     (match v
       [(c S X T)
        (let ([var (hash-ref h (or variable X) Constant)])
-         ;(printf "variance was: ~a~nR was ~a~nX was ~a~nS T ~a ~a~n" var R (or variable X) S T)
+         ;(printf "variance was: ~a\nR was ~a\nX was ~a\nS T ~a ~a\n" var R (or variable X) S T)
          (evcase var 
                  [Constant S]
                  [Covariant S]

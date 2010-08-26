@@ -12,7 +12,7 @@
   (set! test-count (add1 test-count))
   (unless (equal? expect got)
     (let ([s (format "~a: expected ~e; got ~e" name expect got)])
-      (fprintf (current-error-port) "ERROR: ~a~n" s)
+      (fprintf (current-error-port) "ERROR: ~a\n" s)
       (set! errs (cons s errs)))))
 
 (define-syntax mismatch
@@ -23,7 +23,7 @@
 	(test 'was-mismatch 'mismtach
 	      (with-handlers ([exn:fail:contract?
 			       (lambda (x)
-                                 (printf "~a~n" (exn-message x))
+                                 (printf "~a\n" (exn-message x))
 				 'was-mismatch)]
 			      [exn:fail? values])
 		expr)))])))
@@ -51,11 +51,11 @@
 (define (report-errs)
   (newline)
   (if (null? errs)
-      (printf "Passed all ~a tests~n" test-count)
+      (printf "Passed all ~a tests\n" test-count)
       (begin
-	(fprintf (current-error-port) "~a Error(s) in ~a tests~n" (length errs) test-count)
+	(fprintf (current-error-port) "~a Error(s) in ~a tests\n" (length errs) test-count)
 	(for-each
 	 (lambda (s)
-	   (fprintf (current-error-port) "~a~n" s))
+	   (fprintf (current-error-port) "~a\n" s))
 	 (reverse errs)))))
 

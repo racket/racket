@@ -20,7 +20,7 @@
   (define log 
     (read-cache* (build-path (revision-log-dir rev) filename)))
   (when log
-    (printf "~S~n"
+    (printf "~S\n"
             (list rev 
                   (status-duration log)
                   (filter-map
@@ -39,7 +39,7 @@
 (define data-file (path-timing-log filename))
 (with-handlers ([exn:fail? void])
   (make-parent-directory data-file))
-(printf "Making log for ~a~n" filename)
+(printf "Making log for ~a\n" filename)
 
 (if revision
     (with-output-to-file

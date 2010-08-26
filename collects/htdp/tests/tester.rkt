@@ -8,7 +8,7 @@
       [(_ form ...)
        (syntax
         (with-handlers ([exn? (lambda (e) 
-                                (printf "~a~n" (exn-message e))
+                                (printf "~a\n" (exn-message e))
                                 #t)])
           form ...
           #f))])))

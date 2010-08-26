@@ -18,7 +18,7 @@
              (case mode
                [(no-cache) (error 'cache/file "No cache available: ~a" pth)]
                [(cache always)
-                #;(printf "cache/file: running ~S for ~a~n" thnk pth)
+                #;(printf "cache/file: running ~S for ~a\n" thnk pth)
                 (recompute!)]))])
        (read-cache pth))]))
 

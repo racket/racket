@@ -276,7 +276,7 @@
     (begin
       (define (name) (blah))
       (define (blah)
-	(printf "hi~n")))]))
+	(printf "hi\n")))]))
 
 (define fish%
   (class* object% (eater<%>)

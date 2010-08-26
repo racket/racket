@@ -68,7 +68,7 @@
   (sleep)
   (collect-garbage)
   (collect-garbage)
-  (printf "Thread: ~s Cycle: ~s~n" id n)
+  (printf "Thread: ~s Cycle: ~s\n" id n)
   ; (dump-object-stats)
   ; (if (and dump-stats? (= id 1))
   ;    (dump-memory-stats))
@@ -229,7 +229,7 @@
   (map (lambda (x)
 	 (let ([v (weak-box-value (cdr x))])
 	   (when v
-             (printf "~s ~s~n" (car x) v))))
+             (printf "~s ~s\n" (car x) v))))
        allocated)
   (void))
 
@@ -243,10 +243,10 @@
   (if #f
       (thread (lambda ()
 		(read)
-		(printf "breaking~n")
+		(printf "breaking\n")
 		(break-thread t)
 		(thread-wait t)
-		(printf "done~n")))
+		(printf "done\n")))
       (void)))
 
 (define (do-test)

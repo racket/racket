@@ -118,7 +118,7 @@
                (loop (- i 1)))))])
     (for-each-point
      (lambda (i j)
-       ;(printf "(~a, ~a) -> ~a~n" i j (unmarshall-color (f i j)))
+       ;(printf "(~a, ~a) -> ~a\n" i j (unmarshall-color (f i j)))
        ((draw-pixel v) (make-posn i j) (f i j))))
     ;(get-mouse-click v)
     (for-each-point

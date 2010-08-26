@@ -249,9 +249,9 @@
   (lambda (stx #:allow-nonstx? [allow-nonstx? #f] #:default [default #f])
     (let ([replacement (hash-ref table stx #f)])
       (if replacement
-          (begin #;(printf "  replacing ~s with ~s~n" stx replacement)
+          (begin #;(printf "  replacing ~s with ~s\n" stx replacement)
                  replacement)
-          (begin #;(printf "  not replacing ~s~n" stx)
+          (begin #;(printf "  not replacing ~s\n" stx)
                  default)))))
 
 (define (make-renames-table from0 to0)

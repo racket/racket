@@ -202,7 +202,7 @@
 	     [three-red-board (move two-red-board (cadr red-pieces) #f #f 1 1 values void)])
 	(define (test x y)
 	  (unless (equal? x y) 
-	    (error 'test "failure!: ~s ~s~n" x y)))
+	    (error 'test "failure!: ~s ~s\n" x y)))
 	(test #f (n-in-a-row/col? 1 empty-board 0 0 'red))
 	(test #t (n-in-a-row/col? 1 one-red-board 0 0 'red))
 	(test #t (n-in-a-row/col? 2 two-red-board 0 0 'red))

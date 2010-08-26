@@ -18,7 +18,7 @@
     (define val (cdr sig+val))
     (define t (tokenize sig val pos))
     (send browser add-text
-          (format "Signal: ~s: ~s~n"
+          (format "Signal: ~s: ~s\n"
                   pos
                   (token-name (position-token-token t))))
     (when val

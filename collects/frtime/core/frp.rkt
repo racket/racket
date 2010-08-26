@@ -614,7 +614,7 @@
                        (loop)]
                       [msg
                        (fprintf (current-error-port)
-                                "frtime engine: msg not understood: ~a~n"
+                                "frtime engine: msg not understood: ~a\n"
                                 msg)
                        (loop)]))
            

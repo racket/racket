@@ -265,8 +265,8 @@
 	   (fw:gui-utils:get-choice
 	    (format "~
   Solving can be a very computationally intense task;~
-~nyou may run out of memory and crash. ~
-~nReally continue? (Be sure to save your work!)")
+\nyou may run out of memory and crash. ~
+\nReally continue? (Be sure to save your work!)")
 	    "Yes"
 	    "No"
 	    "Really Solve?"

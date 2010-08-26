@@ -83,7 +83,7 @@
   (for-each (lambda (form)
 	      (set! cnt (add1 cnt))
 	      (when (zero? (modulo cnt 100))
-		(printf "~a/~a~n" cnt total))
+		(printf "~a/~a\n" cnt total))
 	      (when ((add1 (random 10)) . >= . do-threshold)
                 ;; (pretty-print form)
 		(parameterize ([current-namespace (make-base-namespace)])
@@ -92,7 +92,7 @@
 			[mode "top-level"])
 		    (with-handlers ([exn:fail?
 				     (lambda (x)
-				       (printf "At ~a:~n" mode)
+				       (printf "At ~a:\n" mode)
 				       (pretty-print form)
 				       (raise x))])
 		      (eval `(require scheme/package))

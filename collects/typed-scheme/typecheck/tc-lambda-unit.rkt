@@ -251,7 +251,7 @@
                          ns))]
             [ty (extend-tvars tvars
                   (maybe-loop form formals bodies (ret expected*)))])
-       ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
+       ;(printf "plambda: ~a ~a ~a \n" literal-tvars new-tvars ty)
        t)]
     [(tc-result1: (and t (PolyDots-names: (list ns ... dvar) expected*)))
      (let-values 
@@ -278,7 +278,7 @@
        [tvars
         (let* ([ty (extend-tvars tvars
                      (tc/mono-lambda/type formals bodies #f))])
-          ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
+          ;(printf "plambda: ~a ~a ~a \n" literal-tvars new-tvars ty)
           (make-Poly tvars ty))])]
     [(tc-result1: t) 
      (unless (check-below (tc/plambda form formals bodies #f) t)

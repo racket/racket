@@ -52,7 +52,7 @@
                (format "number in 0 ...~s" GUESS) "first" i)
     '(if (and (number? i) (integer? i) (exact? i) (<= 0 i (sub1 GUESS)))
          ...  
-         (printf "control: improper index, expected 0 ... ~s~n" GUESS))
+         (printf "control: improper index, expected 0 ... ~s\n" GUESS))
     (send (list-ref guess-choices (- GUESS i 1)) get-selection))
   
   ;; connect : (button% control-event% -> true) -> true
@@ -61,7 +61,7 @@
   (define (connect/proc call-back)
     (check-proc 'connect call-back 2 '1st "2 arguments")
     (if check-button
-        (printf "connect: called a second time~n")
+        (printf "connect: called a second time\n")
         (begin
           (set! check-button 
                 (make-object button% "Check" guess-panel call-back '(border)))

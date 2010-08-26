@@ -555,7 +555,7 @@
              [proc-k (lambda (evt) (proc emit suspend evt) (set! proc-k #f))])
       (let ([thunk (lambda ()
                      (when (ormap undefined? streams)
-                       ;(fprintf (current-error-port) "had an undefined stream~n")
+                       ;(fprintf (current-error-port) "had an undefined stream\n")
                        (set! streams (fix-streams streams args)))
                      (let loop ([streams streams])
                        (extract (lambda (the-event strs)
@@ -658,7 +658,7 @@
        rtn))))
 
 (define (make-mutable lst)
-  (printf "make-mutable called on ~a~n" lst)
+  (printf "make-mutable called on ~a\n" lst)
   lst
   #;(if (pair? lst)
         (mcons (first lst) (make-mutable (rest lst)))
@@ -774,7 +774,7 @@
                                               (syntax->list #'(exp ...)))])
               #'(tag new-exp ...))]
            [x (begin
-                (fprintf (current-error-port) "snapshot-unbound: fell through on ~a~n" #'x)
+                (fprintf (current-error-port) "snapshot-unbound: fell through on ~a\n" #'x)
                 '())])
          expr insp #f))))
   
@@ -793,7 +793,7 @@
                             [(free-var ...) (hash-map unbound-ids
                                                       (lambda (k v) k))])
                 (begin
-                  ;(printf "~a~n" unbound-ids)
+                  ;(printf "~a\n" unbound-ids)
                   #'(if (ormap behavior? (list free-var ...))
                         (procs->signal:compound (lambda _ 
                                                   (lambda (id ...)

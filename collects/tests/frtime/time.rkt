@@ -3,4 +3,4 @@
 
 (==> (filter-e zero? (changes (modulo seconds 10)))
      (lambda (v)
-       (printf "~S~n" (value-now x))))
+       (printf "~s\n" (value-now x))))

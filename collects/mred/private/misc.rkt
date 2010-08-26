@@ -30,7 +30,7 @@
 					 (let loop ()
 					   (let ([l (read-line p)])
 					     (unless (eof-object? l)
-					       (fprintf orig-err "~a~n" l)
+					       (fprintf orig-err "~a\n" l)
 					       (loop)))))
 				       (lambda () (close-input-port p))))))])
 	     (echo in)

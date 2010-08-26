@@ -268,7 +268,7 @@
 		   (if (< line 100) " " "")
 		   (if (< line 1000) " " ""))
 	  5)
-	(fprintf port "!~n"))))
+	(fprintf port "!\n"))))
 
 (define modes
   (list
@@ -308,7 +308,7 @@
      (lambda ()
        (let loop ([modes modes][n n])
 	 (cond
-	  [(null? modes) (printf ":~n") (map pretty-print vs)]
+	  [(null? modes) (printf ":\n") (map pretty-print vs)]
 	  [(positive? (bitwise-and n 1))
 	   (let ([mode (car modes)])
 	     (printf "~s " (car mode))

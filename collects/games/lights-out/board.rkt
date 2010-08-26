@@ -134,7 +134,7 @@
 			     [n choice])
 		    (cond
 		     [(zero? n) 
-					;(printf "choose: ~a~n" (car choices))
+					;(printf "choose: ~a\n" (car choices))
 		      (set! choice-coordinates (car choices))
 		      (cdr choices)]
 		     [else (cons (car choices) (loop (cdr choices) (- n 1)))])))

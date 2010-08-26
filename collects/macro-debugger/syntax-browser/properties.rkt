@@ -255,19 +255,19 @@
 
     ;; display-kv : any any -> void
     (define/private (display-kv key value)
-      (display (format "~a~n" key) key-sd)
-      (display (format "~s~n~n" value) #f))
+      (display (format "~a\n" key) key-sd)
+      (display (format "~s\n\n" value) #f))
 
     ;; display-subkv : any any -> void
     (define/public (display-subkv k v)
       (display (format "~a: " k) sub-key-sd)
-      (display (format "~a~n" v) #f))
+      (display (format "~a\n" v) #f))
 
     (define/public (display-subkv/value k v)
       (display-subkv k v)
       #;
       (begin
-        (display (format "~a:~n" k) sub-key-sd)
+        (display (format "~a:\n" k) sub-key-sd)
         (let* ([value-text (new text:standard-style-list% (auto-wrap #t))]
                [value-snip (new editor-snip% (editor value-text))]
                [value-port (make-text-port value-text)])

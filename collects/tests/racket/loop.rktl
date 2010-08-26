@@ -22,8 +22,6 @@
       (if (equal? n v)
 	  (begin
 	    (when (zero? (modulo n 100))
-		  (printf "~a~n" n))
+		  (printf "~a\n" n))
 	    (loop (add1 n)))
-	  (error 'loop "messed up: ~a != ~a~n" n v)))))
-
-
+	  (error 'loop "messed up: ~a != ~a\n" n v)))))

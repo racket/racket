@@ -94,7 +94,7 @@
                            "\n"))
            (tc-error/expr #:return (ret (Un))
                           (string-append
-                           "Polymorphic " fcn-string " could not be applied to arguments:~n"
+                           "Polymorphic " fcn-string " could not be applied to arguments:\n"
                            (domain-mismatches t msg-doms msg-rests msg-drests msg-rngs argtypes #f #f #:expected expected)
                            (if (not (for/and ([t (apply append (map fv/list msg-doms))]) (memq t msg-vars)))
                                (string-append "Type Variables: " (stringify msg-vars) "\n")
@@ -113,7 +113,7 @@
                            "\n"))
            (tc-error/expr #:return (ret (Un))
                           (string-append
-                           "Polymorphic " fcn-string " could not be applied to arguments:~n"
+                           "Polymorphic " fcn-string " could not be applied to arguments:\n"
                            (domain-mismatches t msg-doms msg-rests msg-drests msg-rngs argtypes #f #f #:expected expected)
                            (if (not (for/and ([t (apply append (map fv/list msg-doms))]) (memq t msg-vars)))
                                (string-append "Type Variables: " (stringify msg-vars) "\n")

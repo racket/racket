@@ -558,7 +558,7 @@
 	  (lambda (v b)
 	    (let* ([args (make-args bg b)]
 		   [expr (cons bg args)])
-	      (printf "~s:~n" expr)
+	      (printf "~s:\n" expr)
 	      (teval `(test ,v (quote ,bg) ,expr))))]
 	 [make-bg
 	  (lambda (b)

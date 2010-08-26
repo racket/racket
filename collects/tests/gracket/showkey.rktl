@@ -9,7 +9,7 @@
 	 (override
 	   [on-event
 	    (lambda (ev)
-	      (printf "~a~a MOUSE ~a (~a,~a)\n  mods:~a~a~a~a~a\n  buttons:~a~a~a~a~a~a~a~n" 
+	      (printf "~a~a MOUSE ~a (~a,~a)\n  mods:~a~a~a~a~a\n  buttons:~a~a~a~a~a~a~a\n" 
 		      (es-check)
 		      iter
 		      (send ev get-event-type)
@@ -38,7 +38,7 @@
 	   [on-char
 	    (lambda (ev)
 	      (set! iter (add1 iter))
-	      (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~a~n" 
+	      (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~a\n" 
 		      (es-check)
 		      iter
 		      (let ([v (send ev get-key-code)])
@@ -68,7 +68,7 @@
                            (inherit accept-drop-files)
                            (override
                              [on-drop-file (lambda (file)
-                                             (printf "Dropped: ~a~n" file))])
+                                             (printf "Dropped: ~a\n" file))])
                            (sequence
                              (super-init "tests" #f 100 100)
                              (accept-drop-files #t)))))

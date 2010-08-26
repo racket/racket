@@ -12,7 +12,7 @@
 	   current-ps-cmap-file-paths)
 
   (define (report-exn exn)
-    (log-error (format "PostScript/AFM error: ~a~n"
+    (log-error (format "PostScript/AFM error: ~a\n"
                        (if (exn? exn)
                            (exn-message exn)
                            exn))))
@@ -508,7 +508,7 @@
 			     (when special-font
                                (let ([name (afm-expand-name special-font-name)])
                                  (hash-set! used-fonts name #t)
-                                 (fprintf out "currentfont~n/~a findfont~n~a scalefont setfont~n"
+                                 (fprintf out "currentfont\n/~a findfont\n~a scalefont setfont\n"
                                           name
                                           size)))
 			     (if (font-is-cid? (or special-font font))
@@ -545,7 +545,7 @@
 					       (fprintf out "(~a) show\n" bytes)))))))
 			     (when special-font
 			       ;; Uses result of currentfont above:
-			       (fprintf out "setfont~n"))))])
+			       (fprintf out "setfont\n"))))])
       (fprintf out "0 -~a rmoveto\n" (/ (* size (- (font-height font) (font-descent font))) 1000.0))
       (let loop ([l l][simples null][special-font-name #f][special-font #f])
 	(cond
@@ -617,11 +617,11 @@
 			     this-font)
 		       (begin
 			 ;; Not simple... use glyphshow
-			 (fprintf out "gsave~n/~a findfont~n~a scalefont setfont~n"
+			 (fprintf out "gsave\n/~a findfont\n~a scalefont setfont\n"
 				  (afm-expand-name this-font-name)
 				  size)
 			 (fprintf out "/~a glyphshow\n" (achar-enc achar))
-			 (fprintf out "grestore~n")
+			 (fprintf out "grestore\n")
 			 (loop (cdr l) null #f #f))))))
 	   (lambda ()
 	     ;; No mapping for the character anywhere.

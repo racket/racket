@@ -167,7 +167,7 @@
   ;; build-LR0-automaton: grammar -> LR0-automaton
   ;; Constructs the kernels of the sets of LR(0) items of g
   (define (build-lr0-automaton grammar)
-;    (printf "LR(0) automaton:~n")
+;    (printf "LR(0) automaton:\n")
     (letrec (
 	     (epsilons (make-hash-table 'equal))
 	     (grammar-symbols (append (send grammar get-non-terms)
@@ -304,7 +304,7 @@
                            (set! automaton-non-term (cons (cons (make-trans-key kernel gs)
                                                                 unique-kernel)
                                                           automaton-non-term))))
-                        #;(printf "~a -> ~a on ~a~n" 
+                        #;(printf "~a -> ~a on ~a\n" 
  				(kernel->string kernel)
  				(kernel->string unique-kernel)
 				(gram-sym-symbol gs))

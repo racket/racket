@@ -17,9 +17,9 @@
 (define (make-archive rev)
   (define archive-path (revision-archive rev))
   (if (file-exists? archive-path)
-      (printf "r~a is already archived~n" rev)
+      (printf "r~a is already archived\n" rev)
       (local [(define tmp-path (make-temporary-file))]
-        (printf "Archiving r~a~n" rev)
+        (printf "Archiving r~a\n" rev)
         (create-archive tmp-path (revision-dir rev))
         (rename-file-or-directory tmp-path archive-path)
         (archive-directory (revision-log-dir rev))

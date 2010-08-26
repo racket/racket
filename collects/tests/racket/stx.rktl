@@ -1133,7 +1133,7 @@
                                (define-syntax (id stx) #'x)))]))
                     (define$ a 1)
                     (define$ b 2)
-                    (printf "~a ~a~n" a b)))
+                    (printf "~a ~a\n" a b)))
            (eval '(require 'mm))
            (eval '(current-namespace (module->namespace ''mm)))
 
@@ -1152,7 +1152,7 @@
                            #'(define-syntax (id stx) #'x))]))
                     (define$ a 1)
                     (define$ b 2)
-                    (printf "~a ~a~n" a b)))
+                    (printf "~a ~a\n" a b)))
            (eval '(require 'mm))
            (eval '(current-namespace (module->namespace ''mm)))
 

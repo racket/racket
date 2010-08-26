@@ -408,7 +408,7 @@
 					       (send the-color-database find-color "BLACK"))])
 			       (unless requested-color
 				 (fprintf (current-error-port)
-					  "WARNING: couldn't find color: ~s~n" (cadr x)))
+					  "WARNING: couldn't find color: ~s\n" (cadr x)))
 			       (set-pen (find-or-create-pen color (send p get-width) 'solid))
 			       (set-brush (find-or-create-brush color 'solid))
 			       (set-text-foreground color))
@@ -429,7 +429,7 @@
 			 (set-pen p))]
 		      [(prog)
 		       ((cadr x) dc dx (- h+top dy (caddr x)))]
-		      [else (error 'render "unknown command: ~a~n" x)])))
+		      [else (error 'render "unknown command: ~a\n" x)])))
 	      (loop dx dy (cdr l))))))
 
       (define (make-pict-drawer p)

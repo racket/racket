@@ -1046,7 +1046,7 @@
                (begin
                  (when #f
                    (fprintf (current-error-port)
-                            "Undefined link: ~s~n"
+                            "Undefined link: ~s\n"
                             (tag-key (link-element-tag e) ri)))
                  `((font ([class "badlink"])
                      ,@(if (empty-content? (element-content e))

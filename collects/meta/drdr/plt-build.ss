@@ -115,7 +115,7 @@
                 (thread
                  (lambda ()
                    (subprocess-wait the-process)
-                   (printf "Killing parent because wrapper is dead...~n")
+                   (printf "Killing parent because wrapper is dead...\n")
                    (kill-thread parent))))]
         
         ; Run without stdin

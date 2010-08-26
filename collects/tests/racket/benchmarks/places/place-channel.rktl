@@ -35,9 +35,9 @@ END
 
 
     (define B/sE (/ (* 2 count message-size) (/ t2 1000)))
-    (printf "~a ~a ~a ~a~n" r t1 t2 t3)
-    (printf "B/s ~a~n" (exact->inexact B/sE))
-    (printf "MB/s ~a~n" (exact->inexact (/ B/sE (* 1024 1024))))
+    (printf "~a ~a ~a ~a\n" r t1 t2 t3)
+    (printf "B/s ~a\n" (exact->inexact B/sE))
+    (printf "MB/s ~a\n" (exact->inexact (/ B/sE (* 1024 1024))))
     (place-wait pl)))
 
 (define (cons-tree-test)
@@ -67,7 +67,7 @@ END
         (place-channel-recv pl))) null))
 
 
-    (printf "~a ~a ~a ~a~n" r t1 t2 t3)
+    (printf "~a ~a ~a ~a\n" r t1 t2 t3)
     (place-wait pl)))
 
 (byte-message-test)

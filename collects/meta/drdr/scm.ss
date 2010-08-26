@@ -113,7 +113,7 @@
      empty]
     [(read-commit in-p)
      => (lambda (c) 
-          (printf "~S~n" c)
+          (printf "~S\n" c)
           (list* c (read-commits in-p)))]
     [else
      empty]))

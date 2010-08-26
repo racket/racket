@@ -287,7 +287,7 @@
 
 (define display-test 
   (lambda (p v)
-    (printf "Should be ~s: ~s ~a~n"
+    (printf "Should be ~s: ~s ~a\n"
 	    p v (if (equal? p v)
 		    ""
 		    "ERROR"))))

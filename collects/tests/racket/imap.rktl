@@ -21,7 +21,7 @@
 
 (define-values (imap cnt recent) (test-connect))
 
-(printf "Msgs: ~a; Validity: ~a~n" cnt (imap-uidvalidity imap))
+(printf "Msgs: ~a; Validity: ~a\n" cnt (imap-uidvalidity imap))
 
 (test cnt imap-messages imap)
 (test recent imap-recent imap)
