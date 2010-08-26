@@ -119,7 +119,7 @@ we're testing.  We can give a test case a name with the
     lst)))
 ]
 
-Now if we want to structure our tests are bit more we can
+Now if we want to structure our tests a bit more we can
 group them into a test suite:
 
 @racketblock[

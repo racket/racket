@@ -60,7 +60,7 @@ sequence types, each extraction implies a side effect; for example,
 extracting the sequence of bytes from a port cause the bytes to be
 read from the port.
 
-Inidvidual elements of a sequence typically correspond to single
+Individual elements of a sequence typically correspond to single
 values, but an element may also correspond to multiple values. For
 example, a hash table generates two values---a key and its value---for
 each element in the sequence.

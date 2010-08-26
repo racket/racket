@@ -111,7 +111,8 @@ fails.  A common error is to use an expression instead of a
 function of no arguments for @racket[thunk].  Remember that
 checks are conceptually functions.}
 
-Here are two example, one showing a test that succeeds, and one showing a common error:
+Here are two examples, one showing a test that succeeds, and one showing
+a common error:
 
 @racketblock[
   (check-exn exn:fail? 
@@ -129,7 +130,7 @@ Checks that @racket[thunk] does not raise any exceptions.
 The optional @racket[message] is included in the output if
 the check fails.}
 
-@defproc[(fail (message string? "")) #t]{This checks fails unconditionally.  Good for creating test stubs that youintend to fill out later.  The optional @racket[message] is included in the output if the check fails.}
+@defproc[(fail (message string? "")) #t]{This checks fails unconditionally.  Good for creating test stubs that you intend to fill out later.  The optional @racket[message] is included in the output if the check fails.}
 
 
 @defproc[(check-regexp-match (regexp regexp?) (string string?)) #t]{Checks that @racket[regexp] matches the @racket[string].}
@@ -146,7 +147,7 @@ This check will fail:
 
 @section{Augmenting Information on Check Failure}
 
-When an check fails it stores information including the name
+When a check fails it stores information including the name
 of the check, the location and message (if available), the
 expression the check is called with, and the parameters to
 the check.  Additional information can be stored by using
@@ -156,7 +157,7 @@ the @racket[with-check-info*] function, and the
 @defstruct[check-info ([name symbol?] [value any])]{
 
 A check-info structure stores information associated
-with the context of execution of an check.}
+with the context of execution of a check.}
 
 The are several predefined functions that create check
 information structures with predefined names.  This avoids
@@ -231,7 +232,7 @@ Firstly, a check should be considered a function, even
 though most uses are actually macros.  In particular, checks
 always evaluate their arguments exactly once before
 executing any expressions in the body of the checks.  Hence
-if you wish to write checks that evalute user defined code
+if you wish to write checks that evaluate user defined code
 that code must be wrapped in a thunk (a function of no
 arguments) by the user.  The predefined @racket[check-exn]
 is an example of this type of check.
