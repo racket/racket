@@ -26,6 +26,7 @@
 (define (test gen)
   (let-values (((base name _) (split-path gen)))
     (or (regexp-match ".*~" name) ; we ignore backup files
+        (directory-exists? gen)   ; and directories
         ;; machine optimized and hand optimized versions must expand to the
         ;; same code
         (and (or (equal? (parameterize ([current-load-relative-directory
