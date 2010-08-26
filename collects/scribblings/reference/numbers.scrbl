@@ -1062,14 +1062,18 @@ Returns @racket[#t] if @racket[v] is a @tech{flvector}, @racket[#f] otherwise.}
 
 @defproc[(flvector [x inexact-real?] ...) flvector?]{
 
-Creates a @tech{flvector} containing the given inexact real numbers.}
+Creates a @tech{flvector} containing the given inexact real numbers.
+
+@mz-examples[(flvector 2.0 3.0 4.0 5.0)]}
 
 @defproc[(make-flvector [size exact-nonnegative-integer?]
                         [x inexact-real? 0.0]) 
          flvector?]{
 
 Creates a @tech{flvector} with @racket[size] elements, where every
-slot in the @tech{flvector} is filled with @racket[x].}
+slot in the @tech{flvector} is filled with @racket[x].
+
+@mz-examples[(make-flvector 4 3.0)]}
 
 @defproc[(flvector-length [vec flvector?]) exact-nonnegative-integer?]{
 
@@ -1108,6 +1112,25 @@ elements of @scheme[v] efficiently as in @scheme[in-list],
 Like @scheme[for/vector] or @scheme[for*/vector], but for
 @tech{flvector}s.}
 
+@defproc[(shared-flvector [x inexact-real?] ...) flvector?]{
+
+Creates a @tech{flvector} containing the given inexact real numbers.
+When @secref["places"] are enabled, the new @tech{flvector} is 
+allocated in the @tech{shared memory space}.
+
+@mz-examples[(shared-flvector 2.0 3.0 4.0 5.0)]}
+
+
+@defproc[(make-shared-flvector [size exact-nonnegative-integer?]
+                        [x inexact-real? 0.0]) 
+         flvector?]{
+
+Creates a @tech{flvector} with @racket[size] elements, where every
+slot in the @tech{flvector} is filled with @racket[x].
+When @secref["places"] are enabled, the new @tech{flvector} is 
+allocated in the @tech{shared memory space}.
+
+@mz-examples[(make-shared-flvector 4 3.0)]}
                        
 @section{Fixnum Operations}
 

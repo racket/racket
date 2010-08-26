@@ -96,6 +96,10 @@ static Scheme_Object *flvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[]);
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *shared_flvector (int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_shared_flvector (int argc, Scheme_Object *argv[]);
+#endif
 
 static Scheme_Object *integer_to_fl (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_to_integer (int argc, Scheme_Object *argv[]);
@@ -548,6 +552,14 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
                                                     "make-flvector",
                                                     1, 2),
 			     env);
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  GLOBAL_PRIM_W_ARITY("shared-flvector", shared_flvector, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY("make-shared-flvector", make_shared_flvector, 1, 2, env);
+#else
+  GLOBAL_PRIM_W_ARITY("shared-flvector", flvector, 0, -1, env); 
+  GLOBAL_PRIM_W_ARITY("make-shared-flvector", make_flvector, 1, 2, env);
+#endif
 
   p = scheme_make_immed_prim(flvector_length, "flvector-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -3139,18 +3151,38 @@ long scheme_integer_length(Scheme_Object *n)
 /*                             flvectors                               */
 /************************************************************************/
 
-static Scheme_Double_Vector *alloc_flvector(long size)
+Scheme_Double_Vector *scheme_alloc_flvector(long size)
 {
   Scheme_Double_Vector *vec;
 
   vec = (Scheme_Double_Vector *)scheme_malloc_fail_ok(scheme_malloc_atomic_tagged, 
                                                       sizeof(Scheme_Double_Vector) 
                                                       + ((size - 1) * sizeof(double)));
-  vec->so.type = scheme_flvector_type;
+  vec->iso.so.type = scheme_flvector_type;
   vec->size = size;
 
   return vec;
 }
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Double_Vector *alloc_shared_flvector(long size)
+{
+  Scheme_Double_Vector *vec;
+  void *original_gc;
+
+  original_gc = GC_switch_to_master_gc();
+  vec = (Scheme_Double_Vector *)scheme_malloc_fail_ok(scheme_malloc_atomic_tagged, 
+                                                      sizeof(Scheme_Double_Vector) 
+                                                      + ((size - 1) * sizeof(double)));
+  GC_switch_back_from_master(original_gc);
+
+  vec->iso.so.type = scheme_flvector_type;
+  SHARED_ALLOCATED_SET(vec);
+  vec->size = size;
+
+  return vec;
+}
+#endif
 
 static Scheme_Object *flvector (int argc, Scheme_Object *argv[])
 {
@@ -3164,7 +3196,7 @@ static Scheme_Object *flvector (int argc, Scheme_Object *argv[])
     }
   }
 
-  vec = alloc_flvector(argc);
+  vec = scheme_alloc_flvector(argc);
 
   for (i = 0; i < argc; i++) {
     vec->els[i] = SCHEME_FLOAT_VAL(argv[i]);
@@ -3173,6 +3205,28 @@ static Scheme_Object *flvector (int argc, Scheme_Object *argv[])
   return (Scheme_Object *)vec;
 }
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *shared_flvector (int argc, Scheme_Object *argv[])
+{
+  int i;
+  Scheme_Double_Vector *vec;
+
+  for (i = 0; i < argc; i++) {
+    if (!SCHEME_FLOATP(argv[i])) {
+      scheme_wrong_type("flvector", "inexact real", i, argc, argv);
+      return NULL;
+    }
+  }
+
+  vec = alloc_shared_flvector(argc);
+
+  for (i = 0; i < argc; i++) {
+    vec->els[i] = SCHEME_FLOAT_VAL(argv[i]);
+  }
+
+  return (Scheme_Object *)vec;
+}
+#endif
 
 static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[])
 {
@@ -3206,7 +3260,7 @@ static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
       scheme_wrong_type("make-flvector", "inexact real", 1, argc, argv);
   }
 
-  vec = alloc_flvector(size);
+  vec = scheme_alloc_flvector(size);
 
   if (argc > 1) {
     int i;
@@ -3218,6 +3272,45 @@ static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
 
   return (Scheme_Object *)vec;
 }
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *make_shared_flvector (int argc, Scheme_Object *argv[])
+{
+  Scheme_Double_Vector *vec;
+  long size;
+
+  if (SCHEME_INTP(argv[0]))
+    size = SCHEME_INT_VAL(argv[0]);
+  else if (SCHEME_BIGNUMP(argv[0])) {
+    if (SCHEME_BIGPOS(argv[0])) {
+      scheme_raise_out_of_memory("make-flvector", NULL);
+      return NULL;
+    } else
+      size = -1;
+  } else
+    size = -1;
+
+  if (size < 0)
+    scheme_wrong_type("make-flvector", "exact non-negative integer", 0, argc, argv);
+
+  if (argc > 1) {
+    if (!SCHEME_FLOATP(argv[1]))
+      scheme_wrong_type("make-flvector", "inexact real", 1, argc, argv);
+  }
+
+  vec = alloc_shared_flvector(size);
+
+  if (argc > 1) {
+    int i;
+    double d = SCHEME_FLOAT_VAL(argv[1]);
+    for (i = 0; i < size; i++) {
+      vec->els[i] = d;
+    }
+  }
+
+  return (Scheme_Object *)vec;
+}
+#endif
 
 Scheme_Object *scheme_flvector_length(Scheme_Object *vec)
 {

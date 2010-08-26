@@ -10,7 +10,7 @@
          flvector? flvector make-flvector 
          flvector-length flvector-ref flvector-set!
          flreal-part flimag-part make-flrectangular
-         in-flvector for/flvector for*/flvector)
+         in-flvector for/flvector for*/flvector shared-flvector make-shared-flvector)
 
 (define (in-flvector* flv)
   (let ((n (flvector-length flv)))

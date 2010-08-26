@@ -1,6 +1,5 @@
 #lang scribble/doc
-
-@title{@bold{Places}: Coarse-grained Parallelism}
+@title[#:tag "places"]{@bold{places}: Coarse-grained Parallelism}
 
 @; ----------------------------------------------------------------------
 
@@ -10,7 +9,8 @@
           (for-label racket
                      racket/base
                      racket/contract
-                     racket/place))
+                     racket/place
+                     racket/flonum))
 
 @; ----------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ hardware threads.
   Returns an immutable message received on channel @racket[ch].
 }
 
-@section[#:tag "example"]{Basic Example?}
+@section[#:tag "example"]{Basic Example}
 
 This code launches two places, echos a message to them and then waits for the places to complete and return.
 
@@ -97,15 +97,33 @@ to send a value through the channel.
 
 @section[#:tag "messagepassingparallelism"]{Message Passing Parallelism}
 
-Places can only communicate by passing immutable messages on place-channels.
-Only immutable pairs, vectors, and structs can be communicated across places channels.
+Places communicate by passing messages on place-channels.
+Only atomic values, immutable pairs, vectors, and structs can be 
+communicated across places channels.
 
 @section[#:tag "places-architecture"]{Architecture and Garbage Collection}
 
-Immutable messages communicated on place-channels are first copied to a shared
-garbage collector called the master.  Places are allowed to garbage collect
-independently of one another.  The master collector, however, has to pause all
-mutators before it can collect garbage.
+Places enables a @deftech{shared memory space} between all places.
+References from the @tech{shared memory space} back into a places memory space.
+The invariant of allowing no backpointers is enforced by only allowing immutable
+datastructures to be deep copied into the @tech{shared memory space}.
+
+However, mutation of atomic values in
+the @tech{shared memory space} is permitted to improve performace of 
+shared-memory parallel programs. 
+
+Special functions such as @racket[shared-flvector] and @racket[shared-bytes] allocate 
+vectors of mutable atomic values into the @tech{shared memory space}.  
+
+Parallel mutation of these atomic values
+can possibly lead to data races, but will not cause @exec{racket} to
+crash.  In practice however, parallel tasks usually write to disjoint 
+partitions of a shared vector.
+}
+
+Places are allowed to garbage collect independently of one another.
+The shared-memory collector, however, has to pause all
+places before it can collect garbage.
 
 @section[#:tag "enabling-places"]{Enabling Places in Racket Builds}
 

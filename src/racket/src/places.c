@@ -33,7 +33,10 @@ static int scheme_place_channel_ready(Scheme_Object *so);
 
 static void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
 static Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch);
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table *ht);
+#endif
 
 # ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -661,6 +664,7 @@ static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[])
 }
 
 Scheme_Object *scheme_places_deep_copy(Scheme_Object *so) {
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   Scheme_Object *new_so = so;
   if (SCHEME_INTP(so)) {
     return so;
@@ -682,8 +686,12 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so) {
       break;
   }
   return new_so;
+#else
+  return so;
+#endif
 }
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table *ht)
 {
   Scheme_Object *new_so = so;
@@ -740,7 +748,12 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       new_so = scheme_make_sized_offset_char_string(SCHEME_CHAR_STR_VAL(so), 0, SCHEME_CHAR_STRLEN_VAL(so), 1);
       break;
     case scheme_byte_string_type:
-      new_so = scheme_make_sized_offset_byte_string(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
+      if (SHARED_ALLOCATEDP(so)) {
+        new_so = so;
+      }
+      else {
+        new_so = scheme_make_sized_offset_byte_string(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
+      }
       break;
     case scheme_unix_path_type:
       new_so = scheme_make_sized_offset_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
@@ -783,7 +796,22 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         new_so = vec;
       }
       break;
+    case scheme_flvector_type:
+      if (SHARED_ALLOCATEDP(so)) {
+        new_so = so;
+      }
+      else {
+        Scheme_Double_Vector *vec;
+        long i;
+        long size = SCHEME_FLVEC_SIZE(so);
+        vec = scheme_alloc_flvector(size);
 
+        for (i = 0; i < size; i++) {
+          SCHEME_FLVEC_ELS(vec)[i] = SCHEME_FLVEC_ELS(so)[i];
+        }
+        new_so = (Scheme_Object *) vec;
+      }
+      break;
     case scheme_structure_type:
       {
         Scheme_Structure *st = (Scheme_Structure*)so;
@@ -849,6 +877,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   }
   return new_so;
 }
+#endif
 
 Scheme_Struct_Type *scheme_make_prefab_struct_type_in_master(Scheme_Object *base,
 					Scheme_Object *parent,
@@ -1085,6 +1114,7 @@ void force_hash_worker(Scheme_Object *so, Scheme_Hash_Table *ht)
     case scheme_unix_path_type:
     case scheme_symbol_type:
     case scheme_place_bi_channel_type:
+    case scheme_flvector_type:
       break;
     case scheme_pair_type:
       {

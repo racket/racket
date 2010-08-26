@@ -17,3 +17,4 @@ to improve performance.
 @include-section["sync.scrbl"]
 @include-section["thread-local.scrbl"]
 @include-section["futures.scrbl"]
+@include-section["places.scrbl"]

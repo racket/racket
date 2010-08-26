@@ -262,6 +262,11 @@ static Scheme_Object *string_normalize_kc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_normalize_d (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_normalize_kd (int argc, Scheme_Object *argv[]);
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *make_shared_byte_string (int argc, Scheme_Object *argv[]);
+static Scheme_Object *shared_byte_string (int argc, Scheme_Object *argv[]);
+#endif
+
 static Scheme_Object *make_byte_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_p (int argc, Scheme_Object *argv[]);
@@ -685,6 +690,15 @@ scheme_init_string (Scheme_Env *env)
 						    "bytes",
 						    0, -1),
 			     env);
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  GLOBAL_PRIM_W_ARITY("make-shared-bytes", make_shared_byte_string, 1, 2, env);
+  GLOBAL_PRIM_W_ARITY("shared-bytes", shared_byte_string, 0, -1, env);
+#else
+  GLOBAL_PRIM_W_ARITY("make-shared-bytes", make_byte_string, 1, 2, env);
+  GLOBAL_PRIM_W_ARITY("shared-bytes", byte_string, 0, -1, env);
+#endif
+
   scheme_add_global_constant("bytes-length",
 			     scheme_make_folding_prim(byte_string_length,
 						      "bytes-length",
@@ -1140,7 +1154,9 @@ byte_p(int argc, Scheme_Object *argv[])
 #define CHAR_STR BYTE_STR
 #define MAKE_CHAR(x) scheme_make_integer_value(x)
 #define xstrlen strlen
+#define GENERATING_BYTE
 #include "strops.inc"
+#undef GENERATING_BYTE
 
 /* comparisons */
 

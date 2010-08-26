@@ -302,8 +302,14 @@ typedef struct Scheme_Vector {
   Scheme_Object *els[1];
 } Scheme_Vector;
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+# define SHARED_ALLOCATED 0x2
+# define SHARED_ALLOCATEDP(so) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(so)) & SHARED_ALLOCATED)
+# define SHARED_ALLOCATED_SET(so) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(so)) |= SHARED_ALLOCATED)
+#endif
+
 typedef struct Scheme_Double_Vector {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* & 0x2 indicates allocated in the MASTERGC */
   long size;
   double els[1];
 } Scheme_Double_Vector;
