@@ -15,8 +15,9 @@
          unboxed-gensym reset-unboxed-gensym
          optimize)
 
-
-(define *log-optimizations?* #f)
+(define *log-optimizations?*
+  (member "--log-optimizations"
+          (vector->list (current-command-line-arguments))))
 (define *log-optimizatons-to-log-file?* #f)
 (define *optimization-log-file* "opt-log")
 (define (log-optimization kind stx)
