@@ -383,17 +383,7 @@
                             #'unboxed-info #'op)) ; no need to optimize op
            #'e
            #:with opt
-           #'e*.opt)
-
-  ;; unboxed variable used in a boxed fashion, we have to box
-  (pattern v:id
-           #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
-           #:when (syntax->datum #'unboxed-info)
-           #:with real-binding (car  (syntax->list #'unboxed-info))
-           #:with imag-binding (cadr (syntax->list #'unboxed-info))
-           #:with opt
-           (begin (log-optimization "boxing of an unboxed variable" #'v)
-                  #'(unsafe-make-flrectangular real-binding imag-binding)))
+           #'e*.opt)  
   
   (pattern e:inexact-complex-arith-opt-expr
            #:with opt #'e.opt))
@@ -421,7 +411,20 @@
            (begin (log-optimization "unboxed inexact complex->float" #'exp)
                   (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
-                      real-binding))))
+                      real-binding)))
+  
+  (pattern v:id
+           #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
+           #:when (syntax->datum #'unboxed-info)
+           #:when (subtypeof? #'v -InexactComplex)
+           #:with real-binding (car  (syntax->list #'unboxed-info))
+           #:with imag-binding (cadr (syntax->list #'unboxed-info))
+           #:with (bindings ...) #'()
+           ;; unboxed variable used in a boxed fashion, we have to box
+           #:with opt
+           (begin (log-optimization "unboxed complex variable " #'v)
+                  (reset-unboxed-gensym)
+                  #'(unsafe-make-flrectangular real-binding imag-binding))))
 
 ;; takes as argument a structure describing which arguments will be unboxed
 ;; and the optimized version of the operator. operators are optimized elsewhere
