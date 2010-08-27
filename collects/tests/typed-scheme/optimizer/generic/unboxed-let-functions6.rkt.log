@@ -1,0 +1,12 @@
+unboxed-let-functions6.rkt line 9 col 11 - + - unboxed binary inexact complex
+unboxed-let-functions6.rkt line 9 col 10 - (#%app + z (quote 0.0+1.0i)) - unboxed inexact complex
+unboxed-let-functions6.rkt line 9 col 11 - + - unboxed binary inexact complex
+unboxed-let-functions6.rkt line 9 col 10 - (#%app + z (quote 0.0+1.0i)) - unboxed inexact complex
+unboxed-let-functions6.rkt line 10 col 22 - car - unary pair
+unboxed-let-functions6.rkt line 10 col 21 - (#%app car l) - float-coerce-expr
+unboxed-let-functions6.rkt line 10 col 17 - + - unboxed binary inexact complex
+unboxed-let-functions6.rkt line 10 col 11 - loop - unboxed call site
+unboxed-let-functions6.rkt line 11 col 17 - cdr - unary pair
+#f line #f col #f - (letrec-values (((loop) (lambda (z l) (if (#%app null? l) (#%app + z (quote 0.0+1.0i)) (#%app loop (#%app + z (#%app car l)) (#%app cdr l)))))) loop) - unboxed let bindings
+#f line #f col #f - (letrec-values (((loop) (lambda (z l) (if (#%app null? l) (#%app + z (quote 0.0+1.0i)) (#%app loop (#%app + z (#%app car l)) (#%app cdr l)))))) loop) - unboxed call site
+6.0+1.0i

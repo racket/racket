@@ -1,0 +1,7 @@
+make-polar.rkt line 7 col 1 - make-polar - make-rectangular elimination
+make-polar.rkt line 7 col 1 - make-polar - make-polar
+make-polar.rkt line 10 col 13 - make-polar - make-rectangular elimination
+make-polar.rkt line 10 col 1 - + - unboxed binary inexact complex
+make-polar.rkt line 10 col 0 - (#%app + (quote 1.0+2.0i) (#%app make-polar (quote 2.0) (quote 4.0))) - unboxed inexact complex
+0.5403023058681398+0.8414709848078965i
+-0.3072872417272239+0.4863950093841434i

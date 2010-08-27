@@ -1,0 +1,5 @@
+zero.rkt line 4 col 1 - zero? - fixnum zero?
+zero.rkt line 5 col 8 - sqrt - unary float
+zero.rkt line 5 col 1 - zero? - float zero?
+#f
+#f

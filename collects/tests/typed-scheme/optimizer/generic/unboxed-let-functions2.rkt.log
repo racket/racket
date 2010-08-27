@@ -1,0 +1,10 @@
+unboxed-let-functions2.rkt line 8 col 19 - + - unboxed binary inexact complex
+unboxed-let-functions2.rkt line 8 col 18 - (#%app + x y) - unboxed inexact complex
+unboxed-let-functions2.rkt line 8 col 19 - + - unboxed binary inexact complex
+unboxed-let-functions2.rkt line 8 col 18 - (#%app + x y) - unboxed inexact complex
+unboxed-let-functions2.rkt line 8 col 19 - + - unboxed binary inexact complex
+unboxed-let-functions2.rkt line 8 col 18 - (#%app + x y) - unboxed inexact complex
+unboxed-let-functions2.rkt line 7 col 0 - (let-values (((f) (lambda (x y) (#%app + x y)))) (#%app f (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i)) (quote 3.0+6.0i))) - unboxed let bindings
+unboxed-let-functions2.rkt line 9 col 6 - + - unboxed binary inexact complex
+unboxed-let-functions2.rkt line 9 col 3 - f - unboxed call site
+6.0+12.0i

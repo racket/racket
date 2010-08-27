@@ -1,0 +1,4 @@
+fixnum-comparison.rkt line 4 col 4 - vector-length - vector
+#f line #f col #f - op - string
+fixnum-comparison.rkt line 4 col 1 - < - binary fixnum
+#t

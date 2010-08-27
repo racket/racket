@@ -1,0 +1,4 @@
+apply-plus.rkt line 4 col 7 - + - apply-map
+apply-plus.rkt line 5 col 7 - * - apply-map
+9
+24

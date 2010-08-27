@@ -1,0 +1,4 @@
+begin-float.rkt line 4 col 8 - - - binary float
+begin-float.rkt line 5 col 8 - * - binary float
+-1.0
+6.0

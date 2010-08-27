@@ -1,0 +1,3 @@
+vector-length-nested.rkt line 4 col 1 - vector-length - vector
+vector-length-nested.rkt line 5 col 2 - vector-ref - vector
+2

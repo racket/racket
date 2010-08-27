@@ -1,0 +1,4 @@
+nested-inexact-complex.rkt line 4 col 13 - - - unboxed binary inexact complex
+nested-inexact-complex.rkt line 4 col 1 - + - unboxed binary inexact complex
+nested-inexact-complex.rkt line 4 col 0 - (#%app + (quote 1.0+2.0i) (#%app - (quote 2.0+4.0i) (quote 3.0+6.0i))) - unboxed inexact complex
+0.0+0.0i

@@ -1,0 +1,6 @@
+inexact-complex-fixnum.rkt line 4 col 4 - quotient - binary nonzero fixnum
+inexact-complex-fixnum.rkt line 4 col 4 - quotient - binary nonzero fixnum
+inexact-complex-fixnum.rkt line 4 col 3 - (#%app quotient (quote 2) (quote 1)) - float-coerce-expr
+inexact-complex-fixnum.rkt line 4 col 1 - + - unboxed binary inexact complex
+inexact-complex-fixnum.rkt line 4 col 0 - (#%app + (#%app quotient (quote 2) (quote 1)) (quote 1.0+2.0i) (quote 3.0+6.0i)) - unboxed inexact complex
+6.0+8.0i

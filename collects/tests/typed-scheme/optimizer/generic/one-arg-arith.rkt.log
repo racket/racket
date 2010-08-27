@@ -1,0 +1,30 @@
+one-arg-arith.rkt line 6 col 1 - - - unary fixnum
+one-arg-arith.rkt line 7 col 1 - - - unary float
+one-arg-arith.rkt line 8 col 1 - / - unary float
+one-arg-arith.rkt line 10 col 1 - + - unary number
+one-arg-arith.rkt line 11 col 1 - + - unary number
+one-arg-arith.rkt line 12 col 1 - + - unary number
+one-arg-arith.rkt line 13 col 1 - * - unary number
+one-arg-arith.rkt line 14 col 1 - * - unary number
+one-arg-arith.rkt line 15 col 1 - * - unary number
+one-arg-arith.rkt line 16 col 1 - min - unary number
+one-arg-arith.rkt line 17 col 1 - min - unary number
+one-arg-arith.rkt line 18 col 1 - min - unary number
+one-arg-arith.rkt line 19 col 1 - max - unary number
+one-arg-arith.rkt line 20 col 1 - max - unary number
+one-arg-arith.rkt line 21 col 1 - max - unary number
+-12
+-12.0
+0.23809523809523808
+1
+1.0
+1267650600228229401496703205376
+1
+1.0
+1267650600228229401496703205376
+1
+1.0
+1267650600228229401496703205376
+1
+1.0
+1267650600228229401496703205376

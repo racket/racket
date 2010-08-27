@@ -1,29 +1,6 @@
 #lang racket
 (require racket/runtime-path racket/sandbox)
 
-;; since Typed Scheme's optimizer does source to source transformations,
-;; we compare the expansion of automatically optimized and hand optimized
-;; modules
-(define (read-and-expand file)
-  ;; drop the type tables added by typed scheme, since they can be in a
-  ;; different order each time, and that would make tests fail when they
-  ;; shouldn't
-  (filter
-   ;; drop the "module", its name and its language, so that we can write
-   ;; the 2 versions of each test in different languages (typed and
-   ;; untyped) if need be
-   (match-lambda [(list 'define-values-for-syntax '() _ ...) #f] [_ #t])
-   (cadddr
-    (syntax->datum
-     (parameterize ([current-namespace (make-base-namespace)]
-                    [read-accept-reader #t])
-       (with-handlers
-           ([exn:fail? (lambda (exn)
-                         (printf "~a\n" (exn-message exn))
-                         #'(#f #f #f (#f)))]) ; for cadddr
-         (expand (with-input-from-file file read-syntax))))))))
-
-
 ;; the first line must be the #lang line
 ;; the second line must be #:optimize
 (define (evaluator file #:optimize [optimize? #f])
@@ -50,19 +27,28 @@
          (kill-evaluator evaluator)
          out)))))
 
+(define (generate-opt-log name)
+  (parameterize ([current-load-relative-directory (build-path here "generic")]
+                 [current-command-line-arguments  '#("--log-optimizations")])
+    (with-output-to-string
+      (lambda ()
+        (dynamic-require (build-path (current-load-relative-directory) name)
+                         #f)))))
+
 (define (test gen)
   (let-values (((base name _) (split-path gen)))
-    (or (regexp-match ".*~" name) ; we ignore backup files
-        (directory-exists? gen)   ; and directories
-        ;; machine optimized and hand optimized versions must expand to the
-        ;; same code
-        (and (or (equal? (parameterize ([current-load-relative-directory
-                                         (build-path here "generic")])
-                           (read-and-expand gen))
-                         (let ((hand-opt-dir (build-path here "hand-optimized")))
-                           (parameterize ([current-load-relative-directory hand-opt-dir])
-                             (read-and-expand (build-path hand-opt-dir name)))))
-                 (begin (printf "~a failed: expanded code mismatch\n\n" name)
+    (or (not (regexp-match ".*rkt$" name)) ; we ignore all but racket files
+        ;; we log optimizations and compare to an expected log to make sure
+        ;; that all the optimizations we expected did indeed happen
+        (and (or (let ((log      (generate-opt-log name))
+                       ;; expected optimizer log, to see what was optimized
+                       (expected
+                        (file->string
+                         (build-path base
+                                     (string-append (path->string name)
+                                                    ".log")))))
+                   (equal? log expected))
+                 (begin (printf "~a failed: optimization log mismatch\n\n" name)
                         #f))
              ;; optimized and non-optimized versions must evaluate to the
              ;; same thing

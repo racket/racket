@@ -1,0 +1,18 @@
+nested-let-loop.rkt line 15 col 36 - + - unboxed binary inexact complex
+nested-let-loop.rkt line 15 col 35 - (#%app + r s) - unboxed inexact complex
+nested-let-loop.rkt line 10 col 10 - r - unboxed complex variable 
+nested-let-loop.rkt line 15 col 36 - + - unboxed binary inexact complex
+nested-let-loop.rkt line 15 col 35 - (#%app + r s) - unboxed inexact complex
+nested-let-loop.rkt line 15 col 36 - + - unboxed binary inexact complex
+nested-let-loop.rkt line 15 col 21 - loop1 - unboxed call site
+nested-let-loop.rkt line 15 col 28 - cdr - unary pair
+nested-let-loop.rkt line 16 col 41 - car - unary pair
+nested-let-loop.rkt line 16 col 49 - car - unary pair
+nested-let-loop.rkt line 16 col 36 - + - unboxed binary inexact complex
+nested-let-loop.rkt line 16 col 21 - loop2 - unboxed call site
+nested-let-loop.rkt line 16 col 28 - cdr - unary pair
+#f line #f col #f - (letrec-values (((loop2) (lambda (y s) (if (#%app null? y) (#%app loop1 (#%app cdr x) (#%app + r s)) (#%app loop2 (#%app cdr y) (#%app + s (#%app car x) (#%app car y))))))) loop2) - unboxed let bindings
+#f line #f col #f - (letrec-values (((loop2) (lambda (y s) (if (#%app null? y) (#%app loop1 (#%app cdr x) (#%app + r s)) (#%app loop2 (#%app cdr y) (#%app + s (#%app car x) (#%app car y))))))) loop2) - unboxed call site
+#f line #f col #f - (letrec-values (((loop1) (lambda (x r) (if (#%app null? x) r (#%app (letrec-values (((loop2) (lambda (y s) (if (#%app null? y) (#%app loop1 (#%app cdr x) (#%app + r s)) (#%app loop2 (#%app cdr y) (#%app + s (#%app car x) (#%app car y))))))) loop2) (quote (3.0+6.0i 4.0+8.0i)) (quote 0.0+0.0i)))))) loop1) - unboxed let bindings
+#f line #f col #f - (letrec-values (((loop1) (lambda (x r) (if (#%app null? x) r (#%app (letrec-values (((loop2) (lambda (y s) (if (#%app null? y) (#%app loop1 (#%app cdr x) (#%app + r s)) (#%app loop2 (#%app cdr y) (#%app + s (#%app car x) (#%app car y))))))) loop2) (quote (3.0+6.0i 4.0+8.0i)) (quote 0.0+0.0i)))))) loop1) - unboxed call site
+20.0+40.0i

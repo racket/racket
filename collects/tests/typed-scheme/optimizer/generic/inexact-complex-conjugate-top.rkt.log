@@ -1,0 +1,4 @@
+inexact-complex-conjugate-top.rkt line 4 col 12 - + - unboxed binary inexact complex
+inexact-complex-conjugate-top.rkt line 4 col 1 - conjugate - unboxed unary inexact complex
+inexact-complex-conjugate-top.rkt line 4 col 0 - (#%app conjugate (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i))) - unboxed inexact complex
+3.0-6.0i

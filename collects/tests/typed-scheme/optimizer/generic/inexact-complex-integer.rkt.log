@@ -1,0 +1,4 @@
+inexact-complex-integer.rkt line 4 col 3 - (#%app expt (quote 2) (quote 100)) - float-coerce-expr
+inexact-complex-integer.rkt line 4 col 1 - + - unboxed binary inexact complex
+inexact-complex-integer.rkt line 4 col 0 - (#%app + (#%app expt (quote 2) (quote 100)) (quote 1.0+2.0i)) - unboxed inexact complex
+1.2676506002282294e+30+2.0i

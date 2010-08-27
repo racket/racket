@@ -1,0 +1,5 @@
+vector-ref-set-ref.rkt line 6 col 1 - vector-ref - vector
+vector-ref-set-ref.rkt line 7 col 1 - vector-set! - vector
+vector-ref-set-ref.rkt line 8 col 1 - vector-ref - vector
+1
+"2"

@@ -1,0 +1,3 @@
+n-ary-inexact-complex.rkt line 4 col 1 - + - unboxed binary inexact complex
+n-ary-inexact-complex.rkt line 4 col 0 - (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i) (quote 3.0+6.0i) (quote 4.0+8.0i)) - unboxed inexact complex
+10.0+20.0i
