@@ -19,7 +19,7 @@ value's operations. Chaperones apply only to procedures,
 value, but not @scheme[eq?] to the original value.
 
 A chaperone's refinement of a value's operation is restricted to side
-effects (including, in particular, raising and exception) or
+effects (including, in particular, raising an exception) or
 chaperoning values supplied to or produced by the operation. For
 example, a vector chaperone can redirect @scheme[vector-ref] to raise
 an exception if the accessed vector slot contains a string, or it can
@@ -148,17 +148,17 @@ The protocol for a @scheme[redirect-proc] depends on the corresponding
 
 @itemlist[
 
- @item{A structure-field or property accessor: @scheme[orig-proc] must
+ @item{A structure-field or property accessor: @scheme[redirect-proc] must
       accept two arguments, @scheme[v] and the value @scheme[_field-v]
       that @scheme[orig-proc] produces for @scheme[v]; it must return
       chaperone of @scheme[_field-v].}
 
- @item{A structure field mutator: @scheme[orig-proc] must accept two
+ @item{A structure field mutator: @scheme[redirect-proc] must accept two
       arguments, @scheme[v] and the value @scheme[_field-v] supplied
       to the mutator; it must return chaperone of @scheme[_field-v]
       to be propagated to @scheme[orig-proc] and @scheme[v].}
 
- @item{@scheme[struct-info]: @scheme[orig-proc] must accept two
+ @item{@scheme[struct-info]: @scheme[redirect-proc] must accept two
        values, which are the results of @scheme[struct-info] on
        @scheme[v]; it must return two values that are chaperones of
        its arguments. The @scheme[orig-proc] is not called if
@@ -174,7 +174,7 @@ then no @scheme[prop]s must be supplied, and @scheme[v] is returned
 unchaperoned.
 
 Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
-to @scheme[chaperone-procedure] must be even) add chaperone properties
+to @scheme[chaperone-procedure] must be odd) add chaperone properties
 or override chaperone-property values of @scheme[v].}
 
 @defproc[(chaperone-vector [vec vector?]
@@ -353,8 +353,8 @@ or override chaperone-property values of @scheme[evt].}
 
 @defproc[(make-chaperone-property [name symbol?])
          (values chaperone-property?
-                 procedure?
-                 procedure?)]{
+                 (-> any/c boolean?)
+                 (-> chaperone? any))]{
 
 Creates a new structure type property and returns three values:
 
@@ -372,7 +372,8 @@ Creates a new structure type property and returns three values:
  @item{an @deftech{chaperone property accessor} procedure, which
        returns the value associated with a chaperone for the property;
        if a value given to the accessor is not a chaperone or does not
-       have a value for the property, the
+       have a value for the property (ie if the corresponding chaperone
+       property predicate returns @racket[#f]), the accessor raises
        @exnraise[exn:fail:contract].}
 
 ]}
