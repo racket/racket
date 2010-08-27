@@ -1,6 +1,13 @@
 #lang racket
 (require racket/runtime-path racket/sandbox)
 
+(define prog-rx
+  (pregexp (string-append "^\\s*"
+                          "(#lang typed/(?:scheme|racket)(?:/base)?)"
+                          "\\s+"
+                          "#:optimize"
+                          "\\s+")))
+
 (define (evaluator file #:optimize [optimize? #f])
   (call-with-trusted-sandbox-configuration
    (lambda ()
@@ -12,14 +19,15 @@
                            'typed/racket
                            'typed/scheme)])
        ;; drop the #lang line
-       (let* ((prog (regexp-replace #rx"^#lang typed/(scheme|racket)(/base)?"
-                                     (file->string file) ""))
-              (in   (if optimize?
-                        prog
-                        ;; drop the #:optimize
-                        (regexp-replace #rx"#:optimize" prog "")))
-              (evaluator (make-evaluator 'typed/racket in))
-              (out       (get-output evaluator)))
+       (let* ([prog (file->string file)]
+              ;; drop the #lang line and #:optimize
+              [m    (or (regexp-match-positions prog-rx prog)
+                        (error 'evaluator "bad program contents in ~e" file))]
+              [prog (string-append (substring prog (caadr m) (cdadr m))
+                                   (if optimize? "\n#:optimize\n" "\n")
+                                   (substring prog (cdar m)))]
+              [evaluator (make-module-evaluator prog)]
+              [out       (get-output evaluator)])
          (kill-evaluator evaluator)
          out)))))
 
