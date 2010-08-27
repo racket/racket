@@ -1,19 +1,24 @@
-inexact-complex-float-small.rkt line 4 col 12 - (quote 3.0) - float-coerce-expr
+inexact-complex-float-small.rkt line 4 col 3 - 1.0+2.0i - unboxed literal
+inexact-complex-float-small.rkt line 4 col 12 - (quote 3.0) - float-coerce-expr in complex ops
 inexact-complex-float-small.rkt line 4 col 1 - + - unboxed binary inexact complex
 inexact-complex-float-small.rkt line 4 col 0 - (#%app + (quote 1.0+2.0i) (quote 3.0)) - unboxed inexact complex
-inexact-complex-float-small.rkt line 5 col 3 - (quote 1.0) - float-coerce-expr
+inexact-complex-float-small.rkt line 5 col 3 - (quote 1.0) - float-coerce-expr in complex ops
+inexact-complex-float-small.rkt line 5 col 7 - 2.0+4.0i - unboxed literal
 inexact-complex-float-small.rkt line 5 col 1 - + - unboxed binary inexact complex
 inexact-complex-float-small.rkt line 5 col 0 - (#%app + (quote 1.0) (quote 2.0+4.0i)) - unboxed inexact complex
-inexact-complex-float-small.rkt line 6 col 12 - (quote 3.0) - float-coerce-expr
+inexact-complex-float-small.rkt line 6 col 3 - 1.0+2.0i - unboxed literal
+inexact-complex-float-small.rkt line 6 col 12 - (quote 3.0) - float-coerce-expr in complex ops
 inexact-complex-float-small.rkt line 6 col 1 - - - unboxed binary inexact complex
 inexact-complex-float-small.rkt line 6 col 0 - (#%app - (quote 1.0+2.0i) (quote 3.0)) - unboxed inexact complex
-inexact-complex-float-small.rkt line 7 col 3 - (quote 1.0) - float-coerce-expr
+inexact-complex-float-small.rkt line 7 col 3 - (quote 1.0) - float-coerce-expr in complex ops
+inexact-complex-float-small.rkt line 7 col 7 - 2.0+4.0i - unboxed literal
 inexact-complex-float-small.rkt line 7 col 1 - - - unboxed binary inexact complex
 inexact-complex-float-small.rkt line 7 col 0 - (#%app - (quote 1.0) (quote 2.0+4.0i)) - unboxed inexact complex
-inexact-complex-float-small.rkt line 8 col 15 - (quote 1.0) - float-coerce-expr
-inexact-complex-float-small.rkt line 8 col 19 - (quote 2.0) - float-coerce-expr
+inexact-complex-float-small.rkt line 8 col 3 - 1.0+2.0i - unboxed literal
+inexact-complex-float-small.rkt line 8 col 15 - (quote 1.0) - float-coerce-expr in complex ops
+inexact-complex-float-small.rkt line 8 col 19 - (quote 2.0) - float-coerce-expr in complex ops
 inexact-complex-float-small.rkt line 8 col 13 - + - binary float
-inexact-complex-float-small.rkt line 8 col 12 - (#%app + (quote 1.0) (quote 2.0)) - float-coerce-expr
+inexact-complex-float-small.rkt line 8 col 12 - (#%app + (quote 1.0) (quote 2.0)) - float-coerce-expr in complex ops
 inexact-complex-float-small.rkt line 8 col 1 - + - unboxed binary inexact complex
 inexact-complex-float-small.rkt line 8 col 0 - (#%app + (quote 1.0+2.0i) (#%app + (quote 1.0) (quote 2.0))) - unboxed inexact complex
 4.0+2.0i

@@ -1,4 +1,4 @@
-#f line #f col #f - op - string
-#f line #f col #f - op - bytes
+#f line #f col #f - op - string-length
+#f line #f col #f - op - bytes-length
 2
 2

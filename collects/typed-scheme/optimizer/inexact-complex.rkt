@@ -229,7 +229,7 @@
            #:with real-binding #'c.real-binding
            #:with imag-binding #f
            #:with (bindings ...)
-           (begin (log-optimization "unboxed unary inexact complex**" #'op)
+           (begin (log-optimization "unboxed unary inexact complex" #'op)
                   #'(c.bindings ...)))
   (pattern (#%plain-app (~and op (~or (~literal imag-part) (~literal unsafe-flimag-part)))
                         c:unboxed-inexact-complex-opt-expr)
@@ -244,7 +244,7 @@
   (pattern e:float-coerce-expr
            #:with real-binding (unboxed-gensym 'unboxed-float-)
            #:with imag-binding #f
-           #:when (log-optimization "float-coerce-expr" #'e)
+           #:when (log-optimization "float-coerce-expr in complex ops" #'e)
            #:with (bindings ...)
            #`(((real-binding) e.opt)))
     
@@ -278,7 +278,9 @@
            #:when (syntax->datum #'unboxed-info)
            #:with real-binding (car  (syntax->list #'unboxed-info))
            #:with imag-binding (cadr (syntax->list #'unboxed-info))
-           #:with (bindings ...) #'())
+           #:with (bindings ...)
+           (begin (log-optimization "leave var unboxed" #'v)
+                  #'()))
   
   ;; else, do the unboxing here
 
@@ -290,21 +292,23 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           (let ((n (syntax->datum #'n)))
-             #`(((real-binding) #,(datum->syntax
-                                   #'here
-                                   (exact->inexact (real-part n))))
-                ((imag-binding) #,(datum->syntax
-                                   #'here
-                                   (exact->inexact (imag-part n)))))))
+           (begin (log-optimization "unboxed literal" #'n)
+                  (let ((n (syntax->datum #'n)))
+                    #`(((real-binding) #,(datum->syntax
+                                          #'here
+                                          (exact->inexact (real-part n))))
+                       ((imag-binding) #,(datum->syntax
+                                          #'here
+                                          (exact->inexact (imag-part n))))))))
   (pattern (quote n)
            #:when (real? (syntax->datum #'n))
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding #f
            #:with (bindings ...)
-           #`(((real-binding) #,(datum->syntax
-                                 #'here
-                                 (exact->inexact (syntax->datum #'n))))))
+           (begin (log-optimization "unboxed literal" #'n)
+                  #`(((real-binding) #,(datum->syntax
+                                        #'here
+                                        (exact->inexact (syntax->datum #'n)))))))
   
   (pattern e:expr
            #:when (isoftype? #'e -InexactComplex)
@@ -312,18 +316,20 @@
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           #`(((e*) #,((optimize) #'e))
-              ((real-binding) (unsafe-flreal-part e*))
-              ((imag-binding) (unsafe-flimag-part e*))))
+           (begin (log-optimization "unbox inexact-complex" #'e)
+                  #`(((e*) #,((optimize) #'e))
+                     ((real-binding) (unsafe-flreal-part e*))
+                     ((imag-binding) (unsafe-flimag-part e*)))))
   (pattern e:expr
            #:when (isoftype? #'e -Number) ; complex, maybe exact, maybe not
            #:with e* (unboxed-gensym)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
-           #`(((e*) #,((optimize) #'e))
-              ((real-binding) (exact->inexact (real-part e*)))
-              ((imag-binding) (exact->inexact (imag-part e*)))))
+           (begin (log-optimization "unbox complex" #'e)
+                  #`(((e*) #,((optimize) #'e))
+                     ((real-binding) (exact->inexact (real-part e*)))
+                     ((imag-binding) (exact->inexact (imag-part e*))))))
   (pattern e:expr
            #:with (bindings ...)
            (error "non exhaustive pattern match")
@@ -387,7 +393,8 @@
                             #'unboxed-info #'op)) ; no need to optimize op
            #'e
            #:with opt
-           #'e*.opt)  
+           (begin (log-optimization "call to fun with unboxed args" #'op)
+                  #'e*.opt))
   
   (pattern e:inexact-complex-arith-opt-expr
            #:with opt #'e.opt))
@@ -427,7 +434,7 @@
            #:with (bindings ...) #'()
            ;; unboxed variable used in a boxed fashion, we have to box
            #:with opt
-           (begin (log-optimization "unboxed complex variable " #'v)
+           (begin (log-optimization "unboxed complex variable" #'v)
                   (reset-unboxed-gensym)
                   #'(unsafe-make-flrectangular real-binding imag-binding))))
 

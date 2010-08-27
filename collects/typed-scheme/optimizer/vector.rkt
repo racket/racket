@@ -30,7 +30,7 @@
                                       (~literal unsafe-vector*-length)))
                         v:vector-expr)
            #:with opt
-           (begin (log-optimization "known-length vector" #'op)
+           (begin (log-optimization "known-length vector-length" #'op)
                   (match (type-of #'v)
                     [(tc-result1: (HeterogenousVector: es))
                      #`(begin v.opt #,(length es))]))) ; v may have side effects
@@ -39,12 +39,12 @@
   ;; we can optimize no matter what.
   (pattern (#%plain-app (~and op (~literal vector-length)) v:expr)
            #:with opt
-           (begin (log-optimization "vector" #'op)
+           (begin (log-optimization "vector-length" #'op)
                   #`(unsafe-vector*-length #,((optimize) #'v))))
   ;; same for flvector-length
   (pattern (#%plain-app (~and op (~literal flvector-length)) v:expr)
            #:with opt
-           (begin (log-optimization "flvector" #'op)
+           (begin (log-optimization "flvector-length" #'op)
                   #`(unsafe-flvector-length #,((optimize) #'v))))
   ;; we can optimize vector ref and set! on vectors of known length if we know
   ;; the index is within bounds (for now, literal or singleton type)

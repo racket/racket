@@ -38,7 +38,8 @@
                             #'unboxed-info #'operator.opt))
            #'e
            #:with opt
-           #'e*.opt))
+           (begin (log-optimization "unboxed let loop" #'loop-fun)
+                  #'e*.opt)))
 
 ;; does the bulk of the work
 ;; detects which let bindings can be unboxed, same for arguments of let-bound
@@ -98,6 +99,10 @@
                                             ;; if so, add to the table of functions with
                                             ;; unboxed params, so we can modify its call
                                             ;; sites, it's body and its header
+                                            (begin (log-optimization
+                                                    "unboxed function -> table"
+                                                    fun-name)
+                                                   #t)
                                             (dict-set! unboxed-funs-table fun-name
                                                        (list (reverse unboxed)
                                                              (reverse boxed))))]
@@ -105,6 +110,8 @@
                                             (could-be-unboxed-in?
                                              (car params) #'(begin body ...)))
                                        ;; we can unbox
+                                       (log-optimization "unboxed var -> table"
+                                                         (car params))
                                        (loop (cons i unboxed) boxed
                                              (add1 i) (cdr params) (cdr doms))]
                                       [else ; can't unbox
@@ -278,6 +285,7 @@
                                          (syntax->list #'(to-unbox ...)))
            #:with res
            (begin
+             (log-optimization "fun -> unboxed fun" #'v)
              ;; add unboxed parameters to the unboxed vars table
              (let ((to-unbox (map syntax->datum (syntax->list #'(to-unbox ...)))))
                (let loop ((params     (syntax->list #'params))

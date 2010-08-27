@@ -1,13 +1,21 @@
+unboxed-make-rectangular.rkt line 7 col 5 - x - unbox inexact-complex
+unboxed-make-rectangular.rkt line 7 col 7 - 2.0+4.0i - unboxed literal
 unboxed-make-rectangular.rkt line 7 col 3 - + - unboxed binary inexact complex
 unboxed-make-rectangular.rkt line 7 col 2 - (#%app + x (quote 2.0+4.0i)) - unboxed inexact complex
 unboxed-make-rectangular.rkt line 6 col 10 - make-rectangular - make-rectangular elimination
 unboxed-make-rectangular.rkt line 6 col 0 - (let-values (((x) (#%app make-rectangular (quote 1.0) (quote 2.0)))) (#%app + x (quote 2.0+4.0i))) - unboxed let bindings
+unboxed-make-rectangular.rkt line 7 col 5 - x - leave var unboxed
+unboxed-make-rectangular.rkt line 7 col 7 - 2.0+4.0i - unboxed literal
 unboxed-make-rectangular.rkt line 7 col 3 - + - unboxed binary inexact complex
 unboxed-make-rectangular.rkt line 7 col 2 - (#%app + x (quote 2.0+4.0i)) - unboxed inexact complex
+unboxed-make-rectangular.rkt line 9 col 5 - x - unbox inexact-complex
+unboxed-make-rectangular.rkt line 9 col 7 - 2.0+4.0i - unboxed literal
 unboxed-make-rectangular.rkt line 9 col 3 - + - unboxed binary inexact complex
 unboxed-make-rectangular.rkt line 9 col 2 - (#%app + x (quote 2.0+4.0i)) - unboxed inexact complex
 unboxed-make-rectangular.rkt line 8 col 10 - unsafe-make-flrectangular - make-rectangular elimination
 unboxed-make-rectangular.rkt line 8 col 0 - (let-values (((x) (#%app unsafe-make-flrectangular (quote 1.0) (quote 2.0)))) (#%app + x (quote 2.0+4.0i))) - unboxed let bindings
+unboxed-make-rectangular.rkt line 9 col 5 - x - leave var unboxed
+unboxed-make-rectangular.rkt line 9 col 7 - 2.0+4.0i - unboxed literal
 unboxed-make-rectangular.rkt line 9 col 3 - + - unboxed binary inexact complex
 unboxed-make-rectangular.rkt line 9 col 2 - (#%app + x (quote 2.0+4.0i)) - unboxed inexact complex
 3.0+6.0i

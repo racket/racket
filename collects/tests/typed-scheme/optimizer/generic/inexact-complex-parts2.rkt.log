@@ -1,17 +1,33 @@
+inexact-complex-parts2.rkt line 6 col 14 - 1.0+2.0i - unboxed literal
+inexact-complex-parts2.rkt line 6 col 23 - 2.0+4.0i - unboxed literal
 inexact-complex-parts2.rkt line 6 col 12 - + - unboxed binary inexact complex
 inexact-complex-parts2.rkt line 6 col 11 - (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i)) - unboxed inexact complex
+inexact-complex-parts2.rkt line 6 col 14 - 1.0+2.0i - unboxed literal
+inexact-complex-parts2.rkt line 6 col 23 - 2.0+4.0i - unboxed literal
 inexact-complex-parts2.rkt line 6 col 12 - + - unboxed binary inexact complex
 inexact-complex-parts2.rkt line 6 col 1 - real-part - unboxed inexact complex
+inexact-complex-parts2.rkt line 7 col 23 - 1.0+2.0i - unboxed literal
+inexact-complex-parts2.rkt line 7 col 32 - 2.0+4.0i - unboxed literal
 inexact-complex-parts2.rkt line 7 col 21 - + - unboxed binary inexact complex
 inexact-complex-parts2.rkt line 7 col 20 - (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i)) - unboxed inexact complex
+inexact-complex-parts2.rkt line 7 col 23 - 1.0+2.0i - unboxed literal
+inexact-complex-parts2.rkt line 7 col 32 - 2.0+4.0i - unboxed literal
 inexact-complex-parts2.rkt line 7 col 21 - + - unboxed binary inexact complex
 inexact-complex-parts2.rkt line 7 col 1 - unsafe-flreal-part - unboxed inexact complex
+inexact-complex-parts2.rkt line 8 col 14 - 1.0+2.0i - unboxed literal
+inexact-complex-parts2.rkt line 8 col 23 - 2.0+4.0i - unboxed literal
 inexact-complex-parts2.rkt line 8 col 12 - + - unboxed binary inexact complex
 inexact-complex-parts2.rkt line 8 col 11 - (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i)) - unboxed inexact complex
+inexact-complex-parts2.rkt line 8 col 14 - 1.0+2.0i - unboxed literal
+inexact-complex-parts2.rkt line 8 col 23 - 2.0+4.0i - unboxed literal
 inexact-complex-parts2.rkt line 8 col 12 - + - unboxed binary inexact complex
 inexact-complex-parts2.rkt line 8 col 1 - imag-part - unboxed inexact complex
+inexact-complex-parts2.rkt line 9 col 23 - 1.0+2.0i - unboxed literal
+inexact-complex-parts2.rkt line 9 col 32 - 2.0+4.0i - unboxed literal
 inexact-complex-parts2.rkt line 9 col 21 - + - unboxed binary inexact complex
 inexact-complex-parts2.rkt line 9 col 20 - (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i)) - unboxed inexact complex
+inexact-complex-parts2.rkt line 9 col 23 - 1.0+2.0i - unboxed literal
+inexact-complex-parts2.rkt line 9 col 32 - 2.0+4.0i - unboxed literal
 inexact-complex-parts2.rkt line 9 col 21 - + - unboxed binary inexact complex
 inexact-complex-parts2.rkt line 9 col 1 - unsafe-flimag-part - unboxed inexact complex
 3.0
