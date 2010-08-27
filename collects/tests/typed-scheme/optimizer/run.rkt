@@ -7,7 +7,7 @@
   (call-with-trusted-sandbox-configuration
    (lambda ()
      (parameterize ([current-load-relative-directory
-                     (build-path here "generic")]
+                     (build-path here "tests")]
                     [sandbox-memory-limit #f] ; TR needs memory
                     [sandbox-output 'string]
                     [sandbox-namespace-specs
@@ -28,7 +28,7 @@
          out)))))
 
 (define (generate-opt-log name)
-  (parameterize ([current-load-relative-directory (build-path here "generic")]
+  (parameterize ([current-load-relative-directory (build-path here "tests")]
                  [current-command-line-arguments  '#("--log-optimizations")])
     (with-output-to-string
       (lambda ()
@@ -60,11 +60,11 @@
 
 (let ((n-failures
        (if (> (vector-length (current-command-line-arguments)) 0)
-           (if (test (format "generic/~a.rkt"
+           (if (test (format "tests/~a.rkt"
                              (vector-ref (current-command-line-arguments) 0)))
                0 1)
            (for/fold ((n-failures 0))
-             ((gen (in-directory (build-path here "generic"))))
+             ((gen (in-directory (build-path here "tests"))))
              (+ n-failures (if (test gen) 0 1))))))
   (unless (= n-failures 0)
     (error (format "~a tests failed." n-failures))))
