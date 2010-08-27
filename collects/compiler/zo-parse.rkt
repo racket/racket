@@ -941,12 +941,14 @@
                   [ind (make-indirect #f)])
              (symtab-write! cp l ind)
              (let* ([v (read-compact cp)]
-                    [cl (make-closure v (gensym
-                                         (let ([s (lam-name v)])
-                                           (cond
-                                             [(symbol? s) s]
-                                             [(vector? s) (vector-ref s 0)]
-                                             [else 'closure]))))])
+                    [cl (make-closure v
+                                      ; XXX Why call gensym here?
+                                      (gensym
+                                       (let ([s (lam-name v)])
+                                         (cond
+                                           [(symbol? s) s]
+                                           [(vector? s) (vector-ref s 0)]
+                                           [else 'closure]))))])
                (set-indirect-v! ind cl)
                ind))]
           [(svector)

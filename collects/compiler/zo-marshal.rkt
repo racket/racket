@@ -87,7 +87,7 @@
     (define (shared-obj-pos/modulo-v v)
       (define skip? #t)
       (λ (v2 #:share [share? #t])
-        (if (and skip? (eq? v v2) (not (closure? v2)))
+        (if (and skip? (eq? v v2) #;(not (closure? v2)))
             (begin
               (set! skip? #f)
               #f)

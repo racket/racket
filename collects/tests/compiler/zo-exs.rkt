@@ -20,86 +20,86 @@
 
 (test
  #;(roundtrip
-  (compilation-top 0 
-                   (prefix 0 empty empty)
-                   (list 1 (list 2 3) (list 2 3) 4 5)))
+    (compilation-top 0 
+                     (prefix 0 empty empty)
+                     (list 1 (list 2 3) (list 2 3) 4 5)))
  (roundtrip
   (compilation-top 0 
                    (prefix 0 empty empty)
                    (let* ([ph (make-placeholder #f)]
-                          [x (closure 
-                              (lam 'name
-                                   empty
-                                   0 
-                                   empty
-                                   #f
-                                   #()
-                                   empty
-                                   0
-                                   ph)
-                              (gensym))])
+                          [x (indirect (closure 
+                               (lam 'name
+                                    empty
+                                    0 
+                                    empty
+                                    #f
+                                    #()
+                                    empty
+                                    0
+                                    ph)
+                               'name))])
                      (placeholder-set! ph x)
                      (make-reader-graph x))))
-                     
- #;(roundtrip
-  (compilation-top
-    0
-    (prefix 0 (list #f) (list))
-    (mod
-       'simple
-       'simple
-       (module-path-index-join #f #f)
-       (prefix
-          0
-          (list (module-variable 
-                 (module-path-index-join
-                  "modbeg.rkt"
-                  (module-path-index-join
-                   "pre-base.rkt"
-                   (module-path-index-join
-                    "namespace.rkt"
-                    (module-path-index-join "private/base.rkt" (module-path-index-join 'racket/base #f))))) 'print-values 0 0))
-          (list))
-       (list)
-       (list (list 0 (module-path-index-join 'racket/base #f)) (list 1) (list -1) (list #f))
-       (list (apply-values
-              (toplevel 0 0 #f #t)
-              (application
-               (primval 231)
-               (list 1 'a))))
-       (list)
-       (list (list) (list) (list))
-       2
-       (toplevel 0 0 #f #f)
-       #(racket/language-info get-info #f)
-       #t)))
- #;(roundtrip 
-  (compilation-top 0 
-                   (prefix 0 empty empty)
-                   (current-directory)))
- 
- #;(roundtrip 
-  (compilation-top 0 
-                   (prefix 0 empty empty)
-                   (list (current-directory))))
  
  #;(roundtrip
-  (compilation-top                                            
-      0                                                          
-      (prefix 0 empty empty)
-      (cons #hasheq()
-            #hasheq())))
+    (compilation-top
+     0
+     (prefix 0 (list #f) (list))
+     (mod
+      'simple
+      'simple
+      (module-path-index-join #f #f)
+      (prefix
+       0
+       (list (module-variable 
+              (module-path-index-join
+               "modbeg.rkt"
+               (module-path-index-join
+                "pre-base.rkt"
+                (module-path-index-join
+                 "namespace.rkt"
+                 (module-path-index-join "private/base.rkt" (module-path-index-join 'racket/base #f))))) 'print-values 0 0))
+       (list))
+      (list)
+      (list (list 0 (module-path-index-join 'racket/base #f)) (list 1) (list -1) (list #f))
+      (list (apply-values
+             (toplevel 0 0 #f #t)
+             (application
+              (primval 231)
+              (list 1 'a))))
+      (list)
+      (list (list) (list) (list))
+      2
+      (toplevel 0 0 #f #f)
+      #(racket/language-info get-info #f)
+      #t)))
+ #;(roundtrip 
+    (compilation-top 0 
+                     (prefix 0 empty empty)
+                     (current-directory)))
+ 
+ #;(roundtrip 
+    (compilation-top 0 
+                     (prefix 0 empty empty)
+                     (list (current-directory))))
+ 
+ #;(roundtrip
+    (compilation-top                                            
+     0                                                          
+     (prefix 0 empty empty)
+     (cons #hasheq()
+           #hasheq())))
  
  #;(local [(define (hash-test make-hash-placeholder)
-           (roundtrip 
-            (compilation-top 0 
-                             (prefix 0 empty empty)
-                             (local [(define ht-ph (make-placeholder #f))
-                                     (define ht (make-hash-placeholder (list (cons 'g ht-ph))))]
-                               (placeholder-set! ht-ph ht)
-                               (make-reader-graph ht)))))]
-   (hash-test make-hash-placeholder)
-   (hash-test make-hasheq-placeholder)
-   (hash-test make-hasheqv-placeholder)))
+             (roundtrip 
+              (compilation-top 0 
+                               (prefix 0 empty empty)
+                               (local [(define ht-ph (make-placeholder #f))
+                                       (define ht (make-hash-placeholder (list (cons 'g ht-ph))))]
+                                 (placeholder-set! ht-ph ht)
+                                 (make-reader-graph ht)))))]
+     (hash-test make-hash-placeholder)
+     (hash-test make-hasheq-placeholder)
+     (hash-test make-hasheqv-placeholder)))
 
 
