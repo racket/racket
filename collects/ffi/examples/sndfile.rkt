@@ -1,12 +1,17 @@
-#lang scheme/base
+#lang racket/base
 
-(require mzlib/foreign) (unsafe!)
+(require ffi/unsafe)
+
+;; the constants in this file are pulled from version 1.0.21 of the libsndfile header file. However,
+;; I think it would be a mistake to specify this in the call to ffi-lib; it appears that 
+;; this version is a conservative extension of the earlier version (1.0.17?), and I
+;; think you'll get graceful failures if the version is wrong.
 
 (define libsndfile (ffi-lib "libsndfile"))
 
 ;; ==================== Types etc ====================
 
-;; This is the scheme represtenatation of the soundfile that is handeled by
+;; This is the scheme representation of the soundfile that is handled by
 ;; libsndfile.
 
 ;; In libsndfile the sndfile object is represented as a pointer. When
@@ -23,8 +28,8 @@
         (error '_sndfile "got a NULL pointer (bad info?)")))))
 
 ;; sf_count_t is a count type that depends on the operating system however it
-;; seems to be a long int for all the supported ones so in this scase we just
-;; define it as two ints.
+;; seems to be a long int for all the supported ones so in this case we just
+;; define it as an int64.
 (define _sf-count-t _int64)
 
 (define _sf-mode
@@ -37,24 +42,31 @@
 
 (define _sf-format
   (let ([majors ; Major formats
-         '((wav       #x010000)   ; Microsoft WAV format (little endian)
-           (aiff      #x020000)   ; Apple/SGI AIFF format (big endian)
-           (au        #x030000)   ; Sun/NeXT AU format (big endian)
-           (raw       #x040000)   ; RAW PCM data
-           (paf       #x050000)   ; Ensoniq PARIS file format
-           (svx       #x060000)   ; Amiga IFF / SVX8 / SV16 format
-           (nist      #x070000)   ; Sphere NIST format
-           (voc       #x080000)   ; VOC files
-           (ircam     #x0A0000)   ; Berkeley/IRCAM/CARL
-           (w64       #x0B0000)   ; Sonic Foundry's 64 bit RIFF/WAV
-           (mat4      #x0C0000)   ; Matlab (tm) V4.2 / GNU Octave 2.0
-           (mat5      #x0D0000)   ; Matlab (tm) V5.0 / GNU Octave 2.1
-           (pvf       #x0E0000)   ; Portable Voice Format
-           (xi        #x0F0000)   ; Fasttracker 2 Extended Instrument
-           (htk       #x100000)   ; HMM Tool Kit format
-           (sds       #x110000)   ; Midi Sample Dump Standard
-           (avr       #x120000)   ; Audio Visual Research
-           (wavex     #x130000)   ; MS WAVE with WAVEFORMATEX
+         '((wav	      #x010000) ; Microsoft WAV format (little endian default). 
+           (aiff      #x020000) ; Apple/SGI AIFF format (big endian). 
+           (au	      #x030000) ; Sun/NeXT AU format (big endian). 
+           (raw	      #x040000) ; RAW PCM data. 
+           (paf	      #x050000) ; Ensoniq PARIS file format. 
+           (svx	      #x060000) ; Amiga IFF / SVX8 / SV16 format. 
+           (nist      #x070000) ; Sphere NIST format. 
+           (voc	      #x080000) ; VOC files. 
+           (ircam     #x0A0000) ; Berkeley/IRCAM/CARL 
+           (w64	      #x0B0000) ; Sonic Foundry's 64 bit RIFF/WAV 
+           (mat4      #x0C0000) ; Matlab (tm) V4.2 / GNU Octave 2.0 
+           (mat5      #x0D0000) ; Matlab (tm) V5.0 / GNU Octave 2.1 
+           (pvf	      #x0E0000) ; Portable Voice Format 
+           (xi	      #x0F0000) ; Fasttracker 2 Extended Instrument 
+           (htk	      #x100000) ; HMM Tool Kit format 
+           (sds	      #x110000) ; Midi Sample Dump Standard 
+           (avr	      #x120000) ; Audio Visual Research 
+           (wavex     #x130000) ; MS WAVE with WAVEFORMATEX 
+           (sd2	      #x160000) ; Sound Designer 2 
+           (flac      #x170000) ; FLAC lossless file format 
+           (caf	      #x180000) ; Core Audio File format 
+           (wve	      #x190000) ; Psion WVE format 
+           (ogg	      #x200000) ; Xiph OGG container 
+           (mpc2k     #x210000) ; Akai MPC 2000 sampler 
+           (rf64      #x220000) ; RF64 WAV file 
            )]
         [subtypes ; Subtypes from here on
          '((pcm-s8    #x0001)     ; Signed 8 bit data
@@ -64,21 +76,28 @@
            (pcm-u8    #x0005)     ; Unsigned 8 bit data (WAV and RAW only)
            (float     #x0006)     ; 32 bit float data
            (double    #x0007)     ; 64 bit float data
+           
            (ulaw      #x0010)     ; U-Law encoded
            (alaw      #x0011)     ; A-Law encoded
            (ima-adpcm #x0012)     ; IMA ADPCM
            (ms-adpcm  #x0013)     ; Microsoft ADPCM
+           
            (gsm610    #x0020)     ; GSM 6.10 encoding
            (vox-adpcm #x0021)     ; OKI / Dialogix ADPCM
+           
            (g721-32   #x0030)     ; 32kbs G721 ADPCM encoding
            (g723-24   #x0031)     ; 24kbs G723 ADPCM encoding
            (g723-40   #x0032)     ; 40kbs G723 ADPCM encoding
+           
            (dwvw-12   #x0040)     ; 12 bit Delta Width Variable Word encoding
            (dwvw-16   #x0041)     ; 16 bit Delta Width Variable Word encoding
            (dwvw-24   #x0042)     ; 24 bit Delta Width Variable Word encoding
            (dwvw-n    #x0043)     ; N bit Delta Width Variable Word encoding
+           
            (dpcm-8    #x0050)     ; 8 bit differential PCM (XI only)
            (dpcm-16   #x0051)     ; 16 bit differential PCM (XI only)
+           
+           (vorbis    #x0060)     ; Xiph Vorbis encoding.
            )]
         [endians ; Endian-ness options
          '((file      #x00000000) ; Default file endian-ness
@@ -200,6 +219,9 @@
                      (lambda (x) (sf-set-string sndfile st (cadr x)))]))
             str-types))
 
+
+;; read-sound-internal : string bool -> (or/c (values/c ... wait a second...))
+;; read the data from a file. 
 (define (read-sound-internal file meta?)
   (let* ([sndfile  (sf-open file 'sfm-read)]
          [strings  (and meta? (get-strings sndfile))]
@@ -294,6 +316,7 @@
     (#rx"\\.pvf"   (pvf   pcm-16  file))
     (#rx"\\.sds"   (sds   pcm-16  file))
     (#rx"\\.xi"    (xi    dpcm-16 file))))
+
 (define (guess-format filename)
   (let loop ([xs file-format-table])
     (cond [(null? xs) (default-file-format)]

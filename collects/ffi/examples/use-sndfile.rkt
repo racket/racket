@@ -13,6 +13,8 @@
   (let loop ([n n] [r '()])
     (if (zero? n) r (loop (sub1 n) (cons x r)))))
 
+;; N.B.: this won't work unless you have a file in the current working directory called "x.wav".
+;; (the error message could be better, though...)
 (let-values ([(data meta) (read-sound* "x.wav")])
   (printf ">>> data-length: ~s\n>>> meta: ~s\n" (length data) meta)
   (let* ([data data #;
