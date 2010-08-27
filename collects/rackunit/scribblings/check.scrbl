@@ -5,7 +5,7 @@
 
 Checks are the basic building block of RackUnit.  A check
 checks some condition.  If the condition holds the check
-evaluates to @racket[#t].  If the condition doesn't hold the
+evaluates to @racket[(void)].  If the condition doesn't hold the
 check raises an instance of @racket[exn:test:check] with
 information detailing the failure.
 
@@ -19,26 +19,12 @@ source locations if you do so.
 The following are the basic checks RackUnit provides.  You
 can create your own checks using @racket[define-check].
 
-@defproc[(check (op (-> any any any))
-                (v1 any)
-                (v2 any)
-		(message string? ""))
-         any]{
-
-The simplest check.  Succeeds if @racket[op] applied to @racket[v1] and @racket[v2] is not @racket[#f], otherwise raises an exception of type @racket[exn:test:check].  The optional @racket[message] is included in the output if the check fails. If the check succeeds, the value returned by @racket[op] is the value returned by the check.}
-
-For example, the following check succeeds:
-
-@racketblock[
-  (check < 2 3)
-]
-
-@defproc*[([(check-eq? (v1 any) (v2 any) (message string? "")) #t]
-           [(check-not-eq? (v1 any) (v2 any) (message string? "")) #t]
-           [(check-eqv? (v1 any) (v2 any) (message string? "")) #t]
-           [(check-not-eqv? (v1 any) (v2 any) (message string? "")) #t]
-           [(check-equal? (v1 any) (v2 any) (message string? "")) #t]
-           [(check-not-equal? (v1 any) (v2 any) (message string? "")) #t])]{
+@defproc*[([(check-eq? (v1 any) (v2 any) (message string? "")) void?]
+           [(check-not-eq? (v1 any) (v2 any) (message string? "")) void?]
+           [(check-eqv? (v1 any) (v2 any) (message string? "")) void?]
+           [(check-not-eqv? (v1 any) (v2 any) (message string? "")) void?]
+           [(check-equal? (v1 any) (v2 any) (message string? "")) void?]
+           [(check-not-equal? (v1 any) (v2 any) (message string? "")) void?])]{
 
 Checks that @racket[v1] is (not) @racket[eq?],
 @racket[eqv?], or @racket[equal?] to @racket[v2]. The
@@ -49,7 +35,7 @@ For example, the following checks all fail:
 
 @racketblock[
   (check-eq? (list 1) (list 1) "allocated data not eq?")
-  (check-not-eq? 1 1 "integers are eq?")
+  (check-not-eq? 1 1 "fixnums are eq?")
   (check-eqv? 1 1.0 "not eqv?")
   (check-not-eqv? 1 1 "integers are eqv?")
   (check-equal? 1 1.0 "not equal?")
@@ -57,7 +43,7 @@ For example, the following checks all fail:
 ]
 
 @defproc[(check-pred (pred (-> any any)) (v any) (message string? ""))
-        #t]{Checks that @racket[pred] returns a value that is not @racket[#f] when applied to @racket[v].  The optional @racket[message] is included in the output if the check fails. The value returned by a successful check is the value returned by @racket[pred].}
+         void?]{Checks that @racket[pred] returns a value that is not @racket[#f] when applied to @racket[v].  The optional @racket[message] is included in the output if the check fails. The value returned by a successful check is the value returned by @racket[pred].}
 
 Here's an example that passes and an example that fails:
 
@@ -67,7 +53,7 @@ Here's an example that passes and an example that fails:
 ]
 
 
-@defproc[(check-= (v1 any) (v2 any) (epsilon number?) (message string? "")) #t]{
+@defproc[(check-= (v1 any) (v2 any) (epsilon number?) (message string? "")) void?]{
 
 Checks that @racket[v1] and @racket[v2] are within
 @racket[epsilon] of one another.  The optional
@@ -81,9 +67,9 @@ Here's an example that passes and an example that fails:
   (check-= 1.0 1.01 0.005 "I fail")
 ]
 
-@defproc*[([(check-true (v any) (message string? "")) #t]
-           [(check-false (v any) (message string? "")) #t]
-           [(check-not-false (v any) (message string? "")) #t])]{
+@defproc*[([(check-true (v any) (message string? "")) void?]
+           [(check-false (v any) (message string? "")) void?]
+           [(check-not-false (v any) (message string? "")) void?])]{
 
 Checks that @racket[v] is @racket[#t], @racket[#f], or not
 @racket[#f] as appropriate.  The optional @racket[message]
@@ -98,8 +84,8 @@ For example, the following checks all fail:
 ]
 
 
-@defproc[(check-exn (exn-predicate (or/c (-> any (or/c #t #f)) regexp?)) (thunk (-> any)) (message string? ""))
-         #t]{
+@defproc[(check-exn (exn-predicate (or/c (-> any boolean?) regexp?)) (thunk (-> any)) (message string? ""))
+         void?]{
 Checks that @racket[thunk] raises an exception and that
 either @racket[exn-predicate] returns @racket[#t] if it is a function,
 or that it matches the message in the exception if @racket[exn-predicate]
@@ -124,16 +110,13 @@ a common error:
              (error 'hi "there"))
 ]
 
-@defproc[(check-not-exn (thunk (-> any)) (message string? "")) #t]{
+@defproc[(check-not-exn (thunk (-> any)) (message string? "")) void?]{
 
 Checks that @racket[thunk] does not raise any exceptions.
 The optional @racket[message] is included in the output if
 the check fails.}
 
-@defproc[(fail (message string? "")) #t]{This checks fails unconditionally.  Good for creating test stubs that you intend to fill out later.  The optional @racket[message] is included in the output if the check fails.}
-
-
-@defproc[(check-regexp-match (regexp regexp?) (string string?)) #t]{Checks that @racket[regexp] matches the @racket[string].}
+@defproc[(check-regexp-match (regexp regexp?) (string string?)) void?]{Checks that @racket[regexp] matches the @racket[string].}
 
 The following check will succeed:
 
@@ -143,7 +126,22 @@ This check will fail:
 
 @racketblock[(check-regexp-match "a+bba" "aaaabbba")]
 
+@defproc[(check (op (-> any any any))
+                (v1 any)
+                (v2 any)
+		(message string? ""))
+         void?]{
 
+The most generic check.  Succeeds if @racket[op] applied to @racket[v1] and @racket[v2] is not @racket[#f], otherwise raises an exception of type @racket[exn:test:check].  The optional @racket[message] is included in the output if the check fails. 
+
+For example, the following check succeeds:
+
+@racketblock[
+  (check < 2 3)
+]
+}
+
+@defproc[(fail (message string? "")) void?]{This checks fails unconditionally.  Good for creating test stubs that you intend to fill out later.  The optional @racket[message] is included in the output.}
 
 @section{Augmenting Information on Check Failure}
 
