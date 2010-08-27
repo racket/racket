@@ -2,7 +2,7 @@
            
 
 
-(providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers lambda #%app)
+(providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers lambda #%app for for*)
                  (except "private/prims.rkt")
                  (except "private/base-types.rkt")
                  (except "private/base-types-extra.rkt"))
@@ -18,4 +18,4 @@
          (for-syntax "private/base-types-extra.rkt"))
 (provide (rename-out [with-handlers: with-handlers])
          (for-syntax (all-from-out "private/base-types-extra.rkt"))
-	 assert with-type)
+	 assert with-type for for*)

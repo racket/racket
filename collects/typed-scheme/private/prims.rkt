@@ -23,7 +23,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
          :
 	 (rename-out [define-typed-struct define-struct:]
                      [lambda: λ:]
-                     [define-typed-struct/exec define-struct/exec:]))
+                     [define-typed-struct/exec define-struct/exec:]
+                     [for/annotation for]
+                     [for*/annotation for*]))
 
 (require "../utils/utils.rkt"
          racket/base
@@ -426,6 +428,18 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 (stop? ret ...)
               c ...)
             ty))]))
+
+;; wrap the original for with a type annotation
+(define-syntax (for/annotation stx)
+  (syntax-parse stx
+   [(_ x ...)
+    (syntax/loc stx
+      (ann (for x ...) Void))]))
+(define-syntax (for*/annotation stx)
+  (syntax-parse stx
+   [(_ x ...)
+    (syntax/loc stx
+      (ann (for* x ...) Void))]))
 
 ;; we need handle #:when clauses manually because we need to annotate
 ;; the type of each nested for
