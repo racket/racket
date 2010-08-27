@@ -1451,6 +1451,19 @@
   #;(t1 'bad-stx-and m:upto-int/lam
       "(and)"
       `((error "foo")))
+  
+  (t 'local-struct/i m:intermediate
+     (define (f x) (local ((define-struct a (b c))) x))  (f 1)
+     :: (define (f x) (local ((define-struct a (b c))) x)) {(f 1)}
+     -> (define (f x) (local ((define-struct a (b c))) x)) {(define-struct a_1 (b c))} {1})
+  
+  (t 'local-struct/ilam m:intermediate-lambda
+     (define (f x) (local ((define-struct a (b c))) x))  (f 1)
+     :: (define (f x) (local ((define-struct a (b c))) x)) {(f 1)}
+     -> (define (f x) (local ((define-struct a (b c))) x)) {((lambda (x) (local ((define-struct a (b c))) x)) 1)}
+     -> (define (f x) (local ((define-struct a (b c))) x)) {(define-struct a_1 (b c))} {1})
+  
+  
 
   
   ;; run whatever tests are enabled (intended for interactive use):
@@ -1461,8 +1474,8 @@
                    #;[show-all-steps #t])
       #;(run-tests '(check-expect forward-ref check-within check-within-bad check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
-      #;(run-tests '(simple-if))
-      (run-all-tests)))
+      (run-tests '(local-struct/i local-struct/ilam))
+      #;(run-all-tests)))
   
   
 
