@@ -1,8 +1,6 @@
 #lang racket
 (require racket/runtime-path racket/sandbox)
 
-;; the first line must be the #lang line
-;; the second line must be #:optimize
 (define (evaluator file #:optimize [optimize? #f])
   (call-with-trusted-sandbox-configuration
    (lambda ()
