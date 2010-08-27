@@ -90,7 +90,7 @@
                    (make-provide/contract-transformer
                     (quote-syntax the-contract)
                     (quote-syntax id)
-                    (quote-syntax out-id)
+                    (quote-syntax export-id)
                     (quote-syntax module-source)))
                  (def-export export-id id cnt-id)))
            new-id)]
