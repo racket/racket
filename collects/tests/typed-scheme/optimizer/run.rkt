@@ -13,16 +13,15 @@
                      (list (car (sandbox-namespace-specs))
                            'typed/racket
                            'typed/scheme)])
-       (let* ((lines (cdr (file->lines file))) ;; drop the #lang line
-              (in    (if optimize?
-                         lines
-                         (cdr lines))) ;; drop the #:optimize
-              (evaluator
-               (make-evaluator 'typed/racket
-                               (foldl (lambda (acc new)
-                                        (string-append new "\n" acc))
-                                      "" in)))
-              (out (get-output evaluator)))
+       ;; drop the #lang line
+       (let* ((prog (regexp-replace #rx"^#lang typed/(scheme|racket)(/base)?"
+                                     (file->string file) ""))
+              (in   (if optimize?
+                        prog
+                        ;; drop the #:optimize
+                        (regexp-replace #rx"#:optimize" prog "")))
+              (evaluator (make-evaluator 'typed/racket in))
+              (out       (get-output evaluator)))
          (kill-evaluator evaluator)
          out)))))
 
