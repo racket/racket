@@ -222,14 +222,22 @@ static size_t mmu_memory_allocated(MMU *mmu) {
   return mmu->memory_allocated;
 }
 
-#if ( defined(_WIN32) || defined(OSKIT) )
+
+/* _WIN32 and OSKIT use these functions
+   On OSX and Linux the block and alloc caches 
+   manipulate mmu->memory_allocated directly.
+  
+   The gc calls mmu_memory_allocated_dec for
+   pages that are going to be orphaned sent to a different place.
+   The gc calls mmu_memory_allocated_inc for 
+   pages that are going to be adopted from another place.
+*/
 static void mmu_memory_allocated_inc(MMU *mmu, long amt) {
   mmu->memory_allocated += amt;
 }
 static void mmu_memory_allocated_dec(MMU *mmu, long amt) {
   mmu->memory_allocated -= amt;
 }
-#endif
 
 #if _WIN32            /* Windows */
 # include "vm_win.c"

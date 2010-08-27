@@ -462,6 +462,27 @@ GC2_EXTERN void GC_allow_master_gc_check();
    in master gc collections
 */
 
+GC2_EXTERN void GC_create_message_allocator();
+/*
+   Saves off the gc->gen0 to gc->saved_allocator.
+   Captures all memory allocations until GC_finish_message_allocator i
+   is called so they can be sent to another place.
+*/
+
+GC2_EXTERN void *GC_finish_message_allocator();
+/*
+   Stops memory allocation capture.
+   Restores gc->saved_allocator to gc->gen0.
+   Returns a void* that represents the message memory captured.
+*/
+
+GC2_EXTERN void GC_adopt_message_allocator(void *msg_memory);
+/*
+   Adopts the message memory captures by the sending place into
+   the current receiving place's gc
+*/
+
+
 # ifdef __cplusplus
 };
 # endif

@@ -820,7 +820,17 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   bpage->next = gc->gen0.big_pages;
   if(bpage->next) bpage->next->prev = bpage;
   gc->gen0.big_pages = bpage;
-  pagemap_add(gc->page_maps, bpage);
+
+
+  /* orphan this page from the current GC */
+  /* this page is going to be sent to a different place, don't account for it here */
+  /* message memory pages shouldn't go into the page_map, they are getting sent to another place */
+  if (gc->saved_allocator) {
+    mmu_memory_allocated_dec(gc->mmu, allocate_size);
+  }
+  else {
+    pagemap_add(gc->page_maps, bpage);
+  }
 
   {
     void * objptr = BIG_PAGE_TO_OBJECT(bpage);
@@ -962,7 +972,17 @@ inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_
   page->size_class = 0;
   page->size = PREFIX_SIZE;
   GEN0_ALLOC_SIZE(page) = page_size;
-  pagemap_add_with_size(gc->page_maps, page, page_size);
+
+  /* orphan this page from the current GC */
+  /* this page is going to be sent to a different place, don't account for it here */
+  /* message memory pages shouldn't go into the page_map, they are getting sent to another place */
+  if (gc->saved_allocator) {
+    mmu_memory_allocated_dec(gc->mmu, page_size);
+  }
+  else {
+    pagemap_add_with_size(gc->page_maps, page, page_size);
+  }
+
   GCVERBOSEPAGE(gc, "NEW gen0", page);
 
   return page;
@@ -1034,13 +1054,32 @@ inline static size_t gen0_size_in_use(NewGC *gc) {
 
 #define BYTES_MULTIPLE_OF_WORD_TO_WORDS(sizeb) ((sizeb) >> gcLOG_WORD_SIZE)
 
-inline unsigned long allocate_slowpath(NewGC *gc, size_t allocate_size, unsigned long newptr)
+inline static void gen0_sync_page_size_from_globals(NewGC *gc) {
+  gc->gen0.curr_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr);
+  gc->gen0.current_size += gc->gen0.curr_alloc_page->size;
+}
+
+inline static void gen0_allocate_and_setup_new_page(NewGC *gc) {
+  mpage *new_mpage = gen0_create_new_mpage(gc);
+
+  /* push page */
+  new_mpage->next = gc->gen0.curr_alloc_page;
+  if (new_mpage->next) {
+    new_mpage->next->prev = new_mpage;
+  }
+  gc->gen0.curr_alloc_page = new_mpage;
+
+  GC_gen0_alloc_page_ptr    = NUM(new_mpage->addr);
+  ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
+  GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_PAGE_SIZE;
+}
+
+inline static unsigned long allocate_slowpath(NewGC *gc, size_t allocate_size, unsigned long newptr)
 {
   do {
   /* master always overflows and uses allocate_medium because master allocations can't move */
     /* bring page size used up to date */
-    gc->gen0.curr_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr);
-    gc->gen0.current_size += gc->gen0.curr_alloc_page->size;
+    gen0_sync_page_size_from_globals(gc);
 
     /* try next nursery page if present */
     if(gc->gen0.curr_alloc_page->next) { 
@@ -1052,16 +1091,7 @@ inline unsigned long allocate_slowpath(NewGC *gc, size_t allocate_size, unsigned
     /* WARNING: tries to avoid a collection but
      * gen0_create_new_mpage can cause a collection via malloc_pages due to check_used_against_max */
     else if (gc->dumping_avoid_collection) {
-      mpage *new_mpage = gen0_create_new_mpage(gc);
-
-      /* push page */
-      new_mpage->next = gc->gen0.curr_alloc_page;
-      new_mpage->next->prev = new_mpage;
-
-      gc->gen0.curr_alloc_page  = new_mpage;
-      GC_gen0_alloc_page_ptr    = NUM(new_mpage->addr);
-      ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
-      GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_PAGE_SIZE;
+      gen0_allocate_and_setup_new_page(gc);
     }
     else {
 #ifdef INSTRUMENT_PRIMITIVES 
@@ -1264,6 +1294,119 @@ long GC_alloc_alignment()
 }
 
 long GC_malloc_stays_put_threshold() { return MAX_OBJECT_SIZE; }
+
+void GC_create_message_allocator() {
+  NewGC *gc = GC_get_GC();
+  Allocator *a;
+ 
+  GC_ASSERT(gc->saved_allocator == NULL); 
+  gc->saved_allocator = (Allocator *) ofm_malloc(sizeof(Allocator));
+  a = gc->saved_allocator;
+
+  a->savedGen0.curr_alloc_page = gc->gen0.curr_alloc_page;
+  a->savedGen0.pages           = gc->gen0.pages;
+  a->savedGen0.big_pages       = gc->gen0.big_pages;
+  a->savedGen0.current_size    = gc->gen0.current_size;
+  a->savedGen0.max_size        = gc->gen0.max_size;
+  a->saved_alloc_page_ptr      = GC_gen0_alloc_page_ptr;
+  a->saved_alloc_page_end      = GC_gen0_alloc_page_end;
+
+  /* allocate initial gen0.page */
+  gc->gen0.pages           = NULL;
+  gc->gen0.curr_alloc_page = NULL;
+  gen0_allocate_and_setup_new_page(gc);
+  gc->gen0.pages           = gc->gen0.curr_alloc_page;
+  gc->gen0.big_pages       = NULL; 
+  gc->gen0.current_size    = 0;
+  gc->gen0.max_size        = 100 * 1024 * 1024; /* some big number, doesn't matter because collection will be disabled */
+
+  gc->in_unsafe_allocation_mode = 1;
+  gc->dumping_avoid_collection++;
+}
+
+void *GC_finish_message_allocator() {
+  NewGC *gc = GC_get_GC();
+  Allocator *a = gc->saved_allocator;
+  MsgMemory *msgm = (MsgMemory *) ofm_malloc(sizeof(MsgMemory));
+
+  gen0_sync_page_size_from_globals(gc);
+
+  msgm->pages = gc->gen0.pages;
+  msgm->big_pages = gc->gen0.big_pages;
+  msgm->size = gc->gen0.current_size;
+
+  gc->gen0.curr_alloc_page = a->savedGen0.curr_alloc_page ;
+  gc->gen0.pages           = a->savedGen0.pages           ;
+  gc->gen0.big_pages       = a->savedGen0.big_pages       ;
+  gc->gen0.current_size    = a->savedGen0.current_size    ;
+  gc->gen0.max_size        = a->savedGen0.max_size        ;
+  GC_gen0_alloc_page_ptr   = a->saved_alloc_page_ptr      ;
+  GC_gen0_alloc_page_end   = a->saved_alloc_page_end      ;
+  
+  free(a);
+  gc->saved_allocator = NULL;
+
+  gc->in_unsafe_allocation_mode = 0;
+  gc->dumping_avoid_collection--;
+
+  return (void *) msgm;
+}
+
+void GC_adopt_message_allocator(void *param) {
+  NewGC *gc = GC_get_GC();
+  mpage *tmp;
+  MsgMemory *msgm = (MsgMemory *) param;
+  
+  if (msgm->big_pages)
+  { 
+    tmp = msgm->big_pages;
+    pagemap_add(gc->page_maps, tmp);
+    mmu_memory_allocated_inc(gc->mmu, tmp->size);
+    while (tmp->next) { 
+      tmp = tmp->next; 
+
+      pagemap_add(gc->page_maps, tmp);
+      mmu_memory_allocated_inc(gc->mmu, tmp->size);
+    }
+
+
+    /* push msgm->big_pages onto the head of the list */
+    tmp->next = gc->gen0.big_pages;
+    if (tmp->next) {
+      tmp->next->prev = tmp;
+    }
+    gc->gen0.big_pages = msgm->big_pages;
+  }
+
+  if (msgm->pages)
+  { 
+    mpage *gen0end;
+
+    tmp = msgm->pages;
+    mmu_memory_allocated_dec(gc->mmu, GEN0_ALLOC_SIZE(tmp));
+    pagemap_add_with_size(gc->page_maps, tmp, GEN0_ALLOC_SIZE(tmp));
+    while (tmp->next) { 
+      tmp = tmp->next;
+
+      mmu_memory_allocated_dec(gc->mmu, GEN0_ALLOC_SIZE(tmp));
+      pagemap_add_with_size(gc->page_maps, tmp, GEN0_ALLOC_SIZE(tmp));
+    }
+
+    /* preserve locality of gen0, when it resizes by adding message pages to end of gen0.pages list */
+    /* append msgm->big_pages onto the tail of the list */
+    gen0end = gc->gen0.curr_alloc_page;
+    while (gen0end->next) { 
+      gen0end = gen0end->next;
+    }
+
+    gen0end->next = msgm->pages;
+    msgm->pages->prev = gen0end;
+  }
+
+  gc->gen0.current_size += msgm->size;
+
+  free(msgm);
+}
 
 /* this function resizes generation 0 to the closest it can get (erring high)
    to the size we've computed as ideal */

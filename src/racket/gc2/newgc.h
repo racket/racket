@@ -9,7 +9,6 @@
 */
 #endif
 
-
 typedef struct mpage {
   struct mpage *next;
   struct mpage *prev;
@@ -43,12 +42,24 @@ typedef struct mpage {
 } mpage;
 
 typedef struct Gen0 {
- struct mpage *curr_alloc_page;
- struct mpage *pages;
- struct mpage *big_pages;
- unsigned long current_size;
- unsigned long max_size;
+  struct mpage *curr_alloc_page;
+  struct mpage *pages;
+  struct mpage *big_pages;
+  unsigned long current_size;
+  unsigned long max_size;
 } Gen0;
+
+typedef struct MsgMemory {
+  struct mpage *pages;
+  struct mpage *big_pages;
+  unsigned long size;
+} MsgMemory;
+
+typedef struct Allocator {
+  Gen0 savedGen0;
+  unsigned long saved_alloc_page_ptr;
+  unsigned long saved_alloc_page_end;
+} Allocator;
 
 typedef struct MarkSegment {
   struct MarkSegment *prev;
@@ -231,6 +242,8 @@ typedef struct NewGC {
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
   struct MMU     *mmu;
+
+  Allocator *saved_allocator;
 
 #if defined(GC_DEBUG_PAGES)
   FILE *GCVERBOSEFH;
