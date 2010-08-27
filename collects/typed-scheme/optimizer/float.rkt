@@ -72,17 +72,17 @@
            #:with opt #'e.opt))
 
 (define-syntax-class float-opt-expr
-  (pattern (~and res (#%plain-app (~var op (float-op unary-float-ops)) f:float-expr))
-           #:when (subtypeof? #'res -Flonum)
+  (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-expr)
+           #:when (subtypeof? this-syntax -Flonum)
            #:with opt
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
-  (pattern (~and res (#%plain-app (~var op (float-op binary-float-ops))
-                                  f1:float-arg-expr
-                                  f2:float-arg-expr
-                                  fs:float-arg-expr ...))
+  (pattern (#%plain-app (~var op (float-op binary-float-ops))
+                        f1:float-arg-expr
+                        f2:float-arg-expr
+                        fs:float-arg-expr ...)
            ;; if the result is a float, we can coerce integers to floats and optimize
-           #:when (subtypeof? #'res -Flonum)
+           #:when (subtypeof? this-syntax -Flonum)
            #:with opt
            (begin (log-optimization "binary float" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))

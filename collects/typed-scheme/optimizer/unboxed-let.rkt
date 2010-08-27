@@ -25,18 +25,17 @@
 ;; we can extend unboxing
 (define-syntax-class app-of-unboxed-let-opt-expr
   #:literal-sets (kernel-literals)
-  (pattern (~and e ((~literal #%plain-app)
-                    (~and let-e
-                          ((~literal letrec-values)
-                           bindings
-                           loop-fun:id)) ; sole element of the body
-                    args:expr ...))
+  (pattern (#%plain-app
+            (~and let-e ((~literal letrec-values)
+                         bindings
+                         loop-fun:id)) ; sole element of the body
+            args:expr ...)
            #:with (~var operator (unboxed-let-opt-expr-internal #t)) #'let-e
            #:with unboxed-info (dict-ref unboxed-funs-table #'loop-fun #f)
            #:when (syntax->datum #'unboxed-info)
            #:with (~var e* (inexact-complex-call-site-opt-expr
                             #'unboxed-info #'operator.opt))
-           #'e
+           this-syntax
            #:with opt
            (begin (log-optimization "unboxed let loop" #'loop-fun)
                   #'e*.opt)))
@@ -46,9 +45,8 @@
 ;; functions
 (define-syntax-class (unboxed-let-opt-expr-internal let-loop?)
   #:literal-sets (kernel-literals)
-  (pattern (~and exp (letk:let-like-keyword
-                      ((~and clause (lhs rhs ...)) ...)
-                      body:expr ...))
+  (pattern (letk:let-like-keyword ((~and clause (lhs rhs ...)) ...)
+                                  body:expr ...)
            ;; we look for bindings of complexes that are not mutated and only
            ;; used in positions where we would unbox them
            ;; these are candidates for unboxing
@@ -125,7 +123,7 @@
            #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
            #:with (opt-others:opt-let-clause ...) #'(others ...)
            #:with opt
-           (begin (log-optimization "unboxed let bindings" #'exp)
+           (begin (log-optimization "unboxed let bindings" this-syntax)
                   ;; add the unboxed bindings to the table, for them to be used by
                   ;; further optimizations
                   (for ((v (in-list (syntax->list #'(opt-candidates.id ...))))

@@ -376,9 +376,9 @@
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
 
-  (pattern (~and exp (#%plain-app (~and op (~literal make-polar)) r theta))
-           #:when (isoftype? #'exp -InexactComplex)
-           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+  (pattern (#%plain-app (~and op (~literal make-polar)) r theta)
+           #:when (isoftype? this-syntax -InexactComplex)
+           #:with exp*:unboxed-inexact-complex-opt-expr this-syntax
            #:with opt
            (begin (log-optimization "make-polar" #'op)
                   (reset-unboxed-gensym)
@@ -386,12 +386,12 @@
                       (unsafe-make-flrectangular exp*.real-binding
                                                  exp*.imag-binding))))
 
-  (pattern (~and e (#%plain-app op:id args:expr ...))
+  (pattern (#%plain-app op:id args:expr ...)
            #:with unboxed-info (dict-ref unboxed-funs-table #'op #f)
            #:when (syntax->datum #'unboxed-info)
            #:with (~var e* (inexact-complex-call-site-opt-expr
                             #'unboxed-info #'op)) ; no need to optimize op
-           #'e
+           this-syntax
            #:with opt
            (begin (log-optimization "call to fun with unboxed args" #'op)
                   #'e*.opt))
@@ -401,26 +401,26 @@
 
 (define-syntax-class inexact-complex-arith-opt-expr
   
-  (pattern (~and exp (#%plain-app op:inexact-complex->float-op e:expr ...))
-           #:when (subtypeof? #'exp -Flonum)
-           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+  (pattern (#%plain-app op:inexact-complex->float-op e:expr ...)
+           #:when (subtypeof? this-syntax -Flonum)
+           #:with exp*:unboxed-inexact-complex-opt-expr this-syntax
            #:with real-binding #'exp*.real-binding
            #:with imag-binding #f
            #:with (bindings ...) #'(exp*.bindings ...)
            #:with opt
-           (begin (log-optimization "unboxed inexact complex->float" #'exp)
+           (begin (log-optimization "unboxed inexact complex->float" this-syntax)
                   (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
                       real-binding)))
 
-  (pattern (~and exp (#%plain-app op:inexact-complex-op e:expr ...))
-           #:when (isoftype? #'exp -InexactComplex)
-           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+  (pattern (#%plain-app op:inexact-complex-op e:expr ...)
+           #:when (isoftype? this-syntax -InexactComplex)
+           #:with exp*:unboxed-inexact-complex-opt-expr this-syntax
            #:with real-binding #'exp*.real-binding
            #:with imag-binding #'exp*.imag-binding
            #:with (bindings ...) #'(exp*.bindings ...)
            #:with opt
-           (begin (log-optimization "unboxed inexact complex" #'exp)
+           (begin (log-optimization "unboxed inexact complex" this-syntax)
                   (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
                       (unsafe-make-flrectangular exp*.real-binding exp*.imag-binding))))
