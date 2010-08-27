@@ -139,18 +139,22 @@
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
         [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
-	[(Poly: vs (and b (Function: _)))
-         (when flat? (exit (fail)))
-         (match-let ([(Poly-names: vs-nm _) ty])
-           (with-syntax ([(v ...) (generate-temporaries vs-nm)])
-             (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
-					  (vars))])
-               #`(parametric/c (v ...) #,(t->c b)))))]
+	[(Poly: vs b)
+         (if from-typed?
+             ;; in positive position, no checking needed for the variables
+             (parameterize ([vars (append (for/list ([v vs]) (list v #'any/c)))])
+               (t->c b))
+             ;; in negative position, use `parameteric/c'
+             (match-let ([(Poly-names: vs-nm _) ty])
+               (with-syntax ([(v ...) (generate-temporaries vs-nm)])
+                 (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
+                                              (vars))])
+                   #`(parametric/c (v ...) #,(t->c b))))))]
         [(Mu: n b)
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
-               #`(flat-rec-contract n* #,(t->c b)))))]
+               #`(flat-rec-contract n* #,(t->c b #:flat #t)))))]
         [(Value: #f) #'false/c]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
          (when flat? (exit (fail)))
