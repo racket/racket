@@ -267,7 +267,7 @@
                         (send panel get-children)))])
          (or found
              (error object-tag 
-                    "no object of class ~a named ~.e in active frame"
+                    "no object of class ~a named ~e in active frame"
                     obj-class
                     b-desc)))]
       [(is-a? b-desc obj-class) b-desc]
@@ -289,11 +289,11 @@
              [ctrl (find-ctrl)])
          (cond
            [(not (send ctrl is-shown?))
-            (error error-tag "control ~.e is not shown (label ~e)" ctrl (send ctrl get-label))]
+            (error error-tag "control ~e is not shown (label ~e)" ctrl (send ctrl get-label))]
            [(not (send ctrl is-enabled?))
-            (error error-tag "control ~.e is not enabled (label ~e)" ctrl (send ctrl get-label))]
+            (error error-tag "control ~e is not enabled (label ~e)" ctrl (send ctrl get-label))]
            [(not (in-active-frame? ctrl))
-            (error error-tag "control ~.e is not in active frame (label ~e)" ctrl (send ctrl get-label))]
+            (error error-tag "control ~e is not in active frame (label ~e)" ctrl (send ctrl get-label))]
            [else
             (update-control ctrl)
             (send ctrl command event)
