@@ -41,7 +41,7 @@
 (define nonempty-queue/c
   (flat-named-contract "nonempty-queue" nonempty-queue?))
 
-;; ELI: Are these needed?  (vs just providing `queue?', `make-queue' and
+;; Eli: Are these needed?  (vs just providing `queue?', `make-queue' and
 ;; `queue-empty?'.)
 (provide/contract
  [queue/c flat-contract?]

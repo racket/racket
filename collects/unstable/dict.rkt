@@ -10,6 +10,9 @@
 
 (define (dict-empty? dict)
   (= (dict-count dict) 0))
+;; Eli: This encourages ignoring the actual representation, and the fact
+;; that `dict-count' can in some cases be an O(N) operation.  (And to
+;; make things worse, it's not even mentioned in the docs.)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -35,6 +38,17 @@
     ([#t #t 'eq] (make-weak-hash))
     ;; Impossible
     ([#f #t _] (error 'empty-set "cannot create an immutable weak hash"))))
+;; Eli: What's the point in this?  The whole dict thing is very similar
+;; to an abstract class, and this code is essentially making a
+;; constructor for the abstract class that decides to instantiate some
+;; arbitrary subclass.  Furthermore, since this arbitrary decision is
+;; always going for a hash table, this whole function is nothing more
+;; than a keyworded version of `make-hash-*'.  (As a very obvious
+;; example, if I have a mental model of alists, using this function
+;; makes things much less efficient than just returning `null'.)  This
+;; is possibly something useful, but calling it `make-dict' is bogus.
+;; Another evidence for this bogosity: the documentation for this
+;; function says: "Constructs an empty >>hash table<<".
 
 (define (make-dict dict
                    #:weak? [weak? #f]
@@ -44,6 +58,11 @@
     (if mutable?
       (begin (dict-union! MT dict) MT)
       (dict-union MT dict))))
+;; Eli: Similar bogosity to the above.  When I see `make-dict', I don't
+;; think about a function that "Converts a given dictionary to a hash
+;; table".  If it's useful, then it should have a more straightforward
+;; name, like `dict->hash'.  Also, reusing `dict-union' is cute, but
+;; makes it slower than it could be.
 
 (define (custom-dict equiv?
                      [hash1 (lambda (x) 0)]
@@ -55,6 +74,20 @@
     ([#t #f] (make-custom-hash equiv? hash1 hash2))
     ([#t #t] (make-weak-custom-hash equiv? hash1 hash2))
     ([#f #t] (error 'custom-set "cannot create an immutable weak hash"))))
+;; Eli: Again, same bogosity comment applies here.  Another point here:
+;; using 0 for the default hashing functions sounds like a very bad idea
+;; -- something that people will run into in the form of extremely bad
+;; performance.  In this case the docs do mention this -- but why not
+;; use the default hash functions that racket already provides?  Also,
+;; the docs indicate that the degenerate hash function makes it
+;; equivalent to a list-based dictionary, which is wrong: relying on
+;; this seems bad (in case custom hashes are (or will be) more
+;; sophisticated), and also it's equivalent to a list-based dictionary,
+;; except with a costly constant factor for the hash machinery, and
+;; without the advantages of an alist (order).  In short, the docs
+;; should really say "don't use this without hash functions" -- or
+;; better, use the better hash functions as a default *or* don't make
+;; them optional (at least the first one).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -62,8 +95,20 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Eli: Ugh.  So the above constructors are keyworded versions of hash
+;; constructors in various forms, and here we take a *single* function
+;; from the dict interface and split it into multiple functions?  Is
+;; there any point for this?  If I were told just this high-level
+;; description, I'd assume that an obvious motivation for doing this
+;; would be performance, but in this case performance is lost.  I also
+;; lose the abolity to have a lazily computed default on the way, since
+;; the default in `dict-ref/default' is a plain argument.  The only new
+;; thing here is the questionable `dict-ref/identity' (at least I have
+;; never seen any code where something like that would be useful).
+
 (define (dict-ref/check dict key)
   (dict-ref dict key))
+;; Eli: why the eta-expanded definition?
 
 (define (dict-ref/identity dict key)
   (dict-ref dict key (lambda () key)))
@@ -73,6 +118,7 @@
 
 (define (dict-ref/failure dict key failure)
   (dict-ref dict key (lambda () (failure))))
+;; Eli: Um, why (lambda () (failure)) and not just `failure'??
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,6 +128,12 @@
 
 (define ((dict-duplicate-error name) key value1 value2)
   (error name "duplicate values for key ~e: ~e and ~e" key value1 value2))
+
+;; Eli: If this is useful, then at least make it worth using instead of
+;; writing your own code.  For example, inspect the arguments and choose
+;; an efficient order for the loops, or use a temporary hash table for a
+;; union of two alists, etc.  Alternatively, just write a function for
+;; merging two hash tables (and call it `hash-union', of course).
 
 (define (dict-union
          #:combine [combine #f]
@@ -112,6 +164,12 @@
 ;;  Property delegation
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Eli: Uh, what is this for?  The documentation for this is unclear: it
+;; has the technical details of what this is doing, but no explanation
+;; about when this is useful.  Specifically, it's unclear why I would
+;; ever want a wrapped dictionary.  (My best guess would be "something
+;; that chaperons are a better solution for".)
 
 (define (wrapped-dict-property
          #:unwrap unwrap
