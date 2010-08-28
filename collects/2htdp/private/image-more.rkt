@@ -780,8 +780,9 @@
   (make-a-polygon (rectangle-points side-length side-length) mode color))
 
 (define/chk (empty-scene width height)
-  (overlay (rectangle width height 'outline 'black)
-           (rectangle width height 'solid 'white)))
+  (crop 0 0 width height
+        (overlay (rectangle width height 'outline (pen "black" 2 'solid 'round 'round))
+                 (rectangle width height 'solid 'white))))
 
 (define/chk (rhombus side-length angle mode color)
   (check-mode/color-combination 'rhombus 3 mode color)
