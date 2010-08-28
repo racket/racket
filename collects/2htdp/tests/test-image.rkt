@@ -644,8 +644,10 @@
 
 (test (empty-scene 185 100)
       =>
-      (overlay (rectangle 185 100 'outline 'black)
-               (rectangle 185 100 'solid 'white)))
+      (overlay/align "left" "top"
+                     (rectangle 184 99 'outline 'solid)
+                     (rectangle 185 100 'solid 'white)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  testing normalization
@@ -1603,6 +1605,21 @@
 (test/exn (save-image "tri.png" (triangle 50 "solid" "purple"))
           =>
           #rx"^save-image:")
+
+(test/exn (pen 1 2 3 4 5)
+          =>
+          #rx"^pen:")
+
+(test/exn (make-pen 1 2 3 4 5)
+          =>
+          #rx"^make-pen:")
+
+(test/exn (make-color #f #f #f)
+          =>
+          #rx"^make-color:")
+(test/exn (color #f #f #f)
+          =>
+          #rx"^color:")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

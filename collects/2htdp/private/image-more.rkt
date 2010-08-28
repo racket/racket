@@ -1165,17 +1165,29 @@
        #`(make-object image-snip% (make-object bitmap% #,path 'unknown/mask)))]))
 
 
-(define build-color
+(define build-color/make-color
   (let ([orig-make-color make-color])
     (define/chk (make-color int0-255-1 int0-255-2 int0-255-3) 
       (orig-make-color int0-255-1 int0-255-2 int0-255-3))
     make-color))
 
-(define build-pen
+(define build-color/color
+  (let ([orig-make-color make-color])
+    (define/chk (color int0-255-1 int0-255-2 int0-255-3) 
+      (orig-make-color int0-255-1 int0-255-2 int0-255-3))
+    color))
+
+(define build-pen/make-pen
   (let ([orig-make-pen make-pen])
     (define/chk (make-pen color real-0-255 pen-style pen-cap pen-join)
       (orig-make-pen color real-0-255 pen-style pen-cap pen-join))
     make-pen))
+
+(define build-pen/pen
+  (let ([orig-make-pen make-pen])
+    (define/chk (pen color real-0-255 pen-style pen-cap pen-join)
+      (orig-make-pen color real-0-255 pen-style pen-cap pen-join))
+    pen))
 
 (provide overlay
          overlay/align
@@ -1249,8 +1261,10 @@
          
          rotate-xy
          
-         build-color
-         build-pen)
+         build-color/make-color
+         build-color/color
+         build-pen/make-pen
+         build-pen/pen)
 
 (provide/contract
  [np-atomic-bb (-> np-atomic-shape? (values real? real? real? real?))]
