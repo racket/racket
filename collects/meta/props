@@ -1477,6 +1477,7 @@ path/s is either such a string or a list of them.
 "collects/tests/plai/gc/bad-mutators/mutator3.rkt" drdr:command-line #f
 "collects/tests/plai/gc/bad-mutators/mutator5.rkt" drdr:command-line #f
 "collects/tests/plai/gc/bad-mutators/void-app.rkt" drdr:command-line #f
+"collects/tests/plai/gc/run-test.rkt" drdr:command-line (racket "-qt" * "--" "-g")
 "collects/tests/plai/test-random-mutator.rkt" responsible (jay robby)
 "collects/tests/plai/web.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/planet" responsible (robby jay)

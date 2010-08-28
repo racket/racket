@@ -11,6 +11,7 @@
                 (directory-list pth)))))
 
 (define (test-mutator m)
+  (printf "Running ~a\n" m)
   (parameterize ([current-namespace (make-base-empty-namespace)])
     (dynamic-require m #f)))
 
@@ -21,10 +22,19 @@
 
 (test
  (if (run-good?)
-     (for ([m (in-directory (build-path here "good-mutators") #rx"ss$")])
+     (for ([m (in-directory (build-path here "good-mutators") #rx"rkt$")])
        (test
         (test-mutator m)))
      (void))
- (for ([m (in-directory (build-path here "bad-mutators") #rx"ss$")])
+ (for ([m (in-directory (build-path here "bad-mutators") #rx"rkt$")])
    (test
-    (test-mutator m) =error> #rx"")))
+    (test-mutator m) =error> #rx""))
+ 
+ (test-mutator (build-path here "other-mutators" "error.rkt"))
+ =error>
+ #rx"plai/mutator has error"
+ 
+ (test-mutator (build-path here "other-mutators" "top.rkt"))
+ =error>
+ #rx"unbound identifier in module in: frozzle"
+ )

@@ -6,16 +6,18 @@
          plai/private/gc-core
          scheme/gui/dynamic
          (only-in plai/test-harness
-                  generic-test test halt-on-errors print-only-errors)
+                  plai-error generic-test test halt-on-errors print-only-errors)
          (for-syntax scheme)
          (for-syntax plai/private/gc-transformer)
          scheme/stxparam
          (for-syntax scheme/stxparam-exptime))
 
-(provide else require provide
+(provide else require provide #%top
          test/location=? 
          test/value=?
          (rename-out
+          [plai-error error]
+          
           [mutator-and and]
           [mutator-or or]
           [mutator-cond cond]
