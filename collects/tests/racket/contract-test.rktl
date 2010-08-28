@@ -10223,11 +10223,11 @@ so that propagation occurs.
            (require 'provide/contract-35/m)
            (f #f)))))
     
-      (test (format "/contract-test.rktl:~a.30: "
+      (test (format "contract-test.rktl:~a.30: "
                     (+ here-line 8))
             'provide/contract-compiled-source-locs
             (with-handlers ((exn:fail? (λ (x) 
-                                         (let ([m (regexp-match #rx"/contract-test.rktl[^ ]* " (exn-message x))])
+                                         (let ([m (regexp-match #rx"contract-test.rktl[^ ]* " (exn-message x))])
                                            (and m (car m))))))
               
               (contract-eval '(require 'provide/contract-35/n)))))
