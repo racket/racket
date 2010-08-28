@@ -31,7 +31,7 @@
                            (datum->syntax #f tok-value (make-srcloc start-pos end-pos)))))
     (grammar
      (program [(statements) $1])
-     (statements [(statement) (list $1)]
+     (statements [() empty]
                  [(statement statements) (list* $1 $2)])
      (statement [(assertion) $1]
                 [(query) $1]
