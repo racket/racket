@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Instead of using the `slideshow' language,
 ;;  we can use scheme/base and import slideshow/base, etc.
@@ -6,19 +6,17 @@
 (require slideshow/base
          slideshow/pict
          slideshow/code
-         mred
-         scheme/class
+         racket/class
          racket/path
-         racket/runtime-path
-         (only-in mzlib/etc begin-with-definitions
-                  this-expression-source-directory))
+         racket/gui/base
+         racket/runtime-path)
 
 (define-runtime-path tutorial-show "tutorial-show.rkt")
 
 (provide do-initial-slides)
 
 (define (do-initial-slides)
-  (begin-with-definitions
+
    (slide
     #:name "Title Slide"
     (titlet "Slideshow Tutorial")
@@ -170,4 +168,4 @@
                  (make-object style-delta% 'change-family 'modern)
                  0 'end)
            (send f show #t))))))
-   ))
+   )
