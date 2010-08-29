@@ -375,7 +375,7 @@ Extra arguments following the last option are available from the
 @; ----------------------------------------------------------------------
 
 @section[#:tag "configure-runtime"]{Language Run-Time Configuration}
-
+@section-index["'configure-runtime"]
 @guidealso["module-runtime-config"]
 
 When a module is implemented using @hash-lang{}, the language after
