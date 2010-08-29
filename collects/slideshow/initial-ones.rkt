@@ -8,8 +8,12 @@
          slideshow/code
          mred
          scheme/class
+         racket/path
+         racket/runtime-path
          (only-in mzlib/etc begin-with-definitions
                   this-expression-source-directory))
+
+(define-runtime-path tutorial-show "tutorial-show.rkt")
 
 (provide do-initial-slides)
 
@@ -146,7 +150,7 @@
           "be viewed while reading the program source")
     (blank)
     (para #:width client-w "The source is")
-    (let ([s (path->string (build-path (this-expression-source-directory) "tutorial-show.ss"))])
+    (let ([s (path->string tutorial-show)])
       (clickback
        (scale/improve-new-text
         (let ([p (tt s)])
@@ -156,16 +160,13 @@
            "blue"))
         (min 1 (/ (* 0.8 client-w ) (pict-width (tt s)))))
        (lambda ()
-         (let* ([f (new frame% 
-                        [label "tutorial-show.ss"]
-                        [width 600]
-                        [height 400])]
+         (let* ([f (new frame% [label (path-element->string
+                                       (file-name-from-path tutorial-show))]
+                        [width 600] [height 400])]
                 [e (new text%)]
-                [c (new editor-canvas% 
-                        [parent f]
-                        [editor e])])
+                [c (new editor-canvas% [parent f] [editor e])])
            (send e load-file s)
-           (send e change-style 
+           (send e change-style
                  (make-object style-delta% 'change-family 'modern)
                  0 'end)
            (send f show #t))))))
