@@ -185,13 +185,13 @@ add this test:
 
 (fire-up-drscheme-and-run-tests
  (λ ()
-    (set! drs-frame (wait-for-drscheme-frame))
-    (set! interactions-text  (send drs-frame get-interactions-text))
-    (set-language-level! (list #rx"Pretty Big"))
-    (clear-definitions drs-frame)
-    (do-execute drs-frame)
-    
-    (output-err-port-checking) ;; must come first
-    ;;(long-io/execute-test)
-    (reading-test)))
+   (set! drs-frame (wait-for-drscheme-frame))
+   (set! interactions-text  (send drs-frame get-interactions-text))
+   (set-language-level! (list #rx"Pretty Big"))
+   (clear-definitions drs-frame)
+   (do-execute drs-frame)
+   
+   (output-err-port-checking) ;; must come first
+   ;;(long-io/execute-test)
+   (reading-test)))
 
