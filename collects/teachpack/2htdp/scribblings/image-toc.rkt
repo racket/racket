@@ -6,10 +6,40 @@
 
 (define mapping
   (list
+   (list
+    '(let* ((s
+             (crop
+              0
+              0
+              20
+              20
+              (rectangle
+               20
+               20
+               "outline"
+               (make-pen "black" 2 "solid" "round" "round"))))
+            (r (beside s s s s s s)))
+       (above r r r r r r))
+    'image
+    "5127be89b4-1.png")
+   (list
+    '(crop
+      0
+      0
+      20
+      20
+      (rectangle 20 20 "outline" (make-pen "black" 2 "solid" "round" "round")))
+    'image
+    "284a96a769b-1.png")
+   (list
+    '(let* ((s (rectangle 20 20 "outline" "black")) (r (beside s s s s s s)))
+       (above r r r r r r))
+    'image
+    "245380940d6-1.png")
    (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-height (text "Hello" 24 "black")) 'val 24)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 18)
+   (list '(image-height (text "Hello" 24 "black")) 'val 41)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val 31)
    (list '(image-height (rectangle 10 0 "solid" "purple")) 'val 0)
    (list
     '(image-height
@@ -717,4 +747,34 @@
    (list '(ellipse 20 40 "solid" "blue") 'image "25451dd2997.png")
    (list '(ellipse 40 20 "outline" "black") 'image "8cb34e62d4.png")
    (list '(circle 20 "solid" "blue") 'image "54d58bf7f6.png")
-   (list '(circle 30 "outline" "red") 'image "262a4fa650a.png")))
+   (list '(circle 30 "outline" "red") 'image "262a4fa650a.png")
+   (list
+    '(let* ((s
+             (crop
+              0
+              0
+              20
+              20
+              (rectangle
+               20
+               20
+               "outline"
+               (make-pen "black" 2 "solid" "round" "round"))))
+            (r (beside s s s s s s)))
+       (above r r r r r r))
+    'image
+    "5127be89b4.png")
+   (list
+    '(crop
+      0
+      0
+      20
+      20
+      (rectangle 20 20 "outline" (make-pen "black" 2 "solid" "round" "round")))
+    'image
+    "284a96a769b.png")
+   (list
+    '(let* ((s (rectangle 20 20 "outline" "black")) (r (beside s s s s s s)))
+       (above r r r r r r))
+    'image
+    "245380940d6.png")))

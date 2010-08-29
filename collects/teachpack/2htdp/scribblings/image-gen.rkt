@@ -35,7 +35,7 @@
 (define (handle-image exp)
   (printf ".") (flush-output)
   (let ([result 
-         (with-handlers ([exn:fail?
+         (with-handlers ([(λ (x) #t)
                           (λ (x)
                             (printf "\nerror evaluating:\n")
                             (pretty-write exp)

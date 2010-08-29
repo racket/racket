@@ -239,6 +239,9 @@
      (if (string? arg)
          (string->symbol arg)
          arg)]
+    [(filename)
+     (check-arg fn-name (path-string? arg) 'path-string i arg)
+     arg]
     [else
      (error 'check "the function ~a has an argument with an unknown name: ~s"
             fn-name
