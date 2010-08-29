@@ -8,13 +8,21 @@
    (thread 
     (λ ()
       (define-values (ip op) (tcp-accept listener))
-      (thread (λ ()
-                (copy-port ip cop)
-                (flush-output cop)
-                (close-input-port ip)))
-      (thread (λ () 
-                (copy-port tp op)
-                (close-output-port op)))))
+      (define ip->cop-t
+        (thread (λ ()
+                  (copy-port ip cop))))
+      (define tp->op-t
+        (thread (λ () 
+                  (copy-port tp op))))
+      
+      (thread-wait tp->op-t)
+      (thread-wait ip->cop-t)
+      
+      (flush-output op)
+      (flush-output cop)
+      
+      (close-output-port op)
+      (close-input-port ip)))
    the-port))
 
 (define (ftp-port-split n)
@@ -120,7 +128,7 @@ drwxrwxr-x    2 0        1003         4096 Aug 02  2003 fontutils
 drwxr-xr-x    2 1003     1003         4096 Apr 20 21:05 freedink
 drwxrwxr-x    2 0        1003         4096 Jan 04  2009 freefont
 END
-                                       )))
+                                                             )))
   (define-values (pasv1-port-maj pasv1-port-min)
     (ftp-port-split pasv1-port))
   (define-values (pasv2-thread pasv2-port)
@@ -146,7 +154,7 @@ pretty obvious and could be educational. ;-)
 Thank You!
 
 END
-                                       )))
+                                                             )))
   (define-values (pasv2-port-maj pasv2-port-min)
     (ftp-port-split pasv2-port))
   (define-values (main-thread main-port)
@@ -197,9 +205,9 @@ END
 221 Goodbye.
 
 END
-                                       pasv1-port-maj pasv1-port-min
-                                       pasv2-port-maj pasv2-port-min
-                                               ))))
+                                                   pasv1-port-maj pasv1-port-min
+                                                   pasv2-port-maj pasv2-port-min
+                                                   ))))
   
   (define server "localhost")
   (define port main-port)
@@ -212,21 +220,27 @@ END
         (ftp-connection? 1) => #f
         (set! conn (ftp-establish-connection server port user passwd))
         (ftp-connection? conn)
-        (ftp-cd conn "gnu")
-        (for ([f (in-list (ftp-directory-list conn))])
-          (match-define (list type ftp-date name) f)
+        (when (ftp-connection? conn)
           (test
-           (ftp-make-file-seconds ftp-date)))
-        
-        (ftp-download-file conn tmp-dir pth)
-        
-        (ftp-close-connection conn)
-        
-        (delete-file (build-path tmp-dir pth))
-        (delete-directory/files tmp-dir)
-        
-        (get-output-string cop) =>
-        #<<END
+           (ftp-cd conn "gnu")
+           (for ([f (in-list (ftp-directory-list conn))])
+             (match-define (list type ftp-date name) f)
+             (test
+              (ftp-make-file-seconds ftp-date)))
+           
+           (ftp-download-file conn tmp-dir pth)
+           
+           (ftp-close-connection conn)
+           
+           (delete-file (build-path tmp-dir pth))
+           (delete-directory/files tmp-dir)
+           
+           (thread-wait pasv1-thread)
+           (thread-wait pasv2-thread)
+           (thread-wait main-thread)
+           
+           (get-output-string cop) =>
+           #<<END
 USER anonymous
 CWD gnu
 PASV
@@ -235,9 +249,10 @@ LIST
 PASV
 TYPE I
 RETR =README-about-.diff-files
+QUIT
 
 END
-        
-        ))
+           
+           ))))
 
 (tests)
