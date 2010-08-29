@@ -159,7 +159,7 @@ add this test:
   (do-input-test "(read-line)" "\n" "\n\"\"")
   (do-input-test "(read-char)" "\n" "\n#\\newline")
   
-  (do-input-test "(list (read) (printf \"1\n\") (read) (printf \"3\n\"))"
+  (do-input-test "(list (read) (printf \"1\\n\") (read) (printf \"3\\n\"))"
                  "0 2\n"
                  "0 2\n1\n3\n(0 #<void> 2 #<void>)")
   
