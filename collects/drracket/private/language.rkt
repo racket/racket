@@ -272,10 +272,6 @@
                              output-panel
                              (λ (rb evt) (enable-fraction-style))
                              '(horizontal vertical-label))]
-             [fraction-style
-              (make-object check-box% (string-constant decimal-notation-for-rationals)
-                output-panel
-                void)]
              [enable-fraction-style 
               (lambda ()
                 (let ([on? (member (send output-style get-selection) '(0 1))])
@@ -287,7 +283,11 @@
              [insert-newlines (make-object check-box%
                                 (string-constant use-pretty-printer-label)
                                 output-panel
-                                void)])
+                                void)]
+             [fraction-style
+              (make-object check-box% (string-constant decimal-notation-for-rationals)
+                output-panel
+                void)])
       (get-debugging-radio-box debugging-left debugging-right)
       (dynamic-panel-extras dynamic-panel)
       

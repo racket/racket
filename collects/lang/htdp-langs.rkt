@@ -276,12 +276,6 @@
                                          (string-constant write-printing-style)))
                                output-panel
                                void)]
-               [fraction-style
-                (make-object radio-box% (string-constant fraction-style)
-                  (list (string-constant use-mixed-fractions)
-                        (string-constant use-repeating-decimals))
-                  output-panel
-                  void)]
                [show-sharing #f]
                [insert-newlines (make-object check-box%
                                   (string-constant use-pretty-printer-label)
@@ -291,6 +285,12 @@
                              (parent output-panel)
                              (label (string-constant tracing-enable-tracing))
                              (callback void))]
+               [fraction-style
+                (make-object radio-box% (string-constant fraction-style)
+                  (list (string-constant use-mixed-fractions)
+                        (string-constant use-repeating-decimals))
+                  output-panel
+                  void)]
                
                [tps '()])
           
