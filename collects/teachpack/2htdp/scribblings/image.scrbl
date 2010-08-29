@@ -1237,7 +1237,7 @@ Two images are equal if they draw exactly the same way, at their current size
 @section[#:tag "nitty-gritty"]{The nitty gritty of pixels, pens, and lines}
 
 The image library treats coordinates as if they are in the upper-left corner 
-of each pixel, and infinitesimally small.
+of each pixel, and infinitesimally small (unlike pixels which have some area).
 
 Thus, when drawing a solid @racket[square] of whose side-length is 10, the image library
 colors in all of the pixels enclosed by the @racket[square] starting at the upper
@@ -1257,15 +1257,50 @@ This means that the outline slightly exceeds the bounding box of the shape.
 Specifically, the upper and left-hand lines around the square are within
 the bounding box, but the lower and right-hand lines are just outside.
 
-The special case of adding 0.5 to each coordinate when drawing the square
-applies to all polygon-based shapes, but does not apply when a @racket[pen]
-is passed as the last argument to create the shape.
-In that case, not adjustment of the pixels is performed and using a one
-pixel wide pen draws the pixels above and below the line, but each with
-a color that is half of the intensity of the given color. Using a
-@racket[pen] with with two, colors the pixels above and below the line
-with the full intensity. 
+This kind of rectangle is useful when putting rectangles next to each other
+and avoiding extra thick lines on the interior. For example, imagine
+building a grid like this:
 
+@image-examples[(let* ([s (rectangle 20 20 "outline" "black")]
+                       [r (beside s s s s s s)])
+                  (above r r r r r r))]
+
+The reason interior lines in this grid are the same thickness as the lines around the edge
+is because the rectangles overlap with each other. 
+That is, the upper-left rectangle's right edge is right on top of the
+next rectangle's left edge.
+
+The special case of adding 0.5 to each coordinate when drawing the square
+applies to all outline polygon-based shapes that just pass color, 
+but does not apply when a @racket[pen]
+is passed as the last argument to create the shape.
+For example, if using a pen of thickness 2 to draw a rectangle, we get a
+shape that has a border drawing the row of pixels just inside and just outside
+the shape. One might imagine that a pen of thickness 1 would draw an outline around the shape with
+a 1 pixel thick line, but this would require 1/2 of each pixel to be illuminated, something
+that is not possible. Instead, the same pixels are lit up as with the 2 pixel wide pen, but
+with only 1/2 of the intensity of the color. So a 1 pixel wide black @racket[pen] object draws
+a 2 pixel wide outline, but in gray.
+
+When combining pens and cropping, we can make a rectangle that has a line that is one pixel
+wide, but where the line is drawn entirely within the rectangle
+
+@image-examples[(crop
+                 0 0 20 20
+                 (rectangle
+                  20 20 "outline" 
+                  (make-pen "black" 2 "solid" "round" "round")))]
+
+and we can use that to build a grid now too, but this grid has doubled lines on the
+interior.
+
+@image-examples[(let* ([s (crop
+                           0 0 20 20
+                           (rectangle
+                            20 20 "outline" 
+                            (make-pen "black" 2 "solid" "round" "round")))]
+                       [r (beside s s s s s s)])
+                  (above r r r r r r))]
 
 @;-----------------------------------------------------------------------------
 @section{Exporting Images to Disk}
