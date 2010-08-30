@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/stress/stress
+(require tests/stress
          net/websocket
          net/url
          racket/async-channel)
@@ -29,4 +29,6 @@
                       (define conn (ws-connect (string->url (format "ws://localhost:~a" port))))
                       (for ([r (in-range REQS)])
                         (ws-send! conn "ping")
-                        (ws-recv conn))))))))
+                        (ws-recv conn))))))
+       
+       (shutdown!)))
