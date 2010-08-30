@@ -1,23 +1,20 @@
-#lang scheme/unit
+#lang racket/unit
 
-;; this version of the view-controller (will) just collect the steps up front rather
+;; this version of the view-controller just collects the steps up front rather
 ;; than blocking until the user presses the "next" button.
 
-;; contracts are bogus all over the place.
-
-(require scheme/class
-         scheme/match
-         scheme/list
+(require racket/class
+         racket/match
+         racket/list
          drscheme/tool
          mred
          string-constants
-         scheme/async-channel
+         racket/async-channel
          (prefix-in model: "private/model.ss")
          (prefix-in x: "private/mred-extensions.ss")
          "private/shared.ss"
          "private/model-settings.ss"
-         "xml-sig.ss"
-         (only-in scheme/pretty pretty-print-show-inexactness))
+         "xml-sig.ss")
 
 
 (import drscheme:tool^ xml^ stepper-frame^)
@@ -65,11 +62,6 @@
   ;; the view in the stepper window
   (define view #f)
   
-  ;; hand-off-and-block : (-> text%? any (listof (or/c posn-info? false?)) void?)
-  ;; puts the step on the channel, to be fetched by the aggregator
-  (define (hand-off result)
-    (async-channel-put view-channel result))
-  
   ;; wait for steps to show up on the channel.  When they do, add them to the list.
   (define (start-listener-thread)
     (thread
@@ -101,10 +93,6 @@
               [else (loop (+ step 1)
                           (cdr remaining)
                           (or seen-final? (finished-stepping-step? (car remaining))))]))))
-  
-  ;; find-later-step/boolean : similar, but just return #f or #t.
-  (define (find-later-step/boolean p n)
-    (number? (find-later-step p n)))
   
   ;; find-earlier-step : like find-later-step, but searches backward from
   ;; the given step.
@@ -185,38 +173,17 @@
   (define (next)
     (next-of-specified-kind (lambda (x) #t)))
   
-  ;; respond to a click on the "next application" button
-  (define (next-application)
-    (next-of-specified-kind application-step?))
+  ;; previous : the action of the 'previous' button
+  (define (previous)
+    (prior-of-specified-kind (lambda (x) #t)))
   
   ;; respond to a click on the "Jump To..." choice
   (define (jump-to control event)
     ((second (list-ref pulldown-choices (send control get-selection)))))
   
-  ;; previous : the action of the 'previous' button
-  (define (previous)
-    (prior-of-specified-kind (lambda (x) #t)))
-  
-  ;; previous-application : the action of the 'previous-application'
-  ;; button
-  (define (previous-application)
-    (prior-of-specified-kind application-step?))
-
   ;; jump-to-beginning : the action of the choice menu entry
   (define (jump-to-beginning)
     (first-of-specified-kind (lambda (x) #t)))
-  
-  ;; jump-to-end : the action of the choice menu entry
-  (define (jump-to-end)
-    (next-of-specified-kind finished-stepping-step?))
-
-  ;; jump-forward-to-selected : the action of the choice menu entry
-  (define (jump-to-selected)
-    (first-of-specified-kind selected-exp-step?))
-  
-  ;; jump-back-to-selection : the action of the choice menu entry
-  (define (jump-back-to-selection)
-    (prior-of-specified-kind selected-exp-step?))
   
   ;; GUI ELEMENTS:
   (define s-frame
@@ -237,14 +204,14 @@
          [enabled #f]))
   
   (define pulldown-choices
-    `((,(string-constant stepper-jump-to-beginning) ,jump-to-beginning)
-      (,(string-constant stepper-jump-to-end)       ,jump-to-end)
-      (,(string-constant stepper-jump-to-selected)  ,jump-to-selected)))
+    `((,(string-constant stepper-jump-to-beginning)            ,(lambda () (first-of-specified-kind (lambda (x) #t))))
+      (,(string-constant stepper-jump-to-end)                  ,(lambda () (next-of-specified-kind finished-stepping-step?)))
+      (,(string-constant stepper-jump-to-selected)             ,(lambda () (first-of-specified-kind selected-exp-step?)))
+      (,(string-constant stepper-jump-to-next-application)     ,(lambda () (next-of-specified-kind application-step?)))
+      (,(string-constant stepper-jump-to-previous-application) ,(lambda () (prior-of-specified-kind application-step?)))))
   
-  (define previous-application-button (add-button (string-constant stepper-previous-application) previous-application))
   (define previous-button             (add-button (string-constant stepper-previous) previous))
   (define next-button                 (add-button (string-constant stepper-next) next))
-  (define next-application-button     (add-button (string-constant stepper-next-application) next-application))
   (define jump-button                 (add-choice-box (string-constant stepper-jump) jump-to))
     
   
@@ -293,10 +260,8 @@
   (define update-status-bar-semaphore (make-semaphore 1))
   
   (define (enable-all-buttons)
-    (send previous-application-button enable #t)
     (send previous-button enable #t)
     (send next-button enable #t)
-    (send next-application-button enable #t)
     (send jump-button enable #t))
 
   
@@ -354,7 +319,8 @@
   (start-listener-thread)
   (model:go
    program-expander-prime 
-   hand-off
+   ;; what do do with the results:
+   (lambda (result) (async-channel-put view-channel result))
    (get-render-settings render-to-string render-to-sexp 
                         (send language-level stepper:enable-let-lifting?)
 			(send language-level stepper:show-consumed-and/or-clauses?))
