@@ -99,9 +99,16 @@
        
      (let ([last-lang #f])
        (for ([t (in-list tests)])
-         (let ([this-lang (test-lang-regexp t)])
-           (unless (equal? this-lang last-lang)
+         
+         
+         (let* ([this-lang (test-lang-regexp t)]
+                [same-last-time? (and (regexp? last-lang)
+                                      (equal? (object-name last-lang)
+                                              (object-name this-lang)))])
+           (unless same-last-time?
+             (set! last-lang this-lang)
              (set-language-level! (list #rx"How to Design Programs" this-lang))))
+         
          (clear-definitions drr-frame)
          (send definitions-text insert (test-program t))
          (do-execute drr-frame)
