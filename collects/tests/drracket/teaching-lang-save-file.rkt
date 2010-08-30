@@ -9,15 +9,15 @@
 
 (fire-up-drscheme-and-run-tests
  (λ ()
-   (let* ([drs-frame (wait-for-drscheme-frame)]
+   (let* ([drr-frame (wait-for-drscheme-frame)]
           [fn (make-temporary-file "save-teaching-lang-test~a")])
      (test:menu-select "File" "New Tab")
      
-     (let ([definitions-text (send drs-frame get-definitions-text)]
-           [interactions-text (send drs-frame get-interactions-text)])
+     (let ([definitions-text (send drr-frame get-definitions-text)]
+           [interactions-text (send drr-frame get-interactions-text)])
        
        (set-language-level! (list #rx"How to Design Programs" #rx"Beginning Student$"))
-       (clear-definitions drs-frame)
+       (clear-definitions drr-frame)
        (send definitions-text set-filename fn)
        (send definitions-text insert "(define (f x) x)\n(f 1)\n")
        (test:menu-select "File" "Save Definitions")
@@ -29,15 +29,15 @@
          (fprintf (current-error-port) "---- saved file, cut here ----\n")
          (error 'save-teaching-lang-file.rkt
                 "expected the saved file to contain the word 'metadata' in a comment"))
-       (do-execute drs-frame)
+       (do-execute drr-frame)
        (test:menu-select "File" "Close Tab")
        (use-get/put-dialog 
         (λ () 
           (test:menu-select "File" "Open..."))
         fn)
-       (do-execute drs-frame)
+       (do-execute drr-frame)
        (let ([result (fetch-output
-                      drs-frame
+                      drr-frame
                       (send interactions-text paragraph-start-position 2)
                       (send interactions-text last-position))])
          (test:menu-select "File" "Close Tab")
