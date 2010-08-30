@@ -63,6 +63,7 @@
 		      scheme/list
 		      (rename racket/base racket:define-struct define-struct)
 		      (only racket/base syntax->datum datum->syntax)
+                      (rename racket/base kw-app #%app)
 		      racket/struct-info
                       stepper/private/shared)
 
@@ -777,12 +778,13 @@
 					(string->symbol
 					 (string-append (symbol->string (syntax->datum name))
 							"-of")))])
-	     (let* ([to-define-names (list* struct: constructor-name predicate-name
+	     (let* ([to-define-names (list* constructor-name predicate-name
 					    (if setters?
 						(append getter-names setter-names)
 						getter-names))]
-		    [proc-names (cdr to-define-names)])
-	       (with-syntax ([compile-info (build-struct-expand-info name fields #f (not setters?) #t null null)]
+		    [proc-names to-define-names])
+	       (with-syntax ([compile-info (kw-app build-struct-expand-info name fields #f (not setters?) #t null null
+                                                   #:omit-struct-type? #t)]
                              [(field_/no-loc ...) (map (λ (x) (datum->syntax x (syntax->datum x) #f)) (syntax->list #'(field_ ...)))])
 		 (let-values ([(defn0 bind-names)
 			       (wrap-func-definitions 

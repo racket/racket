@@ -22,6 +22,7 @@ expression.}
 
 @defproc[(build-struct-names [name-id identifier?]
 			     [field-ids (listof identifier?)]
+                             [#:constructor-name ctr-name (or/c identifier? #f) #f]
 			     [omit-sel? boolean?]
 			     [omit-set? boolean?]
 			     [src-stx (or/c syntax? false/c) #f])
@@ -33,7 +34,7 @@ field names. The result is a list of identifiers:
 
 @itemize[
   @item{@schemeidfont{struct:}@scheme[name-id]}
-  @item{@schemeidfont{make-}@scheme[name-id]}
+  @item{@scheme[ctr-name], or @schemeidfont{make-}@scheme[name-id] if @racket[ctr-name] is @racket[#f]}
   @item{@scheme[name-id]@schemeidfont{?}}
   @item{@scheme[name-id]@schemeidfont{-}@scheme[_field], for each
         @scheme[_field] in @scheme[field-ids].}
@@ -50,6 +51,8 @@ source location to the generated identifiers.}
 
 @defproc[(build-struct-generation [name-id identifier?]
                                   [field-ids (listof identifier?)]
+
+                                  [#:constructor-name ctr-name (or/c identifier? #f) #f]
                                   [omit-sel? boolean?]
                                   [omit-set? boolean?]
 
@@ -66,9 +69,11 @@ the structure type and return values for the identifiers created by
 S-expression values that are used as the corresponding arguments to
 @scheme[make-struct-type].}
 
+
 @defproc[(build-struct-generation* [all-name-ids (listof identifier?)]
 				   [name-id identifier?]
 				   [field-ids (listof identifier?)]
+                                   [#:constructor-name ctr-name (or/c identifier? #f) #f]
 				   [omit-sel? boolean?]
 				   [omit-set? boolean?]
 				   [super-type any/c #f]
@@ -81,6 +86,9 @@ Like @scheme[build-struct-generation], but given the names produced by
 
 @defproc[(build-struct-expand-info [name-id identifier?]
                                    [field-ids (listof identifier?)]
+                                   [#:omit-constructor? no-ctr? any/c #f]
+                                   [#:constructor-name ctr-name (or/c identifier? #f) #f]
+                                   [#:omit-struct-type? no-type? any/c #f]
                                    [omit-sel? boolean?]
                                    [omit-set? boolean?]
                                    [base-name (or/c identifier? boolean?)]
@@ -88,20 +96,27 @@ Like @scheme[build-struct-generation], but given the names produced by
                                    [base-setters (listof (or/c identifier? false/c))])
 	 any]{
 
-Takes the same arguments as @scheme[build-struct-names], plus a parent
+Takes mostly the same arguments as @scheme[build-struct-names], plus a parent
 identifier/@scheme[#t]/@scheme[#f] and a list of accessor and mutator
 identifiers (possibly ending in @scheme[#f]) for a parent type, and
 generates an S-expression for expansion-time code to be used in the
-binding for the structure name. A @scheme[#t] for the
-@scheme[base-name] means no super-type, @scheme[#f] means that the
-super-type (if any) is unknown, and an identifier indicates the
-super-type identifier.}
+binding for the structure name. 
+
+If @racket[no-ctr?] is true, then the constructor name is omitted from
+the expansion-time information. Similarly, if @racket[no-type?] is
+true, then the structure-type name is omitted.
+
+A @scheme[#t] for the @scheme[base-name] means no super-type,
+@scheme[#f] means that the super-type (if any) is unknown, and an
+identifier indicates the super-type identifier.}
+
 
 @defproc[(struct-declaration-info? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[x] has the shape of expansion-time
 information for structure type declarations, @scheme[#f] otherwise.
 See @secref[#:doc refman]{structinfo}.}
+
 
 @defproc[(generate-struct-declaration [orig-stx syntax?] 
                                       [name-id identifier?]
