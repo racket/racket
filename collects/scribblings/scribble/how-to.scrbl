@@ -379,6 +379,3 @@ include introductory text before the call of
 important and when when local table of contents is short, putting the
 introductory text after the call of @racket[local-table-of-contents]
 may be appropriate.
-
-@;----------------------------------------
-@include-section["style.scrbl"]
