@@ -2,9 +2,21 @@
 @(require scribble/manual
           scribble/eval
           "utils.ss"
-          (for-label scribble/manual))
+          (for-label scribble/manual
+                     scribble/eval))
 
 @title[#:tag "reference-style"]{Style Guide}
+
+Consistent style---for terms, typesetting, and prose---makes
+documentation clearer. As much as possible, follow the rules listed in
+this section. Many of the rules are arbitrary in the sense that a
+different choice of rule could work fine, but the only way to make our
+documentation consistent is to pick one of the choices.
+
+There are too many rules to absorb easily on a first reading. Re-read
+this section after writing documentation for a library or two, and
+revisit the section periodically to refresh your memory and check for
+new rules.
 
 @section{Prose and Terminology}
 
@@ -24,6 +36,18 @@ or a ``symbol.'' Do not use the word ``expression'' for a form that is
 a definition or might be a definition; use the word ``form,'' instead.
 Prefer ``function'' to ``procedure.''
 
+Use the word ``list'' only when you mean a run-time value consisting
+of the empty list and cons cells; use the word ``sequence'' in other
+cases, if you must use any word. For example, do not write that
+@racket[begin] has a ``list of sub-forms;'' instead, it has a
+``sequence of subforms.'' Similarly, do not refer to a ``list of
+arguments'' in a function call; just write ``arguments'' if possible,
+or write ``sequence of argument expressions.''  (Unfortunately,
+``@tech[#:doc '(lib
+"scribblings/reference/reference.scrbl")]{sequence}'' has acquired a
+specific run-time meaning, too, but the collision is less severe than
+the historical confusion between lists and other entities in Lisp.)
+
 Avoid cut-and-paste for descriptive text. If two functions are
 similar, consider documenting them together with
 @racket[deftogether]. To abstract a description, consider using
@@ -40,7 +64,8 @@ Use @racketidfont{id} or a name that ends @racketidfont{-id} in
 @racketidfont{symbol}. Similarly, use @racketidfont{expr} or something
 that ends @racketidfont{-expr} for an expression position within a
 syntactic form. Use @racketidfont{body} for a form (definition or
-expression) in an internal-definition position. Do not use
+expression) in an internal-definition position---always followed by 
+@racket[...+] in a grammar description. Do not use
 @racketidfont{expr} for something that isn't exactly an expression,
 @racket[id] for something that isn't exactly an identifier, etc.;
 instead, use @racket[defform/subs] to define a new non-terminal.
@@ -89,7 +114,7 @@ When showing example evaluations, use the REPL-snapshot style:
   ]
 }|
 
-See also the @racket[scribble/eval] library.
+See also the @racket[scribble/eval] library and @secref["examples-style"].
 
 Use four dots, @litchar{....}, in place of omitted code, since
 @litchar{...} means repetition.
@@ -108,6 +133,7 @@ in HTML output. Use American style for quotation marks and punctuation
 @;   and there's no harm in doing the more logical thing of putting
 @;   the punctuations outside quotations and parens.  Just like you
 @;   did at the end of this sentence...
+@; [Matthew] See intro of this section.
 at the end of quotation marks (i.e., a sentence-terminating period
 goes inside the quotation marks). Of course, this rule does not apply
 for quotation marks that are part of code.
@@ -130,3 +156,43 @@ the key word is primarily an executable name, use @racket[exec]
 instead of @racket[bold]. Optionally add further descriptive text in
 the title after a colon, where the text starting with the colon is not
 in boldface.
+
+@section{Indexing}
+
+Document and section titles, identifiers that are documented with
+@racket[defproc], @racket[defform], etc. are automatically indexed, as
+are terms defined with @racket[deftech].
+
+Symbols are not indexed automatically.  Use @racket[indexed-racket]
+instead of @racket[racket] for the instance of a symbol that roughly
+defines the use. For an example, try searching for ``truncate'' to
+find @racket['truncate] as used with @racket[open-output-file]. Do no
+use something like @racket[(index "'truncate")] to index a symbol,
+because it will not typeset correctly (i.e., in a fixed-width font
+with the color of a literal).
+
+Use @racket[index], @racket[as-index], and @racket[section-index] as a
+last resort. Create index entries for terms that are completely
+different from terms otherwise indexed. Do not try to index minor
+variations of a term or phrase in an attempt to improve search
+results; if search fails to find a word or phrase due to a minor
+variation, then the search algorithm should be fixed, not the index
+entry.
+
+@section[#:tag "examples-style"]{Examples}
+
+Strive to include examples (using @racket[examples]) with the
+documentation of every function and syntactic form. When writing
+examples, refrain from using nonsense words like ``foo'' and ``bar.''
+For example, when documenting @racket[member], resist the temptation
+to write
+
+@interaction[
+(member "foo" '("bar" "foo" "baz"))
+]
+
+and instead write something like
+
+@interaction[
+(member "Groucho" '("Harpo" "Groucho" "Zeppo"))
+]
