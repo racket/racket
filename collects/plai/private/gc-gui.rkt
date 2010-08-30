@@ -88,11 +88,11 @@
             (vector-set! row-heights 
                          row
                          (max (+ ch cell-vertical-padding)
-                              (vector-ref row-heights row)))
+                              #;(vector-ref row-heights row)))
             (vector-set! column-widths 
                          column
                          (max (+ cw cell-horizontal-padding) 
-                              (vector-ref column-widths column)))))))
+                              #;(vector-ref column-widths column)))))))
     
     (define/private (cell-min-size obj)
       (let ([dc (get-dc)])
