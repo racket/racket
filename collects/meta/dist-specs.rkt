@@ -661,6 +661,7 @@ plt-extras :+= (package: "deinprogramm/")
                (doc: "DMdA-lib")
 
 ;; -------------------- unstable
+mz-extras :+= (package: "data")
 mz-extras :+= (- (package: "unstable")
                  ;; should "gui" mean DrRacket or GRacket? It's not
                  ;; obvious that "framework" is only in DrRacket.
