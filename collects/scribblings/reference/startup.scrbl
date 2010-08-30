@@ -375,7 +375,7 @@ Extra arguments following the last option are available from the
 @; ----------------------------------------------------------------------
 
 @section[#:tag "configure-runtime"]{Language Run-Time Configuration}
-@section-index["'configure-runtime"]
+
 @guidealso["module-runtime-config"]
 
 When a module is implemented using @hash-lang{}, the language after
@@ -391,7 +391,7 @@ language specifies run-time configuration by
 
  @item{having the function indicated by the @racket['module-language]
        @tech{syntax property} recognize the
-       @racket['configure-runtime] key, for which it returns a list of
+       @indexed-racket['configure-runtime] key, for which it returns a list of
        vectors; each vector must have the form @racket[(vector _mp
        _name _val)] where @racket[_mp] is a @tech{module path},
        @racket[_name] is a symbol, and @racket[_val] is an arbitrary
