@@ -1391,7 +1391,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/randomly-click.rkt" drdr:command-line #f
 "collects/tests/drracket/repl-test.rkt" drdr:command-line (gracket *) drdr:timeout 600
 "collects/tests/drracket/sample-solutions-one-window.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/tests/drracket/save-teaching-lang-file.rkt" drdr:command-line (gracket *)
+"collects/tests/drracket/teaching-lang-save-file.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/stepper-test.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/teachpack.rkt" drdr:command-line (gracket *)
