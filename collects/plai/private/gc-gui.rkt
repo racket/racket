@@ -318,16 +318,18 @@
          (update-arrows '())]))
 
     (define/private (index->nexts index)
-      (let ([n (vector-ref heap-vec index)])
-        (cond
-          [(and (exact-integer? n)
-                (<= 0 n)
-                (< n (vector-length heap-vec)))
-           (list n)]
-          [(procedure? n)
-           (map read-root (procedure-roots n))]
-          [else
-           '()])))
+      (if (< index (vector-length heap-vec))
+          (let ([n (vector-ref heap-vec index)])
+            (cond
+              [(and (exact-integer? n)
+                    (<= 0 n)
+                    (< n (vector-length heap-vec)))
+               (list n)]
+              [(procedure? n)
+               (map read-root (procedure-roots n))]
+              [else
+               '()]))
+          '()))
     
     (define/private (find-connections start)
       (let ([visited (make-hash)]
