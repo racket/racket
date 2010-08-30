@@ -3540,6 +3540,7 @@ typedef struct Scheme_Place_Async_Channel {
   mzrt_mutex *lock;
 #endif
   Scheme_Object **msgs;
+  void **msg_memory;
   void *wakeup_signal;
 } Scheme_Place_Async_Channel;
 
