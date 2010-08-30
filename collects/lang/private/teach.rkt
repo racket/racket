@@ -1540,6 +1540,11 @@
     (define beginner-dots/proc
       (make-set!-transformer
        (lambda (stx)
+         
+         ;; this ensures that coverage happens; it lifts a constant
+         ;; expression to the top level, but one that has the source location of the dots expression
+         (syntax-local-lift-expression (datum->syntax #'here 1 stx))
+         
          (syntax-case stx (set!)
            [(set! form expr) (dots-error stx (syntax form))]
            [(form . rest) (dots-error stx (syntax form))]
