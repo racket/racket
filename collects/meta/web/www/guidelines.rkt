@@ -153,7 +153,7 @@
       
       @@FAQ['how-to-stress]{How can I easily construct stess tests?}{
        @p*{
-         Refer to the @code{tests/stress/stress} library.
+         Refer to the @code{tests/stress} library.
          @~
          It contains a macro for running experiments that should behave the same but
          may have different performance. After running the experiments in isolation

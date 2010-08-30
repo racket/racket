@@ -1,5 +1,5 @@
 #lang racket
-(require tests/stress/stress
+(require tests/stress
          racket/unsafe/ops)
 
 ; vector-set*!

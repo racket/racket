@@ -1,5 +1,5 @@
 #lang racket
-(require tests/stress/stress)
+(require tests/stress)
 
 (define (make-random-hash-table n)
   (for/hasheq ([i (in-range n)])

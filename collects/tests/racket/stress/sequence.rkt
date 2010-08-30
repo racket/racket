@@ -1,5 +1,5 @@
 #lang racket
-(require tests/stress/stress)
+(require tests/stress)
 
 ; seqn-first
 ; This ignores the greater flexiblity of seqn-first to have more than single-valued sequences

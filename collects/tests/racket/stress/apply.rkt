@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/stress/stress)
+(require tests/stress)
 
 (fit "apply to atoms"
      23
