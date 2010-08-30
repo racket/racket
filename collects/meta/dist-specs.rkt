@@ -366,7 +366,7 @@ dr-extras  :=
 plt-extras :=
 
 ;; Tests definitions
-mz-tests := (tests: "racket/" "info.rkt" "utils/" "match/" "eli-tester.rkt")
+mz-tests := (tests: "racket/" "info.rkt" "utils/" "match/" "eli-tester.rkt" "stress.rkt")
 
 ;; ============================================================================
 ;; Source definitions
