@@ -397,11 +397,17 @@
 
 ;; Try including source that needs a reader extension
 
-(define (try-reader-test mred?)
+(define (try-reader-test 12? mred? ss-file? ss-reader?)
+  ;; actual "11" files use ".rkt", actual "12" files use ".ss"
   (define dest (mk-dest mred?))
-  (define filename "embed-me11.rkt")
+  (define filename (format (if ss-file?
+                               "embed-me~a.ss"
+                               "embed-me~a.rkt")
+                           (if 12? "12" "11")))
   (define (flags s)
     (string-append "-" s))
+
+  (printf "Trying ~s ~s ~s ~s...\n" (if 12? "12" "11") mred? ss-file? ss-reader?)
 
   (create-embedding-executable 
    dest
@@ -409,11 +415,18 @@
    #:cmdline `(,(flags "l") ,(string-append "tests/racket/" filename))
    #:src-filter (lambda (f)
                   (let-values ([(base name dir?) (split-path f)])
-                    (equal? name (string->path filename))))
+                    (equal? name (path-replace-suffix (string->path filename) 
+                                                      (if 12? #".ss" #".rkt")))))
    #:get-extra-imports (lambda (f code)
                          (let-values ([(base name dir?) (split-path f)])
-                           (if (equal? name (string->path filename))
-                               '((lib "embed-me11-rd.rkt" "tests" "racket"))
+                           (if (equal? name (path-replace-suffix (string->path filename) 
+                                                                 (if 12? #".ss" #".rkt")))
+                               `((lib ,(format (if ss-reader?
+                                                   "embed-me~a-rd.ss"
+                                                   "embed-me~a-rd.rkt")
+                                               (if 12? "12" "11"))
+                                      "tests" 
+                                      "racket"))
                                null)))
    #:mred? mred?)
 
@@ -422,8 +435,11 @@
   (putenv "ELEVEN" "done"))
 
 (define (try-reader)
-  (try-reader-test #f)
-  (try-reader-test #t))
+  (for ([12? (in-list '(#f #t))])
+    (try-reader-test 12? #f #f #f)
+    (try-reader-test 12? #t #f #f)
+    (try-reader-test 12? #f #t #f)
+    (try-reader-test 12? #f #f #t)))
 
 ;; ----------------------------------------
 
