@@ -31,6 +31,7 @@
 ;; we keep the real and imaginary parts unboxed as long as we stay within
 ;; complex operations
 (define-syntax-class unboxed-inexact-complex-opt-expr
+  #:commit
 
   (pattern (#%plain-app (~and op (~literal +))
                         c1:unboxed-inexact-complex-opt-expr
