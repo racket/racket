@@ -6,7 +6,7 @@
                      syntax/name
                      syntax/define
                      syntax/parse
-                     syntax/parse/experimental
+                     syntax/parse/experimental/splicing
                      scheme/splicing
                      "contexts.ss"
                      "util.ss"
