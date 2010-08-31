@@ -70,12 +70,12 @@
   #:attributes (value)
   #:description name
   #:commit
-  (pattern (~and x:id
-                 (~fail #:unless (syntax-transforming?)
-                              "not within the extent of a macro transformer")
-                 (~bind [value (syntax-local-value #'x (lambda () notfound))])
-                 (~fail #:when (eq? (attribute value) notfound))
-                 (~fail #:unless (pred (attribute value))))))
+  (pattern x:id
+           #:fail-unless (syntax-transforming?)
+                         "not within the dynamic extent of a macro transformation"
+           #:attr value (syntax-local-value #'x (lambda () notfound))
+           #:fail-when (eq? (attribute value) notfound) #f
+           #:fail-unless (pred (attribute value)) #f))
 
 #|
 (define-syntax-class expr
