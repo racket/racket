@@ -23,9 +23,10 @@
 (define _sndfile
   (make-ctype _pointer sndfile-ptr
     (lambda (p)
-      (if p
-        (make-sndfile p #f)
-        (error '_sndfile "got a NULL pointer (bad info?)")))))
+      ;; can't check here for null-ness of p, 
+      ;; the check has to be specific to the 
+      ;; call.
+      (make-sndfile p #f))))
 
 ;; sf_count_t is a count type that depends on the operating system however it
 ;; seems to be a long int for all the supported ones so in this case we just
@@ -35,10 +36,15 @@
 (define _sf-mode
   (_bitmask '(sfm-read  = #x10
               sfm-write = #x20
-              sfm-rdwrt = #x30)))
+              sfm-rdwrt = #x30
+              
+              ;; I really have no clue what these are for:
+              sf-ambisonic-none = #x40
+              sf-ambisonic-b-format = #x41)))
 
-(define str-types '(title copyright software artist comment date))
+(define str-types '(title copyright software artist comment date album license))
 (define _sf-str-type (_enum (cons "dummy" str-types))) ; begins from 1
+(define _sf-error (_enum '(no-error unrecognised-format system malformed-file unsupported-encoding)))
 
 (define _sf-format
   (let ([majors ; Major formats
@@ -161,6 +167,8 @@
 
 ;; ==================== Utilities ====================
 
+;; extract the given function from the library by replacing
+;; hyphens with underscores in the name.
 (define-syntax defsndfile
   (syntax-rules (:)
     [(_ name : type ...)
@@ -180,15 +188,22 @@
 
 ;; ==================== sndfile API ====================
 
+(defsndfile sf-strerror : _sndfile -> _string)
+(defsndfile sf-error    : _sndfile -> _int)
+
 (defsndfile sf-close : _sndfile -> _int)
 
+;; sf-open : path mode [optional-sf-info-pointer] -> sndfile
 (defsndfile sf-open : (path mode . info) ::
   (path : _file)
   (mode : _sf-mode)
   (info : _sf-info-pointer
         = (if (pair? info) (car info) (make-sf-info 0 0 0 '() 0 #f)))
   -> (sf : _sndfile)
-  -> (begin (set-sndfile-info! sf info) sf))
+  -> (if (sndfile-ptr sf)
+         (begin (set-sndfile-info! sf info) sf)
+         ;; goofy way to get the error code:
+         (error 'sf-read "~a" (sf-strerror (make-sndfile #f #f)))))
 
 (defsndfile sf-format-check  : _sf-info-pointer -> _bool)
 
@@ -205,26 +220,28 @@
 
 ;; ==================== Utilities for the Scheme interface ====================
 
-(define (get-strings sndfile)
-  (let loop ([sts str-types] [r '()])
-    (cond [(null? sts) (reverse r)]
-          [(sf-get-string sndfile (car sts)) =>
-           (lambda (x)
-             (loop (cdr sts) (cons (list (car sts) (string-copy x)) r)))]
-          [else (loop (cdr sts) r)])))
+;; get-meta-strings : sndfile -> (listof (list/c sf-str-type string))
+;; produce an association list for the meta-information associated with 
+;; the sndfile
+(define (get-meta-strings sndfile)
+  (for/list ([s (in-list str-types)]
+             #:when (sf-get-string sndfile s))
+    (list s (string-copy (sf-get-string sndfile s)))))
 
-(define (set-strings sndfile meta)
-  (for-each (lambda (st)
-              (cond [(assq st meta) =>
-                     (lambda (x) (sf-set-string sndfile st (cadr x)))]))
-            str-types))
+;; set-meta-strings : sndfile (listof (list/c sf-str-type string)) -> (void)
+;; given a sndfile and an association list between symbols and strings,
+;; attach each string to the soundfile under the given symbol.
+(define (set-meta-strings sndfile meta)
+  (for ([st (in-list str-types)])
+    (let ([found (assq st meta)])
+      (when found (sf-set-string sndfile st (cadr found))))))
 
 
-;; read-sound-internal : string bool -> (or/c (values/c ... wait a second...))
+;; read-sound-internal : string bool -> (or/c (values/c data a-list) data)
 ;; read the data from a file. 
 (define (read-sound-internal file meta?)
   (let* ([sndfile  (sf-open file 'sfm-read)]
-         [strings  (and meta? (get-strings sndfile))]
+         [strings  (and meta? (get-meta-strings sndfile))]
          [info     (sndfile-info sndfile)]
          [frames   (sf-info-frames info)]
          [channels (sf-info-channels info)]
@@ -288,12 +305,16 @@
          [_          (unless (sf-format-check info)
                        (error 'write-sound-internal "bad format: ~s" format))]
          [sndfile    (sf-open file 'sfm-write info)]
-         [_          (set-strings sndfile meta)]
+         [_          (unless (= 0 (set-meta-strings sndfile meta))
+                       (error 'write-sound-internal "failed to write meta strings: ~s" 
+                              (sf-strerror sndfile)))]
          [num-write  (writef sndfile cblock frames)])
     (unless (= frames num-write)
       (error 'write-sound-internal
-             "wanted to write ~s frames, but wrote only ~s" frames num-write))
-    (sf-close sndfile)
+             "wanted to write ~s frames, but wrote only ~s. ~s"
+             frames num-write (sf-strerror sndfile)))
+    (unless (= 0 (sf-close sndfile))
+      (error 'write-sound-internal "failed to close file: ~s" (sf-strerror sndfile)))
     (void)))
 
 (define file-format-table
@@ -364,3 +385,12 @@
 (provide write-sound*)
 (define (write-sound* file data meta)
   (write-sound-internal file data meta))
+
+;; a racketsound provides a representation for sounds 
+;; that leaves them packed as C data. For the moment, it's 
+;; 2-channel float only. Also, it discards all meta-information
+;; except length and sample-rate
+
+;; a racketsound is (racket-sound )
+;(struct racketsound (data length sample-rate))
+
