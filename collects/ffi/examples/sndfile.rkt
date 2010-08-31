@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require ffi/unsafe
-         rackunit
+         #;rackunit
          racket/match)
 
 ;; the constants in this file are pulled from version 1.0.21 of the libsndfile header file. However,
@@ -211,10 +211,12 @@
 
 (defsndfile sf-readf-short   : _sndfile _pointer _sf-count-t -> _sf-count-t)
 (defsndfile sf-readf-int     : _sndfile _pointer _sf-count-t -> _sf-count-t)
+(defsndfile sf-readf-float   : _sndfile _pointer _sf-count-t -> _sf-count-t)
 (defsndfile sf-readf-double  : _sndfile _pointer _sf-count-t -> _sf-count-t)
 
 (defsndfile sf-writef-short  : _sndfile _pointer _sf-count-t -> _sf-count-t)
 (defsndfile sf-writef-int    : _sndfile _pointer _sf-count-t -> _sf-count-t)
+(defsndfile sf-writef-float  : _sndfile _pointer _sf-count-t -> _sf-count-t)
 (defsndfile sf-writef-double : _sndfile _pointer _sf-count-t -> _sf-count-t)
 
 (defsndfile sf-get-string    : _sndfile _sf-str-type -> _string)
@@ -255,10 +257,7 @@
          [channels (sf-info-channels info)]
          [stype    (case (sample-type)
                      [(short) _int16] [(int) _int] [(float) _double*])]
-         [readf    (case (sample-type)
-                     [(short) sf-readf-short]
-                     [(int) sf-readf-int]
-                     [(float) sf-readf-double])]
+         [readf    (sample-type->reader (sample-type))]
          [cblock   (malloc (* frames channels) stype)]
          [num-read (readf sndfile cblock frames)]
          [_        (unless (= frames num-read)
@@ -313,10 +312,7 @@
 ;; write-sound-internal/cblock
 (define (write-sound-internal/cblock file cblock format samplerate frames channels sample-type meta)
   (check-filename-format format file)
-  (let* ([writef     (match sample-type
-                       ['short sf-writef-short]
-                       ['int sf-writef-int]
-                       ['float sf-writef-double])]
+  (let* ([writef     (sample-type->writer sample-type)]
          [info       (make-sf-info frames samplerate channels format 1 #f)]
          [_          (unless (sf-format-check info)
                        (error 'write-sound-internal "bad format: ~s" format))]
@@ -339,7 +335,7 @@
                        1 ; 1-channel if no data, or data is not made of lists
                        (length (car data)))]
          [stype      (case (sample-type)
-                       [(short) _int16] [(int) _int] [(float) _double*])]
+                       [(short) _int16] [(int) _int] [(float) _float] [(double) _double*])]
          [cblock     (frame-list->cblock data frames channels stype)]
          [format     (cond [(assq 'format meta) => cadr]
                            [else (guess-format file)])]
@@ -401,17 +397,34 @@
      (error 'check-filename-format
             "illegal format format: ~s" other)]))
 
+;; return the reader that corresponds to a given sample-type
+(define sample-type->reader
+  (match-lambda
+    ['short  sf-readf-short]
+    ['int    sf-readf-int]
+    ['float  sf-readf-float]
+    ['double sf-readf-double]))
 
+;; return the writer that corresponds to a given sample-type
+(define sample-type->writer
+  (match-lambda
+    ['short  sf-writef-short]
+    ['int    sf-writef-int]
+    ['float  sf-writef-float]
+    ['double sf-writef-double]))
 
 ;; ==================== Exposed Scheme interface ====================
 
-;; types of samples we handle: 'short, 'int, or 'float
+;; types of samples we handle: 'short, 'int, 'double, or 'float
 (provide sample-type)
 (define sample-type
   (make-parameter
    'float (lambda (x)
-            (if (memq x '(short int float))
-              x (error 'sample-type "bad type: ~s" x)))))
+            (if (memq x '(short int float double))
+              x 
+              (error 'sample-type "bad type: ~s" x)))))
+
+
 
 ;; TODO: add a parameter that will determine if you get a list, vector or
 ;; srfi/4-like thing.  possibly also determine if a list/vector gets automatic
@@ -447,32 +460,32 @@
 (define (write-sound* file data meta)
   (write-sound-internal/lists file data meta))
 
-;; a racketsound provides a representation for sounds 
+;; an rsound (racket sound) provides a representation for sounds 
 ;; that leaves them packed as C data. For the moment, it's 
 ;; 2-channel float only. Also, it discards all meta-information
 ;; except length and sample-rate.
 
-;; a racketsound is (racketsound cblock nat nat)
-(provide (struct-out racketsound))
-(struct racketsound (data frames sample-rate))
+;; a rsound is (rsound _cpointer nat nat)
+(provide (struct-out rsound))
+(struct rsound (data frames sample-rate))
 
 ;; these readers and writers short-cut the translation to/from lists.
 
-;; read-racketsound : path-string -> racketsound
-;; read the file into a racketsound
-(provide read-racketsound)
-(define (read-racketsound file)
+;; read-rsound : path-string -> rsound
+;; read the file into a rsound
+(provide read-rsound)
+(define (read-rsound file)
   (parameterize ([sample-type 'float])
     (let*-values ([(cblock meta) (read-sound-internal file #:split #f)])
-      (racketsound cblock (cadr (assq 'frames meta)) (cadr (assq 'samplerate meta))))))
+      (rsound cblock (cadr (assq 'frames meta)) (cadr (assq 'samplerate meta))))))
 
-;; write-racketsound : racketsound path-string -> (void)
-;; write the racketsound to the given file as a wav.
-(provide write-racketsound)
-(define (write-racketsound sound file)
-  (write-sound-internal/cblock file (racketsound-data sound) '(wav float file) 
-                               (racketsound-sample-rate sound) 
-                               (racketsound-frames sound)
+;; write-rsound : rsound path-string -> (void)
+;; write the rsound to the given file as a wav.
+(provide write-rsound)
+(define (write-rsound sound file)
+  (write-sound-internal/cblock file (rsound-data sound) '(wav float file) 
+                               (rsound-sample-rate sound) 
+                               (rsound-frames sound)
                                2
                                'float
                                ;; for now, no meta-data possible.
@@ -480,11 +493,12 @@
 
 
 
-;; test cases for check-filename-format:
+
+;; test cases for check-filename-format: Commented out until there's a critical mass.
 
 ;; okay even though minor and file don't match:
-(check-not-exn (lambda () (check-filename-format '(wav float file) "/tmp/zabaglione.wav")))
+;(check-not-exn (lambda () (check-filename-format '(wav float file) "/tmp/zabaglione.wav")))
 ;; major doesn't match:
-(check-exn exn:fail? (lambda () (check-filename-format '(wav float file) "/tmp/zabaglione.mat")))
+;(check-exn exn:fail? (lambda () (check-filename-format '(wav float file) "/tmp/zabaglione.mat")))
 ;; bad input format:
-(check-exn exn:fail? (lambda () (check-filename-format '(spam spam spam spam) "/tmp/zabaglione.wav")))
+;(check-exn exn:fail? (lambda () (check-filename-format '(spam spam spam spam) "/tmp/zabaglione.wav")))
