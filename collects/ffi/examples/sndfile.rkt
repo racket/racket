@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require ffi/unsafe)
+(require ffi/unsafe
+         rackunit
+         racket/match)
 
 ;; the constants in this file are pulled from version 1.0.21 of the libsndfile header file. However,
 ;; I think it would be a mistake to specify this in the call to ffi-lib; it appears that 
@@ -223,6 +225,11 @@
 ;; get-meta-strings : sndfile -> (listof (list/c sf-str-type string))
 ;; produce an association list for the meta-information associated with 
 ;; the sndfile
+
+;; Q: can sf-get-string signal an error? apparently so. I think it makes sense
+;; to identify these errors with the simple lack of the string, which 
+;; requires no change to the code. I hope that such an error doesn't pollute
+;; later operations on the soundfile.
 (define (get-meta-strings sndfile)
   (for/list ([s (in-list str-types)]
              #:when (sf-get-string sndfile s))
@@ -231,17 +238,18 @@
 ;; set-meta-strings : sndfile (listof (list/c sf-str-type string)) -> (void)
 ;; given a sndfile and an association list between symbols and strings,
 ;; attach each string to the soundfile under the given symbol.
+;; ** Ignores errors that occur during calls to sf-set-string. **
 (define (set-meta-strings sndfile meta)
   (for ([st (in-list str-types)])
     (let ([found (assq st meta)])
       (when found (sf-set-string sndfile st (cadr found))))))
 
 
-;; read-sound-internal : string bool -> (or/c (values/c data a-list) data)
+;; read-sound-internal : path-string [bool] -> (values/c (or/c cblock (listof (listof sample))) a-list)
 ;; read the data from a file. 
-(define (read-sound-internal file meta?)
+(define (read-sound-internal file #:split [split-into-lists? #t])
   (let* ([sndfile  (sf-open file 'sfm-read)]
-         [strings  (and meta? (get-meta-strings sndfile))]
+         [strings  (get-meta-strings sndfile)]
          [info     (sndfile-info sndfile)]
          [frames   (sf-info-frames info)]
          [channels (sf-info-channels info)]
@@ -253,24 +261,38 @@
                      [(float) sf-readf-double])]
          [cblock   (malloc (* frames channels) stype)]
          [num-read (readf sndfile cblock frames)]
-         [data     (cblock->list cblock stype (* num-read channels))]
-         [data     (if (> channels 1) (n-split data channels) data)])
-    (unless (= frames num-read)
-      (error 'read-sound-internal
-             "wanted ~s frames, but got ~s" frames num-read))
-    (begin0 (if meta?
-              (values data `((frames     ,frames)
-                             (samplerate ,(sf-info-samplerate info))
-                             (channels   ,channels)
-                             (format     ,(sf-info-format     info))
-                             (sections   ,(sf-info-sections   info))
-                             ,@strings))
-              data)
-      (sf-close sndfile))))
+         [_        (unless (= frames num-read)
+                     (error 'read-sound-internal
+                            "wanted ~s frames, but got ~s: ~s" 
+                            frames num-read
+                            (sf-strerror sndfile)))]
+         [data (if split-into-lists? 
+                   (split-sound-cblock cblock stype frames channels)
+                   cblock)])
+    (begin0 (values data
+                    `((frames     ,frames)
+                      (samplerate ,(sf-info-samplerate info))
+                      (channels   ,channels)
+                      (format     ,(sf-info-format     info))
+                      (sections   ,(sf-info-sections   info))
+                      ,@strings))
+      (unless (= 0 (sf-close sndfile))
+        (error 'read-sound-internal 
+               "error while closing file: ~s" 
+               (sf-strerror sndfile))))))
 
+;; split-sound-cblock : cblock ffi-type nat nat -> (listof frame)
+;; ... where frame is (listof sample-value)
+(define (split-sound-cblock cblock stype frames channels)
+  (let* ([data (cblock->list cblock stype (* frames channels))])
+    (n-split data channels)))
+
+
+;; frame-list->cblock : (listof (listof sample)) nat nat ctype -> cblock
 (define (frame-list->cblock data frames channels type)
   (cond
    [(null? data) #f]
+   ;; planning to get rid of this special-case...:
    [(and (= 1 channels) (not (pair? (car data)))) (list->cblock data type)]
    [else
     (let ([test (lambda (x)
@@ -285,37 +307,45 @@
               [(pair? d) (loop (car d)) (loop (cdr d))]))
       cblock)]))
 
-(define (write-sound-internal file data meta)
+;; there are some ugly hidden invariants here: what if the sample-type doesn't match
+;; what's specified in the format? This is a question about libsndfile, and I should check it out...
+
+;; write-sound-internal/cblock
+(define (write-sound-internal/cblock file cblock format samplerate frames channels sample-type meta)
+  (check-filename-format format file)
+  (let* ([writef     (match sample-type
+                       ['short sf-writef-short]
+                       ['int sf-writef-int]
+                       ['float sf-writef-double])]
+         [info       (make-sf-info frames samplerate channels format 1 #f)]
+         [_          (unless (sf-format-check info)
+                       (error 'write-sound-internal "bad format: ~s" format))]
+         [sndfile    (sf-open file 'sfm-write info)]
+         [_          (set-meta-strings sndfile meta)]
+         [num-write  (writef sndfile cblock frames)])
+    (unless (= frames num-write)
+      (error 'write-sound-internal/cblock
+             "wanted to write ~s frames, but wrote only ~s. ~s"
+             frames num-write (sf-strerror sndfile)))
+    (unless (= 0 (sf-close sndfile))
+      (error 'write-sound-internal/cblock "failed to close file: ~s" (sf-strerror sndfile)))
+    (void)))
+
+;; write-sound-internal/lists : path-string (listof (listof sample)) (listof (list/c symbol? string?)) -> (void)
+;; a bunch of guessing happens here... 
+(define (write-sound-internal/lists file data meta)
   (let* ([frames     (length data)]
          [channels   (if (or (null? data) (not (pair? (car data))))
                        1 ; 1-channel if no data, or data is not made of lists
                        (length (car data)))]
          [stype      (case (sample-type)
                        [(short) _int16] [(int) _int] [(float) _double*])]
-         [writef     (case (sample-type)
-                       [(short) sf-writef-short]
-                       [(int) sf-writef-int]
-                       [(float) sf-writef-double])]
          [cblock     (frame-list->cblock data frames channels stype)]
          [format     (cond [(assq 'format meta) => cadr]
                            [else (guess-format file)])]
          [samplerate (cond [(assq 'samplerate meta) => cadr]
-                           [else (default-samplerate)])]
-         [info       (make-sf-info frames samplerate channels format 1 #f)]
-         [_          (unless (sf-format-check info)
-                       (error 'write-sound-internal "bad format: ~s" format))]
-         [sndfile    (sf-open file 'sfm-write info)]
-         [_          (unless (= 0 (set-meta-strings sndfile meta))
-                       (error 'write-sound-internal "failed to write meta strings: ~s" 
-                              (sf-strerror sndfile)))]
-         [num-write  (writef sndfile cblock frames)])
-    (unless (= frames num-write)
-      (error 'write-sound-internal
-             "wanted to write ~s frames, but wrote only ~s. ~s"
-             frames num-write (sf-strerror sndfile)))
-    (unless (= 0 (sf-close sndfile))
-      (error 'write-sound-internal "failed to close file: ~s" (sf-strerror sndfile)))
-    (void)))
+                           [else (default-samplerate)])])
+    (write-sound-internal/cblock file cblock format samplerate frames channels (sample-type) meta)))
 
 (define file-format-table
   '((#rx"\\.aiff?" (aiff  pcm-16  file))
@@ -344,6 +374,35 @@
           [(regexp-match (caar xs) filename) (cadar xs)]
           [else (loop (cdr xs))])))
 
+;; check-filename-format : format filename -> (void)
+;; check that the format is compatible with the given 
+;; pathname; it should not be possible to write, e.g., an aiff file
+;; to a filename ending in ".voc". If we don't recognize the 
+;; filename extension, it's okay.
+;; EFFECT: signals an error if the format and filename are incompatible
+(define (check-filename-format format filename)
+  (match format
+    [(list major minor file)
+     (let loop ([xs file-format-table])
+       (cond [(null? xs) (void)]
+             [(regexp-match (caar xs) filename)
+              (match (cadar xs)
+                [(list major/f minor/f file/f) 
+                 (unless (eq? major major/f)
+                   (error 'check-filename-format
+                          "can't use format ~s with filename ~s." 
+                          format
+                          filename))]
+                [other
+                 (error 'check-filename-format
+                        "internal error: unrecognized format format in filename table: ~s" other)])]
+             [else (loop (cdr xs))]))]
+    [other
+     (error 'check-filename-format
+            "illegal format format: ~s" other)]))
+
+
+
 ;; ==================== Exposed Scheme interface ====================
 
 ;; types of samples we handle: 'short, 'int, or 'float
@@ -369,28 +428,63 @@
 (define default-file-format ; no guard, but should be good for _sf-format
   (make-parameter '(wav pcm-16 file)))
 
+;; read-sound : path-string -> (listof frame)
+;; ... where frame is (listof sample)
 (provide read-sound)
 (define (read-sound file)
-  (read-sound-internal file #f))
+  (let*-values ([(data meta) (read-sound-internal file)])
+    data))
 
 (provide read-sound*)
 (define (read-sound* file)
-  (read-sound-internal file #t))
+  (read-sound-internal file #:split #t))
 
 (provide write-sound)
 (define (write-sound file data)
-  (write-sound-internal file data '()))
+  (write-sound-internal/lists file data '()))
 
-;; meta is used only for samplerate & format
 (provide write-sound*)
 (define (write-sound* file data meta)
-  (write-sound-internal file data meta))
+  (write-sound-internal/lists file data meta))
 
 ;; a racketsound provides a representation for sounds 
 ;; that leaves them packed as C data. For the moment, it's 
 ;; 2-channel float only. Also, it discards all meta-information
-;; except length and sample-rate
+;; except length and sample-rate.
 
-;; a racketsound is (racket-sound )
-;(struct racketsound (data length sample-rate))
+;; a racketsound is (racketsound cblock nat nat)
+(provide (struct-out racketsound))
+(struct racketsound (data frames sample-rate))
 
+;; these readers and writers short-cut the translation to/from lists.
+
+;; read-racketsound : path-string -> racketsound
+;; read the file into a racketsound
+(provide read-racketsound)
+(define (read-racketsound file)
+  (parameterize ([sample-type 'float])
+    (let*-values ([(cblock meta) (read-sound-internal file #:split #f)])
+      (racketsound cblock (cadr (assq 'frames meta)) (cadr (assq 'samplerate meta))))))
+
+;; write-racketsound : racketsound path-string -> (void)
+;; write the racketsound to the given file as a wav.
+(provide write-racketsound)
+(define (write-racketsound sound file)
+  (write-sound-internal/cblock file (racketsound-data sound) '(wav float file) 
+                               (racketsound-sample-rate sound) 
+                               (racketsound-frames sound)
+                               2
+                               'float
+                               ;; for now, no meta-data possible.
+                               '()))
+
+
+
+;; test cases for check-filename-format:
+
+;; okay even though minor and file don't match:
+(check-not-exn (lambda () (check-filename-format '(wav float file) "/tmp/zabaglione.wav")))
+;; major doesn't match:
+(check-exn exn:fail? (lambda () (check-filename-format '(wav float file) "/tmp/zabaglione.mat")))
+;; bad input format:
+(check-exn exn:fail? (lambda () (check-filename-format '(spam spam spam spam) "/tmp/zabaglione.wav")))
