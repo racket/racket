@@ -22,14 +22,14 @@
                                    (escape exn))
                                  (lambda ()
                                    (syntax-parse (quote-syntax s)
-                                     [p 'ok] ...))))])
+                                     [p (void)] ...))))])
            (let ([msg (exn-message exn)]
                  [stxs (and (exn:fail:syntax? exn)
                             (exn:fail:syntax-exprs exn))])
              (when 'term
                (check-equal? (and (pair? stxs) (syntax->datum (car stxs))) 'term))
              (erx rx (exn-message exn)) ... #t))
-         'ok)]))
+         (void))]))
 
 (define-syntax erx
   (syntax-rules (not)
@@ -37,6 +37,12 @@
      (check (compose not regexp-match?) rx msg)]
     [(erx rx msg)
      (check regexp-match? rx msg)]))
+
+;; ----
+
+(terx (a b c 7) (x:id ...)
+      #:term 7
+      #rx"expected identifier")
 
 ;; ----
 
@@ -86,3 +92,19 @@
             (~optional b:B #:name "B clause"))
        ...)
       #rx"unexpected term")
+
+;; Ellipses
+
+(terx (a b c 4)
+      (x:id ...)
+      #rx"expected identifier")
+
+;; Repetition constraints
+
+(terx (1 2)
+      ((~or (~once x:id #:name "identifier") n:nat) ...)
+      #rx"missing required occurrence of identifier")
+
+(terx (1 a 2 b)
+      ((~or (~once x:id #:name "identifier") n:nat) ...)
+      #rx"too many occurrences of identifier")

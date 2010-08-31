@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     syntax/parse)
+                     syntax/parse
+                     syntax/parse/experimental/contract)
          racket/list
          racket/contract
          "deriv.rkt"

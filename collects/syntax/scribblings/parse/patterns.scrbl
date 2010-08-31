@@ -3,12 +3,7 @@
           scribble/struct
           scribble/decode
           scribble/eval
-          scheme/sandbox
-          (for-syntax scheme/base)
-          (for-label scheme/base
-                     scheme/contract
-                     (rename-in syntax/parse [...+ DOTSPLUS])
-                     syntax/kerncase))
+          "parse-common.rkt")
 
 @(define-syntax-rule (define-dotsplus-names dotsplus def-dotsplus)
    (begin (require (for-label (only-in syntax/parse ...+)))
@@ -16,63 +11,7 @@
           (define def-dotsplus (defhere ...+))))
 @(define-dotsplus-names dotsplus def-dotsplus)
 
-@(define-syntax-rule (defhere id) (defidentifier #'id #:form? #t))
-
-@(define ellipses @scheme[...])
-
-@(define Spattern "single-term pattern")
-@(define Lpattern "list pattern")
-@(define Hpattern "head pattern")
-@(define EHpattern "ellipsis-head pattern")
-@(define Apattern "action pattern")
-
-@(define Spatterns "single-term patterns")
-@(define Lpatterns "list patterns")
-@(define Hpatterns "head patterns")
-@(define EHpatterns "ellipsis-head patterns")
-@(define Apatterns "action patterns")
-
-@(begin
-   (define-syntax ref
-     (syntax-rules ()
-       [(ref id suffix ...)
-        (elemref (list 'pattern-link (list 'id 'suffix ...))
-                 (schemekeywordfont (symbol->string 'id))
-                 (superscript (symbol->string 'suffix)) ...
-                 #:underline? #f)]))
-   (define-syntax def
-     (syntax-rules ()
-       [(def id suffix ...)
-        (elemtag (list 'pattern-link (list 'id 'suffix ...))
-                 (scheme id)
-                 #|(superscript (symbol->string 'suffix)) ...|# )])))
-
-@(begin
-   (define (fixup exn)
-     (let ([src (ormap values (exn:fail:syntax-exprs exn))])
-       (if src
-           (make-exn:fail:syntax
-            (format "~a at: ~a" (exn-message exn) (syntax->datum src))
-            (exn-continuation-marks exn)
-            (exn:fail:syntax-exprs exn))
-           exn)))
-   (define the-eval
-     (parameterize ((sandbox-output 'string)
-                    (sandbox-error-output 'string)
-                    (sandbox-make-code-inspector current-code-inspector)
-                    (sandbox-eval-handlers
-                     (list #f
-                           (lambda (thunk)
-                             (with-handlers ([exn:fail:syntax?
-                                              (lambda (e) (raise (fixup e)))])
-                               (thunk))))))
-       (make-evaluator 'scheme/base
-                       #:requires '(syntax/parse (for-syntax scheme/base)))))
-   (the-eval '(error-print-source-location #f))
-   (define-syntax-rule (myexamples e ...)
-     (examples #:eval the-eval e ...)))
-
-@title[#:tag "syntax-patterns"]{Syntax patterns}
+@title[#:tag "stxparse-patterns"]{Syntax patterns}
 
 The grammar of @deftech{syntax patterns} used by
 @schememodname[syntax/parse] facilities is given in the following
@@ -99,7 +38,8 @@ means specifically @tech{@Spattern}.
                  pvar-id:syntax-class-id
                  literal-id
                  (@#,ref[~var s-] id)
-                 (@#,ref[~var s+] id syntax-class)
+                 (@#,ref[~var s+] id syntax-class-id)
+                 (@#,ref[~var s+] id (syntax-class-id arg ...))
                  (~literal literal-id)
                  atomic-datum
                  (~datum datum)
@@ -114,7 +54,9 @@ means specifically @tech{@Spattern}.
                  #s(prefab-struct-key (unsyntax @svar[pattern-part]) ...)
                  #&@#,svar[S-pattern]
                  (~rest S-pattern)
-                 (@#,ref[~describe s] expr S-pattern)
+                 (@#,ref[~describe s] maybe-opaque expr S-pattern)
+                 (@#,ref[~commit s] S-pattern)
+                 (@#,ref[~delimit-cut s] S-pattern)
                  A-pattern]
                 [L-pattern
                  ()
@@ -125,12 +67,15 @@ means specifically @tech{@Spattern}.
                  (~rest L-pattern)]
                 [H-pattern
                  pvar-id:splicing-syntax-class-id
-                 (@#,ref[~var h] id splicing-syntax-class)
+                 (@#,ref[~var h] id splicing-syntax-class-id)
+                 (@#,ref[~var h] id (splicing-syntax-class-id arg ...))
                  (~seq . L-pattern)
                  (@#,ref[~and h] proper-H/A-pattern ...+)
                  (@#,ref[~or h] H-pattern ...+)
                  (@#,ref[~optional h] H-pattern maybe-optional-option)
-                 (@#,ref[~describe h] expr H-pattern)
+                 (@#,ref[~describe h] maybe-opaque expr H-pattern)
+                 (@#,ref[~commit h] H-pattern)
+                 (@#,ref[~delimit-cut h] H-pattern)
                  proper-S-pattern]
                 [EH-pattern
                  (@#,ref[~or eh] EH-pattern ...)
@@ -141,7 +86,7 @@ means specifically @tech{@Spattern}.
                 [A-pattern
                  ~!
                  (~bind [attr-id expr] ...)
-                 (~fail maybe-fail-condition message-expr)
+                 (~fail maybe-fail-condition maybe-message-expr)
                  (~parse S-pattern stx-expr)
                  (@#,ref[~and a] A-pattern ...+)]
                 [proper-S-pattern
@@ -185,6 +130,24 @@ One of @ref[~describe s] or @ref[~describe h]:
 @itemize[
 @item{@ref[~describe h] if the subpattern is a @tech{proper @Hpattern}}
 @item{@ref[~describe s] otherwise}
+]
+}
+
+@defidform[~commit]{
+
+One of @ref[~commit s] or @ref[~commit h]:
+@itemize[
+@item{@ref[~commit h] if the subpattern is a @tech{proper @Hpattern}}
+@item{@ref[~commit s] otherwise}
+]
+}
+
+@defidform[~delimit-cut]{
+
+One of @ref[~delimit-cut s] or @ref[~describe h]:
+@itemize[
+@item{@ref[~delimit-cut h] if the subpattern is a @tech{proper @Hpattern}}
+@item{@ref[~delimit-cut s] otherwise}
 ]
 }
 
@@ -289,9 +252,9 @@ like an @tech{annotated pattern variable} with the implicit syntax
 class inserted.
 }
 
-@specsubform/subs[(@#,def[~var s+] pvar-id syntax-class)
-                  ([syntax-class syntax-class-id
-                                 (syntax-class-id arg-expr ...)])]{
+@specsubform/subs[(@#,def[~var s+] pvar-id syntax-class-use)
+                  ([syntax-class-use syntax-class-id
+                                     (syntax-class-id arg ...)])]{
 
 An @deftech{annotated pattern variable}. The pattern matches only
 terms accepted by @svar[syntax-class-id] (parameterized by the
@@ -489,9 +452,11 @@ to have a value if the whole pattern matches.
 
 @myexamples[
 (syntax-parse #'a
-  [(~or x:id (~and x #f)) (syntax->datum #'x)])
-(syntax-parse #'#f
-  [(~or x:id (~and x #f)) (syntax->datum #'x)])
+  [(~or x:id y:nat) (values (attribute x) (attribute y))])
+(syntax-parse #'(a 1)
+  [(~or (x:id y:nat) (x:id)) (values #'x (attribute y))])
+(syntax-parse #'(b)
+  [(~or (x:id y:nat) (x:id)) (values #'x (attribute y))])
 ]
 }
 
@@ -567,25 +532,49 @@ above).
 ]
 }
 
-@specsubform[(@#,def[~describe s] expr S-pattern)]{
+@specsubform/subs[(@#,def[~describe s] maybe-opaque expr S-pattern)
+                  ([maybe-opaque (code:line)
+                                 (code:line #:opaque)])
+                  #:contracts ([expr (or/c string? #f)])]{
 
 The @scheme[~describe] pattern form annotates a pattern with a
 description, a string expression that is evaluated in the scope of all
 prior attribute bindings. If parsing the inner pattern fails, then the
 description is used to synthesize the error message.
 
-A describe-pattern also affects backtracking in two ways:
-
-@itemize{
-
-@item{A cut (@scheme[~!]) within a describe-pattern only
-eliminates choice-points created within the describe-pattern.}
-
-@item{If a describe-pattern succeeds, then all choice points
-created within the describe-pattern are discarded, and a failure
-@emph{after} the describe-pattern backtracks to a choice point
-@emph{before} the describe-pattern, never one @emph{within} it.}
+A @scheme[~describe] pattern has no effect on backtracking.
 }
+
+@specsubform[(@#,def[~commit s] S-pattern)]{
+
+The @scheme[~commit] pattern form affects backtracking in two ways:
+
+@itemize[
+
+@item{If the pattern succeeds, then all choice points created within
+the subpattern are discarded, and a failure @emph{after} the
+@scheme[~commit] pattern backtracks only to choice points
+@emph{before} the @scheme[~commit] pattern, never one @emph{within}
+it.}
+
+@item{A cut (@scheme[~!]) within a @scheme[~commit] pattern only
+eliminates choice-points created within the @scheme[~commit]
+pattern. In this sense, it acts just like @scheme[~delimit-cut].}
+]
+}
+
+@specsubform[(@#,def[~delimit-cut s] S-pattern)]{
+
+The @scheme[~delimit-cut] pattern form affects backtracking in the
+following way:
+
+@itemize[
+
+@item{A cut (@scheme[~!]) within a @scheme[~delimit-cut] pattern only
+eliminates choice-points created within the @scheme[~delimit-cut]
+pattern.}
+
+]
 }
 
 @specsubform[A-pattern]{
@@ -613,9 +602,9 @@ Equivalent to @scheme[(~var pvar-id splicing-syntax-class-id)].
 
 }
 
-@specsubform/subs[(@#,def[~var h] pvar-id splicing-syntax-class)
-                  ([splicing-syntax-class splicing-syntax-class-id
-                                          (splicing-syntax-class-id arg-expr ...)])]{
+@specsubform/subs[(@#,def[~var h] pvar-id splicing-syntax-class-use)
+                  ([splicing-syntax-class-use splicing-syntax-class-id
+                                              (splicing-syntax-class-id arg ...)])]{
 
 Pattern variable annotated with a @tech{splicing syntax
 class}. Similar to a normal @tech{annotated pattern variable}, except
@@ -624,8 +613,8 @@ matches a head pattern.
 
 @specsubform[(@#,defhere[~seq] . L-pattern)]{
 
-Matches a head whose elements, if put in a list, would match
-@scheme[L-pattern].
+Matches a sequence of terms whose elements, if put in a list, would
+match @scheme[L-pattern].
 
 @myexamples[
 (syntax-parse #'(1 2 3 4)
@@ -638,8 +627,8 @@ examples of @scheme[~seq].
 
 @specsubform[(@#,def[~and h] H-pattern ...)]{
 
-Like the @Spattern version of @scheme[~and], but matches a term head
-instead.
+Like the @Spattern version, @ref[~and s], but matches a sequence of
+terms instead.
 
 @myexamples[
 (syntax-parse #'(#:a 1 #:b 2 3 4 5)
@@ -671,8 +660,8 @@ example with the second @scheme[~seq] omitted:
 
 @specsubform[(@#,def[~or h] H-pattern ...)]{
 
-Like the @Spattern version of @scheme[~or], but matches a term head
-instead.
+Like the @Spattern version, @ref[~or s], but matches a sequence of
+terms instead.
 
 @myexamples[
 (syntax-parse #'(m #:foo 2 a b c)
@@ -689,10 +678,10 @@ instead.
                     (code:line)
                     (code:line #:defaults ([attr-id expr] ...))])]{
 
-Matches either the given head subpattern or an empty head. If the
-@scheme[#:defaults] option is given, the subsequent attribute bindings
-are used if the subpattern does not match. The default attributes must
-be a subset of the subpattern's attributes.
+Matches either the given head subpattern or an empty sequence of
+terms. If the @scheme[#:defaults] option is given, the subsequent
+attribute bindings are used if the subpattern does not match. The
+default attributes must be a subset of the subpattern's attributes.
 
 @myexamples[
 (syntax-parse #'(m #:foo 2 a b c)
@@ -710,13 +699,25 @@ be a subset of the subpattern's attributes.
 
 @specsubform[(@#,def[~describe h] expr H-pattern)]{
 
-Like the @Spattern version of @scheme[~describe], but matches a head
+Like the @Spattern version, @ref[~describe s], but matches a head
+pattern instead.
+}
+
+@specsubform[(@#,def[~commit h] H-pattern)]{
+
+Like the @Spattern version, @ref[~commit s], but matches a head
+pattern instead.
+}
+
+@specsubform[(@#,def[~delimit-cut h] H-pattern)]{
+
+Like the @Spattern version, @ref[~delimit-cut s], but matches a head
 pattern instead.
 }
 
 @specsubform[S-pattern]{
 
-Matches a head of one element, which must be a term matching
+Matches a sequence of one element, which must be a term matching
 @scheme[S-pattern].
 }
 
@@ -726,11 +727,11 @@ Matches a head of one element, which must be a term matching
 @section{Ellipsis-head patterns}
 
 An @deftech{@EHpattern} (abbreviated @svar[EH-pattern]) is pattern
-that describes some number of terms, like a @tech{@Hpattern}, but may
-also place contraints on the number of times it occurs in a
-repetition. They are useful for matching keyword arguments where the
-keywords may come in any order. Multiple alternatives can be grouped
-together via @ref[~or eh].
+that describes some number of terms, like a @tech{@Hpattern}, but also
+places contraints on the number of times it occurs in a
+repetition. They are useful for matching, for example, keyword
+arguments where the keywords may come in any order. Multiple
+alternatives are grouped together via @ref[~or eh].
 
 @myexamples[
 (define parser1
@@ -754,23 +755,26 @@ Here are the variants of @elem{@EHpattern}:
 @specsubform[(@#,def[~or eh] EH-pattern ...)]{
 
 Matches if any of the inner @scheme[EH-pattern] alternatives match.
-
 }
 
 @specsubform/subs[(@#,defhere[~once] H-pattern once-option ...)
                   ([once-option (code:line #:name name-expr)
                                 (code:line #:too-few too-few-message-expr)
-                                (code:line #:too-many too-many-message-expr)])]{
+                                (code:line #:too-many too-many-message-expr)])
+                  #:contracts ([name-expr (or/c string? #f)]
+                               [too-few-message-expr (or/c string? #f)]
+                               [too-many-message-expr (or/c string? #f)])]{
 
 Matches if the inner @scheme[H-pattern] matches. This pattern must be
-selected exactly once in the match of the entire repetition sequence.
+matched exactly once in the match of the entire repetition sequence.
 
-If the pattern is not chosen in the repetition sequence, then an error
-is raised with the message either @scheme[too-few-message-expr] or
-@schemevalfont{"missing required occurrence of @scheme[name-expr]"}.
+If the pattern is not matched in the repetition sequence, then the
+ellipsis pattern fails with the message either
+@scheme[too-few-message-expr] or @schemevalfont{"missing required
+occurrence of @scheme[name-expr]"}.
 
 If the pattern is chosen more than once in the repetition sequence,
-then an error is raised with the message either
+then the ellipsis pattern fails with the message either
 @scheme[too-many-message-expr] or @schemevalfont{"too many occurrences
 of @scheme[name-expr]"}.
 }
@@ -778,13 +782,15 @@ of @scheme[name-expr]"}.
 @specsubform/subs[(@#,def[~optional eh] H-pattern optional-option ...)
                   ([optional-option (code:line #:name name-expr)
                                     (code:line #:too-many too-many-message-expr)
-                                    (code:line #:defaults ([attr-id expr] ...))])]{
+                                    (code:line #:defaults ([attr-id expr] ...))])
+                  #:contracts ([name-expr (or/c string? #f)]
+                               [too-many-message-expr (or/c string? #f)])]{
 
 Matches if the inner @scheme[H-pattern] matches. This pattern may be used at
 most once in the match of the entire repetition.
 
-If the pattern is chosen more than once in the repetition sequence,
-then an error is raised with the message either
+If the pattern is matched more than once in the repetition sequence,
+then the ellipsis pattern fails with the message either
 @scheme[too-many-message-expr] or @schemevalfont{"too many occurrences
 of @scheme[name-expr]"}.
 
@@ -797,18 +803,20 @@ attributes.
 @specsubform/subs[(@#,defhere[~between] H-pattern min-number max-number between-option ...)
                   ([reps-option (code:line #:name name-expr)
                                 (code:line #:too-few too-few-message-expr)
-                                (code:line #:too-many too-many-message-expr)])]{
+                                (code:line #:too-many too-many-message-expr)])
+                  #:contracts ([name-expr (or/c syntax? #f)]
+                               [too-few-message-expr (or/c syntax? #f)])]{
 
 Matches if the inner @scheme[H-pattern] matches. This pattern must be
-selected at least @scheme[min-number] and at most @scheme[max-number]
+matched at least @scheme[min-number] and at most @scheme[max-number]
 times in the entire repetition.
 
-If the pattern is chosen too few times, then an error is raised with a
-message, either @scheme[too-few-message-expr] or @schemevalfont{"too
-few occurrences of @scheme[name-expr]"}.
+If the pattern is matched too few times, then the ellipsis pattern
+fails with the message either @scheme[too-few-message-expr] or
+@schemevalfont{"too few occurrences of @scheme[name-expr]"}.
 
-If the pattern is chosen too many times, then an error is raised with
-the message either @scheme[too-many-message-expr] or
+If the pattern is chosen too many times, then the ellipsis pattern
+fails with the message either @scheme[too-many-message-expr] or
 @schemevalfont{"too few occurrences of @scheme[name-expr]"}.
 }
 
@@ -821,11 +829,6 @@ the message either @scheme[too-many-message-expr] or
 An @deftech{@Apattern} (abbreviated @svar[A-pattern]) does not
 describe any syntax; rather, it has an effect such as the binding of
 attributes or the modification of the matching process.
-
-The grammar describing where an @Apattern may occur may look
-complicated, but the essence is this: ``@Apatterns don't take up
-space.'' They can be freely added to a list pattern or inserted into
-an @scheme[~and] pattern.
 
 @specsubform[@#,defhere[~!]]{
 
@@ -848,7 +851,7 @@ expression tries the first clause, fails to match @scheme[a] against
 the pattern @scheme[(x:id ...)], and then backtracks to the second
 clause and ultimately the third clause, producing the value
 @scheme['expression]. But the term is not an expression; it is an
-ill-formed use of @scheme[define-values]! The proper way to write the
+ill-formed use of @scheme[define-values]. The proper way to write the
 @scheme[syntax-parse] expression follows:
 
 @interaction[#:eval the-eval
@@ -865,10 +868,12 @@ points for the second and third clauses. So when the clause fails to
 match, the @scheme[syntax-parse] expression raises an error.
 
 The effect of a @scheme[~!] pattern is delimited by the nearest
-enclosing @scheme[~describe] pattern. If there is no enclosing
-@scheme[~describe] pattern but the cut occurs within a syntax class
-definition, then only choice points within the syntax class definition
-are discarded.
+enclosing @scheme[~delimit-cut] or @scheme[~commit] pattern. If there
+is no enclosing @scheme[~describe] pattern but the cut occurs within a
+syntax class definition, then only choice points within the syntax
+class definition are discarded. A @scheme[~!]  pattern is not allowed
+within a @scheme[~not] pattern unless there is an intervening
+@scheme[~delimit-cut] or @scheme[~commit] pattern.
 }
 
 @specsubform[(@#,defhere[~bind] [attr-id expr] ...)]{
@@ -877,19 +882,23 @@ Evaluates the @scheme[expr]s and binds them to the given
 @scheme[attr-id]s as attributes.
 }
 
-@specsubform/subs[(@#,defhere[~fail] maybe-fail-condition message-expr)
+@specsubform/subs[(@#,defhere[~fail] maybe-fail-condition maybe-message-expr)
                   ([maybe-fail-condition (code:line)
                                          (code:line #:when condition-expr)
-                                         (code:line #:unless condition-expr)])]{
+                                         (code:line #:unless condition-expr)]
+                   [maybe-message-expr (code:line)
+                                       (code:line message-expr)])
+                  #:contracts ([message-expr (or/c string? #f)])]{
 
-If the condition is absent, or if the @scheme[#:when]
-condition evaluates to a true value, or if the @scheme[#:unless]
-condition evaluates to @scheme[#f], then the pattern fails with the
-given message.
+If the condition is absent, or if the @scheme[#:when] condition
+evaluates to a true value, or if the @scheme[#:unless] condition
+evaluates to @scheme[#f], then the pattern fails with the given
+message. If the message is omitted, the default value @scheme[#f] is
+used, representing ``no message.''
 
 Fail patterns can be used together with cut patterns to recognize
-specific ill-formed terms and address them with specially-created
-failure messages.
+specific ill-formed terms and address them with custom failure
+messages.
 }
 
 @specsubform[(@#,defhere[~parse] S-pattern stx-expr)

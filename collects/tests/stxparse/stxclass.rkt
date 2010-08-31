@@ -1,14 +1,10 @@
 #lang scheme/base
-
 (require rackunit
          syntax/parse
+         syntax/parse/debug
          (for-syntax scheme/base syntax/parse))
 
 ;; Testing stuff
-
-(define-namespace-anchor anchor)
-(define tns (namespace-anchor->namespace anchor))
-(define (teval expr) (eval expr tns))
 
 (define-syntax-rule (stx-like? expr template)
   (equal? (stx->datum expr) 'template))
@@ -88,9 +84,9 @@
           (check-equal? (vector-ref rec 1) (cadr ex))
           (check-equal? (stx->datum (vector-ref rec 2)) (caddr ex)))))))
 
-(define-syntax-rule (test-patterns pattern stx . body)
+(define-syntax-rule (test-patterns pattern stx body ...)
   (test-case (format "~s" 'pattern)
-             (syntax-parse stx [pattern . body])))
+             (syntax-parse stx [pattern body ... (void)])))
 
 ;; Tests
 
@@ -127,11 +123,12 @@
                            (~once 2)
                            (~once 3)} ...)
                      #'(1 2 3)
-        'ok)
+        (void))
       (test-patterns ({~or a:id b:nat c:str} ...) #'("one" 2 three)
         (check-equal? (stx->datum #'(a ...)) '(three))
         (check-equal? (stx->datum #'(b ...)) '(2))
-        (check-equal? (stx->datum #'(c ...)) '("one")))
+        (check-equal? (stx->datum #'(c ...)) '("one"))
+        (void))
       (test-patterns ({~or (~once 1)
                            (~once 2)
                            (~once 3)
@@ -143,13 +140,15 @@
         (check-equal? (sort 
                        (map symbol->string (stx->datum #'(x y w)))
                        string<?)
-                      '("x" "y" "z")))
+                      '("x" "y" "z"))
+        (void))
       (test-patterns ({~or x
                            (~once 1)
                            (~once 2)
                            (~once 3)} ...)
                      #'(1 2 3 x y z)
-        (check-equal? (stx->datum #'(x ...)) '(x y z)))
+        (check-equal? (stx->datum #'(x ...)) '(x y z))
+        (void))
       )))
 
 (define-syntax-class bindings
@@ -169,18 +168,21 @@
   (loop ns -inf.0))
 
 (define-syntax-class Opaque
+  #:opaque
   (pattern (a:id n:nat)))
 (define-syntax-class Transparent
-  #:transparent
   (pattern (a:id n:nat)))
 
+#|
 (with-handlers ([exn? exn-message])
-  (syntax-parse #'(0 1) [_:Opaque 'ok]))
+  (syntax-parse #'(0 1) [_:Opaque (void)]))
 (with-handlers ([exn? exn-message])
-  (syntax-parse #'(0 1) [_:Transparent 'ok]))
+  (syntax-parse #'(0 1) [_:Transparent (void)]))
+|#
 
 (syntax-parse #'(+) #:literals ([plus +])
   [(plus) (void)])
+
 
 (define-syntax-class (Nat> n)
   #:description (format "Nat > ~s" n)
@@ -192,44 +194,3 @@
    #:with c #'c0
    #:declare c (Nat> (syntax-e #'b0))
    (void)])
-
-(define-syntax-class (nat> bound)
-  #:opaque
-  #:description (format "natural number greater than ~s" bound)
-  (pattern n:nat
-           #:when (> (syntax-e #'n) bound)))
-
-(define-conventions nat-convs
-  [N (nat> 0)])
-
-(syntax-parse #'(5 4) #:conventions (nat-convs)
-  [(N ...) (void)])
-
-(let/ec escape
-  (with-handlers ([exn? (compose escape void)])
-    (syntax-parse #'(4 -1) #:conventions (nat-convs)
-      [(N ...) (void)]))
-  (error 'test-conv1 "didn't work"))
-
-;; Local conventions
-
-(define-syntax-class (nats> bound)
-  #:local-conventions ([N (nat> bound)])
-  (pattern (N ...)))
-
-(define (p1 bound x)
-  (syntax-parse x
-    #:local-conventions ([ns (nats> bound)])
-    [ns 'yes]
-    [_ 'no]))
-
-(eq? (p1 0 #'(1 2 3)) 'yes)
-(eq? (p1 2 #'(1 2 3)) 'no)
-
-;; Regression (2/2/2010)
-
-(define-splicing-syntax-class twoseq
-  (pattern (~seq a b)))
-
-(syntax-parse #'(1 2 3 4)
-  [(x:twoseq ...) 'ok])

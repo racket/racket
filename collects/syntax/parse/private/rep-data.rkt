@@ -4,55 +4,45 @@
          racket/list
          syntax/stx
          syntax/id-table
-         "../util.ss"
-         "minimatch.ss"
-         "rep-attrs.ss"
-         "rep-patterns.ss")
-(provide (all-from-out "rep-attrs.ss")
-         (all-from-out "rep-patterns.ss")
+         unstable/syntax
+         "minimatch.rkt"
+         "kws.rkt"
+         "rep-attrs.rkt"
+         "rep-patterns.rkt")
+(provide (all-from-out "rep-attrs.rkt")
+         (all-from-out "rep-patterns.rkt")
          (struct-out stxclass)
+         (struct-out options)
+         (struct-out integrate)
          stxclass/s?
          stxclass/h?
+         stxclass-commit?
+         stxclass-delimit-cut?
          (struct-out attr)
          (struct-out rhs)
          (struct-out variant)
          (struct-out clause:fail)
          (struct-out clause:with)
          (struct-out clause:attr)
+         (struct-out clause:do)
          (struct-out conventions)
-         (struct-out literalset))
-
-#|
-
-NOTES
-
-syntax-class protocol
----------------------
-
-Two kinds of syntax class: commit? = #t, commit? = #f
-
-let syntax-class SC have params (P ...)
-  if commit? = #t
-    parser : Stx P ... -> (U list expectation)
-  if commit? = #f
-    parser : Stx ((U list expect) FailFunction -> Answer) P ... -> Answer
-
-
-conventions
------------
-
-let conventions C have params (P ...)
-  get-procedures :
-    (P ... -> (values (listof ParserFun) (listof DescriptionFun)))
-
-|#
+         (struct-out literalset)
+         (struct-out eh-alternative-set)
+         (struct-out eh-alternative))
 
 #|
 A stxclass is
-  (make-sc symbol (listof symbol) (list-of SAttr) identifier identifier boolean boolean)
+  #s(stxclass symbol (listof symbol) (list-of SAttr) identifier bool Options Integrate/#f)
+where Options = #s(options boolean boolean)
+      Integrate = #s(integrate id string)
+Arity is defined in kws.rkt
 |#
-(define-struct stxclass (name params attrs parser-name description
-                         splicing? commit?)
+(define-struct stxclass (name arity attrs parser splicing? options integrate)
+  #:prefab)
+
+(define-struct options (commit? delimit-cut?)
+  #:prefab)
+(define-struct integrate (predicate description)
   #:prefab)
 
 (define (stxclass/s? x)
@@ -60,29 +50,28 @@ A stxclass is
 (define (stxclass/h? x)
   (and (stxclass? x) (stxclass-splicing? x)))
 
+(define (stxclass-commit? x)
+  (options-commit? (stxclass-options x)))
+(define (stxclass-delimit-cut? x)
+  (options-delimit-cut? (stxclass-options x)))
+
 #|
 An RHS is
-  (make-rhs stx (listof SAttr) boolean stx/#f (listof Variant) (listof stx))
+  #s(rhs stx (listof SAttr) bool stx/#f (listof Variant) (listof stx) Options Integrate/#f)
 definitions: auxiliary definitions from #:declare
 |#
-(define-struct rhs (ostx attrs transparent? description variants definitions commit?)
+(define-struct rhs (ostx attrs transparent? description variants definitions options integrate)
   #:prefab)
 
 #|
 A Variant is
-  (make-variant stx (listof SAttr) Pattern (listof SideClause))
+  (make-variant stx (listof SAttr) Pattern (listof stx))
 |#
-(define-struct variant (ostx attrs pattern sides definitions) #:prefab)
+(define-struct variant (ostx attrs pattern definitions) #:prefab)
 
 #|
-A SideClause is one of
-  (make-clause:fail stx stx)
-  (make-clause:with pattern stx (listof stx))
-  (make-clause:attr IAttr stx)
+SideClause is defined in rep-patterns
 |#
-(define-struct clause:fail (condition message) #:prefab)
-(define-struct clause:with (pattern expr definitions) #:prefab)
-(define-struct clause:attr (attr expr) #:prefab)
 
 #|
 A Conventions is
@@ -100,8 +89,16 @@ A LiteralSet is
 ;; make-dummy-stxclass : identifier -> SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
 (define (make-dummy-stxclass name)
-  (make stxclass (syntax-e name) null null #f #f #f #t))
+  (make stxclass (syntax-e name) #f null #f #f #s(options #f #t) #f))
 
+#|
+An EH-alternative-set is
+  (eh-alternative-set (listof EH-alternative)
+An EH-alternative is
+  (eh-alternative RepetitionConstraint (listof SAttr) id)
+|#
+(define-struct eh-alternative-set (alts))
+(define-struct eh-alternative (repc attrs parser))
 
 ;; Environments
 
@@ -111,22 +108,24 @@ DeclEnv =
                 (listof ConventionRule))
 
 DeclEntry =
-  (make-den:lit id id ct-phase ct-phase)
-  (make-den:class id id (listof syntax) bool)
-  (make-den:parser id id (listof SAttr) bool bool)
-  (make-den:delayed id id id)
+  (den:lit id id ct-phase ct-phase)
+  (den:class id id Arguments)
+  (den:parser id (listof SAttr) bool bool bool)
+  (den:delayed id id)
+
+Arguments is defined in rep-patterns.rkt
 |#
 (define-struct declenv (table conventions))
 
 (define-struct den:lit (internal external input-phase lit-phase))
-(define-struct den:class (name class args))
-(define-struct den:parser (parser description attrs splicing? commit?))
-(define-struct den:delayed (parser description class))
+(define-struct den:class (name class argu))
+(define-struct den:parser (parser attrs splicing? commit? delimit-cut?))
+(define-struct den:delayed (parser class))
 
 (define (new-declenv literals #:conventions [conventions null])
   (make-declenv
    (for/fold ([table (make-immutable-bound-id-table)])
-       ([literal literals])
+       ([literal (in-list literals)])
      (bound-id-table-set table (car literal)
                          (make den:lit (first literal) (second literal)
                                (third literal) (fourth literal))))
@@ -152,15 +151,15 @@ DeclEntry =
                          stxclass-name)
            (wrong-syntax (if blame-declare? name id)
                          "identifier previously declared"))]
-      [(struct den:parser (_p _d _a _sp _c))
+      [(struct den:parser (_p _a _sp _c _dc?))
        (wrong-syntax id "(internal error) late unbound check")]
       ['#f (void)])))
 
-(define (declenv-put-stxclass env id stxclass-name args)
+(define (declenv-put-stxclass env id stxclass-name argu)
   (declenv-check-unbound env id)
   (make-declenv
    (bound-id-table-set (declenv-table env) id
-                       (make den:class id stxclass-name args))
+                       (make den:class id stxclass-name argu))
    (declenv-conventions env)))
 
 ;; declenv-update/fold : DeclEnv (Id/Regexp DeclEntry a -> DeclEntry a) a
@@ -168,7 +167,7 @@ DeclEntry =
 (define (declenv-update/fold env0 f acc0)
   (define-values (acc1 rules1)
     (for/fold ([acc acc0] [newrules null])
-        ([rule (declenv-conventions env0)])
+        ([rule (in-list (declenv-conventions env0))])
       (let-values ([(val acc) (f (car rule) (cadr rule) acc)])
         (values acc (cons (list (car rule) val) newrules)))))
   (define-values (acc2 table2)
@@ -182,7 +181,7 @@ DeclEntry =
 ;; returns ids in domain of env but not in given list
 (define (declenv-domain-difference env ids)
   (define idbm (make-bound-id-table))
-  (for ([id ids]) (bound-id-table-set! idbm id #t))
+  (for ([id (in-list ids)]) (bound-id-table-set! idbm id #t))
   (for/list ([(k v) (in-dict (declenv-table env))]
              #:when (or (den:class? v) (den:parser? v))
              #:when (not (bound-id-table-ref idbm k #f)))
@@ -192,7 +191,7 @@ DeclEntry =
 
 (define (conventions-lookup conventions id)
   (let ([sym (symbol->string (syntax-e id))])
-    (for/or ([c conventions])
+    (for/or ([c (in-list conventions)])
       (and (regexp-match? (car c) sym) (cadr c)))))
 
 ;; Contracts
@@ -205,7 +204,7 @@ DeclEntry =
                        (or/c den:lit? den:class? den:parser? den:delayed?)))
 
 (define SideClause/c
-  (or/c clause:fail? clause:with? clause:attr?))
+  (or/c clause:fail? clause:with? clause:attr? clause:do?))
 
 ;; ct-phase = syntax, expr that computes absolute phase
 ;;   usually = #'(syntax-local-phase-level)
@@ -232,7 +231,7 @@ DeclEntry =
  [declenv-lookup
   (-> DeclEnv/c identifier? any)]
  [declenv-put-stxclass
-  (-> DeclEnv/c identifier? identifier? (listof syntax?)
+  (-> DeclEnv/c identifier? identifier? arguments?
       DeclEnv/c)]
  [declenv-domain-difference
   (-> DeclEnv/c (listof identifier?)
@@ -244,11 +243,13 @@ DeclEntry =
       (values DeclEnv/c any/c))]
 
  [get-stxclass
-  (-> identifier? any)]
- [get-stxclass/check-arg-count
-  (-> identifier? exact-nonnegative-integer? any)]
+  (-> identifier? stxclass?)]
+ [get-stxclass/check-arity
+  (-> identifier? syntax? exact-nonnegative-integer? (listof keyword?)
+      stxclass?)]
  [split-id/get-stxclass
-  (-> identifier? DeclEnv/c any)])
+  (-> identifier? DeclEnv/c
+      (values identifier? (or/c stxclass? #f)))])
 
 ;; stxclass-lookup-config : (parameterof (U 'no 'try 'yes))
 ;;  'no means don't lookup, always use dummy (no nested attrs)
@@ -265,16 +266,12 @@ DeclEntry =
              (make-dummy-stxclass id)]
             [else (wrong-syntax id "not defined as syntax class")])))
 
-(define (get-stxclass/check-arg-count id arg-count)
-  (let* ([sc (get-stxclass id)]
-         [expected-arg-count (length (stxclass-params sc))])
-    (unless (or (= expected-arg-count arg-count)
-                (memq (stxclass-lookup-config) '(try no)))
-      ;; (above: don't check error if stxclass may not be defined yet)
-      (wrong-syntax id
-                    "too few arguments for syntax-class ~a (expected ~s)"
-                    (syntax-e id)
-                    expected-arg-count))
+(define (get-stxclass/check-arity id stx pos-count keywords)
+  (let ([sc (get-stxclass id)])
+    (unless (memq (stxclass-lookup-config) '(try no))
+      (check-arity (stxclass-arity sc) pos-count keywords
+                   (lambda (msg)
+                     (raise-syntax-error #f msg stx))))
     sc))
 
 (define (split-id/get-stxclass id0 decls)
@@ -286,6 +283,16 @@ DeclEntry =
                 (datum->syntax id0 (string->symbol (caddr m)) id0 id0))
               (declenv-check-unbound decls id (syntax-e scname)
                                      #:blame-declare? #t)
-              (let ([sc (get-stxclass/check-arg-count scname 0)])
+              (let ([sc (get-stxclass/check-arity scname id0 0 null)])
                 (values id sc)))]
         [else (values id0 #f)]))
+
+;; ----
+
+(provide get-eh-alternative-set)
+
+(define (get-eh-alternative-set id)
+  (let ([v (syntax-local-value id (lambda () #f))])
+    (unless (eh-alternative-set? v)
+      (wrong-syntax id "not defined as an eh-alternative-set"))
+    v))

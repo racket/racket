@@ -2,7 +2,8 @@
 (require racket/contract/base
          syntax/stx
          syntax/id-table
-         "../util.ss")
+         unstable/syntax
+         unstable/struct)
 (provide (struct-out attr))
 
 #|
@@ -12,6 +13,11 @@ An SAttr is (make-attr symbol number boolean)
 The number is the ellipsis nesting depth. The boolean is true iff the
 attr is guaranteed to be bound to a value which is a syntax object (or
 a list^depth of syntax objects).
+|#
+
+#|
+SAttr lists are always stored in sorted order, to make comparison
+of signatures easier for reified syntax-classes.
 |#
 
 (define-struct attr (name depth syntax?) #:prefab)
@@ -56,6 +62,9 @@ a list^depth of syntax objects).
  [iattrs->sattrs
   (-> (listof iattr?)
       (listof sattr?))]
+ [sort-sattrs
+  (-> (listof sattr?)
+      (listof sattr?))]
 
  [intersect-sattrss
   (-> (listof (listof sattr?))
@@ -83,13 +92,13 @@ a list^depth of syntax objects).
   (define count-t (make-bound-id-table))
   (define attr-t (make-bound-id-table))
   (define list-count (length attrss))
-  (for* ([attrs attrss] [attr attrs])
+  (for* ([attrs (in-list attrss)] [attr (in-list attrs)])
     (define name (attr-name attr))
     (define prev (bound-id-table-ref attr-t name #f))
     (bound-id-table-set! attr-t name (join-attrs attr prev))
     (let ([pc (bound-id-table-ref count-t name 0)])
       (bound-id-table-set! count-t name (add1 pc))))
-  (for/list ([a (bound-id-table-map attr-t (lambda (_ v) v))])
+  (for/list ([a (in-list (bound-id-table-map attr-t (lambda (_ v) v)))])
     (if (= (bound-id-table-ref count-t (attr-name a)) list-count)
         a
         (attr-make-uncertain a))))
@@ -120,12 +129,18 @@ a list^depth of syntax objects).
      (make attr (syntax-e name) depth syntax?)))
 
 (define (iattrs->sattrs as)
-  (map iattr->sattr as))
+  (sort-sattrs (map iattr->sattr as)))
+
+(define (sort-sattrs as)
+  (sort as string<?
+        #:key (lambda (a) (symbol->string (attr-name a)))
+        #:cache-keys? #t))
 
 (define (rename-attr a name)
   (make attr name (attr-depth a) (attr-syntax? a)))
 
 ;; intersect-sattrss : (listof (listof SAttr)) -> (listof SAttr)
+;; FIXME: rely on sorted inputs, simplify algorithm and avoid second sort?
 (define (intersect-sattrss attrss)
   (cond [(null? attrss) null]
         [else
@@ -137,21 +152,18 @@ a list^depth of syntax objects).
                 [ht (make-hasheq)]
                 [put (lambda (attr) (hash-set! ht (attr-name attr) attr))]
                 [fetch-like (lambda (attr) (hash-ref ht (attr-name attr) #f))])
-           (for* ([attrs attrss]
-                  [attr attrs]
+           (for* ([attrs (in-list attrss)]
+                  [attr (in-list attrs)]
                   #:when (memq (attr-name attr) names))
              (put (join-attrs attr (fetch-like attr))))
-           (sort (hash-map ht (lambda (k v) v))
-                 (lambda (a b)
-                   (string<? (symbol->string (attr-name a))
-                             (symbol->string (attr-name b))))))]))
+           (sort-sattrs (hash-map ht (lambda (k v) v))))]))
 
 ;; reorder-iattrs : (listof SAttr) (listof IAttr) -> (listof IAttr)
 ;; Reorders iattrs (and restricts) based on relsattrs
 ;; If a relsattr is not found, or if depth or contents mismatches, raises error.
 (define (reorder-iattrs relsattrs iattrs)
   (let ([ht (make-hasheq)])
-    (for ([iattr iattrs])
+    (for ([iattr (in-list iattrs)])
       (let ([remap-name (syntax-e (attr-name iattr))])
         (hash-set! ht remap-name iattr)))
     (let loop ([relsattrs relsattrs])
@@ -178,8 +190,9 @@ a list^depth of syntax objects).
 ;; check-iattrs-subset : (listof IAttr) (listof IAttr) stx -> void
 (define (check-iattrs-subset little big ctx)
   (define big-t (make-bound-id-table))
-  (for ([a big]) (bound-id-table-set! big-t (attr-name a) #t))
-  (for ([a little])
+  (for ([a (in-list big)])
+    (bound-id-table-set! big-t (attr-name a) #t))
+  (for ([a (in-list little)])
     (unless (bound-id-table-ref big-t (attr-name a) #f)
       (raise-syntax-error #f
                           "attribute bound in defaults but not in pattern"
