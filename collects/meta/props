@@ -710,7 +710,7 @@ path/s is either such a string or a list of them.
 "collects/ffi/examples/c-printf.rkt" drdr:command-line (mzc "-k" *)
 "collects/ffi/examples/esd.rkt" drdr:command-line (mzc *)
 "collects/ffi/examples/magick.rkt" drdr:command-line (mzc *)
-"collects/ffi/examples/sndfile.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/sndfile.rkt" responsible (clements) drdr:command-line (mzc *)
 "collects/ffi/examples/tcl.rkt" drdr:command-line (mzc *)
 "collects/ffi/examples/use-c-printf.rkt" drdr:command-line (mzc "-k" *)
 "collects/ffi/examples/use-esd.rkt" drdr:command-line (mzc *)
