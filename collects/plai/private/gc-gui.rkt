@@ -304,15 +304,14 @@
       (cond
         [(and mouse-x mouse-y)
          (let-values ([(i j) (mouse-xy->ij mouse-x mouse-y)])
-           (if (and i j)
-               (let ([index (+ (* j (vector-length column-widths)) i)])
-                 (update-arrows (find-connections index))
-                 (update-highlighted-cells
-                  (cond
-                    [(< index (vector-length heap-vec))
-                     (cons index (index->nexts index))]
-                    [else '()])))
-               (update-highlighted-cells '())))]
+           (let ([index (and i j (+ (* j (vector-length column-widths)) i))])
+             (cond
+               [(and index (< index (vector-length heap-vec)))
+                (update-arrows (find-connections index))
+                (update-highlighted-cells (cons index (index->nexts index)))]
+               [else
+                (update-highlighted-cells '())
+                (update-arrows '())])))]
         [else
          (update-highlighted-cells '())
          (update-arrows '())]))
