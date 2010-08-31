@@ -156,14 +156,13 @@
          (filter
           (λ (x) (<= 2 (length (line-points (car (graph-lines x))))))
           (build-large-graphs data))])
-    (reverse
-     (let loop ([graphs (reverse large-graphs)])
+    (let loop ([graphs (reverse large-graphs)])
        (let-values ([(first rest) (split-out-graph graphs)])
          (cond
            [(null? rest)
             (list first)]
            [else
-            (cons first (loop rest))]))))))
+            (cons first (loop rest))])))))
 
 ;; split-out-graphs : (listof graph) -> (values (listof graph) (listof graph))
 ;; first result is a set of graphs to go into a single image
