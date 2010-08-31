@@ -616,8 +616,8 @@
                   (make-bitmap (bitmap-raw-bitmap bitmap)
                                (bitmap-raw-mask bitmap)
                                (bring-between (if flipped? 
-                                                  (+ θ (bitmap-angle bitmap))
-                                                  (- (+ θ (bitmap-angle bitmap))))
+                                                  (- (bitmap-angle bitmap) θ)
+                                                  (+ (bitmap-angle bitmap) θ))
                                               360)
                                (bitmap-x-scale bitmap)
                                (bitmap-y-scale bitmap)
@@ -647,19 +647,14 @@
     (make-point x y)))
 
 
-;; bring-between : number number -> number
-;; returns a number that is much like the modulo of 'x' and 'upper-bound'
-;; but does this by repeated subtraction (or addition if it is negative), 
+;; bring-between : rational integer -> rational
+;; returns a number that is much like the modulo of 'x' and 'upper-bound',
 ;; since modulo only works on integers
 (define (bring-between x upper-bound)
-  (let loop ([x x])
-    (cond
-      [(< x 0)
-       (loop (+ x upper-bound))]
-      [(< x upper-bound)
-       x]
-      [else
-       (loop (- x upper-bound))])))
+  (let* ([x-floor (floor x)]
+         [fraction (- x x-floor)])
+    (+ (modulo x-floor upper-bound) 
+       fraction)))
 
 (define/chk (flip-horizontal image)
   (rotate 90 (flip-vertical (rotate -90 image))))
