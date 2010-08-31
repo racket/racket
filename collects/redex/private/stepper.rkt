@@ -705,7 +705,7 @@ todo:
        
   
   (define forward-size-editor-canvas%
-    (class canvas:color% 
+    (class canvas:basic% 
       (inherit get-editor)
       (define/override (on-size w h)
         (send (get-editor) update-heights))
