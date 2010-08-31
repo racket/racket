@@ -14,6 +14,7 @@
 ;; possibly replace bindings of complex numbers by bindings of their 2 components
 ;; useful for intermediate results used more than once and for loop variables
 (define-syntax-class unboxed-let-opt-expr
+  #:commit
   (pattern e:app-of-unboxed-let-opt-expr
            #:with opt #'e.opt)
   (pattern (~var e (unboxed-let-opt-expr-internal #f))
@@ -24,6 +25,7 @@
 ;; escapes in the operator position of a call site we control (here)
 ;; we can extend unboxing
 (define-syntax-class app-of-unboxed-let-opt-expr
+  #:commit
   #:literal-sets (kernel-literals)
   (pattern (#%plain-app
             (~and let-e ((~literal letrec-values)
@@ -44,6 +46,7 @@
 ;; detects which let bindings can be unboxed, same for arguments of let-bound
 ;; functions
 (define-syntax-class (unboxed-let-opt-expr-internal let-loop?)
+  #:commit
   #:literal-sets (kernel-literals)
   (pattern (letk:let-like-keyword ((~and clause (lhs rhs ...)) ...)
                                   body:expr ...)
@@ -137,6 +140,7 @@
                       #,@(map (optimize) (syntax->list #'(body ...)))))))
 
 (define-splicing-syntax-class let-like-keyword
+  #:commit
   #:literal-sets (kernel-literals)
   (pattern (~literal let-values)
            #:with (key ...) #'(let*-values))
@@ -261,6 +265,7 @@
 
 ;; let clause whose rhs is going to be unboxed (turned into multiple bindings)
 (define-syntax-class unboxed-let-clause
+  #:commit
   (pattern ((v:id) rhs:unboxed-inexact-complex-opt-expr)
            #:with id #'v
            #:with real-binding #'rhs.real-binding
@@ -271,6 +276,7 @@
 ;; these arguments may be unboxed
 ;; the new function will have all the unboxed arguments first, then all the boxed
 (define-syntax-class unboxed-fun-clause
+  #:commit
   (pattern ((v:id) (#%plain-lambda params body:expr ...))
            #:with id #'v
            #:with unboxed-info (dict-ref unboxed-funs-table #'v #f)
@@ -311,5 +317,6 @@
                               (cons (car params) boxed))]))))))
 
 (define-syntax-class opt-let-clause
+  #:commit
   (pattern (vs rhs:expr)
            #:with res #`(vs #,((optimize) #'rhs))))

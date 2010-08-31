@@ -12,6 +12,7 @@
 (provide struct-opt-expr)
 
 (define-syntax-class struct-opt-expr
+  #:commit
   ;; we can always optimize struct accessors and mutators
   ;; if they typecheck, they're safe
   (pattern (#%plain-app op:id s:expr v:expr ...)

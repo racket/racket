@@ -30,30 +30,36 @@
     #'bitwise-xor #'unsafe-fxxor)
    #'fxxor #'unsafe-fxxor))
 (define-syntax-class fixnum-unary-op
+  #:commit
   (pattern (~or (~literal bitwise-not) (~literal fxnot)) #:with unsafe #'unsafe-fxnot)
   (pattern (~or (~literal abs)         (~literal fxabs)) #:with unsafe #'unsafe-fxabs))
 ;; closed on fixnums, but 2nd argument must not be 0
 (define-syntax-class nonzero-fixnum-binary-op
+  #:commit
   (pattern (~or (~literal quotient)  (~literal fxquotient))  #:with unsafe #'unsafe-fxquotient)
   (pattern (~or (~literal modulo)    (~literal fxmodulo))    #:with unsafe #'unsafe-fxmodulo)
   (pattern (~or (~literal remainder) (~literal fxremainder)) #:with unsafe #'unsafe-fxremainder))
 
 (define-syntax-class (fixnum-op tbl)
+  #:commit
   (pattern i:id
            #:when (dict-ref tbl #'i #f)
            #:with unsafe (dict-ref tbl #'i)))
 
 
 (define-syntax-class fixnum-expr
+  #:commit
   (pattern e:expr
            #:when (subtypeof? #'e -Fixnum)
            #:with opt ((optimize) #'e)))
 (define-syntax-class nonzero-fixnum-expr
+  #:commit
   (pattern e:expr
            #:when (or (isoftype? #'e -PositiveFixnum) (isoftype? #'e -NegativeFixnum))
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class fixnum-opt-expr
+  #:commit
   (pattern (#%plain-app op:fixnum-unary-op n:fixnum-expr)
            #:with opt
            (begin (log-optimization "unary fixnum" #'op)

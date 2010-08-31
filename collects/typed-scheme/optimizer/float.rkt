@@ -28,19 +28,23 @@
                       #'sqrt #'round #'floor #'ceiling #'truncate)))
 
 (define-syntax-class (float-op tbl)
+  #:commit
   (pattern i:id
            #:when (dict-ref tbl #'i #f)
            #:with unsafe (dict-ref tbl #'i)))
 
 (define-syntax-class float-expr
+  #:commit
   (pattern e:expr
            #:when (subtypeof? #'e -Flonum)
            #:with opt ((optimize) #'e)))
 (define-syntax-class int-expr
+  #:commit
   (pattern e:expr
            #:when (subtypeof? #'e -Integer)
            #:with opt ((optimize) #'e)))
 (define-syntax-class real-expr
+  #:commit
   (pattern e:expr
            #:when (subtypeof? #'e -Real)
            #:with opt ((optimize) #'e)))
@@ -48,6 +52,7 @@
 
 ;; generates coercions to floats
 (define-syntax-class float-coerce-expr
+  #:commit
   (pattern e:float-arg-expr
            #:with opt #'e.opt)
   (pattern e:real-expr
@@ -59,6 +64,7 @@
 ;; note: none of the unary operations have types where non-float arguments
 ;;  can result in float (as opposed to real) results
 (define-syntax-class float-arg-expr
+  #:commit
   ;; we can convert literals right away
   (pattern (quote n)
            #:when (exact-integer? (syntax->datum #'n))
@@ -72,6 +78,7 @@
            #:with opt #'e.opt))
 
 (define-syntax-class float-opt-expr
+  #:commit
   (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-expr)
            #:when (subtypeof? this-syntax -Flonum)
            #:with opt

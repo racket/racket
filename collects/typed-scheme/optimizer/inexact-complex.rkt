@@ -338,23 +338,28 @@
            #:with imag-binding #f))
 
 (define-syntax-class inexact-complex-unary-op
+  #:commit
   (pattern (~or (~literal real-part) (~literal flreal-part)) #:with unsafe #'unsafe-flreal-part)
   (pattern (~or (~literal imag-part) (~literal flimag-part)) #:with unsafe #'unsafe-flimag-part))
 
 (define-syntax-class inexact-complex-op
+  #:commit
   (pattern (~or (~literal +) (~literal -) (~literal *) (~literal /) (~literal conjugate))))
 
 (define-syntax-class inexact-complex->float-op
+  #:commit
   (pattern (~or (~literal magnitude)
                 (~literal real-part) (~literal flreal-part) (~literal unsafe-flreal-part)
                 (~literal imag-part) (~literal flimag-part) (~literal unsafe-flimag-part))))
 
 (define-syntax-class inexact-complex-expr
+  #:commit
   (pattern e:expr
            #:when (isoftype? #'e -InexactComplex)
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class inexact-complex-opt-expr
+  #:commit
 
   ;; we can optimize taking the real of imag part of an unboxed complex
   ;; hopefully, the compiler can eliminate unused bindings for the other part if it's not used
@@ -401,6 +406,7 @@
            #:with opt #'e.opt))
 
 (define-syntax-class inexact-complex-arith-opt-expr
+  #:commit
   
   (pattern (#%plain-app op:inexact-complex->float-op e:expr ...)
            #:when (subtypeof? this-syntax -Flonum)
@@ -443,6 +449,7 @@
 ;; and the optimized version of the operator. operators are optimized elsewhere
 ;; to benefit from local information
 (define-syntax-class (inexact-complex-call-site-opt-expr unboxed-info opt-operator)
+  #:commit
   ;; call site of a function with unboxed parameters
   ;; the calling convention is: real parts of unboxed, imag parts, boxed
   (pattern (#%plain-app op:expr args:expr ...)

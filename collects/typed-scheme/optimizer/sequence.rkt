@@ -13,6 +13,7 @@
 
 
 (define-syntax-class list-expr
+  #:commit
   (pattern e:expr
            #:when (match (type-of #'e)
                     [(tc-result1: (Listof: _)) #t]
@@ -22,6 +23,7 @@
 
 ;; unlike other vector optimizations, this works on unknown-length vectors
 (define-syntax-class vector-expr
+  #:commit
   (pattern e:expr
            #:when (match (type-of #'e)
                     [(tc-result1: (Vector: _)) #t]
@@ -30,6 +32,7 @@
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class sequence-opt-expr
+  #:commit
   ;; if we're iterating (with the for macros) over something we know is a list,
   ;; we can generate code that would be similar to if in-list had been used
   (pattern (#%plain-app op:id _ l)

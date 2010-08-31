@@ -9,15 +9,18 @@
 (provide string-opt-expr string-expr bytes-expr)
 
 (define-syntax-class string-expr
+  #:commit
   (pattern e:expr
            #:when (isoftype? #'e -String)
            #:with opt ((optimize) #'e)))
 (define-syntax-class bytes-expr
+  #:commit
   (pattern e:expr
            #:when (isoftype? #'e -Bytes)
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class string-opt-expr
+  #:commit
   (pattern (#%plain-app (~literal string-length) s:string-expr)
            #:with opt
            (begin (log-optimization "string-length" #'op)

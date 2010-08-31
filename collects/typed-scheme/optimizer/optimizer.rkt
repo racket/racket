@@ -15,10 +15,12 @@
 
 
 (define-syntax-class opt-expr
+  #:commit
   (pattern e:opt-expr*
            #:with opt (syntax-recertify #'e.opt this-syntax (current-code-inspector) #f)))
 
 (define-syntax-class opt-expr*
+  #:commit
   #:literal-sets (kernel-literals)
 
   ;; interesting cases, where something is optimized

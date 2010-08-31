@@ -8,6 +8,7 @@
 (provide number-opt-expr)
 
 (define-syntax-class number-opt-expr
+  #:commit
   ;; these cases are all identity
   (pattern (#%plain-app (~and op (~or (~literal +) (~literal *) (~literal min) (~literal max)))
                         f:expr)

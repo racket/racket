@@ -12,11 +12,13 @@
 
 
 (define-syntax-class vector-op
+  #:commit
   ;; we need the * versions of these unsafe operations to be chaperone-safe
   (pattern (~literal vector-ref)  #:with unsafe #'unsafe-vector*-ref)
   (pattern (~literal vector-set!) #:with unsafe #'unsafe-vector*-set!))
 
 (define-syntax-class vector-expr
+  #:commit
   (pattern e:expr
            #:when (match (type-of #'e)
                     [(tc-result1: (HeterogenousVector: _)) #t]
@@ -24,6 +26,7 @@
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class vector-opt-expr
+  #:commit
   ;; vector-length of a known-length vector
   (pattern (#%plain-app (~and op (~or (~literal vector-length)
                                       (~literal unsafe-vector-length)
