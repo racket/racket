@@ -64,12 +64,12 @@
 ;; Splicing
 
 (define-primitive-splicing-syntax-class (foo)
-  #:attrs (z x y)
+  #:attributes (z x y)
   #:description "foo"
   (lambda (stx fail)
     (syntax-case stx ()
       [(a b c . rest)
-       (list #'rest 3 #'a #'b #'c)]
+       (list 3 #'a #'b #'c)]
       [_ (fail)])))
 
 (tok (1 2 3 4) (f:foo 4)
