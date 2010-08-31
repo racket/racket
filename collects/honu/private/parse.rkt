@@ -4,7 +4,7 @@
          "util.ss"
          (for-template "literals.ss")
          syntax/parse
-         syntax/parse/experimental
+         syntax/parse/experimental/splicing
          scheme/splicing
          syntax/stx
          (for-syntax "util.ss")
@@ -34,7 +34,7 @@
        [else (loop (stx-cdr start) (add1 count))]))))
 
 (define-primitive-splicing-syntax-class (honu-expr context)
-  #:attrs (result)
+  #:attributes (result)
   #:description "honu-expr"
   (lambda (stx fail)
     (cond
@@ -42,11 +42,11 @@
      [(get-transformer stx) => (lambda (transformer)
                                  (let-values ([(used rest)
                                                (transformer stx context)])
-                                   (list rest (syntax-object-position stx rest)
+                                   (list (syntax-object-position stx rest)
                                          used)))]
      
      [else (syntax-case stx ()
-                        [(f . rest) (list #'rest 1 #'f)])])))
+                        [(f . rest) (list 1 #'f)])])))
 
     #;
     (define-splicing-syntax-class expr

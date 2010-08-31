@@ -176,17 +176,16 @@ Like @scheme[~reflect] but for reified splicing syntax classes.
            parser-expr)
           #:contracts ([parser (-> syntax?
                                    (->* () ((or/c string? #f) -> any))
-                                   (list syntax? exact-positive-integer? any/c ...))])]{
+                                   (cons/c exact-positive-integer? list?))])]{
 
 Defines a splicing syntax via a procedural parser.
 
 The parser procedure is given two arguments, the syntax to parse and a
 failure procedure. To signal a successful parse, the parser procedure
-returns a list of 2+@scheme[N] elements, where @scheme[N] is the
+returns a list of @scheme[N]+1 elements, where @scheme[N] is the
 number of attributes declared by the splicing syntax class. The first
-two elements are the unconsumed part of the syntax and the size of the
-prefix consumed. The rest of the list contains the values of the
-attributes.
+element is the size of the prefix consumed. The rest of the list
+contains the values of the attributes.
 
 To indicate failure, the parser calls the failure procedure with an
 optional message argument.

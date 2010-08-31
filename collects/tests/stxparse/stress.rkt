@@ -1,3 +1,5 @@
+#lang racket
+
 (begin
   (require syntax/parse)
   (define (mkstx n) (datum->syntax #f (for/list ([i (in-range n)]) #'hello)))
@@ -96,10 +98,11 @@ cpu time: 2908 real time: 2901 gc time: 12
 |#
 
 
-
+#|
 given pattern (E ...) where E = A _ | A
 the sequence (A A B A A B A A B ...)
 causes each E to backtrack
+|#
 
 (begin
   (define-syntax-class id/nat
@@ -131,6 +134,8 @@ causes each E to backtrack
            (syntax->datum #'(y ...))])))))
 
 ;; (solve 35 _) and (solve 36 _) seem manageable
+
+#|
 
 #| before markparams |#
 
@@ -246,3 +251,4 @@ cpu time: 588 real time: 588 gc time: 76
 cpu time: 580 real time: 584 gc time: 68
 > (time (solve 36 20))
 cpu time: 580 real time: 586 gc time: 56
+|#
