@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require (rename-in typed-scheme (#%module-begin #%module-begin-typed-scheme)))
 (require (for-syntax scheme/base

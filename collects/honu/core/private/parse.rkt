@@ -72,9 +72,12 @@
                                   (debug "Transforming honu infix macro ~a\n" (stx-car stx))
                                   (let-values ([(used rest)
                                                 (transformer (introducer full-stx) context)])
-                                    (debug "Result is ~a. Object position is ~a out of expression ~a\n" used (syntax-object-position full-stx (introducer rest)) (syntax->datum full-stx))
-                                    (list (introducer rest) (syntax-object-position full-stx (introducer rest))
-                                          (introducer (used)))))]
+                                    (let ([rest (introducer rest)]
+                                          [position 
+                                            (sub1 (syntax-object-position full-stx (introducer rest)))]
+                                          [parsed (introducer (used))])
+                                    (debug "Result is ~a. Object position is ~a out of expression ~a\n" parsed position (syntax->datum full-stx))
+                                    (list rest position parsed))))]
       [else (fail)])))
 
 (define-primitive-splicing-syntax-class (honu-transformer context)

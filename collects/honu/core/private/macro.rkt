@@ -497,6 +497,7 @@
 
 (define-honu-syntax honu-infix-macro
   (lambda (stx ctx)
+    (debug "Infix macro!\n")
     (define-splicing-syntax-class patterns
                          #:literal-sets ([cruft #:phase (syntax-local-phase-level)])
       #;
