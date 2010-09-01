@@ -26,8 +26,9 @@
          stx-list-drop/cx
 
          let-attributes
-         attribute
+         let-attributes*
          let/unpack
+         attribute
          attribute-binding
          check-list^depth)
 
@@ -164,6 +165,26 @@
                  ()
                . body))))]))
 
+;; (let-attributes* (([id num] ...) (expr ...)) expr) : expr
+;; Special case: empty attrs need not match number of value exprs.
+(define-syntax let-attributes*
+  (syntax-rules ()
+    [(la* (() _) . body)
+     (let () . body)]
+    [(la* ((a ...) (val ...)) . body)
+     (let-attributes ([a val] ...) . body)]))
+
+;; (let/unpack (([id num] ...) expr) expr) : expr
+;; Special case: empty attrs need not match packed length
+(define-syntax (let/unpack stx)
+  (syntax-case stx ()
+    [(let/unpack (() packed) body)
+     #'body]
+    [(let/unpack ((a ...) packed) body)
+     (with-syntax ([(tmp ...) (generate-temporaries #'(a ...))])
+       #'(let-values ([(tmp ...) (apply values packed)])
+           (let-attributes ([a tmp] ...) body)))]))
+
 (define-syntax (attribute stx)
   (parameterize ((current-syntax-context stx))
     (syntax-case stx ()
@@ -179,17 +200,6 @@
              (syntax-property (attribute-mapping-var attr)
                               'disappeared-use
                               #'name))))])))
-
-;; (let/unpack (([id num] ...) expr) expr) : expr
-;; Special case: empty attrs need not match packed length
-(define-syntax (let/unpack stx)
-  (syntax-case stx ()
-    [(let/unpack (() packed) body)
-     #'body]
-    [(let/unpack ((a ...) packed) body)
-     (with-syntax ([(tmp ...) (generate-temporaries #'(a ...))])
-       #'(let-values ([(tmp ...) (apply values packed)])
-           (let-attributes ([a tmp] ...) body)))]))
 
 ;; (attribute-binding id)
 ;; mostly for debugging/testing

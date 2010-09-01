@@ -600,9 +600,10 @@ A syntax class is integrable if
        (define prefix (name->prefix #'name "."))
        (define eh-alt-set (get-eh-alternative-set #'eh-alt-set-id))
        (for/list ([alt (in-list (eh-alternative-set-alts eh-alt-set))])
-         (let ([iattrs (id-pattern-attrs (eh-alternative-attrs alt) prefix)])
+         (let* ([iattrs (id-pattern-attrs (eh-alternative-attrs alt) prefix)]
+                [attr-count (length iattrs)])
            (list (make ehpat (repc-adjust-attrs iattrs (eh-alternative-repc alt))
-                       (create-hpat:var #f (eh-alternative-parser alt) no-arguments iattrs #f)
+                       (create-hpat:var #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f)
                        (eh-alternative-repc alt))
                  (replace-eh-alternative-attrs
                   alt (iattrs->sattrs iattrs))))))]
@@ -692,7 +693,7 @@ A syntax class is integrable if
      (let-values ([(name sc) (split-id/get-stxclass id decls)])
        (if sc
            (parse-pat:var* id allow-head? name sc no-arguments)
-           (create-pat:var name #f no-arguments null #t)))]))
+           (create-pat:var name #f no-arguments null #f #t)))]))
 
 (define (parse-pat:var stx decls allow-head?)
   (define name0
@@ -737,7 +738,7 @@ A syntax class is integrable if
                                              (arguments-kws argu))])
            (parse-pat:var* stx allow-head? name0 sc argu pfx))]
         [else ;; Just proper name
-         (create-pat:var name0 #f (arguments null null null) null #t)]))
+         (create-pat:var name0 #f (arguments null null null) null #f #t)]))
 
 (define (parse-pat:var* stx allow-head? name sc argu [pfx "."])
   (check-no-delimit-cut-in-not stx (stxclass-delimit-cut? sc))
@@ -763,7 +764,7 @@ A syntax class is integrable if
 (define (parse-pat:id/s name parser argu attrs commit? [pfx "."])
   (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
-  (create-pat:var bind parser argu (id-pattern-attrs attrs prefix) commit?))
+  (create-pat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit?))
 
 (define (parse-pat:id/s/integrate name integrate argu)
   (define bind (name->bind name))
@@ -774,7 +775,7 @@ A syntax class is integrable if
 (define (parse-pat:id/h name parser argu attrs commit? [pfx "."])
   (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
-  (create-hpat:var bind parser argu (id-pattern-attrs attrs prefix) commit?))
+  (create-hpat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit?))
 
 (define (name->prefix id pfx)
   (cond [(wildcard? id) #f]

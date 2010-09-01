@@ -21,7 +21,7 @@ A Base is (listof IAttr)
 #|
 A SinglePattern is one of
   (pat:any Base)
-  (pat:var Base id id Arguments (listof IAttr) bool)
+  (pat:var Base id id Arguments (listof IAttr) nat/#f bool)
   (pat:literal Base identifier ct-phase ct-phase)
   (pat:datum Base datum)
   (pat:action Base ActionPattern SinglePattern)
@@ -50,7 +50,7 @@ A ListPattern is a subtype of SinglePattern; one of
 |#
 
 (define-struct pat:any (attrs) #:prefab)
-(define-struct pat:var (attrs name parser argu nested-attrs commit?) #:prefab)
+(define-struct pat:var (attrs name parser argu nested-attrs attr-count commit?) #:prefab)
 (define-struct pat:literal (attrs id input-phase lit-phase) #:prefab)
 (define-struct pat:datum (attrs datum) #:prefab)
 (define-struct pat:action (attrs action inner) #:prefab)
@@ -93,7 +93,7 @@ action:and is desugared below in create-* procedures
 
 #|
 A HeadPattern is one of 
-  (hpat:var Base id id Arguments (listof IAttr) bool)
+  (hpat:var Base id id Arguments (listof IAttr) nat/#f bool)
   (hpat:seq Base ListPattern)
   (hpat:action Base ActionPattern HeadPattern)
   (hpat:and Base HeadPattern SinglePattern)
@@ -106,7 +106,7 @@ A HeadPattern is one of
   (hpat:post Base HeadPattern)
 |#
 
-(define-struct hpat:var (attrs name parser argu nested-attrs commit?) #:prefab)
+(define-struct hpat:var (attrs name parser argu nested-attrs attr-count commit?) #:prefab)
 (define-struct hpat:seq (attrs inner) #:prefab)
 (define-struct hpat:action (attrs action inner) #:prefab)
 (define-struct hpat:and (attrs head single) #:prefab)
@@ -231,10 +231,10 @@ A SideClause is one of
 (define (create-pat:any)
   (make pat:any null))
 
-(define (create-pat:var name parser argu nested-attrs commit?)
+(define (create-pat:var name parser argu nested-attrs attr-count commit?)
   (let ([attrs
          (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make pat:var attrs name parser argu nested-attrs commit?)))
+    (make pat:var attrs name parser argu nested-attrs attr-count commit?)))
 
 (define (create-pat:reflect obj argu attr-decls name nested-attrs)
   (let ([attrs
@@ -328,10 +328,10 @@ A SideClause is one of
 
 ;; ----
 
-(define (create-hpat:var name parser argu nested-attrs commit?)
+(define (create-hpat:var name parser argu nested-attrs attr-count commit?)
   (let ([attrs
          (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make hpat:var attrs name parser argu nested-attrs commit?)))
+    (make hpat:var attrs name parser argu nested-attrs attr-count commit?)))
 
 (define (create-hpat:reflect obj argu attr-decls name nested-attrs)
   (let ([attrs

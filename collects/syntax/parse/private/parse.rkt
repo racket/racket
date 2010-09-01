@@ -239,38 +239,38 @@ Conventions:
             k)]
        [#s(pat:any _attrs)
         #'k]
-       [#s(pat:var _attrs name #f _ () _)
+       [#s(pat:var _attrs name #f _ () _ _)
         #'(let-attributes ([#s(attr name 0 #t) (datum->syntax cx x cx)])
             k)]
-       [#s(pat:var _attrs name parser argu (nested-a ...) commit?)
-        (with-syntax ([(name-attr ...)
+       [#s(pat:var _attrs name parser argu (nested-a ...) attr-count commit?)
+        (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
+                      [(name-attr ...)
                        (if (identifier? #'name)
                            #'([#s(attr name 0 #t) (datum->syntax cx x cx)])
                            #'())])
           (if (not (syntax-e #'commit?))
               ;; The normal protocol
               #'(app-argu parser x cx pr es fail-handler cut-prompt
-                          (lambda (fh cp . result)
+                          (lambda (fh cp av ...)
                             (let-attributes (name-attr ...)
-                              (let/unpack ((nested-a ...) result)
+                              (let-attributes* ((nested-a ...) (av ...))
                                 (with ([fail-handler fh]
                                        [cut-prompt cp])
                                   k))))
                           argu)
               ;; The commit protocol
               ;; (Avoids putting k in procedure)
-              #'(let ([result
-                       (with ([fail-handler (lambda (fs) (cons 'fail fs))])
-                         (with ([cut-prompt fail-handler])
-                           (app-argu parser x cx pr es fail-handler cut-prompt
-                                     (lambda (fh cp . result) (cons 'ok result))
-                                     argu)))])
-                  (case (car result)
-                    ((fail) (fail (cdr result)))
-                    ((ok)
-                     (let-attributes (name-attr ...)
-                       (let/unpack ((nested-a ...) (cdr result))
-                         k)))))))]
+              #'(let-values ([(fs av ...)
+                              (with ([fail-handler (lambda (fs) (values fs (let ([av #f]) av) ...))])
+                                (with ([cut-prompt fail-handler])
+                                  (app-argu parser x cx pr es fail-handler cut-prompt
+                                            (lambda (fh cp av ...) (values #f av ...))
+                                            argu)))])
+                  (if fs
+                      (fail fs)
+                      (let-attributes (name-attr ...)
+                        (let-attributes* ((nested-a ...) (av ...))
+                          k))))))]
        [#s(pat:reflect _attrs obj argu attr-decls name (nested-a ...))
         (with-syntax ([(name-attr ...)
                        (if (identifier? #'name)
@@ -496,8 +496,9 @@ Conventions:
        [#s(hpat:describe _ description transparent? pattern)
         #`(let ([es (cons (cons (expect:thing description transparent?) x) es)])
             (parse:H x cx rest-x rest-cx rest-pr pattern pr es k))]
-       [#s(hpat:var _attrs name parser argu (nested-a ...) commit?)
-        (with-syntax ([(name-attr ...)
+       [#s(hpat:var _attrs name parser argu (nested-a ...) attr-count commit?)
+        (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
+                      [(name-attr ...)
                        (if (identifier? #'name)
                            #'([#s(attr name 0 #t)
                                (stx-list-take x (ps-difference pr rest-pr))])
@@ -505,34 +506,27 @@ Conventions:
           (if (not (syntax-e #'commit?))
               ;; The normal protocol
               #`(app-argu parser x cx pr es fail-handler cut-prompt
-                          (lambda (fh cp rest-x rest-cx rest-pr . result)
+                          (lambda (fh cp rest-x rest-cx rest-pr av ...)
                             (let-attributes (name-attr ...)
-                              (let/unpack ((nested-a ...) result)
+                              (let-attributes* ((nested-a ...) (av ...))
                                 (with ([fail-handler fh]
                                        [cut-prompt cp])
                                   k))))
                           argu)
               ;; The commit protocol
               ;; (Avoids putting k in procedure)
-              #'(let ([result
-                       (with ([fail-handler (lambda (fs) (cons 'fail fs))])
-                         (with ([cut-prompt fail-handler])
-                           (app-argu parser x cx pr es fail-handler cut-prompt
-                                     (lambda result (cons 'ok result))
-                                     argu)))])
-                  (case (car result)
-                    ((fail) (fail (cdr result)))
-                    ((ok)
-                     (let ([_fh (car result)]
-                           [_cp (cadr result)]
-                           [result (cddr result)])
-                       (let ([rest-x (cadr result)]
-                             [rest-cx (caddr result)]
-                             [rest-pr (cadddr result)]
-                             [result (cddddr result)])
-                         (let-attributes (name-attr ...)
-                           (let/unpack ((nested-a ...) result)
-                             k)))))))))]
+              #'(let-values ([(fs rest-x rest-cx rest-pr av ...)
+                              (with ([fail-handler (lambda (fs) (values fs #f #f #f (let ([av #f]) av) ...))])
+                                (with ([cut-prompt fail-handler])
+                                  (app-argu parser x cx pr es fail-handler cut-prompt
+                                            (lambda (fh cp rest-x rest-cx rest-pr av ...)
+                                              (values #f rest-x rest-cx rest-pr av ...))
+                                            argu)))])
+                  (if fs
+                      (fail fs)
+                      (let-attributes (name-attr ...)
+                        (let-attributes* ((nested-a ...) (av ...))
+                          k))))))]
        [#s(hpat:reflect _attrs obj argu attr-decls name (nested-a ...))
         (with-syntax ([(name-attr ...)
                        (if (identifier? #'name)
