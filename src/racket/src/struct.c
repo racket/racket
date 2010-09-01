@@ -5176,7 +5176,9 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_proxy, int ar
       if (is_proxy) {
         /* Must not be an immutable field. */
         if (stype->immutables) {
-          if (stype->immutables[pi->field])
+          if (stype->immutables[pi->field - (pi->struct_type->name_pos 
+                                             ? pi->struct_type->parent_types[pi->struct_type->name_pos - 1]->num_slots 
+                                             : 0)])
             scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                              "%s: cannot replace %s for an immutable field: %V",
                              name,
