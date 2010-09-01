@@ -178,38 +178,3 @@ As far I know no-one uses this macro, so it might disappear
 in future versions of RackUnit.}
 }
 
-
-@section{Compound Testing Evaluation Context}
-
-Just like with checks, there are several parameters that
-control the semantics of compound testing forms.
-
-@defparam[current-test-name name (or/c string? false/c)]{
-
-This parameter stores the name of the current test case.  A
-value of @racket[#f] indicates a test case with no name,
-such as one constructed by @racket[test-begin].  }
-
-@defparam[current-test-case-around handler (-> (-> any/c) any/c)]{
-
-This parameter handles evaluation of test cases.  The value
-of the parameter is a function that is passed a thunk (a
-function of no arguments). The function, when applied,
-evaluates the expressions within a test case.  The default
-value of the @racket[current-test-case-around] parameters
-evaluates the thunk in a context that catches exceptions and
-prints an appropriate message indicating test case failure.}
-
-@defproc[(test-suite-test-case-around [thunk (-> any/c)]) any/c]{
-
-The @racket[current-test-case-around] parameter is
-parameterized to this value within the scope of a
-@racket[test-suite].  This function creates a test case
-structure instead of immediately evaluating the thunk.}
-
-@defproc[(test-suite-check-around [thunk (-> any/c)]) any/c]{
-
-The @racket[current-check-around] parameter is parameterized
-to this value within the scope of a @racket[test-suite].
-This function creates a test case structure instead of
-immediately evaluating a check.}

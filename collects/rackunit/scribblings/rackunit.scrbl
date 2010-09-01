@@ -15,6 +15,7 @@ from novices to experts.
 @include-section["quick-start.scrbl"]
 @include-section["philosophy.scrbl"]
 @include-section["api.scrbl"]
+@include-section["internals.scrbl"]
 @include-section["release-notes.scrbl"]
 @include-section["acknowledgements.scrbl"]
 

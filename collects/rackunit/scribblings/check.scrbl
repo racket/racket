@@ -372,27 +372,3 @@ The @racket[fail-check] macro raises an @racket[exn:test:check] with
 the contents of the check information stack.
 
 }
-
-
-@section{The Check Evaluation Context}
-
-The semantics of checks are determined by the parameters
-@racket[current-check-around] and
-@racket[current-check-handler].  Other testing form such as
-@racket[test-begin] and @racket[test-suite] change the value
-of these parameters.
-
-@defparam[current-check-handler handler (-> any/c any/c)]{
-
-Parameter containing the function that handles exceptions
-raised by check failures.  The default value is @racket[raise].  }
-
-@defparam[current-check-around check (-> thunk any/c)]{
-
-Parameter containing the function that handles the execution
-of checks.  The default value wraps the evaluation of
-@racket[thunk] in a @racket[with-handlers] call that calls
-@racket[current-check-handler] if an exception is raised and then
-(when an exception is not raised) discards the result, returning
-@racket[(void)]. 
-}
