@@ -3509,7 +3509,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
            that's not available yet, or that's mutable. */
         int vpos;
         vpos = SCHEME_LOCAL_POS(value);
-        if ((vpos < head->count) && !pos_EARLIER(vpos, pos))
+        if (!post_bind && (vpos < head->count) && !pos_EARLIER(vpos, pos))
           value = NULL;
         else {
           /* Convert value back to a pre-optimized local coordinates.
