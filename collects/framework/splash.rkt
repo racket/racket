@@ -72,8 +72,8 @@
      (splash-paint-callback dc)]
     [else 
      (splash-paint-callback dc 
-                            (send gauge get-value) 
-                            (send gauge get-range)
+                            (send (get-gauge) get-value) 
+                            (send (get-gauge) get-range)
                             (get-splash-width)
                             (get-splash-height))])
   (for-each (λ (icon)
@@ -88,7 +88,7 @@
 
 (define (set-splash-progress-bar?! b?) 
   (send gauge-panel change-children
-        (λ (l) (if b? (list gauge) '()))))
+        (λ (l) (if b? (list (get-gauge)) '()))))
 
 (define (splash-paint-callback dc)
   (if splash-bitmap
@@ -107,10 +107,11 @@
   (set! icons (cons (make-icon bm x y) icons))
   (refresh-splash))
 
-(define (start-splash splash-draw-spec _splash-title width-default)
+(define (start-splash splash-draw-spec _splash-title width-default #:allow-funny? [allow-funny? #f])
+  (unless allow-funny? (set! funny? #f))
   (set! splash-title _splash-title)
   (set! splash-max-width (max 1 (splash-get-preference (get-splash-width-preference-name) width-default)))
-  (send gauge set-range splash-max-width)
+  (send (get-gauge) set-range splash-max-width)
   (send splash-tlw set-label splash-title)
   (let/ec k
     (define (no-splash)
@@ -188,8 +189,8 @@
 (define (splash-load-handler old-load f expected)
   (set! splash-current-width (+ splash-current-width 1))
   (when (<= splash-current-width splash-max-width)
-    (send gauge set-value splash-current-width)
-    (when (or (not (member gauge (send gauge-panel get-children)))
+    (send (get-gauge) set-value splash-current-width)
+    (when (or (not (member (get-gauge) (send gauge-panel get-children)))
               ;; when the gauge is not visible, we'll redraw the canvas
               (refresh-splash-on-gauge-change? splash-current-width splash-max-width))
       (refresh-splash)))
@@ -303,10 +304,15 @@
 (define panel (make-object vertical-pane% splash-tlw))
 (define splash-canvas (new splash-canvas% [parent panel] [style '(no-autoclear)]))
 (define gauge-panel (make-object horizontal-pane% panel))
-(define gauge
-  (if funny?
-      (make-object funny-gauge% gauge-panel)
-      (make-object gauge% #f splash-max-width gauge-panel '(horizontal))))
+(define get-gauge
+  (let ([gauge #f])
+    (λ ()
+      (unless gauge
+        (set! gauge
+              (if funny?
+                  (make-object funny-gauge% gauge-panel)
+                  (make-object gauge% #f splash-max-width gauge-panel '(horizontal)))))
+      gauge)))
 (send panel stretchable-width #f)
 (send panel stretchable-height #f)
 (send gauge-panel set-alignment 'center 'top)

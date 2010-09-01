@@ -118,7 +118,8 @@
    [else
     (collection-file-path "plt-flat.gif" "icons")])
  "DrRacket"
- 99)
+ 99
+ #:allow-funny? #t)
 
 (when (getenv "PLTDRBREAK")
   (printf "PLTDRBREAK: creating break frame\n") (flush-output)
