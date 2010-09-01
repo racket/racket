@@ -756,12 +756,15 @@ Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
 
 typedef struct Scheme_Chaperone {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* 0x1 => proxy, rather than a checking chaperone */
   Scheme_Object *val;  /* root object */
   Scheme_Object *prev; /* immediately chaperoned object */
   Scheme_Hash_Tree *props;
   Scheme_Object *redirects; /* specific to the type of chaperone and root object */
 } Scheme_Chaperone;
+
+#define SCHEME_CHAPERONE_FLAGS(c) MZ_OPT_HASH_KEY(&(c)->iso)
+#define SCHEME_CHAPERONE_IS_PROXY 0x1
 
 #define SCHEME_CHAPERONE_VAL(obj) (((Scheme_Chaperone *)obj)->val)
 

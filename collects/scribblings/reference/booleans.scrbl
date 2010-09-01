@@ -40,7 +40,7 @@ Two values are @scheme[equal?] if and only if they are @scheme[eqv?],
 unless otherwise specified for a particular datatype.
 
 Datatypes with further specification of @scheme[equal?] include
-strings, byte strings, numbers, pairs, mutable pairs, vectors, hash
+strings, byte strings, numbers, pairs, mutable pairs, vectors, boxes, hash
 tables, and inspectable structures. In the last five cases, equality
 is recursively defined; if both @scheme[v1] and @scheme[v2] contain
 reference cycles, they are equal when the infinite unfoldings of the

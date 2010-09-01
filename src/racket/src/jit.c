@@ -6223,10 +6223,10 @@ static int generate_inlined_constant_test(mz_jit_state *jitter, Scheme_App2_Rec 
 }
 
 static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app,
-				      Scheme_Type lo_ty, Scheme_Type hi_ty,  int can_chaperone,
+				      Scheme_Type lo_ty, Scheme_Type hi_ty, int can_chaperone,
 				      Branch_Info *for_branch, int branch_short, int need_sync)
 {
-  GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4;
+  GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *ref5;
   int int_ok;
 
   int_ok = ((lo_ty <= scheme_integer_type) && (scheme_integer_type <= hi_ty));
@@ -6253,10 +6253,11 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
     ref3 = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
     ref4 = NULL;
     ref = NULL;
+    ref5 = NULL;
   } else {
     ref = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
     jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
-    if (can_chaperone) {
+    if (can_chaperone > 0) {
       __START_INNER_TINY__(branch_short);
       ref3 = jit_bnei_i(jit_forward(), JIT_R1, scheme_chaperone_type);
       jit_ldxi_p(JIT_R1, JIT_R0, (long)&((Scheme_Chaperone *)0x0)->val);
@@ -6272,6 +6273,12 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
       ref3 = jit_blti_p(jit_forward(), JIT_R1, lo_ty);
       ref4 = jit_bgti_p(jit_forward(), JIT_R1, hi_ty);
     }
+    if (can_chaperone < 0) {
+      /* Make sure it's not a proxy */
+      jit_ldxi_s(JIT_R1, JIT_R0, (long)&SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)0x0));
+      ref5 = jit_bmsi_i(jit_forward(), JIT_R1, SCHEME_CHAPERONE_IS_PROXY);
+    } else
+      ref5 = NULL;
     if (int_ok) {
       mz_patch_branch(ref);
     }
@@ -6282,6 +6289,7 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
     }
     add_branch_false(for_branch, ref3);
     add_branch_false(for_branch, ref4);
+    add_branch_false(for_branch, ref5);
     branch_for_true(jitter, for_branch);
     CHECK_LIMIT();
   } else {
@@ -6293,6 +6301,9 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
     mz_patch_branch(ref3);
     if (ref4) {
       mz_patch_branch(ref4);
+    }
+    if (ref5) {
+      mz_patch_branch(ref5);
     }
     (void)jit_movi_p(JIT_R0, scheme_false);
     mz_patch_ucbranch(ref2);
@@ -6441,6 +6452,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     generate_inlined_type_test(jitter, app, scheme_prim_type, scheme_proc_chaperone_type, 1, for_branch, branch_short, need_sync);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "chaperone?")) {
+    generate_inlined_type_test(jitter, app, scheme_proc_chaperone_type, scheme_chaperone_type, -1, for_branch, branch_short, need_sync);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "proxy?")) {
     generate_inlined_type_test(jitter, app, scheme_proc_chaperone_type, scheme_chaperone_type, 0, for_branch, branch_short, need_sync);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "vector?")) {

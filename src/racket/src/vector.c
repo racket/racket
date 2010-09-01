@@ -45,6 +45,7 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv);
+static Scheme_Object *proxy_vector(int argc, Scheme_Object **argv);
 
 static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[]);
@@ -144,6 +145,11 @@ scheme_init_vector (Scheme_Env *env)
   scheme_add_global_constant("chaperone-vector",
                              scheme_make_prim_w_arity(chaperone_vector,
                                                       "chaperone-vector",
+                                                      3, -1),
+                             env);
+  scheme_add_global_constant("proxy-vector",
+                             scheme_make_prim_w_arity(proxy_vector,
+                                                      "proxy-vector",
                                                       3, -1),
                              env);
 }
@@ -419,11 +425,12 @@ Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i)
     red = SCHEME_CAR(px->redirects);
     o = _scheme_apply(red, 3, a);
 
-    if (!scheme_chaperone_of(o, orig))
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "vector-ref: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                       o, 
-                       orig);
+    if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY))
+      if (!scheme_chaperone_of(o, orig))
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "vector-ref: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                         o, 
+                         orig);
 
     return o;
   }
@@ -473,11 +480,12 @@ void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v)
       red = SCHEME_CDR(px->redirects);
       v = _scheme_apply(red, 3, a);
 
-      if (!scheme_chaperone_of(v, a[2]))
-        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                         "vector-set!: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                         v, 
-                         a[2]);
+      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY))
+        if (!scheme_chaperone_of(v, a[2]))
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                           "vector-set!: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                           v, 
+                           a[2]);
     }
   }
 }
@@ -792,7 +800,7 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
   return SCHEME_MULTIPLE_VALUES;
 }
 
-static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv)
+static Scheme_Object *do_chaperone_vector(const char *name, int is_proxy, int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
@@ -802,23 +810,37 @@ static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv)
   if (SCHEME_CHAPERONEP(val))
     val = SCHEME_CHAPERONE_VAL(val);
 
-  if (!SCHEME_VECTORP(val))
-    scheme_wrong_type("chaperone-vector", "vector", 0, argc, argv);
-  scheme_check_proc_arity("chaperone-vector", 3, 1, argc, argv);
-  scheme_check_proc_arity("chaperone-vector", 3, 2, argc, argv);
+  if (!SCHEME_VECTORP(val)
+      || (is_proxy && !SCHEME_MUTABLEP(val)))
+    scheme_wrong_type(name, is_proxy ? "mutable vector" : "vector", 0, argc, argv);
+  scheme_check_proc_arity(name, 3, 1, argc, argv);
+  scheme_check_proc_arity(name, 3, 2, argc, argv);
 
-  props = scheme_parse_chaperone_props("chaperone-vector", 3, argc, argv);
+  props = scheme_parse_chaperone_props(name, 3, argc, argv);
 
   redirects = scheme_make_pair(argv[1], argv[2]);
   
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
-  px->so.type = scheme_chaperone_type;
+  px->iso.so.type = scheme_chaperone_type;
   px->props = props;
   px->val = val;
   px->prev = argv[0];
   px->redirects = redirects;
 
+  if (is_proxy)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_PROXY;
+
   return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_vector("chaperone-vector", 0, argc, argv);
+}
+
+static Scheme_Object *proxy_vector(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_vector("proxy-vector", 1, argc, argv);
 }
 
 /************************************************************/

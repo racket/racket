@@ -545,6 +545,7 @@ EXPORTS
  scheme_eqv
  scheme_equal
  scheme_chaperone_of
+ scheme_proxy_of
  scheme_hash_key
  scheme_equal_hash_key
  scheme_equal_hash_key2

@@ -599,6 +599,7 @@
   scheme_extension_table->scheme_eqv = scheme_eqv;
   scheme_extension_table->scheme_equal = scheme_equal;
   scheme_extension_table->scheme_chaperone_of = scheme_chaperone_of;
+  scheme_extension_table->scheme_proxy_of = scheme_proxy_of;
 #ifdef MZ_PRECISE_GC
   scheme_extension_table->scheme_hash_key = scheme_hash_key;
 #endif

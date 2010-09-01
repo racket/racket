@@ -174,6 +174,7 @@ static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[]);
+static Scheme_Object *proxy_procedure(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_result_arity (int argc, Scheme_Object *argv[]);
@@ -527,6 +528,11 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("chaperone-procedure",
 			     scheme_make_prim_w_arity(chaperone_procedure,
 						      "chaperone-procedure",
+						      2, -1),
+			     env);
+  scheme_add_global_constant("proxy-procedure",
+			     scheme_make_prim_w_arity(proxy_procedure,
+						      "proxy-procedure",
 						      2, -1),
 			     env);
 
@@ -4061,7 +4067,8 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
   return scheme_false;
 }
 
-static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
+static Scheme_Object *do_chaperone_procedure(const char *name, const char *whating,
+                                             int is_proxy, int argc, Scheme_Object *argv[])
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0], *orig, *naya;
@@ -4071,30 +4078,44 @@ static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
     val = SCHEME_CHAPERONE_VAL(val);
 
   if (!SCHEME_PROCP(val))
-    scheme_wrong_type("chaperone-procedure", "procedure", 0, argc, argv);
+    scheme_wrong_type(name, "procedure", 0, argc, argv);
   if (!SCHEME_PROCP(argv[1]))
-    scheme_wrong_type("chaperone-procedure", "procedure", 1, argc, argv);
+    scheme_wrong_type(name, "procedure", 1, argc, argv);
 
   orig = get_or_check_arity(val, -1, NULL);
   naya = get_or_check_arity(argv[1], -1, NULL);
 
   if (!is_subarity(orig, naya))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "chaperone-procedure: arity of chaperoning procedure: %V"
+                     "%s: arity of %s procedure: %V"
                      " does not cover arity of original procedure: %V",
+                     name, whating,
                      argv[1],
                      argv[0]);
 
-  props = scheme_parse_chaperone_props("chaperone-procedure", 2, argc, argv);
+  props = scheme_parse_chaperone_props(name, 2, argc, argv);
 
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
-  px->so.type = scheme_proc_chaperone_type;
+  px->iso.so.type = scheme_proc_chaperone_type;
   px->val = val;
   px->prev = argv[0];
   px->props = props;
   px->redirects = argv[1];
 
+  if (is_proxy)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_PROXY;
+
   return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_procedure("chaperone-procedure", "chaperoning", 0, argc, argv);
+}
+
+static Scheme_Object *proxy_procedure(int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_procedure("proxy-procedure", "proxying", 1, argc, argv);
 }
 
 static Scheme_Object *apply_chaperone_k(void)
@@ -4135,6 +4156,7 @@ static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Obje
 
 Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
 {
+  const char *what;
   Scheme_Chaperone *px = (Scheme_Chaperone *)o;
   Scheme_Object *v, *a[1], *a2[3], **argv2, *post, *result_v;
   int c, i, need_restore = 0;
@@ -4154,6 +4176,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     }
   }
 
+  if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY))
+    what = "chaperone";
+  else
+    what = "proxy";
+
   /* Ensure that the original procedure accepts `argc' arguments: */
   a[0] = px->prev;
   if (!scheme_check_proc_arity(NULL, argc, 0, 0, a)) {
@@ -4162,7 +4189,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
        in case the methodness of the original procedure is different
        from the chaperone, or in case the procedures have different names. */
     (void)_scheme_apply_multi(px->prev, argc, argv);
-    scheme_signal_error("internal error: unexpected success applying chaperoned procedure");
+    scheme_signal_error("internal error: unexpected success applying chaperoned/proxied procedure");
     return NULL;
   }
 
@@ -4185,24 +4212,27 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       memmove(argv2, argv2 + 1, sizeof(Scheme_Object*)*argc);
     } else
       post = NULL;
-    for (i = 0; i < argc; i++) {
-      if (!scheme_chaperone_of(argv2[i], argv[i])) {
-        if (argc == 1)
-          scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                           "procedure chaperone: %V: result: %V is not a chaperone of argument: %V",
-                           px->redirects,
-                           argv2[i], argv[i]);
-        else
-          scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                           "procedure chaperone: %V: %d%s result: %V is not a chaperone of argument: %V",
-                           px->redirects,
-                           i, scheme_number_suffix(i),
-                           argv2[i], argv[i]);
+    if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY)) {
+      for (i = 0; i < argc; i++) {
+        if (!scheme_chaperone_of(argv2[i], argv[i])) {
+          if (argc == 1)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "procedure chaperone: %V: result: %V is not a chaperone of argument: %V",
+                             px->redirects,
+                             argv2[i], argv[i]);
+          else
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "procedure chaperone: %V: %d%s result: %V is not a chaperone of argument: %V",
+                             px->redirects,
+                             i, scheme_number_suffix(i),
+                             argv2[i], argv[i]);
+        }
       }
     }
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                     "procedure chaperone: %V: returned %d values, expected %d or %d",
+                     "procedure %s: %V: returned %d values, expected %d or %d",
+                     what,
                      px->redirects,
                      c, argc, argc + 1);
     return NULL;
@@ -4232,7 +4262,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     /* First element is a filter for the result(s) */
     if (!SCHEME_PROCP(post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure chaperone: %V: expected <procedure> as first result, produced: %V",
+                       "procedure %s: %V: expected <procedure> as first result, produced: %V",
+                       what,
                        px->redirects,
                        post);
     if (auto_val) {
@@ -4277,24 +4308,27 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     }
 
     if (c == argc) {
-      for (i = 0; i < argc; i++) {
-        if (!scheme_chaperone_of(argv2[i], argv[i])) {
-          if (argc == 1)
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                             "procedure-result chaperone: %V: result: %V is not a chaperone of original result: %V",
-                             post,
-                             argv2[i], argv[i]);
-          else
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                             "procedure-result chaperone: %V: %d%s result: %V is not a chaperone of original result: %V",
-                             post,
-                             i, scheme_number_suffix(i),
-                             argv2[i], argv[i]);
+      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY)) {
+        for (i = 0; i < argc; i++) {
+          if (!scheme_chaperone_of(argv2[i], argv[i])) {
+            if (argc == 1)
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                               "procedure-result chaperone: %V: result: %V is not a chaperone of original result: %V",
+                               post,
+                               argv2[i], argv[i]);
+            else
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                               "procedure-result chaperone: %V: %d%s result: %V is not a chaperone of original result: %V",
+                               post,
+                               i, scheme_number_suffix(i),
+                               argv2[i], argv[i]);
+          }
         }
       }
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                       "procedure-result chaperone: %V: returned %d values, expected %d",
+                       "procedure-result %s: %V: returned %d values, expected %d",
+                       what,
                        post,
                        argc, c);
       return NULL;

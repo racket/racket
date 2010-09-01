@@ -866,6 +866,7 @@ int (*scheme_eq)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_eqv)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_equal)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_chaperone_of)(Scheme_Object *obj1, Scheme_Object *obj2);
+int (*scheme_proxy_of)(Scheme_Object *obj1, Scheme_Object *obj2);
 #ifdef MZ_PRECISE_GC
 long (*scheme_hash_key)(Scheme_Object *o);
 #endif

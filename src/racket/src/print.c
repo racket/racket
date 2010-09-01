@@ -2590,6 +2590,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_utf8_string(pp, ">", 0, 1);
       }
     }
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_chaperone_type))
+    { 
+      /* some kind of chaperone that doesn't normally print */
+      closed = print(SCHEME_CHAPERONE_VAL(obj), notdisplay, compact, ht, mt, pp);
+    }
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_regexp_type))
     {
        if (compact) {
