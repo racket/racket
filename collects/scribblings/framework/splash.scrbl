@@ -33,7 +33,12 @@ that number to control the gauge along the bottom of the splash screen.
   The @racket[draw-spec] determines what the splash window contains. 
   The @racket[splash-title] is used as the title of the window and the @racket[width-default] determines
   how many progress steps the gauge in the the splash screen should
-  contain (if there is no preference saved for the splash screen width; see @racket[set-splash-width-preference-name]).
+  contain if there is no preference saved for the splash screen width.
+  The splash library uses @racket[get-preference] and @racket[put-preferences]
+  to store preferences, using 
+  @racketblock[(string->symbol (format "plt:~a-splash-max-width" splash-title))]
+  as the key for the preference. Each time the app starts up, the maximum width 
+  is reset based on the number of files that were loaded that time.
   
   If the @racket[draw-spec] is a @racket[path-string?], then the path is expected to be a file
   that contains a bitmap that is drawn as the contents of the splash screen. If @racket[draw-spec]
