@@ -100,7 +100,7 @@
    [(and valentines-day? high-color?)
     (collection-file-path "heart.png" "icons")]
    [(and (or prince-kuhio-day? kamehameha-day?) high-color?)
-    (set-splash-progress-bar? #f)
+    (set-splash-progress-bar?! #f)
     (let ([size ((dynamic-require 'drracket/private/palaka 'palaka-pattern-size) 4)])
       (vector (dynamic-require 'drracket/private/honu-logo 'draw-honu) 
               size 

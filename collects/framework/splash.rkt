@@ -14,7 +14,7 @@
          shutdown-splash
          close-splash
          add-splash-icon
-         set-splash-progress-bar?
+         set-splash-progress-bar?!
          set-splash-char-observer
          set-splash-event-callback
          get-splash-event-callback
@@ -86,7 +86,7 @@
                     (send (icon-bm icon) get-loaded-mask)))
             icons))
 
-(define (set-splash-progress-bar? b?) 
+(define (set-splash-progress-bar?! b?) 
   (send gauge-panel change-children
         (λ (l) (if b? (list gauge) '()))))
 

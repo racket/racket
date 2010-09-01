@@ -78,6 +78,14 @@ The precise set of exported names is:
 @racket[preferences:set-un/marshall], and
 @racket[preferences:restore-defaults].
 }
+
+@item{@bold{Splash Screen}
+       @racket[(require @#,racketmodname[framework/splash])]
+       
+       This library provides support for a splash screen. See
+       @racketmodname[framework/splash] for more.
+}
+
 @item{@bold{Decorated Editor Snip}
 @racket[(require framework/decorated-editor-snip)]
 
@@ -123,6 +131,7 @@ their feedback and help.
 @include-section["preferences-text.scrbl"]
 @include-section["scheme.scrbl"]
 @include-section["text.scrbl"]
+@include-section["splash.scrbl"]
 @include-section["test.scrbl"]
 @include-section["version.scrbl"]
 
