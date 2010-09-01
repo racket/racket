@@ -23,7 +23,7 @@ that number to control the gauge along the bottom of the splash screen.
                                                   exact-nonnegative-integer?))]
                        [splash-title string?]
                        [width-default exact-nonnegative-integer?]
-                       #:allow-funny? [allow-funny? #f])
+                       [#:allow-funny? allow-funny? boolean? #f])
          void?]{
   Starts a new splash screen. The splash screen is created in its own, new 
   @tech[#:doc '(lib "scribblings/gui/gui.scrbl") #:key "eventspace"]{eventspace}.
