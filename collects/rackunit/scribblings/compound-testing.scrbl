@@ -48,9 +48,37 @@ so the test can be named.
 
 
 @defproc[(test-case? (obj any)) boolean?]{
- True if @racket[obj] is a test case, and false otherwise
+ True if @racket[obj] is a test case, and false otherwise.
 }
 
+@subsection{Shortcuts for Defining Test Cases}
+
+@defproc*[([(test-check [name string?]
+                        [operator (-> any/c any/c any/c)]
+                        [v1 any/c]
+                        [v2 any/c])
+            void?]
+           [(test-pred [name string?]
+                       [pred (-> any/c any/c)]
+                       [v any/c])
+            void?]
+           [(test-equal? [name string?] [v1 any/c] [v2 any/c]) (void?)]
+           [(test-eq? [name string?] [v1 any/c] [v2 any/c]) void?]
+           [(test-eqv? [name string?] [v1 any/c] [v2 any/c]) void?]
+           [(test-= [name string?] [v1 real?] [v2 real?] [epsilon real?]) void?]
+           [(test-true [name string?] [v any/c]) void?]
+           [(test-false [name string?] [v any/c]) void?]
+           [(test-not-false [name string?] [v any/c]) void?]
+           [(test-exn [name string?] [pred (-> exn? any/c)] [thunk (-> any)]) void?]
+           [(test-not-exn [name string?] [thunk (-> any)]) void?])]{
+
+Creates a test case with the given @racket[name] that performs the
+corresponding check. For example,
+
+@racketblock[(test-equal? "Fruit test" "apple" "pear")]
+is equivalent to
+@racketblock[(test-case "Fruit test" (check-equal? "apple" "pear"))]
+}
 
 
 @section{Test Suites}

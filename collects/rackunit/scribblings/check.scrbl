@@ -26,10 +26,10 @@ can create your own checks using @racket[define-check].
            [(check-equal? (v1 any) (v2 any) (message string? "")) void?]
            [(check-not-equal? (v1 any) (v2 any) (message string? "")) void?])]{
 
-Checks that @racket[v1] is (not) @racket[eq?],
-@racket[eqv?], or @racket[equal?] to @racket[v2]. The
-optional @racket[message] is included in the output if the
-check fails.}
+Checks that @racket[v1] is equal (or not equal) to @racket[v2], using
+@racket[eq?], @racket[eqv?], or @racket[equal?], respectively. The
+optional @racket[message] is included in the output if the check
+fails.
 
 For example, the following checks all fail:
 
@@ -41,39 +41,52 @@ For example, the following checks all fail:
   (check-equal? 1 1.0 "not equal?")
   (check-not-equal? (list 1) (list 1) "equal?")
 ]
+}
 
 @defproc[(check-pred (pred (-> any any)) (v any) (message string? ""))
-         void?]{Checks that @racket[pred] returns a value that is not @racket[#f] when applied to @racket[v].  The optional @racket[message] is included in the output if the check fails. The value returned by a successful check is the value returned by @racket[pred].}
+         void?]{
 
-Here's an example that passes and an example that fails:
+Checks that @racket[pred] returns a value that is not @racket[#f] when
+applied to @racket[v].  The optional @racket[message] is included in
+the output if the check fails. The value returned by a successful
+check is the value returned by @racket[pred].
 
+For example, the following check passes:
 @racketblock[
   (check-pred string? "I work")
+]
+The following check fails:
+@racketblock[
   (check-pred number? "I fail")
 ]
+}
 
-
-@defproc[(check-= (v1 any) (v2 any) (epsilon number?) (message string? "")) void?]{
+@defproc[(check-= (v1 any) (v2 any) (epsilon number?) (message string? ""))
+         void?]{
 
 Checks that @racket[v1] and @racket[v2] are within
 @racket[epsilon] of one another.  The optional
 @racket[message] is included in the output if the check
-fails.}
+fails.
 
-Here's an example that passes and an example that fails:
+For example, the following check passes:
 
 @racketblock[
   (check-= 1.0 1.01 0.01 "I work")
+]
+The following check fails:
+@racketblock[
   (check-= 1.0 1.01 0.005 "I fail")
 ]
+}
 
 @defproc*[([(check-true (v any) (message string? "")) void?]
            [(check-false (v any) (message string? "")) void?]
            [(check-not-false (v any) (message string? "")) void?])]{
 
-Checks that @racket[v] is @racket[#t], @racket[#f], or not
-@racket[#f] as appropriate.  The optional @racket[message]
-is included in the output if the check fails.}
+Checks that @racket[v] is @racket[#t], is @racket[#f], or is not
+@racket[#f], respectively.  The optional @racket[message] is included
+in the output if the check fails.
 
 For example, the following checks all fail:
 
@@ -82,49 +95,76 @@ For example, the following checks all fail:
   (check-false 1)
   (check-not-false #f)
 ]
+}
 
-
-@defproc[(check-exn (exn-predicate (or/c (-> any boolean?) regexp?)) (thunk (-> any)) (message string? ""))
+@defproc[(check-exn (exn-predicate (or/c (-> any boolean?) regexp?))
+                    (thunk (-> any)) (message string? ""))
          void?]{
-Checks that @racket[thunk] raises an exception and that
-either @racket[exn-predicate] returns @racket[#t] if it is a function,
-or that it matches the message in the exception if @racket[exn-predicate]
-is a regexp. In the latter case, the exception raised must be
-an @racket[exn:fail?].
-The optional
-@racket[message] is included in the output if the check
-fails.  A common error is to use an expression instead of a
-function of no arguments for @racket[thunk].  Remember that
-checks are conceptually functions.}
 
-Here are two examples, one showing a test that succeeds, and one showing
-a common error:
+Checks that @racket[thunk] raises an exception and that either
+@racket[exn-predicate] returns @racket[#t] if it is a function, or
+that it matches the message in the exception if @racket[exn-predicate]
+is a regexp. In the latter case, the exception raised must be an
+@racket[exn:fail?].  The optional @racket[message] is included in the
+output if the check fails.  A common error is to use an expression
+instead of a function of no arguments for @racket[thunk].  Remember
+that checks are conceptually functions.
+
+For example, the following check succeeds:
 
 @racketblock[
   (check-exn exn:fail? 
              (lambda ()
                (raise (make-exn "Hi there"
                                 (current-continuation-marks)))))
+]
+
+The following check fails:
+
+@racketblock[
+  (check-exn exn:fail?
+             (lambda ()
+               (break-thread (current-thread))))
+]
+
+The following example is a common mistake. The call to @racket[error]
+is not within a @racket[lambda], so it bypasses @racket[check-exn]
+entirely.
+
+@racketblock[
   (code:comment "Forgot to wrap the expression in a thunk.  Don't do this!")
   (check-exn exn:fail?
              (error 'hi "there"))
 ]
+}
 
 @defproc[(check-not-exn (thunk (-> any)) (message string? "")) void?]{
 
 Checks that @racket[thunk] does not raise any exceptions.
 The optional @racket[message] is included in the output if
-the check fails.}
+the check fails.
+}
 
-@defproc[(check-regexp-match (regexp regexp?) (string string?)) void?]{Checks that @racket[regexp] matches the @racket[string].}
+@defproc[(check-regexp-match (regexp regexp?)
+                             (string string?))
+         void?]{
 
-The following check will succeed:
+Checks that @racket[regexp] matches the @racket[string].
 
-@racketblock[(check-regexp-match "a+bba" "aaaaaabba")]
 
-This check will fail:
+For example, the following check succeeds:
 
-@racketblock[(check-regexp-match "a+bba" "aaaabbba")]
+@racketblock[
+  (check-regexp-match "a+bba" "aaaaaabba")
+]
+
+The following check fails:
+
+@racketblock[
+  (check-regexp-match "a+bba" "aaaabbba")
+]
+}
+
 
 @defproc[(check (op (-> any any any))
                 (v1 any)
@@ -132,16 +172,31 @@ This check will fail:
 		(message string? ""))
          void?]{
 
-The most generic check.  Succeeds if @racket[op] applied to @racket[v1] and @racket[v2] is not @racket[#f], otherwise raises an exception of type @racket[exn:test:check].  The optional @racket[message] is included in the output if the check fails. 
+The most generic check.  Succeeds if @racket[op] applied to
+@racket[v1] and @racket[v2] is not @racket[#f], otherwise raises an
+exception of type @racket[exn:test:check].  The optional
+@racket[message] is included in the output if the check fails.
 
 For example, the following check succeeds:
 
 @racketblock[
   (check < 2 3)
 ]
+
+The following check fails:
+
+@racketblock[
+  (check memq 'pine '(apple orange pear))
+]
 }
 
-@defproc[(fail (message string? "")) void?]{This checks fails unconditionally.  Good for creating test stubs that you intend to fill out later.  The optional @racket[message] is included in the output.}
+@defproc[(fail (message string? ""))
+         void?]{
+
+This check fails unconditionally.  Good for creating test stubs that
+you intend to fill out later.  The optional @racket[message] is
+included in the output.
+}
 
 @section{Augmenting Information on Check Failure}
 
@@ -189,8 +244,7 @@ When this check fails the message
 
 @verbatim{time: <current-seconds-at-time-of-running-check>}
 
-will be printed along with the usual information on an
-check failure.
+is printed along with the usual information on an check failure.
 
 @defform[(with-check-info ((name val) ...) body ...)]{
 
@@ -214,8 +268,7 @@ When this test fails the message
 
 @verbatim{current-element: 8}
 
-will be displayed along with the usual information on an
-check failure.
+is displayed along with the usual information on an check failure.
 
 
 
@@ -235,18 +288,16 @@ that code must be wrapped in a thunk (a function of no
 arguments) by the user.  The predefined @racket[check-exn]
 is an example of this type of check.
 
-It is also useful to understand how the check information
-stack operates.  The stack is stored in a parameter and the
+It is also useful to understand how the check information stack
+operates.  The stack is stored in a parameter and the
 @racket[with-check-info] forms evaluate to calls to
-@racket[parameterize].  Hence check information has lexical
-scope.  For this reason simple checks (see below) cannot
-usefully contain calls to @racket[with-check-info] to report
+@racket[parameterize].  For this reason simple checks (see below)
+cannot usefully contain calls to @racket[with-check-info] to report
 additional information.  All checks created using
-@racket[define-simple-check] or @racket[define-check] grab
-some information by default: the name of the checks and the
-values of the parameters.  Additionally the macro forms of
-checks grab location information and the expressions passed
-as parameters.
+@racket[define-simple-check] or @racket[define-check] grab some
+information by default: the name of the checks and the values of the
+parameters.  Additionally the macro forms of checks grab location
+information and the expressions passed as parameters.
 
 @defform[(define-simple-check (name param ...) expr ...)]{
 
@@ -258,9 +309,7 @@ check fails if the result of the @racket[expr]s is
 simple checks cannot report extra information using
 @racket[with-check-info].}
 
-Example:
-
-To define a check @racket[check-odd?]
+For example, the following code defines a check @racket[check-odd?]
 
 @racketblock[
   (define-simple-check (check-odd? number)
@@ -309,7 +358,6 @@ tests a number if within 0.01 of the expected value:
     (< (abs (- actual expected)) 0.01))
 ]
 
-
 @defform[(define-check (name param ...) expr ...)]{
 
 The @racket[define-check] macro acts in exactly the same way
@@ -318,8 +366,12 @@ if the macro @racket[fail-check] is called in the body of
 the check.  This allows more flexible checks, and in
 particular more flexible reporting options.}
 
-@defform[(fail-check)]{The @racket[fail-check] macro raises an @racket[exn:test:check] with
-the contents of the check information stack.}
+@defform[(fail-check)]{
+
+The @racket[fail-check] macro raises an @racket[exn:test:check] with
+the contents of the check information stack.
+
+}
 
 
 @section{The Check Evaluation Context}
