@@ -3648,7 +3648,8 @@ int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
 }
 
 static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use, 
-                                              int *not_ready, int once_used_ok, int context, int *potential_size)
+                                              int *not_ready, int once_used_ok, int context, int *potential_size,
+                                              int disrupt_single_use)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -3701,10 +3702,17 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_once_used_type)) {
         Scheme_Once_Used *o;
 
+        if (disrupt_single_use) {
+          ((Scheme_Once_Used *)n)->expr = NULL;
+          ((Scheme_Once_Used *)n)->vclock = -1;
+        }
+
         if (!once_used_ok)
           break;
 
         o = (Scheme_Once_Used *)n;
+        if (!o->expr) break; /* disrupted or not available */
+
         o->delta = delta;
         o->info = info;
         return (Scheme_Object *)o;
@@ -3726,13 +3734,23 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
             single_use = NULL;
         }
 
-	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL, 0, context, potential_size);
+        /* If the referenced variable is not single-use, then
+           the variable it is replaced by is no longer single-use */
+        disrupt_single_use = !SCHEME_TRUEP(SCHEME_VEC_ELS(p)[3]);
+
+	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL,
+                                    once_used_ok && !disrupt_single_use, context, 
+                                    potential_size, disrupt_single_use);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
 	  delta += scheme_optimize_info_get_shift(info, pos);
 	  n = scheme_make_local(scheme_local_type, pos + delta, 0);
-	}
+	} else if (SAME_TYPE(SCHEME_TYPE(n), scheme_once_used_type)) {
+          /* Need to adjust delta: */
+          delta = scheme_optimize_info_get_shift(info, pos);
+          ((Scheme_Once_Used *)n)->delta += delta;
+        }
       }
       return n;
     }
@@ -3748,14 +3766,14 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
                                            int once_used_ok, int context, int *potential_size)
 {
-  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok, context, potential_size);
+  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok, context, potential_size, 0);
 }
 
 int scheme_optimize_info_is_ready(Optimize_Info *info, int pos)
 {
   int closure_offset, single_use, ready = 1;
   
-  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0, NULL);
+  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0, NULL, 0);
 
   return ready;
 }

@@ -831,6 +831,57 @@
               (- x 8))
            '(- (+ (cons 1 2) 0) 8))
 
+(test-comp '(let ([x (peek-char)])
+              (cons x 10))
+           '(cons (peek-char) 10))
+
+(test-comp '(let ([x (peek-char)])
+              (let ([y x])
+                (cons y 10)))
+           '(cons (peek-char) 10))
+
+(test-comp '(lambda (x)
+              (let ([y x])
+                (cons y 10)))
+           '(lambda (x) (cons x 10)))
+
+(test-comp '(lambda (x)
+              (let ([y x])
+                (cons y y)))
+           '(lambda (x) (cons x x)))
+
+(test-comp '(let ([f (lambda (x)
+                       (let ([y x])
+                         (cons y y)))])
+              (f (peek-char)))
+           '(let ([y (peek-char)])
+              (cons y y)))
+
+(test-comp '(let ([g (lambda (f)
+                       ;; Try to get uses of `z' replaced by `x',
+                       ;; but before `x' and `y' are split apart.
+                       ;; Single-use tracking of `x' can go wrong.
+                       (let-values ([(x y) (f (cons 1 2)
+                                              (cons 3 4))])
+                         (let ([z x])
+                           (list z z y))))])
+              (g values))
+           '(let ([x (cons 1 2)]
+                  [y (cons 3 4)])
+              (list x x y)))
+
+(test-comp '(let ([g (lambda (f)
+                       (letrec-values ([(x y) (f (cons 1 2)
+                                                 (cons 3 4))])
+                         (let ([z x])
+                           (list z z y))))])
+              (g values))
+           '(let ([g (lambda (f)
+                       (letrec-values ([(x y) (f (cons 1 2)
+                                                 (cons 3 4))])
+                         (list x x y)))])
+              (g values)))
+
 (test-comp '(let-values ([(x y) (values 1 2)])
               (+ x y))
            3)

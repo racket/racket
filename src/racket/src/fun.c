@@ -1025,7 +1025,8 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, i
   Scheme_Object *code, *ctx;
   Closure_Info *cl;
   mzshort dcs, *dcm;
-  int i;
+  int i, cnt;
+  Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL;
 
   data = (Scheme_Closure_Data *)_data;
 
@@ -1051,6 +1052,13 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, i
   for (i = 0; i < data->num_params; i++) {
     if (cl->local_flags[i] & SCHEME_WAS_SET_BANGED)
       scheme_optimize_mutated(info, i);
+    
+    cnt = ((cl->local_flags[i] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
+    if (cnt == 1) {
+      last_once_used = scheme_make_once_used(NULL, i, info->vclock, last_once_used);
+      if (!first_once_used) first_once_used = last_once_used;
+      scheme_optimize_propagate(info, i, (Scheme_Object *)last_once_used, 1);
+    }
   }
 
   code = scheme_optimize_expr(data->code, info, 0);
@@ -1058,6 +1066,14 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, i
   for (i = 0; i < data->num_params; i++) {
     if (scheme_optimize_is_flonum_arg(info, i, 1))
       cl->local_flags[i] |= SCHEME_WAS_FLONUM_ARGUMENT;
+  }
+
+  while (first_once_used) {
+    if (first_once_used->vclock < 0) {
+      /* no longer used once, due to binding propagation */
+      cl->local_flags[first_once_used->pos] |= SCHEME_USE_COUNT_MASK;
+    }
+    first_once_used = first_once_used->next;
   }
 
   if (info->single_result)

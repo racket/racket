@@ -4359,8 +4359,11 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
               return scheme_optimize_expr(val, info, context);
             }
           }
-          /* Can't move expression, so lookup again to mark as used. */
-          (void)scheme_optimize_info_lookup(info, pos, NULL, NULL, 0, context, NULL);
+          /* Can't move expression, so lookup again to mark as used
+             and to perform any copy propagation that might apply. */
+          val = scheme_optimize_info_lookup(info, pos, NULL, NULL, 0, context, NULL);
+          if (val)
+            return val;
         } else {
           if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type)) {
             info->size -= 1;
