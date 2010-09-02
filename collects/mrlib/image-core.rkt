@@ -829,18 +829,23 @@ the mask bitmap and the original bitmap are all together in a single bytes!
            (do-rotate bitmap flipped?)])))))
 
 (define (do-rotate bitmap flip?)
-  (let ([θ (degrees->radians (bitmap-angle bitmap))])
-    (let-values ([(bytes w h) (bitmap->bytes (bitmap-rendered-bitmap bitmap) 
-                                             (bitmap-rendered-mask bitmap))])
-      (let-values ([(rotated-bytes rotated-w rotated-h)
-                    (rotate-bytes bytes w h θ)])
-        (let* ([flipped-bytes (if flip?
-                                  (flip-bytes rotated-bytes rotated-w rotated-h)
-                                  rotated-bytes)]
-               [bm (bytes->bitmap flipped-bytes rotated-w rotated-h)]
-               [mask (send bm get-loaded-mask)])
-          (set-bitmap-rendered-bitmap! bitmap bm)
-          (set-bitmap-rendered-mask! bitmap mask))))))
+  (cond
+    [(zero? (bitmap-angle bitmap))
+     ;; don't rotate anything in this case.
+     (void)]
+    [else
+     (let ([θ (degrees->radians (bitmap-angle bitmap))])
+       (let-values ([(bytes w h) (bitmap->bytes (bitmap-rendered-bitmap bitmap) 
+                                                (bitmap-rendered-mask bitmap))])
+         (let-values ([(rotated-bytes rotated-w rotated-h)
+                       (rotate-bytes bytes w h θ)])
+           (let* ([flipped-bytes (if flip?
+                                     (flip-bytes rotated-bytes rotated-w rotated-h)
+                                     rotated-bytes)]
+                  [bm (bytes->bitmap flipped-bytes rotated-w rotated-h)]
+                  [mask (send bm get-loaded-mask)])
+             (set-bitmap-rendered-bitmap! bitmap bm)
+             (set-bitmap-rendered-mask! bitmap mask)))))]))
 
 (define (do-scale bitmap)
   (let* ([bdc (make-object bitmap-dc%)]
