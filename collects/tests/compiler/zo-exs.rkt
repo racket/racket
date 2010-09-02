@@ -27,7 +27,8 @@
   (compilation-top 0 
                    (prefix 0 empty empty)
                    (let* ([ph (make-placeholder #f)]
-                          [x (indirect (closure 
+                          [x (indirect 
+                              (closure 
                                (lam 'name
                                     empty
                                     0 

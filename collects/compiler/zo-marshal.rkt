@@ -10,7 +10,8 @@
          racket/dict
          racket/function
          racket/pretty
-         racket/path)
+         racket/path
+         racket/set)
 
 (provide/contract
  [zo-marshal (compilation-top? . -> . bytes?)]
@@ -24,7 +25,8 @@
   (get-output-bytes bs))
 
 (define (got-here n)
-  (void) #;(printf "got here: ~a~n" n))
+  (void)
+  #;(printf "got here: ~a~n" n))
 
 (define (zo-marshal-to top outp) 
   
@@ -34,12 +36,12 @@
   ; (obj -> (or pos #f)) output-port -> number
   ; writes top to outp using shared-obj-pos to determine symref
   ; returns the file position at the end of the compilation top
-  (define (out-compilation-top shared-obj-pos outp)
+  (define (out-compilation-top shared-obj-pos shared-obj-unsee outp)
     (define ct
       (match top
         [(compilation-top max-let-depth prefix form)
          (list* max-let-depth prefix (protect-quote form))]))
-    (out-anything ct (make-out outp shared-obj-pos wrapped))
+    (out-anything ct (make-out outp shared-obj-pos shared-obj-unsee wrapped))
     (file-position outp))
   
   ; -> vector
@@ -49,25 +51,46 @@
     (define encountered (make-hash))
     (define shared (make-hash))
     (define (encountered? v)
-      (hash-ref encountered v #f))
+      ((hash-ref encountered v 0) . > . 0))
     (define (encounter! v)
-      (hash-set! encountered v #t) 
+      (hash-update! encountered v add1 0) 
       #f)
-    (define (shared-obj-pos v #:share [share? #t])
-      (hash-ref shared v #f))
-    (define (share! v)
+    (define (unencounter! v)
+      (define how-many-encounters (hash-ref encountered v))
+      (when (= how-many-encounters 1)
+        (hash-set! encountered v 0)))
+    (define (shared-obj-pos v #:error? [error? #f])
+      (define pos
+        (hash-ref shared v 
+                  (if error?
+                      (λ () (error 'symref "~e not in symbol table" v))
+                      #f)))
+      #;(when (closure? v)
+        (printf "Looking up ~a, got ~a\n" v pos))
+      pos)
+    (define (share! v) ; XXX this doesn't always set something, probably should be refactored
       (or (shared-obj-pos v)
           (let ([pos (add1 (hash-count shared))])
             (hash-set! shared v pos) 
             pos)))
     
     (out-compilation-top 
-     (λ (v #:share [share? #t])
-       (and share?
-            (if (or (closure? v)
-                    (encountered? v))
-            (share! v)
-            (encounter! v))))
+     (λ (v #:error? [error? #f])
+       (cond
+         [(closure? v)
+          (let ([pos (share! v)])
+            (if (encountered? v)
+                pos
+                (encounter! v)))]
+         #;[error? ; If we would error if this were not present, then we must share it
+          (encounter! v)
+          (share! v)]
+         [(encountered? v)
+          (share! v)]
+         [else
+          (encounter! v)]))
+     (λ (v)
+       (unencounter! v))
      (open-output-nowhere))
     
     (define symbol-table (make-vector (hash-count shared) (not-ready)))
@@ -75,7 +98,8 @@
     (values symbol-table shared-obj-pos))
   
   (got-here 1)
-  (define-values (symbol-table shared-obj-pos) (create-symbol-table))
+  (define-values (symbol-table shared-obj-pos)
+    (create-symbol-table))
   (got-here 2)
   #;(for ([v (in-vector symbol-table)])
     (printf "v = ~a~n" v))
@@ -86,24 +110,27 @@
   (define (out-symbol-table symbol-table outp)
     (define (shared-obj-pos/modulo-v v)
       (define skip? #t)
-      (λ (v2 #:share [share? #t])
-        (if (and skip? (eq? v v2) #;(not (closure? v2)))
+      (λ (v2 #:error? [error? #f])
+        (if (and skip? (eq? v v2))
             (begin
               (set! skip? #f)
               #f)
-            (shared-obj-pos v2))))
+            (shared-obj-pos v2 
+                            #:error? error?))))
     (values
-     (for/list ([v (in-vector symbol-table)])
+     (for/list ([v (in-vector symbol-table)]
+                [i (in-naturals)])
        (begin0
          (file-position outp)
-         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) wrapped))))
+         #;(printf "Out ~a -->" i) #;(pretty-print v)
+         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) void wrapped))))
      (file-position outp)))
   
   ; Calculate file positions
   (define counting-port (open-output-nowhere))
   (define-values (offsets post-shared) (out-symbol-table symbol-table counting-port))
   (got-here 3)
-  (define all-forms-length (out-compilation-top shared-obj-pos counting-port))
+  (define all-forms-length (out-compilation-top shared-obj-pos void counting-port))
   (got-here 4)
   ; Write the compiled form header
   (write-bytes #"#~" outp)
@@ -129,7 +156,7 @@
   ; Actually write the zo
   (out-symbol-table symbol-table outp)
   (got-here 6)
-  (out-compilation-top shared-obj-pos outp)
+  (out-compilation-top shared-obj-pos void outp)
   (got-here 7)
   (void))
 
@@ -390,7 +417,7 @@
            (vector p (encode-certs certs))
            p))]))
 
-(define-struct out (s shared-index encoded-wraps))
+(define-struct out (s shared-index shared-unsee encoded-wraps))
 (define (out-shared v out k)
   (if (shareable? v)
       (let ([v ((out-shared-index out) v)])
@@ -438,16 +465,21 @@
 (define (or-pred? v . ps)
   (ormap (lambda (?) (? v)) ps))
 
-
 (define quoting? (make-parameter #f))
 
 (define (shareable? v)
-  (not (or (quoting?) (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void?))))
+  (define never-share-this?
+    (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void?))
+  (define always-share-this?
+    (or-pred? v closure?))
+  (or always-share-this?
+      (if (quoting?) 
+          #f
+          (not never-share-this?))))
 
 (define (maybe-same-as-fixnum? v)
   (and (exact-integer? v)
        (and (v . >= . -1073741824) (v . <= . 1073741823))))
-
 
 (define (out-anything v out)
   (out-shared 
@@ -479,11 +511,13 @@
         (unless (zero? phase)
           (out-number -2 out))
         (out-number pos out)]
-       [(struct indirect (val)) (out-anything val out)]
+       [(struct indirect (val))
+        (out-anything val out)]
        [(struct closure (lam gen-id))
         (out-byte CPT_CLOSURE out)
-        (out-number ((out-shared-index out) v) out)
-        (out-anything lam out)]
+        (let ([pos ((out-shared-index out) v #:error? #t)])
+          (out-number pos out)
+          (out-anything lam out))]
        [(struct prefix (num-lifts toplevels stxs))
         (out-marshaled
          prefix-type-num
@@ -668,7 +702,7 @@
                     expr
                     out)]
        [(protected-symref v)
-        (out-anything ((out-shared-index out) v) out)]
+        (out-anything ((out-shared-index out) v #:error? #t) out)]
        [(and (? symbol?) (not (? symbol-interned?)))
         (out-as-bytes v 
                       #:before-length (if (symbol-unreadable? v) 0 1)
@@ -706,18 +740,29 @@
         (out-byte CPT_BOX out)
         (out-anything (unbox v) out)]
        [(? pair?)
+        ; This code will not turn two different lists that share a common tail
+        ;  e.g. (list* 1 l) and (list* 2 l)
+        ; into a form that puts l into the symbol table
+        ; (when that is possible)
+        
+        ; In contrast, if we always use CPT_PAIR, then it would
+        
+        ; Unfortunately, detecting this situation during the traversal
+        ; phase, without introducing false sharing, is difficult.
+        ; We had an implementation (see the history), but it was buggy.
         (define (list-length-before-cycle/improper-end l)
-          (let loop ([len 1] [l (cdr l)])
+          (let loop ([len 0] [l l] [seen (set)])
             (cond 
-              [((out-shared-index out) l #:share #f)
+              [(set-member? seen l)
                (values len #f)]
               [(null? l)
                (values len #t)]
               [(pair? l)
-               (loop (add1 len) (cdr l))]
+               (loop (add1 len) (cdr l) (set-add seen l))]
               [else
                (values len #f)])))
         (define-values (len proper?) (list-length-before-cycle/improper-end v))
+        
         (define (print-contents-as-proper)
           (for ([e (in-list v)])
             (out-anything e out)))
@@ -787,28 +832,33 @@
         (vector-set! pre-v 0 (prefab-struct-key v))
         (out-byte CPT_PREFAB out)
         (out-anything pre-v out)]
-       [else
+       [(quoted qv)
         (out-byte CPT_QUOTE out)
-        (if (quoted? v)
-            (parameterize ([quoting? #t])
-              (out-anything (quoted-v v) out))
-            (let ([s (open-output-bytes)])
-              (parameterize ([pretty-print-size-hook
-                              (lambda (v mode port)
-                                (and (path? v)
-                                     (let ([v (make-relative v)])
-                                       (+ 2 (let ([p (open-output-bytes)])
-                                              (write (path->bytes v) p)
-                                              (bytes-length (get-output-bytes p)))))))]
-                             [pretty-print-print-hook
-                              (lambda (v mode port)
-                                (display "#^" port)
-                                (write (path->bytes (make-relative v)) port))])
-                (pretty-write v s))
-              (out-byte CPT_ESCAPE out)
-              (let ([bstr (get-output-bytes s)])
-                (out-number (bytes-length bstr) out)
-                (out-bytes bstr out))))]))))
+        (parameterize ([quoting? #t])
+          (out-anything qv out))]
+       [(or (? path?) ; XXX Why not use CPT_PATH?
+            (? regexp?)
+            (? byte-regexp?)
+            (? number?))
+        (out-byte CPT_QUOTE out)
+        (define s (open-output-bytes))
+        (parameterize 
+            ([pretty-print-size-hook
+              (lambda (v mode port)
+                (and (path? v)
+                     (let ([v (make-relative v)])
+                       (+ 2 (let ([p (open-output-bytes)])
+                              (write (path->bytes v) p)
+                              (bytes-length (get-output-bytes p)))))))]
+             [pretty-print-print-hook
+              (lambda (v mode port)
+                (display "#^" port)
+                (write (path->bytes (make-relative v)) port))])
+          (pretty-write v s))
+        (out-byte CPT_ESCAPE out)
+        (define bstr (get-output-bytes s))
+        (out-number (bytes-length bstr) out)
+        (out-bytes bstr out)]))))
 
 (define-struct module-decl (content))
 
@@ -969,10 +1019,9 @@
 (define-struct quoted (v))
 
 (define (protect-quote v)
-  (if (or (pair? v) (vector? v) (and (not zo?) (prefab-struct-key v)) (box? v) (hash? v) (svector? v))
+  (if (or (pair? v) (vector? v) (and (not (zo? v)) (prefab-struct-key v)) (box? v) (hash? v) (svector? v))
       (make-quoted v)
       v))
-
 
 (define-struct svector (vec))
 

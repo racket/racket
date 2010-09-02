@@ -837,6 +837,10 @@
                   [lst (for/list ([i (in-range n)])
                          (read-compact cp))])
              (vector->immutable-vector (list->vector lst)))]
+          [(pair)
+           (let* ([a (read-compact cp)]
+                  [d (read-compact cp)])
+             (cons a d))]
           [(list) 
            (let ([len (read-compact-number cp)])
              (let loop ([i len])
