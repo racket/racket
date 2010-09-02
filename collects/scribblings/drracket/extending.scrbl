@@ -65,8 +65,8 @@ the module is provided as a new primitive form or primitive operation
 to the user, respectively.
 
 As an example, the following teachpack provides a lazy cons
-implementation. To test it, be sure to save it in a file named
-@filepath{lazycons.ss}.
+implementation. To test it, save the following in a file and
+add the file as a teachpack (or use @racket[require]).
 
 @racketmod[
 racket
