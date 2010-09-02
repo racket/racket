@@ -1450,6 +1450,24 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/wxme-random.rkt" drdr:command-line #f
 "collects/tests/gracket/wxme.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/honu" responsible (rafkind)
+"collects/tests/htdp-lang" responsible (robby mflatt matthias)
+"collects/tests/htdp-lang/advanced.rktl" drdr:command-line (racket "-f" *) drdr:timeout 180
+"collects/tests/htdp-lang/basic.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/beg-adv.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/beg-bega.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/beg-intm.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/beg-intml.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/bega-adv.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/beginner-abbr.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/htdp-lang/beginner.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/htdp-lang/htdp-image.rktl" responsible (robby) drdr:command-line (gracket "-f" *)
+"collects/tests/htdp-lang/htdp-test.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/htdp-lang/htdp.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/intermediate-lambda.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/htdp-lang/intermediate.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/htdp-lang/intm-adv.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/intm-intml.rktl" drdr:command-line #f
+"collects/tests/htdp-lang/intmlam-adv.rktl" drdr:command-line #f
 "collects/tests/html" responsible (jay)
 "collects/tests/jpr" responsible (mflatt)
 "collects/tests/jpr/balle-grav-frot.ss" drdr:command-line (mzc "-k" *)
@@ -1494,18 +1512,9 @@ path/s is either such a string or a list of them.
 "collects/tests/plot/run-tests.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
-"collects/tests/racket/advanced.rktl" drdr:command-line (racket "-f" *) drdr:timeout 180
 "collects/tests/racket/all.rktl" drdr:command-line #f
 "collects/tests/racket/async-channel.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/awk.rktl" drdr:command-line #f
-"collects/tests/racket/basic.rktl" drdr:command-line #f
-"collects/tests/racket/beg-adv.rktl" drdr:command-line #f
-"collects/tests/racket/beg-bega.rktl" drdr:command-line #f
-"collects/tests/racket/beg-intm.rktl" drdr:command-line #f
-"collects/tests/racket/beg-intml.rktl" drdr:command-line #f
-"collects/tests/racket/bega-adv.rktl" drdr:command-line #f
-"collects/tests/racket/beginner-abbr.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/beginner.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/benchmarks/common/auto.rkt" drdr:command-line (racket * "--" "racket" "ctak")
 "collects/tests/racket/benchmarks/common/mk-bigloo.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/mk-chicken.rktl" drdr:command-line #f
@@ -1724,16 +1733,8 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/foreign-test.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/function.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/head.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/htdp-image.rktl" responsible (robby) drdr:command-line (gracket "-f" *)
-"collects/tests/racket/htdp-test.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/htdp.rktl" drdr:command-line #f
 "collects/tests/racket/id-table-test.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/imap.rktl" drdr:command-line #f
-"collects/tests/racket/intermediate-lambda.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/intermediate.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/intm-adv.rktl" drdr:command-line #f
-"collects/tests/racket/intm-intml.rktl" drdr:command-line #f
-"collects/tests/racket/intmlam-adv.rktl" drdr:command-line #f
 "collects/tests/racket/ktest.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/kw.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/list.rktl" drdr:command-line #f
