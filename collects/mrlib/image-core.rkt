@@ -830,7 +830,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
 (define (do-rotate bitmap flip?)
   (cond
-    [(zero? (bitmap-angle bitmap))
+    [(and (not flip?) (zero? (bitmap-angle bitmap)))
      ;; don't rotate anything in this case.
      (void)]
     [else
