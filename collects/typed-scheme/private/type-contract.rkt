@@ -196,6 +196,8 @@
                            #:projection 
                            (lambda (blame)
                              (lambda (val)
+                               (unless (#,pred? val)
+                                 (raise-blame-error blame val "expected ~a value, got ~v" 'cnt-name val))
                                (maker fld-cnts ...))))])
                   rec))]
            [else #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))])]
