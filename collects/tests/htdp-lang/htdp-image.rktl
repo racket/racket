@@ -1,6 +1,6 @@
 ;; Load this one with GRacket
 
-(load-relative "loadtest.rktl")
+(load-relative "../racket/loadtest.rktl")
 (require teachpack/htdp/image
          htdp/error
          lang/posn

@@ -74,7 +74,7 @@ transcript.
 (define number-of-error-tests 0)
 (define number-of-exn-tests 0)
 
-(define (load-in-sandbox file)
+(define (load-in-sandbox file #:testing [testing "testing.rktl"])
   (define-syntax-rule (S id) (dynamic-require 'racket/sandbox 'id))
   (let ([e ((S call-with-trusted-sandbox-configuration)
             (lambda ()
@@ -83,7 +83,7 @@ transcript.
                              [(S sandbox-error-output) current-error-port]
                              [(S sandbox-memory-limit) 100]) ; 100mb per box
                 ((S make-evaluator) '(begin) #:requires (list 'racket)))))])
-    (e `(load-relative "testing.rktl"))
+    (e `(load-relative ,testing))
     (e `(define real-output-port (quote ,real-output-port)))
     (e `(define real-error-port  (quote ,real-error-port)))
     (e `(define Section-prefix ,Section-prefix))

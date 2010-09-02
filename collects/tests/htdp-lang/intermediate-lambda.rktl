@@ -2,7 +2,7 @@
 ;; Basic checks for the intermediate language. See also
 ;;  beginner.rktl
 
-(load-relative "loadtest.rktl")
+(load-relative "../racket/loadtest.rktl")
 
 ;; Don't need these:
 (define no-extra-if-tests? #t)
