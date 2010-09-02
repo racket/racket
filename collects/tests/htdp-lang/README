@@ -1,0 +1,9 @@
+The files in this directory test the teaching language implementation.
+
+htdp.rktl
+  load this file (racket -qr htdp.rktl) to run most of the tests
+  
+htdp-image.rktl
+  load this file in gracket to run the htdp/image tests
+
+See beginner.rktl for more.
