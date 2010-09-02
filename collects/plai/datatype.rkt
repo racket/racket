@@ -59,8 +59,6 @@
   (symbol->string (syntax-e s)))
 
 (define-syntax (define-type stx)
-  (define (format-id/std fmt x)
-    (format-id stx fmt #:source x x))
   (syntax-parse
    stx
    [(_ datatype:id
@@ -82,23 +80,21 @@
          (cons #'datatype? (syntax->list #'(variant ...))))
     (with-syntax
         ([(variant* ...) 
-          (map (lambda (s)
-                 (datum->syntax stx (syntax->datum s)))
-               (generate-temporaries #'(variant ...)))])
+          (generate-temporaries #'(variant ...))])
       
       (with-syntax
           ([((field/c-val ...) ...)
             (syntax-map generate-temporaries #'((field/c ...) ...))]
            [datatype?
-            (format-id/std "~a?" #'datatype)]
+            (format-id stx "~a?" #'datatype #:source #'datatype)]
            [(variant? ...)
-            (syntax-map (curry format-id/std "~a?") #'(variant ...))]
+            (syntax-map (λ (x) (format-id stx "~a?" x #:source x)) #'(variant ...))]
            [(variant*? ...)
-            (syntax-map (curry format-id/std "~a?") #'(variant* ...))]
+            (syntax-map (λ (x) (format-id x "~a?" x #:source x)) #'(variant* ...))]
            [(make-variant ...)
-            (syntax-map (curry format-id/std "make-~a") #'(variant ...))]
+            (syntax-map (λ (x) (format-id stx "make-~a" x #:source x)) #'(variant ...))]
            [(make-variant* ...)
-            (syntax-map (curry format-id/std "make-~a") #'(variant* ...))])
+            (syntax-map (λ (x) (format-id x "make-~a" x #:source x)) #'(variant* ...))])
         
         (with-syntax
             ([((f:variant? ...) ...)
@@ -108,26 +104,26 @@
                           #'((field ...) ...))]
              [((variant-field ...) ...)
               (syntax-map (lambda (variant fields)
-                            (syntax-map (curry format-id/std (string-append (syntax-string variant) "-~a"))
+                            (syntax-map (λ (f) (format-id stx "~a-~a" variant f #:source f))
                                         fields))
                           #'(variant ...)
                           #'((field ...) ...))]
              [((variant*-field ...) ...)
               (syntax-map (lambda (variant fields)
-                            (syntax-map (curry format-id/std (string-append (syntax-string variant) "-~a"))
+                            (syntax-map (λ (f) (format-id variant "~a-~a" variant f #:source f))
                                         fields))
                           #'(variant* ...)
                           #'((field ...) ...))]
              
              [((set-variant-field! ...) ...)
               (syntax-map (lambda (variant fields)
-                            (syntax-map (curry format-id/std (string-append "set-" (syntax-string variant) "-~a!"))
+                            (syntax-map (λ (f) (format-id stx "set-~a-~a!" variant f #:source f))
                                         fields))
                           #'(variant ...)
                           #'((field ...) ...))]
              [((set-variant*-field! ...) ...)
               (syntax-map (lambda (variant fields)
-                            (syntax-map (curry format-id/std (string-append "set-" (syntax-string variant) "-~a!"))
+                            (syntax-map (λ (f) (format-id variant "set-~a-~a!" variant f #:source f))
                                         fields))
                           #'(variant* ...)
                           #'((field ...) ...))])
