@@ -1,11 +1,13 @@
 #lang scribble/doc
-@title[#:tag "places"]{@bold{places}: Coarse-grained Parallelism}
+
+@title[#:tag "places"]{@bold{Places}: Coarse-grained Parallelism}
 
 @; ----------------------------------------------------------------------
 
 @(require scribble/manual
           scribble/urls
           scribble/struct
+          "mz.ss"
           (for-label racket
                      racket/base
                      racket/contract
@@ -18,13 +20,21 @@ The PLT Places API enables the development of parallel programs which
 take advantage of machines with multiple processors, cores, or
 hardware threads.
 
-@defmodule[racket/place]{}
+@note-lib[racket/place]
 
-@defproc[(place [module-path module-path?] [start-proc proc?]) place?]{
+@margin-note{Currently, parallel support for @racket[place] is is only enabled if you pass
+@DFlag{enable-places} to @exec{configure} when you build Racket (and
+that build currently only works with @exec{racket}, not with
+@exec{gracket}). When parallel-places support is not enabled,
+@racket[place] usage is a syntax error.
+Places is only supported on Linux x86/x86_64, and Mac OS X
+x86/x86_64 platforms.}
+
+@defproc[(place [module-path module-path?] [start-proc symbol?]) place?]{
   Starts running @racket[start-proc] in parallel. @racket[start-proc] must
   be a function defined in @racket[module-path].  The @racket[place]
   procedure returns immediately with a place descriptor value representing the newly constructed place.
-  Each place descriptor value is also a racket[place-channel] that permits communication with the place.  
+  Each place descriptor value is also a @racket[place-channel] that permits communication with the place.  
 }
 
 @defproc[(place-wait [p place?]) exact-integer?]{
@@ -33,7 +43,7 @@ hardware threads.
 }
 
 @defproc[(place? [x any/c]) boolean?]{
-  Returns @racket[#t] if @racket[x] is a place object.
+  Returns @racket[#t] if @racket[x] is a place-descriptor value, @racket[#f] otherwise.
 }
 
 @defproc[(place-channel) (values place-channel? place-channel?)]{
@@ -119,17 +129,7 @@ Parallel mutation of these atomic values
 can possibly lead to data races, but will not cause @exec{racket} to
 crash.  In practice however, parallel tasks usually write to disjoint 
 partitions of a shared vector.
-}
 
 Places are allowed to garbage collect independently of one another.
 The shared-memory collector, however, has to pause all
 places before it can collect garbage.
-
-@section[#:tag "enabling-places"]{Enabling Places in Racket Builds}
-
-PLT's parallel-places support is only enabled if you pass
-@DFlag{enable-places} to @exec{configure} when you build PLT (and
-that build currently only works with @exec{racket}, not with
-@exec{gracket}). When parallel-places support is not enabled,
-@racket[place] usage is a syntax error.
-@; @FIXME{use threads to emulate places maybe?}
