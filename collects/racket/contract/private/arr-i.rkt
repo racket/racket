@@ -739,7 +739,15 @@
                               #f)))
                    #,(and (istx-post an-istx) (map syntax-e (pre/post-vars (istx-post an-istx))))))
              'racket/contract:contract 
-             (vector this->i 
-                     ;; the ->i in the original input to this guy
-                     (list (car (syntax-e stx)))
-                     '()))))))
+             (let ()
+               (define (find-kwd kwd)
+                 (for/or ([x (in-list (syntax->list stx))])
+                   (and (eq? (syntax-e x) kwd)
+                        x)))
+               (define pre (find-kwd '#:pre))
+               (define post (find-kwd '#:post))
+               (define orig (list (car (syntax-e stx))))
+               (vector this->i 
+                       ;; the ->i in the original input to this guy
+                       (if post (cons post orig) orig)
+                       (if pre (list pre) '()))))))))

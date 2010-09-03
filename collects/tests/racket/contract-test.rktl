@@ -25,6 +25,10 @@
     (parameterize ([current-namespace contract-namespace])
       (compile x)))
   
+  (define (contract-expand-once x)
+    (parameterize ([current-namespace contract-namespace])
+      (expand-once x)))
+  
   (define-syntax (ctest stx)
     (syntax-case stx ()
       [(_ a ...)
@@ -147,15 +151,41 @@
     (contract-eval `(,test ,name contract-name ,contract-exp))
     (contract-eval `(,test ,name contract-name (opt/c ,contract-exp))))
   
-  (test/spec-passed
-   'contract-flat1 
-   '(contract not #f 'pos 'neg))
-  
-  (test/pos-blame
-   'contract-flat2 
-   '(contract not #t 'pos 'neg))
-
  
+  (define (test-obligations quoted-expr expected-props)
+    
+    (define (cleanup key obj stx)
+      (case key 
+        [(racket/contract:contract) 
+         (let ([cleanup-ent
+                (λ (x)
+                  (sort (map syntax->datum (vector-ref obj x)) string<=? #:key (λ (x) (format "~s" x))))])
+         (list key (cleanup-ent 1) (cleanup-ent 2)))]
+        [(racket/contract:positive-position racket/contract:negative-position)
+         (list key (syntax->datum stx))]
+        [(racket/contract:contract-on-boundary) `(racket/contract:contract-on-boundary ,(syntax->datum stx))]
+        [(racket/contract:internal-contract) `(racket/contract:internal-contract ,(syntax->datum stx))]
+        [else
+         (error 'test-obligations "unknown property ~s" key)]))
+    
+    (let ([props '()])
+      (let ([stx (contract-expand-once quoted-expr)])
+        (let loop ([stx stx])
+          (cond
+            [(syntax? stx) 
+             (for ([key (in-list (syntax-property-symbol-keys stx))])
+               (when (regexp-match #rx"^racket/contract:" (symbol->string key))
+                 (set! props (cons (cleanup key (syntax-property stx key) stx)
+                                   props))))
+             (loop (syntax-e stx))]
+            [(pair? stx)
+             (loop (car stx))
+             (loop (cdr stx))])))
+      (test expected-props
+            `(obligations-for ,quoted-expr)
+            (sort props string<=? #:key (λ (x) (format "~s" x))))))
+  
+    
 ;                                                                                                    
 ;                                                                                                    
 ;                                                                                                    
@@ -172,7 +202,6 @@
 ;                                                                                                    
 ;                                                                                                    
 
-  
   (test/no-error '(-> integer? integer?))
   (test/no-error '(-> (flat-contract integer?) (flat-contract integer?)))
   (test/no-error '(-> integer? any))
@@ -3338,7 +3367,16 @@
        1)
       (reverse x))
    '(3 1 2 4))
-
+  
+  (test/spec-passed
+   'contract-flat1 
+   '(contract not #f 'pos 'neg))
+  
+  (test/pos-blame
+   'contract-flat2 
+   '(contract not #t 'pos 'neg))
+  
+  
   
 ;                                                                                              
 ;                                                                                              
@@ -9548,6 +9586,47 @@ so that propagation occurs.
                  'neg)
        (λ (x) x)))
    11)
+  
+;                                                        
+;                                                        
+;                                                        
+;                                         ;;             
+;                                     ;;  ;;             
+;                                     ;;                 
+;   ;;;;  ;;;; ;;;   ;;;;   ;;;; ;;;;;;;; ;;  ;;;;  ;;;  
+;   ;;;;; ;;;;;;;;;  ;;;;; ;;;;;;;;;;;;;; ;; ;;;;;;;;;;; 
+;   ;; ;; ;;  ;; ;;  ;; ;; ;;; ;;;;   ;;  ;; ;;;;;;;;    
+;   ;; ;; ;;  ;; ;;  ;; ;; ;;;;;;;;   ;;  ;; ;;;;;;  ;;; 
+;   ;;;;; ;;  ;;;;;  ;;;;; ;;;;;;;;   ;;  ;; ;;;;;;;; ;; 
+;   ;;;;  ;;   ;;;   ;;;;   ;;;; ;;   ;;; ;;  ;;;;  ;;;  
+;   ;;               ;;                                  
+;   ;;               ;;                                  
+;                                                        
+
+  
+  (test-obligations '(-> a b)
+                    '((racket/contract:contract (->) ())
+                      (racket/contract:negative-position a)
+                      (racket/contract:positive-position b)))
+  (test-obligations '(->i ([x a]) any)
+                    '((racket/contract:contract (->i) ())
+                      (racket/contract:contract-on-boundary a)
+                      (racket/contract:negative-position a)))
+  (test-obligations '(->i ([x a]) [res b])
+                    '((racket/contract:contract (->i) ())
+                      (racket/contract:contract-on-boundary a)
+                      (racket/contract:contract-on-boundary b)
+                      (racket/contract:negative-position a)
+                      (racket/contract:positive-position b)))
+  (test-obligations '(->i ([x a]) #:pre () #t [res b] #:post () #t)
+                    '((racket/contract:contract (->i #:post) (#:pre))
+                      (racket/contract:contract-on-boundary a)
+                      (racket/contract:contract-on-boundary b)
+                      (racket/contract:negative-position a)
+                      (racket/contract:positive-position b)))
+  (test-obligations '(listof a)
+                    '((racket/contract:contract (listof) ())
+                      (racket/contract:positive-position a)))
   
   
 ;                                                                
