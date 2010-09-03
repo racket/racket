@@ -456,7 +456,7 @@
          (syntax/loc stx
            (define id
              (let ([mixin-id mixin] ...
-                   [protocol-id proto] ...)
+                   [proto-id proto] ...)
                (lambda (to-id superclass-id ivars)
                  (check-expected-ivars 'id ivars '(ivar ...))
                  (void (class_addProtocol to-id proto-id)) ...
