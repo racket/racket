@@ -6,8 +6,19 @@
          racket/dict
          racket/vector)
 
-(define (make-gvector* #:capacity [capacity 10])
-  (make-gvector (make-vector capacity #f) 0))
+(define make-gvector*
+  (let ([make-gvector
+         (lambda (#:capacity [capacity 10])
+           (make-gvector (make-vector capacity #f) 0))])
+    make-gvector))
+
+(define gvector*
+  (let ([gvector
+         (lambda init-elements
+           (let ([gv (make-gvector*)])
+             (apply gvector-add! gv init-elements)
+             gv))])
+    gvector))
 
 (define (check-index who index n set-to-add?)
   (unless (exact-nonnegative-integer? index)
@@ -25,27 +36,41 @@
 (define ((bad-index-error who index))
   (raise-mismatch-error who "index out of range" index))
 
-(define (gvector-add! gv item)
+(define (gvector-add! gv . items)
   (let ([n (gvector-n gv)]
-        [v (gvector-vec gv)])
-    (cond [(< n (vector-length v))
-           (vector-set! v n item)
-           (set-gvector-n! gv (add1 n))]
+        [v (gvector-vec gv)]
+        [item-count (length items)])
+    (cond [(<= (+ n item-count) (vector-length v))
+           (for ([index (in-naturals n)] [item (in-list items)])
+             (vector-set! v index item))
+           (set-gvector-n! gv (+ n item-count))]
           [else
-           (let ([nv (make-vector (* 2 n) #f)])
+           (let* ([nn (let loop ([nn n])
+                        (if (<= (+ n item-count) nn) nn (loop (* 2 nn))))]
+                  [nv (make-vector nn #f)])
              (vector-copy! nv 0 v)
-             (vector-set! nv n item)
+             (for ([index (in-naturals n)] [item (in-list items)])
+               (vector-set! nv index item))
              (set-gvector-vec! gv nv)
-             (set-gvector-n! gv (add1 n)))])))
+             (set-gvector-n! gv (+ n item-count)))])))
+
+(define SHRINK-MIN 10)
 
 ;; SLOW!
 (define (gvector-remove! gv index)
   (let ([n (gvector-n gv)]
         [v (gvector-vec gv)])
     (check-index 'gvector-remove! index n #f)
-    (set-gvector-n! gv (sub1 n))
-    (vector-copy! v index v (add1 index) n)
-    (vector-set! v (sub1 n) #f)))
+    (cond [(<= SHRINK-MIN (* 3 n) (vector-length v))
+           (let ([nv (make-vector (floor (/ (vector-length v) 2)) #f)])
+             (vector-copy! nv 0 v 0 index)
+             (vector-copy! nv index v (add1 index) n)
+             (set-gvector-n! gv (sub1 n))
+             (set-gvector-vec! gv nv))]
+          [else
+           (set-gvector-n! gv (sub1 n))
+           (vector-copy! v index v (add1 index) n)
+           (vector-set! v (sub1 n) #f)])))
 
 (define (gvector-count gv)
   (gvector-n gv))
@@ -120,6 +145,22 @@
            [(var ...) (in-vector gv-expr-c)]))]
       [_ #f])))
 
+(define-syntax (for/gvector stx)
+  (syntax-case stx ()
+    [(_ (clause ...) . body)
+     (quasisyntax/loc stx
+       (let ([gv (make-gvector)])
+         (for/fold/derived #,stx () (clause ...) . body)
+         gv))]))
+
+(define-syntax (for*/gvector stx)
+  (syntax-case stx ()
+    [(_ (clause ...) . body)
+     (quasisyntax/loc stx
+       (let ([gv (make-gvector)])
+         (for*/fold/derived #,stx () (clause ...) . body)
+         gv))]))
+
 (define-struct gvector (vec n)
   #:mutable
   #:property prop:dict
@@ -138,14 +179,16 @@
 (provide/contract
  [gvector?
   (-> any/c any)]
+ [rename gvector* gvector
+  (->* () () #:rest any/c gvector?)]
  [rename make-gvector* make-gvector
-  (->* () (#:capacity exact-positive-integer?) any)]
+  (->* () (#:capacity exact-positive-integer?) gvector?)]
  [gvector-ref
   (->* (gvector? exact-nonnegative-integer?) (any/c) any)]
  [gvector-set!
   (-> gvector? exact-nonnegative-integer? any/c any)]
  [gvector-add!
-  (-> gvector? any/c any)]
+  (->* (gvector?) () #:rest any/c any)]
  [gvector-remove!
   (-> gvector? exact-nonnegative-integer? any)]
  [gvector-count

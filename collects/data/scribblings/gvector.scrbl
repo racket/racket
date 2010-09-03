@@ -26,14 +26,19 @@ number of elements in the gvector.
 @defproc[(make-gvector [#:capacity capacity exact-positive-integer? 10])
          gvector?]{
 
-Creates a new empty growable vector (gvector) with an initial capacity
-of @racket[capacity].
+Creates a new empty gvector with an initial capacity of
+@racket[capacity].
+}
+
+@defproc[(gvector [elem any/c] ...)
+         gvector?]{
+
+Creates a new gvector containing each @racket[elem] in order.
 }
 
 @defproc[(gvector? [x any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[x] was created by
-@racket[make-gvector], @racket[#f] otherwise.
+Returns @racket[#t] if @racket[x] is a gvector, @racket[#f] otherwise.
 }
 
 @defproc[(gvector-ref [gv gvector?]
@@ -47,10 +52,10 @@ invoked if it is a procedure, returned otherwise.
 }
 
 @defproc[(gvector-add! [gv gvector?]
-                       [value any/c])
+                       [value any/c] ...)
          void?]{
 
-Adds @racket[value] to the end of the gvector @racket[gv].
+Adds each @racket[value] to the end of the gvector @racket[gv].
 }
 
 @defproc[(gvector-set! [gv gvector?]
