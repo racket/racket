@@ -45,8 +45,8 @@
                       mutable-idtbl?
                       immutable-idtbl?)
              (provide/contract
-              [make-idtbl (->* () (dict?) any)]
-              [make-immutable-idtbl (->* () (dict?) any)]
+              [make-idtbl (->* () (dict? #:phase (or/c exact-integer? #f)) any)]
+              [make-immutable-idtbl (->* () (dict? #:phase (or/c exact-integer? #f)) any)]
               [idtbl-ref (->* (idtbl? any/c) (any/c)
                               any)]
               [idtbl-set! (-> mutable-idtbl? any/c any/c
@@ -69,4 +69,4 @@
 
 (make-code bound-id-table)
 (make-code free-id-table)
-(make-code free*-id-table)
+;; (make-code free*-id-table)

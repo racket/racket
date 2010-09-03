@@ -42,6 +42,46 @@
       (apply f args))
     name)
    arity))
+;; ========
+
+;; Inline alist operations...
+;;   id, v args must be variables (to avoid duplicating expressions)
+
+(define-syntax-rule (alist-set identifier=? phase l0 id v)
+  ;; To minimize allocation
+  ;;   - add new pairs to front
+  ;;   - avoid allocation on idempotent sets
+  (let* ([not-found? #f]
+         [new-l
+          (let loop ([l l0])
+            (cond [(null? l) (begin (set! not-found? #t) null)]
+                  [(identifier=? (caar l) id phase)
+                   (if (eq? v (cdar l)) ;; idempotent; just leave it alone
+                       l
+                       (cons (cons id v) (cdr l)))]
+                  [else
+                   (let ([rest* (loop (cdr l))])
+                     (if (eq? (cdr l) rest*)
+                         l
+                         (cons (car l) rest*)))]))])
+    (if not-found?
+        (cons (cons id v) l0)
+        new-l)))
+
+(define-syntax-rule (alist-remove identifier=? phase l0 id)
+  ;; To minimize allocation
+  ;;   - avoid allocation on idempotent removes
+  (let loop ([l l0])
+    (cond [(null? l) null]
+          [(identifier=? (caar l) id phase)
+           (cdr l)]
+          [else
+           (let ([rest* (loop (cdr l))])
+             (if (eq? (cdr l) rest*)
+                 l
+                 (cons (car l) rest*)))])))
+
+;; ========
 
 (define-syntax (make-code stx)
   (syntax-case stx ()
@@ -65,6 +105,7 @@
        (define (s x) (format-id #'idtbl "~a~a" (syntax-e #'idtbl) x))
        (with-syntax ([idtbl? (s '?)]
                      [idtbl-hash (s '-hash)]
+                     [idtbl-phase (s '-phase)]
                      [idtbl-ref (s '-ref)]
                      [idtbl-set! (s '-set!)]
                      [idtbl-set (s '-set)]
@@ -83,86 +124,71 @@
 
              (define mk
                (let ([make-idtbl
-                      (case-lambda
-                        [() (mk null)]
-                        [(init-dict)
-                         (let ([t (make-mutable-idtbl (make-hasheq))])
-                           (for ([(k v) (in-dict init-dict)])
-                             (idtbl-set! t k v))
-                           t)])])
+                      (lambda ([init-dict null] #:phase [phase (syntax-local-phase-level)])
+                        (let ([t (make-mutable-idtbl (make-hasheq) phase)])
+                          (for ([(k v) (in-dict init-dict)])
+                            (idtbl-set! t k v))
+                          t))])
                  make-idtbl))
              (define mkimm
                (let ([make-immutable-idtbl
-                      (case-lambda
-                        [() (mkimm null)]
-                        [(init-dict)
-                         (for/fold ([t (make-immutable-idtbl empty-immutable-hasheq)])
-                             ([(k v) (in-dict init-dict)])
-                           (idtbl-set t k v))])])
+                      (lambda ([init-dict null] #:phase [phase (syntax-local-phase-level)])
+                        (for/fold ([t (make-immutable-idtbl empty-immutable-hasheq phase)])
+                            ([(k v) (in-dict init-dict)])
+                          (idtbl-set t k v)))])
                  make-immutable-idtbl))
 
              (define (idtbl-ref d id [fail (lambda ()
                                              (error 'idtbl-ref
                                                     "no mapping for ~e" id))])
-               (let ([i (ormap (lambda (i) (and (identifier=? (car i) id) i))
-                               (hash-ref (idtbl-hash d)
-                                         (identifier->symbol id)
-                                         null))])
-                 (if i
-                     (cdr i)
-                     (if (procedure? fail)
-                         (fail)
-                         fail))))
+               (let ([phase (idtbl-phase d)])
+                 (let ([i (ormap (lambda (i) (and (identifier=? (car i) id phase) i))
+                                 (hash-ref (idtbl-hash d)
+                                           (identifier->symbol id phase)
+                                           null))])
+                   (if i
+                       (cdr i)
+                       (if (procedure? fail)
+                           (fail)
+                           fail)))))
 
              (define (idtbl-set! d id v)
-               (let ([l (hash-ref (idtbl-hash d) (identifier->symbol id) null)])
+               (let* ([phase (idtbl-phase d)]
+                      [sym (identifier->symbol id phase)]
+                      [l (hash-ref (idtbl-hash d) sym null)])
                  (hash-set! (idtbl-hash d)
-                            (identifier->symbol id)
-                            (let loop ([l l])
-                              (cond [(null? l) (list (cons id v))]
-                                    [(identifier=? (caar l) id)
-                                     (cons (cons id v) (cdr l))]
-                                    [else (cons (car l) (loop (cdr l)))])))))
+                            sym
+                            (alist-set identifier=? phase l id v))))
 
              (define (idtbl-set d id v)
-               (let ([l (hash-ref (idtbl-hash d) (identifier->symbol id) null)])
+               (let* ([phase (idtbl-phase d)]
+                      [sym (identifier->symbol id phase)]
+                      [l (hash-ref (idtbl-hash d) sym null)])
                  (make-immutable-idtbl
                   (hash-set (idtbl-hash d)
-                            (identifier->symbol id)
-                            (let loop ([l l])
-                              (cond [(null? l) (list (cons id v))]
-                                    [(identifier=? (caar l) id)
-                                     (cons (cons id v) (cdr l))]
-                                    [else (cons (car l) (loop (cdr l)))]))))))
+                            sym
+                            (alist-set identifier=? phase l id v))
+                  phase)))
 
              (define (idtbl-remove! d id)
-               (let* ([l (hash-ref (idtbl-hash d) (identifier->symbol id) null)]
-                      [newl (let loop ([l l])
-                              (cond [(null? l) null]
-                                    [(identifier=? (caar l) id)
-                                     (cdr l)]
-                                    [else (cons (car l) (loop (cdr l)))]))])
+               (let* ([phase (idtbl-phase d)]
+                      [sym (identifier->symbol id phase)]
+                      [l (hash-ref (idtbl-hash d) sym null)]
+                      [newl (alist-remove identifier=? phase l id)])
                  (if (pair? newl)
-                     (hash-set! (idtbl-hash d)
-                                (identifier->symbol id)
-                                newl)
-                     (hash-remove! (idtbl-hash d)
-                                   (identifier->symbol id)))))
+                     (hash-set! (idtbl-hash d) sym newl)
+                     (hash-remove! (idtbl-hash d) sym))))
 
              (define (idtbl-remove d id)
-               (let* ([l (hash-ref (idtbl-hash d) (identifier->symbol id) null)]
-                      [newl (let loop ([l l])
-                              (cond [(null? l) null]
-                                    [(identifier=? (caar l) id)
-                                     (cdr l)]
-                                    [else (cons (car l) (loop (cdr l)))]))])
+               (let* ([phase (idtbl-phase d)]
+                      [sym (identifier->symbol id phase)]
+                      [l (hash-ref (idtbl-hash d) sym null)]
+                      [newl (alist-remove identifier=? phase l id)])
                  (make-immutable-idtbl
                   (if (pair? newl)
-                      (hash-set (idtbl-hash d)
-                                (identifier->symbol id)
-                                newl)
-                      (hash-remove (idtbl-hash d)
-                                   (identifier->symbol id))))))
+                      (hash-set (idtbl-hash d) sym newl)
+                      (hash-remove (idtbl-hash d) sym))
+                  phase)))
 
              (define (idtbl-count d)
                (apply + (hash-map (idtbl-hash d) (lambda (k v) (length v)))))
@@ -221,7 +247,7 @@
                (unless (immutable-idtbl? x)
                  (raise-type-error who (symbol->string 'immutable-idtbl) x)))
 
-             (define-struct idtbl (hash))
+             (define-struct idtbl (hash phase))
              (define-struct (mutable-idtbl idtbl) ()
                #:property prop:dict
                (vector (wrap idtbl-ref (list check-idtbl check-id void) '(2 3))
@@ -265,14 +291,14 @@
                         idtbl-map
                         idtbl-for-each))))]))
 
-(define (bound-identifier->symbol id) (syntax-e id))
+(define (bound-identifier->symbol id phase) (syntax-e id))
 
 (make-code bound-id-table
            bound-identifier->symbol
            bound-identifier=?)
 
-(define (free-identifier->symbol id) 
-  (let ([binding (identifier-binding id)])
+(define (free-identifier->symbol id phase)
+  (let ([binding (identifier-binding id phase)])
     (if (pair? binding)
         (cadr binding)
         (syntax-e id))))
@@ -281,21 +307,25 @@
            free-identifier->symbol
            free-identifier=?)
 
-(define (resolve id)
-  (if (syntax-transforming?)
+#|
+;; free*-id-tables only phase = (syntax-local-phase-level)
+
+(define (resolve id phase)
+  (if (and (syntax-transforming?) (equal? phase (syntax-local-phase-level)))
       (let-values ([(v next)
                     (syntax-local-value/immediate id (lambda () (values #f #f)))])
         (if next
-            (resolve next)
+            (resolve next phase)
             id))
       id))
 
-(define (free*-identifier->symbol id)
-  (free-identifier->symbol (resolve id)))
+(define (free*-identifier->symbol id phase)
+  (free-identifier->symbol (resolve id phase) phase))
 
-(define (free*-identifier=? a b)
-  (free-identifier=? (resolve a) (resolve b)))
+(define (free*-identifier=? a b phase)
+  (free-identifier=? (resolve a phase) (resolve b phase) phase))
 
 (make-code free*-id-table
            free*-identifier->symbol
            free*-identifier=?)
+|#
