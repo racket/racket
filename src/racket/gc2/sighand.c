@@ -49,12 +49,17 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
   if (si->si_code != SEGV_ACCERR) { /*SEGV_MAPERR*/
     if (c == SEGV_MAPERR) {
       printf("SIGSEGV MAPERR si_code %i fault on addr %p\n", c, p);
-      printf("This often means %p isn't getting marked, and was prematurely freed\n", p);
+      /* SIGSEGV MAPERRs are invalid addresses. Possible reasons:
+         An object is prematurely freed because it isn't getting marked correctly
+         An unsafe operation was used incorrectly
+         The stack grew beyond its bounds.
+      */
     }
     if (c == 0) {
       /* I have no idea why this happens on linux */
       /* supposedly its coming from the user via kill */
-      /* so just ignore it. */
+      /* so just ignore it. It appears when */
+      /* running w/ places in GDB */
       printf("SIGSEGV SI_USER SI_CODE %i fault on addr %p\n", c, p);
 #ifdef MZ_USE_PLACES
       printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_thread_self());
