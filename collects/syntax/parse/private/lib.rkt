@@ -1,10 +1,7 @@
 #lang racket/base
 (require "sc.rkt"
          "keywords.rkt"
-         syntax/stx
-         unstable/syntax
-         (for-syntax racket/base
-                     "rep.rkt"))
+         (for-syntax racket/base))
 
 (provide identifier
          boolean

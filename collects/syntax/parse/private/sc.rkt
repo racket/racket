@@ -4,13 +4,9 @@
                      unstable/syntax
                      "rep-data.rkt"
                      "rep.rkt")
-         racket/list
-         syntax/stx
          "parse.rkt"
          "keywords.rkt"
-         "runtime.rkt"
-         "runtime-report.rkt"
-         "kws.rkt")
+         "runtime.rkt")
 
 (provide define-syntax-class
          define-splicing-syntax-class

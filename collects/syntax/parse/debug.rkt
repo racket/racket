@@ -1,18 +1,11 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     racket/private/sc
                      syntax/stx
                      unstable/syntax
-                     unstable/struct
                      "private/rep-data.rkt"
                      "private/rep.rkt"
                      "private/kws.rkt")
-         racket/list
-         syntax/stx
-         unstable/markparam
          "../parse.rkt"
-         "private/parse.rkt"
-         "private/keywords.rkt"
          "private/runtime.rkt"
          "private/runtime-progress.rkt"
          "private/runtime-report.rkt"

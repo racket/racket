@@ -8,8 +8,6 @@
                      "../private/lib.rkt"
                      "../private/rep-data.ss"
                      "../private/kws.rkt"
-                     (only-in "../private/runtime.rkt"
-                              this-context-syntax)
                      unstable/wrapc))
 (provide provide-syntax-class/contract
          syntax-class/c

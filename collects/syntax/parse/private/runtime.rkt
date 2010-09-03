@@ -1,15 +1,10 @@
 #lang racket/base
-(require racket/contract/base
-         racket/list
+(require racket/list
          racket/stxparam
-         unstable/struct
-         "minimatch.rkt"
          "runtime-progress.rkt"
          "runtime-failure.rkt"
-         "kws.rkt"
          (for-syntax racket/base
                      racket/list
-                     syntax/stx
                      syntax/kerncase
                      racket/private/sc
                      unstable/syntax

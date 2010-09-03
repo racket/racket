@@ -1,5 +1,4 @@
 #lang racket/base
-(require racket/list)
 (provide (struct-out arguments)
          (struct-out arity)
          no-arguments

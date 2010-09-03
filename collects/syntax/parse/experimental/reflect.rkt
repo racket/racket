@@ -1,8 +1,5 @@
 #lang racket/base
 (require racket/contract/base
-         (for-syntax racket/base
-                     "../../parse.rkt"
-                     "../private/rep-data.rkt")
          "../private/minimatch.rkt"
          "../private/keywords.rkt"
          "../private/runtime-reflect.rkt"

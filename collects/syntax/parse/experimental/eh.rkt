@@ -5,8 +5,7 @@
                      "../private/minimatch.rkt"
                      "../private/rep.rkt"
                      "../private/rep-data.rkt"
-                     "../private/rep-patterns.rkt"
-                     "../private/kws.rkt")
+                     "../private/rep-patterns.rkt")
          "../private/keywords.rkt"
          "../private/sc.rkt")
 

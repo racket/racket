@@ -1,10 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base
                      "../../parse.ss"
-                     "../private/rep-attrs.rkt"
                      "../private/rep-data.rkt"
                      "../private/kws.rkt")
-         "../private/runtime-progress.rkt"
          "../private/runtime.rkt")
 (provide define-primitive-splicing-syntax-class)
 

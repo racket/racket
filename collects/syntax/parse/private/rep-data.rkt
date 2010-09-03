@@ -2,7 +2,6 @@
 (require racket/contract/base
          racket/dict
          racket/list
-         syntax/stx
          syntax/id-table
          unstable/syntax
          "minimatch.rkt"

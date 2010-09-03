@@ -1,6 +1,5 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     racket/private/sc
                      syntax/stx
                      syntax/id-table
                      syntax/keyword
@@ -10,7 +9,6 @@
                      "kws.rkt"
                      "txlift.rkt")
          racket/stxparam
-         racket/list
          syntax/stx
          unstable/struct
          "runtime.rkt"

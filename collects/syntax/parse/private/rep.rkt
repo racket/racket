@@ -5,7 +5,6 @@
                        "runtime.rkt")
          racket/contract/base
          "minimatch.rkt"
-         racket/dict
          syntax/id-table
          syntax/stx
          syntax/keyword
