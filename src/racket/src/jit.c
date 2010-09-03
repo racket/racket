@@ -8070,7 +8070,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         ref3 = NULL;
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
       ref = jit_beqi_i(jit_forward(), JIT_R2, scheme_box_type);
-      mz_patch_branch(ref3);
+      if (ref3)
+        mz_patch_branch(ref3);
       (void)jit_calli(set_box_code);
       ref2 = jit_jmpi(jit_forward());
       mz_patch_branch(ref);

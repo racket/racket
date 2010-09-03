@@ -221,7 +221,7 @@
               #:post (lambda (x) (mcdr v))
               #:literal-ok? #f))
 
-  (for ([star (list values (add-star "vector"))])
+  (for ([star (list values (add-star "box"))])
     (test-un 3 (star 'unsafe-unbox) #&3)
     (let ([b (box 12)])
       (test-tri (list (void) 8) 
