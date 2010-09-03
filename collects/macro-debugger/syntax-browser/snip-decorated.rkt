@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          (only-in mzlib/string read-from-string)
          unstable/class-iop
          "interfaces.rkt"

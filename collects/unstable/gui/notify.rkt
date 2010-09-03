@@ -2,7 +2,7 @@
 ;; owner: ryanc
 (require racket/list
          racket/class
-         racket/gui
+         racket/gui/base
          "../private/notify.rkt")
 (provide (all-from-out "../private/notify.rkt")
          menu-option/notify-box

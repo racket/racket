@@ -1,8 +1,7 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          racket/list
-         framework
          unstable/class-iop
          "interfaces.rkt"
          "partition.rkt"

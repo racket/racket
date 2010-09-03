@@ -2,7 +2,6 @@
 (require racket/class
          parser-tools/lex
          "deriv-tokens.rkt"
-         "deriv-parser.rkt"
          "../syntax-browser.rkt")
 (provide (all-defined-out))
 

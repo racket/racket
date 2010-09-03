@@ -1,7 +1,6 @@
 #lang racket/base
 (require racket/promise
          parser-tools/lex
-         "deriv.rkt"
          "deriv-parser.rkt"
          "deriv-tokens.rkt")
 

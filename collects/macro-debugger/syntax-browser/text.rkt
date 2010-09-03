@@ -1,11 +1,10 @@
 #lang racket/base
 (require racket/list
          racket/class
-         racket/gui
+         racket/gui/base
          drracket/arrow
          framework/framework
          data/interval-map
-         unstable/gui/notify
          "interfaces.rkt")
 
 (provide text:hover<%>

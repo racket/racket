@@ -2,7 +2,8 @@
 (require racket/list
          racket/class
          racket/pretty
-         racket/gui
+         racket/gui/base
+         racket/promise
          "pretty-helper.rkt"
          "interfaces.rkt")
 (provide pretty-print-syntax)

@@ -3,23 +3,11 @@
          racket/unit
          racket/list
          racket/match
-         racket/gui
-         framework
+         racket/gui/base
          unstable/class-iop
          "interfaces.rkt"
-         "prefs.rkt"
-         "extensions.rkt"
-         "hiding-panel.rkt"
-         "../model/deriv.rkt"
-         "../model/deriv-util.rkt"
-         "../model/deriv-parser.rkt"
-         "../model/trace.rkt"
-         "../model/reductions-config.rkt"
-         "../model/reductions.rkt"
          "../model/steps.rkt"
-         unstable/gui/notify
 	 (prefix-in sb: "../syntax-browser/interfaces.rkt")
-         "cursor.rkt"
          "debug-format.rkt")
 
 #;

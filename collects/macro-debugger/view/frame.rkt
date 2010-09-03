@@ -3,21 +3,15 @@
          racket/unit
          racket/list
          racket/file
+         racket/path
          racket/match
-         racket/gui
+         racket/gui/base
          framework
          unstable/class-iop
          "interfaces.rkt"
          "stepper.rkt"
-         "prefs.rkt"
-         "hiding-panel.rkt"
          (prefix-in sb: "../syntax-browser/embed.rkt")
 	 (prefix-in sb: "../syntax-browser/interfaces.rkt")
-         "../model/deriv.rkt"
-         "../model/deriv-util.rkt"
-         "../model/trace.rkt"
-         "../model/steps.rkt"
-         "cursor.rkt"
          unstable/gui/notify)
 (provide macro-stepper-frame-mixin)
 

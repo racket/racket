@@ -3,15 +3,11 @@
          racket/unit
          racket/list
          racket/match
-         racket/gui
-         framework
+         racket/gui/base
          syntax/stx
          unstable/find
          unstable/class-iop
          "interfaces.rkt"
-         "prefs.rkt"
-         "extensions.rkt"
-         "hiding-panel.rkt"
          "step-display.rkt"
          "../model/deriv.rkt"
          "../model/deriv-util.rkt"
@@ -20,9 +16,7 @@
          "../model/reductions-config.rkt"
          "../model/reductions.rkt"
          "../model/steps.rkt"
-         unstable/gui/notify
-         "cursor.rkt"
-         "debug-format.rkt")
+         "cursor.rkt")
 
 (provide term-record%)
 

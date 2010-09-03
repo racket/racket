@@ -1,10 +1,9 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          framework
          unstable/class-iop
          "interfaces.rkt"
-         "util.rkt"
          "../util/mpi.rkt"
          "../util/stxobj.rkt")
 (provide properties-view%

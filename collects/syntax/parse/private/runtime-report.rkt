@@ -1,13 +1,6 @@
 #lang racket/base
-(require racket/contract/base
-         racket/list
+(require racket/list
          "minimatch.rkt"
-         racket/stxparam
-         syntax/stx
-         (for-syntax racket/base
-                     syntax/stx
-                     racket/private/sc
-                     "rep-data.rkt")
          "runtime.rkt"
          "kws.rkt")
 (provide syntax-patterns-fail

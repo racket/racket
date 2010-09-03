@@ -1,9 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         racket/list
          racket/contract
          racket/match
-         "deriv.rkt"
          "deriv-util.rkt"
          "stx-util.rkt"
          "context.rkt"

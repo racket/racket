@@ -2,14 +2,13 @@
 (require racket/list
          racket/unit
          racket/match
-         racket/gui
+         racket/gui/base
+         racket/class
          framework
          drscheme/tool
          mrlib/switchable-button
          string-constants
          "model/trace.rkt"
-         "model/deriv.rkt"
-         "model/deriv-util.rkt"
          "view/frame.rkt"
          (only-in "view/view.rkt" macro-stepper-director%)
          "view/stepper.rkt"

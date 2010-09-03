@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          framework
          drscheme/tool
          racket/unit

@@ -1,10 +1,9 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          racket/match
          (only-in mzlib/string read-from-string)
          framework
-         "interfaces.rkt"
          "display.rkt"
          "controller.rkt"
          "keymap.rkt"

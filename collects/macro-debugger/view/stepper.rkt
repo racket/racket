@@ -3,11 +3,9 @@
          racket/unit
          racket/list
          racket/match
-         racket/gui
-         framework
+         racket/gui/base
          unstable/class-iop
          "interfaces.rkt"
-         "prefs.rkt"
          "extensions.rkt"
          "hiding-panel.rkt"
          "term-record.rkt"
@@ -15,9 +13,6 @@
 	 (prefix-in sb: "../syntax-browser/interfaces.rkt")
          "../model/deriv.rkt"
          "../model/deriv-util.rkt"
-         "../model/trace.rkt"
-         "../model/reductions.rkt"
-         "../model/steps.rkt"
          "cursor.rkt"
          unstable/gui/notify
          (only-in mzscheme [#%top-interaction mz-top-interaction]))

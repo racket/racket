@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/contract/base
-         syntax/stx
          syntax/id-table
          unstable/syntax
          unstable/struct)
