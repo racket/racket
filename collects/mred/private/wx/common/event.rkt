@@ -67,8 +67,7 @@
     (eq? et 'leave))
 
   (def/public (moving?)
-    (and (eq? et 'motion)
-         (not (or left-down middle-down right-down)))))
+    (eq? et 'motion)))
 
 (defclass key-event% event%
   (init-properties [[(make-alts symbol? char?) key-code] #\nul]

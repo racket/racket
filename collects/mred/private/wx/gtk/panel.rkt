@@ -1,17 +1,18 @@
 #lang scheme/base
 (require scheme/class
-         scheme/foreign
+         ffi/unsafe
           "../../syntax.rkt"
+          "../../lock.rkt"
          "window.rkt"
          "utils.rkt"
-         "types.rkt")
-(unsafe!)
+         "types.rkt"
+         "const.rkt")
 
 (provide panel%
          panel-mixin)
 
-; (define-gtk gtk_alignment_new (_fun _gfloat _gfloat _gfloat _gfloat -> _GtkWidget))
 (define-gtk gtk_fixed_new (_fun -> _GtkWidget))
+(define-gtk gtk_event_box_new (_fun -> _GtkWidget))
 
 (define-gtk gtk_fixed_move (_fun _GtkWidget _GtkWidget _int _int -> _void))
 
@@ -56,14 +57,28 @@
     
     (inherit set-size get-gtk)
     
+    (define gtk (as-gtk-allocation (gtk_event_box_new)))
+    (define client-gtk (atomically
+                        (let ([client (gtk_fixed_new)])
+                          (gtk_container_add gtk client)
+                          (gtk_widget_show client)
+                          client)))
+
+    (define/override (get-client-gtk) client-gtk)
+
     (super-new [parent parent]
-               [gtk (as-gtk-allocation (gtk_fixed_new))]
+               [gtk gtk]
+               [extra-gtks (list client-gtk)]
                [no-show? (memq 'deleted style)])
     
-    (define gtk (get-gtk))
-
     (connect-key-and-mouse gtk)
+    (gtk_widget_add_events gtk (bitwise-ior GDK_BUTTON_PRESS_MASK
+                                            GDK_BUTTON_RELEASE_MASK
+                                            GDK_POINTER_MOTION_MASK
+                                            GDK_FOCUS_CHANGE_MASK
+                                            GDK_ENTER_NOTIFY_MASK
+                                            GDK_LEAVE_NOTIFY_MASK))
 
     (define/override (set-child-size child-gtk x y w h)
-      (gtk_fixed_move gtk child-gtk x y)
+      (gtk_fixed_move client-gtk child-gtk x y)
       (gtk_widget_set_size_request child-gtk w h))))

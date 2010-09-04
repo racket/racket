@@ -1,6 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
          racket/class
+         racket/draw
          "utils.rkt"
          "types.rkt"
          "pixbuf.rkt"
@@ -75,6 +76,19 @@
             (hash-set! gdk-cursors sym c)
             (set! handle c)))]
        [else (set! handle v)])))
+
+  (define/public (set-image image mask hot-spot-x hot-spot-y)
+    (let ([bm (make-object bitmap% 16 16 #f #t)])
+      (let ([dc (make-object bitmap-dc% bm)])
+        (send dc draw-bitmap image 0 0 'solid (send the-color-database find-color "black") mask)
+        (send dc set-bitmap #f))
+      (let ([pixbuf (bitmap->pixbuf bm)])
+        (set! handle
+              (gdk_cursor_new_from_pixbuf
+               (gdk_display_get_default)
+               pixbuf
+               hot-spot-x
+               hot-spot-y)))))
 
   (define/public (get-handle) handle)
     

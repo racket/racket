@@ -15,7 +15,7 @@
 (import-class NSView)
 
 (define-objc-class MyPanelView NSView
-  #:mixins (CursorDisplayer)
+  #:mixins (KeyMouseTextResponder CursorDisplayer)
   [wxb])
 
 (define (panel-mixin %)
