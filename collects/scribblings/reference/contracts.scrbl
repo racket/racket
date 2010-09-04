@@ -1209,12 +1209,15 @@ flat contracts do not need to supply an explicit projection.
          (if (and (procedure? f) (procedure-arity-includes? f 1))
            (λ (x) (range (f (domain x))))
            (raise-blame-error
-            b f "expected a function of one argument, got: ~e" f)))))))
+            b f
+            "expected a function of one argument, got: ~e"
+            f)))))))
 (contract int->int/c "not fun" 'positive 'negative)
-(define halve (contract int->int/c (λ (x) (/ x 2)) 'positive 'negative))
+(define halve 
+  (contract int->int/c (λ (x) (/ x 2)) 'positive 'negative))
 (halve 2)
-(halve 1)
 (halve 1/2)
+(halve 1)
 ]
 
 }
@@ -1444,6 +1447,78 @@ fashion, analogous to the constraint on projections in
 These predicates detect whether a value is a @tech{contract property} or a
 @tech{flat contract property}, respectively.
 }
+
+@subsection{Obligation Information in Check Syntax}
+
+@seclink[#:doc '(lib "scribblings/drracket/drracket.scrbl")
+"buttons"]{Check Syntax} in DrRacket shows obligations information for 
+contracts according to @racket[syntax-property]s that the contract combinators
+leave in the expanded form of the program. These properties indicate
+where contracts appears in the source and where the positive and negative
+positions of the contracts appear.
+
+To make Check Syntax show obligation information for your new contract
+combinators, use these properties:
+
+@itemize[@item{@racketblock0['racket/contract:contract :
+                             (vector/c symbol? (listof syntax?) (listof syntax?))]
+                This property should be attached to the result of a transformer
+                that implements a contract combinator. It signals to Check Syntax
+                that this is where a contract begins. 
+                
+                The first element in the
+                vector should be a unique (in the sense of @racket[eq?]) value
+                that Check Syntax can use a tag to match up this contract with
+                its subpieces (specified by the two following syntax properties).
+                
+                The second and third elements of the vector are syntax objects
+                from pieces of the contract and Check Syntax will color them.
+                The first list should contain subparts that are the responsibility
+                of parties (typically modules) that provide implementations of the contract.
+                The second list should contain subparts that are the 
+                responsibility of clients.
+                
+                For example, in @racket[(->* () #:pre #t any/c #:post #t)],
+                the @racket[->*] and the @racket[#:post] should be in the first
+                list and @racket[#:pre] in the second list.}
+                
+          @item{@racketblock0['racket/contract:negative-position : symbol?]
+                 This property should be attached to subexpressions of
+                 a contract combinator that are expected to be other contracts.
+                 The value of the property should be the key (the first element from
+                 the vector for the @racket['racket/contract:contract] property)
+                 indicating which contract this is.
+                 
+                 This property should be used when the expression's value is a contract
+                 that clients are responsible for. }
+         
+          @item{@racketblock0['racket/contract:positive-position : symbol?]
+                 This is just like @racket['racket/contract:negative-position],
+                 except that it should be used when the expression's value is 
+                 a contract that the original party should be responsible for.
+                 }
+         
+          @item{@racketblock0['racket/contract:contract-on-boundary : symbol?]
+                 The presence of this property tells Check Syntax that it
+                 should start coloring from this point. It expects the expression
+                 to alow be a contract
+                 (and thus to have the @racket['racket/contract:contract] property);
+                 this property indicates that this contract is on a (module) boundary.
+                 
+                 (The value of the property is not used.)
+                 }
+          
+          @item{@racketblock0['racket/contract:internal-contract : symbol?]
+                 
+                 Like @racket['racket/contract:contract-on-boundary], the presence
+                 of this property triggers coloring, but this is meant for use
+                 when the party (module) containing the contract (regardless of whether
+                 or not this module exports anything matching the contract)
+                 can be blamed for violating the contract. This comes into play
+                 for @racket[->i] contracts, since the contract itself has
+                 acceess to values under contract via the dependency. 
+                 }
+         ]
 
 @; ------------------------------------------------------------------------
 
