@@ -53,6 +53,8 @@
 (import-class NSArray)
 (import-protocol NSTextInput)
 
+(define current-insert-text (make-parameter #f))
+
 (define-objc-mixin (KeyMouseResponder Superclass)
   [wxb]
   [-a _void (mouseDown: [_id event]) 
@@ -106,19 +108,34 @@
         (super-tell #:type _void otherMouseDragged: event))]
   
   [-a _void (keyDown: [_id event])
-      (unless (do-key-event wxb event)
+      (unless (do-key-event wxb event self)
         (super-tell #:type _void keyDown: event))]
   [-a _void (insertText: [_NSString str])
-      (let ([wx (->wx wxb)])
-        (post-dummy-event) ;; to wake up in case of character palette insert 
-        (when wx
-          (queue-window-event wx (lambda ()
-                                   (send wx key-event-as-string str)))))]
+      (let ([cit (current-insert-text)])
+        (if cit
+            (set-box! cit str)
+            (let ([wx (->wx wxb)])
+              (post-dummy-event) ;; to wake up in case of character palette insert 
+              (when wx
+                (queue-window-event wx (lambda ()
+                                         (send wx key-event-as-string str)))))))]
 
-  ;; for NSTextInput, to enable character palette insert:
+  ;; for NSTextInput:
   [-a _BOOL (hasMarkedText) #f]
   [-a _id (validAttributesForMarkedText)
-      (tell NSArray array)])
+      (tell NSArray array)]
+  [-a _void (unmarkText) (void)]
+  [-a _NSRange (markedRange) (make-NSRange 0 0)]
+  [-a _NSRange (selectedRange) (make-NSRange 0 0)]
+  [-a _void (setMarkedText: [_id aString] selectedRange: [_NSRange selRange])
+      (void)]
+  [-a _id (validAttributesForMarkedText) #f]
+  [-a _id (attributedSubstringFromRange: [_NSRange theRange]) #f]
+  [-a _NSUInteger (characterIndexForPoint: [_NSPoint thePoint]) 0]
+  [-a _NSInteger (conversationIdentifier) 0]
+  [-a _void (doCommandBySelector: [_SEL aSelector]) (void)]
+  [-a _NSRect (firstRectForCharacterRange: [_NSRange r]) (make-NSRect (make-NSPoint 0 0)
+                                                                      (make-NSSize 0 0))])
 
 (define-objc-mixin (KeyMouseTextResponder Superclass)
   #:mixins (KeyMouseResponder)
@@ -132,51 +149,64 @@
         (when wx
           (send wx reset-cursor-rects)))])
 
-(define (do-key-event wxb event)
+(define (do-key-event wxb event self)
   (let ([wx (->wx wxb)])
     (and
      wx
-     (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
-            [bit? (lambda (m b) (positive? (bitwise-and m b)))]
-            [pos (tell #:type _NSPoint event locationInWindow)]
-            [str (tell #:type _NSString event characters)]
-            [control? (bit? modifiers NSControlKeyMask)])
-       (let-values ([(x y) (send wx window-point-to-view pos)])
-         (let ([k (new key-event%
-                       [key-code (or
-                                  (map-key-code (tell #:type _ushort event keyCode))
-                                  (if (string=? "" str)
-                                      #\nul
-                                      (let ([c (string-ref str 0)])
-                                        (or (and control?
-                                                 (char<=? #\u00 c #\u1a)
-                                                 (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
-                                                   (and (string? alt-str)
-                                                        (= 1 (string-length alt-str))
-                                                        (string-ref alt-str 0))))
-                                            c))))]
-                       [shift-down (bit? modifiers NSShiftKeyMask)]
-                       [control-down control?]
-                       [meta-down (bit? modifiers NSCommandKeyMask)]
-                       [alt-down (bit? modifiers NSAlternateKeyMask)]
-                       [x (->long x)]
-                       [y (->long y)]
-                       [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
-                       [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-           (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
-             (when (and (string? alt-str)
-                        (= 1 (string-length alt-str)))
-               (let ([alt-code (string-ref alt-str 0)])
-                 (unless (equal? alt-code (send k get-key-code))
-                   (send k set-other-altgr-key-code alt-code)))))
-           (if (send wx definitely-wants-event? k)
-               (begin
-                 (queue-window-event wx (lambda ()
-                                          (send wx dispatch-on-char k #f)))
-                 #t)
-               (constrained-reply (send wx get-eventspace)
-                                  (lambda () (send wx dispatch-on-char k #t))
-                                  #t))))))))
+     (let ([inserted-text (box #f)])
+       ;; Calling `interpretKeyEvents:' allows key combinations to be
+       ;; handled, such as option-e followed by e to produce é. The
+       ;; call to `interpretKeyEvents:' typically calls `insertText:',
+       ;; so we set `current-insert-text' to tell `insertText:' to just 
+       ;; give us back the text in the parameter. For now, we ignore the
+       ;; text and handle the event as usual, though probably we should
+       ;; be doing something with it.
+       (parameterize ([current-insert-text inserted-text])
+         (tellv self interpretKeyEvents: (tell (tell NSArray alloc) 
+                                               initWithObjects: #:type (_ptr i _id) event
+                                               count: #:type _NSUInteger 1)))
+       
+       (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
+              [bit? (lambda (m b) (positive? (bitwise-and m b)))]
+              [pos (tell #:type _NSPoint event locationInWindow)]
+              [str (tell #:type _NSString event characters)]
+              [control? (bit? modifiers NSControlKeyMask)])
+         (let-values ([(x y) (send wx window-point-to-view pos)])
+           (let ([k (new key-event%
+                         [key-code (or
+                                    (map-key-code (tell #:type _ushort event keyCode))
+                                    (if (string=? "" str)
+                                        #\nul
+                                        (let ([c (string-ref str 0)])
+                                          (or (and control?
+                                                   (char<=? #\u00 c #\u1a)
+                                                   (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
+                                                     (and (string? alt-str)
+                                                          (= 1 (string-length alt-str))
+                                                          (string-ref alt-str 0))))
+                                              c))))]
+                         [shift-down (bit? modifiers NSShiftKeyMask)]
+                         [control-down control?]
+                         [meta-down (bit? modifiers NSCommandKeyMask)]
+                         [alt-down (bit? modifiers NSAlternateKeyMask)]
+                         [x (->long x)]
+                         [y (->long y)]
+                         [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                         [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+             (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
+               (when (and (string? alt-str)
+                          (= 1 (string-length alt-str)))
+                 (let ([alt-code (string-ref alt-str 0)])
+                   (unless (equal? alt-code (send k get-key-code))
+                     (send k set-other-altgr-key-code alt-code)))))
+             (if (send wx definitely-wants-event? k)
+                 (begin
+                   (queue-window-event wx (lambda ()
+                                            (send wx dispatch-on-char k #f)))
+                   #t)
+                 (constrained-reply (send wx get-eventspace)
+                                    (lambda () (send wx dispatch-on-char k #t))
+                                    #t)))))))))
 
 (define (do-mouse-event wxb event kind l? m? r? [ctl-kind kind])
   (let ([wx (->wx wxb)])
