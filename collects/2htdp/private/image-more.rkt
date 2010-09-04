@@ -1159,7 +1159,39 @@
                      (current-directory)))])])
        #`(make-object image-snip% (make-object bitmap% #,path 'unknown/mask)))]))
 
+(define/chk (image->color-list image)
+  (let* ([w (image-width image)]
+         [h (image-height image)]
+         [bm (make-object bitmap% w h)]
+         [bdc (make-object bitmap-dc% bm)]
+         [c (make-object color%)])
+    (send bdc clear)
+    (render-image image bdc 0 0)
+    (for/list ([i (in-range 0 (* w h))])
+      (send bdc get-pixel (remainder i w) (quotient i w) c)
+      (color (send c red) (send c green) (send c blue)))))
 
+(define/chk (color-list->bitmap color-list width height)
+  (check-dependencies 'color-list->bitmap
+                      (= (* width height) (length color-list))
+                      "the length of the color list to match the product of the width and the height, but the list has ~a elements and the width and height are ~a and ~a respectively"
+                      (length color-list) width height)
+  (let* ([bmp (make-object bitmap% width height)]
+         [bdc (make-object bitmap-dc% bmp)]
+         [o (make-object color%)])
+    (for ([c (in-list color-list)]
+          [i (in-naturals)])
+      (cond
+        [(color? c)
+         (send o set (color-red c) (color-green c) (color-blue c))
+         (send bdc set-pixel (remainder i width) (quotient i width) o)]
+        [else
+         (let* ([str (if (string? c) c (symbol->string c))]
+                [clr (or (send the-color-database find-color str)
+                         (send the-color-database find-color "black"))])
+           (send bdc set-pixel (remainder i width) (quotient i width) clr))]))
+    (bitmap->image bmp)))
+      
 (define build-color/make-color
   (let ([orig-make-color make-color])
     (define/chk (make-color int0-255-1 int0-255-2 int0-255-3) 
@@ -1249,6 +1281,8 @@
          scene+curve
          text
          text/font
+         image->color-list
+         color-list->bitmap
          
          bitmap
          

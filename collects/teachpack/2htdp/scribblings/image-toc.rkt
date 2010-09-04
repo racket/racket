@@ -36,26 +36,47 @@
        (above r r r r r r))
     'image
     "245380940d6-1.png")
-   (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-height (text "Hello" 24 "black")) 'val 24)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 18)
-   (list '(image-height (rectangle 10 0 "solid" "purple")) 'val 0)
+   (list '(image-height (rectangle 100 100 "solid" "black")) 'val '100)
+   (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val '100)
+   (list '(image-height (text "Hello" 24 "black")) 'val '24)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val '18)
+   (list '(image-height (rectangle 10 0 "solid" "purple")) 'val '0)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
     'val
-    60)
-   (list '(image-height (circle 30 "solid" "orange")) 'val 60)
-   (list '(image-height (ellipse 30 40 "solid" "orange")) 'val 40)
-   (list '(image-width (rectangle 0 10 "solid" "purple")) 'val 0)
+    '60)
+   (list '(image-height (circle 30 "solid" "orange")) 'val '60)
+   (list '(image-height (ellipse 30 40 "solid" "orange")) 'val '40)
+   (list '(image-width (rectangle 0 10 "solid" "purple")) 'val '0)
    (list
     '(image-width
       (beside (circle 20 "solid" "orange") (circle 20 "solid" "purple")))
     'val
-    80)
-   (list '(image-width (circle 30 "solid" "orange")) 'val 60)
-   (list '(image-width (ellipse 30 40 "solid" "orange")) 'val 30)
+    '80)
+   (list '(image-width (circle 30 "solid" "orange")) 'val '60)
+   (list '(image-width (ellipse 30 40 "solid" "orange")) 'val '30)
+   (list
+    '(scale 40 (color-list->bitmap (list "red" "green" "blue") 3 1))
+    'image
+    "2e45632f5de.png")
+   (list
+    '(image->color-list
+      (above
+       (beside
+        (rectangle 1 1 "solid" (make-color 1 1 1))
+        (rectangle 1 1 "solid" (make-color 2 2 2)))
+       (beside
+        (rectangle 1 1 "solid" (make-color 3 3 3))
+        (rectangle 1 1 "solid" (make-color 4 4 4)))))
+    'val
+    '(list (color 1 1 1) (color 2 2 2) (color 3 3 3) (color 4 4 4)))
+   (list
+    '(image->color-list (rectangle 2 2 "solid" "black"))
+    'val
+    '(list (color 0 0 0) (color 0 0 0) (color 0 0 0) (color 0 0 0)))
+   (list '(bitmap icons/b-run.png) 'image "13aef4074e9.png")
+   (list '(bitmap icons/stop-16x16.png) 'image "72aef3dc67.png")
    (list
     '(beside
       (ellipse 20 70 "solid" "lightsteelblue")
@@ -641,8 +662,6 @@
     "2dde939d6dc.png")
    (list '(right-triangle 36 48 "solid" "black") 'image "1a0088e3819.png")
    (list '(triangle 40 "solid" "tan") 'image "aeddf66d5d.png")
-   (list '(bitmap icons/b-run.png) 'image "13aef4074e9.png")
-   (list '(bitmap icons/stop-16x16.png) 'image "72aef3dc67.png")
    (list
     '(text/font "not really a link" 18 "blue" #f 'roman 'normal 'normal #t)
     'image

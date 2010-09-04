@@ -105,6 +105,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          scene+curve
          text
          text/font
+         image->color-list
+         color-list->bitmap
          
          x-place?
          y-place?

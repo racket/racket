@@ -182,6 +182,9 @@
           (if (send the-color-database find-color color-str)
               color-str
               "black"))])]
+    [(color-list)
+     (check-arg fn-name (and (list? arg) (andmap image-color? arg)) 'color-list i arg)
+     arg]
     [(string)
      (check-arg fn-name (string? arg) 'string i arg)
      arg]

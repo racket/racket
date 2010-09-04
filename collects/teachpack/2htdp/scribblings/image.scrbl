@@ -177,18 +177,6 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
                              #f 'roman 'normal 'normal #t)]
 }
 
-@defform/subs[(bitmap bitmap-spec)
-              ([bitmap-spec rel-string
-                            id])]{
-                                  
-  Loads the bitmap specified by @racket[bitmap-spec]. If @racket[bitmap-spec] is a string, it is treated as a 
-  relative path. If it is an identifier, it is treated like a require spec and used to refer to a file
-  in a collection.
-  
-  @image-examples[(bitmap icons/stop-16x16.png)
-                  (bitmap icons/b-run.png)]
-}
-
 @section{Polygons}
                      
 @defproc*[([(triangle [side-length (and/c real? (not/c negative?))] 
@@ -1059,6 +1047,58 @@ the parts that fit onto @racket[scene].
                    (ellipse 20 30 "solid" "slateblue")
                    (ellipse 20 10 "solid" "navy"))]
 }
+
+@section{Bitmaps}
+
+DrRacket's @seclink["images" #:doc '(lib "scribblings/drracket/drracket.scrbl")]{Insert Image ...} 
+menu item allows you to insert images into your program text, and those images are treated 
+as images for this library. 
+
+Unlike all of the other images in this library, those images (and the other images created
+by functions in this section of the documentation)
+are represented as bitmaps, i.e., a (potentially quite large) array of colors. 
+This means that scaling and rotating them loses fidelity in the image and is significantly
+more expensive than with the other shapes.
+
+@defform/subs[(bitmap bitmap-spec)
+              ([bitmap-spec rel-string
+                            id])]{
+                                  
+  Loads the bitmap specified by @racket[bitmap-spec]. If @racket[bitmap-spec] is a string, it is treated as a 
+  relative path. If it is an identifier, it is treated like a require spec and used to refer to a file
+  in a collection.
+  
+  @image-examples[(bitmap icons/stop-16x16.png)
+                  (bitmap icons/b-run.png)]
+}
+
+@defproc[(image->color-list [image image?]) (listof color?)]{
+  Returns a list of colors that correspond to the colors in the
+  image, reading from left to right, top to bottom.
+  
+  @image-examples[(image->color-list (rectangle 2 2 "solid" "black"))
+                  (image->color-list
+                   (above (beside (rectangle 1 1 "solid" (make-color 1 1 1))
+                                  (rectangle 1 1 "solid" (make-color 2 2 2)))
+                          (beside (rectangle 1 1 "solid" (make-color 3 3 3))
+                                  (rectangle 1 1 "solid" (make-color 4 4 4)))))]
+  
+}
+
+@defproc[(color-list->bitmap [colors (listof image-color?)] 
+                             [width (and/c real? (not/c negative?))]
+                             [height (and/c real? (not/c negative?))])
+         image?]{
+  Constructs a bitmap from the given @racket[colors], with the given @racket[width] and @racket[height].
+
+  @image-examples[(scale
+                   40
+                   (color-list->bitmap
+                    (list "red" "green" "blue")
+                    3 1))]
+  
+  }
+                             
 
 @section{Image Properties}
 

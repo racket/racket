@@ -40,7 +40,8 @@
                             (printf "\nerror evaluating:\n")
                             (pretty-write exp)
                             (raise x))])
-           (parameterize ([current-namespace image-ns]) (eval exp)))])
+           (parameterize ([current-namespace image-ns])
+             (rewrite (eval exp))))])
     (cond
       [(image? result)
        (let ([fn (exp->filename exp)])
@@ -52,7 +53,18 @@
        (unless (equal? result (read/write result))
          (error 'handle-image "expression ~s produced ~s, which I can't write"
                 exp result))
-       (set! mapping (cons `(list ',exp 'val ,result) mapping))])))
+       (set! mapping (cons `(list ',exp 'val ',result) mapping))])))
+
+(define (rewrite exp)
+  (let loop ([exp exp])
+    (cond
+      [(list? exp)
+       `(list ,@(map loop exp))]
+      [(color? exp)
+       `(color ,(color-red exp)
+               ,(color-green exp)
+               ,(color-blue exp))]
+      [else exp])))
 
 (define (exp->filename exp)
   (let loop ([prev 0])

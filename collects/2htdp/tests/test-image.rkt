@@ -644,9 +644,9 @@
 
 (test (empty-scene 185 100)
       =>
-      (overlay/align "left" "top"
-                     (rectangle 184 99 'outline 'solid)
-                     (rectangle 185 100 'solid 'white)))
+      (crop 0 0 185 100
+            (overlay (rectangle 185 100 'outline (pen "black" 2 'solid 'round 'round))
+                     (rectangle 185 100 'solid 'white))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1555,6 +1555,29 @@
        160 160 0 1/2
        (make-pen "black" 12 "solid" "round" "round")))
 
+(test (image->color-list
+       (above (beside (rectangle 1 1 'solid (color 1 1 1))
+                      (rectangle 1 1 'solid (color 2 2 2))
+                      (rectangle 1 1 'solid (color 3 3 3)))
+              (beside (rectangle 1 1 'solid (color 4 4 4))
+                      (rectangle 1 1 'solid (color 5 5 5))
+                      (rectangle 1 1 'solid (color 6 6 6)))))
+      =>
+      (list (color 1 1 1) (color 2 2 2) (color 3 3 3) 
+            (color 4 4 4) (color 5 5 5) (color 6 6 6)))
+
+(test (color-list->bitmap
+       (list (color 1 1 1) (color 2 2 2) (color 3 3 3) 
+             (color 4 4 4) (color 5 5 5) (color 6 6 6))
+       3 2)
+      =>
+      (above (beside (rectangle 1 1 'solid (color 1 1 1))
+                     (rectangle 1 1 'solid (color 2 2 2))
+                     (rectangle 1 1 'solid (color 3 3 3)))
+             (beside (rectangle 1 1 'solid (color 4 4 4))
+                     (rectangle 1 1 'solid (color 5 5 5))
+                     (rectangle 1 1 'solid (color 6 6 6)))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1633,6 +1656,12 @@
 (test/exn (color #f #f #f)
           =>
           #rx"^color:")
+(test/exn (color-list->bitmap
+           (list (color 1 1 1) (color 2 2 2) (color 3 3 3) 
+                 (color 4 4 4) (color 5 5 5) (color 6 6 6))
+           3 3)
+          =>
+          #rx"^color-list->bitmap")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1760,7 +1789,7 @@
                (term image))))
     #:attempts 1000)))
 
-;;This expression was found by the below. Its problematic because it has a negative width.
+;;This expression was found by the above. Its problematic because it has a negative width.
 #;
 (begin
   (define i
@@ -1769,3 +1798,22 @@
      (rotate 30 (crop 54 30 20 10 i))))
   (image-width i) (image-height i) i)
 
+
+#|
+
+This was found by the first redex check above:
+
+(let ((i (flip-horizontal 
+          (let ((i (line (+ (* 10 1) -2) (+ (* 10 3) 4) "green")))
+            (crop (max 0 (min (image-width i) (+ (* 10 4) 13)))
+                  (max 0 (min (image-height i) (+ (* 10 2) 0)))
+                  (+ (* 10 3) 2)
+                  (+ (* 10 7) 0)
+                  i)))))
+  (crop (max 0 (min (image-width i) (+ (* 10 0) 2))) 
+        (max 0 (min (image-height i) (+ (* 10 2) 12))) 
+        (+ (* 10 1) 7) (+ (* 10 1) 2)
+        i))
+raises an exception crop: expected <number that is between 0 than the width (-1)> as first argument, given: 0
+
+|#
