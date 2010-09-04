@@ -858,11 +858,13 @@ trigger runtime errors in check syntax.
               (send defs save-file filename)
 	      (preferences:set 'framework:coloring-active #f)
               (close-the-error-window-test drs)
-              ;(for-each (run-one-test (normalize-path dir)) tests)
+              (for-each (run-one-test (normalize-path dir)) tests)
 	      (preferences:set 'framework:coloring-active #t)
 	      (send defs save-file) ;; clear out autosave
 	      (send defs set-filename #f)
-	      (delete-file filename)))))))
+              (delete-file filename)
+              
+              (printf "Ran ~a tests.\n" total-tests-run)))))))
   
   (define (close-the-error-window-test drs)
     (clear-definitions drs)
@@ -875,7 +877,10 @@ trigger runtime errors in check syntax.
     (when (send drs syncheck:error-report-visible?)
       (error 'close-the-error-window-test "error report window did not go away after clicking Run")))
     
+  (define total-tests-run 0)
+  
   (define ((run-one-test save-dir) test)
+    (set! total-tests-run (+ total-tests-run 1))
     (let* ([drs (wait-for-drscheme-frame)]
            [defs (send drs get-definitions-text)]
            [input (test-input test)]
