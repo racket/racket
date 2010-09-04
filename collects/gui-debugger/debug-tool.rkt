@@ -447,15 +447,22 @@
                           (invalidate-bitmap-cache)])
                        (let* ([frames (send (get-tab) get-stack-frames)]
                               [pos-vec (send (get-tab) get-pos-vec)]
-                              [id (robust-vector-ref pos-vec pos)])
-                         (send (get-tab) set-mouse-over-msg
-                               (clean-status
-                                (lookup-var id (list-tail frames (send (get-tab) get-frame-num))
+                              [id (robust-vector-ref pos-vec pos)]
+                              ;; Try to look up the identifier and render its value.  If either
+                              ;; of these steps fails, just draw an empty string in the status bar.
+                              [rendered
+                               (lookup-var
+                                id (list-tail frames (send (get-tab) get-frame-num))
                                             ;; id found
                                             (lambda (val _)
-                                              (string-append (symbol->string (syntax-e id)) " = " (render val)))
+                                  (cond
+                                    [(render val) => (lambda (str)
+                                                       (string-append
+                                                        (symbol->string (syntax-e id)) " = " str))]
+                                    [else ""]))
                                             ;; id not found
-                                            (lambda () ""))))))))
+                                (lambda () ""))])
+                         (send (get-tab) set-mouse-over-msg (clean-status rendered))))))
                  (super on-event event)]
                 [(send event button-down? 'right)
                  (debugger-handle-right-click event breakpoints)]
@@ -547,7 +554,8 @@
       (define (debug-interactions-text-mixin super%)
         (class super%
           
-          (inherit run-in-evaluation-thread)
+          (inherit run-in-evaluation-thread
+                   get-user-thread)
           
           (super-instantiate ())
           
@@ -555,6 +563,18 @@
           (define tab #f)
           (define/public (get-tab) tab)
           (define/public (set-tab t) (set! tab t))
+          
+          ;; Returns whether the evaluation thread has been killed.
+          (define/public (evaluation-thread-dead?)
+            (cond
+              [(get-user-thread) => thread-dead?]
+              [else #t]))
+          
+          (define/override (kill-evaluation)
+            (super kill-evaluation)
+            (when (get-tab)
+              ;; Remove any markings indicating that the program is suspended.
+              (send (get-tab) resume-gui)))
           
           (define/private (stx-source->breakpoints src)
             (send (send (or (and src (filename->defs src)) this) get-tab) get-breakpoints))
@@ -727,7 +747,8 @@
           
           (inherit get-defs
                    get-ints
-                   get-frame)
+                   get-frame
+                   is-running?)
           
           (field [breakpoints (make-hash-table)]
                  [suspend-sema (make-semaphore 1)]
@@ -795,8 +816,11 @@
           
           (define/public (resume)
             (let ([v (get-break-status)])
-              (resume-gui)
-              (channel-put resume-ch (and (pair? v) (cdr v)))))
+              ;; We should be suspended here, so the user thread should be waiting for a value
+              ;; on resume-ch.  However, we set a timeout to guard against cases where
+              ;; the user thread gets interrupted or killed unexpectedly.
+              (when (sync/timeout 1 (channel-put-evt resume-ch (and (pair? v) (cdr v))))
+                (resume-gui))))
           
           (define/public (set-mouse-over-msg msg)
             (send (get-frame) set-mouse-over-msg msg))
@@ -842,12 +866,27 @@
           
           (define (do-in-user-thread thunk)
             (if (get-break-status)
-                (channel-put in-user-ch thunk)
+                ;; The evaluation thread is suspended, so it should be waiting for thunks
+                ;; to arrive on in-user-ch, evaluating them, and sending the results back
+                ;; on result-ch.  However, the user (or some background thread) might break
+                ;; or kill the evaluation thread at any time, in which case this protocol could
+                ;; fail.  We could try to enumerate and handle all such failure modes explicitly,
+                ;; but a simple timeout, inelegant as it may be, lets us recover from all of them.
+                (sync/timeout 1 (channel-put-evt in-user-ch thunk))
                 (send (get-ints) run-in-evaluation-thread thunk)))
+          
+          ;; Returns whether the user thread is free, which is the case when:
+          ;; - it's not dead, AND either
+          ;;   * it's been suspended by the debugger, OR
+          ;;   * it's done running the user's program.
+          (define/private (user-thread-free?)
+            (and (not (send (get-ints) evaluation-thread-dead?))
+                 (or (get-break-status) (not (is-running?)))))
           
           (define/public (render v)
             ;; ==drscheme eventspace thread==
-            ;; only when a user thread is suspended
+            ;; returns false if the user thread is unavailable to perform the rendering
+            (and (user-thread-free?)
             (let ([result-ch (make-channel)]
                   [v (truncate-value v 100 5)])
               (do-in-user-thread
@@ -860,8 +899,12 @@
                          (drscheme:language-configuration:language-settings-settings
                           current-language-settings)
                          s)
-                   (channel-put result-ch (get-output-string s)))))
-              (channel-get result-ch)))
+                        ;; Set a timeout in the user thread, so we don't block forever if the
+                        ;; drscheme thread gives up waiting for our response.
+                        (sync/timeout 1 (channel-put-evt result-ch (get-output-string s))))))
+                   ;; Set a timeout to guard against cases where the user thread
+                   ;; gets interrupted or killed in the middle of evaluation.
+                   (sync/timeout 1 result-ch))))
           
           (define/public (print-to-console v)
             ;; ==drscheme eventspace thread==
