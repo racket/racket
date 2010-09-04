@@ -58,4 +58,5 @@
   (make-weak-box wx))
 
 (define (->wx wxb)
-  (weak-box-value wxb))
+  (and wxb
+       (weak-box-value wxb)))

@@ -22,6 +22,7 @@
 
          FocusResponder
          KeyMouseResponder
+         KeyMouseTextResponder
          CursorDisplayer
 
          queue-window-event
@@ -48,6 +49,9 @@
            (let ([wx (->wx wxb)])
              (when wx (send wx is-responder wx #f))
              #t))])
+
+(import-class NSArray)
+(import-protocol NSTextInput)
 
 (define-objc-mixin (KeyMouseResponder Superclass)
   [wxb]
@@ -106,9 +110,20 @@
         (super-tell #:type _void keyDown: event))]
   [-a _void (insertText: [_NSString str])
       (let ([wx (->wx wxb)])
+        (post-dummy-event) ;; to wake up in case of character palette insert 
         (when wx
           (queue-window-event wx (lambda ()
-                                   (send wx key-event-as-string str)))))])
+                                   (send wx key-event-as-string str)))))]
+
+  ;; for NSTextInput, to enable character palette insert:
+  [-a _BOOL (hasMarkedText) #f]
+  [-a _id (validAttributesForMarkedText)
+      (tell NSArray array)])
+
+(define-objc-mixin (KeyMouseTextResponder Superclass)
+  #:mixins (KeyMouseResponder)
+  #:protocols (NSTextInput)
+  [wxb])
 
 (define-objc-mixin (CursorDisplayer Superclass)
   [wxb]
@@ -124,16 +139,24 @@
      (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
             [bit? (lambda (m b) (positive? (bitwise-and m b)))]
             [pos (tell #:type _NSPoint event locationInWindow)]
-            [str (tell #:type _NSString event characters)])
+            [str (tell #:type _NSString event characters)]
+            [control? (bit? modifiers NSControlKeyMask)])
        (let-values ([(x y) (send wx window-point-to-view pos)])
          (let ([k (new key-event%
                        [key-code (or
                                   (map-key-code (tell #:type _ushort event keyCode))
                                   (if (string=? "" str)
                                       #\nul
-                                      (string-ref str 0)))]
+                                      (let ([c (string-ref str 0)])
+                                        (or (and control?
+                                                 (char<=? #\u00 c #\u1a)
+                                                 (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
+                                                   (and (string? alt-str)
+                                                        (= 1 (string-length alt-str))
+                                                        (string-ref alt-str 0))))
+                                            c))))]
                        [shift-down (bit? modifiers NSShiftKeyMask)]
-                       [control-down (bit? modifiers NSControlKeyMask)]
+                       [control-down control?]
                        [meta-down (bit? modifiers NSCommandKeyMask)]
                        [alt-down (bit? modifiers NSAlternateKeyMask)]
                        [x (->long x)]

@@ -5,7 +5,7 @@
 ;; it is loaded without using bytecode.
 
 (define mode (make-parameter 'download))
-(define touch-ready? (make-parameter #f))
+(define touch-ready (make-parameter #f))
 
 (define-values (src-dir dest-dir)
   (command-line
@@ -13,7 +13,7 @@
    [("--download") "download mode (the default)" (mode 'download)]
    [("--install") "install mode" (mode 'install)]
    #:once-each
-   [("--ready") "touch `ready' on download success" (touch-ready? #t)]
+   [("--ready") n "touch `ready<n>' on download success" (touch-ready n)]
    #:args
    (src-dir dest-dir)
    (values src-dir dest-dir)))
@@ -22,46 +22,63 @@
 (define url-path "/mflatt/gracket-libs/raw/master/")
 (define url-base (string-append "http://" url-host url-path))
 
-(define needed-files
+(define needed-files+sizes
   (case (system-type)
     [(unix)
      ;; Pre-built binaries are for Windows and Mac only
      null]
     [(macosx)
-     '("libcairo.2.dylib"
-       "libintl.8.dylib"
-       "libgio-2.0.0.dylib"
-       "libjpeg.62.dylib"
-       "libglib-2.0.0.dylib"
-       "libpango-1.0.0.dylib"
-       "libgmodule-2.0.0.dylib"
-       "libpangocairo-1.0.0.dylib"
-       "libgobject-2.0.0.dylib"
-       "libpixman-1.0.dylib"
-       "libgthread-2.0.0.dylib"
-       "libpng14.14.dylib")]
+     (case (string->symbol (path->string (system-library-subpath)))
+       [(i386-macosx)
+        '(["libcairo.2.dylib" 831084]
+          ["libintl.8.dylib" 57536]
+          ["libgio-2.0.0.dylib" 748360]
+          ["libjpeg.62.dylib" 412024]
+          ["libglib-2.0.0.dylib" 1015008]
+          ["libpango-1.0.0.dylib" 347180]
+          ["libgmodule-2.0.0.dylib" 19016]
+          ["libpangocairo-1.0.0.dylib" 84340]
+          ["libgobject-2.0.0.dylib" 288252]
+          ["libpixman-1.0.dylib" 459304]
+          ["libgthread-2.0.0.dylib" 24592]
+          ["libpng14.14.dylib" 182992]
+          ["PSMTabBarControl.tgz" 91318])]
+       [(x86_64-macosx)
+        '(["libcairo.2.dylib" 927464]
+          ["libintl.8.dylib" 61016]
+          ["libgio-2.0.0.dylib" 897624]
+          ["libjpeg.62.dylib" 153360]
+          ["libglib-2.0.0.dylib" 1162256]
+          ["libpango-1.0.0.dylib" 394768]
+          ["libgmodule-2.0.0.dylib" 19832]
+          ["libpangocairo-1.0.0.dylib" 94952]
+          ["libgobject-2.0.0.dylib" 344024]
+          ["libpixman-1.0.dylib" 499440]
+          ["libgthread-2.0.0.dylib" 21728]
+          ["libpng14.14.dylib" 192224]
+          ["PSMTabBarControl.tgz" 107171])])]
     [(windows)
-     '("freetype6.dll"
-       "libgobject-2.0-0.dll"
-       "libatk-1.0-0.dll"
-       "libgtk-win32-2.0-0.dll"
-       "libcairo-2.dll"
-       "libjpeg-7.dll"
-       "libexpat-1.dll"
-       "libpango-1.0-0.dll"
-       "libfontconfig-1.dll"
-       "libpangocairo-1.0-0.dll"
-       "libgdk-win32-2.0-0.dll"
-       "libpangoft2-1.0-0.dll"
-       "libgdk_pixbuf-2.0-0.dll"
-       "libpangowin32-1.0-0.dll"
-       "libgio-2.0-0.dll"
-       "libpng14-14.dll"
-       "libglib-2.0-0.dll"
-       "libwimp.dll"
-       "libgmodule-2.0-0.dll"
-       "zlib1.dll"
-       "gtkrc")]))
+     '(["freetype6.dll" 535264]
+       ["libgobject-2.0-0.dll" 316586]
+       ["libatk-1.0-0.dll" 153763]
+       ["libgtk-win32-2.0-0.dll" 4813228]
+       ["libcairo-2.dll" 921369]
+       ["libjpeg-7.dll" 233192]
+       ["libexpat-1.dll" 143096]
+       ["libpango-1.0-0.dll" 337702]
+       ["libfontconfig-1.dll" 279059]
+       ["libpangocairo-1.0-0.dll" 95189]
+       ["libgdk-win32-2.0-0.dll" 868712]
+       ["libpangoft2-1.0-0.dll" 686030]
+       ["libgdk_pixbuf-2.0-0.dll" 253834]
+       ["libpangowin32-1.0-0.dll" 102774]
+       ["libgio-2.0-0.dll" 669318]
+       ["libpng14-14.dll" 219305]
+       ["libglib-2.0-0.dll" 1110713]
+       ["libwimp.dll" 69632]
+       ["libgmodule-2.0-0.dll" 31692]
+       ["zlib1.dll" 55808]
+       ["gtkrc" 1181])]))
 
 (define explained? #f)
 
@@ -91,10 +108,11 @@
 	(string-append (unixize base) "/" (path->string name))
 	(path->string name))))
 
-(define (download-if-needed dest-dir file)
+(define (download-if-needed dest-dir file size)
   (let ([dest (build-path dest-dir file)]
         [tmp (build-path dest-dir (format "~a.download" file))])
-    (if (file-exists? dest)
+    (if (and (file-exists? dest)
+             (= (file-size dest) size))
         (printf " ~a is ready\n" file)
         (let* ([sub (unixize (system-library-subpath #f))]
 	       [src (format "~a~a/~a"
@@ -130,26 +148,42 @@
        (= (file-size f1) (file-size f2))))
 
 (define (install-file src dest)
-  (unless (same-content? src dest)
-    (printf "Updating ~a\n" dest)
-    (when (file-exists? dest)
-      (delete-file dest))
-    (copy-file src dest)))
+  (if (regexp-match? #rx"[.]tgz" (path->string src))
+      ;; Unpack tar file:
+      (unpack-tgz src dest)
+      ;; Plain copy:
+      (unless (same-content? src dest)
+        (printf "Updating ~a\n" dest)
+        (when (file-exists? dest)
+          (delete-file dest))
+        (copy-file src dest))))
+
+(define (unpack-tgz src dest)
+  (let ([src (path->complete-path src)])
+    (parameterize ([current-directory (let-values ([(base name dir?) (split-path dest)])
+                                        base)])
+      (subprocess (current-output-port)
+                  (current-input-port)
+                  (current-error-port)
+                  "/usr/bin/tar"
+                  "zxf"
+                  (path->string src)))))
 
 (case (mode)
   [(download)
    (let ([libs dest-dir])
      (unless (directory-exists? libs)
        (make-directory libs))
-     (for-each (lambda (file)
-                 (download-if-needed libs file))
-               needed-files)
-     (when (touch-ready?)
-       (let ([ok (build-path libs "ready")])
+     (for-each (lambda (file+size)
+                 (download-if-needed libs (car file+size) (cadr file+size)))
+               needed-files+sizes)
+     (when (touch-ready)
+       (let ([ok (build-path libs (format "ready~a" (touch-ready)))])
          (unless (file-exists? ok)
            (with-output-to-file ok void)))))]
   [(install)
-   (for-each (lambda (file)
-               (install-file (build-path src-dir "libs" file)
-                             (build-path dest-dir file)))
-             needed-files)])
+   (for-each (lambda (file+size)
+               (let ([file (car file+size)])
+                 (install-file (build-path src-dir "libs" file)
+                               (build-path dest-dir file))))
+             needed-files+sizes)])

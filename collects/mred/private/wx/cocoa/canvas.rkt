@@ -47,7 +47,7 @@
             (tellv ctx restoreGraphicsState)))))))
 
 (define-objc-class MyView NSView 
-  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer) 
+  #:mixins (FocusResponder KeyMouseTextResponder CursorDisplayer) 
   [wxb]
   (-a _void (drawRect: [_NSRect r])
       (when wxb
@@ -127,7 +127,7 @@
           (tellv ctx restoreGraphicsState)))))
 
 (define-objc-class MyComboBox NSComboBox
-  #:mixins (FocusResponder KeyMouseResponder CursorDisplayer) 
+  #:mixins (FocusResponder KeyMouseTextResponder CursorDisplayer) 
   #:protocols (NSComboBoxDelegate)
   [wxb]
   (-a _void (drawRect: [_NSRect r])

@@ -131,9 +131,11 @@
 	  (check-container-parent cwho parent)
 	  (check-style cwho #f '(deleted no-border) style)
 	  (check-font cwho font))
-	(super-init parent (if (memq 'deleted style)
-			       '(deleted)
-			       null))
+	(super-init parent (if (memq 'no-border style)
+                               (if (eq? (car style) 'no-border)
+                                   (cdr style)
+                                   (list (car style)))
+                               (cons 'border style)))
         (send (mred->wx this) set-callback callback))
 
       (public

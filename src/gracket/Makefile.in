@@ -68,15 +68,18 @@ LINKRESULT_wx_xt = gracket@CGC@
 LINKRESULT_wx_mac = GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 LINKRESULT = $(LINKRESULT_@WXVARIANT@)
 
+# Incremented each time the binaries change:
+DOWNLOAD_BIN_VERSION = 2
+
 bin:
 	$(MAKE) @MAIN_VARIANT@
 
 3m:
-	$(MAKE) libs/ready
+	$(MAKE) libs/ready$(DOWNLOAD_BIN_VERSION)
 	cd gc2; $(MAKE) 3m
 
 cgc:
-	$(MAKE) libs/ready
+	$(MAKE) libs/ready$(DOWNLOAD_BIN_VERSION)
 	$(MAKE) $(LINKRESULT)
 
 both:
@@ -123,8 +126,8 @@ grmain_ee.@LTO@ : gracket.@LTO@
 ee-main:
 	$(MAKE) grmain_ee.@LTO@
 
-libs/ready:
-	$(RACKET) -c "$(srcdir)/get-libs.rkt" --ready "$(srcdir)" libs
+libs/ready$(DOWNLOAD_BIN_VERSION):
+	$(RACKET) -c "$(srcdir)/get-libs.rkt" --ready $(DOWNLOAD_BIN_VERSION) "$(srcdir)" libs
 
 clean:
 	rm -f *.@LTO@ *.d core gracket gracket3m

@@ -10,6 +10,9 @@ Get these packages (or newer, if compatible):
  pango-1.28.0.tar.gz
  libjpeg62 (maybe in binary form)
 
+ PSMTabBarControl, probably from "maccode.googlecode.com",
+                   and handled differently
+
 Patches:
  cairo/src/cairo-quartz-font.c:656:
     if (width < 1) width = 1;
@@ -39,12 +42,22 @@ Configures (where <dest> is some temporary area):
  Note: PATH above ensures that pkg-config binaries are used to find
  things in <dest> rather than some other area, such as /opt/local.
 
+XCode:
+ Build PSMTabBarControl. You only need the Framework target, and
+ in Release mode.
+
 Install:
   racket install-libs.rkt <dest>/lib
    * using `racket' for the target installation
    * do not include a trailing slash
    * double-check installed libraries to ensure that they do not
      have <dest> in their shared-library paths
+
+  Also copy "PSMTabBarControl.framework" into the installation's "lib"
+  directory. You can flatten all the auto-version soft links (moving
+  "PSMTabBarControl" and "Resources" to immediately inside
+  "PSMTabBarControl), and you can use `ditto' to prune the binary to
+  just the platform that you're using.
 
 --------------------------------------------------
 
