@@ -1056,7 +1056,7 @@ as images for this library.
 
 Unlike all of the other images in this library, those images (and the other images created
 by functions in this section of the documentation)
-are represented as bitmaps, i.e., a (potentially quite large) array of colors. 
+are represented as bitmaps, i.e., an array of colors (that can be quite large in some cases).
 This means that scaling and rotating them loses fidelity in the image and is significantly
 more expensive than with the other shapes.
 
