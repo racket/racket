@@ -139,6 +139,8 @@
     (when label
       (gtk_window_set_title gtk label))
 
+    ;(gtk_window_add_accel_group (widget-window gtk) the-accelerator-group)
+
     (define/override (set-child-size child-gtk x y w h)
       (gtk_fixed_move panel-gtk child-gtk x y)
       (gtk_widget_set_size_request child-gtk w h))

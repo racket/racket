@@ -88,6 +88,8 @@
 
   (connect-menu-deactivate gtk)
 
+  (gtk_menu_set_accel_group gtk the-accelerator-group)
+
   (define items null)
 
   (define parent #f)
@@ -168,7 +170,7 @@
                         (char->integer
                          (string-ref (cadr m) 0)))])
              (unless (zero? code)
-               (let ([accel-path (format "<MrEd>/Thing/~a" title)])
+               (let ([accel-path (format "<GRacket>/Hardwired/~a" title)])
                  (gtk_accel_map_add_entry accel-path
                                           code
                                           GDK_CONTROL_MASK)

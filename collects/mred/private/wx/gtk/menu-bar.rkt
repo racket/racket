@@ -82,6 +82,8 @@
   (connect-menu-key-press gtk)
   (connect-menu-button-press gtk)
 
+  ; (gtk_menu_set_accel_group gtk the-accelerator-group)
+
   (define top-wx #f)
 
   (define/public (set-top-window top)

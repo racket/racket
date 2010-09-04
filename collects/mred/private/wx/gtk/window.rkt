@@ -36,7 +36,11 @@
          (struct-out GtkRequisition) _GtkRequisition-pointer
          (struct-out GtkAllocation) _GtkAllocation-pointer
 
-	 widget-window)
+	 widget-window
+
+         the-accelerator-group
+         gtk_window_add_accel_group
+         gtk_menu_set_accel_group)
 
 ;; ----------------------------------------
 
@@ -61,6 +65,13 @@
 (define-gtk gtk_widget_grab_focus (_fun _GtkWidget -> _void))
 (define-gtk gtk_widget_is_focus (_fun _GtkWidget -> _gboolean))
 (define-gtk gtk_widget_set_sensitive (_fun _GtkWidget _gboolean -> _void))
+
+(define _GtkAccelGroup (_cpointer 'GtkAccelGroup))
+(define-gtk gtk_accel_group_new (_fun -> _GtkAccelGroup))
+(define-gtk gtk_window_add_accel_group (_fun _GtkWindow _GtkAccelGroup -> _void))
+(define-gtk gtk_menu_set_accel_group (_fun _GtkWidget _GtkAccelGroup -> _void))
+
+(define the-accelerator-group (gtk_accel_group_new))
 
 (define-cstruct _GtkWidgetT ([obj _GtkObject]
 			     [private_flags _uint16]
