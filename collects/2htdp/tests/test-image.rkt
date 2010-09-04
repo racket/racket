@@ -1262,7 +1262,7 @@
       =>
       (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
 
-(test (rotate -90 (make-object image-snip% green-blue-20x10-bitmap))
+(test (rotate 90 (make-object image-snip% green-blue-20x10-bitmap))
       =>
       (image-snip->image (make-object image-snip% green-blue-10x20-bitmap)))
 

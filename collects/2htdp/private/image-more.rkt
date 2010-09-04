@@ -616,8 +616,8 @@
                   (make-bitmap (bitmap-raw-bitmap bitmap)
                                (bitmap-raw-mask bitmap)
                                (bring-between (if flipped? 
-                                                  (- (bitmap-angle bitmap) θ)
-                                                  (+ (bitmap-angle bitmap) θ))
+                                                  (+ (bitmap-angle bitmap) θ)
+                                                  (- (bitmap-angle bitmap) θ))
                                               360)
                                (bitmap-x-scale bitmap)
                                (bitmap-y-scale bitmap)
