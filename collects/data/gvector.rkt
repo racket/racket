@@ -149,16 +149,20 @@
   (syntax-case stx ()
     [(_ (clause ...) . body)
      (quasisyntax/loc stx
-       (let ([gv (make-gvector)])
-         (for/fold/derived #,stx () (clause ...) . body)
+       (let ([gv (make-gvector*)])
+         (for/fold/derived #,stx () (clause ...)
+           (call-with-values (lambda () . body)
+             (lambda args (apply gvector-add! gv args) (values))))
          gv))]))
 
 (define-syntax (for*/gvector stx)
   (syntax-case stx ()
     [(_ (clause ...) . body)
      (quasisyntax/loc stx
-       (let ([gv (make-gvector)])
-         (for*/fold/derived #,stx () (clause ...) . body)
+       (let ([gv (make-gvector*)])
+         (for*/fold/derived #,stx () (clause ...)
+           (call-with-values (lambda () . body)
+             (lambda args (apply gvector-add! gv args) (values))))
          gv))]))
 
 (define-struct gvector (vec n)
@@ -174,6 +178,25 @@
                      gvector-iterate-next
                      gvector-iterate-key
                      gvector-iterate-value)
+  #:property prop:equal+hash
+             (let ([equals
+                    (lambda (x y recursive-equal?)
+                      (let ([vx (gvector-vec x)]
+                            [vy (gvector-vec y)]
+                            [nx (gvector-n x)]
+                            [ny (gvector-n y)])
+                        (and (= nx ny)
+                             (for/and ([index (in-range nx)])
+                               (recursive-equal? (vector-ref vx index)
+                                                 (vector-ref vy index))))))]
+                   [hash-code
+                    (lambda (x hc)
+                      (let ([v (gvector-vec x)]
+                            [n (gvector-n x)])
+                        (for/fold ([h 1]) ([i (in-range n)])
+                          ;; FIXME: better way of combining hashcodes
+                          (+ h (hc (vector-ref v i))))))])
+               (list equals hash-code hash-code))
   #:property prop:sequence in-gvector)
 
 (provide/contract
@@ -196,4 +219,6 @@
  [gvector->vector
   (-> gvector? vector?)])
 
-(provide (rename-out [in-gvector* in-gvector]))
+(provide (rename-out [in-gvector* in-gvector])
+         for/gvector
+         for*/gvector)

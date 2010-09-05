@@ -23,6 +23,9 @@ be extended by adding an element to the end, and it can be shrunk by
 removing any element, although removal can take time linear in the
 number of elements in the gvector.
 
+Two gvectors are @racket[equal?] if they contain the same number of
+elements and if the contain equal elements at each index.
+
 @defproc[(make-gvector [#:capacity capacity exact-positive-integer? 10])
          gvector?]{
 
@@ -101,4 +104,16 @@ Returns a sequence whose elements are the elements of
 changes the elements produced by the sequence. To obtain a sequence
 from a snapshot of @racket[gv], use @racket[(in-vector
 (gvector->vector gv))] instead.
+}
+
+@deftogether[[
+@defform[(for/gvector (for-clause ...) body ...+)]
+@defform[(for*/gvector (for-clause ...) body ...+)]]]{
+
+Analogous to @racket[for/list] and @racket[for*/list], but constructs
+a gvector instead of a list.
+
+Unlike @racket[for/list], the @racket[body] may return zero or
+multiple values; all returned values are added to the gvector, in
+order, on each iteration.
 }
