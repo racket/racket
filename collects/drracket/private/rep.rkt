@@ -1586,13 +1586,6 @@ TODO
                           (primitive-dispatch-handler eventspace)]))])
              drscheme-event-dispatch-handler))))
       
-      (define/public (new-empty-console)
-        (queue-user/wait
-         (λ () ; =User=, =No-Breaks=
-           (send (drracket:language-configuration:language-settings-language user-language-settings)
-                 first-opened
-                 (drracket:language-configuration:language-settings-settings user-language-settings)))))
-      
       (define/public (reset-console)
         (when (thread? thread-killed)
           (kill-thread thread-killed))
