@@ -9,6 +9,7 @@
          "../common/queue.rkt"
          "../common/local.rkt"
          "keycode.rkt"
+         "keymap.rkt"
          "queue.rkt"
          "utils.rkt"
          "const.rkt"
@@ -128,11 +129,12 @@
        wx
        (let* ([modifiers (GdkEventKey-state event)]
               [bit? (lambda (m v) (positive? (bitwise-and m v)))]
+              [keyval->code (lambda (kv)
+                              (or
+                               (map-key-code kv)
+                               (integer->char (gdk_keyval_to_unicode kv))))]
               [k (new key-event%
-                      [key-code (let ([kv (GdkEventKey-keyval event)])
-                                  (or
-                                   (map-key-code kv)
-                                   (integer->char (gdk_keyval_to_unicode kv))))]
+                      [key-code (keyval->code (GdkEventKey-keyval event))]
                       [shift-down (bit? modifiers GDK_SHIFT_MASK)]
                       [control-down (bit? modifiers GDK_CONTROL_MASK)]
                       [meta-down (bit? modifiers GDK_META_MASK)]
@@ -141,6 +143,11 @@
                       [y 0]
                       [time-stamp (GdkEventKey-time event)]
                       [caps-down (bit? modifiers GDK_LOCK_MASK)])])
+         (let-values ([(s ag sag cl) (get-alts event)])
+           (when s (send k set-other-shift-key-code (keyval->code s)))
+           (when ag (send k set-other-altgr-key-code (keyval->code ag)))
+           (when sag (send k set-other-shift-altgr-key-code (keyval->code sag)))
+           (when cl (send k set-other-caps-key-code (keyval->code cl))))
          (if (send wx handles-events? gtk)
              (begin
                (queue-window-event wx (lambda () (send wx dispatch-on-char k #f)))
