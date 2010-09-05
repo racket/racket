@@ -247,8 +247,8 @@
               (set! x-align-delta 0.5)
               (set! y-align-delta 0.5))
             (begin
-              (set! x-align-delta (/ (bitwise-and 1 (max 1 (inexact->exact (floor (* scale-x w))))) 2.0))
-              (set! y-align-delta (/ (bitwise-and 1 (max 1 (inexact->exact (floor (* scale-y w))))) 2.0))))))
+              (set! x-align-delta (/ (bitwise-and 1 (max 1 (inexact->exact (floor (* effective-scale-x w))))) 2.0))
+              (set! y-align-delta (/ (bitwise-and 1 (max 1 (inexact->exact (floor (* effective-scale-y w))))) 2.0))))))
 
     (def/public (set-font [font% f])
       (set! font f))
@@ -265,6 +265,22 @@
     (define scroll-dx 0.0)
     (define scroll-dy 0.0)
 
+    (define effective-scale-x 1.0)
+    (define effective-scale-y 1.0)
+    (define effective-origin-x 0.0)
+    (define effective-origin-y 0.0)
+
+    (define/private (reset-effective!)
+      (let* ([mx (make-cairo_matrix_t 1 0 0 1 0 0)])
+        (cairo_matrix_rotate mx (- rotation))
+        (cairo_matrix_scale mx scale-x scale-y)
+        (cairo_matrix_translate mx origin-x origin-y)
+        (cairo_matrix_multiply mx mx matrix)
+        (set! effective-scale-x (cairo_matrix_t-xx mx))
+        (set! effective-scale-y (cairo_matrix_t-yy mx))
+        (set! effective-origin-x (cairo_matrix_t-x0 mx))
+        (set! effective-origin-y (cairo_matrix_t-y0 mx))))
+
     (define/override (set-auto-scroll dx dy)
       (unless (and (= scroll-dx (- dx))
                    (= scroll-dy (- dy)))
@@ -277,6 +293,7 @@
                    (equal? scale-y sy))
         (set! scale-x sx)
         (set! scale-y sy)
+        (reset-effective!)
         (reset-align!)
         (reset-matrix)))
     (def/public (get-scale) (values scale-x scale-y))
@@ -286,12 +303,14 @@
                    (equal? origin-y oy))
         (set! origin-x ox)
         (set! origin-y oy)
+        (reset-effective!)
         (reset-matrix)))
     (def/public (get-origin) (values origin-x origin-y))
 
     (def/public (set-rotation [real? th])
       (unless (and (equal? rotation th))
         (set! rotation th)
+        (reset-effective!)
         (reset-matrix)))
     (def/public (get-rotation) rotation)
 
@@ -333,6 +352,8 @@
                                         (vector-ref m 3)
                                         (vector-ref m 4)
                                         (vector-ref m 5)))
+      (reset-effective!)
+      (reset-align!)
       (reset-matrix))
 
     (def/public (get-initial-matrix)
@@ -355,7 +376,6 @@
       (set-origin (vector-ref v 1) (vector-ref v 2))
       (set-scale (vector-ref v 3) (vector-ref v 4))
       (set-rotation (vector-ref v 5)))
-    
 
     (define/private (do-reset-matrix cr)
       (cairo_identity_matrix cr)
@@ -374,7 +394,7 @@
 
     (inherit get-font-metrics-key)
     (define/public (cache-font-metrics-key)
-      (get-font-metrics-key scale-x scale-y))
+      (get-font-metrics-key effective-scale-x effective-scale-y))
 
     (define/override (reset-cr cr)
       (set! context #f)
@@ -394,13 +414,17 @@
       smoothing)      
     (define/private (align-x/delta x delta)
       (if (aligned? smoothing)
-          (/ (- (+ (floor (+ (* x scale-x) origin-x)) delta) origin-x) scale-x)
+          (/ (- (+ (floor (+ (* x effective-scale-x) effective-origin-x)) delta) 
+                effective-origin-x) 
+             effective-scale-x)
           x))
     (define/private (align-x x)
       (align-x/delta x x-align-delta))
     (define/private (align-y/delta y delta)
       (if (aligned? smoothing)
-          (/ (- (+ (floor (+ (* y scale-y) origin-y)) delta) origin-y) scale-y)
+          (/ (- (+ (floor (+ (* y effective-scale-y) effective-origin-y)) delta) 
+                effective-origin-y) 
+             effective-scale-y)
           y))
     (define/private (align-y y)
       (align-y/delta y y-align-delta))
@@ -674,7 +698,7 @@
                                  (if (eq? s 'hilite) hilite-alpha alpha))))
             (cairo_set_line_width cr (let* ([v (send pen get-width)]
                                             [v (if (aligned? smoothing)
-                                                   (/ (floor (* scale-x v)) scale-x)
+                                                   (/ (floor (* effective-scale-x v)) effective-scale-x)
                                                    v)])
                                        (if (zero? v)
                                            1
@@ -919,14 +943,41 @@
        (do-text cr #t s x y font combine? offset angle)
        (flush-cr)))
 
+    ;; FIXME: how do we keep this from growing too much ---
+    ;; lots of characters in lots of fonts?
+    (define size-cache (make-hash))
+
     (def/public (get-text-extent [string? s] 
-                                 [font% [font font]]
+                                 [(make-or-false font%) [use-font font]]
                                  [any? [combine? #f]]
                                  [exact-nonnegative-integer? [offset 0]])
-      (with-cr
-       (values 1.0 1.0 0.0 0.0)
-       cr
-       (do-text cr #f s 0 0 font combine? offset 0.0)))
+      (let ([use-font (or use-font font)])
+        ;; Try to used cached size info, first:
+        (let-values ([(w h d a)
+                      (if (or combine?
+                              (not (= 1.0 effective-scale-x))
+                              (not (= 1.0 effective-scale-y)))
+                          (values #f #f #f #f)
+                          (let ([id (send font get-font-id)]
+                                [sz (send font get-point-size)])
+                            (let loop ([i offset] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
+                              (if (= i (string-length s))
+                                  (values w h d a)
+                                  (let ([ch (string-ref s i)])
+                                    (let ([v (hash-ref size-cache (vector id sz ch) #f)])
+                                      (if v
+                                          (loop (add1 i)
+                                                (+ w (vector-ref v 0)) 
+                                                (max h (vector-ref v 1))
+                                                (max d (vector-ref v 2))
+                                                (max a (vector-ref v 3)))
+                                          (values #f #f #f #f))))))))])
+          (if w
+              (values w h d a)
+              (with-cr
+               (values 1.0 1.0 0.0 0.0)
+               cr
+               (do-text cr #f s 0 0 use-font combine? offset 0.0))))))
 
     (define/private (do-text cr draw? s x y font combine? offset angle)
       (let* ([s (if (zero? offset) 
@@ -958,7 +1009,7 @@
               [x (if rotate? 0.0 x)]
               [y (if rotate? 0.0 y)])
           (if (and combine?
-                   (can-combine-text? (* scale-y (send font get-point-size))))
+                   (can-combine-text? (* effective-scale-y (send font get-point-size))))
               (let loop ([s s] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
                 (cond
                  [(not s)
@@ -1013,7 +1064,18 @@
                                                  (exact->inexact PANGO_SCALE)))]
                                 [na 0.0])
                             (loop next-s (+ w nw) (max h nh) (max d nd) (max a na))))])))]))
-              (let ([logical (make-PangoRectangle 0 0 0 0)])
+              (let ([logical (make-PangoRectangle 0 0 0 0)]
+                    [record-size-result
+                     (if (or combine?
+                             (not (= 1.0 effective-scale-x))
+                             (not (= 1.0 effective-scale-y)))
+                         void
+                         (let ([id (send font get-font-id)]
+                               [sz (send font get-point-size)])
+                           (lambda (ch w h d a)
+                             (hash-set! size-cache 
+                                        (vector id sz ch)
+                                        (vector w h d a)))))])
                 (begin0
                  (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
                      ([ch (in-string s)])
@@ -1042,6 +1104,7 @@
                                                (pango_layout_get_baseline layout))
                                             (exact->inexact PANGO_SCALE)))]
                            [la 0.0])
+                       (record-size-result ch lw lh ld la)
                        (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la)))))
                  (when rotate? (cairo_restore cr))))))))
 
