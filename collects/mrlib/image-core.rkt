@@ -88,7 +88,7 @@ has been moved out).
 
 
 ;; a image is 
-;;  (make-image shape bb boolean)
+;;  (make-image shape bb boolean (or/c point #f))
 ;; NOTE: the shape field is mutated when normalized, as
 ;;       is the normalized? field.
 (define (make-image shape bb normalized? [pinhole #f]) (new image% [shape shape] [bb bb] [normalized? normalized?] [pinhole pinhole]))
@@ -97,6 +97,10 @@ has been moved out).
 (define (image-normalized? p) (send p get-normalized?))
 (define (set-image-shape! p s) (send p set-shape s))
 (define (set-image-normalized?! p n?) (send p set-normalized? n?))
+(define (pinhole-x p) (let ([ph (send p get-pinhole)]) (and ph (pinhole-x ph))))
+(define (pinhole-y p) (let ([ph (send p get-pinhole)]) (and ph (pinhole-y ph))))
+(define (put-pinhole x y image) (make-image (image-shape image) (image-bb image) (image-normalized? image) (make-point x y)))
+(define (clear-pinhole image) (make-image (image-shape image) (image-bb image) (image-normalized? image) #f))
 (define (image? p) 
   (or (is-a? p image%)
       (is-a? p image-snip%)
@@ -224,7 +228,7 @@ has been moved out).
 ;                         ;;;;                      
 
 (define-local-member-name
-  get-shape set-shape get-bb 
+  get-shape set-shape get-bb get-pinhole 
   get-normalized? set-normalized get-normalized-shape)
 
 (define skip-image-equality-fast-path (make-parameter #f))
@@ -274,6 +278,7 @@ has been moved out).
     (define/public (get-shape) shape)
     (define/public (set-shape s) (set! shape s))
     (define/public (get-bb) bb)
+    (define/public (get-pinhole) pinhole)
     (define/public (get-normalized?) normalized?)
     (define/public (set-normalized? n?) (set! normalized? n?))
     
@@ -603,19 +608,38 @@ has been moved out).
         [brush (send dc get-brush)]
         [font (send dc get-font)]
         [fg (send dc get-text-foreground)]
-        [smoothing (send dc get-smoothing)])
+        [smoothing (send dc get-smoothing)]
+        [alpha (send dc get-alpha)])
     (cond
       [(is-a? image bitmap%)
        (send dc draw-bitmap image dx dy)]
       [(is-a? image image-snip%)
        (send dc draw-bitmap (send image get-bitmap) dx dy)]
       [else
-       (render-normalized-shape (send image get-normalized-shape) dc dx dy)])
+       (render-normalized-shape (send image get-normalized-shape) dc dx dy)
+       (let ([ph (send image get-pinhole)])
+         (when ph
+           (let* ([px (point-x ph)]
+                  [py (point-y ph)]
+                  [bb (image-bb image)]
+                  [w (bb-right bb)]
+                  [h (bb-bottom bb)])
+             (send dc set-alpha (* alpha .5))
+             (send dc set-smoothing 'smoothed)
+             
+             (send dc set-pen "white" 1 'solid)
+             (send dc draw-line (+ dx px .5) (+ dy .5) (+ dx px .5) (+ dy h -.5))
+             (send dc draw-line (+ dx .5) (+ dy py .5) (+ dx w -.5) (+ dy py .5))
+             
+             (send dc set-pen "black" 1 'solid)
+             (send dc draw-line (+ dx px -.5) (+ dy .5) (+ dx px -.5) (+ dy h -.5))
+             (send dc draw-line (+ dx .5) (+ dy py -.5) (+ dx w -.5) (+ dy py -.5)))))])
     (send dc set-pen pen)
     (send dc set-brush brush)
     (send dc set-font font)
     (send dc set-text-foreground fg)
-    (send dc set-smoothing smoothing)))
+    (send dc set-smoothing smoothing)
+    (send dc set-alpha alpha)))
 
 (define (save-image-as-bitmap image filename kind)
   (let* ([bb (send image get-bb)]
@@ -1071,9 +1095,14 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          
          to-img
          bitmap->image
-         image-snip->image)
+         image-snip->image
+         
+         put-pinhole
+         clear-pinhole
+         pinhole-x
+         pinhole-y)
 
 ;; method names
-(provide get-shape get-bb get-normalized? get-normalized-shape)
+(provide get-shape get-bb get-pinhole get-normalized? get-normalized-shape)
 
 (provide np-atomic-shape? atomic-shape? simple-shape? cn-or-simple-shape? normalized-shape?)
