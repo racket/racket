@@ -95,7 +95,7 @@ contract wrapping.
     [(_ ((p v)) body)
      (with-syntax ([cp (wrap-expr/c
                         #'parameter? #'p
-                        #:expr-name "the parameter argument"
+                        #:name "the parameter argument"
                         #:context stx)])
        #'(parameterize ((cp v)) body))]))
 (myparameterize1 ((current-input-port
@@ -112,7 +112,7 @@ contract wrapping.
        (with-syntax ([cf (wrap-expr/c
                           #'(-> number? number?)
                           #'f
-                          #:expr-name "the function argument"
+                          #:name "the function argument"
                           #:context stx)])
          #'(cf arg))]))
   (provide app))
