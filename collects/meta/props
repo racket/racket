@@ -1469,7 +1469,7 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/paramz.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/png.rktl" drdr:command-line #f
 "collects/tests/gracket/random.rktl" drdr:command-line #f
-"collects/tests/gracket/showkey.rktl" drdr:command-line #f
+"collects/tests/gracket/showkey.rkt" drdr:command-line #f
 "collects/tests/gracket/sixlib.rktl" drdr:command-line #f
 "collects/tests/gracket/test-editor-admin.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/gracket/testing.rktl" drdr:command-line (gracket "-f" *)
