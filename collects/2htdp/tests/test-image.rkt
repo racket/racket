@@ -1767,7 +1767,7 @@
                   (/ (sqrt max-s) h)
                   img))))
 
-#;
+;#;
 (time
  (let ([fn (make-temporary-file "test-image~a")])
    (redex-check
@@ -1783,10 +1783,12 @@
         (error 'test-image.rkt
                "saving and loading this image fails:\n  ~s"
                (term image)))
-      (unless (< cpu 2000)
+      (unless (< cpu 4000)
         (error 'test-image.rkt
-               "saving and loading this image takes too longer than 2 seconds:\n  ~s"
-               (term image))))
+               "saving and loading this image takes too longer than 4 seconds:\n  ~s"
+               (term image)))
+      (display #\.) (flush-output)
+      )
     #:attempts 1000)))
 
 ;;This expression was found by the above. Its problematic because it has a negative width.

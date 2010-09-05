@@ -91,7 +91,7 @@ has been moved out).
 ;;  (make-image shape bb boolean)
 ;; NOTE: the shape field is mutated when normalized, as
 ;;       is the normalized? field.
-(define (make-image shape bb normalized?) (new image% [shape shape] [bb bb] [normalized? normalized?]))
+(define (make-image shape bb normalized? [pinhole #f]) (new image% [shape shape] [bb bb] [normalized? normalized?] [pinhole pinhole]))
 (define (image-shape p) (send p get-shape))
 (define (image-bb p) (send p get-bb))
 (define (image-normalized? p) (send p get-normalized?))
@@ -231,7 +231,7 @@ has been moved out).
 
 (define image%
   (class* snip% (equal<%>)
-    (init-field shape bb normalized?)
+    (init-field shape bb normalized? pinhole)
     (define/public (equal-to? that eq-recur)
       (or (eq? this that)
           (let ([that 
@@ -314,7 +314,7 @@ has been moved out).
       (calc-scroll-step)
       (inexact->exact (ceiling (/ y scroll-step))))
 
-    (define/override (copy) (make-image shape bb normalized?))
+    (define/override (copy) (make-image shape bb normalized? pinhole))
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
       (let ([smoothing (send dc get-smoothing)])
         (render-image this dc x y)))
@@ -331,7 +331,7 @@ has been moved out).
         (set-box/f! rspace 0)))
 
     (define/override (write f) 
-      (let ([bytes (string->bytes/utf-8 (format "~s" (list shape bb)))])
+      (let ([bytes (string->bytes/utf-8 (format "~s" (list shape bb pinhole)))])
         (send f put (bytes-length bytes) bytes)))
     
     (super-new)
@@ -360,13 +360,22 @@ has been moved out).
                       (racket/base:read
                        (open-input-string
                         str)))))])
-        (if lst
-            (make-image (list-ref lst 0)
-                        (list-ref lst 1)
-                        #f)
-            (make-image (make-ellipse 100 100 0 'solid "black")
-                        (make-bb 100 100 100)
-                        #f))))
+        (cond
+          [(not lst)
+           (make-image (make-ellipse 100 100 0 'solid "black")
+                       (make-bb 100 100 100)
+                       #f
+                       #f)]
+          [(= 2 (length lst))
+           (make-image (list-ref lst 0)
+                       (list-ref lst 1)
+                       #f
+                       #f)]
+          [else
+           (make-image (list-ref lst 0)
+                       (list-ref lst 1)
+                       #f
+                       (list-ref lst 2))])))
     (super-new)))
 
 (provide snip-class) 
