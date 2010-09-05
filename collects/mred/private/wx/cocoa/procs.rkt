@@ -4,6 +4,7 @@
          racket/draw
          ffi/unsafe
          ffi/unsafe/objc
+         "utils.rkt"
          "types.rkt"
          "../../lock.rkt"
          "../common/handlers.rkt")
@@ -105,8 +106,10 @@
   (let ([f (tell #:type _NSRect (tell NSScreen mainScreen) frame)])
     (set-box! xb (->long (NSSize-width (NSRect-size f))))
     (set-box! yb (->long (NSSize-height (NSRect-size f))))))
-  
-(define (bell) (void))
+
+(define-appkit NSBeep (_fun -> _void))  
+(define (bell) (NSBeep))
+
 (define (hide-cursor) 
   (tellv NSCursor setHiddenUntilMouseMoves: #:type _BOOL #t))
 

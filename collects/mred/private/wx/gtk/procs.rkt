@@ -113,7 +113,9 @@
     (set-box! h (gdk_screen_get_height s))))
 (define (get-display-depth) 32)
 
-(define-unimplemented bell)
+(define-gdk gdk_display_beep (_fun _GdkDisplay -> _void))
+(define (bell) (gdk_display_beep (gdk_display_get_default)))
+
 (define (hide-cursor) (void))
 
 (define-unimplemented is-color-display?)
