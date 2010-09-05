@@ -628,8 +628,8 @@ default settings obtained via
 
 }
 
-@defmethod[(first-opened)
-           void?]{
+@defmethod*[([(first-opened [settings settings]) void?]
+             [(first-opened) void?])]{
 
 This method is called when the language is initialized, but
 no program is run. It is called from the user's eventspace's
@@ -638,6 +638,9 @@ main thread.
 See also
 @method[drracket:rep:text% initialize-console].
 
+It does not have to accept both zero and one arguments; the zero argument
+version is for backwards compatibility and drracket tests the arity of the
+method before invoking it.
 
 }
 

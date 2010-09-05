@@ -1590,7 +1590,8 @@ TODO
         (queue-user/wait
          (λ () ; =User=, =No-Breaks=
            (send (drracket:language-configuration:language-settings-language user-language-settings)
-                 first-opened))))
+                 first-opened
+                 (drracket:language-configuration:language-settings-settings user-language-settings)))))
       
       (define/public (reset-console)
         (when (thread? thread-killed)
@@ -1686,8 +1687,16 @@ TODO
         
         (queue-user/wait
          (λ () ; =User=, =No-Breaks=
-           (send (drracket:language-configuration:language-settings-language user-language-settings)
-                 first-opened)))
+           (let ([lang (drracket:language-configuration:language-settings-language user-language-settings)])
+             (cond
+               ;; this is for backwards compatibility; drracket used to
+               ;; expect this method to be a thunk (but that was a bad decision)
+               [(object-method-arity-includes? lang 'first-opened 1)
+                (send lang first-opened
+                      (drracket:language-configuration:language-settings-settings user-language-settings))]
+               [else
+                ;; this is the backwards compatible case.
+                (send lang first-opened)]))))
         
         (insert-prompt)
         (send context enable-evaluation)

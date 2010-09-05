@@ -426,6 +426,9 @@
               (go "." welcome)
               (newline port)))
           
+          (define/override (first-opened settings)
+            (for-each namespace-require/constant (htdp-lang-settings-teachpacks settings)))
+          
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
           (define/override (create-executable setting parent program-filename)
