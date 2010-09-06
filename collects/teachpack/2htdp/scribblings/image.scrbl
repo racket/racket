@@ -1274,6 +1274,33 @@ The baseline of an image is the place where the bottoms any letters line up, not
 Two images are equal if they draw exactly the same way, at their current size
 (not neccessarily at all sizes).
 
+@section{Pinholes}
+
+A pinhole is an optional property of an image that identifies a point somewhere
+in the image. The pinhole can then be used to facilitate overlaying images by
+lining them up on the their pinholes. When an image has a pinhole, the pinhole
+is drawn with crosshairs drawn across the image.
+
+@defproc[(center-pinhole [image image?]) image?]{
+  Creates a pinhole in @racket[image] at its center.
+  @image-examples[(center-pinhole (rectangle 40 20 "solid" "red"))]
+}
+@defproc[(put-pinhole [x integer?] [y integer?] [image image?]) image?]{
+  Creates a pinhole in @racket[image] at the point (@racket[x],@racket[y]).
+  @image-examples[(put-pinhole 2 18 (rectangle 40 20 "solid" "forestgreen"))]
+}
+@defproc[(pinhole-x [image image?]) (or/c integer? #f)]{
+  Returns the x coordinate of @racket[image]'s pinhole.
+  @image-examples[(pinhole-x (center-pinhole (rectangle 10 10 "solid" "red")))]
+}
+@defproc[(pinhole-y [image image?]) (or/c integer? #f)]{
+  Returns the y coordinate of @racket[image]'s pinhole.
+  @image-examples[(pinhole-y (center-pinhole (rectangle 10 10 "solid" "red")))]
+}
+@defproc[(clear-pinhole [image image?]) image?]{
+  Removes a pinhole from @racket[image] (if the image has a pinhole).                                                  
+}
+
 @section[#:tag "nitty-gritty"]{The nitty gritty of pixels, pens, and lines}
 
 The image library treats coordinates as if they are in the upper-left corner 

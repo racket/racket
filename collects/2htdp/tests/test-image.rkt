@@ -1786,9 +1786,7 @@
       (unless (< cpu 4000)
         (error 'test-image.rkt
                "saving and loading this image takes too longer than 4 seconds:\n  ~s"
-               (term image)))
-      (display #\.) (flush-output)
-      )
+               (term image))))
     #:attempts 1000)))
 
 ;;This expression was found by the above. Its problematic because it has a negative width.

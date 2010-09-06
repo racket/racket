@@ -124,6 +124,12 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          image-width
          image-height
          image-baseline
+
+         put-pinhole
+         clear-pinhole
+         center-pinhole
+         pinhole-x
+         pinhole-y
          
          make-color
          make-pen pen

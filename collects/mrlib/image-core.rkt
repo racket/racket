@@ -97,10 +97,6 @@ has been moved out).
 (define (image-normalized? p) (send p get-normalized?))
 (define (set-image-shape! p s) (send p set-shape s))
 (define (set-image-normalized?! p n?) (send p set-normalized? n?))
-(define (pinhole-x p) (let ([ph (send p get-pinhole)]) (and ph (pinhole-x ph))))
-(define (pinhole-y p) (let ([ph (send p get-pinhole)]) (and ph (pinhole-y ph))))
-(define (put-pinhole x y image) (make-image (image-shape image) (image-bb image) (image-normalized? image) (make-point x y)))
-(define (clear-pinhole image) (make-image (image-shape image) (image-bb image) (image-normalized? image) #f))
 (define (image? p) 
   (or (is-a? p image%)
       (is-a? p image-snip%)
@@ -372,6 +368,7 @@ has been moved out).
                        #f
                        #f)]
           [(= 2 (length lst))
+           ;; backwards compatibility for saved images that didn't have a pinhole
            (make-image (list-ref lst 0)
                        (list-ref lst 1)
                        #f
@@ -1095,12 +1092,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          
          to-img
          bitmap->image
-         image-snip->image
-         
-         put-pinhole
-         clear-pinhole
-         pinhole-x
-         pinhole-y)
+         image-snip->image)
 
 ;; method names
 (provide get-shape get-bb get-pinhole get-normalized? get-normalized-shape)

@@ -1198,6 +1198,18 @@
       (orig-make-color int0-255-1 int0-255-2 int0-255-3))
     make-color))
 
+(define/chk (pinhole-x image) (let ([ph (send image get-pinhole)]) (and ph (point-x ph))))
+(define/chk (pinhole-y image) (let ([ph (send image get-pinhole)]) (and ph (point-y ph))))
+(define/chk (put-pinhole x1 y1 image) (make-image (image-shape image) (image-bb image) (image-normalized? image) (make-point x1 y1)))
+(define/chk (center-pinhole image) 
+  (let ([bb (send image get-bb)])
+    (make-image (image-shape image)
+                (image-bb image)
+                (image-normalized? image) 
+                (make-point (/ (bb-right bb) 2)
+                            (/ (bb-baseline bb) 2)))))
+(define/chk (clear-pinhole image) (make-image (image-shape image) (image-bb image) (image-normalized? image) #f))
+
 (define build-color/color
   (let ([orig-make-color make-color])
     (define/chk (color int0-255-1 int0-255-2 int0-255-3) 
@@ -1289,6 +1301,12 @@
          swizzle
          
          rotate-xy
+         
+         put-pinhole
+         pinhole-x
+         pinhole-y
+         clear-pinhole
+         center-pinhole
          
          build-color/make-color
          build-color/color
