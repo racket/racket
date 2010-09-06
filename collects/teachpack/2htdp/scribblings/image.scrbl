@@ -27,7 +27,7 @@ The image teachpack provides a number of basic image construction functions, alo
 combinators for building more complex images out of existing images. Basic images include
 various polygons, ellipses and circles, and text, as well as bitmaps (typically bitmaps 
 come about via the @onscreen{Insert Image...} menu item in DrRacket).
-Existing images can be rotated, scaled, and overlaid on top of each other.
+Existing images can be rotated, scaled, flipped, and overlaid on top of each other.
 
 @section{Basic Images}
 
