@@ -17,6 +17,14 @@
       (set! success (add1 success))
       (error 'check "failed: ~s vs. ~s" a b)))
 
+(check (to-string print Foo?) "#<procedure:Foo?>")
+(check (to-string write Foo?) "#<procedure:Foo?>")
+(check (to-string display Foo?) "#<procedure:Foo?>")
+
+(check (to-string print bar?) "#<procedure:bar?>")
+(check (to-string write bar?) "#<procedure:bar?>")
+(check (to-string display bar?) "#<procedure:bar?>")
+
 (check (to-string print (bar "a" 'b)) "(bar \"a\" 'b)")
 (check (to-string write (bar "a" 'b)) "#(struct:bar \"a\" b)")
 (check (to-string display (bar "a" 'b)) "#(struct:bar a b)")

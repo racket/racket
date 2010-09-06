@@ -142,7 +142,7 @@
                 #:reflection-name 'variant)
               ...
               (define variant? 
-                (flat-named-contract 'variant? variant*?))
+                variant*?)
               ...
               (define (datatype? x)
                 (or (variant? x) ...))
