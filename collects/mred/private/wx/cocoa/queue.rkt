@@ -1,7 +1,8 @@
 #lang scheme/base
-(require ffi/objc
-         scheme/foreign
+(require ffi/unsafe/objc
+         ffi/unsafe
          scheme/class
+         racket/draw/dc
          "pool.rkt"
          "utils.rkt"
          "const.rkt"
@@ -10,8 +11,6 @@
          "../common/handlers.rkt"
          "../../lock.rkt"
          "../common/freeze.rkt")
-(unsafe!)
-(objc-unsafe!)
 
 (provide app
          cocoa-start-event-pump
@@ -27,7 +26,7 @@
          queue-event
          yield)
 
-(import-class NSApplication NSAutoreleasePool)
+(import-class NSApplication NSAutoreleasePool NSColor)
 (import-protocol NSApplicationDelegate)
 
 (define app (tell NSApplication sharedApplication))
@@ -276,3 +275,24 @@
   (set-ffi-obj! 'scheme_sleep #f _pointer (function-ptr sleep-until-event 
                                                         (_fun #:atomic? #t 
                                                               _float _pointer -> _void))))
+
+;; ------------------------------------------------------------
+;; Set highlight color
+
+(define-cocoa NSCalibratedRGBColorSpace _id)
+
+(define (install-system-highlight-color! r g b a) 
+  (void))
+
+(let ([hi (tell (tell NSColor selectedTextBackgroundColor) 
+                colorUsingColorSpaceName: NSCalibratedRGBColorSpace)]
+      [as-color (lambda (v)
+                  (inexact->exact (floor (* 255.0 v))))])
+  (install-system-highlight-color! (as-color
+                                    (tell #:type _CGFloat hi redComponent))
+                                   (as-color
+                                    (tell #:type _CGFloat hi greenComponent))
+                                   (as-color
+                                    (tell #:type _CGFloat hi blueComponent))
+                                   (as-color
+                                    (tell #:type _CGFloat hi alphaComponent))))
