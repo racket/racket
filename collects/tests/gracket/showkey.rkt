@@ -1,6 +1,14 @@
 #lang racket/base
 (require racket/gui/base
-         racket/class)
+         racket/class
+         racket/cmdline)
+
+(command-line
+ #:once-each
+ [("--option") "set special Option key"
+  (special-option-key #t)]
+ [("--control") "set special Control key"
+  (special-control-key #t)])
 
 (let ()
   (define iter 0)

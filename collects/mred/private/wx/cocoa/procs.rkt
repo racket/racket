@@ -10,8 +10,6 @@
          "../common/handlers.rkt")
 
 (provide
- special-control-key
- special-option-key
  application-file-handler
  application-quit-handler
  application-about-handler
@@ -62,8 +60,6 @@
 (import-class NSScreen NSCursor)
 
 
-(define-unimplemented special-control-key)
-(define (special-option-key on?) (void))
 (define-unimplemented get-color-from-user)
 (define-unimplemented get-font-from-user)
 (define (get-panel-background) (make-object color% "gray"))

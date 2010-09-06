@@ -29,9 +29,26 @@
          queue-window*-event
          request-flush-delay
          cancel-flush-delay
-         make-init-point)
+         make-init-point
+
+         special-control-key
+         special-option-key)
 
 (define-local-member-name flip-client)
+
+;; ----------------------------------------
+
+(define special-control-key? #f)
+(define special-control-key
+  (case-lambda
+   [() special-control-key?]
+   [(on?) (set! special-control-key? (and on? #t))]))
+
+(define special-option-key? #f)
+(define special-option-key
+  (case-lambda
+   [() special-option-key?]
+   [(on?) (set! special-option-key? (and on? #t))]))
 
 ;; ----------------------------------------
 
@@ -170,7 +187,8 @@
               [bit? (lambda (m b) (positive? (bitwise-and m b)))]
               [pos (tell #:type _NSPoint event locationInWindow)]
               [str (tell #:type _NSString event characters)]
-              [control? (bit? modifiers NSControlKeyMask)])
+              [control? (bit? modifiers NSControlKeyMask)]
+              [option? (bit? modifiers NSAlternateKeyMask)])
          (let-values ([(x y) (send wx window-point-to-view pos)])
            (let ([k (new key-event%
                          [key-code (or
@@ -188,7 +206,7 @@
                          [shift-down (bit? modifiers NSShiftKeyMask)]
                          [control-down control?]
                          [meta-down (bit? modifiers NSCommandKeyMask)]
-                         [alt-down (bit? modifiers NSAlternateKeyMask)]
+                         [alt-down option?]
                          [x (->long x)]
                          [y (->long y)]
                          [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
@@ -199,6 +217,13 @@
                  (let ([alt-code (string-ref alt-str 0)])
                    (unless (equal? alt-code (send k get-key-code))
                      (send k set-other-altgr-key-code alt-code)))))
+             (when (and option? 
+                        special-option-key?
+                        (send k get-other-altgr-key-code))
+               ;; swap altenate with main
+               (let ([other (send k get-other-altgr-key-code)])
+                 (send k set-other-altgr-key-code (send k get-key-code))
+                 (send k set-key-code other)))
              (if (send wx definitely-wants-event? k)
                  (begin
                    (queue-window-event wx (lambda ()
