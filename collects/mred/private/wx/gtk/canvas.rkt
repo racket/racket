@@ -185,7 +185,8 @@
 
     (inherit get-gtk set-size get-size get-client-size 
              on-size get-top-win
-             set-auto-size adjust-client-delta)
+             set-auto-size 
+             adjust-client-delta infer-client-delta)
 
     (define is-combo? (memq 'combo style))
     (define has-border? (or (memq 'border style)
@@ -199,7 +200,8 @@
 
     (define-values (client-gtk gtk 
                                hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box
-                               combo-button-gtk)
+                               combo-button-gtk
+                               scroll-width)
       (atomically ;; need to connect all children to gtk to avoid leaks
        (cond
         [(or (memq 'hscroll style)
@@ -214,6 +216,13 @@
                  [hscroll (gtk_hscrollbar_new hadj)]
                  [vscroll (gtk_vscrollbar_new vadj)]
                  [resize-box (gtk_drawing_area_new)])
+             ;; |------------------------------------|
+             ;; | h |-----------------| |-----------||
+             ;; |   | v               | | v2        ||
+             ;; |   |                 | | [vscroll] ||
+             ;; |   | [h2 [hscroll]]  | | [resize]  ||
+             ;; |   |-----------------| |-----------|| 
+             ;; |------------------------------------|
              (when has-border?
                (gtk_container_set_border_width h margin))
              (gtk_box_pack_start h v #t #t 0)
@@ -223,28 +232,29 @@
              (gtk_box_pack_start v h2 #f #f 0)
              (gtk_box_pack_start h2 hscroll #t #t 0)
              (gtk_box_pack_start v2 resize-box #f #f 0)
-             (gtk_widget_show hscroll)
+             (when (memq 'hscroll style)
+               (gtk_widget_show hscroll))
              (gtk_widget_show vscroll)
              (gtk_widget_show h)
              (gtk_widget_show v)
-             (gtk_widget_show v2)
+             (when (memq 'vscroll style)
+               (gtk_widget_show v2))
              (gtk_widget_show h2)
-             (gtk_widget_show resize-box)
+             (when (memq 'hscroll style)
+               (gtk_widget_show resize-box))
              (gtk_widget_show client-gtk)
-             (unless (memq 'hscroll style)
-               (gtk_widget_hide hscroll)
-               (gtk_widget_hide resize-box))
-             (unless (memq 'vscroll style)
-               (gtk_widget_hide v2))
-             (values client-gtk h hadj vadj 
-                     (and (memq 'hscroll style) h2)
-                     (and (memq 'vscroll style) v2)
-                     (and (memq 'hscroll style) (memq 'vscroll style) resize-box)
-                     #f)))]
+             (let ([req (make-GtkRequisition 0 0)])
+               (gtk_widget_size_request vscroll req)
+               (values client-gtk h hadj vadj 
+                       (and (memq 'hscroll style) h2)
+                       (and (memq 'vscroll style) v2)
+                       (and (memq 'hscroll style) (memq 'vscroll style) resize-box)
+                       #f
+                       (GtkRequisition-width req)))))]
         [is-combo?
          (let* ([gtk (as-gtk-allocation (gtk_combo_box_entry_new_text))]
                 [orig-entry (gtk_bin_get_child gtk)])
-           (values orig-entry gtk #f #f #f #f #f (extract-combo-button gtk)))]
+           (values orig-entry gtk #f #f #f #f #f (extract-combo-button gtk) 0))]
         [has-border?
          (let ([client-gtk (gtk_drawing_area_new)]
                [h (as-gtk-allocation (gtk_hbox_new #f 0))])
@@ -252,10 +262,10 @@
            (gtk_container_set_border_width h margin)
            (connect-expose-border h)
            (gtk_widget_show client-gtk)
-           (values client-gtk h #f #f #f #f #f #f))]
+           (values client-gtk h #f #f #f #f #f #f 0))]
         [else
          (let ([client-gtk (as-gtk-allocation (gtk_drawing_area_new))])
-           (values client-gtk client-gtk #f #f #f #f #f #f))])))
+           (values client-gtk client-gtk #f #f #f #f #f #f 0))])))
 
     (super-new [parent parent]
                [gtk gtk]
@@ -268,9 +278,9 @@
                                    (if combo-button-gtk
                                        (list client-gtk combo-button-gtk)
                                        (list client-gtk))))])
-    
-    (set-size x y w h)
 
+    (set-size x y w h)
+    
     (define dc (new dc% [canvas this]))
 
     (gtk_widget_realize gtk)
@@ -303,7 +313,14 @@
     (when vscroll-adj (connect-value-changed-v vscroll-adj))
 
     (set-auto-size)
-    (adjust-client-delta margin margin)
+    (adjust-client-delta (+ (* 2 margin) 
+                            (if (memq 'vscroll style)
+                                scroll-width
+                                0))
+                         (+ (* 2 margin) 
+                            (if (memq 'hscroll style)
+                                scroll-width
+                                0)))
 
     (define/override (direct-update?) #f)
 
@@ -400,7 +417,9 @@
           (gtk_widget_show resize-box)]
          [(and v? (not h?))
           ;; remove corner 
-          (gtk_widget_hide resize-box)])))
+          (gtk_widget_hide resize-box)]))
+      (adjust-client-delta (+ (* 2 margin) (if v? scroll-width 0))
+                           (+ (* 2 margin) (if h? scroll-width 0))))
 
     (define/private (configure-adj adj scroll-gtk len page pos)
       (when (and scroll-gtk adj)

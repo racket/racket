@@ -129,23 +129,26 @@
                     0
                     (gtk_get_current_event_time)))
 
+  (define ignore-callback? #f)
+
   (define/public (do-selected menu-item)
     ;; Called in event-pump thread
-    (let ([top (get-top-parent)])
-      (cond
-       [top
-        (queue-window-event
-         top
-         (lambda () (send top on-menu-command menu-item)))]
-       [on-popup
-        (let* ([e (new popup-event% [event-type 'menu-popdown])]
-               [pu on-popup]
-               [cnb cancel-none-box])
-          (set! on-popup #f)
-          (set-box! cancel-none-box #t)
-          (send e set-menu-id menu-item)
-          (pu (lambda () (cb this e))))]
-       [parent (send parent do-selected menu-item)])))
+    (unless ignore-callback?
+      (let ([top (get-top-parent)])
+        (cond
+         [top
+          (queue-window-event
+           top
+           (lambda () (send top on-menu-command menu-item)))]
+         [on-popup
+          (let* ([e (new popup-event% [event-type 'menu-popdown])]
+                 [pu on-popup]
+                 [cnb cancel-none-box])
+            (set! on-popup #f)
+            (set-box! cancel-none-box #t)
+            (send e set-menu-id menu-item)
+            (pu (lambda () (cb this e))))]
+         [parent (send parent do-selected menu-item)]))))
 
   (define/public (do-no-selected)
     ;; Queue a none-selected event, but only tentatively, because
@@ -237,7 +240,10 @@
   (define/public (check item on?)
     (let ([gtk (find-gtk item)])
       (when gtk
-        (gtk_check_menu_item_set_active gtk on?))))
+        (atomically
+         (set! ignore-callback? #t)
+         (gtk_check_menu_item_set_active gtk on?)
+         (set! ignore-callback? #f)))))
     
   (define/public (checked? item)
     (let ([gtk (find-gtk item)])

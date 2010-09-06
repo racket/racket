@@ -338,8 +338,6 @@
         (unless (= h -1) (set! save-h h))
         (set! save-w (max save-w client-delta-w))
         (set! save-h (max save-h client-delta-h))
-        (tentative-client-size (+ save-w client-delta-w)
-                               (+ save-h client-delta-h))
         (really-set-size gtk save-x save-y save-w save-h)))
 
     (define/public (save-size x y w h)
@@ -368,16 +366,6 @@
 
     (define client-delta-w 0)
     (define client-delta-h 0)
-    (define min-client-delta-w 0)
-    (define min-client-delta-h 0)
-    (define/public (remember-client-size w h)
-      ;; Called in the Gtk event-loop thread
-      ;(set! client-delta-w (max min-client-delta-w (- save-w w)))
-      ;(set! client-delta-h (max min-client-delta-h (- save-h h)))
-      #;(queue-window-event this (lambda () (on-size 0 0)))
-      (void))
-    (define/public (tentative-client-size w h)
-      (void))
 
     (define/public (adjust-client-delta dw dh)
       (set! client-delta-w dw)

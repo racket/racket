@@ -90,7 +90,7 @@
          h
          (and b&w? #t)
          (and alpha? (not b&w?))
-         (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)])
+         (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 (max w 1) (max h 1))])
            (cairo_surface_flush s)
            (cond
             [alpha? 
