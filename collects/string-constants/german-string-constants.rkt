@@ -1169,18 +1169,18 @@
   "Der Stepper unterstützt die Sprachebene \"~a\" nicht.")
  (stepper-button-label "Stepper")
 
- (stepper-previous-application "|< Applikation")
  (stepper-previous "< Schritt")
  (stepper-next "Schritt >")
- (stepper-next-application "Applikation >|")
- (stepper-jump "Springen ...")
+ (stepper-jump "Springen...")
+ (stepper-jump-to-beginning "an den Anfang")
+ (stepper-jump-to-end "ans Ende")
+ (stepper-jump-to-selected "an den Anfang der Selektion")
+ (stepper-jump-to-previous-application "zur vorigen Applikation")
+ (stepper-jump-to-next-application "zur nächsten Applikation")
  (stepper-out-of-steps "Ende der Auswertung erreicht, bevor ein angemessener Schritt gefunden werden konnte.")
  (stepper-no-such-step/title "Kein Schritt gefunden.")
  (stepper-no-such-step "Kein Schritt gefunden, der das Kriterium erfüllt.")
  (stepper-no-such-step/earlier "Kein früherer Schritt gefunden, der das Kriterium erfüllt.")
- (stepper-jump-to-beginning "an den Anfang") ;; name changed from stepper-home to stepper-jump-to-beginning
- (stepper-jump-to-end "ans Ende") ;; content changed
- (stepper-jump-to-selected "an den Anfang des markierten Ausdrucks") ;; new
  
  (debug-tool-button-name "Debugger")
 
