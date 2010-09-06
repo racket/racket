@@ -1594,6 +1594,13 @@
 (test (pinhole-x (clear-pinhole (rectangle 10 24 'solid 'blue))) => #f)
 (test (pinhole-y (clear-pinhole (rectangle 10 24 'solid 'blue))) => #f)
 
+(test (pinhole-x (scale 11 (center-pinhole (rectangle 10 24 'solid 'blue))))
+      =>
+      55)
+(test (pinhole-y (scale 11 (center-pinhole (rectangle 10 24 'solid 'blue))))
+      =>
+      132)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  test errors.

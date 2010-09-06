@@ -104,11 +104,15 @@
   (scale-internal x-factor y-factor image))
 
 (define (scale-internal x-factor y-factor image)
-  (make-image (make-scale x-factor y-factor (image-shape image))
-              (make-bb (* x-factor (get-right image))
-                       (* y-factor (get-bottom image))
-                       (* y-factor (get-baseline image)))
-              #f))
+  (let ([ph (send image get-pinhole)])
+    (make-image (make-scale x-factor y-factor (image-shape image))
+                (make-bb (* x-factor (get-right image))
+                         (* y-factor (get-bottom image))
+                         (* y-factor (get-baseline image)))
+                #f
+                (and ph 
+                     (make-point (* x-factor (point-x ph))
+                                 (* y-factor (point-y ph)))))))
 
 ;; overlay : image image image ... -> image
 ;; places images on top of each other with their upper left corners aligned. 

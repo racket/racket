@@ -1,10 +1,5 @@
 #lang racket/base
 
-;; changed:
-;; - simple-shape
-;; - np-atomic-shape
-;; - atomic-shape
-
 #|
 
 This library is the part of the 2htdp/image 
