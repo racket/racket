@@ -43,6 +43,10 @@
     'image
     "14fa9751041.png")
    (list
+    '(rotate 30 (center-pinhole (rectangle 40 20 "solid" "orange")))
+    'image
+    "f89620acd3.png")
+   (list
     '(center-pinhole (rectangle 40 20 "solid" "red"))
     'image
     "b2c3ee438.png")

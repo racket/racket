@@ -1291,7 +1291,8 @@ See @secref["nitty-gritty"] for more details about pixels.
 
 @defproc[(center-pinhole [image image?]) image?]{
   Creates a pinhole in @racket[image] at its center.
-  @image-examples[(center-pinhole (rectangle 40 20 "solid" "red"))]
+  @image-examples[(center-pinhole (rectangle 40 20 "solid" "red"))
+                  (rotate 30 (center-pinhole (rectangle 40 20 "solid" "orange")))]
 }
 @defproc[(put-pinhole [x integer?] [y integer?] [image image?]) image?]{
   Creates a pinhole in @racket[image] at the point (@racket[x],@racket[y]).

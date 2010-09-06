@@ -1600,6 +1600,12 @@
 (test (pinhole-y (scale 11 (center-pinhole (rectangle 10 24 'solid 'blue))))
       =>
       132)
+(test (round-numbers (pinhole-x (rotate 90 (center-pinhole (rectangle 40 20 'solid 'red)))))
+      =>
+      10.0)
+(test (round-numbers (pinhole-y (rotate 90 (center-pinhole (rectangle 40 20 'solid 'red)))))
+      =>
+      20.0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -375,12 +375,17 @@
   (let* ([rotated-shape (rotate-normalized-shape 
                          angle
                          (send image get-normalized-shape))]
-        [ltrb (normalized-shape-bb rotated-shape)])
+         [ltrb (normalized-shape-bb rotated-shape)]
+         [ph (send image get-pinhole)])
     (make-image (make-translate (- (ltrb-left ltrb)) (- (ltrb-top ltrb)) rotated-shape)
                 (make-bb (- (ltrb-right ltrb) (ltrb-left ltrb))
                          (- (ltrb-bottom ltrb) (ltrb-top ltrb))
                          (- (ltrb-bottom ltrb) (ltrb-top ltrb)))
-                #f)))
+                #f
+                (and ph
+                     (let ([rp (rotate-point ph angle)])
+                       (make-point (- (point-x rp) (ltrb-left ltrb))
+                                   (- (point-y rp) (ltrb-top ltrb))))))))
 
 (define/contract (rotate-normalized-shape angle shape)
   (-> number? normalized-shape? normalized-shape?)
@@ -396,7 +401,7 @@
   (-> number? cn-or-simple-shape? cn-or-simple-shape?)
   (cond
     [(crop? shape)
-     (make-crop (rotate-points angle (crop-points shape))
+     (make-crop (rotate-points (crop-points shape) angle)
                 (rotate-normalized-shape angle (crop-shape shape)))]
     [else
      (rotate-simple angle shape)]))
@@ -422,7 +427,7 @@
                          (curve-segment-e-pull simple-shape)
                          (curve-segment-color simple-shape))]
     [(polygon? simple-shape)
-     (make-polygon (rotate-points θ (polygon-points simple-shape))
+     (make-polygon (rotate-points (polygon-points simple-shape) θ)
                    (polygon-mode simple-shape)
                    (polygon-color simple-shape))]
     [else
@@ -547,7 +552,7 @@
             (max ax bx cx dx)
             (max ay by cy dy))))
 
-(define (rotate-points θ in-points)
+(define (rotate-points in-points θ)
   (let* ([cs (map point->c in-points)]
          [vectors (points->vectors cs)]
          [rotated-vectors (map (λ (c) (rotate-c c θ)) vectors)]
