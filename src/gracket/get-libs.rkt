@@ -30,7 +30,7 @@
     [(macosx)
      (case (string->symbol (path->string (system-library-subpath)))
        [(i386-macosx)
-        '(["libcairo.2.dylib" 831084]
+        '(["libcairo.2.dylib" 848488]
           ["libintl.8.dylib" 57536]
           ["libgio-2.0.0.dylib" 748360]
           ["libjpeg.62.dylib" 412024]
@@ -44,7 +44,7 @@
           ["libpng14.14.dylib" 182992]
           ["PSMTabBarControl.tgz" 91318])]
        [(x86_64-macosx)
-        '(["libcairo.2.dylib" 927464]
+        '(["libcairo.2.dylib" 944552]
           ["libintl.8.dylib" 61016]
           ["libgio-2.0.0.dylib" 897624]
           ["libjpeg.62.dylib" 153360]

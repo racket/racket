@@ -69,7 +69,7 @@ LINKRESULT_wx_mac = GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 LINKRESULT = $(LINKRESULT_@WXVARIANT@)
 
 # Incremented each time the binaries change:
-DOWNLOAD_BIN_VERSION = 2
+DOWNLOAD_BIN_VERSION = 3
 
 bin:
 	$(MAKE) @MAIN_VARIANT@

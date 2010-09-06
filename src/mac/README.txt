@@ -4,7 +4,7 @@ Get these packages (or newer, if compatible):
  pkg-config-0.23.tar.gz
  libpng-1.4.0.tar.gz 
  pixman-0.17.14.tar.gz
- cairo-1.9.6.tar.gz
+ cairo-1.9.14.tar.gz
  gettext-0.17.tar.gz
  glib-2.22.4.tar.gz
  pango-1.28.0.tar.gz
@@ -69,7 +69,7 @@ cd "$WORKDIR"
 tar zxf "$ARCHDIR"pkg-config-0.23.tar.gz
 tar zxf "$ARCHDIR"libpng-1.4.0.tar.gz
 tar zxf "$ARCHDIR"pixman-0.17.14.tar.gz
-tar zxf "$ARCHDIR"cairo-1.9.6.tar.gz
+tar zxf "$ARCHDIR"cairo-1.9.14.tar.gz
 tar zxf "$ARCHDIR"gettext-0.17.tar.gz
 tar zxf "$ARCHDIR"glib-2.22.4.tar.gz
 tar zxf "$ARCHDIR"pango-1.28.0.tar.gz
@@ -86,7 +86,7 @@ cd pixman-0.17.14/
 ./configure --prefix="$DESTDIR"
 make
 make install
-cd ../cairo-1.9.6/
+cd ../cairo-1.9.14/
 env PATH="$DESTDIR"/bin:"$PATH" ./configure --disable-xlib --disable-ft --disable-fc --prefix="$DESTDIR"
 make
 make install
