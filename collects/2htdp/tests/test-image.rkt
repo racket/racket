@@ -1606,6 +1606,19 @@
 (test (round-numbers (pinhole-y (rotate 90 (center-pinhole (rectangle 40 20 'solid 'red)))))
       =>
       20.0)
+(test (pinhole-x (flip-vertical (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
+      =>
+      1)
+(test (pinhole-y (flip-vertical (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
+      =>
+      18)
+(test (pinhole-x (flip-horizontal (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
+      =>
+      9.0)
+(test (pinhole-y (flip-horizontal (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
+      =>
+      2.0)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

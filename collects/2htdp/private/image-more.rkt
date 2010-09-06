@@ -671,12 +671,16 @@
 (define/chk (flip-vertical image)
   (let* ([flipped-shape (flip-normalized-shape 
                          (send image get-normalized-shape))]
-        [ltrb (normalized-shape-bb flipped-shape)])
+         [ltrb (normalized-shape-bb flipped-shape)]
+         [ph (send image get-pinhole)])
     (make-image (make-translate (- (ltrb-left ltrb)) (- (ltrb-top ltrb)) flipped-shape)
                 (make-bb (- (ltrb-right ltrb) (ltrb-left ltrb))
                          (- (ltrb-bottom ltrb) (ltrb-top ltrb))
                          (- (ltrb-bottom ltrb) (ltrb-top ltrb)))
-                #f)))
+                #f
+                (and ph
+                     (make-point (+ (point-x ph) (- (ltrb-left ltrb)))
+                                 (+ (- (point-y ph)) (- (ltrb-top ltrb))))))))
 
 (define/contract (flip-normalized-shape shape)
   (-> normalized-shape? normalized-shape?)
