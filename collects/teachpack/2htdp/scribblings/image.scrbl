@@ -1278,8 +1278,16 @@ Two images are equal if they draw exactly the same way, at their current size
 
 A pinhole is an optional property of an image that identifies a point somewhere
 in the image. The pinhole can then be used to facilitate overlaying images by
-lining them up on the their pinholes. When an image has a pinhole, the pinhole
+lining them up on the their pinholes. 
+
+When an image has a pinhole, the pinhole
 is drawn with crosshairs drawn across the image.
+The crosshairs are drawn with a two one pixel wide black lines and two one pixel wide white lines,
+where the black lines is drawn .5 pixels to the left and above the pinhole, and the
+white lines are drawn .5 pixels to the right and below the pinhole. 
+Accordingly, when the pixel is on an integral coordinate, then black and white lines all 
+take up a single pixel and in the center of their intersections is the actual pinholes.
+See @secref["nitty-gritty"] for more details about pixels.
 
 @defproc[(center-pinhole [image image?]) image?]{
   Creates a pinhole in @racket[image] at its center.
