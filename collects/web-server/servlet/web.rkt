@@ -23,11 +23,12 @@
 ;; determine if this url encodes a continuation and extract the instance id and
 ;; continuation id.
 (define (continuation-url? a-url)
-  (cond 
-    [(extract-param a-url "k")
-     => read/string]
-    [else
-     #f]))
+  (parameterize ([read-accept-dot #t])
+    (cond 
+      [(extract-param a-url "k")
+       => read/string]
+      [else
+       #f])))
 
 (provide/contract
  [continuation-url? (url? . -> . (or/c false/c (list/c number? number? number?)))])
