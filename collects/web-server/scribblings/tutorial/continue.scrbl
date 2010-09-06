@@ -511,7 +511,7 @@ application that needs to accommodate the post's new structure.
 
 Once we've changed the data structure of the posts and adjusted our
 functions to deal with this revised structure, the web application
-should be runnable.  The user may even may even see some of the fruits
+should be runnable.  The user may even see some of the fruits
 of our labor: if the initial @racket[BLOG] has a post with a comment, the user
 should see those comments now.  But obviously, there's something
 missing: the user doesn't have the user interface to add comments to a
