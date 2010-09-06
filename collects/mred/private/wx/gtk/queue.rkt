@@ -6,7 +6,8 @@
          "../../lock.rkt"
          "../common/queue.rkt"
          "../common/freeze.rkt"
-         "const.rkt")
+         "const.rkt"
+	 "w32.rkt")
 
 (provide gtk-start-event-pump
 
@@ -63,6 +64,8 @@
 (define-mz scheme_get_fdset (_fun _pointer _int -> _pointer))
 (define-mz scheme_fdset (_fun _pointer _int -> _void))
 (define-mz scheme_set_wakeup_time (_fun _pointer _double -> _void))
+(define-mz scheme_add_fd_eventmask (_fun _pointer _int -> _void)
+  #:fail #f)
 
 (define (install-wakeup fds)
   (pre-event-sync #t)
@@ -79,16 +82,21 @@
           (set! poll-fds (malloc _GPollFD n))
           (set! poll-fd-count n)
           (install-wakeup fds))
-        (for ([i (in-range n)])
-          (let* ([gfd (ptr-ref poll-fds _GPollFD i)]
-                 [fd (GPollFD-fd gfd)]
-                 [events (GPollFD-events gfd)])
-            (when (not (zero? (bitwise-and events POLLIN)))
-              (scheme_fdset (scheme_get_fdset fds 0) fd))
-            (when (not (zero? (bitwise-and events POLLOUT)))
-              (scheme_fdset (scheme_get_fdset fds 1) fd))
-            (when (not (zero? (bitwise-and events (bitwise-ior POLLERR POLLHUP))))
-              (scheme_fdset (scheme_get_fdset fds 2) fd)))))))
+	(if (eq? 'windows (system-type))
+	    ;; We don't know how to deal with GLib FDs under
+	    ;;  Windows, but we should wake up on any Windows event
+	    (scheme_add_fd_eventmask fds QS_ALLINPUT)
+	    ;; Normal FD handling under Unix variants:
+            (for ([i (in-range n)])
+              (let* ([gfd (ptr-ref poll-fds _GPollFD i)]
+                     [fd (GPollFD-fd gfd)]
+                     [events (GPollFD-events gfd)])
+                (when (not (zero? (bitwise-and events POLLIN)))
+                  (scheme_fdset (scheme_get_fdset fds 0) fd))
+                (when (not (zero? (bitwise-and events POLLOUT)))
+                  (scheme_fdset (scheme_get_fdset fds 1) fd))
+                (when (not (zero? (bitwise-and events (bitwise-ior POLLERR POLLHUP))))
+                  (scheme_fdset (scheme_get_fdset fds 2) fd))))))))
 
 (set-check-queue! gtk_events_pending)
 (set-queue-wakeup! install-wakeup)
