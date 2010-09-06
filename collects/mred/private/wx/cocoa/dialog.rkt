@@ -28,7 +28,7 @@
         (let ([s (atomically
                   (let ([s (or close-sema (make-semaphore))])
                     (unless close-sema (set! close-sema s))
-                    s))])
+                    (semaphore-peek-evt s)))])
           (super show on?)
           (yield s)
           (void))

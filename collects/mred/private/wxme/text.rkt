@@ -4759,7 +4759,7 @@
 
                         (when (and resized? s-admin)
                           (send s-admin resized #f))
-                        
+
                         (on-reflow)))))))))))
 
   (def/public (on-reflow) (void))

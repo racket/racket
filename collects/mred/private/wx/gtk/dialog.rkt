@@ -3,6 +3,7 @@
          ffi/unsafe
           "../../syntax.rkt"
           "../common/queue.rkt"
+          "../../lock.rkt"
           "types.rkt"
           "utils.rkt"
           "frame.rkt")
@@ -51,9 +52,10 @@
     (unless on?
       (set! dialog-level 0))
     (unless on?
-      (when close-sema
-        (semaphore-post close-sema)
-        (set! close-sema #f)))
+      (atomically
+       (when close-sema
+         (semaphore-post close-sema)
+         (set! close-sema #f))))
     (super direct-show on?))
 
   (define/override (center dir wrt)
@@ -66,9 +68,11 @@
 
   (define/override (show on?)
     (if on?
-        (unless close-sema
-          (let ([s (make-semaphore)])
-            (set! close-sema s)
-            (super show on?)
-            (yield s)))
+        (let ([s (atomically
+                  (let ([s (or close-sema (make-semaphore))])
+                    (unless close-sema (set! close-sema s))
+                    (semaphore-peek-evt s)))])
+          (super show on?)
+          (yield s)
+          (void))
         (super show on?))))

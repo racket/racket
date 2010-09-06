@@ -241,7 +241,7 @@
 
 	    ;; Exact
 	    (set! dy (inexact->exact dy))))
-	
+
 	(when value
 	  (set-value value)
 	  (unless (string=? value "")

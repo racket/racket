@@ -208,7 +208,7 @@
 								    ((done #t) #f #f)))
 			      init-val (list* 'single 'vertical-label style))]
 	      [p (make-object horizontal-pane% f)])
-	  (send p set-alignment 'right 'center)
+          (send p set-alignment 'right 'center)
 	  (send f stretchable-height #f)
           (ok-cancel
            (lambda () (make-object button% "OK" p (done #t) '(border)))

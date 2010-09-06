@@ -41,6 +41,8 @@
 
   (require openssl/mzssl)
 
+  (require (only racket/base log-error))
+
   ;; Constant for messages without a title:
   (define no-subject-string "<No subject>")
 

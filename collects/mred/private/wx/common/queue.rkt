@@ -355,7 +355,7 @@
                             (when v (handle-event v))
                             (yield evt))))]
        [else
-        (sync e)]))]))
+        (sync evt)]))]))
 
 (define event-dispatch-handler (make-parameter void))
 (define (main-eventspace? e)

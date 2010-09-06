@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require mred/private/syntax
+         mred/private/lock
          scheme/math
          scheme/class
          "hold.ss"
@@ -143,11 +144,15 @@
 (define default-dc-backend%
   (class* object% (dc-backend<%>)
 
-    (define lock (make-semaphore 1))
+    ;; Using the global lock here is troublesome, becase
+    ;; operations involving paths, regions, and text can
+    ;; take arbitrarily long. Parts of the editor infrastructure,
+    ;; meanwhile, assume that the global lock can be taken
+    ;; around actions that use the editor-canvas dc. If we
+    ;; have a separate per-dc lock, we can hit deadlock due to
+    ;; lock order.
     (define/public (call-with-cr-lock thunk)
-      (call-with-semaphore
-       lock
-       thunk))
+      (as-entry thunk))
 
     (define/public (get-cr) #f)
     (define/public (release-cr cr) (void))
@@ -964,7 +969,7 @@
                               (if (= i (string-length s))
                                   (values w h d a)
                                   (let ([ch (string-ref s i)])
-                                    (let ([v (hash-ref size-cache (vector id sz ch) #f)])
+                                    (let ([v (atomically (hash-ref size-cache (vector id sz ch) #f))])
                                       (if v
                                           (loop (add1 i)
                                                 (+ w (vector-ref v 0)) 
@@ -1073,9 +1078,10 @@
                          (let ([id (send font get-font-id)]
                                [sz (send font get-point-size)])
                            (lambda (ch w h d a)
-                             (hash-set! size-cache 
-                                        (vector id sz ch)
-                                        (vector w h d a)))))])
+                             (atomically
+                              (hash-set! size-cache 
+                                         (vector id sz ch)
+                                         (vector w h d a))))))])
                 (begin0
                  (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
                      ([ch (in-string s)])
