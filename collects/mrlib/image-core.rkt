@@ -236,6 +236,7 @@ has been moved out).
                    [else that])])
             (and (is-a? that image%)
                  (same-bb? bb (send that get-bb))
+                 (equal? pinhole (send that get-pinhole))
                  (or (and (not (skip-image-equality-fast-path))  ;; this is here to make testing more effective
                           (equal? (get-normalized-shape) (send that get-normalized-shape)))
                      (let ([w (+ 1 (round (inexact->exact (bb-right bb))))]    ;; some shapes (ie, rectangles) draw 1 outside the bounding box

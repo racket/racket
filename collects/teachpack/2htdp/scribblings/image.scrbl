@@ -1271,8 +1271,9 @@ The baseline of an image is the place where the bottoms any letters line up, not
 
 @section{Equality Testing of Images}
 
-Two images are equal if they draw exactly the same way, at their current size
-(not neccessarily at all sizes).
+Two images are equal if they draw exactly the same way at their current size
+(not neccessarily at all sizes) and, if there are pinholes, the pinholes are
+in the same place.
 
 @section{Pinholes}
 

@@ -1618,7 +1618,14 @@
 (test (pinhole-y (flip-horizontal (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
       =>
       2.0)
-
+(test (equal? (center-pinhole (rectangle 10 12 'solid 'blue))
+              (rectangle 10 12 'solid 'blue))
+      =>
+      #f)
+(test (equal? (center-pinhole (rectangle 10 12 'solid 'blue))
+              (put-pinhole 5 6 (rectangle 10 12 'solid 'blue)))
+      =>
+      #t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
