@@ -1578,6 +1578,21 @@
                      (rectangle 1 1 'solid (color 5 5 5))
                      (rectangle 1 1 'solid (color 6 6 6)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  test pinholes.
+;;
+
+(test (pinhole-x (rectangle 10 10 'solid 'blue)) => #f)
+(test (pinhole-y (rectangle 10 10 'solid 'blue)) => #f)
+(test (pinhole-x (put-pinhole 2 3 (rectangle 10 10 'solid 'blue))) => 2)
+(test (pinhole-y (put-pinhole 2 3 (rectangle 10 10 'solid 'blue))) => 3)
+(test (pinhole-x (center-pinhole (rectangle 10 24 'solid 'blue))) => 5)
+(test (pinhole-y (center-pinhole (rectangle 10 24 'solid 'blue))) => 12)
+(test (pinhole-x (clear-pinhole (center-pinhole (rectangle 10 24 'solid 'blue)))) => #f)
+(test (pinhole-y (clear-pinhole (center-pinhole (rectangle 10 24 'solid 'blue)))) => #f)
+(test (pinhole-x (clear-pinhole (rectangle 10 24 'solid 'blue))) => #f)
+(test (pinhole-y (clear-pinhole (rectangle 10 24 'solid 'blue))) => #f)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1767,7 +1782,7 @@
                   (/ (sqrt max-s) h)
                   img))))
 
-;#;
+#;
 (time
  (let ([fn (make-temporary-file "test-image~a")])
    (redex-check
