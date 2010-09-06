@@ -1664,8 +1664,22 @@
       =>
       60)
 
-;; crop
-;; frame
+(test (pinhole-x (crop 2 2 8 10
+                       (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      3)
+(test (pinhole-y (crop 2 2 8 10
+                       (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      4)
+
+(test (pinhole-x (frame (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      5)
+(test (pinhole-y (frame (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      6)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

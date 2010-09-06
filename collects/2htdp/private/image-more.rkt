@@ -299,13 +299,17 @@
     (crop/internal x1 y1 w h image)))
 
 (define (crop/internal x1 y1 width height image)
-  (let* ([points (rectangle-points width height)])
+  (let ([points (rectangle-points width height)]
+        [ph (send image get-pinhole)])
     (make-image (make-crop points
                            (make-translate (- x1) (- y1) (image-shape image)))
                 (make-bb width
                          height
                          (min height (get-baseline image)))
-                #f)))
+                #f
+                (and ph 
+                     (make-point (- (point-x ph) x1)
+                                 (- (point-y ph) y1))))))
 
 ;; place-image : image x y scene -> scene
 (define/chk (place-image image1 x1 y1 image2) 
@@ -366,7 +370,8 @@
               (make-bb (get-right image)
                        (get-bottom image)
                        (get-baseline image))
-              #f))
+              #f
+              (send image get-pinhole)))
 
 ;; scale : I number -> I
 ;; scales the I by the given factor
