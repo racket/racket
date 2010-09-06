@@ -336,7 +336,8 @@
                             (make-line-segment (make-point x1 y1) (make-point x2 y2) color))
                  (image-shape image))
                 (image-bb image)
-                #f)))
+                #f
+                (send image get-pinhole))))
 
 (define/chk (scene+curve image x1 y1 angle1 pull1 x2 y2 angle2 pull2 color)
   (let* ([dx (abs (min 0 x1 x2))]
@@ -348,7 +349,8 @@
                                                 color))
                  (image-shape image))
                 (image-bb image)
-                #f)))
+                #f
+                (send image get-pinhole))))
 
 ;; frame : image -> image
 ;; draws a black frame around a image where the bounding box is
@@ -845,7 +847,8 @@
                   (make-line-segment (make-point x1 y1) (make-point x2 y2) color)
                   (image-shape image)))
                 (make-bb right bottom baseline)
-                #f)))
+                #f
+                (send image get-pinhole))))
 
 (define/chk (add-curve image x1 y1 angle1 pull1 x2 y2 angle2 pull2 color)
   (let* ([dx (abs (min 0 x1 x2))]
@@ -865,7 +868,8 @@
                                       color)
                   (image-shape image)))
                 (make-bb right bottom baseline)
-                #f)))
+                #f
+                (send image get-pinhole))))
 
 ;; this is just so that 'text' objects can be sized.
 (define text-sizing-bm (make-object bitmap-dc% (make-object bitmap% 1 1)))

@@ -1626,6 +1626,46 @@
               (put-pinhole 5 6 (rectangle 10 12 'solid 'blue)))
       =>
       #t)
+(test (pinhole-x (add-line (center-pinhole (rectangle 100 120 'solid 'red)) 10 10 20 20 'blue))
+      =>
+      50)
+(test (pinhole-y (add-line (center-pinhole (rectangle 100 120 'solid 'red)) 10 10 20 20 'blue))
+      =>
+      60)
+(test (pinhole-x (add-curve (center-pinhole (rectangle 100 120 'solid 'red)) 
+                            10 10 30 1/2
+                            20 20 60 1/2
+                            'white))
+      =>
+      50)
+(test (pinhole-y (add-curve (center-pinhole (rectangle 100 120 'solid 'red)) 
+                            10 10 30 1/2
+                            20 20 60 1/2
+                            'white))
+      =>
+      60)
+
+(test (pinhole-x (scene+line (center-pinhole (rectangle 100 120 'solid 'red)) 10 10 20 20 'blue))
+      =>
+      50)
+(test (pinhole-y (scene+line (center-pinhole (rectangle 100 120 'solid 'red)) 10 10 20 20 'blue))
+      =>
+      60)
+(test (pinhole-x (scene+curve (center-pinhole (rectangle 100 120 'solid 'red)) 
+                              10 10 30 1/2
+                              20 20 60 1/2
+                              'white))
+      =>
+      50)
+(test (pinhole-y (scene+curve (center-pinhole (rectangle 100 120 'solid 'red)) 
+                              10 10 30 1/2
+                              20 20 60 1/2
+                              'white))
+      =>
+      60)
+
+;; crop
+;; frame
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
