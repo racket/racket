@@ -25,7 +25,7 @@
 (provide index)
 (define index
   @page[#:file "" #:window-title "Prebuilt materials"]{
-    @p{This directory contains Racket material that is built daily from the
+    @p{This directory contains Racket materials that are built daily from the
        development repository.  See below for instructions.}
     @hr
     @content-hole
