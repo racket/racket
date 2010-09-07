@@ -355,7 +355,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide/contract
- [non-empty-string/c contract?]
  [path-element? contract?]
  [port-number? contract?]
  [tcp-listen-port? contract?]
