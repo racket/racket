@@ -134,9 +134,25 @@
 ;; images up at their centers.
 
 (define/chk (overlay/align x-place y-place image image2 . image3)
+  (when (or (eq? x-place 'pinhole) (eq? y-place 'pinhole))
+    (check-dependencies 'overlay/align
+                        (and (send image get-pinhole)
+                             (send image2 get-pinhole)
+                             (andmap (λ (x) (send x get-pinhole))
+                                     image3))
+                        "when x-place or y-place is ~e or ~e, then all of the arguments must have pinholes"
+                        'pinhole "pinhole"))
   (overlay/internal x-place y-place image (cons image2 image3)))
 
 (define/chk (underlay/align x-place y-place image image2 . image3)
+  (when (or (eq? x-place 'pinhole) (eq? y-place 'pinhole))
+    (check-dependencies 'underlay/align
+                        (and (send image get-pinhole)
+                             (send image2 get-pinhole)
+                             (andmap (λ (x) (send x get-pinhole))
+                                     image3))
+                        "when x-place or y-place is ~e or ~e, then all of the arguments must have pinholes"
+                        'pinhole "pinhole"))
   (let ([imgs (reverse (list* image image2 image3))])
     (overlay/internal x-place y-place (car imgs) (cdr imgs))))
 
@@ -157,7 +173,8 @@
                           (if (< dy 0) (- dy) 0)
                           (car rst)
                           (if (< dx 0) 0 dx)
-                          (if (< dy 0) 0 dy))
+                          (if (< dy 0) 0 dy)
+                          #t)
                (cdr rst)))])))
 
 (define (find-x-spot x-place image)
@@ -165,6 +182,7 @@
     [(left) 0]
     [(middle) (/ (get-right image) 2)]
     [(right) (get-right image)]
+    [(pinhole) (point-x (send image get-pinhole))]
     [else (error 'find-x-spot "~s" x-place)]))
 
 (define (find-y-spot y-place image)
@@ -173,6 +191,7 @@
     [(middle) (/ (get-bottom image) 2)]
     [(bottom) (get-bottom image)]
     [(baseline) (get-baseline image)]
+    [(pinhole) (point-y (send image get-pinhole))]
     [else (error 'find-y-spot "~s" y-place)]))
 
 ;; overlay/xy : image number number image -> image
@@ -184,7 +203,8 @@
              (if (< dy 0) (- dy) 0)
              image2
              (if (< dx 0) 0 dx)
-             (if (< dy 0) 0 dy)))
+             (if (< dy 0) 0 dy)
+             #t))
 
 (define/chk (underlay/xy image dx dy image2)
   (overlay/δ image2
@@ -192,18 +212,28 @@
              (if (< dy 0) 0 dy)
              image
              (if (< dx 0) (- dx) 0)
-             (if (< dy 0) (- dy) 0)))
+             (if (< dy 0) (- dy) 0)
+             #f))
 
-(define (overlay/δ image1 dx1 dy1 image2 dx2 dy2)
-  (make-image (make-overlay (make-translate dx1 dy1 (image-shape image1))
-                            (make-translate dx2 dy2 (image-shape image2)))
-              (make-bb (max (+ (get-right image1) dx1)
-                            (+ (get-right image2) dx2))
-                       (max (+ (get-bottom image1) dy1)
-                            (+ (get-bottom image2) dy2))
-                       (max (+ (get-baseline image1) dy1)
-                            (+ (get-baseline image2) dy2)))
-              #f))
+(define (overlay/δ image1 dx1 dy1 image2 dx2 dy2 first-pinhole?)
+    (make-image (make-overlay (make-translate dx1 dy1 (image-shape image1))
+                              (make-translate dx2 dy2 (image-shape image2)))
+                (make-bb (max (+ (get-right image1) dx1)
+                              (+ (get-right image2) dx2))
+                         (max (+ (get-bottom image1) dy1)
+                              (+ (get-bottom image2) dy2))
+                         (max (+ (get-baseline image1) dy1)
+                              (+ (get-baseline image2) dy2)))
+                #f
+                (if first-pinhole?
+                    (let ([ph (send image1 get-pinhole)])
+                      (and ph
+                           (make-point (+ (point-x ph) dx1)
+                                       (+ (point-y ph) dy1))))
+                    (let ([ph (send image2 get-pinhole)])
+                      (and ph
+                           (make-point (+ (point-x ph) dx2)
+                                       (+ (point-y ph) dy2)))))))
 
 ;; beside : image image image ... -> image
 ;; places images in a single horizontal row, top aligned
@@ -231,7 +261,8 @@
                           (if (< dy 0) (- dy) 0)
                           (car rst)
                           (get-right fst)
-                          (if (< dy 0) 0 dy))
+                          (if (< dy 0) 0 dy)
+                          #t)
                (cdr rst)))])))
 
 ;; above : image image image ... -> image
@@ -260,7 +291,8 @@
                           0
                           (car rst)
                           (if (< dx 0) 0 dx)
-                          (get-bottom fst))
+                          (get-bottom fst)
+                          #t)
                (cdr rst)))])))
 
 
@@ -330,7 +362,8 @@
                 (if (< dy 0) 0 dy)
                 scene
                 (if (< dx 0) (- dx) 0)
-                (if (< dy 0) (- dy) 0)))))
+                (if (< dy 0) (- dy) 0)
+                #f))))
 
 (define/chk (scene+line image x1 y1 x2 y2 color)
   (let* ([dx (abs (min 0 x1 x2))]

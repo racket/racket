@@ -1680,6 +1680,57 @@
       =>
       6)
 
+(test (pinhole-x (overlay (put-pinhole 1 2 (rectangle 10 100 'solid 'red))
+                          (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))))
+      =>
+      46)
+(test (pinhole-y (overlay (put-pinhole 1 2 (rectangle 10 100 'solid 'red))
+                          (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))))
+      =>
+      2)
+(test (pinhole-x (overlay (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))
+                          (put-pinhole 1 2 (rectangle 10 100 'solid 'red))))
+      =>
+      75)
+(test (pinhole-y (overlay (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))
+                          (put-pinhole 1 2 (rectangle 10 100 'solid 'red))))
+      =>
+      54)
+(test (pinhole-x (overlay (rectangle 100 10 'solid 'blue)
+                          (put-pinhole 1 2 (rectangle 10 100 'solid 'red))))
+      =>
+      #f)
+(test (pinhole-y (overlay (rectangle 100 10 'solid 'blue)
+                          (put-pinhole 1 2 (rectangle 10 100 'solid 'red))))
+      =>
+      #f)
+(test (pinhole-x (beside (center-pinhole (rectangle 10 100 'solid 'red))
+                         (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      5)
+(test (pinhole-y (beside (center-pinhole (rectangle 10 100 'solid 'red))
+                         (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      50)
+(test (pinhole-x (above (center-pinhole (rectangle 10 100 'solid 'red))
+                        (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      50)
+(test (pinhole-y (above (center-pinhole (rectangle 10 100 'solid 'red))
+                        (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      50)
+
+(test (pinhole-x (place-image (center-pinhole (rectangle 10 100 'solid 'red))
+                              0 0
+                              (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      50)
+(test (pinhole-y (place-image (center-pinhole (rectangle 10 100 'solid 'red))
+                              0 0
+                              (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      5)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

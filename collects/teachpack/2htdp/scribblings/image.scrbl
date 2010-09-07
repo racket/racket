@@ -1290,6 +1290,12 @@ Accordingly, when the pixel is on an integral coordinate, then black and white l
 take up a single pixel and in the center of their intersections is the actual pinholes.
 See @secref["nitty-gritty"] for more details about pixels.
 
+When images are @racket[overlay]'d, @racket[underlay]'d (or the variants of those functions),
+placed @racket[beside], or @racket[above] each other, 
+the pinhole of the resulting image is the pinhole of the first image argument passed to the combining
+operation. When images are combined with @racket[place-image] (or the variants of @racket[place-image]), 
+then the scene argument's pinhole is preserved.
+
 @defproc[(center-pinhole [image image?]) image?]{
   Creates a pinhole in @racket[image] at its center.
   @image-examples[(center-pinhole (rectangle 40 20 "solid" "red"))

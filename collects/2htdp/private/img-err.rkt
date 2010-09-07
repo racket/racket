@@ -251,9 +251,9 @@
             argname)]))
 
 (define (y-place? arg)
-  (member arg '("top" top "bottom" bottom "middle" middle "center" center "baseline" baseline)))
+  (member arg '("top" top "bottom" bottom "middle" middle "center" center "baseline" baseline "pinhole" pinhole)))
 (define (x-place? arg)
-  (member arg '("left" left "right" right "middle" middle "center" center)))
+  (member arg '("left" left "right" right "middle" middle "center" center "pinhole" pinhole)))
 (define (mode? arg)
   (member arg '(solid outline "solid" "outline")))
 (define (angle? arg)
