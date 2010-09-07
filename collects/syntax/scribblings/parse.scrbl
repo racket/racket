@@ -2,7 +2,7 @@
 @(require scribble/manual
           (for-label syntax/parse))
 
-@title[#:tag "stxparse" #:style '(toc)]{Parsing and classifying syntax}
+@title[#:tag "stxparse" #:style '(toc)]{Parsing and specifying syntax}
 
 The @schememodname[syntax/parse] library provides a framework for
 writing macros and processing syntax. The library provides a powerful
@@ -18,6 +18,7 @@ messages embedded in the macro's syntax patterns.
 @include-section["parse/intro.scrbl"]
 @include-section["parse/examples.scrbl"]
 @include-section["parse/parsing.scrbl"]
+@include-section["parse/stxclasses.scrbl"]
 @include-section["parse/patterns.scrbl"]
 @include-section["parse/litconv.scrbl"]
 @include-section["parse/lib.scrbl"]

@@ -5,7 +5,7 @@
           scribble/eval
           "parse-common.rkt")
 
-@title[#:tag "stxparse-litconv"]{Literal sets and Conventions}
+@title{Literal sets and Conventions}
 
 Sometimes the same literals are recognized in a number of different
 places. The most common example is the literals for fully expanded

@@ -6,7 +6,7 @@
           "parse-common.rkt"
           (for-label syntax/kerncase))
 
-@title[#:tag "stxparse-lib"]{Library syntax classes and literal sets}
+@title{Library syntax classes and literal sets}
 
 @section{Syntax classes}
 
