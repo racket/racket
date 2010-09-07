@@ -18,9 +18,10 @@
 This section provides an introduction to writing robust macros with
 @scheme[syntax-parse] and syntax classes.
 
-The task is to write a macro named @scheme[mylet] that has the same
-syntax and behavior as Racket's @scheme[let] form. The macro should
-good error messages when used incorrectly.
+As a running example we use the following task: write a macro named
+@scheme[mylet] that has the same syntax and behavior as Racket's
+@scheme[let] form. The macro should produce good error messages when
+used incorrectly.
 
 Here is the specification of @scheme[mylet]'s syntax:
 
@@ -29,11 +30,12 @@ Here is the specification of @scheme[mylet]'s syntax:
    (code:line (@#,(defdummy mylet) ([var-id rhs-expr] ...) body ...+)
               (mylet loop-id ([var-id rhs-expr] ...) body ...+))]
 
-For simplicify, we handle only the first case for now. We return to
+For simplicity, we handle only the first case for now. We return to
 the second case later in the introduction.
 
-First, we import @scheme[syntax-parse] @scheme[for-syntax], since we
-will use it to implement a macro transformer.
+First, we import @scheme[syntax-parse] into the @tech[#:doc '(lib
+"scribblings/reference/reference.scrbl")]{transformer environment},
+since we will use it to implement a macro transformer.
 
 @myinteraction[(require (for-syntax syntax/parse))]
 
