@@ -2,7 +2,8 @@
 
 @begin[(require "utils.rkt" scribble/eval scriblib/footnote
                 racket/sandbox)
-       (require (for-label (only-meta-in 0 typed/racket)
+       (require (for-label (only-meta-in 0 [except-in typed/racket for])
+                           (only-in racket/base for)
                            racket/list srfi/14
                            version/check))]
 
