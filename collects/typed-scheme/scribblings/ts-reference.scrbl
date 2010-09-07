@@ -43,6 +43,9 @@ any expression of this type will not evaluate to a value.}
 @defidform[Natural]
 @defidform[Exact-Nonnegative-Integer]
 @defidform[Exact-Positive-Integer]
+@defidform[Fixnum]
+@defidform[Nonnegative-Fixnum]
+@defidform[Positive-Fixnum]
 @defidform[Zero]
 )]{These types represent the hierarchy of @rtech{numbers} of Racket.
 @racket[Integer] includes only @rtech{integers} that are @rtech{exact
