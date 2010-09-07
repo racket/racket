@@ -68,7 +68,7 @@
 
 (define (contract-first-order c)
   (contract-struct-first-order
-   (coerce-contract 'contract-first-order-passes? c)))
+   (coerce-contract 'contract-first-order c)))
 
 (define (contract-first-order-passes? c v)
   ((contract-struct-first-order
