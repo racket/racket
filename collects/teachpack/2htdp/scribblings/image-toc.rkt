@@ -36,6 +36,42 @@
        (above r r r r r r))
     'image
     "245380940d6-1.png")
+   (list
+    '(let* ((t (triangle 40 "solid" "orange"))
+            (w (image-width t))
+            (h (image-height t)))
+       (clear-pinhole
+        (overlay/pinhole
+         (put-pinhole (/ w 2) 0 t)
+         (put-pinhole w h t)
+         (put-pinhole 0 h t))))
+    'image
+    "1847b22ee5c.png")
+   (list
+    '(underlay/pinhole
+      (put-pinhole 25 10 (ellipse 100 50 "solid" "red"))
+      (put-pinhole 75 40 (ellipse 100 50 "solid" "blue")))
+    'image
+    "1648582961a.png")
+   (list
+    '(let ((petal (put-pinhole 20 20 (ellipse 100 40 "solid" "purple"))))
+       (clear-pinhole
+        (overlay/pinhole
+         (circle 30 "solid" "yellow")
+         (rotate (* 60 0) petal)
+         (rotate (* 60 1) petal)
+         (rotate (* 60 2) petal)
+         (rotate (* 60 3) petal)
+         (rotate (* 60 4) petal)
+         (rotate (* 60 5) petal))))
+    'image
+    "31011b92fc.png")
+   (list
+    '(overlay/pinhole
+      (put-pinhole 25 10 (ellipse 100 50 "solid" "red"))
+      (put-pinhole 75 40 (ellipse 100 50 "solid" "blue")))
+    'image
+    "d2d7809e7e.png")
    (list '(pinhole-y (center-pinhole (rectangle 10 10 "solid" "red"))) 'val '5)
    (list '(pinhole-x (center-pinhole (rectangle 10 10 "solid" "red"))) 'val '5)
    (list

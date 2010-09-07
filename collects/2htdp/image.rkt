@@ -130,6 +130,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          center-pinhole
          pinhole-x
          pinhole-y
+         overlay/pinhole
+         underlay/pinhole
          
          make-color
          make-pen pen

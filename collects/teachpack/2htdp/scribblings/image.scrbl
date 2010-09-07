@@ -1290,8 +1290,9 @@ in the image. The pinhole can then be used to facilitate overlaying images by
 lining them up on the their pinholes. 
 
 When an image has a pinhole, the pinhole
-is drawn with crosshairs drawn across the image.
-The crosshairs are drawn with a two one pixel wide black lines and two one pixel wide white lines,
+is drawn with crosshairs on the image.
+The crosshairs are drawn with a two one pixel wide black lines (one horizontal and one vertical)
+and two one pixel wide white lines,
 where the black lines is drawn .5 pixels to the left and above the pinhole, and the
 white lines are drawn .5 pixels to the right and below the pinhole. 
 Accordingly, when the pixel is on an integral coordinate, then black and white lines all 
@@ -1323,6 +1324,46 @@ then the scene argument's pinhole is preserved.
 }
 @defproc[(clear-pinhole [image image?]) image?]{
   Removes a pinhole from @racket[image] (if the image has a pinhole).                                                  
+}
+
+@defproc[(overlay/pinhole [i1 image?] [i2 image?] [is image?] ...) image?]{
+  
+  Overlays all of the image arguments on their pinholes. If any of the
+  arguments do not have pinholes, then the center of the image is used instead.
+  
+  @image-examples[(overlay/pinhole
+                   (put-pinhole 25 10 (ellipse 100 50 "solid" "red"))
+                   (put-pinhole 75 40 (ellipse 100 50 "solid" "blue")))
+                  (let ([petal (put-pinhole 
+                                20 20
+                                (ellipse 100 40 "solid" "purple"))])
+                    (clear-pinhole
+                     (overlay/pinhole
+                      (circle 30 "solid" "yellow")
+                      (rotate (* 60 0) petal)
+                      (rotate (* 60 1) petal)
+                      (rotate (* 60 2) petal)
+                      (rotate (* 60 3) petal)
+                      (rotate (* 60 4) petal)
+                      (rotate (* 60 5) petal))))]
+}
+
+@defproc[(underlay/pinhole [i1 image?] [i2 image?] [is image?] ...) image?]{
+  
+  Underlays all of the image arguments on their pinholes. If any of the
+  arguments do not have pinholes, then the center of the image is used instead.
+  
+  @image-examples[(underlay/pinhole
+                   (put-pinhole 25 10 (ellipse 100 50 "solid" "red"))
+                   (put-pinhole 75 40 (ellipse 100 50 "solid" "blue")))
+                  (let* ([t (triangle 40 "solid" "orange")]
+                         [w (image-width t)]
+                         [h (image-height t)])
+                    (clear-pinhole
+                     (overlay/pinhole
+                      (put-pinhole (/ w 2) 0 t)
+                      (put-pinhole w h t)
+                      (put-pinhole 0 h t))))]
 }
 
 @section[#:tag "nitty-gritty"]{The nitty gritty of pixels, pens, and lines}

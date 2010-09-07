@@ -156,6 +156,22 @@
   (let ([imgs (reverse (list* image image2 image3))])
     (overlay/internal x-place y-place (car imgs) (cdr imgs))))
 
+(define/chk (overlay/pinhole image1 image2 . image3)
+  (overlay/internal 'pinhole 'pinhole 
+                    (maybe-center-pinhole image1)
+                    (map maybe-center-pinhole (cons image2 image3))))
+
+(define/chk (underlay/pinhole image1 image2 . image3)
+  (let ([imgs (map maybe-center-pinhole (reverse (list* image1 image2 image3)))])
+    (overlay/internal 'pinhole 'pinhole
+                      (car imgs)
+                      (cdr imgs))))
+
+(define (maybe-center-pinhole img)
+  (if (send img get-pinhole)
+      img
+      (center-pinhole img)))
+
 (define (overlay/internal x-place y-place fst rst)
   (let loop ([fst fst]
              [rst rst])
@@ -1384,6 +1400,8 @@
          pinhole-y
          clear-pinhole
          center-pinhole
+         overlay/pinhole
+         underlay/pinhole
          
          build-color/make-color
          build-color/color
