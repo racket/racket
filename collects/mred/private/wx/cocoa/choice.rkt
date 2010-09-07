@@ -28,7 +28,7 @@
   (init parent cb label
         x y w h
         choices style font)
-  (inherit get-cocoa init-font)
+  (inherit get-cocoa init-font register-as-child)
 
   (super-new [parent parent]
              [cocoa 
@@ -68,4 +68,7 @@
   (define/public (append lbl)
     (tellv (get-cocoa)
            insertItemWithTitle: #:type _NSString lbl 
-           atIndex: #:type _NSInteger (number))))
+           atIndex: #:type _NSInteger (number)))
+
+  (define/override (maybe-register-as-child parent on?)
+    (register-as-child parent on?)))

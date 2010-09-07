@@ -40,7 +40,7 @@
         x y w
         style
         font)
-  (inherit get-cocoa)
+  (inherit get-cocoa register-as-child)
 
   (super-new [parent parent]
              [cocoa (let ([cocoa (as-objc-allocation
@@ -76,5 +76,8 @@
   (define/public (set-value v)
     (tellv cocoa setDoubleValue: #:type _double* v))
   (define/public (get-value)
-    (inexact->exact (floor (tell #:type _double cocoa doubleValue)))))
+    (inexact->exact (floor (tell #:type _double cocoa doubleValue))))
+
+  (define/override (maybe-register-as-child parent on?)
+    (register-as-child parent on?)))
 

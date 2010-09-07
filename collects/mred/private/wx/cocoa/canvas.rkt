@@ -202,27 +202,37 @@
         (tellv cocoa setNeedsDisplay: #:type _BOOL #t))
       (super focus-is-on on?))
 
-    ;; Avoid multiple queued paints:
-    (define paint-queued? #f)
+    ;; Avoid multiple queued paints, and also allow cancel
+    ;; of queued paint:
+    (define paint-queued #f) ; #f or (box #t)
 
     (define/public (queue-paint)
       ;; can be called from any thread, including the event-pump thread
-      (unless paint-queued?
-        (set! paint-queued? #t)
-        (let ([req (request-flush-delay (get-cocoa-window))])
-          (queue-window-event this (lambda () 
-                                     (set! paint-queued? #f)
-                                     (when (is-shown-to-root?)
-                                       (send dc reset-backing-retained) ; start with a clean slate
-                                       (let ([bg (get-canvas-background)])
-                                         (when bg 
-                                           (let ([old-bg (send dc get-background)])
-                                             (send dc set-background bg)
-                                             (send dc clear)
-                                             (send dc set-background old-bg))))
-                                       (on-paint)
-                                       (queue-backing-flush)
-                                       (cancel-flush-delay req)))))))
+      (unless paint-queued
+        (let ([b (box #t)])
+          (set! paint-queued b)
+          (let ([req (request-flush-delay (get-cocoa-window))])
+            (queue-window-event this (lambda () 
+                                       (do-on-paint req b)))))))
+
+    (define/private (do-on-paint req b)
+      ;; only called in the handler thread
+      (when (or (not b) (unbox b))
+        (let ([pq paint-queued])
+          (when pq (set-box! pq #f)))
+        (set! paint-queued #f)
+        (when (or (not b) (is-shown-to-root?))
+          (send dc reset-backing-retained) ; start with a clean slate
+          (let ([bg (get-canvas-background)])
+            (when bg 
+              (let ([old-bg (send dc get-background)])
+                (send dc set-background bg)
+                (send dc clear)
+                (send dc set-background old-bg))))
+          (on-paint)
+          (queue-backing-flush)))
+      (when req
+        (cancel-flush-delay req)))
 
     (define/public (paint-or-queue-paint)
       (or (do-backing-flush this dc (tell NSGraphicsContext currentContext)
@@ -230,6 +240,11 @@
           (begin
             (queue-paint)
             #f)))
+
+    (define/override (paint-children)
+      (when (or paint-queued
+                (not (send dc can-backing-flush?)))
+        (do-on-paint #f #f)))
 
     (define/override (refresh)
       ;; can be called from any thread, including the event-pump thread
@@ -283,7 +298,7 @@
     
     (define/public (get-dc) dc)
 
-    (define/public (fix-dc [refresh? #t])
+    (define/override (fix-dc [refresh? #t])
       (when (dc . is-a? . dc%)
         (send dc reset-backing-retained)
         (send dc set-auto-scroll
@@ -608,8 +623,7 @@
     
     (define/override (definitely-wants-event? e) 
       ;; Called in Cocoa event-handling mode
-      (when (and is-combo?
-                 (e . is-a? . mouse-event%)
+      (when (and (e . is-a? . mouse-event%)
                  (send e button-down? 'left))
         (set-focus))
       (or (not is-combo?)

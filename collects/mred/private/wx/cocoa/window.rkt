@@ -287,9 +287,21 @@
 
     (define/public (focus-is-on on?)
       (void))
+    
+    (define is-responder? #f)
 
     (define/public (is-responder wx on?)
-      (send parent is-responder wx on?))
+      (unless (eq? on? is-responder?)
+        (set! is-responder? (and on? #t))
+        (send parent is-responder wx on?)))
+
+    (define/public (hide-children)
+      (is-responder this #f)
+      (focus-is-on #f))
+    (define/public (fix-dc) 
+      (void))
+    (define/public (paint-children)
+      (void))
 
     (define/public (get-cocoa) cocoa)
     (define/public (get-cocoa-content) cocoa)
@@ -321,9 +333,11 @@
          (set! is-on? (and on? #t))))
       (maybe-register-as-child parent on?)
       (unless on?
-        (focus-is-on #f)
+        (hide-children)
         (is-responder this #f)))
     (define/public (maybe-register-as-child parent on?)
+      ;; override this to call register-as-child if the window
+      ;; can have the focus or otherwise needs show-state notifications.
       (void))
     (define/public (register-as-child parent on?)
       (send parent register-child this on?))
@@ -538,12 +552,9 @@
     (when wx
       (queue-event (send wx get-eventspace) (lambda () (proc wx))))))
 
-(define depth 0)
-
 (define (request-flush-delay cocoa-win)
   (atomically
    (let ([req (box cocoa-win)])
-     (set! depth (add1 depth))
      (tellv cocoa-win disableFlushWindow)
      (add-event-boundary-sometimes-callback! 
       req
@@ -551,9 +562,8 @@
         ;; in atomic mode
         (when (unbox req) 
           (set-box! req #f)
-          (set! depth (sub1 depth))
           (tellv cocoa-win enableFlushWindow)
-          (tellv cocoa-win flushWindow))))
+          (tellv cocoa-win flushWindowIfNeeded))))
      req)))
 
 (define (cancel-flush-delay req)
@@ -561,8 +571,11 @@
    (let ([cocoa-win (unbox req)])
      (when cocoa-win
        (set-box! req #f)
-       (set! depth (sub1 depth))
        (tellv cocoa-win enableFlushWindow)
+       (add-event-boundary-sometimes-callback! 
+        cocoa-win
+        (lambda (v)
+          (tellv cocoa-win flushWindowIfNeeded)))
        (remove-event-boundary-callback! req)))))
 
 (define (make-init-point x y)

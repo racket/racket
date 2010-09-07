@@ -40,7 +40,7 @@
         x y w h
         style
         labels)
-  (inherit get-cocoa)
+  (inherit get-cocoa register-as-child)
 
   (define tabv-cocoa (as-objc-allocation
                       (tell (tell MyTabView alloc) init)))
@@ -147,4 +147,8 @@
              [no-show? (memq 'deleted style)])
   
   (when control-cocoa
-    (set-ivar! control-cocoa wxb (->wxb this))))
+    (set-ivar! control-cocoa wxb (->wxb this)))
+
+  (define/override (maybe-register-as-child parent on?)
+    (register-as-child parent on?)))
+

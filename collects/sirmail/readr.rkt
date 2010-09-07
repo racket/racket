@@ -1840,9 +1840,6 @@
               (send dc set-font font)
               (let-values ([(w h) (get-client-size)]
                            [(tw th ta td) (send dc get-text-extent message)])
-                (send dc set-pen (send the-pen-list find-or-create-pen (get-panel-background) 1 'transparent))
-                (send dc set-brush (send the-brush-list find-or-create-brush (get-panel-background) 'panel))
-                (send dc draw-rectangle 0 0 w h)
                 (send dc draw-text message
                       (- (/ w 2) (/ tw 2))
                       (- (/ h 2) (/ th 2))

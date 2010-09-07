@@ -254,11 +254,21 @@
              (set-wait-cursor-mode (not (zero? b))))))))
     
     (define/override (show on?)
-      (when on?
-        (when (eventspace-shutdown? (get-eventspace))
-          (error (string->symbol
-                  (format "show method in ~a" (if is-a-dialog? 'dialog% 'frame%)))
-                 "the eventspace hash been shutdown")))
+      (let ([es (get-eventspace)])
+        (when on?
+          (when (eventspace-shutdown? es)
+            (error (string->symbol
+                    (format "show method in ~a" (if is-a-dialog? 'dialog% 'frame%)))
+                   "the eventspace hash been shutdown"))
+          (when saved-child
+            (if (eq? (current-thread) (eventspace-handler-thread es))
+                (send saved-child paint-children)
+                (let ([s (make-semaphore)])
+                  (queue-callback (lambda ()
+                                    (when saved-child
+                                      (send saved-child paint-children))
+                                    (semaphore-post s)))
+                  (sync/timeout 0.2 s))))))
       (direct-show on?))
 
     (define/public (destroy)
@@ -305,11 +315,13 @@
                               (lambda () (send wx on-kill-focus)))))
 
     (define/override (is-responder wx on?)
-      (if on?
-          (set! first-responder wx)
-          (set! first-responder #f))
-      (when is-main?
-        (do-notify-responder wx on?)))
+      (unless (and (not on?)
+                   (not (eq? first-responder wx)))
+        (if on?
+            (set! first-responder wx)
+            (set! first-responder #f))
+        (when is-main?
+          (do-notify-responder wx on?))))
 
     (define/public (install-wait-cursor)
       (when (positive? (eventspace-wait-cursor-count (get-eventspace)))

@@ -64,7 +64,7 @@
         val
         style
         font)
-  (inherit get-cocoa set-focus init-font)
+  (inherit get-cocoa set-focus init-font register-as-child)
 
   (define horiz? (and (memq 'horizontal style) #t))
 
@@ -136,4 +136,7 @@
     (if horiz?
         (tell #:type _NSInteger (get-cocoa) selectedColumn)
         (tell #:type _NSInteger (get-cocoa) selectedRow)))
-  (define/public (number) count))
+  (define/public (number) count)
+
+  (define/override (maybe-register-as-child parent on?)
+    (register-as-child parent on?)))

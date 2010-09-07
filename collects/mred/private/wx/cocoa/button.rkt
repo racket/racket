@@ -33,7 +33,8 @@
   (init parent cb label x y w h style font
         [button-type #f])
   (init-field [event-type 'button])
-  (inherit get-cocoa get-cocoa-window init-font)
+  (inherit get-cocoa get-cocoa-window init-font
+           register-as-child)
 
   (define button-cocoa
     (let ([cocoa 
@@ -119,6 +120,9 @@
 
   (define/override (get-cocoa-control) button-cocoa)
 
+  (define/override (maybe-register-as-child parent on?)
+    (register-as-child parent on?))
+    
   (define/override (set-label label)
     (cond
      [(string? label)

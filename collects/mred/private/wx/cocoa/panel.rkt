@@ -30,9 +30,17 @@
     (define/public (get-label-position) lbl-pos)
     (define/public (set-label-position pos) (set! lbl-pos pos))
 
-    (define/public (fix-dc)
+    (define/override (fix-dc)
       (for ([child (in-list children)])
         (send child fix-dc)))
+
+    (define/override (hide-children)
+      (for ([child (in-list children)])
+        (send child hide-children)))
+    
+    (define/override (paint-children)
+      (for ([child (in-list children)])
+        (send child paint-children)))
     
     (define/override (set-size x y w h)
       (super set-size x y w h)

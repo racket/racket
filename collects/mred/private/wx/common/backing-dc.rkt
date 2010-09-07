@@ -62,6 +62,9 @@
        [else 
         (reset-backing-retained proc)
         #t]))
+    
+    (define/public (can-backing-flush?)
+      (and retained-cr #t))
 
     (define/public (reset-backing-retained [proc void])
       (let ([cr retained-cr])

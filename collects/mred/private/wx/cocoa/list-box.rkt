@@ -59,7 +59,8 @@
         label kind x y w h
         choices style
         font label-font)
-  (inherit set-size init-font)
+  (inherit set-size init-font
+           register-as-child)
 
   (define source (as-objc-allocation
                   (tell (tell MyDataSource alloc) init)))
@@ -194,4 +195,7 @@
 
   (define/public (reset)
     (tellv content-cocoa noteNumberOfRowsChanged)
-    (tellv content-cocoa reloadData)))
+    (tellv content-cocoa reloadData))
+
+  (define/override (maybe-register-as-child parent on?)
+    (register-as-child parent on?)))
