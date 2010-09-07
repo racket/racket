@@ -253,7 +253,8 @@
     (send status-text begin-edit-sequence)
     (send status-text lock #f)
     (send status-text delete 0 (send status-text last-position))
-    (send status-text insert (format "~a/~a" view (length view-history)))
+    ;; updated to yield 1-based step numbering rather than 0-based numbering.
+    (send status-text insert (format "~a/~a" (if view (+ 1 view) "none") (length view-history)))
     (send status-text lock #t)
     (send status-text end-edit-sequence))
   
