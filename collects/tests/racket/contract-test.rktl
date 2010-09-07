@@ -3672,6 +3672,90 @@
   
   (ctest #t contract? proj:add1->sub1)
   (ctest #f flat-contract? proj:add1->sub1)
+  (ctest #f chaperone-contract? proj:add1->sub1)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  make-chaperone-contract
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  (contract-eval
+   '(define proj:prime-box-list/c
+      (let* ([prime? (λ (n)
+                       (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                         (not (= (remainder n m) 0))))]
+             [wrap-box (λ (blame b)
+                         (chaperone-box
+                          b
+                          (λ (b v)
+                            (unless (prime? v)
+                              (raise-blame-error blame v
+                                                 "expected prime, got ~v" v))
+                            v)
+                          (λ (b v)
+                            (unless (prime? v)
+                              (raise-blame-error (blame-swap blame) v
+                                                 "expected prime, got ~v" v))
+                            v)))])
+        (make-chaperone-contract
+         #:name 'prime-box-list/c
+         #:first-order (λ (v) (and (list? v) (andmap box? v)))
+         #:projection (λ (blame)
+                        (λ (v)
+                          (unless (and (list? v) (andmap box? v))
+                            (raise-blame-error blame v
+                                               "expected list of boxes, got ~v" v))
+                          (map (λ (b) (wrap-box blame b)) v)))))))
+  
+  (test/spec-passed/result
+   'make-chaperone-contract-1
+   '(contract proj:prime-box-list/c
+              (list (box 2) (box 3) (box 5) (box 7))
+              'pos 'neg)
+   (list (box 2) (box 3) (box 5) (box 7)))
+  
+  (test/pos-blame
+   'make-chaperone-contract-2
+   '(let ([boxes (contract proj:prime-box-list/c
+                           (list (box 2) (box 3) (box 4) (box 5))
+                           'pos 'neg)])
+      (unbox (caddr boxes))))
+  
+  (test/neg-blame
+   'make-chaperone-contract-3
+   '(let ([boxes (contract proj:prime-box-list/c
+                           (list (box 2) (box 3) (box 4) (box 5))
+                           'pos 'neg)])
+      (set-box! (caddr boxes) 6)))
+  
+  (ctest #t contract? proj:prime-box-list/c)
+  (ctest #f flat-contract? proj:prime-box-list/c)
+  (ctest #t chaperone-contract? proj:prime-box-list/c)
+  
+  (contract-eval
+   '(define proj:bad-prime-box-list/c
+      (let* ([prime? (λ (n)
+                       (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                         (not (= (remainder n m) 0))))]
+             [wrap-box (λ (blame b) (box (unbox b)))])
+        (make-chaperone-contract
+         #:name 'bad-prime-box-list/c
+         #:first-order (λ (v) (and (list? v) (andmap box? v)))
+         #:projection (λ (blame)
+                        (λ (v)
+                          (unless (and (list? v) (andmap box? v))
+                            (raise-blame-error blame v
+                                               "expected list of boxes, got ~v" v))
+                          (map (λ (b) (wrap-box blame b)) v)))))))
+  
+  (ctest #t contract? proj:bad-prime-box-list/c)
+  (ctest #f flat-contract? proj:bad-prime-box-list/c)
+  (ctest #t chaperone-contract? proj:bad-prime-box-list/c)
+  
+  (contract-error-test
+   '(contract proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
+   exn:fail?)
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
@@ -3699,6 +3783,11 @@
 
   (ctest #t contract? proj:prime/c)
   (ctest #t flat-contract? proj:prime/c)
+  
+  (test/spec-passed/result
+   'make-flat-contract-5
+   '(chaperone-contract? proj:prime/c)
+   #t)
   
   ;; Check to make sure that flat contracts always return the original value,
   ;; even if the projection is written badly.
@@ -3733,6 +3822,11 @@
 
   (ctest #t contract? proj:prime-list/c)
   (ctest #t flat-contract? proj:prime-list/c)
+  
+  (test/spec-passed/result
+   'make-flat-contract-bad-6
+   '(chaperone-contract? proj:prime-list/c)
+   #t)
   
   
 ;                                                                                           

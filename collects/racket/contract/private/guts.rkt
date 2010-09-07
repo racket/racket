@@ -15,7 +15,11 @@
          coerce-contracts
          coerce-flat-contract
          coerce-flat-contracts
+         coerce-chaperone-contract
+         coerce-chaperone-contracts
          coerce-contract/f
+         
+         chaperone-contract?
          
          flat-contract?
          flat-contract
@@ -100,6 +104,28 @@
       (unless (flat-contract-struct? ctc)
         (error name
                "expected all of the arguments to be flat contracts, but argument ~a was not, got ~e"
+               i
+               x))
+      ctc)))
+
+;; coerce-chaperone-contract : symbol any/c -> contract
+(define (coerce-chaperone-contract name x)
+  (let ([ctc (coerce-contract/f x)])
+    (unless (chaperone-contract-struct? ctc)
+      (error name
+             "expected a chaperone contract or a value that can be coerced into one, got ~e"
+             x))
+    ctc))
+
+;; coerce-chaperone-contacts : symbol (listof any/c) -> (listof flat-contract)
+;; like coerce-contracts, but insists on chaperone-contracts
+(define (coerce-chaperone-contracts name xs)
+  (for/list ([x (in-list xs)]
+             [i (in-naturals)])
+    (let ([ctc (coerce-contract/f x)])
+      (unless (chaperone-contract-struct? ctc)
+        (error name
+               "expected all of the arguments to be chaperone contracts, but argument ~a was not, got ~e"
                i
                x))
       ctc)))
@@ -230,6 +256,11 @@
   (let ([c (coerce-contract/f x)])
     (and c
          (flat-contract-struct? c))))
+
+(define (chaperone-contract? x)
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (chaperone-contract-struct? c))))
 
 (define (contract-name ctc)
   (contract-struct-name

@@ -11,14 +11,21 @@
 
          prop:flat-contract
          flat-contract-struct?
+         
+         prop:chaperone-contract
+         chaperone-contract-struct?
 
          contract-property?
          build-contract-property
+         
+         chaperone-contract-property?
+         build-chaperone-contract-property
 
          flat-contract-property?
          build-flat-contract-property
 
          make-contract
+         make-chaperone-contract
          make-flat-contract)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,6 +75,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;  Chaperone Contract Property
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-struct chaperone-contract-property [implementation]
+  #:omit-define-syntaxes)
+
+(define (chaperone-contract-property-guard prop info)
+  (unless (chaperone-contract-property? prop)
+    (raise
+     (make-exn:fail:contract
+      (format "~a: expected a chaperone contract property; got: ~e"
+              'prop:chaperone-contract
+              prop)
+      (current-continuation-marks))))
+  prop)
+
+;; We check to make sure the contract projection actually resulted in
+;; a chaperone (or chaperone-friendly) version of the value.
+(define (chaperone-contract-property->contract-property fc)
+  (let ([impl (chaperone-contract-property-implementation fc)])
+    impl))
+
+(define-values [ prop:chaperone-contract
+                 chaperone-contract-struct?
+                 chaperone-contract-struct-property ]
+  (make-struct-type-property
+   'prop:chaperone-contract
+   chaperone-contract-property-guard
+   (list (cons prop:contract chaperone-contract-property->contract-property))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;  Flat Contract Property
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,8 +125,9 @@
       (current-continuation-marks))))
   prop)
 
-(define flat-contract-property->contract-property
-  flat-contract-property-implementation)
+(define (flat-contract-property->chaperone-contract-property fc)
+  (let ([impl (flat-contract-property-implementation fc)])
+    (make-chaperone-contract-property impl)))
 
 (define (flat-contract-property->procedure-property prop)
   (let* ([impl (flat-contract-property-implementation prop)]
@@ -99,7 +140,7 @@
   (make-struct-type-property
    'prop:flat-contract
    flat-contract-property-guard
-   (list (cons prop:contract flat-contract-property->contract-property)
+   (list (cons prop:chaperone-contract flat-contract-property->chaperone-contract-property)
          (cons prop:procedure flat-contract-property->procedure-property))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,6 +184,22 @@
                   'anonymous-flat-contract
                   flat-projection-wrapper))
 
+(define (chaperone-projection-wrapper f)
+  (λ (c)
+    (let ([proj (f c)])
+      (λ (b)
+        (let ([p (proj b)])
+          (λ (v)
+            (let ([v* (p v)])
+              (unless (chaperone-of? v* v)
+                (error "expected a chaperone of ~v, got ~v" v v*))
+              v*)))))))
+
+(define build-chaperone-contract-property
+  (build-property (compose make-chaperone-contract-property make-contract-property)
+                  'anonymous-chaperone-contract
+                  chaperone-projection-wrapper))
+
 (define (get-any? c) any?)
 (define (any? x) #t)
 
@@ -170,6 +227,16 @@
    #:first-order (lambda (c) (make-contract-first-order c))
    #:projection (lambda (c) (make-contract-projection c))
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
+   #:generator #f))
+
+(define-struct make-chaperone-contract [ name first-order projection stronger ]
+  #:omit-define-syntaxes
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:name (lambda (c) (make-chaperone-contract-name c))
+   #:first-order (lambda (c) (make-chaperone-contract-first-order c))
+   #:projection (lambda (c) (make-chaperone-contract-projection c))
+   #:stronger (lambda (a b) ((make-chaperone-contract-stronger a) a b))
    #:generator #f))
 
 (define-struct make-flat-contract [ name first-order projection stronger ]
@@ -202,6 +269,9 @@
 
 (define make-contract
   (build-contract make-make-contract 'anonymous-contract))
+
+(define make-chaperone-contract
+  (build-contract make-make-chaperone-contract 'anonymous-chaperone-contract))
 
 (define make-flat-contract
   (build-contract make-make-flat-contract 'anonymous-flat-contract))
