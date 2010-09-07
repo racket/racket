@@ -94,18 +94,15 @@
 ;; coerce-flat-contacts : symbol (listof any/c) -> (listof flat-contract)
 ;; like coerce-contracts, but insists on flat-contracts
 (define (coerce-flat-contracts name xs) 
-  (let loop ([xs xs]
-             [i 1])
-    (cond
-      [(null? xs) '()]
-      [else
-       (let ([fst (coerce-contract/f (car xs))])
-         (unless (flat-contract-struct? fst)
-           (error name 
-                  "expected all of the arguments to be flat contracts, but argument ~a was not, got ~e" 
-                  i
-                  (car xs)))
-         (cons fst (loop (cdr xs) (+ i 1))))])))
+  (for/list ([x (in-list xs)]
+             [i (in-naturals)])
+    (let ([ctc (coerce-contract/f x)])
+      (unless (flat-contract-struct? ctc)
+        (error name
+               "expected all of the arguments to be flat contracts, but argument ~a was not, got ~e"
+               i
+               x))
+      ctc)))
 
 ;; coerce-contract : symbol any/c -> contract
 (define (coerce-contract name x)
@@ -118,17 +115,16 @@
 ;; turns all of the arguments in 'xs' into contracts
 ;; the error messages assume that the function named by 'name'
 ;; got 'xs' as it argument directly
-(define (coerce-contracts name xs) 
-  (let loop ([xs xs]
-             [i 1])
-    (cond
-      [(null? xs) '()]
-      [(coerce-contract/f (car xs)) => (λ (x) (cons x (loop (cdr xs) (+ i 1))))]
-      [else
-       (error name 
-              "expected all of the arguments to be contracts, but argument ~a was not, got ~e" 
+(define (coerce-contracts name xs)
+  (for/list ([x (in-list xs)]
+             [i (in-naturals)])
+    (let ([ctc (coerce-contract/f x)])
+      (unless ctc
+        (error name
+              "expected all of the arguments to be contracts, but argument ~a was not, got ~e"
               i
-              (car xs))])))
+              x))
+      ctc)))
 
 ;; coerce-contract/f : any -> (or/c #f contract?)
 ;; returns #f if the argument could not be coerced to a contract
@@ -261,28 +257,16 @@
 
 ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
 (define (build-compound-type-name . fs)
-  (let loop ([subs fs])
-    (cond
-      [(null? subs)
-       '()]
-      [else (let ([sub (car subs)])
-              (cond
-                [(contract-struct? sub)
-                 (let ([mk-sub-name (contract-name sub)])
-                   `(,mk-sub-name ,@(loop (cdr subs))))]
-                [else `(,sub ,@(loop (cdr subs)))]))])))
+  (for/list ([sub (in-list fs)])
+    (if (contract-struct? sub) (contract-name sub) sub)))
 
 (define (and-proj ctc)
   (let ([mk-pos-projs (map contract-projection (and/c-ctcs ctc))])
     (lambda (blame)
       (let ([projs (map (λ (c) (c blame)) mk-pos-projs)])
-        (let loop ([projs (cdr projs)]
-                   [proj (car projs)])
-          (cond
-            [(null? projs) proj]
-            [else (loop (cdr projs)
-                        (let ([f (car projs)])
-                          (λ (v) (f (proj v)))))]))))))
+        (for/fold ([proj (car projs)])
+          ([p (in-list (cdr projs))])
+          (λ (v) (p (proj v))))))))
 
 (define-struct and/c (ctcs)
   #:omit-define-syntaxes
@@ -293,8 +277,7 @@
    #:first-order
    (λ (ctc)
       (let ([tests (map contract-first-order (and/c-ctcs ctc))])
-        (λ (x) 
-           (andmap (λ (f) (f x)) tests))))
+        (λ (x) (for/and ([test (in-list tests)]) (test x)))))
    #:stronger
    (λ (this that)
       (and (and/c? that)
@@ -310,17 +293,10 @@
     (cond
       [(null? contracts) any/c]
       [(andmap flat-contract? contracts)
-       (let* ([pred
-               (let loop ([pred (flat-contract-predicate (car contracts))]
-                          [preds (cdr contracts)])
-                 (cond
-                   [(null? preds) pred]
-                   [else
-                    (let* ([fst (flat-contract-predicate (car preds))])
-                      (loop (let ([and/c-contract? (lambda (x) (and (pred x) (fst x)))])
-                              and/c-contract?)
-                            (cdr preds)))]))])
-         (flat-named-contract (apply build-compound-type-name 'and/c contracts) pred))]
+       (let ([preds (map flat-contract-predicate contracts)])
+         (flat-named-contract
+          (apply build-compound-type-name 'and/c contracts)
+          (λ (x) (for/and ([pred (in-list preds)]) (pred x)))))]
       [else (make-and/c contracts)])))
 
 (define (get-any-projection c) any-projection)
