@@ -6,6 +6,7 @@
          ffi/unsafe/objc
          "utils.rkt"
          "types.rkt"
+         "frame.rkt"
          "../../lock.rkt"
          "../common/handlers.rkt")
 
@@ -25,7 +26,6 @@
  shortcut-visible-in-label?
  in-atomic-region
  set-menu-tester
- location->window
  set-dialogs
  set-executer
  send-event
@@ -74,7 +74,6 @@
 (define-unimplemented in-atomic-region)
 (define (set-menu-tester proc)
   (void))
-(define-unimplemented location->window)
 (define (set-dialogs . args)
   (void))
 (define (set-executer proc)

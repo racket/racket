@@ -13,7 +13,6 @@
      (ffi-lib "libpango-1.0.0")]
     [(unix) (ffi-lib "libpango-1.0" '("0"))]
     [(windows) 
-     ; (ffi-lib "msjava")
      (ffi-lib "libglib-2.0-0")
      (ffi-lib "libgmodule-2.0-0")
      (ffi-lib "libgobject-2.0-0")

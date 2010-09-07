@@ -16,12 +16,13 @@
 (unsafe!)
 (objc-unsafe!)
 
-(provide frame%)
+(provide frame%
+         location->window)
 
 ;; ----------------------------------------
 
 (import-class NSWindow NSGraphicsContext NSMenu NSPanel
-              NSApplication NSAutoreleasePool)
+              NSApplication NSAutoreleasePool NSScreen)
 
 (define front #f)
 
@@ -29,6 +30,8 @@
 (define root-fake-frame #f)
 
 (define dialog-level-counter 0)
+
+(define all-windows (make-hash))
 
 (define-objc-mixin (MyWindowMethods Superclass)
   [wxb]
@@ -242,6 +245,10 @@
                   [root-fake-frame (send root-fake-frame install-mb)]
                   [else (void)]))))
          (register-frame-shown this on?)
+         (let ([num (tell #:type _NSInteger cocoa windowNumber)])
+           (if on?
+               (hash-set! all-windows num this)
+               (hash-remove! all-windows num)))
          (when on?
            (let ([b (eventspace-wait-cursor-count (get-eventspace))])
              (set-wait-cursor-mode (not (zero? b))))))))
@@ -436,3 +443,13 @@
 
     (define/public (set-title s)
       (tellv cocoa setTitle: #:type _NSString s))))
+
+;; ----------------------------------------
+
+(define (location->window x y)
+  (let ([n (tell #:type _NSInteger NSWindow 
+                 windowNumberAtPoint: #:type _NSPoint 
+                 (let ([f (tell #:type _NSRect (tell NSScreen mainScreen) frame)])
+                   (make-NSPoint x (- (NSSize-height (NSRect-size f)) y)))
+                 belowWindowWithWindowNumber: #:type _NSInteger 0)])
+    (atomically (hash-ref all-windows n #f))))

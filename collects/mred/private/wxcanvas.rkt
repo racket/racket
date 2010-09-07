@@ -220,4 +220,4 @@
       (define/override (on-scroll e)
         (editor-canvas-on-scroll))
       (super-new)
-      (set-no-expose-focus))))
+      #;(set-no-expose-focus))))

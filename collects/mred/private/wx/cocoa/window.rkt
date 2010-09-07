@@ -319,7 +319,10 @@
              (with-autorelease
               (tellv cocoa removeFromSuperview)))
          (set! is-on? (and on? #t))))
-      (maybe-register-as-child parent on?))
+      (maybe-register-as-child parent on?)
+      (unless on?
+        (focus-is-on #f)
+        (is-responder this #f)))
     (define/public (maybe-register-as-child parent on?)
       (void))
     (define/public (register-as-child parent on?)
