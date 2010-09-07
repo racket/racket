@@ -117,7 +117,9 @@
         [(Univ:) (if from-typed? #'any-wrap/c #'any/c)]
         ;; we special-case lists:
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
-         #`(listof #,(t->c elem-ty))]
+         (if (and (not from-typed?) (type-equal? elem-ty t:Univ))
+             #'list?
+             #`(listof #,(t->c elem-ty)))]
         [(? (lambda (e) (eq? t:Any-Syntax e))) #'syntax?]
         [(Base: sym cnt) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
         [(Refinement: par p? cert)
@@ -168,7 +170,6 @@
                        [(name ...) name]
                        [(by-name-cnt ...) (for/list ([t by-name-init-ty]) (t->c/neg t))]
                        [(by-name-init ...) by-name-init])
-           #;#'class?           
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
         [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred? cert maker-id)
@@ -185,21 +186,21 @@
                             (for/list ([fty flds]
                                        [f-acc acc-ids]
                                        [m? mut?])
-                              #`(((contract-projection
-                                   #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec)) structs-seen)))
-                                  blame)
-                                 (#,f-acc val)))])
-              #`(letrec ([rec 
-                          (make-contract 
-                           #:name 'cnt-name
-                           #:first-order #,pred?
-                           #:projection 
-                           (lambda (blame)
-                             (lambda (val)
-                               (unless (#,pred? val)
-                                 (raise-blame-error blame val "expected ~a value, got ~v" 'cnt-name val))
-                               (maker fld-cnts ...))))])
-                  rec))]
+                #`(((contract-projection
+                     #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec)) structs-seen)))
+                    blame)
+                   (#,f-acc val)))])
+                #`(letrec ([rec 
+                            (make-contract 
+                             #:name 'cnt-name
+                             #:first-order #,pred?
+                             #:projection 
+                             (lambda (blame)
+                               (lambda (val)
+                                 (unless (#,pred? val)
+                                   (raise-blame-error blame val "expected ~a value, got ~v" 'cnt-name val))
+                                 (maker fld-cnts ...))))])
+                    rec))]
            [else #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))])]
         [(Syntax: (Base: 'Symbol _)) #'identifier?]
         [(Syntax: t) #`(syntax/c #,(t->c t))]
