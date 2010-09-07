@@ -244,6 +244,14 @@
 ;; places images in a horizontal row where the vertical alignment is
 ;; covered by the string argument
 (define/chk (beside/align y-place image1 image2 . image3)
+  (when (eq? y-place 'pinhole)
+    (check-dependencies 'beside/align
+                        (and (send image1 get-pinhole)
+                             (send image2 get-pinhole)
+                             (andmap (λ (x) (send x get-pinhole))
+                                     image3))
+                        "when y-place is ~e or ~e, then all of the arguments must have pinholes"
+                        'pinhole "pinhole"))
   (beside/internal y-place image1 (cons image2 image3)))
 
 (define (beside/internal y-place fst rst)
@@ -274,6 +282,14 @@
 ;; places images in a horizontal row where the vertical alignment is
 ;; covered by the string argument
 (define/chk (above/align x-place image1 image2 . image3)
+  (when (eq? x-place 'pinhole)
+    (check-dependencies 'above/align
+                        (and (send image1 get-pinhole)
+                             (send image2 get-pinhole)
+                             (andmap (λ (x) (send x get-pinhole))
+                                     image3))
+                        "when x-place is ~e or ~e, then all of the arguments must have pinholes"
+                        'pinhole "pinhole"))
   (above/internal x-place image1 (cons image2 image3)))
 
 (define (above/internal x-place fst rst)
@@ -347,6 +363,12 @@
 (define/chk (place-image image1 x1 y1 image2) 
   (place-image/internal image1 x1 y1 image2 'middle 'middle))
 (define/chk (place-image/align image1 x1 y1 x-place y-place image2)
+  (when (or (eq? x-place 'pinhole) (eq? y-place 'pinhole))
+    (check-dependencies 'place-image/align
+                        (and (send image1 get-pinhole)
+                             (send image2 get-pinhole))
+                        "when x-place or y-place is ~e or ~e, then both of the image arguments must have pinholes"
+                        'pinhole "pinhole"))
   (place-image/internal image1 x1 y1 image2 x-place y-place))
 
 (define (place-image/internal image orig-dx orig-dy scene x-place y-place)

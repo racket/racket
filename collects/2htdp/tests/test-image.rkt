@@ -1732,6 +1732,52 @@
       =>
       5)
 
+(test (clear-pinhole
+       (overlay/align "pinhole" 'pinhole
+                      (center-pinhole (rectangle 40 100 'solid 'red))
+                      (put-pinhole 0 0 (rectangle 100 40 'solid 'blue))))
+      =>
+      (overlay/xy (rectangle 40 100 'solid 'red)
+                  20 50
+                  (rectangle 100 40 'solid 'blue)))
+
+(test (clear-pinhole
+       (underlay/align "pinhole" 'pinhole
+                       (center-pinhole (rectangle 40 100 'solid 'red))
+                       (put-pinhole 100 40 (rectangle 100 40 'solid 'blue))))
+      =>
+      (underlay/xy (rectangle 40 100 'solid 'red)
+                   -80 10
+                   (rectangle 100 40 'solid 'blue)))
+
+(test (clear-pinhole
+       (beside/align "pinhole"
+                     (center-pinhole (rectangle 100 40 'solid 'purple))
+                     (center-pinhole (rectangle 40 100 'solid 'purple))))
+      =>
+      (beside (rectangle 100 40 'solid 'purple)
+              (rectangle 40 100 'solid 'purple)))
+
+
+(test (clear-pinhole
+       (above/align "pinhole"
+                    (center-pinhole (rectangle 100 40 'solid 'purple))
+                    (center-pinhole (rectangle 40 100 'solid 'purple))))
+      =>
+      (above (rectangle 100 40 'solid 'purple)
+             (rectangle 40 100 'solid 'purple)))
+
+(test (clear-pinhole
+       (place-image/align
+        (center-pinhole (rectangle 100 10 'solid 'red))
+        0 0 "pinhole" "pinhole"
+        (center-pinhole (rectangle 10 100 'solid 'blue))))
+      =>
+      (place-image/align
+       (rectangle 100 10 'solid 'red)
+       0 0 "center" "center"
+       (rectangle 10 100 'solid 'blue)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  test errors.
@@ -1815,6 +1861,98 @@
            3 3)
           =>
           #rx"^color-list->bitmap")
+
+(test/exn (overlay/align
+           "pinhole" "center"
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^overlay/align")
+(test/exn (overlay/align
+           "center" "pinhole" 
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^overlay/align")
+(test/exn (overlay/align
+           "pinhole" "center"
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^overlay/align")
+(test/exn (overlay/align
+           "center" "pinhole" 
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^overlay/align")
+
+(test/exn (underlay/align
+           "pinhole" "center"
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^underlay/align")
+(test/exn (underlay/align
+           "center" "pinhole" 
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^underlay/align")
+(test/exn (underlay/align
+           "pinhole" "center"
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^underlay/align")
+(test/exn (underlay/align
+           "center" "pinhole" 
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^underlay/align")
+
+(test/exn (place-image/align
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           0 0 "pinhole" "center"
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^place-image/align")
+(test/exn (place-image/align
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           0 0 "center" "pinhole" 
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^place-image/align")
+(test/exn (place-image/align
+           (rectangle 100 10 'solid 'red)
+           0 0 "pinhole" "center"
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^place-image/align")
+(test/exn (place-image/align
+           (rectangle 100 10 'solid 'red)
+           0 0 "center" "pinhole" 
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^place-image/align")
+
+
+
+(test/exn (above/align
+           "pinhole" 
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^above/align")
+(test/exn (beside/align
+           "pinhole" 
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^beside/align")
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

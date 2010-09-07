@@ -1190,11 +1190,14 @@ This section lists predicates for the basic structures provided by the image lib
 @racket['middle],
 @racket["center"],
 @racket['center],
-@racket["baseline"], or
-@racket['baseline].
+@racket["baseline"],
+@racket['baseline],
+@racket["pinhole"], or
+@racket['pinhole].
 
 The baseline of an image is the place where the bottoms any letters line up, not counting descenders, e.g. the tail on ``y'' or ``g'' or ``j''.
 
+Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the image arguments have @seclink["pinholes"]{pinholes}.
 
 }
 
@@ -1207,8 +1210,13 @@ The baseline of an image is the place where the bottoms any letters line up, not
   @racket['right],
   @racket["middle"],
   @racket['middle],
-  @racket["center"], or
-  @racket['center].
+  @racket["center"],
+  @racket['center],
+  @racket["pinhole"], or
+  @racket['pinhole].
+
+  Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the image arguments have @seclink["pinholes"]{pinholes}.
+
 }
 
 @defproc[(angle? [x any/c]) boolean?]{
@@ -1275,7 +1283,7 @@ Two images are equal if they draw exactly the same way at their current size
 (not neccessarily at all sizes) and, if there are pinholes, the pinholes are
 in the same place.
 
-@section{Pinholes}
+@section[#:tag "pinholes"]{Pinholes}
 
 A pinhole is an optional property of an image that identifies a point somewhere
 in the image. The pinhole can then be used to facilitate overlaying images by
