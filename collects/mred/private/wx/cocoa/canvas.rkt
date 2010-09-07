@@ -223,6 +223,7 @@
         (set! paint-queued #f)
         (when (or (not b) (is-shown-to-root?))
           (send dc reset-backing-retained) ; start with a clean slate
+          (send dc ensure-ready)
           (let ([bg (get-canvas-background)])
             (when bg 
               (let ([old-bg (send dc get-background)])

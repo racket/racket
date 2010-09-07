@@ -90,6 +90,8 @@
 
     (define/public (get-bitmap%) bitmap%)
 
+    (define/public (ensure-ready) (get-cr))
+
     (define/override (get-cr)
       (or retained-cr
           (let ([w (box 0)]

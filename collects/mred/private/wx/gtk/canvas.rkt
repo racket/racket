@@ -347,6 +347,7 @@
                                    (set! paint-queued? #f)
                                    (set! now-drawing? #t)
                                    (send dc reset-backing-retained) ; clean slate
+                                   (send dc ensure-ready)
                                    (let ([bg (get-canvas-background)])
                                      (when bg 
                                        (let ([old-bg (send dc get-background)])

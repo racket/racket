@@ -562,8 +562,7 @@
         ;; in atomic mode
         (when (unbox req) 
           (set-box! req #f)
-          (tellv cocoa-win enableFlushWindow)
-          (tellv cocoa-win flushWindowIfNeeded))))
+          (tellv cocoa-win enableFlushWindow))))
      req)))
 
 (define (cancel-flush-delay req)
@@ -572,10 +571,6 @@
      (when cocoa-win
        (set-box! req #f)
        (tellv cocoa-win enableFlushWindow)
-       (add-event-boundary-sometimes-callback! 
-        cocoa-win
-        (lambda (v)
-          (tellv cocoa-win flushWindowIfNeeded)))
        (remove-event-boundary-callback! req)))))
 
 (define (make-init-point x y)
