@@ -1457,7 +1457,7 @@ v4 todo:
             (λ (first-mark)
               (if (and first-mark
                        (= (length first-mark) count)
-                       (andmap eq? fs first-mark))
+                       (andmap procedure-closure-contents-eq? fs first-mark))
                   (thunk)
                   (let-values ([(x ...) (with-continuation-mark multiple-contract-key fs
                                           (thunk))])
@@ -1477,7 +1477,7 @@ v4 todo:
   (call-with-immediate-continuation-mark
    single-contract-key
    (λ (first-mark)  ;; note this is #f if there is no mark (so if #f can be a contract, something must change)
-     (if (eq? first-mark ctc)
+     (if (and first-mark (procedure-closure-contents-eq? first-mark ctc))
          (thnk)
          (ctc
           (with-continuation-mark single-contract-key ctc

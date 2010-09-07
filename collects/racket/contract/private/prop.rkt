@@ -108,7 +108,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ((build-property mk default-name)
+(define ((build-property mk default-name projection-wrapper)
          #:name [get-name #f]
          #:first-order [get-first-order #f]
          #:projection [get-projection #f]
@@ -117,19 +117,31 @@
 
   (let* ([get-name (or get-name (lambda (c) default-name))]
          [get-first-order (or get-first-order get-any?)]
-         [get-projection (or get-projection
-                             (get-first-order-projection
-                              get-name get-first-order))]
+         [get-projection
+          (cond
+            [get-projection (projection-wrapper get-projection)]
+            [else (get-first-order-projection
+                   get-name get-first-order)])]
          [stronger (or stronger weakest)])
 
     (mk get-name get-first-order get-projection stronger generator)))
 
 (define build-contract-property
-  (build-property make-contract-property 'anonymous-contract))
+  (build-property make-contract-property 'anonymous-contract values))
+
+;; Here we'll force the projection to always return the original value,
+;; instead of assuming that the provided projection does so appropriately.
+(define (flat-projection-wrapper f)
+  (λ (c)
+    (let ([proj (f c)])
+      (λ (b)
+        (let ([p (proj b)])
+          (λ (v) (p v) v))))))
 
 (define build-flat-contract-property
   (build-property (compose make-flat-contract-property make-contract-property)
-                  'anonymous-flat-contract))
+                  'anonymous-flat-contract
+                  flat-projection-wrapper))
 
 (define (get-any? c) any?)
 (define (any? x) #t)
@@ -153,23 +165,22 @@
 (define-struct make-contract [ name first-order projection stronger ]
   #:omit-define-syntaxes
   #:property prop:contract
-  (make-contract-property
-   (lambda (c) (make-contract-name c))
-   (lambda (c) (make-contract-first-order c))
-   (lambda (c) (make-contract-projection c))
-   (lambda (a b) ((make-contract-stronger a) a b))
-   #f))
+  (build-contract-property
+   #:name (lambda (c) (make-contract-name c))
+   #:first-order (lambda (c) (make-contract-first-order c))
+   #:projection (lambda (c) (make-contract-projection c))
+   #:stronger (lambda (a b) ((make-contract-stronger a) a b))
+   #:generator #f))
 
 (define-struct make-flat-contract [ name first-order projection stronger ]
   #:omit-define-syntaxes
   #:property prop:flat-contract
-  (make-flat-contract-property
-   (make-contract-property
-    (lambda (c) (make-flat-contract-name c))
-    (lambda (c) (make-flat-contract-first-order c))
-    (lambda (c) (make-flat-contract-projection c))
-    (lambda (a b) ((make-flat-contract-stronger a) a b))
-    #f)))
+  (build-flat-contract-property
+   #:name (lambda (c) (make-flat-contract-name c))
+   #:first-order (lambda (c) (make-flat-contract-first-order c))
+   #:projection (lambda (c) (make-flat-contract-projection c))
+   #:stronger (lambda (a b) ((make-flat-contract-stronger a) a b))
+   #:generator #f))
 
 (define ((build-contract mk default-name)
          #:name [name #f]

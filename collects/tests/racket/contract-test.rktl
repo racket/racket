@@ -3670,6 +3670,71 @@
    'make-contract-4
    '((contract proj:add1->sub1 sqrt 'pos 'neg) 'dummy))
   
+  (ctest #t contract? proj:add1->sub1)
+  (ctest #f flat-contract? proj:add1->sub1)
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  make-flat-contract
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  (contract-eval
+   '(define proj:prime/c
+      (let ([prime? (λ (n)
+                      (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                        (not (= (remainder n m) 0))))])
+        (make-flat-contract
+         #:name 'prime/c
+         #:first-order prime?))))
+  
+  (test/spec-passed/result
+   'make-flat-contract-1
+   '(contract proj:prime/c 2 'pos 'neg)
+   2)
+  
+  (test/pos-blame
+   'make-flat-contract-2
+   '(contract proj:prime/c 4 'pos 'neg))
+
+  (ctest #t contract? proj:prime/c)
+  (ctest #t flat-contract? proj:prime/c)
+  
+  ;; Check to make sure that flat contracts always return the original value,
+  ;; even if the projection is written badly.
+  (contract-eval
+   '(define proj:prime-list/c
+      (let ([prime? (λ (n)
+                      (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                        (not (= (remainder n m) 0))))])
+        (make-flat-contract
+         #:name 'prime-list/c
+         #:first-order (λ (v) (and (list? v) (andmap prime? v)))
+         #:projection (λ (b)
+                        (λ (v)
+                          (unless (and (list? v) (andmap prime? v))
+                            (raise-blame-error b v "expected prime list, got ~v" v))
+                          (map values v)))))))
+  
+  (test/spec-passed/result
+   'make-flat-contract-bad-1
+   '(contract proj:prime-list/c (list 2 3 5 7) 'pos 'neg)
+   (list 2 3 5 7))
+  
+  (test/pos-blame
+   'make-flat-contract-bad-2
+   '(contract proj:prime-list/c (list 2 3 4 5) 'pos 'neg))
+  
+  (test/spec-passed/result
+   'make-flat-contract-bad-3
+   '(let ([l (list 2 3 5 7)])
+      (eq? l (contract proj:prime-list/c l 'pos 'neg)))
+   #t)
+
+  (ctest #t contract? proj:prime-list/c)
+  (ctest #t flat-contract? proj:prime-list/c)
+  
+  
 ;                                                                                           
 ;                                                                                           
 ;                                                                                           
@@ -9539,7 +9604,10 @@ so that propagation occurs.
              (f 3))
            (c)))
   
-  (ctest 2
+  ;; Robby had this as 2, but now we only end up checking it once, which
+  ;; looks right to me.  Not sure whether "2" was _wanted_, or if it just
+  ;; happened to be what it returned when run.
+  (ctest 1
          'case->-regular
          (let ([c (counter)])
            (letrec ([f 
