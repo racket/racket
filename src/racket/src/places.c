@@ -167,6 +167,14 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 
   if (argc == 2) {
     Scheme_Object *so;
+
+    if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0])) {
+      scheme_wrong_type("place", "module-path or path", 0, argc, args);
+    }
+    if (!SCHEME_SYMBOLP(args[1])) {
+      scheme_wrong_type("place", "symbol", 1, argc, args);
+    }
+
     so = scheme_places_deep_copy_to_master(args[0]);
     place_data->module   = so;
     so = scheme_places_deep_copy_to_master(args[1]);
@@ -628,6 +636,13 @@ static int place_wait_ready(Scheme_Object *o) {
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
+
+  if (argc != 1) {
+    scheme_wrong_count_m("place-wait", 1, 1, argc, args, 0);
+  }
+  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
+    scheme_wrong_type("place-wait", "place", 0, argc, args);
+  }
  
 # ifdef MZ_PRECISE_GC
    {
@@ -1145,8 +1160,12 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
     if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
       ch = (Scheme_Place_Bi_Channel *) ((Scheme_Place *) args[0])->channel;
     }
+    else if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_bi_channel_type)) {
+      ch = (Scheme_Place_Bi_Channel *) args[0];
+    }
     else {
-      ch = (Scheme_Place_Bi_Channel *)args[0];
+      ch = NULL;
+      scheme_wrong_type("place-channel-send", "place-channel", 0, argc, args);
     }
     {
       void *msg_memory;
@@ -1155,7 +1174,7 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
     }
   }
   else {
-    scheme_wrong_count_m("place-channel-send", 1, 2, argc, args, 0);
+    scheme_wrong_count_m("place-channel-send", 2, 2, argc, args, 0);
   }
   return scheme_true;
 }
@@ -1167,8 +1186,12 @@ Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
     if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
       ch = (Scheme_Place_Bi_Channel *) ((Scheme_Place *) args[0])->channel;
     }
-    else {
+    else if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_bi_channel_type)) {
       ch = (Scheme_Place_Bi_Channel *) args[0];
+    }
+    else {
+      ch = NULL;
+      scheme_wrong_type("place-channel-recv", "place-channel", 0, argc, args);
     }
     {
       void *msg_memory;
@@ -1177,7 +1200,7 @@ Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
     }
   }
   else {
-    scheme_wrong_count_m("place-channel-recv", 1, 2, argc, args, 0);
+    scheme_wrong_count_m("place-channel-recv", 1, 1, argc, args, 0);
   }
   return scheme_true;
 }

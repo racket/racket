@@ -9,9 +9,12 @@
 
 (splat
 #<<END
-(module pct1 scheme
+(module pct1 racket/base
   (provide place-main)
-  (require racket/flonum)
+  (require racket/flonum
+           racket/place
+           racket/list
+           (for-syntax racket/base))
 
   (define-syntax (pcrs stx)
     (syntax-case stx ()

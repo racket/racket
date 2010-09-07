@@ -43,8 +43,8 @@
               (lambda (out)
                 (write txt out))))
 
-        (define module-path-prefix (make-temporary-file "place-worker-~a.rkt" #f))
-        (define-values (base file-name isdir) (split-path module-path-prefix))
+        (define module-path (make-temporary-file "place-worker-~a.rkt" #f))
+        (define-values (base file-name isdir) (split-path module-path))
         (define worker-syntax
           (with-syntax ([module-name (datum->syntax #'name (string->symbol (path->string (path-replace-suffix file-name ""))))])
             #'(module module-name racket/base
@@ -52,12 +52,12 @@
                 (provide name)
                 (define (name ch)
                     body ...))))
-        (define module-path (path->string module-path-prefix))
+        (define module-path-str (path->string module-path))
 
-        (splat (syntax->datum worker-syntax) module-path)
+        (splat (syntax->datum worker-syntax) module-path-str)
 
-        (define place-syntax #`(place (make-resolved-module-path #,module-path) (quote name)))
-        ;(write (syntax->datum place-syntax))
+        (define place-syntax #`(place #,module-path (quote name)))
+        ;(write (syntax->datum place-syntax)) (newline)
         place-syntax)]))
 
 (define-syntax (time-n stx)
