@@ -36,7 +36,7 @@
 ;; closed on fixnums, but 2nd argument must not be 0
 (define-syntax-class nonzero-fixnum-binary-op
   #:commit
-  (pattern (~or (~literal quotient)  (~literal fxquotient))  #:with unsafe #'unsafe-fxquotient)
+  ;; quotient is not closed. (quotient most-negative-fixnum -1) is not a fixnum
   (pattern (~or (~literal modulo)    (~literal fxmodulo))    #:with unsafe #'unsafe-fxmodulo)
   (pattern (~or (~literal remainder) (~literal fxremainder)) #:with unsafe #'unsafe-fxremainder))
 
