@@ -1266,14 +1266,14 @@
         #f))
 
   (def/public (refresh [real? left] [real? top] [nonnegative-real? width] [nonnegative-real? height]
-                       [(symbol-in no-caret show-inactive-caret show-caret) show-caret]
+                       [caret-status? show-caret]
                        [(make-or-false color%) bg-color])
     (void))
 
   (def/public (on-paint [any? pre?] [dc<%> dc]
                         [real? l] [real? t] [real? r] [real? b]
                         [real? dx] [real? dy]
-                        [(symbol-in no-caret show-inactive-caret show-caret) show-caret])
+                        [caret-status? show-caret])
     (void))
 
   (def/public (can-save-file? [path-string? filename]

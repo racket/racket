@@ -47,8 +47,8 @@
 
 (define caret-pen (send the-pen-list find-or-create-pen "BLACK" 1 'xor))
 (define outline-pen (send the-pen-list find-or-create-pen "BLACK" 0 'transparent))
-(define outline-inactive-pen (send the-pen-list find-or-create-pen "BLACK" 1 'hilite))
-(define outline-brush (send the-brush-list find-or-create-brush "BLACK" 'hilite))
+(define outline-inactive-pen (send the-pen-list find-or-create-pen (get-highlight-background-color) 1 'solid))
+(define outline-brush (send the-brush-list find-or-create-brush (get-highlight-background-color) 'solid))
 (define xpattern #"\x88\x88\0\0\x22\x22\0\0\x88\x88\0\0\x22\x22\0\0\x88\x88\0\0\x22\x22\0\0\x88\x88\0\0\x22\x22\0\0")
 (define outline-nonowner-brush (let ([b (new brush%)])
                                  (send b set-color "BLACK")
@@ -4933,7 +4933,7 @@
 
   ;; called by the administrator to trigger a redraw
   (def/override (refresh [real? left] [real? top] [nonnegative-real? width] [nonnegative-real? height]
-                         [(symbol-in no-caret show-inactive-caret show-caret) show-caret]
+                         [caret-status? show-caret]
                          [(make-or-false color%) bg-color])
     (cond
      [(or (width . <= . 0) (height . <= . 0)) (void)]
@@ -4955,6 +4955,7 @@
 
           (let ([show-caret
                  (if (and caret-blinked?
+                          (not (pair? show-caret))
                           (not (eq? show-caret 'no-caret))
                           (not s-caret-snip))
                      ;; maintain caret-blinked invariant
@@ -4979,7 +4980,9 @@
                              (dc . is-a? . printer-dc%))]
                     [show-xsel?
                      (and ALLOW-X-STYLE-SELECTION?
-                          (or (not (eq? 'show-caret show-caret)) s-caret-snip)
+                          (or (not (eq? 'show-caret show-caret)) 
+                              (not (pair? show-caret))
+                              s-caret-snip)
                           (eq? this editor-x-selection-owner)
                           (not flash?)
                           (not (= endpos startpos)))])
@@ -5078,7 +5081,8 @@
 
         (let ([line (mline-find-location (unbox line-root-box) starty)])
 
-          (when bg-color
+          (when (and bg-color
+                     (not (pair? show-caret)))
             (let ([lsave-pen (send dc get-pen)]
                   [lsave-brush (send dc get-brush)])
               (let ([wb (if (and (= 255 (send bg-color red))
@@ -5099,7 +5103,8 @@
           (let* ([call-on-paint
                   (lambda (pre?)
                     (on-paint pre? dc leftx starty rightx endy dx dy
-                              (if (not s-caret-snip)
+                              (if (or (pair? show-caret)
+                                      (not s-caret-snip))
                                   show-caret
                                   'no-caret)))]
                  [paint-done
@@ -5123,7 +5128,8 @@
                   (cond
                    [(not line)
                     (send (send s-style-list basic-style) switch-to dc old-style)
-                    (when (and (eq? 'show-caret show-caret) (not s-caret-snip)
+                    (when (and (eq? 'show-caret show-caret) 
+                               (not s-caret-snip)
                                extra-line?
                                (not pos-at-eol?)
                                (= len -startpos)
@@ -5142,106 +5148,123 @@
                           [last (snip->next (mline-last-snip line))]
                           [bottombase (+ ycounter (mline-bottombase line))]
                           [topbase (+ ycounter (mline-topbase line))])
-                      (let-values ([(hilite-some? hsxs hsxe hsys hsye old-style)
-                                    (let sloop ([snip first]
-                                                [p pcounter]
-                                                [x (mline-get-left-location line max-width)]
-                                                [hilite-some? #f]
-                                                [hsxs 0.0]
-                                                [hsxe 0.0]
-                                                [hsys 0.0]
-                                                [hsye 0.0]
-                                                [old-style old-style])
-                                      (if (eq? snip last)
-                                          (values hilite-some? hsxs hsxe hsys hsye old-style)
-                                          (begin
-                                            (send (snip->style snip) switch-to dc old-style)
-                                            (let ([old-style (snip->style snip)])
-                                              (let-boxes ([w 0.0] [h 0.0] [descent 0.0] [space 0.0])
-                                                  (send snip get-extent dc x ycounter w h descent space #f #f)
-                                                (let* ([align (send (snip->style snip) get-alignment)]
-                                                       [down
-                                                        (cond
-                                                         [(eq? 'bottom align)
-                                                          (+ (- bottombase h) descent)]
-                                                         [(eq? 'top align)
-                                                          (- topbase space)]
-                                                         [else
-                                                          (- (/ (+ topbase bottombase) 2) 
-                                                             (/ (- h descent space) 2)
-                                                             space)])])
+                      (define (process-snips draw? maybe-hilite? old-style)
+                        (let sloop ([snip first]
+                                    [p pcounter]
+                                    [x (mline-get-left-location line max-width)]
+                                    [hilite-some? #f]
+                                    [hsxs 0.0]
+                                    [hsxe 0.0]
+                                    [hsys 0.0]
+                                    [hsye 0.0]
+                                    [old-style old-style])
+                          (if (eq? snip last)
+                              (values hilite-some? hsxs hsxe hsys hsye old-style)
+                              (begin
+                                (send (snip->style snip) switch-to dc old-style)
+                                (let ([old-style (snip->style snip)])
+                                  (let-boxes ([w 0.0] [h 0.0] [descent 0.0] [space 0.0])
+                                      (send snip get-extent dc x ycounter w h descent space #f #f)
+                                    (let* ([align (send (snip->style snip) get-alignment)]
+                                           [down
+                                            (cond
+                                             [(eq? 'bottom align)
+                                              (+ (- bottombase h) descent)]
+                                             [(eq? 'top align)
+                                              (- topbase space)]
+                                             [else
+                                              (- (/ (+ topbase bottombase) 2) 
+                                                 (/ (- h descent space) 2)
+                                                 space)])])
 
-                                                  (when (and (x . <= . rightx)
-                                                             ((+ x w) . >= . leftx))
-                                                    (send snip draw dc (+ x dx) (+ down dy)
-                                                          tleftx tstarty trightx tendy
-                                                          dx dy
-                                                          (if (eq? snip s-caret-snip)
-                                                              show-caret
-                                                              'no-caret)))
+                                      (when draw?
+                                        (when (and (x . <= . rightx)
+                                                   ((+ x w) . >= . leftx))
+                                          (send snip draw dc (+ x dx) (+ down dy)
+                                                tleftx tstarty trightx tendy
+                                                dx dy
+                                                (if (pair? show-caret)
+                                                    (cons p (+ p (snip->count snip)))
+                                                    (if (eq? snip s-caret-snip)
+                                                        show-caret
+                                                        (if (and maybe-hilite?
+                                                                 (endpos . > . p)
+                                                                 (startpos . < . (+ p (snip->count snip))))
+                                                            (cons (max 0 (- startpos p))
+                                                                  (min (snip->count snip) (- endpos p)))
+                                                            'no-caret))))))
 
-                                                  ;; the rules for hiliting are surprisingly complicated:
-                                                  (let ([hilite? 
-                                                         (and
-                                                          hilite-on?
-                                                          (or show-xsel?
-                                                              (and (not s-caret-snip)
-                                                                   (or (eq? 'show-caret show-caret)
-                                                                       (and (show-caret . showcaret>= . s-inactive-caret-threshold)
-                                                                            (not (= -endpos -startpos))))))
-                                                          (if pos-at-eol?
-                                                              (= -startpos (+ p (snip->count snip)))
-                                                              (or (and (-startpos . < . (+ p (snip->count snip)))
-                                                                       (-endpos . >= . p)
-                                                                       (or (= -endpos -startpos) (-endpos . > . p)))
-                                                                  (and (= (+ p (snip->count snip)) len)
-                                                                       (= len -startpos))))
-                                                          (or (not (has-flag? (snip->flags snip) NEWLINE))
-                                                              ;; end of line:
-                                                              (or (not (= -startpos (+ p (snip->count snip))))
-                                                                  (and (= -endpos -startpos) pos-at-eol?)
-                                                                  (and (not (= -endpos -startpos)) 
-                                                                       (-startpos . < . (+ p (snip->count snip))))))
-                                                          (or (not (eq? snip first))
-                                                              ;; beginning of line:
-                                                              (or (not (= p -endpos))
-                                                                  (and (= -endpos -startpos) (not pos-at-eol?))
-                                                                  (and (not (= -endpos -startpos))
-                                                                       (-endpos . > . p)))))])
-                                                    
-                                                    (if hilite?
-                                                        (let*-values ([(bottom) (+ down h)]
-                                                                      [(hxs) (if (-startpos . <= . p)
-                                                                                 (if (-startpos . < . p)
-                                                                                     0
-                                                                                     x)
-                                                                                 (+ x (send snip partial-offset dc x ycounter
-                                                                                            (- -startpos p))))]
-                                                                      [(hxe bottom) (if (-endpos . >= . (+ p (snip->count snip)))
-                                                                                        (if (has-flag? (snip->flags snip) NEWLINE)
-                                                                                            (if (= -startpos -endpos)
-                                                                                                (values hxs bottom)
-                                                                                                (values rightx
-                                                                                                        (+ ycounter (mline-h line))))
-                                                                                            (values (+ x w) bottom))
-                                                                                        (values (+ x (send snip partial-offset dc x ycounter
-                                                                                                           (- -endpos p)))
-                                                                                                bottom))])
-                                                          
-                                                          (let-values ([(hsxs hsxe hsys hsye)
-                                                                        (if (not hilite-some?)
-                                                                            (values hxs hxe down bottom)
-                                                                            (values hsxs hxe (min down hsys) (max hsye bottom)))])
-                                                            (sloop (snip->next snip)
-                                                                   (+ p (snip->count snip))
-                                                                   (+ x w)
-                                                                   #t hsxs hsxe hsys hsye
-                                                                   old-style)))
-                                                        (sloop (snip->next snip)
-                                                               (+ p (snip->count snip))
-                                                               (+ x w)
-                                                               hilite-some? hsxs hsxe hsys hsye
-                                                               old-style)))))))))])
+                                      ;; the rules for hiliting are surprisingly complicated:
+                                      (let ([hilite?
+                                             (and
+                                              hilite-on?
+                                              (or show-xsel?
+                                                  (and (not s-caret-snip)
+                                                       (or (eq? 'show-caret show-caret)
+                                                           (and (show-caret . showcaret>= . s-inactive-caret-threshold)
+                                                                (not (= -endpos -startpos))))))
+                                              (if pos-at-eol?
+                                                  (= -startpos (+ p (snip->count snip)))
+                                                  (or (and (-startpos . < . (+ p (snip->count snip)))
+                                                           (-endpos . >= . p)
+                                                           (or (= -endpos -startpos) (-endpos . > . p)))
+                                                      (and (= (+ p (snip->count snip)) len)
+                                                           (= len -startpos))))
+                                              (or (not (has-flag? (snip->flags snip) NEWLINE))
+                                                  ;; end of line:
+                                                  (or (not (= -startpos (+ p (snip->count snip))))
+                                                      (and (= -endpos -startpos) pos-at-eol?)
+                                                      (and (not (= -endpos -startpos)) 
+                                                           (-startpos . < . (+ p (snip->count snip))))))
+                                              (or (not (eq? snip first))
+                                                  ;; beginning of line:
+                                                  (or (not (= p -endpos))
+                                                      (and (= -endpos -startpos) (not pos-at-eol?))
+                                                      (and (not (= -endpos -startpos))
+                                                           (-endpos . > . p)))))])
+                                        
+                                        (if hilite?
+                                            (let*-values ([(bottom) (+ down h)]
+                                                          [(hxs) (if (-startpos . <= . p)
+                                                                     (if (-startpos . < . p)
+                                                                         0
+                                                                         x)
+                                                                     (+ x (send snip partial-offset dc x ycounter
+                                                                                (- -startpos p))))]
+                                                          [(hxe bottom) (if (-endpos . >= . (+ p (snip->count snip)))
+                                                                            (if (has-flag? (snip->flags snip) NEWLINE)
+                                                                                (if (= -startpos -endpos)
+                                                                                    (values hxs bottom)
+                                                                                    (values rightx
+                                                                                            (+ ycounter (mline-h line))))
+                                                                                (values (+ x w) bottom))
+                                                                            (values (+ x (send snip partial-offset dc x ycounter
+                                                                                               (- -endpos p)))
+                                                                                    bottom))])
+                                              
+                                              (let-values ([(hsxs hsxe hsys hsye)
+                                                            (if (not hilite-some?)
+                                                                (values hxs hxe down bottom)
+                                                                (values hsxs hxe (min down hsys) (max hsye bottom)))])
+                                                (sloop (snip->next snip)
+                                                       (+ p (snip->count snip))
+                                                       (+ x w)
+                                                       #t hsxs hsxe hsys hsye
+                                                       old-style)))
+                                            (sloop (snip->next snip)
+                                                   (+ p (snip->count snip))
+                                                   (+ x w)
+                                                   hilite-some? hsxs hsxe hsys hsye
+                                                   old-style))))))))))
+                      (let*-values ([(draw-first?)
+                                     (or (not (showcaret>= show-caret 'show-caret))
+                                         (and s-caret-snip (not (pair? show-caret)))
+                                         (not hilite-on?)
+                                         (= -startpos -endpos)
+                                         (endpos . < . pcounter)
+                                         (startpos . > . (+ pcounter (mline-len line))))]
+                                    [(hilite-some? hsxs hsxe hsys hsye old-style)
+                                     (process-snips draw-first? #f old-style)])
                         (when (and (positive? wrap-bitmap-width)
                                    (not (has-flag? (snip->flags (mline-last-snip line)) HARD-NEWLINE))
                                    last
@@ -5314,11 +5337,17 @@
                                                (send dc set-pen save-pen))))
                                          prevwasfirst))
                                    prevwasfirst)])
-                          (lloop (mline-next line)
-                                 old-style
-                                 (+ ycounter (mline-h line))
-                                 (+ pcounter (mline-len line))
-                                 prevwasfirst))))])))))))))
+                          (let ([old-style
+                                 (if draw-first?
+                                     old-style
+                                     (let-values ([(_hilite-some? _hsxs _hsxe _hsys _hsye old-style)
+                                                   (process-snips #t #t old-style)])
+                                       old-style))])
+                            (lloop (mline-next line)
+                                   old-style
+                                   (+ ycounter (mline-h line))
+                                   (+ pcounter (mline-len line))
+                                   prevwasfirst)))))])))))))))
 
   ;; ----------------------------------------
 

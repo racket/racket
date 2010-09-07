@@ -8,11 +8,6 @@
          "cycle.ss"
          "wx.ss")
 
-(define (symbol-list? l)
-  (and (list? l) (andmap symbol? l)))
-(define (mutable-string? s)
-  (and (string? s) (not (immutable? s))))
-
 (provide snip%
          snip-class%
          string-snip%
@@ -55,7 +50,27 @@
          snip%-get-text
 
          string-snip-buffer
-         string-snip-dtext)
+         string-snip-dtext
+
+         caret-status?
+
+         selected-text-color)
+
+(define (symbol-list? l)
+  (and (list? l) (andmap symbol? l)))
+(define (mutable-string? s)
+  (and (string? s) (not (immutable? s))))
+
+(define (caret-status? v)
+  (or (eq? v 'no-caret)
+      (eq? v 'show-inactive-caret)
+      (eq? v 'show-caret)
+      (and (pair? v)
+           (exact-nonnegative-integer? (car v))
+           (exact-nonnegative-integer? (cdr v))
+           ((car v) . < . (cdr v)))))
+
+(define selected-text-color (get-highlight-text-color))
 
 ;; ------------------------------------------------------------
 
@@ -232,7 +247,7 @@
 
   (def/public (draw [dc<%> dc] [real? x] [real? y] 
                     [real? left] [real? top] [real? bottom] [real? right] 
-                    [real? dx] [real? dy] [symbol? caret])
+                    [real? dx] [real? dy] [caret-status? caret])
     (void))
 
   (def/public (split [exact-nonnegative-integer? position] [box? first] [box? second])
@@ -442,9 +457,42 @@
 
   (def/override (draw [dc<%> dc] [real? x] [real? y] 
                       [real? left] [real? top] [real? bottom] [real? right] 
-                      [real? dx] [real? dy] [symbol? caret])
+                      [real? dx] [real? dy] [caret-status? caret])
     (unless (has-flag? s-flags INVISIBLE)
-      (send dc draw-text (replace-nuls (substring s-buffer s-dtext (+ s-dtext s-count))) x y #f)))
+      (if (and (pair? caret)
+               (or selected-text-color
+                   (eq? 'solid (send dc get-text-mode))))
+          ;; Draw three parts: before selection, selection, after selection
+          (let ([before (replace-nuls
+                         (substring s-buffer 
+                                    s-dtext 
+                                    (+ s-dtext (min (car caret) s-count))))]
+                [sel (replace-nuls
+                      (substring s-buffer 
+                                 (+ s-dtext (min (car caret) s-count))
+                                 (+ s-dtext (min (cdr caret) s-count))))]
+                [after (replace-nuls
+                        (substring s-buffer 
+                                   (+ s-dtext (min (cdr caret) s-count))
+                                   (+ s-dtext s-count)))])
+            (unless (string=? before "")
+              (send dc draw-text before x y #f))
+            (let-values ([(w h d a) (if (string=? before "")
+                                        (values 0 0 0 0)
+                                        (send dc get-text-extent before))])
+              (let ([col (send dc get-text-foreground)]
+                    [mode (send dc get-text-mode)])
+                (when selected-text-color
+                  (send dc set-text-foreground selected-text-color))
+                (send dc set-text-mode 'transparent)
+                (send dc draw-text sel (+ x w) y #f)
+                (send dc set-text-foreground col)
+                (send dc set-text-mode mode))
+              (unless (string=? after "")
+                (let-values ([(w2 h d a) (send dc get-text-extent sel)])
+                  (send dc draw-text after (+ x w w2) y #f)))))
+          ;; Just draw the string
+          (send dc draw-text (replace-nuls (substring s-buffer s-dtext (+ s-dtext s-count))) x y #f))))
 
   (def/override (split [exact-nonnegative-integer? position] [box? first] [box? second])
     (let ([count s-count])
@@ -691,7 +739,7 @@
 
   (def/override (draw [dc<%> dc] [real? x] [real? y] 
                       [real? left] [real? top] [real? bottom] [real? right] 
-                      [real? dx] [real? dy] [symbol? caret])
+                      [real? dx] [real? dy] [caret-status? caret])
     ;; draw nothing
     (void))
 
@@ -892,7 +940,7 @@
 
   (def/override (draw [dc<%> dc] [real? x] [real? y] 
                       [real? left] [real? top] [real? bottom] [real? right] 
-                      [real? dx] [real? dy] [symbol? caret])
+                      [real? dx] [real? dy] [caret-status? caret])
     (if (or (not bm)
             (not (send bm ok?)))
         (begin

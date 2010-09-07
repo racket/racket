@@ -15,6 +15,7 @@
          define-mz
 
          g_object_ref
+         g_object_ref_sink
          g_object_unref
 
          gobject-ref

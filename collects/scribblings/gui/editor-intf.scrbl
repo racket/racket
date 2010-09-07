@@ -1549,7 +1549,9 @@ Returns @scheme[(make-object image-snip% filename kind relative-path? inline?)].
                      [bottom real?]
                      [dx real?]
                      [dy real?]
-                     [draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret)])
+                     [draw-caret (or/c (one-of/c 'no-caret 'show-inactive-caret 'show-caret)
+                                       (cons/c exact-nonnegative-integer?
+                                               exact-nonnegative-integer?))])
            void?]{
 @methspec{
 
@@ -1888,7 +1890,9 @@ See also @method[editor<%> add-undo].
                     [y real?]
                     [width (and/c real? (not/c negative?))]
                     [height (and/c real? (not/c negative?))]
-                    [draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret)]
+                    [draw-caret (or/c (one-of/c 'no-caret 'show-inactive-caret 'show-caret)
+                                      (cons/c exact-nonnegative-integer?
+                                              exact-nonnegative-integer?))]
                     [background (or/c (is-a?/c color%) #f)])
            void?]{
 

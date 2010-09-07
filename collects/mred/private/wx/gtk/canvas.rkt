@@ -173,8 +173,6 @@
       (queue-window-event wx (lambda () (send wx do-scroll dir)))))
   #t)
 
-(define-gtk gtk_entry_get_type (_fun -> _GType))
-
 (define canvas%
   (class (client-size-mixin window%)
     (init parent

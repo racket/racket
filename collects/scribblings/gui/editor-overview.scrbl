@@ -601,8 +601,8 @@ When an editor contains other editors, it keeps track of caret
  appropriate sub-editor.
 
 When an editor or snip is drawn, an argument to the drawing method
- specifies whether the caret should be drawn with the data. This
- argument can be any of (in increasing order):
+ specifies whether the caret should be drawn with the data or whether
+ a selection spans the data. This argument can be any of:
 
 @itemize[
 
@@ -615,6 +615,11 @@ When an editor or snip is drawn, an argument to the drawing method
 
  @item{@indexed-scheme['show-caret] --- The caret should be drawn to show
  keyboard focus ownership.}
+
+ @item{@racket[(cons _start _end)] --- The caret is owned by an
+ enclosing region, and its selection spans the current editor or snip;
+ in the case of the snip, the selection spans elements @racket[_start]
+ through @racket[_end] positions within the snip.}
 
 ]
 

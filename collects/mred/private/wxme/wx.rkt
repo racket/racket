@@ -52,7 +52,9 @@
          family-symbol?
          style-symbol?
          weight-symbol?
-         smoothing-symbol?)
+         smoothing-symbol?
+         get-highlight-background-color
+         get-highlight-text-color)
 
 (define (get-double-click-threshold)
   (get-double-click-time))

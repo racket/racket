@@ -275,24 +275,3 @@
   (set-ffi-obj! 'scheme_sleep #f _pointer (function-ptr sleep-until-event 
                                                         (_fun #:atomic? #t 
                                                               _float _pointer -> _void))))
-
-;; ------------------------------------------------------------
-;; Set highlight color
-
-(define-cocoa NSCalibratedRGBColorSpace _id)
-
-(define (install-system-highlight-color! r g b a) 
-  (void))
-
-(let ([hi (tell (tell NSColor selectedTextBackgroundColor) 
-                colorUsingColorSpaceName: NSCalibratedRGBColorSpace)]
-      [as-color (lambda (v)
-                  (inexact->exact (floor (* 255.0 v))))])
-  (install-system-highlight-color! (as-color
-                                    (tell #:type _CGFloat hi redComponent))
-                                   (as-color
-                                    (tell #:type _CGFloat hi greenComponent))
-                                   (as-color
-                                    (tell #:type _CGFloat hi blueComponent))
-                                   (as-color
-                                    (tell #:type _CGFloat hi alphaComponent))))

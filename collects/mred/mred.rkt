@@ -132,7 +132,9 @@
 	     font%
 	     font-list%
 	     font-name-directory<%>
-	     get-resource
+             get-highlight-background-color
+             get-highlight-text-color
+             get-resource
 	     get-the-editor-data-class-list
 	     get-the-snip-class-list
 	     image-snip%
@@ -271,7 +273,7 @@
 	   get-display-left-top-inset
 	   get-color-from-user
 	   get-font-from-user
-	   append-editor-operation-menu-items
+           append-editor-operation-menu-items
 	   append-editor-font-menu-items
 	   get-top-level-focus-window
 	   get-top-level-edit-target-window

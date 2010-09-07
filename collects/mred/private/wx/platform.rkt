@@ -79,5 +79,7 @@
                 application-quit-handler
                 application-file-handler
                 special-option-key
-                special-control-key)
+                special-control-key
+                get-highlight-background-color
+                get-highlight-text-color)
   ((dynamic-require platform-lib 'platform-values)))

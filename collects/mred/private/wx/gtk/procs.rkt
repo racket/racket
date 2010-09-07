@@ -7,6 +7,7 @@
          "filedialog.rkt"
          "types.rkt"
          "utils.rkt"
+         "style.rkt"
          "widget.rkt"
          "../common/handlers.rkt")
 
@@ -58,7 +59,9 @@
  get-the-x-selection
  get-the-clipboard
  show-print-setup
- can-show-print-setup?)
+ can-show-print-setup?
+ get-highlight-background-color
+ get-highlight-text-color)
 
 (define-unimplemented special-control-key)
 (define (special-option-key on?) (void))
@@ -125,3 +128,11 @@
 (define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)
 (define (can-show-print-setup?) #f)
+
+(define (get-highlight-background-color)
+  (let-values ([(r g b) (get-selected-background-color)])
+    (make-object color% r g b)))
+
+(define (get-highlight-text-color)
+  (let-values ([(r g b) (get-selected-text-color)])
+    (make-object color% r g b)))

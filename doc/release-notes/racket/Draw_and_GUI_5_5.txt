@@ -64,6 +64,14 @@ Changes to the drawing toolbox:
  * The old 'xor mode for pens and brushes is no longer available
    (since it is not supported by Cairo).
 
+ * The `draw-caret' argument to a `snip%' or `editor<%>' `draw' or
+   `refresh' method can be a pair, which indicates that the caret is
+   owned by an enclosing display and the selection spans the snip or
+   editor. In that case, the snip or editor should refrain from
+   drawing a background for the selected region, and it should draw
+   the foreground in the color specified by
+   `get-highlight-text-color', if any.
+
 Changes to the GUI toolbox:
 
  [Nothing to report, yet.]

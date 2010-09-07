@@ -55,7 +55,9 @@
  get-the-x-selection
  get-the-clipboard
  show-print-setup
- can-show-print-setup?)
+ can-show-print-setup?
+ get-highlight-background-color
+ get-highlight-text-color)
 
 (import-class NSScreen NSCursor)
 
@@ -117,3 +119,26 @@
 (define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)
 (define (can-show-print-setup?) #t)
+
+;; ------------------------------------------------------------
+;; Text & highlight color
+
+(import-class NSColor)
+
+(define-cocoa NSCalibratedRGBColorSpace _id)
+
+(define (get-highlight-background-color)
+  (let ([hi (tell (tell NSColor selectedTextBackgroundColor) 
+                  colorUsingColorSpaceName: NSCalibratedRGBColorSpace)]
+        [as-color (lambda (v)
+                    (inexact->exact (floor (* 255.0 v))))])
+    (make-object color%
+                 (as-color
+                  (tell #:type _CGFloat hi redComponent))
+                 (as-color
+                  (tell #:type _CGFloat hi greenComponent))
+                 (as-color
+                  (tell #:type _CGFloat hi blueComponent)))))
+
+(define (get-highlight-text-color)
+  #f)

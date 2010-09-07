@@ -115,6 +115,18 @@ Returns the background color of a panel (usually some shade of gray)
 
 }
 
+
+@defproc[(get-highlight-background-color) (is-a?/c color%)]{
+
+Returns the color drawn behind selected text.}
+
+
+@defproc[(get-highlight-text-color) (or/c (is-a?/c color%) #f)]{
+
+Returns the color used to draw selected text or @racket[#f] if
+selected text is drawn with its usual color.}
+
+
 @defproc[(get-resource [section string?]
                        [entry string?]
                        [value (box/c (or/c string? exact-integer?))]

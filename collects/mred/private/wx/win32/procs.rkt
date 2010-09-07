@@ -49,7 +49,9 @@
  get-the-x-selection
  get-the-clipboard
  show-print-setup
- can-show-print-setup?)
+ can-show-print-setup?
+ get-highlight-background-color
+ get-highlight-text-color)
 
 
 (define-unimplemented special-control-key)
@@ -103,3 +105,5 @@
 (define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)
 (define-unimplemented can-show-print-setup?)
+(define-unimplemented get-highlight-background-color)
+(define-unimplemented get-highlight-text-color)
