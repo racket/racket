@@ -56,26 +56,36 @@
   (case (system-type)
     [(windows)
      (ffi-lib "libgobject-2.0-0")]
+    [(unix)
+     (ffi-lib "libgobject-2.0" '("0"))]
     [else gdk-lib]))
 (define glib-lib 
   (case (system-type)
     [(windows)
      (ffi-lib "libglib-2.0-0")]
+    [(unix)
+     (ffi-lib "libglib-2.0" '("0"))]
     [else gdk-lib]))
 (define gio-lib 
   (case (system-type)
     [(windows)
      (ffi-lib "libgio-2.0-0")]
+    [(unix)
+     (ffi-lib "libgio-2.0" '("0"))]
     [else gdk-lib]))
 (define gmodule-lib 
   (case (system-type)
     [(windows)
      (ffi-lib "libgmodule-2.0-0")]
+    [(unix)
+     (ffi-lib "libgmodule-2.0" '("0"))]
     [else gdk-lib]))
 (define gdk_pixbuf-lib 
   (case (system-type)
     [(windows)
      (ffi-lib "libgdk_pixbuf-2.0-0")]
+    [(unix)
+     (ffi-lib "libgdk_pixbuf-2.0" '("0"))]
     [else gdk-lib]))
 (define gtk-lib
   (case (system-type)

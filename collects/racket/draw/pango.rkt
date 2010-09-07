@@ -35,6 +35,7 @@
 (define glib-lib 
   (case (system-type)
     [(macosx) (ffi-lib "libgobject-2.0.0")]
+    [(unix) (ffi-lib "libgobject-2.0" '("0"))]
     [else #f]))
 
 (define-ffi-definer define-pango pango-lib
