@@ -9,10 +9,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (dict-empty? dict)
-  (= (dict-count dict) 0))
+  (not (dict-iterate-first dict)))
 ;; Eli: This encourages ignoring the actual representation, and the fact
 ;; that `dict-count' can in some cases be an O(N) operation.  (And to
 ;; make things worse, it's not even mentioned in the docs.)
+;; Ryan: Fixed complexity.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -134,6 +135,10 @@
 ;; an efficient order for the loops, or use a temporary hash table for a
 ;; union of two alists, etc.  Alternatively, just write a function for
 ;; merging two hash tables (and call it `hash-union', of course).
+
+;; Ryan: I prefer the names dict-add-all and dict-add-all!---no connotations
+;; of symmetry, and it makes it clear that the first argument determines the
+;; representation (and key constraints, etc).
 
 (define (dict-union
          #:combine [combine #f]

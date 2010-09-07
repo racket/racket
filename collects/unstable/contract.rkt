@@ -9,13 +9,6 @@
 (define port-number? (between/c 1 65535))
 (define tcp-listen-port? (between/c 0 65535))
 
-(define non-empty-string/c
-  (and/c string?
-         (lambda (s) (not (zero? (string-length s))))))
-;; Eli: If this gets in, there should also be versions for bytes, lists, and
-;;   vectors.
-;; Ryan: How about just making these predicates? Predicates are more broadly applicable,
-;;   and when used as a contract we get the descriptive name for free.
 (define (non-empty-string? x)
   (and (string? x) (not (zero? (string-length x)))))
 (define (non-empty-bytes? x)

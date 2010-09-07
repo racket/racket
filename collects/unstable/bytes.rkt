@@ -21,6 +21,8 @@
 ;;   "read with bytes".  Regardless, I see little point in composing two
 ;;   functions where the two names are clear enough -- you might consider
 ;;   looking at the version in CL.
+;; Ryan: I agree. More useful would be a version that checked that the
+;; bytes contains only one S-expr and errors otherwise.
 
 (define (write/bytes v)
   (define by (open-output-bytes))

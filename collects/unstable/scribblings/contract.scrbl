@@ -7,8 +7,21 @@
 
 @unstable-header[]
 
-@defthing[non-empty-string/c contract?]{
-Contract for non-empty strings.
+@deftogether[[
+@defproc[(non-empty-string? [x any/c]) boolean?]
+@defproc[(non-empty-list? [x any/c]) boolean?]
+@defproc[(non-empty-bytes? [x any/c]) boolean?]
+@defproc[(non-empty-vector? [x any/c]) boolean?]]]{
+
+Returns @racket[#t] if @racket[x] is of the appropriate data type
+(string, list, bytes, or vector, respectively) and is not empty;
+returns @racket[#f] otherwise.
+}
+
+@defproc[(singleton-list? [x any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[x] is a list of one element; returns
+@racket[#f] otherwise.
 }
 
 @defthing[port-number? contract?]{

@@ -25,7 +25,7 @@
 
 (provide/contract
  [redirect-to
-  (->* (non-empty-string/c) (redirection-status? #:headers (listof header?))
+  (->* (non-empty-string?) (redirection-status? #:headers (listof header?))
        response/full?)]
  [redirection-status? (any/c . -> . boolean?)]
  [permanently redirection-status?]
