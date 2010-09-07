@@ -135,4 +135,6 @@
 
 (define (get-highlight-text-color)
   (let-values ([(r g b) (get-selected-text-color)])
-    (make-object color% r g b)))
+    (if (and (zero? r) (zero? g) (zero? b))
+	#f
+	(make-object color% r g b))))

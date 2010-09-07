@@ -13,8 +13,17 @@
    [green _uint16]
    [blue _uint16]))
 
+(define-cstruct _GTypeInstance
+  ([class _pointer]))
+
+(define-cstruct _GObject
+  ([g_type_instance _GTypeInstance]
+   [ref_count _uint]
+   [qdata _pointer]))
+
 (define-cstruct _GtkStyle
-  ([fg1 _GdkColor]
+  ([obj _GObject]
+   [fg1 _GdkColor]
    [fg2 _GdkColor]
    [fg3 _GdkColor]
    [fg4 _GdkColor]
@@ -61,11 +70,12 @@
    ))
 
 (define-gtk gtk_widget_get_style (_fun  _GtkWidget -> _GtkStyle-pointer))
+(define-gtk gtk_rc_get_style (_fun  _GtkWidget -> _GtkStyle-pointer))
 (define-gtk gtk_text_view_new (_fun -> _GtkWidget))
 
 (define the-text-style
   (let ([w (gtk_text_view_new)])
-    (let ([style (gtk_widget_get_style w)])
+    (let ([style (gtk_rc_get_style w)])
       (g_object_ref style)
       (begin0
        style
@@ -73,7 +83,7 @@
        (g_object_unref w)))))
 
 (define (extract-color-values c)
-  (define (s v) (bitwise-and #xFF (arithmetic-shift v -8)))
+  (define (s v) (arithmetic-shift v -8))
   (values (s (GdkColor-red c))
           (s (GdkColor-green c))
           (s (GdkColor-blue c))))
