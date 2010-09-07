@@ -17,7 +17,7 @@
 
 #;(define: match-test : number
 (match 3
-       [(? number? #{x number}) (+ 17 x)]
+       [(? number? #{x : number}) (+ 17 x)]
        [_ 12]))
 
 
@@ -45,7 +45,7 @@
 
 #;(define: (pt-add/match [v : top]) : number
 (match v
-       [($ pt #{x number} #{y number}) (+ x y)]
+       [($ pt #{x : number} #{y : number}) (+ x y)]
        [_ 0]))
 
 #;(pt-add/match x-struct)
@@ -77,9 +77,9 @@
 
 (define: (f [x : number] [y : number]) : number (+ x y))
 (define: (g [x : number] [y : number]) : boolean
-  (let+ (#;[val #{z number} #f]
-	 [val #{x1 number} (* x x)]
-	 [rec #{y1 number} (* y y)])
+  (let+ (#;[val #{z : number} #f]
+	 [val #{x1 : number} (* x x)]
+	 [rec #{y1 : number} (* y y)])
 	#|(define-syntax foo
 	(syntax-rules ()
 	[(foo) (= x1 y1)]))

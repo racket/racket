@@ -14,7 +14,7 @@
 
 (define: (pt-add/match/blah [v : Any]) : Number
   (match v
-	 [(blah pt #{x Number} #{y Number}) (+ x y)]
+	 [(blah pt #{x : Number} #{y : Number}) (+ x y)]
 	 [_ 0]))
 
 

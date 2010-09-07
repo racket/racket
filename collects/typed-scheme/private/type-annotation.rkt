@@ -30,7 +30,7 @@
                (printf/log "Annotation Sexp Pair \n")
                (print-size #'a)
                (print-size #'b))]      
-    [_ (printf/log "Annotation Sexp \n" )]))
+    [_ (printf/log "Annotation Sexp \n")]))
 
 ;; get the type annotation of this syntax
 ;; syntax -> Maybe[Type]
@@ -62,7 +62,6 @@
 
 (define (type-ascription stx)
   (define (pt prop)
-    #;(print-size prop)
     (if (syntax? prop)
         (parse-tc-results prop)
         (parse-tc-results/id stx prop)))
@@ -72,7 +71,7 @@
      (lambda (prop)
        (if (pair? prop)
            (pt (car prop))
-           (pt prop)))]
+           (pt prop)))]    
     [else #f]))
 
 (define (remove-ascription stx)

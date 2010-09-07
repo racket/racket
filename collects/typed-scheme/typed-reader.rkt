@@ -51,11 +51,13 @@
                          (let* ([prop-name (syntax-e (read-one))])   
                            (skip-whitespace port)
                            (syntax-property name prop-name (read-one)))]
-                 ;; type annotation
-                 [else (syntax-property name 'type-label (syntax->datum next))])))
+                 ;; otherwise error
+                 [else 
+                  (let-values ([(l c p) (port-next-location port)])
+                    (raise-read-error (format "typed expression ~a must be followed by :, ::, or @"
+                                              (syntax->datum name)) src l c p 1))])))
       (skip-whitespace port)
       (let ([c (read-char port)])
-        #;(printf "char: ~a" c)
         (unless (equal? #\} c)
           (let-values ([(l c p) (port-next-location port)])
             (raise-read-error (format "typed expression ~a not properly terminated" (syntax->datum name)) src l c p 1)))))))
