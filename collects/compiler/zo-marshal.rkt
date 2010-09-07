@@ -77,6 +77,7 @@
     (out-compilation-top 
      (λ (v #:error? [error? #f])
        (cond
+         [(hash? v) (error 'create-symbol-table "current type trace: ~a" (current-type-trace))]
          [(closure? v)
           (let ([pos (share! v)])
             (if (encountered? v)
@@ -101,6 +102,8 @@
   (define-values (symbol-table shared-obj-pos)
     (create-symbol-table))
   (got-here 2)
+  
+  #;(printf "symtab[998] = ~a\n" (vector-ref symbol-table 998))
   #;(for ([v (in-vector symbol-table)])
     (printf "v = ~a~n" v))
   
@@ -469,7 +472,7 @@
 
 (define (shareable? v)
   (define never-share-this?
-    (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void?))
+    (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void? hash? ))
   (define always-share-this?
     (or-pred? v closure?))
   (or always-share-this?
@@ -481,7 +484,26 @@
   (and (exact-integer? v)
        (and (v . >= . -1073741824) (v . <= . 1073741823))))
 
+(define (current-type-trace)
+  (reverse (continuation-mark-set->list (current-continuation-marks) 'zo)))
+
+(define (typeof v)
+  (cond
+    [(pair? v) 'cons]
+    [(hash? v) 'hash]
+    [(prefab-struct-key v) => (λ (key) key)]
+    [(vector? v) 'vector]
+    [else v]))
+
+(define-syntax with-type-trace
+  (syntax-rules ()
+    [(_ v body ...)
+     (begin body ...)
+     #;(with-continuation-mark 'zo (typeof v)
+       (begin0 (begin body ...) (void)))]))
+
 (define (out-anything v out)
+  (with-type-trace v
   (out-shared 
    v out
    (λ ()
@@ -858,7 +880,7 @@
         (out-byte CPT_ESCAPE out)
         (define bstr (get-output-bytes s))
         (out-number (bytes-length bstr) out)
-        (out-bytes bstr out)]))))
+        (out-bytes bstr out)])))))
 
 (define-struct module-decl (content))
 
