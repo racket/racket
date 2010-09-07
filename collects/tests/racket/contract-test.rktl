@@ -9619,7 +9619,7 @@ so that propagation occurs.
                       (racket/contract:negative-position a)
                       (racket/contract:positive-position b)))
   (test-obligations '(->i ([x a]) #:pre () #t [res b] #:post () #t)
-                    '((racket/contract:contract (->i #:post) (#:pre))
+                    '((racket/contract:contract (#:post ->i) (#:pre))
                       (racket/contract:contract-on-boundary a)
                       (racket/contract:contract-on-boundary b)
                       (racket/contract:negative-position a)
