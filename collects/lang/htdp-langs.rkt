@@ -678,45 +678,51 @@
                                 data-class-names)))))))))
       
       (define (get-teachpack-from-user parent)
-        (define tp-dirs (list (collection-path "teachpack" "htdp")
-                              (collection-path "teachpack" "2htdp")))
-        (define columns 2)
-        (define tps (apply
-                     append
-                     (map (λ (tp-dir)
-                            (filter
-                             (λ (x) (file-exists? (build-path tp-dir x)))
-                             (directory-list tp-dir)))
-                          tp-dirs)))
+        (define tp-dirs (list "htdp" "2htdp"))
+        (define labels (list (string-constant teachpack-pre-installed/htdp)
+                             (string-constant teachpack-pre-installed/2htdp)))
+        (define tpss (map (λ (tp-dir)
+                            (let ([base (collection-path "teachpack" tp-dir)])
+                              (filter
+                               (λ (x) (file-exists? (build-path base x)))
+                               (directory-list base))))
+                          tp-dirs))
         (define sort-order (λ (x y) (string<=? (path->string x) (path->string y))))
-        (define pre-installed-tps (sort tps sort-order))
+        (define pre-installed-tpss (map (λ (tps) (sort tps sort-order)) tpss))
         (define dlg (new dialog% [parent parent] [label (string-constant drscheme)]))
         (define hp (new horizontal-panel% [parent dlg]))
         (define answer #f)
         (define compiling? #f)
         
-        (define pre-installed-gb (new group-box-panel%
-                                      [label (string-constant teachpack-pre-installed)]
-                                      [parent hp]))
+        (define pre-installed-gbs (map (λ (tps label)
+                                         (new group-box-panel%
+                                              [label label]
+                                              [parent hp]))
+                                       tpss labels))
         (define user-installed-gb (new group-box-panel%
                                        [label (string-constant teachpack-user-installed)]
                                        [parent hp]))
         
-        (define pre-installed-lb
-          (new list-box%
-               [label #f]
-               [choices (map path->string pre-installed-tps)]
-               [stretchable-height #t]
-               [min-height 300]
-               [min-width 200]
-               [callback
-                (λ (x evt)
-                  (case (send evt get-event-type)
-                    [(list-box-dclick) (selected pre-installed-lb)]
-                    [else
-                     (clear-selection user-installed-lb)
-                     (update-button)]))]
-               [parent pre-installed-gb]))
+        (define pre-installed-lbs
+          (map (λ (pre-installed-gb pre-installed-tps)
+                 (new list-box%
+                      [label #f]
+                      [choices (map path->string pre-installed-tps)]
+                      [stretchable-height #t]
+                      [min-height 300]
+                      [min-width 200]
+                      [callback
+                       (λ (this evt)
+                         (case (send evt get-event-type)
+                           [(list-box-dclick) (selected this)]
+                           [else
+                            (for-each (λ (x) (unless (eq? x this) (clear-selection x)))
+                                      (cons user-installed-lb
+                                            pre-installed-lbs))
+                            (update-button)]))]
+                      [parent pre-installed-gb]))
+               pre-installed-gbs
+               pre-installed-tpss))
         
         (define user-installed-lb
           (new list-box%
@@ -729,7 +735,8 @@
                   (case (send evt get-event-type)
                     [(list-box-dclick) (selected user-installed-lb)]
                     [else
-                     (clear-selection pre-installed-lb)
+                     (for ([pre-installed-lb (in-list pre-installed-lbs)])
+                       (clear-selection pre-installed-lb))
                      (update-button)]))]
                [parent user-installed-gb]))
         
@@ -810,7 +817,8 @@
         
         (define (post-compilation-gui-cleanup short-name)
           (update-user-installed-lb)
-          (clear-selection pre-installed-lb)
+          (for ([pre-installed-lb (in-list pre-installed-lbs)])
+            (clear-selection pre-installed-lb))
           (send user-installed-lb set-string-selection (path->string short-name)))
         
         (define (starting-compilation)
@@ -838,7 +846,9 @@
           (send ok-button enable 
                 (and (not compiling?)
                      (or (pair? (send user-installed-lb get-selections))
-                         (pair? (send pre-installed-lb get-selections))))))
+                         (ormap (λ (pre-installed-lb)
+                                  (pair? (send pre-installed-lb get-selections)))
+                                pre-installed-lbs)))))
         
         (define button-panel (new horizontal-panel% 
                                   [parent dlg]
@@ -856,17 +866,15 @@
         
         (define (figure-out-answer)
           (cond
-            [(send pre-installed-lb get-selection)
+            [(ormap (λ (pre-installed-lb tp-dir) 
+                      (and (send pre-installed-lb get-selection)
+                           (list tp-dir (send pre-installed-lb get-string (send pre-installed-lb get-selection)))))
+                    pre-installed-lbs
+                    tp-dirs)
              =>
-             (λ (i)
-               (define f (send pre-installed-lb get-string i))
-               (cond
-                 [(file-exists? (build-path (collection-path "teachpack" "htdp") f))
-                  `(lib ,f "teachpack" "htdp")]
-                 [(file-exists? (build-path (collection-path "teachpack" "2htdp") f))
-                  `(lib ,f "teachpack" "2htdp")]
-                 [else (error 'figuer-out-answer "argh: ~a ~a" 
-                              (collection-path "teachpack" "htdp") f)]))]
+             (λ (pr)
+               (define-values (tp-dir f) (apply values pr))
+               `(lib ,f "teachpack" ,tp-dir))]
             [(send user-installed-lb get-selection)
              =>
              (λ (i) `(lib ,(send user-installed-lb get-string i)

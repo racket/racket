@@ -981,7 +981,8 @@ please adhere to these guidelines:
   
   ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
   (compiling-teachpack "Compiling ~a teachpack ...")
-  (teachpack-pre-installed "Preinstalled Teachpacks")
+  (teachpack-pre-installed/htdp "Preinstalled HtDP Teachpacks")
+  (teachpack-pre-installed/2htdp "Preinstalled HtDP/2e Teachpacks")
   (teachpack-user-installed "User-installed Teachpacks")
   (add-teachpack-to-list... "Add Teachpack to List...")
   (teachpack-already-installed "A teachpack with the name '~a' has already been installed. Overwrite it?")
