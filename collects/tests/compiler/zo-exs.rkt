@@ -23,7 +23,7 @@
     (compilation-top 0 
                      (prefix 0 empty empty)
                      (list 1 (list 2 3) (list 2 3) 4 5)))
- (roundtrip
+ #;(roundtrip
   (compilation-top 0 
                    (prefix 0 empty empty)
                    (let* ([ph (make-placeholder #f)]
@@ -84,12 +84,18 @@
                      (prefix 0 empty empty)
                      (list (current-directory))))
  
- #;(roundtrip
+ (roundtrip
     (compilation-top                                            
      0                                                          
      (prefix 0 empty empty)
-     (cons #hasheq()
-           #hasheq())))
+     (cons #hash()
+           #hash())))
+ 
+ (roundtrip
+    (compilation-top                                            
+     0                                                          
+     (prefix 0 empty empty)
+     #hash()))
  
  #;(local [(define (hash-test make-hash-placeholder)
              (roundtrip 
