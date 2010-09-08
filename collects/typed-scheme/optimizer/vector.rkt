@@ -1,11 +1,11 @@
 #lang scheme/base
 
 (require syntax/parse
-         unstable/match racket/match
+         racket/match
          (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
          (rep type-rep)
-         (types abbrev type-table utils subtype)
+         (types type-table utils)
          (optimizer utils))
 
 (provide vector-opt-expr)

@@ -1,12 +1,11 @@
 #lang scheme/base
 
 (require syntax/parse
-         syntax/id-table racket/dict
-         unstable/match racket/match
+         racket/match
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
          (rep type-rep)
-         (types abbrev type-table utils subtype)
+         (types type-table utils)
          (optimizer utils))
 
 (provide pair-opt-expr)

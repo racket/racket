@@ -1,12 +1,7 @@
 #lang scheme/base
 (require syntax/parse
-         syntax/id-table racket/dict
-         unstable/match racket/match
          (for-template scheme/unsafe/ops racket/base (prefix-in k: '#%kernel))
-         (for-syntax racket/base)
          "../utils/utils.rkt"
-         (rep type-rep)
-         (types abbrev type-table utils subtype)
          (optimizer utils))
 
 (provide apply-opt-expr)

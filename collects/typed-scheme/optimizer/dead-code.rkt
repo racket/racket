@@ -2,7 +2,7 @@
 
 (require syntax/parse
          (for-template scheme/base)
-         "../utils/utils.rkt" "../utils/tc-utils.rkt"
+         "../utils/utils.rkt"
          (types type-table)
          (optimizer utils))
 

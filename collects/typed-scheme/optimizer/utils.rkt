@@ -2,9 +2,9 @@
 
 (require unstable/match racket/match
          racket/dict syntax/id-table unstable/syntax
-         (for-template scheme/base racket/flonum scheme/fixnum scheme/unsafe/ops)
          "../utils/utils.rkt"
-         (types abbrev type-table utils subtype)
+         (for-template scheme/base)
+         (types type-table utils subtype)
          (rep type-rep))
 
 (provide log-optimization *log-optimizations?* *log-optimizatons-to-log-file?*

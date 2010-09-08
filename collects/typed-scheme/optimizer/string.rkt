@@ -1,9 +1,9 @@
 #lang scheme/base
 
 (require syntax/parse
-         (for-template scheme/base racket/flonum scheme/unsafe/ops)
+         (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
-         (types abbrev type-table utils subtype)
+         (types abbrev)
          (optimizer utils))
 
 (provide string-opt-expr string-expr bytes-expr)

@@ -1,13 +1,9 @@
 #lang scheme/base
 
 (require syntax/parse 
-         syntax/id-table racket/dict
          racket/pretty
-         (for-template scheme/base
-                       racket/flonum scheme/fixnum scheme/unsafe/ops
-                       racket/private/for)
+         (for-template scheme/base)
          "../utils/utils.rkt"
-         (types abbrev type-table utils subtype)
          (optimizer utils number fixnum float inexact-complex vector string
                     pair sequence box struct dead-code apply unboxed-let))
 

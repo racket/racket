@@ -1,10 +1,10 @@
 #lang scheme/base
 
 (require syntax/parse
-         syntax/id-table racket/dict racket/flonum
+         racket/dict racket/flonum
          (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
-         (types abbrev type-table utils subtype)
+         (types abbrev)
          (optimizer utils fixnum))
 
 (provide float-opt-expr float-coerce-expr)

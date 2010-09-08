@@ -3,7 +3,7 @@
 (require syntax/parse
          "../utils/utils.rkt"
          (for-template scheme/base scheme/fixnum scheme/unsafe/ops)
-         (types abbrev type-table utils subtype)
+         (types abbrev)
          (optimizer utils))
 
 (provide fixnum-expr fixnum-opt-expr)
