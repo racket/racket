@@ -347,10 +347,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
                           [dtsi (quasisyntax/loc stx (dtsi* () nm (fs ...) #,@mutable))])
               #'(begin d-s dtsi)))]
          [(_ (vars:id ...) nm:struct-name (fs:fld-spec ...) . opts)
-          (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
-                                              'typechecker:ignore #t)]
-                        [dtsi (syntax/loc stx (dtsi* (vars ...) nm (fs ...)))])
-            #'(begin d-s dtsi))]))
+          (let ([mutable (mutable? #'opts)])
+            (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
+                                                'typechecker:ignore #t)]
+                          [dtsi (quasisyntax/loc stx (dtsi* (vars ...) nm (fs ...)  #,@mutable))])
+              #'(begin d-s dtsi)))]))
      (lambda (stx)
        (syntax-parse stx
          [(_ nm:struct-name/new (fs:fld-spec ...) . opts)
@@ -364,13 +365,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
                           [dtsi (quasisyntax/loc stx (dtsi* () nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
               #'(begin d-s dtsi)))]
          [(_ (vars:id ...) nm:struct-name/new (fs:fld-spec ...) . opts)
-          (let ([cname (datum->syntax #f (syntax-e #'nm.name))])
+          (let ([cname (datum->syntax #f (syntax-e #'nm.name))]
+                [mutable (mutable? #'opts)])
             (with-syntax ([d-s (syntax-property (quasisyntax/loc stx 
                                                   (struct #,@(attribute nm.new-spec) (fs.fld ...)
                                                           #:extra-constructor-name #,cname
                                                           . opts))
                                                 'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* (vars ...) nm.old-spec (fs ...) #:maker #,cname))])
+                          [dtsi (quasisyntax/loc stx (dtsi* (vars ...) nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
               #'(begin d-s dtsi)))])))))
 
 (define-syntax (require-typed-struct stx)
