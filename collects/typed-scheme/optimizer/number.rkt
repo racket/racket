@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/parse
-         (for-template scheme/base scheme/flonum scheme/unsafe/ops)
+         (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
          (optimizer utils))
 

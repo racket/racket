@@ -1,26 +1,29 @@
 #lang s-exp "env-lang.rkt"
 
 (require
- racket/tcp
- racket
- racket/unsafe/ops
- racket/fixnum
- racket/future
- (only-in rnrs/lists-6 fold-left)
- '#%paramz
- "extra-procs.rkt"
- (only-in '#%kernel [apply kernel:apply])
- (only-in racket/private/pre-base new-apply-proc)
- (for-syntax (only-in racket/private/pre-base new-apply-proc))
- scheme/promise scheme/system
- racket/mpair
- (only-in string-constants/private/only-once maybe-print-message)
- (only-in mzscheme make-namespace)
- (only-in racket/match/runtime match:error matchable? match-equality-test)
- (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
-             (only-in (rep type-rep) make-HashtableTop make-MPairTop
-                                     make-BoxTop make-ChannelTop make-VectorTop
-                                     make-HeterogenousVector)))
+ 
+ 
+ (for-template 
+  (except-in racket -> ->* one-of/c)
+  racket/unsafe/ops
+  racket/tcp
+  racket/fixnum
+  racket/future
+  (only-in rnrs/lists-6 fold-left)
+  '#%paramz
+  "extra-procs.rkt"
+  (only-in '#%kernel [apply kernel:apply])
+  (only-in racket/private/pre-base new-apply-proc) 
+  scheme/promise scheme/system
+  racket/mpair
+  racket/base
+  (only-in string-constants/private/only-once maybe-print-message)
+  (only-in mzscheme make-namespace)
+  (only-in racket/match/runtime match:error matchable? match-equality-test))
+ (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
+ (only-in (rep type-rep) make-HashtableTop make-MPairTop
+          make-BoxTop make-ChannelTop make-VectorTop
+          make-HeterogenousVector))
 
 [raise (Univ . -> . (Un))]
 [raise-syntax-error (cl->* 

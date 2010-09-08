@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/match scheme/contract)
+(require racket/match scheme/contract)
 (require "rep-utils.rkt" "free-variance.rkt")
 
 (define (Filter/c-predicate? e)

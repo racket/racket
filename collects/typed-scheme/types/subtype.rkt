@@ -1,15 +1,14 @@
-#lang scheme/base
+#lang racket/base
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
 	 (types utils comparison resolve abbrev substitute)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
-         scheme/match unstable/match
-         mzlib/trace (rename-in scheme/contract
-                                [-> c->]
-                                [->* c->*])
-	 (for-syntax scheme/base syntax/parse))
+         racket/match unstable/match
+         (rename-in racket/contract
+                    [-> c->] [->* c->*])
+	 (for-syntax racket/base syntax/parse))
 
 ;; exn representing failure of subtyping
 ;; s,t both types

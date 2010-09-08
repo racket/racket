@@ -12,7 +12,7 @@
  (types resolve utils)
  (prefix-in t: (types convenience))
  (private parse-type)
- scheme/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list 
+ racket/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list 
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base scheme/contract unstable/poly-c (utils any-wrap)
 	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))

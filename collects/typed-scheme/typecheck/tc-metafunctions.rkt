@@ -6,7 +6,7 @@
                     [->* -->*]
                     [one-of/c -one-of/c])
          (rep type-rep filter-rep rep-utils) scheme/list
-         scheme/contract scheme/match unstable/match scheme/trace
+         scheme/contract racket/match unstable/match racket/trace
          unstable/debug
          (for-syntax scheme/base))
 

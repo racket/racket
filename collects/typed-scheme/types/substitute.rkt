@@ -5,7 +5,7 @@
          (utils tc-utils)
          (only-in (rep free-variance) combine-frees)
          (env index-env tvar-env)
-         scheme/match
+         racket/match
          scheme/contract)
 
 (provide subst-all substitute substitute-dots substitute-dotted subst

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require unstable/debug scheme/contract "../utils/utils.rkt" syntax/id-table racket/dict racket/match
+(require unstable/debug racket/contract "../utils/utils.rkt" syntax/id-table racket/dict racket/match
          (rep type-rep object-rep) (only-in (types abbrev utils) tc-results?) (utils tc-utils)
          (env init-envs) mzlib/pconvert)
 

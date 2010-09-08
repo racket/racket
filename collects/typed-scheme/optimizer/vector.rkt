@@ -1,8 +1,8 @@
 #lang scheme/base
 
 (require syntax/parse
-         unstable/match scheme/match
-         (for-template scheme/base scheme/flonum scheme/unsafe/ops)
+         unstable/match racket/match
+         (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
          (rep type-rep)
          (types abbrev type-table utils subtype)

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/match scheme/contract "rep-utils.rkt" "free-variance.rkt" "filter-rep.rkt")
+(require racket/match scheme/contract "rep-utils.rkt" "free-variance.rkt" "filter-rep.rkt")
 (provide object-equal?)
 
 (dpe CarPE () [#:fold-rhs #:base])

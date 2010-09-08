@@ -5,8 +5,7 @@
           (except-in racket/base for for*)
           "prims.rkt"
           (prefix-in c: (combine-in racket/contract/regions racket/contract/base)))
-         "base-env.rkt" "base-special-env.rkt" "base-env-numeric.rkt"
-	 "base-env-indexing.rkt" "extra-procs.rkt" "prims.rkt"         
+         "extra-procs.rkt" "prims.rkt"
          syntax/parse racket/block racket/match
          unstable/sequence unstable/debug "base-types-extra.rkt"
          (except-in (path-up "env/type-name-env.rkt"

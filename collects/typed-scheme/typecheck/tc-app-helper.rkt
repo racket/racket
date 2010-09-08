@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.rkt" scheme/match unstable/list
+(require "../utils/utils.rkt" racket/match unstable/list
          (utils tc-utils) (rep type-rep) (types utils union abbrev))
 
 (provide (all-defined-out))

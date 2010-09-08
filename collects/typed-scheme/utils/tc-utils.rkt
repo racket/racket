@@ -7,7 +7,7 @@ don't depend on any other portion of the system
 
 (provide (all-defined-out))
 (require "syntax-traversal.rkt" racket/dict
-	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match)
+	 syntax/parse (for-syntax scheme/base syntax/parse) racket/match)
 
 ;; a parameter representing the original location of the syntax being currently checked
 (define current-orig-stx (make-parameter #'here))
@@ -165,8 +165,8 @@ don't depend on any other portion of the system
     #:transparent
     #:attributes (ty id)
     (pattern [nm:identifier ~! ty]
-             #:fail-unless (list? (identifier-template-binding #'nm)) "not a bound identifier"
-             #:with id #'#'nm)
+             #:fail-unless (list? ((if (= 1 (syntax-local-phase-level)) identifier-template-binding identifier-template-binding) #'nm)) "not a bound identifier"
+             #:with id #'(quote-syntax nm))
     (pattern [e:expr ty]
              #:with id #'e))
   (syntax-parse stx

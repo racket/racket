@@ -2,7 +2,7 @@
 
 (require scheme/contract unstable/sequence racket/dict syntax/id-table
          (prefix-in r: "../utils/utils.rkt")
-         scheme/match (r:rep filter-rep rep-utils type-rep) unstable/struct
+         racket/match (r:rep filter-rep rep-utils type-rep) unstable/struct
          (except-in (r:utils tc-utils) make-env))
 
 (provide extend

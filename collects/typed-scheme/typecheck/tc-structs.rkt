@@ -12,7 +12,7 @@
          mzlib/trace      
          unstable/debug
          racket/function
-         scheme/match
+         racket/match
          (only-in racket/contract
                   listof any/c or/c
                   [->* c->*]

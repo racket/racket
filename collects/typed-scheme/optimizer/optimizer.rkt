@@ -4,7 +4,7 @@
          syntax/id-table racket/dict
          racket/pretty
          (for-template scheme/base
-                       scheme/flonum scheme/fixnum scheme/unsafe/ops
+                       racket/flonum scheme/fixnum scheme/unsafe/ops
                        racket/private/for)
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)

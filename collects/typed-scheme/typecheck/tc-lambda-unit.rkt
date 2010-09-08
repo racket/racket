@@ -16,7 +16,7 @@
 	 (env type-env-structs lexical-env tvar-env index-env)
 	 (utils tc-utils)
          unstable/debug
-         scheme/match)
+         racket/match)
 (require (for-template scheme/base "internal-forms.rkt"))
 
 (import tc-expr^)

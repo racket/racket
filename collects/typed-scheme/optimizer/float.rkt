@@ -1,8 +1,8 @@
 #lang scheme/base
 
 (require syntax/parse
-         syntax/id-table racket/dict scheme/flonum
-         (for-template scheme/base scheme/flonum scheme/unsafe/ops)
+         syntax/id-table racket/dict racket/flonum
+         (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)
          (optimizer utils fixnum))

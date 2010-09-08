@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require scheme/require (path-up "utils/utils.rkt")
+(require racket/require (path-up "utils/utils.rkt")
          (except-in 
           (combine-in
            (utils tc-utils)
@@ -11,11 +11,11 @@
           make-env -> ->* one-of/c)
          "constraint-structs.rkt"
 	 "signatures.rkt"                  
-         scheme/match
+         racket/match
          mzlib/etc
          racket/trace racket/contract
 	 unstable/sequence unstable/list unstable/debug unstable/hash
-         scheme/list)
+         racket/list)
 
 (import dmap^ constraints^ promote-demote^)
 (export infer^)

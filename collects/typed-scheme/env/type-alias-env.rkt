@@ -4,7 +4,7 @@
 	 syntax/boundmap
          (utils tc-utils)
          mzlib/trace
-         scheme/match)
+         racket/match)
 
 (provide register-type-alias
          lookup-type-alias

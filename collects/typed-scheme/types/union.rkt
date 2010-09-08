@@ -1,11 +1,10 @@
 #lang scheme/base
 
-(require "../utils/utils.rkt")
-
-(require (rep type-rep rep-utils)
+(require "../utils/utils.rkt"
+         (rep type-rep rep-utils)
 	 (utils tc-utils)
 	 (types utils subtype abbrev printer comparison)
-         scheme/match mzlib/trace)
+         racket/match)
 
 (provide Un)
 

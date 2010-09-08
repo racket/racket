@@ -4,7 +4,7 @@
          syntax/kerncase
          unstable/list unstable/syntax syntax/parse unstable/debug
          mzlib/etc
-         scheme/match
+         racket/match
          "signatures.rkt"
          "tc-structs.rkt"
          "typechecker.rkt"

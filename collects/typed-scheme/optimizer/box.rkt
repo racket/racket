@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/parse
-         unstable/match scheme/match
+         unstable/match racket/match
          "../utils/utils.rkt"
          (for-template scheme/base scheme/fixnum scheme/unsafe/ops)
          (rep type-rep)

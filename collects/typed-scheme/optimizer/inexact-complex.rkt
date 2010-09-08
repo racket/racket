@@ -2,7 +2,7 @@
 
 (require syntax/parse syntax/id-table scheme/dict
          "../utils/utils.rkt" racket/unsafe/ops
-         (for-template scheme/base scheme/math scheme/flonum scheme/unsafe/ops)
+         (for-template scheme/base scheme/math racket/flonum scheme/unsafe/ops)
          (types abbrev type-table utils subtype)
          (optimizer utils float fixnum))
 

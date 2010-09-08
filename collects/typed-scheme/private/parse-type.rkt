@@ -7,7 +7,7 @@
          syntax/stx (prefix-in c: scheme/contract)
          syntax/parse
          (env type-env-structs tvar-env type-name-env type-alias-env lexical-env index-env)         
-         scheme/match unstable/debug
+         racket/match unstable/debug
          (for-template scheme/base "colon.ss")
          ;; needed at this phase for tests
          (combine-in (prefix-in t: "base-types-extra.ss") "colon.ss")

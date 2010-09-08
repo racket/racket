@@ -1,6 +1,4 @@
-#lang scheme/base
-
-(require mzlib/trace)
+#lang racket/base
 
 ;; from Eli
 

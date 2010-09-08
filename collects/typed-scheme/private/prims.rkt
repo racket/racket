@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 #|
 
-This file defines two sorts of primitives. All of them are provided into any module using the typed scheme language.
+This file defines two sorts of primitives. All of them are provided into any module using the typed racket language.
 
 1. macros for defining type annotated code. 
    this includes: lambda:, define:, etc
@@ -27,29 +27,22 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      [for/annotation for]
                      [for*/annotation for*]))
 
-(require "../utils/utils.rkt"
-         racket/base
-         mzlib/etc
-         "../utils/require-contract.rkt"
+(require "../utils/require-contract.rkt"
          "colon.rkt"
          "../typecheck/internal-forms.rkt"
          (rename-in racket/contract [-> c->])
-         mzlib/struct
          "base-types.rkt"
          "base-types-extra.rkt"
          (for-syntax 
           syntax/parse
 	  syntax/private/util
-          scheme/base
-          mzlib/match
-          scheme/struct-info
+          racket/base
+          racket/struct-info
           syntax/struct
-          syntax/stx
           "../rep/type-rep.rkt"
           "parse-type.rkt"
           "annotate-classes.rkt"
           "internal.rkt"
-          "../utils/utils.rkt"
           "../utils/tc-utils.rkt"	  
           "../env/type-name-env.rkt"
           "type-contract.rkt"
@@ -277,8 +270,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ nm ((~describe "field specification" [fld:annotated-name]) ...) [proc : proc-ty])
      (with-syntax* 
       ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
-       [d-s (syntax-property (syntax/loc stx (define-struct/properties nm (fld.name ...)
-                                               ([prop:procedure proc*])))
+       [d-s (syntax-property (syntax/loc stx (define-struct nm (fld.name ...)
+                                               #:property prop:procedure proc*))
                              'typechecker:ignore-some #t)]
        [dtsi (internal (syntax/loc stx (define-typed-struct/exec-internal nm (fld ...) proc-ty)))])
       #'(begin d-s dtsi))]))

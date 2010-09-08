@@ -3,9 +3,9 @@
 (require "test-utils.ss"
          (for-syntax scheme/base)
          (for-template scheme/base))
-(require (private base-env prims type-annotation 
+(require (private #;base-env prims type-annotation 
 		  base-types-extra
-		  base-env-numeric
+		  #;base-env-numeric
 		  base-env-indexing
                   parse-type)
 	 (typecheck typechecker)
@@ -24,10 +24,10 @@
          (for-syntax (utils tc-utils)
                      (typecheck typechecker)
 	             (env global-env)
-	             (private base-env base-env-numeric
+	             (private #;base-env #;base-env-numeric
 			      base-env-indexing))
-         (for-template (private base-env base-types base-types-extra
-				base-env-numeric
+         (for-template (private #;base-env base-types base-types-extra
+				#;base-env-numeric
 				base-env-indexing))
          (for-syntax syntax/kerncase syntax/parse))
 

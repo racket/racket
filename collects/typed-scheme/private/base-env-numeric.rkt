@@ -2,24 +2,15 @@
 
 (begin
   (require
-   scheme/tcp
-   scheme scheme/flonum scheme/fixnum
-   scheme/unsafe/ops
-   (only-in rnrs/lists-6 fold-left)
-   '#%paramz
-   "extra-procs.rkt"
-   (only-in '#%kernel [apply kernel:apply])
-   scheme/promise scheme/system
-   (only-in string-constants/private/only-once maybe-print-message)
-   (only-in racket/match/runtime match:error matchable? match-equality-test)
-   (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos])))
+   (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base)
+   (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos]))
   
-  (define-for-syntax all-num-types (list -Pos -Nat -Integer -ExactRational -Flonum -Real N))
+  (define all-num-types (list -Pos -Nat -Integer -ExactRational -Flonum -Real N))
 
-  (define-for-syntax binop 
+  (define binop 
     (lambda (t [r t])
       (t t . -> . r)))
-  (define-for-syntax rounder 
+  (define rounder 
     (cl->* (-> -PositiveFixnum -PositiveFixnum)
            (-> -NonnegativeFixnum -NonnegativeFixnum)
            (-> -Fixnum -Fixnum)
@@ -30,37 +21,37 @@
            (-> -Flonum -Flonum)
            (-> -Real -Real)))
   
-  (define-for-syntax (unop t) (-> t t))
+  (define (unop t) (-> t t))
   
-  (define-for-syntax fl-comp (binop -Flonum B))
-  (define-for-syntax fl-op (binop -Flonum))
-  (define-for-syntax fl-unop (unop -Flonum))
-  (define-for-syntax fl-rounder
+  (define fl-comp (binop -Flonum B))
+  (define fl-op (binop -Flonum))
+  (define fl-unop (unop -Flonum))
+  (define fl-rounder
     (cl->* (-> -NonnegativeFlonum -NonnegativeFlonum)
            (-> -Flonum -Flonum)))
   
-  (define-for-syntax int-op (binop -Integer))
-  (define-for-syntax nat-op (binop -Nat))
+  (define int-op (binop -Integer))
+  (define nat-op (binop -Nat))
   
-  (define-for-syntax fx-comp (binop -Integer B))
-  (define-for-syntax fx-op (cl->* (-Pos -Pos . -> . -PositiveFixnum)
+  (define fx-comp (binop -Integer B))
+  (define fx-op (cl->* (-Pos -Pos . -> . -PositiveFixnum)
                                   (-Nat -Nat . -> . -NonnegativeFixnum)
                                   (-Integer -Integer . -> . -Fixnum)))
-  (define-for-syntax fx-natop (cl->* (-Nat -Nat . -> . -NonnegativeFixnum)
+  (define fx-natop (cl->* (-Nat -Nat . -> . -NonnegativeFixnum)
                                      (-Integer -Integer . -> . -Fixnum)))
-  (define-for-syntax fx-unop (-Integer . -> . -Fixnum))
+  (define fx-unop (-Integer . -> . -Fixnum))
 
-  (define-for-syntax real-comp (->* (list R R) R B))
+  (define real-comp (->* (list R R) R B))
 
   ;; types for specific operations, to avoid repetition between safe and unsafe versions
-  (define-for-syntax fx+-type
+  (define fx+-type
     (cl->* (-Pos -Nat . -> . -PositiveFixnum)
            (-Nat -Pos . -> . -PositiveFixnum)
            (-Nat -Nat . -> . -NonnegativeFixnum)
            (-Integer -Integer . -> . -Fixnum)))
-  (define-for-syntax fx--type
+  (define fx--type
     (-Integer -Integer . -> . -Fixnum))
-  (define-for-syntax fx=-type
+  (define fx=-type
     (cl->*
      (-> -Integer (-val 0) B : (-FS (-filter (-val 0) 0) -top))
      (-> (-val 0) -Integer B : (-FS (-filter (-val 0) 1) -top))
@@ -71,40 +62,40 @@
      (-> -Integer -NegativeFixnum B : (-FS (-filter -NegativeFixnum 0) -top))
      (-> -NegativeFixnum -Integer B : (-FS (-filter -NegativeFixnum 1) -top))
      fx-comp))
-  (define-for-syntax fx<-type
+  (define fx<-type
     (cl->*
      (-> -Integer (-val 0) B : (-FS (-filter -NegativeFixnum 0) (-filter -NonnegativeFixnum 0)))
      (-> -Integer -NegativeFixnum B : (-FS (-filter -NegativeFixnum 0) -top))
      (-> -Nat -Integer B : (-FS (-filter -PositiveFixnum 1) -top))
      fx-comp))
-  (define-for-syntax fx>-type
+  (define fx>-type
     (cl->*
      (-> -Integer (-val 0) B : (-FS (-filter -PositiveFixnum 0) -top))
      (-> -NegativeFixnum -Integer B : (-FS (-filter -NegativeFixnum 1) -top))
      (-> -Integer -Nat B : (-FS (-filter -PositiveFixnum 0) -top))
      fx-comp))
-  (define-for-syntax fx<=-type
+  (define fx<=-type
     (cl->*
      (-> -Integer (-val 0) B : (-FS -top (-filter -PositiveFixnum 0)))
      (-> -Integer -NegativeFixnum B : (-FS (-filter -NegativeFixnum 0) -top))
      (-> -Pos -Integer B : (-FS (-filter -Pos 1) -top))
      (-> -Nat -Integer B : (-FS (-filter -Nat 1) -top))
      fx-comp))
-  (define-for-syntax fx>=-type
+  (define fx>=-type
     (cl->*
      (-> -Integer (-val 0) B : (-FS (-filter -NonnegativeFixnum 0) -top))
      (-> -NegativeFixnum -Integer B : (-FS (-filter -NegativeFixnum 1) -top))
      (-> -Integer -Pos B : (-FS (-filter -Pos 0) -top))
      (-> -Integer -Nat B : (-FS (-filter -Nat 0) -top))
      fx-comp))
-  (define-for-syntax fxmin-type
+  (define fxmin-type
     (cl->*
      (-> -NegativeFixnum -Integer -NegativeFixnum)
      (-> -Integer -NegativeFixnum -NegativeFixnum)
      (-> -Pos -Pos -PositiveFixnum)
      (-> -Nat -Nat -NonnegativeFixnum)
      (-> -Integer -Integer -Fixnum)))
-  (define-for-syntax fxmax-type
+  (define fxmax-type
     (cl->*
      (-> -NegativeFixnum -NegativeFixnum -NegativeFixnum)
      (-> -Pos -Integer -PositiveFixnum)
@@ -113,26 +104,26 @@
      (-> -Integer -Nat -NonnegativeFixnum)
      (-> -Integer -Integer -Fixnum)))
 
-  (define-for-syntax fl+*-type
+  (define fl+*-type
     (cl->* (-NonnegativeFlonum -NonnegativeFlonum . -> . -NonnegativeFlonum)
            (-Flonum -Flonum . -> . -Flonum)))
-  (define-for-syntax fl=-type
+  (define fl=-type
     (cl->*
      (-> -Flonum -NonnegativeFlonum B : (-FS (-filter -NonnegativeFlonum 0) -top))
      (-> -NonnegativeFlonum -Flonum B : (-FS (-filter -NonnegativeFlonum 1) -top))
      fl-comp))
-  (define-for-syntax fl<-type
+  (define fl<-type
     (cl->*
      (-> -NonnegativeFlonum -Flonum B : (-FS (-filter -NonnegativeFlonum 1) -top))
      fl-comp))
-  (define-for-syntax fl>-type
+  (define fl>-type
     (cl->*
      (-> -Flonum -NonnegativeFlonum B : (-FS (-filter -NonnegativeFlonum 0) -top))
      fl-comp))
-  (define-for-syntax flmin-type
+  (define flmin-type
     (cl->* (-> -NonnegativeFlonum -NonnegativeFlonum -NonnegativeFlonum)
            (-> -Flonum -Flonum -Flonum)))
-  (define-for-syntax flmax-type
+  (define flmax-type
     (cl->* (-> -NonnegativeFlonum -Flonum -NonnegativeFlonum)
            (-> -Flonum -NonnegativeFlonum -NonnegativeFlonum)
            (-> -Flonum -Flonum -Flonum)))

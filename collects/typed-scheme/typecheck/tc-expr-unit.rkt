@@ -3,7 +3,7 @@
 
 (require (rename-in "../utils/utils.rkt" [private private-in])
          syntax/kerncase mzlib/trace
-         scheme/match (prefix-in - scheme/contract)
+         racket/match (prefix-in - scheme/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt" "tc-funapp.rkt"
          (types utils convenience union subtype remove-intersect type-table filter-ops)

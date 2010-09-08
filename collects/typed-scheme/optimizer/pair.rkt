@@ -2,7 +2,7 @@
 
 (require syntax/parse
          syntax/id-table racket/dict
-         unstable/match scheme/match
+         unstable/match racket/match
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
          (rep type-rep)

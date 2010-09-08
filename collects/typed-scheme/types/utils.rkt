@@ -1,17 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
-(require "../utils/utils.rkt")
-
-(require (rep type-rep filter-rep object-rep rep-utils)
+(require "../utils/utils.rkt"
+         (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          "substitute.rkt"
          (only-in (rep free-variance) combine-frees)
          (env index-env tvar-env)
-         scheme/match
-         scheme/list
-         mzlib/trace
-         scheme/contract
-         (for-syntax scheme/base syntax/parse))
+         racket/match
+         racket/list
+         racket/contract
+         (for-syntax racket/base syntax/parse))
 
 (provide fv fv/list fi
          instantiate-poly

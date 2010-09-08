@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/parse
-         scheme/list scheme/dict scheme/match
+         scheme/list scheme/dict racket/match
          "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
          (for-template scheme/base)

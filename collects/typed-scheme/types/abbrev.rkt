@@ -2,17 +2,15 @@
 
 (require "../utils/utils.rkt")
 
-(require (rep type-rep object-rep filter-rep rep-utils)
-	 #;"printer.rkt" "utils.rkt" "resolve.rkt"
+(require (rep type-rep object-rep filter-rep)
+         "resolve.rkt"
          (utils tc-utils)
-         scheme/list
-         scheme/match         
-         scheme/promise
-         scheme/flonum (except-in scheme/contract ->* ->)
-         unstable/syntax
-         (prefix-in c: scheme/contract)
-         (for-syntax scheme/base syntax/parse)
-	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp scheme/flonum))
+         racket/list
+         racket/match         
+         (except-in racket/contract ->* ->)
+         (prefix-in c: racket/contract)
+         (for-syntax racket/base syntax/parse)
+	 (for-template racket/base racket/contract racket/promise racket/tcp racket/flonum))
 
 (provide (all-defined-out)
          (rename-out [make-Listof -lst]

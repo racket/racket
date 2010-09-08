@@ -5,14 +5,12 @@
  "../utils/utils.rkt"
  racket/promise
  string-constants/string-constant 
- (for-syntax
-  scheme/base syntax/parse
-  (only-in unstable/syntax syntax-local-eval)
-  (utils tc-utils)
-  (env init-envs)          
-  (except-in (rep filter-rep object-rep type-rep) make-arr)
-  (types convenience union)
-  (only-in (types convenience) [make-arr* make-arr])))
+ (for-syntax racket/base syntax/parse (only-in unstable/syntax syntax-local-eval)
+             (utils tc-utils)
+             (env init-envs)          
+             (except-in (rep filter-rep object-rep type-rep) make-arr)
+             (types convenience union)
+             (only-in (types convenience) [make-arr* make-arr])))
 
 (define-syntax (define-initial-env stx)
   (syntax-parse stx

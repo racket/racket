@@ -72,5 +72,5 @@
     [e:core-expr
      (ormap find (syntax->list #'(e.expr ...)))]))
 
-; (require scheme/trace)
+; (require racket/trace)
 ; (trace find-annotation)

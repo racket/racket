@@ -3,9 +3,7 @@
 (require scheme/contract
          unstable/location
          (for-syntax scheme/base
-                     syntax/kerncase 
                      syntax/parse                     
-                     "../utils/tc-utils.rkt"
                      (prefix-in tr: "../private/typed-renaming.rkt")))
 
 (provide require/contract define-ignored)

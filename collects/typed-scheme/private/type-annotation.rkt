@@ -7,7 +7,7 @@
          (except-in (types subtype union convenience resolve utils) -> ->*)
          (private parse-type)
          (only-in scheme/contract listof ->)
-         scheme/match mzlib/trace)
+         racket/match mzlib/trace)
 (provide type-annotation
          get-type
          get-types
