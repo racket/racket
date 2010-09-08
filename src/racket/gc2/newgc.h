@@ -47,6 +47,7 @@ typedef struct Gen0 {
   struct mpage *big_pages;
   unsigned long current_size;
   unsigned long max_size;
+  unsigned long page_alloc_size;
 } Gen0;
 
 typedef struct MsgMemory {

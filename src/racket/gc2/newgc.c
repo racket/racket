@@ -1037,15 +1037,10 @@ inline static void gen0_free_jit_nursery_page(NewGC *gc, mpage *page) {
   gen0_free_nursery_mpage(gc, page, GEN0_ALLOC_SIZE(page));
 }
 
-inline static mpage *gen0_create_new_mpage(NewGC *gc) {
-  return gen0_create_new_nursery_mpage(gc, GEN0_PAGE_SIZE);
-}
-
 inline static void gen0_free_mpage(NewGC *gc, mpage *page) {
-  gen0_free_nursery_mpage(gc, page, GEN0_PAGE_SIZE);
+  gen0_free_nursery_mpage(gc, page, GEN0_ALLOC_SIZE(page));
 }
 
-//#define OVERFLOWS_GEN0(ptr) ((ptr) > (NUM(gc->gen0.curr_alloc_page->addr) + GEN0_PAGE_SIZE))
 #define OVERFLOWS_GEN0(ptr) ((ptr) > GC_gen0_alloc_page_end)
 
 inline static size_t gen0_size_in_use(NewGC *gc) {
@@ -1055,12 +1050,14 @@ inline static size_t gen0_size_in_use(NewGC *gc) {
 #define BYTES_MULTIPLE_OF_WORD_TO_WORDS(sizeb) ((sizeb) >> gcLOG_WORD_SIZE)
 
 inline static void gen0_sync_page_size_from_globals(NewGC *gc) {
-  gc->gen0.curr_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr);
-  gc->gen0.current_size += gc->gen0.curr_alloc_page->size;
+  if (gc->gen0.curr_alloc_page) {
+    gc->gen0.curr_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr);
+    gc->gen0.current_size += gc->gen0.curr_alloc_page->size;
+  }
 }
 
 inline static void gen0_allocate_and_setup_new_page(NewGC *gc) {
-  mpage *new_mpage = gen0_create_new_mpage(gc);
+  mpage *new_mpage = gen0_create_new_nursery_mpage(gc, gc->gen0.page_alloc_size);
 
   /* push page */
   new_mpage->next = gc->gen0.curr_alloc_page;
@@ -1069,9 +1066,13 @@ inline static void gen0_allocate_and_setup_new_page(NewGC *gc) {
   }
   gc->gen0.curr_alloc_page = new_mpage;
 
+  if (!gc->gen0.pages) {
+    gc->gen0.pages = new_mpage;
+  }
+
   GC_gen0_alloc_page_ptr    = NUM(new_mpage->addr);
   ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
-  GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_PAGE_SIZE;
+  GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_ALLOC_SIZE(new_mpage);
 }
 
 inline static unsigned long allocate_slowpath(NewGC *gc, size_t allocate_size, unsigned long newptr)
@@ -1082,11 +1083,11 @@ inline static unsigned long allocate_slowpath(NewGC *gc, size_t allocate_size, u
     gen0_sync_page_size_from_globals(gc);
 
     /* try next nursery page if present */
-    if(gc->gen0.curr_alloc_page->next) { 
+    if(gc->gen0.curr_alloc_page && gc->gen0.curr_alloc_page->next) { 
       gc->gen0.curr_alloc_page  = gc->gen0.curr_alloc_page->next;
       GC_gen0_alloc_page_ptr    = NUM(gc->gen0.curr_alloc_page->addr) + gc->gen0.curr_alloc_page->size;
       ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
-      GC_gen0_alloc_page_end    = NUM(gc->gen0.curr_alloc_page->addr) + GEN0_PAGE_SIZE;
+      GC_gen0_alloc_page_end    = NUM(gc->gen0.curr_alloc_page->addr) + GEN0_ALLOC_SIZE(gc->gen0.curr_alloc_page);
     }
     /* WARNING: tries to avoid a collection but
      * gen0_create_new_mpage can cause a collection via malloc_pages due to check_used_against_max */
@@ -1308,17 +1309,19 @@ void GC_create_message_allocator() {
   a->savedGen0.big_pages       = gc->gen0.big_pages;
   a->savedGen0.current_size    = gc->gen0.current_size;
   a->savedGen0.max_size        = gc->gen0.max_size;
+  a->savedGen0.page_alloc_size = gc->gen0.page_alloc_size;
   a->saved_alloc_page_ptr      = GC_gen0_alloc_page_ptr;
   a->saved_alloc_page_end      = GC_gen0_alloc_page_end;
 
   /* allocate initial gen0.page */
   gc->gen0.pages           = NULL;
   gc->gen0.curr_alloc_page = NULL;
-  gen0_allocate_and_setup_new_page(gc);
-  gc->gen0.pages           = gc->gen0.curr_alloc_page;
   gc->gen0.big_pages       = NULL; 
   gc->gen0.current_size    = 0;
   gc->gen0.max_size        = 100 * 1024 * 1024; /* some big number, doesn't matter because collection will be disabled */
+  gc->gen0.page_alloc_size = APAGE_SIZE;
+  GC_gen0_alloc_page_ptr   = 0;
+  GC_gen0_alloc_page_end   = 0;
 
   gc->in_unsafe_allocation_mode = 1;
   gc->dumping_avoid_collection++;
@@ -1340,6 +1343,7 @@ void *GC_finish_message_allocator() {
   gc->gen0.big_pages       = a->savedGen0.big_pages       ;
   gc->gen0.current_size    = a->savedGen0.current_size    ;
   gc->gen0.max_size        = a->savedGen0.max_size        ;
+  gc->gen0.page_alloc_size = a->savedGen0.page_alloc_size ; 
   GC_gen0_alloc_page_ptr   = a->saved_alloc_page_ptr      ;
   GC_gen0_alloc_page_end   = a->saved_alloc_page_end      ;
   
@@ -1361,12 +1365,15 @@ void GC_adopt_message_allocator(void *param) {
   { 
     tmp = msgm->big_pages;
     pagemap_add(gc->page_maps, tmp);
-    mmu_memory_allocated_inc(gc->mmu, tmp->size);
+    mmu_memory_allocated_inc(gc->mmu, GEN0_ALLOC_SIZE(tmp));
+    gc->gen0.current_size += GEN0_ALLOC_SIZE(tmp);
+
     while (tmp->next) { 
       tmp = tmp->next; 
 
       pagemap_add(gc->page_maps, tmp);
-      mmu_memory_allocated_inc(gc->mmu, tmp->size);
+      mmu_memory_allocated_inc(gc->mmu, GEN0_ALLOC_SIZE(tmp));
+      gc->gen0.current_size += GEN0_ALLOC_SIZE(tmp);
     }
 
 
@@ -1383,13 +1390,16 @@ void GC_adopt_message_allocator(void *param) {
     mpage *gen0end;
 
     tmp = msgm->pages;
-    mmu_memory_allocated_dec(gc->mmu, GEN0_ALLOC_SIZE(tmp));
+    mmu_memory_allocated_inc(gc->mmu, GEN0_ALLOC_SIZE(tmp));
     pagemap_add_with_size(gc->page_maps, tmp, GEN0_ALLOC_SIZE(tmp));
+    gc->gen0.current_size += GEN0_ALLOC_SIZE(tmp);
+    
     while (tmp->next) { 
       tmp = tmp->next;
 
-      mmu_memory_allocated_dec(gc->mmu, GEN0_ALLOC_SIZE(tmp));
+      mmu_memory_allocated_inc(gc->mmu, GEN0_ALLOC_SIZE(tmp));
       pagemap_add_with_size(gc->page_maps, tmp, GEN0_ALLOC_SIZE(tmp));
+      gc->gen0.current_size += GEN0_ALLOC_SIZE(tmp);
     }
 
     /* preserve locality of gen0, when it resizes by adding message pages to end of gen0.pages list */
@@ -1423,7 +1433,7 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
 
   /* reset any parts of gen0 we're keeping */
   while(work && (alloced_size < new_size)) {
-    alloced_size += GEN0_PAGE_SIZE;
+    alloced_size += gc->gen0.page_alloc_size;
     work->size = PREFIX_SIZE;
     prev = work;
     work = work->next;
@@ -1431,14 +1441,14 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
 
   /* if we're short, add more */
   while(alloced_size < new_size) {
-    mpage *newpage = gen0_create_new_mpage(gc);
+    mpage *newpage = gen0_create_new_nursery_mpage(gc, gc->gen0.page_alloc_size);
 
     if(prev)
       prev->next = newpage;
     else gc->gen0.pages = newpage;
     prev = newpage;
 
-    alloced_size += GEN0_PAGE_SIZE;
+    alloced_size += gc->gen0.page_alloc_size;
   }
 
   /* deallocate any parts left over */
@@ -1457,7 +1467,7 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
   gc->gen0.curr_alloc_page = gc->gen0.pages;
   GC_gen0_alloc_page_ptr = NUM(gc->gen0.curr_alloc_page->addr) + gc->gen0.curr_alloc_page->size;
   ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
-  GC_gen0_alloc_page_end = NUM(gc->gen0.curr_alloc_page->addr) + GEN0_PAGE_SIZE;
+  GC_gen0_alloc_page_end = NUM(gc->gen0.curr_alloc_page->addr) + GEN0_ALLOC_SIZE(gc->gen0.curr_alloc_page);
 
   /* set the two size variables */
   gc->gen0.max_size = alloced_size;
@@ -1576,7 +1586,7 @@ static void dump_heap(NewGC *gc)
   if(collections >= 0) {
     for(page = gc->gen0.pages; page; page = page->next) {
       fprintf(dump, "Generation 0 Page (%p:%p - %p, size %i):\n", 
-              page, page->addr, PTR(NUM(page->addr) + GEN0_PAGE_SIZE), page->size);
+              page, page->addr, PTR(NUM(page->addr) + GEN0_ALLOC_SIZE(page)), page->size);
       dump_region(PAGE_START_VSS(page), PAGE_END_VSS(page));
     }
     for(page = gc->gen0.big_pages; page; page = page->next) {
@@ -2461,6 +2471,7 @@ static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mu
      administrative structures for the GC itself. */
   gc->max_pages_for_use = gc->max_pages_in_heap / 2;
 
+  gc->gen0.page_alloc_size = GEN0_PAGE_SIZE;
   resize_gen0(gc, GEN0_INITIAL_SIZE);
 
   if (!parentgc) {
