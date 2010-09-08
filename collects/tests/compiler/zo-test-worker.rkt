@@ -210,8 +210,8 @@
                                        (if serious?
                                            (esc #f)
                                            #f))])
-                      e)])
-         (record! (success 'step1))
+                      (begin0 e
+                              (record! (success 'step1))))])
          (run/stages* file . rst)))]))
 
 (define-syntax-rule (define-stages (run! file)
@@ -235,22 +235,22 @@
   [compare-parsed-to-parsed-marshalled 
    #f
    (equal?/why-not parse-orig parse-marshalled)]
-  [marshal-marshalled 
+  #;[marshal-marshalled 
    #t
    (zo-marshal parse-marshalled)]
-  [compare-marshalled-to-marshalled-marshalled 
+  #;[compare-marshalled-to-marshalled-marshalled 
    #f
    (bytes-not-equal?-error marshal-parsed marshal-marshalled)]
   #;[replace-with-marshalled 
      #t
      (replace-file file marshal-marshalled)]
-  [decompile-parsed 
+  #;[decompile-parsed 
    #t
    (decompile parse-orig)]
   [c-parse-marshalled
    #t
    (read-compiled-bytes marshal-parsed)]
-  [compare-orig-to-marshalled 
+  #;[compare-orig-to-marshalled 
    #f
    (bytes-not-equal?-error read-orig marshal-parsed)])
 
@@ -260,7 +260,7 @@
 (define (run-test file)
   (run-with-limit 
    file
-   (* 1024 1024 128)
+   (* 1024 1024 1024)
    (lambda ()
      (run! file)))
   (write (reverse RESULTS)))
