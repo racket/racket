@@ -1826,7 +1826,7 @@
              [min-height (floor (/ (send plt-logo-shiny get-height) 2))])
         (new canvas-message%
              (parent racketeer-panel) 
-             (label sc-use-language-in-source)
+             (label (string-constant use-language-in-source))
              (color (send the-color-database find-color "blue"))
              (callback (λ () (change-current-lang-to (λ (x) (is-a? x drracket:module-language:module-language<%>)))))
              (font (get-font #:underlined #t))))
