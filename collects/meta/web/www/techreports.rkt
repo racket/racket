@@ -118,8 +118,8 @@
                 [type "Introduction"])
     (more       "*...!"    plt    "More: Systems Programming with PLT Scheme"
      [type "Introduction"])
-    ;; (continue   "4.1.1...!"    ym     "Continue: Web Applications in PLT Scheme"
-    ;;  [type "Introduction"])
+    (continue   "4.1.1..." ym    "Continue: Web Applications in PLT Scheme"
+     [type "Introduction"])
     (guide      "*...!"    ffplt  "Guide: PLT Scheme" [type "Introduction"])
     (reference  "*...!"    fplt   "Reference: PLT Scheme")
     (htdp-langs "*...!"    plt    "How to Design Programs Languages")
@@ -128,7 +128,7 @@
     (eopl       "*...!"    plt    "Essentials of Programming Languages Language")
     (drscheme   "*...!"    rplt   "DrScheme: PLT Programming Environment")
     (mzc        "*...!"    plt    "mzc: PLT Compilation and Packaging")
-    (setup-plt  "*...!"    plt   "setup-plt: PLT Configuration and Installation")
+    (setup-plt  "*...!"    plt    "setup-plt: PLT Configuration and Installation")
     (planet     "*...!"    jacobm "PLaneT: Automatic Package Distribution")
     (redex      "4.1...!"  robby  "Redex: Debugging Operational Semantics")
     (scribble   "*...!"    fb     "Scribble: PLT Documentation Tool")
@@ -191,20 +191,19 @@
     (test-box-recovery "*...!" plt "Test Box Recovery Tool")
 
     ;; Racket versions
-    (quick      "+..."     mflatt
+    (quick      "!..."     mflatt
                 "Quick: An Introduction to Racket with Pictures"
                 [type "Introduction"])
-    (more       "+..."    plt    "More: Systems Programming with Racket"
+    (more       "!..."    plt    "More: Systems Programming with Racket"
                 [type "Introduction"])
-    (guide      "+..."    ffplt  "Guide: Racket" [type "Introduction"])
-    (reference  "+..."    fplt   "Reference: Racket")
-    (drracket   "+..."    rplt   "DrRacket: Programming Environment")
-    (scribble   "+..."    fb     "Scribble: Racket Documentation Tool")
-    (slideshow  "+..."    ff     "Slideshow: Racket Figure and Presentation Tools")
-    (web-server "+..."    jaym   "Web Server: Racket HTTP Server")
-    (foreign    "+..."    eli    "FFI: Racket Foreign Interface")
-    (inside     "+..."    mflatt "Inside: Racket C API")
-
+    (guide      "!..."    ffplt  "Guide: Racket" [type "Introduction"])
+    (reference  "!..."    fplt   "Reference: Racket")
+    (drracket   "!..."    rplt   "DrRacket: Programming Environment")
+    (scribble   "!..."    fb     "Scribble: Racket Documentation Tool")
+    (slideshow  "!..."    ff     "Slideshow: Racket Figure and Presentation Tools")
+    (web-server "!..."    jaym   "Web Server: Racket HTTP Server")
+    (foreign    "!..."    eli    "FFI: Racket Foreign Interface")
+    (inside     "!..."    mflatt "Inside: Racket C API")
 
     ;; Both Scheme and Racket
     (r6rs       "*..."    plt    "R6RS: Standard Language"
@@ -244,12 +243,10 @@
 ;; "..."          all versions
 ;; "V"            specific version
 ;; ""             no versions
-;; V can be `*' which is a number between the v3 docs and the v4 docs
-;; V can be `!' which is the last PLT Scheme version
-;; V can be `+' which is the first Racket version
-(define middle-version  (ver:version->integer "379"))
-(define last-scheme-version  (ver:version->integer "4.2.5"))
-(define first-racket-version  (ver:version->integer "5.0"))
+;; V can be `*': a number between the v3 docs and the v4 docs
+;; V can be `!': a number between the last PLT Scheme and the first Racket
+(define v:3->4 (ver:version->integer "379"))
+(define v:4->5 (ver:version->integer "4.3"))
 (define (versions->pred str)
   (let* ([str (regexp-replace* #rx"  +" str " ")]
          [str (regexp-replace #rx"^ +" str "")]
@@ -257,9 +254,8 @@
          [l (regexp-split #rx" *[.][.][.] *" str)]
          [l (map (lambda (x)
                    (cond [(equal? "" x) #f]
-                         [(equal? "*"  x) middle-version]
-                         [(equal? "!"  x) last-scheme-version]
-                         [(equal? "+"  x) first-racket-version]
+                         [(equal? "*"  x) v:3->4]
+                         [(equal? "!"  x) v:4->5]
                          [(version->integer x)]
                          [else (error 'versions->pred "bad version: ~e" x)]))
                  l)])
@@ -317,11 +313,12 @@
       (let ([n1 "\\url{http://plt-scheme.org/techreports/}"]
             [n2 (get '#:note #f)])
         (if n2 (cons (string-append n1 ";") n2) (list n1))))
-    (define old? (< (ver:version->integer ver) first-racket-version))
+    (define old? (< (ver:version->integer ver) v:4->5))
     (define site (if old? "plt-scheme" "racket-lang"))
     (define maybe-s (if old? "" "s"))
     (define (url* path)
-      (url (format (string-append "http://download." site ".org/doc" maybe-s "/~a/" path) ver docname)))
+      (url (format (string-append "http://download." site ".org/doc" maybe-s "/~a/" path)
+                   ver docname)))
     (define pdf-url  (url* "pdf/~a.pdf"))
     (define pdf-html (url* "html/~a/"))
     (bib 'techreport key
@@ -358,4 +355,3 @@
         @td{@a[href: (url (make-bib-file bib))]{[bib]}@|nbsp|@;
             @a[href: (hash-ref bib '#:pdf-url)]{[pdf]}@|nbsp|@;
             @a[href: (hash-ref bib '#:html-url)]{[html]}}})))
-

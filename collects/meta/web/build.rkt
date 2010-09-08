@@ -7,10 +7,9 @@ exec "$exe" "$0" "$@"
 
 #lang racket/base
 
-(require racket/cmdline racket/runtime-path
-         racket/string racket/file
-         "html/resource.rkt" "common/distribute.rkt"
-         "config.rkt" "navbar.rkt")
+(require racket/cmdline racket/runtime-path racket/string racket/file
+         meta/web/html
+         "common/distribute.rkt" "config.rkt" "navbar.rkt")
 
 (define build-mode #f)
 (define output-dir (current-directory))

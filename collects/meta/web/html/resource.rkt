@@ -218,9 +218,11 @@
 (provide render-all)
 (define (render-all)
   (printf "Rendering...\n")
-  (let loop ()
-    (let ([todo (get/reset-renderers)])
+  (define todo (get/reset-renderers))
+  (if (null? todo)
+    (printf "  Warning: no content to render\n")
+    (let loop ([todo todo])
       (unless (null? todo)
         (for-each (lambda (r) (r)) todo)
-        (loop)))) ; if more were created
+        (loop (get/reset-renderers))))) ; if more were created
   (printf "Rendering done.\n"))
