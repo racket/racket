@@ -1,3 +1,9 @@
+#;
+(
+simple-pair.rkt line 10 col 1 - car - unary pair
+1
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/unsafe/ops)

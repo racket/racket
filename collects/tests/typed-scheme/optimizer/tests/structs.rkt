@@ -1,3 +1,10 @@
+#;
+(
+structs.rkt line 13 col 1 - pt-x - struct ref
+structs.rkt line 14 col 1 - set-pt-y! - struct set
+3
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/unsafe/ops)

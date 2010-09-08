@@ -1,3 +1,12 @@
+#;
+(
+vector-ref-set-ref.rkt line 15 col 1 - vector-ref - vector
+vector-ref-set-ref.rkt line 16 col 1 - vector-set! - vector
+vector-ref-set-ref.rkt line 17 col 1 - vector-ref - vector
+1
+"2"
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/unsafe/ops)

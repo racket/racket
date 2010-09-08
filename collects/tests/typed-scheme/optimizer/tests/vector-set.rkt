@@ -1,3 +1,8 @@
+#;
+(
+vector-set.rkt line 9 col 1 - vector-set! - vector
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/unsafe/ops)

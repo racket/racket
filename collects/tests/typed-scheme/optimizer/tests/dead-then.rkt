@@ -1,3 +1,12 @@
+#;
+(
+#f line #f col #f - op - dead then branch
+dead-then.rkt line 15 col 14 - + - binary float
+#f line #f col #f - op - dead then branch
+dead-then.rkt line 18 col 14 - + - binary float
+9.09.0
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/unsafe/ops)

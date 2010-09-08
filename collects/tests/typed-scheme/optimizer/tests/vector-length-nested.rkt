@@ -1,3 +1,10 @@
+#;
+(
+vector-length-nested.rkt line 11 col 1 - vector-length - vector-length
+vector-length-nested.rkt line 12 col 2 - vector-ref - vector
+2
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/unsafe/ops)

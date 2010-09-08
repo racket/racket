@@ -1,6 +1,8 @@
 #lang racket
 (require racket/runtime-path racket/sandbox)
 
+(define show-names? (make-parameter #f))
+
 (define prog-rx
   (pregexp (string-append "^\\s*"
                           "(#lang typed/(?:scheme|racket)(?:/base)?)"
@@ -18,9 +20,12 @@
                      (list (car (sandbox-namespace-specs))
                            'typed/racket
                            'typed/scheme)])
-       ;; drop the #lang line
-       (let* ([prog (file->string file)]
-              ;; drop the #lang line and #:optimize
+       ;; drop the expected log
+       (let* ([prog (with-input-from-file file
+                      (lambda ()
+                        (read-line) ; drop #;
+                        (read)      ; drop expected log
+                        (port->string)))] ; get the actual program
               [m    (or (regexp-match-positions prog-rx prog)
                         (error 'evaluator "bad program contents in ~e" file))]
               [prog (string-append (substring prog (caadr m) (cdadr m))
@@ -34,23 +39,29 @@
 (define (generate-opt-log name)
   (parameterize ([current-load-relative-directory tests-dir]
                  [current-command-line-arguments  '#("--log-optimizations")])
-    (with-output-to-string
-      (lambda ()
-        (dynamic-require (build-path (current-load-relative-directory) name)
-                         #f)))))
+    (let ((log-string
+           (with-output-to-string
+             (lambda ()
+               (dynamic-require (build-path (current-load-relative-directory)
+                                            name)
+                                #f)))))
+      ;; have the log as an sexp, since that's what the expected log is
+      (with-input-from-string (string-append "(" log-string ")")
+        read))))
 
 (define (test gen)
   (let-values (((base name _) (split-path gen)))
+    (when (show-names?) (displayln name))
     (or (not (regexp-match ".*rkt$" name)) ; we ignore all but racket files
         ;; we log optimizations and compare to an expected log to make sure
         ;; that all the optimizations we expected did indeed happen
         (and (or (let ((log      (generate-opt-log name))
                        ;; expected optimizer log, to see what was optimized
                        (expected
-                        (file->string
-                         (build-path base
-                                     (string-append (path->string name)
-                                                    ".log")))))
+                        (with-input-from-file gen
+                          (lambda ()
+                            (read-line) ; skip the #;
+                            (read)))))  ; get the log itself
                    (equal? log expected))
                  (begin (printf "~a failed: optimization log mismatch\n\n" name)
                         #f))
@@ -60,13 +71,20 @@
                  (begin (printf "~a failed: result mismatch\n\n" name)
                         #f))))))
 
+(define to-run
+  (command-line
+   #:once-each
+   ["--show-names" "show the names of tests as they are run" (show-names? #t)]
+   ;; we optionally take a test name. if none is given, run everything (#f)
+   #:args maybe-test-to-run
+   (and (not (null? maybe-test-to-run))
+        (car maybe-test-to-run))))
+
 (define-runtime-path tests-dir "./tests")
 
 (let ((n-failures
-       (if (> (vector-length (current-command-line-arguments)) 0)
-           (if (test (format "tests/~a.rkt"
-                             (vector-ref (current-command-line-arguments) 0)))
-               0 1)
+       (if to-run
+           (if (test (format "tests/~a.rkt" to-run)) 0 1)
            (for/fold ((n-failures 0))
              ((gen (in-directory tests-dir)))
              (+ n-failures (if (test gen) 0 1))))))

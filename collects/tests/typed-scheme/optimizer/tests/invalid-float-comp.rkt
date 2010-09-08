@@ -1,3 +1,8 @@
+#;
+(
+#t
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/unsafe/ops)

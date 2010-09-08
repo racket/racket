@@ -1,3 +1,9 @@
+#;
+(
+1
+2
+)
+
 #lang typed/scheme
 #:optimize
 

@@ -1,3 +1,6 @@
+#;
+()
+
 #lang typed/scheme
 #:optimize
 (: f ((Vectorof Integer) -> Void))

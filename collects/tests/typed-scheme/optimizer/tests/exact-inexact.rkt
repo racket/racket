@@ -1,3 +1,9 @@
+#;
+(
+exact-inexact.rkt line 10 col 1 - exact->inexact - int to float
+1e+100
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/flonum)

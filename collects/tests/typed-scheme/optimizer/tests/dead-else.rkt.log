@@ -1,5 +1,0 @@
-#f line #f col #f - op - dead else branch
-dead-else.rkt line 5 col 14 - + - binary float
-#f line #f col #f - op - dead else branch
-dead-else.rkt line 8 col 14 - + - binary float
-5.05.0

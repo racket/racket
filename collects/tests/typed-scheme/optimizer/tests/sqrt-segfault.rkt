@@ -1,3 +1,13 @@
+#;
+(
+sqrt-segfault.rkt line 22 col 15 - - - binary float
+sqrt-segfault.rkt line 22 col 0 - (let-values (((dx) (#%app - (quote 0.0) (quote 0.0)))) (let-values (((dist2) (#%app * dx dx))) (let-values (((mag) (let-values (((val) (#%app * dist2 (#%app sqrt dist2)))) (if (#%app inexact-real? val) val (#%app error (quote Assertion failed)))))) (#%app void)))) - unboxed let bindings
+sqrt-segfault.rkt line 23 col 15 - * - binary float
+sqrt-segfault.rkt line 22 col 0 - (let-values (((dist2) (#%app * dx dx))) (let-values (((mag) (let-values (((val) (#%app * dist2 (#%app sqrt dist2)))) (if (#%app inexact-real? val) val (#%app error (quote Assertion failed)))))) (#%app void))) - unboxed let bindings
+sqrt-segfault.rkt line 24 col 14 - (let-values (((val) (#%app * dist2 (#%app sqrt dist2)))) (if (#%app inexact-real? val) val (#%app error (quote Assertion failed)))) - unboxed let bindings
+sqrt-segfault.rkt line 22 col 0 - (let-values (((mag) (let-values (((val) (#%app * dist2 (#%app sqrt dist2)))) (if (#%app inexact-real? val) val (#%app error (quote Assertion failed)))))) (#%app void)) - unboxed let bindings
+)
+
 #lang typed/scheme
 #:optimize
 

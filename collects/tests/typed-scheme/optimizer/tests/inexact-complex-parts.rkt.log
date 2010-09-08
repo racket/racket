@@ -1,9 +1,0 @@
-inexact-complex-parts.rkt line 4 col 11 - 1.0+2.0i - unboxed literal
-inexact-complex-parts.rkt line 4 col 1 - real-part - unboxed inexact complex
-inexact-complex-parts.rkt line 5 col 11 - 1.0+2.0i - unboxed literal
-inexact-complex-parts.rkt line 5 col 1 - imag-part - unboxed inexact complex
-inexact-complex-parts.rkt line 6 col 11 - 1.0+2.0i - unboxed literal
-inexact-complex-parts.rkt line 6 col 1 - real-part - unboxed inexact complex
-1.0
-2.0
-1.0

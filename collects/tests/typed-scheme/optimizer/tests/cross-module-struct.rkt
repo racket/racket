@@ -1,3 +1,6 @@
+#;
+()
+
 #lang typed/scheme #:optimize
 
 ;; will be imported by cross-module-struct2

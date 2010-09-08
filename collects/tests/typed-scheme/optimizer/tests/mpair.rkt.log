@@ -1,8 +1,0 @@
-mpair.rkt line 6 col 1 - mcar - mutable pair
-mpair.rkt line 7 col 1 - mcdr - mutable pair
-mpair.rkt line 8 col 1 - set-mcar! - mutable pair
-mpair.rkt line 9 col 1 - set-mcdr! - mutable pair
-mpair.rkt line 9 col 14 - + - binary float
-mpair.rkt line 15 col 7 - mcar - mutable pair
-1
-1.0

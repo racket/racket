@@ -1,3 +1,9 @@
+#;
+(
+binary-fixnum.rkt line 12 col 16 - vector-length - vector-length
+binary-fixnum.rkt line 12 col 3 - bitwise-and - binary fixnum
+)
+
 #lang typed/scheme
 #:optimize
 (require racket/unsafe/ops)

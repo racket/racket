@@ -1,5 +1,0 @@
-float-promotion.rkt line 4 col 4 - modulo - binary nonzero fixnum
-float-promotion.rkt line 4 col 1 - + - binary float
-float-promotion.rkt line 5 col 1 - + - binary float
-2.0
-1e+200
