@@ -19,6 +19,7 @@
 (provide window%
          gtk->wx
          queue-window-event
+         queue-window-refresh-event
 
          gtk_widget_show
          gtk_widget_hide
@@ -544,3 +545,5 @@
 
 (define (queue-window-event win thunk)
   (queue-event (send win get-eventspace) thunk))
+(define (queue-window-refresh-event win thunk)
+  (queue-refresh-event (send win get-eventspace) thunk))

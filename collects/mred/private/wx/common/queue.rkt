@@ -19,7 +19,9 @@
          eventspace?
          current-eventspace
          queue-event
+         queue-refresh-event
          yield
+         yield-refresh
          (rename-out [make-new-eventspace make-eventspace])
 
          event-dispatch-handler
@@ -176,6 +178,7 @@
                             (let ([count 0])
                               (let ([lo (mcons #f #f)]
                                     [med (mcons #f #f)]
+                                    [refresh (mcons #f #f)]
                                     [hi (mcons #f #f)]
                                     [timer (box '())]
                                     [timer-counter 0]
@@ -224,6 +227,7 @@
                                       (case (car v)
                                         [(lo) (enqueue val lo)]
                                         [(med) (enqueue val med)]
+                                        [(refresh) (enqueue val refresh)]
                                         [(hi) (enqueue val hi)]
                                         [(timer-add) 
                                          (set! timer-counter (add1 timer-counter))
@@ -272,12 +276,19 @@
                                                 (or (first hi)
                                                     (timer-first-ready timer)
                                                     (first med)
+                                                    (first refresh)
                                                     (first lo)
                                                     (timer-first-wait timer)
                                                     ;; nothing else ready...
                                                     never-evt))])
                                         (end-atomic)
-                                        e))]))))
+                                        e))]
+                                   [(_1 _2)
+                                    ;; Dequeue only refresh event
+                                    (start-atomic)
+                                    (begin0
+                                     (or (first refresh) never-evt)
+                                     (end-atomic))]))))
                             frames
                             (semaphore-peek-evt done-sema)
                             #f
@@ -312,6 +323,9 @@
 
 (define (queue-event eventspace thunk [level 'med])
   ((eventspace-queue-proc eventspace) (cons level thunk)))
+
+(define (queue-refresh-event eventspace thunk)
+  ((eventspace-queue-proc eventspace) (cons 'refresh thunk)))
 
 (define (handle-event thunk)
   (let/ec esc
@@ -356,6 +370,15 @@
                             (yield evt))))]
        [else
         (sync evt)]))]))
+
+(define yield-refresh
+  (lambda ()
+    (let ([e (current-eventspace)])
+      (when (eq? (current-thread) (eventspace-handler-thread e))
+        (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #f #f))])
+          (when v
+            (handle-event v)
+            (yield-refresh)))))))
 
 (define event-dispatch-handler (make-parameter void))
 (define (main-eventspace? e)

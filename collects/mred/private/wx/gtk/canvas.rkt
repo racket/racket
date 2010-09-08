@@ -343,22 +343,24 @@
       ;; can be called from any thread, including the event-pump thread
       (unless paint-queued?
         (set! paint-queued? #t)
-        (queue-window-event this (lambda () 
-                                   (set! paint-queued? #f)
-                                   (set! now-drawing? #t)
-                                   (send dc reset-backing-retained) ; clean slate
-                                   (send dc ensure-ready)
-                                   (let ([bg (get-canvas-background)])
-                                     (when bg 
-                                       (let ([old-bg (send dc get-background)])
-                                         (send dc set-background bg)
-                                         (send dc clear)
-                                         (send dc set-background old-bg))))
-                                   (on-paint)
-                                   (set! now-drawing? #f)
-                                   (when refresh-after-drawing?
-                                     (set! refresh-after-drawing? #f)
-                                     (refresh))))))
+        (queue-window-refresh-event
+         this
+         (lambda () 
+           (set! paint-queued? #f)
+           (set! now-drawing? #t)
+           (send dc reset-backing-retained) ; clean slate
+           (send dc ensure-ready)
+           (let ([bg (get-canvas-background)])
+             (when bg 
+               (let ([old-bg (send dc get-background)])
+                 (send dc set-background bg)
+                 (send dc clear)
+                 (send dc set-background old-bg))))
+           (on-paint)
+           (set! now-drawing? #f)
+           (when refresh-after-drawing?
+             (set! refresh-after-drawing? #f)
+             (refresh))))))
 
     (define/public (paint-or-queue-paint)
       (or (do-backing-flush this dc (if is-combo?

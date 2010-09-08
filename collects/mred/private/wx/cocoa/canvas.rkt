@@ -212,8 +212,9 @@
         (let ([b (box #t)])
           (set! paint-queued b)
           (let ([req (request-flush-delay (get-cocoa-window))])
-            (queue-window-event this (lambda () 
-                                       (do-on-paint req b)))))))
+            (queue-window-refresh-event 
+             this 
+             (lambda () (do-on-paint req b)))))))
 
     (define/private (do-on-paint req b)
       ;; only called in the handler thread

@@ -26,6 +26,7 @@
          CursorDisplayer
 
          queue-window-event
+         queue-window-refresh-event
          queue-window*-event
          request-flush-delay
          cancel-flush-delay
@@ -227,7 +228,7 @@
              (if (send wx definitely-wants-event? k)
                  (begin
                    (queue-window-event wx (lambda ()
-                                            (send wx dispatch-on-char k #f)))
+                                            (send wx dispatch-on-char/sync k)))
                    #t)
                  (constrained-reply (send wx get-eventspace)
                                     (lambda () (send wx dispatch-on-char k #t))
@@ -257,7 +258,7 @@
            (if (send wx definitely-wants-event? m)
                (begin
                  (queue-window-event wx (lambda ()
-                                          (send wx dispatch-on-event m #f)))
+                                          (send wx dispatch-on-event/sync m)))
                  #t)
                (constrained-reply (send wx get-eventspace)
                                   (lambda () (send wx dispatch-on-event m #t))
@@ -441,12 +442,27 @@
       ;; Called in Cocoa event-handling mode
       #f)
 
+    (define/private (pre-event-refresh)
+      ;; Since we break the connection between the
+      ;; Cocoa queue and event handling, we'd like to
+      ;; re-sync the display in case a stream of
+      ;; events (e.g., key repeat) have a corersponding
+      ;; stream of screen updates.
+      (void))
+
+    (define/public (dispatch-on-char/sync e)
+      (pre-event-refresh)
+      (dispatch-on-char e #f))
     (define/public (dispatch-on-char e just-pre?) 
       (cond
        [(other-modal? this) #t]
        [(call-pre-on-char this e) #t]
        [just-pre? #f]
        [else (when enabled? (on-char e)) #t]))
+
+    (define/public (dispatch-on-event/sync e)
+      (pre-event-refresh)
+      (dispatch-on-event e #f))
     (define/public (dispatch-on-event e just-pre?) 
       (cond
        [(other-modal? this) #t]
@@ -546,6 +562,9 @@
 
 (define (queue-window-event wx thunk)
   (queue-event (send wx get-eventspace) thunk))
+
+(define (queue-window-refresh-event wx thunk)
+  (queue-refresh-event (send wx get-eventspace) thunk))
 
 (define (queue-window*-event wxb proc)
   (let ([wx (->wx wxb)])

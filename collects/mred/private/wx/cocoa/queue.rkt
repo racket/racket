@@ -21,6 +21,8 @@
          set-menu-bar-hooks!
          post-dummy-event
 
+         try-to-sync-refresh
+
          ;; from common/queue:
          current-eventspace
          queue-event
@@ -254,6 +256,11 @@
 (set-check-queue!
  ;; Called through an atomic callback:
  (lambda () (check-one-event #f #f)))
+
+(define (try-to-sync-refresh)
+  (atomically
+   (pre-event-sync #t)
+   (check-one-event #f #f)))
 
 ;; ------------------------------------------------------------
 ;; Install an alternate "sleep" function (in the PLT Scheme core)
