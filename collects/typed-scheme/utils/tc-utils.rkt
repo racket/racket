@@ -6,10 +6,8 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out))
-(require "syntax-traversal.rkt"
-	 "utils.rkt" racket/dict
-	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match unstable/debug
-         (for-syntax unstable/syntax))
+(require "syntax-traversal.rkt" racket/dict
+	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match)
 
 ;; a parameter representing the original location of the syntax being currently checked
 (define current-orig-stx (make-parameter #'here))
@@ -138,13 +136,12 @@ don't depend on any other portion of the system
 
 ;; raise an internal error - typechecker bug!
 (define (int-err msg . args) 
-  (parameterize ([custom-printer #t])
-    (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
-					    (apply format msg args)
-					    (format "\nwhile typechecking\n~aoriginally\n~a"
-						    (syntax->datum (current-orig-stx))
-						    (syntax->datum (locate-stx (current-orig-stx)))))
-			     (current-continuation-marks)))))
+  (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
+                                          (apply format msg args)
+                                          (format "\nwhile typechecking\n~aoriginally\n~a"
+                                                  (syntax->datum (current-orig-stx))
+                                                  (syntax->datum (locate-stx (current-orig-stx)))))
+                           (current-continuation-marks))))
 
 (define-syntax (nyi stx)
   (syntax-case stx ()
