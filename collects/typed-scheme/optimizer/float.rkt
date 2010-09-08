@@ -7,7 +7,7 @@
          (types abbrev type-table utils subtype)
          (optimizer utils fixnum))
 
-(provide float-opt-expr float-expr int-expr float-coerce-expr)
+(provide float-opt-expr float-coerce-expr)
 
 
 (define (mk-float-tbl generic)
