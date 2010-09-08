@@ -11,8 +11,7 @@
  "extra-procs.rkt"
  (only-in '#%kernel [apply kernel:apply])
  (only-in racket/private/pre-base new-apply-proc)
- (for-syntax (only-in racket/private/pre-base new-apply-proc)
-             #;racket/string)
+ (for-syntax (only-in racket/private/pre-base new-apply-proc))
  scheme/promise scheme/system
  racket/mpair
  (only-in string-constants/private/only-once maybe-print-message)
