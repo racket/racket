@@ -30,8 +30,6 @@
  set-executer
  send-event
  file-creator-and-type
- begin-refresh-sequence
- end-refresh-sequence
  run-printout
  get-double-click-time
  set-combo-box-font

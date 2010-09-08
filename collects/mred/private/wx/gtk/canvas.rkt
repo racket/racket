@@ -373,6 +373,9 @@
 
     (define/public (on-paint) (void))
 
+    (define/public (begin-refresh-sequence) (void))
+    (define/public (end-refresh-sequence) (void))
+
     (define/override (refresh)
       (queue-paint))
 

@@ -248,6 +248,11 @@
                 (not (send dc can-backing-flush?)))
         (do-on-paint #f #f)))
 
+    (define/public (begin-refresh-sequence)
+      (send dc suspend-flush))
+    (define/public (end-refresh-sequence)
+      (send dc resume-flush))
+
     (define/override (refresh)
       ;; can be called from any thread, including the event-pump thread
       (queue-paint))

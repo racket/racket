@@ -24,8 +24,6 @@
  set-executer
  send-event
  file-creator-and-type
- begin-refresh-sequence
- end-refresh-sequence
  run-printout
  get-double-click-time
  set-combo-box-font
@@ -76,8 +74,6 @@
 (define-unimplemented set-executer)
 (define-unimplemented send-event)
 (define-unimplemented file-creator-and-type)
-(define-unimplemented begin-refresh-sequence)
-(define-unimplemented end-refresh-sequence)
 (define-unimplemented run-printout)
 (define-unimplemented get-double-click-time)
 (define-unimplemented set-combo-box-font)

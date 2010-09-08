@@ -159,7 +159,9 @@
            get-scroll-range set-scroll-range
            is-shown-to-root?
            show-scrollbars
-	   set-focus)
+	   set-focus
+           begin-refresh-sequence
+           end-refresh-sequence)
 
   (define blink-timer #f)
   (define noloop? #f)

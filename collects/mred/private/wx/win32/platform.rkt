@@ -77,8 +77,6 @@
    set-combo-box-font
    get-double-click-time
    run-printout
-   end-refresh-sequence
-   begin-refresh-sequence
    file-creator-and-type
    send-event
    set-executer

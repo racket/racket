@@ -34,8 +34,6 @@
  set-executer
  send-event
  file-creator-and-type
- begin-refresh-sequence
- end-refresh-sequence
  run-printout
  get-double-click-time
  set-combo-box-font
@@ -84,8 +82,6 @@
   (case-lambda
    [(path cr ty) (void)]
    [(path) (values #"????" #"????")]))
-(define (begin-refresh-sequence) (void))
-(define (end-refresh-sequence) (void))
 (define-unimplemented run-printout)
 (define (get-double-click-time) 250)
 (define (set-combo-box-font f) (void))

@@ -262,14 +262,19 @@
                    "the eventspace hash been shutdown"))
           (when saved-child
             (if (eq? (current-thread) (eventspace-handler-thread es))
-                (send saved-child paint-children)
+                (do-paint-children)
                 (let ([s (make-semaphore)])
                   (queue-callback (lambda ()
-                                    (when saved-child
-                                      (send saved-child paint-children))
+                                    (do-paint-children)
                                     (semaphore-post s)))
-                  (sync/timeout 0.2 s))))))
+                  (sync/timeout 1 s))))))
       (direct-show on?))
+
+    (define/private (do-paint-children)
+      (when saved-child
+        (send saved-child paint-children))
+      (yield-refresh)
+      (try-to-sync-refresh))
 
     (define/public (destroy)
       (when child-sheet (send child-sheet destroy))

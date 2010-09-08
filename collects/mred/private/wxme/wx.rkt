@@ -42,8 +42,6 @@
          the-clipboard
          the-x-selection-clipboard
          get-double-click-threshold
-         begin-refresh-sequence
-         end-refresh-sequence
          begin-busy-cursor
          end-busy-cursor
          hide-cursor

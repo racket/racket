@@ -57,6 +57,8 @@
        (cairo_surface_destroy s)
        (set! s #f)))))
 
+(define-local-member-name end-delay)
+
 (define dc%
   (class backing-dc%
     (init [(cnvs canvas)])
@@ -94,10 +96,12 @@
     (define/override (resume-flush) 
       (atomically
        (set! suspend-count (sub1 suspend-count))
-       (when (and (zero? suspend-count) req)
-         (cancel-flush-delay req)
-         (set! req #f))
-       (super resume-flush)))))
+       (super resume-flush)))
+
+    (define/public (end-delay)
+      (when (and (zero? suspend-count) req)
+        (cancel-flush-delay req)
+        (set! req #f)))))
 
 (define (do-backing-flush canvas dc ctx dx dy)
   (tellv ctx saveGraphicsState)
@@ -124,4 +128,5 @@
                    (cairo_set_source cr s)
                    (cairo_pattern_destroy s))
                  (cairo_destroy cr))))))
-   (tellv ctx restoreGraphicsState)))
+   (tellv ctx restoreGraphicsState)
+   (send dc end-delay)))

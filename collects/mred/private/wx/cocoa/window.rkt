@@ -130,7 +130,7 @@
         (super-tell #:type _void keyDown: event))]
   [-a _void (keyUp: [_id event])
       (unless (do-key-event wxb event self #f)
-        (super-tell #:type _void keyDown: event))]
+        (super-tell #:type _void keyUp: event))]
   [-a _void (insertText: [_NSString str])
       (let ([cit (current-insert-text)])
         (if cit
@@ -455,7 +455,10 @@
       ;; re-sync the display in case a stream of
       ;; events (e.g., key repeat) have a corersponding
       ;; stream of screen updates.
-      (void))
+      (try-to-sync-refresh)
+      (let ([cocoa-win (get-cocoa-window)])
+        (when cocoa-win
+          (tellv cocoa-win flushWindowIfNeeded))))
 
     (define/public (dispatch-on-char/sync e)
       (pre-event-refresh)
