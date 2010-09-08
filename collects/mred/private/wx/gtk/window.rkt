@@ -134,8 +134,9 @@
                               (or
                                (map-key-code kv)
                                (integer->char (gdk_keyval_to_unicode kv))))]
+              [key-code (keyval->code (GdkEventKey-keyval event))]
               [k (new key-event%
-                      [key-code (keyval->code (GdkEventKey-keyval event))]
+                      [key-code key-code]
                       [shift-down (bit? modifiers GDK_SHIFT_MASK)]
                       [control-down (bit? modifiers GDK_CONTROL_MASK)]
                       [meta-down (bit? modifiers GDK_META_MASK)]
@@ -144,18 +145,28 @@
                       [y 0]
                       [time-stamp (GdkEventKey-time event)]
                       [caps-down (bit? modifiers GDK_LOCK_MASK)])])
-         (let-values ([(s ag sag cl) (get-alts event)])
-           (when s (send k set-other-shift-key-code (keyval->code s)))
-           (when ag (send k set-other-altgr-key-code (keyval->code ag)))
-           (when sag (send k set-other-shift-altgr-key-code (keyval->code sag)))
-           (when cl (send k set-other-caps-key-code (keyval->code cl))))
-         (if (send wx handles-events? gtk)
-             (begin
-               (queue-window-event wx (lambda () (send wx dispatch-on-char k #f)))
-               #t)
-             (constrained-reply (send wx get-eventspace)
-                                (lambda () (send wx dispatch-on-char k #t))
-                                #t)))))))
+         (when (or (not (equal? #\u0000 key-code))
+                   (let-values ([(s ag sag cl) (get-alts event)]
+                                [(keyval->code*) (lambda (v)
+                                                  (let ([c (keyval->code v)])
+                                                    (and (not (equal? #\u0000 key-code))
+                                                         c)))])
+                     (let ([s (keyval->code* s)]
+                           [ag (keyval->code* ag)]
+                           [sag (keyval->code* sag)]
+                           [cl (keyval->code* cl)])
+                       (when s (send k set-other-shift-key-code (keyval->code s)))
+                       (when ag (send k set-other-altgr-key-code (keyval->code ag)))
+                       (when sag (send k set-other-shift-altgr-key-code (keyval->code sag)))
+                       (when cl (send k set-other-caps-key-code (keyval->code cl)))
+                       (or s ag sag cl))))
+           (if (send wx handles-events? gtk)
+               (begin
+                 (queue-window-event wx (lambda () (send wx dispatch-on-char k #f)))
+                 #t)
+               (constrained-reply (send wx get-eventspace)
+                                  (lambda () (send wx dispatch-on-char k #t))
+                                  #t))))))))
 
 (define-signal-handler connect-button-press "button-press-event"
   (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)

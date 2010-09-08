@@ -8,7 +8,7 @@
          (#xff09 . #\tab)
          (#xff0a . #\newline)
          (#xff0d . #\return)
-         (#xff1b . #\u1B); escape
+         (#xff1b . escape) ; escape
          (#xff50 . home)
          (#xff51 . left)
          (#xff52 . up)
