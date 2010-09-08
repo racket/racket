@@ -1324,6 +1324,7 @@ path/s is either such a string or a list of them.
 "collects/syntax/scribblings/parse.scrbl" responsible (ryanc)
 "collects/syntax-color" responsible (mflatt)
 "collects/teachpack" responsible (matthias)
+"collects/teachpack/2htdp/image.ss" drdr:command-line (gracket *)
 "collects/teachpack/2htdp/scribblings/image-gen.rkt" responsible (robby) drdr:command-line (gracket-text *)
 "collects/teachpack/2htdp/scribblings/image-toc.rkt" responsible (robby)
 "collects/teachpack/2htdp/scribblings/image-util.rkt" responsible (robby)
