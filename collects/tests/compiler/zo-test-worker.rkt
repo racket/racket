@@ -260,7 +260,7 @@
 (define (run-test file)
   (run-with-limit 
    file
-   (* 1024 1024 1024)
+   (* 1024 1024 512)
    (lambda ()
      (run! file)))
   (write (reverse RESULTS)))
