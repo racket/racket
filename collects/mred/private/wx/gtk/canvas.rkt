@@ -296,6 +296,7 @@
     (connect-key-and-mouse client-gtk)
     (connect-focus client-gtk)
     (gtk_widget_add_events client-gtk (bitwise-ior GDK_KEY_PRESS_MASK
+                                                   GDK_KEY_RELEASE_MASK
                                                    GDK_BUTTON_PRESS_MASK
                                                    GDK_BUTTON_RELEASE_MASK
                                                    GDK_POINTER_MOTION_MASK

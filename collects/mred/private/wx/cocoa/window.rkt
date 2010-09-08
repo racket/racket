@@ -126,7 +126,10 @@
         (super-tell #:type _void otherMouseDragged: event))]
   
   [-a _void (keyDown: [_id event])
-      (unless (do-key-event wxb event self)
+      (unless (do-key-event wxb event self #t)
+        (super-tell #:type _void keyDown: event))]
+  [-a _void (keyUp: [_id event])
+      (unless (do-key-event wxb event self #f)
         (super-tell #:type _void keyDown: event))]
   [-a _void (insertText: [_NSString str])
       (let ([cit (current-insert-text)])
@@ -167,7 +170,7 @@
         (when wx
           (send wx reset-cursor-rects)))])
 
-(define (do-key-event wxb event self)
+(define (do-key-event wxb event self down?)
   (let ([wx (->wx wxb)])
     (and
      wx
@@ -225,6 +228,10 @@
                (let ([other (send k get-other-altgr-key-code)])
                  (send k set-other-altgr-key-code (send k get-key-code))
                  (send k set-key-code other)))
+             (unless down?
+               ;; swap altenate with main
+               (send k set-key-release-code (send k get-key-code))
+               (send k set-key-code 'release))
              (if (send wx definitely-wants-event? k)
                  (begin
                    (queue-window-event wx (lambda ()
