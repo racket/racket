@@ -6,7 +6,8 @@
          Build-Cond
          Cond-List
          simplify
-         simple-swap)
+         simple-swap
+         compile)
 
 (define hole-table (make-hash))
 
@@ -2375,6 +2376,16 @@
    (side-condition (> (length (remove-duplicates (term (simplify (p_1 ...))))) (length (remove-duplicates (term (simplify (p_3 ...))))))))
   ((simple-swap any) any)
   )
+
+(define-namespace-anchor here)
+
+(define/contract (compile m)
+  (-> (redex-match L m) (-> any/c any/c))
+  (eval `(λ ,(second m) 
+           (let ([results '()])
+             ,(car (apply-reduction-relation* red m))
+             results))
+        (namespace-anchor->namespace here)))
 
 ; TEST CASES
 

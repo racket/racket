@@ -4,6 +4,9 @@
 (require racket/set)
 (require profile)
 
+(provide test-red-rel
+         test-non-term)
+
 (define lit-table (make-hash))
 (define or-table (make-hash))
 (define nt-table (make-hash))
@@ -14,7 +17,7 @@
 
 (define-struct nt-struct (match-bool match-set))
 
-(define lang '(define-language T
+#;(define lang '(define-language T
                 (n (number_1 ... number_1 ...))
                 (m ((number_1 number_1) ...))
                 (o ((number_1 ... number_1 ...) ...))
@@ -470,6 +473,7 @@
 
 (define-namespace-anchor here)
 
+;; compile-dl : sexp[lang] -> (listof sexp[def])
 (define (compile-dl lang)
   (let* ([lang lang]
          [nts (compile-define-language-nts lang)]
@@ -492,104 +496,84 @@
     (build-hole-table '())
     (caching-enabled? #t)
     
-    (printf "~a\n ~a\n ~a\n ~a\n\n\n" nts lit-table or-table hole-table)
     (hash-for-each
      or-table
      (λ (key val)
-       (let ((val val))
-         (printf "non-terminal: ~a\n" key)
-         
-         (printf "~a\n~a\n\n"
-                 `(term (matrix (a)
-                                (
-                                 ((,val -> (set! results (cons #t results))) ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,val () ())))))
-                                 )
-                                ()
-                                ()
-                                0
-                                #f))
-                 `(term (matrix (a)
-                                ( ,@(map (λ (x) 
-                                           (let ((row (wrap-production-with-name x)))
-                                             `((,row -> ,(build-right-hand-side row)) 
-                                               
-                                               ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,row () ())))))))
-                                         (make-or-list val)))
-                                ()
-                                ()
-                                0
-                                #f)))
-         (let ((compiled-bool (car (apply-reduction-relation* red
-                                                              (term (matrix (a)
-                                                                            (
-                                                                             ((,val -> (set! results (cons #t results))) ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,val () ())))))
-                                                                             )
-                                                                            ()
-                                                                            ()
-                                                                            0
-                                                                            #f)))))
-               (compiled-set (car (apply-reduction-relation* red 
-                                                             (term (matrix (a)
-                                                                           ( ,@(map (λ (x) 
-                                                                                      (let ((row (wrap-production-with-name x)))
-                                                                                        (printf "Row: ~a Wrapped: ~a\n" x row) 
-                                                                                        `((,row -> ,(build-right-hand-side row)) 
-                                                                                          
-                                                                                          ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,row () ())))))))
-                                                                                    (make-or-list val)))
-                                                                           ()
-                                                                           ()
-                                                                           0
-                                                                           #f))))
-                             ))
-           (printf "compiled bool: ~a\n\n" compiled-bool)
-           (printf "compiled set: ~a\n\n" compiled-set)
-           (hash-set! nt-table
-                      key
-                      (make-nt-struct
-                       (term (define ,(string->symbol (format "~s~s" key '-bool))
-                               (λ (a)
-                                 (let ((results (list)))
-                                   ,compiled-bool
-                                   (and (andmap values results) (positive? (length results))))
-                                 )
-                               )
-                             )
-                       (term (define ,(string->symbol (format "~s~s" key '-list))
-                               (λ (a)
-                                 (let ((results (list)))
-                                   ,compiled-set
-                                   results   
-                                   )
-                                 )
-                               ))
-                       ))
-           ))))
-    #;(let ((rr (compile-reduction-relation lang-rr nts (hash-map lit-table (λ (x y) x)))))
-      (print rr)
-      (apply-reduction-relation* red rr))
-    )
-  )
+       (let ((compiled-bool (car (apply-reduction-relation* red
+                                                            (term (matrix (a)
+                                                                          (
+                                                                           ((,val -> (set! results (cons #t results))) ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,val () ())))))
+                                                                           )
+                                                                          ()
+                                                                          ()
+                                                                          0
+                                                                          #f)))))
+             (compiled-set (car (apply-reduction-relation* red 
+                                                           (term (matrix (a)
+                                                                         ( ,@(map (λ (x) 
+                                                                                    (let ((row (wrap-production-with-name x))) 
+                                                                                      `((,row -> ,(build-right-hand-side row)) 
+                                                                                        
+                                                                                        ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,row () ())))))))
+                                                                                  (make-or-list val)))
+                                                                         ()
+                                                                         ()
+                                                                         0
+                                                                         #f))))
+                           ))
+         (hash-set! nt-table
+                    key
+                    (make-nt-struct
+                     (term (define ,(string->symbol (format "~s~s" key '-bool))
+                             (λ (a)
+                               (let ((results (list)))
+                                 ,compiled-bool
+                                 (and (andmap values results) (positive? (length results)))))))
+                     (term (define ,(string->symbol (format "~s~s" key '-list))
+                             (λ (a)
+                               (let ((results (list)))
+                                 ,compiled-set
+                                 results)))))))))
+    
+    (append (hash-map nt-table (λ (_ n) (nt-struct-match-bool n)))
+            (hash-map nt-table (λ (_ n) (nt-struct-match-set n))))))
 
+; compile-reduction-relation: sexp[reduction-relation] (listof symbol[non-terminals]) (listof symbols) -> sexp[def]
 (define (compile-reduction-relation rr nts syms)
-  (let* ([lit-table lit-table]
-         [or-table or-table]
-         [nt-table nt-table]
-         [hole-table hole-table]
-         [e rr])
-    (let loop ([e e])
-      (match e
-        [`(reduction-relation ,L ,rules ...)
-         (term (matrix (a) ,(map loop rules) () () 0 #f))]
-        [`(--> ,pat ,t)
-         (let ((p (translate-redex pat nts syms #f)))
-           (printf "Left hand side: ~a\n\n" p)
-           (printf "Right hand side: ~a\n\n" t)
-           `((,p -> (set! results (cons (term ,t) results))) ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))))
-           )])
-      )))
+  `(λ (a)
+     (let ([results '()])
+       ,(car
+         (apply-reduction-relation* 
+          red
+          (let loop ([e rr])
+            (match e
+              [`(reduction-relation ,L ,rules ...)
+               (term (matrix (a) ,(map loop rules) () () 0 #f))]
+              [`(--> ,pat ,t)
+               (let ((p (translate-redex pat nts syms #f)))
+                 `((,p -> (set! results (cons (term ,t) results)))
+                   ,@(map (λ (x) (list x #f)) 
+                          (remove-duplicates (term (Get-Free-Name-Patterns ,p () ()))))))]))))
+       results)))
 
-(compile-dl lang)
+;; make-lang-namespace: sexp[lang] -> namespace
+(define (make-lang-namespace lang)
+  (define lang-defs (compile-dl lang))
+  (define namespace (namespace-anchor->namespace here))
+  (for-each (curryr eval namespace) lang-defs)
+  namespace)
+
+;; test-red-rel: sexp[lang] -> sexp[red-rel] (listof sexp[nts]) (listof symbol) -> sexp[term] -> sexp[term]
+(define (test-red-rel lang)
+  (define namespace (make-lang-namespace lang))
+  (λ (rel nts syms)
+    (eval (compile-reduction-relation rel nts syms) namespace)))
+
+;; sexp[lang] -> sexp[non-terminal] -> sexp[term] -> boolean
+(define (test-non-term lang)
+  (define namespace (make-lang-namespace lang))
+  (λ (nt)
+    (eval `(λ (t) (,(string->symbol (format "~s-bool" nt)) t)) namespace)))
 
 (define-language T
   (B true
