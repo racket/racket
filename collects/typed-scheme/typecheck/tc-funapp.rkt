@@ -43,7 +43,7 @@
              (poly-fail t argtys #:name (and (identifier? f-stx) f-stx) #:expected expected))))]))
 
 (d/c (tc/funapp f-stx args-stx ftype0 argtys expected)
-  (syntax? syntax? tc-results? (listof tc-results?) (or/c #f tc-results?) . -> . tc-results?)
+  (syntax? syntax? tc-results? (c:listof tc-results?) (c:or/c #f tc-results?) . c:-> . tc-results?)
   (match* (ftype0 argtys)
     ;; we special-case this (no case-lambda) for improved error messages
     [((tc-result1: (and t (Function: (list (and a (arr: dom (Values: _) rest #f kws)))))) argtys)
