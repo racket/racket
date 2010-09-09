@@ -12,8 +12,7 @@
 	 check-expect check-within check-error check-member-of check-range
 	 check-property for-all ==> expect expect-within expect-member-of expect-range
 	 signature contract : define-contract -> mixed one-of predicate combined list-of
-	 number real rational integer natural boolean true false string symbol empty-list unspecific property
-	 chocolate-cookie)
+	 number real rational integer natural boolean true false string symbol empty-list unspecific property)
 (provide cons)
 (provide-and-document
  procedures
