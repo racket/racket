@@ -978,13 +978,12 @@
                               (not (= 1.0 effective-scale-x))
                               (not (= 1.0 effective-scale-y)))
                           (values #f #f #f #f)
-                          (let ([id (send font get-font-key)]
-                                [sz (send font get-point-size)])
+                          (let ([desc (get-pango use-font)])
                             (let loop ([i offset] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
                               (if (= i (string-length s))
                                   (values w h d a)
                                   (let ([ch (string-ref s i)])
-                                    (let ([v (atomically (hash-ref size-cache (vector id sz ch) #f))])
+                                    (let ([v (atomically (hash-ref size-cache (cons desc ch) #f))])
                                       (if v
                                           (loop (add1 i)
                                                 (+ w (vector-ref v 0)) 
@@ -1090,13 +1089,11 @@
                              (not (= 1.0 effective-scale-x))
                              (not (= 1.0 effective-scale-y)))
                          void
-                         (let ([id (send font get-font-key)]
-                               [sz (send font get-point-size)])
-                           (lambda (ch w h d a)
-                             (atomically
-                              (hash-set! size-cache 
-                                         (vector id sz ch)
-                                         (vector w h d a))))))])
+                         (lambda (ch w h d a)
+                           (atomically
+                            (hash-set! size-cache 
+                                       (cons desc ch)
+                                       (vector w h d a)))))])
                 (begin0
                  (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
                      ([ch (in-string s)])
