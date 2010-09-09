@@ -1,6 +1,9 @@
 #lang racket/base
 
-(require (for-syntax racket/base "typecheck/renamer.rkt")         
+(require (for-syntax racket/base 
+                     ;; these requires are needed since their code
+                     ;; appears in the residual program
+                     "typecheck/renamer.rkt" "types/type-table.rkt")         
          "private/base-special-env.rkt")
 
 (begin-for-syntax )
