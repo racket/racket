@@ -1,48 +1,11 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "bib.rkt" (prefix-in ver: version/utils)
-         racket/list)
+(require "bib.rkt" (prefix-in - version/utils) racket/list
+         "../download/data.rkt")
 
 (provide make-bib-table)
 
-(define version->date
-  '#hash(["5.0"   . ("2010" "May")]
-         ["4.2.5" . ("2010" "April")]
-         ["4.2.4" . ("2010" "January")]
-         ["4.2.3" . ("2009" "December")]
-         ["4.2.2" . ("2009" "October")]
-         ["4.2.1" . ("2009" "July")]
-         ["4.2"   . ("2009" "June")]
-         ["4.1.5" . ("2009" "March")]
-         ["4.1.4" . ("2009" "January")]
-         ["4.1.3" . ("2008" "November")]
-         ["4.1.2" . ("2008" "October")]
-         ["4.1.1" . ("2008" "October")]
-         ["4.1"   . ("2008" "August")]
-         ["4.0.2" . ("2008" "July")]
-         ["4.0.1" . ("2008" "June")]
-         ["4.0"   . ("2008" "June")]
-         ["372"   . ("2007" "December")]
-         ["371"   . ("2007" "August")]
-         ["370"   . ("2007" "May")]
-         ["360"   . ("2006" "November")]
-         ["352"   . ("2006" "July")]
-         ["351"   . ("2006" "July")]
-         ["350"   . ("2006" "June")]
-         ["301"   . ("2006" "January")]
-         ["300"   . ("2005" "December")]
-         ["209"   . ("2004" "December")]
-         ["208"   . ("2004" "August")]
-         ["207"   . ("2004" "May")]
-         ["206p1" . ("2004" "January")]
-         ["206"   . ("2004" "January")]
-         ["205"   . ("2003" "August")]
-         ["204"   . ("2003" "May")]
-         ["203"   . ("2002" "December")]
-         ["202"   . ("2002" "August")]
-         ["201"   . ("2002" "July")]
-         ["200"   . ("2002" "June")]
-         ["103p1" . ("2001" "August")]))
+(define tr-version-range "...5.0")
 
 (define authors
   '([plt      "PLT"]
@@ -226,17 +189,22 @@
      ;;   [year "2002"])
     ))
 
+;; Use this instead of the built-in one, to make sure that we only deal
+;; with known released version.
 (define version->integer
-  (let ([t (for/hash ([(v d) (in-hash version->date)])
-             (values v (ver:version->integer v)))])
+  (let ([t (for*/hash ([v+d (in-list versions+dates)]
+                       [v (in-value (car v+d))])
+             (values v (-version->integer (regexp-replace #rx"^0+" v ""))))])
     (lambda (ver)
       (hash-ref t ver (lambda ()
                         (error 'version->integer
                                "unknown pltreport version: ~e" ver))))))
 
-(define versions
-  (sort (hash-map version->date (lambda (v d) v))
-        > #:key version->integer #:cache-keys? #t))
+(define (date->year+month date)
+  (let ([m (regexp-match #rx"^([A-Z][a-z]+) +([0-9]+)$" date)])
+    (if m
+      (values (caddr m) (cadr m))
+      (error 'date->year+month "unexpected date string: ~.a" date))))
 
 ;; "V...V"        version range
 ;; "...V", "V..." open-ended version range
@@ -245,8 +213,8 @@
 ;; ""             no versions
 ;; V can be `*': a number between the v3 docs and the v4 docs
 ;; V can be `!': a number between the last PLT Scheme and the first Racket
-(define v:3->4 (ver:version->integer "379"))
-(define v:4->5 (ver:version->integer "4.3"))
+(define v:3->4 (-version->integer "379"))
+(define v:4->5 (-version->integer "4.3"))
 (define (versions->pred str)
   (let* ([str (regexp-replace* #rx"  +" str " ")]
          [str (regexp-replace #rx"^ +" str "")]
@@ -267,7 +235,7 @@
                   [(from to)
                    (let ([from (or from -inf.0)]
                          [to   (or to   +inf.0)])
-                     (lambda (ver) (<= from (version->integer ver) to)))]
+                     (lambda (v) (<= from (version->integer v) to)))]
                   [_ (error 'versions->pred "bad versions spec: ~e" str)])
      l)))
 
@@ -299,28 +267,29 @@
          ,@attrs))
      (if (number? (cadr d)) d (list* (car d) #f (cdr d))))))
 
-(define (url s) s)
-
 (define bibs
-  (for*/list ([ver versions] [doc doc-defs*] #:when ((car doc) ver))
+  (for*/list ([ver (filter (versions->pred tr-version-range)
+                           (reverse all-versions))]
+              [doc doc-defs*]
+              #:when ((car doc) ver))
     (define attrs (cdr doc))
     (define (get key [dflt #f]) (cond [(assq key attrs) => cadr] [else dflt]))
     (define docname (get '#:docname))
-    (define-values (year month) (apply values (hash-ref version->date ver)))
+    (define-values (year month) (date->year+month (version->date ver)))
     (define number (format (get '#:number-template) year ver))
     (define key (regexp-replace* #rx":" (string-downcase number) "_"))
     (define note
       (let ([n1 "\\url{http://plt-scheme.org/techreports/}"]
             [n2 (get '#:note #f)])
         (if n2 (cons (string-append n1 ";") n2) (list n1))))
-    (define old? (< (ver:version->integer ver) v:4->5))
+    (define old? (< (version->integer ver) v:4->5))
     (define site (if old? "plt-scheme" "racket-lang"))
     (define maybe-s (if old? "" "s"))
-    (define (url* path)
-      (url (format (string-append "http://download." site ".org/doc" maybe-s "/~a/" path)
-                   ver docname)))
-    (define pdf-url  (url* "pdf/~a.pdf"))
-    (define pdf-html (url* "html/~a/"))
+    (define (mk-url dir sfx)
+      (format "http://download.~a.org/doc~a/~a/~a/~a~a"
+              site maybe-s ver dir docname sfx))
+    (define pdf-url  (mk-url "pdf" ".pdf"))
+    (define pdf-html (mk-url "html" "/"))
     (bib 'techreport key
          `(,@attrs
            [year        ,year]
@@ -352,6 +321,6 @@
         @td[style: "white-space: nowrap;"]{@(hash-ref bib 'number)}
         @td[align: 'left]{@i{@(without-braces (hash-ref bib 'title))}}
         @td{@(bib-author bib)}
-        @td{@a[href: (url (make-bib-file bib))]{[bib]}@|nbsp|@;
+        @td{@a[href: (make-bib-file bib)]{[bib]}@|nbsp|@;
             @a[href: (hash-ref bib '#:pdf-url)]{[pdf]}@|nbsp|@;
             @a[href: (hash-ref bib '#:html-url)]{[html]}}})))

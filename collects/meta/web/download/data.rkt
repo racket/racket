@@ -145,6 +145,7 @@
                 (version->integer (regexp-replace #rx"^0+" (car vd) "")))
         #:cache-keys? #t))
 
+;; sorted from oldest to newest
 (define all-versions (map car versions+dates))
 
 (define current-version (last all-versions))
