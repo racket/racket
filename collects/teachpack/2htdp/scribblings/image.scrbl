@@ -1035,7 +1035,7 @@ the parts that fit onto @racket[scene].
   with a black, single pixel frame drawn around the 
   bounding box of the image.
   
-  @image-examples[(frame (ellipse 20 20 "outline" "black"))]
+  @image-examples[(frame (ellipse 40 40 "solid" "gray"))]
   
   Generally speaking, this function is useful to 
   debug image constructions, i.e., to see where
@@ -1433,6 +1433,12 @@ interior.
                             (make-pen "black" 2 "solid" "round" "round")))]
                        [r (beside s s s s s s)])
                   (above r r r r r r))]
+
+While this kind of rectangle is not useful for building grids, it 
+is important to be able to build rectangles whose drawing does not
+exceed its bounding box. Specifically, this kind of drawing is used
+by @racket[frame] and @racket[empty-scene] so that the extra drawn pixels
+are not lost if the image is later clipped to its bounding box.
 
 @;-----------------------------------------------------------------------------
 @section{Exporting Images to Disk}

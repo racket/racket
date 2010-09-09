@@ -432,12 +432,15 @@
 ;; (useful for debugging images)
 
 (define/chk (frame image)
-  (make-image (make-overlay (image-shape image)
-                            (image-shape 
-                             (rectangle (get-right image)
-                                        (get-bottom image)
-                                        'outline
-                                        'black)))
+  (make-image (make-overlay (image-shape 
+                             (crop 0 0
+                                   (get-right image)
+                                   (get-bottom image)
+                                   (rectangle (get-right image)
+                                              (get-bottom image)
+                                              'outline
+                                              (pen "black" 2 'solid 'round 'round))))
+                            (image-shape image))
               (make-bb (get-right image)
                        (get-bottom image)
                        (get-baseline image))

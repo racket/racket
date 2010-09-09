@@ -135,7 +135,7 @@
       (ellipse 20 10 "solid" "navy"))
     'image
     "54a488e1a5.png")
-   (list '(frame (ellipse 20 20 "outline" "black")) 'image "6a5a617f28.png")
+   (list '(frame (ellipse 40 40 "solid" "gray")) 'image "1a74ac09f8a.png")
    (list
     '(above
       (beside
