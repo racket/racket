@@ -7,6 +7,7 @@
          "utils.rkt"
          "types.rkt"
          "frame.rkt"
+         "finfo.rkt" ; file-creator-and-type
          "../../lock.rkt"
          "../common/handlers.rkt")
 
@@ -77,7 +78,6 @@
 (define (set-executer proc)
   (void))
 (define-unimplemented send-event)
-(define-unimplemented file-creator-and-type)
 (define (begin-refresh-sequence) (void))
 (define (end-refresh-sequence) (void))
 (define-unimplemented run-printout)
