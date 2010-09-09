@@ -96,4 +96,4 @@
       (define-hierarchy exn:fail:user ())))
 
   ;; cce: adding exn:break would require a generic type for continuations
-  )
+  (void))
