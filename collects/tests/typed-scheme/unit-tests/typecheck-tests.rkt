@@ -3,10 +3,9 @@
 (require "test-utils.ss"
          (for-syntax scheme/base)
          (for-template scheme/base))
-(require (private #;base-env prims type-annotation 
-		  base-types-extra
-		  #;base-env-numeric
-		  base-env-indexing
+(require (private prims type-annotation 
+		  base-types-extra base-special-env
+		  base-env-indexing base-structs
                   parse-type)
 	 (typecheck typechecker)
 	 (rep type-rep filter-rep object-rep)
@@ -25,13 +24,18 @@
                      (typecheck typechecker)
 	             (env global-env)
 	             (private #;base-env #;base-env-numeric
-			      base-env-indexing))
+			      base-env-indexing base-special-env))
          (for-template (private #;base-env base-types base-types-extra
-				#;base-env-numeric
+				#;base-env-numeric base-special-env
 				base-env-indexing))
          (for-syntax syntax/kerncase syntax/parse))
 
+(require (prefix-in b: (private base-env))
+         (prefix-in n: (private base-env-numeric)))
+
 (provide typecheck-tests g tc-expr/expand)
+
+(b:init) (n:init) (initialize-structs) (initialize-indexing)
 
 (define N -Number)
 (define B -Boolean)
