@@ -65,8 +65,9 @@
      (define (gen-alt-helper accessors)
        (if (null? accessors)
            #'arg
-           #`(#%plain-app #,(car accessors)
-                          #,(gen-alt-helper (cdr accessors)))))
+           (quasisyntax/loc stx
+             (#%plain-app #,(car accessors)
+                          #,(gen-alt-helper (cdr accessors))))))
      (let ((ty  (type-of stx))
            (obj (gen-alt-helper accessors)))
        ;; we're calling the typechecker, but this is just a shortcut, we're
@@ -75,16 +76,17 @@
        (tc-expr/check obj ty)
        obj)]))
 
-(define-syntax-class pair-derived-expr
-  #:commit
-  (pattern (#%plain-app (~literal caar) x)
-           #:with alt (gen-alt (list #'car #'car) this-syntax))
-  (pattern (#%plain-app (~literal cadr) x)
-           #:with alt (gen-alt (list #'car #'cdr) this-syntax))
-  (pattern (#%plain-app (~literal cdar) x)
-           #:with alt (gen-alt (list #'cdr #'car) this-syntax))
-  (pattern (#%plain-app (~literal cddr) x)
-           #:with alt (gen-alt (list #'cdr #'cdr) this-syntax)))
+(define-syntax-rule (gen-pair-derived-expr name (orig seq ...) ...)
+  (define-syntax-class name
+    #:commit
+    (pattern (#%plain-app (~literal orig) x)
+             #:with alt (gen-alt (list seq ...) this-syntax))
+    ...))
+(gen-pair-derived-expr pair-derived-expr
+ (caar #'car #'car)
+ (cadr #'car #'cdr)
+ (cdar #'cdr #'car)
+ (cddr #'cdr #'cdr))
 
 (define-syntax-class pair-derived-opt-expr
   #:commit
