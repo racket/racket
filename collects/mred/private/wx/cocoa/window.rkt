@@ -449,19 +449,7 @@
       ;; Called in Cocoa event-handling mode
       #f)
 
-    (define/private (pre-event-refresh)
-      ;; Since we break the connection between the
-      ;; Cocoa queue and event handling, we'd like to
-      ;; re-sync the display in case a stream of
-      ;; events (e.g., key repeat) have a corersponding
-      ;; stream of screen updates.
-      (try-to-sync-refresh)
-      (let ([cocoa-win (get-cocoa-window)])
-        (when cocoa-win
-          (tellv cocoa-win flushWindowIfNeeded))))
-
     (define/public (dispatch-on-char/sync e)
-      (pre-event-refresh)
       (dispatch-on-char e #f))
     (define/public (dispatch-on-char e just-pre?) 
       (cond
@@ -471,7 +459,6 @@
        [else (when enabled? (on-char e)) #t]))
 
     (define/public (dispatch-on-event/sync e)
-      (pre-event-refresh)
       (dispatch-on-event e #f))
     (define/public (dispatch-on-event e just-pre?) 
       (cond
