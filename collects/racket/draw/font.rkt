@@ -1,5 +1,6 @@
 #lang scheme/base
 (require scheme/class
+         ffi/unsafe/atomic
          "syntax.ss"
          "pango.ss"
          "font-syms.ss"
@@ -26,12 +27,19 @@
 (define (size? v) (and (exact-positive-integer? v)
                        (byte? v)))
 
-(define-local-member-name s-set-key)
+(define-local-member-name s-set-table-key)
+
+(define font-descs (make-weak-hash))
+(define ps-font-descs (make-weak-hash))
+(define keys (make-weak-hash))
+
+(define-syntax-rule (atomically e)
+  (begin (start-atomic) (begin0 e (end-atomic))))
 
 (defclass font% object%
 
-  (define key #f)
-  (define/public (s-set-key k) (set! key k))
+  (define table-key #f)
+  (define/public (s-set-table-key k) (set! table-key k))
 
   (define cached-desc #f)
   (define ps-cached-desc #f)
@@ -39,15 +47,21 @@
   (define/public (get-pango)
     (create-desc #f 
                  cached-desc
+                 font-descs
                  (lambda (d) (set! cached-desc d))))
 
   (define/public (get-ps-pango)
     (create-desc #t
                  ps-cached-desc
+                 ps-font-descs
                  (lambda (d) (set! ps-cached-desc d))))
 
-  (define/private (create-desc ps? cached-desc install!)
+  (define/private (create-desc ps? cached-desc font-descs install!)
     (or cached-desc
+        (let ([desc (atomically (hash-ref font-descs key #f))])
+          (and desc
+               (install! desc)
+               desc))
         (let* ([desc (pango_font_description_new)])
           (pango_font_description_set_family desc 
                                              (if ps?
@@ -73,6 +87,7 @@
               (pango_font_description_set_absolute_size desc (* size PANGO_SCALE))
               (pango_font_description_set_size desc (inexact->exact (floor (* size PANGO_SCALE)))))
           (install! desc)
+          (atomically (hash-set! font-descs key desc))
           desc)))
 
   (define/public (get-pango-attrs)
@@ -105,6 +120,7 @@
   (def/public (get-weight) weight)
 
   (def/public (get-font-id) id)
+  (def/public (get-font-key) key)
 
   (def/public (screen-glyph-exists? [char? c]
                                     [any? [for-label? #f]])
@@ -151,7 +167,15 @@
   (define id 
     (if face
         (send the-font-name-directory find-or-create-font-id face family)
-        (send the-font-name-directory find-family-default-font-id family))))
+        (send the-font-name-directory find-family-default-font-id family)))
+  (define key
+    (let ([key (vector id size style weight underlined? smoothing size-in-pixels?)])
+      (let ([old-key (atomically (hash-ref keys key #f))])
+        (if old-key
+            (weak-box-value old-key)
+            (begin
+              (atomically (hash-set! keys key (make-weak-box key)))
+              key))))))
 
 ;; ----------------------------------------
 
@@ -186,7 +210,7 @@
                  (ephemeron-value e))
             (let* ([f (apply make-object font% (vector->list key))]
                    [e (make-ephemeron key f)])
-              (send f s-set-key key)
+              (send f s-set-table-key key)
               (hash-set! fonts key e)
               f))))))
 

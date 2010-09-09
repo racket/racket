@@ -139,7 +139,11 @@
     ;;
     ;; Return #t if bitmap drawing with a mask is supported.
     ;; It's not supported for PostScirpt output, for example.
-    can-mask-bitmap?))
+    can-mask-bitmap?
+
+    ;; erase : -> void
+    ;; A public method: erases all drawing
+    erase))
 
 (define default-dc-backend%
   (class* object% (dc-backend<%>)
@@ -197,6 +201,9 @@
 
     (define/public (can-mask-bitmap?)
       #t)
+
+    (define/public (erase)
+      (void))
 
     (super-new)))
 
@@ -571,6 +578,14 @@
        (install-color cr bg 1.0)
        (cairo_paint cr)))
 
+    (define/override (erase)
+      (with-cr
+       (void)
+       cr
+       (cairo_set_operator cr CAIRO_OPERATOR_CLEAR)
+       (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
+       (cairo_paint cr)
+       (cairo_set_operator cr CAIRO_OPERATOR_OVER)))
 
     (define/private (make-pattern-surface cr col draw)
       (let* ([s (cairo_surface_create_similar (cairo_get_target cr)
@@ -963,7 +978,7 @@
                               (not (= 1.0 effective-scale-x))
                               (not (= 1.0 effective-scale-y)))
                           (values #f #f #f #f)
-                          (let ([id (send font get-font-id)]
+                          (let ([id (send font get-font-key)]
                                 [sz (send font get-point-size)])
                             (let loop ([i offset] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
                               (if (= i (string-length s))
@@ -1075,7 +1090,7 @@
                              (not (= 1.0 effective-scale-x))
                              (not (= 1.0 effective-scale-y)))
                          void
-                         (let ([id (send font get-font-id)]
+                         (let ([id (send font get-font-key)]
                                [sz (send font get-point-size)])
                            (lambda (ch w h d a)
                              (atomically

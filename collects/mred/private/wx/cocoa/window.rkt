@@ -449,7 +449,16 @@
       ;; Called in Cocoa event-handling mode
       #f)
 
+    (define/private (pre-event-refresh key?)
+      ;; Since we break the connection between the
+      ;; Cocoa queue and event handling, we
+      ;; re-sync the display in case a stream of
+      ;; events (e.g., key repeat) have a corresponding
+      ;; stream of screen updates.
+      (try-to-sync-refresh))
+
     (define/public (dispatch-on-char/sync e)
+      (pre-event-refresh #t)
       (dispatch-on-char e #f))
     (define/public (dispatch-on-char e just-pre?) 
       (cond
@@ -459,6 +468,7 @@
        [else (when enabled? (on-char e)) #t]))
 
     (define/public (dispatch-on-event/sync e)
+      (pre-event-refresh #f)
       (dispatch-on-event e #f))
     (define/public (dispatch-on-event e just-pre?) 
       (cond

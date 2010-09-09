@@ -32,7 +32,8 @@
     (inherit call-with-cr-lock
              internal-get-bitmap
              internal-set-bitmap
-             reset-cr)
+             reset-cr
+             erase)
 
     (super-new)
 
@@ -68,7 +69,7 @@
 
     (define/public (reset-backing-retained [proc void])
       (let ([cr retained-cr])
-        (when cr
+        (when cr 
           (let ([bm (internal-get-bitmap)])
             (set! retained-cr #f)
             (internal-set-bitmap #f #t)

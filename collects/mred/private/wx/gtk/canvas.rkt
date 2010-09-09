@@ -349,15 +349,17 @@
          (lambda () 
            (set! paint-queued? #f)
            (set! now-drawing? #t)
-           (send dc reset-backing-retained) ; clean slate
            (send dc ensure-ready)
+           (send dc erase) ; clean slate
            (let ([bg (get-canvas-background)])
              (when bg 
                (let ([old-bg (send dc get-background)])
                  (send dc set-background bg)
                  (send dc clear)
                  (send dc set-background old-bg))))
+           (send dc suspend-flush)
            (on-paint)
+           (send dc resume-flush)
            (set! now-drawing? #f)
            (when refresh-after-drawing?
              (set! refresh-after-drawing? #f)

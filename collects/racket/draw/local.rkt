@@ -29,6 +29,7 @@
 
   ;; font%
   get-ps-pango
+  get-font-key
 
   ;; dc-backend<%>
   call-with-cr-lock
