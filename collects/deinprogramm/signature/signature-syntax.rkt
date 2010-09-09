@@ -20,7 +20,7 @@
 
 (define-for-syntax (parse-signature name stx)
   (syntax-case* stx
-		(mixed one-of predicate list -> combined property reference at signature)
+		(mixed one-of predicate list -> combined property reference at signature list-of)
 		module-or-top-identifier=?
     ((mixed ?signature ...)
      (with-syntax ((?stx (phase-lift stx))

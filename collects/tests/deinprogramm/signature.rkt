@@ -198,10 +198,10 @@
 
    (test-case
     "list"
-    (check-equal? (say-no (apply-signature (signature x (list %a)) 5)) 'no)
-    (check-equal? (say-no (apply-signature (signature x (list %a)) '(1 2 3))) '(1 2 3))
-    (check-equal? (say-no (apply-signature (signature x (list (predicate integer?))) '(1 2 3))) '(1 2 3))
-    (check-equal? (say-no (apply-signature (signature x (list (predicate integer?))) '(1 #f 3))) 'no))
+    (check-equal? (say-no (apply-signature (signature x (list-of %a)) 5)) 'no)
+    (check-equal? (say-no (apply-signature (signature x (list-of %a)) '(1 2 3))) '(1 2 3))
+    (check-equal? (say-no (apply-signature (signature x (list-of (predicate integer?))) '(1 2 3))) '(1 2 3))
+    (check-equal? (say-no (apply-signature (signature x (list-of (predicate integer?))) '(1 #f 3))) 'no))
 
    (test-case
     "mixed"
@@ -321,28 +321,28 @@
 
       (define empty-list (signature (predicate null?)))
 
-      (define list-of
+      (define my-list-of
 	(lambda (x)
 	  (signature (mixed empty-list
-			   (pare-of x (list-of x))))))
+			    (pare-of x (my-list-of x))))))
       
-      (define/signature kons (signature (%a (list-of %a) -> (pare-of %a (list-of %a))))
+      (define/signature kons (signature (%a (my-list-of %a) -> (pare-of %a (my-list-of %a))))
 	raw-kons)
       
-      (define/signature build-list (signature (integer -> (list-of counting-integer)))
+      (define/signature build-list (signature (integer -> (my-list-of counting-integer)))
 	(lambda (n)
 	  (if (= n 0)
 	      '()
 	      (kons n (build-list (- n 1))))))
 
-      (define/signature list-length (signature ((list-of counting-integer) -> integer))
+      (define/signature list-length (signature ((my-list-of counting-integer) -> integer))
 	(lambda (lis)
 	  (cond
 	   ((null? lis) 0)
 	   ((pare? lis)
 	    (+ 1 (list-length (kdr lis)))))))
       
-      ;; one wrap each for (list-of %a), one for (list-of counting-integer)
+      ;; one wrap each for (my-list-of %a), one for (my-list-of counting-integer)
       (let  ((l1 (build-list 10)))
 	(check-equal? count 0)
 	(let ((len1 (list-length l1)))
@@ -362,15 +362,15 @@
    (test-case
     "wrap equality"
     (define-record-procedures-parametric pare pare-of raw-kons pare? (kar kdr))
-    
+
     (define empty-list (signature (predicate null?)))
     
-    (define list-of
+    (define my-list-of
       (lambda (x)
 	(signature (mixed empty-list
-			 (pare-of x (list-of x))))))
+			  (pare-of x (my-list-of x))))))
     
-    (define/signature kons (signature (%a (list-of %a) -> (pare-of %a (list-of %a))))
+    (define/signature kons (signature (%a (my-list-of %a) -> (pare-of %a (my-list-of %a))))
       raw-kons)
 
     (check-equal? (raw-kons 1 '()) (raw-kons 1 '()))
