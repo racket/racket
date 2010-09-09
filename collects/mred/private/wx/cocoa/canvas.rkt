@@ -10,6 +10,7 @@
          "types.rkt"
          "window.rkt"
          "dc.rkt"
+         "cg.rkt"
          "queue.rkt"
          "item.rkt"
          "../common/backing-dc.rkt"

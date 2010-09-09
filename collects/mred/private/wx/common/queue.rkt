@@ -177,8 +177,8 @@
            (make-eventspace th
                             (let ([count 0])
                               (let ([lo (mcons #f #f)]
-                                    [med (mcons #f #f)]
                                     [refresh (mcons #f #f)]
+                                    [med (mcons #f #f)]
                                     [hi (mcons #f #f)]
                                     [timer (box '())]
                                     [timer-counter 0]
@@ -226,8 +226,8 @@
                                     (let ([val (cdr v)])
                                       (case (car v)
                                         [(lo) (enqueue val lo)]
-                                        [(med) (enqueue val med)]
                                         [(refresh) (enqueue val refresh)]
+                                        [(med) (enqueue val med)]
                                         [(hi) (enqueue val hi)]
                                         [(timer-add) 
                                          (set! timer-counter (add1 timer-counter))
@@ -275,8 +275,8 @@
                                                           (lambda (_) #f))
                                                 (or (first hi)
                                                     (timer-first-ready timer)
-                                                    (first med)
                                                     (first refresh)
+                                                    (first med)
                                                     (first lo)
                                                     (timer-first-wait timer)
                                                     ;; nothing else ready...
@@ -374,11 +374,14 @@
 (define yield-refresh
   (lambda ()
     (let ([e (current-eventspace)])
-      (when (eq? (current-thread) (eventspace-handler-thread e))
-        (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #f #f))])
-          (when v
-            (handle-event v)
-            (yield-refresh)))))))
+      (and (eq? (current-thread) (eventspace-handler-thread e))
+           (let loop ([result #f])
+             (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #f #f))])
+               (if v
+                   (begin
+                     (handle-event v)
+                     (loop #t))
+                   result)))))))
 
 (define event-dispatch-handler (make-parameter void))
 (define (main-eventspace? e)

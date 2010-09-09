@@ -455,7 +455,11 @@
       ;; re-sync the display in case a stream of
       ;; events (e.g., key repeat) have a corresponding
       ;; stream of screen updates.
-      (try-to-sync-refresh))
+      (try-to-sync-refresh)
+      (let ([cocoa-win (get-cocoa-window)])
+        (when cocoa-win
+          (tellv cocoa-win displayIfNeeded)
+          (tellv cocoa-win flushWindowIfNeeded))))
 
     (define/public (dispatch-on-char/sync e)
       (pre-event-refresh #t)
