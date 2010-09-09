@@ -46,10 +46,10 @@
              (combine-frees (map free-idxs* fs))])
 
 (df FilterSet (thn els)
-    [#:contract (->d ([t any/c]
+    [#:contract (->i ([t any/c]
                       [e any/c])
                      (#:syntax [stx #f])
-                     #:pre-cond
+                     #:pre-cond (t e)
                      (and (cond [(Bot? t) #t]
                                 [(Bot? e) (Top? t)]
                                 [else (Filter/c-predicate? t)])

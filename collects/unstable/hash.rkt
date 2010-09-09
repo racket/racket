@@ -56,9 +56,9 @@
  [hash-ref/default (-> hash? any/c any/c any/c)]
  [hash-ref/failure (-> hash? any/c (-> any/c) any/c)]
  [hash-ref/check
-  (->d ([table hash?] [key any/c]) ()
-       #:pre-cond (hash-has-key? table key)
-       [_ any/c])]
+  (->i ([table hash?] [key any/c]) ()
+       #:pre (table key) (hash-has-key? table key)
+       [res any/c])]
  [hash-union (->* [(and/c hash? immutable?)]
                   [#:combine
                    (-> any/c any/c any/c)

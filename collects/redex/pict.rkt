@@ -19,10 +19,12 @@
 
 (provide/contract
  [render-reduction-relation
-  (->d ([rel reduction-relation?])
+  (->i ([rel reduction-relation?])
        ([file (or/c false/c path-string?)]
-        #:style [style reduction-rule-style/c])
-       [result (if (path-string? file)
+        #:style
+        [style reduction-rule-style/c])
+       [result (file)
+               (if (path-string? file)
                    void?
                    pict?)])]
  [reduction-relation->pict (->* (reduction-relation?)
@@ -34,10 +36,12 @@
                       (#:nts (or/c false/c (listof (or/c string? symbol?))))
                       pict?)]
  [render-language
-  (->d ([lang compiled-lang?])
+  (->i ([lang compiled-lang?])
        ([file (or/c false/c path-string?)]
-        #:nts [nts (or/c false/c (listof (or/c string? symbol?)))])
-       [result (if (path-string? file)
+        #:nts
+        [nts (or/c false/c (listof (or/c string? symbol?)))])
+       [result (file)
+               (if (path-string? file)
                    void?
                    pict?)])])
 

@@ -195,15 +195,15 @@
  (proc-doc/names
   preferences:add-panel
   (-> (or/c string? (cons/c string? (listof string?)))
-      (->d ([parent (is-a?/c area-container-window<%>)])
+      (->i ([parent (is-a?/c area-container-window<%>)])
            ()
-           [_
-            (let ([old-children (send parent get-children)])
-              (and/c (is-a?/c area-container-window<%>)
-                     (λ (child)
-                       (andmap eq?
-                               (append old-children (list child))
-                               (send parent get-children)))))])
+           [_ (parent)
+              (let ([old-children (send parent get-children)])
+                (and/c (is-a?/c area-container-window<%>)
+                       (λ (child)
+                         (andmap eq?
+                                 (append old-children (list child))
+                                 (send parent get-children)))))])
       void?)
   (labels f)
   @{@scheme[preferences:add-preference-panel] adds the result of @scheme[f]

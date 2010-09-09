@@ -77,10 +77,9 @@
                  (unmarshall-settings (-> printable/c any))
                  
                  (capability-value 
-                  (->d ([s (and/c symbol? 
+                  (->i ([s (and/c symbol? 
                                   drracket:language:capability-registered?)])
-                       ()
-                       [res (drracket:language:get-capability-contract s)]))))])
+                       [res (s) (drracket:language:get-capability-contract s)]))))])
            #`(begin
                (define id (reconstitute #,ctc provide?))
                #,@(if (syntax-e #'provide?)

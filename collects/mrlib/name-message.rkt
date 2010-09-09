@@ -1,11 +1,23 @@
 #lang racket/gui
 
+(define (get-left-side-padding) (+ button-label-inset circle-spacer))
+(define button-label-inset 1)
+(define black-color (make-object color% "BLACK"))
+
+(define triangle-width 10)
+(define triangle-height 14)
+(define triangle-color (make-object color% 50 50 50))
+
+(define border-inset 1)
+(define circle-spacer 4)
+(define rrect-spacer 3)
+
 (provide/contract
  [get-left-side-padding (-> number?)]
  [pad-xywh (-> number? number? (>=/c 0) (>=/c 0)
                (values number? number? (>=/c 0) (>=/c 0)))]
  [draw-button-label
-  (->d ([dc (is-a?/c dc<%>)]
+  (->i ([dc (is-a?/c dc<%>)]
         [label (or/c false/c string?)]
         [x number?]
         [y number?]
@@ -15,7 +27,7 @@
         [grabbed? boolean?]
         [button-label-font (is-a?/c font%)]
         [bkg-color (or/c false/c (is-a?/c color%) string?)])
-       #:pre-cond
+       #:pre (w h)
        (w . > . (- h (* 2 border-inset)))
        [result void?])]
  
@@ -213,18 +225,6 @@
     (stretchable-width #f)
     (stretchable-height #f)
     (send (get-dc) set-smoothing 'aligned)))
-
-(define (get-left-side-padding) (+ button-label-inset circle-spacer))
-(define button-label-inset 1)
-(define black-color (make-object color% "BLACK"))
-
-(define triangle-width 10)
-(define triangle-height 14)
-(define triangle-color (make-object color% 50 50 50))
-
-(define border-inset 1)
-(define circle-spacer 4)
-(define rrect-spacer 3)
 
 (define (offset-color color offset-one)
   (make-object color%

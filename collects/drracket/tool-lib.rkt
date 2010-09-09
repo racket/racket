@@ -1154,9 +1154,9 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc
   drracket:language:register-capability
-  (->d ([s symbol?]
+  (->i ([s symbol?]
         [the-contract contract?]
-        [default the-contract])
+        [default (the-contract) the-contract])
        ()
        [res void?])
   @{Registers a new capability with a default value for each language
@@ -1242,9 +1242,9 @@ all of the names in the tools library, for use defining keybindings
     has been called with @racket[s].})
  (proc-doc
   drracket:language:get-capability-default
-  (->d ([s (and/c symbol? drracket:language:capability-registered?)])
+  (->i ([s (and/c symbol? drracket:language:capability-registered?)])
        ()
-       [res (drracket:language:get-capability-contract s)])
+       [res (s) (drracket:language:get-capability-contract s)])
   @{Returns the default for a particular capability.})
  (proc-doc/names
   drracket:language:get-capability-contract

@@ -137,16 +137,16 @@
 
 (p/c
  [ret    
-  (->d ([t (or/c Type/c (listof Type/c))])
-       ([f (if (list? t)
-               (listof FilterSet/c)
-               FilterSet/c)]
-        [o (if (list? t)
-               (listof Object?)
-               Object?)]
+  (->i ([t (or/c Type/c (listof Type/c))])
+       ([f (t) (if (list? t)
+                   (listof FilterSet/c)
+                   FilterSet/c)]
+        [o (t) (if (list? t)
+                   (listof Object?)
+                   Object?)]
         [dty Type/c]
         [dbound symbol?])
-       [_ tc-results?])])
+       [res tc-results?])])
 
 (define (combine-results tcs)
   (match tcs

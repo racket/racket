@@ -281,9 +281,9 @@
  [dict-ref/default (-> dict? any/c any/c any/c)]
  [dict-ref/failure (-> dict? any/c (-> any/c) any/c)]
  [dict-ref/check
-  (->d ([table dict?] [key any/c]) ()
-       #:pre-cond (dict-has-key? table key)
-       [_ any/c])]
+  (->i ([table dict?] [key any/c]) ()
+       #:pre (table key) (dict-has-key? table key)
+       [res any/c])]
  [dict-union (->* [(and/c dict? dict-can-functional-set?)]
                   [#:combine
                    (-> any/c any/c any/c)

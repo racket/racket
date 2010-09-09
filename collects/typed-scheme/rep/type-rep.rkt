@@ -149,8 +149,8 @@
 ;; n is how many variables are bound here
 ;; body is a Scope
 (dt Poly (n body) #:no-provide 
-    [#:contract (->d ([n natural-number/c]
-                      [body (scope-depth n)])
+    [#:contract (->i ([n natural-number/c]
+                      [body (n) (scope-depth n)])
                      (#:syntax [stx (or/c #f syntax?)])
                      [result Poly?])]
     [#:frees (λ (f) (f body))]
@@ -162,8 +162,8 @@
 ;; there are n-1 'normal' vars and 1 ... var
 ;; body is a Scope
 (dt PolyDots (n body) #:no-provide
-    [#:contract (->d ([n natural-number/c]
-                      [body (scope-depth n)])
+    [#:contract (->i ([n natural-number/c]
+                      [body (n) (scope-depth n)])
                      (#:syntax [stx (or/c #f syntax?)])
                      [result PolyDots?])]
     [#:key (Type-key body)]
