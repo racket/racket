@@ -6,17 +6,18 @@
 
 (define (get-definitions/string
          string
-         #:define-prefix [define-prefix "(define"]
-         #:indent? [indent? #f])
+         #:define-prefix [define-prefix "(define"])
   (define text (new text%))
   (send text insert (make-object string-snip% string))
-  (get-definitions define-prefix indent? text))
+  (get-definitions define-prefix #f text))
 
 (define-syntax (test-definitions stx)
   (syntax-case stx ()
-    [(_ string (name ...))
-     #`(let ([actual (map defn-name (get-definitions/string string))]
-             [expected (list name ...)])
+    [(_ string ((name start end) ...))
+     #`(let ([actual (map (match-lambda [(defn _ n s e)
+                                         (list n s e)])
+                          (get-definitions/string string))]
+             [expected (list (list name start end) ...)])
          (unless (equal? actual expected)
            (eprintf "Test failure at ~a\nActual: ~s\nExpected: ~s\n"
                     #,(format "~a:~a:~a"
@@ -35,7 +36,14 @@
 (define y 2)
 (define
 END
- ("x" "f" "y" "y" (string-constant end-of-buffer-define)))
+ (("x" 0 12)
+  ; The end positions for f and the inner y look wrong to me.
+  ; If they look wrong to you too (but you know what you're doing),
+  ; please change the tests.
+  ("f" 13 28) 
+  ("y" 29 46)
+  ("y" 47 59)
+  ((string-constant end-of-buffer-define) 60 67)))
 
 (test-definitions 
  #<<END
@@ -51,4 +59,8 @@ END
   [(i p) t])
 (define-metafunction
 END
- ("f" "g" "h" "i" (string-constant end-of-buffer-define)))
+ (("f" 0 48)
+  ("g" 49 84)
+  ("h" 85 145)
+  ("i" 146 193)
+  ((string-constant end-of-buffer-define) 194 214)))
