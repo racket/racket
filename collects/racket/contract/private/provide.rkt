@@ -727,7 +727,7 @@
                                                                            (a:update-loc
                                                                             (quote-syntax id)
                                                                             (vector
-                                                                             #,(syntax-source #'id)
+                                                                             '#,(syntax-source #'id)
                                                                              #,(syntax-line #'id)
                                                                              #,(syntax-column #'id)
                                                                              #,(syntax-position #'id)
