@@ -24,3 +24,12 @@ Abstraktion}.
 @section[#:tag "vanilla-prim-op"]{Primitive Operationen}
 
 @prim-op-defns['(lib "DMdA-vanilla.ss" "deinprogramm") #'here '()]
+
+@section[#:tag "signatures-vanilla"]{Signaturen}
+
+@subsection{@scheme[list-of]} 
+@defform[(list-of sig)]{
+Diese Signatur ist dann für einen Wert gültig, wenn dieser eine Liste ist,
+für dessen Elemente @scheme[sig] gültig ist.
+}
+

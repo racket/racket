@@ -4,7 +4,7 @@
 	 signature signature/arbitrary
 	 define-contract contract ; legacy
 	 define/signature define-values/signature
-	 -> mixed one-of predicate combined property)
+	 -> mixed one-of predicate combined property list-of)
 
 (require deinprogramm/signature/signature
 	 scheme/promise
@@ -55,6 +55,11 @@
 		   (?name name))
        #'(make-predicate-signature '?name (delay ?exp) ?stx)))
     ((list ?signature)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name)
+		   (?signature-expr (parse-signature #f #'?signature)))
+       #'(make-list-signature '?name ?signature-expr ?stx)))
+    ((list-of ?signature)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name)
 		   (?signature-expr (parse-signature #f #'?signature)))
@@ -269,5 +274,4 @@
 (define-syntax predicate within-signature-syntax-transformer)
 (define-syntax combined within-signature-syntax-transformer)
 (define-syntax property within-signature-syntax-transformer)
-; not a good idea:
-; (define-syntax list within-signature-syntax-transformer)
+(define-syntax list-of within-signature-syntax-transformer)

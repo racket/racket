@@ -283,12 +283,6 @@ für den Rückgabewert.
 }}
 }
 
-@subsection{@scheme[list]} 
-@defform[(list sig)]{
-Diese Signatur ist dann für einen Wert gültig, wenn dieser eine Liste ist,
-für dessen Elemente @scheme[sig] gültig ist.
-}
-
 @subsection[#:tag "signature-variable"]{Signatur-Variablen} 
 @defform/none[%a]
 @defform/none[%b]

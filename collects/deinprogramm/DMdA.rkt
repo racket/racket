@@ -31,7 +31,7 @@
 (provide (all-from-out test-engine/scheme-tests))
 (provide signature define-contract :
 	 contract ; legacy
-	 -> mixed one-of predicate combined)
+	 -> mixed one-of predicate combined list-of)
 
 (provide number real rational integer natural
 	 boolean true false
