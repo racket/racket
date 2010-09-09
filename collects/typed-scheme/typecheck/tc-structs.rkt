@@ -123,7 +123,9 @@
                        (make-fld t g setters?))]
          [flds (append parent-fields this-flds)]
          [sty (make-Struct name parent flds proc-ty poly? pred
-                           (syntax-local-certifier) (or maker* maker))]
+                           ;; this check is so that the tests work
+                           (if (syntax-transforming?) (syntax-local-certifier) values)
+                           (or maker* maker))]
          [external-fld-types/no-parent types]
          [external-fld-types (map fld-t flds)])
     (if type-only
