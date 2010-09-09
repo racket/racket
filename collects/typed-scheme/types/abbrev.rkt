@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt")
 
-(require (rep type-rep object-rep filter-rep)
+(require (rep type-rep object-rep filter-rep rep-utils)
          "resolve.rkt"
          (utils tc-utils)
          racket/list
