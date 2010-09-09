@@ -15,7 +15,7 @@
 (provide Filter/c FilterSet/c name-ref/c hash-name)
 
 (define name-ref/c (or/c identifier? integer?))
-(define (hash-name v) (if (identifier? v) (hash-id v) v))
+(define (hash-name v) (if (identifier? v) (hash-id v) (list v)))
 
 (df Bot () [#:fold-rhs #:base])
 (df Top () [#:fold-rhs #:base])
