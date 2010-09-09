@@ -223,6 +223,7 @@
           (when pq (set-box! pq #f)))
         (set! paint-queued #f)
         (when (or (not b) (is-shown-to-root?))
+          (send dc suspend-flush)
           (send dc ensure-ready)
           (send dc erase) ; start with a clean slate
           (let ([bg (get-canvas-background)])
@@ -231,7 +232,6 @@
                 (send dc set-background bg)
                 (send dc clear)
                 (send dc set-background old-bg))))
-          (send dc suspend-flush)
           (on-paint)
           (send dc resume-flush)
           (queue-backing-flush)))
