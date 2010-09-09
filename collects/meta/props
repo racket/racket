@@ -1388,6 +1388,7 @@ path/s is either such a string or a list of them.
 "collects/tests/deinprogramm/run-image-test.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket" responsible (robby) drdr:random #t
 "collects/tests/drracket/drracket-test-util.rkt" drdr:command-line (gracket "-t" *)
+"collects/tests/drracket/get-defs-test.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/io.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/language-test.rkt" drdr:command-line (gracket *) drdr:timeout 600
 "collects/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
