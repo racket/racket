@@ -460,32 +460,27 @@
 (define (write-sound* file data meta)
   (write-sound-internal/lists file data meta))
 
-;; an rsound (racket sound) provides a representation for sounds 
-;; that leaves them packed as C data. For the moment, it's 
-;; 2-channel float only. Also, it discards all meta-information
-;; except length and sample-rate.
 
-;; a rsound is (rsound _cpointer nat nat)
-(provide (struct-out rsound))
-(struct rsound (data frames sample-rate))
+;; here's a simplified interface that leaves sounds packed as
+;; C data.  It's 2-channel 32-bit float only. Also, it discards
+;; all meta-information except length and sample-rate.
 
-;; these readers and writers short-cut the translation to/from lists.
-
-;; read-rsound : path-string -> rsound
-;; read the file into a rsound
-(provide read-rsound)
-(define (read-rsound file)
+;; read-sound/floatblock : path-string -> (list/c _pointer nat nat)
+;; read the file into a buffer, return the data, the number of frames,
+;; and the sample rate.
+(provide read-sound/floatblock)
+(define (read-sound/floatblock file)
   (parameterize ([sample-type 'float])
     (let*-values ([(cblock meta) (read-sound-internal file #:split #f)])
-      (rsound cblock (cadr (assq 'frames meta)) (cadr (assq 'samplerate meta))))))
+      (list cblock (cadr (assq 'frames meta)) (cadr (assq 'samplerate meta))))))
 
-;; write-rsound : rsound path-string -> (void)
-;; write the rsound to the given file as a wav.
-(provide write-rsound)
-(define (write-rsound sound file)
-  (write-sound-internal/cblock file (rsound-data sound) '(wav float file) 
-                               (rsound-sample-rate sound) 
-                               (rsound-frames sound)
+;; write-sound/floatblock : _pointer nat nat path-string -> (void)
+;; write the floatblock sound to the given file as a wav.
+(provide write-sound/floatblock)
+(define (write-sound/floatblock data frames sample-rate file)
+  (write-sound-internal/cblock file data '(wav float file) 
+                               sample-rate 
+                               frames
                                2
                                'float
                                ;; for now, no meta-data possible.

@@ -640,6 +640,8 @@
 [exit (-> (Un))]
 
 [collect-garbage (-> -Void)]
+[current-memory-use (-> -Nat)]
+[dump-memory-stats (-> Univ)]
 
 [module->namespace (-> (-mu x (-lst (Un -Symbol -String -Nat x (-val #f)))) -Namespace)]
 [current-namespace (-Param -Namespace -Namespace)]

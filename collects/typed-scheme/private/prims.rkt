@@ -30,30 +30,30 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (require "../utils/utils.rkt"
          racket/base
          mzlib/etc
-	 (for-syntax 
+         "../utils/require-contract.rkt"
+         "colon.rkt"
+         "../typecheck/internal-forms.rkt"
+         (rename-in racket/contract [-> c->])
+         mzlib/struct
+         "base-types.rkt"
+         "base-types-extra.rkt"
+         (for-syntax 
           syntax/parse
 	  syntax/private/util
           scheme/base
-          (rep type-rep)
           mzlib/match
-          "parse-type.rkt" "annotate-classes.rkt"
+          scheme/struct-info
           syntax/struct
           syntax/stx
-          scheme/struct-info
-          (private internal)
-	  (except-in (utils utils tc-utils))
-          (env type-name-env)
+          "../rep/type-rep.rkt"
+          "parse-type.rkt"
+          "annotate-classes.rkt"
+          "internal.rkt"
+          "../utils/utils.rkt"
+          "../utils/tc-utils.rkt"	  
+          "../env/type-name-env.rkt"
           "type-contract.rkt"
           "for-clauses.rkt"))
-
-(require (utils require-contract)
-         "colon.rkt"
-         (typecheck internal-forms)
-         (except-in mzlib/contract ->)
-         (only-in mzlib/contract [-> c->])
-         mzlib/struct
-         "base-types.rkt"
-         "base-types-extra.rkt")
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
 

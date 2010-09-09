@@ -1201,6 +1201,8 @@ path/s is either such a string or a list of them.
 "collects/redex/main.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/pict.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/private/arrow.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/redex/private/compiler/match.rkt" drdr:command-line #f
+"collects/redex/private/compiler/redextomatrix.rkt" drdr:command-line #f
 "collects/redex/private/core-layout.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/private/dot.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/private/pict.rkt" drdr:command-line (gracket-text "-t" *)
