@@ -1,23 +1,23 @@
 #lang racket/unit
 
-(require (rename-in "../utils/utils.rkt" [infer r:infer]))
-(require "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
+(require (rename-in "../utils/utils.rkt" [infer r:infer])
+         "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt"
          (types utils convenience)
          (private type-annotation parse-type)
 	 (env lexical-env type-alias-env global-env type-env-structs)
          (rep type-rep)
          syntax/free-vars
-         racket/trace unstable/debug
+         ;racket/trace unstable/debug
          racket/match (prefix-in c: racket/contract)
          (except-in racket/contract -> ->* one-of/c)
          syntax/kerncase syntax/parse
+         unstable/debug
          (for-template 
           racket/base
           "internal-forms.rkt"))
 
 (require (only-in srfi/1/list s:member))
-
 
 (import tc-expr^)
 (export tc-let^)
