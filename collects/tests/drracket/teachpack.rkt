@@ -191,15 +191,15 @@
           (lambda (dir)
             (lambda (teachpack)
               (when (or (equal? #"ss" (filename-extension teachpack))
-                        (equal? #"scm" (filename-extension teachpack)))
+                        (equal? #"scm" (filename-extension teachpack))
+                        (equal? #"rkt" (filename-extension teachpack)))
                 (unless (equal? "graphing.ss" (path->string teachpack))
                   (printf "  testing ~a\n" teachpack)
                   (fw:test:menu-select "Language" "Clear All Teachpacks")
                   (fw:test:menu-select "Language" "Add Teachpack...")
                   (wait-for-new-frame drs-frame)
                   (let* ([tp-dialog (get-top-level-focus-window)]
-                         [choice (find-leftmost-choice tp-dialog)])
-                    (fw:test:set-list-box! choice (path->string teachpack))
+                         [choice (find/select-relevant-choice tp-dialog (path->string teachpack))])
                     (fw:test:button-push "OK")
                     (wait-for-new-frame tp-dialog))
                   (do-execute drs-frame)
@@ -221,6 +221,26 @@
     (do-execute drs-frame)
     (test-teachpacks (list (build-path teachpack-dir "2htdp")
                            (build-path teachpack-dir "htdp")))))
+
+(define (find/select-relevant-choice tp-dialog tp-string)
+  (define lb
+    (let loop ([p tp-dialog])
+      (cond
+        [(and (is-a? p list-box%)
+              (list-control-has-string? p tp-string))
+         p]
+        [(is-a? p area-container<%>)
+         (ormap loop (send p get-children))]
+        [else #f])))
+  (cond
+    [lb (fw:test:set-list-box! lb tp-string)]
+    [else
+     (error 'find/select-relevant-choice "did not find ~s in any list-box%" tp-string)]))
+
+(define (list-control-has-string? control str)
+  (for/or ([i (in-range 0 (send control get-number))])
+    (equal? (send control get-string i) 
+            str)))
 
 (define (find-leftmost-choice frame)
   (let loop ([p frame])
