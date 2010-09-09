@@ -214,7 +214,7 @@ form normally suffices with @racket[for], a @racket[when] expression
 form in a @racket[for/list] would cause the result list to contain
 @|void-const|s instead of omitting list elements.
 
-The @racket[for*/list] is like @racket[for*], nesting multiple
+The @racket[for*/list] form is like @racket[for*], nesting multiple
 iterations:
 
 @interaction[
@@ -241,8 +241,8 @@ newly-constructed vector instead of a list:
   (string-append (number->string i) ". " chapter))
 ]
 
-The @racket[for*/vector] behaves similarly, but the iterations are
-nested.
+The @racket[for*/vector] form behaves similarly, but the iterations are
+nested as in @racket[for*].
 
 The @racket[for/vector] and @racket[for*/vector] forms also allow the
 length of the vector to be constructed to be supplied in advance.  The
