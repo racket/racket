@@ -137,51 +137,6 @@ einer @scheme[#t], ergibt auch der or-Ausdruck @scheme[#t]; wenn alle Operanden 
 ergeben, ergibt auch der @scheme[or]-Ausdruck @scheme[#f].
 }
 
-@section{@scheme[let], @scheme[letrec] und @scheme[let*]}
-
-@defform[(let ((id expr) ...) expr)]{
-
-Bei einem @scheme[let]-Ausdruck werden zunächst die @scheme[expr]s aus
-den @scheme[(id expr)]-Paaren ausgewertet. Ihre Werte werden dann im
-Rumpf-@scheme[expr] für die Namen @scheme[id] eingesetzt. Dabei können
-sich die Ausdrücke nicht auf die Namen beziehen.
-
-@schemeblock[
-(define a 3)
-(let ((a 16)
-      (b a))
-  (+ b a))
-=> 19]
-
-Das Vorkommen von @scheme[a] in der Bindung von @scheme[b] bezieht
-sich also auf das @scheme[a] aus der Definition, nicht das @scheme[a]
-aus dem @scheme[let]-Ausdruck.
-}
-
-@defform[(letrec ((id expr) ...) expr)]{
-Ein @scheme[letrec]-Ausdruck ist
-ähnlich zum entsprechenden @scheme[let]-Ausdruck, mit dem Unterschied, daß sich
-die @scheme[expr]s aus den Bindungen auf die gebundenen Namen beziehen
-dürfen.}
-
-@defform[(let* ((id expr) ...) expr)]{
-Ein @scheme[let*]-Ausdruck ist ähnlich zum entsprechenden
-@scheme[let]-Ausdruck, mit dem Unterschied, daß sich die @scheme[expr]s
-aus den Bindungen auf die Namen beziehen dürfen, die jeweils vor dem
-@scheme[expr] gebunden wurden. Beispiel:
-
-@schemeblock[
-(define a 3)
-(let* ((a 16)
-       (b a))
-  (+ b a))
-=> 32]
-
-Das Vorkommen von @scheme[a] in der Bindung von @scheme[b] bezieht
-sich also auf das @scheme[a] aus dem @scheme[let*]-Ausdruck, nicht das
-@scheme[a] aus der globalen Definition.
-}
-
 @section{@scheme[begin]}
 
 @defform[(begin expr expr ...)]{
