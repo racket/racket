@@ -13,7 +13,7 @@ The @racket[->] contract constructor works for functions that take a
 fixed number of arguments and where the result contract is independent
 of the input arguments. To support other kinds of functions, Racket
 supplies additional contract constructors, notably @racket[->*] and 
-@racket[->d].
+@racket[->i].
 
 @ctc-section[#:tag "optional"]{Optional Arguments}
 
@@ -272,15 +272,16 @@ The following is an excerpt from an imaginary numerics module:
 
 @racketblock[
 (provide/contract 
- [real-sqrt (->d ([argument (>=/c 1)])
-                 ()
-                 [result (<=/c argument)])])
+ [real-sqrt (->i ([argument (>=/c 1)])
+                 [result (argument) (<=/c argument)])])
 ]
 
 The contract for the exported function @racket[real-sqrt] uses the
-@racket[->d] rather than @racket[->*] function contract. The ``d''
-stands for a @italic{dependent} contract, meaning the contract for the
-function range depends on the value of the argument. In this
+@racket[->i] rather than @racket[->*] function contract. The ``i''
+stands for an @italic{indy dependent} contract, meaning the contract for the
+function range depends on the value of the argument. The appearance
+of @racket[argument] in the line for @racket[result]'s contract means
+that the result depends on the argument. In this
 particular case, the argument of @racket[real-sqrt] is greater or
 equal to 1, so a very basic correctness check is that the result is
 smaller than the argument.
@@ -327,17 +328,17 @@ racket
 (provide/contract
  [create   (amount/c . -> . account?)]
  [balance  (account? . -> . amount/c)]
- [withdraw (->d ([acc account?]
-                 [amt (and/c amount/c (<=/c (balance acc)))])
-                ()
-                [result (and/c account? 
+ [withdraw (->i ([acc account?]
+                 [amt (acc) (and/c amount/c (<=/c (balance acc)))])
+                [result (acc amt)
+                        (and/c account? 
                                (lambda (res)
                                  (>= (balance res) 
                                      (- (balance acc) amt))))])]
- [deposit  (->d ([acc account?]
+ [deposit  (->i ([acc account?]
                  [amt amount/c])
-                ()
-                [result (and/c account? 
+                [result (acc amt)
+                        (and/c account? 
                                (lambda (res)
                                  (>= (balance res) 
                                      (+ (balance acc) amt))))])])
@@ -361,7 +362,7 @@ complicated constraints on @racket[balance] and @racket[deposit].  The
 contract on the second argument to @racket[withdraw] uses
 @racket[(balance acc)] to check whether the supplied withdrawal amount
 is small enough, where @racket[acc] is the name given within
-@racket[->d] to the function's first argument. The contract on the
+@racket[->i] to the function's first argument. The contract on the
 result of @racket[withdraw] uses both @racket[acc] and @racket[amt] to
 guarantee that no more than that requested amount was withdrawn. The
 contract on @racket[deposit] similarly uses @racket[acc] and
@@ -393,14 +394,13 @@ racket
 (provide/contract
  [create   (amount/c . -> . account?)]
  [balance  (account? . -> . amount/c)]
- [withdraw (->d ([acc account?]
-                 [amt (and/c amount/c (<=/c (balance acc)))])
-                ()
-                [result (mk-account-contract acc amt >= msg>)])]
- [deposit  (->d ([acc account?]
+ [withdraw (->i ([acc account?]
+                 [amt (acc) (and/c amount/c (<=/c (balance acc)))])
+                [result (acc amt) (mk-account-contract acc amt >= msg>)])]
+ [deposit  (->i ([acc account?]
                  [amt amount/c])
-                ()
-                [result (mk-account-contract acc amt <= msg<)])])
+                [result (acc amt) 
+                        (mk-account-contract acc amt <= msg<)])])
 
 (code:comment "section 3: the function definitions")
 (define balance account-balance)
@@ -416,15 +416,14 @@ racket
 
 @ctc-section[#:tag "arrow-d-eval-order"]{Checking State Changes}
 
-The @racket[->d] contract combinator can also ensure that a
+The @racket[->i] contract combinator can also ensure that a
 function only modifies state according to certain
 constraints. For example, consider this contract
 (it is a slightly simplified from the function
 @racket[preferences:add-panel] in the framework):
 @racketblock[
-(->d ([parent (is-a?/c area-container-window<%>)])
-      ()
-      [_
+(->i ([parent (is-a?/c area-container-window<%>)])
+      [_ (parent)
        (let ([old-children (send parent get-children)])
          (λ (child)
            (andmap eq?
@@ -459,13 +458,13 @@ racket
 (define (get-x) x)
 (define (f) (set! x (cons 'f x)))
 (provide/contract 
- [f (->d () () [_ (begin (set! x (cons 'ctc x)) any/c)])]
+ [f (->i () [_ (begin (set! x (cons 'ctc x)) any/c)])]
  [get-x (-> (listof symbol?))])
 ]
 If you were to require this module, call @racket[f], then
 the result of @racket[get-x] would be @racket['(f ctc)]. In
 contrast, if the contract for @racket[f] were
-@racketblock[(->d () () [res (begin (set! x (cons 'ctc x)) any/c)])]
+@racketblock[(->i () [res (begin (set! x (cons 'ctc x)) any/c)])]
 (only changing the underscore to @racket[res]), then
 the result of @racket[get-x] would be @racket['(ctc f)].
 
@@ -514,7 +513,7 @@ using @racket[->*]:
 
 Now, suppose that we also want to ensure that the first result of
  @racket[split] is a prefix of the given word in list format. In that
- case, we need to use the @racket[->d] contract combinator:
+ case, we need to use the @racket[->i] contract combinator:
 @racketblock[
 (define (substring-of? s)
   (flat-named-contract
@@ -525,12 +524,11 @@ Now, suppose that we also want to ensure that the first result of
            (equal? (substring s 0 (string-length s2)) s2)))))
 
 (provide/contract 
- [split (->d ([fl (listof char?)])
-             ()
-             (values [s (substring-of (list->string fl))]
+ [split (->i ([fl (listof char?)])
+             (values [s (fl) (substring-of (list->string fl))]
                      [c (listof char?)]))])
 ]
- Like @racket[->*], the @racket[->d] combinator uses a function over the
+ Like @racket[->*], the @racket[->i] combinator uses a function over the
  argument to create the range contracts. Yes, it doesn't just return one
  contract but as many as the function produces values: one contract per
  value.  In this case, the second contract is the same as before, ensuring
@@ -542,9 +540,8 @@ This contract is expensive to check, of course. Here is a slightly
   cheaper version: 
 @racketblock[
 (provide/contract 
- [split (->d ([fl (listof char?)])
-             ()
-             (values [s (string-len/c (length fl))]
+ [split (->i ([fl (listof char?)])
+             (values [s (fl) (string-len/c (length fl))]
                      [c (listof char?)]))])
 ]
 
@@ -613,7 +610,7 @@ because the given function accepts only one argument.
 @racketblock[
 (provide/contract
  [n-step
-  (->d ([proc 
+  (->i ([proc (inits)
          (and/c (unconstrained-domain-> 
                  (or/c false/c number?))
                 (λ (f) (procedure-arity-includes? 
