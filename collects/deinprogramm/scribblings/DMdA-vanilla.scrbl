@@ -22,10 +22,6 @@ Abstraktion}.
 
 @prim-ops['(lib "DMdA-vanilla.ss" "deinprogramm") #'here]
 
-@section[#:tag "vanilla-prim-op"]{Primitive Operationen}
-
-@prim-op-defns['(lib "DMdA-vanilla.ss" "deinprogramm") #'here '()]
-
 @section[#:tag "signatures-vanilla"]{Signaturen}
 
 @subsection{@scheme[list-of]} 
@@ -79,4 +75,7 @@ sich also auf das @scheme[a] aus dem @scheme[let*]-Ausdruck, nicht das
 @scheme[a] aus der globalen Definition.
 }
 
+@section[#:tag "vanilla-prim-op"]{Primitive Operationen}
+
+@prim-op-defns['(lib "DMdA-vanilla.ss" "deinprogramm") #'here '()]
 
