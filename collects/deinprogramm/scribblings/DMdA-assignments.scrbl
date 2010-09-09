@@ -51,6 +51,14 @@ werden die Signaturen für die Feldinhalte, anders als bei
 Konstruktion überprüft und nicht erst beim Aufruf eines Selektors.
 }
 
+@section{@scheme[begin]}
+
+@defform[(begin expr expr ...)]{
+Bei der Auswertung eines @scheme[begin]-Ausdrucks werden nacheinander
+die Operanden ausgewertet. Der Wert des letzten Ausdrucks wird der
+Wert des @scheme[begin]-Ausdrucks.
+}
+
 @section{@scheme[set!]}
 
 @defform[(set! id expr)]{

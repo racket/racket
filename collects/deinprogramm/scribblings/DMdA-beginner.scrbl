@@ -137,14 +137,6 @@ einer @scheme[#t], ergibt auch der or-Ausdruck @scheme[#t]; wenn alle Operanden 
 ergeben, ergibt auch der @scheme[or]-Ausdruck @scheme[#f].
 }
 
-@section{@scheme[begin]}
-
-@defform[(begin expr expr ...)]{
-Bei der Auswertung eines @scheme[begin]-Ausdrucks werden nacheinander
-die Operanden ausgewertet. Der Wert des letzten Ausdrucks wird der
-Wert des @scheme[begin]-Ausdrucks.
-}
-
 @section{Signaturen}
 
 Signaturen können statt der Verträge aus dem Buch geschrieben werden:
