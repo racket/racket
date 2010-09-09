@@ -1,46 +1,6 @@
 #lang racket/base
-
-(require (for-syntax racket/base))
-
-(provide prop:dict
-         dict?
-
-         dict-mutable?
-         dict-can-remove-keys?
-         dict-can-functional-set?
-         
-         dict-has-key?
-         dict-ref
-         dict-ref!
-         dict-set!
-         dict-set*!
-         dict-set
-         dict-set*
-         dict-update!
-         dict-update
-         dict-remove!
-         dict-remove
-         dict-count
-         dict-iterate-first
-         dict-iterate-next
-         dict-iterate-key
-         dict-iterate-value
-         
-         dict-map
-         dict-for-each
-
-         in-dict
-         in-dict-keys
-         in-dict-values
-         in-dict-pairs
-         
-         dict-keys
-         dict-values
-         dict->list
-
-         (rename-out [create-custom-hash make-custom-hash]
-                     [create-immutable-custom-hash make-immutable-custom-hash])
-         make-weak-custom-hash)
+(require (for-syntax racket/base)
+         racket/contract/base)
 
 (define (dict-property-guard v info)
   (check-dict-vector 'prop:dict "dictionary property" v)
@@ -131,8 +91,22 @@
     (apply format fmt args)
     (current-continuation-marks))))
 
+(define (dict/c-property-guard v _)
+  v)
+
+(define (dict/contracts-property-guard v _)
+  v)
+
 (define-values (prop:dict dict-struct? dict-struct-ref)
   (make-struct-type-property 'dict dict-property-guard))
+
+(define-values (prop:dict/c dict/c-struct? dict/c-struct-ref)
+  (make-struct-type-property 'dict/c dict/c-property-guard))
+
+(define-values (prop:dict/contracts dict/contracts? dict/contracts-ref)
+  (make-struct-type-property 'dict/contracts dict/contracts-property-guard
+                             (list (cons prop:dict car)
+                                   (cons prop:dict/c cadr))))
 
 (define (get-dict-ref v)
   (vector-ref v 0))
@@ -154,6 +128,19 @@
   (vector-ref v 8))
 (define (get-dict-iterate-value v)
   (vector-ref v 9))
+
+(define (get-dict/c-type-key-c v)
+  (vector-ref v 0))
+(define (get-dict/c-type-value-c v)
+  (vector-ref v 1))
+(define (get-dict/c-type-iter-c v)
+  (vector-ref v 2))
+(define (get-dict/c-inst-key-c v)
+  (vector-ref v 3))
+(define (get-dict/c-inst-value-c v)
+  (vector-ref v 4))
+(define (get-dict/c-inst-iter-c v)
+  (vector-ref v 5))
 
 (define (assoc? v) 
   (and (list? v) (andmap pair? v)))
@@ -510,7 +497,34 @@
   (for/list ([k*v (in-dict-pairs d)])
     k*v))
 
+;; ----------------------------------------
 
+(define (dict-key-contract d)
+  (if (dict/c-struct? d)
+      (let ([type-key-contract (get-dict/c-type-key-c d)]
+            [inst-key-contract (get-dict/c-inst-key-c d)])
+        (if inst-key-contract
+            (and/c type-key-contract (inst-key-contract d))
+            type-key-contract))
+      any/c))
+
+(define (dict-value-contract d)
+  (if (dict/c-struct? d)
+      (let ([type-value-contract (get-dict/c-type-value-c d)]
+            [inst-value-contract (get-dict/c-inst-value-c d)])
+        (if inst-value-contract
+            (and/c type-value-contract (inst-value-contract d))
+            type-value-contract))
+      any/c))
+
+(define (dict-iter-contract d)
+  (if (dict/c-struct? d)
+      (let ([type-iter-contract (get-dict/c-type-iter-c d)]
+            [inst-iter-contract (get-dict/c-inst-iter-c d)])
+        (if inst-iter-contract
+            (and/c type-iter-contract (inst-iter-contract d))
+            type-iter-contract))
+      any/c))
 
 ;; ----------------------------------------
 
@@ -645,3 +659,95 @@
       (values make-custom-hash 
               make-immutable-custom-hash
               make-weak-custom-hash))))
+
+;; --------------------
+
+(provide prop:dict
+         prop:dict/contracts
+         dict?
+
+         dict-mutable?
+         dict-can-remove-keys?
+         dict-can-functional-set?)
+
+(provide/contract
+ [dict-has-key?
+  (-> dict? any/c boolean?)]
+ [dict-ref
+  (->i ([d dict?] [k (d) (dict-key-contract d)])
+       ([default any/c])
+       [_ (d) (dict-value-contract d)])] ;; or == default ?
+ [dict-ref!
+  (->i ([d dict-mutable?] [k (d) (dict-key-contract d)]
+        [default any/c]) ;; refine using if/c
+       [_ (d) (dict-value-contract d)])] ;; or == default ?
+ [dict-set!
+  (->i ([d dict-mutable?]
+        [k (d) (dict-key-contract d)]
+        [value (d) (dict-value-contract d)])
+       [_ void?])]
+ [dict-set
+  (->i ([d dict-can-functional-set?]
+        [k (d) (dict-key-contract d)]
+        [value (d) (dict-value-contract d)])
+       [_ dict?])]
+ [dict-set*! any/c] ;; FIXME!!!
+ [dict-set* any/c] ;; FIXME!!!
+ [dict-update!
+  (->i ([d dict-mutable?]
+        [k (d) (dict-key-contract d)]
+        [update (d) (-> (dict-value-contract d) (dict-value-contract d))])
+       [_ void?])]
+ [dict-update
+  (->i ([d dict-can-functional-set?]
+        [k (d) (dict-key-contract d)]
+        [update (d) (-> (dict-value-contract d) (dict-value-contract d))])
+       [_ dict?])]
+ [dict-remove!
+  (->i ([d (and/c dict-mutable? dict-can-remove-keys?)]
+        [k (d) (dict-key-contract d)])
+       [_ void?])]
+ [dict-remove
+  (->i ([d (and/c dict-can-functional-set? dict-can-remove-keys?)]
+        [k (d) (dict-key-contract d)])
+       [_ dict?])]
+ [dict-count
+  (-> dict? exact-nonnegative-integer?)]
+ [dict-iterate-first
+  (->i ([d dict?]) [_ (d) (or/c #f (dict-iter-contract d))])]
+ [dict-iterate-next
+  (->i ([d dict?] [iter (d) (dict-iter-contract d)])
+       [_ (d) (or/c #f (dict-iter-contract d))])]
+ [dict-iterate-key
+  (->i ([d dict?] [iter (d) (dict-iter-contract d)])
+       [_ (d) (dict-key-contract d)])]
+ [dict-iterate-value
+  (->i ([d dict?] [iter (d) (dict-iter-contract d)])
+       [_ (d) (dict-value-contract d)])]
+
+ [dict-map
+  (->i ([d dict?] [proc (d) (-> (dict-key-contract d) (dict-value-contract d) any)])
+       [_ list?])]
+ [dict-for-each
+  (->i ([d dict?] [proc (d) (-> (dict-key-contract d) (dict-value-contract d) any)])
+       [_ void?])]
+
+ [dict-keys
+  (->i ([d dict?])
+       [_ (d) (listof (dict-key-contract d))])]
+ [dict-values
+  (->i ([d dict?])
+       [_ (d) (listof (dict-value-contract d))])]
+ [dict->list
+  (->i ([d dict?])
+       [_ (d) (listof (cons/c (dict-key-contract d) (dict-value-contract d)))])])
+
+(provide (rename-out [create-custom-hash make-custom-hash]
+                     [create-immutable-custom-hash make-immutable-custom-hash])
+         make-weak-custom-hash
+
+         in-dict
+         in-dict-keys
+         in-dict-values
+         in-dict-pairs)
+       
