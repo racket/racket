@@ -1143,8 +1143,8 @@
 
 ;; Simple structs: call this with a list of types, and get a type that marshals
 ;; C structs to/from Scheme lists.
-(define* (_list-struct . types)
-  (let ([stype   (make-cstruct-type types)]
+(define* (_list-struct #:alignment [alignment 2] . types)
+  (let ([stype   (make-cstruct-type types #f alignment)]
         [offsets (compute-offsets types)]
         [len     (length types)])
     (make-ctype stype
@@ -1178,7 +1178,7 @@
 ;; type.
 (provide define-cstruct)
 (define-syntax (define-cstruct stx)
-  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx)
+  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx alignment-stx)
     (define name
       (cadr (regexp-match #rx"^_(.+)$" (symbol->string (syntax-e _TYPE-stx)))))
     (define slot-names (map (lambda (x) (symbol->string (syntax-e x)))
@@ -1220,7 +1220,8 @@
          [(TYPE-SLOT ...)      (ids (lambda (s) `(,name"-",s)))]
          [(set-TYPE-SLOT! ...) (ids (lambda (s) `("set-",name"-",s"!")))]
          [(offset ...) (generate-temporaries
-                               (ids (lambda (s) `(,s"-offset"))))])
+                               (ids (lambda (s) `(,s"-offset"))))]
+         [alignment            alignment-stx])
       (with-syntax ([get-super-info
                      ;; the 1st-type might be a pointer to this type
                      (if (or (safe-id=? 1st-type #'_TYPE-pointer/null)
@@ -1255,7 +1256,7 @@
                   (define all-tags (cons TYPE-tag super-tags))
                   (define _TYPE*
                     ;; c->scheme adjusts all tags
-                    (let* ([cst (make-cstruct-type types)]
+                    (let* ([cst (make-cstruct-type types #f alignment)]
                            [t (_cpointer TYPE-tag cst)]
                            [c->s (ctype-c->scheme t)])
                       (make-ctype cst (ctype-scheme->c t)
@@ -1352,11 +1353,19 @@
     [(_ _TYPE ([slot slot-type] ...))
      (and (_-identifier? #'_TYPE stx)
           (identifiers? #'(slot ...)))
-     (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...))]
+     (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...) #'#f)]
+    [(_ _TYPE #:alignment alignment-expr ([slot slot-type] ...))
+     (and (_-identifier? #'_TYPE stx)
+          (identifiers? #'(slot ...)))
+     (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...) #'alignment-expr)]
     [(_ (_TYPE _SUPER) ([slot slot-type] ...))
      (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
      (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
-       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...)))]))
+       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'#f))]
+    [(_ (_TYPE _SUPER) #:alignment alignment-expr ([slot slot-type] ...))
+     (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
+     (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
+       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'alignment-expr))]))
 
 ;; helper for the above: keep runtime information on structs
 (define cstruct-info

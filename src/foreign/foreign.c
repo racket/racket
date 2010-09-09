@@ -1013,6 +1013,16 @@ void free_libffi_type(void *ignored, void *p)
   free(p);
 }
 
+void free_libffi_type_with_alignment(void *ignored, void *p)
+{
+  int i;
+
+  for (i = 0; ((ffi_type*)p)->elements[i]; i++) {
+    free(((ffi_type*)p)->elements[i]);
+  }
+  free_libffi_type(ignored, p);
+}
+
 /*****************************************************************************/
 /* ABI spec */
 
@@ -1049,7 +1059,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 /*****************************************************************************/
 /* cstruct types */
 
-/* (make-cstruct-type types [abi]) -> ctype */
+/* (make-cstruct-type types [abi alignment]) -> ctype */
 /* This creates a new primitive type that is a struct.  This type can be used
  * with cpointer objects, except that the contents is used rather than the
  * pointer value.  Marshaling to lists or whatever should be done in Scheme. */
@@ -1063,11 +1073,24 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   GC_CAN_IGNORE ffi_type **elements, *libffi_type, **dummy;
   ctype_struct *type;
   ffi_cif cif;
-  int i, nargs;
+  int i, nargs, with_alignment;
   ffi_abi abi;
   nargs = scheme_proper_list_length(argv[0]);
   if (nargs < 0) scheme_wrong_type(MYNAME, "proper list", 0, argc, argv);
   abi = GET_ABI(MYNAME,1);
+  if (argc > 2) {
+    if (!SCHEME_FALSEP(argv[2])) {
+      if (!SAME_OBJ(argv[2], scheme_make_integer(1))
+          && !SAME_OBJ(argv[2], scheme_make_integer(2))
+          && !SAME_OBJ(argv[2], scheme_make_integer(4))
+          && !SAME_OBJ(argv[2], scheme_make_integer(8))
+          && !SAME_OBJ(argv[2], scheme_make_integer(16)))
+        scheme_wrong_type(MYNAME, "1, 2, 4, 8, 16, or #f", 2, argc, argv);
+      with_alignment = SCHEME_INT_VAL(argv[2]);
+    } else
+      with_alignment = 0;
+  } else
+    with_alignment = 0;
   /* allocate the type elements */
   elements = malloc((nargs+1) * sizeof(ffi_type*));
   elements[nargs] = NULL;
@@ -1077,6 +1100,13 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
     if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
       scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 0, argc, argv);
     elements[i] = CTYPE_PRIMTYPE(base);
+    if (with_alignment) {
+      /* copy the type to set an alignment: */
+      libffi_type = malloc(sizeof(ffi_type));
+      memcpy(libffi_type, elements[i], sizeof(ffi_type));
+      elements[i] = libffi_type;
+      elements[i]->alignment = with_alignment;
+    }
   }
   /* allocate the new libffi type object */
   libffi_type = malloc(sizeof(ffi_type));
@@ -1093,7 +1123,10 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   type->basetype = (argv[0]);
   type->scheme_to_c = ((Scheme_Object*)libffi_type);
   type->c_to_scheme = ((Scheme_Object*)FOREIGN_struct);
-  scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
+  if (with_alignment)
+    scheme_register_finalizer(type, free_libffi_type_with_alignment, libffi_type, NULL, NULL);
+  else
+    scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
   return (Scheme_Object*)type;
 }
 #undef MYNAME
@@ -3089,7 +3122,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("make-ctype",
     scheme_make_prim_w_arity(foreign_make_ctype, "make-ctype", 3, 3), menv);
   scheme_add_global("make-cstruct-type",
-    scheme_make_prim_w_arity(foreign_make_cstruct_type, "make-cstruct-type", 1, 2), menv);
+    scheme_make_prim_w_arity(foreign_make_cstruct_type, "make-cstruct-type", 1, 3), menv);
   scheme_add_global("ffi-callback?",
     scheme_make_prim_w_arity(foreign_ffi_callback_p, "ffi-callback?", 1, 1), menv);
   scheme_add_global("cpointer?",
@@ -3387,7 +3420,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("make-ctype",
    scheme_make_prim_w_arity((Scheme_Prim *)foreign_make_ctype, "make-ctype", 3, 3), menv);
   scheme_add_global("make-cstruct-type",
-   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 2), menv);
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 3), menv);
   scheme_add_global("ffi-callback?",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-callback?", 1, 1), menv);
   scheme_add_global("cpointer?",

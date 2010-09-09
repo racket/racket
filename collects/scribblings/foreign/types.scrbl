@@ -343,7 +343,7 @@ the later case, the result is the @scheme[ctype]).}
 
 @defproc[(_cprocedure [input-types (list ctype?)]
                       [output-type ctype?]
-                      [#:abi abi (or/c symbol/c #f) #f]
+                      [#:abi abi (or/c #f 'default 'stdcall 'sysv) #f]
                       [#:atomic? atomic? any/c #f]
                       [#:async-apply async-apply (or/c #f ((-> any) . -> . any)) #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
@@ -744,7 +744,10 @@ is present for consistency with the above macros).}
 
 @section{C Struct Types}
 
-@defproc[(make-cstruct-type [types (listof ctype?)]) ctype?]{
+@defproc[(make-cstruct-type [types (listof ctype?)]
+                            [abi (or/c #f 'default 'stdcall 'sysv) #f]
+                            [alignment (or/c #f 1 2 4 8 16) #f]) 
+         ctype?]{
 
 The primitive type constructor for creating new C struct types.  These
 types are actually new primitive types; they have no conversion
@@ -752,10 +755,17 @@ functions associated.  The corresponding Racket objects that are used
 for structs are pointers, but when these types are used, the value
 that the pointer @italic{refers to} is used, rather than the pointer
 itself.  This value is basically made of a number of bytes that is
-known according to the given list of @scheme[types] list.}
+known according to the given list of @scheme[types] list.
+
+If @racket[alignment] is @racket[#f], then the natural alignment of
+each type in @racket[types] is used for its alignment within the
+struct type. Otherwise, @racket[alignment] is used for all struct type
+members.}
 
 
-@defproc[(_list-struct [type ctype?] ...+) ctype?]{
+@defproc[(_list-struct [#:alignment alignment (or/c #f 1 2 4 8 16) #f] 
+                       [type ctype?] ...+)
+         ctype?]{
 
 A type constructor that builds a struct type using
 @scheme[make-cstruct-type] function and wraps it in a type that
@@ -766,9 +776,11 @@ the allocated space, so it is inefficient. Use @scheme[define-cstruct]
 below for a more efficient approach.}
 
 
-@defform/subs[(define-cstruct id/sup ([field-id type-expr] ...))
+@defform/subs[(define-cstruct id/sup alignment ([field-id type-expr] ...))
               [(id/sup _id
-                       (_id super-id))]]{
+                       (_id super-id))
+               (alignment code:blank
+                          (code:line #:alignment alignment-expr))]]{
 
 Defines a new C struct type, but unlike @scheme[_list-struct], the
 resulting type deals with C structs in binary form, rather than
