@@ -2021,7 +2021,8 @@ static Scheme_Object *hash_table_copy(int argc, Scheme_Object *argv[])
       scheme_hash_tree_index(t, i, &k, &val);
       if (!SAME_OBJ((Scheme_Object *)t, v))
         val = scheme_chaperone_hash_traversal_get(v, k);
-      scheme_hash_set(naya, k, val);
+      if (val)
+        scheme_hash_set(naya, k, val);
     }
 
     return (Scheme_Object *)naya;
@@ -2330,6 +2331,11 @@ static Scheme_Object *do_map_hash_table(int argc,
           v = chaperone_hash_key(name, chaperone, p[0]);
           p[0] = v;
           v = scheme_chaperone_hash_get(chaperone, v);
+          if (!v)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: no value found for post-proxy key: %V",
+                             name,
+                             p[0]);
         } else
           v = (Scheme_Object *)bucket->val;
         if (v) {
@@ -2359,6 +2365,11 @@ static Scheme_Object *do_map_hash_table(int argc,
           v = chaperone_hash_key(name, chaperone, p[0]);
           p[0] = v;
           v = scheme_chaperone_hash_get(chaperone, v);
+          if (!v)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: no value found for post-proxy key: %V",
+                             name,
+                             p[0]);
         } else {
           v = hash->vals[i];
         }
@@ -2391,6 +2402,11 @@ static Scheme_Object *do_map_hash_table(int argc,
       if (chaperone) {
         ik = chaperone_hash_key(name, chaperone, ik);
         iv = scheme_chaperone_hash_get(chaperone, ik);
+        if (!iv)
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                           "%s: no value found for post-chaperone key: %V",
+                           name,
+                           ik);
       }
       if (iv) {
         p[1] = iv;
@@ -2524,7 +2540,7 @@ static Scheme_Object *hash_table_iterate_next(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object *argv[], int get_val)
 {
-  Scheme_Object *p = argv[1], *obj, *chaperone;
+  Scheme_Object *p = argv[1], *obj, *chaperone, *key;
   int pos, sz;
 
   obj = argv[0];
@@ -2551,9 +2567,15 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
     if (pos < sz) {
       if (hash->vals[pos]) {
         if (chaperone) {
-          if (get_val)
-            return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, hash->keys[pos]));
-          else
+          if (get_val) {
+            key = chaperone_hash_key(name, chaperone, hash->keys[pos]);
+            obj = scheme_chaperone_hash_get(chaperone, key);
+            if (!obj)
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                               "hash-iterate-value: no value found for post-proxy key: %V",
+                               key);
+            return obj;
+          } else
             return chaperone_hash_key(name, chaperone, hash->keys[pos]);
         } else if (get_val)
           return hash->vals[pos];
@@ -2565,9 +2587,15 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
     Scheme_Object *v, *k;
     if (scheme_hash_tree_index((Scheme_Hash_Tree *)obj, pos, &k, &v)) {
       if (chaperone) {
-        if (get_val)
-          return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, k));
-        else
+        if (get_val) {
+          key = chaperone_hash_key(name, chaperone, k);
+          obj = scheme_chaperone_hash_get(chaperone, key);
+          if (!obj)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "hash-iterate-value: no value found for post-chaperone key: %V",
+                             key);
+          return obj;
+        } else
           return chaperone_hash_key(name, chaperone, k);
       } else
         return (get_val ? v : k);
@@ -2591,9 +2619,15 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
           else
             obj = (Scheme_Object *)bucket->key;
           if (chaperone) {
-            if (get_val)
-              return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, obj));
-            else
+            if (get_val) {
+              key = chaperone_hash_key(name, chaperone, obj);
+              obj = scheme_chaperone_hash_get(chaperone, key);
+              if (!obj)
+                scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                                 "hash-iterate-value: no value found for post-proxy key: %V",
+                                 key);
+              return obj;
+            } else
               return chaperone_hash_key(name, chaperone, obj);
           } else
             return obj;
@@ -2709,7 +2743,12 @@ static Scheme_Object *chaperone_hash_op_k(void)
   p->ku.k.p3 = NULL;
   p->ku.k.p4 = NULL;
 
-  return chaperone_hash_op(who, o, k, v, p->ku.k.i1);
+  o = chaperone_hash_op(who, o, k, v, p->ku.k.i1);
+  
+  if (!o)
+    return scheme_false;
+  else
+    return scheme_box(o);
 }
 
 static Scheme_Object *chaperone_hash_op_overflow(const char *who, Scheme_Object *o, Scheme_Object *k, 
@@ -2723,7 +2762,12 @@ static Scheme_Object *chaperone_hash_op_overflow(const char *who, Scheme_Object 
   p->ku.k.p4 = (void *)who;
   p->ku.k.i1 = mode;
 
-  return scheme_handle_stack_overflow(chaperone_hash_op_k);
+  o = scheme_handle_stack_overflow(chaperone_hash_op_k);
+
+  if (SCHEME_FALSEP(o)) 
+    return NULL;
+  else
+    return SCHEME_BOX_VAL(o);
 }
 
 static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Scheme_Object *k, 

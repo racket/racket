@@ -828,6 +828,50 @@
 
 ;; ----------------------------------------
 
+;; Check broken key proxy:
+
+(let ([check
+       (lambda (orig)
+         (let ([h (proxy-hash
+                   orig
+                   (λ (h k) 
+                      (values 'bad1
+                              (λ (h k v)
+                                 'bad2)))
+                   (λ (h k v) (values 'bad3 'bad4))
+                   (λ (h k) 'bad5)
+                   (λ (h k) 'bad6))])
+           (test (void) hash-set! h 1 2)
+           (test #f hash-ref h 1 #f)
+           (err/rt-test (hash-iterate-value h (hash-iterate-first h)))
+           (err/rt-test (hash-map h void))
+           (err/rt-test (hash-for-each h void))))])
+  (check (make-hash))
+  (check (make-hasheq))
+  (check (make-weak-hash))
+  (check (make-weak-hasheq)))
+
+(let ([check
+       (lambda (orig)
+         (let ([h (chaperone-hash
+                   orig
+                   (λ (h k) 
+                      (values (chaperone-vector k (lambda (b i v) v) (lambda (b i v) v))
+                              (λ (h k v) v)))
+                   (λ (h k v) (values (chaperone-vector k (lambda (b i v) v) (lambda (b i v) v))
+                                      v))
+                   (λ (h k) (chaperone-vector k (lambda (b i v) v) (lambda (b i v) v)))
+                   (λ (h k) (chaperone-vector k (lambda (b i v) v) (lambda (b i v) v))))])
+           (let* ([vec (vector 1 2 3)]
+                  [h (hash-set h vec 2)])
+             (test #f hash-ref h vec #f)
+             (err/rt-test (hash-iterate-value h (hash-iterate-first h)))
+             (err/rt-test (hash-map h void))
+             (err/rt-test (hash-for-each h void)))))])
+  (check (hasheq)))
+
+;; ----------------------------------------
+
 (let ()
   (define-struct a (x y) #:transparent)
   (let* ([a1 (make-a 1 2)]

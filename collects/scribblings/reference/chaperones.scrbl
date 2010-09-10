@@ -291,6 +291,12 @@ other operations that use @scheme[hash-iterate-key] internally); it
 must produce a replacement for the key, which is then reported as a
 key extracted from the table.
 
+The @racket[hash-iterate-value], @racket[hash-map], or
+@racket[hash-for-each] functions use a combination of
+@racket[hash-iterate-key] and @racket[hash-ref]. If a key
+produced by @scheme[key-proc] does not yield a value through
+@racket[hash-ref], then the @exnraise[exn:fail:contract].
+
 Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[proxy-hash] must be odd) add proxy properties
 or override proxy-property values of @scheme[hash].}
