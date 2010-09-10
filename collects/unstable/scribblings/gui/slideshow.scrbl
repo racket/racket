@@ -8,6 +8,8 @@
 
 @defmodule[unstable/gui/slideshow]
 
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
+
 @section{Text Formatting}
 
 @defform[(with-size size expr)]{
