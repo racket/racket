@@ -165,7 +165,7 @@ After @racket[rhs] is evaluated, the stack is restored to its depth
 from before evaluating @racket[rhs].}
 
 @deftogether[(
-@defstruct+[(def-syntaxes form) ([ids (listof toplevel?)]
+@defstruct+[(def-syntaxes form) ([ids (listof symbol?)]
                                  [rhs (or/c expr? seq? indirect? any/c)]
                                  [prefix prefix?]
                                  [max-let-depth exact-nonnegative-integer?])]
