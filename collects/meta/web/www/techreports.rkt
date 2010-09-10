@@ -3,9 +3,11 @@
 (require "bib.rkt" (prefix-in - version/utils) racket/list
          "../download/data.rkt")
 
+;; Old style TR entries, for compatibility ------------------------------------
+
 (provide make-bib-table)
 
-(define tr-version-range "...5.0")
+(define last-old-tr "4.9")
 
 (define authors
   '([plt      "PLT"]
@@ -268,7 +270,8 @@
      (if (number? (cadr d)) d (list* (car d) #f (cdr d))))))
 
 (define bibs
-  (for*/list ([ver (filter (versions->pred tr-version-range)
+  (for*/list ([ver (filter (let ([last (-version->integer last-old-tr)])
+                             (lambda (v) (<= (version->integer v) last)))
                            (reverse all-versions))]
               [doc doc-defs*]
               #:when ((car doc) ver))
