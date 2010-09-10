@@ -77,8 +77,7 @@
                  (unmarshall-settings (-> printable/c any))
                  
                  (capability-value 
-                  (->i ([this any/c]  ;; this is a workaround for a bug in ->i and object-contract's interaction!
-                        [s (and/c symbol? 
+                  (->i ([s (and/c symbol? 
                                   drracket:language:capability-registered?)])
                        [res (s) (drracket:language:get-capability-contract s)]))))])
            #`(begin

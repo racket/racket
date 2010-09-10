@@ -2092,6 +2092,76 @@
    '->i22
    '((contract (->i () () #:rest [rst (listof number?)] [r any/c]) (lambda w 1) 'pos 'neg) #f))
   
+  (test/spec-passed/result
+   '->i22
+   '(send (contract (object-contract
+					[m (->i ([x any/c] #:y [y any/c]) ([z any/c]) any)])
+				   (new (class object%
+							   (define/public (m x #:y y [z 1]) x)
+							   (super-new)))
+				   'pos
+				   'neg)
+		 m 1 #:y 2)
+   1)
+
+  (test/spec-passed/result
+   '->i23
+   '((contract (->i ([x any/c] #:y [y any/c]) ([z any/c]) any)
+               (let ()
+                 (define (m x #:y y [z 1]) x)
+                 m)
+               'pos
+               'neg)
+     1 #:y 2)
+   1)
+  
+  (test/spec-passed/result
+   '->i24
+   '((contract (->i ([x any/c]) ([y any/c]) any)
+               (let ()
+                 (define (m x [y 1]) x)
+                 m)
+               'pos
+               'neg)
+     1)
+   1)
+  
+  (test/spec-passed/result
+   '->i25
+   '(send (contract (object-contract
+                     [m (->i ([x any/c]) ([y any/c]) any)])
+                    (new (class object%
+                           (define/public (m x [y 1]) x)
+                           (super-new)))
+                    'pos
+                    'neg)
+          m 1)
+   1)
+  
+  (test/spec-passed/result
+   '->i26
+   '(send (contract (object-contract
+                     [m (->i ([x any/c]) #:rest [rest any/c] any)])
+                    (new (class object%
+                           (define/public (m x . y) x)
+                           (super-new)))
+                    'pos
+                    'neg)
+          m 1)
+   1)
+  
+  (test/spec-passed/result
+   '->i27
+   '(send (contract (object-contract
+                     [m (->i ([x any/c]) any)])
+                    (new (class object%
+                           (define/public (m x) x)
+                           (super-new)))
+                    'pos
+                    'neg)
+          m 1)
+   1)
+  
   (test/spec-passed
    '->i-any1
    '((contract (->i () () any) (lambda () 1) 'pos 'neg)))
