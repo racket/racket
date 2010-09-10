@@ -970,7 +970,9 @@
      (let* ([l (protect-quote body)]
             [any-refs? (or (ormap (lambda (t) (memq t '(ref flonum))) param-types)
                            (ormap (lambda (t) (memq t '(flonum))) closure-types))]
-            [num-all-params ((if rest? add1 values) num-params)]
+            [num-all-params (if (and rest? (not (memq 'only-rest-arg-not-used flags)))
+                                (add1 num-params)
+                                num-params)]
             [l (cons (make-svector (if any-refs?
                                        (list->vector
                                         (append

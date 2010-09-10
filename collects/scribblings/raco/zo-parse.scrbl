@@ -289,7 +289,7 @@ only other things that can be expressions).}
 
 
 @defstruct+[(lam expr) ([name (or/c symbol? vector?)]
-                        [flags (listof (or/c 'preserves-marks 'is-method 'single-result))]
+                        [flags (listof (or/c 'preserves-marks 'is-method 'single-result 'only-rest-arg-not-used))]
                         [num-params exact-nonnegative-integer?]
                         [param-types (listof (or/c 'val 'ref 'flonum))]
                         [rest? boolean?]

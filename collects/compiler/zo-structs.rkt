@@ -135,8 +135,8 @@
                                 [internal-context (or/c #f #t stx?)]))
 
 (define-form-struct (lam expr) ([name (or/c symbol? vector? empty?)]
-                                [flags (listof (or/c 'preserves-marks 'is-method 'single-result))]
-                                [num-params integer?] ; should be exact-nonnegative-integer?
+                                [flags (listof (or/c 'preserves-marks 'is-method 'single-result 'only-rest-arg-not-used))]
+                                [num-params exact-nonnegative-integer?]
                                 [param-types (listof (or/c 'val 'ref 'flonum))]
                                 [rest? boolean?]
                                 [closure-map (vectorof exact-nonnegative-integer?)]
