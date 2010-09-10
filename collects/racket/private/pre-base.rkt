@@ -27,7 +27,9 @@
            #f
            "not at top level"
            stx))
-      (datum->syntax stx (cdr (syntax-e stx)) stx stx)))
+      (if (symbol? (syntax-e stx))
+          (raise-syntax-error #f "bad syntax" stx)
+          (datum->syntax stx (cdr (syntax-e stx)) stx stx))))
 
   (define-values (new-apply-proc)
     (make-keyword-procedure
