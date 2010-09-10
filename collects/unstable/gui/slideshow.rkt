@@ -173,7 +173,8 @@
                     (ghost pict) ... (ghost final)))))]
     [(_ test #:combine combine [literals expr] ...)
      (syntax/loc stx
-       (pict-case #:combine combine [literals expr] ... [else (blank 0 0)]))]
+       (pict-case test #:combine combine
+                  [literals expr] ... [else (blank 0 0)]))]
     [(_ test [literals expr] ...)
      (quasisyntax/loc stx
        (pict-case test #:combine #,(syntax-parameter-value #'pict-combine)
