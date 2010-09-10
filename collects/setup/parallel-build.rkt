@@ -11,22 +11,21 @@
 (provide parallel-compile
          parallel-build-worker)
 
-(define-struct collects-queue (cclst hash collects-dir printer) #:transparent
+(define-struct collects-queue (cclst hash collects-dir printer append-error) #:transparent
   #:mutable
   #:property prop:jobqueue
   (define-methods jobqueue
     (define (work-done jobqueue work workerid msg)
       (match (list work msg)
-        [(list (list cc file) (list result-type out err))
+        [(list (list cc file last) (list result-type out err))
           (let ([cc-name (cc-name cc)])
-          (match result-type
-            [(list 'ERROR msg)
-              ((collects-queue-printer jobqueue) (current-error-port) "ERROR" "~a ~a: ~a" cc-name file msg)]
-            ['DONE (void)])
-          (when (or (not (zero? (string-length out))) (not (zero? (string-length err))))
-            ((collects-queue-printer jobqueue) (current-error-port) "build-output" "~a ~a" cc-name file)
-            (eprintf "STDOUT:\n~a=====\n" out)
-            (eprintf "STDERR:\n~a=====\n" err)))]))
+            (match result-type
+              [(list 'ERROR msg)
+                ((collects-queue-append-error jobqueue) cc "making" (exn msg (current-continuation-marks)) out err "error")]
+              ['DONE
+                (when (or (not (zero? (string-length out))) (not (zero? (string-length err))))
+                  ((collects-queue-append-error jobqueue) cc "making" null out err "output"))])
+            (when last ((collects-queue-printer jobqueue) (current-output-port) "made" "~a" cc-name )))]))
     ;; assigns a collection to each worker to be compiled
     ;; when it runs out of collections, steals work from other workers collections
     (define (get-job jobqueue workerid)
@@ -46,7 +45,7 @@
             (set-collects-queue-cclst! jobqueue t)
             (list h)]))
       (let ([w-hash (collects-queue-hash jobqueue)])
-        (define (build-job cc file)
+        (define (build-job cc file last)
           (define (->bytes x)
             (cond [(path? x) (path->bytes x)]
                   [(string? x) (string->bytes/locale x)]))
@@ -54,7 +53,7 @@
                  [cc-path (cc-path cc)]
                  [full-path (path->string (build-path cc-path file))])
             ;(printf "JOB ~a ~a ~a ~a\n" workerid cc-name cc-path file)
-            (values (list cc file) (list cc-name (->bytes cc-path) (->bytes file)))))
+            (values (list cc file last) (list cc-name (->bytes cc-path) (->bytes file)))))
         (let retry ()
           (define (find-job-in-cc cc id)
             (match cc
@@ -68,11 +67,10 @@
                 (hash-set! w-hash id (append subs tail)) (retry)]
               [(cons (list cc (list file) subs) tail)
                 (hash-set! w-hash id (append subs tail))
-                  ((collects-queue-printer jobqueue) (current-output-port) "made" "~a" (cc-name cc))
-                  (build-job cc file)]
+                  (build-job cc file #t)]
               [(cons (list cc (cons file ft) subs) tail)
                 (hash-set! w-hash id (cons (list cc ft subs) tail))
-                (build-job cc file)]))
+                (build-job cc file #f)]))
           (match (hash-ref!/true w-hash workerid take-cc)
             [#f 
                 (match (hash/first-pair w-hash)
@@ -95,18 +93,18 @@
          (for/fold ([cnt 0]) ([cct (in-hash-values (collects-queue-hash jobqueue))])
             (+ cnt (count-cct cct)))))))
 
-(define (parallel-compile worker-count setup-fprintf collects-tree)
+(define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (let ([collects-dir (current-collects-path)]) 
     (setup-fprintf (current-output-port) #f "--- parallel build using ~a processor cores ---" worker-count)
     (parallel-do-event-loop #f
-                            (lambda (id) id)
+                            values ; identity function
                             (list (current-executable-path)
                                   "-X"
                                   (path->string collects-dir)
                                   "-l"
                                   "setup/parallel-build-worker.rkt")
-                              (make-collects-queue collects-tree (make-hash) collects-dir setup-fprintf)
-                              worker-count 999999999)))
+                            (make-collects-queue collects-tree (make-hash) collects-dir setup-fprintf append-error)
+                            worker-count 999999999)))
 
 (define (parallel-build-worker)
   (let ([cmc (make-caching-managed-compile-zo)]

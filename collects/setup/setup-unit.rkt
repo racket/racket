@@ -88,6 +88,8 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define errors null)
+  (define (append-error cc desc exn out err type)
+    (set! errors (cons (list cc desc exn out err type) errors)))
   (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
                      (lambda (x)
@@ -96,7 +98,7 @@
                             (format "~a\n" (exn->string x))
                             x)
                            (fprintf (current-error-port) "~a\n" (exn->string x)))
-                       (set! errors (cons (list cc desc x) errors))
+                       (append-error cc desc x "" "" "error")
                        (fail-k))])
       (go)))
   (define-syntax begin-record-error
@@ -104,10 +106,11 @@
       [(_ cc desc body ...) (record-error cc desc (lambda () body ...) void)]))
   (define (show-errors port)
     (for ([e (reverse errors)])
-      (match-let ([(list cc desc x) e])
-        (setup-fprintf port "error" "during ~a for ~a"
-                       desc (if (cc? cc) (cc-name cc) cc))
-        (setup-fprintf port #f "  ~a" (exn->string x)))))
+      (match-let ([(list cc desc x out err type) e])
+        (setup-fprintf port type "during ~a for ~a" desc (if (cc? cc) (cc-name cc) cc))
+        (when (not (null? x)) (setup-fprintf port #f "  ~a" (exn->string x)))
+        (when (not (zero? (string-length out))) (eprintf "STDOUT:\n~a=====\n" out))
+        (when (not (zero? (string-length err))) (eprintf "STDERR:\n~a=====\n" err)))))
 
   (define (done)
     (setup-printf #f "done")
@@ -668,7 +671,7 @@
               (let ([dir (cc-path cc)]
                     [info (cc-info cc)])
                   (clean-cc dir info))) cct)
-            (parallel-compile (parallel-workers) setup-fprintf cct))
+            (parallel-compile (parallel-workers) setup-fprintf append-error cct))
           (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
             (compile-cc cc gcs)))]
       [else
