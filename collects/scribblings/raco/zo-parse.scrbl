@@ -554,6 +554,10 @@ A nested certificate.}
                                            [map (listof number? module-path-index? ...)])]{
                                                                                             
 A reference certificate.}
+                                                                                          
+@defstruct+[(certificate:plain certificate) ([map (listof number? module-path-index? ...)])]{
+                                                                                            
+A plain certificate.}
                                                                                            
 
 @defstruct+[(wrap zo) ()]{

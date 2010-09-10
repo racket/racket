@@ -524,7 +524,9 @@
         (symtab-lookup cp symref)
         (decode-mark-map alist))]
       [(list* (? list? nested) alist)
-       (make-certificate:nest (decode-mark-map nested) (decode-mark-map alist))])))
+       (make-certificate:nest (decode-mark-map nested) (decode-mark-map alist))]
+      [alist
+       (make-certificate:plain (decode-mark-map alist))])))
 
 (define stx-memo (make-memo))
 ; XXX More memo use

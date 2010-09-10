@@ -356,7 +356,9 @@
     [(struct certificate:nest (m1 m2))
      (list* (encode-mark-map m1) (encode-mark-map m2))]
     [(struct certificate:ref (val m))
-     (list* #f (make-protected-symref val) (encode-mark-map m))]))
+     (list* #f (make-protected-symref val) (encode-mark-map m))]
+    [(struct certificate:plain (m))
+     (encode-mark-map m)]))
 
 (define (encode-wrapped w)
   (match w
