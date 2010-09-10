@@ -23,7 +23,7 @@ unboxed-let-functions1.rkt line 30 col 3 - f - call to fun with unboxed args
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 ;; simple case, function with single complex arg
 (let ((f (lambda: ((x : Inexact-Complex)) (+ x 3.0+6.0i))))

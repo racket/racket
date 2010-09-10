@@ -9,7 +9,7 @@ vector-ref-set-ref.rkt line 17 col 1 - vector-ref - vector
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (: x (Vector Integer String))
 (define x (vector 1 "1"))
 (vector-ref x 0)

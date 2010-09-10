@@ -8,5 +8,5 @@ fixnum-comparison.rkt line 12 col 1 - < - binary fixnum
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (< (vector-length '#(1 2 3)) (string-length "asdf"))

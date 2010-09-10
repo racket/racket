@@ -26,7 +26,7 @@ nested-unboxed-let.rkt line 33 col 4 - (#%app + x (quote 3.0+6.0i)) - unboxed in
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 (let ((x (+ 1.0+2.0i 2.0+3.0i)))
   (let ((x (+ x 2.0+3.0i)))

@@ -11,7 +11,7 @@ sqrt-segfault.rkt line 22 col 0 - (let-values (((mag) (let-values (((val) (#%app
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 ;; from the nbody-generic benchmark.
 ;; the result of sqrt was an Inexact-Complex, so inexact complex opts kicked

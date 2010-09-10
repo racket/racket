@@ -23,7 +23,7 @@ unboxed-let-functions3.rkt line 31 col 3 - f - call to fun with unboxed args
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 ;; function with a mix of complex and non-complex args
 (let ((f (lambda: ((x : Inexact-Complex) (y : Float))

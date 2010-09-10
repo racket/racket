@@ -9,6 +9,6 @@ magnitude.rkt line 14 col 0 - (#%app magnitude (quote 3.0+4.0i)) - unboxed inexa
 #lang typed/racket/base
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 (magnitude 3.0+4.0i)

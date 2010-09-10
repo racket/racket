@@ -18,6 +18,6 @@ in-vector.rkt line 22 col 0 - (letrec-values (((for-loop) (lambda (fold-var pos)
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (for: ((i : Integer (vector 1 2 3)))
       (display i))

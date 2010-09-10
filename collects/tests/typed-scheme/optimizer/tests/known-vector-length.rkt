@@ -7,5 +7,5 @@ known-vector-length.rkt line 11 col 6 - vector-length - known-length vector-leng
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (+ 2 (vector-length (ann (vector 1 2) (Vector Integer Integer))))

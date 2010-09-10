@@ -6,5 +6,5 @@ unary-float.rkt line 10 col 1 - sin - unary float
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (sin 2.0)

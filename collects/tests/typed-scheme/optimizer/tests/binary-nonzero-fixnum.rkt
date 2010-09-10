@@ -7,5 +7,5 @@ binary-nonzero-fixnum.rkt line 11 col 1 - modulo - binary nonzero fixnum
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (modulo (vector-length '#(1 2 3)) 2)

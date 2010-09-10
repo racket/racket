@@ -8,6 +8,6 @@ begin-float.rkt line 13 col 8 - * - binary float
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (begin (- 2.0 3.0)
        (* 2.0 3.0))

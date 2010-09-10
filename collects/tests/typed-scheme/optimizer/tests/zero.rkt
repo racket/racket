@@ -9,6 +9,6 @@ zero.rkt line 14 col 1 - zero? - float zero?
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (zero? 1)
 (zero? (sqrt 3.0))

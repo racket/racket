@@ -12,7 +12,7 @@ mpair.rkt line 27 col 7 - mcar - mutable pair
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (: x (MPairof Integer Float))
 (define x (mcons 1 1.0))
 (mcar x)

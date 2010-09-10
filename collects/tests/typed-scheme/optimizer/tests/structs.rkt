@@ -7,7 +7,7 @@ structs.rkt line 14 col 1 - set-pt-y! - struct set
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (define-struct: pt ((x : Integer) (y : Integer)) #:mutable)
 (define a (pt 3 4))
 (pt-x a)

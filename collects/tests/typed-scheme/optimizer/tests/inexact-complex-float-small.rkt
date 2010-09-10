@@ -32,7 +32,7 @@ inexact-complex-float-small.rkt line 40 col 0 - (#%app + (quote 1.0+2.0i) (#%app
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (+ 1.0+2.0i 3.0)
 (+ 1.0 2.0+4.0i)
 (- 1.0+2.0i 3.0)

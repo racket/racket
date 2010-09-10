@@ -8,6 +8,6 @@ make-flrectangular.rkt line 13 col 1 - make-flrectangular - binary float comp
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops racket/flonum)
+(require racket/flonum)
 (make-rectangular 1.0 2.2)
 (make-flrectangular 1.0 2.2)

@@ -9,6 +9,6 @@ float-promotion.rkt line 14 col 1 - + - binary float
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops racket/flonum)
+
 (+ (modulo 1 1) 2.0)
 (+ (expt 100 100) 2.0)

@@ -44,7 +44,7 @@ nested-let-loop.rkt line 49 col 6 - loop1 - unboxed let loop
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 (let: loop1 : Inexact-Complex
       ((x : (Listof Inexact-Complex) '(1.0+2.0i 2.0+4.0i))

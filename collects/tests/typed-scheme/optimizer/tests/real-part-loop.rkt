@@ -25,7 +25,7 @@ real-part-loop.rkt line 31 col 6 - loop - unboxed let loop
 #lang typed/racket/base
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 (ann
  (let loop ([v 0.0+1.0i])

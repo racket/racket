@@ -18,6 +18,6 @@ in-string.rkt line 22 col 0 - (letrec-values (((for-loop) (lambda (fold-var pos)
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (for: ((i : Char "123"))
       (display i))

@@ -22,7 +22,7 @@ make-polar.rkt line 33 col 40 - imag-part - unboxed inexact complex
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 ;; top level
 (make-polar 1.0 1.0)

@@ -12,5 +12,5 @@ inexact-complex-fixnum.rkt line 16 col 0 - (#%app + (#%app modulo (quote 2) (quo
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (+ (modulo 2 1) 1.0+2.0i 3.0+6.0i)

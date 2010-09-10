@@ -6,5 +6,5 @@ simple-pair.rkt line 10 col 1 - car - pair
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (car (cons 1 2))

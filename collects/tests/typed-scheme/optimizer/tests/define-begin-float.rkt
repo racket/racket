@@ -7,6 +7,6 @@ define-begin-float.rkt line 12 col 18 - * - binary float
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (define a (begin (display (- 2.0 3.0))
                  (* 2.0 3.0)))

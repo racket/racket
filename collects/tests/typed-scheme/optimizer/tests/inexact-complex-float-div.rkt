@@ -42,7 +42,7 @@ inexact-complex-float-div.rkt line 56 col 6 - (#%app / (quote 1.0) (quote 2.0) (
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (map (lambda: ((x : Inexact-Complex))
               (string-append (real->decimal-string (real-part x) 10)
                              (real->decimal-string (imag-part x) 10)))

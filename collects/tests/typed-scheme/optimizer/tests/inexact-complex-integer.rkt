@@ -9,5 +9,5 @@ inexact-complex-integer.rkt line 13 col 0 - (#%app + (#%app expt (quote 2) (quot
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops racket/flonum)
+
 (+ (expt 2 100) 1.0+2.0i)

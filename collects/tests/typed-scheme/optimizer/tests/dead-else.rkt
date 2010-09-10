@@ -9,7 +9,7 @@ dead-else.rkt line 17 col 14 - + - binary float
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (display (if (number? 3)
              (+ 2.0 3.0)
              (+ 4.0 5.0)))

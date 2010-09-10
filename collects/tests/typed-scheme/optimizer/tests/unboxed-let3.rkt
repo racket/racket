@@ -19,7 +19,7 @@ unboxed-let3.rkt line 34 col 6 - (#%app + x (quote 2.0+4.0i)) - unboxed inexact 
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 ;; both boxed and unboxed uses, we unbox anyway
 ;; causes unnecessary boxing/unboxing if we take a boxed path when

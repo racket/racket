@@ -11,5 +11,5 @@ inexact-complex-conjugate.rkt line 15 col 0 - (#%app + (#%app conjugate (quote 1
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (+ (conjugate 1.0+2.0i) (conjugate 2.0+4.0i))

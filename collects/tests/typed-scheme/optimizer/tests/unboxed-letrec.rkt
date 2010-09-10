@@ -23,7 +23,7 @@ unboxed-letrec.rkt line 31 col 2 - (#%app + x y) - unboxed inexact complex
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 (letrec: ((f : (Any -> Any) (lambda: ((x : Any)) (f x)))
           (x : Inexact-Complex 1.0+2.0i)

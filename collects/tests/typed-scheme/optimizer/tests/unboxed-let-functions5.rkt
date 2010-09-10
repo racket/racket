@@ -12,7 +12,7 @@ unboxed-let-functions5.rkt line 22 col 12 - (#%app + (quote 1.0+2.0i) (quote 2.0
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 ;; invalid: f "escapes", according to our analysis
 (letrec: ((f : (Inexact-Complex -> Inexact-Complex)

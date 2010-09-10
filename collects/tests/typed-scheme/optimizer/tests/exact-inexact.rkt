@@ -6,5 +6,5 @@ exact-inexact.rkt line 10 col 1 - exact->inexact - int to float
 
 #lang typed/scheme
 #:optimize
-(require racket/flonum)
+
 (exact->inexact (expt 10 100)) ; must not be a fixnum

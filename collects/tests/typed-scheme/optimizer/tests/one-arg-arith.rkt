@@ -35,7 +35,7 @@ one-arg-arith.rkt line 55 col 1 - max - unary number
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 (- 12)
 (- 12.0)

@@ -13,7 +13,7 @@ inexact-complex-parts.rkt line 19 col 1 - real-part - unboxed inexact complex
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (real-part 1.0+2.0i)
 (imag-part 1+2.0i)
 (real-part 1.0+2i)

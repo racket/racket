@@ -11,7 +11,7 @@ unboxed-let-functions8.rkt line 16 col 0 - (letrec-values (((f) (lambda (x) (#%a
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 (letrec: ((f : (Inexact-Complex -> Inexact-Complex) (lambda (x) (+ x 2.0+4.0i)))
           (g : (Inexact-Complex -> Inexact-Complex) f)) ; f escapes! can't unbox it's args

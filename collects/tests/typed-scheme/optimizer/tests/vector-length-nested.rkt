@@ -7,7 +7,7 @@ vector-length-nested.rkt line 12 col 2 - vector-ref - vector
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops)
+
 (vector-length
  (vector-ref
   (ann (vector (vector 1 2) 2 3)

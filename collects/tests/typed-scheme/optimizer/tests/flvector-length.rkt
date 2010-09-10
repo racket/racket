@@ -6,5 +6,5 @@ flvector-length.rkt line 10 col 1 - flvector-length - flvector-length
 
 #lang typed/scheme
 #:optimize
-(require racket/unsafe/ops racket/flonum)
+(require racket/flonum)
 (flvector-length (flvector 0.0 1.2))

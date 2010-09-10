@@ -6,6 +6,6 @@ cross-module-struct2.rkt line 11 col 1 - x-x - struct ref
 
 #lang typed/scheme #:optimize
 
-(require (file "cross-module-struct.rkt") racket/unsafe/ops)
+(require (file "cross-module-struct.rkt"))
 (define a (make-x 1))
 (x-x a)

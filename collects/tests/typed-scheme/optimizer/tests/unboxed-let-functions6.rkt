@@ -28,7 +28,7 @@ unboxed-let-functions6.rkt line 33 col 6 - loop - unboxed let loop
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops racket/flonum)
+
 
 (let: loop : Inexact-Complex ((z : Inexact-Complex 0.0+0.0i)
                               (l : (Listof Integer) '(1 2 3)))

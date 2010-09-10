@@ -10,7 +10,7 @@ box.rkt line 19 col 1 - unbox - box
 #lang typed/scheme
 #:optimize
 
-(require racket/unsafe/ops)
+
 
 (: x (Boxof Integer))
 (define x (box 1))
