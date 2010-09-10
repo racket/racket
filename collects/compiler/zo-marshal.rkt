@@ -24,10 +24,6 @@
   (zo-marshal-to top bs)
   (get-output-bytes bs))
 
-(define (got-here n)
-  (void)
-  #;(printf "got here: ~a~n" n))
-
 (define (zo-marshal-to top outp) 
   
   ; XXX: wraps were encoded in traverse, now needs to be handled when writing
@@ -60,14 +56,10 @@
       (when (= how-many-encounters 1)
         (hash-set! encountered v 0)))
     (define (shared-obj-pos v #:error? [error? #f])
-      (define pos
-        (hash-ref shared v 
-                  (if error?
-                      (λ () (error 'symref "~e not in symbol table" v))
-                      #f)))
-      #;(when (closure? v)
-        (printf "Looking up ~a, got ~a\n" v pos))
-      pos)
+      (hash-ref shared v 
+                (if error?
+                    (λ () (error 'symref "~e not in symbol table" v))
+                    #f)))
     (define (share! v) ; XXX this doesn't always set something, probably should be refactored
       (or (shared-obj-pos v)
           (let ([pos (add1 (hash-count shared))])
@@ -83,7 +75,7 @@
             (if (encountered? v)
                 pos
                 (encounter! v)))]
-         #;[error? ; If we would error if this were not present, then we must share it
+         [error? ; If we would error if this were not present, then we must share it
           (encounter! v)
           (share! v)]
          [(encountered? v)
@@ -98,14 +90,8 @@
     (hash-map shared (λ (k v) (vector-set! symbol-table (sub1 v) k)))
     (values symbol-table shared-obj-pos))
   
-  (got-here 1)
   (define-values (symbol-table shared-obj-pos)
     (create-symbol-table))
-  (got-here 2)
-  
-  #;(printf "symtab[998] = ~a\n" (vector-ref symbol-table 998))
-  #;(for ([v (in-vector symbol-table)])
-    (printf "v = ~a~n" v))
   
   ; vector output-port -> (listof number) number
   ; writes symbol-table to outp
@@ -125,16 +111,14 @@
                 [i (in-naturals)])
        (begin0
          (file-position outp)
-         #;(printf "Out ~a -->" i) #;(pretty-print v)
          (out-anything v (make-out outp (shared-obj-pos/modulo-v v) void wrapped))))
      (file-position outp)))
   
   ; Calculate file positions
   (define counting-port (open-output-nowhere))
   (define-values (offsets post-shared) (out-symbol-table symbol-table counting-port))
-  (got-here 3)
   (define all-forms-length (out-compilation-top shared-obj-pos void counting-port))
-  (got-here 4)
+  
   ; Write the compiled form header
   (write-bytes #"#~" outp)
   
@@ -155,12 +139,9 @@
   (write-bytes (int->bytes post-shared) outp)
   ; This is where the file should end
   (write-bytes (int->bytes all-forms-length) outp)
-  (got-here 5)
   ; Actually write the zo
   (out-symbol-table symbol-table outp)
-  (got-here 6)
   (out-compilation-top shared-obj-pos void outp)
-  (got-here 7)
   (void))
 
 ;; ----------------------------------------
@@ -700,7 +681,6 @@
                 (out-byte CPT_APPLICATION out)
                 (out-number len out)))
           (for-each (lambda (e)
-                      #;(printf "here: ~a~n" e) 
                       (out-anything (protect-quote e) out))
                     (cons rator rands)))]
        [(struct apply-values (proc args-expr))
