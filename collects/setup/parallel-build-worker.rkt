@@ -2,6 +2,11 @@
 (require compiler/cm)
 (require racket/match)
 
+(define prev-uncaught-exception-handler (uncaught-exception-handler))
+(uncaught-exception-handler (lambda (x)
+  (when (exn:break? x) (exit 1))
+  (prev-uncaught-exception-handler x)))
+
 (let ([cmc (make-caching-managed-compile-zo)]
       [worker-id (read)])
  (let loop ()
