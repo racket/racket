@@ -32,8 +32,6 @@
 ;; ----------------------------------------
 ;; Bytecode unmarshalers for various forms
 
-(define debug-symrefs #f)
-
 (define (read-toplevel v)
   (define SCHEME_TOPLEVEL_CONST #x01)
   (define SCHEME_TOPLEVEL_READY #x02)
@@ -981,8 +979,6 @@
   (placeholder-set! (vector-ref (cport-symtab cp) i) v))
 
 (define (symtab-lookup cp i)
-  (when (mark-parameter-first read-sym-mark)
-    (dict-update! debug-symrefs (mark-parameter-first read-sym-mark) (λ (last) (cons i last)) empty))
   (vector-ref (cport-symtab cp) i))
 
 (require unstable/markparam)
@@ -1042,20 +1038,11 @@
     (define symtab 
       (build-vector symtabsize (λ (i) (make-placeholder nr))))
     
-    (set! debug-symrefs (make-vector symtabsize empty))
-    
     (define cp (make-cport 0 shared-size port size* rst-start symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
     
     (for ([i (in-range 1 symtabsize)])
       (read-sym cp i))
     
-    #;(for ([i (in-naturals)]
-          [v (in-vector debug-symrefs)])
-      (printf "~a: ~a~n" i v))
-    #;(printf "SYMBOL TABLE(~a):~n~n" symtabsize)
-    #;(for ([i (in-naturals)]
-          [v (in-vector (cport-symtab cp))])
-      (printf "~a: ~s~n~n" i (placeholder-get v)))
     (set-cport-pos! cp shared-size)
     (make-reader-graph
      (read-marshalled 'compilation-top-type cp))))
