@@ -121,7 +121,7 @@
                  (true))
             (false
              (make-exn:invalid-xexpr
-              (format "Expected a pair, given ~a" attr)
+              (format "Expected a pair, given ~s" attr)
               (current-continuation-marks)
               attr))))))
 
@@ -134,15 +134,15 @@
                   (permissive-xexprs))
               (true)
               (false (make-exn:invalid-xexpr
-                      (format "Expected a string, given ~a" (cadr attr))
+                      (format "Expected a string, given ~s" (cadr attr))
                       (current-continuation-marks)
                       (cadr attr))))
           (false (make-exn:invalid-xexpr
-                  (format "Expected an attribute value string for attribute ~a" attr)
+                  (format "Expected an attribute value string for attribute ~s" attr)
                   (current-continuation-marks)
                   attr)))
       (false (make-exn:invalid-xexpr
-              (format "Expected a symbol, given ~a" (car attr))
+              (format "Expected a symbol, given ~s" (car attr))
               (current-continuation-marks)
               (cadr attr)))))
 
