@@ -54,8 +54,6 @@
 
 ;; to generate temporary symbols in a predictable manner
 ;; these identifiers are unique within a sequence of unboxed operations
-;; necessary to have predictable symbols to add in the hand-optimized versions
-;; of the optimizer tests (which check for equality of expanded code)
 (define *unboxed-gensym-counter* 0)
 (define (unboxed-gensym [name 'unboxed-gensym-])
   (set! *unboxed-gensym-counter* (add1 *unboxed-gensym-counter*))
