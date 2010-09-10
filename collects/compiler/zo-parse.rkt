@@ -117,8 +117,11 @@
                    (append
                     (if (zero? (bitwise-and flags flags CLOS_PRESERVES_MARKS)) null '(preserves-marks))
                     (if (zero? (bitwise-and flags flags CLOS_IS_METHOD)) null '(is-method))
-                    (if (zero? (bitwise-and flags flags CLOS_SINGLE_RESULT)) null '(single-result)))
-                   ((if rest? sub1 values) num-params)
+                    (if (zero? (bitwise-and flags flags CLOS_SINGLE_RESULT)) null '(single-result))
+                    (if (and rest? (zero? num-params)) '(only-rest-arg-not-used) null))
+                   (if (and rest? (num-params . > . 0))
+                       (sub1 num-params)
+                       num-params)
                    arg-types
                    rest?
                    (if (= closure-size (vector-length closed-over))
