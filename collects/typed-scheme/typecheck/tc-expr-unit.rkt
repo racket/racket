@@ -159,7 +159,7 @@
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type
-(define (tc-expr/t e) (match (tc-expr e)
+(define (tc-expr/t e) (match (single-value e)
                         [(tc-result1: t _ _) t]
                         [t (int-err "tc-expr returned ~a, not a single tc-result, for ~a" t (syntax->datum e))]))
 

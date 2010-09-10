@@ -833,6 +833,7 @@
          (make-pred-ty (-val eof))]
         [tc-e ((inst map Number (Pairof Number Number)) car (ann (list (cons 1 2) (cons 2 3) (cons 4 5)) (Listof (Pairof Number Number))))
               (-lst -Number)]
+        [tc-err (list (values 1 2))]
         )
   (test-suite
    "check-type tests"
