@@ -49,7 +49,7 @@
     [#:contract (->i ([t any/c]
                       [e any/c])
                      (#:syntax [stx #f])
-                     #:pre-cond (t e)
+                     #:pre (t e)
                      (and (cond [(Bot? t) #t]
                                 [(Bot? e) (Top? t)]
                                 [else (Filter/c-predicate? t)])
