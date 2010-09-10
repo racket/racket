@@ -18,11 +18,16 @@
 ;; into "racket/set.rkt", then it could be even faster by using the
 ;; representation directly.)
 
+;; Ryan: Sets implement prop:equal+hash, so isn't this just 'equal?'?
+
 (define (proper-subset? one two)
   (and (subset? one two)
        (not (subset? two one))))
 ;; Eli: Same comment here -- both re using `set-subtract', and using the
 ;; count first.
+
+;; Ryan: better yet:
+;;   (and (subset? one two) (not (= (set-count one) (set-count two))))
 
 (define (set-exclusive-or s0 . rest)
   (for/fold ([s s0]) ([s* (in-list rest)])
