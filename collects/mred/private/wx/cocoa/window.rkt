@@ -99,12 +99,19 @@
                 (loop (tell hit superview))))))]
   [-a _BOOL (doMouseMoved: [_id event]) 
       ;; called by mouseMoved:
-      (do-mouse-event wxb event 'motion #f #f #f)]
+      (and 
+       ;; Make sure we're in the right eventspace:
+       (let ([wx (->wx wxb)])
+         (and wx
+              (eq? (current-eventspace)
+                   (send wx get-eventspace))))
+       ;; Right event space, so handle the event:
+       (do-mouse-event wxb event 'motion #f #f #f))]
   [-a _void (mouseEntered: [_id event]) 
-      (unless (do-mouse-event wxb event 'enter #f #f #f)
+      (unless (do-mouse-event wxb event 'enter 'check 'check 'check)
         (super-tell #:type _void mouseEntered: event))]
   [-a _void (mouseExited: [_id event]) 
-      (unless (do-mouse-event wxb event 'leave #f #f #f)
+      (unless (do-mouse-event wxb event 'leave 'check 'check 'check)
         (super-tell #:type _void mouseExited: event))]
   [-a _void (rightMouseDown: [_id event]) 
       (unless (do-mouse-event wxb event 'right-down #f #f #t)
@@ -249,27 +256,46 @@
             [bit? (lambda (m b) (positive? (bitwise-and m b)))]
             [pos (tell #:type _NSPoint event locationInWindow)])
        (let-values ([(x y) (send wx window-point-to-view pos)]
-                    [(control-down) (bit? modifiers NSControlKeyMask)])
-         (let ([m (new mouse-event%
-                       [event-type (if control-down ctl-kind kind)]
-                       [left-down (and l? (not control-down))]
-                       [middle-down m?]
-                       [right-down (or r? (and l? control-down))]
-                       [x (->long x)]
-                       [y (->long y)]
-                       [shift-down (bit? modifiers NSShiftKeyMask)]
-                       [meta-down (bit? modifiers NSCommandKeyMask)]
-                       [alt-down (bit? modifiers NSAlternateKeyMask)]
-                       [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
-                       [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-           (if (send wx definitely-wants-event? m)
-               (begin
-                 (queue-window-event wx (lambda ()
-                                          (send wx dispatch-on-event/sync m)))
-                 #t)
-               (constrained-reply (send wx get-eventspace)
-                                  (lambda () (send wx dispatch-on-event m #t))
-                                  #t))))))))
+                    [(control-down) (bit? modifiers NSControlKeyMask)]
+                    [(l?) (if (eq? l? 'check)
+                              (send wx get-last-left-button)
+                              l?)]
+                    [(m?) (if (eq? m? 'check)
+                              (send wx get-last-middle-button)
+                              m?)]
+                    [(r?) (if (eq? r? 'check)
+                              (send wx get-last-right-button)
+                              r?)])
+         (let ([l? (and l? (not control-down))]
+               [r? (or r? (and l? control-down))])
+           (send wx set-last-buttons l? m? r?)
+           (let ([m (new mouse-event%
+                         [event-type (if control-down ctl-kind kind)]
+                         [left-down l?]
+                         [middle-down m?]
+                         [right-down r?]
+                         [x (->long x)]
+                         [y (->long y)]
+                         [shift-down (bit? modifiers NSShiftKeyMask)]
+                         [meta-down (bit? modifiers NSCommandKeyMask)]
+                         [alt-down (bit? modifiers NSAlternateKeyMask)]
+                         [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                         [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+             (cond
+              [(send m dragging?) (void)]
+              [(send m button-down?) 
+               (send wx set-sticky-cursor)
+               (send wx start-no-cursor-rects)]
+              [(or l? m? r?) (void)]
+              [else (send wx end-no-cursor-rects)])
+             (if (send wx definitely-wants-event? m)
+                 (begin
+                   (queue-window-event wx (lambda ()
+                                            (send wx dispatch-on-event/sync m)))
+                   #t)
+                 (constrained-reply (send wx get-eventspace)
+                                    (lambda () (send wx dispatch-on-event m #t))
+                                    #t)))))))))
 
 (define window%
   (class object%
@@ -507,6 +533,26 @@
     (define/public (on-event m) (void))
     (define/public (on-size x y) (void))
 
+    (define last-l? #f)
+    (define last-m? #f)
+    (define last-r? #f)
+    (define/public (set-last-buttons l? m? r?)
+      (set! last-l? l?)
+      (set! last-m? m?)
+      (set! last-r? r?))
+    (define/public (get-last-left-button) last-l?)
+    (define/public (get-last-middle-button) last-m?)
+    (define/public (get-last-right-button) last-r?)
+
+    (define/public (set-sticky-cursor)
+      (set! sticky-cursor? #t))
+
+    (define/public (start-no-cursor-rects)
+      (send (get-parent) start-no-cursor-rects))
+    (define/public (end-no-cursor-rects)
+      (set! sticky-cursor? #f)
+      (send (get-parent) end-no-cursor-rects))
+
     (def/public-unimplemented on-drop-file)
     (def/public-unimplemented get-handle)
     (def/public-unimplemented set-phantom-size)
@@ -543,6 +589,7 @@
     (def/public-unimplemented fit)
 
     (define cursor-handle #f)
+    (define sticky-cursor? #f)
     (define/public (set-cursor c)
       (let ([h (if c
                    (send (send c get-driver) get-handle)
@@ -550,6 +597,7 @@
         (unless (eq? h cursor-handle)
           (atomically
            (set! cursor-handle h)
+           (when sticky-cursor? (tellv h set))
            (tellv (get-cocoa-window) invalidateCursorRectsForView: (get-cocoa-cursor-content))))))
     (define/public (reset-cursor-rects)
       ;; called in event-pump thread

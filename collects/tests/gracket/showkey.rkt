@@ -16,33 +16,32 @@
     (class canvas%
       (super-new)
       (define/override (on-event ev)
-        (lambda (ev)
-          (printf "~a~a MOUSE ~a (~a,~a)\n  mods:~a~a~a~a~a\n  buttons:~a~a~a~a~a~a~a\n" 
-                  (es-check)
-                  iter
-                  (send ev get-event-type)
-                  (send ev get-x)
-                  (send ev get-y)
-                  (if (send ev get-meta-down) " META" "")
-                  (if (send ev get-control-down) " CTL" "")
-                  (if (send ev get-alt-down) " ALT" "")
-                  (if (send ev get-shift-down) " SHIFT" "")
-                  (if (send ev get-caps-down) " CAPS" "")
-                  (if (send ev get-left-down) " LEFT" "")
-                  (if (send ev get-middle-down) " MIDDLE" "")
-                  (if (send ev get-right-down) " RIGHT" "")
-                  (if (send ev dragging?)
-                      " dragging"
-                      "")
-                  (if (send ev moving?)
-                      " moving"
-                      "")
-                  (if (send ev entering?)
-                      " entering"
-                      "")
-                  (if (send ev leaving?)
-                      " leaving"
-                      ""))))
+        (printf "~a~a MOUSE ~a (~a,~a)\n  mods:~a~a~a~a~a\n  buttons:~a~a~a~a~a~a~a\n" 
+                (es-check)
+                iter
+                (send ev get-event-type)
+                (send ev get-x)
+                (send ev get-y)
+                (if (send ev get-meta-down) " META" "")
+                (if (send ev get-control-down) " CTL" "")
+                (if (send ev get-alt-down) " ALT" "")
+                (if (send ev get-shift-down) " SHIFT" "")
+                (if (send ev get-caps-down) " CAPS" "")
+                (if (send ev get-left-down) " LEFT" "")
+                (if (send ev get-middle-down) " MIDDLE" "")
+                (if (send ev get-right-down) " RIGHT" "")
+                (if (send ev dragging?)
+                    " dragging"
+                    "")
+                (if (send ev moving?)
+                    " moving"
+                    "")
+                (if (send ev entering?)
+                    " entering"
+                    "")
+                (if (send ev leaving?)
+                    " leaving"
+                    "")))
       (define/override (on-char ev)
         (set! iter (add1 iter))
         (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~a\n" 

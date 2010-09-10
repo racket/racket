@@ -345,6 +345,13 @@
             (install-wait-cursor)
             (uninstall-wait-cursor))))
 
+    (define/override (start-no-cursor-rects)
+      (tell cocoa disableCursorRects))
+
+    (define/override (end-no-cursor-rects)
+      (unless (positive? (eventspace-wait-cursor-count (get-eventspace)))
+        (tell cocoa enableCursorRects)))
+
     (define/public (flip-screen y)
       (let ([f (tell #:type _NSRect (tell cocoa screen) frame)])
         (- (NSSize-height (NSRect-size f)) y)))
