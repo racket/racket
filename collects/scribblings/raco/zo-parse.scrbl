@@ -74,9 +74,12 @@ the stack) before evaluating expressions that might use them.}
 @; --------------------------------------------------
 @section{Prefix}
 
-@defstruct+[compilation-top ([max-let-depth exact-nonnegative-integer?]
-                             [prefix prefix?]
-                             [code (or/c form? indirect? any/c)])]{
+@defstruct+[zo ()]{
+A supertype for all zo objects that can appear in compiled code.}
+
+@defstruct+[(compilation-top zo) ([max-let-depth exact-nonnegative-integer?]
+                                  [prefix prefix?]
+                                  [code (or/c form? indirect? any/c)])]{
 
 Wraps compiled code. The @racket[max-let-depth] field indicates the
 maximum stack depth that @racket[code] creates (not counting the
@@ -87,9 +90,9 @@ is normally a @racket[form], but a literal value is represented as
 itself.}
 
 
-@defstruct+[prefix ([num-lifts exact-nonnegative-integer?]
-                    [toplevels (listof (or/c #f symbol? global-bucket? module-variable?))]
-                    [stxs (listof stx?)])]{
+@defstruct+[(prefix zo) ([num-lifts exact-nonnegative-integer?]
+                         [toplevels (listof (or/c #f symbol? global-bucket? module-variable?))]
+                         [stxs (listof stx?)])]{
 
 Represents a ``prefix'' that is pushed onto the stack to initiate
 evaluation. The prefix is an array, where buckets holding the values
@@ -120,15 +123,15 @@ are accessed by @racket[toplevel] and @racket[topsyntax] expression
 forms.}
 
 
-@defstruct+[global-bucket ([name symbol?])]{
+@defstruct+[(global-bucket zo) ([name symbol?])]{
 
 Represents a top-level variable, and used only in a @racket[prefix].}
 
 
-@defstruct+[module-variable ([modidx module-path-index?]
-                             [sym symbol?]
-                             [pos exact-integer?]
-                             [phase (or/c 0 1)])]{
+@defstruct+[(module-variable zo) ([modidx module-path-index?]
+                                  [sym symbol?]
+                                  [pos exact-integer?]
+                                  [phase (or/c 0 1)])]{
 
 Represents a top-level variable, and used only in a @racket[prefix].
 The @racket[pos] may record the variable's offset within its module,
@@ -137,7 +140,7 @@ The @racket[phase] indicates the phase level of the definition within
 its module.}
 
 
-@defstruct+[stx ([encoded wrapped?])]{
+@defstruct+[(stx zo) ([encoded wrapped?])]{
 
 Wraps a syntax object in a @racket[prefix].}
 
@@ -145,7 +148,7 @@ Wraps a syntax object in a @racket[prefix].}
 @; --------------------------------------------------
 @section{Forms}
 
-@defstruct+[form ()]{
+@defstruct+[(form zo) ()]{
 
 A supertype for all forms that can appear in compiled code (including
 @racket[expr]s), except for literals that are represented as
@@ -333,7 +336,7 @@ for a recursive constant procedure; the @racket[gen-id] is different
 for each such constant.}
 
 
-@defstruct[indirect ([v closure?]) #:mutable #:prefab]{
+@defstruct[(indirect zo) ([v closure?]) #:mutable #:prefab]{
 
 An indirection used in expression positions to form cycles.}
 
@@ -530,15 +533,15 @@ kernel.}
 @; --------------------------------------------------
 @section{Syntax Objects}
 
-@defstruct+[wrapped ([datum any/c]
-                     [wraps (listof wrap?)]
-                     [certs (or/c certificate? #f)])]{
+@defstruct+[(wrapped zo) ([datum any/c]
+                          [wraps (listof wrap?)]
+                          [certs (or/c certificate? #f)])]{
 
 Represents a syntax object, where @racket[wraps] contain the lexical
 information and @racket[certs] is certificate information. When the
 @racket[datum] part is itself compound, its pieces are wrapped, too.}
 
-@defstruct+[certificate ()]{
+@defstruct+[(certificate zo) ()]{
                             
 A supertype for syntax certificates.}
 
@@ -553,7 +556,7 @@ A nested certificate.}
 A reference certificate.}
                                                                                            
 
-@defstruct+[wrap ()]{
+@defstruct+[(wrap zo) ()]{
 
 A supertype for lexical-information elements.}
 
@@ -565,14 +568,14 @@ A top-level renaming.}
                                                        
 A mark barrier.}
 
-@defstruct+[free-id-info ([path0 module-path-index?]
-                          [symbol0 symbol?]
-                          [path1 module-path-index?]
-                          [symbol1 symbol?]
-                          [phase0 (or/c exact-integer? #f)]
-                          [phase1 (or/c exact-integer? #f)]
-                          [phase2 (or/c exact-integer? #f)]
-                          [use-current-inspector? boolean?])]{
+@defstruct+[(free-id-info zo) ([path0 module-path-index?]
+                               [symbol0 symbol?]
+                               [path1 module-path-index?]
+                               [symbol1 symbol?]
+                               [phase0 (or/c exact-integer? #f)]
+                               [phase1 (or/c exact-integer? #f)]
+                               [phase2 (or/c exact-integer? #f)]
+                               [use-current-inspector? boolean?])]{
 Information about a free identifier.}
 
 @defstruct+[(lexical-rename wrap) ([has-free-id-info? boolean?]
@@ -606,16 +609,16 @@ Shifts module bindings later in the wrap set.}
 
 Represents a set of module and import bindings.}
 
-@defstruct+[all-from-module ([path module-path-index?]
-                             [phase (or/c exact-integer? #f)]
-                             [src-phase (or/c exact-integer? #f)]
-                             [exceptions (listof (or/c symbol? number?))]
-                             [prefix (or/c symbol? #f)])]{
+@defstruct+[(all-from-module zo) ([path module-path-index?]
+                                  [phase (or/c exact-integer? #f)]
+                                  [src-phase (or/c exact-integer? #f)]
+                                  [exceptions (listof (or/c symbol? number?))]
+                                  [prefix (or/c symbol? #f)])]{
 
 Represents a set of simple imports from one module within a
 @racket[module-rename].}
 
-@defstruct+[module-binding ()]{
+@defstruct+[(module-binding zo) ()]{
 
 A supertype for module bindings.}
 
@@ -654,7 +657,7 @@ Represents a single identifier import within
 a @racket[module-rename].}
                                                                            
                                                                            
-@defstruct+[nominal-path ()]{
+@defstruct+[(nominal-path zo) ()]{
                              
 A supertype for nominal paths.}
 
