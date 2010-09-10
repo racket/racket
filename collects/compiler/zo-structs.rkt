@@ -63,6 +63,9 @@
 (define-form-struct (certificate:ref certificate)
   ([val any/c]
    [map  mark-map?]))
+(define-form-struct (certificate:plain certificate)
+  ([map  mark-map?]))
+
 
 (define-form-struct wrap ())
 (define-form-struct wrapped ([datum any/c] 
