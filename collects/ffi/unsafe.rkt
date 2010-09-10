@@ -1354,7 +1354,7 @@
      (and (_-identifier? #'_TYPE stx)
           (identifiers? #'(slot ...)))
      (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...) #'#f)]
-    [(_ _TYPE #:alignment alignment-expr ([slot slot-type] ...))
+    [(_ _TYPE ([slot slot-type] ...) #:alignment alignment-expr)
      (and (_-identifier? #'_TYPE stx)
           (identifiers? #'(slot ...)))
      (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...) #'alignment-expr)]
@@ -1362,7 +1362,7 @@
      (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
      (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
        (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'#f))]
-    [(_ (_TYPE _SUPER) #:alignment alignment-expr ([slot slot-type] ...))
+    [(_ (_TYPE _SUPER) ([slot slot-type] ...) #:alignment alignment-expr)
      (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
      (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
        (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'alignment-expr))]))

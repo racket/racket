@@ -776,7 +776,7 @@ the allocated space, so it is inefficient. Use @scheme[define-cstruct]
 below for a more efficient approach.}
 
 
-@defform/subs[(define-cstruct id/sup alignment ([field-id type-expr] ...))
+@defform/subs[(define-cstruct id/sup ([field-id type-expr] ...) alignment)
               [(id/sup _id
                        (_id super-id))
                (alignment code:blank
