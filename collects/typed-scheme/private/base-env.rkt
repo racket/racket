@@ -385,7 +385,7 @@
 [string-copy (-> -String -String)]
 [string->immutable-string (-> -String -String)]
 [string->path (-> -String -Path)]
-[file-exists? (-> -Pathlike B)]
+
 
 [build-path ((list -Pathlike*) -Pathlike* . ->* . -Path)]
 [with-input-from-file
@@ -489,7 +489,6 @@
 
 [match:error ((list) Univ . ->* . (Un))]
 
-[file-exists? (-Pathlike . -> . B)]
 [string->symbol (-String . -> . Sym)]
 [symbol->string (Sym . -> . -String)]
 [string->keyword (-String . -> . -Keyword)]
@@ -533,6 +532,16 @@
 [file-exists? (-> -Pathlike B)]
 [directory-list (cl-> [() (-lst -Path)]
                       [(-Path) (-lst -Path)])]
+[file-or-directory-modify-seconds
+ (cl->* (-Pathlike . -> . -Nat)
+        (-Pathlike (-val #f) . -> . -Nat)
+        (-Pathlike -Nat . -> . -Void)
+        (-Pathlike (-opt -Nat) (-> Univ) . -> . Univ))]
+
+[file-or-directory-permissions (-> -Pathlike (-lst (Un (-val 'read) (-val 'write) (-val 'execute))))]
+[file-or-directory-identity (->opt -Pathlike (Univ) -Nat)]
+[file-size (-> -Pathlike -Nat)]
+
 
 [hash? (make-pred-ty (make-HashtableTop))]
 [hash-eq? (-> (make-HashtableTop) B)]
