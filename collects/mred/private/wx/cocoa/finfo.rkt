@@ -16,10 +16,10 @@
 (define _FSVolumeRefNum _int16)
 
 (define-cstruct _UTCDateTime
-  #:alignment 2
   ([highSeconds _uint16]
    [lowSeconds _uint32]
-   [fraction _uint16]))
+   [fraction _uint16])
+  #:alignment 2)
 
 (define-cstruct _Point
   ([v _short]
@@ -28,22 +28,21 @@
 (define _OSType _uint32)
 
 (define-cstruct _FileInfo
-  #:alignment 2
   ([fileType _OSType]
    [fileCreator _OSType]
    [finderFlags _uint16]
    [location _Point]
-   [reservedField _uint16]))
+   [reservedField _uint16])
+  #:alignment 2)
 
 (define-cstruct _FSPermissionInfo
-  #:alignment 2
   ([userID _uint32]
    [groupID _uint32]
    [word _uint32]
-   [fileSec _pointer]))
+   [fileSec _pointer])
+  #:alignment 2)
 
 (define-cstruct _FSCatalogInfo
-  #:alignment 2
   ([nodeFlags _uint16]
    [volume _FSVolumeRefNum]
    [parentDirID _uint32]
@@ -60,7 +59,8 @@
    [permissions _FSPermissionInfo]
    [finderInfo _FileInfo]
    ;; .... 144 or 148 bytes total
-   ))
+   )
+  #:alignment 2)
 
 (define _FSRef _pointer) ; 80 bytes
 
