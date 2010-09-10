@@ -19,10 +19,11 @@
 
 
 (test
- #;(roundtrip
+ (roundtrip
     (compilation-top 0 
                      (prefix 0 empty empty)
                      (list 1 (list 2 3) (list 2 3) 4 5)))
+ ; XXX This should work, but closures have a field that is gensym'ed
  #;(roundtrip
   (compilation-top 0 
                    (prefix 0 empty empty)
@@ -42,6 +43,7 @@
                      (placeholder-set! ph x)
                      (make-reader-graph x))))
  
+ ; This should work, but module-path-index-join doesn't create equal? module-path-index's
  #;(roundtrip
     (compilation-top
      0
@@ -74,12 +76,12 @@
       (toplevel 0 0 #f #f)
       #(racket/language-info get-info #f)
       #t)))
- #;(roundtrip 
+ (roundtrip 
     (compilation-top 0 
                      (prefix 0 empty empty)
                      (current-directory)))
  
- #;(roundtrip 
+ (roundtrip 
     (compilation-top 0 
                      (prefix 0 empty empty)
                      (list (current-directory))))
