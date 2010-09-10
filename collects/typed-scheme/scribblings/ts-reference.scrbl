@@ -309,6 +309,8 @@ the return type of a @racket[for] form is optional. Unlike
 @;@defform[(for/hash: : u (for:-clause ...) expr ...+)] @; the ones that are commented out don't currently work
 @;@defform[(for/hasheq: : u (for:-clause ...) expr ...+)]
 @;@defform[(for/hasheqv: : u (for:-clause ...) expr ...+)]
+@;@defform[(for/vector: : u (for:-clause ...) expr ...+)]
+@;@defform[(for/flvector: : u (for:-clause ...) expr ...+)]
 @;@defform[(for/and: : u (for:-clause ...) expr ...+)]
 @defform[(for/or:   : u (for:-clause ...) expr ...+)]
 @;@defform[(for/first: : u (for:-clause ...) expr ...+)]

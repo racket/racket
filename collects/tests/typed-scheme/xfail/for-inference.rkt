@@ -79,3 +79,9 @@
 (for/and: : Boolean
           ((i : Exact-Positive-Integer '(1 2 3)))
           (< i 3))
+
+;; for/vector: would need stronger inference. same for for*/vector and
+;; both flvector variants
+(for/vector: : (Vectorof Integer)
+             ((x : Integer (in-range 10)))
+             x)

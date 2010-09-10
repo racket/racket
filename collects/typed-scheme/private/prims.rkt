@@ -33,6 +33,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (rename-in racket/contract [-> c->])
          "base-types.rkt"
          "base-types-extra.rkt"
+         racket/flonum ; for for/flvector and for*/flvector
          (for-syntax 
           syntax/parse
 	  syntax/private/util
@@ -511,8 +512,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (quasisyntax/loc
          stx
        (begin (define-syntax name (define-for-variant #'untyped-name)) ...))]))
-;; for/hash{,eq,eqv}:, for/and:, for/first: and for/last:'s expansions
-;; can't currently be handled by the typechecker.
+;; for/hash{,eq,eqv}:, for/vector:, for/flvector:, for/and:, for/first: and
+;; for/last:'s expansions can't currently be handled by the typechecker.
 ;; They have been left out of the documentation.
 (define-for-variants
   (for/list: for/list)
@@ -522,7 +523,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for/and: for/and)
   (for/or: for/or)
   (for/first: for/first)
-  (for/last: for/last))
+  (for/last: for/last)
+  (for/vector: for/vector)
+  (for/flvector: for/flvector))
 
 ;; Unlike with the above, the inferencer can handle any number of #:when
 ;; clauses with these 2.
@@ -595,7 +598,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for*/and: for*/and)
   (for*/or: for*/or)
   (for*/first: for*/first)
-  (for*/last: for*/last))
+  (for*/last: for*/last)
+  (for*/vector: for*/vector)
+  (for*/flvector: for*/flvector))
 
 (define-for-syntax (define-for*-folding-variant name)
   (lambda (stx)
