@@ -752,7 +752,9 @@
                    #,(and (istx-ress an-istx)
                           (for/list ([a-res (in-list (istx-ress an-istx))])
                             `(,(if (arg/res-vars a-res) 'dep 'nodep)
-                              ,(syntax-e (arg/res-var a-res))
+                              ,(if (eres? a-res)
+                                   '_
+                                   (syntax-e (arg/res-var a-res)))
                               ,(if (arg/res-vars a-res)
                                    (map syntax-e (arg/res-vars a-res))
                                    '())

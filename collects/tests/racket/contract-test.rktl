@@ -8881,6 +8881,8 @@ so that propagation occurs.
               (->i () #:pre () #t  [q () number?] #:post () #t))
   (test-name '(->i ([x integer?]) #:pre (x) ... [q (x) ...]     #:post (x) ...) 
               (->i ([x integer?]) #:pre (x) #t  [q (x) number?] #:post (x) #t))
+  (test-name '(->i ([x real?]) [_ (x) ...])
+              (->i ([x real?]) [_ (x) (>/c x)]))
 
   (test-name '(case->) (case->))
   (test-name '(case-> (-> integer? any) (-> boolean? boolean? any) (-> char? char? char? any))
