@@ -1,6 +1,6 @@
 #lang scheme/base
-(require ffi/objc
-         scheme/foreign
+(require ffi/unsafe/objc
+         ffi/unsafe
          scheme/class
          "pool.rkt"
          "utils.rkt"
@@ -13,11 +13,10 @@
          "../../syntax.rkt"
          "../common/queue.rkt"
          "../../lock.rkt")
-(unsafe!)
-(objc-unsafe!)
 
 (provide frame%
-         location->window)
+         location->window
+         get-front)
 
 ;; ----------------------------------------
 
@@ -25,6 +24,8 @@
               NSApplication NSAutoreleasePool NSScreen)
 
 (define front #f)
+
+(define (get-front) front)
 
 (define empty-mb (new menu-bar%))
 (define root-fake-frame #f)

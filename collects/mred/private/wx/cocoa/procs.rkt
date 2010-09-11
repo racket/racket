@@ -8,6 +8,7 @@
          "types.rkt"
          "frame.rkt"
          "finfo.rkt" ; file-creator-and-type
+         "filedialog.rkt"
          "../../lock.rkt"
          "../common/handlers.rkt")
 
@@ -110,7 +111,6 @@
 
 (define (get-display-depth) 32)
 (define-unimplemented is-color-display?)
-(define-unimplemented file-selector)
 (define (id-to-menu-item id) id)
 (define-unimplemented get-the-x-selection)
 (define-unimplemented get-the-clipboard)
@@ -129,6 +129,7 @@
                   colorUsingColorSpaceName: NSCalibratedRGBColorSpace)]
         [as-color (lambda (v)
                     (inexact->exact (floor (* 255.0 v))))])
+    (unless hi (error "selection background color lookup failed!"))
     (make-object color%
                  (as-color
                   (tell #:type _CGFloat hi redComponent))

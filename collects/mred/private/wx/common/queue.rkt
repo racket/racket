@@ -412,7 +412,7 @@
             (lambda (k v) k)))
 
 (define (other-modal? win)
-  ;; called in event-pump thread
+  ;; called in atmoic mode in eventspace's thread
   (let loop ([frames (get-top-level-windows)]) 
     (and (pair? frames)
          (let ([status (send (car frames) frame-relative-dialog-status win)])
