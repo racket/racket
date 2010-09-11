@@ -1,10 +1,11 @@
 #lang racket/base
-(require racket/vector
+(require racket/contract
+         racket/vector
          racket/match)
 
 (define MIN-SIZE 4)
 
-(define-struct heap (vec size <=?) #:mutable)
+(define-struct heap (vec count <=?) #:mutable)
 ;; length(vec)/4 <= size <= length(vec)
 ;; size = next available index
 
@@ -111,7 +112,7 @@
          (vector-copy! vec size keys 0)
          (for ([n (in-range size new-size)])
            (heapify-up <=? vec n))
-         (set-heap-size! h new-size))])))
+         (set-heap-count! h new-size))])))
 
 (define (heap-min h)
   (match h
@@ -141,7 +142,7 @@
      (heapify-down <=? vec index (sub1 size))
      (when (< MIN-SIZE size (quotient (vector-length vec) 4))
        (set-heap-vec! h (shrink-vector vec)))
-     (set-heap-size! h (sub1 size))]))
+     (set-heap-count! h (sub1 size))]))
 
 (define (in-heap h)
   (in-heap/consume! (heap-copy h)))
@@ -158,7 +159,7 @@
 (provide/contract
  [make-heap (-> (-> any/c any/c any/c) heap?)]
  [heap? (-> any/c boolean?)]
- [heap-size (-> heap? exact-nonnegative-integer?)]
+ [heap-count (-> heap? exact-nonnegative-integer?)]
  [heap-copy (-> heap? heap?)]
  [vector->heap (-> (-> any/c any/c any/c) vector? heap?)]
  [heap-add! (->* (heap?) () #:rest list? void?)]
