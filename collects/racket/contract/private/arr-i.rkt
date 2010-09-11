@@ -745,7 +745,7 @@
                    #,(if (istx-rst an-istx)
                          (if (arg/res-vars (istx-rst an-istx))
                              `(dep ,(syntax-e (arg/res-var (istx-rst an-istx)))
-                                   ,(syntax-e (arg/res-vars (istx-rst an-istx))))
+                                   ,(map syntax-e (arg/res-vars (istx-rst an-istx))))
                              `(nodep ,(syntax-e (arg/res-var (istx-rst an-istx)))))
                          #f)
                    #,(and (istx-pre an-istx) (map syntax-e (pre/post-vars (istx-pre an-istx))))

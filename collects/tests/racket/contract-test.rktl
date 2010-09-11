@@ -2161,6 +2161,33 @@
                     'neg)
           m 1)
    1)
+
+   (test/spec-passed/result
+    '->i28
+    '((contract (->i ([x real?])
+		     #:rest [rest (x) (listof (>=/c x))]
+		     any)
+		(λ (x . rest)
+		   (cons x rest))
+		'pos
+		'neg)
+      1
+      2
+      3)
+    '(1 2 3))
+
+   (test/neg-blame
+    '->i29
+    '((contract (->i ([x real?])
+		     #:rest [rest (x) (listof (>=/c x))]
+		     any)
+		(λ (x . rest)
+		   (cons x rest))
+		'pos
+		'neg)
+      1
+      -2
+      -3))
   
   (test/spec-passed
    '->i-any1

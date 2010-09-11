@@ -344,8 +344,8 @@ code does the parsing and validation of the syntax.
                       (for-each (λ (x) (check-id stx x))
                                 (syntax->list #'(id2 ...)))
                       (values (arg/res #'id 
-                                   (syntax->list #'(id2 ...))
-                                   #'rest-expr)
+                                       (syntax->list #'(id2 ...))
+                                       #'rest-expr)
                               #'leftover))]
                    [(#:rest other . leftover)
                     (raise-syntax-error #f "expected an id+ctc"
@@ -397,12 +397,6 @@ code does the parsing and validation of the syntax.
        (raise-syntax-error #f "bad syntax" stx #'a)]
       [_
        (raise-syntax-error #f "bad syntax" stx)])))
-
-;(define (ensure-no-cycles istx)
-;  (let (;; cm : id -o> {'pending, 'no-cycle}
-;        [cm (make-free-identifier-map)])
-;    (for ([dom (in-list (istx-args istx))])
-;      (let loop ([id (
 
 (provide
  parse-->i
