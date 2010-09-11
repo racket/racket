@@ -7,7 +7,9 @@
          syntax/stx
          syntax/id-table
          macro-debugger/model/deriv
-         "util.rkt")
+         "private/reftable.rkt"
+         "private/nom-use-alg.rkt"
+         "private/util.rkt")
 (provide/contract
  [check-requires (-> module-path? list?)]
  [add-disappeared-uses? (parameter/c boolean?)]
@@ -93,45 +95,6 @@ The limitations:
 ;; ========
 
 (define add-disappeared-uses? (make-parameter #t))
-
-;; ========
-
-;; A RefTable = hash[Phase => free-id-table[bool]]
-;; Phase = nat
-
-#|
-
-For the calculations at the end, we only want to consider identifiers
-from the expanded module (ie, syntax-source-module = here.)
-
-That means that instead of a free-id-table, we really want a dict/set
-that distinguishes between identifiers imported different ways.  eg,
-hash keyed on (nom-name, nom-mod). The reason is that a not-from-here
-identifier can block/clobber a from-here identifier if they happen to
-refer to the same binding. That messes up the analysis.
-
-Temporary solution: only add from-here identifiers to the reftable.
-
-|#
-
-;; new-reftable : -> RefTable
-(define (new-reftable)
-  (make-hash))
-
-;; reftable-get-phase : RefTable Phase -> free-id-table[bool]
-(define (reftable-get-phase refs phase)
-  (hash-ref! refs phase (lambda () (make-free-id-table #:phase phase))))
-
-;; reftable-add-all! : RefTable Phase (listof identifier) -> void
-(define (reftable-add-all! refs phase ids)
-  (let ([id-table (reftable-get-phase refs phase)])
-    (for ([id (in-list ids)]
-          #:when (here-mpi? (syntax-source-module id)))
-      (free-id-table-set! id-table id #t))))
-
-;; reftable-add! : RefTable Phase identifier -> void
-(define (reftable-add! refs phase id)
-  (reftable-add-all! refs phase (list id)))
 
 ;; ========
 
@@ -338,103 +301,6 @@ Temporary solution: only add from-here identifiers to the reftable.
 
 ;; ========
 
-;; sMPI = S-expr form of mpi (see mpi->key)
-;; Using MPIs doesn't work. I conjecture that the final module shift means that
-;; all during-expansion MPIs are different from all compiled-expr MPIs.
-
-;; A UsedTable = hash[(list int sMPI) => list]
-
-;; calculate-used-approximations : RefTable -> (values UsedTable UsedTable)
-(define (calculate-used-approximations refs)
-  (let ([NOM-USES (make-hash)]
-        [DEF-USES (make-hash)])
-    (for* ([(use-phase id-table) (in-hash refs)]
-           [id (in-dict-keys id-table)])
-      ;; Only look at identifiers written in module being examined.
-      ;; (Otherwise, nom-mod & nom-phase aren't enough info (???)
-      (when (here-mpi? (syntax-source-module id)) ;; REDUNDANT
-        (let ([b (identifier-binding id use-phase)])
-          (match b
-            [(list def-mod def-sym nom-mod nom-sym
-                   def-phase nom-imp-phase nom-exp-phase)
-             ;; use-phase = def-phase + required-phase
-             ;; thus required-phase = use-phase - def-phase
-             (let* ([required-phase (- use-phase def-phase)]
-                    [key (list required-phase (mpi->key def-mod))])
-               (hash-set! DEF-USES key
-                          (cons id (hash-ref DEF-USES key null))))
-             ;; use-phase = nom-imp-phase + nom-exp-phase ?????
-             ;; We just care about nom-imp-phase, since importing into *here*
-             #|
-             ;; FIXME: This check goes wrong on defined-for-syntax ids
-             (unless (equal? use-phase (+ nom-imp-phase nom-exp-phase))
-               (error 'calculate
-                      "internal error: phases wrong in ~s @ ~s, binding = ~s"
-                      id use-phase b))
-             |#
-             (let ([key (list nom-imp-phase (mpi->key nom-mod))])
-               (hash-set! NOM-USES key
-                          (cons id (hash-ref NOM-USES key null))))]
-            [_
-             (void)]))))
-    (values NOM-USES DEF-USES)))
-
-;; ========
-
-;; get-requires : compiled-module-expr -> (listof (list int MPI))
-(define (get-requires compiled)
-  (let ([phase+mods-list (module-compiled-imports compiled)])
-    (for*/list ([phase+mods (in-list phase+mods-list)]
-                #:when (car phase+mods) ;; Skip for-label requires
-                [mod (cdr phase+mods)])
-      (list (car phase+mods) mod))))
-
-;; add-provides! : compiled-module-expr UsedTable UsedTable -> void
-(define (add-provides! compiled NOM-USES DEF-USES)
-  (define (add! mpi phase)
-    (let ([key (list phase (mpi->key mpi))])
-      (hash-set! NOM-USES key (cons 'export (hash-ref NOM-USES key null)))
-      (hash-set! DEF-USES key (cons 'export (hash-ref DEF-USES key null)))))
-  (let-values ([(vprov sprov) (module-compiled-exports compiled)])
-    (for* ([phase+exps (in-list (append vprov sprov))]
-           #:when (car phase+exps) ;; Skip for-label provides
-           [name+srcs (in-list (cdr phase+exps))]
-           [src (in-list (cadr name+srcs))])
-      (let ([name (car name+srcs)])
-        (match src
-          [(? module-path-index?)
-           (add! src 0)]
-          [(list imp-mod imp-phase-shift imp-name imp-phase-???)
-           (add! imp-mod imp-phase-shift)])))))
-
-;; ========
-
-;; A ModuleDB = hash[path/symbol => (U 'no-drop 'no-bypass)]
-;;   'no-drop = must not be dropped or bypassed because of, eg, side effects
-;;   'no-bypass = don't bypass in favor of private component modules
-;;                but if the module is unused, can drop it
-;;                (FIXME: replace with component module calculation and checking)
-
-(define (make-module-db mod+config-list)
-  (for/hash ([mod+config (in-list mod+config-list)])
-    (values (resolve-module-path (car mod+config) #f) (cadr mod+config))))
-
-;; module-db : ModuleDB
-(define module-db
-  (make-module-db
-   '([racket/base                            no-bypass]
-     [racket/contract/base                   no-bypass]
-     [racket/gui                             no-bypass]
-     [racket/match                           no-bypass]
-     ['#%builtin                             no-drop]
-
-     [typed-scheme/private/base-env          no-drop]
-     [typed-scheme/private/base-special-env  no-drop]
-     [typed-scheme/private/base-env-numeric  no-drop]
-     [typed-scheme/private/base-env-indexing no-drop])))
-
-;; ========
-
 #|
 A recommendation is one of
   (list 'keep   module-path-index phase string/#f)
@@ -447,51 +313,7 @@ A recommendation is one of
   (let-values ([(compiled deriv) (get-module-code/trace mod-path)])
     (let ([refs (new-reftable)])
       (analyze deriv refs)
-      (let-values ([(NOM-USES DEF-USES) (calculate-used-approximations refs)])
-        (add-provides! compiled NOM-USES DEF-USES)
-        (report NOM-USES DEF-USES (get-requires compiled))))))
-
-;; report : UseTable UseTable (listof (list int mpi)) -> (listof recommendation)
-(define (report NOM-USES DEF-USES phase+mod-list)
-  (for/list ([phase+mod (in-list phase+mod-list)])
-    (let* ([key (list (car phase+mod) (mpi->key (cadr phase+mod)))]
-           [db-config
-            (hash-ref module-db
-                      (resolved-module-path-name
-                       (module-path-index-resolve (cadr phase+mod)))
-                      #f)]
-           [nom-ids (hash-ref NOM-USES key null)]
-           [def-ids (hash-ref DEF-USES key null)]
-           [phase (car phase+mod)]
-           [mod (cadr phase+mod)]
-           [name (format "~s at ~s" (mpi->key mod) phase)])
-      (cond [(and (pair? nom-ids) (pair? def-ids))
-             (list 'keep mod phase (if (ormap identifier? nom-ids) #f "for exports"))]
-            [(pair? nom-ids)
-             (if (memq db-config '(no-bypass no-drop))
-                 (list 'keep mod phase "db says no-bypass")
-                 (list 'bypass mod phase))]
-            [else
-             (if (memq db-config '(no-drop))
-                 (list 'keep mod phase "db says no-drop")
-                 (list 'drop mod phase))]))))
-
-(define (mpi->key x)
-  (let ([l (mpi->list x)])
-    (if (and (pair? l) (null? (cdr l)))
-        (car l)
-        l)))
-
-(define (mpi->list x)
-  (cond [(module-path-index? x)
-         (let-values ([(rel base) (module-path-index-split x)])
-           (if rel
-               (cons rel (mpi->list base))
-               null))]
-        [(eq? x #f)
-         null]
-        [else
-         (list x)]))
+      (nom-use-alg refs compiled))))
 
 #|
 TODO
