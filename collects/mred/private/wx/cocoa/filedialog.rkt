@@ -19,15 +19,13 @@
 (define (file-selector message directory filename 
                        extension
                        filters style parent)
-  (let ([ns (if (memq 'put style)
+  (let ([ns (as-objc-allocation-with-retain
+             (if (memq 'put style)
                 (tell NSSavePanel savePanel)
-                (tell NSOpenPanel openPanel))]
+                (tell NSOpenPanel openPanel)))]
         [parent (and parent
                      (not (send parent get-sheet))
                      parent)])
-    ;; Why? This looks like a leak, but we get crashes
-    ;; without it.
-    (retain ns)
 
     (let ([extensions (append
                        (if extension (list extension) null)
@@ -84,12 +82,14 @@
                (when parent (tell app endSheet: ns))
                (when front (tellv (send front get-cocoa-window)
                                   makeKeyAndOrderFront: #f)))))])
-      (if (zero? result)
-          #f
-          (if (memq 'multi style)
-              (let ([urls (tell ns URLs)])
-                (for/list ([i (in-range (tell #:type _NSUInteger urls count))])
-                  (nsurl->string (tell urls objectAtIndex: #:type _NSUInteger i))))
-              (let ([url (tell ns URL)])
-                (nsurl->string url)))))))
+      (begin0
+       (if (zero? result)
+           #f
+           (if (memq 'multi style)
+               (let ([urls (tell ns URLs)])
+                 (for/list ([i (in-range (tell #:type _NSUInteger urls count))])
+                   (nsurl->string (tell urls objectAtIndex: #:type _NSUInteger i))))
+               (let ([url (tell ns URL)])
+                 (nsurl->string url))))
+       (release ns)))))
 

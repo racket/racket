@@ -125,18 +125,20 @@
 (define-cocoa NSCalibratedRGBColorSpace _id)
 
 (define (get-highlight-background-color)
-  (let ([hi (tell (tell NSColor selectedTextBackgroundColor) 
-                  colorUsingColorSpaceName: NSCalibratedRGBColorSpace)]
+  (let ([hi (as-objc-allocation-with-retain
+             (tell (tell NSColor selectedTextBackgroundColor) 
+                   colorUsingColorSpaceName: NSCalibratedRGBColorSpace))]
         [as-color (lambda (v)
                     (inexact->exact (floor (* 255.0 v))))])
-    (unless hi (error "selection background color lookup failed!"))
-    (make-object color%
-                 (as-color
-                  (tell #:type _CGFloat hi redComponent))
-                 (as-color
-                  (tell #:type _CGFloat hi greenComponent))
-                 (as-color
-                  (tell #:type _CGFloat hi blueComponent)))))
+    (begin0
+     (make-object color%
+                  (as-color
+                   (tell #:type _CGFloat hi redComponent))
+                  (as-color
+                   (tell #:type _CGFloat hi greenComponent))
+                  (as-color
+                   (tell #:type _CGFloat hi blueComponent)))
+     (release hi))))
 
 (define (get-highlight-text-color)
   #f)

@@ -13,6 +13,7 @@
          define-appkit
          define-mz
          as-objc-allocation
+         as-objc-allocation-with-retain
          retain release
          with-autorelease
          clean-menu-label
@@ -36,6 +37,11 @@
 
 (define-syntax-rule (as-objc-allocation expr)
   ((objc-allocator (lambda () expr))))
+
+(define-syntax-rule (as-objc-allocation-with-retain expr)
+  ((objc-allocator (lambda () (let ([v expr])
+                                (tellv v retain)
+                                v)))))
 
 (define release ((deallocator) objc-delete))
 (define retain ((retainer release car)
