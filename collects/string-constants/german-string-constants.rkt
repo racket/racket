@@ -879,6 +879,8 @@
  (compiling-teachpack "Teachpack ~a compilieren...")
  
   (teachpack-pre-installed "Vorinstallierte Teachpacks")
+  (teachpack-pre-installed/htdp "Vorinstallierte HtDP-Teachpacks")
+  (teachpack-pre-installed/2htdp "Vorinstallierte HtDP/2e-Teachpacks")
   (teachpack-user-installed "selbst installierte Teachpacks")
   (add-teachpack-to-list... "Teachpack zu Liste hinzufügen...")
   (teachpack-already-installed "Ein Teachpack names '~a' ist schon installiert. Überschreiben?")
