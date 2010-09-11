@@ -22,7 +22,7 @@ code does the parsing and validation of the syntax.
 ;; pre  : (or/c pre/post? #f)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (or/c pre/post? #f)
-(struct istx (args rst pre ress post))
+(struct istx (args rst pre ress post) #:transparent)
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
 ;;       but only temporarily; in that case, a syntax error
 ;;       is signaled and the istx struct is not used afterwards
@@ -30,23 +30,23 @@ code does the parsing and validation of the syntax.
 ;; var  : identifier?
 ;; vars : (or/c #f (listof identifier?))
 ;; ctc  : syntax[expr]
-(struct arg/res (var vars ctc))
+(struct arg/res (var vars ctc) #:transparent)
 
 ;; kwd  : (or/c #f syntax[kwd])
 ;; optional? : boolean?
-(struct arg arg/res (kwd optional?))
+(struct arg arg/res (kwd optional?) #:transparent)
 
 ;; these represent res contracts that came from _s (and thus should be evaluated early)
 ;; eid : identifier?  --- extra variable to be bound to the result 
 ;;                    --- of evaluating the result contract early
-(struct eres arg/res (eid))
+(struct eres arg/res (eid) #:transparent)
 
 ;; these represent res contracts that do not come from _s (and thus should be evaluated later)
-(struct lres arg/res ())
+(struct lres arg/res () #:transparent)
 
 ;; vars : (listof identifier?)
 ;; exp  : syntax[expr]
-(struct pre/post (vars exp))
+(struct pre/post (vars exp) #:transparent)
 
 (define (parse-->i stx)
   (if (identifier? stx)
