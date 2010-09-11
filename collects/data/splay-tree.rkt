@@ -122,6 +122,7 @@ In (values status nroot pside pnode):
 ;; incremental splay
 (define (isplay! tx ok? x p-side p gp-side gp)
   ;; (printf "splay! ~s\n" (list x p-side p gp-side gp))
+  (printf "splay!\n")
   (cond [(eq? x #f)
          ;; Then p-side = #f, p = #f
          ;; Overwrite new root with gp
@@ -131,19 +132,22 @@ In (values status nroot pside pnode):
          (set-node-side! p p-side x)
          (cond [(eq? p-side gp-side)
                 ;; zig-zig
-                (rotate! tx gp gp-side)
                 (rotate! tx p p-side)
+                (set-node-side! gp gp-side x)
+                (rotate! tx gp gp-side)
                 (values tx ok? x #f #f)]
                [else
                 ;; zig-zag
                 (rotate! tx p p-side)
+                (set-node-side! gp gp-side x)
                 (rotate! tx gp gp-side)
                 (values tx ok? x #f #f)])]
         [else
          (values tx ok? x gp-side gp)]))
 
 (define (finish tx ok? x p-side p)
-  (printf "run ~s\n" (list x p-side p))
+  ;; (printf "run ~s\n" (list x p-side p))
+  (printf "finish!\n")
   (cond [(eq? x #f)
          ;; Then p-side = #f, p = #f
          (values ok? #f)]
@@ -315,20 +319,14 @@ In (values status nroot pside pnode):
 
 ;; ======== Splay tree ========
 
-(define make-splay-tree*
-  (let ([make-splay-tree
-         (lambda (<? =?)
-           (splay-tree #f
-                       (lambda (x y) (if (=? x y) '= (if (<? x y) '< '>)))
-                       #f))])
-    make-splay-tree))
+(define (make-splay-tree <? =?)
+  (splay-tree #f 0 (lambda (x y) (if (=? x y) '= (if (<? x y) '< '>))) #f))
 
 #|
-In a numeric splay tree, keys can be stored relative to their parent nodes.
-Only if requested, though; otherwise, lots of pointless arithmetic.
+In an integer splay tree, keys can be stored relative to their parent nodes.
 |#
-(define (make-numeric-splay-tree [tx #f])
-  (splay-tree #f 0 (lambda (x y) (if (= x y) '= (if (< x y) '< '>))) tx))
+(define (make-integer-splay-tree)
+  (integer-splay-tree #f 0 (lambda (x y) (if (= x y) '= (if (< x y) '< '>))) #t))
 
 (define not-given (gensym 'not-given))
 
@@ -351,7 +349,7 @@ Only if requested, though; otherwise, lots of pointless arithmetic.
      (let-values ([(ok? root) (find/root cmp tx x root (list v))])
        (set-splay-tree-root! s root)
        (when (eq? ok? 'added) (set-splay-tree-size! s (add1 size)))
-       (printf "root = ~s\n" root)
+       ;; (printf "root = ~s\n" root)
        (unless (eq? (node-value root) v)
          (set-node-value! root v)))]))
 
@@ -412,17 +410,39 @@ Options
 
 (struct splay-tree ([root #:mutable] [size #:mutable] cmp tx)
         #:transparent
-        #:property prop:dict
-        (vector splay-tree-ref
-                splay-tree-set!
-                #f ;; set
-                splay-tree-remove!
-                #f ;; remove
-                splay-tree-count
-                splay-tree-iterate-first
-                splay-tree-iterate-next
-                splay-tree-iterate-key
-                splay-tree-iterate-value))
+        #:property prop:dict/contract
+        (list (vector-immutable splay-tree-ref
+                                splay-tree-set!
+                                #f ;; set
+                                splay-tree-remove!
+                                #f ;; remove
+                                splay-tree-count
+                                splay-tree-iterate-first
+                                splay-tree-iterate-next
+                                splay-tree-iterate-key
+                                splay-tree-iterate-value)
+              (vector-immutable any/c
+                                any/c
+                                splay-tree-iter?
+                                #f #f #f)))
+
+(struct integer-splay-tree splay-tree ()
+        #:transparent
+        #:property prop:dict/contract
+        (list (vector-immutable splay-tree-ref
+                                splay-tree-set!
+                                #f ;; set
+                                splay-tree-remove!
+                                #f ;; remove
+                                splay-tree-count
+                                splay-tree-iterate-first
+                                splay-tree-iterate-next
+                                splay-tree-iterate-key
+                                splay-tree-iterate-value)
+              (vector-immutable exact-integer?
+                                any/c
+                                splay-tree-iter?
+                                #f #f #f)))
 
 ;; Order-based search
 
@@ -479,7 +499,8 @@ Options
 ;; ========
 
 (provide/contract
- [make-numeric-splay-tree (->* () (any/c) splay-tree?)]
+ [make-splay-tree (-> (-> any/c any/c any/c) (-> any/c any/c any/c) splay-tree?)]
+ [make-integer-splay-tree (-> splay-tree?)]
  [splay-tree? (-> any/c boolean?)]
  [splay-tree-ref (->* (splay-tree? any/c) (any/c) any/c)]
  [splay-tree-set! (-> splay-tree? any/c any/c void?)]
