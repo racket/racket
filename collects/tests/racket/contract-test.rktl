@@ -9042,13 +9042,12 @@ so that propagation occurs.
   (test-name '(object-contract (m (->d ((x ...) (y ...) (z ...)) () #:rest w ... [x0 ...])))
              (object-contract (m (->d ((x number?) (y boolean?) (z pair?)) () #:rest rest-x any/c [result number?]))))
 
-#| ->i FIXME
-  (test-name '(object-contract (m (->i ((x ...)) () (y ...)))) (object-contract (m (->i ((x number?)) () [result number?]))))
-  (test-name '(object-contract (m (->i ((x ...) (y ...) (z ...)) () [w ...])))
+  (test-name '(object-contract (m (->i ((x number?)) (result number?)))) 
+	     (object-contract (m (->i ((x number?)) () [result number?]))))
+  (test-name '(object-contract (m (->i ((x number?) (y boolean?) (z pair?)) [result number?])))
              (object-contract (m (->i ((x number?) (y boolean?) (z pair?)) () [result number?]))))
-  (test-name '(object-contract (m (->i ((x ...) (y ...) (z ...)) () #:rest [w ...] [x0 ...])))
+  (test-name '(object-contract (m (->i ((x number?) (y boolean?) (z pair?)) #:rest [rest-x any/c] [result number?])))
              (object-contract (m (->i ((x number?) (y boolean?) (z pair?)) () #:rest [rest-x any/c] [result number?]))))
-|#
 
   (test-name '(promise/c any/c) (promise/c any/c))
   (test-name '(syntax/c any/c) (syntax/c any/c))
