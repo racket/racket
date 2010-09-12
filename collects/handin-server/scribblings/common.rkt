@@ -1,20 +1,19 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/require)
-
-(require scribble/manual
-         (for-label scheme
-                    (subtract-in handin-server/checker scheme)
-                    ;; scheme/sandbox
+(require racket/require
+         scribble/manual
+         (for-label racket
+                    (subtract-in handin-server/checker racket)
+                    ;; racket/sandbox
                     handin-server/sandbox
                     handin-server/utils
-                    mred
-                    "hook-dummy.ss"))
+                    racket/gui/base
+                    "hook-dummy.rkt"))
 
 (provide (all-from-out scribble/manual)
-         (for-label (all-from-out scheme
+         (for-label (all-from-out racket
                                   handin-server/checker
                                   handin-server/sandbox
                                   handin-server/utils
-                                  mred
-                                  "hook-dummy.ss")))
+                                  racket/gui/base
+                                  "hook-dummy.rkt")))

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/file)
+(require racket/file)
 
 ;; This module should be invoked when we're in the server directory
 (provide server-dir)

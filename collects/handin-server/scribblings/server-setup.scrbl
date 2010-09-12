@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @title[#:tag "server-setup"]{Server Setup}
 
@@ -27,102 +27,102 @@ This directory contains the following files and sub-directories:
   The following keys can be used:
 
   @itemize[
-  @item{@indexed-scheme[active-dirs] --- a list of directories that
+  @item{@indexed-racket[active-dirs] --- a list of directories that
     are active submissions, relative to the current directory or
     absolute; the last path element for each of these (and
-    @schemeid[inactive-dirs] below) should be unique, and is used to
+    @racketid[inactive-dirs] below) should be unique, and is used to
     identify the submission (for example, in the client's submission
     dialog and in the status servlet).  If a specified directory does
     not exist, it will be created.}
 
-  @item{@indexed-scheme[inactive-dirs] --- a list of inactive
+  @item{@indexed-racket[inactive-dirs] --- a list of inactive
     submission directories (see above for details).}
 
-  @item{@indexed-scheme[port-number] --- the port for the main handin
+  @item{@indexed-racket[port-number] --- the port for the main handin
     server; the default is 7979.}
 
-  @item{@indexed-scheme[use-https] --- determines whether to start an
+  @item{@indexed-racket[use-https] --- determines whether to start an
     embedded web server for handin status reports; the default is
-    @scheme[#t].}
+    @racket[#t].}
 
-  @item{@indexed-scheme[session-timeout] --- number of seconds before
+  @item{@indexed-racket[session-timeout] --- number of seconds before
     the session times-out.  The client is given this many seconds for
     the login stage and then starts again so the same number of
     seconds is given for the submit-validation process; the default is
     300.}
 
-  @item{@indexed-scheme[session-memory-limit] --- maximum size in
+  @item{@indexed-racket[session-memory-limit] --- maximum size in
     bytes of memory allowed for per-session computation, if
     per-session limits are supported (i.e., when using GRacket and
     Racket with the (default) exact garbage collector and memory
     accounting); the default is 40000000.}
 
-  @item{@indexed-scheme[default-file-name] --- the default filename
+  @item{@indexed-racket[default-file-name] --- the default filename
     that will be saved with the submission contents.  The default is
-    @filepath{handin.scm}.}
+    @filepath{handin.rkt}.}
 
-  @item{@indexed-scheme[max-upload] --- maximum size in bytes of an
+  @item{@indexed-racket[max-upload] --- maximum size in bytes of an
     acceptable submission; the default is 500000.}
 
-  @item{@indexed-scheme[max-upload-keep] --- maximum index of
+  @item{@indexed-racket[max-upload-keep] --- maximum index of
     submissions to keep; the most recent submission is
-    @filepath{handin.scm} (by default), the next oldest is in
-    @filepath{BACKUP-0/handin.scm}, next oldest is
-    @filepath{BACKUP-1/handin.scm}, etc.  The default is 9.}
+    @filepath{handin.rkt} (by default), the next oldest is in
+    @filepath{BACKUP-0/handin.rkt}, next oldest is
+    @filepath{BACKUP-1/handin.rkt}, etc.  The default is 9.}
 
-  @item{@indexed-scheme[user-regexp] --- a regular expression that is
-    used to validate usernames; alternatively, this can be @scheme[#f]
+  @item{@indexed-racket[user-regexp] --- a regular expression that is
+    used to validate usernames; alternatively, this can be @racket[#f]
     meaning no restriction, or a list of permitted strings.  Young
     students often choose exotic usernames that are impossible to
     remember, and forget capitalization, so the default is fairly
-    strict--- @scheme[#rx"^[a-z][a-z0-9]+$"]; a @litchar{+} is always
+    strict--- @racket[#rx"^[a-z][a-z0-9]+$"]; a @litchar{+} is always
     disallowed in a username, since it is used in a submission username
     to specify joint work.}
 
-  @item{@indexed-scheme[user-desc] --- a plain-words description of
+  @item{@indexed-racket[user-desc] --- a plain-words description of
     the acceptable username format (according to user-regexp above);
-    @scheme[#f] stands for no description; the default is
-    @scheme["alphanumeric string"] which matches the default
+    @racket[#f] stands for no description; the default is
+    @racket["alphanumeric string"] which matches the default
     user-regexp.}
 
-  @item{@indexed-scheme[username-case-sensitive] --- a boolean; when
-    @scheme[#f], usernames are case-folded for all purposes; defaults
-    to @scheme[#f] (note that you should not set this to @scheme[#t]
+  @item{@indexed-racket[username-case-sensitive] --- a boolean; when
+    @racket[#f], usernames are case-folded for all purposes; defaults
+    to @racket[#f] (note that you should not set this to @racket[#t]
     on Windows or when using other case-insensitive filesystems, since
     usernames are used as directory names).}
 
-  @item{@indexed-scheme[allow-new-users] --- a boolean indicating
+  @item{@indexed-racket[allow-new-users] --- a boolean indicating
     whether to allow new-user requests from a client tool; the default
-    is @scheme[#f].}
+    is @racket[#f].}
 
-  @item{@indexed-scheme[allow-change-info] --- a boolean indicating
+  @item{@indexed-racket[allow-change-info] --- a boolean indicating
     whether to allow changing user information from a client tool
     (changing passwords is always possible); the default is
-    @scheme[#f].}
+    @racket[#f].}
 
-  @item{@indexed-scheme[master-password] --- a string for an MD5 hash
+  @item{@indexed-racket[master-password] --- a string for an MD5 hash
     for a password that allows login as any user; the default is
-    @scheme[#f], which disables the password.}
+    @racket[#f], which disables the password.}
 
-  @item{@indexed-scheme[log-output] --- a boolean that controls
+  @item{@indexed-racket[log-output] --- a boolean that controls
     whether the handin server log is written on the standard output;
-    defaults to @scheme[#t].}
+    defaults to @racket[#t].}
 
-  @item{@indexed-scheme[log-file] --- a path (relative to handin
+  @item{@indexed-racket[log-file] --- a path (relative to handin
     server directory or absolute) that specifies a filename for the
-    handin server log (possibly combined with the @schemeid[log-output]
-    option), or @scheme[#f] for no log file; defaults to
+    handin server log (possibly combined with the @racketid[log-output]
+    option), or @racket[#f] for no log file; defaults to
     @filepath{log}.}
 
-  @item{@indexed-scheme[web-log-file] --- a path (relative to handin
+  @item{@indexed-racket[web-log-file] --- a path (relative to handin
     server directory or absolute) that specifies a filename for
-    logging the internal HTTPS status web server; or @scheme[#f] (the
+    logging the internal HTTPS status web server; or @racket[#f] (the
     default) to disable this log.}
 
-  @item{@indexed-scheme[extra-fields] --- a list that describes extra
+  @item{@indexed-racket[extra-fields] --- a list that describes extra
     string fields of information for student records; each element in
     this list is a list of three values: the name of the field, the
-    regexp (or @scheme[#f], or a list of permitted string values), and
+    regexp (or @racket[#f], or a list of permitted string values), and
     a string describing acceptable strings.  The default is
     @verbatim[#:indent 2]|{
       (("Full Name" #f #f)
@@ -148,7 +148,7 @@ This directory contains the following files and sub-directories:
     @; JBC: a hyperlink here for users.rktd?
 
     The second item in a field description can also be the symbol
-    @schemeid[-], which marks this field as one that is hidden from the
+    @racketid[-], which marks this field as one that is hidden from the
     user interface: students will not see it and will not be able to
     provide or modify it; when a new student creates an account, such
     fields will be left empty.  This is useful for adding information
@@ -157,11 +157,11 @@ This directory contains the following files and sub-directories:
     @filepath{users.rktd} file and fill in such information.  (The third
     element for such descriptors is ignored.)}
 
-  @item{@indexed-scheme[hook-file] --- a path (relative to handin
+  @item{@indexed-racket[hook-file] --- a path (relative to handin
     server directory or absolute) that specifies a filename that
     contains a `hook' module.  This is useful as a general device for
-    customizing the server through Scheme code.  The file is expected
-    to contain a module that provides a @scheme[hook] function, which
+    customizing the server through Racket code.  The file is expected
+    to contain a module that provides a @racket[hook] function, which
     should be receiving three arguments:
 
     @defproc[(hook [operation symbol?]
@@ -169,22 +169,22 @@ This directory contains the following files and sub-directories:
                    [relevant-info (listof (list/c symbol? any))])
              void?]{
 
-      The @scheme[operation] argument indicates the operation that is
+      The @racket[operation] argument indicates the operation that is
       now taking place.  It can be one of the following:
-      @indexed-scheme['server-start], @indexed-scheme['server-connect],
-      @indexed-scheme['user-create], @indexed-scheme['user-change],
-      @indexed-scheme['login], @indexed-scheme['submission-received],
-      @indexed-scheme['submission-committed],
-      @indexed-scheme['submission-retrieved],
-      @indexed-scheme['status-login], or
-      @indexed-scheme['status-file-get].
+      @indexed-racket['server-start], @indexed-racket['server-connect],
+      @indexed-racket['user-create], @indexed-racket['user-change],
+      @indexed-racket['login], @indexed-racket['submission-received],
+      @indexed-racket['submission-committed],
+      @indexed-racket['submission-retrieved],
+      @indexed-racket['status-login], or
+      @indexed-racket['status-file-get].
 
-      The @scheme[connection-context] argument is a datum that specifies
+      The @racket[connection-context] argument is a datum that specifies
       the connection context (a number for handin connections, a
-      @schemeid[wN] symbol for servlet connections, and @scheme[#f] for
+      @racketid[wN] symbol for servlet connections, and @racket[#f] for
       other server operations).
 
-      The @scheme[relevant-info] contains an alist of information
+      The @racket[relevant-info] contains an alist of information
       relevant to this operation.  Currently, the hook is used in
       several places after an operation has completed.
 
@@ -192,8 +192,8 @@ This directory contains the following files and sub-directories:
       notification messages when users are created or their
       information has changed:
 
-      @schememod[
-        mzscheme
+      @racketmod[
+        racket/base
         (provide hook)
         (require net/sendmail)
         (define (hook what session alist)
@@ -210,7 +210,7 @@ This directory contains the following files and sub-directories:
   re-read, and options are reloaded.  A few options are fixed at startup
   time: port numbers and log file specs are fixed as configured at
   startup.  All other options will change the behavior of the running
-  server (but things like @schemeid[username-case-sensitive?]  it would
+  server (but things like @racketid[username-case-sensitive?]  it would
   be unwise to do so).  (For safety, options are not reloaded until the
   file parses correctly, but make sure that you don't save a copy that
   has inconsistent options: it is best to create a new configuration
@@ -221,25 +221,25 @@ This directory contains the following files and sub-directories:
 @item{@filepath{users.rktd} (created if not present when a user is added):
   keeps the list of user accounts, along with the associated password
   (actually the MD5 hash of the password), and extra string fields as
-  specified by the @schemeid[extra-fields] configuration entry (in the
+  specified by the @racketid[extra-fields] configuration entry (in the
   same order).  The file format is
   @verbatim[#:indent 2]{
     ((<username-sym> (<pw-md5-str> <extra-field> ...))
      ...)}
 
-  For example, the default @schemeid[extra-field] setting will make
+  For example, the default @racketid[extra-field] setting will make
   this:
   @verbatim[#:indent 2]{
     ((<username-sym> (<pw-md5-str> <full-name> <id> <email>))
       ...)}
 
   Usernames that begin with ``solution'' are special.  They are used by
-  the HTTPS status server.  Independent of the @schemeid[user-regexp]
-  and @schemeid[username-case-sensitive?] configuration items, usernames
+  the HTTPS status server.  Independent of the @racketid[user-regexp]
+  and @racketid[username-case-sensitive?] configuration items, usernames
   are not allowed to contain characters that are illegal in Windows
   pathnames, and they cannot end or begin in spaces or periods.
 
-  If the @schemeid[allow-new-users] configuration allows new users, the
+  If the @racketid[allow-new-users] configuration allows new users, the
   @filepath{users.rktd} file can be updated by the server with new users.
   It can always be updated by the server to change passwords.
 
@@ -247,13 +247,13 @@ This directory contains the following files and sub-directories:
   @filepath{/etc/passwd} or @filepath{/etc/shadow}), then you can
   construct a @filepath{users.rktd} file that will allow users to use
   their normal passwords.  To achieve this, use a list with
-  @schemeid[unix] as the first element and the system's encrypted
+  @racketid[unix] as the first element and the system's encrypted
   password string as the second element.  Such passwords can be used,
   but when users change them, a plain md5 hash will be used.
 
   You can combine this with other fields from the password file to
   create your @filepath{users.rktd}, but make sure you have information
-  that matches your @schemeid[extra-fields] specification.  For example,
+  that matches your @racketid[extra-fields] specification.  For example,
   given this system file:
   @verbatim[#:indent 2]|{
     foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo        :/home/foo:/bin/tcsh
@@ -262,7 +262,7 @@ This directory contains the following files and sub-directories:
   @verbatim[#:indent 2]|{
     ((foo ((unix "wRzN1u5q2SqRD") "L.E. Foo" "?"))
      (bar ((unix "$1$dKlU0OkJ$t63TzKz") "Bar Z. Lie" "?")))}|
-  which can be combined with this setting for @schemeid[extra-fields] in
+  which can be combined with this setting for @racketid[extra-fields] in
   your @filepath{config.rktd}:
   @verbatim[#:indent 2]{
     ...
@@ -274,15 +274,15 @@ This directory contains the following files and sub-directories:
   their TA name.
 
   Finally, a password value can be a list that begins with a
-  @schemeid[plaintext] symbol, which will be used without encryption.
+  @racketid[plaintext] symbol, which will be used without encryption.
   This may be useful for manually resetting a forgotten passwords.}
 
-@item{@filepath{log} (or any other name that the @schemeid[log-file]
+@item{@filepath{log} (or any other name that the @racketid[log-file]
   configuration option specifies (if any), created if not present,
   appended otherwise): records connections and actions, where each entry
   is of the form
   @verbatim{[<id>|<time>] <msg>}
-  where @schemeid[<id>] is an integer representing the connection
+  where @racketid[<id>] is an integer representing the connection
   (numbered consecutively from 1 when the server starts), ``@tt{-}'' for
   a message without a connection, and ``@tt{wN}'' for a message from the
   status servlet.}
@@ -290,11 +290,11 @@ This directory contains the following files and sub-directories:
 @item{Active and inactive assignment directories (which you can put in
   a nested directory for convenience, or specify a different absolute
   directory), as specified by the configuration file using the
-  @schemeid[active-dirs] and @schemeid[inactive-dirs].  A list of active
+  @racketid[active-dirs] and @racketid[inactive-dirs].  A list of active
   assignment directories (the last path element in each specified path
   is used as a label) is sent to the client tool when a student clicks
   @onscreen{Handin}.  The assignment labels are ordered in the student's
-  menu using @scheme[string<?], and the first assignment is the default
+  menu using @racket[string<?], and the first assignment is the default
   selection.
 
   Within each assignment directory, the student id is used for a
@@ -317,20 +317,20 @@ This directory contains the following files and sub-directories:
   might not finish.  When the server is started, it automatically runs
   the cleanup process for each student directory.
 
-  Within a student directory, a @filepath{handin.scm} file (or some
-  other name if the @schemeid[default-file-name] option is set) contains
-  the actual submission.  A @scheme[checker] procedure can change this
+  Within a student directory, a @filepath{handin.rkt} file (or some
+  other name if the @racketid[default-file-name] option is set) contains
+  the actual submission.  A @racket[checker] procedure can change this
   default file name, and it can create additional files in an
   @filepath{ATTEMPT} directory (to be copied by the cleanup process);
-  see below for more details on @schememodname[handin-server/checker].
+  see below for more details on @racketmodname[handin-server/checker].
 
   For submissions from a normal DrRacket frame, a submission file
   contains a copy of the student's definitions and interactions
   windows.  The file is in a binary format (to support non-text code),
   and opening the file directly in DrRacket shows the definitions
   part.  To get both the definitions and interactions parts, the file
-  can be parsed with @scheme[unpack-submission] from
-  @schememodname[handin-server/utils].
+  can be parsed with @racket[unpack-submission] from
+  @racketmodname[handin-server/utils].
 
   To submit an assignment as a group, students use a concatenation of
   usernames separated by ``@tt{+}'' and any number of spaces (e.g.,
@@ -343,19 +343,19 @@ This directory contains the following files and sub-directories:
   Inactive assignment directories are used by the HTTPS status web
   server.}
 
-@item{@filepath{<active-assignment>/checker.ss} (optional): a module
-  that exports a @scheme[checker] function.  This function receives
+@item{@filepath{<active-assignment>/checker.rkt} (optional): a module
+  that exports a @racket[checker] function.  This function receives
   two
   @; JBC: use defproc here?
   arguments: a username list and a submission as a byte string.  (See
-  also @scheme[unpack-submission], etc. from
-  @schememodname[handin-server/utils].)  To
-    reject the submission, the @scheme[checker] function can raise an
+  also @racket[unpack-submission], etc. from
+  @racketmodname[handin-server/utils].)  To
+    reject the submission, the @racket[checker] function can raise an
     exception; the exception message will be relayed back to the
     student.  The module is loaded when the current directory is the
     main server directory, so it can read files from there (but note
     that to read values from @filepath{config.rktd} it is better to use
-    @scheme[get-conf]).  Also, the module will be reloaded if the
+    @racket[get-conf]).  Also, the module will be reloaded if the
     checker file is modified; there's no need to restart the server,
     but make sure that you do not save a broken checker (i.e., do not
     save in mid-edit).
@@ -365,10 +365,10 @@ This directory contains the following files and sub-directories:
     the submission username was a concatenation of usernames separated
     by ``@tt{+}'').
 
-    The @scheme[checker] function is called with the current directory
+    The @racket[checker] function is called with the current directory
     as @filepath{<active-assignment>/<username(s)>/ATTEMPT}, and the
     submission is saved in the file @filepath{handin}, and the timeout
-    clock is reset to the value of the @scheme[session-timeout]
+    clock is reset to the value of the @racket[session-timeout]
     configuration.  The checker function can change @filepath{handin},
     and it can create additional files in this directory.  (Extra
     files in the current directory will be preserved as it is later
@@ -378,12 +378,12 @@ This directory contains the following files and sub-directories:
     put the files in a subdirectory, it is preserved but hidden from
     the status interface.
 
-    The checker should return a string, such as @filepath{handin.scm},
-    to use in naming the submission file, or @scheme[#f] to indicate
+    The checker should return a string, such as @filepath{handin.rkt},
+    to use in naming the submission file, or @racket[#f] to indicate
     that he file should be deleted (e.g., when the checker alrady
     created the submission file(s) in a different place).
 
-    Alternatively, the module can bind @scheme[checker] to a list of
+    Alternatively, the module can bind @racket[checker] to a list of
     three procedures: a pre-checker, a checker, and a post-checker.
     All three are applied in exactly the same way as the checker (same
     arguments, and always within the submission directory), except
@@ -394,7 +394,7 @@ This directory contains the following files and sub-directories:
       submission directory does not have a @filepath{SUCCESS-*}
       directory, then the whole submission directory is removed.  This
       is useful for checking that the user/s are valid; if you allow a
-      submission only when @scheme[users] is @scheme['("foo" "bar")],
+      submission only when @racket[users] is @racket['("foo" "bar")],
       and ``@tt{foo}'' tries to submit alone, then the submission
       directory for ``@tt{foo}'' should be removed to allow a proper
       submission later.  Note that the timeout clock is reset only
@@ -406,17 +406,17 @@ This directory contains the following files and sub-directories:
       considered successful, so this function should avoid throwing an
       exception (it can, but the submission will still be in place).
       This is useful for things like notifying the user of the
-      successful submission (see @scheme[message]), or sending a
+      successful submission (see @racket[message]), or sending a
       ``receipt'' email.}]
 
-    To specify only pre/post-checker, use @scheme[#f] for the one you
+    To specify only pre/post-checker, use @racket[#f] for the one you
     want to omit.}
 
 @item{@filepath{<[in]active-assignment>/<user(s)>/<filename>} (if
   submitted): the most recent submission for
   @tt{<[in]active-assignment>} by @tt{<user(s)>} where <filename> was
   returned by the checker (or the value of the
-  @schemeid[default-file-name] configuration option if there's no
+  @racketid[default-file-name] configuration option if there's no
   checker).  If the submission is from multiple users, then
   ``@tt{<user(s)>}'' is actually ``@tt{<user1>+<user2>}'' etc.  Also, if
   the cleanup process was interrupted (by a machine failure, etc.), the
@@ -438,8 +438,8 @@ This directory contains the following files and sub-directories:
 ]
 
 The server can be run within either Racket or GRacket, but
-@schememodname[handin-server/utils] requires GRacket (which means that
-@scheme[checker] modules will likely require the server to run under
+@racketmodname[handin-server/utils] requires GRacket (which means that
+@racket[checker] modules will likely require the server to run under
 GRacket).  Remember that if you're not using the (default) 3m garbage
 collector you don't get memory accounting.
 
@@ -471,7 +471,7 @@ the correct assignment in the handin dialog.
 A student can download his/her own submissions through the handin
 dialog.  This can also be done through a web server that runs
 concurrently with the handin server (on the same port) if you set the
-@scheme[use-https] option in the configuration file to @scheme[#t] (the
+@racket[use-https] option in the configuration file to @racket[#t] (the
 default).  The starting URL is
 
 @commandline{https://SERVER:PORT/}

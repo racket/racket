@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @title{Client Customization}
 
@@ -9,10 +9,10 @@ collection directory.  The new name should describe your class
 uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
 1410 at the University of Utah.}
 
-@item{Edit the first three definitions of @filepath{info.ss} in your
+@item{Edit the first three definitions of @filepath{info.rkt} in your
   renamed client collection:
   @itemize[
-  @item{For @scheme[name], choose a name for the handin tool as it
+  @item{For @racket[name], choose a name for the handin tool as it
     will appear in DrRacket's interface (e.g., the @onscreen{XXX} for
     the @onscreen{Manage XXX Handin Account...}  menu item).  Again,
     make the name specific to the course, in case a student installs
@@ -20,16 +20,16 @@ uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
     part of the name, since @onscreen{Handin} is always added for
     button and menu names.}
 
-  @item{Uncomment the definitions of @scheme[tools],
-    @scheme[tool-names], and @scheme[tool-icons].  (But leave the
+  @item{Uncomment the definitions of @racket[tools],
+    @racket[tool-names], and @racket[tool-icons].  (But leave the
     latter field's definition as @filepath{icon.png}.)}
 
-  @item{For @scheme[server:port], uncomment the line, and use the
+  @item{For @racket[server:port], uncomment the line, and use the
     hostname and port where the server will be running to accept
     handin submissions.}]
 
   Optionally uncomment and edit the next two definitions,
-  @scheme[web-menu-name] and @scheme[web-address], to add an item to
+  @racket[web-menu-name] and @racket[web-address], to add an item to
   the @onscreen{Help} menu that opens a (course-specific) web page.}
 
 @item{Replace @filepath{icon.png} in your renamed directory with a new

@@ -1,4 +1,4 @@
-#lang scheme/gui
+#lang racket/gui
 
 (require htdp/error lang/prim)
 

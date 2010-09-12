@@ -1,14 +1,14 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/class mred scheme/pretty
+(require racket/class racket/gui/base racket/pretty
          (prefix-in pc: mzlib/pconvert)
-         (only-in "main.ss" timeout-control)
-         "private/run-status.ss"
-         "private/config.ss"
-         "private/logger.ss"
-         "sandbox.ss")
+         (only-in "main.rkt" timeout-control)
+         "private/run-status.rkt"
+         "private/config.rkt"
+         "private/logger.rkt"
+         "sandbox.rkt")
 
-(provide (all-from-out "sandbox.ss")
+(provide (all-from-out "sandbox.rkt")
 
          get-conf
          log-line

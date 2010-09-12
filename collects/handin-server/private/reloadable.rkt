@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require syntax/moddep "logger.rkt")
 
@@ -15,7 +15,7 @@
       (with-handlers ([exn? (lambda (e)
                               (log-line "error, module not reloaded (~a)"
                                         (exn-message e)))])
-        (namespace-require '(only scheme module #%top-interaction))
+        (namespace-require '(only racket module #%top-interaction))
         (load/use-compiled path)))))
 
 ;; pulls out a value from a module, reloading the module if its source file was

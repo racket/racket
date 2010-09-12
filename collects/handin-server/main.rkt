@@ -1,9 +1,9 @@
 #lang racket/base
 
 (require mzlib/thread
-         scheme/port
+         racket/port
          openssl
-         scheme/file
+         racket/file
          "private/logger.rkt"
          "private/config.rkt"
          "private/lock.rkt"

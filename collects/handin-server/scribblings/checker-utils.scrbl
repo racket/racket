@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @title[#:style 'toc]{Checker Utilities}
 
@@ -10,20 +10,19 @@ order):
 
 @itemize[
 
-@item{@schememodname[scheme/sandbox]: contains basic sandbox
-  evaluation utilities.  This is in MzLib since it can be used
-  independently.}
+@item{@racketmodname[racket/sandbox]: is the basic sandbox
+  evaluation code, which is the basic functionality checkers build on.}
 
-@item{@schememodname[handin-server/sandbox]: contains a wrapper that
-  configures MzLib's sandbox for the handin server.}
+@item{@racketmodname[handin-server/sandbox]: contains a wrapper that
+  configures the Racket sandbox for the handin server.}
 
-@item{@schememodname[handin-server/utils]: contains additional
+@item{@racketmodname[handin-server/utils]: contains additional
   utilities for dealing with handin submissions, as well as a few
   helpers for testing code.}
 
-@item{@schememodname[handin-server/checker]: automates the task of
+@item{@racketmodname[handin-server/checker]: automates the task of
   creating a checker function (in
-  @filepath{<active-assignment>/checker.ss} modules) to cope with
+  @filepath{<active-assignment>/checker.rkt} modules) to cope with
   common submission situations.}]
 
 The following sections describe each of these modules.

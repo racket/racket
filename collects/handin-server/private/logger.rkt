@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require "config.rkt" scheme/date scheme/port)
+(require "config.rkt" racket/date racket/port)
 
 (provide current-session)
 (define current-session (make-parameter #f))

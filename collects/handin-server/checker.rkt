@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base) "utils.rkt"
-         scheme/file scheme/class mred)
+(require (for-syntax racket/base) "utils.rkt"
+         racket/file racket/class racket/gui/base)
 
-(provide (except-out (all-from-out scheme/base) #%module-begin)
+(provide (except-out (all-from-out racket/base) #%module-begin)
          (all-from-out "utils.rkt"))
 
 (provide (rename-out [module-begin~ #%module-begin]))
@@ -93,7 +93,7 @@
 ;; * snip->text is used earlier in the process, where comment-box text is still
 ;;   available
 
-(require framework) ; for drscheme snips, used below
+(require framework) ; for drracket snips, used below
 
 ;; input-port->text-input-port : input-port (any -> any) -> input-port
 ;;  the `filter' function is applied to special values; the filter result is

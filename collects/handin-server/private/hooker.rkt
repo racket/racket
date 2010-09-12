@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "config.rkt" "logger.rkt" "reloadable.rkt")
 

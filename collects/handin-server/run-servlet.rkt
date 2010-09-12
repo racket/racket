@@ -1,13 +1,13 @@
-#lang scheme/base
+#lang racket/base
 
 (define default-context-length (error-print-context-length))
 
 ;; This code has parts that are copied from `serve/servlet' in
-;; "web-server/servlet-env.ss", and parts from `serve/launch/wait' in
-;; "web-server/servlet-dispatch.ss"
+;; "web-server/servlet-env.rkt", and parts from `serve/launch/wait' in
+;; "web-server/servlet-dispatch.rkt"
 
-(require scheme/unit
-         scheme/async-channel
+(require racket/unit
+         racket/async-channel
          web-server/web-server
          web-server/servlet-dispatch
          web-server/managers/lru
@@ -106,7 +106,7 @@
                     (* 12 1024 1024))))
       ;; This can be used to serve html content too; doesn't make sense now,
       ;; since the servlet will be used for all requests, and it never calls
-      ;; (next-dispatcher).  (See "servlet-env.ss" for the needed `require's.)
+      ;; (next-dispatcher).  (See "servlet-env.rkt" for the needed `require's.)
       ;; (files:make
       ;;  #:url->path (fsmap:make-url->path (build-path server-dir "htdocs")))
       ;; (lift:make (send-error "File not found" (lambda () "/")))
