@@ -15,6 +15,8 @@
          (struct-out GdkEventButton)
          _GdkEventKey _GdkEventKey-pointer
          (struct-out GdkEventKey)
+         _GdkEventScroll _GdkEventScroll-pointer
+         (struct-out GdkEventScroll)
          _GdkEventMotion _GdkEventMotion-pointer
          (struct-out GdkEventMotion)
          _GdkEventCrossing _GdkEventCrossing-pointer
@@ -66,6 +68,18 @@
                               [hardware_keycode _uint16]
                               [group _ubyte]
                               [is_modifier _byte])) ; just 1 bit
+
+(define-cstruct _GdkEventScroll ([type _GdkEventType]
+                                 [window _GdkWindow]
+                                 [send_event _byte]
+                                 [time _uint32]
+                                 [x _double]
+                                 [y _double]
+                                 [state _uint]
+                                 [direction _uint]
+                                 [device _GdkDevice]
+                                 [x_root _double]
+                                 [y_root _double]))
 
 (define-cstruct _GdkEventMotion ([type _GdkEventType]
                                  [window _GdkWindow]

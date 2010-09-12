@@ -125,24 +125,39 @@
 (define-signal-handler connect-key-press "key-press-event"
   (_fun _GtkWidget _GdkEventKey-pointer -> _gboolean)
   (lambda (gtk event)
-    (do-key-event gtk event #t)))
+    (do-key-event gtk event #t #f)))
 
 (define-signal-handler connect-key-release "key-release-event"
   (_fun _GtkWidget _GdkEventKey-pointer -> _gboolean)
   (lambda (gtk event)
-    (do-key-event gtk event #f)))
+    (do-key-event gtk event #f #f)))
 
-(define (do-key-event gtk event down?)
+(define-signal-handler connect-scroll "scroll-event"
+  (_fun _GtkWidget _GdkEventScroll-pointer -> _gboolean)
+  (lambda (gtk event)
+    (and (member (GdkEventScroll-direction event)
+                 (list GDK_SCROLL_UP
+                       GDK_SCROLL_DOWN))
+         (do-key-event gtk event #f #t))))
+
+(define (do-key-event gtk event down? scroll?)
   (let ([wx (gtk->wx gtk)])
     (and
      wx
-     (let* ([modifiers (GdkEventKey-state event)]
+     (let* ([modifiers (if scroll?
+                           (GdkEventScroll-state event)
+                           (GdkEventKey-state event))]
             [bit? (lambda (m v) (positive? (bitwise-and m v)))]
             [keyval->code (lambda (kv)
                             (or
                              (map-key-code kv)
                              (integer->char (gdk_keyval_to_unicode kv))))]
-            [key-code (keyval->code (GdkEventKey-keyval event))]
+            [key-code (if scroll?
+                          (if (= (GdkEventScroll-direction event)
+                                 GDK_SCROLL_UP)
+                              'wheel-up
+                              'wheel-down)
+                          (keyval->code (GdkEventKey-keyval event)))]
             [k (new key-event%
                     [key-code key-code]
                     [shift-down (bit? modifiers GDK_SHIFT_MASK)]
@@ -151,25 +166,28 @@
                     [alt-down (bit? modifiers GDK_MOD1_MASK)]
                     [x 0]
                     [y 0]
-                    [time-stamp (GdkEventKey-time event)]
+                    [time-stamp (if scroll?
+                                    (GdkEventScroll-time event)
+                                    (GdkEventKey-time event))]
                     [caps-down (bit? modifiers GDK_LOCK_MASK)])])
-       (when (or (not (equal? #\u0000 key-code))
-                 (let-values ([(s ag sag cl) (get-alts event)]
-                              [(keyval->code*) (lambda (v)
-                                                 (and v
-                                                      (let ([c (keyval->code v)])
-                                                        (and (not (equal? #\u0000 key-code))
-                                                             c))))])
-                   (let ([s (keyval->code* s)]
-                         [ag (keyval->code* ag)]
-                         [sag (keyval->code* sag)]
-                         [cl (keyval->code* cl)])
-                     (when s (send k set-other-shift-key-code (keyval->code s)))
-                     (when ag (send k set-other-altgr-key-code (keyval->code ag)))
-                     (when sag (send k set-other-shift-altgr-key-code (keyval->code sag)))
-                     (when cl (send k set-other-caps-key-code (keyval->code cl)))
-                     (or s ag sag cl))))
-         (unless down?
+       (when (or (and (not scroll?)
+                      (let-values ([(s ag sag cl) (get-alts event)]
+                                   [(keyval->code*) (lambda (v)
+                                                      (and v
+                                                           (let ([c (keyval->code v)])
+                                                             (and (not (equal? #\u0000 c))
+                                                                  c))))])
+                        (let ([s (keyval->code* s)]
+                              [ag (keyval->code* ag)]
+                              [sag (keyval->code* sag)]
+                              [cl (keyval->code* cl)])
+                          (when s (send k set-other-shift-key-code s))
+                          (when ag (send k set-other-altgr-key-code ag))
+                          (when sag (send k set-other-shift-altgr-key-code sag))
+                          (when cl (send k set-other-caps-key-code cl))
+                          (or s ag sag cl))))
+                 (not (equal? #\u0000 key-code)))
+         (unless (or scroll? down?)
            ;; swap altenate with main
            (send k set-key-release-code (send k get-key-code))
            (send k set-key-code 'release))
@@ -216,6 +234,7 @@
 (define (connect-key-and-mouse gtk [skip-press? #f])
   (connect-key-press gtk)
   (connect-key-release gtk)
+  (connect-scroll gtk)
   (connect-button-press gtk)
   (unless skip-press? (connect-button-release gtk))
   (connect-pointer-motion gtk)

@@ -130,3 +130,9 @@
 (define GDK_HINT_WIN_GRAVITY (1 . << . 6))
 (define GDK_HINT_USER_POS (1 . << . 7))
 (define GDK_HINT_USER_SIZE (1 . << . 8))
+
+(define GDK_SCROLL_UP 0)
+(define GDK_SCROLL_DOWN 1)
+(define GDK_SCROLL_LEFT 2)
+(define GDK_SCROLL_RIGHT 3)
+
