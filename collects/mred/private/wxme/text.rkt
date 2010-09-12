@@ -4980,8 +4980,8 @@
                              (dc . is-a? . printer-dc%))]
                     [show-xsel?
                      (and ALLOW-X-STYLE-SELECTION?
-                          (or (not (eq? 'show-caret show-caret)) 
-                              (not (pair? show-caret))
+                          (or (and (not (eq? 'show-caret show-caret)) 
+                                   (not (pair? show-caret)))
                               s-caret-snip)
                           (eq? this editor-x-selection-owner)
                           (not flash?)

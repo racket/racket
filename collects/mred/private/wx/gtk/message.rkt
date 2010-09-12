@@ -64,7 +64,8 @@
                                  (as-gtk-allocation
                                   (gtk_image_new_from_pixbuf pixbuf))
                                  (release-pixbuf pixbuf)))
-                              (gtk_label_new_with_mnemonic "<bad-image>"))))]
+                              (as-gtk-allocation
+                               (gtk_label_new_with_mnemonic "<bad-image>")))))]
              [no-show? (memq 'deleted style)])
 
   (when (string? label)

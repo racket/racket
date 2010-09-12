@@ -375,6 +375,8 @@
 
     (define/public (on-paint) (void))
 
+    (define/public (get-flush-window) client-gtk)
+
     (define/public (begin-refresh-sequence) (void))
     (define/public (end-refresh-sequence) (void))
 
@@ -393,6 +395,7 @@
 
     (define/private (reset-dc)
       (send dc reset-backing-retained)
+      (refresh)
       (send dc set-auto-scroll
             (if virtual-width
                 (gtk_adjustment_get_value hscroll-adj)

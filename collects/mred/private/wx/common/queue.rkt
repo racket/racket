@@ -15,6 +15,7 @@
          add-event-boundary-sometimes-callback!
          remove-event-boundary-callback!
          pre-event-sync
+         boundary-tasks-ready-evt
 
          eventspace?
          current-eventspace
@@ -97,16 +98,35 @@
 (define boundary-ht (make-hasheq))
 (define sometimes-boundary-ht (make-hasheq))
 
-(define (add-event-boundary-callback! v proc) 
-  (hash-set! boundary-ht v proc))
+(define tasks-ready? #f)
+(define task-ready-sema (make-semaphore))
+(define boundary-tasks-ready-evt (semaphore-peek-evt task-ready-sema))
+
+(define (alert-tasks-ready)
+  (let ([ready? (or (positive? (hash-count boundary-ht))
+                    (positive? (hash-count sometimes-boundary-ht)))])
+    (unless (eq? ready? tasks-ready?)
+      (set! tasks-ready? ready?)
+      (if ready?
+          (semaphore-post task-ready-sema)
+          (semaphore-wait task-ready-sema)))))
+
+(define (add-event-boundary-callback! v proc)
+  (atomically
+   (alert-tasks-ready)
+   (hash-set! boundary-ht v proc)))
 (define (add-event-boundary-sometimes-callback! v proc) 
-  (when (zero? (hash-count sometimes-boundary-ht))
-    (set! last-time (current-inexact-milliseconds)))
-  (hash-set! sometimes-boundary-ht v proc))
+  (atomically
+   (alert-tasks-ready)
+   (when (zero? (hash-count sometimes-boundary-ht))
+     (set! last-time (current-inexact-milliseconds)))
+   (hash-set! sometimes-boundary-ht v proc)))
 
 (define (remove-event-boundary-callback! v) 
-  (hash-remove! boundary-ht v)
-  (hash-remove! sometimes-boundary-ht v))
+  (atomically
+   (hash-remove! boundary-ht v)
+   (hash-remove! sometimes-boundary-ht v)
+   (alert-tasks-ready)))
 
 (define last-time -inf.0)
 
@@ -118,7 +138,8 @@
       (set! last-time now)
       (hash-for-each sometimes-boundary-ht 
                      (lambda (v p) (hash-remove! sometimes-boundary-ht v) (p v)))))
-  (hash-for-each boundary-ht (lambda (v p) (hash-remove! boundary-ht v) (p v))))
+  (hash-for-each boundary-ht (lambda (v p) (hash-remove! boundary-ht v) (p v)))
+  (alert-tasks-ready))
 
 ;; ------------------------------------------------------------
 ;; Eventspaces

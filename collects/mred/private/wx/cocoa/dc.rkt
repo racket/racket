@@ -39,8 +39,6 @@
        (cairo_surface_destroy s)
        (set! s #f)))))
 
-(define-local-member-name end-delay)
-
 (define dc%
   (class backing-dc%
     (init [(cnvs canvas)])
@@ -65,26 +63,10 @@
       ;; called atomically (not expecting exceptions)
       (send canvas queue-backing-flush))
 
-    (define suspend-count 0)
-    (define req #f)
-
-    (define/override (suspend-flush) 
-      (atomically
-       (when (zero? suspend-count)
-         (when req (cancel-flush-delay req))
-         (set! req (request-flush-delay (send canvas get-cocoa-window))))
-       (set! suspend-count (add1 suspend-count))
-       (super suspend-flush)))
-
-    (define/override (resume-flush) 
-      (atomically
-       (set! suspend-count (sub1 suspend-count))
-       (super resume-flush)))
-
-    (define/public (end-delay)
-      (when (and (zero? suspend-count) req)
-        (cancel-flush-delay req)
-        (set! req #f)))))
+    (define/override (request-delay)
+      (request-flush-delay (send canvas get-flush-window)))
+    (define/override (cancel-delay req)
+      (cancel-flush-delay req))))
 
 (define (do-backing-flush canvas dc ctx dx dy)
   (tellv ctx saveGraphicsState)

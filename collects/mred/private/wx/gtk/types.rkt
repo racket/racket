@@ -4,6 +4,7 @@
 
 (provide _GdkWindow
          _GtkWidget _GtkWindow
+         _GdkDisplay
          _gpointer
          _GType
 
@@ -33,6 +34,8 @@
 
 (define _GtkWidget (_cpointer 'GtkWidget))
 (define _GtkWindow _GtkWidget)
+
+(define _GdkDisplay (_cpointer 'GdkDisplay))
 
 (define _gpointer _GtkWidget)
 

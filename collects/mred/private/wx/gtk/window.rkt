@@ -8,6 +8,7 @@
          "../common/freeze.rkt"
          "../common/queue.rkt"
          "../common/local.rkt"
+         "../common/delay.rkt"
          "keycode.rkt"
          "keymap.rkt"
          "queue.rkt"
@@ -42,7 +43,13 @@
 
          the-accelerator-group
          gtk_window_add_accel_group
-         gtk_menu_set_accel_group)
+         gtk_menu_set_accel_group
+
+         flush-display
+         gdk_display_get_default
+
+         request-flush-delay
+         cancel-flush-delay)
 
 ;; ----------------------------------------
 
@@ -517,14 +524,26 @@
     (define/public (on-set-focus) (void))
     (define/public (on-kill-focus) (void))
 
+    (define/private (pre-event-refresh)
+      ;; Since we break the connection between the
+      ;; Gtk queue and event handling, we
+      ;; re-sync the display in case a stream of
+      ;; events (e.g., key repeat) have a corresponding
+      ;; stream of screen updates.
+      (try-to-sync-refresh)
+      (gdk_window_process_all_updates)
+      (flush-display))
+
     (define/public (handles-events? gtk) #f)
     (define/public (dispatch-on-char e just-pre?) 
+      (pre-event-refresh)
       (cond
        [(other-modal? this) #t]
        [(call-pre-on-char this e) #t]
        [just-pre? #f]
        [else (when enabled? (on-char e)) #t]))
     (define/public (dispatch-on-event e just-pre?) 
+      (pre-event-refresh)
       (cond
        [(other-modal? this) #t]
        [(call-pre-on-event this e) #t]
@@ -591,3 +610,28 @@
   (queue-event (send win get-eventspace) thunk))
 (define (queue-window-refresh-event win thunk)
   (queue-refresh-event (send win get-eventspace) thunk))
+
+(define-gdk gdk_display_flush (_fun _GdkDisplay -> _void))
+(define-gdk gdk_display_sync (_fun _GdkDisplay -> _void))
+(define-gdk gdk_display_get_default (_fun -> _GdkDisplay))
+(define (flush-display) (gdk_display_flush (gdk_display_get_default)))
+(define (sync-display) (gdk_display_sync (gdk_display_get_default)))
+
+(define-gdk gdk_window_freeze_updates (_fun _GdkWindow -> _void))
+(define-gdk gdk_window_thaw_updates (_fun _GdkWindow -> _void))
+(define-gdk gdk_window_invalidate_rect (_fun _GdkWindow _pointer _gboolean -> _void))
+(define-gdk gdk_window_process_all_updates (_fun -> _void))
+
+(define (request-flush-delay gtk)
+  (do-request-flush-delay 
+   gtk
+   (lambda (gtk)
+     (gdk_window_freeze_updates (widget-window gtk)))
+   (lambda (gtk)
+     (gdk_window_thaw_updates (widget-window gtk)))))
+
+(define (cancel-flush-delay req)
+  (do-cancel-flush-delay 
+   req   
+   (lambda (gtk)
+     (gdk_window_thaw_updates (widget-window gtk)))))

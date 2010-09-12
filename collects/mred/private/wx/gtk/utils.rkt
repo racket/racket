@@ -125,7 +125,9 @@
                                (g_object_ref_sink v)
                                v)))))
 (define-syntax-rule (as-gtk-window-allocation expr)
-  ((gtk-allocator (lambda () expr))))
+  ((gtk-allocator (lambda () (let ([v expr])
+                               (g_object_ref v)
+                               v)))))
 
 (define-glib g_free (_fun _pointer -> _void))
 

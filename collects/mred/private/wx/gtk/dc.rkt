@@ -3,6 +3,7 @@
          racket/class
          "utils.rkt"
          "types.rkt"
+         "window.rkt"
 	 "../../lock.rkt"
          "../common/backing-dc.rkt"
          racket/draw/cairo
@@ -34,21 +35,28 @@
 
     (define/override (queue-backing-flush)
       ;; called atomically (not expecting exceptions)
-      (send canvas queue-backing-flush))))
+      (send canvas queue-backing-flush))
+
+    (define/override (request-delay)
+      (request-flush-delay (send canvas get-flush-window)))
+    (define/override (cancel-delay req)
+      (cancel-flush-delay req))))
 
 (define (do-backing-flush canvas dc win)
-  (send dc on-backing-flush
-        (lambda (bm)
-          (let ([w (box 0)]
-                [h (box 0)])
-            (send canvas get-client-size w h)
-            (let ([cr (gdk_cairo_create win)])
-              (let ([s (cairo_get_source cr)])
-                (cairo_pattern_reference s)
-                (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
-                (cairo_new_path cr)
-                (cairo_rectangle cr 0 0 (unbox w) (unbox h))
-                (cairo_fill cr)
-                (cairo_set_source cr s)
-                (cairo_pattern_destroy s))
-              (cairo_destroy cr))))))
+  (begin0
+   (send dc on-backing-flush
+         (lambda (bm)
+           (let ([w (box 0)]
+                 [h (box 0)])
+             (send canvas get-client-size w h)
+             (let ([cr (gdk_cairo_create win)])
+               (let ([s (cairo_get_source cr)])
+                 (cairo_pattern_reference s)
+                 (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
+                 (cairo_new_path cr)
+                 (cairo_rectangle cr 0 0 (unbox w) (unbox h))
+                 (cairo_fill cr)
+                 (cairo_set_source cr s)
+                 (cairo_pattern_destroy s))
+               (cairo_destroy cr)))))
+   (send dc end-delay)))

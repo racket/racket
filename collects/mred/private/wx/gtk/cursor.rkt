@@ -37,7 +37,6 @@
 
 (define _GdkCursor (_cpointer 'GdkCursor))
 (define-gdk gdk_cursor_new  (_fun _int -> _GdkCursor))
-(define _GdkDisplay (_cpointer 'GdkDisplay))
 (define-gdk gdk_display_get_default (_fun -> _GdkDisplay))
 (define-gdk gdk_cursor_new_from_pixbuf (_fun _GdkDisplay _GdkPixbuf _int _int -> _GdkCursor))
 

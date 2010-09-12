@@ -11,6 +11,8 @@
 
 (provide gtk-start-event-pump
 
+         try-to-sync-refresh
+
          set-widget-hook!
 
          ;; from common/queue:
@@ -68,7 +70,6 @@
   #:fail #f)
 
 (define (install-wakeup fds)
-  (pre-event-sync #t)
   (let ([n (g_main_context_query (g_main_context_default)
                                  #x7FFFFFFF ; max-int, hopefully
                                  timeout
@@ -135,9 +136,20 @@
     (gtk_main_iteration_do #f)
     (dispatch-all-ready)))
 
+(define-gdk gdk_window_process_all_updates (_fun -> _void))
+
 (define (gtk-start-event-pump)
   (thread (lambda ()
             (let loop ()
-              (sync queue-evt)
+              (unless (let ([any-tasks? (sync/timeout 0 boundary-tasks-ready-evt)])
+                        (sync queue-evt (if any-tasks?
+                                            (wrap-evt (system-idle-evt)
+                                                      (lambda (v) #f))
+                                            boundary-tasks-ready-evt)))
+                (pre-event-sync #t))
               (atomically (dispatch-all-ready))
               (loop)))))
+
+(define (try-to-sync-refresh)
+  (atomically
+   (pre-event-sync #t)))

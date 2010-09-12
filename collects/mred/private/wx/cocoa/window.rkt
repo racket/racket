@@ -13,6 +13,7 @@
          "../../lock.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
+         "../common/delay.rkt"
          "../../syntax.rkt"
          "../common/freeze.rkt")
 (unsafe!)
@@ -651,25 +652,18 @@
       (queue-event (send wx get-eventspace) (lambda () (proc wx))))))
 
 (define (request-flush-delay cocoa-win)
-  (atomically
-   (let ([req (box cocoa-win)])
-     (tellv cocoa-win disableFlushWindow)
-     (add-event-boundary-sometimes-callback! 
-      req
-      (lambda (v) 
-        ;; in atomic mode
-        (when (unbox req) 
-          (set-box! req #f)
-          (tellv cocoa-win enableFlushWindow))))
-     req)))
+  (do-request-flush-delay 
+   cocoa-win
+   (lambda (cocoa-win)
+     (tellv cocoa-win disableFlushWindow))
+   (lambda (cocoa-win)
+     (tellv cocoa-win enableFlushWindow))))
 
 (define (cancel-flush-delay req)
-  (atomically
-   (let ([cocoa-win (unbox req)])
-     (when cocoa-win
-       (set-box! req #f)
-       (tellv cocoa-win enableFlushWindow)
-       (remove-event-boundary-callback! req)))))
+  (do-cancel-flush-delay 
+   req
+   (lambda (cocoa-win)
+     (tellv cocoa-win enableFlushWindow))))
 
 (define (make-init-point x y)
   (make-NSPoint (if (= x -11111)

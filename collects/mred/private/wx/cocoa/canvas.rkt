@@ -263,6 +263,9 @@
     (define/public (end-refresh-sequence)
       (send dc resume-flush))
 
+    (define/public (get-flush-window)
+      (get-cocoa-window))
+
     (define/override (refresh)
       ;; can be called from any thread, including the event-pump thread
       (queue-paint))

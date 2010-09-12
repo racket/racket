@@ -16,7 +16,10 @@
          start-backing-retained
          end-backing-retained
          reset-backing-retained
-         get-bitmap%)
+         get-bitmap%
+         request-delay
+         cancel-delay
+         end-delay)
 
 (define-local-member-name
   get-backing-size
@@ -25,7 +28,10 @@
   start-backing-retained
   end-backing-retained
   reset-backing-retained
-  get-bitmap%)
+  get-bitmap%
+  request-delay
+  cancel-delay
+  end-delay)
 
 (define backing-dc%
   (class (dc-mixin bitmap-dc-backend%)
@@ -110,15 +116,29 @@
         (queue-backing-flush)))
 
     (define flush-suspends 0)
+    (define req #f)
+
+    (define/public (request-delay) (void))
+    (define/public (cancel-delay req) (void))
 
     (define/override (suspend-flush) 
       (atomically
+       (when (zero? flush-suspends)
+         (when req (cancel-delay req))
+         (set! req (request-delay)))
        (set! flush-suspends (add1 flush-suspends))))
+
     (define/override (resume-flush)  
       (atomically 
        (set! flush-suspends (sub1 flush-suspends))
        (when (zero? flush-suspends)
-         (queue-backing-flush))))))
+         (queue-backing-flush))))
+
+    (define/public (end-delay)
+      ;; call in atomic mode
+      (when (and (zero? flush-suspends) req)
+        (cancel-delay req)
+        (set! req #f)))))
 
 (define (get-backing-bitmap bitmap% w h)
   (make-object bitmap% w h #f #t))
