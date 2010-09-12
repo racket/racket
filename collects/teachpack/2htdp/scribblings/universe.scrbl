@@ -71,13 +71,13 @@ primitives.
 
 The simplest kind of animated @tech{world} program is a time-based
  simulation, which is a series of scenes.  The programmer's task is to
- supply a function that creates a scene for each natural number. By handing
- this function to the teachpack displays the simulation. 
+ supply a function that creates a scene for each natural number. Handing
+ this function to the teachpack displays the simulation.
 
 @defproc[(animate [create-image (-> natural-number/c scene?)])
          natural-number/c]{
 
- opens a canvas and starts a clock that tick 28 times per second.  Every
+ opens a canvas and starts a clock that ticks 28 times per second.  Every
  time the clock ticks, DrRacket applies @scheme[create-image] to the
  number of ticks passed since this function call. The results of these
  function calls are displayed in the canvas. The simulation runs until you
@@ -196,7 +196,7 @@ The design of a world program demands that you come up with a data
          #:contracts
 	 ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))])]{
 
-tell DrRacket to call the @scheme[tick-expr] function on the current
+tells DrRacket to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks at the rate of 28 times per second.}}
 
@@ -206,7 +206,7 @@ current world. The clock ticks at the rate of 28 times per second.}}
               #:contracts
               ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))]
                [rate-expr (and/c real? positive?)])]{
-tell DrRacket to call the @scheme[tick-expr] function on the current
+tells DrRacket to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks at the rate of @scheme[rate-expr].}}
 
@@ -228,11 +228,11 @@ For simplicity, we represent key events with strings, but not all strings
 
 ]
  On rare occasions you may also encounter @scheme["\u007F"], which is the
- string representing the delete key (aka rubout). 
+ string representing the delete key (aka rubout).
 
 Second, some keys have multiple-character string representations. Strings
- with more than one character denotes arrow keys or other special events, 
- starting with the most important: 
+ with more than one character denote arrow keys or other special events,
+ starting with the most important:
 @itemize[
 @item{@scheme["left"] is the left arrow;}
 @item{@scheme["right"] is the right arrow;}
@@ -313,7 +313,7 @@ Second, some keys have multiple-character string representations. Strings
 @defform[(on-key key-expr)
          #:contracts
 	  ([key-expr (-> (unsyntax @tech{WorldState}) key-event? (unsyntax @tech{WorldState}))])]{
- tell DrRacket to call the @scheme[key-expr] function on the current world and a 
+ tells DrRacket to call the @scheme[key-expr] function on the current world and a 
  @tech{KeyEvent} for every keystroke the user of the computer makes. The result
  of the call becomes the current world.
 
@@ -335,7 +335,7 @@ Second, some keys have multiple-character string representations. Strings
 @defform[(on-release release-expr)
          #:contracts
 	  ([release-expr (-> (unsyntax @tech{WorldState}) key-event? (unsyntax @tech{WorldState}))])]{
- tell DrRacket to call the @scheme[release-expr] function on the current world and a 
+ tells DrRacket to call the @scheme[release-expr] function on the current world and a 
  @tech{KeyEvent} for every release event on the keyboard. A release event
  occurs when a user presses the key and then releases it. The second argument
  indicates which key has been released. The result of the function call
@@ -377,7 +377,7 @@ All @tech{MouseEvent}s are represented via strings:
            (-> (unsyntax @tech{WorldState}) 
                integer? integer? (unsyntax @tech{MouseEvent}) 
                (unsyntax @tech{WorldState}))])]{
- tell DrRacket to call @scheme[mouse-expr] on the current world, the current
+ tells DrRacket to call @scheme[mouse-expr] on the current world, the current
  @scheme[x] and @scheme[y] coordinates of the mouse, and and a
  @tech{MouseEvent} for every (noticeable) action of the mouse by the
  computer user. The result of the call becomes the current world. 
@@ -398,7 +398,7 @@ All @tech{MouseEvent}s are represented via strings:
          #:contracts
          ([render-expr (-> (unsyntax @tech{WorldState}) scene?)])]{ 
 
- tell DrRacket to call the function @scheme[render-expr] whenever the
+ tells DrRacket to call the function @scheme[render-expr] whenever the
  canvas must be drawn. The external canvas is usually re-drawn after DrRacket has
  dealt with an event. Its size is determined by the size of the first
  generated @tech{scene}.}
@@ -410,7 +410,7 @@ All @tech{MouseEvent}s are represented via strings:
 	       [width-expr natural-number/c]
                [height-expr natural-number/c])]{ 
 
- tell DrRacket to use a @scheme[width-expr] by @scheme[height-expr]
+ tells DrRacket to use a @scheme[width-expr] by @scheme[height-expr]
  canvas instead of one determine by the first generated @tech{scene}.
 }
 
@@ -424,7 +424,7 @@ now.
 @defform[(stop-when last-world?)
          #:contracts
          ([last-world? (-> (unsyntax @tech{WorldState}) boolean?)])]{
- tell DrRacket to call the @scheme[last-world?] function whenever the canvas is
+ tells DrRacket to call the @scheme[last-world?] function whenever the canvas is
  drawn. If this call produces @scheme[true], the world program is shut
  down. Specifically, the  clock is stopped; no more
  tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
@@ -437,7 +437,7 @@ now.
          #:contracts
          ([last-world? (-> (unsyntax @tech{WorldState}) boolean?)]
  	  [last-picture (-> (unsyntax @tech{WorldState}) scene?)])]{
- tell DrRacket to call the @scheme[last-world?] function whenever the canvas is
+ tells DrRacket to call the @scheme[last-world?] function whenever the canvas is
  drawn. If this call produces @scheme[true], the world program is shut
  down after displaying the world one last time, this time using the scene
  rendered with @scheme[last-picture]. Specifically, the  clock is stopped; no more
@@ -462,7 +462,7 @@ and @scheme[big-bang] will close down all event handling.}
 @defform[(check-with world-expr?)
          #:contracts
          ([world-expr? (-> Any boolean?)])]{
- tell DrRacket to call the @scheme[world-expr?] function on the result of
+ tells DrRacket to call the @scheme[world-expr?] function on the result of
  every world handler call. If this call produces @scheme[true], the result
  is considered a world; otherwise the world program signals an error. 
 }}
@@ -472,7 +472,7 @@ and @scheme[big-bang] will close down all event handling.}
 @defform[(record? boolean-expr)
          #:contracts
          ([boolean-expr boolean?])]{
- tell DrRacket to record all events and to enable a replay of the entire
+ tells DrRacket to record all events and to enable a replay of the entire
  interaction. The replay action also generates one png image per scene and
  an animated gif for the entire sequence.
 }}
@@ -482,7 +482,7 @@ and @scheme[big-bang] will close down all event handling.}
 @defform[(state boolean-expr)
          #:contracts
          ([boolean-expr boolean?])]{
- tell DrRacket to display a separate window in which the current 
+ tells DrRacket to display a separate window in which the current 
  state is rendered each time it is updated. This is useful for beginners
  who wish to see how their world evolves---without having to design a
  rendering function---plus for the debugging of world programs. 
@@ -543,7 +543,7 @@ Like the picture of the general workings of a @tech{world} program, this
  closed (and unlocked), and open. The arrows specify how the door can go
  from one state into another. For example, when the door is open, the
  automatic door closer shuts the door as time passes. This transition is
- indicated by the arrow labeled ``time passes.'' The other arrows represent
+ indicated by the arrow labeled ``time.'' The other arrows represent
  transitions in a similar manner:
 
 @itemize[
@@ -772,7 +772,7 @@ The @scheme[on-receive] clause of a @scheme[big-bang] specifies the event handle
 @defform[(on-receive receive-expr)
          #:contracts
 	 ([receive-expr (-> (unsyntax @tech{WorldState}) sexp? (or/c (unsyntax @tech{WorldState}) package?))])]{
- tell DrRacket to call @scheme[receive-expr] for every message receipt, on the current
+ tells DrRacket to call @scheme[receive-expr] for every message receipt, on the current
  @tech{WorldState} and the received message. The result of the call becomes the current
  @tech{WorldState}. 
 
@@ -798,7 +798,7 @@ When messages are sent from any of the worlds to the universe or vice versa,
  there is no need for the sender and receiver to synchronize. Indeed, a sender
  may dispatch as many messages as needed without regard to whether the
  receiver has processed them yet. The messages simply wait in queue until
- the receiving @tech{server} or @tech{world} program take care of them. 
+ the receiving @tech{server} or @tech{world} program takes care of them.
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "universe-server"]{The Universe Server}
@@ -829,7 +829,7 @@ The teachpack provides a mechanism for designating event handlers for
 
 @item{A server may play the role of a special-purpose arbiter, e.g., the referee
  or administrator of a game. It may check that each world ``plays'' by the rules,
- and it administrate the resources of the game.}
+ and it administrates the resources of the game.}
 
 ]
 
@@ -855,7 +855,7 @@ Understanding the server's event handling functions demands several data
  universe. 
 
 @defproc[(iworld? [x any/c]) boolean?]{
- determines whether @scheme[x] is a @emph{iworld}. Because the universe server
+ determines whether @scheme[x] is an @emph{iworld}. Because the universe server
  represents worlds via structures that collect essential information about
  the connections, the teachpack does not export any constructor or selector
  functions on worlds.} 
@@ -963,7 +963,7 @@ The mandatory clauses of a @scheme[universe] server description are
  @defform[(on-new new-expr)
           #:contracts
           ([new-expr (-> (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
- tell DrRacket to call the function @scheme[new-expr] every time another world joins the
+ tells DrRacket to call the function @scheme[new-expr] every time another world joins the
  universe. The event handler is called with the current state and the
  joining iworld, which isn't on the list yet. In particular, the handler may
  reject a @tech{world} program from participating in a @tech{universe},
@@ -974,7 +974,7 @@ The mandatory clauses of a @scheme[universe] server description are
  @defform[(on-msg msg-expr)
           #:contracts
           ([msg-expr (-> (unsyntax @tech{UniverseState}) iworld? sexp? bundle?)])]{
- tell DrRacket to apply @scheme[msg-expr] to the current state of the
+ tells DrRacket to apply @scheme[msg-expr] to the current state of the
  universe, the world 
  @scheme[w] that sent the message, and the message itself. 
  }
@@ -1003,14 +1003,14 @@ optional handlers:
               (on-tick tick-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)])]{
- tell DrRacket to apply @scheme[tick-expr] to the current state of the universe.}
+ tells DrRacket to apply @scheme[tick-expr] to the current state of the universe.}
 
 @defform/none[#:literals (on-tick)
               (on-tick tick-expr rate-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
                [rate-expr (and/c real? positive?)])]{ 
- tell DrRacket to apply @scheme[tick-expr] as above but use the specified
+ tells DrRacket to apply @scheme[tick-expr] as above but use the specified
  clock tick rate instead of the default.}
 }
 
@@ -1018,7 +1018,7 @@ optional handlers:
  @defform[(on-disconnect dis-expr)
           #:contracts
           ([dis-expr (-> (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
- tell DrRacket to invoke @scheme[dis-expr] every time a participating
+ tells DrRacket to invoke @scheme[dis-expr] every time a participating
  @tech{world} drops its connection to the server. The first argument
  is the current state of the universe server, while the second argument is
  the (representation of the) world that got disconnected. The resulting
@@ -1030,7 +1030,7 @@ optional handlers:
  @defform[(to-string render-expr)
           #:contracts
           ([render-expr (-> (unsyntax @tech{UniverseState}) string?)])]{
- tell DrRacket to render the state of the universe after each event and to
+ tells DrRacket to render the state of the universe after each event and to
  display this string in the universe console. 
  }
 }
@@ -1048,7 +1048,7 @@ optional handlers:
 @defform/none[(state boolean-expr)
          #:contracts
          ([boolean-expr boolean?])]{
- tell DrRacket to display a separate window in which the current 
+ tells DrRacket to display a separate window in which the current 
  state is rendered each time it is updated. This is mostly useful for
  debugging server programs. 
 }}
@@ -1265,7 +1265,7 @@ The server should send messages to the first @emph{iworld} of its list as
  long as it wishes this @emph{iworld} to remain active. In turn, it should
  expect to receive messages only from this one active @emph{iworld} and no
  other @emph{iworld}. The content of these two messages is nearly irrelevant
- because a message from the server to a @emph{iworld} means that it is the
+ because a message from the server to an @emph{iworld} means that it is the
  @emph{iworld}'s turn and a message from the @emph{iworld} to the server
  means that the turn is over. Just so that we don't confuse ourselves, we
  use two distinct symbols for these two messages:
