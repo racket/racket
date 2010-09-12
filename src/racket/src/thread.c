@@ -210,6 +210,8 @@ HOOK_SHARED_OK void (*scheme_on_atomic_timeout)(void);
 HOOK_SHARED_OK static int atomic_timeout_auto_suspend;
 HOOK_SHARED_OK static int atomic_timeout_atomic_level;
 
+THREAD_LOCAL_DECL(struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_descs);
+
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
 ROSYM static Scheme_Object *froz_key;
@@ -824,6 +826,7 @@ void scheme_init_thread_places(void) {
   buffer_init_size = INIT_TB_SIZE;
   REGISTER_SO(recycle_cell);
   REGISTER_SO(maybe_recycle_cell);
+  REGISTER_SO(gc_prepost_callback_descs);
 }
 
 void scheme_init_memtrace(Scheme_Env *env)
@@ -7375,6 +7378,141 @@ static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost)
 START_XFORM_SKIP;
 #endif
 
+typedef struct Scheme_GC_Pre_Post_Callback_Desc {
+  /* All pointer fields => allocate with GC_malloc() */
+  Scheme_Object *boxed_key;
+  Scheme_Object *pre_desc;
+  Scheme_Object *post_desc;
+  struct Scheme_GC_Pre_Post_Callback_Desc *prev;
+  struct Scheme_GC_Pre_Post_Callback_Desc *next;
+} Scheme_GC_Pre_Post_Callback_Desc;
+
+
+Scheme_Object *scheme_add_gc_callback(Scheme_Object *pre, Scheme_Object *post)
+{
+  Scheme_GC_Pre_Post_Callback_Desc *desc;
+  Scheme_Object *key, *boxed;
+
+  desc = (Scheme_GC_Pre_Post_Callback_Desc *)GC_malloc(sizeof(Scheme_GC_Pre_Post_Callback_Desc));
+  desc->pre_desc = pre;
+  desc->post_desc = post;
+
+  key = scheme_make_vector(1, scheme_false);
+  boxed = scheme_make_weak_box(key);
+  desc->boxed_key = boxed;
+
+  desc->next = gc_prepost_callback_descs;
+  gc_prepost_callback_descs = desc;
+  
+  return key;
+}
+
+void scheme_remove_gc_callback(Scheme_Object *key)
+{
+  Scheme_GC_Pre_Post_Callback_Desc *prev = NULL, *desc;
+
+  desc = gc_prepost_callback_descs; 
+  while (desc) {
+    if (SAME_OBJ(SCHEME_WEAK_BOX_VAL(desc->boxed_key), key)) {
+      if (prev)
+        prev->next = desc->next;
+      else
+        gc_prepost_callback_descs = desc->next;
+      if (desc->next)
+        desc->next->prev = desc->prev;
+    }
+    prev = desc;
+    desc = desc->next;
+  }
+}
+
+typedef void (*gccb_Ptr_Ptr_Ptr_Int_to_Void)(void*, void*, void*, int);
+typedef void (*gccb_Ptr_Ptr_Ptr_to_Void)(void*, void*, void*);
+typedef void (*gccb_Ptr_Ptr_Float_to_Void)(void*, void*, float);
+typedef void (*gccb_Ptr_Ptr_Double_to_Void)(void*, void*, double);
+
+#ifdef DONT_USE_FOREIGN
+# define scheme_extract_pointer(x) NULL
+#endif
+
+static void run_gc_callbacks(int pre) 
+  XFORM_SKIP_PROC
+{
+  Scheme_GC_Pre_Post_Callback_Desc *prev = NULL, *desc;
+  Scheme_Object *acts, *act, *protocol;
+  int j;
+
+  desc = gc_prepost_callback_descs; 
+  while (desc) {
+    if (!SCHEME_WEAK_BOX_VAL(desc->boxed_key)) {
+      if (prev)
+        prev->next = desc->next;
+      else
+        gc_prepost_callback_descs = desc->next;
+      if (desc->next)
+        desc->next->prev = desc->prev;
+    } else {
+      if (pre)
+        acts = desc->pre_desc;
+      else
+        acts = desc->post_desc;
+      for (j = 0; j < SCHEME_VEC_SIZE(acts); j++) {
+        act = SCHEME_VEC_ELS(acts)[j];
+        protocol = SCHEME_VEC_ELS(act)[0];
+        /* The set of suported protocols is arbitary, based on what we've needed
+           so far. */
+        if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr_int->void")) {
+          gccb_Ptr_Ptr_Ptr_Int_to_Void proc;
+          void *a, *b, *c;
+          int i;
+
+          proc = (gccb_Ptr_Ptr_Ptr_Int_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          c = scheme_extract_pointer(SCHEME_VEC_ELS(act)[4]);
+          i = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[5]);
+
+          proc(a, b, c, i);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr->void")) {
+          gccb_Ptr_Ptr_Ptr_to_Void proc;
+          void *a, *b, *c;
+
+          proc = (gccb_Ptr_Ptr_Ptr_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          c = scheme_extract_pointer(SCHEME_VEC_ELS(act)[4]);
+
+          proc(a, b, c);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_float->void")) {
+          gccb_Ptr_Ptr_Float_to_Void proc;
+          void *a, *b;
+          float f;
+
+          proc = (gccb_Ptr_Ptr_Float_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          f = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[4]);
+
+          proc(a, b, f);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_double->void")) {
+          gccb_Ptr_Ptr_Double_to_Void proc;
+          void *a, *b;
+          double d;
+
+          proc = (gccb_Ptr_Ptr_Double_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          d = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[4]);
+
+          proc(a, b, d);
+        }
+        prev = desc;
+      }
+    }
+    desc = desc->next;
+  }
+}
+
 void scheme_zero_unneeded_rands(Scheme_Thread *p)
 {
   /* Call this procedure before GC or before copying out
@@ -7533,6 +7671,8 @@ static void get_ready_for_GC()
   scheme_future_block_until_gc();
 #endif
 
+  run_gc_callbacks(1);
+
   scheme_zero_unneeded_rands(scheme_current_thread);
 
   scheme_clear_modidx_cache();
@@ -7600,6 +7740,8 @@ static void done_with_GC()
 
   end_this_gc_time = scheme_get_process_milliseconds();
   scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
+
+  run_gc_callbacks(0);
 
 #ifdef MZ_USE_FUTURES
   scheme_future_continue_after_gc();

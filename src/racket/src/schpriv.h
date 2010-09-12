@@ -464,6 +464,10 @@ void scheme_resume_remembered_threads(void);
 extern void scheme_check_foreign_work(void);
 #endif
 
+#ifndef DONT_USE_FOREIGN
+extern void *scheme_extract_pointer(Scheme_Object *v);
+#endif
+
 void scheme_kickoff_green_thread_time_slice_timer(long usec);
 
 #ifdef UNIX_PROCESSES

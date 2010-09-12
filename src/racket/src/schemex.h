@@ -351,6 +351,8 @@ void *(*GC_fixup_self)(void *p);
 #endif
 void **(*scheme_malloc_immobile_box)(void *p);
 void (*scheme_free_immobile_box)(void **b);
+Scheme_Object *(*scheme_add_gc_callback)(Scheme_Object *pre, Scheme_Object *post);
+void (*scheme_remove_gc_callback)(Scheme_Object *key);
 /*========================================================================*/
 /*                             hash tables                                */
 /*========================================================================*/

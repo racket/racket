@@ -250,6 +250,8 @@
 #endif
   scheme_extension_table->scheme_malloc_immobile_box = scheme_malloc_immobile_box;
   scheme_extension_table->scheme_free_immobile_box = scheme_free_immobile_box;
+  scheme_extension_table->scheme_add_gc_callback = scheme_add_gc_callback;
+  scheme_extension_table->scheme_remove_gc_callback = scheme_remove_gc_callback;
   scheme_extension_table->scheme_make_bucket_table = scheme_make_bucket_table;
   scheme_extension_table->scheme_add_to_table = scheme_add_to_table;
   scheme_extension_table->scheme_change_in_table = scheme_change_in_table;

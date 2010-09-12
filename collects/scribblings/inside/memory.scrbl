@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "utils.ss")
+@(require "utils.ss"
+          (for-label ffi/unsafe))
 
 @title[#:tag "im:memoryalloc"]{Memory Allocation}
 
@@ -1032,3 +1033,47 @@ implementations of the memory manager, the result is the same as
 moved before it is fixed. With other implementations, an object might
 be moved after the fixup process, and the result is the location that
 the object will have after garbage collection finished.}
+
+@function[(Scheme_Object* scheme_add_gc_callback [Scheme_Object* pre_desc]
+                                                 [Scheme_Object* post_desc])]{
+
+Registers descriptions of foreign functions to be called just before
+and just after a garbage collection. The foreign functions must not
+allocate garbage-collected memory, and they are called in a way that
+does not allocate, which is why @var{pre_desc} and @var{post_desc} are
+function descriptions instead of thunks.
+
+A description is a vector of vectors, where each of the inner vectors
+describes a single call, and the calls are performed in sequence. Each
+call vector starts with a symbol that indicates the protocol of the
+foreign function to be called. The following protocols are supported:
+
+@itemlist[
+
+ @item{@racket['ptr_ptr_ptr->void] corresponds to @cpp{void
+ (*)(void*, void*, void*)}.}
+
+ @item{@racket['ptr_ptr_ptr_int->void] corresponds to @cpp{void
+ (*)(void*, void*, void*, int)}.}
+
+ @item{@racket['ptr_ptr_float->void] corresponds to @cpp{void
+ (*)(void*, void*, float)}.}
+
+ @item{@racket['ptr_ptr_double->void] corresponds to @cpp{void
+ (*)(void*, void*, double)}.}
+
+]
+
+After the protocol symbol, the vector should contain a pointer to a
+foreign function and then an element for each of the function's
+arguments. Pointer values are represented as for the @racket[_pointer]
+representation defined by @racketmodname[ffi/unsafe].
+
+The result is a key for use with @cpp{scheme_remove_gc_callback}. If
+the key becomes inaccessible, then the callback will be removed
+automatically (but beware that the pre-callback will have executed and
+the post-callback will not have executed).}
+
+@function[(void scheme_remove_gc_callback [Scheme_Object* key])]{
+
+Removes a garbage-collection callback installed with @cpp{scheme_add_gc_callback}.}

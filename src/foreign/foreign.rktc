@@ -1030,6 +1030,10 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   return scheme_void;
 }
 
+void *scheme_extract_pointer(Scheme_Object *v) {
+  return SCHEME_FFIANYPTR_VAL(v);
+}
+
 /*****************************************************************************/
 /* Scheme<-->C conversions */
 

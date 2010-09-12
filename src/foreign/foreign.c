@@ -1243,6 +1243,10 @@ static Scheme_Object *foreign_set_cpointer_tag_bang(int argc, Scheme_Object *arg
 }
 #undef MYNAME
 
+void *scheme_extract_pointer(Scheme_Object *v) {
+  return SCHEME_FFIANYPTR_VAL(v);
+}
+
 /*****************************************************************************/
 /* Scheme<-->C conversions */
 
