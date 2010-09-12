@@ -9,12 +9,13 @@
                       (prefix dutch: "dutch-string-constants.ss")
                       (prefix danish: "danish-string-constants.ss")
                       (prefix portuguese: "portuguese-string-constants.ss")
-		      (prefix japanese: "japanese-string-constants.ss")
+                      (prefix japanese: "japanese-string-constants.ss")
                       (prefix traditional-chinese: "traditional-chinese-string-constants.ss")
                       (prefix simplified-chinese: "simplified-chinese-string-constants.ss")
                       (prefix russian: "russian-string-constants.ss")
-                      (prefix ukrainian: "ukrainian-string-constants.ss"))
-  
+                      (prefix ukrainian: "ukrainian-string-constants.ss")
+                      (prefix korean: "korean-string-constants.ss"))
+
   (require mzlib/file
            mzlib/etc
            "private/only-once.ss")
@@ -42,7 +43,8 @@
       (traditional-chinese #rx"^zh_(HK|TW)" #rx"Chinese_China")
       (simplified-chinese  #rx"^zh_CN"      #rx"Chinese_(Hong|Taiwan)")
       (russian             #rx"^ru_"        #rx"^Russian_")
-      (ukrainian           #rx"^uk_"        #rx"^Ukrainian_")))
+      (ukrainian           #rx"^uk_"        #rx"^Ukrainian_")
+      (korean              #rx"^ko_"        #rx"^Korean_")))
 
   ;; default-language : -> symbol
   ;; uses `table' and system-language+contry to find what language to start with
@@ -83,7 +85,8 @@
        (make-sc 'traditional-chinese traditional-chinese:string-constants #f)
        (make-sc 'simplified-chinese simplified-chinese:string-constants #f)
        (make-sc 'russian russian:string-constants #f)
-       (make-sc 'ukrainian ukrainian:string-constants #f)))
+       (make-sc 'ukrainian ukrainian:string-constants #f)
+       (make-sc 'korean korean:string-constants #f)))
     
     (define first-string-constant-set (car available-string-constant-sets))
     
