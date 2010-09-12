@@ -131,12 +131,17 @@
   [-a _void (otherMouseDragged: [_id event]) 
       (unless (do-mouse-event wxb event 'motion #f #t #f)
         (super-tell #:type _void otherMouseDragged: event))]
+
+  [-a _void (scrollWheel: [_id event])
+      (unless (and (not (zero? (tell #:type _CGFloat event deltaY)))
+                   (do-key-event wxb event self #f #t))
+        (super-tell #:type _void scrollWheel: event))]
   
   [-a _void (keyDown: [_id event])
-      (unless (do-key-event wxb event self #t)
+      (unless (do-key-event wxb event self #t #f)
         (super-tell #:type _void keyDown: event))]
   [-a _void (keyUp: [_id event])
-      (unless (do-key-event wxb event self #f)
+      (unless (do-key-event wxb event self #f #f)
         (super-tell #:type _void keyUp: event))]
   [-a _void (insertText: [_NSString str])
       (let ([cit (current-insert-text)])
@@ -177,43 +182,51 @@
         (when wx
           (send wx reset-cursor-rects)))])
 
-(define (do-key-event wxb event self down?)
+(define (do-key-event wxb event self down? wheel?)
   (let ([wx (->wx wxb)])
     (and
      wx
      (let ([inserted-text (box #f)])
-       ;; Calling `interpretKeyEvents:' allows key combinations to be
-       ;; handled, such as option-e followed by e to produce é. The
-       ;; call to `interpretKeyEvents:' typically calls `insertText:',
-       ;; so we set `current-insert-text' to tell `insertText:' to just 
-       ;; give us back the text in the parameter. For now, we ignore the
-       ;; text and handle the event as usual, though probably we should
-       ;; be doing something with it.
-       (parameterize ([current-insert-text inserted-text])
-         (tellv self interpretKeyEvents: (tell (tell NSArray alloc) 
-                                               initWithObjects: #:type (_ptr i _id) event
-                                               count: #:type _NSUInteger 1)))
-       
+       (unless wheel?
+         ;; Calling `interpretKeyEvents:' allows key combinations to be
+         ;; handled, such as option-e followed by e to produce é. The
+         ;; call to `interpretKeyEvents:' typically calls `insertText:',
+         ;; so we set `current-insert-text' to tell `insertText:' to just 
+         ;; give us back the text in the parameter. For now, we ignore the
+         ;; text and handle the event as usual, though probably we should
+         ;; be doing something with it.
+         (parameterize ([current-insert-text inserted-text])
+           (tellv self interpretKeyEvents: (tell (tell NSArray alloc) 
+                                                 initWithObjects: #:type (_ptr i _id) event
+                                                 count: #:type _NSUInteger 1))))
        (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
               [bit? (lambda (m b) (positive? (bitwise-and m b)))]
               [pos (tell #:type _NSPoint event locationInWindow)]
-              [str (tell #:type _NSString event characters)]
+              [str (if wheel?
+                       #f
+                       (tell #:type _NSString event characters))]
               [control? (bit? modifiers NSControlKeyMask)]
-              [option? (bit? modifiers NSAlternateKeyMask)])
+              [option? (bit? modifiers NSAlternateKeyMask)]
+              [delta-y (and wheel?
+                            (tell #:type _CGFloat event deltaY))])
          (let-values ([(x y) (send wx window-point-to-view pos)])
            (let ([k (new key-event%
-                         [key-code (or
-                                    (map-key-code (tell #:type _ushort event keyCode))
-                                    (if (string=? "" str)
-                                        #\nul
-                                        (let ([c (string-ref str 0)])
-                                          (or (and control?
-                                                   (char<=? #\u00 c #\u1a)
-                                                   (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
-                                                     (and (string? alt-str)
-                                                          (= 1 (string-length alt-str))
-                                                          (string-ref alt-str 0))))
-                                              c))))]
+                         [key-code (if wheel?
+                                       (if (positive? delta-y)
+                                           'wheel-up
+                                           'wheel-down)
+                                       (or
+                                        (map-key-code (tell #:type _ushort event keyCode))
+                                        (if (string=? "" str)
+                                            #\nul
+                                            (let ([c (string-ref str 0)])
+                                              (or (and control?
+                                                       (char<=? #\u00 c #\u1a)
+                                                       (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
+                                                         (and (string? alt-str)
+                                                              (= 1 (string-length alt-str))
+                                                              (string-ref alt-str 0))))
+                                                  c)))))]
                          [shift-down (bit? modifiers NSShiftKeyMask)]
                          [control-down control?]
                          [meta-down (bit? modifiers NSCommandKeyMask)]
@@ -222,23 +235,24 @@
                          [y (->long y)]
                          [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
                          [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-             (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
-               (when (and (string? alt-str)
-                          (= 1 (string-length alt-str)))
-                 (let ([alt-code (string-ref alt-str 0)])
-                   (unless (equal? alt-code (send k get-key-code))
-                     (send k set-other-altgr-key-code alt-code)))))
-             (when (and option? 
-                        special-option-key?
-                        (send k get-other-altgr-key-code))
-               ;; swap altenate with main
-               (let ([other (send k get-other-altgr-key-code)])
-                 (send k set-other-altgr-key-code (send k get-key-code))
-                 (send k set-key-code other)))
-             (unless down?
-               ;; swap altenate with main
-               (send k set-key-release-code (send k get-key-code))
-               (send k set-key-code 'release))
+             (unless wheel?
+               (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
+                 (when (and (string? alt-str)
+                            (= 1 (string-length alt-str)))
+                   (let ([alt-code (string-ref alt-str 0)])
+                     (unless (equal? alt-code (send k get-key-code))
+                       (send k set-other-altgr-key-code alt-code)))))
+               (when (and option? 
+                          special-option-key?
+                          (send k get-other-altgr-key-code))
+                 ;; swap altenate with main
+                 (let ([other (send k get-other-altgr-key-code)])
+                   (send k set-other-altgr-key-code (send k get-key-code))
+                   (send k set-key-code other)))
+               (unless down?
+                 ;; swap altenate with main
+                 (send k set-key-release-code (send k get-key-code))
+                 (send k set-key-code 'release)))
              (if (send wx definitely-wants-event? k)
                  (begin
                    (queue-window-event wx (lambda ()

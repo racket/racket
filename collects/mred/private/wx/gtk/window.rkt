@@ -156,9 +156,10 @@
        (when (or (not (equal? #\u0000 key-code))
                  (let-values ([(s ag sag cl) (get-alts event)]
                               [(keyval->code*) (lambda (v)
-                                                 (let ([c (keyval->code v)])
-                                                   (and (not (equal? #\u0000 key-code))
-                                                        c)))])
+                                                 (and v
+                                                      (let ([c (keyval->code v)])
+                                                        (and (not (equal? #\u0000 key-code))
+                                                             c))))])
                    (let ([s (keyval->code* s)]
                          [ag (keyval->code* ag)]
                          [sag (keyval->code* sag)]
