@@ -332,6 +332,8 @@
     (define/public (hide-children)
       (is-responder this #f)
       (focus-is-on #f))
+    (define/public (show-children)
+      (void))
     (define/public (fix-dc) 
       (void))
     (define/public (paint-children)
@@ -364,11 +366,13 @@
              (tellv (send parent get-cocoa-content) addSubview: cocoa)
              (with-autorelease
               (tellv cocoa removeFromSuperview)))
-         (set! is-on? (and on? #t))))
-      (maybe-register-as-child parent on?)
-      (unless on?
-        (hide-children)
-        (is-responder this #f)))
+         (set! is-on? (and on? #t))
+         (maybe-register-as-child parent on?)
+         (if on?
+             (show-children)
+             (begin
+               (hide-children)
+               (is-responder this #f))))))
     (define/public (maybe-register-as-child parent on?)
       ;; override this to call register-as-child if the window
       ;; can have the focus or otherwise needs show-state notifications.
@@ -575,14 +579,16 @@
         (set-box! xb (inexact->exact (floor (NSPoint-x p))))
         (set-box! yb (inexact->exact (floor (flip-client (NSPoint-y p)))))))
 
-    (define/public (client-to-screen xb yb)
+    (define/public (client-to-screen xb yb [flip-y? #t])
       (let* ([p (tell #:type _NSPoint (get-cocoa-window)
                       convertBaseToScreen:
                       #:type _NSPoint
                       (tell #:type _NSPoint (get-cocoa-content) 
                             convertPointToBase: #:type _NSPoint
                             (make-NSPoint (unbox xb) (flip-client (unbox yb)))))])
-        (let ([new-y (send (get-wx-window) flip-screen (NSPoint-y p))])
+        (let ([new-y (if flip-y?
+                         (send (get-wx-window) flip-screen (NSPoint-y p))
+                         (NSPoint-y p))])
           (set-box! xb (inexact->exact (floor (NSPoint-x p))))
           (set-box! yb (inexact->exact (floor new-y))))))
       

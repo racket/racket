@@ -205,6 +205,9 @@
            (set! front #f)
            (send empty-mb install))
          (if on?
+             (show-children)
+             (hide-children))
+         (if on?
              (begin
                (when is-a-dialog?
                  (set! dialog-level-counter (add1 dialog-level-counter))
@@ -280,6 +283,13 @@
     (define/public (destroy)
       (when child-sheet (send child-sheet destroy))
       (direct-show #f))
+
+    (define/override (hide-children)
+      (when saved-child
+        (send saved-child hide-children)))
+    (define/override (show-children)
+      (when saved-child
+        (send saved-child show-children)))
 
     (define/override (is-shown?)
       (tell #:type _bool cocoa isVisible))

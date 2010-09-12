@@ -37,6 +37,10 @@
     (define/override (hide-children)
       (for ([child (in-list children)])
         (send child hide-children)))
+
+    (define/override (show-children)
+      (for ([child (in-list children)])
+        (send child show-children)))
     
     (define/override (paint-children)
       (for ([child (in-list children)])

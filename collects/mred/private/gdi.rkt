@@ -32,6 +32,16 @@
      [(canvas x y w h on off on-x on-y off-x) (register-collecting-blit canvas x y w h on off on-x on-y off-x 0)]
      [(canvas x y w h on off on-x on-y off-x off-y)
       (check-instance 'register-collecting-blit canvas% 'canvas% #f canvas)
+      ((check-bounded-integer -10000 10000 #f) 'register-collecting-blit x)
+      ((check-bounded-integer -10000 10000 #f) 'register-collecting-blit y)
+      ((check-bounded-integer 0 10000 #f) 'register-collecting-blit w)
+      ((check-bounded-integer 0 10000 #f) 'register-collecting-blit h)
+      (check-instance 'register-collecting-blit wx:bitmap% 'bitmap% #f on)
+      (check-instance 'register-collecting-blit wx:bitmap% 'bitmap% #f off)
+      ((check-bounded-integer -10000 10000 #f) 'register-collecting-blit on-x)
+      ((check-bounded-integer -10000 10000 #f) 'register-collecting-blit on-y)
+      ((check-bounded-integer -10000 10000 #f) 'register-collecting-blit off-x)
+      ((check-bounded-integer -10000 10000 #f) 'register-collecting-blit off-y)
       (wx:register-collecting-blit (mred->wx canvas) x y w h on off on-x on-y off-x off-y)]))
 
   (define unregister-collecting-blit

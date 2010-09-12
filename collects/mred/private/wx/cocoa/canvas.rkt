@@ -13,6 +13,8 @@
          "cg.rkt"
          "queue.rkt"
          "item.rkt"
+         "gc.rkt"
+         "image.rkt"
          "../common/backing-dc.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
@@ -24,9 +26,13 @@
 
 ;; ----------------------------------------
 
-(import-class NSView NSGraphicsContext NSScroller NSComboBox)
+(import-class NSView NSGraphicsContext NSScroller NSComboBox NSWindow NSImageView)
 
 (import-protocol NSComboBoxDelegate)
+
+(define NSWindowAbove 1)
+
+(define o (current-error-port))
 
 ;; Called when a canvas has no backing store ready
 (define (clear-background wxb)
@@ -174,7 +180,8 @@
              on-size
              register-as-child
              get-size get-position
-             set-focus)
+             set-focus
+             client-to-screen)
 
     (define vscroll-ok? (and (memq 'vscroll style) #t))
     (define vscroll? vscroll-ok?)
@@ -336,7 +343,17 @@
       (super show on?)
       (fix-dc))
 
+    (define/override (hide-children)
+      (super hide-children)
+      (suspend-all-reg-blits))
+
+    (define/override (show-children)
+      (super show-children)
+      (resume-all-reg-blits))
+
     (define/private (do-set-size x y w h)
+      (when (pair? blits)
+        (atomically (suspend-all-reg-blits)))
       (super set-size x y w h)
       (when tr
         (tellv content-cocoa removeTrackingRect: #:type _NSInteger tr)
@@ -369,6 +386,9 @@
                 (make-NSSize (max 0 (- w (if vscroll? scroll-width 0)
                                        x-sb-margin x-sb-margin))
                              scroll-width))))
+      (when (and (pair? blits)
+                 (is-shown-to-root?))
+        (atomically (resume-all-reg-blits)))
       (fix-dc)
       (when auto-scroll?
         (reset-auto-scroll 0 0))
@@ -708,4 +728,73 @@
     (define/public (get-virtual-size xb yb)
       (get-client-size xb yb)
       (when virtual-width (set-box! xb virtual-width))
-      (when virtual-height (set-box! yb virtual-height)))))
+      (when virtual-height (set-box! yb virtual-height)))
+
+    (define blits null)
+    (define reg-blits null)
+
+    (define/private (suspend-all-reg-blits)
+      (let ([cocoa-win (get-cocoa-window)])
+        (for ([r (in-list reg-blits)])
+          (tellv cocoa-win removeChildWindow: (car r))
+          (release (car r))
+          (scheme_remove_gc_callback (cdr r))))
+      (set! reg-blits null))
+
+    (define/public (resume-all-reg-blits)
+      (unless (pair? reg-blits)
+        (when (pair? blits)
+          (set! reg-blits
+                (for/list ([b (in-list blits)])
+                  (let-values ([(x y w h img) (apply values b)])
+                    (register-one-blit x y w h img)))))))
+
+    (define/private (register-one-blit x y w h img)
+      (let ([xb (box x)]
+            [yb (box y)])
+        (client-to-screen xb yb #f)
+        (let* ([cocoa-win (get-cocoa-window)])
+          (atomically
+           (let ([win (as-objc-allocation
+                       (tell (tell NSWindow alloc)
+                             initWithContentRect: #:type _NSRect (make-NSRect (make-NSPoint (unbox xb)
+                                                                                            (- (unbox yb)
+                                                                                               h))
+                                                                              (make-NSSize w h))
+                             styleMask: #:type _int NSBorderlessWindowMask
+                             backing: #:type _int NSBackingStoreBuffered
+                             defer: #:type _BOOL NO))]
+                 [iv (tell (tell NSImageView alloc) init)])
+             (tellv iv setImage: img)
+             (tellv iv setFrame: #:type _NSRect  (make-NSRect (make-NSPoint 0 0)
+                                                              (make-NSSize w h)))
+             (tellv (tell win contentView) addSubview: iv)
+             (tellv win setAlphaValue: #:type _CGFloat 0.0)
+             (tellv cocoa-win addChildWindow: win ordered: #:type _int NSWindowAbove)
+             (tellv iv release)
+             (let ([r (scheme_add_gc_callback
+                       (make-gc-action-desc win (selector setAlphaValue:) 1.0)
+                       (make-gc-action-desc win (selector setAlphaValue:) 0.0))])
+               (cons win r)))))))
+    
+    (define/public (register-collecting-blit x y w h on off on-x on-y off-x off-y)
+      (let ([on (if (and (zero? on-x)
+                         (zero? on-y)
+                         (= (send on get-width) w)
+                         (= (send on get-height) h))
+                    on
+                    (let ([bm (make-object bitmap% w h)])
+                      (let ([dc (make-object bitmap-dc% on)])
+                        (send dc draw-bitmap-section on 0 0 on-x on-y w h)
+                        (send dc set-bitmap #f)
+                        bm)))])
+        (let ([img (bitmap->image on)])
+          (atomically
+           (set! blits (cons (list x y w h img) blits))
+           (when (is-shown-to-root?)
+             (set! reg-blits (cons (register-one-blit x y w h img) reg-blits)))))))
+
+    (define/public (unregister-collecting-blits)
+      (atomically
+       (suspend-all-reg-blits)
+       (set! blits null)))))
