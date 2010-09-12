@@ -979,18 +979,25 @@
                               (not (= 1.0 effective-scale-y)))
                           (values #f #f #f #f)
                           (let ([desc (get-pango use-font)])
-                            (let loop ([i offset] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
-                              (if (= i (string-length s))
-                                  (values w h d a)
-                                  (let ([ch (string-ref s i)])
-                                    (let ([v (atomically (hash-ref size-cache (cons desc ch) #f))])
-                                      (if v
-                                          (loop (add1 i)
-                                                (+ w (vector-ref v 0)) 
-                                                (max h (vector-ref v 1))
-                                                (max d (vector-ref v 2))
-                                                (max a (vector-ref v 3)))
-                                          (values #f #f #f #f))))))))])
+                            (if (= offset (string-length s))
+                                ;; empty string, so measure space character for height
+                                (let ([v (atomically (hash-ref size-cache (cons desc #\space) #f))])
+                                  (if v
+                                      (values 0 (vector-ref v 1) (vector-ref v 2) (vector-ref v 3))
+                                      (values #f #f #f #f)))
+                                ;; iterate through string
+                                (let loop ([i offset] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
+                                  (if (= i (string-length s))
+                                      (values w h d a)
+                                      (let ([ch (string-ref s i)])
+                                        (let ([v (atomically (hash-ref size-cache (cons desc ch) #f))])
+                                          (if v
+                                              (loop (add1 i)
+                                                    (+ w (vector-ref v 0)) 
+                                                    (max h (vector-ref v 1))
+                                                    (max d (vector-ref v 2))
+                                                    (max a (vector-ref v 3)))
+                                              (values #f #f #f #f)))))))))])
           (if w
               (values w h d a)
               (with-cr
