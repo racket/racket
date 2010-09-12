@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/file scheme/port net/url setup/plt-installer mred framework
-         "info.ss" "this-collection.ss")
+#lang racket/base
+(require racket/file racket/port net/url setup/plt-installer mred framework
+         "info.rkt" "this-collection.rkt")
 
 (define name        (#%info-lookup 'name))
 (define web-address (#%info-lookup 'web-address))

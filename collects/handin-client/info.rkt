@@ -9,9 +9,9 @@
 
 ;; The handin tool is disabled by default, uncomment these three lines to
 ;; enable it
-;(define tools      `("client-gui.ss"))
-;(define tool-names `(,name))
-;(define tool-icons `("icon.png"))
+;(define drracket-tools      `("client-gui.ss"))
+;(define drracket-tool-names `(,name))
+;(define drracket-tool-icons `("icon.png"))
 ;; Modify the provided "icon.png" file to your school/lab/etc logo.
 
 ;; You must define a server:port for the client to be functional
@@ -33,7 +33,7 @@
 ;(define enable-multifile-handin #t) ; enable multi-file?
 ;(define selection-mode 'extended) ; mode for file choose, usually 'extended
 ;(define selection-default ; suffixes to auto-choose (string or string-list)
-;  '("*.scm;*.ss" "*.scm;*.ss;*.txt"))
+;  '("*.rkt" "*.rkt;*.txt"))
 
 ;; Client configuration
 ;(define password-keep-minutes 5) ; client remembers entered password 5 mins

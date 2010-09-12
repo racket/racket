@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/class scheme/unit scheme/file mred net/sendurl
-         mrlib/switchable-button mrlib/bitmap-label drscheme/tool framework
-         "info.ss" "client.ss" "this-collection.ss")
+(require racket/class racket/unit racket/file mred net/sendurl
+         mrlib/switchable-button mrlib/bitmap-label drracket/tool framework
+         "info.rkt" "client.rkt" "this-collection.rkt")
 
 (provide tool@)
 
@@ -521,8 +521,8 @@
                                           exe "it will be overwritten")
                                          this '(ok-cancel caution))))
                            ((launcher 'make-mred-launcher)
-                            (list "-mvLe-" "handin-multi.ss"
-                                  this-collection-name
+                            (list "-le-" (format "~a/handin-multi"
+                                                 this-collection-name)
                                   "(multifile-handin)")
                             (build-path dir exe))
                            (message-box "Standalone Executable"
@@ -737,13 +737,13 @@
 
 (define tool@
   (unit
-    (import drscheme:tool^)
-    (export drscheme:tool-exports^)
+    (import drracket:tool^)
+    (export drracket:tool-exports^)
 
     (define phase1 void)
     (define phase2
       (if updater?
-        (dynamic-require `(lib "updater.ss" ,this-collection-name) 'bg-update)
+        (dynamic-require `(lib "updater.rkt" ,this-collection-name) 'bg-update)
         void))
 
     (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
@@ -769,7 +769,7 @@
                  [parent file-menu]
                  [callback (lambda (m e)
                              ((dynamic-require
-                               `(lib "handin-multi.ss" ,this-collection-name)
+                               `(lib "handin-multi.rkt" ,this-collection-name)
                                'multifile-handin)))]))
           (when updater?
             (new menu-item%
@@ -777,7 +777,7 @@
                  [parent file-menu]
                  [callback
                   (lambda (m e)
-                    ((dynamic-require `(lib "updater.ss" ,this-collection-name)
+                    ((dynamic-require `(lib "updater.rkt" ,this-collection-name)
                                       'update)
                      #f #t))])) ; no parent
           (new separator-menu-item% [parent file-menu]))
@@ -810,7 +810,7 @@
                           (lambda (buf)
                             (string->editor!
                              buf
-                             (send (drscheme:unit:open-drscheme-window)
+                             (send (drracket:unit:open-drscheme-window)
                                    get-editor)))])))]))
 
         (inherit register-toolbar-button)
@@ -820,4 +820,4 @@
               (lambda (l) (cons client-panel (remq client-panel l))))))
 
     (when (and server port-no)
-      (drscheme:get/extend:extend-unit-frame make-new-unit-frame% #f))))
+      (drracket:get/extend:extend-unit-frame make-new-unit-frame% #f))))

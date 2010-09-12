@@ -1,14 +1,14 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/class scheme/port mred framework browser/external
-         "info.ss" "client-gui.ss" "this-collection.ss")
+(require racket/class racket/port mred framework browser/external
+         "info.rkt" "client-gui.rkt" "this-collection.rkt")
 
 (define handin-name (#%info-lookup 'name))
 (define web-address (#%info-lookup 'web-address
                       (lambda () "http://racket-lang.org")))
 (define selection-mode (#%info-lookup 'selection-mode (lambda () 'extended)))
 (define selection-defaults
-  (let ([sd (#%info-lookup 'selection-default (lambda () '("*.scm" "*.ss")))])
+  (let ([sd (#%info-lookup 'selection-default (lambda () '("*.rkt")))])
     (if (string? sd) (list sd) sd)))
 (define last-dir-key (make-my-key 'multifile:last-dir))
 (preferences:set-default last-dir-key "" string?)
@@ -19,7 +19,7 @@
 
 (define update
   (and (#%info-lookup 'enable-auto-update (lambda () #f))
-       (dynamic-require `(lib "updater.ss" ,this-collection-name) 'update)))
+       (dynamic-require `(lib "updater.rkt" ,this-collection-name) 'update)))
 
 ;; ==========================================================================
 (define magic #"<<<MULTI-SUBMISSION-FILE>>>")
