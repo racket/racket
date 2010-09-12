@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "config.ss" "logger.ss" "reloadable.ss")
+(require "config.rkt" "logger.rkt" "reloadable.rkt")
 
 (provide hook)
 

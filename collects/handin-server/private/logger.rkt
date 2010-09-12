@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "config.ss" scheme/date scheme/port)
+(require "config.rkt" scheme/date scheme/port)
 
 (provide current-session)
 (define current-session (make-parameter #f))

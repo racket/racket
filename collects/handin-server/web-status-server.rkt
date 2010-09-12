@@ -23,7 +23,7 @@
          (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
 
 (define get-user-data
-  (let ([users-file (build-path server-dir "users.ss")])
+  (let ([users-file (build-path server-dir "users.rktd")])
     (unless (file-exists? users-file)
       (log-line "WARNING: users file missing on startup: ~a" users-file))
     (lambda (user)

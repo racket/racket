@@ -21,7 +21,7 @@ This directory contains the following files and sub-directories:
   distributed to students with the handin client,
   @filepath{private-key.pem} is kept private.}
 
-@item{@filepath{config.ss}: configuration options.  The file format is
+@item{@filepath{config.rktd}: configuration options.  The file format is
   @verbatim[#:indent 2]{((<key> <val>) ...)}
 
   The following keys can be used:
@@ -143,9 +143,9 @@ This directory contains the following files and sub-directories:
         #rx"^[^@<>\"`',]+@cs\\.utah\\.edu$"
         "A Utah CS email address"))}|
     The order of these fields will be used both on the client GUI side
-    and in the @filepath{users.ss} file (see below).
+    and in the @filepath{users.rktd} file (see below).
 
-    @; JBC: a hyperlink here for users.ss?
+    @; JBC: a hyperlink here for users.rktd?
 
     The second item in a field description can also be the symbol
     @schemeid[-], which marks this field as one that is hidden from the
@@ -154,7 +154,7 @@ This directory contains the following files and sub-directories:
     fields will be left empty.  This is useful for adding information
     that you have on students from another source, for example, adding
     information from a course roster.  You should manually edit the
-    @filepath{users.ss} file and fill in such information.  (The third
+    @filepath{users.rktd} file and fill in such information.  (The third
     element for such descriptors is ignored.)}
 
   @item{@indexed-scheme[hook-file] --- a path (relative to handin
@@ -206,7 +206,7 @@ This directory contains the following files and sub-directories:
                     (apply format "~a: ~s" key+val))
                   alist))))]}}]
 
-  Changes to @filepath{config.ss} are detected, the file will be
+  Changes to @filepath{config.rktd} are detected, the file will be
   re-read, and options are reloaded.  A few options are fixed at startup
   time: port numbers and log file specs are fixed as configured at
   startup.  All other options will change the behavior of the running
@@ -218,7 +218,7 @@ This directory contains the following files and sub-directories:
   not save until the new contents is ready.)  This is most useful for
   closing & opening submissions directories.}
 
-@item{@filepath{users.ss} (created if not present when a user is added):
+@item{@filepath{users.rktd} (created if not present when a user is added):
   keeps the list of user accounts, along with the associated password
   (actually the MD5 hash of the password), and extra string fields as
   specified by the @schemeid[extra-fields] configuration entry (in the
@@ -240,30 +240,30 @@ This directory contains the following files and sub-directories:
   pathnames, and they cannot end or begin in spaces or periods.
 
   If the @schemeid[allow-new-users] configuration allows new users, the
-  @filepath{users.ss} file can be updated by the server with new users.
+  @filepath{users.rktd} file can be updated by the server with new users.
   It can always be updated by the server to change passwords.
 
   If you have access to a standard Unix password file (from
   @filepath{/etc/passwd} or @filepath{/etc/shadow}), then you can
-  construct a @filepath{users.ss} file that will allow users to use
+  construct a @filepath{users.rktd} file that will allow users to use
   their normal passwords.  To achieve this, use a list with
   @schemeid[unix] as the first element and the system's encrypted
   password string as the second element.  Such passwords can be used,
   but when users change them, a plain md5 hash will be used.
 
   You can combine this with other fields from the password file to
-  create your @filepath{users.ss}, but make sure you have information
+  create your @filepath{users.rktd}, but make sure you have information
   that matches your @schemeid[extra-fields] specification.  For example,
   given this system file:
   @verbatim[#:indent 2]|{
     foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo        :/home/foo:/bin/tcsh
     bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash}|
-  you can create this @filepath{users.ss} file:
+  you can create this @filepath{users.rktd} file:
   @verbatim[#:indent 2]|{
     ((foo ((unix "wRzN1u5q2SqRD") "L.E. Foo" "?"))
      (bar ((unix "$1$dKlU0OkJ$t63TzKz") "Bar Z. Lie" "?")))}|
   which can be combined with this setting for @schemeid[extra-fields] in
-  your @filepath{config.ss}:
+  your @filepath{config.rktd}:
   @verbatim[#:indent 2]{
     ...
     (extra-fields (("Full Name" #f #f)
@@ -354,7 +354,7 @@ This directory contains the following files and sub-directories:
     exception; the exception message will be relayed back to the
     student.  The module is loaded when the current directory is the
     main server directory, so it can read files from there (but note
-    that to read values from @filepath{config.ss} it is better to use
+    that to read values from @filepath{config.rktd} it is better to use
     @scheme[get-conf]).  Also, the module will be reloaded if the
     checker file is modified; there's no need to restart the server,
     but make sure that you do not save a broken checker (i.e., do not

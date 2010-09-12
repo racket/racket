@@ -10,7 +10,7 @@
       dir
       (error 'config "handin server directory does not exist: ~e" dir))))
 
-(define config-file (path->complete-path "config.ss" server-dir))
+(define config-file (path->complete-path "config.rktd" server-dir))
 
 (define poll-freq 2000.0) ; poll at most once every two seconds
 

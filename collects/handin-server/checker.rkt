@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base) "utils.ss"
+(require (for-syntax scheme/base) "utils.rkt"
          scheme/file scheme/class mred)
 
 (provide (except-out (all-from-out scheme/base) #%module-begin)
-         (all-from-out "utils.ss"))
+         (all-from-out "utils.rkt"))
 
 (provide (rename-out [module-begin~ #%module-begin]))
 (define-syntax (module-begin~ stx)
@@ -43,7 +43,7 @@
   ;; the student is always assumed to exist
   (cdr (get-preference (if (string? user) (string->symbol user) user)
                        (lambda () #f) 'timestamp
-                       (build-path server-dir "users.ss"))))
+                       (build-path server-dir "users.rktd"))))
 
 (provide user-substs)
 (define (user-substs user str)
@@ -127,7 +127,8 @@
   (let ([name (and (is-a? x snip%)
                    (send (send x get-snipclass) get-classname))])
     (cond [(equal? name "wximage") "{{IMAGE}}"]
-          [(equal? name "(lib \"comment-snip.ss\" \"framework\")")
+          [(regexp-match? #rx"(lib \"comment-snip.(?:rkt|ss)\" \"framework\")"
+                          name)
            ;; comments will have ";" prefix on every line, and "\n" suffix
            (format ";{{COMMENT:\n~a;}}\n"
                    (send x get-text 0 (send x get-count)))]
@@ -175,7 +176,7 @@
 
 (define (submission->bytes submission maxwidth textualize? untabify?
                            markup-prefix bad-re)
-  (define magic #rx#"^(?:#reader[(]lib\"read.ss\"\"wxme\"[)])?WXME")
+  (define magic #rx#"^(?:#reader[(]lib\"read.(?:rkt|ss)\"\"wxme\"[)])?WXME")
   (unless (regexp-match? magic submission)
     (error* "bad submission format, expecting a single DrRacket submission"))
   (let-values ([(defs inters) (unpack-submission submission)])

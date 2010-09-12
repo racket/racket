@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/moddep "logger.ss")
+(require syntax/moddep "logger.rkt")
 
 (provide reload-module)
 (define (reload-module modspec path)
@@ -23,24 +23,20 @@
 (provide auto-reload-value)
 (define module-times (make-hash))
 (define (auto-reload-value modspec valname)
-  (let* ([path (resolve-module-path modspec #f)] ; HACK: set!ed below
-         [last (hash-ref module-times path #f)]
-         [cur  (file-or-directory-modify-seconds 
-                path
-                #f
-                (lambda () 
-                  (if (regexp-match #rx#"[.]rkt$" (path->bytes path))
-                      (file-or-directory-modify-seconds 
-                       (begin
-                         (set! path (path-replace-suffix path #".ss"))
-                         path)
-                       #f
-                       (lambda () +inf.0))
-                      +inf.0)))])
-    (unless (equal? cur last)
-      (hash-set! module-times path cur)
-      (reload-module modspec path))
-    (dynamic-require modspec valname)))
+  (define path0 (resolve-module-path modspec #f))
+  (define last  (hash-ref module-times path0 #f))
+  (define-values (path cur)
+    (let ([s (file-or-directory-modify-seconds path0 #f (lambda () #f))])
+      (if s
+        (values path0 s)
+        (let* ([p (and (regexp-match? #rx#"[.]rkt$" (path->bytes path0))
+                       (path-replace-suffix path0 #".ss"))]
+               [s (and p (file-or-directory-modify-seconds p #f (lambda () #f)))])
+          (if s (values p s) (values path0 +inf.0))))))
+  (unless (equal? cur last)
+    (hash-set! module-times path cur)
+    (reload-module modspec path))
+  (dynamic-require modspec valname))
 
 (define poll-freq 2000.0) ; poll at most once every two seconds
 

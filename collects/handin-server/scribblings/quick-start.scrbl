@@ -18,14 +18,14 @@
 
   NOTE: For real use, you need a new key.}
 
-@item{Create a file @filepath{users.ss} with the following content:
+@item{Create a file @filepath{users.rktd} with the following content:
   @schemeblock[
     ((tester ("8fe4c11451281c094a6578e6ddbf5eed"
               "Tester" "1" "test@cs")))]}
 
 @item{Make a @filepath{test} subdirectory in your new directory.}
 
-@item{Create a file @filepath{config.ss} with the following content:
+@item{Create a file @filepath{config.rktd} with the following content:
   @schemeblock[((active-dirs ("test")))]}
 
 @item{In your new directory, run
