@@ -208,7 +208,10 @@
 (let ([hash-table (make-hasheq)])
   (for-each (λ (x) 
               (hash-set! hash-table x 'define))
-            '(struct local))
+            '(struct
+              local
+                     
+              define-type))
   (for-each (λ (x) 
               (hash-set! hash-table x 'begin))
             '(case-lambda
@@ -264,6 +267,8 @@
                with-output-to-file with-output-to-port 
 
 	       for-all
+               
+               type-case
 	       ))
   (preferences:set-default 
    'framework:tabify
