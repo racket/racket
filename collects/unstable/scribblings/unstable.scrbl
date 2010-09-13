@@ -111,6 +111,7 @@ Keep documentation and tests up to date.
 @include-section["markparam.scrbl"]
 @include-section["debug.scrbl"]
 @include-section["wrapc.scrbl"]
+@include-section["prop-contract.scrbl"]
 
 @;{--------}
 
