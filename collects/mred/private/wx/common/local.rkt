@@ -6,6 +6,7 @@
 (define-local-member-name
   ;; clipboard-client%:
   get-client-eventspace
+  set-client-eventspace
 
   ;; cursor%
   get-driver)

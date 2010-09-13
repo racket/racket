@@ -14,6 +14,7 @@
   (define types null)
   (define es (current-eventspace))
   (define/public (get-client-eventspace) es)
+  (define/public (set-client-eventspace e) (set! es e))
   (def/public (same-eventspace? [eventspace? e])
     (eq? e es))
   (def/public (get-types)
@@ -47,6 +48,7 @@
   
   (def/public (set-clipboard-client [clipboard-client% c]
                                     [exact-integer? timestamp])
+    (send c set-client-eventspace (current-eventspace))
     (send driver set-client c (send c get-types)))
 
   (super-new))
