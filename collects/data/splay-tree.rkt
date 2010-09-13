@@ -444,7 +444,7 @@ Options
 (define-syntax-rule (mkcmp <? =?)
   (lambda (x y) (cond [(=? x y) '=] [(<? x y) '<] [else '>])))
 
-(define (make-splay-tree <? =?
+(define (make-splay-tree =? <?
                          #:key-contract [key-contract any/c]
                          #:value-contract [value-contract any/c])
   (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
@@ -488,7 +488,7 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
                           [else
                            (values #f root)])])
        (set-splay-tree-root! s root)
-       (and ok? (splay-tree-iter root)))]))
+       (and ok? (splay-tree-iter (node-key root))))]))
 
 (define (splay-tree-iterate-greatest/<=? s key)
   (extreme 'splay-tree-iterate-greatest/<=? s key '(< =) has-prev? find-prev))
