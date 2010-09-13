@@ -1,5 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base)
+         racket/serialize
          racket/pretty)
 
 (provide set seteq seteqv
@@ -13,7 +14,7 @@
          for/set for/seteq for/seteqv
          for*/set for*/seteq for*/seteqv)
 
-(define-struct set (ht)
+(define-serializable-struct set (ht)
   #:omit-define-syntaxes
   #:property prop:custom-print-quotable 'never
   #:property prop:custom-write

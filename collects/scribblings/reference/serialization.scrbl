@@ -47,7 +47,7 @@ The following kinds of values are serializable:
        @tech{unreadable symbols}, strings, byte strings, paths (for a
        specific convention), @|void-const|, and the empty list;}
 
- @item{pairs, mutable pairs, vectors, boxes, and hash tables;}
+ @item{pairs, mutable pairs, vectors, boxes, hash tables, and sets;}
 
  @item{@scheme[date] and @scheme[arity-at-least] structures; and}
  
