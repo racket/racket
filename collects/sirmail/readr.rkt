@@ -697,6 +697,8 @@
       (send vertical-line-snipclass set-classname "sirmail:vertical-line%")
       (send (get-the-snip-class-list) add vertical-line-snipclass)
       (define body-pen (send the-pen-list find-or-create-pen "blue" 0 'solid))
+      (define selected-text-color (get-highlight-text-color))
+      (define selected-pen (send the-pen-list find-or-create-pen (or selected-text-color "blue") 0 'solid))
       (define body-brush (send the-brush-list find-or-create-brush "WHITE" 'solid))
       (define vertical-line-snip%
 	(class snip%
@@ -736,7 +738,9 @@
             (lambda (dc x y left top right bottom dx dy draw-caret)
               (let ([orig-pen (send dc get-pen)]
                     [orig-brush (send dc get-brush)])
-                (send dc set-pen body-pen)
+                (send dc set-pen (if (pair? draw-caret)
+                                     selected-pen
+                                     body-pen))
                 (send dc set-brush body-brush)
                 
                 (send dc draw-line 
@@ -807,7 +811,14 @@
                                 (send new-clip set-rectangle x y w h)
                                 (send new-clip intersect old-clip)
                                 (send dc set-clipping-region new-clip))
-                              (send dc set-clipping-rect x y w h)))])
+                              (send dc set-clipping-rect x y w h)))]
+                       [fg+mode (and (pair? draw-caret)
+                                     (cons (send dc get-text-foreground)
+                                           (send dc get-text-mode)))])
+                  (when fg+mode
+                    (when selected-text-color
+                      (send dc set-text-foreground selected-text-color))
+                    (send dc set-text-mode 'transparent))
                   (set-clip x y (+ FROM-WIDTH (/ first-gap 2) (- line-space)) h)
                   (send dc draw-text from (+ x left-edge-space) y #t)
                   (set-clip (+ x FROM-WIDTH (/ first-gap 2) line-space)
@@ -820,10 +831,15 @@
                         uid 
                         (+ x FROM-WIDTH first-gap SUBJECT-WIDTH (/ second-gap 2) line-space)
                         y
-			#t))
+			#t)
+                  (when fg+mode
+                    (send dc set-text-foreground (car fg+mode))
+                    (send dc set-text-mode (cdr fg+mode))))
                   
 		(let ([p (send dc get-pen)])
-		  (send dc set-pen body-pen)
+		  (send dc set-pen (if (pair? draw-caret)
+                                       selected-pen
+                                       body-pen))
 		  (send dc draw-line 
 			(+ x FROM-WIDTH (/ first-gap 2))
 			y
