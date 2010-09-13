@@ -7430,6 +7430,7 @@ typedef void (*gccb_Ptr_Ptr_Ptr_Int_to_Void)(void*, void*, void*, int);
 typedef void (*gccb_Ptr_Ptr_Ptr_to_Void)(void*, void*, void*);
 typedef void (*gccb_Ptr_Ptr_Float_to_Void)(void*, void*, float);
 typedef void (*gccb_Ptr_Ptr_Double_to_Void)(void*, void*, double);
+typedef void (*gccb_Ptr_Ptr_Ptr_Nine_Ints)(void*,void*,void*,int,int,int,int,int,int,int,int,int);
 
 #ifdef DONT_USE_FOREIGN
 # define scheme_extract_pointer(x) NULL
@@ -7505,6 +7506,26 @@ static void run_gc_callbacks(int pre)
           d = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[4]);
 
           proc(a, b, d);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void")) {
+          gccb_Ptr_Ptr_Ptr_Nine_Ints proc;
+          void *a, *b, *c;
+          int i1, i2, i3, i4, i5, i6, i7, i8, i9;
+
+          proc = (gccb_Ptr_Ptr_Ptr_Nine_Ints)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          c = scheme_extract_pointer(SCHEME_VEC_ELS(act)[4]);
+          i1 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[5]);
+          i2 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[6]);
+          i3 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[7]);
+          i4 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[8]);
+          i5 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[9]);
+          i6 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[10]);
+          i7 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[11]);
+          i8 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[12]);
+          i9 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[13]);
+
+          proc(a, b, c, i1, i2, i3, i4, i5, i6, i7, i8, i9);
         }
         prev = desc;
       }

@@ -1062,6 +1062,10 @@ foreign function to be called. The following protocols are supported:
  @item{@racket['ptr_ptr_double->void] corresponds to @cpp{void
  (*)(void*, void*, double)}.}
 
+ @item{@racket['ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void]
+ corresponds to @cpp{void (*)(void*, void*, void*, int, int, int, int,
+ int, int, int, int, int)}.}
+
 ]
 
 After the protocol symbol, the vector should contain a pointer to a
