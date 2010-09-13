@@ -294,12 +294,14 @@
         (set! effective-scale-y (cairo_matrix_t-yy mx))
         (set! effective-origin-x (cairo_matrix_t-x0 mx))
         (set! effective-origin-y (cairo_matrix_t-y0 mx))
-        (set! current-xform (vector (cairo_matrix_t-xx mx)
-                                    (cairo_matrix_t-yx mx)
-                                    (cairo_matrix_t-xy mx)
-                                    (cairo_matrix_t-yy mx)
-                                    (cairo_matrix_t-x0 mx)
-                                    (cairo_matrix_t-y0 mx)))))
+        (let ([v (vector (cairo_matrix_t-xx mx)
+                         (cairo_matrix_t-yx mx)
+                         (cairo_matrix_t-xy mx)
+                         (cairo_matrix_t-yy mx)
+                         (cairo_matrix_t-x0 mx)
+                         (cairo_matrix_t-y0 mx))])
+          (unless (equal? v current-xform)
+            (set! current-xform v)))))
 
     (define/override (set-auto-scroll dx dy)
       (unless (and (= scroll-dx (- dx))
@@ -957,8 +959,8 @@
              (draw cr #t #t)))
        (cairo_restore cr)))
 
-    (define desc-layouts (make-weak-hash))
-    (define/private (reset-layouts!) (set! desc-layouts (make-weak-hash)))
+    (define desc-layouts (make-weak-hasheq))
+    (define/private (reset-layouts!) (set! desc-layouts (make-weak-hasheq)))
 
     (inherit get-size)
     (def/public (draw-text [string? s] [real? x] [real? y]
@@ -971,9 +973,7 @@
        (do-text cr #t s x y font combine? offset angle)
        (flush-cr)))
 
-    ;; FIXME: how do we keep this from growing too much ---
-    ;; lots of characters in lots of fonts?
-    (define size-cache (make-hasheq))
+    (define size-cache (make-weak-hasheq))
 
     (define/private (get-size-cache desc)
       (or (hash-ref size-cache desc #f)
@@ -1087,6 +1087,7 @@
                                  (substring s (max 1 ok-count))))])
                       (when draw?
                         (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
+                        ;; Draw the text:
                         (pango_cairo_show_layout cr layout))
                       (cond
                        [(and draw? (not next-s))
@@ -1110,11 +1111,14 @@
                                    (not (= 1.0 effective-scale-y)))
                                #f
                                (get-size-cache desc))]
-                    [layouts (let ([key (cons desc attrs)])
-                                  (or (hash-ref desc-layouts key #f)
-                                      (let ([layouts (make-hasheq)])
-                                        (hash-set! desc-layouts key layouts)
-                                        layouts)))]
+                    [layouts (let ([attr-layouts (or (hash-ref desc-layouts desc #f)
+                                                     (let ([layouts (make-hasheq)])
+                                                       (hash-set! desc-layouts desc layouts)
+                                                       layouts))])
+                               (or (hash-ref attr-layouts attrs #f)
+                                   (let ([layouts (make-hasheq)])
+                                     (hash-set! attr-layouts attrs layouts)
+                                     layouts)))]
                     [xform current-xform])
                 (begin0
                  (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
@@ -1136,8 +1140,10 @@
                      (unless (equal? xform (mcdr layout+xform))
                        (pango_cairo_update_layout cr layout)
                        (set-mcdr! layout+xform xform))
-                     (when draw?
+                     (when (and draw? (or (not (eq? ch #\space))
+                                          attrs))
                        (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
+                       ;; Here's the draw command, which uses most of the time:
                        (pango_cairo_show_layout cr layout))
                      (let ([v (and cache
                                    (hash-ref cache (char->integer ch) #f))])
