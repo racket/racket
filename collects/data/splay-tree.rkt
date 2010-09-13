@@ -533,7 +533,7 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
  [splay-tree-ref
   (->i ([s splay-tree?] [key (s) (key-c s)])
        ([default any/c])
-       [_ (s default) (or/c (key-c s) (lambda (x) (eq? x default)))])]
+       any)]
  [splay-tree-set!
   (->i ([s splay-tree?] [key (s) (key-c s)] [v (s) (val-c s)]) [_ void?])]
  [splay-tree-remove!

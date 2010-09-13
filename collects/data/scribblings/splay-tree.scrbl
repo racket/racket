@@ -90,7 +90,7 @@ adjustment; see @racket[splay-tree-contract!] and
 @defproc[(splay-tree-remove! [s splay-tree?]
                              [key any/c])
          void?]
-@defproc[(splay-tree-count! [s splay-tree?]) exact-nonnegative-integer?]
+@defproc[(splay-tree-count [s splay-tree?]) exact-nonnegative-integer?]
 @defproc[(splay-tree-iterate-first [s splay-tree?])
          (or/c #f splay-tree-iter?)]
 @defproc[(splay-tree-iterate-next [s splay-tree?] [iter splay-tree-iter?])

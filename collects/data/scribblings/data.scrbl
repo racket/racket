@@ -16,6 +16,8 @@ This manual documents data structure libraries available in the
 @;{--------}
 
 @include-section["queue.scrbl"]
+@include-section["gvector.scrbl"]
+@include-section["splay-tree.scrbl"]
 @include-section["skip-list.scrbl"]
 @include-section["interval-map.scrbl"]
-@include-section["gvector.scrbl"]
+@include-section["heap.scrbl"]
