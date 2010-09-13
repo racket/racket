@@ -519,7 +519,7 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
 
 (provide/contract
  [make-splay-tree
-  (->* ((-> any/c any/c any/c) (-> any/c any/c any/c))
+  (->* ((-> any/c any/c any) (-> any/c any/c any))
        (#:key-contract contract? #:value-contract contract?)
        splay-tree?)]
  [make-integer-splay-tree
@@ -559,9 +559,9 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
  [splay-tree-iterate-next
   (-> splay-tree? splay-tree-iter? (or/c splay-tree-iter? #f))]
  [splay-tree-iterate-key
-  (-> splay-tree? splay-tree-iter? any/c)]
+  (->i ([s splay-tree?] [i splay-tree-iter?]) [_ (s) (key-c s)])]
  [splay-tree-iterate-value
-  (-> splay-tree? splay-tree-iter? any/c)]
+  (->i ([s splay-tree?] [i splay-tree-iter?]) [_ (s) (val-c s)])]
 
  [splay-tree-iterate-greatest/<=?
   (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
