@@ -16,7 +16,9 @@
          "client-window.rkt"
          "widget.rkt"
          "dc.rkt"
-         "combo.rkt")
+         "combo.rkt"
+         "pixbuf.rkt"
+         "gcwin.rkt")
 
 (provide canvas%)
 
@@ -588,5 +590,37 @@
     (define/public (get-virtual-size xb yb)
       (get-client-size xb yb)
       (when virtual-width (set-box! xb virtual-width))
-      (when virtual-height (set-box! yb virtual-height)))))
+      (when virtual-height (set-box! yb virtual-height)))
 
+    (define reg-blits null)
+    
+    (define/private (register-one-blit x y w h pixbuf)
+      (let* ([cwin (widget-window client-gtk)])
+        (atomically
+         (let ([win (create-gc-window cwin x y w h pixbuf)])
+           (let ([r (scheme_add_gc_callback
+                     (make-gc-show-desc win pixbuf w h)
+                     (make-gc-hide-desc win))])
+             (cons win r))))))
+    
+    (define/public (register-collecting-blit x y w h on off on-x on-y off-x off-y)
+      (let ([on (if (and (zero? on-x)
+                         (zero? on-y)
+                         (= (send on get-width) w)
+                         (= (send on get-height) h))
+                    on
+                    (let ([bm (make-object bitmap% w h)])
+                      (let ([dc (make-object bitmap-dc% on)])
+                        (send dc draw-bitmap-section on 0 0 on-x on-y w h)
+                        (send dc set-bitmap #f)
+                        bm)))])
+        (let ([pixbuf (bitmap->pixbuf on)])
+          (atomically
+           (set! reg-blits (cons (register-one-blit x y w h pixbuf) reg-blits))))))
+    
+    (define/public (unregister-collecting-blits)
+      (atomically
+       (for ([r (in-list reg-blits)])
+         (g_object_unref (car r))
+         (scheme_remove_gc_callback (cdr r)))
+       (set! reg-blits null)))))
