@@ -121,6 +121,10 @@
                       (or/c #f (-> dict? contract?))
                       (or/c #f (-> dict? contract?))))
 
+(define even-length-list/c
+  (flat-named-contract 'even-length-list/c
+                       (lambda (l) (even? (length l)))))
+
 ;; ----------------------------------------
 
 (provide/contract
@@ -152,8 +156,6 @@
  [dict-set
   dict-set-contract]
  [dict-set*!
-  any/c
-  #|
   (->i ([d (and/c dict? dict-mutable?)])
        #:rest [_ (d) (let ([key/c (dict-key-contract d)]
                            [val/c (dict-value-contract d)])
@@ -161,12 +163,10 @@
                                  (recursive-contract
                                   (or/c null
                                         (cons/c key/c (cons/c val/c args/c))))])
-                         args/c))]
-       [_ void?])
-  |#]
+                         (and/c even-length-list/c
+                                args/c)))]
+       [_ void?])]
  [dict-set*
-  any/c
-  #|
   (->i ([d (and/c dict? dict-can-functional-set?)])
        #:rest [_ (d) (let ([key/c (dict-key-contract d)]
                            [val/c (dict-value-contract d)])
@@ -174,9 +174,9 @@
                                  (recursive-contract
                                   (or/c null
                                         (cons/c key/c (cons/c val/c args/c))))])
-                         args/c))]
-       [_ dict?])
-  |#]
+                         (and/c even-length-list/c
+                                args/c)))]
+       [_ dict?])]
  [dict-update!
   (->i ([d (and/c dict? dict-mutable?)]
         [k (d) (dict-key-contract d)]
