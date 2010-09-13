@@ -68,14 +68,7 @@
 (define dict-ref-contract
   (->i ([d dict?] [k (d) (dict-key-contract d)])
        ([default any/c])
-       [_ (d default) (or/c (lambda (x) (eq? x default))
-                            (dict-value-contract d))]))
-(define dict-ref!-contract
-  (->i ([d (and/c dict? dict-mutable?)]
-        [k (d) (dict-key-contract d)]
-        [default (d) (or/c (dict-value-contract d)
-                           (-> (dict-value-contract d)))]) ;; use if/c ??
-       [_ (d) (dict-value-contract d)]))
+       any)) ;; because default can be multi-valued procedure
 (define dict-set!-contract
   (->i ([d (and/c dict? dict-mutable?)]
         [k (d) (dict-key-contract d)]
@@ -152,9 +145,8 @@
  [dict-ref!
   (->i ([d (and/c dict? dict-mutable?)]
         [k (d) (dict-key-contract d)]
-        [default any/c]) ;; use if/c ?
-       [_ (d default) (or/c (lambda (x) (eq? x default))
-                            (dict-value-contract d))])]
+        [default (d) (or/c (dict-value-contract d) (-> (dict-value-contract d)))]) ;; use if/c ?
+       [_ (d) (dict-value-contract d)])]
  [dict-set!
   dict-set!-contract]
  [dict-set
