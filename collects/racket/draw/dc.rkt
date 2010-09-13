@@ -282,6 +282,8 @@
     (define effective-origin-x 0.0)
     (define effective-origin-y 0.0)
 
+    (define current-xform (vector 1.0 0.0 0.0 1.0 0.0 0.0))
+
     (define/private (reset-effective!)
       (let* ([mx (make-cairo_matrix_t 1 0 0 1 0 0)])
         (cairo_matrix_rotate mx (- rotation))
@@ -291,7 +293,13 @@
         (set! effective-scale-x (cairo_matrix_t-xx mx))
         (set! effective-scale-y (cairo_matrix_t-yy mx))
         (set! effective-origin-x (cairo_matrix_t-x0 mx))
-        (set! effective-origin-y (cairo_matrix_t-y0 mx))))
+        (set! effective-origin-y (cairo_matrix_t-y0 mx))
+        (set! current-xform (vector (cairo_matrix_t-xx mx)
+                                    (cairo_matrix_t-yx mx)
+                                    (cairo_matrix_t-xy mx)
+                                    (cairo_matrix_t-yy mx)
+                                    (cairo_matrix_t-x0 mx)
+                                    (cairo_matrix_t-y0 mx)))))
 
     (define/override (set-auto-scroll dx dy)
       (unless (and (= scroll-dx (- dx))
@@ -949,8 +957,8 @@
              (draw cr #t #t)))
        (cairo_restore cr)))
 
-    (define layouts (make-weak-hash))
-    (define/private (reset-layouts!) (set! layouts (make-weak-hash)))
+    (define desc-layouts (make-weak-hash))
+    (define/private (reset-layouts!) (set! desc-layouts (make-weak-hash)))
 
     (inherit get-size)
     (def/public (draw-text [string? s] [real? x] [real? y]
@@ -965,7 +973,13 @@
 
     ;; FIXME: how do we keep this from growing too much ---
     ;; lots of characters in lots of fonts?
-    (define size-cache (make-hash))
+    (define size-cache (make-hasheq))
+
+    (define/private (get-size-cache desc)
+      (or (hash-ref size-cache desc #f)
+          (let ([h (make-hasheq)])
+            (hash-set! size-cache desc h)
+            h)))
 
     (def/public (get-text-extent [string? s] 
                                  [(make-or-false font%) [use-font font]]
@@ -978,10 +992,10 @@
                               (not (= 1.0 effective-scale-x))
                               (not (= 1.0 effective-scale-y)))
                           (values #f #f #f #f)
-                          (let ([desc (get-pango use-font)])
+                          (let ([cache (get-size-cache (get-pango use-font))])
                             (if (= offset (string-length s))
                                 ;; empty string, so measure space character for height
-                                (let ([v (atomically (hash-ref size-cache (cons desc #\space) #f))])
+                                (let ([v (hash-ref cache (char->integer #\space) #f)])
                                   (if v
                                       (values 0 (vector-ref v 1) (vector-ref v 2) (vector-ref v 3))
                                       (values #f #f #f #f)))
@@ -990,7 +1004,7 @@
                                   (if (= i (string-length s))
                                       (values w h d a)
                                       (let ([ch (string-ref s i)])
-                                        (let ([v (atomically (hash-ref size-cache (cons desc ch) #f))])
+                                        (let ([v (hash-ref cache (char->integer ch) #f)])
                                           (if v
                                               (loop (add1 i)
                                                     (+ w (vector-ref v 0)) 
@@ -1091,48 +1105,59 @@
                                 [na 0.0])
                             (loop next-s (+ w nw) (max h nh) (max d nd) (max a na))))])))]))
               (let ([logical (make-PangoRectangle 0 0 0 0)]
-                    [record-size-result
-                     (if (or combine?
-                             (not (= 1.0 effective-scale-x))
-                             (not (= 1.0 effective-scale-y)))
-                         void
-                         (lambda (ch w h d a)
-                           (atomically
-                            (hash-set! size-cache 
-                                       (cons desc ch)
-                                       (vector w h d a)))))])
+                    [cache (if (or combine?
+                                   (not (= 1.0 effective-scale-x))
+                                   (not (= 1.0 effective-scale-y)))
+                               #f
+                               (get-size-cache desc))]
+                    [layouts (let ([key (cons desc attrs)])
+                                  (or (hash-ref desc-layouts key #f)
+                                      (let ([layouts (make-hasheq)])
+                                        (hash-set! desc-layouts key layouts)
+                                        layouts)))]
+                    [xform current-xform])
                 (begin0
                  (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
                      ([ch (in-string s)])
-                   (let* ([key (vector desc attrs ch)]
-                          [layout (hash-ref layouts
-                                            key
-                                            (lambda ()
-                                              (let ([layout (pango_layout_new context)])
-                                                (pango_layout_set_font_description layout desc)
-                                                (when attrs (pango_layout_set_attributes layout attrs))
-                                                (pango_layout_set_text layout (string ch))
-                                                (unless (or (not substitute-fonts?)
-                                                            (zero? (pango_layout_get_unknown_glyphs_count layout)))
-                                                  ;; No good glyph; look for an alternate face
-                                                  (install-alternate-face ch layout font desc attrs context))
-                                                (hash-set! layouts key layout)
-                                                layout)))])
-                     (pango_cairo_update_layout cr layout)
+                   (let* ([layout+xform
+                           (or (hash-ref layouts (char->integer ch) #f)
+                               (let ([layout (pango_layout_new context)])
+                                 (pango_layout_set_font_description layout desc)
+                                 (when attrs (pango_layout_set_attributes layout attrs))
+                                 (pango_layout_set_text layout (string ch))
+                                 (unless (or (not substitute-fonts?)
+                                             (zero? (pango_layout_get_unknown_glyphs_count layout)))
+                                   ;; No good glyph; look for an alternate face
+                                   (install-alternate-face ch layout font desc attrs context))
+                                 (let ([layout+xform (mcons layout xform)])
+                                   (hash-set! layouts (char->integer ch) layout+xform)
+                                   layout+xform)))]
+                          [layout (mcar layout+xform)])
+                     (unless (equal? xform (mcdr layout+xform))
+                       (pango_cairo_update_layout cr layout)
+                       (set-mcdr! layout+xform xform))
                      (when draw?
                        (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
                        (pango_cairo_show_layout cr layout))
-                     (pango_layout_get_extents layout #f logical)
-                     (let ([lw (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))]
-                           [lh (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))]
-                           [ld (integral (/ (- (PangoRectangle-height logical) 
-                                               (pango_layout_get_baseline layout))
-                                            (exact->inexact PANGO_SCALE)))]
-                           [la 0.0])
-                       (record-size-result ch lw lh ld la)
-                       (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la)))))
+                     (let ([v (and cache
+                                   (hash-ref cache (char->integer ch) #f))])
+                       (if v
+                           (values (if blank? 0.0 (+ w (vector-ref v 0))) 
+                                   (max h (vector-ref v 1)) 
+                                   (max d (vector-ref v 2)) 
+                                   (max a (vector-ref v 3)))
+                           (begin
+                             (pango_layout_get_extents layout #f logical)
+                             (let ([lw (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))]
+                                   [lh (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))]
+                                   [ld (integral (/ (- (PangoRectangle-height logical) 
+                                                       (pango_layout_get_baseline layout))
+                                                    (exact->inexact PANGO_SCALE)))]
+                                   [la 0.0])
+                               (when cache
+                                 (hash-set! cache (char->integer ch) (vector lw lh ld la)))
+                               (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la))))))))
                  (when rotate? (cairo_restore cr))))))))
-
 
     (define/private (install-alternate-face ch layout font desc attrs context)
       (or
