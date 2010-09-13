@@ -317,11 +317,49 @@ Under X, the function invokes an external sound-playing program;
 Under Mac OS X, Quicktime is used to play sounds; most sound
  formats (.wav, .aiff, .mp3) are supported in recent versions of
  Quicktime. In order to play .wav files, Quicktime 3.0 (compatible
- with OS 7.5 and up) is required.
+ with OS 7.5 and up) is required.}
 
 
+@defproc[(register-collecting-blit [canvas (is-a?/c canvas%)]
+                                   [x real?]
+                                   [y real?]
+                                   [w (and/c real? (not/c negative?))]
+                                   [h (and/c real? (not/c negative?))]
+                                   [on (is-a?/c bitmap%)]
+                                   [off (is-a?/c bitmap%)]
+                                   [on-x real? 0]
+                                   [on-y real? 0]
+                                   [off-x real? 0]
+                                   [off-y real? 0])
+         void?]{
 
-}
+Registers a ``blit'' to occur when garbage collection starts and
+ ends. When garbage collection starts, @racket[on] is drawn at
+ location @racket[x] and @racket[y] within @racket[canvas], if
+ @racket[canvas] is shown.  When garbage collection ends, the drawing
+ is reverted. The @racket[off], @racket[off-x], and @racket[off-y]
+ arguments are currently unused, though they were formerly used to
+ revert the drawing of @racket[on].
+
+The background behind @racket[on] is unspecified, so @racket[on]
+ should be a solid image, and the canvas's scale or scrolling is not
+ applied to the drawing. Only the portion of @racket[on] within
+ @racket[w] and @racket[h] pixels is used; if @racket[on-x] and
+ @racket[on-y] are specified, they specify an offset within the bitmap
+ that is used for drawing.
+
+The blit is automatically unregistered if @scheme[canvas] becomes
+ invisible and inaccessible.  Multiple registrations can be installed
+ for the same @scheme[canvas].
+
+See also @scheme[unregister-collecting-blit].}
+
+
+@defproc[(unregister-collecting-blit [canvas (is-a?/c canvas%)])
+         void?]{
+
+Unregisters all blit requests installed for @racket[canvas] with
+ @scheme[register-collecting-blit].}
 
 
 @defproc[(send-event [receiver-bytes (lambda (s) (and (bytes? s)
