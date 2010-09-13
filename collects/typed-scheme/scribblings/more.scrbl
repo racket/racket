@@ -44,7 +44,7 @@ in both top-level and internal contexts.
 
 @racketblock[
 (define: x : Number 7)
-(define: (id [z : Number]) z)]
+(define: (id [z : Number]) : Number z)]
 
 Here, @racket[x] has the type @racket[Number], and @racket[id] has the
 type @racket[(Number -> Number)].  In the body of @racket[id],
