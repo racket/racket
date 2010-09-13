@@ -204,7 +204,8 @@
          (let ([up-sexp (send text find-up-sexp click-pos)])
            (when up-sexp 
              (let ([fwd (send text get-forward-sexp up-sexp)])
-               (make-collapse-item text up-sexp fwd menu))))]))))
+               (when fwd
+                 (make-collapse-item text up-sexp fwd menu)))))]))))
 
 ;; make-expand-item : (instanceof text%) (instanceof sexp-snip<%>) (instanceof menu%) -> void
 (define (make-expand-item text snip menu)
