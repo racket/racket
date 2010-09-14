@@ -5188,10 +5188,10 @@
                                                     (if (eq? snip s-caret-snip)
                                                         show-caret
                                                         (if (and maybe-hilite?
-                                                                 (endpos . > . p)
-                                                                 (startpos . < . (+ p (snip->count snip))))
-                                                            (cons (max 0 (- startpos p))
-                                                                  (min (snip->count snip) (- endpos p)))
+                                                                 (-endpos . > . p)
+                                                                 (-startpos . < . (+ p (snip->count snip))))
+                                                            (cons (max 0 (- -startpos p))
+                                                                  (min (snip->count snip) (- -endpos p)))
                                                             'no-caret))))))
 
                                       ;; the rules for hiliting are surprisingly complicated:

@@ -5,7 +5,8 @@
          "utils.rkt"
          "types.rkt"
          "../common/bstr.rkt"
-          "../../syntax.rkt")
+          "../../syntax.rkt"
+          "../../lock.rkt")
 
 (provide clipboard-driver%
          has-x-selection?)
@@ -49,20 +50,22 @@
                  #f)))))
 
   (define/public (set-client c types)
-    (let ([pb (tell NSPasteboard generalPasteboard)]
-          [a (tell NSArray arrayWithObjects:
-                   #:type (_list i _NSString) (map map-type types)
-                   count: #:type _NSUInteger (length types))])
-      (set! counter (tell #:type _NSInteger pb clearContents))
-      (set! client c)
-      (for ([type (in-list types)])
-        (let* ([bstr (send c get-data type)]
-               [data (tell NSData 
-                           dataWithBytes: #:type _bytes bstr
-                           length: #:type _NSUInteger (bytes-length bstr))])
-          (tellv (tell NSPasteboard generalPasteboard)
-                 setData: data
-                 forType: #:type _NSString (map-type type))))))
+    (atomically
+     (with-autorelease
+      (let ([pb (tell NSPasteboard generalPasteboard)]
+            [a (tell NSArray arrayWithObjects:
+                     #:type (_list i _NSString) (map map-type types)
+                     count: #:type _NSUInteger (length types))])
+        (set! counter (tell #:type _NSInteger pb clearContents))
+        (set! client c)
+        (for ([type (in-list types)])
+          (let* ([bstr (send c get-data type)]
+                 [data (tell NSData 
+                             dataWithBytes: #:type _bytes bstr
+                             length: #:type _NSUInteger (bytes-length bstr))])
+            (tellv (tell NSPasteboard generalPasteboard)
+                   setData: data
+                   forType: #:type _NSString (map-type type))))))))
   
   (define/public (get-data-for-type type)
     (log-error "didn't expect clipboard data request"))
@@ -73,9 +76,11 @@
            (bytes->string/utf-8 bstr #\?))))
   
   (define/public (get-data type)
-    (let* ([pb (tell NSPasteboard generalPasteboard)]
-           [data (tell pb dataForType: #:type _NSString (map-type type))])
-      (and data
-           (let ([len (tell #:type _NSUInteger data length)]
-                 [bstr (tell #:type _pointer data bytes)])
-             (scheme_make_sized_byte_string bstr len 1))))))
+    (atomically
+     (with-autorelease
+      (let* ([pb (tell NSPasteboard generalPasteboard)]
+             [data (tell pb dataForType: #:type _NSString (map-type type))])
+        (and data
+             (let ([len (tell #:type _NSUInteger data length)]
+                   [bstr (tell #:type _pointer data bytes)])
+               (scheme_make_sized_byte_string bstr len 1))))))))

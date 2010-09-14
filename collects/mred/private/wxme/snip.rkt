@@ -68,7 +68,7 @@
       (and (pair? v)
            (exact-nonnegative-integer? (car v))
            (exact-nonnegative-integer? (cdr v))
-           ((car v) . < . (cdr v)))))
+           ((car v) . <= . (cdr v)))))
 
 (define selected-text-color (get-highlight-text-color))
 
