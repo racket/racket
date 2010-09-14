@@ -1194,7 +1194,7 @@ Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
       scheme_wrong_type("place-channel-recv", "place-channel", 0, argc, args);
     }
     {
-      void *msg_memory;
+      void *msg_memory = NULL;
       mso = scheme_place_async_recv((Scheme_Place_Async_Channel *) ch->recvch, &msg_memory);
       return scheme_places_deserialize(mso, msg_memory);
     }
