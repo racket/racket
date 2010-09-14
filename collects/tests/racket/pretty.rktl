@@ -247,6 +247,7 @@
      #(1 2 3 4 5)
      (read (open-input-string "(#0=() . #0#)"))
      (read (open-input-string "#1=(1 . #1#)"))
+     (read (open-input-string "#1={#0={1 2 . #2={#0# . #1#}} . #2#}"))
      (map box (make #f))
      (make #f)
      (make-pprec 1 2)

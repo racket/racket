@@ -655,7 +655,7 @@
        (lambda (obj pport check? c-k d-k n-k)
 	 (let ([ref (and check? 
 			 found
-			 (hash-ref found obj  #f))])
+			 (hash-ref found obj #f))])
 	   (if (and ref (unbox (mark-def ref)))
 	       (if c-k
 		   (c-k (mark-str ref))
@@ -756,7 +756,11 @@
                       (lambda (s) (out " . ") (out s) (out close))
                       (lambda ()
                         (out " . ")
-                        (wr-lst l check? (dsub1 depth) pair? car cdr open close qd)
+                        (check-expr-found ;; will find it!
+                         l pport #t
+                         #f #f
+                         (lambda ()
+                           (wr-lst l check? (dsub1 depth) pair? car cdr open close qd)))
                         (out close))
                       (lambda ()
                         (cond 
