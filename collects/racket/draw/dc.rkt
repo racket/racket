@@ -17,7 +17,11 @@
          "dc-intf.ss"
          "dc-path.ss"
          "point.ss"
-         "local.ss")
+         "local.ss"
+
+         racket/flonum
+         ffi/unsafe
+         "bstr.rkt")
 
 (provide dc-mixin
          dc-backend<%>
@@ -1046,10 +1050,18 @@
         (let ([desc (get-pango font)]
               [attrs (send font get-pango-attrs)]
               [integral round]
-              [x (if rotate? 0.0 x)]
-              [y (if rotate? 0.0 y)])
+              [x (if rotate? 0.0 (exact->inexact x))]
+              [y (if rotate? 0.0 (exact->inexact y))])
+          ;; We have two ways to draw text:
+          ;;  - If `combine?' (to enable kerning etc.), then we create a Pango layout
+          ;;    and draw it. This is the slow but pretty way (bt not used for editors,
+          ;;    where the text needs to draw the same if it's drawn all together or
+          ;;    in pieces).
+          ;;  - If not `combine' or if combining isn't supported (e.g., because the scale
+          ;;    is too small, so that it would look bad), then we draw character by character.
           (if (and combine?
                    (can-combine-text? (* effective-scale-y (send font get-point-size))))
+              ;; This is combine mode.
               (let loop ([s s] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
                 (cond
                  [(not s)
@@ -1105,6 +1117,8 @@
                                                  (exact->inexact PANGO_SCALE)))]
                                 [na 0.0])
                             (loop next-s (+ w nw) (max h nh) (max d nd) (max a na))))])))]))
+              ;; This is character-by-character mode. It uses a cached per-character+font layout
+              ;;  object.
               (let ([logical (make-PangoRectangle 0 0 0 0)]
                     [cache (if (or combine?
                                    (not (= 1.0 effective-scale-x))
@@ -1120,51 +1134,134 @@
                                      (hash-set! attr-layouts attrs layouts)
                                      layouts)))]
                     [xform current-xform])
+                ;; First, ensure that all layout records are ready:
+                (for ([ch (in-string s)])
+                  (let* ([layout-info
+                          (or (hash-ref layouts (char->integer ch) #f)
+                              (let ([layout (pango_layout_new context)])
+                                (pango_layout_set_font_description layout desc)
+                                (when attrs (pango_layout_set_attributes layout attrs))
+                                (pango_layout_set_text layout (string ch))
+                                (unless (or (not substitute-fonts?)
+                                            (zero? (pango_layout_get_unknown_glyphs_count layout)))
+                                  ;; No good glyph; look for an alternate face
+                                  (install-alternate-face ch layout font desc attrs context))
+                                (let ([run (extract-only-run layout)])
+                                  (let ([layout-info (vector layout xform run)])
+                                    (hash-set! layouts (char->integer ch) layout-info)
+                                    layout-info))))]
+                         [layout (vector-ref layout-info 0)])
+                    (unless (equal? xform (vector-ref layout-info 1))
+                      (pango_cairo_update_layout cr layout)
+                      (vector-set! layout-info 1 xform)
+                      (vector-set! layout-info 2 (extract-only-run layout)))))
+                ;; At this point, we have two options for dealing with the layouts.
+                ;; If layouts all use the same font and a single glyph, then
+                ;; build a glyph string with the right offsets and draw all the
+                ;; characters at once. That's faster, but it only works if there
+                ;; are no font substitions or other fancy glyph transformations.
+                ;; We try the fast way, and bail out to the low way if it doesn't
+                ;; work. Also, we don't bother with the fast way if there's just one
+                ;; character or if we're just measuring text.
                 (begin0
-                 (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
-                     ([ch (in-string s)])
-                   (let* ([layout+xform
-                           (or (hash-ref layouts (char->integer ch) #f)
-                               (let ([layout (pango_layout_new context)])
-                                 (pango_layout_set_font_description layout desc)
-                                 (when attrs (pango_layout_set_attributes layout attrs))
-                                 (pango_layout_set_text layout (string ch))
-                                 (unless (or (not substitute-fonts?)
-                                             (zero? (pango_layout_get_unknown_glyphs_count layout)))
-                                   ;; No good glyph; look for an alternate face
-                                   (install-alternate-face ch layout font desc attrs context))
-                                 (let ([layout+xform (mcons layout xform)])
-                                   (hash-set! layouts (char->integer ch) layout+xform)
-                                   layout+xform)))]
-                          [layout (mcar layout+xform)])
-                     (unless (equal? xform (mcdr layout+xform))
-                       (pango_cairo_update_layout cr layout)
-                       (set-mcdr! layout+xform xform))
-                     (when (and draw? (or (not (eq? ch #\space))
-                                          attrs))
-                       (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
-                       ;; Here's the draw command, which uses most of the time:
-                       (pango_cairo_show_layout cr layout))
-                     (let ([v (and cache
-                                   (hash-ref cache (char->integer ch) #f))])
-                       (if v
-                           (values (if blank? 0.0 (+ w (vector-ref v 0))) 
-                                   (max h (vector-ref v 1)) 
-                                   (max d (vector-ref v 2)) 
-                                   (max a (vector-ref v 3)))
-                           (begin
-                             (pango_layout_get_extents layout #f logical)
-                             (let ([lw (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))]
-                                   [lh (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))]
-                                   [ld (integral (/ (- (PangoRectangle-height logical) 
-                                                       (pango_layout_get_baseline layout))
-                                                    (exact->inexact PANGO_SCALE)))]
-                                   [la 0.0])
-                               (when cache
-                                 (hash-set! cache (char->integer ch) (vector lw lh ld la)))
-                               (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la))))))))
+                 (unless (and
+                          draw?
+                          cache
+                          ((string-length s) . > . 1)
+                          (let ([len (string-length s)]
+                                [first-v (hash-ref cache (char->integer (string-ref s 0)) #f)])
+                            ;; Check whether the fast way applies...
+                            (let ([glyph-infos (malloc len _PangoGlyphInfo 'raw)] ;; assuming atomic until `free' below
+                                  [log-clusters (malloc len _int 'raw)]
+                                  [first-font (let* ([run (vector-ref (hash-ref layouts (char->integer (string-ref s 0))) 2)])
+                                                (and run
+                                                     (PangoItem-font (PangoGlyphItem-item run))))]
+                                  [first-ascent (and first-v (fl- (vector-ref first-v 1) (vector-ref first-v 2)))])
+                              (and
+                               (let loop ([i 0][dx 0.0])
+                                 (or (= i len)
+                                     (let* ([ch (string-ref s i)]
+                                            [layout-info (hash-ref layouts (char->integer ch))]
+                                            [run (vector-ref layout-info 2)]
+                                            [v (hash-ref cache (char->integer ch) #f)])
+                                       (and run
+                                            v
+                                            (fl= first-ascent
+                                                 (fl- (vector-ref v 1) (vector-ref v 2)))
+                                            (ptr-equal? first-font
+                                                        (PangoItem-font (PangoGlyphItem-item run)))
+                                            ;; Assume that the rect of the characters will pan out,
+                                            ;; and start filling in the glyph-info array:
+                                            (let ([dest-info (cast (ptr-add glyph-infos i _PangoGlyphInfo)
+                                                                   _pointer
+                                                                   _PangoGlyphInfo-pointer)])
+                                              (memcpy dest-info
+                                                      (PangoGlyphString-glyphs (PangoGlyphItem-glyphs run))
+                                                      1
+                                                      _PangoGlyphInfo)
+                                              (ptr-set! log-clusters _int i i)
+                                              ;; Adjust width to be consistent with integral widths
+                                              ;; used when drawing individual characters.
+                                              (let ([w (vector-ref v 0)])
+                                                (set-PangoGlyphInfo-width! dest-info
+                                                                           (inexact->exact
+                                                                            (flfloor
+                                                                             (fl* w (->fl PANGO_SCALE)))))
+                                                (loop (add1 i) (fl+ dx w))))))))
+                               ;; If we get here, we can use the fast way:
+                               (let ([glyph-string (make-PangoGlyphString len
+                                                                          glyph-infos
+                                                                          log-clusters)])
+                                 ;; Move into position and draw the glyphs
+                                 (cairo_move_to cr 
+                                                (align-x/delta x 0) 
+                                                (+ (align-y/delta y 0)
+                                                   (/ (vector-ref first-v 4) (->fl PANGO_SCALE))))
+                                 (pango_cairo_show_glyph_string cr first-font glyph-string)
+                                 (free glyph-infos)
+                                 (free log-clusters)
+                                 #t)))))
+                   ;; We use the slower, per-layout way:
+                   (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
+                       ([ch (in-string s)])
+                     (let ([layout (vector-ref (hash-ref layouts (char->integer ch)) 0)])
+                       (when (and draw? (or (not (eq? ch #\space))
+                                            attrs))
+                         (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
+                         ;; Here's the draw command, which uses most of the time in this mode:
+                         (pango_cairo_show_layout cr layout))
+                       (let ([v (and cache
+                                     (hash-ref cache (char->integer ch) #f))])
+                         (if v
+                             (values (if blank? 0.0 (+ w (vector-ref v 0))) 
+                                     (max h (vector-ref v 1)) 
+                                     (max d (vector-ref v 2)) 
+                                     (max a (vector-ref v 3)))
+                             (begin
+                               (pango_layout_get_extents layout #f logical)
+                               (let ([baseline (pango_layout_get_baseline layout)]
+                                     [orig-h (PangoRectangle-height logical)])
+                                 (let ([lw (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))]
+                                       [lh (integral (/ orig-h (exact->inexact PANGO_SCALE)))]
+                                       [ld (integral (/ (- orig-h baseline) (exact->inexact PANGO_SCALE)))]
+                                       [la 0.0])
+                                   (when cache
+                                     (hash-set! cache (char->integer ch) (vector lw lh ld la baseline)))
+                                   (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la))))))))))
                  (when rotate? (cairo_restore cr))))))))
 
+    (define/private (extract-only-run layout)
+      (let* ([iter (pango_layout_get_iter layout)]
+             [run (pango_layout_iter_get_run_readonly iter)]
+             [done? (or (not (pango_layout_iter_next_run iter))
+                        (and (not (pango_layout_iter_get_run_readonly iter))
+                             (not (pango_layout_iter_next_run iter))))])
+        (pango_layout_iter_free iter)
+        (and run
+             done?
+             (= 1 (PangoGlyphString-num_glyphs (PangoGlyphItem-glyphs run)))
+             run)))
+    
     (define/private (install-alternate-face ch layout font desc attrs context)
       (or
        (for/or ([face (in-list 

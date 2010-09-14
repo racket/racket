@@ -66,6 +66,47 @@
          PangoRectangle-width
          PangoRectangle-height)
 
+(define-cstruct _PangoItem
+  ([offset _int]
+   [length _int]
+   [num_chars _int]
+   ;; Inline PangoAnalysis:
+   [shape_engine _pointer]
+   [lang_engine _pointer]
+   [font PangoFont]
+   [level _uint8]
+   [gravity _uint8]
+   [flags _uint8]
+   [script _uint8]
+   [language _pointer]
+   [extra_attrs _pointer]))
+
+(provide (struct-out PangoItem)
+         _PangoItem _PangoItem-pointer)
+
+(define-cstruct _PangoGlyphInfo
+  ([glyph _uint32]
+   [width _uint32]
+   [dx _uint32]
+   [dy _uint32]
+   [is_cluster_start _uint]))
+
+(provide (struct-out PangoGlyphInfo)
+         _PangoGlyphInfo _PangoGlyphInfo-pointer)
+
+(define-cstruct _PangoGlyphString
+  ([num_glyphs _int]
+   [glyphs _pointer]
+   [log_clusters _pointer]))
+
+(provide (struct-out PangoGlyphString)
+         _PangoGlyphString)
+
+(define-cstruct _PangoGlyphItem ([item _PangoItem-pointer]
+                                 [glyphs _PangoGlyphString-pointer]))
+(provide (struct-out PangoGlyphItem))
+
+
 (define-glib g_object_unref (_fun _pointer -> _void)
   #:wrap (deallocator))
 
@@ -100,12 +141,16 @@
 (define-pangocairo pango_cairo_update_layout (_fun _cairo_t PangoLayout -> _void))
 (define-pango pango_layout_set_text (_fun PangoLayout [s : _string] [_int = -1] -> _void))
 (define-pangocairo pango_cairo_show_layout (_fun _cairo_t PangoLayout -> _void))
+(define-pangocairo pango_cairo_show_glyph_item (_fun _cairo_t _string _PangoGlyphItem-pointer -> _void))
+(define-pangocairo pango_cairo_show_glyph_string (_fun _cairo_t PangoFont _PangoGlyphString-pointer -> _void))
 
 (define-pango pango_layout_iter_free (_fun PangoLayoutIter -> _void)
   #:wrap (deallocator))
 (define-pango pango_layout_get_iter (_fun PangoLayout -> PangoLayoutIter)
   #:wrap (allocator pango_layout_iter_free))
 (define-pango pango_layout_iter_get_baseline (_fun PangoLayoutIter -> _int))
+(define-pango pango_layout_iter_next_run (_fun PangoLayoutIter -> _bool))
+(define-pango pango_layout_iter_get_run_readonly (_fun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer)))
 
 (define-pango pango_layout_get_context (_fun PangoLayout -> PangoContext)) ;; not an allocator
 (define-pango pango_layout_get_extents (_fun PangoLayout  _pointer _PangoRectangle-pointer -> _void))
@@ -117,6 +162,7 @@
                (begin0
                 (pango_layout_iter_get_baseline iter)
                 (pango_layout_iter_free iter))))))
+(define-pango pango_layout_get_spacing (_fun PangoLayout -> _int))
 
 (define-pango pango_layout_new (_fun PangoContext -> PangoLayout)
   #:wrap (allocator g_object_unref))
