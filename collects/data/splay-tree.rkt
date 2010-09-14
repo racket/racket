@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/match
          racket/dict
-         racket/contract)
+         racket/contract
+         "private/ordered-dict.rkt")
 
 ;; ======== Raw splay tree ========
 
@@ -403,44 +404,6 @@ Options
 
 ;; ========
 
-(struct splay-tree ([root #:mutable] [size #:mutable] cmp tx)
-        #:transparent
-        #:property prop:dict/contract
-        (list (vector-immutable splay-tree-ref
-                                splay-tree-set!
-                                #f ;; set
-                                splay-tree-remove!
-                                #f ;; remove
-                                splay-tree-count
-                                splay-tree-iterate-first
-                                splay-tree-iterate-next
-                                splay-tree-iterate-key
-                                splay-tree-iterate-value)
-              (vector-immutable any/c
-                                any/c
-                                splay-tree-iter?
-                                #f #f #f)))
-
-(struct splay-tree* splay-tree (key-c value-c)
-        #:transparent
-        #:property prop:dict/contract
-        (list (vector-immutable splay-tree-ref
-                                splay-tree-set!
-                                #f ;; set
-                                splay-tree-remove!
-                                #f ;; remove
-                                splay-tree-count
-                                splay-tree-iterate-first
-                                splay-tree-iterate-next
-                                splay-tree-iterate-key
-                                splay-tree-iterate-value)
-              (vector-immutable any/c
-                                any/c
-                                splay-tree-iter?
-                                (lambda (s) (splay-tree*-key-c s))
-                                (lambda (s) (splay-tree*-value-c s))
-                                #f)))
-
 (define-syntax-rule (mkcmp <? =?)
   (lambda (x y) (cond [(=? x y) '=] [(<? x y) '<] [else '>])))
 
@@ -466,11 +429,6 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
 
 (define (splay-tree-with-adjust? s)
   (splay-tree-tx s))
-
-(define (key-c s)
-  (if (splay-tree*? s) (splay-tree*-key-c s) any/c))
-(define (val-c s)
-  (if (splay-tree*? s) (splay-tree*-value-c s) any/c))
 
 ;; ========
 
@@ -499,6 +457,15 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
 (define (splay-tree-iterate-least/>? s key)
   (extreme 'splay-tree-iterate-least/>? s key '(>) has-next? find-next))
 
+(define (splay-tree-iterate-min s)
+  (splay-tree-iterate-first s))
+(define (splay-tree-iterate-max s)
+  (match s
+    [(splay-tree root size cmp tx)
+     (let-values ([(ok? root) (find-max tx root)])
+       (set-splay-tree-root! s root)
+       (if ok? (splay-tree-iter (node-key root)) #f))]))
+
 ;; ========
 
 ;; snapshot
@@ -514,6 +481,57 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
                         (loop right onto key))
                   key))]
          [#f onto]))]))
+
+;; ========
+
+(define (key-c s)
+  (if (splay-tree*? s) (splay-tree*-key-c s) any/c))
+(define (val-c s)
+  (if (splay-tree*? s) (splay-tree*-value-c s) any/c))
+
+(define dict-methods
+  (vector-immutable splay-tree-ref
+                    splay-tree-set!
+                    #f ;; set
+                    splay-tree-remove!
+                    #f ;; remove
+                    splay-tree-count
+                    splay-tree-iterate-first
+                    splay-tree-iterate-next
+                    splay-tree-iterate-key
+                    splay-tree-iterate-value))
+
+(define ordered-dict-methods
+  (vector-immutable splay-tree-iterate-min
+                    splay-tree-iterate-max
+                    splay-tree-iterate-least/>?
+                    splay-tree-iterate-least/>=?
+                    splay-tree-iterate-greatest/<?
+                    splay-tree-iterate-greatest/<=?))
+
+(struct splay-tree ([root #:mutable] [size #:mutable] cmp tx)
+        #:transparent
+        #:property prop:dict/contract
+        (list dict-methods
+              (vector-immutable any/c
+                                any/c
+                                splay-tree-iter?
+                                #f #f #f))
+        #:property prop:ordered-dict
+        ordered-dict-methods)
+
+(struct splay-tree* splay-tree (key-c value-c)
+        #:transparent
+        #:property prop:dict/contract
+        (list dict-methods
+              (vector-immutable any/c
+                                any/c
+                                splay-tree-iter?
+                                (lambda (s) (splay-tree*-key-c s))
+                                (lambda (s) (splay-tree*-value-c s))
+                                #f))
+        #:property prop:ordered-dict
+        ordered-dict-methods)
 
 ;; ========
 
@@ -571,5 +589,10 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
   (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
  [splay-tree-iterate-least/>?
   (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
+
+ [splay-tree-iterate-min
+  (-> splay-tree? (or/c splay-tree-iter? #f))]
+ [splay-tree-iterate-max
+  (-> splay-tree? (or/c splay-tree-iter? #f))]
 
  [splay-tree-iter? (-> any/c boolean?)])

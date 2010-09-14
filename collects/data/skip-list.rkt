@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract
-         racket/dict)
+         racket/dict
+         "private/ordered-dict.rkt")
 ;; owned by ryanc
 
 #|
@@ -143,10 +144,8 @@ Levels are indexed starting at 1, as in the paper.
 
 ;; Skip list
 
-(define make-skip-list*
-  (let ([make-skip-list
-         (lambda (=? <?) (make-skip-list (vector 'head 'head #f) 0 =? <?))])
-    make-skip-list))
+(define (make-skip-list =? <?)
+  (skip-list (vector 'head 'head #f) 0 =? <?))
 
 (define (skip-list-ref s key [default (skip-list-error key)])
   (define head (skip-list-head s))
@@ -191,7 +190,7 @@ Levels are indexed starting at 1, as in the paper.
 
 (define (skip-list-count s) (skip-list-num-entries s))
 
-(define-struct skip-list-iter (s item))
+(struct skip-list-iter (s item))
 
 (define (check-iter who s iter)
   (unless (skip-list-iter? iter)
@@ -201,12 +200,12 @@ Levels are indexed starting at 1, as in the paper.
 
 (define (skip-list-iterate-first s)
   (let ([next (item-next (skip-list-head s) 1)])
-    (and next (make-skip-list-iter s next))))
+    (and next (skip-list-iter s next))))
 
 (define (skip-list-iterate-next s iter)
   (check-iter 'skip-list-iterate-next s iter)
   (let ([next (item-next (skip-list-iter-item iter) 1)])
-    (and next (make-skip-list-iter s next))))
+    (and next (skip-list-iter s next))))
 
 (define (skip-list-iterate-key s iter)
   (check-iter 'skip-list-iterate-key s iter)
@@ -223,7 +222,7 @@ Levels are indexed starting at 1, as in the paper.
   (let* ([head (skip-list-head s)]
          [<? (skip-list-<? s)]
          [item (closest head (item-level head) key <?)])
-    (and (not (eq? item head)) (make-skip-list-iter s item))))
+    (and (not (eq? item head)) (skip-list-iter s item))))
 
 ;; Returns greatest/rightmost item s.t. key(item) <= key
 (define (skip-list-iterate-greatest/<=? s key)
@@ -233,21 +232,23 @@ Levels are indexed starting at 1, as in the paper.
          [item< (closest head (item-level head) key <?)]
          [item1 (item-next item< 1)])
     (cond [(and item1 (=? (item-key item1) key))
-           (make-skip-list-iter s item1)]
+           (skip-list-iter s item1)]
           [(eq? item< head)
            #f]
           [else
-           (make-skip-list-iter s item<)])))
+           (skip-list-iter s item<)])))
 
 ;; Returns least/leftmost item s.t. key(item) > key
 (define (skip-list-iterate-least/>? s key)
   (let* ([head (skip-list-head s)]
          [<? (skip-list-<? s)]
-         [item< (closest head (item-level head) key <?)])
+         [item< (closest head (item-level head) key <?)]
+         ;; If head, nudge forward one so comparisons are valid.
+         [item< (if (eq? item< head) (item-next item< 1) item<)])
     (let loop ([item item<])
       (and item
            (if (<? key (item-key item))
-               (make-skip-list-iter s item)
+               (skip-list-iter s item)
                (loop (item-next item 1)))))))
 
 ;; Returns least/leftmost item s.t. key(item) >= key
@@ -256,7 +257,21 @@ Levels are indexed starting at 1, as in the paper.
          [<? (skip-list-<? s)]
          [item (closest head (item-level head) key <?)]
          [item (item-next item 1)])
-    (and item (make-skip-list-iter s item))))
+    (and item (skip-list-iter s item))))
+
+(define (skip-list-iterate-min s)
+  (let* ([head (skip-list-head s)]
+         [item (item-next head 1)])
+    (and item (skip-list-iter s item))))
+
+(define (skip-list-iterate-max s)
+  (let* ([head (skip-list-head s)]
+         [item (closest head (item-level head)
+                        ;; replace standard comparison with "always <",
+                        ;; so closest yields max item
+                        'unused
+                        (lambda (x y) #t))])
+    (and item (skip-list-iter s item))))
 
 (define (skip-list-iterate-set-key! s iter key)
   (check-iter 'skip-list-iterate-set-key! s iter)
@@ -266,8 +281,7 @@ Levels are indexed starting at 1, as in the paper.
   (check-iter 'skip-list-iterate-set-value! s iter)
   (set-item-data! (skip-list-iter-item iter) value))
 
-
-(define-struct skip-list ([head #:mutable] [num-entries #:mutable] =? <?)
+(struct skip-list ([head #:mutable] [num-entries #:mutable] =? <?)
   #:property prop:dict
              (vector skip-list-ref
                      skip-list-set!
@@ -278,10 +292,17 @@ Levels are indexed starting at 1, as in the paper.
                      skip-list-iterate-first
                      skip-list-iterate-next
                      skip-list-iterate-key
-                     skip-list-iterate-value))
+                     skip-list-iterate-value)
+  #:property prop:ordered-dict
+             (vector-immutable skip-list-iterate-min
+                               skip-list-iterate-max
+                               skip-list-iterate-least/>?
+                               skip-list-iterate-least/>=?
+                               skip-list-iterate-greatest/<?
+                               skip-list-iterate-greatest/<=?))
 
 (provide/contract
- [rename make-skip-list* make-skip-list
+ [make-skip-list
   (-> procedure? procedure? skip-list?)]
  [skip-list?
   (-> any/c boolean?)]
@@ -310,6 +331,12 @@ Levels are indexed starting at 1, as in the paper.
   (-> skip-list? any/c (or/c skip-list-iter? #f))]
  [skip-list-iterate-least/>=?
   (-> skip-list? any/c (or/c skip-list-iter? #f))]
+
+ [skip-list-iterate-min
+  (-> skip-list? (or/c skip-list-iter? #f))]
+ [skip-list-iterate-max
+  (-> skip-list? (or/c skip-list-iter? #f))]
+
  [skip-list-iterate-set-key!
   (-> skip-list? skip-list-iter? any/c any)]
  [skip-list-iterate-set-value!

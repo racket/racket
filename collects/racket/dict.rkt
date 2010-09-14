@@ -228,4 +228,8 @@
          in-dict
          in-dict-keys
          in-dict-values
-         in-dict-pairs)
+         in-dict-pairs
+
+         dict-key-contract
+         dict-value-contract
+         dict-iter-contract)

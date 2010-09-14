@@ -2,27 +2,12 @@
 (require rackunit
          racket/dict
          data/skip-list
-         data/splay-tree)
+         data/splay-tree
+         data/private/ordered-dict)
 
 ;; Tests for ordered dictionaries
 ;;   - skip-list
 ;;   - splay-tree
-
-(define (it-least/>? d k)
-  (cond [(skip-list? d) (skip-list-iterate-least/>? d k)]
-        [(splay-tree? d) (splay-tree-iterate-least/>? d k)]))
-
-(define (it-least/>=? d k)
-  (cond [(skip-list? d) (skip-list-iterate-least/>=? d k)]
-        [(splay-tree? d) (splay-tree-iterate-least/>=? d k)]))
-
-(define (it-greatest/<? d k)
-  (cond [(skip-list? d) (skip-list-iterate-greatest/<? d k)]
-        [(splay-tree? d) (splay-tree-iterate-greatest/<? d k)]))
-
-(define (it-greatest/<=? d k)
-  (cond [(skip-list? d) (skip-list-iterate-greatest/<=? d k)]
-        [(splay-tree? d) (splay-tree-iterate-greatest/<=? d k)]))
 
 (test-case "random keys and values"
   (let ([hash (make-hash)]
@@ -46,10 +31,10 @@
       (let* ([k0 (- (random 2000) 1000)])
         (for ([d dicts])
           (let* ([has? (dict-has-key? d k0)]
-                 [l>i (it-least/>? d k0)]
-                 [l>=i (it-least/>=? d k0)]
-                 [g<i (it-greatest/<? d k0)]
-                 [g<=i (it-greatest/<=? d k0)]
+                 [l>i (dict-iterate-least/>? d k0)]
+                 [l>=i (dict-iterate-least/>=? d k0)]
+                 [g<i (dict-iterate-greatest/<? d k0)]
+                 [g<=i (dict-iterate-greatest/<=? d k0)]
                  [l> (and l>i (dict-iterate-key d l>i))]
                  [l>= (and l>=i (dict-iterate-key d l>=i))]
                  [g< (and g<i (dict-iterate-key d g<i))]
