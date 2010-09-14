@@ -305,8 +305,9 @@
                                                    GDK_FOCUS_CHANGE_MASK
                                                    GDK_ENTER_NOTIFY_MASK
                                                    GDK_LEAVE_NOTIFY_MASK))
-    (set-gtk-object-flags! client-gtk (bitwise-ior (get-gtk-object-flags client-gtk)
-                                                   GTK_CAN_FOCUS))
+    (unless (memq 'no-focus style)
+      (set-gtk-object-flags! client-gtk (bitwise-ior (get-gtk-object-flags client-gtk)
+                                                     GTK_CAN_FOCUS)))
     (when combo-button-gtk
       (connect-combo-key-and-mouse combo-button-gtk))
 

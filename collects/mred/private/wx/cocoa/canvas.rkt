@@ -192,6 +192,7 @@
     (define virtual-height #f)
     (define virtual-width #f)
 
+    (define wants-focus? (not (memq 'no-focus style)))
     (define is-combo? (memq 'combo style))
     (define has-control-border? (and (not is-combo?)
                                      (memq 'control-border style)))
@@ -656,13 +657,19 @@
     
     (define/override (definitely-wants-event? e) 
       ;; Called in Cocoa event-handling mode
-      (when (and (e . is-a? . mouse-event%)
+      (when (and wants-focus?
+                 (e . is-a? . mouse-event%)
                  (send e button-down? 'left))
         (set-focus))
       (or (not is-combo?)
           (e . is-a? . key-event%)
           (not (send e button-down? 'left))
           (not (on-menu-click? e))))
+
+    (define/override (gets-focus?)
+      wants-focus?)
+    (define/override (can-be-responder?)
+      wants-focus?)
 
     (define/private (on-menu-click? e)
       ;; Called in Cocoa event-handling mode

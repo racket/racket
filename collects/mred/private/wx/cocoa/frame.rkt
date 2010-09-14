@@ -23,6 +23,8 @@
 (import-class NSWindow NSGraphicsContext NSMenu NSPanel
               NSApplication NSAutoreleasePool NSScreen)
 
+(define NSWindowCloseButton 0)
+
 (define front #f)
 
 (define (get-front) front)
@@ -459,8 +461,8 @@
     (def/public-unimplemented system-menu)
 
     (define/public (set-modified on?)
-      ;; Use standardWindowButton: ...
-      (void))
+      (let ([b (tell cocoa standardWindowButton: #:type _NSInteger NSWindowCloseButton)])
+        (tellv b setDocumentEdited: #:type _BOOL on?)))
     
     (define/public (create-status-line) (void))
     (define/public (set-status-text s) (void))

@@ -57,7 +57,9 @@
 (define-objc-mixin (FocusResponder Superclass)
   [wxb]
   [-a _BOOL (acceptsFirstResponder)
-      #t]
+      (let ([wx (->wx wxb)])
+        (or (not wx)
+            (send wx can-be-responder?)))]
   [-a _BOOL (becomeFirstResponder)
       (and (super-tell becomeFirstResponder)
            (let ([wx (->wx wxb)])
@@ -635,6 +637,7 @@
     (define/public (get-cursor-width-delta) 0)
     
     (define/public (gets-focus?) #f)
+    (define/public (can-be-responder?) #t)
     
     (def/public-unimplemented centre)))
 

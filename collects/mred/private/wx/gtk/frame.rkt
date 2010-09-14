@@ -136,6 +136,9 @@
     (connect-delete gtk)
     (connect-configure gtk)
 
+    (define saved-title (or label ""))
+    (define is-modified? #f)
+
     (when label
       (gtk_window_set_title gtk label))
 
@@ -288,7 +291,10 @@
     (def/public-unimplemented designate-root-frame)
     (def/public-unimplemented system-menu)
 
-    (define/public (set-modified mod?) (void))
+    (define/public (set-modified mod?)
+      (unless (eq? is-modified? (and mod? #t))
+        (set! is-modified? (and mod? #t))
+        (set-title saved-title)))
 
     (define/public (create-status-line) (void))
     (define/public (set-status-text s) (void))
@@ -334,6 +340,10 @@
     (def/public-unimplemented iconized?)
     (def/public-unimplemented get-menu-bar)
     (def/public-unimplemented iconize)
+
     (define/public (set-title s)
-      (gtk_window_set_title gtk s))))
+      (set! saved-title s)
+      (gtk_window_set_title gtk (if is-modified?
+                                    (string-append s "*")
+                                    s)))))
 
