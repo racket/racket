@@ -5261,8 +5261,8 @@
                                          (and s-caret-snip (not (pair? show-caret)))
                                          (not hilite-on?)
                                          (= -startpos -endpos)
-                                         (endpos . < . pcounter)
-                                         (startpos . > . (+ pcounter (mline-len line))))]
+                                         (-endpos . < . pcounter)
+                                         (-startpos . > . (+ pcounter (mline-len line))))]
                                     [(hilite-some? hsxs hsxe hsys hsye old-style)
                                      (process-snips draw-first? #f old-style)])
                         (when (and (positive? wrap-bitmap-width)
