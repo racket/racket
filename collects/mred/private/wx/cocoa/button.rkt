@@ -22,6 +22,7 @@
 (import-class NSButton NSView NSImageView)
 
 (define MIN-BUTTON-WIDTH 72)
+(define BUTTON-EXTRA-WIDTH 12)
 
 (define-objc-class MyButton NSButton
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
@@ -62,11 +63,12 @@
       (when (and (eq? event-type 'button)
                  (string? label))
         (let ([frame (tell #:type _NSRect cocoa frame)])
-          (when ((NSSize-width (NSRect-size frame)) . < . MIN-BUTTON-WIDTH)
-            (tellv cocoa setFrame: #:type _NSRect 
-                   (make-NSRect (NSRect-origin frame)
-                                (make-NSSize MIN-BUTTON-WIDTH
-                                             (NSSize-height (NSRect-size frame))))))))
+          (tellv cocoa setFrame: #:type _NSRect 
+                 (make-NSRect (NSRect-origin frame)
+                              (make-NSSize (+ BUTTON-EXTRA-WIDTH
+                                              (max MIN-BUTTON-WIDTH
+                                                   (NSSize-width (NSRect-size frame))))
+                                           (NSSize-height (NSRect-size frame)))))))
       cocoa))
 
   (define cocoa (if (and button-type
