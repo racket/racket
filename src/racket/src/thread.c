@@ -239,6 +239,9 @@ THREAD_LOCAL_DECL(static Scheme_Object *recycle_cell);
 THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
 THREAD_LOCAL_DECL(static int recycle_cc_count);
 
+THREAD_LOCAL_DECL(struct Scheme_Hash_Table *place_local_misc_table);
+
+
 #ifdef MZ_PRECISE_GC
 extern long GC_get_memory_use(void *c);
 #else
@@ -827,6 +830,7 @@ void scheme_init_thread_places(void) {
   REGISTER_SO(recycle_cell);
   REGISTER_SO(maybe_recycle_cell);
   REGISTER_SO(gc_prepost_callback_descs);
+  REGISTER_SO(place_local_misc_table);
 }
 
 void scheme_init_memtrace(Scheme_Env *env)
@@ -2582,6 +2586,13 @@ void scheme_init_process_globals(void)
 #if defined(MZ_USE_MZRT)
   mzrt_mutex_create(&process_global_lock);
 #endif
+}
+
+Scheme_Object *scheme_get_place_table(void)
+{
+  if (!place_local_misc_table)
+    place_local_misc_table = scheme_make_hash_table(SCHEME_hash_ptr);
+  return (Scheme_Object *)place_local_misc_table;
 }
 
 /*========================================================================*/

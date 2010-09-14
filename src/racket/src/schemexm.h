@@ -655,6 +655,7 @@
 #define scheme_get_signal_handle (scheme_extension_table->scheme_get_signal_handle)
 #define scheme_char_strlen (scheme_extension_table->scheme_char_strlen)
 #define scheme_stx_extract_marks (scheme_extension_table->scheme_stx_extract_marks)
+#define scheme_get_place_table (scheme_extension_table->scheme_get_place_table)
 #define scheme_register_process_global (scheme_extension_table->scheme_register_process_global)
 #ifdef MZ_PRECISE_GC
 #pragma GC_VARIABLE_STACK_THOUGH_TABLE

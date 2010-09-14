@@ -1128,4 +1128,5 @@ MZ_EXTERN int scheme_char_strlen(const mzchar *s);
 
 MZ_EXTERN Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx);
 
+MZ_EXTERN Scheme_Object *scheme_get_place_table(void);
 MZ_EXTERN void *scheme_register_process_global(const char *key, void *val);

@@ -339,3 +339,21 @@ Returns the string that is used as the Racket startup banner.}
 @function[(char* scheme_version)]{
 
 Returns a string for the executing version of Racket.}
+
+@function[(Scheme_Object* scheme_get_place_table)]{
+
+Returns an @racket[eq?]-based hash table that is global to the current
+place.}
+
+@function[(void* scheme_register_process_global 
+                 [const-char* key]
+                 [void* val])]{
+
+Gets or sets a value in a process-global table (i.e., shared across
+multiple places, if any). If @var{val} is NULL, the current mapping
+for @var{key} is given, otherwise @var{val} is installed as the value
+for @var{key} and @cpp{NULL} is returned. The given @var{val} must not
+refer to garbage-collected memory.
+
+This function is intended for infrequent use with a small number of
+keys.}
