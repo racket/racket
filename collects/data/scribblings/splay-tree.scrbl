@@ -118,8 +118,9 @@ greater than or equal to @racket[from] and less than @racket[to].
                                [from any/c] [to any/c])
          void?]{
 
-Like @racket[splay-tree-remove-range!], but decreases the value of all
-keys greater than or equal to @racket[to] by @racket[(- to from)].
+Like @racket[splay-tree-remove-range!], but also decreases the value
+of all keys greater than or equal to @racket[to] by @racket[(- to
+from)].
 }
 
 @defproc[(splay-tree-expand! [s (and/c splay-tree? splay-tree-with-adjust?)]
@@ -135,9 +136,9 @@ by @racket[(- to from)].
          (or/c #f splay-tree-iter?)]
 @defproc[(splay-tree-iterate-greatest/<=? [s splay-tree?] [key any/c])
          (or/c #f splay-tree-iter?)]
-@defproc[(splay-tree-iterate-least/<? [s splay-tree?] [key any/c])
+@defproc[(splay-tree-iterate-least/>? [s splay-tree?] [key any/c])
          (or/c #f splay-tree-iter?)]
-@defproc[(splay-tree-iterate-least/<=? [s splay-tree?] [key any/c])
+@defproc[(splay-tree-iterate-least/>=? [s splay-tree?] [key any/c])
          (or/c #f splay-tree-iter?)]]]{
 
 Return the position of, respectively, the greatest key less than

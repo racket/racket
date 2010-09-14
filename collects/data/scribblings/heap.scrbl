@@ -4,7 +4,7 @@
                      racket/contract
                      racket/base))
 
-@title{Binary Heap}
+@title{Binary Heaps}
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require data/heap))
@@ -18,7 +18,7 @@ Binary heaps are a simple implementation of priority queues.
 @defproc[(make-heap [<=? (-> any/c any/c any/c)])
          heap?]{
 
-Makes a new empty heap.
+Makes a new empty heap using @racket[<=?] to order elements.
 }
 
 @defproc[(heap? [x any/c]) boolean?]{

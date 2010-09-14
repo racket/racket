@@ -570,4 +570,6 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
  [splay-tree-iterate-least/>=?
   (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
  [splay-tree-iterate-least/>?
-  (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])])
+  (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
+
+ [splay-tree-iter? (-> any/c boolean?)])

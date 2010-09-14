@@ -34,7 +34,7 @@
       (unless (<=? parent-key n-key)
         (vector-set! vec parent n-key)
         (vector-set! vec n parent-key)
-        (heapify-up vec parent)))))
+        (heapify-up <=? vec parent)))))
 
 (define (heapify-down <=? vec n size)
   (let ([left (vt-leftchild n)]
@@ -64,10 +64,14 @@
              (<=? (vector-ref vec n) (vector-ref vec right))
              #t))))
 
-(define (grow-vector v1)
-  (let ([v2 (make-vector (* (vector-length v1) 2) #f)])
-    (vector-copy! v2 0 v1 0)
-    v2))
+(define (grow-vector v1 new-size-min)
+  (let ([new-size (let loop ([size (vector-length v1)])
+                    (if (>= size new-size-min)
+                        size
+                        (loop (* size 2))))])
+    (let ([v2 (make-vector new-size #f)])
+      (vector-copy! v2 0 v1 0)
+      v2)))
 
 (define (shrink-vector v1)
   (let ([v2 (make-vector (quotient (vector-length v1) 2) #f)])
@@ -181,7 +185,9 @@
 (define (heap->vector h)
   (match h
     [(heap vec size <=?)
-     (heap-sort! <=? (vector-copy vec 0 size))]))
+     (let ([v (vector-copy vec 0 size)])
+       (heap-sort! <=? v)
+       v)]))
 
 ;; --------
 
