@@ -2,6 +2,7 @@
 (require scheme/class
          scheme/foreign
          "../../syntax.rkt"
+         "../../lock.rkt"
          "../common/queue.rkt"
          "../common/local.rkt"
          "../common/bstr.rkt"
@@ -41,7 +42,7 @@
 (define-gtk gtk_selection_data_set (_fun _GtkSelectionData
                                          _GdkAtom
                                          _int
-                                         _ubyte
+                                         _bytes
                                          _int
                                          -> _void))
 (define-gtk gtk_clipboard_wait_for_contents (_fun _GtkClipboard _GdkAtom -> (_or-null _GtkSelectionData)))
@@ -62,7 +63,7 @@
   (function-ptr get-data (_fun #:atomic? #t _GtkClipboard _GtkSelectionData _int _pointer -> _void)))
 
 (define (clear-owner cb self-box)
-  (send (ptr-ref self-box _scheme) replaced))
+  (send (ptr-ref self-box _scheme) replaced self-box))
 (define clear_owner
   (function-ptr clear-owner (_fun #:atomic? #t _GtkClipboard _pointer -> _void)))
 
@@ -77,7 +78,7 @@
               (if x-selection?
                   (gdk_atom_intern "CLIPBOARD" #t)
                   (gdk_atom_intern "PRIMARY" #t))))
-  (define self-box (malloc-immobile-cell this))
+  (define self-box #f)
 
   (define/public (get-client) client)
 
@@ -107,25 +108,33 @@
                   (+ offset 1))))
             (set! client c)
             (set! client-data all-data)
-            (gtk_clipboard_set_with_data cb
-                                         targets 
-                                         (length types)
-                                         get_data 
-                                         clear_owner
-                                         self-box)
+            
+            (atomically
+             (let ([this-box (malloc-immobile-cell this)])
+               (set! self-box this-box)
+               (gtk_clipboard_set_with_data cb
+                                            targets 
+                                            (length types)
+                                            get_data 
+                                            clear_owner
+                                            this-box)))
+
             (free target-strings)))))
 
-  (define/public (replaced)
+  (define/public (replaced s-box)
     ;; Called in Gtk event-dispatch thread --- atomically with respect
     ;; to any other thread
-    (let ([c client])
-      (when c
-        (set! client #f)
-        (set! client-data #f)
-        (queue-event (send c get-client-eventspace)
-                     (lambda ()
-                       (send c on-replaced))))))
-
+    (when (eq? s-box self-box)
+      (set! self-box #f)
+      (let ([c client])
+        (when c
+          (set! client #f)
+          (set! client-data #f)
+          (queue-event (send c get-client-eventspace)
+                       (lambda ()
+                         (send c on-replaced))))))
+    (free-immobile-cell s-box))
+  
   (define/public (provide-data i sel-data)
     ;; Called in Gtk event-dispatch thread --- atomically with respect
     ;; to any other thread
@@ -150,7 +159,7 @@
       (process (gtk_clipboard_wait_for_contents cb (gdk_atom_intern format #t)))))
 
   (define/public (get-text-data)
-    (gtk_clipboard_wait_for_text cb))
+    (or (gtk_clipboard_wait_for_text cb) ""))
 
   (super-new))
 
