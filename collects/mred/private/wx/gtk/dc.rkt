@@ -5,6 +5,7 @@
          "types.rkt"
          "window.rkt"
          "x11.rkt"
+         "win32.rkt"
 	 "../../lock.rkt"
          "../common/backing-dc.rkt"
          racket/draw/cairo
@@ -46,6 +47,32 @@
        (gobject-unref pixmap)
        (set! s #f)))))
 
+(define win32-bitmap%
+  (class bitmap%
+    (init w h gdk-win)
+    (super-make-object (make-alternate-bitmap-kind w h))
+
+    (define s
+      (if gdk-win
+	  (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h)
+	  (atomically
+	   (let ([hdc (GetDC (gdk_win32_drawable_get_handle gdk-win))])
+	     (begin0
+	      (cairo_win32_surface_create_with_ddb hdc
+						   CAIRO_FORMAT_RGB24 w h)
+	      (ReleaseDC hdc))))))
+
+    (define/override (ok?) #t)
+    (define/override (is-color?) #t)
+    (define/override (has-alpha-channel?) #f)
+
+    (define/override (get-cairo-surface) s)
+
+    (define/override (release-bitmap-storage)
+      (atomically
+       (cairo_surface_destroy s)
+       (set! s #f)))))
+
 (define dc%
   (class backing-dc%
     (init [(cnvs canvas)])
@@ -54,11 +81,17 @@
     (super-new)
 
     (define/override (make-backing-bitmap w h [any-bg? #f])
-      (if (and (or any-bg?
-                   (send canvas get-canvas-background))
-               (eq? 'unix (system-type)))
-          (make-object x11-bitmap% w h (widget-window (send canvas get-client-gtk)))
-          (super make-backing-bitmap w h)))
+      (cond
+       [(and (eq? 'unix (system-type))
+	     (or any-bg?
+		 (send canvas get-canvas-background)))
+	(make-object x11-bitmap% w h (widget-window (send canvas get-client-gtk)))]
+       [(and (eq? 'windows (system-type))
+	     (or any-bg?
+		 (send canvas get-canvas-background)))
+	(make-object win32-bitmap% w h (widget-window (send canvas get-client-gtk)))]
+       [else
+	(super make-backing-bitmap w h)]))
 
     (define/override (get-backing-size xb yb)
       (send canvas get-client-size xb yb))

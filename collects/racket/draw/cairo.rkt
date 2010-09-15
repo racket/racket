@@ -17,11 +17,6 @@
      (ffi-lib "libfontconfig-1")
      (ffi-lib "libcairo-2")]))
 
-(define gdk-lib 
-  (case (system-type)
-    [(unix) (ffi-lib "libgdk-x11-2.0" '("0"))]
-    [else #f]))
-
 (define-ffi-definer define-cairo cairo-lib
   #:provide provide-protected)
 
@@ -73,6 +68,15 @@
                                               _int     ; width
                                               _int     ; height
                                               -> _cairo_surface_t)
+  #:make-fail make-not-available
+  #:wrap (allocator cairo_surface_destroy))
+
+(define-cairo cairo_win32_surface_create_with_dib 
+  (_fun _int _int _int -> _cairo_surface_t)
+  #:make-fail make-not-available
+  #:wrap (allocator cairo_surface_destroy))
+(define-cairo cairo_win32_surface_create_with_ddb 
+  (_fun _pointer _int _int _int -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 
