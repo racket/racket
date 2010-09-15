@@ -32,6 +32,7 @@
          request-flush-delay
          cancel-flush-delay
          make-init-point
+         flush-display
 
          special-control-key
          special-option-key)
@@ -504,6 +505,9 @@
       ;; events (e.g., key repeat) have a corresponding
       ;; stream of screen updates.
       (try-to-sync-refresh)
+      (flush))
+
+    (define/public (flush)
       (let ([cocoa-win (get-cocoa-window)])
         (when cocoa-win
           (tellv cocoa-win displayIfNeeded)
@@ -676,3 +680,8 @@
                 (if (= y -11111)
                     0
                     y)))
+
+(define (flush-display)
+  (try-to-sync-refresh)
+  (for ([win (in-list (get-top-level-windows))])
+    (send win flush)))

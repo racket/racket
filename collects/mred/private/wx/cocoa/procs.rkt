@@ -7,6 +7,7 @@
          "utils.rkt"
          "types.rkt"
          "frame.rkt"
+         "window.rkt"
          "finfo.rkt" ; file-creator-and-type
          "filedialog.rkt"
          "../../lock.rkt"
@@ -93,7 +94,6 @@
 (define (get-control-font-size) 13)
 (define (cancel-quit) (void))
 (define-unimplemented fill-private-color)
-(define (flush-display) (void))
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
 

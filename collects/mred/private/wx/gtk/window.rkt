@@ -530,8 +530,6 @@
       ;; re-sync the display in case a stream of
       ;; events (e.g., key repeat) have a corresponding
       ;; stream of screen updates.
-      (try-to-sync-refresh)
-      (gdk_window_process_all_updates)
       (flush-display))
 
     (define/public (handles-events? gtk) #f)
@@ -612,10 +610,11 @@
   (queue-refresh-event (send win get-eventspace) thunk))
 
 (define-gdk gdk_display_flush (_fun _GdkDisplay -> _void))
-(define-gdk gdk_display_sync (_fun _GdkDisplay -> _void))
 (define-gdk gdk_display_get_default (_fun -> _GdkDisplay))
-(define (flush-display) (gdk_display_flush (gdk_display_get_default)))
-(define (sync-display) (gdk_display_sync (gdk_display_get_default)))
+(define (flush-display)
+  (try-to-sync-refresh)
+  (gdk_window_process_all_updates)
+  (gdk_display_flush (gdk_display_get_default)))
 
 (define-gdk gdk_window_freeze_updates (_fun _GdkWindow -> _void))
 (define-gdk gdk_window_thaw_updates (_fun _GdkWindow -> _void))

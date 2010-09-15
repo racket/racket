@@ -157,6 +157,7 @@
     (refresh-splash)
     (send splash-tlw center 'both)
     (thread (λ () (send splash-tlw show #t)))
+    (sync (system-idle-evt)) ; try to wait for dialog to be shown
     (flush-display) (yield) (sleep)
     (flush-display) (yield) (sleep)))
 
