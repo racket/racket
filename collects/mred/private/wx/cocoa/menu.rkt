@@ -15,7 +15,7 @@
 
 (import-class NSMenu NSMenuItem)
 
-(define-struct mitem (item))
+(define-struct mitem (item checkable?))
 
 (defclass menu% object%
   (init-field label
@@ -45,7 +45,7 @@
       (tellv cocoa setSubmenu: cocoa-menu)
       (for-each (lambda (item)
                   (if item
-                      (send (mitem-item item) install cocoa-menu)
+                      (send (mitem-item item) install cocoa-menu (mitem-checkable? item))
                       (tellv cocoa-menu addItem: (tell NSMenuItem separatorItem))))
                 items)))
 
@@ -100,10 +100,10 @@
     (when (help-str-or-submenu . is-a? . menu%)
       (send i set-submenu help-str-or-submenu)
       (send help-str-or-submenu set-parent this))
-    (set! items (append items (list (make-mitem i))))
+    (set! items (append items (list (make-mitem i chckable?))))
     (send i set-parent this)
     (when cocoa-menu
-      (send i install cocoa-menu)))
+      (send i install cocoa-menu chckable?)))
 
   (define/public (append-separator)
     (set! items (append items (list #f)))

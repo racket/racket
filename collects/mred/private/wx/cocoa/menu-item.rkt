@@ -18,7 +18,11 @@
   (-a _void (selected: [_id sender]) 
       (let ([wx (->wx wxb)])
         (when wx
-          (send wx selected)))))
+          (send wx selected))))
+  (-a _void (selectedCheckable: [_id sender]) 
+      (let ([wx (->wx wxb)])
+        (when wx
+          (send wx selected-checkable self)))))
 
 
 (defclass menu-item% object%
@@ -27,6 +31,11 @@
   (define parent #f)
   (define/public (selected)
     ;; called in Cocoa thread
+    (send parent item-selected this))
+  (define/public (selected-checkable cocoa)
+    ;; called in Cocoa thread
+    (set! checked? (not checked?))
+    (tellv cocoa setState: #:type _int (if checked? 1 0))
     (send parent item-selected this))
 
   (define/public (set-parent p)
@@ -47,7 +56,7 @@
   (define submenu #f)
   (define/public (set-submenu m) (set! submenu m))
 
-  (define/public (install menu)
+  (define/public (install menu checkable?)
     (if submenu
         (send submenu install menu label enabled?)
         (let ([item (as-objc-allocation
@@ -58,8 +67,12 @@
           (set-ivar! item wxb (->wxb this))
           (tellv menu addItem: item)
           (tellv item setEnabled: #:type _BOOL enabled?)
+          (when checked?
+            (tellv item setState: #:type _int 1))
           (tellv item setTarget: item)
-          (tellv item setAction: #:type _SEL (selector selected:))
+          (tellv item setAction: #:type _SEL (if checkable?
+                                                 (selector selectedCheckable:)
+                                                 (selector selected:)))
           (let ([shortcut (regexp-match #rx"\tCut=(.)(.*)" label)])
             (when shortcut
               (let* ([s (string-downcase (string (integer->char (string->number (caddr shortcut)))))]
