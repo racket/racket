@@ -6,23 +6,18 @@
          racket/dict
          racket/vector)
 
-(define make-gvector*
-  (let ([make-gvector
-         (lambda (#:capacity [capacity 10])
-           (make-gvector (make-vector capacity #f) 0))])
-    make-gvector))
+(define (make-gvector #:capacity [capacity 10])
+  (make-gvector (make-vector capacity #f) 0))
 
 (define gvector*
   (let ([gvector
          (lambda init-elements
-           (let ([gv (make-gvector*)])
+           (let ([gv (make-gvector)])
              (apply gvector-add! gv init-elements)
              gv))])
     gvector))
 
 (define (check-index who index n set-to-add?)
-  (unless (exact-nonnegative-integer? index)
-    (raise-type-error who "exact nonnegative integer" index))
   (unless (< index n)
     (error who "index out of range ~a~a: ~s"
            (let ([max-index (if set-to-add? (- n 2) (- n 1))])
@@ -149,7 +144,7 @@
   (syntax-case stx ()
     [(_ (clause ...) . body)
      (quasisyntax/loc stx
-       (let ([gv (make-gvector*)])
+       (let ([gv (make-gvector)])
          (for/fold/derived #,stx () (clause ...)
            (call-with-values (lambda () . body)
              (lambda args (apply gvector-add! gv args) (values))))
@@ -159,25 +154,29 @@
   (syntax-case stx ()
     [(_ (clause ...) . body)
      (quasisyntax/loc stx
-       (let ([gv (make-gvector*)])
+       (let ([gv (make-gvector)])
          (for*/fold/derived #,stx () (clause ...)
            (call-with-values (lambda () . body)
              (lambda args (apply gvector-add! gv args) (values))))
          gv))]))
 
-(define-struct gvector (vec n)
+(struct gvector (vec n)
   #:mutable
-  #:property prop:dict
-             (vector gvector-ref
-                     gvector-set!
-                     #f ;; set
-                     gvector-remove!
-                     #f ;; remove
-                     gvector-count
-                     gvector-iterate-first
-                     gvector-iterate-next
-                     gvector-iterate-key
-                     gvector-iterate-value)
+  #:property prop:dict/contract
+             (list (vector-immutable gvector-ref
+                                     gvector-set!
+                                     #f ;; set
+                                     gvector-remove!
+                                     #f ;; remove
+                                     gvector-count
+                                     gvector-iterate-first
+                                     gvector-iterate-next
+                                     gvector-iterate-key
+                                     gvector-iterate-value)
+                   (vector-immutable exact-nonnegative-integer?
+                                     any/c
+                                     exact-nonnegative-integer?
+                                     #f #f #f))
   #:property prop:equal+hash
              (let ([equals
                     (lambda (x y recursive-equal?)
@@ -204,7 +203,7 @@
   (-> any/c any)]
  [rename gvector* gvector
   (->* () () #:rest any/c gvector?)]
- [rename make-gvector* make-gvector
+ [make-gvector
   (->* () (#:capacity exact-positive-integer?) gvector?)]
  [gvector-ref
   (->* (gvector? exact-nonnegative-integer?) (any/c) any)]

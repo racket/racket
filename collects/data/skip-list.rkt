@@ -282,17 +282,19 @@ Levels are indexed starting at 1, as in the paper.
   (set-item-data! (skip-list-iter-item iter) value))
 
 (struct skip-list ([head #:mutable] [num-entries #:mutable] =? <?)
-  #:property prop:dict
-             (vector skip-list-ref
-                     skip-list-set!
-                     #f ;; set
-                     skip-list-remove!
-                     #f ;; remove
-                     skip-list-count
-                     skip-list-iterate-first
-                     skip-list-iterate-next
-                     skip-list-iterate-key
-                     skip-list-iterate-value)
+  #:property prop:dict/contract
+             (list (vector-immutable skip-list-ref
+                                     skip-list-set!
+                                     #f ;; set
+                                     skip-list-remove!
+                                     #f ;; remove
+                                     skip-list-count
+                                     skip-list-iterate-first
+                                     skip-list-iterate-next
+                                     skip-list-iterate-key
+                                     skip-list-iterate-value)
+                   (vector-immutable any/c any/c skip-list-iter?
+                                     #f #f #f))
   #:property prop:ordered-dict
              (vector-immutable skip-list-iterate-min
                                skip-list-iterate-max

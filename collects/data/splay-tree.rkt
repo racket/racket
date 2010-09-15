@@ -200,6 +200,49 @@ In (values status nroot pside pnode):
        (when B
          (set-node-key! B (+ (node-key B) Kx))))]))
 
+#|
+Top-down splay
+|#
+
+#|
+(define (findt cmp tx k x scratch)
+  (if x
+      (findt* cmp tx k x scratch scratch scratch)
+      (values #f #f)))
+
+(define (findt* cmp tx k t scratch l r)
+  (define-syntax-rule (assemble! t)
+    (set-node-right! l (node-left t))
+    (set-node-left! r (node-right t))
+    (set-node-left! t (node-right scratch))
+    (set-node-right! t (node-left scratch))
+    t)
+  (define-syntax-rule (continue t)
+    (findt* cmp tx k t scratch l r))
+  (define-syntax-rule (rotate&link cmpresult rl (node-A set-node-A!) (node-B set-node-B!))
+    (let ([tsub (node-A t)])
+      (cond [tsub
+             (let-values ([(continue? t)
+                           (case (cmp k (node-key tsub))
+                             ((cmpresult)
+                              (set-node-A! t (node-B tsub))
+                              (set-node-B! tsub t)
+                              (cond [(node-A tsub) (values #t tsub)]
+                                    [else (values #f tsub)])))])
+               (cond [continue?
+                      (set-node-A! rl t)
+                      (continue t)]
+                     [else
+                      (assemble! t)]))])))
+  (case (cmp k (node-key x))
+    ((<)
+     (rotate&link < r (node-left set-node-left!) (node-right set-node-right!)))
+    ((>)
+     (rotate&link > l (node-right set-node-right!) (node-left! set-node-left!)))
+    (else
+     (assemble t))))
+|#
+
 ;; --------
 
 ;; if left is node, new root is max(left)

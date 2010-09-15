@@ -9,11 +9,8 @@
 ;;   - skip-list
 ;;   - splay-tree
 
-(test-case "random keys and values"
-  (let ([hash (make-hash)]
-        [dicts (list (make-skip-list = <)
-                     (make-splay-tree = <)
-                     (make-integer-splay-tree #:adjust? #t))])
+(define (rand-test dicts ordered?)
+  (let ([hash (make-hash)])
     (for ([c (in-range 100)])
       (let* ([k (- (random 2000) 1000)]
              [v (- (random 2000) 1000)])
@@ -27,29 +24,77 @@
           (check-equal? vh vd (format "dict ~e, key = ~s, value = ~s, expected = ~s"
                                       d i vd vh)))))
 
+    (when ordered?
+      (for ([c (in-range 100)])
+        (let* ([k0 (- (random 2000) 1000)])
+          (for ([d dicts])
+            (let* ([has? (dict-has-key? d k0)]
+                   [l>i (dict-iterate-least/>? d k0)]
+                   [l>=i (dict-iterate-least/>=? d k0)]
+                   [g<i (dict-iterate-greatest/<? d k0)]
+                   [g<=i (dict-iterate-greatest/<=? d k0)]
+                   [l> (and l>i (dict-iterate-key d l>i))]
+                   [l>= (and l>=i (dict-iterate-key d l>=i))]
+                   [g< (and g<i (dict-iterate-key d g<i))]
+                   [g<= (and g<=i (dict-iterate-key d g<=i))])
+              (when has?
+                (check-equal? l>= g<= "has, should be same"))
+              (unless has?
+                (check-equal? l> l>= "not has, should be same")
+                (check-equal? g< g<= "not has, should be same"))
+              (when l> (check > l> k0))
+              (when l>= (check >= l>= k0))
+              (when g< (check < g< k0))
+              (when g<= (check <= g<= k0))
+              (for ([k (in-dict-keys d)])
+                (when (and l> (and (> k k0) (< k l>))) (error "l>"))
+                (when (and l>= (and (>= k k0) (< k l>=))) (error "l>="))
+                (when (and g< (and (< k k0) (> k g<))) (error "g<"))
+                (when (and g<= (and (<= k k0) (> k g<=))) (error "g<="))))))))))
+
+(test-case "skip-list tests"
+  (rand-test (list (make-skip-list = <)) #t))
+
+(test-case "splay-tree test"
+  (rand-test (list (make-splay-tree = <)) #t))
+
+(test-case "int-splay-tree w adjust"
+  (rand-test (list (make-integer-splay-tree #:adjust? #t)) #t))
+
+(provide rand-test)
+
+#|
+(define (splay-test splays _eh)
+  (let ([hash (make-hash)])
     (for ([c (in-range 100)])
-      (let* ([k0 (- (random 2000) 1000)])
-        (for ([d dicts])
-          (let* ([has? (dict-has-key? d k0)]
-                 [l>i (dict-iterate-least/>? d k0)]
-                 [l>=i (dict-iterate-least/>=? d k0)]
-                 [g<i (dict-iterate-greatest/<? d k0)]
-                 [g<=i (dict-iterate-greatest/<=? d k0)]
-                 [l> (and l>i (dict-iterate-key d l>i))]
-                 [l>= (and l>=i (dict-iterate-key d l>=i))]
-                 [g< (and g<i (dict-iterate-key d g<i))]
-                 [g<= (and g<=i (dict-iterate-key d g<=i))])
-            (when has?
-              (check-equal? l>= g<= "has, should be same"))
-            (unless has?
-              (check-equal? l> l>= "not has, should be same")
-              (check-equal? g< g<= "not has, should be same"))
-            (when l> (check > l> k0))
-            (when l>= (check >= l>= k0))
-            (when g< (check < g< k0))
-            (when g<= (check <= g<= k0))
-            (for ([k (in-dict-keys d)])
-              (when (and l> (and (> k k0) (< k l>))) (error "l>"))
-              (when (and l>= (and (>= k k0) (< k l>=))) (error "l>="))
-              (when (and g< (and (< k k0) (> k g<))) (error "g<"))
-              (when (and g<= (and (<= k k0) (> k g<=))) (error "g<=")))))))))
+      (let* ([k (- (random 2000) 1000)]
+             [v (- (random 2000) 1000)])
+        (hash-set! hash k v)
+        (for ([d splays])
+          (splay-tree-set! d k v))))
+
+    (for ([i (in-range -1000 1000)])
+      (for ([d splays])
+        (let ([vh (hash-ref hash i 'not-there)]
+              [vd (splay-tree-ref d i 'not-there)])
+          (check-equal? vh vd (format "dict ~e, key = ~s, value = ~s, expected = ~s"
+                                      d i vd vh)))))))
+
+(provide splay-test)
+
+(require (prefix-in ud: racket/private/dict)
+         (prefix-in cd: racket/dict))
+
+(define-syntax-rule (htest *dict-set! *dict-ref)
+  (let ([h (make-hash)])
+    (for ([c (in-range 100)])
+      (*dict-set! h (- (random 2000) 1000) (- (random 2000) 1000)))
+    (for ([i (in-range -1000 1000)])
+      (*dict-ref h i 'not-there))))
+
+(define (ud-test) (htest ud:dict-set! ud:dict-ref))
+(define (cd-test) (htest cd:dict-set! cd:dict-ref))
+
+(provide ud-test
+         cd-test)
+|#
