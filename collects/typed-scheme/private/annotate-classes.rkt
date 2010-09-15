@@ -14,6 +14,17 @@
            #:with ty (syntax-property #'name 'type-label)
            #:with ann-name #'name))
 
+(define-splicing-syntax-class optionally-annotated-name
+  #:attributes (name ann-name)
+  #:description "optionally type-annotated identifier"
+  #:literals (:)
+  (pattern n:annotated-name
+           #:with name #'n.name
+           #:with ann-name #'n.ann-name)
+  (pattern n:id
+           #:with name #'n
+           #:with ann-name #'n))
+
 (define-splicing-syntax-class (param-annotated-name trans)
   #:attributes (name ty ann-name)
   #:description "type-annotated identifier"

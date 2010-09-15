@@ -268,7 +268,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax (define-typed-struct/exec stx)
   (syntax-parse stx #:literals (:)
-    [(_ nm ((~describe "field specification" [fld:annotated-name]) ...) [proc : proc-ty])
+    [(_ nm ((~describe "field specification" [fld:optionally-annotated-name]) ...) [proc : proc-ty])
      (with-syntax* 
       ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
        [d-s (syntax-property (syntax/loc stx (define-struct nm (fld.name ...)
@@ -415,7 +415,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (do: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty 
-        ((var:annotated-name rest ...) ...) 
+        ((var:optionally-annotated-name rest ...) ...) 
         (stop?:expr ret ...)
         c:expr ...)
      (syntax/loc
@@ -452,11 +452,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
            ;; single-valued seq-expr
            ;; unlike the definitions in for-clauses.rkt, this does not include
            ;; #:when clauses, which are handled separately here
-           (pattern (var:annotated-name seq-expr:expr)
+           (pattern (var:optionally-annotated-name seq-expr:expr)
                     #:with expand #'(var.ann-name seq-expr))
            ;; multi-valued seq-expr
            ;; currently disabled because it triggers an internal error in the typechecker
-           #;(pattern ((v:annotated-name ...) seq-expr:expr)
+           #;(pattern ((v:optionally-annotated-name ...) seq-expr:expr)
                     #:with expand #'((v.ann-name ...) seq-expr)))
          (syntax-parse clauses
            [(head:for-clause next:for-clause ... #:when rest ...)
@@ -532,7 +532,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (for/lists: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
-        ((var:annotated-name) ...)
+        ((var:optionally-annotated-name) ...)
         (clause:for-clause ...)
         c:expr ...)
      (syntax-property
@@ -545,7 +545,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (for/fold: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
-        ((var:annotated-name init:expr) ...)
+        ((var:optionally-annotated-name init:expr) ...)
         (clause:for-clause ...)
         c:expr ...)
      (syntax-property
