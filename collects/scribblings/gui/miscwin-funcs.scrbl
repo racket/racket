@@ -294,8 +294,7 @@ environment of the result namespace.}
          (is-a/c? bitmap%)]{
 
 Creates a bitmap that draws in a way that is the same as drawing to a
-canvas in its default configuration. The bitmap is always in color
-with an alpha channel.
+canvas in its default configuration.
 
 A normal @racket[bitmap%] draws in a more platform-independent way and
 may use fewer constrained resources, particularly under Windows.}

@@ -329,7 +329,7 @@
     (define/public (get-dc) dc)
 
     (define/public (make-compatible-bitmap w h)
-      (send dc make-backing-bitmap w h #t))
+      (send dc make-backing-bitmap w h))
 
     (define/override (get-client-gtk) client-gtk)
     (define/override (handles-events? gtk) (not (ptr-equal? gtk combo-button-gtk)))

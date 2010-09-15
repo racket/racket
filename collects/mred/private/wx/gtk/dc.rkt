@@ -38,6 +38,7 @@
 
     (define/override (ok?) #t)
     (define/override (is-color?) #t)
+    (define/override (has-alpha-channel?) #f)
     
     (define/override (get-cairo-surface) s)
 
@@ -80,15 +81,13 @@
 
     (super-new)
 
-    (define/override (make-backing-bitmap w h [any-bg? #f])
+    (define/override (make-backing-bitmap w h)
       (cond
        [(and (eq? 'unix (system-type))
-	     (or any-bg?
-		 (send canvas get-canvas-background)))
+             (send canvas get-canvas-background))
 	(make-object x11-bitmap% w h (widget-window (send canvas get-client-gtk)))]
        [(and (eq? 'windows (system-type))
-	     (or any-bg?
-		 (send canvas get-canvas-background)))
+             (send canvas get-canvas-background))
 	(make-object win32-bitmap% w h (widget-window (send canvas get-client-gtk)))]
        [else
 	(super make-backing-bitmap w h)]))
