@@ -9698,9 +9698,6 @@ so that propagation occurs.
              (f 3))
            (c)))
   
-  ;; Robby had this as 2, but now we only end up checking it once, which
-  ;; looks right to me.  Not sure whether "2" was _wanted_, or if it just
-  ;; happened to be what it returned when run.
   (ctest 1
          'case->-regular
          (let ([c (counter)])
