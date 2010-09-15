@@ -1,8 +1,56 @@
 #lang racket/base
 
-(require "guts.ss")
+(require (for-syntax racket/base)
+         "guts.ss")
 
-(provide (rename-out [build-hash/c hash/c]))
+(provide (rename-out [wrap-hash/c hash/c]))
+
+(define-syntax (wrap-hash/c stx)
+  (syntax-case stx ()
+    [x
+     (identifier? #'x)
+     (syntax-property
+      (syntax/loc stx
+        build-hash/c)
+      'racket/contract:contract
+      (vector (gensym 'ctc) (list stx) null))]
+    [(h/c arg ...)
+     (let ([args (syntax->list #'(arg ...))]
+           [this-one (gensym 'ctc)])
+       (define (convert-args args)
+         (let loop ([args args]
+                    [new-args null]
+                    [neg-ctc? #t])
+           (cond
+             [(null? args) (reverse new-args)]
+             [(keyword? (syntax-e (car args)))
+              (if (null? (cdr args))
+                  (reverse (cons (car args) new-args))
+                  (loop (cddr args)
+                        (list* (cadr args) (car args) new-args)
+                        neg-ctc?))]
+             [neg-ctc?
+              (loop (cdr args)
+                    (cons (syntax-property 
+                           (car args)
+                           'racket/contract:negative-position
+                           this-one)
+                          new-args)
+                    #f)]
+             [else
+              (append (reverse new-args)
+                      (cons (syntax-property
+                             (car args)
+                             'racket/contract:positive-position
+                             this-one)
+                            (cdr args)))])))
+       (with-syntax ([(new-arg ...) (convert-args args)]
+                     [app (datum->syntax stx '#%app)])
+         (syntax-property
+          (syntax/loc stx
+            (app build-hash/c new-arg ...))
+          'racket/contract:contract
+          (vector this-one (list #'h/c) null))))]))
 
 (define (build-hash/c dom rng #:immutable [immutable 'dont-care] #:flat? [flat? #f])
   (unless (memq immutable '(#t #f dont-care))
