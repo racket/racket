@@ -99,16 +99,16 @@ In (values status nroot pside pnode):
 ;; find/root : ... -> (values boolean node/#f)
 ;; If ok?, then node returned is one sought.
 (define (find/root cmp tx k x add-v)
-  (SPfinish (find cmp tx k x #f #f add-v)))
+  (SPfinish (findb cmp tx k x #f #f add-v)))
 
-;; find : ... -> SP
-(define (find cmp tx k x p-side p add-v)
+;; findb : ... -> SP
+(define (findb cmp tx k x p-side p add-v)
   (cond [x
          (let ([k* (if tx (- k (node-key x)) k)])
            (case (cmp k (node-key x))
              ((=) (SPunit tx x))
-             ((<) (SPisplay (find cmp tx k* (node-left x)  'left  x add-v) 'left x))
-             ((>) (SPisplay (find cmp tx k* (node-right x) 'right x add-v) 'right x))))]
+             ((<) (SPisplay (findb cmp tx k* (node-left x)  'left  x add-v) 'left x))
+             ((>) (SPisplay (findb cmp tx k* (node-right x) 'right x add-v) 'right x))))]
         [add-v
          (let ([new-node (node k (car add-v) #f #f)])
            ;; FIXME: link unnecessary? will be done in isplay/finish?
@@ -117,20 +117,20 @@ In (values status nroot pside pnode):
         [else (SPfail tx)]))
 
 (define (find-min tx x)
-  (define (find-min-loop x)
+  (define (find-min-loop tx x)
     (cond [(and x (node-left x))
-           (SPisplay (find-min-loop (node-left x)) 'left x)]
+           (SPisplay (find-min-loop tx (node-left x)) 'left x)]
           [x (SPunit tx x)]
           [else (SPfail tx)]))
-  (SPfinish (find-min-loop x)))
+  (SPfinish (find-min-loop tx x)))
 
 (define (find-max tx x)
-  (define (find-max-loop x)
+  (define (find-max-loop tx x)
     (cond [(and x (node-right x))
-           (SPisplay (find-max-loop (node-right x)) 'right x)]
+           (SPisplay (find-max-loop tx (node-right x)) 'right x)]
           [x (SPunit tx x)]
           [else (SPfail tx)]))
-  (SPfinish (find-max-loop x)))
+  (SPfinish (find-max-loop tx x)))
 
 ;; isplay! : ... -> SP
 ;; incremental splay
@@ -202,45 +202,73 @@ In (values status nroot pside pnode):
 
 #|
 Top-down splay
+
+Doesn't support parent-relative keys.
+No faster than bottom-up splay, surprisingly.
 |#
-
 #|
-(define (findt cmp tx k x scratch)
-  (if x
-      (findt* cmp tx k x scratch scratch scratch)
-      (values #f #f)))
+(define (findt cmp k x scratch add-v)
+  (cond [x
+         (findt* cmp k x scratch scratch scratch add-v)]
+        [add-v
+         (values 'added (node k (car add-v) #f #f))]
+        [else
+         (values #f #f)]))
 
-(define (findt* cmp tx k t scratch l r)
-  (define-syntax-rule (assemble! t)
-    (set-node-right! l (node-left t))
-    (set-node-left! r (node-right t))
-    (set-node-left! t (node-right scratch))
-    (set-node-right! t (node-left scratch))
-    t)
-  (define-syntax-rule (continue t)
-    (findt* cmp tx k t scratch l r))
-  (define-syntax-rule (rotate&link cmpresult rl (node-A set-node-A!) (node-B set-node-B!))
-    (let ([tsub (node-A t)])
-      (cond [tsub
-             (let-values ([(continue? t)
-                           (case (cmp k (node-key tsub))
-                             ((cmpresult)
-                              (set-node-A! t (node-B tsub))
-                              (set-node-B! tsub t)
-                              (cond [(node-A tsub) (values #t tsub)]
-                                    [else (values #f tsub)])))])
-               (cond [continue?
-                      (set-node-A! rl t)
-                      (continue t)]
-                     [else
-                      (assemble! t)]))])))
-  (case (cmp k (node-key x))
+(define (findt* cmp k t scratch l r add-v)
+  (define-syntax-rule (finish! status t l r)
+    (assemble! status t scratch l r))
+  (define-syntax-rule (continue t l r)
+    (findt* cmp k t scratch l r add-v))
+  (define-syntax-rule (rotate&link cmpresult rl l r
+                                   (node-A set-node-A!)
+                                   (node-B set-node-B!))
+    (let ([tA (node-A t)])
+      (cond [tA
+             (let ([c (cmp k (node-key tA))])
+               (case c
+                 ((cmpresult) ;; k should be on A-side of tA
+                  (set-node-A! t (node-B tA))
+                  (set-node-B! tA t)
+                  (let ([tAA (node-A tA)])
+                    (cond [tAA
+                           (set-node-A! rl tA)
+                           (let ([rl tA]) ;; shadows either l or r
+                             (continue tAA l r))]
+                          [add-v
+                           (let ([tAA (node k (car add-v) #f #f)])
+                             (set-node-A! tA tAA)
+                             (set-node-A! rl tA)
+                             (let ([rl tA]) ;; shadows either l or r
+                               (finish! 'added tAA l r)))]
+                          [else
+                           (finish! #f tA l r)])))
+                 (else
+                  (set-node-A! rl t)
+                  (let ([rl t]) ;; shadows either l or r
+                    (continue tA l r)))))]
+            [add-v
+             (let ([tA (node k (car add-v) #f #f)])
+               (set-node-A! t tA)
+               (set-node-A! rl t)
+               (let ([rl t]) ;; shadows either l or r
+                 (finish! 'added tA l r)))]
+            [else
+             (finish! #f t l r)])))
+  (case (cmp k (node-key t))
     ((<)
-     (rotate&link < r (node-left set-node-left!) (node-right set-node-right!)))
+     (rotate&link < r l r (node-left set-node-left!) (node-right set-node-right!)))
     ((>)
-     (rotate&link > l (node-right set-node-right!) (node-left! set-node-left!)))
+     (rotate&link > l l r (node-right set-node-right!) (node-left set-node-left!)))
     (else
-     (assemble t))))
+     (finish! 'found t l r))))
+
+(define (assemble! status t scratch l r)
+  (set-node-right! l (node-left t))
+  (set-node-left! r (node-right t))
+  (set-node-left! t (node-right scratch))
+  (set-node-right! t (node-left scratch))
+  (values status t))
 |#
 
 ;; --------
@@ -298,7 +326,6 @@ Top-down splay
     (join-left tx left right)))
 
 (define (remove-range! cmp tx root from to contract?)
-  ;; tx = #t... why pass as param?
   (let*-values ([(ok? from-node) (find/root cmp tx from root (list #f))]
                 [(left-tree right-tree)
                  (if (eq? ok? 'added)
