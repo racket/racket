@@ -4,7 +4,7 @@
          "guts.rkt")
 
 (provide box-immutable/c 
-         (rename-out [build-box/c box/c]))
+         (rename-out [wrap-box/c box/c]))
 
 (define-syntax (*-immutable/c stx)
   (syntax-case stx ()
@@ -174,6 +174,41 @@
    #:name box/c-name
    #:first-order box/c-first-order
    #:projection (ho-projection proxy-box)))
+
+(define-syntax (wrap-box/c stx)
+  (syntax-case stx ()
+    [x
+     (identifier? #'x)
+     (syntax-property
+      (syntax/loc stx build-box/c)
+      'racket/contract:contract
+      (vector (gensym 'ctc) (list #'x) null))]
+    [(b/c arg ...)
+     (let ([args (syntax->list #'(arg ...))]
+           [this-one (gensym 'ctc)])
+       (define (convert-args args)
+         (let loop ([args args]
+                    [new-args null])
+           (cond
+             [(null? args) (reverse new-args)]
+             [(keyword? (syntax-e (car args)))
+              (if (null? (cdr args))
+                  (reverse (cons (car args) new-args))
+                  (loop (cddr args)
+                        (list* (cadr args) (car args) new-args)))]
+             [else (append (reverse new-args)
+                           (cons (syntax-property
+                                  (car args)
+                                  'racket/contract:positive-position
+                                  this-one)
+                                 (cdr args)))])))
+       (with-syntax ([(new-arg ...) (convert-args args)]
+                     [app (datum->syntax stx '#%app)])
+         (syntax-property
+          (syntax/loc stx
+            (app build-box/c new-arg ...))
+          'racket/contract:contract
+          (vector this-one (list #'b/c) null))))]))
 
 (define (build-box/c elem #:immutable [immutable 'dont-care] #:flat? [flat? #f])
   (let ([ctc (if flat?

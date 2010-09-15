@@ -10019,6 +10019,9 @@ so that propagation occurs.
                     '((racket/contract:contract (hash/c) ())
                       (racket/contract:negative-position a)
                       (racket/contract:positive-position b)))
+  (test-obligations '(box/c a)
+                    '((racket/contract:contract (box/c) ())
+                      (racket/contract:positive-position a)))
   
   
 ;                                                                
