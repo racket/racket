@@ -337,16 +337,15 @@ Registers a ``blit'' to occur when garbage collection starts and
  ends. When garbage collection starts, @racket[on] is drawn at
  location @racket[x] and @racket[y] within @racket[canvas], if
  @racket[canvas] is shown.  When garbage collection ends, the drawing
- is reverted. The @racket[off], @racket[off-x], and @racket[off-y]
- arguments are currently unused, though they were formerly used to
- revert the drawing of @racket[on].
+ is reverted, possibly by drawing the @racket[off] bitmap.
 
 The background behind @racket[on] is unspecified, so @racket[on]
  should be a solid image, and the canvas's scale or scrolling is not
  applied to the drawing. Only the portion of @racket[on] within
  @racket[w] and @racket[h] pixels is used; if @racket[on-x] and
  @racket[on-y] are specified, they specify an offset within the bitmap
- that is used for drawing.
+ that is used for drawing, and @racket[off-x] and @racket[off-y]
+ similarly specify an offset within @racket[off].
 
 The blit is automatically unregistered if @scheme[canvas] becomes
  invisible and inaccessible.  Multiple registrations can be installed

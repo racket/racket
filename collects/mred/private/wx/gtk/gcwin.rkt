@@ -54,7 +54,7 @@
 (define-mz scheme_add_gc_callback (_fun _racket _racket -> _racket))
 (define-mz scheme_remove_gc_callback (_fun _racket -> _void))
 
-(define (create-gc-window cwin x y w h pixbuf)
+(define (create-gc-window cwin x y w h)
   (let ([win (gdk_window_new cwin (make-GdkWindowAttr
                                    ""
                                    0
@@ -68,16 +68,27 @@
                                           GDK_WA_Y))])
     win))
 
+(define (make-draw win pixbuf w h)
+  (vector 'ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void
+          gdk_draw_pixbuf
+          win #f pixbuf
+          0 0 0 0 w h
+          0 0 0))
+
+(define (make-flush)
+  (vector 'ptr_ptr_ptr->void gdk_display_flush (gdk_display_get_default) #f #f))
+
 (define (make-gc-show-desc win pixbuf w h)
   (vector
    (vector 'ptr_ptr_ptr->void gdk_window_show win #f #f)
-   (vector 'ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void
-           gdk_draw_pixbuf
-           win #f pixbuf
-           0 0 0 0 w h
-           0 0 0)
-   (vector 'ptr_ptr_ptr->void gdk_display_flush (gdk_display_get_default) #f #f)))
+   (make-draw win pixbuf w h)
+   (make-flush)))
 
-(define (make-gc-hide-desc win)
+(define (make-gc-hide-desc win pixbuf w h)
   (vector
+   ;; draw the ``off'' bitmap so we can flush immediately
+   (make-draw win pixbuf w h)
+   (make-flush)
+   ;; hide the window; it may take a while for the underlying canvas
+   ;; to refresh:
    (vector 'ptr_ptr_ptr->void gdk_window_hide win #f #f)))
