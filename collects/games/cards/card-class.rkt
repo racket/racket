@@ -14,8 +14,8 @@
   (define prev-region-dc #f)
 
   (define (with-card-region dc x y width height thunk)
-    (let ([rs (if (eq? prev-region-dc dc)
-		  prev-regions
+    (let ([rs (if #f ; (eq? prev-region-dc dc) <- assumes the same xform matrix
+                  prev-regions
 		  (cons (make-object mred:region% dc)
 			(make-object mred:region% dc)))])
       (set! prev-regions rs)
