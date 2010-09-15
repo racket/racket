@@ -1145,6 +1145,17 @@ the contract library primitives below.
                  (raise-blame-error
                   b x "expected <~a>, given: ~e" name x))))])
          contract?]
+@defproc[(make-chaperone-contract
+          [#:name name any/c 'anonymous-chaperone-contract]
+          [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:projection proj (-> blame? (-> any/c any/c))
+           (λ (b)
+             (λ (x)
+               (if (test x)
+                 x
+                 (raise-blame-error
+                  b x "expected <~a>, given: ~e" name x))))])
+         chaperone-contract?]
 @defproc[(make-flat-contract
           [#:name name any/c 'anonymous-flat-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
@@ -1158,13 +1169,14 @@ the contract library primitives below.
          flat-contract?]
 )]{
 
-These functions build simple procedure-based contracts and flat contracts,
+These functions build simple higher-order contracts, chaperone contracts, and flat contracts,
 respectively.  They both take the same set of three optional arguments: a name,
 a first order predicate, and a blame-tracking projection.
 
 The @racket[name] argument is any value to be rendered using @racket[display] to
 describe the contract when a violation occurs.  The default name for simple
-higher order contracts is @racketresult[anonymous-contract], and for flat
+higher order contracts is @racketresult[anonymous-contract], for chaperone
+contracts is @racketresult[anonymous-chaperone-contract], and for flat
 contracts is @racketresult[anonymous-flat-contract].
 
 The first order predicate @racket[test] can be used to determine which values
@@ -1182,6 +1194,8 @@ higher-order aspects of the contract, or signal a contract violation using
 @racket[raise-blame-error].  The default projection produces an error when the
 first order test fails, and produces the value unchanged otherwise.
 
+Projections for chaperone contracts must produce a value that passes
+@racket[chaperone-of?] when compared with the original, uncontracted value.
 Projections for flat contracts must fail precisely when the first order test
 does, and must produce the input value unchanged otherwise.  Applying a flat
 contract may result in either an application of the predicate, or the
@@ -1244,6 +1258,16 @@ Coerces all of the arguments in 'xs' into contracts (via
 @racket[coerce-contract/f]) and signals an error if any of them are not
 contracts.  The error messages assume that the function named by
 @racket[id] got @racket[xs] as its entire argument list.
+}
+
+@defproc[(coerce-chaperone-contract [id symbol?] [x any/c]) chaperone-contract?]{
+  Like @racket[coerce-contract], but requires the result
+  to be a chaperone contract, not an arbitrary contract.
+}
+
+@defproc[(coerce-chaperone-contracts [id symbol?] [x (listof any/c)]) (listof/c chaperone-contract?)]{
+  Like @racket[coerce-contracts], but requires the results
+  to be chaperone contracts, not arbitrary contracts.
 }
 
 @defproc[(coerce-flat-contract [id symbol?] [x any/c]) flat-contract?]{
@@ -1335,19 +1359,25 @@ This accessor extracts the blame object associated with a contract violation.
 
 @para{
 The property @racket[prop:contract] allows arbitrary structures to act as
-contracts.  The property @racket[prop:flat-contract] allows arbitrary structures
+contracts.  The property @racket[prop:chaperone-contract] allows arbitrary
+structures to act as chaperone contracts; @racket[prop:chaperone-contract]
+inherits @racket[prop:contract], so chaperone contract structures may also act
+as general contracts.  The property @racket[prop:flat-contract] allows arbitrary structures
 to act as flat contracts; @racket[prop:flat-contract] inherits both
-@racket[prop:contract] and @racket[prop:procedure], so flat contract structures
-may also act as general contracts and as predicate procedures.
+@racket[prop:chaperone-contract] and @racket[prop:procedure], so flat contract structures
+may also act as chaperone contracts, as general contracts, and as predicate procedures.
 }
 
 @deftogether[(
 @defthing[prop:contract struct-type-property?]
+@defthing[prop:chaperone-contract struct-type-property?]
 @defthing[prop:flat-contract struct-type-property?]
 )]{
 These properties declare structures to be contracts or flat contracts,
 respectively.  The value for @racket[prop:contract] must be a @tech{contract
 property} constructed by @racket[build-contract-property]; likewise, the value
+for @racket[prop:chaperone-contract] must be a @tech{chaperone contract property}
+constructed by @racket[build-chaperone-contract-property] and the value
 for @racket[prop:flat-contract] must be a @tech{flat contract property}
 constructed by @racket[build-flat-contract-property].
 }
@@ -1381,6 +1411,34 @@ constructed by @racket[build-flat-contract-property].
 	  (or/c (-> number? (listof (list any/c contract?)) any/c) #f)
 	  #f])
          flat-contract-property?]
+@defproc[(build-chaperone-contract-property
+          [#:name
+           get-name
+           (-> contract? any/c)
+           (λ (c) 'anonymous-chaperone-contract)]
+          [#:first-order
+           get-first-order
+           (-> contract? (-> any/c boolean?))
+           (λ (c) (λ (x) #t))]
+          [#:projection
+           get-projection
+           (-> contract? (-> blame? (-> any/c any/c)))
+           (λ (c)
+             (λ (b)
+               (λ (x)
+                 (if ((get-first-order c) x)
+                   x
+                   (raise-blame-error
+                    b x "expected <~a>, given: ~e" (get-name c) x)))))]
+         [#:stronger
+	  stronger
+	  (or/c (-> contract? contract? boolean?) #f)
+	  #f]
+         [#:generator
+	  generator
+	  (or/c (-> number? (listof (list any/c contract?)) any/c) #f)
+	  #f])
+         chaperone-contract-property?]
 @defproc[(build-contract-property
           [#:name
            get-name
@@ -1411,8 +1469,8 @@ constructed by @racket[build-flat-contract-property].
          contract-property?]
 )]{
 
-These functions build the arguments for @racket[prop:contract] and
-@racket[prop:flat-contract], respectively.
+These functions build the arguments for @racket[prop:contract],
+@racket[prop:chaperone-contract], and @racket[prop:flat-contract], respectively.
 
 A @deftech{contract property} specifies the behavior of a structure when used as
 a contract.  It is specified in terms of five accessors: @racket[get-name],
@@ -1430,6 +1488,13 @@ These accessors are passed as (optional) keyword arguments to
 appropriate structure type by the contract system.  Their results are used
 analogously to the arguments of @racket[make-contract].
 
+A @deftech{chaperone contract property} specifies the behavior of a structure
+when used as a chaperone contract.  It is specified using
+@racket[build-chaperone-contract-property], and accepts exactly the same set of
+arguments as @racket[build-contract-property].  The only difference is that the
+projection accessor must return a value that passes @racket[chaperone-of?] when
+compared with the original, uncontracted value.
+
 A @deftech{flat contract property} specifies the behavior of a structure when
 used as a flat contract.  It is specified using
 @racket[build-flat-contract-property], and accepts exactly the same set of
@@ -1442,9 +1507,11 @@ fashion, analogous to the constraint on projections in
 
 @deftogether[(
 @defproc[(contract-property? [x any/c]) boolean?]
+@defproc[(chaperone-contract-property? [x any/c]) boolean?]
 @defproc[(flat-contract-property? [x any/c]) boolean?]
 )]{
-These predicates detect whether a value is a @tech{contract property} or a
+These predicates detect whether a value is a @tech{contract property},
+@tech{chaperone contract property}, or a
 @tech{flat contract property}, respectively.
 }
 
@@ -1529,6 +1596,12 @@ combinators, use these properties:
 Returns @racket[#t] if its argument is a contract (i.e., constructed
 with one of the combinators described in this section or a value that
 can be used as a contract) and @racket[#f] otherwise.}
+
+@defproc[(chaperone-contract? [v any/c]) boolean?]{
+
+Returns @racket[#t] if its argument is a contract that guarantees that
+it returns a value which passes @racket[chaperone-of?] when compared to
+the original, uncontracted value.}
 
 @defproc[(flat-contract? [v any/c]) boolean?]{
 
