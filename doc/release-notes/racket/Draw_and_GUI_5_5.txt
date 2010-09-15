@@ -8,6 +8,18 @@ Changes to the drawing toolbox:
    The `racket/draw' library is built on top of the widely used Cairo
    drawing library and Pango text-rendering library.
 
+ * Drawing to a bitmap may not produce the same results as drawing to
+   a canvas. Use the `make-screen-bitmap' function (from `racket/gui')
+   or the `make-bitmap' method of `canvas%' to obtain a bitmap that
+   uses the same drawing algorithms as a canvas.
+
+   Drawing to a canvas always draws into a bitmap that is kept
+   offscreen and periodically flushed onto the screen. The new
+   `suspend-flush' and `resume-fluah' methods of `canvas%' provide
+   some control over the timing of the flushes, which in many cases
+   avoids the need for (additional) double buffering of canvas
+   content.
+
  * A color bitmap can have an alpha channel, instead of just a mask
    bitmap. When drawing a bitmap, alpha channels are used more
    consistently and automatically than mask bitmaps. More

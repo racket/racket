@@ -10,6 +10,7 @@
          "style.rkt"
          "widget.rkt"
          "window.rkt"
+         "dc.rkt"
          "../common/handlers.rkt")
 
 (provide
@@ -60,7 +61,8 @@
  show-print-setup
  can-show-print-setup?
  get-highlight-background-color
- get-highlight-text-color)
+ get-highlight-text-color
+ make-screen-bitmap)
 
 (define-unimplemented special-control-key)
 (define (special-option-key on?) (void))
@@ -132,3 +134,9 @@
     (if (and (zero? r) (zero? g) (zero? b))
 	#f
 	(make-object color% r g b))))
+
+(define/top (make-screen-bitmap [exact-positive-integer? w]
+                                [exact-positive-integer? h])
+  (if (eq? 'unix (system-type))
+      (make-object x11-bitmap% w h #f)
+      (make-object bitmap% w h #f #t)))

@@ -10,6 +10,7 @@
          "window.rkt"
          "finfo.rkt" ; file-creator-and-type
          "filedialog.rkt"
+         "dc.rkt"
          "../../lock.rkt"
          "../common/handlers.rkt")
 
@@ -58,7 +59,8 @@
  show-print-setup
  can-show-print-setup?
  get-highlight-background-color
- get-highlight-text-color)
+ get-highlight-text-color
+ make-screen-bitmap)
 
 (import-class NSScreen NSCursor)
 
@@ -118,6 +120,10 @@
 (define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)
 (define (can-show-print-setup?) #t)
+
+(define/top (make-screen-bitmap [exact-positive-integer? w]
+                                [exact-positive-integer? h])
+  (make-object quartz-bitmap% w h))
 
 ;; ------------------------------------------------------------
 ;; Text & highlight color

@@ -16,7 +16,7 @@
          start-backing-retained
          end-backing-retained
          reset-backing-retained
-         get-bitmap%
+         make-backing-bitmap
          request-delay
          cancel-delay
          end-delay)
@@ -28,7 +28,7 @@
   start-backing-retained
   end-backing-retained
   reset-backing-retained
-  get-bitmap%
+  make-backing-bitmap
   request-delay
   cancel-delay
   end-delay)
@@ -95,7 +95,8 @@
              (log-error "unbalanced end-on-paint")
              (set! retained-counter (sub1 retained-counter))))))
 
-    (define/public (get-bitmap%) bitmap%)
+    (define/public (make-backing-bitmap w h)
+      (make-object bitmap% w h #f #t))
 
     (define/public (ensure-ready) (get-cr))
 
@@ -104,7 +105,7 @@
           (let ([w (box 0)]
                 [h (box 0)])
             (get-backing-size w h)
-            (let ([bm (get-backing-bitmap (get-bitmap%) (unbox w) (unbox h))])
+            (let ([bm (get-backing-bitmap (lambda (w h) (make-backing-bitmap w h)) (unbox w) (unbox h))])
               (internal-set-bitmap bm #t))
             (let ([cr (super get-cr)])
               (set! retained-cr cr)
@@ -130,9 +131,10 @@
 
     (define/override (resume-flush)  
       (atomically 
-       (set! flush-suspends (sub1 flush-suspends))
-       (when (zero? flush-suspends)
-         (queue-backing-flush))))
+       (unless (zero? flush-suspends)
+         (set! flush-suspends (sub1 flush-suspends))
+         (when (zero? flush-suspends)
+           (queue-backing-flush)))))
 
     (define/public (end-delay)
       ;; call in atomic mode
@@ -140,8 +142,8 @@
         (cancel-delay req)
         (set! req #f)))))
 
-(define (get-backing-bitmap bitmap% w h)
-  (make-object bitmap% w h #f #t))
+(define (get-backing-bitmap make-bitmap w h)
+  (make-bitmap w h))
 
 (define (release-backing-bitmap bm)
   (send bm release-bitmap-storage))

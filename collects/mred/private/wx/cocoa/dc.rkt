@@ -3,6 +3,7 @@
          ffi/unsafe
          ffi/unsafe/objc
          racket/draw/cairo
+         racket/draw/bitmap
          racket/draw/local
          "types.rkt"
          "utils.rkt"
@@ -13,28 +14,26 @@
          "cg.rkt")
 
 (provide dc%
+         quartz-bitmap%
          do-backing-flush)
 
 (define quartz-bitmap%
-  (class object%
-    (init w h b&w? alpha?)
-    (super-new)
+  (class bitmap%
+    (init w h)
+    (super-make-object (make-alternate-bitmap-kind w h))
+
     (define s
       (cairo_quartz_surface_create CAIRO_FORMAT_ARGB32
                                    w
                                    h))
 
-    (define/public (ok?) #t)
-    (define/public (is-color?) #t)
+    (define/override (ok?) #t)
+    (define/override (is-color?) #t)
 
-    (define width w)
-    (define height h)
-    (define/public (get-width) width)
-    (define/public (get-height) height)
-    
-    (define/public (get-cairo-surface) s)
+    (define/override (get-cairo-surface) s)
+    (define/override (get-cairo-alpha-surface) s)
 
-    (define/public (release-bitmap-storage)
+    (define/override (release-bitmap-storage)
       (atomically
        (cairo_surface_destroy s)
        (set! s #f)))))
@@ -47,7 +46,7 @@
     (super-new)
 
     ;; Use a quartz bitmap so that text looks good:
-    (define/override (get-bitmap%) quartz-bitmap%)
+    (define/override (make-backing-bitmap w h) (make-object quartz-bitmap% w h))
     (define/override (can-combine-text? sz) #t)
 
     (define/override (get-backing-size xb yb)

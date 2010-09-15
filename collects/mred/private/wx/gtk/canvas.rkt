@@ -328,6 +328,9 @@
 
     (define/public (get-dc) dc)
 
+    (define/public (make-compatible-bitmap w h)
+      (send dc make-backing-bitmap w h #t))
+
     (define/override (get-client-gtk) client-gtk)
     (define/override (handles-events? gtk) (not (ptr-equal? gtk combo-button-gtk)))
 
@@ -380,8 +383,10 @@
 
     (define/public (get-flush-window) client-gtk)
 
-    (define/public (begin-refresh-sequence) (void))
-    (define/public (end-refresh-sequence) (void))
+    (define/public (begin-refresh-sequence)
+      (send dc suspend-flush))
+    (define/public (end-refresh-sequence)
+      (send dc resume-flush))
 
     (define/override (refresh)
       (queue-paint))

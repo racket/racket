@@ -100,4 +100,5 @@
    special-option-key
    special-control-key
    get-highlight-background-color
-   get-highlight-text-color))
+   get-highlight-text-color
+   make-screen-bitmap))

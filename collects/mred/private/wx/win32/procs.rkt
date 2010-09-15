@@ -49,8 +49,8 @@
  show-print-setup
  can-show-print-setup?
  get-highlight-background-color
- get-highlight-text-color)
-
+ get-highlight-text-color
+ make-screen-bitmap)
 
 (define-unimplemented special-control-key)
 (define-unimplemented special-option-key)
@@ -103,3 +103,4 @@
 (define-unimplemented can-show-print-setup?)
 (define-unimplemented get-highlight-background-color)
 (define-unimplemented get-highlight-text-color)
+(define-unimplemented make-screen-bitmap)

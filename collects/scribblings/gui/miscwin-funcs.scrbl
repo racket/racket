@@ -289,6 +289,18 @@ Like @racket[make-base-namespace], but with @racketmodname[racket/class] and
 environment of the result namespace.}
 
 
+@defproc[(make-screen-bitmap [width exact-positive-integer?]
+                             [height exact-positive-integer?]) 
+         (is-a/c? bitmap%)]{
+
+Creates a bitmap that draws in a way that is the same as drawing to a
+canvas in its default configuration. The bitmap is always in color
+with an alpha channel.
+
+A normal @racket[bitmap%] draws in a more platform-independent way and
+may use fewer constrained resources, particularly under Windows.}
+
+
 @defproc[(play-sound [filename path-string?]
                      [async? any/c])
          boolean?]{

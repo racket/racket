@@ -4,18 +4,47 @@
          "utils.rkt"
          "types.rkt"
          "window.rkt"
+         "x11.rkt"
 	 "../../lock.rkt"
          "../common/backing-dc.rkt"
          racket/draw/cairo
          racket/draw/dc
+         racket/draw/bitmap
          racket/draw/local
          ffi/unsafe/alloc)
 
 (provide dc%
-         do-backing-flush)
+         do-backing-flush
+         x11-bitmap%)
 
 (define-gdk gdk_cairo_create (_fun _pointer -> _cairo_t)
   #:wrap (allocator cairo_destroy))
+
+(define x11-bitmap%
+  (class bitmap%
+    (init w h gdk-win)
+    (super-make-object (make-alternate-bitmap-kind w h))
+
+    (define pixmap (gdk_pixmap_new gdk-win w h (if gdk-win -1 24)))
+    (define s
+      (cairo_xlib_surface_create (gdk_x11_display_get_xdisplay
+                                  (gdk_drawable_get_display pixmap))
+                                 (gdk_x11_drawable_get_xid pixmap)
+                                 (gdk_x11_visual_get_xvisual
+                                  (gdk_drawable_get_visual pixmap))
+                                 w
+                                 h))
+
+    (define/override (ok?) #t)
+    (define/override (is-color?) #t)
+    
+    (define/override (get-cairo-surface) s)
+
+    (define/override (release-bitmap-storage)
+      (atomically
+       (cairo_surface_destroy s)
+       (gobject-unref pixmap)
+       (set! s #f)))))
 
 (define dc%
   (class backing-dc%
@@ -23,6 +52,13 @@
     (define canvas cnvs)
 
     (super-new)
+
+    (define/override (make-backing-bitmap w h [any-bg? #f])
+      (if (and (or any-bg?
+                   (send canvas get-canvas-background))
+               (eq? 'unix (system-type)))
+          (make-object x11-bitmap% w h (widget-window (send canvas get-client-gtk)))
+          (super make-backing-bitmap w h)))
 
     (define/override (get-backing-size xb yb)
       (send canvas get-client-size xb yb))

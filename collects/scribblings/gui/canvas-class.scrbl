@@ -248,6 +248,13 @@ See also
 
 }
 
+@defmethod[(make-bitmap [width exact-positive-integer?]
+                        [height exact-positive-integer?]) 
+           (is-a/c? bitmap%)]{
+
+Creates a bitmap that draws in a way that is the same as drawing to the
+canvas. See also @racket[make-screen-bitmap].}
+
 
 @defmethod[#:mode override 
            (on-paint)
@@ -271,6 +278,11 @@ This method is called only when manual
 @method[canvas<%> on-paint] method is called, instead.
 
 }
+
+
+@defmethod[(resume-flush) void?]{
+
+See @method[canvas% suspend-flush].}
 
 
 @defmethod[(scroll [h-value (or/c (real-in 0.0 1.0) false/c)]
@@ -371,6 +383,22 @@ init-auto-scrollbars] and @method[canvas%
 init-manual-scrollbars].
 
 }
+
+
+@defmethod[(suspend-flush) void?]{
+
+Drawing to a canvas's drawing context actually renders into an
+offscreen buffer. The buffer is automatically flushed to the screen by
+a background thread, unless flushing has been disabled for the canvas.
+The @method[canvas% suspend-flush] method suspends flushing for a
+canvas until a matching @method[canvas% resume-flush] calls; calls to
+@method[canvas% suspend-flush] and @method[canvas% resume-flush] can
+be nested, in which case flushing is suspended until the outermost
+@method[canvas% suspend-flush] is balanced by a @method[canvas%
+resume-flush].
+
+On some platforms, beware that suspending flushing for a canvas can
+discourage refreshes for other windows in the same frame.}
 
 
 @defmethod[(swap-gl-buffers)

@@ -4,7 +4,8 @@
 @defclass/title[bitmap% object% ()]{
 
 A @scheme[bitmap%] object is a pixel-based image, either
- monochrome, color, or color with an alpha channel.
+ monochrome, color, or color with an alpha channel. See also
+ @racket[make-screen-bitmap] and @xmethod[canvas% make-bitmap].
 
 Sometimes, a bitmap object creation fails in a low-level manner. In
  that case, the @method[bitmap% ok?] method returns @scheme[#f], and

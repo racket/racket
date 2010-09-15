@@ -14,10 +14,13 @@
          "local.ss"
          "color.ss")
 
-(provide bitmap%)
+(provide bitmap%
+         make-alternate-bitmap-kind)
 
 ;; FIXME: there must be some way to abstract over all many of the
 ;; ARGB/RGBA/BGRA iterations.
+
+(define-struct alternate-bitmap-kind (width height))
 
 (define-local-member-name
   get-alphas-as-mask
@@ -77,15 +80,20 @@
     (init-rest args)
     (super-new)
 
-    (define-values (width height b&w? alpha-channel? s loaded-mask)
+    (define-values (alt? width height b&w? alpha-channel? s loaded-mask)
       (case-args 
        args
-       [() (void)]
+       [([alternate-bitmap-kind? a])
+        (values #t
+                (alternate-bitmap-kind-width a)
+                (alternate-bitmap-kind-height a)
+                #f #t #f #f)]
        [([exact-nonnegative-integer? w]
          [exact-nonnegative-integer? h]
          [any? [b&w? #f]]
          [any? [alpha? #f]])
         (values
+         #f
          w
          h
          (and b&w? #t)
@@ -137,13 +145,14 @@
                            (bytes-set! bstr (+ A (* 4 i) (* j row-width)) 255))
                          (cairo_surface_mark_dirty s))))])
             (if s
-                (values (cairo_image_surface_get_width s)
+                (values #f
+                        (cairo_image_surface_get_width s)
                         (cairo_image_surface_get_height s)
                         b&w?
                         alpha?
                         s
                         mask-bm)
-                (values 0 0 #f #f #f #f))))]
+                (values #f 0 0 #f #f #f #f))))]
        [([bytes? bstr]
          [exact-nonnegative-integer? w]
          [exact-nonnegative-integer? h])
@@ -158,7 +167,7 @@
                            (let ([s (* i bw)])
                              (subbytes bstr s (+ s bw)))))])
               (install-bytes-rows s w h rows #t #f #f #t))
-            (values w h #t #f s #f)))]
+            (values #f w h #t #f s #f)))]
        (init-name 'bitmap%)))
 
     ;; Use for non-alpha color bitmaps when they are used as a mask:
@@ -181,6 +190,12 @@
     (def/public (is-color?) (not b&w?))
     (def/public (has-alpha-channel?) alpha-channel?)
 
+    (define/private (check-alternate who)
+      (when alt?
+        (raise-mismatch-error (method-name 'bitmap% who)
+                              "not available in a canvas-compatible bitmap: "
+                              this)))
+
     (def/public (get-loaded-mask) loaded-mask)
     (def/public (set-loaded-mask [(make-or-false bitmap%) m]) (set! loaded-mask m))
 
@@ -201,6 +216,7 @@
     (def/public (load-bitmap [(make-alts path-string? input-port?) in]
                              [kind-symbol? [kind 'unknown]]
                              [(make-or-false color%) [bg #f]])
+      (check-alternate 'load-bitmap)
       (release-bitmap-storage)
       (set!-values (s b&w?) (do-load-bitmap in kind bg))
       (set! width (if s (cairo_image_surface_get_width s) 0))
@@ -393,6 +409,7 @@
     (def/public (save-file [(make-alts path-string? output-port?) out]
                            [save-kind-symbol? [kind 'unknown]]
                            [quality-integer? [quality 75]])
+      (check-alternate 'save-file)
       (check-ok 'save-file)
       (do-save-file out kind quality))
 
@@ -514,6 +531,7 @@
         (raise-mismatch-error (method-name 'bitmap% 'get-argb-pixels)
                               "byte string is too short: "
                               bstr))
+      (check-alternate 'get-argb-pixels)
       ;; Fill range that is beyond edge of picture:
       (if get-alpha?
           (for* ([i (in-range width (+ x w))]
@@ -573,6 +591,7 @@
         (raise-mismatch-error (method-name 'bitmap% 'set-argb-pixels)
                               "byte string is too short: "
                               bstr))
+      (check-alternate 'set-argb-pixels)
       ;; Set pixels:
       (let-values ([(A R G B) (argb-indices)])
         (when (not set-alpha?)

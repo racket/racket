@@ -122,6 +122,7 @@ list-control<%>
 make-eventspace
 make-gui-empty-namespace
 make-gui-namespace
+make-screen-bitmap
 map-command-as-meta-key
 menu%
 menu-bar%

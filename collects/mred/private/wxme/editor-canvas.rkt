@@ -895,7 +895,7 @@
       (set! noloop? savenoloop?)
 
       (when refresh?
-        (if (and #f ;; special scrolling disabled: not faster with Cocoa, broken for Gtk
+        (if (and #f ;; special scrolling disabled: not faster with Cocoa, broken for Windows
                  (not need-refresh?)
                  (not lazy-refresh?)
                  (get-canvas-background)

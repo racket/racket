@@ -194,7 +194,8 @@
              the-pen-list
              the-brush-list
              the-style-list
-             the-editor-wordbreak-map)
+             the-editor-wordbreak-map
+             make-screen-bitmap)
    
   (define the-clipboard (wx:get-the-clipboard))
   (define the-x-selection-clipboard (wx:get-the-x-selection))

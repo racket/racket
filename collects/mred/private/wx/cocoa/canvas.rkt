@@ -319,6 +319,9 @@
     
     (define/public (get-dc) dc)
 
+    (define/public (make-compatible-bitmap w h)
+      (make-object quartz-bitmap% w h))
+
     (define/override (fix-dc [refresh? #t])
       (when (dc . is-a? . dc%)
         (send dc reset-backing-retained)
