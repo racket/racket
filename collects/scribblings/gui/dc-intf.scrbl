@@ -30,6 +30,23 @@ as determined by @method[dc<%> get-background]).
 
 }
 
+@defmethod[(copy [x real?]
+                 [y real?]
+                 [width (and/c real? (not/c negative?))]
+                 [height (and/c real? (not/c negative?))]
+                 [x2 real?]
+                 [y2 real?])
+           void?]{
+
+Copies the rectangle defined by @racket[x], @racket[y],
+@racket[width], and @racket[height] of the drawing context to the same
+drawing context at the position specified by @racket[x2] and
+@racket[y2].
+
+The result is undefined if the source and destination rectangles
+overlap.}
+
+
 @defmethod[(draw-arc [x real?]
                      [y real?]
                      [width (and/c real? (not/c negative?))]

@@ -424,6 +424,7 @@
 
     (define/override (reset-cr cr)
       (set! context #f)
+      (set! current-smoothing #f)
       (reset-layouts!)
       (do-reset-matrix cr)
       (when clipping-region
@@ -437,7 +438,7 @@
     (def/public (set-smoothing [(symbol-in unsmoothed smoothed aligned) s])
       (set! smoothing s))
     (def/public (get-smoothing)
-      smoothing)      
+      smoothing)
     (define/private (align-x/delta x delta)
       (if (aligned? smoothing)
           (/ (- (+ (floor (+ (* x effective-scale-x) effective-origin-x)) delta) 
@@ -455,20 +456,25 @@
     (define/private (align-y y)
       (align-y/delta y y-align-delta))
 
+    (define current-smoothing #f)
+
     (define (set-font-antialias context smoothing)
-      (let ([o (pango_cairo_context_get_font_options context)]
-            [o2 (cairo_font_options_create)])
-        (when o
-          (cairo_font_options_copy o2 o))
-        (cairo_font_options_set_antialias
-         o2 
-         (case (dc-adjust-smoothing smoothing)
-           [(default) CAIRO_ANTIALIAS_SUBPIXEL] ; should be DEFAULT?
-           [(unsmoothed) CAIRO_ANTIALIAS_NONE]
-           [(partly-smoothed) CAIRO_ANTIALIAS_GRAY]
-           [(smoothed) CAIRO_ANTIALIAS_SUBPIXEL]))
-        (pango_cairo_context_set_font_options context o2)
-        (cairo_font_options_destroy o2)))
+      (let ([smoothing (dc-adjust-smoothing smoothing)])
+        (unless (eq? current-smoothing smoothing)
+          (set! current-smoothing smoothing)
+          (let ([o (pango_cairo_context_get_font_options context)]
+                [o2 (cairo_font_options_create)])
+            (when o
+              (cairo_font_options_copy o2 o))
+            (cairo_font_options_set_antialias
+             o2 
+             (case smoothing
+               [(default) CAIRO_ANTIALIAS_SUBPIXEL] ; should be DEFAULT?
+               [(unsmoothed) CAIRO_ANTIALIAS_NONE]
+               [(partly-smoothed) CAIRO_ANTIALIAS_GRAY]
+               [(smoothed) CAIRO_ANTIALIAS_SUBPIXEL]))
+            (pango_cairo_context_set_font_options context o2)
+            (cairo_font_options_destroy o2)))))
 
     (define alpha 1.0)
     (def/public (get-alpha) alpha)
@@ -599,6 +605,20 @@
        (cairo_set_operator cr CAIRO_OPERATOR_CLEAR)
        (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
        (cairo_paint cr)
+       (cairo_set_operator cr CAIRO_OPERATOR_OVER)))
+
+    (def/public (copy [real? x] [real? y] [nonnegative-real? w] [nonnegative-real? h]
+                      [real? x2] [real? y2])
+      (with-cr
+       (void)
+       cr
+       (cairo_set_source_surface cr
+                                 (cairo_get_target cr)
+                                 (- x2 x) (- y2 y))
+       (cairo_set_operator cr CAIRO_OPERATOR_SOURCE)
+       (cairo_new_path cr)
+       (cairo_rectangle cr x2 y2 w h)
+       (cairo_fill cr)
        (cairo_set_operator cr CAIRO_OPERATOR_OVER)))
 
     (define/private (make-pattern-surface cr col draw)
@@ -1027,7 +1047,7 @@
       (let* ([s (if (zero? offset) 
                     s 
                     (substring s offset))]
-             [blank? (equal? s "")]
+             [blank? (string=? s "")]
              [s (if (and (not draw?) blank?) " " s)]
              [rotate? (and draw? (not (zero? angle)))])
         (unless context
@@ -1123,8 +1143,8 @@
               ;;  object.
               (let ([logical (make-PangoRectangle 0 0 0 0)]
                     [cache (if (or combine?
-                                   (not (= 1.0 effective-scale-x))
-                                   (not (= 1.0 effective-scale-y)))
+                                   (not (fl= 1.0 effective-scale-x))
+                                   (not (fl= 1.0 effective-scale-y)))
                                #f
                                (get-size-cache desc))]
                     [layouts (let ([attr-layouts (or (hash-ref desc-layouts desc #f)
@@ -1186,10 +1206,11 @@
                                (let loop ([i 0])
                                  (or (= i len)
                                      (let* ([ch (string-ref s i)]
-                                            [layout-info (hash-ref layouts (char->integer ch))]
+                                            [chi (char->integer ch)]
+                                            [layout-info (hash-ref layouts chi)]
                                             [font (vector-ref layout-info 3)]
                                             [glyphs (vector-ref layout-info 4)]
-                                            [v (hash-ref cache (char->integer ch) #f)])
+                                            [v (hash-ref cache chi #f)])
                                        (and font
                                             v
                                             ;; Need the same font for all glyphs for the fast path:
