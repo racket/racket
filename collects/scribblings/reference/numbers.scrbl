@@ -1096,6 +1096,10 @@ Sets the inexact real number in slot @racket[pos] of @racket[vec]. The
 first slot is position @racket[0], and the last slot is one less than
 @racket[(flvector-length vec)].}
 
+@defproc[(flvector-copy (v flvector?)) flvector?]{
+
+Returns a fresh copy of @racket[v].}
+
 @defproc[(in-flvector (v flvector?)) sequence?]{
 
 Produces a sequence that gives the elements of @scheme[v] in order.

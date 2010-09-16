@@ -61,4 +61,15 @@
   (test (flvector 2.0 3.0 4.0) 'for/flvector-many-body flv2)
   (test (flvector 3.0 4.0 5.0) 'for/flvector-length-many-body flv3))
 
+;; flvector-copy test
+(let ((v (flvector 0.0 1.0 2.0 3.0)))
+  (let ((vc (flvector-copy v)))
+    (test (flvector-length v) 'flvector-copy (flvector-length vc))
+    (for ((vx (in-flvector v))
+          (vcx (in-flvector vc)))
+      (test vx 'flvector-copy vcx))
+    (flvector-set! vc 2 -10.0)
+    (test 2.0 'flvector-copy (flvector-ref v 2))
+    (test -10.0 'flvector-copy (flvector-ref vc 2))))
+
 (report-errs)

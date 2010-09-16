@@ -9,6 +9,7 @@
          ->fl fl->exact-integer
          flvector? flvector make-flvector 
          flvector-length flvector-ref flvector-set!
+         flvector-copy
          flreal-part flimag-part make-flrectangular
          in-flvector for/flvector for*/flvector shared-flvector make-shared-flvector)
 
@@ -84,3 +85,8 @@
              (flvector-set! v i (begin body ...))
              (add1 i))
            v))))))
+
+(define (flvector-copy flv)
+  (for/flvector #:length (flvector-length flv)
+                ((x (in-flvector flv)))
+                x))
