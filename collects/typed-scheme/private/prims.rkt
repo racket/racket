@@ -238,7 +238,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (let ([mk (lambda (form)
               (lambda (stx)
                 (syntax-parse stx
-                  [(_ (bs:annotated-binding ...) . body)
+                  [(_ (bs:optionally-annotated-binding ...) . body)
                    (quasisyntax/loc stx (#,form (bs.binding ...) . body))])))])
     (values (mk #'let) (mk #'let*) (mk #'letrec))))
 
@@ -246,7 +246,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (let ([mk (lambda (form)
               (lambda (stx)
                 (syntax-parse stx
-                  [(_ (bs:annotated-values-binding ...) . body)
+                  [(_ (bs:optionally-annotated-values-binding ...) . body)
                    (quasisyntax/loc stx (#,form (bs.binding ...) . body))])))])
     (values (mk #'let-values) (mk #'let*-values) (mk #'letrec-values))))
 
