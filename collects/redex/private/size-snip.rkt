@@ -9,6 +9,7 @@
          size-editor-snip%
          size-text%
          default-pretty-printer
+         current-pretty-printer
          initial-char-width
          resizing-pasteboard-mixin
          get-user-char-width)
@@ -37,6 +38,8 @@
                       [(eq? val 'hole) 
                        (display ",'hole" op)]))])
     (pretty-print v port)))
+
+(define current-pretty-printer (make-parameter default-pretty-printer))
 
 (define reflowing-snip<%>
   (interface ()

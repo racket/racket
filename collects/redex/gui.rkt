@@ -97,6 +97,13 @@
  [light-text-color (parameter/c (or/c string? (is-a?/c color%)))]
  [initial-font-size (parameter/c number?)]
  [initial-char-width (parameter/c (or/c number? (-> any/c number?)))])
-         
-(provide reduction-steps-cutoff
-         default-pretty-printer)
+
+(provide/contract 
+ [reduction-steps-cutoff (parameter/c exact-nonnegative-integer?)]
+ [default-pretty-printer
+   (-> any/c output-port? exact-nonnegative-integer? (is-a?/c text%) 
+       void?)]
+ [current-pretty-printer
+  (parameter/c 
+   (-> any/c output-port? exact-nonnegative-integer? (is-a?/c text%) 
+       void?))])

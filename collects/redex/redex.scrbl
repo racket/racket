@@ -1458,7 +1458,7 @@ exploring reduction sequences.
                  [#:pp pp
                        (or/c (any -> string)
                              (any output-port number (is-a?/c text%) -> void))
-                       default-pretty-printer]
+                       (current-pretty-printer)]
                  [#:colors colors 
                   (listof 
                    (cons/c string? 
@@ -1577,7 +1577,7 @@ inserted into the editor by this library have a
                     [#:pp pp
                           (or/c (any -> string)
                                 (any output-port number (is-a?/c text%) -> void))
-                          default-pretty-printer]
+                          (current-pretty-printer)]
                     [#:colors colors 
                               (listof 
                                (cons/c string?
@@ -1607,7 +1607,7 @@ just before the PostScript is created with the graph pasteboard.
                   [t any/c] 
                   [pp (or/c (any -> string)
                             (any output-port number (is-a?/c text%) -> void))
-                      default-pretty-printer])
+                      (current-pretty-printer)])
           void?]{
 
 This function opens a stepper window for exploring the
@@ -1622,7 +1622,7 @@ The @racket[pp] argument is the same as to the
                        [seed (cons/c any/c (listof any/c))]
                        [pp (or/c (any -> string)
                                  (any output-port number (is-a?/c text%) -> void))
-                           default-pretty-printer])
+                           (current-pretty-printer)])
          void?]{
 
 Like @racket[stepper], this function opens a stepper window, but it
@@ -1748,7 +1748,16 @@ the color used to fill the arrowhead and the text colors control the
 color used to draw the label on the edge.
 }
 
-@defproc[(default-pretty-printer [v any] [port output-port] [width number] [text (is-a?/c text%)]) void?]{
+@defparam[current-pretty-printer pp (-> any/c
+                                        output-port?
+                                        exact-nonnegative-integer?
+                                        (is-a?/c text%)
+                                        void?)]{
+  A parameter that is used by the graphics tools to render
+  expressions. Defaults to @racket[default-pretty-printer].
+}
+                                                                       
+@defproc[(default-pretty-printer [v any/c] [port output-port?] [width exact-nonnegative-integer?] [text (is-a?/c text%)]) void?]{
 
 This is the default value of @racket[pp] used by @racket[traces] and
 @racket[stepper] and it uses
