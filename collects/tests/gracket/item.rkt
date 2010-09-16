@@ -1561,7 +1561,7 @@
   (instructions p "choice-list-steps.txt")
   (send f show #t))
 
-(define (slider-frame)
+(define (slider-frame style)
   (define f (make-frame frame% "Slider Test"))
   (define p (make-object vertical-panel% f))
   (define old-list null)
@@ -1570,7 +1570,8 @@
 			 (lambda (sl e)
 			   (check-callback-event s sl e commands #f)
 			   (printf "slid: ~a\n" (send s get-value)))
-			 3))
+			 3
+                         (cons 'horizontal style)))
   (define c (make-object button% "Check" p
 			 (lambda (c e)
 			   (for-each
@@ -2168,17 +2169,18 @@
 (send gsp stretchable-height #f)
 (make-object button% "Make Gauge Frame" gsp (lambda (b e) (gauge-frame)))
 (make-object vertical-pane% gsp) ; filler
-(make-object button% "Make Slider Frame" gsp (lambda (b e) (slider-frame)))
+(make-object button% "Make Slider Frame" gsp (lambda (b e) (slider-frame null)))
+(make-object button% "Make Plain Slider Frame" gsp (lambda (b e) (slider-frame '(plain))))
 (make-object vertical-pane% gsp) ; filler
 (make-object button% "Make Tab Panel" gsp (lambda (b e) (test-tab-panel #f)))
 (make-object button% "Make Tabs" gsp (lambda (b e) (test-tab-panel #t)))
-(make-object vertical-pane% gsp) ; filler
-(make-object button% "Make Modified Frame" gsp (lambda (b e) (test-modified-frame)))
 
 (define tp (make-object horizontal-pane% ap))
 (send tp stretchable-width #f)
 (make-object button% "Make Text Frame" tp (lambda (b e) (text-frame '(single))))
 (make-object button% "Make Multitext Frame" tp (lambda (b e) (text-frame '(multiple))))
+(make-object vertical-pane% tp) ; filler
+(make-object button% "Make Modified Frame" tp (lambda (b e) (test-modified-frame)))
 
 (define cnp (make-object horizontal-pane% ap))
 (send cnp stretchable-width #t)

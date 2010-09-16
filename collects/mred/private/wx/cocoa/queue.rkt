@@ -259,8 +259,7 @@
 
 (define (try-to-sync-refresh)
   (atomically
-   (pre-event-sync #t)
-   (check-one-event #f #f)))
+   (pre-event-sync #t)))
 
 ;; ------------------------------------------------------------
 ;; Install an alternate "sleep" function (in the PLT Scheme core)

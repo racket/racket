@@ -21,6 +21,7 @@
 (define-gtk gtk_range_set_increments (_fun _GtkWidget _double* _double* -> _void))
 (define-gtk gtk_range_set_value (_fun _GtkWidget _double* -> _void))
 (define-gtk gtk_range_get_value (_fun _GtkWidget -> _double))
+(define-gtk gtk_scale_set_draw_value (_fun _GtkWidget _gboolean -> _void))
 
 (define-signal-handler connect-changed "value-changed"
   (_fun _GtkWidget -> _void)
@@ -50,6 +51,9 @@
   (gtk_range_set_range gtk lo hi)
   (gtk_range_set_increments gtk 1.0 1.0)
   (gtk_range_set_value gtk val)
+
+  (when (memq 'plain style)
+    (gtk_scale_set_draw_value gtk #f))
 
   (set-auto-size)
 
