@@ -27,6 +27,8 @@ Example: @racketblock[(lambda (k-url)
 
 @defthing[expiration-handler/c contract?]{
 Equivalent to @racket[(or/c false/c (request? . -> . response/c))].
+              
+Typically @racket[#f] uses the default expiration handler, which displays an error message.
            
 Example: @racketblock[(lambda (req)
                         `(html (head (title "Expired"))
