@@ -82,11 +82,7 @@
 (define-form-struct form ())
 (define-form-struct (expr form) ())
 
-;; A static closure can refer directly to itself, creating a cycle
-; XXX: this might not be needed anymore with the current sharing model
-(define-struct (indirect zo) ([v #:mutable]) #:prefab)
-
-(define-form-struct compilation-top ([max-let-depth exact-nonnegative-integer?] [prefix prefix?] [code (or/c form? indirect? any/c)])) ; compiled code always wrapped with this
+(define-form-struct compilation-top ([max-let-depth exact-nonnegative-integer?] [prefix prefix?] [code (or/c form? any/c)])) ; compiled code always wrapped with this
 
 ;; A provided identifier
 (define-form-struct provided ([name symbol?] 
@@ -102,17 +98,17 @@
                                      [const? boolean?] 
                                      [ready? boolean?]))  ; access binding via prefix array (which is on stack)
 
-(define-form-struct (seq form) ([forms (listof (or/c form? indirect? any/c))])) ; `begin'
+(define-form-struct (seq form) ([forms (listof (or/c form? any/c))])) ; `begin'
 
 ;; Definitions (top level or within module):
 (define-form-struct (def-values form) ([ids (listof (or/c toplevel? symbol?))] ; added symbol?
-                                       [rhs (or/c expr? seq? indirect? any/c)])) 
+                                       [rhs (or/c expr? seq? any/c)])) 
 (define-form-struct (def-syntaxes form) ([ids (listof (or/c toplevel? symbol?))] ; added symbol?                                        
-                                         [rhs (or/c expr? seq? indirect? any/c)] 
+                                         [rhs (or/c expr? seq? any/c)] 
                                          [prefix prefix?] 
                                          [max-let-depth exact-nonnegative-integer?])) 
 (define-form-struct (def-for-syntax form) ([ids (listof (or/c toplevel? symbol?))] ; added symbol?
-                                           [rhs (or/c expr? seq? indirect? any/c)] 
+                                           [rhs (or/c expr? seq? any/c)] 
                                            [prefix prefix?] 
                                            [max-let-depth exact-nonnegative-integer?])) 
 
@@ -125,7 +121,7 @@
                                                           (listof provided?)))] 
                                 [requires (listof (cons/c (or/c exact-integer? #f)
                                                           (listof module-path-index?)))]
-                                [body (listof (or/c form? indirect? any/c))] 
+                                [body (listof (or/c form? any/c))] 
                                 [syntax-body (listof (or/c def-syntaxes? def-for-syntax?))] 
                                 [unexported (list/c (listof symbol?) (listof symbol?)
                                                     (listof symbol?))] 
@@ -142,35 +138,35 @@
                                 [closure-map (vectorof exact-nonnegative-integer?)]
                                 [closure-types (listof (or/c 'val/ref 'flonum))]
                                 [max-let-depth exact-nonnegative-integer?]
-                                [body (or/c expr? seq? indirect? any/c)])) ; `lambda'
+                                [body (or/c expr? seq? any/c)])) ; `lambda'
 (define-form-struct (closure expr) ([code lam?] [gen-id symbol?])) ; a static closure (nothing to close over)
-(define-form-struct (case-lam expr) ([name (or/c symbol? vector? empty?)] [clauses (listof (or/c lam? indirect?))])) ; each clause is a lam (added indirect)
+(define-form-struct (case-lam expr) ([name (or/c symbol? vector? empty?)] [clauses (listof (or/c lam? closure?))]))
 
-(define-form-struct (let-one expr) ([rhs (or/c expr? seq? indirect? any/c)] [body (or/c expr? seq? indirect? any/c)] [flonum? boolean?] [unused? boolean?])) ; pushes one value onto stack
-(define-form-struct (let-void expr) ([count exact-nonnegative-integer?] [boxes? boolean?] [body (or/c expr? seq? indirect? any/c)])) ; create new stack slots
+(define-form-struct (let-one expr) ([rhs (or/c expr? seq? any/c)] [body (or/c expr? seq? any/c)] [flonum? boolean?] [unused? boolean?])) ; pushes one value onto stack
+(define-form-struct (let-void expr) ([count exact-nonnegative-integer?] [boxes? boolean?] [body (or/c expr? seq? any/c)])) ; create new stack slots
 (define-form-struct (install-value expr) ([count exact-nonnegative-integer?] 
                                           [pos exact-nonnegative-integer?] 
                                           [boxes? boolean?] 
-                                          [rhs (or/c expr? seq? indirect? any/c)] 
-                                          [body (or/c expr? seq? indirect? any/c)])) ; set existing stack slot(s)
-(define-form-struct (let-rec expr) ([procs (listof lam?)] [body (or/c expr? seq? indirect? any/c)])) ; put `letrec'-bound closures into existing stack slots
-(define-form-struct (boxenv expr) ([pos exact-nonnegative-integer?] [body (or/c expr? seq? indirect? any/c)])) ; box existing stack element
+                                          [rhs (or/c expr? seq? any/c)] 
+                                          [body (or/c expr? seq? any/c)])) ; set existing stack slot(s)
+(define-form-struct (let-rec expr) ([procs (listof lam?)] [body (or/c expr? seq? any/c)])) ; put `letrec'-bound closures into existing stack slots
+(define-form-struct (boxenv expr) ([pos exact-nonnegative-integer?] [body (or/c expr? seq? any/c)])) ; box existing stack element
 
 (define-form-struct (localref expr) ([unbox? boolean?] [pos exact-nonnegative-integer?] [clear? boolean?] [other-clears? boolean?] [flonum? boolean?])) ; access local via stack
 
 
 (define-form-struct (topsyntax expr) ([depth exact-nonnegative-integer?] [pos exact-nonnegative-integer?] [midpt exact-nonnegative-integer?])) ; access syntax object via prefix array (which is on stack)
 
-(define-form-struct (application expr) ([rator (or/c expr? seq? indirect? any/c)] [rands (listof (or/c expr? seq? indirect? any/c))])) ; function call
-(define-form-struct (branch expr) ([test (or/c expr? seq? indirect? any/c)] [then (or/c expr? seq? indirect? any/c)] [else (or/c expr? seq? indirect? any/c)])) ; `if'
-(define-form-struct (with-cont-mark expr) ([key (or/c expr? seq? indirect? any/c)] 
-                                           [val (or/c expr? seq? indirect? any/c)] 
-                                           [body (or/c expr? seq? indirect? any/c)])) ; `with-continuation-mark'
-(define-form-struct (beg0 expr) ([seq (listof (or/c expr? seq? indirect? any/c))])) ; `begin0'
-(define-form-struct (splice form) ([forms (listof (or/c form? indirect? any/c))])) ; top-level `begin'
+(define-form-struct (application expr) ([rator (or/c expr? seq? any/c)] [rands (listof (or/c expr? seq? any/c))])) ; function call
+(define-form-struct (branch expr) ([test (or/c expr? seq? any/c)] [then (or/c expr? seq? any/c)] [else (or/c expr? seq? any/c)])) ; `if'
+(define-form-struct (with-cont-mark expr) ([key (or/c expr? seq? any/c)] 
+                                           [val (or/c expr? seq? any/c)] 
+                                           [body (or/c expr? seq? any/c)])) ; `with-continuation-mark'
+(define-form-struct (beg0 expr) ([seq (listof (or/c expr? seq? any/c))])) ; `begin0'
+(define-form-struct (splice form) ([forms (listof (or/c form? any/c))])) ; top-level `begin'
 (define-form-struct (varref expr) ([toplevel toplevel?])) ; `#%variable-reference'
-(define-form-struct (assign expr) ([id toplevel?] [rhs (or/c expr? seq? indirect? any/c)] [undef-ok? boolean?])) ; top-level or module-level set!
-(define-form-struct (apply-values expr) ([proc (or/c expr? seq? indirect? any/c)] [args-expr (or/c expr? seq? indirect? any/c)])) ; `(call-with-values (lambda () ,args-expr) ,proc)
+(define-form-struct (assign expr) ([id toplevel?] [rhs (or/c expr? seq? any/c)] [undef-ok? boolean?])) ; top-level or module-level set!
+(define-form-struct (apply-values expr) ([proc (or/c expr? seq? any/c)] [args-expr (or/c expr? seq? any/c)])) ; `(call-with-values (lambda () ,args-expr) ,proc)
 (define-form-struct (primval expr) ([id exact-nonnegative-integer?])) ; direct preference to a kernel primitive
 
 ;; Top-level `require'
@@ -244,8 +240,6 @@
 
 ; XXX better name for 'value'
 (define-form-struct (mark-barrier wrap) ([value symbol?]))
-
-(provide/contract (struct indirect ([v (or/c closure? #f)])))
 
 
 

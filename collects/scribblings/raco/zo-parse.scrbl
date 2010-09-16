@@ -79,7 +79,7 @@ A supertype for all zo objects that can appear in compiled code.}
 
 @defstruct+[(compilation-top zo) ([max-let-depth exact-nonnegative-integer?]
                                   [prefix prefix?]
-                                  [code (or/c form? indirect? any/c)])]{
+                                  [code (or/c form? any/c)])]{
 
 Wraps compiled code. The @racket[max-let-depth] field indicates the
 maximum stack depth that @racket[code] creates (not counting the
@@ -152,10 +152,10 @@ Wraps a syntax object in a @racket[prefix].}
 
 A supertype for all forms that can appear in compiled code (including
 @racket[expr]s), except for literals that are represented as
-themselves and @racket[indirect] structures to create cycles.}
+themselves.}
 
 @defstruct+[(def-values form) ([ids (listof toplevel?)]
-                               [rhs (or/c expr? seq? indirect? any/c)])]{
+                               [rhs (or/c expr? seq? any/c)])]{
 
 Represents a @racket[define-values] form. Each element of @racket[ids]
 will reference via the prefix either a top-level variable or a local
@@ -166,11 +166,11 @@ from before evaluating @racket[rhs].}
 
 @deftogether[(
 @defstruct+[(def-syntaxes form) ([ids (listof symbol?)]
-                                 [rhs (or/c expr? seq? indirect? any/c)]
+                                 [rhs (or/c expr? seq? any/c)]
                                  [prefix prefix?]
                                  [max-let-depth exact-nonnegative-integer?])]
 @defstruct+[(def-for-syntax form) ([ids (listof toplevel?)]
-                                   [rhs (or/c expr? seq? indirect? any/c)]
+                                   [rhs (or/c expr? seq? any/c)]
                                    [prefix prefix?]
                                    [max-let-depth exact-nonnegative-integer?])]
 )]{
@@ -192,7 +192,7 @@ Represents a top-level @racket[#%require] form (but not one in a
 top-level namespace.}
 
 
-@defstruct+[(seq form) ([forms (listof (or/c form? indirect? any/c))])]{
+@defstruct+[(seq form) ([forms (listof (or/c form? any/c))])]{
 
 Represents a @racket[begin] form, either as an expression or at the
 top level (though the latter is more commonly a @racket[splice] form).
@@ -203,7 +203,7 @@ After each form in @racket[forms] is evaluated, the stack is restored
 to its depth from before evaluating the form.}
 
 
-@defstruct+[(splice form) ([forms (listof (or/c form? indirect? any/c))])]{
+@defstruct+[(splice form) ([forms (listof (or/c form? any/c))])]{
 
 Represents a top-level @racket[begin] form where each evaluation is
 wrapped with a continuation prompt.
@@ -221,7 +221,7 @@ to its depth from before evaluating the form.}
                                                   (listof provided?)))]
                         [requires (listof (cons/c (or/c exact-integer? #f) 
                                                   (listof module-path-index?)))]
-                        [body (listof (or/c form? indirect? any/c))]
+                        [body (listof (or/c form? any/c))]
                         [syntax-body (listof (or/c def-syntaxes? def-for-syntax?))]
                         [unexported (list/c (listof symbol?) (listof symbol?) 
                                             (listof symbol?))]
@@ -282,8 +282,7 @@ Describes an individual provided identifier within a @racket[mod] instance.}
 @defstruct+[(expr form) ()]{
 
 A supertype for all expression forms that can appear in compiled code,
-except for literals that are represented as themselves,
-@racket[indirect] structures to create cycles, and some @racket[seq]
+except for literals that are represented as themselves and some @racket[seq]
 structures (which can appear as an expression as long as it contains
 only other things that can be expressions).}
 
@@ -296,7 +295,7 @@ only other things that can be expressions).}
                         [closure-map (vectorof exact-nonnegative-integer?)]
                         [closure-types (listof (or/c 'val/ref 'flonum))]
                         [max-let-depth exact-nonnegative-integer?]
-                        [body (or/c expr? seq? indirect? any/c)])]{
+                        [body (or/c expr? seq? any/c)])]{
 
 Represents a @racket[lambda] form. The @racket[name] field is a name
 for debugging purposes. The @racket[num-params] field indicates the
@@ -331,15 +330,8 @@ expression for the closure's body.}
 A @racket[lambda] form with an empty closure, which is a procedure
 constant. The procedure constant can appear multiple times in the
 graph of expressions for bytecode, and the @racket[code] field can
-refer back to the same @racket[closure] through an @racket[indirect]
-for a recursive constant procedure; the @racket[gen-id] is different
-for each such constant.}
-
-
-@defstruct[(indirect zo) ([v closure?]) #:mutable #:prefab]{
-
-An indirection used in expression positions to form cycles.}
-
+be a cycle for a recursive constant procedure; the @racket[gen-id]
+is different for each such constant.}
 
 @defstruct+[(case-lam expr) ([name (or/c symbol? vector?)]
                              [clauses (listof lam?)])]{
@@ -349,8 +341,8 @@ Represents a @racket[case-lambda] form as a combination of
 arguments given.}
 
 
-@defstruct+[(let-one expr) ([rhs (or/c expr? seq? indirect? any/c)]
-                            [body (or/c expr? seq? indirect? any/c)]
+@defstruct+[(let-one expr) ([rhs (or/c expr? seq? any/c)]
+                            [body (or/c expr? seq? any/c)]
                             [flonum? boolean?]
                             [unused? boolean?])]{
 
@@ -370,7 +362,7 @@ before evaluating @racket[rhs].}
 
 @defstruct+[(let-void expr) ([count exact-nonnegative-integer?]
                              [boxes? boolean?]
-                             [body (or/c expr? seq? indirect? any/c)])]{
+                             [body (or/c expr? seq? any/c)])]{
 
 Pushes @racket[count] uninitialized slots onto the stack and then runs
 @racket[body]. If @racket[boxes?] is @racket[#t], then the slots are
@@ -380,8 +372,8 @@ filled with boxes that contain @|undefined-const|.}
 @defstruct+[(install-value expr) ([count exact-nonnegative-integer?]
                                   [pos exact-nonnegative-integer?]
                                   [boxes? boolean?]
-                                  [rhs (or/c expr? seq? indirect? any/c)]
-                                  [body (or/c expr? seq? indirect? any/c)])]{
+                                  [rhs (or/c expr? seq? any/c)]
+                                  [body (or/c expr? seq? any/c)])]{
 
 Runs @racket[rhs] to obtain @racket[count] results, and installs them
 into existing slots on the stack in order, skipping the first
@@ -393,7 +385,7 @@ from before evaluating @racket[rhs].}
 
 
 @defstruct+[(let-rec expr) ([procs (listof lam?)]
-                            [body (or/c expr? seq? indirect? any/c)])]{
+                            [body (or/c expr? seq? any/c)])]{
 
 Represents a @racket[letrec] form with @racket[lambda] bindings. It
 allocates a closure shell for each @racket[lambda] form in
@@ -407,7 +399,7 @@ then evaluates @racket[body].}
 
 
 @defstruct+[(boxenv expr) ([pos exact-nonnegative-integer?]
-                           [body (or/c expr? seq? indirect? any/c)])]{
+                           [body (or/c expr? seq? any/c)])]{
 
 Skips @racket[pos] elements of the stack, setting the slot afterward
 to a new box containing the slot's old value, and then runs
@@ -463,8 +455,8 @@ the offset into the array. The @racket[midpt] value is used internally
 for lazy calculation of syntax information.}
 
 
-@defstruct+[(application expr) ([rator (or/c expr? seq? indirect? any/c)]
-                                [rands (listof (or/c expr? seq? indirect? any/c))])]{
+@defstruct+[(application expr) ([rator (or/c expr? seq? any/c)]
+                                [rands (listof (or/c expr? seq? any/c))])]{
 
 Represents a function call. The @racket[rator] field is the expression
 for the function, and @racket[rands] are the argument
@@ -473,9 +465,9 @@ expressions. Before any of the expressions are evaluated,
 used as temporary space).}
 
 
-@defstruct+[(branch expr) ([test (or/c expr? seq? indirect? any/c)]
-                           [then (or/c expr? seq? indirect? any/c)]
-                           [else (or/c expr? seq? indirect? any/c)])]{
+@defstruct+[(branch expr) ([test (or/c expr? seq? any/c)]
+                           [then (or/c expr? seq? any/c)]
+                           [else (or/c expr? seq? any/c)])]{
 
 Represents an @racket[if] form.
 
@@ -483,9 +475,9 @@ After @racket[test] is evaluated, the stack is restored to its depth
 from before evaluating @racket[test].}
 
 
-@defstruct+[(with-cont-mark expr) ([key (or/c expr? seq? indirect? any/c)]
-                                   [val (or/c expr? seq? indirect? any/c)]
-                                   [body (or/c expr? seq? indirect? any/c)])]{
+@defstruct+[(with-cont-mark expr) ([key (or/c expr? seq? any/c)]
+                                   [val (or/c expr? seq? any/c)]
+                                   [body (or/c expr? seq? any/c)])]{
 
 Represents a @racket[with-continuation-mark] expression. 
 
@@ -493,7 +485,7 @@ After each of @racket[key] and @racket[val] is evaluated, the stack is
 restored to its depth from before evaluating @racket[key] or
 @racket[val].}
 
-@defstruct+[(beg0 expr) ([seq (listof (or/c expr? seq? indirect? any/c))])]{
+@defstruct+[(beg0 expr) ([seq (listof (or/c expr? seq? any/c))])]{
 
 Represents a @racket[begin0] expression.
 
@@ -507,7 +499,7 @@ Represents a @racket[#%variable-reference] form.}
 
 
 @defstruct+[(assign expr) ([id toplevel?]
-                           [rhs (or/c expr? seq? indirect? any/c)]
+                           [rhs (or/c expr? seq? any/c)]
                            [undef-ok? boolean?])]{
 
 Represents a @racket[set!] expression that assigns to a top-level or
@@ -518,8 +510,8 @@ After @racket[rhs] is evaluated, the stack is restored to its depth
 from before evaluating @racket[rhs].}
 
 
-@defstruct+[(apply-values expr) ([proc (or/c expr? seq? indirect? any/c)]
-                                 [args-expr (or/c expr? seq? indirect? any/c)])]{
+@defstruct+[(apply-values expr) ([proc (or/c expr? seq? any/c)]
+                                 [args-expr (or/c expr? seq? any/c)])]{
 
 Represents @racket[(call-with-values (lambda () args-expr) proc)],
 which is handled specially by the run-time system.}

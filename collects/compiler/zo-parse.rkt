@@ -348,9 +348,9 @@
     (cons 'free-id-info-type read-free-id-info))))
 
 (define (get-reader type)
-  (or (hash-ref type-readers type #f)
-      (lambda (v)
-        (error 'read-marshalled "reader for ~a not implemented" type))))
+  (hash-ref type-readers type
+            (λ ()
+              (error 'read-marshalled "reader for ~a not implemented" type))))
 
 ;; ----------------------------------------
 ;; Lowest layer of bytecode parsing
@@ -732,6 +732,9 @@
 
 (define (parse-module-path-index cp s)
   s)
+
+(define (error-when-false v)
+  (or v (error "app rator is false")))
 ;; ----------------------------------------
 ;; Main parsing loop
 
@@ -927,7 +930,7 @@
           [(small-marshalled)
            (read-marshalled (- ch cpt-start) cp)]
           [(small-application2)
-           (make-application (read-compact cp)
+           (make-application (error-when-false (read-compact cp))
                              (list (read-compact cp)))]
           [(small-application3)
            (make-application (read-compact cp)
@@ -935,29 +938,26 @@
                                    (read-compact cp)))]
           [(small-application)
            (let ([c (add1 (- ch cpt-start))])
-             (make-application (read-compact cp)
+             (make-application (error-when-false (read-compact cp))
                                (for/list ([i (in-range (sub1 c))])
                                  (read-compact cp))))]          
           [(application)
            (let ([c (read-compact-number cp)])
-             (make-application (read-compact cp)
+             (make-application (error-when-false (read-compact cp))
                                (for/list ([i (in-range c)])
                                  (read-compact cp))))]          
-          [(closure) ; XXX The use of indirect may be an artifact from pre-placeholder days
-           (let* ([l (read-compact-number cp)]
-                  [ind (make-indirect #f)])
-             (symtab-write! cp l ind)
-             (let* ([v (read-compact cp)]
-                    [cl (make-closure v
-                                      ; XXX Why call gensym here?
-                                      (gensym
-                                       (let ([s (lam-name v)])
-                                         (cond
-                                           [(symbol? s) s]
-                                           [(vector? s) (vector-ref s 0)]
-                                           [else 'closure]))))])
-               (set-indirect-v! ind cl)
-               ind))]
+          [(closure)
+           (read-compact-number cp) ; symbol table pos. our marshaler will generate this
+           (let ([v (read-compact cp)])
+             (make-closure 
+              v
+              ; XXX Why call gensym here?
+              (gensym
+               (let ([s (lam-name v)])
+                 (cond
+                   [(symbol? s) s]
+                   [(vector? s) (vector-ref s 0)]
+                   [else 'closure])))))]
           [(svector)
            (read-compact-svector cp (read-compact-number cp))]
           [(small-svector)
