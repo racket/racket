@@ -304,8 +304,3 @@
    ; XXX test dispatch
    
    ))
-
-#|
-(require rackunit/text-ui)
-(run-tests abort-resume-tests)
-|#

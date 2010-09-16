@@ -624,6 +624,3 @@
                                       (values "Jay" 10 6 10 8)))))
    
    ))
-
-(require rackunit/text-ui)
-(run-tests all-formlets-tests)

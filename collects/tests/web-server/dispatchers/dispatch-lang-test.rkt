@@ -162,8 +162,3 @@
    
    ; XXX test web-extras.rkt - redirect/get
    ))
-
-#|
-(require rackunit/text-ui)
-(run-tests dispatch-lang-tests)
-|#
