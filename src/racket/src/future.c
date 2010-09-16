@@ -526,15 +526,23 @@ void scheme_future_block_until_gc()
   }
 
   if (cpucount > 1) {
-    /* `cpucount' is not actually a complete test for whether mfence
-       should work, but the probability of someone using futures
-       on a multiprocessor system without SSE2 seems very low. */
-#ifdef _MSC_VER
-    __asm { 
-      mfence 
-        }
-#else
-    asm("mfence");
+    /* In principle, we need some sort of fence to ensure that future
+       threads see the change to the fuel pointer. The MFENCE
+       instruction would do that, but it requires SSE2. The CPUID
+       instruction is a non-privileged serializing instruction that
+       should be available on any x86 platform that runs threads. */
+#if defined(i386) || defined(__i386__) || defined(__x86_64) || defined(__x86_64__) || defined(__amd64__)
+# ifdef _MSC_VER
+    {
+      int r[4];
+      __cpuid(r, 0);
+    }
+# else
+    {
+      int _eax, _ebx, _ecx, _edx, op = 0;
+      asm ("cpuid" : "=a" (_eax), "=b" (_ebx), "=c" (_ecx), "=d" (_edx) : "a" (op));
+    }
+# endif
 #endif
   }
 
