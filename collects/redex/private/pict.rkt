@@ -1,6 +1,7 @@
 #lang scheme/base
 (require (lib "mrpict.ss" "texpict")
          (lib "utils.ss" "texpict")
+         racket/contract
          scheme/gui/base
          scheme/class
          scheme/match
@@ -41,8 +42,6 @@
          metafunction-font-size
          reduction-relation-rule-separation
          
-         linebreaks
-         
          just-before
          just-after         
          
@@ -54,6 +53,8 @@
          compact-vertical-min-width
          extend-language-show-union
          set-arrow-pict!)
+(provide/contract
+ [linebreaks (parameter/c (or/c #f (listof boolean?)))])
 
 
 ;                                                                             
@@ -790,6 +791,11 @@
          [eqns (select-cases all-eqns)]
          [lhss (select-cases all-lhss)]
          [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 2))) eqns)]
+         [_ (unless (or (not current-linebreaks)
+                        (= (length current-linebreaks) (length eqns)))
+              (error 'metafunction->pict "expected the current-linebreaks parameter to be a list whose length matches the number of cases in the metafunction (~a), but got ~s"
+                     (length eqns)
+                     current-linebreaks))]
          [linebreak-list (or current-linebreaks
                              (map (lambda (x) #f) eqns))]
          [=-pict (make-=)]
@@ -797,15 +803,18 @@
          [max-line-w/pre-sc (apply
                              max
                              (map (lambda (lhs rhs linebreak?)
-                                    (max
-                                     (if (or linebreak?
-                                             (memq style '(up-down
-                                                           up-down/vertical-side-conditions
-                                                           up-down/compact-side-conditions)))
-                                         (max (pict-width lhs)
-                                              (+ (pict-width rhs) (pict-width =-pict)))
-                                         (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
-                                            (* 2 sep)))))
+                                    (cond
+                                      [(and linebreak? (member #f linebreak-list))
+                                       0]
+                                      [(or linebreak?
+                                           (memq style '(up-down
+                                                         up-down/vertical-side-conditions
+                                                         up-down/compact-side-conditions)))
+                                       (max (pict-width lhs)
+                                            (+ (pict-width rhs) (pict-width =-pict)))]
+                                      [else
+                                       (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
+                                          (* 2 sep))]))
                                   lhss rhss linebreak-list))]
          [scs (map (lambda (eqn)
                      (let ([scs (reverse (list-ref eqn 1))])
@@ -838,11 +847,16 @@
               (apply append
                      (map (lambda (lhs sc rhs linebreak?)
                             (append
-                             (if linebreak?
-                                 (list lhs (blank) (blank))
-                                 (if (and sc (eq? style 'left-right/beside-side-conditions))
-                                     (list lhs =-pict (htl-append 10 rhs sc))
-                                     (list lhs =-pict rhs)))
+                             (cond
+                               [(and linebreak? (member #f linebreak-list))
+                                (list (inset lhs 0 0 (- 5 (pict-width lhs)) 0)
+                                      (blank)
+                                      (blank))]
+                               [linebreak? (list lhs (blank) (blank))]
+                               [(and sc (eq? style 'left-right/beside-side-conditions))
+                                (list lhs =-pict (htl-append 10 rhs sc))]
+                               [else
+                                (list lhs =-pict rhs)])
                              (if linebreak?
                                  (let ([p rhs])
                                    (list (htl-append sep
