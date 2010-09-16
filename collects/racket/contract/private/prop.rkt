@@ -192,7 +192,7 @@
           (λ (v)
             (let ([v* (p v)])
               (unless (chaperone-of? v* v)
-                (error "expected a chaperone of ~v, got ~v" v v*))
+                (error 'prop:chaperone-contract (format "expected a chaperone of ~v, got ~v" v v*)))
               v*)))))))
 
 (define build-chaperone-contract-property
