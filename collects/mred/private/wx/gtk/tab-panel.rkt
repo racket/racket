@@ -19,6 +19,7 @@
 
 (define-gtk gtk_notebook_append_page (_fun _GtkWidget _GtkWidget (_or-null _GtkWidget) -> _void))
 (define-gtk gtk_notebook_remove_page (_fun _GtkWidget _int -> _void))
+(define-gtk gtk_notebook_set_scrollable (_fun _GtkWidget _gboolean -> _void))
 (define-gtk gtk_notebook_get_current_page (_fun _GtkWidget -> _int))
 (define-gtk gtk_notebook_set_current_page (_fun _GtkWidget _int -> _void))
 
@@ -51,6 +52,8 @@
     (define gtk (gtk_notebook_new))
     ;; Reparented so that it's always in the current page's bin:
     (define client-gtk (gtk_fixed_new))
+
+    (gtk_notebook_set_scrollable gtk #t)
 
     (super-new [parent parent]
                [gtk gtk]
