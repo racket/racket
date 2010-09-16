@@ -3,9 +3,18 @@
 (require "bib.rkt" (prefix-in - version/utils) racket/list
          "../download/data.rkt")
 
-;; Old style TR entries, for compatibility ------------------------------------
+(provide techreports)
+(define techreports
+  @page[#:file "techreports/" #:part-of 'learning
+        #:title "Technical Reports"]{
+    @p{PLT publishes technical reports about some of its tools and libraries so
+       that scholars who wish to give proper credit to some of our innovations
+       have a definite citation.  Each entry below provides the full pdf and a
+       bibtex entry; some of the bibtex entries provide additional citations to
+       published papers.}
+    @make-bib-table{}})
 
-(provide make-bib-table)
+;; Old style TR entries, for compatibility ------------------------------------
 
 (define last-old-tr "4.9")
 

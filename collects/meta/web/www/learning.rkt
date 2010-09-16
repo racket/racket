@@ -15,7 +15,7 @@
 
 (provide learning)
 (define learning
-  @page{
+  @page[#:part-of 'learning]{
     @parlist[@strong{Resources for Learning}
       (apply parlist @text{Documentation for getting started:} intros)
       @text{@-cookbook — useful recipes, many of which apply to Racket.}
@@ -35,7 +35,7 @@
                    @|graduate-study|.}]})
 
 (define graduate-study
-  @page[#:file "common-plt-app.html" #:part-of learning]{
+  @page[#:file "common-plt-app.html" #:part-of 'learning]{
     @(define (box-style border-width color)
        @list{border: @|border-width|px solid black; padding: 5px; @;
              background: @|color|@";"})
@@ -88,20 +88,10 @@
       @a[href: "http://www.cs.brown.edu/~sk/"]{Shriram}}})
 
 (require "techreports.rkt")
-(define techreports
-  @page[#:file "techreports/" #:part-of learning
-        #:title "Technical Reports"]{
-    @p{PLT publishes technical reports about some of its tools and libraries so
-       that scholars who wish to give proper credit to some of our innovations
-       have a definite citation.  Each entry below provides the full pdf and a
-       bibtex entry; some of the bibtex entries provide additional citations to
-       published papers.}
-
-    @make-bib-table{}})
 
 ;; redirection page for the previous name of this page
 (define outreach+research
-  @page[#:part-of learning
+  @page[#:part-of 'learning
         #:title "Outreach & Research"
         #:link-title @list{Outreach@|nbsp|&@|nbsp|Research}
         #:extra-headers
