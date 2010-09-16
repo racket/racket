@@ -38,6 +38,7 @@
 	 string symbol
 	 empty-list
 	 unspecific
+	 any
 	 property)
 
 (define-syntax provide/rename
@@ -909,6 +910,7 @@
 (define empty-list (signature (one-of empty)))
 
 (define unspecific (signature (predicate (lambda (_) #t))))
+(define any (signature (predicate (lambda (_) #t))))
 
 ;; aus collects/lang/private/teach.ss
 
