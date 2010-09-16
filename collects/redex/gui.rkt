@@ -2,7 +2,7 @@
 ;; use `count-snips'; use something associated with the
 ;; equal hash-table
 
-#lang scheme/base
+#lang racket/base
 
 (require "private/stepper.ss"
          "private/traces.ss"
@@ -10,9 +10,9 @@
          "private/reduction-semantics.ss"
          "private/size-snip.ss"
          mrlib/graph
-         scheme/contract
-         scheme/class
-         scheme/gui/base)
+         racket/contract
+         racket/class
+         racket/gui/base)
 
 (define pp-contract
   (or/c (-> any/c string?)
@@ -35,8 +35,8 @@
                             (any/c term-node? . -> . any))
                #:pp pp-contract
                #:colors (listof (list/c string? string?))
-               #:racket-colors? boolean?
                #:scheme-colors? boolean?
+               #:racket-colors? boolean?
                #:layout (-> any/c any/c)
                #:edge-label-font (or/c #f (is-a?/c font%))
                #:edge-labels? boolean?
@@ -52,8 +52,8 @@
                                (any/c term-node? . -> . any))
                   #:pp pp-contract
                   #:colors (listof any/c)
-                  #:racket-colors? boolean?
                   #:scheme-colors? boolean?
+                  #:racket-colors? boolean?
                   #:layout (-> any/c any/c)
                   #:edge-label-font (or/c #f (is-a?/c font%))
                   #:edge-labels? boolean?

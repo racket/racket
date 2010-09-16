@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; should cache the count of new snips -- dont
 ;; use `count-snips'; use something associated with the
@@ -9,9 +9,9 @@
          "matcher.ss"
          "size-snip.ss"
          "dot.ss"
-         scheme/gui/base
-         scheme/class
-         scheme/file
+         racket/gui/base
+         racket/class
+         racket/file
          framework)
 
 (preferences:set-default 'plt-reducer:show-bottom #t boolean?)
@@ -374,13 +374,13 @@
   ;; set-font-size : number -> void
   ;; =eventspace main thread=
   (define (set-font-size size)
-    (let* ([scheme-standard (send (editor:get-standard-style-list) find-named-style
-                                  "Standard")]
-           [scheme-delta (make-object style-delta%)])
-      (send scheme-standard get-delta scheme-delta)
-      (send scheme-delta set-size-mult 0)
-      (send scheme-delta set-size-add size)
-      (send scheme-standard set-delta scheme-delta)
+    (let* ([standard (send (editor:get-standard-style-list) find-named-style
+                           "Standard")]
+           [delta (make-object style-delta%)])
+      (send standard get-delta delta)
+      (send delta set-size-mult 0)
+      (send delta set-size-add size)
+      (send standard set-delta delta)
       (let loop ([snip (send graph-pb find-first-snip)])
         (when snip
           (when (is-a? snip reflowing-snip<%>)

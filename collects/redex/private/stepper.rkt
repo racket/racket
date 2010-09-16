@@ -11,16 +11,16 @@ todo:
 
 |#
 
-#lang scheme/base
+#lang racket/base
 
-(require scheme/pretty
-         scheme/gui/base
-         scheme/list
-         scheme/class
-         scheme/set
+(require racket/pretty
+         racket/gui/base
+         racket/list
+         racket/class
+         racket/set
          framework
          mrlib/graph
-         scheme/contract
+         racket/contract
          "sexp-diffs.ss"
          "size-snip.ss"
          "reduction-semantics.ss")
@@ -712,8 +712,7 @@ todo:
       (super-new)))
   
   (define (mk-big-snip sexp node pp init-cw)
-    (let* (#;[txt (new scheme:text%)]
-             [txt (new text:keymap%)]
+    (let* ([txt (new text:keymap%)]
            [s (new big-snip% 
                    [pp pp]
                    [node node]
