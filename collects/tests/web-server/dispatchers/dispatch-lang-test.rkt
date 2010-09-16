@@ -161,4 +161,18 @@
                   "Quiz Results")
    
    ; XXX test web-extras.rkt - redirect/get
+   
+   (let* ([x (random 500)]
+          [xs (string->bytes/utf-8 (number->string x))]
+          [y (random 500)]
+          [ys (string->bytes/utf-8 (number->string y))])
+     (test-equal? 
+      "redirectget.rkt"
+      (let* ([d (mkd (build-path example-servlets "redirectget.rkt"))]
+             [k0 (simple-xpath* '(form #:action) (call d url0 empty))]
+             [k1 (call d k0 empty)])
+        k1)
+      ""))
+   
+   
    ))
