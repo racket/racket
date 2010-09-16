@@ -1,8 +1,7 @@
 #lang scribble/doc
 @(require "web-server.rkt")
 
-@title[#:tag "servlet-env"
-       #:style 'toc]{Simple Single Servlet Servers}
+@title[#:tag "servlet-env"]{Simple Single Servlet Servers}
 @(require (for-label web-server/servlet-env
                      web-server/http
                      web-server/managers/lru
@@ -17,9 +16,13 @@
                      web-server/stuffers
                      racket/list))
 
-@defmodule[web-server/servlet-env]{
+@defmodule[web-server/servlet-env]
 
-The @web-server provides a way to quickly configure and start a servlet with more customizability than @racketmodname[web-server/insta] provides. This is provided by the @racketmodname[web-server/servlet-env] module. Here is a simple example of its use:
+The @web-server provides a way to quickly configure and start a servlet with more customizability than @racketmodname[web-server/insta] provides. This is provided by the @racketmodname[web-server/servlet-env] module.
+
+@section{Examples}
+
+Here is a simple example of its use:
 @racketmod[
 racket
 (require web-server/servlet
@@ -94,6 +97,8 @@ and don't want a browser opened or the DrRacket banner printed, then you can wri
                #:command-line? #t)
 ]
 
+@subsection{Stateless Servlets}
+
 Suppose you would like to start a server for a stateless Web servlet @filepath{servlet.rkt} that provides @racketid[start]:
 @racketmod[
  racket
@@ -122,6 +127,8 @@ serialized continuations. Second, due to an unfortunately subtle bug that we hav
 every time the continuation link is clicked, @racket[serve/servlet] will
 run and attempt to start a Web server instance and open a browser window. These problems do not occur if your servlet is saved in a file
 and if @racket[serve/servlet] is run in another module.
+
+@section{Full API}
 
 @defproc[(serve/servlet [start (request? . -> . response/c)]
                         [#:command-line? command-line? boolean? #f]
@@ -211,4 +218,3 @@ and if @racket[serve/servlet] is run in another module.
  request. Otherwise, the client decides based on what HTTP version it uses.
 }
               
-}

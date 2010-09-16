@@ -61,6 +61,7 @@ These servlets have an extensive API available to them: @racketmodname[net/url],
 @racketmodname[web-server/stuffers].
       Some of these are documented in the subsections that follow.
 
+@include-section["stateless-usage.scrbl"]
 @include-section["serial.scrbl"]
 @include-section["native.scrbl"]
 @include-section["lang.scrbl"]
@@ -69,4 +70,3 @@ These servlets have an extensive API available to them: @racketmodname[net/url],
 @include-section["web-param.scrbl"]
 @include-section["soft.scrbl"]
 @include-section["stuffers.scrbl"]
-@include-section["stateless-usage.scrbl"]
