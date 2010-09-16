@@ -252,8 +252,8 @@ creating new types, and annotating expressions.
 Local bindings, like @racket[let], each with
 associated types.  In the second form, @racket[_t0] is the type of the
 result of @racket[_loop] (and thus the result of the entire
-			      expression as well as the final
-				expression in @racket[body]).}
+expression as well as the final expression in @racket[body]).
+Type annotations are optional.}
 @deftogether[[
 @defform[(letrec: ([v : t e] ...) . body)]
 @defform[(let*: ([v : t e] ...) . body)]
@@ -262,7 +262,8 @@ result of @racket[_loop] (and thus the result of the entire
 @defform[(let*-values: ([([v : t] ...) e] ...) . body)]]]{
 Type-annotated versions of
 @racket[letrec], @racket[let*], @racket[let-values],
-  @racket[letrec-values], and @racket[let*-values].}  
+@racket[letrec-values], and @racket[let*-values]. As with
+@racket[let:], type annotations are optional.}
 
 @deftogether[[
 @defform[(let/cc: v : t . body)]
@@ -297,11 +298,14 @@ A polymorphic function of multiple arities.}
               ([type-ann-maybe code:blank
                                @code:line[: Void]]
 	       [for:-clause [id : t seq-expr]
+	                    [id seq-expr]
 	                    @code:line[#:when guard]])]{
 Like @racket[for], but each @racket[id] having the associated type
 @racket[t]. Since the return type is always @racket[Void], annotating
 the return type of a @racket[for] form is optional. Unlike
 @racket[for], multi-valued @racket[seq-expr]s are not supported.
+Type annotations in clauses are optional for all @racket[for:]
+variants.
 }
 
 @deftogether[[
@@ -351,7 +355,8 @@ These behave like their non-annotated counterparts.
               ([step-expr-maybe code:blank
                                 step-expr])]{
 Like @racket[do], but each @racket[id] having the associated type @racket[t], and 
-the final body @racket[expr] having the type @racket[u].
+the final body @racket[expr] having the type @racket[u]. Type
+annotations are optional.
 }
 
 

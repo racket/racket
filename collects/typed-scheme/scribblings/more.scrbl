@@ -60,7 +60,8 @@ type @racket[(Number -> Number)].  In the body of @racket[id],
 The @racket[let:] form is exactly like @racket[let], but type
 annotations are provided for each variable bound.  Here, @racket[x] is
 given the type @racket[Number].  The @racket[let*:] and
-@racket[letrec:] are similar.
+@racket[letrec:] are similar. Annotations are optional with
+@racket[let:] and variants.
 
 @racketblock[
 (let-values: ([([x : Number] [y : String]) (values 7 "hello")])
