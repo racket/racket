@@ -232,7 +232,7 @@
   [parse-marshalled 
    #t
    (zo-parse/bytes marshal-parsed)]
-  [compare-parsed-to-parsed-marshalled 
+  #;[compare-parsed-to-parsed-marshalled 
    #f
    (equal?/why-not parse-orig parse-marshalled)]
   #;[marshal-marshalled 

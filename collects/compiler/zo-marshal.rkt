@@ -516,8 +516,6 @@
         (unless (zero? phase)
           (out-number -2 out))
         (out-number pos out)]
-       [(struct indirect (val))
-        (out-anything val out)]
        [(struct closure (lam gen-id))
         (out-byte CPT_CLOSURE out)
         (let ([pos ((out-shared-index out) v #:error? #t)])
