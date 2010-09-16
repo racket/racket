@@ -44,19 +44,18 @@ Makes a new empty splay-tree. The splay tree uses @racket[=?] and
 ]
 }
 
-@defproc[(make-integer-splay-tree [#:adjust? adjust boolean? #f]
-                                  [#:key-contract key-contract contract? any/c]
-                                  [#:value-contract value-contract contract? any/c])
+@defproc[(make-adjustable-splay-tree
+           [#:key-contract key-contract contract? any/c]
+           [#:value-contract value-contract contract? any/c])
          splay-tree?]{
 
 Makes a new empty splay-tree that permits only exact integers as keys
-(in addition to any constraints imposed by @racket[key-contract]). If
-@racket[adjust?] is true, then the resulting splay tree answers true
-to @racket[splay-tree-with-adjust?] and supports efficient key
-adjustment.
+(in addition to any constraints imposed by @racket[key-contract]). The
+resulting splay tree answers true to @racket[adjustable-splay-tree?]
+and supports efficient key adjustment.
 
 @examples[#:eval the-eval
-(define splay-tree (make-integer-splay-tree))
+(define splay-tree (make-adjustable-splay-tree))
 (splay-tree-set! splay-tree 3 'apple)
 (splay-tree-set! splay-tree 6 'cherry)
 (dict-map splay-tree list)
@@ -71,7 +70,7 @@ adjustment.
 Returns @racket[#t] if @racket[x] is a splay-tree, @racket[#f] otherwise.
 }
 
-@defproc[(splay-tree-with-adjust? [s splay-tree?]) boolean?]{
+@defproc[(adjustable-splay-tree? [x any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[x] is a splay-tree that supports key
 adjustment; see @racket[splay-tree-contract!] and
@@ -114,7 +113,7 @@ Removes all keys in [@racket[from], @racket[to]); that is, all keys
 greater than or equal to @racket[from] and less than @racket[to].
 }
 
-@defproc[(splay-tree-contract! [s (and/c splay-tree? splay-tree-with-adjust?)]
+@defproc[(splay-tree-contract! [s adjustable-splay-tree?]
                                [from any/c] [to any/c])
          void?]{
 
@@ -123,7 +122,7 @@ of all keys greater than or equal to @racket[to] by @racket[(- to
 from)].
 }
 
-@defproc[(splay-tree-expand! [s (and/c splay-tree? splay-tree-with-adjust?)]
+@defproc[(splay-tree-expand! [s adjustable-splay-tree?]
                              [from any/c] [to any/c])
          void?]{
 

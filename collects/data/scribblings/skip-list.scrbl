@@ -25,10 +25,13 @@ A skip-list is a dictionary (@racket[dict?] from
 dictionary interface for iterator-based search and mutation.
 
 @defproc[(make-skip-list [=? (any/c any/c . -> . any/c)]
-                         [<? (any/c any/c . -> . any/c)])
+                         [<? (any/c any/c . -> . any/c)]
+                         [#:key-contract key-contract contract? any/c]
+                         [#:value-contract value-contract contract? any/c])
          skip-list?]{
 
-Makes a new empty skip-list. The skip-list uses @racket[=?] and @racket[<?] to order keys.
+Makes a new empty skip-list. The skip-list uses @racket[=?] and
+@racket[<?] to order keys.
 
 @examples[#:eval the-eval
 (define skip-list (make-skip-list = <))

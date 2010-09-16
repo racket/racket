@@ -1,10 +1,49 @@
 #lang racket/base
-(require racket/match
+(require (for-syntax racket/base
+                     unstable/syntax)
+         racket/match
          racket/dict
          racket/contract
          "private/ordered-dict.rkt")
 
-;; ======== Raw splay tree ========
+#|
+This library contains two implementations of splay trees.
+
+node-splay-tree:
+  - nodes are separate structures
+  - bottom-up splay (no allocation)
+  - fast expand!/contract!/remove-range! via parent-relative keys
+  - specialized to integer keys
+
+compact-splay-tree:
+  - nodes packed in vector
+  - top-down splay (constant preallocated scratch node)
+  - 2-3x faster than *unspecialized* node-based splay-tree
+    - from vector packing, not from top-down splay
+
+If anyone wants to adapt the top-down splay algorithm to work with
+parent-relative keys, we can get rid of node-splay-tree entirely.
+|#
+
+
+
+;; ============================================================
+;; Common
+;; ============================================================
+
+(define not-given (gensym 'not-given))
+
+(struct splay-tree-iter (key))
+
+(define-syntax-rule (mkcmp <? =?)
+  (lambda (x y) (cond [(=? x y) '=] [(<? x y) '<] [else '>])))
+
+(define intcmp (mkcmp < =))
+
+
+;; ============================================================
+;; Node splay tree
+;; ============================================================
 
 (struct node (key value left right) #:mutable #:transparent)
 
@@ -69,9 +108,11 @@ is not called.
 To avoid allocation, we flatten the types above and use multiple value
 return.
 
-<SPB> = (Maybe Side) (Maybe Node)
-SP = (values Status (Maybe Node) <SPB>)
-   = (values Status (Maybe Node) (Maybe Side) (Maybe Node))
+<SPB> = Node/#f Node/#f
+SP = (values Status Node/#f <SPB>)
+   = (values Status Node/#f Side/#f Node/#f)
+Status = 'found | 'added | #f
+Side = 'left | 'right
 
 In (values status nroot pside pnode):
   nroot is the new root (or #f)
@@ -83,86 +124,88 @@ In (values status nroot pside pnode):
 |#
 
 (define-syntax-rule (SPfinish expr)
-  (let-values ([(tx ok? x p-side p) expr])
-    (finish tx ok? x p-side p)))
+  (let-values ([(ok? x p-side p) expr])
+    (finish ok? x p-side p)))
 
 (define-syntax-rule (SPisplay x-expr gp-side gp)
-  (let-values ([(tx ok? x p-side p) x-expr])
-    (isplay! tx ok? x p-side p gp-side gp)))
+  (let-values ([(ok? x p-side p) x-expr])
+    (isplay! ok? x p-side p gp-side gp)))
 
-(define (SPunit tx x) (values tx 'found x #f #f))
-(define (SPunit/add tx x) (values tx 'added x #f #f))
-(define (SPfail tx) (values tx #f #f #f #f))
+(define (SPunit x) (values 'found x #f #f))
+(define (SPunit/add x) (values 'added x #f #f))
+(define (SPfail) (values #f #f #f #f))
 
 ;; --------
 
-;; find/root : ... -> (values boolean node/#f)
+;; find : ... -> (values status node/#f)
 ;; If ok?, then node returned is one sought.
-(define (find/root cmp tx k x add-v)
-  (SPfinish (findb cmp tx k x #f #f add-v)))
+(define (n:find k x add-v)
+  (SPfinish (findb k x #f #f add-v)))
 
 ;; findb : ... -> SP
-(define (findb cmp tx k x p-side p add-v)
+(define (findb k x p-side p add-v)
   (cond [x
-         (let ([k* (if tx (- k (node-key x)) k)])
-           (case (cmp k (node-key x))
-             ((=) (SPunit tx x))
-             ((<) (SPisplay (findb cmp tx k* (node-left x)  'left  x add-v) 'left x))
-             ((>) (SPisplay (findb cmp tx k* (node-right x) 'right x add-v) 'right x))))]
+         (let ([k* (- k (node-key x))])
+           (cond [(= k (node-key x))
+                  (SPunit x)]
+                 [(< k (node-key x))
+                  (SPisplay (findb k* (node-left x)  'left  x add-v) 'left x)]
+                 [else
+                  (SPisplay (findb k* (node-right x) 'right x add-v) 'right x)]))]
         [add-v
          (let ([new-node (node k (car add-v) #f #f)])
            ;; FIXME: link unnecessary? will be done in isplay/finish?
            (when p (set-node-side! p p-side new-node))
-           (SPunit/add tx new-node))]
-        [else (SPfail tx)]))
+           (SPunit/add new-node))]
+        [else (SPfail)]))
 
-(define (find-min tx x)
-  (define (find-min-loop tx x)
+(define (n:find-min x)
+  (define (find-min-loop x)
     (cond [(and x (node-left x))
-           (SPisplay (find-min-loop tx (node-left x)) 'left x)]
-          [x (SPunit tx x)]
-          [else (SPfail tx)]))
-  (SPfinish (find-min-loop tx x)))
+           (SPisplay (find-min-loop (node-left x)) 'left x)]
+          [x (SPunit x)]
+          [else (SPfail)]))
+  (SPfinish (find-min-loop x)))
 
-(define (find-max tx x)
-  (define (find-max-loop tx x)
+(define (n:find-max x)
+  (define (find-max-loop x)
     (cond [(and x (node-right x))
-           (SPisplay (find-max-loop tx (node-right x)) 'right x)]
-          [x (SPunit tx x)]
-          [else (SPfail tx)]))
-  (SPfinish (find-max-loop tx x)))
+           (SPisplay (find-max-loop (node-right x)) 'right x)]
+          [x (SPunit x)]
+          [else (SPfail)]))
+  (SPfinish (find-max-loop x)))
 
 ;; isplay! : ... -> SP
 ;; incremental splay
-(define (isplay! tx ok? x p-side p gp-side gp)
+(define (isplay! ok? x p-side p gp-side gp)
   (cond [(eq? x #f)
          ;; Then p-side = #f, p = #f
          ;; Overwrite new root with gp
-         (values tx ok? gp #f #f)]
+         (values ok? gp #f #f)]
         [p-side ;; we have two splay path segments; splay
          (set-node-side! p p-side x)
          (cond [(eq? p-side gp-side)
                 ;; zig-zig
-                (rotate! tx p p-side)
+                (rotate! p p-side)
                 (set-node-side! gp gp-side x)
-                (rotate! tx gp gp-side)
-                (values tx ok? x #f #f)]
+                (rotate! gp gp-side)
+                (values ok? x #f #f)]
                [else
                 ;; zig-zag
-                (rotate! tx p p-side)
+                (rotate! p p-side)
                 (set-node-side! gp gp-side x)
-                (rotate! tx gp gp-side)
-                (values tx ok? x #f #f)])]
+                (rotate! gp gp-side)
+                (values ok? x #f #f)])]
         [else
-         (values tx ok? x gp-side gp)]))
+         (values ok? x gp-side gp)]))
 
-(define (finish tx ok? x p-side p)
+(define (finish ok? x p-side p)
   (cond [(eq? x #f)
          ;; Then p-side = #f, p = #f
          (values ok? #f)]
         [p-side ;; one splay path segment left; perform zig
          (set-node-side! p p-side x)
-         (rotate! tx p p-side)
+         (rotate! p p-side)
          (values ok? x)]
         [else ;; no splay path segments left
          (values ok? x)]))
@@ -172,210 +215,133 @@ In (values status nroot pside pnode):
     ((left) (set-node-left! n v))
     ((right) (set-node-right! n v))))
 
-(define (rotate! tx x side)
+(define (rotate! x side)
   (case side
-    ((left) (right! tx x))
-    ((right) (left! tx x))
+    ((left) (right! x))
+    ((right) (left! x))
     ((#f) (void))))
 
-(define (right! tx p)
+(define (right! p)
   (match p
     [(node Kp _ (and x (node Kx _ A B)) C)
      (set-node-left! p B)
      (set-node-right! x p)
-     (when tx
-       (set-node-key! p (- 0 Kx))
-       (set-node-key! x (+ Kp Kx))
-       (when B
-         (set-node-key! B (+ (node-key B) Kx))))]))
+     (set-node-key! p (- 0 Kx))
+     (set-node-key! x (+ Kp Kx))
+     (when B
+       (set-node-key! B (+ (node-key B) Kx)))]))
 
-(define (left! tx p)
+(define (left! p)
   (match p
     [(node Kp _ A (and x (node Kx _ B C)))
      (set-node-right! p B)
      (set-node-left! x p)
-     (when tx
-       (set-node-key! p (- 0 Kx))
-       (set-node-key! x (+ Kp Kx))
-       (when B
-         (set-node-key! B (+ (node-key B) Kx))))]))
-
-#|
-Top-down splay
-
-Doesn't support parent-relative keys.
-No faster than bottom-up splay, surprisingly.
-|#
-#|
-(define (findt cmp k x scratch add-v)
-  (cond [x
-         (findt* cmp k x scratch scratch scratch add-v)]
-        [add-v
-         (values 'added (node k (car add-v) #f #f))]
-        [else
-         (values #f #f)]))
-
-(define (findt* cmp k t scratch l r add-v)
-  (define-syntax-rule (finish! status t l r)
-    (assemble! status t scratch l r))
-  (define-syntax-rule (continue t l r)
-    (findt* cmp k t scratch l r add-v))
-  (define-syntax-rule (rotate&link cmpresult rl l r
-                                   (node-A set-node-A!)
-                                   (node-B set-node-B!))
-    (let ([tA (node-A t)])
-      (cond [tA
-             (let ([c (cmp k (node-key tA))])
-               (case c
-                 ((cmpresult) ;; k should be on A-side of tA
-                  (set-node-A! t (node-B tA))
-                  (set-node-B! tA t)
-                  (let ([tAA (node-A tA)])
-                    (cond [tAA
-                           (set-node-A! rl tA)
-                           (let ([rl tA]) ;; shadows either l or r
-                             (continue tAA l r))]
-                          [add-v
-                           (let ([tAA (node k (car add-v) #f #f)])
-                             (set-node-A! tA tAA)
-                             (set-node-A! rl tA)
-                             (let ([rl tA]) ;; shadows either l or r
-                               (finish! 'added tAA l r)))]
-                          [else
-                           (finish! #f tA l r)])))
-                 (else
-                  (set-node-A! rl t)
-                  (let ([rl t]) ;; shadows either l or r
-                    (continue tA l r)))))]
-            [add-v
-             (let ([tA (node k (car add-v) #f #f)])
-               (set-node-A! t tA)
-               (set-node-A! rl t)
-               (let ([rl t]) ;; shadows either l or r
-                 (finish! 'added tA l r)))]
-            [else
-             (finish! #f t l r)])))
-  (case (cmp k (node-key t))
-    ((<)
-     (rotate&link < r l r (node-left set-node-left!) (node-right set-node-right!)))
-    ((>)
-     (rotate&link > l l r (node-right set-node-right!) (node-left set-node-left!)))
-    (else
-     (finish! 'found t l r))))
-
-(define (assemble! status t scratch l r)
-  (set-node-right! l (node-left t))
-  (set-node-left! r (node-right t))
-  (set-node-left! t (node-right scratch))
-  (set-node-right! t (node-left scratch))
-  (values status t))
-|#
+     (set-node-key! p (- 0 Kx))
+     (set-node-key! x (+ Kp Kx))
+     (when B
+       (set-node-key! B (+ (node-key B) Kx)))]))
 
 ;; --------
 
 ;; if left is node, new root is max(left)
-(define (join-left tx left right)
+(define (n:join-left left right)
   (cond [(and left right)
-         (let-values ([(_ok? left*) (find-max tx left)])
+         (let-values ([(_ok? left*) (n:find-max left)])
            ;; left* is node, left*.right = #f
            (set-node-right! left* right)
-           (when tx
-             (set-node-key! right (- (node-key right) (node-key left*))))
+           (set-node-key! right (- (node-key right) (node-key left*)))
            left*)]
         [left left]
         [else right]))
 
 ;; if right is node, new root is min(right)
-(define (join-right tx left right)
+(define (n:join-right left right)
   (cond [(and left right)
-         (let-values ([(_ok? right*) (find-min tx right)])
+         (let-values ([(_ok? right*) (n:find-min right)])
            ;; right* is node, right*.left = #f
            (set-node-left! right* left)
-           (when tx
-             (set-node-key! left (- (node-key left) (node-key right*))))
+           (set-node-key! left (- (node-key left) (node-key right*)))
            right*)]
         [right right]
         [else left]))
 
-(define (split/drop-root tx root)
+(define (n:split/drop-root root)
   (let ([left (node-left root)]
         [right (node-right root)])
-    (when tx
-      (when left
-        (set-node-key! left (+ (node-key left) (node-key root))))
-      (when right
-        (set-node-key! right (+ (node-key right) (node-key root)))))
+    (when left
+      (set-node-key! left (+ (node-key left) (node-key root))))
+    (when right
+      (set-node-key! right (+ (node-key right) (node-key root))))
     (values left right)))
 
-(define (split/root-to-left tx root)
+(define (n:split/root-to-left root)
   (let ([right (node-right root)])
-    (when (and tx right)
+    (when right
       (set-node-key! right (+ (node-key right) (node-key root))))
     (set-node-right! root #f)
     (values root right)))
 
-(define (split/root-to-right tx root)
+(define (n:split/root-to-right root)
   (let ([left (node-left root)])
-    (when (and tx left)
+    (when left
       (set-node-key! left (+ (node-key left) (node-key root))))
     (set-node-left! root #f)
     (values left root)))
 
-(define (delete-root tx root)
-  (let-values ([(left right) (split/drop-root tx root)])
-    (join-left tx left right)))
+(define (n:delete-root root)
+  (let-values ([(left right) (n:split/drop-root root)])
+    (n:join-left left right)))
 
-(define (remove-range! cmp tx root from to contract?)
-  (let*-values ([(ok? from-node) (find/root cmp tx from root (list #f))]
+(define (n:remove-range! root from to contract!?)
+  (let*-values ([(ok? from-node) (n:find from root (list #f))]
                 [(left-tree right-tree)
                  (if (eq? ok? 'added)
-                     (split/drop-root tx from-node)
-                     (split/root-to-right tx from-node))]
-                [(ok? to-node) (find/root cmp tx to right-tree (list #f))]
+                     (n:split/drop-root from-node)
+                     (n:split/root-to-right from-node))]
+                [(ok? to-node) (n:find to right-tree (list #f))]
                 [(mid-tree right-tree)
                  (if (eq? ok? 'added)
-                     (split/drop-root tx to-node)
-                     (split/root-to-right tx to-node))])
-    (when (and tx contract?)
+                     (n:split/drop-root to-node)
+                     (n:split/root-to-right to-node))])
+    (when contract!?
       (when right-tree
         (set-node-key! right-tree (+ (node-key right-tree) (- from to)))))
-    (join-left tx left-tree right-tree)))
+    (n:join-left left-tree right-tree)))
 
-(define (expand! cmp tx root from to)
-  (let*-values ([(ok? from-node) (find/root cmp tx from root (list #f))]
+(define (n:expand! root from to)
+  (let*-values ([(ok? from-node) (n:find from root (list #f))]
                 [(left-tree right-tree)
                  (if (eq? ok? 'added)
-                     (split/drop-root tx from-node)
-                     (split/root-to-right tx from-node))])
-    (when tx ;; ie, #t
-      (when right-tree
-        (set-node-key! right-tree (+ (node-key right-tree) (- to from)))))
-    (join-left tx left-tree right-tree)))
+                     (n:split/drop-root from-node)
+                     (n:split/root-to-right from-node))])
+    (when right-tree
+      (set-node-key! right-tree (+ (node-key right-tree) (- to from))))
+    (n:join-left left-tree right-tree)))
 
-(define (find-prev tx root)
+(define (n:find-prev root)
   ;; PRE: root is node and root.left is node; ie, has-prev?
-  (let-values ([(left right) (split/root-to-right tx root)])
+  (let-values ([(left right) (n:split/root-to-right root)])
     ;; join-left does max(left)
-    (join-left tx left right)))
+    (n:join-left left right)))
 
-(define (find-next tx root)
+(define (n:find-next root)
   ;; PRE: root is node and root.right is node; ie, has-next?
-  (let-values ([(left right) (split/root-to-left tx root)])
+  (let-values ([(left right) (n:split/root-to-left root)])
     ;; join-right does min(right)
-    (join-right tx left right)))
+    (n:join-right left right)))
 
-(define (has-prev? x) (and x (node-left x) #t))
-(define (has-next? x) (and x (node-right x) #t))
+(define (n:has-prev? x) (and x (node-left x) #t))
+(define (n:has-next? x) (and x (node-right x) #t))
 
-;; ======== Splay tree ========
+;; ------------------------------------------------------------
+;; Splay tree operations
+;; ------------------------------------------------------------
 
-(define not-given (gensym 'not-given))
-
-(define (splay-tree-ref s x [default not-given])
+(define (n:splay-tree-ref s x [default not-given])
   (match s
-    [(splay-tree root size cmp tx)
-     (let-values ([(ok? root) (find/root cmp tx x root #f)])
-       (set-splay-tree-root! s root)
+    [(node-splay-tree root size)
+     (let-values ([(ok? root) (n:find x root #f)])
+       (set-node-splay-tree-root! s root)
        (if ok?
            (node-value root)
            (cond [(eq? default not-given)
@@ -384,51 +350,60 @@ No faster than bottom-up splay, surprisingly.
                   (default)]
                  [else default])))]))
 
-(define (splay-tree-set! s x v)
+(define (n:splay-tree-set! s x v)
   (match s
-    [(splay-tree root size cmp tx)
-     (let-values ([(ok? root) (find/root cmp tx x root (list v))])
-       (set-splay-tree-root! s root)
+    [(node-splay-tree root size)
+     (let-values ([(ok? root) (n:find x root (list v))])
+       (set-node-splay-tree-root! s root)
        (when (and (eq? ok? 'added) size)
-         (set-splay-tree-size! s (add1 size)))
+         (set-node-splay-tree-size! s (add1 size)))
        (unless (eq? (node-value root) v)
          (set-node-value! root v)))]))
 
-(define (splay-tree-remove! s x)
+(define (n:splay-tree-remove! s x)
   (match s
-    [(splay-tree root size cmp tx)
-     (let-values ([(ok? root) (find/root cmp tx x root #f)])
-       (when ok? ;; => root is node
-         (set-splay-tree-root! s (delete-root tx root))
-         (when size (set-splay-tree-size! s (sub1 size)))))]))
+    [(node-splay-tree root size)
+     (let-values ([(ok? root) (n:find x root #f)])
+       (cond [ok? ;; => root is node to remove
+              (set-node-splay-tree-root! s (n:delete-root root))
+              (when size (set-node-splay-tree-size! s (sub1 size)))]
+             [else
+              (set-node-splay-tree-root! s root)]))]))
 
-(define (splay-tree-count s)
-  (let ([size (splay-tree-size s)])
+(define (n:splay-tree-count s)
+  (let ([size (node-splay-tree-size s)])
     (if size
         size
-        (let ([size (let loop ([x (splay-tree-root s)] [n 0])
+        (let ([size (let loop ([x (node-splay-tree-root s)] [n 0])
                       (if x
                           (loop (node-left x) (loop (node-right x) (add1 n)))
                           n))])
-          (set-splay-tree-size! s size)
+          (set-node-splay-tree-size! s size)
           size))))
 
-(define (splay-tree-remove-range! s from to)
+(define (n:splay-tree-remove-range! s from to)
   (match s
-    [(splay-tree root size cmp tx)
-     (set-splay-tree-root! s (remove-range! cmp tx root from to #f))
-     (set-splay-tree-size! s #f)]))
+    [(node-splay-tree root size)
+     (when (< from to)
+       (set-node-splay-tree-root! s (n:remove-range! root from to #f))
+       (set-node-splay-tree-size! s #f))]))
 
 (define (splay-tree-contract! s from to)
   (match s
-    [(splay-tree root size cmp tx)
-     (set-splay-tree-root! s (remove-range! cmp tx root from to #t))
-     (set-splay-tree-size! s #f)]))
+    [(node-splay-tree root size)
+     (unless (< from to)
+       (error 'splay-tree-contract!
+              "bad range: ~s to ~s" from to))
+     (set-node-splay-tree-root! s (n:remove-range! root from to #t))
+     (set-node-splay-tree-size! s #f)]))
 
 (define (splay-tree-expand! s from to)
   (match s
-    [(splay-tree root size cmp tx)
-     (set-splay-tree-root! s (expand! cmp tx root from to))]))
+    [(node-splay-tree root size)
+     (unless (< from to)
+       (error 'splay-tree-expand!
+              "bad range: ~s to ~s" from to))
+     (set-node-splay-tree-root! s (n:expand! root from to))]))
 
 ;; ========
 
@@ -437,7 +412,6 @@ Iteration in splay-trees is problematic.
  - any access to the splay-tree disturbs most notions of "position"
    (other dictionaries, eg hashes, are only disturbed by *updates*)
  - parent-relative keys need parent chain to be interpreted
- - sequential iteration is worst for splaying (leaves as linear tree)
 
 Options
  1) position = parent chain (very likely to get out of sync)
@@ -450,173 +424,645 @@ Options
 (2) seems to be the best compromise.
 |#
 
-(struct splay-tree-iter (key))
-
-(define (splay-tree-iterate-first s)
+(define (n:splay-tree-iterate-first s)
   (match s
-    [(splay-tree root size cmp tx)
-     (let-values ([(ok? root) (find-min tx root)])
-       (set-splay-tree-root! s root)
+    [(node-splay-tree root size)
+     (let-values ([(ok? root) (n:find-min root)])
+       (set-node-splay-tree-root! s root)
        (if ok? (splay-tree-iter (node-key root)) #f))]))
 
-(define (splay-tree-iterate-next s pos)
+(define (n:splay-tree-iterate-next s pos)
   (match pos
     [(splay-tree-iter key)
-     (splay-tree-iterate-least/>? s key)]))
+     (n:splay-tree-iterate-least/>? s key)]))
 
-(define (splay-tree-iterate-key s pos)
+(define (n:splay-tree-iterate-key s pos)
   (match pos
     [(splay-tree-iter key) key]))
 
-(define (splay-tree-iterate-value s pos)
+(define (n:splay-tree-iterate-value s pos)
   (match pos
-    [(splay-tree-iter key) (splay-tree-ref s key #f)]))
-
-;; ========
-
-(define-syntax-rule (mkcmp <? =?)
-  (lambda (x y) (cond [(=? x y) '=] [(<? x y) '<] [else '>])))
-
-(define (make-splay-tree =? <?
-                         #:key-contract [key-contract any/c]
-                         #:value-contract [value-contract any/c])
-  (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
-         (splay-tree #f 0 (mkcmp <? =?) #f)]
-        [else
-         (splay-tree* #f 0 (mkcmp <? =?) #f key-contract value-contract)]))
-
-#|
-In an integer splay tree, keys can be stored relative to their parent nodes.
-|#
-(define (make-integer-splay-tree #:adjust? [adjust? #f]
-                                 #:key-contract [key-contract any/c]
-                                 #:value-contract [value-contract any/c])
-  (splay-tree* #f 0 (mkcmp < =) (and adjust? #t)
-               (if (eq? key-contract any/c)
-                   exact-integer?
-                   (and/c exact-integer? key-contract))
-               value-contract))
-
-(define (splay-tree-with-adjust? s)
-  (splay-tree-tx s))
-
-;; ========
+    [(splay-tree-iter key) (n:splay-tree-ref s key #f)]))
 
 ;; Order-based search
 
-(define (extreme who s key cmp-result has-X? find-X)
+(define (n:extreme s key cmp-result has-X? find-X)
   (match s
-    [(splay-tree root size cmp tx)
-     (let*-values ([(_ok? root) (find/root cmp tx key root #f)]
-                   [(ok? root)
-                    (cond [(and root (memq (cmp (node-key root) key) cmp-result))
-                           (values #t root)]
-                          [(has-X? root)
-                           (values #t (find-X tx root))]
-                          [else
-                           (values #f root)])])
-       (set-splay-tree-root! s root)
+    [(node-splay-tree root size)
+     (let-values ([(ok? root)
+                   (n:extreme* root key cmp-result has-X? find-X)])
+       (set-node-splay-tree-root! s root)
        (and ok? (splay-tree-iter (node-key root))))]))
 
-(define (splay-tree-iterate-greatest/<=? s key)
-  (extreme 'splay-tree-iterate-greatest/<=? s key '(< =) has-prev? find-prev))
-(define (splay-tree-iterate-greatest/<? s key)
-  (extreme 'splay-tree-iterate-greatest/<? s key '(<) has-prev? find-prev))
-(define (splay-tree-iterate-least/>=? s key)
-  (extreme 'splay-tree-iterate-least/>=? s key '(> =) has-next? find-next))
-(define (splay-tree-iterate-least/>? s key)
-  (extreme 'splay-tree-iterate-least/>? s key '(>) has-next? find-next))
+(define (n:extreme* root key cmp-result has-X? find-X)
+  (let-values ([(_ok? root) (n:find key root #f)])
+    ;; ok? is true if returned root satisfies search criteria
+    (cond [(and root (memq (intcmp (node-key root) key) cmp-result))
+           (values #t root)]
+          [(has-X? root)
+           (values #t (find-X root))]
+          [else
+           (values #f root)])))
 
-(define (splay-tree-iterate-min s)
-  (splay-tree-iterate-first s))
-(define (splay-tree-iterate-max s)
+(define (n:splay-tree-iterate-greatest/<=? s key)
+  (n:extreme s key '(< =) n:has-prev? n:find-prev))
+(define (n:splay-tree-iterate-greatest/<? s key)
+  (n:extreme s key '(<) n:has-prev? n:find-prev))
+(define (n:splay-tree-iterate-least/>=? s key)
+  (n:extreme s key '(> =) n:has-next? n:find-next))
+(define (n:splay-tree-iterate-least/>? s key)
+  (n:extreme s key '(>) n:has-next? n:find-next))
+
+(define (n:splay-tree-iterate-min s)
+  (n:splay-tree-iterate-first s))
+(define (n:splay-tree-iterate-max s)
   (match s
-    [(splay-tree root size cmp tx)
-     (let-values ([(ok? root) (find-max tx root)])
-       (set-splay-tree-root! s root)
+    [(node-splay-tree root size)
+     (let-values ([(ok? root) (n:find-max root)])
+       (set-node-splay-tree-root! s root)
        (if ok? (splay-tree-iter (node-key root)) #f))]))
 
 ;; ========
 
 ;; snapshot
-(define (splay-tree->list s)
+(define (n:splay-tree->list s)
   (match s
-    [(splay-tree root size cmp tx)
-     (let loop ([x root] [onto null] [k* (if tx 0 #f)])
+    [(node-splay-tree root size)
+     (let loop ([x root] [onto null] [k* 0])
        (match x
          [(node key value left right)
-          (let ([key (if tx (+ key k*) key)])
+          (let ([key (+ key k*)])
             (loop left
                   (cons (cons key value)
                         (loop right onto key))
                   key))]
          [#f onto]))]))
 
+;; ------------------------------------------------------------
+;; Struct
+;; ------------------------------------------------------------
+
+(define n:dict-methods
+  (vector-immutable n:splay-tree-ref
+                    n:splay-tree-set!
+                    #f ;; set
+                    n:splay-tree-remove!
+                    #f ;; remove
+                    n:splay-tree-count
+                    n:splay-tree-iterate-first
+                    n:splay-tree-iterate-next
+                    n:splay-tree-iterate-key
+                    n:splay-tree-iterate-value))
+
+(define n:ordered-dict-methods
+  (vector-immutable n:splay-tree-iterate-min
+                    n:splay-tree-iterate-max
+                    n:splay-tree-iterate-least/>?
+                    n:splay-tree-iterate-least/>=?
+                    n:splay-tree-iterate-greatest/<?
+                    n:splay-tree-iterate-greatest/<=?))
+
+(struct node-splay-tree ([root #:mutable] [size #:mutable])
+        #:property prop:dict/contract
+        (list n:dict-methods
+              (vector-immutable exact-integer?
+                                any/c
+                                splay-tree-iter?
+                                #f #f #f))
+        #:property prop:ordered-dict
+        n:ordered-dict-methods)
+
+(struct node-splay-tree* node-splay-tree (key-c value-c)
+        #:property prop:dict/contract
+        (list n:dict-methods
+              (vector-immutable any/c
+                                any/c
+                                splay-tree-iter?
+                                (lambda (s) (node-splay-tree*-key-c s))
+                                (lambda (s) (node-splay-tree*-value-c s))
+                                #f))
+        #:property prop:ordered-dict
+        n:ordered-dict-methods)
+
+
+
+;; ============================================================
+;; Compact splay tree
+;; ============================================================
+
+;; Mem = vector: [key, value, left, right] ...
+;; Node = nat, multiple of NODE-SIZE
+
+(define NODE-SIZE 4)
+
+;; min number of vector slots
+;; (ie, (MIN-SIZE / NODE-SIZE) - 1 is min number of data nodes
+(define MIN-SIZE 16)
+
+(define-syntax-rule (dvf [ref set offset] ...)
+  (begin (define (ref mem node)
+           (vector-ref mem (+ node offset))) ...
+         (define (set mem node v)
+           (vector-set! mem (+ node offset) v)) ...))
+(dvf [vnode-key set-vnode-key! 0]
+     [vnode-value set-vnode-value! 1]
+     [vnode-left set-vnode-left! 2]
+     [vnode-right set-vnode-right! 3])
+
+(define (vnode! mem key value left right)
+  (let ([node (v:size mem)])
+    (set-vnode-key! mem node key)
+    (set-vnode-value! mem node value)
+    (set-vnode-left! mem node left)
+    (set-vnode-right! mem node right)
+    (v:adjust-size! mem NODE-SIZE)
+    node))
+
+;; scratch = 0, always
+;; (node-key scratch) contains size = next available node
+
+(define scratch 0)
+(define (v:size mem)
+  (vnode-key mem scratch))
+(define (v:adjust-size! mem x)
+  (set-vnode-key! mem scratch (+ x (vnode-key mem scratch))))
+
+;; find : ... -> (values boolean node/#f)
+;; If ok?, then node returned is one sought.
+;; PRE: if add-v, then (size mem) + NODE-SIZE <= (vector-length mem)
+;;   that is, room for at least one node
+(define (v:find cmp k mem x add-v)
+  (v:findt cmp k mem x add-v))
+
+#|
+Top-down splay
+|#
+(define (v:findt cmp k mem x add-v)
+  (cond [x
+         (set-vnode-left! mem scratch #f)
+         (set-vnode-right! mem scratch #f)
+         (v:findt* cmp k mem x scratch scratch add-v)]
+        [add-v
+         (values 'added (vnode! mem k (car add-v) #f #f))]
+        [else
+         (values #f #f)]))
+
+(define (v:find-min mem x)
+  (if x
+      (let-values ([(_ok? root) (v:findt (lambda (x y) '<) 'dummy mem x #f)])
+        (values 'found root))
+      (values #f #f)))
+
+(define (v:find-max mem x)
+  (if x
+      (let-values ([(_ok? root) (v:findt (lambda (x y) '>) 'dummy mem x #f)])
+        (values 'found root))
+      (values #f #f)))
+
+(define (v:findt* cmp k mem t l r add-v)
+  (define-syntax-rule (finish! status t l r)
+    (assemble! status mem t scratch l r))
+  (define-syntax-rule (continue t l r)
+    (v:findt* cmp k mem t l r add-v))
+  (define-syntax-rule (rotate&link cmpresult rl l r
+                                   (vnode-A set-vnode-A!)
+                                   (vnode-B set-vnode-B!))
+    (let ([tA (vnode-A mem t)])
+      (cond [tA
+             (let ([c (cmp k (vnode-key mem tA))])
+               (case c
+                 ((cmpresult) ;; k should be on A-side of tA
+                  (set-vnode-A! mem t (vnode-B mem tA))
+                  (set-vnode-B! mem tA t)
+                  (let ([tAA (vnode-A mem tA)])
+                    (cond [tAA
+                           (set-vnode-A! mem rl tA)
+                           (let ([rl tA]) ;; shadows either l or r
+                             (continue tAA l r))]
+                          [add-v
+                           (let ([tAA (vnode! mem k (car add-v) #f #f)])
+                             (set-vnode-A! mem tA tAA)
+                             (set-vnode-A! mem rl tA)
+                             (let ([rl tA]) ;; shadows either l or r
+                               (finish! 'added tAA l r)))]
+                          [else
+                           (finish! #f tA l r)])))
+                 (else
+                  (set-vnode-A! mem rl t)
+                  (let ([rl t]) ;; shadows either l or r
+                    (continue tA l r)))))]
+            [add-v
+             (let ([tA (vnode! mem k (car add-v) #f #f)])
+               (set-vnode-A! mem t tA)
+               (set-vnode-A! mem rl t)
+               (let ([rl t]) ;; shadows either l or r
+                 (finish! 'added tA l r)))]
+            [else
+             (finish! #f t l r)])))
+  (case (cmp k (vnode-key mem t))
+    ((<)
+     (rotate&link < r l r (vnode-left set-vnode-left!) (vnode-right set-vnode-right!)))
+    ((>)
+     (rotate&link > l l r (vnode-right set-vnode-right!) (vnode-left set-vnode-left!)))
+    (else
+     (finish! 'found t l r))))
+
+(define (assemble! status mem t scratch l r)
+  (set-vnode-right! mem l (vnode-left mem t))
+  (set-vnode-left! mem r (vnode-right mem t))
+  (set-vnode-left! mem t (vnode-right mem scratch))
+  (set-vnode-right! mem t (vnode-left mem scratch))
+  (values status t))
+
+;; --------
+
+;; if left is node, new root is max(left)
+(define (v:join-left mem left right)
+  (cond [(and left right)
+         (let-values ([(_ok? left*) (v:find-max mem left)])
+           ;; left* is node, left*.right = #f
+           (set-vnode-right! mem left* right)
+           left*)]
+        [left left]
+        [else right]))
+
+;; if right is node, new root is min(right)
+(define (v:join-right mem left right)
+  (cond [(and left right)
+         (let-values ([(_ok? right*) (v:find-min mem right)])
+           ;; right* is node, right*.left = #f
+           (set-vnode-left! mem right* left)
+           right*)]
+        [right right]
+        [else left]))
+
+(define (v:split/drop-root mem root cmp)
+  (let ([root-key (vnode-key mem root)]
+        [left (vnode-left mem root)]
+        [right (vnode-right mem root)]
+        [last (- (v:size mem) NODE-SIZE)])
+
+    ;; Must update former parent(last) to point to root.
+    ;; Also update left, right if they point to last.
+    (let-values ([(last-parent last-parent-side)
+                  (let loop ([x root] [p #f] [side #f])
+                    (case (cmp (vnode-key mem last) (vnode-key mem x))
+                      ((<) (let ([xleft (vnode-left mem x)]) (and xleft (loop xleft x 'left))))
+                      ((>) (let ([xright (vnode-right mem x)]) (and xright (loop xright x 'right))))
+                      ((=) (values p side))))]
+                 [(left) (if (equal? left last) root left)]
+                 [(right) (if (equal? right last) root right)])
+      (case last-parent-side
+        ((left) (set-vnode-left! mem last-parent root))
+        ((right) (set-vnode-right! mem last-parent root))
+        ((#f) (void))) ;; last = root
+
+      ;; Overwrite root with last, null out last
+      (vector-copy! mem root mem last (+ last NODE-SIZE))
+      (set-vnode-key! mem last #f)
+      (set-vnode-value! mem last #f)
+      (set-vnode-left! mem last #f)
+      (set-vnode-right! mem last #f)
+      (v:adjust-size! mem (- NODE-SIZE))
+      (values left right))))
+
+(define (v:split/root-to-left mem root)
+  (let ([right (vnode-right mem root)])
+    (set-vnode-right! mem root #f)
+    (values root right)))
+
+(define (v:split/root-to-right mem root)
+  (let ([left (vnode-left mem root)])
+    (set-vnode-left! mem root #f)
+    (values left root)))
+
+(define (v:delete-root mem root cmp)
+  (let-values ([(left right) (v:split/drop-root mem root cmp)])
+    (v:join-left mem left right)))
+
+(define (v:remove-range! mem root cmp from to)
+  (let loop ([root root])
+    (let-values ([(ok? root)
+                  (v:extreme* mem root cmp from '(> =) v:has-next? v:find-next)])
+      (if (and ok? (eq? (cmp (vnode-key mem root) '<) to))
+          (loop (v:delete-root mem root cmp))
+          root))))
+
+#|
+;; Would require distinguishing integer/real-keyed compact-splay-trees.
+
+(define (v:contract! mem root cmp from to)
+  (let ([root (v:remove-range! cmp root from to)])
+    (v:adjust-from-node! mem root (- from to))))
+
+(define (v:expand! mem root cmp from to)
+  (v:adjust-from-node! mem root (- to from)))
+
+(define (v:adjust-from-node! mem root delta)
+  (let-values ([(ok? root)
+                (v:extreme* mem root cmp from '(> =) v:has-next? v:find-next)])
+    (when ok?
+      (let loop ([x root])
+        (when x
+          (set-vnode-key! mem x (+ (vnode-key mem x) delta))
+          (loop (vnode-left mem x))
+          (loop (vnode-right mem x)))))
+    root))
+|#
+
+(define (v:find-prev mem root)
+  ;; PRE: root is node and root.left is node; ie, has-prev?
+  (let-values ([(left right) (v:split/root-to-right mem root)])
+    ;; join-left does max(left)
+    (v:join-left mem left right)))
+
+(define (v:find-next mem root)
+  ;; PRE: root is node and root.right is node; ie, has-next?
+  (let-values ([(left right) (v:split/root-to-left mem root)])
+    ;; join-right does min(right)
+    (v:join-right mem left right)))
+
+(define (v:has-prev? mem x) (and x (vnode-left mem x) #t))
+(define (v:has-next? mem x) (and x (vnode-right mem x) #t))
+
+;; ------------------------------------------------------------
+;; Splay tree operations
+;; ------------------------------------------------------------
+
+(define (v:splay-tree-ref s x [default not-given])
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (let-values ([(ok? root) (v:find cmp x mem root #f)])
+       (set-compact-splay-tree-root! s root)
+       (if ok?
+           (vnode-value mem root)
+           (cond [(eq? default not-given)
+                  (error 'splay-tree-ref "no value found for key: ~e" x)]
+                 [(procedure? default)
+                  (default)]
+                 [else default])))]))
+
+(define (v:splay-tree-set! s x v)
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (let ([mem
+            (if (<= (+ NODE-SIZE (v:size mem)) (vector-length mem))
+                mem
+                (let ([mem* (make-vector (* (vector-length mem) 2) #f)])
+                  (vector-copy! mem* 0 mem)
+                  (set-compact-splay-tree-mem! s mem*)
+                  mem*))])
+       (let-values ([(ok? root) (v:find cmp x mem root (list v))])
+         (set-compact-splay-tree-root! s root)
+         (unless (eq? (vnode-value mem root) v)
+           (set-vnode-value! mem root v))))]))
+
+(define (v:splay-tree-remove! s x)
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (let-values ([(ok? root) (v:find cmp x mem root #f)])
+       (cond [ok? ;; => root is node to remove
+              (set-compact-splay-tree-root! s (v:delete-root mem root cmp))
+              (v:check-size s mem)]
+             [else
+              (set-compact-splay-tree-root! s root)]))]))
+
+(define (v:splay-tree-count s)
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (sub1 (quotient (v:size mem) 4))]))
+
+(define (v:splay-tree-remove-range! s from to)
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (when (eq? (cmp from to) '<)
+       (set-compact-splay-tree-root! s (v:remove-range! mem root cmp from to))
+       (v:check-size s mem))]))
+
+(define (v:check-size s mem)
+  (when (and (< (* 2 (v:size mem)) (vector-length mem))
+             (>= (quotient (vector-length mem) 2) MIN-SIZE))
+    (let ([mem* (make-vector (quotient (vector-length mem) 2) #f)])
+      (vector-copy! mem* 0 mem 0 (v:size mem))
+      (set-compact-splay-tree-mem! s mem*))))
+
 ;; ========
 
-(define (key-c s)
-  (if (splay-tree*? s) (splay-tree*-key-c s) any/c))
-(define (val-c s)
-  (if (splay-tree*? s) (splay-tree*-value-c s) any/c))
+(define (v:splay-tree-iterate-first s)
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (let-values ([(ok? root) (v:find-min mem root)])
+       (set-compact-splay-tree-root! s root)
+       (if ok? (splay-tree-iter (vnode-key mem root)) #f))]))
 
-(define dict-methods
-  (vector-immutable splay-tree-ref
-                    splay-tree-set!
+(define (v:splay-tree-iterate-next s pos)
+  (match pos
+    [(splay-tree-iter key)
+     (v:splay-tree-iterate-least/>? s key)]))
+
+(define (v:splay-tree-iterate-key s pos)
+  (match pos
+    [(splay-tree-iter key) key]))
+
+(define (v:splay-tree-iterate-value s pos)
+  (match pos
+    [(splay-tree-iter key) (v:splay-tree-ref s key #f)]))
+
+;; Order-based search
+
+(define (v:extreme s key cmp-result has-X? find-X)
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (let-values ([(ok? root)
+                   (v:extreme* mem root cmp key cmp-result has-X? find-X)])
+       (set-compact-splay-tree-root! s root)
+       (and ok? (splay-tree-iter (vnode-key mem root))))]))
+
+(define (v:extreme* mem root cmp key cmp-result has-X? find-X)
+  (let*-values ([(_ok? root) (v:find cmp key mem root #f)])
+    ;; ok? is true when root returned satisfies search criteria
+    (cond [(and root (memq (cmp (vnode-key mem root) key) cmp-result))
+           (values #t root)]
+          [(has-X? mem root)
+           (values #t (find-X mem root))]
+          [else
+           (values #f root)])))
+
+(define (v:splay-tree-iterate-greatest/<=? s key)
+  (v:extreme s key '(< =) v:has-prev? v:find-prev))
+(define (v:splay-tree-iterate-greatest/<? s key)
+  (v:extreme s key '(<) v:has-prev? v:find-prev))
+(define (v:splay-tree-iterate-least/>=? s key)
+  (v:extreme s key '(> =) v:has-next? v:find-next))
+(define (v:splay-tree-iterate-least/>? s key)
+  (v:extreme s key '(>) v:has-next? v:find-next))
+
+(define (v:splay-tree-iterate-min s)
+  (v:splay-tree-iterate-first s))
+(define (v:splay-tree-iterate-max s)
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (let-values ([(ok? root) (v:find-max mem root)])
+       (set-compact-splay-tree-root! s root)
+       (if ok? (splay-tree-iter (vnode-key mem root)) #f))]))
+
+;; ========
+
+;; snapshot
+(define (v:splay-tree->list s)
+  (match s
+    [(compact-splay-tree mem root cmp)
+     (let loop ([x root] [onto null])
+       (cond [x (loop (vnode-left mem x)
+                      (cons (cons (vnode-key mem x) (vnode-value mem x))
+                            (loop (vnode-right mem x) onto)))]
+             [else onto]))]))
+
+;; ------------------------------------------------------------
+;; Struct
+;; ------------------------------------------------------------
+
+(define v:dict-methods
+  (vector-immutable v:splay-tree-ref
+                    v:splay-tree-set!
                     #f ;; set
-                    splay-tree-remove!
+                    v:splay-tree-remove!
                     #f ;; remove
-                    splay-tree-count
-                    splay-tree-iterate-first
-                    splay-tree-iterate-next
-                    splay-tree-iterate-key
-                    splay-tree-iterate-value))
+                    v:splay-tree-count
+                    v:splay-tree-iterate-first
+                    v:splay-tree-iterate-next
+                    v:splay-tree-iterate-key
+                    v:splay-tree-iterate-value))
 
-(define ordered-dict-methods
-  (vector-immutable splay-tree-iterate-min
-                    splay-tree-iterate-max
-                    splay-tree-iterate-least/>?
-                    splay-tree-iterate-least/>=?
-                    splay-tree-iterate-greatest/<?
-                    splay-tree-iterate-greatest/<=?))
+(define v:ordered-dict-methods
+  (vector-immutable v:splay-tree-iterate-min
+                    v:splay-tree-iterate-max
+                    v:splay-tree-iterate-least/>?
+                    v:splay-tree-iterate-least/>=?
+                    v:splay-tree-iterate-greatest/<?
+                    v:splay-tree-iterate-greatest/<=?))
 
-(struct splay-tree ([root #:mutable] [size #:mutable] cmp tx)
-        #:transparent
+(struct compact-splay-tree ([mem #:mutable] [root #:mutable] cmp)
         #:property prop:dict/contract
-        (list dict-methods
+        (list v:dict-methods
               (vector-immutable any/c
                                 any/c
                                 splay-tree-iter?
                                 #f #f #f))
         #:property prop:ordered-dict
-        ordered-dict-methods)
+        v:ordered-dict-methods)
 
-(struct splay-tree* splay-tree (key-c value-c)
-        #:transparent
+(struct compact-splay-tree* compact-splay-tree (key-c value-c)
         #:property prop:dict/contract
-        (list dict-methods
+        (list v:dict-methods
               (vector-immutable any/c
                                 any/c
                                 splay-tree-iter?
-                                (lambda (s) (splay-tree*-key-c s))
-                                (lambda (s) (splay-tree*-value-c s))
+                                (lambda (s) (compact-splay-tree*-key-c s))
+                                (lambda (s) (compact-splay-tree*-value-c s))
                                 #f))
         #:property prop:ordered-dict
-        ordered-dict-methods)
+        v:ordered-dict-methods)
 
-;; ========
+
+
+;; ============================================================
+;; Constructors, predicates
+;; ============================================================
+
+(define (make-splay-tree =? <?
+                         #:key-contract [key-contract any/c]
+                         #:value-contract [value-contract any/c])
+  (let ([mem (make-vector (* NODE-SIZE 4) #f)])
+    (set-vnode-key! mem scratch 4)
+    (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
+           (compact-splay-tree mem #f (mkcmp <? =?))]
+          [else
+           (compact-splay-tree* mem #f (mkcmp <? =?) key-contract value-contract)])))
+
+(define (make-adjustable-splay-tree #:key-contract [key-contract any/c]
+                                    #:value-contract [value-contract any/c])
+  (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
+         (node-splay-tree #f 0)]
+        [else
+         (node-splay-tree* #f 0 key-contract value-contract)]))
+
+(define (splay-tree? x)
+  (or (node-splay-tree? x) (compact-splay-tree? x)))
+
+(define (adjustable-splay-tree? s)
+  (node-splay-tree? s))
+
+
+
+;; ============================================================
+;; Splay trees
+;; ============================================================
+
+(define (splay-tree-ref s x [default not-given])
+  (if (compact-splay-tree? s)
+      (v:splay-tree-ref s x default)
+      (n:splay-tree-ref s x default)))
+
+(define-syntax (defboth stx)
+  (syntax-case stx ()
+    [(defboth (f p0 p ...) ...)
+     (with-syntax ([(v:f ...) (map (lambda (f) (format-id f "v:~a" f))
+                                   (syntax->list #'(f ...)))]
+                   [(n:f ...) (map (lambda (f) (format-id f "n:~a" f))
+                                   (syntax->list #'(f ...)))])
+       #'(begin (define (f p0 p ...)
+                  (if (compact-splay-tree? p0)
+                      (v:f p0 p ...)
+                      (n:f p0 p ...)))
+                ...))]))
+
+(defboth
+  (splay-tree-set! s x v)
+  (splay-tree-remove! s x)
+  (splay-tree-count s)
+  (splay-tree-remove-range! s from to)
+  (splay-tree-iterate-first s)
+  (splay-tree-iterate-next s pos)
+  (splay-tree-iterate-key s pos)
+  (splay-tree-iterate-value s pos)
+  (splay-tree-iterate-greatest/<=? s key)
+  (splay-tree-iterate-greatest/<? s key)
+  (splay-tree-iterate-least/>=? s key)
+  (splay-tree-iterate-least/>? s key)
+  (splay-tree-iterate-min s)
+  (splay-tree-iterate-max s)
+  (splay-tree->list s))
+
+
+;; ============================================================
+;; provide/contract
+;; ============================================================
+
+(define (key-c s)
+  (cond [(compact-splay-tree*? s) (compact-splay-tree*-key-c s)]
+        [(node-splay-tree*? s)
+         (let ([c (node-splay-tree*-key-c s)])
+           (if (eq? c any/c) exact-integer? (and/c exact-integer? c)))]
+        [(node-splay-tree? s) exact-integer?]
+        [else any/c]))
+(define (val-c s)
+  (cond [(compact-splay-tree*? s) (compact-splay-tree*-value-c s)]
+        [(node-splay-tree*? s) (node-splay-tree*-value-c s)]
+        [else any/c]))
 
 (provide/contract
  [make-splay-tree
   (->* ((-> any/c any/c any) (-> any/c any/c any))
        (#:key-contract contract? #:value-contract contract?)
        splay-tree?)]
- [make-integer-splay-tree
+ [make-adjustable-splay-tree
   (->* ()
-       (#:adjust? any/c #:key-contract contract? #:value-contract contract?)
+       (#:key-contract contract? #:value-contract contract?)
        splay-tree?)]
 
  [splay-tree? (-> any/c boolean?)]
- [splay-tree-with-adjust? (-> splay-tree? boolean?)]
+ [adjustable-splay-tree? (-> any/c boolean?)]
 
  [splay-tree-ref
   (->i ([s splay-tree?] [key (s) (key-c s)])
@@ -634,11 +1080,11 @@ In an integer splay tree, keys can be stored relative to their parent nodes.
   (->i ([s splay-tree?]) [_ (s) (listof (cons/c (key-c s) (val-c s)))])]
 
  [splay-tree-contract!
-  (->i ([s (and/c splay-tree? splay-tree-with-adjust?)]
+  (->i ([s adjustable-splay-tree?]
         [from (s) (key-c s)] [to (s) (key-c s)])
        [_ void?])]
  [splay-tree-expand!
-  (->i ([s (and/c splay-tree? splay-tree-with-adjust?)]
+  (->i ([s adjustable-splay-tree?]
         [from (s) (key-c s)] [to (s) (key-c s)])
        [_ void?])]
 

@@ -144,9 +144,6 @@ Levels are indexed starting at 1, as in the paper.
 
 ;; Skip list
 
-(define (make-skip-list =? <?)
-  (skip-list (vector 'head 'head #f) 0 =? <?))
-
 (define (skip-list-ref s key [default (skip-list-error key)])
   (define head (skip-list-head s))
   (define result
@@ -281,39 +278,73 @@ Levels are indexed starting at 1, as in the paper.
   (check-iter 'skip-list-iterate-set-value! s iter)
   (set-item-data! (skip-list-iter-item iter) value))
 
+(define dict-methods
+  (vector-immutable skip-list-ref
+                    skip-list-set!
+                    #f ;; set
+                    skip-list-remove!
+                    #f ;; remove
+                    skip-list-count
+                    skip-list-iterate-first
+                    skip-list-iterate-next
+                    skip-list-iterate-key
+                    skip-list-iterate-value))
+
+(define ordered-dict-methods
+  (vector-immutable skip-list-iterate-min
+                    skip-list-iterate-max
+                    skip-list-iterate-least/>?
+                    skip-list-iterate-least/>=?
+                    skip-list-iterate-greatest/<?
+                    skip-list-iterate-greatest/<=?))
+
 (struct skip-list ([head #:mutable] [num-entries #:mutable] =? <?)
-  #:property prop:dict/contract
-             (list (vector-immutable skip-list-ref
-                                     skip-list-set!
-                                     #f ;; set
-                                     skip-list-remove!
-                                     #f ;; remove
-                                     skip-list-count
-                                     skip-list-iterate-first
-                                     skip-list-iterate-next
-                                     skip-list-iterate-key
-                                     skip-list-iterate-value)
-                   (vector-immutable any/c any/c skip-list-iter?
-                                     #f #f #f))
-  #:property prop:ordered-dict
-             (vector-immutable skip-list-iterate-min
-                               skip-list-iterate-max
-                               skip-list-iterate-least/>?
-                               skip-list-iterate-least/>=?
-                               skip-list-iterate-greatest/<?
-                               skip-list-iterate-greatest/<=?))
+        #:property prop:dict/contract
+        (list dict-methods
+              (vector-immutable any/c any/c skip-list-iter?
+                                #f #f #f))
+        #:property prop:ordered-dict ordered-dict-methods)
+
+(struct skip-list* skip-list (key-c value-c)
+        #:property prop:dict/contract
+        (list dict-methods
+              (vector-immutable any/c any/c skip-list-iter?
+                                (lambda (s) (skip-list*-key-c s))
+                                (lambda (s) (skip-list*-value-c s))
+                                #f))
+        #:property prop:ordered-dict ordered-dict-methods)
+
+(define (make-skip-list =? <?
+                        #:key-contract [key-contract any/c]
+                        #:value-contract [value-contract any/c])
+  (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
+         (skip-list (vector 'head 'head #f) 0 =? <?)]
+        [else
+         (skip-list* (vector 'head 'head #f) 0 =? <? key-contract value-contract)]))
+
+(define (key-c s)
+  (cond [(skip-list*? s) (skip-list*-key-c s)]
+        [else any/c]))
+(define (val-c s)
+  (cond [(skip-list*? s) (skip-list*-value-c s)]
+        [else any/c]))
 
 (provide/contract
  [make-skip-list
-  (-> procedure? procedure? skip-list?)]
+  (->* ((-> any/c any/c any/c) (-> any/c any/c any/c))
+       (#:key-contract contract? #:value-contract contract?)
+       skip-list?)]
  [skip-list?
   (-> any/c boolean?)]
+
  [skip-list-ref
-  (->* (skip-list? any/c) (any/c) any)]
+  (->i ([s skip-list?] [k (s) (key-c s)])
+       ([d any/c])
+       any)]
  [skip-list-set!
-  (-> skip-list? any/c any/c void?)]
+  (->i ([s skip-list?] [k (s) (key-c s)] [v (s) (val-c s)]) [_ void?])]
  [skip-list-remove!
-  (-> skip-list? any/c void?)]
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_ void?])]
  [skip-list-count
   (-> skip-list? exact-nonnegative-integer?)]
  [skip-list-iterate-first
@@ -321,18 +352,18 @@ Levels are indexed starting at 1, as in the paper.
  [skip-list-iterate-next
   (-> skip-list? skip-list-iter? (or/c skip-list-iter? #f))]
  [skip-list-iterate-key
-  (-> skip-list? skip-list-iter? any)]
+  (->i ([s skip-list?] [i skip-list-iter?]) [_ (s) (key-c s)])]
  [skip-list-iterate-value
-  (-> skip-list? skip-list-iter? any)]
+  (->i ([s skip-list?] [i skip-list-iter?]) [_ (s) (val-c s)])]
 
- [skip-list-iterate-greatest/<?
-  (-> skip-list? any/c (or/c skip-list-iter? #f))]
  [skip-list-iterate-greatest/<=?
-  (-> skip-list? any/c (or/c skip-list-iter? #f))]
- [skip-list-iterate-least/>?
-  (-> skip-list? any/c (or/c skip-list-iter? #f))]
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
+ [skip-list-iterate-greatest/<?
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
  [skip-list-iterate-least/>=?
-  (-> skip-list? any/c (or/c skip-list-iter? #f))]
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
+ [skip-list-iterate-least/>?
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
 
  [skip-list-iterate-min
   (-> skip-list? (or/c skip-list-iter? #f))]
@@ -340,45 +371,9 @@ Levels are indexed starting at 1, as in the paper.
   (-> skip-list? (or/c skip-list-iter? #f))]
 
  [skip-list-iterate-set-key!
-  (-> skip-list? skip-list-iter? any/c any)]
+  (->i ([s skip-list?] [i skip-list-iter?] [k (s) (key-c s)]) [_ void?])]
  [skip-list-iterate-set-value!
-  (-> skip-list? skip-list-iter? any/c any)]
+  (->i ([s skip-list?] [i skip-list-iter?] [v (s) (val-c s)]) [_ void?])]
 
  [skip-list-iter?
   (-> any/c any)])
-
-#|
-;; Testing
-
-(define s (make-skip-list* = <))
-s
-(dict-map s list)
-(skip-list-set! s 1 'apple)
-(skip-list-set! s 3 'pear)
-(skip-list-set! s 2 'orange)
-(dict-map s list)
-
-(define h
-  (time
-   (for/hash ([n (in-range 1 50000)])
-     (values (random 1000) n))))
-
-(define s2 (make-skip-list* = <))
-(time
- (for ([n (in-range 1 50000)])
-   (skip-list-set! s2 (random 1000) n)))
-
-(define d (make-skip-list* = <))
-(time
- (for ([n (in-range 1 50000)])
-   (dict-set! d (random 1000) n)))
-
-
-(define (find-a-bunch t)
-  (for ([n (in-range 1 10000)])
-    (dict-ref t (random 1000) #f)))
-
-(display "\nlookup 10000 times\n")
-;(time (find-a-bunch h))
-(time (find-a-bunch s2))
-|#

@@ -7,36 +7,60 @@
 
 ;; Tests for ordered dictionaries
 ;;   - skip-list
-;;   - splay-tree
+;;   - splay-tree (both kinds)
 
-(define (rand-test dicts ordered?)
+(define-syntax-rule (rand-test dicts ordered? idk?
+                               (-ref
+                                -set!
+                                -remove!
+                                -count
+                                -has-key?
+                                -iterate-key
+                                -iterate-least/>?
+                                -iterate-least/>=?
+                                -iterate-greatest/<?
+                                -iterate-greatest/<=?))
   (let ([hash (make-hash)])
     (for ([c (in-range 100)])
       (let* ([k (- (random 2000) 1000)]
              [v (- (random 2000) 1000)])
-        (for ([d (cons hash dicts)])
-          (dict-set! d k v))))
+        (hash-set! hash k v)
+        (for ([d dicts])
+          (-set! d k v))))
 
+    (for ([d dicts])
+      (check-equal? (hash-count hash)
+                    (-count d)))
+
+    ;; Sequential access
     (for ([i (in-range -1000 1000)])
       (for ([d dicts])
         (let ([vh (hash-ref hash i 'not-there)]
-              [vd (dict-ref d i 'not-there)])
+              [vd (-ref d i 'not-there)])
           (check-equal? vh vd (format "dict ~e, key = ~s, value = ~s, expected = ~s"
                                       d i vd vh)))))
+
+    ;; Random removal
+    (for ([i (in-range 500)])
+      (let ([k (- (random 2000) 1000)])
+        (for ([d dicts])
+          (hash-remove! hash k)
+          (-remove! d k)
+          (check-equal? (hash-count hash) (-count d)))))
 
     (when ordered?
       (for ([c (in-range 100)])
         (let* ([k0 (- (random 2000) 1000)])
           (for ([d dicts])
-            (let* ([has? (dict-has-key? d k0)]
-                   [l>i (dict-iterate-least/>? d k0)]
-                   [l>=i (dict-iterate-least/>=? d k0)]
-                   [g<i (dict-iterate-greatest/<? d k0)]
-                   [g<=i (dict-iterate-greatest/<=? d k0)]
-                   [l> (and l>i (dict-iterate-key d l>i))]
-                   [l>= (and l>=i (dict-iterate-key d l>=i))]
-                   [g< (and g<i (dict-iterate-key d g<i))]
-                   [g<= (and g<=i (dict-iterate-key d g<=i))])
+            (let* ([has? (-has-key? d k0)]
+                   [l>i (-iterate-least/>? d k0)]
+                   [l>=i (-iterate-least/>=? d k0)]
+                   [g<i (-iterate-greatest/<? d k0)]
+                   [g<=i (-iterate-greatest/<=? d k0)]
+                   [l> (and l>i (-iterate-key d l>i))]
+                   [l>= (and l>=i (-iterate-key d l>=i))]
+                   [g< (and g<i (-iterate-key d g<i))]
+                   [g<= (and g<=i (-iterate-key d g<=i))])
               (when has?
                 (check-equal? l>= g<= "has, should be same"))
               (unless has?
@@ -46,55 +70,184 @@
               (when l>= (check >= l>= k0))
               (when g< (check < g< k0))
               (when g<= (check <= g<= k0))
-              (for ([k (in-dict-keys d)])
-                (when (and l> (and (> k k0) (< k l>))) (error "l>"))
-                (when (and l>= (and (>= k k0) (< k l>=))) (error "l>="))
-                (when (and g< (and (< k k0) (> k g<))) (error "g<"))
-                (when (and g<= (and (<= k k0) (> k g<=))) (error "g<="))))))))))
+              (when idk?
+                (for ([k (in-dict-keys d)])
+                  (when (and l> (and (> k k0) (< k l>))) (error "l>"))
+                  (when (and l>= (and (>= k k0) (< k l>=))) (error "l>="))
+                  (when (and g< (and (< k k0) (> k g<))) (error "g<"))
+                  (when (and g<= (and (<= k k0) (> k g<=))) (error "g<=")))))))))))
 
-(test-case "skip-list tests"
-  (rand-test (list (make-skip-list = <)) #t))
+;; Test dict interface
 
-(test-case "splay-tree test"
-  (rand-test (list (make-splay-tree = <)) #t))
+(define (dict-test dicts ordered? [idk? #f])
+  (rand-test dicts ordered? idk?
+             (dict-ref
+              dict-set!
+              dict-remove!
+              dict-count
+              dict-has-key?
+              dict-iterate-key
+              dict-iterate-least/>?
+              dict-iterate-least/>=?
+              dict-iterate-greatest/<?
+              dict-iterate-greatest/<=?)))
 
-(test-case "int-splay-tree w adjust"
-  (rand-test (list (make-integer-splay-tree #:adjust? #t)) #t))
+(test-case "skip-list, dict interface"
+  (dict-test (list (make-skip-list = <)) #t #t))
+(test-case "splay-tree, dict interface"
+  (dict-test (list (make-splay-tree = <)) #t #t))
+(test-case "adjustable-splay-tree, dict interface"
+  (dict-test (list (make-adjustable-splay-tree)) #t #t))
 
-(provide rand-test)
+(provide dict-test)
 
-#|
-(define (splay-test splays _eh)
-  (let ([hash (make-hash)])
-    (for ([c (in-range 100)])
-      (let* ([k (- (random 2000) 1000)]
-             [v (- (random 2000) 1000)])
-        (hash-set! hash k v)
-        (for ([d splays])
-          (splay-tree-set! d k v))))
+;; Test splay-tree interface
 
-    (for ([i (in-range -1000 1000)])
-      (for ([d splays])
-        (let ([vh (hash-ref hash i 'not-there)]
-              [vd (splay-tree-ref d i 'not-there)])
-          (check-equal? vh vd (format "dict ~e, key = ~s, value = ~s, expected = ~s"
-                                      d i vd vh)))))))
+(define (splay-test dicts ordered? [idk? #f])
+  (rand-test dicts ordered? idk?
+             (splay-tree-ref
+              splay-tree-set!
+              splay-tree-remove!
+              splay-tree-count
+              dict-has-key?
+              splay-tree-iterate-key
+              splay-tree-iterate-least/>?
+              splay-tree-iterate-least/>=?
+              splay-tree-iterate-greatest/<?
+              splay-tree-iterate-greatest/<=?)))
+
+(test-case "splay-tree, splay-tree interface"
+  (splay-test (list (make-splay-tree = <)) #t #t))
+
+(test-case "adjustable-splay-tree, splay-tree interface"
+  (splay-test (list (make-adjustable-splay-tree)) #t #t))
 
 (provide splay-test)
 
-(require (prefix-in ud: racket/private/dict)
-         (prefix-in cd: racket/dict))
+;; Test skip-list interface
 
-(define-syntax-rule (htest *dict-set! *dict-ref)
-  (let ([h (make-hash)])
-    (for ([c (in-range 100)])
-      (*dict-set! h (- (random 2000) 1000) (- (random 2000) 1000)))
-    (for ([i (in-range -1000 1000)])
-      (*dict-ref h i 'not-there))))
+(define (skip-test dicts ordered? [idk? #f])
+  (rand-test dicts ordered? idk?
+             (skip-list-ref
+              skip-list-set!
+              skip-list-remove!
+              skip-list-count
+              dict-has-key?
+              skip-list-iterate-key
+              skip-list-iterate-least/>?
+              skip-list-iterate-least/>=?
+              skip-list-iterate-greatest/<?
+              skip-list-iterate-greatest/<=?)))
 
-(define (ud-test) (htest ud:dict-set! ud:dict-ref))
-(define (cd-test) (htest cd:dict-set! cd:dict-ref))
+(test-case "skip-list, skip-list interface"
+  (skip-test (list (make-skip-list = <)) #t #t))
 
-(provide ud-test
-         cd-test)
+(provide skip-test)
+
+;; Test hash interface
+;; for speed comparison only
+
+(define (hash-test dicts ordered?)
+  (when ordered?
+    (error 'hash-tests "ordered not supported"))
+  (rand-test dicts #f #f
+             (hash-ref
+              hash-set!
+              hash-remove!
+              hash-count
+              hash-has-key?
+              '-iterate-key
+              '-iterate-least/>?
+              '-iterate-least/>=?
+              '-iterate-greatest/<?
+              '-iterate-greatest/<=?)))
+
+(provide hash-test)
+
+;; ============================================================
+;; Performance tests
+;; ============================================================
+
+(define (p name testf mkd ordered?)
+  (let-values ([(_result cpu real gc)
+                (time-apply
+                 (lambda ()
+                   (for ([i (in-range 20)])
+                     (testf (list (mkd)) ordered?)))
+                 null)])
+    (printf "~a : ~s\n" name cpu)))
+
+(define (mksplay) (make-splay-tree = <))
+(define (mkadj) (make-adjustable-splay-tree))
+(define (mkcsplay) (make-splay-tree = < #:key-contract number? #:value-contract number?))
+(define (mkskip) (make-skip-list = <))
+(define (mkcskip) (make-skip-list = < #:key-contract number? #:value-contract number?))
+
+(define (performance)
+  (display "Using ordered-dict interface, w/ search\n")
+  (p "splay-tree" dict-test mksplay #t)
+  (p "adj-splay " dict-test mkadj #t)
+  (p "skip-list " dict-test mkskip #t)
+  (p "splay w/ c" dict-test mkcsplay #t)
+  (p "skip w/ c " dict-test mkcskip #t)
+  (newline)
+  (display "Using custom interfaces, w/ search\n")
+  (p "splay-tree" splay-test mksplay #t)
+  (p "adj-splay " splay-test mkadj #t)
+  (p "skip-list " skip-test mkskip #t)
+  (p "splay w/ c" splay-test mkcsplay #t)
+  (p "skip w/ c " skip-test mkcskip #t)
+  (newline)
+  (display "Using custom interfaces, w/o search\n")
+  (p "splay-tree" splay-test mksplay #f)
+  (p "adj-splay " splay-test mksplay #f)
+  (p "skip-list " skip-test mkskip #f)
+  (p "splay w/ c" splay-test mkcsplay #f)
+  (p "skip w/ c " skip-test mkcskip #f)
+  (p "hash      " hash-test make-hash #f)
+  (newline))
+
+(provide performance)
+
+#|
+Recent run:
+
+  Using ordered-dict interface, w/ search
+  splay-tree : 3745
+  adj-splay  : 3640
+  skip-list  : 3920
+  splay w/ c : 5884
+  skip w/ c  : 6297
+
+  Using custom interfaces, w/ search
+  splay-tree : 3140
+  adj-splay  : 3128
+  skip-list  : 3428
+  splay w/ c : 3277
+  skip w/ c  : 3624
+
+  Using custom interfaces, w/o search
+  splay-tree : 2732
+  adj-splay  : 2736
+  skip-list  : 2976
+  splay w/ c : 2809
+  skip w/ c  : 3076
+  hash       : 3456
+
+Recent run with dict contracts bypassed (impl and client):
+(Requires multiple changes to code, not easy to automate.)
+
+  Using ordered-dict interface, w/ search
+  splay-tree : 3368
+  adj-splay  : 3472
+  skip-list  : 3276
+  splay w/ c : 4729
+  skip w/ c  : 5104
+
+Conclusions:
+
+  - per-inst contracts using dict interface are expensive,
+    but per-inst contracts using custom interface not that bad
+    (why?)
+
 |#
