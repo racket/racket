@@ -733,8 +733,6 @@
 (define (parse-module-path-index cp s)
   s)
 
-(define (error-when-false v)
-  (or v (error "app rator is false")))
 ;; ----------------------------------------
 ;; Main parsing loop
 
@@ -930,7 +928,7 @@
           [(small-marshalled)
            (read-marshalled (- ch cpt-start) cp)]
           [(small-application2)
-           (make-application (error-when-false (read-compact cp))
+           (make-application (read-compact cp)
                              (list (read-compact cp)))]
           [(small-application3)
            (make-application (read-compact cp)
@@ -938,12 +936,12 @@
                                    (read-compact cp)))]
           [(small-application)
            (let ([c (add1 (- ch cpt-start))])
-             (make-application (error-when-false (read-compact cp))
+             (make-application (read-compact cp)
                                (for/list ([i (in-range (sub1 c))])
                                  (read-compact cp))))]          
           [(application)
            (let ([c (read-compact-number cp)])
-             (make-application (error-when-false (read-compact cp))
+             (make-application (read-compact cp)
                                (for/list ([i (in-range c)])
                                  (read-compact cp))))]          
           [(closure)
