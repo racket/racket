@@ -84,7 +84,9 @@
 (define (call d u bs)
   (htxml (collect d (make-request #"GET" (string->url u) empty (delay bs) #"" "127.0.0.1" 80 "127.0.0.1"))))
 (define (htxml bs)
-  (match (regexp-match #"^.+\r\n\r\n(.+)$" bs)
+  (match (regexp-match #"^.+\r\n\r\n(.*)$" bs)
+    [(list _ #"")
+     ""]
     [(list _ s)
      (string->xexpr (bytes->string/utf-8 s))]
     [_
