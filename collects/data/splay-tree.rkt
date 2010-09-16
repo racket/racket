@@ -970,15 +970,26 @@ Top-down splay
 ;; Constructors, predicates
 ;; ============================================================
 
-(define (make-splay-tree =? <?
-                         #:key-contract [key-contract any/c]
-                         #:value-contract [value-contract any/c])
+(define (*make-splay-tree cmp key-contract value-contract)
   (let ([mem (make-vector (* NODE-SIZE 4) #f)])
     (set-vnode-key! mem scratch 4)
     (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
-           (compact-splay-tree mem #f (mkcmp <? =?))]
+           (compact-splay-tree mem #f cmp)]
           [else
-           (compact-splay-tree* mem #f (mkcmp <? =?) key-contract value-contract)])))
+           (compact-splay-tree* mem #f cmp key-contract value-contract)])))
+
+(define (make-splay-tree =? <?
+                         #:key-contract [key-contract any/c]
+                         #:value-contract [value-contract any/c])
+  (*make-splay-tree (mkcmp <? =?) key-contract value-contract))
+
+(define (make-natural-splay-tree #:key-contract [key-contract any/c]
+                                 #:value-contract [value-contract any/c])
+  (*make-splay-tree natural-cmp key-contract value-contract))
+
+(define (make-datum-splay-tree #:key-contract [key-contract any/c]
+                               #:value-contract [value-contract any/c])
+  (*make-splay-tree natural-cmp key-contract value-contract))
 
 (define (make-adjustable-splay-tree #:key-contract [key-contract any/c]
                                     #:value-contract [value-contract any/c])
@@ -1060,6 +1071,12 @@ Top-down splay
   (->* ()
        (#:key-contract contract? #:value-contract contract?)
        splay-tree?)]
+ #|
+ [make-datum-splay-tree
+  (->* ()
+       (#:key-contract contract? #:value-contract contract?)
+       splay-tree?)]
+ |#
 
  [splay-tree? (-> any/c boolean?)]
  [adjustable-splay-tree? (-> any/c boolean?)]
