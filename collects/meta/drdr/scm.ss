@@ -13,6 +13,8 @@
 
 (define git-url-base "http://git.racket-lang.org/plt.git")
 
+(provide/contract
+ [newest-push (-> number?)]) 
 (define (newest-push)
   (string->number (port->string (get-pure-port (string->url (format "~a/push-counter" git-url-base))))))
 
