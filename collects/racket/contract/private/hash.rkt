@@ -74,41 +74,39 @@
       [else
        (make-proxy-hash/c dom-ctc rng-ctc immutable)])))
 
-(define (hash/c-first-order ctc) 
+(define (check-hash/c ctc) 
   (let ([dom-ctc (hash/c-dom ctc)]
         [rng-ctc (hash/c-rng ctc)]
         [immutable (hash/c-immutable ctc)]
         [flat? (flat-hash/c? ctc)])
-    (λ (val #:blame [blame #f])
+    (λ (val fail [first-order? #f])
+      (unless (hash? val)
+        (fail "expected a hash, got ~a" val))
+      (when (and (not flat?)
+                 (not (flat-contract? dom-ctc))
+                 (not (hash-equal? val)))
+        (fail "expected equal?-based hash table due to higher-order domain contract, got ~a" val))
+      (case immutable
+        [(#t) 
+         (unless (immutable? val) 
+           (fail "expected an immutable hash, got ~a" val))]
+        [(#f)
+         (when (immutable? val)
+           (fail "expected an mutable hash, got ~a" val))]
+        [(dont-care) (void)])
+      (when first-order?
+        (for ([(k v) (in-hash val)])
+          (unless (contract-first-order-passes? dom-ctc k)
+            (fail "expected <~s> for key, got ~v" (contract-name dom-ctc) k))
+          (unless (contract-first-order-passes? rng-ctc v)
+            (fail "expected <~s> for value, got ~v" (contract-name rng-ctc) v))))
+        #t)))
+
+(define (hash/c-first-order ctc)
+  (let ([check (check-hash/c ctc)])
+    (λ (val)
       (let/ec return
-        (define (fail . args)
-          (if blame
-              (apply raise-blame-error blame val args)
-              (return #f)))
-        (unless (hash? val)
-          (fail "expected a hash, got ~a" val))
-        (when (and (not flat?)
-                   (not (flat-contract? dom-ctc))
-                   (not (hash-equal? val)))
-          (fail "expected equal?-based hash table due to higher-order domain contract, got ~a" val))
-        (case immutable
-          [(#t) 
-           (unless (immutable? val) 
-             (fail "expected an immutable hash, got ~a" val))]
-          [(#f)
-           (when (immutable? val)
-             (fail "expected an mutable hash, got ~a" val))]
-          [(dont-care) (void)])
-        (when (or flat? (immutable? val))
-          (for ([(k v) (in-hash val)])
-            (if blame
-                (begin (((contract-projection dom-ctc) blame) k)
-                       (((contract-projection rng-ctc) blame) v)
-                       (void))
-                (unless (and (contract-first-order-passes? dom-ctc k)
-                             (contract-first-order-passes? rng-ctc v))
-                  (fail)))))
-        #t))))
+        (check val (λ _ (return #f)) #t)))))
 
 (define (hash/c-name ctc)
   (apply 
@@ -135,12 +133,16 @@
   (build-flat-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
-   
    #:projection
    (λ (ctc)
      (λ (blame)
        (λ (val)
-         ((hash/c-first-order ctc) val #:blame blame)
+         ((check-hash/c ctc) val (λ args (apply raise-blame-error blame val args)))
+         (let ([dom-proj ((contract-projection (hash/c-dom ctc)) blame)]
+               [rng-proj ((contract-projection (hash/c-rng ctc)) blame)])
+           (for ([(k v) (in-hash val)])
+             (dom-proj k)
+             (rng-proj v)))
          val)))))
 
 (define (ho-projection hash-wrapper)
@@ -154,7 +156,7 @@
               [pos-rng-proj (rng-proc blame)]
               [neg-rng-proj (rng-proc (blame-swap blame))])
           (λ (val)
-            ((hash/c-first-order ctc) val #:blame blame)
+            ((check-hash/c ctc) val (λ args (apply raise-blame-error blame val args)))
             
             (if (immutable? val)
                 (let ([hash-maker
@@ -182,22 +184,16 @@
 
 (define-struct (chaperone-hash/c hash/c) ()
   #:omit-define-syntaxes
-
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
-   
-   #:projection
-   (ho-projection chaperone-hash)))
+   #:projection (ho-projection chaperone-hash)))
 
 (define-struct (proxy-hash/c hash/c) ()
   #:omit-define-syntaxes
-
   #:property prop:contract
   (build-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
-   
-   #:projection
-   (ho-projection proxy-hash)))
+   #:projection (ho-projection proxy-hash)))
