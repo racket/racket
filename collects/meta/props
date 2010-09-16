@@ -594,6 +594,7 @@ path/s is either such a string or a list of them.
 "collects/compiler/commands/make.rkt" drdr:command-line (mzc *)
 "collects/compiler/commands/pack.rkt" drdr:command-line #f
 "collects/config" responsible (mflatt eli)
+"collects/data" responsible (ryanc samth)
 "collects/datalog" responsible (jay)
 "collects/defaults" responsible (robby)
 "collects/deinprogramm" responsible (sperber)
