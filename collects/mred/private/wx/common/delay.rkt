@@ -8,15 +8,17 @@
 (define (do-request-flush-delay win disable enable)
   (atomically
    (let ([req (box win)])
-     (disable win)
-     (add-event-boundary-sometimes-callback! 
-      req
-      (lambda (v) 
-        ;; in atomic mode
-        (when (unbox req) 
-          (set-box! req #f)
-          (enable win))))
-     req)))
+     (and 
+      (disable win)
+      (begin
+        (add-event-boundary-sometimes-callback! 
+         req
+         (lambda (v) 
+           ;; in atomic mode
+           (when (unbox req) 
+             (set-box! req #f)
+             (enable win))))
+        req)))))
 
 (define (do-cancel-flush-delay req enable)
   (atomically

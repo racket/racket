@@ -237,14 +237,24 @@
       (gtk_window_resize gtk (max 1 w) (max 1 h)))
 
     (define/override (show on?)
-      (when (and on?
-                 (eventspace-shutdown? (get-eventspace)))
-        (error (string->symbol
-                (format "show method in ~a"
-                        (if (frame-relative-dialog-status this)
-                            'dialog%
-                            'frame%)))
-               "eventspace has been shutdown"))
+      (let ([es (get-eventspace)])
+        (when (and on?
+                   (eventspace-shutdown? es))
+          (error (string->symbol
+                  (format "show method in ~a"
+                          (if (frame-relative-dialog-status this)
+                              'dialog%
+                              'frame%)))
+                 "eventspace has been shutdown")
+          (when saved-child
+            (if (eq? (current-thread) (eventspace-handler-thread es))
+                (send saved-child paint-children)
+                (let ([s (make-semaphore)])
+                  (queue-callback (lambda ()
+                                    (when saved-child
+                                      (send saved-child paint-children))
+                                    (semaphore-post s)))
+                  (sync/timeout 1 s))))))
       (super show on?))
 
     (define saved-child #f)

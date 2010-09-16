@@ -663,7 +663,8 @@
   (do-request-flush-delay 
    cocoa-win
    (lambda (cocoa-win)
-     (tellv cocoa-win disableFlushWindow))
+     (tellv cocoa-win disableFlushWindow)
+     #t)
    (lambda (cocoa-win)
      (tellv cocoa-win enableFlushWindow))))
 

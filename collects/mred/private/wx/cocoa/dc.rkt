@@ -35,8 +35,9 @@
 
     (define/override (release-bitmap-storage)
       (atomically
-       (cairo_surface_destroy s)
-       (set! s #f)))))
+       (when s
+         (cairo_surface_destroy s)
+         (set! s #f))))))
 
 (define dc%
   (class backing-dc%

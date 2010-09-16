@@ -475,8 +475,10 @@
                    (and on? #t))
         (tellv cocoa zoom: cocoa)))
 
-    (def/public-unimplemented iconized?)
-    (def/public-unimplemented iconize)
+    (define/public (iconized?)
+      (tell #:type _BOOL cocoa isMiniaturized))
+    (define/public (iconize on?)
+      (tellv cocoa miniaturize: cocoa))
 
     (define/public (set-title s)
       (tellv cocoa setTitle: #:type _NSString s))))

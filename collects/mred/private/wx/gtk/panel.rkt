@@ -32,6 +32,11 @@
         (for ([child (in-list children)])
           (send child reset-child-dcs))))
     
+    (define/override (paint-children)
+      (when (pair? children)
+        (for ([child (in-list children)])
+          (send child paint-children))))
+    
     (define/override (set-size x y w h)
       (super set-size x y w h)
       (reset-child-dcs))

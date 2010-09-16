@@ -568,6 +568,9 @@
       (when parent
         (send parent register-child this on?)))
 
+    (define/public (paint-children)
+      (void))
+
     (def/public-unimplemented on-drop-file)
     (def/public-unimplemented get-handle)
     (def/public-unimplemented set-phantom-size)
@@ -625,12 +628,16 @@
   (do-request-flush-delay 
    gtk
    (lambda (gtk)
-     (gdk_window_freeze_updates (widget-window gtk)))
+     (let ([win (widget-window gtk)])
+       (and win
+            (gdk_window_freeze_updates win)
+            #t)))
    (lambda (gtk)
      (gdk_window_thaw_updates (widget-window gtk)))))
 
 (define (cancel-flush-delay req)
-  (do-cancel-flush-delay 
-   req   
-   (lambda (gtk)
-     (gdk_window_thaw_updates (widget-window gtk)))))
+  (when req
+    (do-cancel-flush-delay 
+     req
+     (lambda (gtk)
+       (gdk_window_thaw_updates (widget-window gtk))))))
