@@ -6,6 +6,7 @@
 @(require (for-label web-server/servlet-env
                      web-server/http
                      web-server/managers/lru
+                     web-server/managers/manager
                      web-server/lang/lang-api
                      web-server/private/util
                      web-server/dispatchers/dispatch
