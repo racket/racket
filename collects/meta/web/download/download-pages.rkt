@@ -1,7 +1,7 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "data.rkt" "installer-pages.rkt"
-         (prefix-in pre: "../stubs/pre.rkt"))
+(require "data.rkt" "installer-pages.rkt" (prefix-in pre: "../stubs/pre.rkt")
+         racket/list)
 
 (provide render-download-page)
 
@@ -21,7 +21,8 @@
       @input[type: 'submit value: "Download" onclick: "do_jump();"]
       @|br hr|
       @div[align: "center"]{
-        @small{@license @nbsp @bull @nbsp @pre:installers}}
+        @small{@all-version-pages @nbsp @bull @nbsp
+               @license @nbsp @bull @nbsp @pre:installers}}
       @hr
       @div[id: "linux_explain"
            style: '("font-size: 75%; display: none; width: 28em;"
@@ -38,8 +39,36 @@
                                   (equal? package (installer-package i))))
              @li{@(installer->page i 'only-platform)})}}})
 
+(define all-version-pages
+  (let ()
+    (define all-versions
+      (remove-duplicates (map installer-version all-installers)))
+    (define all-packages
+      (remove-duplicates (map installer-package all-installers)))
+    (define (make-page ver pkg)
+      (define file  (format "~a-v~a.html" pkg ver))
+      (define title @list{@(package->name pkg) v@ver})
+      (define label @list{v@ver @small{(@(version->date ver))}})
+      (define the-page
+        @page[#:file file #:title title #:part-of 'download]{
+          @(render-download-page ver pkg)})
+      (the-page label))
+    @page[#:id 'all-versions #:title "All Versions" #:part-of 'download]{
+      @table[width: "90%" align: 'center cellspacing: 10 cellpadding: 10
+             rules: 'cols frame: 'box]{
+        @thead{
+          @tr[style: "border-bottom: 1px solid;"]{
+            @(map (lambda (p)
+                    @th[width: "50%" align: 'center]{@(package->name p)})
+                  all-packages)}}
+        @tbody{
+          @(map (lambda (v)
+                  (tr (map (lambda (p) (td align: 'center (make-page v p)))
+                           all-packages)))
+                all-versions)}}}))
+
 (define license
-  @page[#:title "Software License"]{
+  @page[#:title "Software License" #:part-of 'download]{
     @p{Racket is distributed under the
        @a[href: "http://www.gnu.org/copyleft/lesser.html"]{
          GNU Lesser General Public License (LGPL)}.

@@ -79,6 +79,9 @@
     ["plt" "Racket Package"]
     ["sit" "StuffIt Archive"]))
 
+;; Used to sort packages when more then one is rendered on a page
+(define -package-order- '(racket racket-textual))
+
 (define -mirrors-
   ;; This is a sequence of
   ;;   (location url reposnisble-name email [techincal-contact])
@@ -139,10 +142,13 @@
 
 ;; ----------------------------------------------------------------------------
 
+;; accepts "053"
+(define (version->integer* v)
+  (version->integer (regexp-replace #rx"^0+" v "")))
+
 (define versions+dates
   (sort -versions+dates- <
-        #:key (lambda (vd)
-                (version->integer (regexp-replace #rx"^0+" (car vd) "")))
+        #:key (lambda (vd) (version->integer* (car vd)))
         #:cache-keys? #t))
 
 ;; sorted from oldest to newest
@@ -176,6 +182,7 @@
         (path     ; path to file from the installers directory
          file     ; just the file name
          version  ; version of the installer (as a string)
+         version-number ; version as a number (via version->integer*)
          size     ; human-readable size string
          package  ; package kind symbol 'racket or 'racket-textual
          binary?  ; #t = binary distribution, #f = source distribution
@@ -200,8 +207,8 @@
             "))$")))
 
 (define (make-installer size path version package file type platform suffix)
-  (installer path file version size (string->symbol package)
-             (equal? "bin" type) platform suffix))
+  (installer path file version (version->integer* version) size
+             (string->symbol package) (equal? "bin" type) platform suffix))
 
 (define (parse-installers in)
   (port-count-lines! in)
@@ -211,7 +218,19 @@
                     (error 'installers "bad installer data line#~a: ~s"
                            num line))))))
 
-(define all-installers (call-with-input-file installers-data parse-installers))
+;; sorted by version (newest first), and then by -package-order-
+(define all-installers
+  (sort (call-with-input-file installers-data parse-installers)
+        (lambda (i1 i2)
+          (let ([v1 (installer-version-number i1)]
+                [v2 (installer-version-number i2)])
+            (or (> v1 v2)
+                (and (= v1 v2)
+                     (let* ([p1 (installer-package i1)]
+                            [p2 (installer-package i2)]
+                            [t1 (memq p1 -package-order-)])
+                       (and t1 (or (memq p2 (cdr t1))
+                                   (not (memq p2 -package-order-)))))))))))
 
 (define package->name
   (let ([t (make-hasheq)])
