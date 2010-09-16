@@ -70,6 +70,7 @@
                               (lambda () default)))
                            freeze-tag)
                           (void)))]
+             [prev #f]
              [done? #f])
         (hash-set! saved-ptrs handler #t)
         (parameterize ([freezer-box #f])
@@ -81,8 +82,7 @@
                 (lambda ()
                   (call-with-continuation-prompt ; to catch aborts
                    (lambda ()
-                     (when (scheme_set_on_atomic_timeout handler)
-                       (error 'try-atomic "internal error: nested handlers?!"))
+                     (set! prev (scheme_set_on_atomic_timeout handler))
                      (set! ready? #t)
                      (begin0
                       (thunk)
@@ -102,6 +102,6 @@
                   (thunk))))
              (lambda ()
                (hash-remove! saved-ptrs handler)
-               (scheme_restore_on_atomic_timeout #f)
+               (scheme_restore_on_atomic_timeout prev)
                (unless done? (esc (void))))))))])))
 
