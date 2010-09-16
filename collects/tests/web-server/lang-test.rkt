@@ -40,6 +40,32 @@
                           (+ f initial)))))])
        (check = 8 (test-m00.4 '(dispatch-start start 1)))))
     
+    
+    (test-case
+     "Embedded Definitions"
+     (let-values ([(test-m00.4)
+                   (make-module-eval
+                    (module m00.4 (lib "lang.rkt" "web-server")
+                      (provide start)
+                      (define (start initial)
+                        (define m 7)
+                        (define f m)
+                        (+ f initial))))])
+       (check = 8 (test-m00.4 '(dispatch-start start 1)))))
+    
+    (test-case
+     "Embedded Definitions + Intermixed expressions"
+     (let-values ([(test-m00.4)
+                   (make-module-eval
+                    (module m00.4 (lib "lang.rkt" "web-server")
+                      (provide start)
+                      (define (start initial)
+                        (define m 7)
+                        (+ m 13)
+                        (define f m)
+                        (+ f initial))))])
+       (check = 8 (test-m00.4 '(dispatch-start start 1)))))
+    
     (test-case
      "start-interaction in argument position of a function call"
      (let-values ([(test-m00.3)

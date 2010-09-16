@@ -38,7 +38,7 @@
      (kernel-syntax-case
          stx (transformer?)
        [(begin)
-        (anormal ctxt (syntax/loc stx (#%plain-app (#%top . void))))]
+        (anormal ctxt (syntax/loc stx (#%plain-app void)))]
        [(begin lbe)
         (anormal ctxt (syntax/loc stx lbe))]
        [(begin fbe be ...)
@@ -48,8 +48,6 @@
                                 (#%plain-lambda () fbe)
                                 (#%plain-lambda throw-away
                                                 (begin be ...)))))]
-       [(begin0)
-        (anormal ctxt (syntax/loc stx (#%plain-app (#%top . void))))]
        [(begin0 lbe)
         (anormal ctxt (syntax/loc stx lbe))]
        [(begin0 fbe be ...)
