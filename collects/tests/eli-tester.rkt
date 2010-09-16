@@ -61,7 +61,7 @@
       #'(let* ([form (failure-format)]
                [prefix (continuation-mark-set->list (current-continuation-marks)
                                                     failure-prefix-mark)])
-          (error 'loc (form prefix 'e fmt arg ...)))))
+          (error 'loc "~a" (form prefix 'e fmt arg ...)))))
   (define (t1 x)
     #`(let ([x (safe #,x)])
         (unless (and (eq? 'values (car x)) (= 2 (length x)) (cadr x))
