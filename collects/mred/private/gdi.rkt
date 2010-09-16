@@ -224,78 +224,11 @@
      [() (get-face-list 'all)]
      [(a) (sort (wx:get-face-list a) compare-face-names)]))
 
-  (define x-has-xft? 'unknown)
-  (define mswin-system #f)
-  (define mswin-default #f)
-  (define (look-for-font name)
-    (if (ormap (lambda (n) (string-ci=? name n)) (wx:get-face-list))
-	name
-	"MS San Serif"))
-
   (define (get-family-builtin-face family)
     (unless (memq family '(default decorative roman script swiss modern system symbol))
       (raise-type-error 'get-family-builtin-face "family symbol" family))
-    (case (system-type)
-      [(unix)
-       ;; Detect Xft by looking for a font with a space in front of its name:
-       (when (eq? x-has-xft? 'unknown)
-	 (set! x-has-xft? (ormap (lambda (s) (regexp-match #rx"^ " s)) (wx:get-face-list))))
-       (if x-has-xft?
-	   (case family
-	     [(system) " Sans"]
-	     [(default) " Sans"]
-	     [(roman) " Serif"]
-	     [(decorative) " Nimbus Sans L"]
-	     [(modern) " Monospace"]
-	     [(swiss) " Nimbus Sans L"]
-	     [(script) " URW Chancery L"]
-	     [(symbol) " Standard Symbols L,Nimbus Sans L"])
-	   (case family
-	     [(system) "-b&h-lucida"]
-	     [(default) "-b&h-lucida"]
-	     [(roman) "-adobe-times"]
-	     [(decorative) "-adobe-helvetica"]
-	     [(modern) "-adobe-courier"]
-	     [(swiss) "-b&h-lucida"]
-	     [(script) "-itc-zapfchancery"]
-	     [(symbol) "-adobe-symbol"]))]
-      [(windows)
-       (case family
-	 [(system) 
-	  (unless mswin-system 
-	    (set! mswin-system (look-for-font "Tahoma")))
-	  mswin-system]
-	 [(default) 
-	  (unless mswin-default 
-	    (set! mswin-default (look-for-font "Microsoft Sans Serif")))
-	  mswin-default]
-	 [(default) "MS Sans Serif"]
-	 [(roman) "Times New Roman"]
-	 [(decorative) "Arial"]
-	 [(modern) "Courier New"]
-	 [(swiss) "Arial"]
-	 [(script) "Arial"]
-	 [(symbol) "Symbol"])]
-      [(macos)
-       (case family
-	 [(system) "systemfont"]
-	 [(default) "applicationfont"]
-	 [(roman) "Times"]
-	 [(decorative) "Geneva"]
-	 [(modern) "Monaco"]
-	 [(swiss) "Helvetica"]
-	 [(script) "Zaph Chancery"]
-	 [(symbol) "Symbol"])]
-      [(macosx)
-       (case family
-	 [(system) "systemfont"]
-	 [(default) "applicationfont"]
-	 [(roman) "Times"]
-	 [(decorative) "Arial"]
-	 [(modern) "Courier New"]
-	 [(swiss) "Helvetica"]
-	 [(script) "Apple Chancery"]
-	 [(symbol) "Symbol"])]))
+    (let ([id (send wx:the-font-name-directory find-family-default-font-id family)])
+      (send wx:the-font-name-directory get-screen-name id 'normal 'normal)))
 
   (define small-delta (case (system-type)
 			[(windows) 0]

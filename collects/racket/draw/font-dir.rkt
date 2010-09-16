@@ -46,7 +46,7 @@
                              [family-symbol? family])
       (hash-ref table (cons string family) 0))
 
-    (define (default-font s)
+    (define/private (default-font s)
       (case s
         [(modern) "Monospace"]
         [(roman) "Serif"]
@@ -67,9 +67,9 @@
          [(symbol? s) (default-font s)]
          [else "Serif"])))
 
-    (def/public (get-screen-script-name [exact-integer? id]
-                                        [weight-symbol? w]
-                                        [style-symbol? s])
+    (def/public (get-screen-name [exact-integer? id]
+                                 [weight-symbol? w]
+                                 [style-symbol? s])
       (let ([s (or (hash-ref screen-table (list id w s) #f)
                    (hash-ref reverse-table id #f))])
         (cond

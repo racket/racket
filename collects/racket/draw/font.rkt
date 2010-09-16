@@ -71,7 +71,7 @@
                                                        weight
                                                        style)
                                                  (send the-font-name-directory
-                                                       get-screen-script-name
+                                                       get-screen-name
                                                        id
                                                        weight
                                                        style)))
