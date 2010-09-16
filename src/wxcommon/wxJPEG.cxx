@@ -726,7 +726,11 @@ int wx_read_png(char *file_name, wxBitmap *bm, int w_mask, wxColour *bg)
        png_set_strip_16(png_ptr);
 
      /* Expand grayscale images to the full 8 bits from 1, 2, or 4 bits/pixel */
+#if PNG_LIBPNG_VER >= 10400
+     png_set_expand_gray_1_2_4_to_8(png_ptr);
+#else
      png_set_gray_1_2_4_to_8(png_ptr);
+#endif
    }
 
    /* Set the background color to draw transparent and alpha images over.
