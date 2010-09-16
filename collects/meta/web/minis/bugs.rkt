@@ -172,9 +172,10 @@
         #:extra-body-attrs `(onLoad: "initBugData();")]{
     @p[style: '("padding: 5px; color: #a00; background-color: #ffe;"
                 " border: 1px solid; font-weight: bold;")]{
-         If you can, please use the Bug Report item in DrRacket's Help menu. It
-         works better than this page, because it helps you supply precise
-         information about your Racket installation and working environment.}
+         If you can, please use the “Submit Bug Report” item in DrRacket's Help
+         menu.  It works better than this page, because it helps you supply
+         precise information about your Racket installation and working
+         environment.}
     @p{@strong{Note:} Bug reports for PLaneT packages are submitted on the
        @a[href: planet-bugs]{PLaneT server}.}
     @p{Before submitting a bug report, you may wish to:

@@ -85,7 +85,7 @@
         Scheme. As long as we call our language @name{Scheme}, we struggle to
         explain our language, and we are usually forced to start the
         explanation with a disclaimer.  At the same time, to the degree that
-        the PLT community has defined @name{Scheme} though market share,
+        the PLT community has defined @name{Scheme} through market share,
         publications, and educational outreach, we interfere with everyone
         else's ability to define @name{Scheme} — and many have a valid claim to
         that ability.

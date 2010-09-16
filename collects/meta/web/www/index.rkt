@@ -166,8 +166,8 @@
      @desc{This program uses the @elemcode{scribble/base} language for
        generating documents using a prose-friendly syntax.})
     (graphical-example
-     @code{#lang racket ; draw a graph of cos and deriv^3(cos)
-           (require plot)
+     @code{#lang racket   ; draw a graph of cos
+           (require plot) ; and deriv^3(cos)
            (define ((deriv f) x)
              (/ (- (f x) (f (- x 0.001))) 0.001))
            (define (thrice f) (lambda (x) (f (f (f x)))))
@@ -196,16 +196,19 @@
      @desc{Using the FFI means that you're not limited to using Racket
        libraries: pulling out a foreign function is easy, and can even be done
        dynamically on the REPL.})
-    #; ; Is this effective without any highlights?
+    ;; Is this effective without any highlights?
     (example
-     @code{#lang planet jaymccarthy/datalog
+     @code{#lang datalog
            ancestor(A, B) :- parent(A, B).
            ancestor(A, B) :-
              parent(A, C), D = C, ancestor(D, B).
            parent(john, douglas).
            parent(bob, john).
            ancestor(A, B)?}
-     @desc{Blah})
+     @desc{Racket is useful for building other languages.  This example uses
+      the pre-packaged Racket implementation of Datalog, a logic programming
+      language.  If you use this from DrRacket, you'll see that it provides
+      proper highlighting, Check Syntax, and a Datalog-specific REPL.})
     #; ; Not easy to present something like this.
     (example
      @code{#lang racket
