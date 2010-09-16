@@ -408,7 +408,7 @@
 (define (main-eventspace? e)
   (eq? e main-eventspace))
 
-(define (queue-callback thunk [high? #f])
+(define (queue-callback thunk [high? #t])
   (queue-event (current-eventspace) thunk (cond
                                            [(not high?) 'lo]
                                            [(eq? high? middle-queue-key) 'med]
