@@ -2027,6 +2027,13 @@ The @racket['left-right/beside-side-conditions] variant is like
 @racket['left-right], except it puts the side-conditions on the 
 same line, instead of on a new line below the case.}
 
+@defparam[delimit-ellipsis-arguments? delimit? any/c]{
+This parameter controls the typesetting of metafunction definitions
+and applications. When it is non-@racket[#f] (the default), commas
+precede ellipses that represent argument sequences; when it is 
+@racket[#f] no commas appear in those positions.
+}                                                                            
+                                                                            
 @defparam[linebreaks breaks (or/c #f (listof boolean?))]{
   This parameter controls which cases in the metafunction 
   are rendered on two lines and which are rendered on one.

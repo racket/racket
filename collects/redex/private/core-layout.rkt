@@ -29,6 +29,7 @@
          non-terminal
          literal-style
          metafunction-style
+         delimit-ellipsis-arguments?
          open-white-square-bracket
          close-white-square-bracket
          just-before
@@ -259,7 +260,8 @@
                [(null? (cddr lst))
                 (cons (car lst) (loop (cdr lst)))]
                [else 
-                (if (eq? '... (lw-e (cadr lst)))
+                (if (and (not (delimit-ellipsis-arguments?))
+                         (eq? '... (lw-e (cadr lst))))
                     (cons (car lst)
                           (loop (cdr lst)))
                     (list* (car lst) 
@@ -760,6 +762,7 @@
   (define default-font-size (make-parameter 14))
   (define metafunction-font-size (make-parameter (default-font-size)))
   (define label-font-size (make-parameter 14))
+  (define delimit-ellipsis-arguments? (make-parameter #t))
   
   (define (open-white-square-bracket) (white-bracket "["))
   (define (close-white-square-bracket) (white-bracket "]"))

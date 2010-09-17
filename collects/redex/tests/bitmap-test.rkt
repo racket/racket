@@ -197,7 +197,9 @@
    (where (x_3 ...) (rdups x_2 ...))]
   [(rdups) ()])
 
-(test (render-metafunction rdups) "rdups.png")
+(test (render-metafunction rdups) "rdups-delimited.png")
+(parameterize ([delimit-ellipsis-arguments? #f])
+  (test (render-metafunction rdups) "rdups-undelimited.png"))
 
 ;; Non-terminal superscripts
 (test (render-lw lang (to-lw (x_^abcdef x_q^abcdef)))

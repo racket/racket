@@ -36,6 +36,7 @@
          label-style
          literal-style
          metafunction-style
+         delimit-ellipsis-arguments?
          
          label-font-size
          default-font-size
