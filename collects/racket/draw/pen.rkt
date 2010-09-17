@@ -7,6 +7,7 @@
 
 (provide pen%
          pen-list% the-pen-list
+         pen-width?
          pen-style-symbol?)
 
 (define (pen-style-symbol? s)

@@ -493,7 +493,7 @@
        args
        [([pen% p]) (set-pen! p) (reset-align!)]
        [([(make-alts string? color%) col]
-         [exact-nonnegative-integer? width]
+         [pen-width? width]
          [pen-style-symbol? style])
         (set-pen! (send the-pen-list find-or-create-pen col width style))
         (reset-align!)]
