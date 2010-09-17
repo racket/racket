@@ -4173,8 +4173,8 @@ static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Obje
 Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
 {
   const char *what;
-  Scheme_Chaperone *px = (Scheme_Chaperone *)o;
-  Scheme_Object *v, *a[1], *a2[3], **argv2, *post, *result_v;
+  Scheme_Chaperone *px;
+  Scheme_Object *v, *a[1], *a2[3], **argv2, *post, *result_v, *orig_obj;
   int c, i, need_restore = 0;
 
   if (argv == MZ_RUNSTACK) {
@@ -4191,6 +4191,18 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       argv = argv2;
     }
   }
+
+  if (SCHEME_RPAIRP(o)) {
+    /* An applicable struct, where a layout of struct chaperones
+       has been removed from the object to apply, but we will
+       eventually need to extract the procedure from the original
+       object. */
+    orig_obj = SCHEME_CDR(o);
+    o = SCHEME_CAR(o);
+  } else {
+    orig_obj = NULL;
+  }
+  px = (Scheme_Chaperone *)o;
 
   if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY))
     what = "chaperone";
@@ -4272,7 +4284,12 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       else
         return argv2[0];
     } else {
-      return scheme_tail_apply(px->prev, c, argv2);
+      if (orig_obj)
+        /* A raw pair tells apply to extract a procedure from orig_obj */
+        orig_obj = scheme_make_raw_pair(px->prev, orig_obj);
+      else
+        orig_obj = px->prev;
+      return scheme_tail_apply(orig_obj, c, argv2);
     }
   } else {
     /* First element is a filter for the result(s) */
@@ -4289,7 +4306,12 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         result_v = argv2[0];
       v = auto_val;
     } else {
-      v = _scheme_apply_multi(px->prev, argc, argv2);
+      if (orig_obj)
+        /* A raw pair tells apply to extract a procedure from orig_obj */
+        orig_obj = scheme_make_raw_pair(px->prev, orig_obj);
+      else
+        orig_obj = px->prev;
+      v = _scheme_apply_multi(orig_obj, argc, argv2);
       result_v = NULL;
     }
     if (v == SCHEME_MULTIPLE_VALUES) {

@@ -32,6 +32,7 @@ READ_ONLY Scheme_Object *scheme_source_property;
 READ_ONLY Scheme_Object *scheme_input_port_property;
 READ_ONLY Scheme_Object *scheme_output_port_property;
 READ_ONLY Scheme_Object *scheme_equal_property;
+READ_ONLY Scheme_Object *scheme_proxy_of_property;
 READ_ONLY Scheme_Object *scheme_make_struct_type_proc;
 READ_ONLY Scheme_Object *scheme_current_inspector_proc;
 READ_ONLY Scheme_Object *scheme_recur_symbol;
@@ -87,6 +88,7 @@ static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_proxy_of_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_print_attribute_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -343,6 +345,16 @@ scheme_init_struct (Scheme_Env *env)
     scheme_equal_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("equal+hash"),
                                                                      guard);
     scheme_add_global_constant("prop:equal+hash", scheme_equal_property, env);
+  }
+
+  {
+    guard = scheme_make_prim_w_arity(check_proxy_of_property_value_ok,
+				     "guard-for-prop:proxy-of",
+				     2, 2);
+    REGISTER_SO(scheme_proxy_of_property);
+    scheme_proxy_of_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("proxy-of"),
+                                                                        guard);
+    scheme_add_global_constant("prop:proxy-of", scheme_proxy_of_property, env);
   }
 
   {
@@ -1486,6 +1498,25 @@ static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *arg
                         " and two recursive hash-code procedures (arity 2), given: ",
                         argv[0]);
   }
+
+  return v;
+}
+
+static Scheme_Object *check_proxy_of_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  /* This is the guard for prop:proxy-of */
+  Scheme_Object *v;
+
+  v = argv[0];
+
+  if (!scheme_check_proc_arity(NULL, 1, 0, argc, argv)) {
+    scheme_arg_mismatch("guard-for-prop:proxy-of",
+			"not a procedure of arity 1: ",
+			v); 
+  }
+
+  /* Add a tag to track origin of the proxy-of property: */
+  v = scheme_make_pair(scheme_make_symbol("tag"), v);
 
   return v;
 }
@@ -4821,15 +4852,24 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
 Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands, Scheme_Object **rands, int *is_method)
 {
   Scheme_Struct_Type *stype;
-  Scheme_Object *a, *proc;
+  Scheme_Object *plain_obj, *a, *proc;
   int meth_wrap = 0;
 
-  stype = ((Scheme_Structure *)obj)->stype;
+  if (SCHEME_CHAPERONEP(obj))
+    plain_obj = SCHEME_CHAPERONE_VAL(obj);
+  else
+    plain_obj = obj;
+
+  stype = ((Scheme_Structure *)plain_obj)->stype;
   a = stype->proc_attr;
 
   if (SCHEME_INTP(a)) {
     *is_method = 0;
-    proc = ((Scheme_Structure *)obj)->slots[SCHEME_INT_VAL(a)];
+    if (!SAME_OBJ(plain_obj, obj)) {
+      proc = chaperone_struct_ref("struct-ref", obj, SCHEME_INT_VAL(a));
+    } else {
+      proc = ((Scheme_Structure *)obj)->slots[SCHEME_INT_VAL(a)];
+    }
   } else {
     *is_method = 1;
     proc = a;
@@ -4843,7 +4883,7 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
        * account for that.
        */
       if (scheme_reduced_procedure_struct
-	  && scheme_is_struct_instance(scheme_reduced_procedure_struct, obj))
+	  && scheme_is_struct_instance(scheme_reduced_procedure_struct, plain_obj))
 	meth_wrap = SCHEME_TRUEP(((Scheme_Structure *)obj)->slots[3]);
 
       scheme_wrong_count_m((char *)obj,

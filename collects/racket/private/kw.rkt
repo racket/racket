@@ -27,10 +27,18 @@
   
   ;; ----------------------------------------
 
+  (define-values (prop:keyword-proxy keyword-proxy? keyword-proxy-ref) 
+    (make-struct-type-property 'keyword-proxy))
+  (define (keyword-procedure-proxy-of v)
+    (cond
+     [(keyword-proxy? v) ((keyword-proxy-ref v) v)]
+     [else #f]))
+
   (define-values (struct:keyword-procedure mk-kw-proc keyword-procedure?
                                            keyword-procedure-ref keyword-procedure-set!)
     (make-struct-type 'keyword-procedure #f 4 0 #f
-                      (list (cons prop:checked-procedure #t))
+                      (list (cons prop:checked-procedure #t)
+                            (cons prop:proxy-of keyword-procedure-proxy-of))
                       (current-inspector)
                       #f
                       '(0 1 2 3)))
@@ -123,12 +131,16 @@
   ;;  is used for each evaluation of a keyword lambda.)
   ;; The `procedure' property is a per-type method that has exactly
   ;;  the right arity, and that sends all arguments to `missing-kw'.
-  (define (make-required name fail-proc method?)
+  (define (make-required name fail-proc method? proxy?)
     (let-values ([(s: mk ? -ref -set!)
                   (make-struct-type (or name 'unknown)
-                                    (if method?
-                                        struct:keyword-method
-                                        struct:keyword-procedure)
+                                    (if proxy?
+                                        (if method?
+                                            struct:keyword-method-proxy
+                                            struct:keyword-procedure-proxy)
+                                        (if method?
+                                            struct:keyword-method
+                                            struct:keyword-procedure))
                                     0 0 #f
                                     (list (cons prop:arity-string 
                                                 generate-arity-string)
@@ -141,7 +153,30 @@
   (define-values (new-prop:procedure new-procedure? new-procedure-ref)
     (make-struct-type-property 'procedure #f
                                (list (cons prop:procedure values))))
+
   
+  ;; Proxies
+  (define-values (struct:keyword-procedure-proxy make-kpp keyword-procedure-proxy? kpp-ref kpp-set!)
+    (make-struct-type 'procedure
+                      struct:keyword-procedure
+                      1 0 #f
+                      (list (cons prop:keyword-proxy (lambda (v) (kpp-ref v 0))))))
+  (define-values (struct:keyword-method-proxy make-kmp keyword-method-proxy? kmp-ref kmp-set!)
+    (make-struct-type 'procedure
+                      struct:keyword-method
+                      1 0 #f
+                      (list (cons prop:keyword-proxy (lambda (v) (kmp-ref v 0))))))
+  (define-values (struct:okpp make-optional-keyword-procedure-proxy okpp? okpp-ref okpp-set!)
+    (make-struct-type 'procedure
+                      struct:okp
+                      1 0 #f
+                      (list (cons prop:keyword-proxy (lambda (v) (okpp-ref v 0))))))
+  (define-values (struct:okmp make-optional-keyword-method-proxy okmp? okmp-ref okmp-set!)
+    (make-struct-type 'procedure
+                      struct:okp
+                      1 0 #f
+                      (list (cons prop:keyword-proxy (lambda (v) (okmp-ref v 0))))))
+
   ;; ----------------------------------------
 
   (define make-keyword-procedure
@@ -487,7 +522,7 @@
                                                  [mk-id (with-syntax ([n (syntax-local-infer-name stx)]
                                                                       [call-fail (mk-kw-arity-stub)])
                                                           (syntax-local-lift-expression
-                                                           #'(make-required 'n call-fail method?)))])
+                                                           #'(make-required 'n call-fail method? #F)))])
                                      (syntax/loc stx
                                        (mk-id
                                         (lambda (given-kws given-argc)
@@ -1063,7 +1098,8 @@
                                  missing-kw
                                  (inc-arity arity 1))
                                 (or (okm? proc)
-                                    (keyword-method? proc)))
+                                    (keyword-method? proc))
+                                #f)
                  kw-checker
                  new-kw-proc
                  req-kw
@@ -1099,7 +1135,7 @@
                    ;; Constructor must be from `make-required', but not a method.
                    ;; Make a new variant that's a method:
                    (let* ([name+fail (keyword-procedure-name+fail proc)]
-                          [mk (make-required (car name+fail) (cdr name+fail) #t)])
+                          [mk (make-required (car name+fail) (cdr name+fail) #t #f)])
                      (mk
                       (keyword-procedure-checker proc)
                       (keyword-procedure-proc proc)
@@ -1129,7 +1165,7 @@
                   [else
                    ;; Constructor must be from `make-required':
                    (let* ([name+fail (keyword-procedure-name+fail proc)]
-                          [mk (make-required name (cdr name+fail) (keyword-method? proc))])
+                          [mk (make-required name (cdr name+fail) (keyword-method? proc) #f)])
                      (mk
                       (keyword-procedure-checker proc)
                       (keyword-procedure-proc proc)
@@ -1140,14 +1176,14 @@
   (define new:chaperone-procedure
     (let ([chaperone-procedure 
            (lambda (proc wrap-proc . props)
-             (do-chaperone-procedure #t chaperone-procedure 'chaperone-procedure proc wrap-proc props))])
-      chaperone-procedure ))
+             (do-chaperone-procedure #f chaperone-procedure 'chaperone-procedure proc wrap-proc props))])
+      chaperone-procedure))
 
   (define new:proxy-procedure
-    (let ([chaperone-procedure 
+    (let ([proxy-procedure 
            (lambda (proc wrap-proc . props)
-             (do-chaperone-procedure #f proxy-procedure 'proxy-procedure proc wrap-proc props))])
-      chaperone-procedure ))
+             (do-chaperone-procedure #t proxy-procedure 'proxy-procedure proc wrap-proc props))])
+      proxy-procedure))
 
   (define (do-chaperone-procedure is-proxy? chaperone-procedure name proc wrap-proc props)
     (if (or (not (keyword-procedure? proc))
@@ -1240,23 +1276,43 @@
                  [new-proc
                   (cond
                    [(okp? proc)
-                    (make-optional-keyword-procedure
-                     (keyword-procedure-checker proc)
-                     (chaperone-procedure (keyword-procedure-proc proc)
-                                          kw-chaperone)
-                     (keyword-procedure-required proc)
-                     (keyword-procedure-allowed proc)
-                     (chaperone-procedure (okp-ref proc 0)
-                                          (okp-ref wrap-proc 0)))]
+                    (if is-proxy?
+                        ((if (okm? proc)
+                             make-optional-keyword-method-proxy
+                             make-optional-keyword-procedure-proxy)
+                         (keyword-procedure-checker proc)
+                         (chaperone-procedure (keyword-procedure-proc proc)
+                                              kw-chaperone)
+                         (keyword-procedure-required proc)
+                         (keyword-procedure-allowed proc)
+                         (chaperone-procedure (okp-ref proc 0)
+                                              (okp-ref wrap-proc 0))
+                         proc)
+                        (chaperone-struct
+                         proc
+                         keyword-procedure-proc
+                         (lambda (self proc)
+                           (chaperone-procedure proc kw-chaperone))
+                         (make-struct-field-accessor okp-ref 0)
+                         (lambda (self proc)
+                           (chaperone-procedure proc
+                                                (okp-ref wrap-proc 0)))))]
                    [else
-                    ;; Constructor must be from `make-required':
-                    (let* ([name+fail (keyword-procedure-name+fail proc)]
-                           [mk (make-required (car name+fail) (cdr name+fail) (keyword-method? proc))])
-                      (mk
-                       (keyword-procedure-checker proc)
-                       (chaperone-procedure (keyword-procedure-proc proc) kw-chaperone)
-                       (keyword-procedure-required proc)
-                       (keyword-procedure-allowed proc)))])])
+                    (if is-proxy?
+                        ;; Constructor must be from `make-required':
+                        (let* ([name+fail (keyword-procedure-name+fail proc)]
+                               [mk (make-required (car name+fail) (cdr name+fail) (keyword-method? proc) #t)])
+                          (mk
+                           (keyword-procedure-checker proc)
+                           (chaperone-procedure (keyword-procedure-proc proc) kw-chaperone)
+                           (keyword-procedure-required proc)
+                           (keyword-procedure-allowed proc)
+                           proc))
+                        (chaperone-struct
+                         proc
+                         keyword-procedure-proc
+                         (lambda (self proc)
+                           (chaperone-procedure proc kw-chaperone))))])])
             (if (null? props)
                 new-proc
                 (apply chaperone-struct new-proc 

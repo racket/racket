@@ -88,7 +88,9 @@ be considered proxies of each other if they are @scheme[equal?].
 Otherwise, all proxies of @scheme[v2] must be intact in @scheme[v1],
 in the sense that parts of @scheme[v2] must be derived from
 @scheme[v1] through one of the proxy constructors (e.g.,
-@scheme[proxy-procedure] or @racket[chaperone-procedure]).}
+@scheme[proxy-procedure] or @racket[chaperone-procedure]).
+
+See also @racket[prop:proxy-of].}
 
 
 @defproc[(chaperone-of? [v1 any/c] [v2 any/c]) boolean?]{
@@ -300,6 +302,25 @@ produced by @scheme[key-proc] does not yield a value through
 Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[proxy-hash] must be odd) add proxy properties
 or override proxy-property values of @scheme[hash].}
+
+
+@defthing[prop:proxy-of struct-type-property?]{
+
+A @tech{structure type property} (see @secref["structprops"]) that
+supplies a procedure for extracting a proxied value from a structure
+that represents a proxy. The property is used for @racket[proxy-of]
+as well as @racket[equal?].
+
+The property value must be a procedure of one argument, which is a
+structure whose structure type has the property. The result can be
+@scheme[#f] to indicate the structure does not represent a proxy,
+otherwise the result is a value for which the original structure is a
+proxy (so the original structure is a @racket[proxy-of?] and it is
+@racket[equal?] to the result value). The result value must have the
+same @racket[prop:proxy-of] and @racket[prop:equal+hash] property
+values as the original structure, and the property values must be
+inherited from the same structure type (which ensures some consistency
+between @racket[proxy-of?] and @racket[equal?]).}
 
 @; ------------------------------------------------------------
 @section{Chaperone Constructors}

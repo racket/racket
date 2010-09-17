@@ -44,7 +44,7 @@ strings, byte strings, numbers, pairs, mutable pairs, vectors, boxes, hash
 tables, and inspectable structures. In the last five cases, equality
 is recursively defined; if both @scheme[v1] and @scheme[v2] contain
 reference cycles, they are equal when the infinite unfoldings of the
-values would be equal. See also @scheme[prop:equal+hash].
+values would be equal. See also @scheme[prop:equal+hash] and @racket[prop:proxy-of].
 
 @examples[
 (equal? 'yes 'yes)
@@ -183,7 +183,10 @@ transparent structures, @scheme[equal-hash-code] and
 values. For opaque structure types, @scheme[equal?] is the same as
 @scheme[eq?], and @scheme[equal-hash-code] and
 @scheme[equal-secondary-hash-code] results are based only on
-@scheme[eq-hash-code].
+@scheme[eq-hash-code]. If a structure has a @racket[prop:proxy-of]
+property, then the @racket[prop:proxy-of] property takes precedence over
+@racket[prop:equal+hash] if the property value's procedure returns a
+non-@racket[#f] value when applied to the structure.
 
 @examples[
 (define (farm=? farm1 farm2 recursive-equal?)

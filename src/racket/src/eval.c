@@ -9494,61 +9494,113 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       UPDATE_THREAD_RSPTR();
       scheme_escape_to_continuation(obj, num_rands, rands, NULL);
       return NULL;
-    } else if (type == scheme_proc_struct_type) {
+    } else if ((type == scheme_proc_struct_type)
+               || ((type == scheme_proc_chaperone_type)
+                   /* Chaperone is for struct fields, not function arguments --- but
+                      the chaperone may guard access to the function as a field inside
+                      the struct. We'll need to keep track of the original object
+                      as we unwrap to discover procedure chaperones. */
+                   && (SCHEME_VECTORP(((Scheme_Chaperone *)obj)->redirects)))
+               /* A raw pair is from scheme_apply_chaperone(), propagating the
+                  original object for an applicable structure. */
+               || (type == scheme_raw_pair_type)) {
       int is_method;
       int check_rands = num_rands;
+      Scheme_Object *orig_obj;
 
-      do {
-        VACATE_TAIL_BUFFER_USE_RUNSTACK();
+      if (SCHEME_RPAIRP(obj)) {
+        orig_obj = SCHEME_CDR(obj);
+        obj = SCHEME_CAR(obj);
+      } else {
+        orig_obj = obj;
+      }
 
-        UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
+      while (1) {
+        /* Like the apply loop around this one, but we need
+           to keep track of orig_obj until we get down to the
+           structure. */
 
-        v = obj;
-        obj = scheme_extract_struct_procedure(obj, check_rands, rands, &is_method);
-        if (is_method) {
-          /* Have to add an extra argument to the front of rands */
-          if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
-            /* Common case: we can just push self onto the front: */
-            rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
-            rands[0] = v;
-          } else {
-            int i;
-            Scheme_Object **a;
+        type = SCHEME_TYPE(obj);
+        if (type == scheme_proc_struct_type) {
+          do {
+            VACATE_TAIL_BUFFER_USE_RUNSTACK();
 
-            if (p->tail_buffer && (num_rands < p->tail_buffer_size)) {
-              /* Use tail-call buffer. Shift in such a way that this works if
-                 rands == p->tail_buffer */
-              a = p->tail_buffer;
+            UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
+
+            v = obj;
+            obj = scheme_extract_struct_procedure(orig_obj, check_rands, rands, &is_method);
+            if (is_method) {
+              /* Have to add an extra argument to the front of rands */
+              if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
+                /* Common case: we can just push self onto the front: */
+                rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
+                rands[0] = v;
+              } else {
+                int i;
+                Scheme_Object **a;
+
+                if (p->tail_buffer && (num_rands < p->tail_buffer_size)) {
+                  /* Use tail-call buffer. Shift in such a way that this works if
+                     rands == p->tail_buffer */
+                  a = p->tail_buffer;
+                } else {
+                  /* Uncommon general case --- allocate an array */
+                  UPDATE_THREAD_RSPTR_FOR_GC();
+                  a = MALLOC_N(Scheme_Object *, num_rands + 1);
+                }
+
+                for (i = num_rands; i--; ) {
+                  a[i + 1] = rands[i];
+                }
+                a[0] = v;
+                rands = a;
+              }
+              num_rands++;
+            }
+
+            /* After we check arity once, no need to check again
+               (which would lead to O(n^2) checking for nested
+               struct procs): */
+            check_rands = -1;
+
+            DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
+
+            break;
+          } while (SAME_TYPE(scheme_proc_struct_type, SCHEME_TYPE(obj)));
+
+          goto apply_top;
+        } else {
+          if (SCHEME_VECTORP(((Scheme_Chaperone *)obj)->redirects))
+            obj = ((Scheme_Chaperone *)obj)->prev;
+          else if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj)->redirects), scheme_nack_guard_evt_type))
+            /* Chaperone is for evt, not function arguments */
+            obj = ((Scheme_Chaperone *)obj)->prev;
+          else {
+            /* Chaperone is for function arguments */
+            VACATE_TAIL_BUFFER_USE_RUNSTACK();
+            UPDATE_THREAD_RSPTR();
+            v = scheme_apply_chaperone(scheme_make_raw_pair(obj, orig_obj), num_rands, rands, NULL);
+            
+            if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING)) {
+              /* Need to stay in this loop, because a tail-call result must
+                 be a tail call to an unwrapped layer, so we'll eventually
+                 need to use orig_obj. */
+              obj = p->ku.apply.tail_rator;
+              num_rands = p->ku.apply.tail_num_rands;
+              if (check_rands != -1) check_rands = num_rands;
+              rands = p->ku.apply.tail_rands;
+              p->ku.apply.tail_rator = NULL;
+              p->ku.apply.tail_rands = NULL;
+              RUNSTACK = old_runstack;
+              RUNSTACK_CHANGED();
             } else {
-              /* Uncommon general case --- allocate an array */
-              UPDATE_THREAD_RSPTR_FOR_GC();
-              a = MALLOC_N(Scheme_Object *, num_rands + 1);
+              break;
             }
-
-            for (i = num_rands; i--; ) {
-              a[i + 1] = rands[i];
-            }
-            a[0] = v;
-            rands = a;
           }
-          num_rands++;
         }
-
-        /* After we check arity once, no need to check again
-           (which would lead to O(n^2) checking for nested
-           struct procs): */
-        check_rands = -1;
-
-        DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
-      } while (SAME_TYPE(scheme_proc_struct_type, SCHEME_TYPE(obj)));
-
-      goto apply_top;
+      }
     } else if (type == scheme_proc_chaperone_type) {
-      if (SCHEME_VECTORP(((Scheme_Chaperone *)obj)->redirects)) {
-        /* Chaperone is for struct fields, not function arguments */
-        obj = ((Scheme_Chaperone *)obj)->prev;
-        goto apply_top;
-      } else if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj)->redirects), scheme_nack_guard_evt_type)) {
+      if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj)->redirects), scheme_nack_guard_evt_type)) {
         /* Chaperone is for evt, not function arguments */
         obj = ((Scheme_Chaperone *)obj)->prev;
         goto apply_top;

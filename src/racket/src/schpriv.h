@@ -384,6 +384,7 @@ THREAD_LOCAL_DECL(extern Scheme_Object *scheme_system_idle_channel);
 extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 
 extern Scheme_Object *scheme_equal_property;
+extern Scheme_Object *scheme_proxy_of_property;
 
 extern Scheme_Object *scheme_reduced_procedure_struct;
 

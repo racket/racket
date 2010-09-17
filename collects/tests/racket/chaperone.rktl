@@ -1047,4 +1047,91 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define (a-proxy-of v) (a-x v))
+  (define a-equal+hash (list
+                        (lambda (v1 v2 equal?)
+                          (equal? (a-y v1) (a-y v2)))
+                        (lambda (v1 hash)
+                          (hash (a-y v1)))
+                        (lambda (v2 hash)
+                          (hash (a-y v2)))))
+  (define-struct a (x y)
+    #:property prop:proxy-of a-proxy-of
+    #:property prop:equal+hash a-equal+hash)
+  (define-struct (a-more a) (z))
+  (define-struct (a-new-proxy a) ()
+    #:property prop:proxy-of a-proxy-of)
+  (define-struct (a-new-equal a) ()
+    #:property prop:equal+hash a-equal+hash)
+
+  (let ([a1 (make-a #f 2)])
+    (test #t equal? (make-a #f 2) a1)
+    (test #t equal? (make-a-more #f 2 7) a1)
+    (test #t equal? (make-a-new-proxy #f 2) a1)
+    (test #f equal? (make-a-new-equal #f 2) a1)
+    (test #f equal? (make-a #f 3) a1)
+    (test #f proxy-of? (make-a #f 2) a1)
+    (test #t proxy-of? (make-a a1 3) a1)
+    (test #t proxy-of? (make-a-more a1 3 8) a1)
+    (test #f chaperone-of? (make-a a1 3) a1)
+    (test #t equal? (make-a a1 3) a1)
+    (test #t equal? (make-a-more a1 3 9) a1)
+    (err/rt-test (equal? (make-a 0 1) (make-a 0 1)))
+    (err/rt-test (proxy-of? (make-a-new-proxy a1 1) a1))
+    (err/rt-test (proxy-of? (make-a-new-equal a1 1) a1))
+    (err/rt-test (equal? (make-a-new-equal a1 1) a1))
+    (void)))
+
+;; ----------------------------------------
+
+(let ()
+  (define f1 (λ (k) k))
+  (define f2 (λ (#:key k) k))
+  (define f3 (λ (#:key [k 0]) k))
+  (define wrapper
+    (make-keyword-procedure
+     (λ (kwds kwd-args . args)
+        (apply values kwd-args args))
+     (λ args (apply values args))))
+  
+  (define g1 (chaperone-procedure f1 wrapper))
+  (define g2 (chaperone-procedure f2 wrapper))
+  (define g3 (chaperone-procedure f2 wrapper))
+  (define h1 (proxy-procedure f1 wrapper))
+  (define h2 (proxy-procedure f2 wrapper))
+  (define h3 (proxy-procedure f2 wrapper))
+
+  (test #t chaperone-of? g1 f1)
+  (test #t chaperone-of? g2 f2)
+  (test #t chaperone-of? g3 f2)
+  (test #f chaperone-of? g3 g2)
+
+  (test #t equal? g1 f1)
+  (test #t equal? g2 f2)
+  (test #t equal? g3 f2)
+  (test #t equal? g3 g2)
+
+  (test #t proxy-of? h1 f1)
+  (test #t proxy-of? h2 f2)
+  (test #t proxy-of? h3 f2)
+  (test #f proxy-of? h3 h2)
+
+  (test #t equal? h1 f1)
+  (test #t equal? h2 f2)
+  (test #t equal? h3 f2)
+  (test #t equal? h3 h2)
+
+  (test #t equal? h1 g1)
+  (test #t equal? h2 g2)
+  (test #t equal? h3 g3)
+  (test #t equal? h3 g2)
+
+  (test #f equal? h1 f3)
+  (test #f equal? h2 f1)
+  (test #f equal? h3 f1))
+  
+
+;; ----------------------------------------
+
 (report-errs)
