@@ -1133,10 +1133,10 @@
                           (let ([nw (if blank?
                                         0.0
                                         (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))]
-                                [nh (integral (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE)))]
-                                [nd (integral (/ (- (PangoRectangle-height logical)
-                                                    (pango_layout_get_baseline layout))
-                                                 (exact->inexact PANGO_SCALE)))]
+                                [nh (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE))]
+                                [nd (/ (- (PangoRectangle-height logical)
+                                          (pango_layout_get_baseline layout))
+                                       (exact->inexact PANGO_SCALE))]
                                 [na 0.0])
                             (loop next-s (+ w nw) (max h nh) (max d nd) (max a na))))])))]))
               ;; This is character-by-character mode. It uses a cached per-character+font layout
@@ -1236,8 +1236,7 @@
                                  ;; Move into position and draw the glyphs
                                  (cairo_move_to cr 
                                                 (align-x/delta x 0) 
-                                                (+ (align-y/delta y 0)
-                                                   (/ (vector-ref first-v 4) (->fl PANGO_SCALE))))
+                                                (align-y/delta (+ y (/ (vector-ref first-v 4) (->fl PANGO_SCALE))) 0))
                                  (pango_cairo_show_glyph_string cr first-font glyph-string)
                                  (free glyph-infos)
                                  (free log-clusters)
@@ -1247,32 +1246,42 @@
                      (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
                          ([ch (in-string s)])
                        (let ([layout (vector-ref (hash-ref layouts (char->integer ch)) 0)])
-                         (when draw?
-                           (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
-                           ;; Here's the draw command, which uses most of the time in this mode:
-                           (pango_cairo_show_layout cr layout))
-                         (let ([v (and cache (hash-ref cache (char->integer ch) #f))])
-                           (if v
-                               ;; Used cached size:
-                               (values (if blank? 0.0 (+ w (vector-ref v 0))) 
-                                       (max h (vector-ref v 1)) 
-                                       (max d (vector-ref v 2)) 
-                                       (max a (vector-ref v 3)))
-                               ;; Query and record size:
-                               (begin
-                                 (pango_layout_get_extents layout #f logical)
-                                 (let ([baseline (pango_layout_get_baseline layout)]
-                                       [orig-h (PangoRectangle-height logical)])
-                                   (let ([lw (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE)))]
-                                         [lh (integral (/ orig-h (exact->inexact PANGO_SCALE)))]
-                                         [ld (integral (/ (- orig-h baseline) (exact->inexact PANGO_SCALE)))]
-                                         [la 0.0])
-                                     (when cache
-                                       (hash-set! cache (char->integer ch) (vector lw lh ld la baseline
-                                                                                   ;; rounded width in Pango units:
-                                                                                   (inexact->exact
-                                                                                    (floor (* lw (->fl PANGO_SCALE)))))))
-                                     (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la)))))))))))
+                         (let-values ([(lw lh ld la)
+                                       (let ([v (and cache (hash-ref cache (char->integer ch) #f))])
+                                         (if v
+                                             ;; Used cached size:
+                                             (values (vector-ref v 0)
+                                                     (vector-ref v 1)
+                                                     (vector-ref v 2)
+                                                     (vector-ref v 3))
+                                             ;; Query and record size:
+                                             (begin
+                                               (pango_layout_get_extents layout #f logical)
+                                               (let ([baseline (pango_layout_get_baseline layout)]
+                                                     [orig-h (PangoRectangle-height logical)])
+                                                 ;; We keep an integer width to pixel-align each individual character,
+                                                 ;; but we keep non-integral lh & ld to pixel-align the baseline.
+                                                 (let ([lw (integral (/ (PangoRectangle-width logical) 
+                                                                        (exact->inexact PANGO_SCALE)))]
+                                                       [lh (/ orig-h (exact->inexact PANGO_SCALE))]
+                                                       [ld (/ (- orig-h baseline) (exact->inexact PANGO_SCALE))]
+                                                       [la 0.0])
+                                                   (when cache
+                                                     (hash-set! cache (char->integer ch) 
+                                                                (vector lw lh ld la baseline
+                                                                        ;; rounded width in Pango units:
+                                                                        (inexact->exact
+                                                                         (floor (* lw (->fl PANGO_SCALE)))))))
+                                                   (values lw lh ld la))))))])
+                           (when draw?
+                             (cairo_move_to cr 
+                                            (align-x/delta (+ x w) 0) 
+                                            (let ([bl (- lh ld)])
+                                              (- (align-y/delta (+ y bl) 0)
+                                                 (align-y/delta bl 0))))
+                             ;; Here's the draw command, which uses most of the time in this mode:
+                             (pango_cairo_show_layout cr layout))
+                           (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la)))))))
                  (when rotate? (cairo_restore cr))))))))
 
     (define/private (extract-only-run layout vec)
