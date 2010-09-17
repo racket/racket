@@ -1131,6 +1131,21 @@
   (test #f equal? h2 f1)
   (test #f equal? h3 f1))
   
+;; ----------------------------------------
+
+;; A regression test mixing `procedure-rename',
+;; chaperones, and proxy properties:
+(let ()
+  (define (f #:key k) k)
+  (define null-checker
+    (make-keyword-procedure
+     (λ (kwds kwd-vals . args) (apply values kwd-vals args))
+     (λ args (apply values args))))
+  (define-values (proxy-prop:p p? p-ref) (make-proxy-property 'p))
+  (define new-f
+    (chaperone-procedure f null-checker proxy-prop:p #t))
+  
+  (test #t procedure? (procedure-rename new-f 'g)))
 
 ;; ----------------------------------------
 

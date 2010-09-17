@@ -1187,7 +1187,16 @@
 
   (define (do-chaperone-procedure is-proxy? chaperone-procedure name proc wrap-proc props)
     (if (or (not (keyword-procedure? proc))
-            (not (procedure? wrap-proc)))
+            (not (procedure? wrap-proc))
+            ;; if any bad prop, let `chaperone-procedure' complain
+            (let loop ([props props])
+              (cond
+               [(null? props) #f]
+               [(proxy-property? (car props))
+                (let ([props (cdr props)])
+                  (or (null? props)
+                      (loop (cdr props))))]
+               [else #t])))
         (apply chaperone-procedure proc wrap-proc props)
         (let-values ([(a) (procedure-arity proc)]
                      [(b) (procedure-arity wrap-proc)]
@@ -1317,5 +1326,5 @@
                 new-proc
                 (apply chaperone-struct new-proc 
                        ;; chaperone-struct insists on having at least one selector:
-                       keyword-procedure-allowed values
+                       keyword-procedure-allowed (lambda (s v) v)
                        props)))))))
