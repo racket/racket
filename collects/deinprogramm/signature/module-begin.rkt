@@ -43,8 +43,11 @@
 		(filter (lambda (maybe)
 			  (syntax-case maybe (:)
 			    ((: ?id ?cnt)
-			     (identifier? #'id)
 			     (begin
+			       (when (not (identifier? #'?id))
+				 (raise-syntax-error #f
+						     "Nach dem : sollte ein Bezeichner stehen; da steht was anderes."
+						     #'?id))
 			       (when (bound-identifier-mapping-get table #'?id (lambda () #f))
 				 (raise-syntax-error #f
 						     "Zweite Vertragsdefinition für denselben Namen."
@@ -52,9 +55,9 @@
 			       (bound-identifier-mapping-put! table #'?id #'?cnt)
 			       #f))
 			    ((: ?id)
-			     (raise-syntax-error 'signatures "Bei dieser Vertragsdefinition fehlt der Vertrag" maybe))
+			     (raise-syntax-error #f "Bei dieser Vertragsdefinition fehlt der Vertrag" maybe))
 			    ((: ?id ?cnt ?stuff0 ?stuff1 ...)
-			     (raise-syntax-error 'signatures "In der :-Form werden ein Name und ein Vertrag erwartet; da steht noch mehr"
+			     (raise-syntax-error #f "In der :-Form werden ein Name und ein Vertrag erwartet; da steht noch mehr"
 						 (syntax/loc #'?stuff0
 							     (?stuff0 ?stuff1 ...))))
 			    (_ #t)))

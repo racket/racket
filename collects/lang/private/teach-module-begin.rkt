@@ -48,18 +48,23 @@
 		(filter (lambda (maybe)
 			  (syntax-case maybe (:)
 			    ((: ?id ?cnt)
-			     (identifier? #'?id)
-			     (let ((real-id (first-order->higher-order #'?id)))
-			       (when (bound-identifier-mapping-get table real-id (lambda () #f))
+			     (begin
+			       (when (not (identifier? #'?id))
 				 (raise-syntax-error #f
-						     "Second signature declaraton for the same name."
-						     maybe))
-			       (bound-identifier-mapping-put! table real-id #'?cnt)
-			       #f))
+						     "Something that's not an identifier after the :"
+						     #'?id))
+			       
+			       (let ((real-id (first-order->higher-order #'?id)))
+				 (when (bound-identifier-mapping-get table real-id (lambda () #f))
+				   (raise-syntax-error #f
+						       "Second signature declaration for the same name."
+						       maybe))
+				 (bound-identifier-mapping-put! table real-id #'?cnt)
+				 #f)))
 			    ((: ?id)
-			     (raise-syntax-error 'signatures "Signature declaration is missing a signature." maybe))
+			     (raise-syntax-error #f "Signature declaration is missing a signature." maybe))
 			    ((: ?id ?cnt ?stuff0 ?stuff1 ...)
-			     (raise-syntax-error 'signatures "The : form expects a name and a signature; there is more."
+			     (raise-syntax-error #f "The : form expects a name and a signature; there is more."
 						 (syntax/loc #'?stuff0
 							     (?stuff0 ?stuff1 ...))))
 			    (_ #t)))
