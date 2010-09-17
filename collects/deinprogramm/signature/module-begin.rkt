@@ -50,14 +50,14 @@
 						     #'?id))
 			       (when (bound-identifier-mapping-get table #'?id (lambda () #f))
 				 (raise-syntax-error #f
-						     "Zweite Vertragsdefinition für denselben Namen."
+						     "Zweite Signaturdeklaration für denselben Namen."
 						     maybe))
 			       (bound-identifier-mapping-put! table #'?id #'?cnt)
 			       #f))
 			    ((: ?id)
-			     (raise-syntax-error #f "Bei dieser Vertragsdefinition fehlt der Vertrag" maybe))
+			     (raise-syntax-error #f "Bei dieser Signaturdeklaration fehlt die Signatur" maybe))
 			    ((: ?id ?cnt ?stuff0 ?stuff1 ...)
-			     (raise-syntax-error #f "In der :-Form werden ein Name und ein Vertrag erwartet; da steht noch mehr"
+			     (raise-syntax-error #f "In der :-Form werden ein Name und eine Signatur erwartet; da steht noch mehr"
 						 (syntax/loc #'?stuff0
 							     (?stuff0 ?stuff1 ...))))
 			    (_ #t)))
@@ -79,8 +79,8 @@
 					     (lambda (id thing)
 					       (when thing
 						 (if (identifier-binding id)
-						     (raise-syntax-error #f "Zu einer eingebauten Form kann kein Vertrag erklärt werden" id)
-						     (raise-syntax-error #f "Zu diesem Vertrag gibt es keine Definition" id)))))
+						     (raise-syntax-error #f "Zu einer eingebauten Form kann keine Signatur deklariert werden" id)
+						     (raise-syntax-error #f "Zu dieser Signatur gibt es keine Definition" id)))))
 	  #'(begin))
 	 (else
 	  (let ((expanded (car exprs)))

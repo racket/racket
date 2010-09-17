@@ -263,8 +263,8 @@
 		    (make-exn:fail:contract
 		     (string->immutable-string
 		      (if name
-			  (format "rekursiver Vertrag: ~a" name)
-			  "rekursiver Vertrag"))
+			  (format "rekursive Signatur: ~a" name)
+			  "rekursive Signatur"))
 		     (current-continuation-marks))))
 		  (else
 		   (check-signature (car alternative-signatures)

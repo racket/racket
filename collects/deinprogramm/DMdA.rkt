@@ -1003,7 +1003,7 @@
 			     ((?id ?signature)
 			      (identifier? #'?id)
 			      (with-syntax ((?error-call
-					     (syntax/loc #'?signature (error "Vertrag hat keinen Generator"))))
+					     (syntax/loc #'?signature (error "Signatur hat keinen Generator"))))
 				#'(?id
 				   (or (signature-arbitrary (signature ?signature))
 				       ?error-call))))

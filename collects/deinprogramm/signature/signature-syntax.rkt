@@ -43,7 +43,7 @@
 			       (with-syntax ((?raise
 					      (syntax/loc 
 					       #'?exp
-					       (error 'signatures "hier kein Vertrag zulässig, nur normaler Wert"))))
+					       (error 'signatures "hier keine Signatur zulässig, nur normaler Wert"))))
 				 #'(when (signature? ?temp)
 				     ?raise))))
 			   (syntax->list #'((?temp ?exp) ...)))))
@@ -59,14 +59,18 @@
 		   (?name name)
 		   (?signature-expr (parse-signature #f #'?signature)))
        #'(make-list-signature '?name ?signature-expr ?stx)))
+    ((list ?signature1 ?rest ...)
+     (raise-syntax-error #f
+			 "list-Signatur darf nur einen Operanden haben."
+			 (syntax ?signature1)))
     ((list-of ?signature)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name)
 		   (?signature-expr (parse-signature #f #'?signature)))
        #'(make-list-signature '?name ?signature-expr ?stx)))
-    ((list ?signature1 ?rest ...)
+    ((list-of ?signature)
      (raise-syntax-error #f
-			 "list-Vertrag darf nur einen Operanden haben."
+			 "list-of-Signatur darf nur einen Operanden haben."
 			 (syntax ?signature1)))
     ((?arg-signature ... -> ?return-signature)
      (with-syntax ((?stx (phase-lift stx))
@@ -78,7 +82,7 @@
        #'(make-procedure-signature '?name (list ?arg-signature-exprs ...) ?return-signature-expr ?stx)))
     ((?arg-signature ... -> ?return-signature1 ?return-signature2 . ?_)
      (raise-syntax-error #f
-			 "Nach dem -> darf nur ein Vertrag stehen."
+			 "Nach dem -> darf nur eine Signatur stehen."
 			 (syntax ?return-signature2)))
     ((at ?loc ?sig)
      (with-syntax ((?sig-expr (parse-signature #f #'?sig)))
@@ -142,7 +146,7 @@
 			       ?stx))))
     (else
      (raise-syntax-error 'signature
-			 "ungültiger Vertrag" stx))))
+			 "ungültige Signatur" stx))))
 
 ; regrettable
 (define signature/signature

@@ -406,7 +406,7 @@ prints as:
 
 	 (check-for-id!
 	  (syntax ?signature-constructor-name)
-	  "Vertrags-Konstruktor-Name ist kein Bezeichner")
+	  "Signaturkonstruktor-Name ist kein Bezeichner")
 
          (check-for-id!
           (syntax ?constructor)
@@ -527,7 +527,7 @@ prints as:
 
 	 (check-for-id!
 	  (syntax ?signature-constructor-name)
-	  "Vertrags-Konstruktor-Name ist kein Bezeichner")
+	  "Signaturkonstruktor-Name ist kein Bezeichner")
 
 	 (check-for-id!
 	  (syntax ?constructor)
