@@ -1,17 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(define brown-pubs
-  @a[href: "http://www.cs.brown.edu/~sk/Publications/Papers/"]{
-    Brown PLT Publications})
-(define nwu-pubs
-  @a[href: "http://www.eecs.northwestern.edu/~robby/pubs/"]{
-    Northwestern PLT Publications})
-(define neu-pubs
-  @a[href: "http://www.ccs.neu.edu/scheme/pubs/"]{
-    Northeastern PLT Publications})
-(define utah-pubs
-  @a[href: "http://www.cs.utah.edu/plt/publications/"]{Utah PLT Publications})
-;; TODO: add calpoly & byu?
+(require "people.rkt" racket/list)
 
 (provide learning)
 (define learning
@@ -28,8 +17,12 @@
       @text{@-teachscheme — a workshop to train teachers using @-htdp in the
         classroom.}
       @text{@-bootstrap — a curriculum for middle-school students.}]
-    @parlist[@strong{Publications}
-             techreports brown-pubs nwu-pubs neu-pubs utah-pubs]
+    @(apply parlist @strong{PLT Publications}
+            (cons techreports
+                  (for*/list ([place (in-list all-places)]
+                              [pubs (in-value (place-pubs-url place))]
+                              #:when pubs)
+                    @a[href: pubs]{@(place-name place)})))
     @parlist[@strong{Graduate Study}
              @text{We welcome applications from students interested in
                    @|graduate-study|.}]})
@@ -39,6 +32,25 @@
     @(define (box-style border-width color)
        @list{border: @|border-width|px solid black; padding: 5px; @;
              background: @|color|@";"})
+    @(define place-names
+       (add-between
+        (sort (map (lambda (p)
+                     (regexp-replace #rx", [A-Z][A-Z]$" (place-location p) ""))
+                   all-places)
+              string<?)
+        " / "))
+    @(define responsible-people
+       (let ([people
+              (for/list ([p (in-list all-places)])
+                (define edu (place-edu p))
+                (ormap (lambda (p)
+                         (and (equal? edu (person-responsible-for p)) p))
+                       all-people))])
+         (add-between
+          (for/list ([person (sort people string<? #:key person-name)])
+            @a[href: (person-url person)]{
+              @(regexp-replace #rx" .*$" (person-name person) "")})
+          ", ")))
     @h1{Graduate Study with PLT}
     @p{An open letter to graduate applicants:}
     @div[style: (box-style 3 "#ddd")]{
@@ -52,13 +64,12 @@
       we have created the following common application form.  By filling it in
       once, you can automatically apply to all current PLT institutions.
     @~ @|style: (box-style 1 "#bbb")|@;
-      Yes, we know you don't like Boston/Chicago/Providence/Provo/Salt Lake
-      City/San Luis Obispo/Worcester (circle those applicable).  But we like
-      them, or we wouldn't be living there.  Think about the message you're
-      sending by rejecting our choices.  Moreover, we think very highly of our
-      colleagues—more highly than we think of your judgment in this matter—so
-      for your own good, we're going to forward your application to them
-      anyway.
+      Yes, we know you don't like @place-names (circle those applicable).  But
+      we like them, or we wouldn't be living there.  Think about the message
+      you're sending by rejecting our choices.  Moreover, we think very highly
+      of our colleagues—more highly than we think of your judgment in this
+      matter—so for your own good, we're going to forward your application to
+      them anyway.
     @~ How many years have you programmed in Scheme?
     @~ How many years have you programmed in PLT Scheme?
     @~ If the two numbers above are not identical, justify.
@@ -79,13 +90,7 @@
        innovation, you should strongly consider graduate study with us.  We
        look forward to hearing from you.  All of us, no matter where we may
        live.}
-    @p[align: 'right]{
-      —@;
-      @a[href: "http://www.ccs.neu.edu/home/matthias/"]{Matthias},
-      @a[href: "http://www.eecs.northwestern.edu/~robby/"]{Robby},
-      @a[href: "http://www.cs.wpi.edu/~kfisler/"]{Kathi},
-      @a[href: "http://www.cs.utah.edu/~mflatt/"]{Matthew},
-      @a[href: "http://www.cs.brown.edu/~sk/"]{Shriram}}})
+    @p[align: 'right]{—@responsible-people}})
 
 (require "techreports.rkt")
 
