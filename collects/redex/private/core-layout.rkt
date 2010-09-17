@@ -18,6 +18,7 @@
          lw->pict
          basic-text
          metafunction-text
+         grammar-style
          default-style
          label-style
          non-terminal-style
@@ -755,6 +756,7 @@
   (define non-terminal-subscript-style (make-parameter `(subscript . ,(non-terminal-style))))
   (define non-terminal-superscript-style (make-parameter `(superscript . ,(non-terminal-style))))
   (define default-style (make-parameter 'roman))
+  (define grammar-style (make-parameter 'roman))
   (define metafunction-style (make-parameter 'swiss))
   (define (metafunction-text str) ((current-text) str (metafunction-style) (metafunction-font-size)))
   (define literal-style (make-parameter 'swiss))

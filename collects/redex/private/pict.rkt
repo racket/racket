@@ -33,6 +33,7 @@
          basic-text
          
          default-style
+         grammar-style
          label-style
          literal-style
          metafunction-style
@@ -587,11 +588,11 @@
                extensions))]
         [else info]))))
 
-(define (make-::=) (basic-text " ::= " (default-style)))
+(define (make-::=) (basic-text " ::= " (grammar-style)))
 (define (make-bar) 
-  (basic-text " | " (default-style))
+  (basic-text " | " (grammar-style))
   #;
-  (let ([p (basic-text " | " (default-style))])
+  (let ([p (basic-text " | " (grammar-style))])
     (dc 
      (λ (dc dx dy)
        (cond

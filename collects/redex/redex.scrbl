@@ -2057,6 +2057,7 @@ cases appear. If it is a list of numbers, then only the selected cases appear (c
 
 @deftogether[[
 @defparam[label-style style text-style/c]{}
+@defparam[grammar-style style text-style/c]{}
 @defparam[literal-style style text-style/c]{}
 @defparam[metafunction-style style text-style/c]{}
 @defparam[non-terminal-style style text-style/c]{}
@@ -2076,7 +2077,8 @@ The @racket[label-style] is used for the reduction rule label
 names. The @racket[literal-style] is used for names that aren't
 non-terminals that appear in patterns. The
 @racket[metafunction-style] is used for the names of
-metafunctions. 
+metafunctions. The @racket[grammar-style] is used for the ``::='' and ``|''
+in grammars.
 
 The @racket[non-terminal-style] is used for the names of non-terminals.
 Two parameters style the text in the (optional) "underscore" component
@@ -2093,7 +2095,7 @@ The
 after the underscore in non-terminal references.
 
 The @racket[default-style] is used for parenthesis, the dot in dotted
-lists, spaces, the separator words in the grammar, the
+lists, spaces, the
 "where" and "fresh" in side-conditions, and other places
 where the other parameters aren't used.
 }
