@@ -148,10 +148,12 @@ und meldet etwaige Verletzungen.
 Diese Form liefert die Signatur mit der Notation @scheme[sig].
 }
 
-@subsection{Signaturerklärung}
+@subsection{Signaturdeklaration}
 @defform[(: id sig)]{
 Diese Form erklärt @scheme[sig] zur gültigen Signatur für @scheme[id].
 }
+
+@subsection{Eingebaute Verträge}
 
 @defidform[number]{
 Signatur für beliebige Zahlen.
@@ -192,6 +194,9 @@ Signatur für Zeichenketten.
 @defidform[empty-list]{
 Signatur für die leere Liste.
 }
+
+@defidform[any]{
+Signatur, die auf alle Werte gültig ist.}
 
 @defform/none[signature]{
 Signatur für Signaturen.}

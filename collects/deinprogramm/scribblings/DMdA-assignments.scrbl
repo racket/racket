@@ -66,6 +66,15 @@ Ein @scheme[set!]-Ausdruck ist eine Zuweisung, und ändert den Inhalt
 der Zelle, die an @scheme[id] gebunden ist, auf den Wert von @scheme[expr].
 }
 
+@section[#:tag "assignments-signatures"]{Signaturen}
+
+@defidform[unspecific]{
+Signatur für unspezifische Werte, die unwichtig sind - typischerweise für die 
+Rückgabewerte von Operationen, die nur Seiteneffekte haben wie @scheme[set!]
+oder @scheme[write-string].
+}
+
+
 @section[#:tag "assignments-prim-op"]{Primitive Operationen}
 
 @prim-op-defns['(lib "DMdA-assignments.ss" "deinprogramm") #'here '()]
