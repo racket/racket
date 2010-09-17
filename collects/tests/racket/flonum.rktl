@@ -2,7 +2,7 @@
 
 (Section 'flonum)
 
-(require scheme/flonum)
+(require racket/flonum)
 
 (define (flonum-close? fl1 fl2)
   (<= (flabs (fl- fl1 fl2))
@@ -70,6 +70,8 @@
       (test vx 'flvector-copy vcx))
     (flvector-set! vc 2 -10.0)
     (test 2.0 'flvector-copy (flvector-ref v 2))
-    (test -10.0 'flvector-copy (flvector-ref vc 2))))
+    (test -10.0 'flvector-copy (flvector-ref vc 2))
+    (test '(2.0 3.0) 'flvector-copy (for/list ([i (in-flvector (flvector-copy v 2))]) i))
+    (test '(2.0) 'flvector-copy (for/list ([i (in-flvector (flvector-copy v 2 3))]) i))))
 
 (report-errs)

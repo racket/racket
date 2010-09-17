@@ -86,7 +86,27 @@
              (add1 i))
            v))))))
 
-(define (flvector-copy flv)
-  (for/flvector #:length (flvector-length flv)
-                ((x (in-flvector flv)))
-                x))
+(define (flvector-copy flv [start 0] [end (and (flvector? flv) (flvector-length flv))])
+  (unless (flvector? flv)
+    (raise-type-error 'flvector-copy "flvector" flv))
+  (unless (exact-nonnegative-integer? start)
+    (raise-type-error 'flvector-copy "non-negative exact integer" start))
+  (unless (exact-nonnegative-integer? end)
+    (raise-type-error 'flvector-copy "non-negative exact integer" end))
+  (let ([orig-len (flvector-length flv)])
+    (unless (<= start end orig-len)
+      (unless (<= start orig-len)
+        (raise-mismatch-error 'flvector-copy 
+                              (format "start index ~s out of range [~a, ~a] for flvector: "
+                                      start 0 orig-len)
+                              flv))
+      (raise-mismatch-error 'flvector-copy 
+                            (format "end index ~s out of range [~a, ~a] for flvector: "
+                                    end start orig-len)
+                            flv)))
+  (let* ([len (- end start)]
+         [vec (make-flvector len)])
+    (for ([i (in-range len)])
+      (flvector-set! vec i (flvector-ref flv (+ i start))))
+    vec))
+

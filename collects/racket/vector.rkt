@@ -27,7 +27,7 @@
   (unless (vector? v)
     (raise-type-error 'vector-copy "vector" v))
   (unless (exact-nonnegative-integer? start)
-    (raise-type-error 'vector-copy "non-negative exact integer" 1 start))
+    (raise-type-error 'vector-copy "non-negative exact integer" start))
   (let ([len (vector-length v)])
     (cond
       [(= len 0)

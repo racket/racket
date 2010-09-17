@@ -1096,9 +1096,16 @@ Sets the inexact real number in slot @racket[pos] of @racket[vec]. The
 first slot is position @racket[0], and the last slot is one less than
 @racket[(flvector-length vec)].}
 
-@defproc[(flvector-copy (v flvector?)) flvector?]{
+@defproc[(flvector-copy [vec flvector?]
+                        [start exact-nonnegative-integer? 0]
+                        [end exact-nonnegative-integer? (vector-length v)]) 
+         flvector?]{
 
-Returns a fresh copy of @racket[v].}
+Creates a fresh @tech{flvector} of size @racket[(- end start)], with all of the
+elements of @racket[vec] from @racket[start] (inclusive) to
+@racket[end] (exclusive).
+
+Returns a fresh copy of @racket[vec].}
 
 @defproc[(in-flvector (v flvector?)) sequence?]{
 
