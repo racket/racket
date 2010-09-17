@@ -13,6 +13,8 @@
 	 (for-syntax syntax/boundmap)
 	 (for-syntax syntax/kerncase))
 
+(require (for-syntax "firstorder.ss"))
+
 (define-syntax (print-results stx)
   (syntax-case stx ()
     ((_ expr)
@@ -46,13 +48,13 @@
 		(filter (lambda (maybe)
 			  (syntax-case maybe (:)
 			    ((: ?id ?cnt)
-			     (identifier? #'id)
-			     (begin
-			       (when (bound-identifier-mapping-get table #'?id (lambda () #f))
+			     (identifier? #'?id)
+			     (let ((real-id (first-order->higher-order #'?id)))
+			       (when (bound-identifier-mapping-get table real-id (lambda () #f))
 				 (raise-syntax-error #f
 						     "Second signature declaraton for the same name."
 						     maybe))
-			       (bound-identifier-mapping-put! table #'?id #'?cnt)
+			       (bound-identifier-mapping-put! table real-id #'?cnt)
 			       #f))
 			    ((: ?id)
 			     (raise-syntax-error 'signatures "Signature declaration is missing a signature." maybe))
