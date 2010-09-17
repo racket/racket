@@ -187,6 +187,18 @@
 ;; make sure two metafunctions simultaneously rewritten line up properly
 (test (render-metafunctions S T TL) "metafunctions-multiple.png")
 
+;; make sure that the ellipses don't have commas before them.
+(define-metafunction lang
+  rdups : x ... -> (x ...)
+  [(rdups x_1 x_2 ... x_1 x_3 ...)
+   (rdups x_2 ... x_1 x_3 ...)]
+  [(rdups x_1 x_2 ...)
+   (x_1 x_3 ...)
+   (where (x_3 ...) (rdups x_2 ...))]
+  [(rdups) ()])
+
+(test (render-metafunction rdups) "rdups.png")
+
 ;; Non-terminal superscripts
 (test (render-lw lang (to-lw (x_^abcdef x_q^abcdef)))
       "superscripts.png")

@@ -258,9 +258,13 @@
                         (just-after (close-white-square-bracket) last)))]
                [(null? (cddr lst))
                 (cons (car lst) (loop (cdr lst)))]
-               [else (list* (car lst) 
-                            (just-after (basic-text "," (default-style)) (car lst))
-                            (loop (cdr lst)))]))))
+               [else 
+                (if (eq? '... (lw-e (cadr lst)))
+                    (cons (car lst)
+                          (loop (cdr lst)))
+                    (list* (car lst) 
+                           (just-after (basic-text "," (default-style)) (car lst))
+                           (loop (cdr lst))))]))))
   
   (define (just-before what lw)
     (build-lw (if (symbol? what)
