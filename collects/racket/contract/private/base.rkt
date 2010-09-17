@@ -52,18 +52,21 @@ improve method arity mismatch contract violation error messages?
                (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
                (procedure? new-val)
                (not (eq? name (object-name new-val))))
-          (cond
-            [(contracted-function? new-val)
-             ;; when PR11222 is fixed, change these things:
-             ;;   - eliminate this cond case
-             ;;   - remove the require of arrow.rkt above
-             ;;   - change (struct-out contracted-function) 
-             ;;     in arrow.rkt to make-contracted-function
-             (make-contracted-function 
-              (procedure-rename (contracted-function-proc new-val) name)
-              (contracted-function-ctc new-val))]
-            [else
-             (procedure-rename new-val name)])
+          (let ([name (if (symbol? name)
+                          name
+                          (string->symbol (format "~a" name)))])
+            (cond
+              [(contracted-function? new-val)
+               ;; when PR11222 is fixed, change these things:
+               ;;   - eliminate this cond case
+               ;;   - remove the require of arrow.rkt above
+               ;;   - change (struct-out contracted-function) 
+               ;;     in arrow.rkt to make-contracted-function
+               (make-contracted-function 
+                (procedure-rename (contracted-function-proc new-val) name)
+                (contracted-function-ctc new-val))]
+              [else
+               (procedure-rename new-val name)]))
           new-val))))
 
 (define-syntax (recursive-contract stx)
