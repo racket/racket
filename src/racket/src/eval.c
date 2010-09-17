@@ -1954,9 +1954,15 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
     Scheme_Object *modname, *varname;
     int mod_phase = 0;
     if (SCHEME_SYMBOLP(expr)) {
-      varname = expr;
-      modname = env->module->modname;
-      mod_phase = env->mod_phase;
+      if (!env->module) {
+        /* compiled as a module variable, but instantiated in a non-module
+           namespace; grab a bucket */
+        return (Scheme_Object *)scheme_global_bucket(expr, env);
+      } else {
+        varname = expr;
+        modname = env->module->modname;
+        mod_phase = env->mod_phase;
+      }
     } else {
       varname = SCHEME_CAR(expr);
       modname = SCHEME_CDR(expr);
