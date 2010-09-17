@@ -130,12 +130,12 @@
 
 (import-class NSColor)
 
-(define-cocoa NSCalibratedRGBColorSpace _id)
+(define-cocoa NSDeviceRGBColorSpace _id)
 
 (define (get-highlight-background-color)
   (let ([hi (as-objc-allocation-with-retain
              (tell (tell NSColor selectedTextBackgroundColor) 
-                   colorUsingColorSpaceName: NSCalibratedRGBColorSpace))]
+                   colorUsingColorSpaceName: NSDeviceRGBColorSpace))]
         [as-color (lambda (v)
                     (inexact->exact (floor (* 255.0 v))))])
     (begin0
