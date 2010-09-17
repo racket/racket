@@ -13,7 +13,7 @@ improve method arity mismatch contract violation error messages?
          recursive-contract
          current-contract-region)
 
-(require (for-syntax racket/base)
+(require (for-syntax racket/base syntax/name)
          racket/stxparam
          unstable/srcloc
          unstable/location
@@ -30,8 +30,11 @@ improve method arity mismatch contract violation error messages?
      (syntax/loc stx
        (apply-contract c v pos neg name loc (current-contract-region)))]
     [(_ c v pos neg)
-     (syntax/loc stx
-       (apply-contract c v pos neg #f (build-source-location #f) (current-contract-region)))]
+     (with-syntax ([name (syntax-local-infer-name stx)])
+      (syntax/loc stx
+        (apply-contract c v pos neg 'name
+                        (build-source-location #f)
+                        (current-contract-region))))]
     [(_ c v pos neg src)
      (raise-syntax-error 'contract
        (string-append
