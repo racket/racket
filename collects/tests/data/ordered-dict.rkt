@@ -1,9 +1,10 @@
 #lang racket/base
 (require rackunit
+         racket/contract
          racket/dict
          data/skip-list
          data/splay-tree
-         data/private/ordered-dict)
+         data/order)
 
 ;; Tests for ordered dictionaries
 ;;   - skip-list
@@ -92,10 +93,17 @@
               dict-iterate-greatest/<?
               dict-iterate-greatest/<=?)))
 
-(test-case "skip-list, dict interface"
-  (dict-test (list (make-skip-list = <)) #t #t))
-(test-case "splay-tree, dict interface"
-  (dict-test (list (make-splay-tree = <)) #t #t))
+(test-case "skip-list, datum-order, dict interface"
+  (dict-test (list (make-skip-list)) #t #t))
+(test-case "skip-list, < = order, dict interface"
+  (dict-test (list (make-skip-list (order 'my-order any/c = <))) #t #t))
+(test-case "adjustable-skip-list, dict interface"
+  (dict-test (list (make-adjustable-skip-list)) #t #t))
+
+(test-case "splay-tree, datum-order, dict interface"
+  (dict-test (list (make-splay-tree)) #t #t))
+(test-case "splay-tree, < = order, dict interface"
+  (dict-test (list (make-splay-tree (order 'mine any/c = <))) #t #t))
 (test-case "adjustable-splay-tree, dict interface"
   (dict-test (list (make-adjustable-splay-tree)) #t #t))
 
@@ -116,10 +124,12 @@
               splay-tree-iterate-greatest/<?
               splay-tree-iterate-greatest/<=?)))
 
-(test-case "splay-tree, splay-tree interface"
-  (splay-test (list (make-splay-tree = <)) #t #t))
+(test-case "splay-tree, datum-order, custom interface"
+  (splay-test (list (make-splay-tree)) #t #t))
+(test-case "splay-tree, < = order, custom interface"
+  (splay-test (list (make-splay-tree (order 'mine any/c = <))) #t #t))
 
-(test-case "adjustable-splay-tree, splay-tree interface"
+(test-case "adjustable-splay-tree, custom interface"
   (splay-test (list (make-adjustable-splay-tree)) #t #t))
 
 (provide splay-test)
@@ -139,8 +149,14 @@
               skip-list-iterate-greatest/<?
               skip-list-iterate-greatest/<=?)))
 
-(test-case "skip-list, skip-list interface"
-  (skip-test (list (make-skip-list = <)) #t #t))
+(test-case "skip-list, datum-order, custom interface"
+  (skip-test (list (make-skip-list)) #t #t))
+
+(test-case "skip-list, < = order, custom interface"
+  (skip-test (list (make-skip-list (order 'mine any/c = <))) #t #t))
+
+(test-case "adjustable-skip-list, custom interface"
+  (skip-test (list (make-adjustable-skip-list)) #t #t))
 
 (provide skip-test)
 
@@ -169,6 +185,8 @@
 ;; ============================================================
 
 (define (p name testf mkd ordered?)
+  (collect-garbage)
+  (collect-garbage)
   (let-values ([(_result cpu real gc)
                 (time-apply
                  (lambda ()
@@ -177,18 +195,16 @@
                  null)])
     (printf "~a : ~s\n" name cpu)))
 
-(define (mksplay) (make-splay-tree = <))
+(define (mksplay) (make-splay-tree))
 (define (mkadj) (make-adjustable-splay-tree))
-(define (mkcsplay) (make-splay-tree = < #:key-contract number? #:value-contract number?))
-(define (mkdsplay) (make-datum-splay-tree))
-(define (mkskip) (make-skip-list = <))
-(define (mkcskip) (make-skip-list = < #:key-contract number? #:value-contract number?))
+(define (mkcsplay) (make-splay-tree real-order))
+(define (mkskip) (make-skip-list))
+(define (mkcskip) (make-skip-list real-order))
 
 (define (performance)
   (display "Using ordered-dict interface, w/ search\n")
   (p "splay-tree" dict-test mksplay #t)
   (p "adj splay " dict-test mkadj #t)
-  (p "dat splay " dict-test mkdsplay #t)
   (p "skip-list " dict-test mkskip #t)
   (p "splay w/ c" dict-test mkcsplay #t)
   (p "skip w/ c " dict-test mkcskip #t)
@@ -196,7 +212,6 @@
   (display "Using custom interfaces, w/ search\n")
   (p "splay-tree" splay-test mksplay #t)
   (p "adj splay " splay-test mkadj #t)
-  (p "dat splay " splay-test mkdsplay #t)
   (p "skip-list " skip-test mkskip #t)
   (p "splay w/ c" splay-test mkcsplay #t)
   (p "skip w/ c " skip-test mkcskip #t)
@@ -204,7 +219,6 @@
   (display "Using custom interfaces, w/o search\n")
   (p "splay-tree" splay-test mksplay #f)
   (p "adj splay " splay-test mksplay #f)
-  (p "dat splay " splay-test mkdsplay #f)
   (p "skip-list " skip-test mkskip #f)
   (p "splay w/ c" splay-test mkcsplay #f)
   (p "skip w/ c " skip-test mkcskip #f)

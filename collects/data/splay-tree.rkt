@@ -4,7 +4,7 @@
          racket/match
          racket/dict
          racket/contract
-         "private/ordered-dict.rkt")
+         "order.rkt")
 
 #|
 This library contains two implementations of splay trees.
@@ -473,9 +473,9 @@ Options
 (define (n:splay-tree-iterate-least/>? s key)
   (n:extreme s key '(>) n:has-next? n:find-next))
 
-(define (n:splay-tree-iterate-min s)
+(define (n:splay-tree-iterate-least s)
   (n:splay-tree-iterate-first s))
-(define (n:splay-tree-iterate-max s)
+(define (n:splay-tree-iterate-greatest s)
   (match s
     [(node-splay-tree root size)
      (let-values ([(ok? root) (n:find-max root)])
@@ -515,8 +515,8 @@ Options
                     n:splay-tree-iterate-value))
 
 (define n:ordered-dict-methods
-  (vector-immutable n:splay-tree-iterate-min
-                    n:splay-tree-iterate-max
+  (vector-immutable n:splay-tree-iterate-least
+                    n:splay-tree-iterate-greatest
                     n:splay-tree-iterate-least/>?
                     n:splay-tree-iterate-least/>=?
                     n:splay-tree-iterate-greatest/<?
@@ -744,7 +744,7 @@ Top-down splay
   (let loop ([root root])
     (let-values ([(ok? root)
                   (v:extreme* mem root cmp from '(> =) v:has-next? v:find-next)])
-      (if (and ok? (eq? (cmp (vnode-key mem root) '<) to))
+      (if (and ok? (eq? (cmp (vnode-key mem root) to) '<))
           (loop (v:delete-root mem root cmp))
           root))))
 
@@ -897,9 +897,9 @@ Top-down splay
 (define (v:splay-tree-iterate-least/>? s key)
   (v:extreme s key '(>) v:has-next? v:find-next))
 
-(define (v:splay-tree-iterate-min s)
+(define (v:splay-tree-iterate-least s)
   (v:splay-tree-iterate-first s))
-(define (v:splay-tree-iterate-max s)
+(define (v:splay-tree-iterate-greatest s)
   (match s
     [(compact-splay-tree mem root cmp)
      (let-values ([(ok? root) (v:find-max mem root)])
@@ -935,8 +935,8 @@ Top-down splay
                     v:splay-tree-iterate-value))
 
 (define v:ordered-dict-methods
-  (vector-immutable v:splay-tree-iterate-min
-                    v:splay-tree-iterate-max
+  (vector-immutable v:splay-tree-iterate-least
+                    v:splay-tree-iterate-greatest
                     v:splay-tree-iterate-least/>?
                     v:splay-tree-iterate-least/>=?
                     v:splay-tree-iterate-greatest/<?
@@ -970,26 +970,12 @@ Top-down splay
 ;; Constructors, predicates
 ;; ============================================================
 
-(define (*make-splay-tree cmp key-contract value-contract)
-  (let ([mem (make-vector (* NODE-SIZE 4) #f)])
-    (set-vnode-key! mem scratch 4)
-    (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
-           (compact-splay-tree mem #f cmp)]
-          [else
-           (compact-splay-tree* mem #f cmp key-contract value-contract)])))
-
-(define (make-splay-tree =? <?
+(define (make-splay-tree [ord datum-order]
                          #:key-contract [key-contract any/c]
                          #:value-contract [value-contract any/c])
-  (*make-splay-tree (mkcmp <? =?) key-contract value-contract))
-
-(define (make-natural-splay-tree #:key-contract [key-contract any/c]
-                                 #:value-contract [value-contract any/c])
-  (*make-splay-tree natural-cmp key-contract value-contract))
-
-(define (make-datum-splay-tree #:key-contract [key-contract any/c]
-                               #:value-contract [value-contract any/c])
-  (*make-splay-tree natural-cmp key-contract value-contract))
+  (*make-splay-tree (order-comparator ord)
+                    (and/c* (order-domain-contract ord) key-contract)
+                    value-contract))
 
 (define (make-adjustable-splay-tree #:key-contract [key-contract any/c]
                                     #:value-contract [value-contract any/c])
@@ -998,13 +984,24 @@ Top-down splay
         [else
          (node-splay-tree* #f 0 key-contract value-contract)]))
 
+(define (*make-splay-tree cmp key-contract value-contract)
+  (let ([mem (make-vector (* NODE-SIZE 4) #f)])
+    (set-vnode-key! mem scratch 4)
+    (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
+           (compact-splay-tree mem #f cmp)]
+          [else
+           (compact-splay-tree* mem #f cmp key-contract value-contract)])))
+
 (define (splay-tree? x)
   (or (node-splay-tree? x) (compact-splay-tree? x)))
 
 (define (adjustable-splay-tree? s)
   (node-splay-tree? s))
 
-
+(define (and/c* x y)
+  (cond [(eq? x any/c) y]
+        [(eq? y any/c) x]
+        [else (and/c x y)]))
 
 ;; ============================================================
 ;; Splay trees
@@ -1041,8 +1038,8 @@ Top-down splay
   (splay-tree-iterate-greatest/<? s key)
   (splay-tree-iterate-least/>=? s key)
   (splay-tree-iterate-least/>? s key)
-  (splay-tree-iterate-min s)
-  (splay-tree-iterate-max s)
+  (splay-tree-iterate-least s)
+  (splay-tree-iterate-greatest s)
   (splay-tree->list s))
 
 
@@ -1053,8 +1050,7 @@ Top-down splay
 (define (key-c s)
   (cond [(compact-splay-tree*? s) (compact-splay-tree*-key-c s)]
         [(node-splay-tree*? s)
-         (let ([c (node-splay-tree*-key-c s)])
-           (if (eq? c any/c) exact-integer? (and/c exact-integer? c)))]
+         (and/c* exact-integer? (node-splay-tree*-key-c s))]
         [(node-splay-tree? s) exact-integer?]
         [else any/c]))
 (define (val-c s)
@@ -1064,8 +1060,8 @@ Top-down splay
 
 (provide/contract
  [make-splay-tree
-  (->* ((-> any/c any/c any) (-> any/c any/c any))
-       (#:key-contract contract? #:value-contract contract?)
+  (->* ()
+       (order? #:key-contract contract? #:value-contract contract?)
        splay-tree?)]
  [make-adjustable-splay-tree
   (->* ()
@@ -1123,9 +1119,9 @@ Top-down splay
  [splay-tree-iterate-least/>?
   (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
 
- [splay-tree-iterate-min
+ [splay-tree-iterate-least
   (-> splay-tree? (or/c splay-tree-iter? #f))]
- [splay-tree-iterate-max
+ [splay-tree-iterate-greatest
   (-> splay-tree? (or/c splay-tree-iter? #f))]
 
  [splay-tree-iter? (-> any/c boolean?)])

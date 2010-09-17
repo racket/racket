@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require scribble/eval
           (for-label data/skip-list
+                     data/order
                      racket/contract
                      racket/dict
                      racket/base))
@@ -8,8 +9,7 @@
 @title[#:tag "skip-list"]{Skip Lists}
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require data/skip-list))
-@(the-eval '(require racket/dict))
+@(the-eval '(require racket/dict data/order data/skip-list))
 
 @defmodule[data/skip-list]
 
@@ -20,21 +20,21 @@ dictionaries with totally ordered keys. They were described in the
 paper ``Skip Lists: A Probabilistic Alternative to Balanced Trees'' by
 William Pugh in Communications of the ACM, June 1990, 33(6) pp668-676.
 
-A skip-list is a dictionary (@racket[dict?] from
-@racketmodname[racket/dict]). It also supports extensions of the
-dictionary interface for iterator-based search and mutation.
+A skip-list is an ordered dictionary (@racket[dict?] and
+@racket[ordered-dict?]). It also supports extensions of the dictionary
+interface for iterator-based search and mutation.
 
-@defproc[(make-skip-list [=? (any/c any/c . -> . any/c)]
-                         [<? (any/c any/c . -> . any/c)]
+@defproc[(make-skip-list [ord order? datum-order]
                          [#:key-contract key-contract contract? any/c]
                          [#:value-contract value-contract contract? any/c])
          skip-list?]{
 
-Makes a new empty skip-list. The skip-list uses @racket[=?] and
-@racket[<?] to order keys.
+Makes a new empty skip-list. The skip-list uses @racket[ord] to order
+keys; in addition, the domain contract of @racket[ord] is combined
+with @racket[key-contract] to check keys.
 
 @examples[#:eval the-eval
-(define skip-list (make-skip-list = <))
+(define skip-list (make-skip-list real-order))
 (skip-list-set! skip-list 3 'apple)
 (skip-list-set! skip-list 6 'cherry)
 (dict-map skip-list list)
@@ -136,23 +136,24 @@ keys greater than or equal to @racket[from].
 }
 
 @deftogether[[
+@defproc[(skip-list-iterate-least/>? [skip-list skip-list?]
+                                        [key any/c])
+         (or/c skip-list-iter? #f)]
+@defproc[(skip-list-iterate-least/>=? [skip-list skip-list?]
+                                        [key any/c])
+         (or/c skip-list-iter? #f)]
 @defproc[(skip-list-iterate-greatest/<? [skip-list skip-list?]
                                         [key any/c])
          (or/c skip-list-iter? #f)]
 @defproc[(skip-list-iterate-greatest/<=? [skip-list skip-list?]
                                         [key any/c])
          (or/c skip-list-iter? #f)]
-@defproc[(skip-list-iterate-least/>? [skip-list skip-list?]
-                                        [key any/c])
-         (or/c skip-list-iter? #f)]
-@defproc[(skip-list-iterate-least/>=? [skip-list skip-list?]
-                                        [key any/c])
-         (or/c skip-list-iter? #f)]]]{
+]]{
 
-Return the position of, respectively, the greatest key less than
-@racket[key], the greatest key less than or equal to @racket[key], the
-least key greater than @racket[key], and the least key greater than or
-equal to @racket[key].
+Implementations of @racket[dict-iterate-least],
+@racket[dict-iterate-greatest], @racket[dict-iterate-least/>?],
+@racket[dict-iterate-least/>=?], @racket[dict-iterate-greatest/<?],
+and @racket[dict-iterate-greatest/<=?], respectively.
 }
 
 @defproc[(skip-list-iter? [v any/c]) boolean?]{

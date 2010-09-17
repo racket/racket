@@ -2,7 +2,7 @@
 (require racket/match
          racket/contract
          racket/dict
-         "private/ordered-dict.rkt")
+         "order.rkt")
 ;; owned by ryanc
 
 #|
@@ -151,7 +151,7 @@ Levels are indexed starting at 1, as in the paper.
                 ;; t-item greatest s.t. key(t-item) <? t-key (at level)
                 [t-item* (item-next t-item level)]) ;; key(t-item*) >=? t-key
            (set-item-next! f-item level t-item*)
-           (delete-range f-item t-item (sub1 level) f-key t-key <?))]
+           (delete-range f-item t-item (sub1 level) f-key t-key <? contract!?))]
         [else
          ;; f-item is greatest s.t. key(item) <? f-key
          ;; so f-item is greatest s.t. key(item) <? t-key,
@@ -315,12 +315,12 @@ Levels are indexed starting at 1, as in the paper.
          [item (item-next item 1)])
     (and item (skip-list-iter s item))))
 
-(define (skip-list-iterate-min s)
+(define (skip-list-iterate-least s)
   (let* ([head (skip-list-head s)]
          [item (item-next head 1)])
     (and item (skip-list-iter s item))))
 
-(define (skip-list-iterate-max s)
+(define (skip-list-iterate-greatest s)
   (let* ([head (skip-list-head s)]
          [item (closest head (item-level head)
                         ;; replace standard comparison with "always <",
@@ -351,8 +351,8 @@ Levels are indexed starting at 1, as in the paper.
                     skip-list-iterate-value))
 
 (define ordered-dict-methods
-  (vector-immutable skip-list-iterate-min
-                    skip-list-iterate-max
+  (vector-immutable skip-list-iterate-least
+                    skip-list-iterate-greatest
                     skip-list-iterate-least/>?
                     skip-list-iterate-least/>=?
                     skip-list-iterate-greatest/<?
@@ -389,13 +389,17 @@ Levels are indexed starting at 1, as in the paper.
                                 #f))
         #:property prop:ordered-dict ordered-dict-methods)
 
-(define (make-skip-list =? <?
+(define (make-skip-list [ord datum-order]
                         #:key-contract [key-contract any/c]
                         #:value-contract [value-contract any/c])
-  (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
-         (skip-list (vector 'head 'head #f) 0 =? <?)]
-        [else
-         (skip-list* (vector 'head 'head #f) 0 =? <? key-contract value-contract)]))
+  (let ([key-contract (and/c* (order-domain-contract ord) key-contract)]
+        [=? (order-=? ord)]
+        [<? (order-<? ord)])
+    (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
+           (skip-list (vector 'head 'head #f) 0 =? <?)]
+          [else
+           (skip-list* (vector 'head 'head #f) 0 =? <?
+                       key-contract value-contract)])))
 
 (define (make-adjustable-skip-list #:key-contract [key-contract any/c]
                                    #:value-contract [value-contract any/c])
@@ -405,21 +409,28 @@ Levels are indexed starting at 1, as in the paper.
          (adjustable-skip-list* (vector 'head 'head #f) 0 = <
                                 key-contract value-contract)]))
 
+
 (define (key-c s)
   (cond [(skip-list*? s) (skip-list*-key-c s)]
         [(adjustable-skip-list*? s)
-         (let ([key-c (adjustable-skip-list*-key-c s)])
-           (if (eq? key-c any/c) exact-integer? (and/c exact-integer? key-c)))]
+         (and/c* exact-integer? (adjustable-skip-list*-key-c s))]
         [else any/c]))
 (define (val-c s)
   (cond [(skip-list*? s) (skip-list*-value-c s)]
         [(adjustable-skip-list*? s) (adjustable-skip-list*-value-c s)]
         [else any/c]))
 
+(define (and/c* x y)
+  (cond [(eq? x any/c) y]
+        [(eq? y any/c) x]
+        [else (and/c x y)]))
+
+;; ============================================================
+
 (provide/contract
  [make-skip-list
-  (->* ((-> any/c any/c any/c) (-> any/c any/c any/c))
-       (#:key-contract contract? #:value-contract contract?)
+  (->* ()
+       (order? #:key-contract contract? #:value-contract contract?)
        skip-list?)]
  [make-adjustable-skip-list
   (->* ()
@@ -469,9 +480,9 @@ Levels are indexed starting at 1, as in the paper.
  [skip-list-iterate-least/>?
   (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
 
- [skip-list-iterate-min
+ [skip-list-iterate-least
   (-> skip-list? (or/c skip-list-iter? #f))]
- [skip-list-iterate-max
+ [skip-list-iterate-greatest
   (-> skip-list? (or/c skip-list-iter? #f))]
 
  [skip-list-iter?

@@ -4,6 +4,11 @@
          racket/string
          unstable/prop-contract)
 
+(define ordering/c
+  (or/c '= '< '>))
+
+(provide ordering/c)
+
 (define-values (prop:ordered-dict ordered-dict? ordered-dict-ref)
   (make-struct-type-property 'ordered-dict #f))
 
@@ -19,8 +24,8 @@
 (define prop:ordered-dict-contract
   (let ([e extreme-contract]
         [s search-contract])
-    (vector-immutable/c e   ;; iterate-min
-                        e   ;; iterate-max
+    (vector-immutable/c e   ;; iterate-least
+                        e   ;; iterate-greatest
                         s   ;; iterate-least/>?
                         s   ;; iterate-least/>=?
                         s   ;; iterate-greatest/<?
@@ -32,9 +37,9 @@
   (let ([dv d])
     ((vector-ref (ordered-dict-ref dv) offset) dv arg ...)))
 
-(define (dict-iterate-min d)
+(define (dict-iterate-least d)
   (appd d 0))
-(define (dict-iterate-max d)
+(define (dict-iterate-greatest d)
   (appd d 1))
 (define (dict-iterate-least/>? d k)
   (appd d 2 k))
@@ -49,8 +54,8 @@
  [prop:ordered-dict
   (struct-type-property/c prop:ordered-dict-contract)]
  [ordered-dict? (-> any/c boolean?)]
- [dict-iterate-min extreme-contract]
- [dict-iterate-max extreme-contract]
+ [dict-iterate-least extreme-contract]
+ [dict-iterate-greatest extreme-contract]
  [dict-iterate-least/>? search-contract]
  [dict-iterate-least/>=? search-contract]
  [dict-iterate-greatest/<? search-contract]
@@ -58,10 +63,62 @@
 
 ;; ============================================================
 
-(provide natural-cmp
-         datum-cmp)
+(struct order (name domain-contract comparator =? <?)
+        #:property prop:procedure (struct-field-index comparator))
 
-;; Comparator : any any -> (U '< '= '>)
+(define order*
+  (let ([order
+         (case-lambda
+           [(name ctc cmp)
+            (order name ctc cmp
+                   (lambda (x y) (eq? (cmp x y) '=))
+                   (lambda (x y) (eq? (cmp x y) '<)))]
+           [(name ctc = <)
+            (order name ctc
+                   (lambda (x y)
+                     (cond [(= x y) '=]
+                           [(< x y) '<]
+                           [(< y x) '>]
+                           [else (incomparable name x y)]))
+                   = <)]
+           [(name ctc = < >)
+            (order name ctc
+                   (lambda (x y)
+                     (cond [(= x y) '=]
+                           [(< x y) '<]
+                           [(> x y) '>]
+                           [else (incomparable name x y)]))
+                   = <)])])
+    order))
+
+(define (incomparable name x y)
+  (error name "values are incomparable: ~e ~e" x y))
+
+(provide/contract
+ [rename order* order
+  (->* (symbol? contract? procedure?) (procedure? procedure?)
+       order?)]
+ [order? (-> any/c boolean?)]
+ [order-comparator
+  (-> order? procedure?)]
+ [order-<?
+  (-> order? procedure?)]
+ [order-=?
+  (-> order? procedure?)]
+ [order-domain-contract
+  (-> order? contract?)])
+
+;; ============================================================
+
+(define (real/not-NaN? x) (and (real? x) (not (eqv? x +nan.0))))
+
+(define real-order
+  (order* 'real-order real/not-NaN? = < >))
+
+(provide/contract
+ [real-order order?])
+
+;; ============================================================
 
 #|
 natural-cmp : Comparator
@@ -103,6 +160,8 @@ Other:
 
 |#
 
+;; not exported because I'm not sure it's a good idea and I'm not sure
+;; how to characterize it
 (define (natural-cmp x y)
   (gen-cmp x y #t))
 
@@ -239,3 +298,9 @@ Other:
         [(< i (vector-length y))
          '<]
         [else '=]))
+
+(define datum-order
+  (order* 'datum-order any/c datum-cmp))
+
+(provide/contract
+ [datum-order order?])

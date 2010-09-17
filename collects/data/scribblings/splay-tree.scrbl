@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require scribble/eval
           (for-label data/splay-tree
+                     data/order
                      racket/contract
                      racket/dict
                      racket/base))
@@ -8,8 +9,7 @@
 @title{Splay Trees}
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require data/splay-tree))
-@(the-eval '(require racket/dict))
+@(the-eval '(require racket/dict data/order data/splay-tree))
 
 @defmodule[data/splay-tree]
 
@@ -20,27 +20,28 @@ with totally ordered keys. They were described in the paper
 ``Self-Adjusting Binary Search Trees'' by Daniel Sleator and Robert
 Tarjan in Journal of the ACM 32(3) pp652-686.
 
-A splay-tree is a dictionary (@racket[dict?] from
-@racketmodname[racket/dict]). It also supports extensions of the
-dictionary interface for iterator-based search.
+A splay-tree is a ordered dictionary (@racket[dict?] and
+@racket[ordered-dict?]).
 
-@defproc[(make-splay-tree [=? (-> any/c any/c any/c)]
-                          [<? (-> any/c any/c any/c)]
+@defproc[(make-splay-tree [ord order? datum-order]
                           [#:key-contract key-contract contract? any/c]
                           [#:value-contract value-contract contract? any/c])
          splay-tree?]{
 
-Makes a new empty splay-tree. The splay tree uses @racket[=?] and
-@racket[<?] to compare keys.
+Makes a new empty splay-tree. The splay tree uses @racket[ord] to
+order keys; in addition, the domain contract of @racket[ord] is
+combined with @racket[key-contract] to check keys.
 
 @examples[#:eval the-eval
-(define splay-tree (make-splay-tree string=? string<?))
+(define splay-tree
+  (make-splay-tree (order 'string-order string? string=? string<?)))
 (splay-tree-set! splay-tree "dot" 10)
 (splay-tree-set! splay-tree "cherry" 500)
 (dict-map splay-tree list)
 (splay-tree-ref splay-tree "dot")
 (splay-tree-remove! splay-tree "cherry")
 (splay-tree-count splay-tree)
+(splay-tree-set! splay-tree 'pear 3)
 ]
 }
 
@@ -142,19 +143,24 @@ This operation is only allowed on adjustable splay trees, and it takes
 }
 
 @deftogether[[
-@defproc[(splay-tree-iterate-greatest/<? [s splay-tree?] [key any/c])
+@defproc[(splay-tree-iterate-least [s splay-tree])
          (or/c #f splay-tree-iter?)]
-@defproc[(splay-tree-iterate-greatest/<=? [s splay-tree?] [key any/c])
+@defproc[(splay-tree-iterate-greatest [s splay-tree])
          (or/c #f splay-tree-iter?)]
 @defproc[(splay-tree-iterate-least/>? [s splay-tree?] [key any/c])
          (or/c #f splay-tree-iter?)]
 @defproc[(splay-tree-iterate-least/>=? [s splay-tree?] [key any/c])
-         (or/c #f splay-tree-iter?)]]]{
+         (or/c #f splay-tree-iter?)]
+@defproc[(splay-tree-iterate-greatest/<? [s splay-tree?] [key any/c])
+         (or/c #f splay-tree-iter?)]
+@defproc[(splay-tree-iterate-greatest/<=? [s splay-tree?] [key any/c])
+         (or/c #f splay-tree-iter?)]
+]]{
 
-Return the position of, respectively, the greatest key less than
-@racket[key], the greatest key less than or equal to @racket[key], the
-least key greater than @racket[key], and the least key greater than or
-equal to @racket[key].
+Implementations of @racket[dict-iterate-least],
+@racket[dict-iterate-greatest], @racket[dict-iterate-least/>?],
+@racket[dict-iterate-least/>=?], @racket[dict-iterate-greatest/<?],
+and @racket[dict-iterate-greatest/<=?], respectively.
 }
 
 @defproc[(splay-tree-iter? [x any/c]) boolean?]{

@@ -100,10 +100,10 @@
 
 (define (norm s pos adjust)
   (cond [(= pos -inf.0)
-         (let ([iter (splay-tree-iterate-min s)])
+         (let ([iter (splay-tree-iterate-least s)])
            (and iter (splay-tree-iterate-key s iter)))]
         [(= pos +inf.0)
-         (let ([iter (splay-tree-iterate-max s)])
+         (let ([iter (splay-tree-iterate-greatest s)])
            ;; add 1 to *include* max (recall, half-open intervals)
            (and iter (+ 1 (splay-tree-iterate-key s iter))))]
         [else pos]))
