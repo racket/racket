@@ -5,7 +5,7 @@
          scheme/match
 	 lang/private/continuation-mark-key
          (only scheme/base for memf findf)
-         "test-engine.scm"
+         "test-engine.rkt"
 	 "test-info.scm"
          )
 

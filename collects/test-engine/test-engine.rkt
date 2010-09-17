@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/class
+(require racket/class
          "test-info.scm")
 
 (define test-display-textual%
@@ -99,7 +99,7 @@
     ;; make-link: (listof (U check-fail (U string snip%))) src -> void
     (define (make-link reason dest)
       (print-reason display display reason)
-      (printf (format-src dest)))
+      (printf "~a" (format-src dest)))
 
     (define (format-src src)
       (let ([src-file car]
