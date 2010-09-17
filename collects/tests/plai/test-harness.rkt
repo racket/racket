@@ -2,6 +2,7 @@
 (require (prefix-in eli: tests/eli-tester))
 
 (define-type WAE
+  [binop (p procedure?) (lhs WAE?) (rhs WAE?)]
   [num (n number?)]
   [id (s symbol?)])
 
@@ -15,6 +16,12 @@
     (plai-catch-test-exn catch?)
     (print-only-errors errors?)
     (abridged-test-output abridged?)
+    
+    (->string (test (list 'binop + (num 1) (num 2)) (binop + (num 1) (num 2))))
+    =>
+    (if abridged?
+        "(bad (list 'binop #<procedure:+> (num 1) (num 2)) (binop #<procedure:+> (num 1) (num 2)))\n"
+        "(bad (list (quote binop) + (num 1) (num 2)) (list 'binop #<procedure:+> (num 1) (num 2)) (binop #<procedure:+> (num 1) (num 2)) \"at line ??\")\n")
     
     (->string (test (num 5) (id 'x)))
     =>
