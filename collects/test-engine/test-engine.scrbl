@@ -41,10 +41,11 @@ delta of the cooresponding number in the second expression.
 It is an error to produce a function value.}
 
 
-@defproc[(check-error (test any/c) (msg string?)) void?]{
+@defproc*[([(check-error (test any/c) (msg string?)) void?]
+           [(check-error (test any/c)) void?])]{
 
 Checks that evaluating the first expression signals an error, where
-the error message matches the string.}
+the error message matches the string, if it is present.}
 
 @defform[(check-member-of (test any/c) (expected any/c) ...)]{
 

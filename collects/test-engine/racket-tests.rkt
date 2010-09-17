@@ -16,7 +16,7 @@
  check-within ;; syntax : (check-within <expression> <expression> <expression>)
  check-member-of ;; syntax : (check-member-of <expression> <expression>)
  check-range ;; syntax : (check-range <expression> <expression> <expression>)
- check-error  ;; syntax : (check-error <expression> <expression>)
+ check-error  ;; syntax : (check-error <expression> [<expression>])
  )
 
 ; for other modules implementing check-expect-like forms
@@ -48,7 +48,7 @@
 (define-for-syntax CHECK-EXPECT-STR
   "check-expect requires two expressions. Try (check-expect test expected).")
 (define-for-syntax CHECK-ERROR-STR
-  "check-error requires two expressions. Try (check-error test message).")
+  "check-error requires at least one expression. Try (check-error test message) or (check-error test).")
 (define-for-syntax CHECK-WITHIN-STR
   "check-within requires three expressions. Try (check-within test expected range).")
 (define-for-syntax CHECK-MEMBER-OF-STR
@@ -191,6 +191,9 @@
     [(_ test error)
      (check-expect-maker stx #'check-values-error #`test (list #`error)
                          'comes-from-check-error)]
+    [(_ test)
+     (check-expect-maker stx #'check-values-error/no-string #`test null
+                         'comes-from-check-error)]
     [_ (raise-syntax-error 'check-error CHECK-ERROR-STR stx)]))
 
 ;; check-values-error: (-> scheme-val) scheme-val src test-object -> void
@@ -209,6 +212,21 @@
           (send (send test-info get-info) check-failed
                 result (check-fail-src result)
                 (and (incorrect-error? result) (incorrect-error-exn result)))
+          #f)
+        #t)))
+
+;; check-values-error/no-string: (-> scheme-val) src test-object -> void
+(define (check-values-error/no-string test src test-info)
+  (send (send test-info get-info) add-check)
+  (let ([result (with-handlers ([exn?
+                                 (lambda (e) #t)])
+                  (let ([test-val (test)])
+                    (make-expected-an-error src (test-format) test-val)))])
+    (if (check-fail? result)
+        (begin
+          (send (send test-info get-info) check-failed
+                result (check-fail-src result)
+                #f)
           #f)
         #t)))
 

@@ -278,6 +278,14 @@
 (htdp-test 2 'two 2)
 (htdp-top-pop 1)
 
+(htdp-top (check-error (/ 1 0)))
+(htdp-test 2 'two 2)
+(htdp-top-pop 1)
+
+(htdp-top (check-error 1))
+(htdp-test 2 'two 2)
+(htdp-top-pop 1)
+
 (htdp-top (check-error (/ 1 0) "wrong error"))
 (htdp-test 2 'two 2)
 (htdp-top-pop 1)

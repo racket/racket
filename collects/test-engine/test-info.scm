@@ -21,6 +21,8 @@
 (define-struct (incorrect-error check-fail) (expected message exn))
 ;; (make-expected-error src format string scheme-val)
 (define-struct (expected-error check-fail) (message value))
+;; (make-expected-an-error src format scheme-val)
+(define-struct (expected-an-error check-fail) (value))
 ;; (make-not-mem src format scheme-val scheme-val)
 (define-struct (not-mem check-fail) (test set))
 ;; (make-not-range src format scheme-val scheme-val scheme-val)

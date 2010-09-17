@@ -408,7 +408,8 @@ The same as Intermediate's @|intm-time|.}
 @deftogether[(
 @defform[(check-expect expr expr)]
 @defform[(check-within expr expr expr)]
-@defform[(check-error expr expr)]
+@defform*[[(check-error expr expr)
+           (check-error expr)]]
 @defform[(check-member-of expr expr expr ...)]
 @defform[(check-range expr expr expr)]
 )]{

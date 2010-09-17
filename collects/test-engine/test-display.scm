@@ -278,6 +278,9 @@
 	  (print (string-constant test-engine-expected-error-error)
 		 (formatter (expected-error-value fail))
 		 (expected-error-message fail))]
+         [(expected-an-error? fail)
+	  (print (string-constant test-engine-expected-an-error-error)
+		 (formatter (expected-an-error-value fail)))]
 	 [(message-error? fail)
 	  (for-each print-formatted (message-error-strings fail))]
          [(not-mem? fail)
