@@ -18,7 +18,8 @@ improve method arity mismatch contract violation error messages?
          unstable/srcloc
          unstable/location
          "guts.rkt"
-         "blame.rkt")
+         "blame.rkt"
+         "arrow.rkt")
 
 (define-syntax-parameter current-contract-region
   (λ (stx) #'(quote-module-path)))
@@ -40,9 +41,27 @@ improve method arity mismatch contract violation error messages?
 (define (apply-contract c v pos neg name loc usr)
   (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
-    (((contract-projection c)
-      (make-blame loc name (contract-name c) pos neg usr #t))
-     v)))
+    (let ([new-val
+           (((contract-projection c)
+             (make-blame loc name (contract-name c) pos neg usr #t))
+            v)])
+      (if (and name 
+               (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
+               (procedure? new-val)
+               (not (eq? name (object-name new-val))))
+          (cond
+            [(contracted-function? new-val)
+             ;; when PR11222 is fixed, change these things:
+             ;;   - eliminate this cond case
+             ;;   - remove the require of arrow.rkt above
+             ;;   - change (struct-out contracted-function) 
+             ;;     in arrow.rkt to make-contracted-function
+             (make-contracted-function 
+              (procedure-rename (contracted-function-proc new-val) name)
+              (contracted-function-ctc new-val))]
+            [else
+             (procedure-rename new-val name)])
+          new-val))))
 
 (define-syntax (recursive-contract stx)
   (syntax-case stx ()

@@ -9066,11 +9066,11 @@ so that propagation occurs.
 ;                                                                                                               
 
   (contract-eval 
-   '(module contract-test-suite-inferred-name1 scheme/base
-      (require scheme/contract)
+   '(module contract-test-suite-inferred-name1 racket/base
+      (require racket/contract)
       (define contract-inferred-name-test-contract (-> integer? any))
-      (define (contract-inferred-name-test x) #t)
-      (provide/contract (contract-inferred-name-test contract-inferred-name-test-contract))
+      (define (contract-inferred-name-test1 x) #t)
+      (provide/contract (contract-inferred-name-test1 contract-inferred-name-test-contract))
       
       (define (contract-inferred-name-test2 x) x)
       (provide/contract (contract-inferred-name-test2 (-> number? number?)))
@@ -9086,16 +9086,14 @@ so that propagation occurs.
 
       (define (contract-inferred-name-test5) 7)
       (provide/contract (contract-inferred-name-test5 (->i () () any)))
-
       ))
   (contract-eval '(require 'contract-test-suite-inferred-name1))
-  ;; (eval '(test 'contract-inferred-name-test object-name contract-inferred-name-test)) ;; this one can't be made to pass, sadly.
+  (test 'contract-inferred-name-test1 object-name (contract-eval 'contract-inferred-name-test1))
   (test 'contract-inferred-name-test2 object-name (contract-eval 'contract-inferred-name-test2))
   (test 'contract-inferred-name-test2b object-name (contract-eval 'contract-inferred-name-test2b))
   (test 'contract-inferred-name-test3 object-name (contract-eval 'contract-inferred-name-test3))
   (test 'contract-inferred-name-test4 object-name (contract-eval 'contract-inferred-name-test4))
   (test 'contract-inferred-name-test5 object-name (contract-eval 'contract-inferred-name-test5))
-  
   
 
 ;                                                                                                                  
