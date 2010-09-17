@@ -81,9 +81,10 @@
     (check-interval start end 'interval-map-remove!)
     (let ([start (norm s start 0)]
           [end (norm s end 1)])
-      (split! s start)
-      (split! s end)
-      (splay-tree-remove-range! s start end))))
+      (when (and start end) ;; ie, s not empty
+        (split! s start)
+        (split! s end)
+        (splay-tree-remove-range! s start end)))))
 
 (define (interval-map-contract! im from to)
   (check-interval from to 'interval-map-contract!)
