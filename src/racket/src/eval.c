@@ -11781,6 +11781,27 @@ void scheme_pop_prefix(Scheme_Object **rs)
   MZ_RUNSTACK = rs;
 }
 
+Scheme_Object *scheme_suspend_prefix(Scheme_Object **rs)
+{
+  if (rs != MZ_RUNSTACK) {
+    Scheme_Object *v;
+    v = MZ_RUNSTACK[0];
+    MZ_RUNSTACK++;
+    return v;
+  } else
+    return NULL;
+}
+
+Scheme_Object **scheme_resume_prefix(Scheme_Object *v)
+{
+  if (v) {
+    --MZ_RUNSTACK;
+    MZ_RUNSTACK[0] = v;
+    return MZ_RUNSTACK + 1;
+  } else
+    return MZ_RUNSTACK;
+}
+
 /*========================================================================*/
 /*                          bytecode validation                           */
 /*========================================================================*/

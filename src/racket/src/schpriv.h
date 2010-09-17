@@ -2730,6 +2730,8 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 				   int src_phase, int now_phase,
                                    Scheme_Env *dummy_env);
 void scheme_pop_prefix(Scheme_Object **rs);
+Scheme_Object *scheme_suspend_prefix(Scheme_Object **rs);
+Scheme_Object **scheme_resume_prefix(Scheme_Object *v);
 
 Scheme_Object *scheme_eval_clone(Scheme_Object *expr);
 Resolve_Prefix *scheme_prefix_eval_clone(Resolve_Prefix *rp);

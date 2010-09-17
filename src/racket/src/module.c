@@ -4565,9 +4565,15 @@ static void eval_module_body(Scheme_Env *menv, Scheme_Env *env)
 #endif
 }
 
-static Scheme_Object *body_one_expr(void *expr, int argc, Scheme_Object **argv)
+static Scheme_Object *body_one_expr(void *prefix_plus_expr, int argc, Scheme_Object **argv)
 {
-  return _scheme_eval_linked_expr_multi((Scheme_Object *)expr);
+  Scheme_Object *v, **saved_runstack;
+
+  saved_runstack = scheme_resume_prefix(SCHEME_CAR((Scheme_Object *)prefix_plus_expr));
+  v = _scheme_eval_linked_expr_multi(SCHEME_CDR((Scheme_Object *)prefix_plus_expr));
+  scheme_suspend_prefix(saved_runstack);
+
+  return v;
 }
 
 static int needs_prompt(Scheme_Object *e)
@@ -4607,7 +4613,7 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
 {
   Scheme_Thread *p;
   Scheme_Module *m = menv->module;
-  Scheme_Object *body, **save_runstack;
+  Scheme_Object *body, **save_runstack, *save_prefix;
   int depth;
   int i, cnt;
   Scheme_Cont_Frame_Data cframe;
@@ -4659,9 +4665,14 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
     cnt = SCHEME_VEC_SIZE(m->body);
     for (i = 0; i < cnt; i++) {
       body = SCHEME_VEC_ELS(m->body)[i];
-      if (needs_prompt(body))
-        (void)_scheme_call_with_prompt_multi(body_one_expr, body);
-      else
+      if (needs_prompt(body)) {
+        /* We need to push the prefix after the prompt is set, so
+           restore the runstack and then add the prefix back. */
+        save_prefix = scheme_suspend_prefix(save_runstack);
+        (void)_scheme_call_with_prompt_multi(body_one_expr, 
+                                             scheme_make_raw_pair(save_prefix, body));
+        scheme_resume_prefix(save_prefix);
+      } else
         (void)_scheme_eval_linked_expr_multi(body);
     }
 
