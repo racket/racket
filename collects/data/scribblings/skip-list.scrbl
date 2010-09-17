@@ -44,12 +44,28 @@ Makes a new empty skip-list. The skip-list uses @racket[=?] and
 ]
 }
 
-@defproc[(skip-list? [v any/c])
-         boolean?]{
+@defproc[(make-adjustable-skip-list
+           [#:key-contract key-contract contract? any/c]
+           [#:value-contract value-contract contract? any/c])
+         adjustable-skip-list?]{
+
+Makes a new empty skip-list that permits only exact integers as keys
+(in addition to any constraints imposed by @racket[key-contract]). The
+resulting skip-list answers true to @racket[adjustable-skip-list?]
+and supports key adjustment.
+}
+
+@defproc[(skip-list? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a skip-list, @racket[#f]
 otherwise.
+}
 
+@defproc[(adjustable-skip-list? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a skip-list that supports key
+adjustment; see @racket[skip-list-contract!] and
+@racket[skip-list-expand!].
 }
 
 @deftogether[[
@@ -85,6 +101,40 @@ Implementations of @racket[dict-ref], @racket[dict-set!],
 respectively.
 }
 
+@defproc[(skip-list-remove-range! [skip-list skip-list?]
+                                  [from any/c]
+                                  [to any/c])
+         void?]{
+
+Removes all keys in [@racket[from], @racket[to]); that is, all keys
+greater than or equal to @racket[from] and less than @racket[to].
+}
+
+@defproc[(skip-list-contract! [skip-list adjustable-skip-list?]
+                              [from exact-integer?]
+                              [to exact-integer?])
+         void?]{
+
+Like @racket[skip-list-remove-range!], but also decreases the value
+of all keys greater than or equal to @racket[to] by @racket[(- to
+from)].
+
+This operation takes time proportional to the number of elements with
+keys greater than or equal to @racket[to].
+}
+
+@defproc[(skip-list-expand! [skip-list adjustable-skip-list?]
+                            [from exact-integer?]
+                            [to exact-integer?])
+         void?]{
+
+Increases the value of all keys greater than or equal to @racket[from]
+by @racket[(- to from)].
+
+This operation takes time proportional to the number of elements with
+keys greater than or equal to @racket[from].
+}
+
 @deftogether[[
 @defproc[(skip-list-iterate-greatest/<? [skip-list skip-list?]
                                         [key any/c])
@@ -105,28 +155,14 @@ least key greater than @racket[key], and the least key greater than or
 equal to @racket[key].
 }
 
-@deftogether[[
-@defproc[(skip-list-iterate-set-key! [skip-list skip-list?]
-                                     [iter skip-list-iter?]
-                                     [key any/c])
-         void?]
-@defproc[(skip-list-iterate-set-value! [skip-list skip-list?]
-                                       [iter skip-list-iter?]
-                                       [value any/c])
-         void?]]]{
-
-Set the key and value, respectively, at the position @racket[iter] in
-@racket[skip-list].
-
-@bold{Warning:} Changing a position's key to be less than its
-predecessor's key or greater than its successor's key results in an
-out-of-order skip-list, which may cause comparison-based operations to
-behave incorrectly.
-}
-
-@defproc[(skip-list-iter? [v any/c])
-         boolean?]{
+@defproc[(skip-list-iter? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] represents a position in a
 skip-list, @racket[#f] otherwise.
+}
+
+@defproc[(skip-list->list [skip-list skip-list?]) (listof pair?)]{
+
+Returns an association list with the keys and values of
+@racket[skip-list], in order.
 }

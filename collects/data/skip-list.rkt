@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/contract
+(require racket/match
+         racket/contract
          racket/dict
          "private/ordered-dict.rkt")
 ;; owned by ryanc
@@ -67,7 +68,7 @@ Levels are indexed starting at 1, as in the paper.
 
 ;; closest : Item Nat Key Cmp Cmp -> Item
 ;; Returns greatest item R s.t. key(R) <? key.
-;; Pre: level(item) >= level, key <? key(item) OR item = head
+;; Pre: level(item) >= level, key(item) <? key OR item = head
 (define (closest item level key <?)
   (if (zero? level)
       item
@@ -75,7 +76,7 @@ Levels are indexed starting at 1, as in the paper.
 
 ;; advance : Item Nat Key Cmp -> Item
 ;; Returns greatest item R s.t. key(R) <? key and level(R) >= level.
-;; Pre: level(item) >= level, key <? key(item) OR item = head
+;; Pre: level(item) >= level, key(item) <? key OR item = head
 (define (advance item level key <?)
   (let ([next (item-next item level)])
     (if (and next (<? (item-key next) key))
@@ -94,7 +95,7 @@ Levels are indexed starting at 1, as in the paper.
 ;; Updates skip-list so that key |-> data
 ;; Returns #f to indicate update (existing item changed);
 ;; returns item to indicate insertion (context's links need updating)
-;; Pre: level(item) >= level, key <? key(item) OR item = head
+;; Pre: level(item) >= level, key(item) <? key OR item = head
 (define (update/insert item level key data =? <? max-level)
   (cond [(positive? level)
          (let* ([item (advance item level key <?)]
@@ -122,7 +123,7 @@ Levels are indexed starting at 1, as in the paper.
 ;; delete : ... -> Item/#f
 ;; Returns item to indicate deletion (context's links need updating);
 ;; returns #f if not found.
-;; Pre: level(item) >= level; key <? key(item) OR item = head
+;; Pre: level(item) >= level; key(item) <? key OR item = head
 (define (delete item level key =? <?)
   (cond [(positive? level)
          (let* ([item (advance item level key <?)]
@@ -140,6 +141,39 @@ Levels are indexed starting at 1, as in the paper.
                  [else
                   ;; Not found!
                   #f]))]))
+
+;; delete-range : ... -> void
+;; Pre: level(*-item) >= level; key(*-item) <? *-key OR *-item = head
+(define (delete-range f-item t-item level f-key t-key <? contract!?)
+  (cond [(positive? level)
+         (let* ([f-item (advance f-item level f-key <?)]
+                [t-item (advance t-item level t-key <?)]
+                ;; t-item greatest s.t. key(t-item) <? t-key (at level)
+                [t-item* (item-next t-item level)]) ;; key(t-item*) >=? t-key
+           (set-item-next! f-item level t-item*)
+           (delete-range f-item t-item (sub1 level) f-key t-key <?))]
+        [else
+         ;; f-item is greatest s.t. key(item) <? f-key
+         ;; so f-item is greatest s.t. key(item) <? t-key,
+         ;; because deleted [f-key, t-key)
+         (when contract!?
+           (let ([delta (- t-key f-key)])
+             (let loop ([item (item-next f-item 1)])
+               (when item
+                 ;; key(item) >=? t-key
+                 (set-item-key! item (- (item-key item) delta))
+                 (loop (item-next item 1))))))]))
+
+;; expand! : ... -> void
+(define (expand! item level from to <?)
+  (let ([delta (- to from)]
+        [item (closest item level from <?)])
+    ;; item greatest s.t. key(item) <? from
+    (let loop ([item (item-next item 1)])
+      (when item
+        ;; key(item) >=? from
+        (set-item-key! item (+ (item-key item) delta))
+        (loop (item-next item 1))))))
 
 
 ;; Skip list
@@ -163,7 +197,8 @@ Levels are indexed starting at 1, as in the paper.
   (define result ;; new Item or #f
     (update/insert head (item-level head) key data =? <? max-level))
   (when result
-    (set-skip-list-num-entries! s (add1 (skip-list-count s)))
+    (when (skip-list-num-entries s)
+      (set-skip-list-num-entries! s (add1 (skip-list-count s))))
     (when (> (item-level result) (item-level head))
       (let ([new-head (resize-item head (item-level result))])
         (set-item-next! new-head (item-level result) result)
@@ -175,7 +210,7 @@ Levels are indexed starting at 1, as in the paper.
   (define <? (skip-list-<? s))
   (define deleted
     (delete head (item-level head) key =? <?))
-  (when deleted
+  (when (and deleted (skip-list-num-entries s))
     (set-skip-list-num-entries! s (sub1 (skip-list-count s))))
   (unless (or (item? (item-next head (item-level head)))
               (= 1 (item-level head)))
@@ -183,9 +218,33 @@ Levels are indexed starting at 1, as in the paper.
     (let ([new-head (resize-item head (sub1 (item-level head)))])
       (set-skip-list-head! s new-head))))
 
+(define (skip-list-remove-range! s from to)
+  (match s
+    [(skip-list head count =? <?)
+     (delete-range head head (item-level head) from to <? #f)
+     (set-skip-list-num-entries! s #f)]))
+
+(define (skip-list-contract! s from to)
+  (match s
+    [(adjustable-skip-list head count =? <?)
+     (delete-range head head (item-level head) from to <? #t)
+     (set-skip-list-num-entries! s #f)]))
+
+(define (skip-list-expand! s from to)
+  (match s
+    [(adjustable-skip-list head count =? <?)
+     (expand! head (item-level head) from to <?)]))
+
 ;; Dict methods
 
-(define (skip-list-count s) (skip-list-num-entries s))
+(define (skip-list-count s)
+  (let ([n (skip-list-num-entries s)])
+    (or n
+        (let loop ([n 0] [item (item-next (skip-list-head s) 1)])
+          (cond [item (loop (add1 n) (item-next item 1))]
+                [else
+                 (set-skip-list-num-entries! s n)
+                 n])))))
 
 (struct skip-list-iter (s item))
 
@@ -270,13 +329,14 @@ Levels are indexed starting at 1, as in the paper.
                         (lambda (x y) #t))])
     (and item (skip-list-iter s item))))
 
-(define (skip-list-iterate-set-key! s iter key)
-  (check-iter 'skip-list-iterate-set-key! s iter)
-  (set-item-key! (skip-list-iter-item iter) key))
+(define (skip-list->list s)
+  (let loop ([item (item-next (skip-list-head s) 1)])
+    (if item
+        (cons (cons (item-key item) (item-data item))
+              (loop (item-next item 1)))
+        null)))
 
-(define (skip-list-iterate-set-value! s iter value)
-  (check-iter 'skip-list-iterate-set-value! s iter)
-  (set-item-data! (skip-list-iter-item iter) value))
+;; ============================================================
 
 (define dict-methods
   (vector-immutable skip-list-ref
@@ -314,6 +374,21 @@ Levels are indexed starting at 1, as in the paper.
                                 #f))
         #:property prop:ordered-dict ordered-dict-methods)
 
+(struct adjustable-skip-list skip-list ()
+        #:property prop:dict/contract
+        (list dict-methods
+              (vector-immutable exact-integer? any/c skip-list-iter?
+                                #f #f #f)))
+
+(struct adjustable-skip-list* adjustable-skip-list (key-c value-c)
+        #:property prop:dict/contract
+        (list dict-methods
+              (vector-immutable exact-integer? any/c skip-list-iter?
+                                (lambda (s) (adjustable-skip-list*-key-c s))
+                                (lambda (s) (adjustable-skip-list*-value-c s))
+                                #f))
+        #:property prop:ordered-dict ordered-dict-methods)
+
 (define (make-skip-list =? <?
                         #:key-contract [key-contract any/c]
                         #:value-contract [value-contract any/c])
@@ -322,11 +397,23 @@ Levels are indexed starting at 1, as in the paper.
         [else
          (skip-list* (vector 'head 'head #f) 0 =? <? key-contract value-contract)]))
 
+(define (make-adjustable-skip-list #:key-contract [key-contract any/c]
+                                   #:value-contract [value-contract any/c])
+  (cond [(and (eq? key-contract any/c) (eq? value-contract any/c))
+         (adjustable-skip-list (vector 'head 'head #f) 0 = <)]
+        [else
+         (adjustable-skip-list* (vector 'head 'head #f) 0 = <
+                                key-contract value-contract)]))
+
 (define (key-c s)
   (cond [(skip-list*? s) (skip-list*-key-c s)]
+        [(adjustable-skip-list*? s)
+         (let ([key-c (adjustable-skip-list*-key-c s)])
+           (if (eq? key-c any/c) exact-integer? (and/c exact-integer? key-c)))]
         [else any/c]))
 (define (val-c s)
   (cond [(skip-list*? s) (skip-list*-value-c s)]
+        [(adjustable-skip-list*? s) (adjustable-skip-list*-value-c s)]
         [else any/c]))
 
 (provide/contract
@@ -334,7 +421,13 @@ Levels are indexed starting at 1, as in the paper.
   (->* ((-> any/c any/c any/c) (-> any/c any/c any/c))
        (#:key-contract contract? #:value-contract contract?)
        skip-list?)]
+ [make-adjustable-skip-list
+  (->* ()
+       (#:key-contract contract? #:value-contract contract?)
+       adjustable-skip-list?)]
  [skip-list?
+  (-> any/c boolean?)]
+ [adjustable-skip-list?
   (-> any/c boolean?)]
 
  [skip-list-ref
@@ -347,6 +440,17 @@ Levels are indexed starting at 1, as in the paper.
   (->i ([s skip-list?] [k (s) (key-c s)]) [_ void?])]
  [skip-list-count
   (-> skip-list? exact-nonnegative-integer?)]
+
+ [skip-list-remove-range!
+  (->i ([s skip-list?] [from (s) (key-c s)] [to (s) (key-c s)])
+       [_ void?])]
+ [skip-list-contract! 
+  (->i ([s adjustable-skip-list?] [from (s) (key-c s)] [to (s) (key-c s)])
+       [_ void?])]
+ [skip-list-expand!
+  (->i ([s adjustable-skip-list?] [from (s) (key-c s)] [to (s) (key-c s)])
+       [_ void?])]
+
  [skip-list-iterate-first
   (-> skip-list? (or/c skip-list-iter? #f))]
  [skip-list-iterate-next
@@ -370,10 +474,8 @@ Levels are indexed starting at 1, as in the paper.
  [skip-list-iterate-max
   (-> skip-list? (or/c skip-list-iter? #f))]
 
- [skip-list-iterate-set-key!
-  (->i ([s skip-list?] [i skip-list-iter?] [k (s) (key-c s)]) [_ void?])]
- [skip-list-iterate-set-value!
-  (->i ([s skip-list?] [i skip-list-iter?] [v (s) (val-c s)]) [_ void?])]
-
  [skip-list-iter?
-  (-> any/c any)])
+  (-> any/c any)]
+
+ [skip-list->list
+  (-> skip-list? list?)])

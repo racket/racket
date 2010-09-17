@@ -5,7 +5,7 @@
                      racket/dict
                      racket/base))
 
-@title[#:tag "gvector"]{Growable vectors}
+@title[#:tag "gvector"]{Growable Vectors}
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require data/gvector))

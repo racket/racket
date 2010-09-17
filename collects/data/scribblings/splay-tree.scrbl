@@ -106,28 +106,39 @@ Implementations of @racket[dict-ref], @racket[dict-set!],
 respectively.
 }
 
-@defproc[(splay-tree-remove-range! [s splay-tree?] [from any/c] [to any/c])
+@defproc[(splay-tree-remove-range! [s splay-tree?]
+                                   [from any/c]
+                                   [to any/c])
          void?]{
 
 Removes all keys in [@racket[from], @racket[to]); that is, all keys
 greater than or equal to @racket[from] and less than @racket[to].
+
+This operation takes @italic{O(N)} time, or @italic{O(log N)} time if
+@racket[(adjustable-splay-tree? s)].
 }
 
 @defproc[(splay-tree-contract! [s adjustable-splay-tree?]
-                               [from any/c] [to any/c])
+                               [from exact-integer?] [to exact-integer?])
          void?]{
 
 Like @racket[splay-tree-remove-range!], but also decreases the value
 of all keys greater than or equal to @racket[to] by @racket[(- to
 from)].
+
+This operation is only allowed on adjustable splay trees, and it takes
+@italic{O(log N)} time.
 }
 
 @defproc[(splay-tree-expand! [s adjustable-splay-tree?]
-                             [from any/c] [to any/c])
+                             [from exact-integer?] [to exact-integer?])
          void?]{
 
 Increases the value of all keys greater than or equal to @racket[from]
 by @racket[(- to from)].
+
+This operation is only allowed on adjustable splay trees, and it takes
+@italic{O(log N)} time.
 }
 
 @deftogether[[

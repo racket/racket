@@ -105,7 +105,7 @@
              invalidate-bitmap-cache)
 
     ;; interval-map of Drawings
-    (define drawings-list (make-numeric-interval-map))
+    (define drawings-list (make-interval-map))
 
     (field [hover-position #f])
 

@@ -15,52 +15,35 @@
 
 @author[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
-An interval-map is a mutable dictionary-like data structure where
-mappings are added by @emph{half-open} intervals and queried by
-discrete points. Interval-maps can be used with any total
-order. Internally, an interval-map uses a skip-list
-(@racketmodname[data/skip-list]) of intervals for efficient query
-and update.
+An interval-map is a mutable data structure that maps @emph{half-open}
+intervals of exact integers to values. An interval-map is queried at a
+discrete point, and the result of the query is the value mapped to the
+interval containing the point.
+
+Internally, interval-maps use a splay-tree
+(@racketmodname[data/splay-tree]) of intervals for efficient query and
+update, including efficient contraction and expansion of intervals.
 
 Interval-maps implement the dictionary (@racketmodname[racket/dict])
 interface to a limited extent. Only @racket[dict-ref] and the
-iteraction-based methods (@racket[dict-iterate-first],
+iteration-based methods (@racket[dict-iterate-first],
 @racket[dict-map], etc) are supported. For the iteration-based
 methods, the mapping's keys are considered the pairs of the start and
 end positions of the mapping's intervals.
 
 @examples[#:eval the-eval
-(define r (make-numeric-interval-map))
+(define r (make-interval-map))
 (interval-map-set! r 1 5 'apple)
 (interval-map-set! r 6 10 'pear)
-(interval-map-set! r 3 6 'banana)
+(interval-map-set! r 3 7 'banana)
 (dict-map r list)
 ]
 
-@defproc[(make-interval-map [=? (any/c any/c . -> . any/c)]
-                            [<? (any/c any/c . -> . any/c)]
-                            [translate (or/c (any/c any/c . -> . (any/c . -> . any/c)) #f) #f])
+@defproc[(make-interval-map [#:key-contract key-contract contract? any/c]
+                            [#:value-contract value-contract contract? any/c])
          interval-map?]{
 
-Makes a new empty interval-map. The interval-map uses @racket[=?] and
-@racket[<?] to order the endpoints of intervals.
-
-If @racket[translate] is a procedure, the interval-map supports
-contraction and expansion of regions of its domain via
-@racket[interval-map-contract!] and @racket[interval-map-expand!]. See
-also @racket[make-numeric-interval-map].
-}
-
-@defproc[(make-numeric-interval-map)
-         interval-map-with-translate?]{
-
-Makes a new empty interval-map suitable for representing numeric
-ranges.
-
-Equivalent to
-@racketblock[
-(make-interval-map = < (lambda (x y) (lambda (z) (+ z (- y x)))))
-]
+Makes a new empty interval-map.
 }
 
 @defproc[(interval-map? [v any/c])
@@ -70,15 +53,8 @@ Returns @racket[#t] if @racket[v] is an interval-map, @racket[#f]
 otherwise.
 }
 
-@defproc[(interval-map-with-translate? [v any/c])
-         boolean?]{
-
-Returns @racket[#t] if @racket[v] is an interval-map constructed with
-support for translation of keys, @racket[#f] otherwise.
-}
-
 @defproc[(interval-map-ref [interval-map interval-map?]
-                           [position any/c]
+                           [position exact-integer?]
                            [default any/c (lambda () (error ....))])
          any/c]{
 
@@ -88,8 +64,8 @@ applied if it is a procedure, or returned otherwise.
 }
 
 @defproc[(interval-map-set! [interval-map interval-map?]
-                            [start any/c]
-                            [end any/c]
+                            [start exact-integer?]
+                            [end exact-integer?]
                             [value any/c])
          void?]{
 
@@ -103,9 +79,9 @@ preserves distinctions within [@racket[start], @racket[end]).
 }
 
 @defproc[(interval-map-update*! [interval-map interval-map?]
-                                [start any/c]
-                                [end any/c]
-                                [updater (any/c . -> . any/c)]
+                                [start exact-integer?]
+                                [end exact-integer?]
+                                [updater (-> any/c any/c)]
                                 [default any/c (lambda () (error ....))])
          void?]{
 
@@ -119,40 +95,36 @@ preserves existing distinctions within [@racket[start], @racket[end]).
 }
 
 @defproc[(interval-map-remove! [interval-map interval-map?]
-                               [start any/c]
-                               [end any/c])
+                               [start (or/c exact-integer? -inf.0)]
+                               [end (or/c exact-integer? +inf.0)])
          void?]{
 
 Removes the value associated with every position in [@racket[start],
 @racket[end]).
 }
 
-@defproc[(interval-map-expand! [interval-map interval-map-with-translate?]
-                               [start any/c]
-                               [end any/c])
-         void?]{
-
-Expands @racket[interval-map]'s domain by introducing a gap
-[@racket[start], @racket[end]) and adjusting intervals after
-@racket[start] using @racket[(_translate start end)].
-
-If @racket[interval-map] was not constructed with a
-@racket[_translate] argument, an exception is raised. If
-@racket[start] is not less than @racket[end], an exception is raised.
-}
-
-@defproc[(interval-map-contract! [interval-map interval-map-with-translate?]
-                                 [start any/c]
-                                 [end any/c])
+@defproc[(interval-map-contract! [interval-map interval-map?]
+                                 [start exact-integer?]
+                                 [end exact-integer?])
          void?]{
 
 Contracts @racket[interval-map]'s domain by removing all mappings on
-the interval [@racket[start], @racket[end]) and adjusting intervals
-after @racket[end] using @racket[(_translate end start)].
+the interval [@racket[start], @racket[end]) and decreasing intervals
+initally after @racket[end] by @racket[(- end start)].
 
-If @racket[interval-map] was not constructed with a
-@racket[_translate] argument, an exception is raised. If
-@racket[start] is not less than @racket[end], an exception is raised.
+If @racket[start] is not less than @racket[end], an exception is raised.
+}
+
+@defproc[(interval-map-expand! [interval-map interval-map?]
+                               [start exact-integer?]
+                               [end exact-integer?])
+         void?]{
+
+Expands @racket[interval-map]'s domain by introducing a gap
+[@racket[start], @racket[end]) and increasing intervals initially after
+@racket[start] by @racket[(- end start)].
+
+If @racket[start] is not less than @racket[end], an exception is raised.
 }
 
 @defproc[(interval-map-cons*! [interval-map interval-map?]
