@@ -1,6 +1,6 @@
 #lang scheme/base
-(require ffi/objc
-         scheme/foreign
+(require ffi/unsafe/objc
+         ffi/unsafe
          scheme/class
          "queue.rkt"
          "utils.rkt"
@@ -16,8 +16,6 @@
          "../common/delay.rkt"
          "../../syntax.rkt"
          "../common/freeze.rkt")
-(unsafe!)
-(objc-unsafe!)
 
 (provide window%
 
@@ -76,6 +74,8 @@
 (import-protocol NSTextInput)
 
 (define current-insert-text (make-parameter #f))
+
+(define NSDragOperationCopy 1)
 
 (define-objc-mixin (KeyMouseResponder Superclass)
   [wxb]
@@ -172,7 +172,26 @@
   [-a _NSInteger (conversationIdentifier) 0]
   [-a _void (doCommandBySelector: [_SEL aSelector]) (void)]
   [-a _NSRect (firstRectForCharacterRange: [_NSRange r]) (make-NSRect (make-NSPoint 0 0)
-                                                                      (make-NSSize 0 0))])
+                                                                      (make-NSSize 0 0))]
+
+  ;; Dragging:
+  [-a _int (draggingEntered: [_id info])
+      NSDragOperationCopy]
+  [-a _BOOL (prepareForDragOperation: [_id info])
+      #t]
+  [-a _BOOL (performDragOperation: [_id info])
+      (let ([wx (->wx wxb)])
+        (when wx
+          (with-autorelease
+           (let ([pb (tell info draggingPasteboard)])
+             (let ([data (tell pb propertyListForType: NSFilenamesPboardType)])
+               (when data
+                 (for ([i (in-range (tell #:type _NSUInteger data count))])
+                   (let ([s (tell #:type _NSString data objectAtIndex: #:type _NSUInteger i)])
+                     (queue-window-event wx 
+                                         (lambda ()
+                                           (send wx do-on-drop-file s)))))))))))
+      #t])
 
 (define-objc-mixin (KeyMouseTextResponder Superclass)
   #:mixins (KeyMouseResponder)
@@ -315,6 +334,8 @@
                                     (lambda () (send wx dispatch-on-event m #t))
                                     #t)))))))))
 
+(define-cocoa NSFilenamesPboardType _id)
+
 (define window%
   (class object%
     (init-field parent 
@@ -400,6 +421,16 @@
     (define/public (register-child child on?)
       (void))
 
+    (define/public (on-new-child child on?)
+      (if on?
+          (queue-window-event
+           child
+           (lambda ()
+             (atomically
+              (with-autorelease
+               (send child child-accept-drag (or accept-drag? accept-parent-drag?))))))
+          (send child child-accept-drag #f)))
+
     (define/public (is-shown?)
       (and (tell cocoa superview) #t))
 
@@ -483,8 +514,38 @@
     (define/public (move x y)
       (set-size x y (get-width) (get-height)))
 
+    (define accept-drag? #f)
+    (define accept-parent-drag? #f)
+
+    (define/public (on-drop-file f) (void))
+    (define/public (do-on-drop-file f)
+      (if accept-drag?
+          (on-drop-file (string->path f))
+          (when parent
+            (send parent do-on-drop-file f))))
+
     (define/public (drag-accept-files on?) 
+      (unless (eq? (and on? #t) accept-drag?)
+        (atomically
+         (with-autorelease
+          (set! accept-drag? (and on? #t))
+          (accept-drags-everywhere (or accept-drag? accept-parent-drag?))))))
+
+    (define/public (accept-drags-everywhere on?) 
+      (if on?
+          (tellv (get-cocoa-content) registerForDraggedTypes:
+                 (let ([a (tell NSArray arrayWithObjects: #:type (_list i _id) (list NSFilenamesPboardType)
+                                count: #:type _NSUInteger 1)])
+                   a))
+          (tellv (get-cocoa-content) unregisterDraggedTypes))
+      (children-accept-drag on?))
+
+    (define/public (children-accept-drag on?)
       (void))
+    (define/public (child-accept-drag on?)
+      (unless (eq? (and on? #t) accept-parent-drag?)
+        (set! accept-parent-drag? (and on? #t))
+        (accept-drags-everywhere (or accept-drag? accept-parent-drag?))))
 
     (define/public (set-focus)
       (when (gets-focus?)
@@ -579,7 +640,6 @@
       (set! sticky-cursor? #f)
       (send (get-parent) end-no-cursor-rects))
 
-    (def/public-unimplemented on-drop-file)
     (def/public-unimplemented get-handle)
     (def/public-unimplemented set-phantom-size)
 

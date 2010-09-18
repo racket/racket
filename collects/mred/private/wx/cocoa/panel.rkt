@@ -20,7 +20,7 @@
 
 (define (panel-mixin %)
   (class %
-    (inherit register-as-child)
+    (inherit register-as-child on-new-child)
 
     (define lbl-pos 'horizontal)
     (define children null)
@@ -45,6 +45,10 @@
     (define/override (paint-children)
       (for ([child (in-list children)])
         (send child paint-children)))
+
+    (define/override (children-accept-drag on?)
+      (for ([child (in-list children)])
+        (send child child-accept-drag on?)))
     
     (define/override (set-size x y w h)
       (super set-size x y w h)
@@ -59,7 +63,8 @@
           (set! children 
                 (if on?
                     (cons child children)
-                    (remq child children))))))
+                    (remq child children)))
+          (on-new-child child on?))))
 
     (define/override (show on?)
       (super show on?)

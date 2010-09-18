@@ -262,8 +262,8 @@
              circle-spacer 
              border-inset)])
     (values 
-     (- tx (quotient (- ans-w tw) 2))
-     (- ty (quotient (- ans-h th) 2))
+     (- tx (quotient (ceiling (- ans-w tw)) 2))
+     (- ty (quotient (ceiling (- ans-h th)) 2))
      ans-w
      ans-h)))
 

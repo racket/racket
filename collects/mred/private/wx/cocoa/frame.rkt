@@ -113,7 +113,8 @@
     (inherit get-cocoa get-parent
              get-eventspace
              pre-on-char pre-on-event
-             get-x get-y)
+             get-x get-y
+             on-new-child)
 
     (super-new [parent parent]
                [cocoa
@@ -293,6 +294,10 @@
       (when saved-child
         (send saved-child show-children)))
 
+    (define/override (children-accept-drag on?)
+      (when saved-child
+        (send saved-child child-accept-drag on?)))
+
     (define/override (is-shown?)
       (tell #:type _bool cocoa isVisible))
 
@@ -314,7 +319,8 @@
       (unless on? (error 'register-child-in-frame "did not expect #f"))
       (unless (or (not saved-child) (eq? child saved-child))
         (error 'register-child-in-frame "expected only one child"))
-      (set! saved-child child))
+      (set! saved-child child)
+      (on-new-child child #t))
 
     (define/override (set-cursor c)
       (when saved-child
