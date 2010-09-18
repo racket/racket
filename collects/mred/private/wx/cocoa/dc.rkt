@@ -60,7 +60,12 @@
         (values (unbox xb) (unbox yb))))
 
     (define/override (queue-backing-flush)
-      ;; called atomically (not expecting exceptions)
+      ;; With Cocoa window-level delay doesn't stop
+      ;; displays; it blocks flushes to the screen.
+      ;; So leave the delay in place, and `end-delay'
+      ;; after displaying to the window (after which
+      ;; we'll be ready to flush the window), which
+      ;; is at then end of `do-backing-flush'.
       (send canvas queue-backing-flush))
 
     (define/override (request-delay)
@@ -92,6 +97,6 @@
                    (cairo_fill cr)
                    (cairo_set_source cr s)
                    (cairo_pattern_destroy s))
-                 (cairo_destroy cr))))))
-   (tellv ctx restoreGraphicsState)
-   (send dc end-delay)))
+                 (cairo_destroy cr))))
+           (send dc end-delay)))
+   (tellv ctx restoreGraphicsState)))
