@@ -22,7 +22,7 @@ Macht der Abstraktion}.
     durch. Stellen Sie dabei fest, zu welcher Sorte die Daten gehören, ob
     Daten mit Fallunterscheidung vorliegen und ob zusammengesetzte
     oder gemischte Daten vorliegen.}
-  @item{@bold{Signatur} (im Buch "Vertrag") Wählen Sie einen Namen und schreiben Sie eine Signatur für die Prozedur.}
+  @item{@bold{Signatur} (im Buch ``Vertrag'') Wählen Sie einen Namen und schreiben Sie eine Signatur für die Prozedur.}
   @item{@bold{Testfälle}  Schreiben Sie einige Testfälle.}
   @item{@bold{Gerüst} Leiten Sie direkt aus der Signatur das Gerüst der Prozedur her.}
   @item{@bold{Schablone} Leiten Sie aus der Signatur und der Datenanalyse mit
