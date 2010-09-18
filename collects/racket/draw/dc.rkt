@@ -2,8 +2,11 @@
 
 (require mred/private/syntax
          mred/private/lock
-         scheme/math
-         scheme/class
+         racket/flonum
+         ffi/unsafe
+         ffi/unsafe/atomic
+         racket/math
+         racket/class
          "hold.ss"
          "local.ss"
          "cairo.ss"
@@ -18,9 +21,6 @@
          "dc-path.ss"
          "point.ss"
          "local.ss"
-
-         racket/flonum
-         ffi/unsafe
          "bstr.rkt")
 
 (provide dc-mixin
@@ -64,6 +64,7 @@
     ;; call-with-cr-lock : (-> any) -> any
     ;;
     ;; Calls a thunk while holding the lock on the cairo context.
+    call-with-cr-lock
 
     ;; get-cr : -> cairo_t or #f
     ;;
@@ -227,6 +228,20 @@
              can-combine-text? can-mask-bitmap?)
 
     (define-syntax-rule (with-cr default cr . body)
+      ;; Faster:
+      (begin
+        (start-atomic)
+        (let ([cr (get-cr)])
+          (if cr 
+              (begin0
+                (begin . body)
+                (release-cr cr)
+                (end-atomic))
+              (begin
+                (end-atomic)
+                default))))
+      ;; Safer:
+      #;
       (call-with-cr-lock
        (lambda ()
          (let ([cr (get-cr)])
@@ -1243,52 +1258,51 @@
                                  (free log-clusters)
                                  #t)))))
                    ;; We use the slower, per-layout way:
-                   (let ([logical (make-PangoRectangle 0 0 0 0)])
-                     (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
-                         ([ch (in-string s)])
-                       (let ([layout (vector-ref (hash-ref layouts (char->integer ch)) 0)])
-                         (let-values ([(lw lh ld la flh)
-                                       (let ([v (and cache (hash-ref cache (char->integer ch) #f))])
-                                         (if v
-                                             ;; Used cached size:
-                                             (values (vector-ref v 0)
-                                                     (vector-ref v 1)
-                                                     (vector-ref v 2)
-                                                     (vector-ref v 3)
-                                                     (vector-ref v 6))
-                                             ;; Query and record size:
-                                             (begin
-                                               (pango_layout_get_extents layout #f logical)
-                                               (let ([baseline (pango_layout_get_baseline layout)]
-                                                     [orig-h (PangoRectangle-height logical)])
-                                                 ;; We keep integer width & height to pixel-align each individual character,
-                                                 ;; but we keep non-integral lh & ld to pixel-align the baseline.
-                                                 (let ([lw (integral (/ (PangoRectangle-width logical) 
-                                                                        (exact->inexact PANGO_SCALE)))]
-                                                       [flh (/ orig-h (exact->inexact PANGO_SCALE))]
-                                                       [ld (/ (- orig-h baseline) (exact->inexact PANGO_SCALE))]
-                                                       [la 0.0])
-                                                   (let ([lh (ceiling flh)])
-                                                     (when cache
-                                                       (hash-set! cache (char->integer ch) 
-                                                                  (vector lw lh ld la 
-                                                                          ;; baseline in Pango units; for fast path
-                                                                          baseline
-                                                                          ;; rounded width in Pango units; for fast path
-                                                                          (inexact->exact
-                                                                           (floor (* lw (->fl PANGO_SCALE))))
-                                                                          ;; unrounded height, for slow-path alignment
-                                                                          flh)))
-                                                     (values lw lh ld la flh)))))))])
-                           (when draw?
-                             (cairo_move_to cr 
-                                            (align-x/delta (+ x w) 0) 
-                                            (let ([bl (- flh ld)])
-                                              (- (align-y/delta (+ y bl) 0)
-                                                 (align-y/delta bl 0))))
-                             ;; Here's the draw command, which uses most of the time in this mode:
-                             (pango_cairo_show_layout cr layout))
-                           (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la)))))))
+                   (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
+                       ([ch (in-string s)])
+                     (let ([layout (vector-ref (hash-ref layouts (char->integer ch)) 0)])
+                       (let-values ([(lw lh ld la flh)
+                                     (let ([v (and cache (hash-ref cache (char->integer ch) #f))])
+                                       (if v
+                                           ;; Used cached size:
+                                           (values (vector-ref v 0)
+                                                   (vector-ref v 1)
+                                                   (vector-ref v 2)
+                                                   (vector-ref v 3)
+                                                   (vector-ref v 6))
+                                           ;; Query and record size:
+                                           (let ([logical (make-PangoRectangle 0 0 0 0)])
+                                             (pango_layout_get_extents layout #f logical)
+                                             (let ([baseline (pango_layout_get_baseline layout)]
+                                                   [orig-h (PangoRectangle-height logical)])
+                                               ;; We keep integer width & height to pixel-align each individual character,
+                                               ;; but we keep non-integral lh & ld to pixel-align the baseline.
+                                               (let ([lw (integral (/ (PangoRectangle-width logical) 
+                                                                      (exact->inexact PANGO_SCALE)))]
+                                                     [flh (/ orig-h (exact->inexact PANGO_SCALE))]
+                                                     [ld (/ (- orig-h baseline) (exact->inexact PANGO_SCALE))]
+                                                     [la 0.0])
+                                                 (let ([lh (ceiling flh)])
+                                                   (when cache
+                                                     (hash-set! cache (char->integer ch) 
+                                                                (vector lw lh ld la 
+                                                                        ;; baseline in Pango units; for fast path
+                                                                        baseline
+                                                                        ;; rounded width in Pango units; for fast path
+                                                                        (inexact->exact
+                                                                         (floor (* lw (->fl PANGO_SCALE))))
+                                                                        ;; unrounded height, for slow-path alignment
+                                                                        flh)))
+                                                   (values lw lh ld la flh)))))))])
+                         (when draw?
+                           (cairo_move_to cr 
+                                          (align-x/delta (+ x w) 0) 
+                                          (let ([bl (- flh ld)])
+                                            (- (align-y/delta (+ y bl) 0)
+                                               (align-y/delta bl 0))))
+                           ;; Here's the draw command, which uses most of the time in this mode:
+                           (pango_cairo_show_layout cr layout))
+                         (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la))))))
                  (when rotate? (cairo_restore cr))))))))
 
     (define/private (extract-only-run layout vec)
