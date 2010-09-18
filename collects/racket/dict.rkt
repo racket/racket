@@ -181,11 +181,13 @@
   (->i ([d (and/c dict? dict-mutable?)]
         [k (d) (dict-key-contract d)]
         [update (d) (-> (dict-value-contract d) (dict-value-contract d))])
+       ([default (d) (or/c (dict-value-contract d) (-> (dict-value-contract d)))]) ;; use if/c
        [_ void?])]
  [dict-update
   (->i ([d (and/c dict? dict-can-functional-set?)]
         [k (d) (dict-key-contract d)]
         [update (d) (-> (dict-value-contract d) (dict-value-contract d))])
+       ([default (d) (or/c (dict-value-contract d) (-> (dict-value-contract d)))]) ;; use if/c ?
        [_ dict?])]
  [dict-remove!
   dict-remove!-contract]
