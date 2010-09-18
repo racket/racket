@@ -1,7 +1,7 @@
 #lang at-exp s-exp "shared.rkt"
 
 (require "bib.rkt" (prefix-in - version/utils) racket/list
-         "../download/data.rkt")
+         "people.rkt" "../download/data.rkt")
 
 (provide techreports)
 (define techreports
@@ -20,25 +20,20 @@
 
 (define authors
   '([plt      "PLT"]
-    [mflatt   "Matthew Flatt"]
-    [robby    "Robert Bruce Findler"]
     [ff       mflatt robby]
     [fplt     mflatt plt]
     [rplt     robby plt]
     [ffplt    ff plt]
     [ffc      ff clements]
     [fb       mflatt eli]
-    [eli      "Eli Barzilay"]
-    [clements "John Clements"]
     [dorai    "Dorai Sitaram"]
     [wright   "Andrew K. Wright"]
     [flanagan "Cormac Flanagan"]
-    [web      burns gregp jaym]
+    [web      burns gregp jay]
     [burns    "Mike Burns"]
-    [jaym     "Jay McCarthy"]
     [gregp    "Greg Pettyjohn"]
     [dyoo     "Danny Yoo"]
-    [ym       dyoo jaym]
+    [ym       dyoo jay]
     [kathyg   "Kathryn E. Gray"]
     [jacobm   "Jacob Matthews"]
     [sowens   "Scott Owens"]
@@ -107,7 +102,7 @@
     (redex      "4.1...!"  robby  "Redex: Debugging Operational Semantics")
     (scribble   "*...!"    fb     "Scribble: PLT Documentation Tool")
     (slideshow  "*...!"    ff     "Slideshow: PLT Figure and Presentation Tools")
-    (web-server "*...!"    jaym   "Web Server: PLT HTTP Server")
+    (web-server "*...!"    jay    "Web Server: PLT HTTP Server")
     (tools      "*...!"    robby  "Plugins: Extending DrScheme")
     (gui        "*...!"    ffc    "GUI: PLT Graphics Toolkit")
     (framework  "*...!"    ff     "Framework: PLT GUI Application Framework")
@@ -175,7 +170,7 @@
     (drracket   "!..."    rplt   "DrRacket: Programming Environment")
     (scribble   "!..."    fb     "Scribble: Racket Documentation Tool")
     (slideshow  "!..."    ff     "Slideshow: Racket Figure and Presentation Tools")
-    (web-server "!..."    jaym   "Web Server: Racket HTTP Server")
+    (web-server "!..."    jay    "Web Server: Racket HTTP Server")
     (foreign    "!..."    eli    "FFI: Racket Foreign Interface")
     (inside     "!..."    mflatt "Inside: Racket C API")
 
@@ -258,7 +253,8 @@
     t))
 
 (define (author->string author)
-  (let ([r (hash-ref authors* author)])
+  (let ([r (hash-ref authors* author
+                     (lambda () (person-bibname (find-person author))))])
     (if (string? r)
       r
       (let ([r (apply string-append

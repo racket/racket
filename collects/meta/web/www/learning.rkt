@@ -20,7 +20,7 @@
     @(apply parlist @strong{PLT Publications}
             (cons techreports
                   (for*/list ([place (in-list all-places)]
-                              [pubs (in-value (place-pubs-url place))]
+                              [pubs (in-value (place-pubs place))]
                               #:when pubs)
                     @a[href: pubs]{@(place-name place)})))
     @parlist[@strong{Graduate Study}
@@ -40,17 +40,12 @@
               string<?)
         " / "))
     @(define responsible-people
-       (let ([people
-              (for/list ([p (in-list all-places)])
-                (define edu (place-edu p))
-                (ormap (lambda (p)
-                         (and (equal? edu (person-responsible-for p)) p))
-                       all-people))])
-         (add-between
-          (for/list ([person (sort people string<? #:key person-name)])
-            @a[href: (person-url person)]{
-              @(regexp-replace #rx" .*$" (person-name person) "")})
-          ", ")))
+       (add-between
+        (for/list ([person (sort (map (compose car place-people) all-places)
+                                 string<? #:key person-name)])
+          @a[href: (person-url person)]{
+            @(regexp-replace #rx" .*$" (person-name person) "")})
+        ", "))
     @h1{Graduate Study with PLT}
     @p{An open letter to graduate applicants:}
     @div[style: (box-style 3 "#ddd")]{
