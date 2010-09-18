@@ -70,7 +70,6 @@
 ;;  ready to wake up
 
 (import-class NSEvent)
-(define NSApplicationDefined 15)
 (define wake-evt
   (tell NSEvent 
         otherEventWithType: #:type _int NSApplicationDefined
@@ -181,6 +180,8 @@
 (define events-suspended? #f)
 (define was-menu-bar #f)
 
+(define avoid-mouse-key-until #f)
+
 (define (check-menu-bar-click evt)
   (if (and evt 
            (= 14 (tell #:type _NSUInteger evt type))
@@ -217,10 +218,17 @@
     (when (and events-suspended? wait?)
       (set! was-menu-bar #f)
       (set! events-suspended? #f))
+    (when (and avoid-mouse-key-until
+               ((current-inexact-milliseconds) . > . avoid-mouse-key-until))
+      (set! avoid-mouse-key-until #f))
     (begin0
      (let ([evt (if events-suspended?
                     #f
-                    (tell app nextEventMatchingMask: #:type _NSUInteger NSAnyEventMask
+                    (tell app nextEventMatchingMask: #:type _NSUInteger (if (and (not wait?)
+                                                                                 avoid-mouse-key-until)
+                                                                            (- NSAnyEventMask
+                                                                               MouseAndKeyEventMask)
+                                                                            NSAnyEventMask)
                           untilDate: (if wait? distantFuture #f)
                           inMode: NSDefaultRunLoopMode
                           dequeue: #:type _BOOL dequeue?))])
@@ -229,7 +237,15 @@
             (or (not dequeue?)
                 (let ([e (eventspace-hook (tell evt window))])
                   (if e
-                      (begin
+                      (let ([mouse-or-key?
+                             (bitwise-bit-set? MouseAndKeyEventMask
+                                               (tell #:type _NSInteger evt type))])
+                        ;; If it's a mouse or key event, delay further
+                        ;;  dequeue of mouse and key events until this
+                        ;;  one can be handled.
+                        (when mouse-or-key?
+                          (set! avoid-mouse-key-until
+                                (+ (current-inexact-milliseconds) 200.0)))
                         (retain evt)
                         (queue-event e (lambda () 
                                          (call-as-nonatomic-retry-point
@@ -237,7 +253,9 @@
                                             ;; in atomic mode
                                             (with-autorelease
                                              (tellv app sendEvent: evt)
-                                             (release evt)))))))
+                                             (release evt))))
+                                         (when mouse-or-key?
+                                           (set! avoid-mouse-key-until #f)))))
                       (tellv app sendEvent: evt)))
                 #t)))
      (tellv pool release))))
