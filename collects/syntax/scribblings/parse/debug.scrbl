@@ -40,7 +40,7 @@ the result is some internal representation of the failure.
          #:contracts ([stx-expr syntax?])]{
 
 Tries to match @scheme[stx-expr] against the @scheme[S-pattern]s. If
-matching succeeds, the the symbol @scheme['success] is
+matching succeeds, the symbol @scheme['success] is
 returned. Otherwise, an S-expression describing the failure is returned.
 
 The failure S-expression shows both the raw set of failures (unsorted)

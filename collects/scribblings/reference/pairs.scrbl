@@ -979,7 +979,7 @@ instead, parts of @scheme[v] are copied as necessary to construct
 the resulting graph, where at most one copy is created for any given
 value.
 
-Since the copied vales can be immutable, and since the copy is also
+Since the copied values can be immutable, and since the copy is also
 immutable, @scheme[make-reader-graph] can create cycles involving only
 immutable pairs, vectors, boxes, and hash tables.
 

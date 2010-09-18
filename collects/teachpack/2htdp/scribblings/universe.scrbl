@@ -378,12 +378,12 @@ All @tech{MouseEvent}s are represented via strings:
                integer? integer? (unsyntax @tech{MouseEvent}) 
                (unsyntax @tech{WorldState}))])]{
  tells DrRacket to call @scheme[mouse-expr] on the current world, the current
- @scheme[x] and @scheme[y] coordinates of the mouse, and and a
+ @scheme[x] and @scheme[y] coordinates of the mouse, and a
  @tech{MouseEvent} for every (noticeable) action of the mouse by the
  computer user. The result of the call becomes the current world. 
 
  For @scheme["leave"] and @scheme["enter"] events, the coordinates of the
- mouse click may be outside of the (implicitly) rectangle. That is, the
+ mouse click may be outside of the (implicit) rectangle. That is, the
  coordinates may be negative or larger than the (implicitly) specified
  width and height.
 

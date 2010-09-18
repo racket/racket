@@ -32,7 +32,7 @@ that number to control the gauge along the bottom of the splash screen.
   
   The @racket[draw-spec] determines what the splash window contains. 
   The @racket[splash-title] is used as the title of the window and the @racket[width-default] determines
-  how many progress steps the gauge in the the splash screen should
+  how many progress steps the gauge in the splash screen should
   contain if there is no preference saved for the splash screen width.
   The splash library uses @racket[get-preference] and @racket[put-preferences]
   to store preferences, using 

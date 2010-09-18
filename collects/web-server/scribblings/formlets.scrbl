@@ -139,7 +139,7 @@ to be @emph{syntactically} an @|xexpr|. You may discover you want to use a more 
 
 @defform[(formlet* rendering-expr yields-expr)]{
  Constructs a @tech{formlet} where @racket[rendering-expr] is evaluated (with caveats) to construct the rendering
- and the processing result is the evaluation of the the @racket[yields-expr] expression.
+ and the processing result is the evaluation of the @racket[yields-expr] expression.
  The @racket[rendering-expr] should evaluate to an "@xexpr" that may embed the results of the following forms
  that only have meaning within @racket[formlet*]:
  

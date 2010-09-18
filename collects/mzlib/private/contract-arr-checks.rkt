@@ -161,7 +161,7 @@
     (raise-blame-error
      blame
      val
-     "expected a procedure that accepts ~a arguments and and arbitrarily more~a, given: ~e"
+     "expected a procedure that accepts ~a arguments and arbitrarily more~a, given: ~e"
      dom-length
      (keyword-error-text mandatory-kwds)
      val)))

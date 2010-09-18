@@ -149,6 +149,6 @@
 			    arguments))
 		(result-arguments-list (property-fail-result fail)))]
      [(property-error? fail)
-      (print "check-property encountered the the following error\n:: ~a"
+      (print "check-property encountered the following error\n:: ~a"
 	     (property-error-message fail))])
     (print-string "\n")))

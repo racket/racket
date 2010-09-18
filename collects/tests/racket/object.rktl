@@ -708,7 +708,7 @@
 
 ;; ------------------------------------------------------------
 ;; ...-final  clauses.
-;; Internal calls to public-final and and pubment are direct,
+;; Internal calls to public-final and pubment are direct,
 ;;  but other calls must be indirect.
 
 (let ()

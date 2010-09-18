@@ -1003,7 +1003,7 @@
 
 ; excess : R+ R+ -> R
 ;  compute the Euclidean excess
-;  Note: If the excess is 0, the the C is 90 deg.
+;  Note: If the excess is 0, then C is 90 deg.
 ;        If the excess is negative, then C is obtuse.
 ;        If the excess is positive, then C is acuse.
 (define (excess a b c)

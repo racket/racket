@@ -71,7 +71,7 @@ the result is always a @tech{fixnum}. The @scheme[unsafe-fxlshift] and
 @scheme[unsafe-fxrshift] is a negative (i.e., right) shift, where the
 number of bits to shift must be less than the number of bits used to
 represent a @tech{fixnum}. In the case of @scheme[unsafe-fxlshift],
-bits in the result beyond the the number of bits used to represent a
+bits in the result beyond the number of bits used to represent a
 @tech{fixnum} are effectively replaced with a copy of the high bit.}
 
 

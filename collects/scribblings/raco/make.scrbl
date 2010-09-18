@@ -338,7 +338,7 @@ source in an namespace that iniitially imports @racketmodname[scheme].
 
 Outside of a module, top-level @racket[define-syntaxes],
 @racket[module], @racket[#%require],
-@racket[define-values-for-syntax], and and @racket[begin] expressions
+@racket[define-values-for-syntax], and @racket[begin] expressions
 are handled specially by @exec{raco make --no-deps}: the compile-time
 portion of the expression is evaluated, because it might affect later
 expressions.

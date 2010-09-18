@@ -1740,7 +1740,7 @@
   
   
   
-  ; if a one-rowed matrix is the the result, assume that the matching isn't over and just update the eqs
+  ; if a one-rowed matrix is the result, assume that the matching isn't over and just update the eqs
   #;((Build-Term-Let (eqs ...) (matrix (x_1 ...) (((p_1 ... -> r) eqs_2 ...)) (pvar_1 ...) (pvar_2 ...) natural bool))
      (matrix (x_1 ...) (((p_1 ... -> r) eqs ...)) (pvar_1 ...) (pvar_2 ...) natural bool))
   

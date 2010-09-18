@@ -149,7 +149,7 @@ webscript="collects/meta/web/build.rkt"
 # sitemap materials
 sitemapdir="$scriptdir/sitemap"
 
-# platform-installer stuff, all relative the the racket tree
+# platform-installer stuff, all relative to the racket tree
 nsisdir="$scriptdir/nsis"
 unixinstallerdir="$scriptdir/unix-installer"
 unixpathcheckscript="$unixinstallerdir/check-install-paths"

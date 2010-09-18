@@ -2601,7 +2601,7 @@
        accept it.  On the other hand, if you're working with someone specific,
        they might prefer attachments (for example, it's easier to save the
        attached file from gmail).}}
-@~ Once the commits have been pushed the the main repository, you would get
+@~ Once the commits have been pushed to the main repository, you would get
    them when you pull to update.  The commits will now be different objects
    than the ones you have — since the information changed (at least the
    committer information will be different, the log message might have been
