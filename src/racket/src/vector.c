@@ -698,7 +698,9 @@ Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *vec)
   a[1] = scheme_make_integer(0);
   a[2] = vec;
 
-  return vector_copy_bang(3, a);
+  (void)vector_copy_bang(3, a);
+
+  return vec2;
 }
 
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])

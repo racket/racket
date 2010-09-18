@@ -134,6 +134,8 @@
 (test #t chaperone?/proxy (chaperone-vector (vector-immutable 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
 (err/rt-test (proxy-vector (vector-immutable 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
 
+(test #(1 2 3) make-reader-graph (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
+
 (as-chaperone-or-proxy
  ([chaperone-vector proxy-vector]
   [chaperone-of? proxy-of?])
