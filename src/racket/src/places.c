@@ -1455,6 +1455,9 @@ static int scheme_place_async_ch_ready(Scheme_Place_Async_Channel *ch) {
   int ready = 0;
   mzrt_mutex_lock(ch->lock);
   {
+    void *signaldescr;
+    signaldescr = scheme_get_signal_handle();
+    ch->wakeup_signal = signaldescr;
     if (ch->count > 0) ready = 1;
   }
   mzrt_mutex_unlock(ch->lock);

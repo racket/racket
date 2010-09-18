@@ -34,7 +34,8 @@
       (cons (car x) 'b)
       (list (car x) 'b (cadr x))
       (vector (vector-ref x 0) 'b (vector-ref x 1))
-      #s((abuilding 1 building 2) 6 'utah 'no))
+      #s((abuilding 1 building 2) 6 'utah 'no)
+      `(,x))
 
     (define pc1 (place-channel-recv ch))
     (pcrss pc1 (string-append x "-ok"))
@@ -46,6 +47,9 @@
     (pcrss ch (begin (flvector-set! x 2 6.0) "Ready2"))
     (pcrss ch (begin (bytes-set! x 2 67) "Ready3"))
     (pcrss ch (begin (bytes-set! x 2 67) "Ready4"))
+
+    (define pc5 (place-channel-recv ch))
+    (place-channel-send pc5 "Ready5")
   )
 )
 END
@@ -72,7 +76,8 @@ END
     ((cons 'a 'a) (cons 'a 'b))
     ((list 'a 'a) (list 'a 'b 'a))
     (#(a a) #(a b a))
-    (h1 #s((abuilding 1 building 2) 6 'utah 'no)))
+    (h1 #s((abuilding 1 building 2) 6 'utah 'no))
+    ('(printf "Hello") '((printf "Hello"))))
 
   (define-values (pc1 pc2) (place-channel))
   (place-channel-send pl pc2)
@@ -94,6 +99,9 @@ END
   (test "Ready4" place-channel-send/recv pl b2)
   (test 67 bytes-ref b2 2)
 
+  (define-values (pc5 pc6) (place-channel))
+  (place-channel-send pl pc5)
+  (test "Ready5" sync (handle-evt pc6 (lambda (p) (place-channel-recv p))))
 
   (place-wait pl)
 )
