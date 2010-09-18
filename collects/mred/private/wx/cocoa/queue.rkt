@@ -45,7 +45,9 @@
       (if (ptr-equal? (selector openPreferences:) 
                       (tell #:type _SEL menuItem action))
           (not (eq? (application-pref-handler) nothing-application-pref-handler))
-          (super-tell #:type _BOOL validateMenuItem: menuItem))])
+          (super-tell #:type _BOOL validateMenuItem: menuItem))]
+  [-a _BOOL (application: [_id theApplication] openFile: [_NSString filename])
+      (queue-file-event (string->path filename))])
 
 (tellv app finishLaunching)
 
