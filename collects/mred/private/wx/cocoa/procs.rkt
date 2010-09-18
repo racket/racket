@@ -103,9 +103,12 @@
   (set-box! xb 0)
   (set-box! yb 0))
 (define (display-size xb yb v)
-  (let ([f (tell #:type _NSRect (tell NSScreen mainScreen) frame)])
-    (set-box! xb (->long (NSSize-width (NSRect-size f))))
-    (set-box! yb (->long (NSSize-height (NSRect-size f))))))
+  (atomically
+   (with-autorelease
+    (let* ([screen (tell (tell NSScreen screens) objectAtIndex: #:type _NSUInteger 0)]
+           [f (tell #:type _NSRect screen frame)])
+      (set-box! xb (->long (NSSize-width (NSRect-size f))))
+      (set-box! yb (->long (NSSize-height (NSRect-size f))))))))
 
 (define-appkit NSBeep (_fun -> _void))  
 (define (bell) (NSBeep))
