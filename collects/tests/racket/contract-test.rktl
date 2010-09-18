@@ -9929,6 +9929,8 @@ so that propagation occurs.
     (test ctc value-contract (contract ctc (λ (x [y 3]) x) 'pos 'neg)))
   (let ([ctc (->i ([x number?]) ([y number?]) [_ number?])])
     (test ctc value-contract (contract ctc (λ (x [y 3]) x) 'pos 'neg)))
+  ;; currently fails due to procedure-rename interacting badly with
+  ;; chaperoned/proxied procedures
   (let ([ctc (unconstrained-domain-> number?)])
     (test ctc value-contract (contract ctc (λ (x) 3) 'pos 'neg)))
   (let ([ctc (case-> (-> number? number? number?) (-> number? number?))])
