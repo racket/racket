@@ -268,8 +268,15 @@
 (define (cocoa-start-event-pump)
   (thread (lambda ()
             (let loop ()
+              ;; Wait 50 msecs between event polling, unless nothing
+              ;; else is going on:
+              (sync/timeout 0.05 (system-idle-evt))
+              ;; Wait until event is ready --- but waiting is implemented
+              ;; by polling:
               (sync queue-evt)
+              ;; Something is ready, so dispatch:
               (atomically (dispatch-all-ready))
+              ;; Periodically free everything in the default allocation pool:
               (queue-autorelease-flush)
               (loop)))))
 
