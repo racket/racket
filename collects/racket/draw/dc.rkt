@@ -1233,7 +1233,8 @@
                                (let ([glyph-string (make-PangoGlyphString len
                                                                           glyph-infos
                                                                           log-clusters)])
-                                 ;; Move into position and draw the glyphs
+                                 ;; Move into position (based on the recorded Pango-units baseline)
+                                 ;; and draw the glyphs
                                  (cairo_move_to cr 
                                                 (align-x/delta x 0) 
                                                 (align-y/delta (+ y (/ (vector-ref first-v 4) (->fl PANGO_SCALE))) 0))
@@ -1246,37 +1247,43 @@
                      (for/fold ([w 0.0][h 0.0][d 0.0][a 0.0])
                          ([ch (in-string s)])
                        (let ([layout (vector-ref (hash-ref layouts (char->integer ch)) 0)])
-                         (let-values ([(lw lh ld la)
+                         (let-values ([(lw lh ld la flh)
                                        (let ([v (and cache (hash-ref cache (char->integer ch) #f))])
                                          (if v
                                              ;; Used cached size:
                                              (values (vector-ref v 0)
                                                      (vector-ref v 1)
                                                      (vector-ref v 2)
-                                                     (vector-ref v 3))
+                                                     (vector-ref v 3)
+                                                     (vector-ref v 6))
                                              ;; Query and record size:
                                              (begin
                                                (pango_layout_get_extents layout #f logical)
                                                (let ([baseline (pango_layout_get_baseline layout)]
                                                      [orig-h (PangoRectangle-height logical)])
-                                                 ;; We keep an integer width to pixel-align each individual character,
+                                                 ;; We keep integer width & height to pixel-align each individual character,
                                                  ;; but we keep non-integral lh & ld to pixel-align the baseline.
                                                  (let ([lw (integral (/ (PangoRectangle-width logical) 
                                                                         (exact->inexact PANGO_SCALE)))]
-                                                       [lh (/ orig-h (exact->inexact PANGO_SCALE))]
+                                                       [flh (/ orig-h (exact->inexact PANGO_SCALE))]
                                                        [ld (/ (- orig-h baseline) (exact->inexact PANGO_SCALE))]
                                                        [la 0.0])
-                                                   (when cache
-                                                     (hash-set! cache (char->integer ch) 
-                                                                (vector lw lh ld la baseline
-                                                                        ;; rounded width in Pango units:
-                                                                        (inexact->exact
-                                                                         (floor (* lw (->fl PANGO_SCALE)))))))
-                                                   (values lw lh ld la))))))])
+                                                   (let ([lh (ceiling flh)])
+                                                     (when cache
+                                                       (hash-set! cache (char->integer ch) 
+                                                                  (vector lw lh ld la 
+                                                                          ;; baseline in Pango units; for fast path
+                                                                          baseline
+                                                                          ;; rounded width in Pango units; for fast path
+                                                                          (inexact->exact
+                                                                           (floor (* lw (->fl PANGO_SCALE))))
+                                                                          ;; unrounded height, for slow-path alignment
+                                                                          flh)))
+                                                     (values lw lh ld la flh)))))))])
                            (when draw?
                              (cairo_move_to cr 
                                             (align-x/delta (+ x w) 0) 
-                                            (let ([bl (- lh ld)])
+                                            (let ([bl (- flh ld)])
                                               (- (align-y/delta (+ y bl) 0)
                                                  (align-y/delta bl 0))))
                              ;; Here's the draw command, which uses most of the time in this mode:
