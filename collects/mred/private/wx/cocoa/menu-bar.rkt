@@ -10,7 +10,8 @@
          "const.rkt"
          "queue.rkt")
 
-(provide menu-bar%)
+(provide menu-bar%
+         get-menu-bar-height)
 
 (import-class NSApplication NSMenu NSMenuItem NSProcessInfo NSScreen)
 
@@ -58,6 +59,9 @@
       (let ([h (tell #:type _CGFloat cocoa-mb menuBarHeight)])
         (and (<= x (NSPoint-x p) (+ x w))
              (<= (- y h) (NSPoint-y p) y)))))))
+
+(define (get-menu-bar-height)
+  (inexact->exact (floor (tell #:type _CGFloat cocoa-mb menuBarHeight))))
 
 (set-menu-bar-hooks! in-menu-bar-range)
 

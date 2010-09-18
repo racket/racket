@@ -402,7 +402,8 @@
     (define/override (move x y)
       (let ([x (if (= x -11111) (get-x) x)]
             [y (if (= y -11111) (get-y) y)])
-        (tellv cocoa setFrameTopLeftPoint: #:type _NSPoint (make-NSPoint x (flip-screen y)))))
+        (tellv cocoa setFrameTopLeftPoint: #:type _NSPoint (make-NSPoint x (- (flip-screen y)
+                                                                              (get-menu-bar-height))))))
 
     (define/override (center dir wrt)
       (let ([f (tell #:type _NSRect cocoa frame)]

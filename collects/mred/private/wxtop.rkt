@@ -35,7 +35,7 @@
     (opt-lambda ([full-screen? #f])
       (let ([xb (box 0)]
 	    [yb (box 0)])
-	(wx:display-size xb yb (if full-screen? 1 0))
+	(wx:display-size xb yb full-screen?)
 	(values (unbox xb) (unbox yb)))))
 
   (define get-display-left-top-inset

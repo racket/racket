@@ -11,6 +11,7 @@
          "finfo.rkt" ; file-creator-and-type
          "filedialog.rkt"
          "dc.rkt"
+         "menu-bar.rkt"
          "../../lock.rkt"
          "../common/handlers.rkt")
 
@@ -101,12 +102,16 @@
 
 (define (display-origin xb yb all?)
   (set-box! xb 0)
-  (set-box! yb 0))
-(define (display-size xb yb v)
+  (if all?
+      (set-box! yb 0)
+      (set-box! yb (get-menu-bar-height))))
+(define (display-size xb yb all?)
   (atomically
    (with-autorelease
     (let* ([screen (tell (tell NSScreen screens) objectAtIndex: #:type _NSUInteger 0)]
-           [f (tell #:type _NSRect screen frame)])
+           [f (if all?
+                  (tell #:type _NSRect screen frame)
+                  (tell #:type _NSRect screen visibleFrame))])
       (set-box! xb (->long (NSSize-width (NSRect-size f))))
       (set-box! yb (->long (NSSize-height (NSRect-size f))))))))
 

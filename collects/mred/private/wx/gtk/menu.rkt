@@ -182,7 +182,8 @@
   (public [append-item append])
   (define (append-item i label help-str-or-submenu chckable?)
     (atomically
-     (let ([item-gtk ((if chckable?
+     (let ([item-gtk ((if (and chckable?
+                               (not (help-str-or-submenu . is-a? . menu%)))
                           gtk_check_menu_item_new_with_mnemonic
                           gtk_menu_item_new_with_mnemonic)
                       (fixup-mneumonic label))])
