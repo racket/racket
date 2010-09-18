@@ -173,7 +173,10 @@
 (define (do-value-changed gtk dir)
   (let ([wx (gtk->wx gtk)])
     (when wx
-      (queue-window-event wx (lambda () (send wx do-scroll dir)))))
+      (when (send wx deliver-scroll-callbacks?)
+        (queue-window-event wx (lambda () 
+                                 (send wx do-scroll dir)
+                                 (flush-display))))))
   #t)
 
 (define canvas%
@@ -417,11 +420,23 @@
        (adjust-client-delta (+ (* 2 margin) (if v? scroll-width 0))
                             (+ (* 2 margin) (if h? scroll-width 0))))
 
+     (define suspend-scroll-callbacks? #f)
+     (define/public (deliver-scroll-callbacks?) (not suspend-scroll-callbacks?))
+     (define/private (as-scroll-change thunk)
+       (atomically
+        (set! suspend-scroll-callbacks? #t)
+        (begin0
+         (thunk)
+         (set! suspend-scroll-callbacks? #f))))
+
+
      (define/private (configure-adj adj scroll-gtk len page pos)
        (when (and scroll-gtk adj)
-         (if (zero? len)
-             (gtk_adjustment_configure adj 0 0 1 1 1 1)
-             (gtk_adjustment_configure adj pos 0 (+ len page) 1 page page))))
+         (as-scroll-change
+          (lambda ()
+            (if (zero? len)
+                (gtk_adjustment_configure adj 0 0 1 1 1 1)
+                (gtk_adjustment_configure adj pos 0 (+ len page) 1 page page))))))
 
      (define/public (set-scrollbars h-step v-step
                                     h-len v-len
@@ -475,15 +490,22 @@
        (dispatch which (lambda (adj)
                          (let ([old (gtk_adjustment_get_page_size adj)])
                            (unless (= old v)
-                             (gtk_adjustment_set_page_size adj v)
-                             (gtk_adjustment_set_page_increment adj v)
-                             (gtk_adjustment_set_upper adj (+ (- v old)
-                                                              (gtk_adjustment_get_upper adj))))))))
+                             (as-scroll-change
+                              (lambda ()
+                                (gtk_adjustment_set_page_size adj v)
+                                (gtk_adjustment_set_page_increment adj v)
+                                (gtk_adjustment_set_upper adj (+ (- v old)
+                                                                 (gtk_adjustment_get_upper adj))))))))))
      (define/public (set-scroll-range which v)
        (dispatch which (lambda (adj)
-                         (gtk_adjustment_set_upper adj (+ v (gtk_adjustment_get_page_size adj))))))
+                         (as-scroll-change
+                          (lambda ()
+                            (gtk_adjustment_set_upper adj (+ v (gtk_adjustment_get_page_size adj))))))))
      (define/public (set-scroll-pos which v)
-       (dispatch which (lambda (adj) (gtk_adjustment_set_value adj v))))
+       (dispatch which (lambda (adj) 
+                         (as-scroll-change
+                          (lambda ()
+                            (gtk_adjustment_set_value adj v))))))
 
      (define/public (get-scroll-page which) 
        (->long (dispatch which gtk_adjustment_get_page_size 0)))
@@ -546,8 +568,10 @@
      (define/public (on-scroll e) (void))
 
      (define/public (scroll x y)
-       (when hscroll-adj (gtk_adjustment_set_value hscroll-adj x))
-       (when vscroll-adj (gtk_adjustment_set_value vscroll-adj y))
+       (as-scroll-change
+        (lambda ()
+          (when hscroll-adj (gtk_adjustment_set_value hscroll-adj x))
+          (when vscroll-adj (gtk_adjustment_set_value vscroll-adj y))))
        (when auto-scroll? (refresh-for-autoscroll)))
 
      (def/public-unimplemented warp-pointer)
