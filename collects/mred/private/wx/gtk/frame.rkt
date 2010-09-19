@@ -3,7 +3,7 @@
          racket/class
          racket/promise
          racket/runtime-path
-         racket/draw/bitmap
+         racket/draw
          (for-syntax (only-in racket/base quote))
          "../../syntax.rkt"
          "../../lock.rkt"
@@ -27,6 +27,7 @@
 
 (define _GList (_cpointer/null 'GList))
 (define-glib g_list_insert (_fun _GList _pointer _int -> _GList))
+(define-glib g_list_free (_fun _GList -> _void))
 
 (define-gtk gtk_window_new (_fun _int -> _GtkWidget))
 (define-gtk gtk_window_set_title (_fun _GtkWindow _string -> _void))
@@ -104,7 +105,7 @@
 (define-runtime-path plt-32x32-file '(lib "icons/plt-32x32.png"))
 (define-runtime-path plt-48x48-file '(lib "icons/plt-48x48.png"))
 
-(define icon-list 
+(define icon-pixbufs+glist
   (delay
     (let ([icons (map
                   (lambda (fn)
@@ -112,8 +113,12 @@
                   (list plt-16x16-file
                         plt-32x32-file
                         plt-48x48-file))])
-      (for/fold ([l #f]) ([i (in-list icons)])
-        (g_list_insert l i -1)))))
+      (cons 
+       ;; keep pixbuf pointers to avoid GC:
+       icons
+       ;; a glist:
+       (for/fold ([l #f]) ([i (in-list icons)])
+	 (g_list_insert l i -1))))))
 
 (define frame%
   (class (client-size-mixin window%)
@@ -144,7 +149,7 @@
     (gtk_widget_show panel-gtk)
 
     (unless is-dialog?
-      (gtk_window_set_icon_list gtk (force icon-list)))
+      (gtk_window_set_icon_list gtk (cdr (force icon-pixbufs+glist))))
 
     (define/override (get-client-gtk) panel-gtk)
     (define/override (get-window-gtk) gtk)
@@ -303,7 +308,42 @@
 
     (define/augment (is-enabled-to-root?) #t)
 
-    (define/public (set-icon bm mask [mode 'both]) (void)) ;; FIXME
+    (define big-icon #f)
+    (define small-icon #f)
+    (define/public (set-icon bm mask [mode 'both])
+      (let ([bm (if mask
+		    (let* ([nbm (make-object bitmap%
+					     (send bm get-width)
+					     (send bm get-height)
+					     #f
+					     #t)]
+			   [dc (make-object bitmap-dc% nbm)])
+		      (send dc draw-bitmap bm 0 0
+			    'solid (make-object color% "black")
+			    mask)
+		      (send dc set-bitmap #f)
+		      nbm)
+		    bm)])
+	(case mode
+	  [(small) (set! small-icon bm)]
+	  [(big) (set! big-icon bm)]
+	  [(both) 
+	   (set! small-icon bm)
+	   (set! big-icon bm)])
+	(let ([small-pixbuf
+	       (if small-icon
+		   (bitmap->pixbuf small-icon)
+		   (car (car (force icon-pixbufs+glist))))]
+	      [big-pixbufs
+	       (if big-icon
+		   (list (bitmap->pixbuf big-icon))
+		   (cdr (car (force icon-pixbufs+glist))))])
+	(atomically
+	 (let ([l (for/fold ([l #f]) ([i (cons small-pixbuf
+					       big-pixbufs)])
+		    (g_list_insert l i -1))])
+	   (gtk_window_set_icon_list gtk l)
+	   (g_list_free l))))))
     
     (define/override (call-pre-on-event w e)
       (pre-on-event w e))
