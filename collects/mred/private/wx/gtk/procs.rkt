@@ -16,31 +16,19 @@
 (provide
  special-control-key
  special-option-key
- application-file-handler
- application-quit-handler
- application-about-handler
- application-pref-handler
  get-color-from-user
  get-font-from-user
  get-panel-background
  play-sound
- check-for-break
  find-graphical-system-path
  register-collecting-blit
  unregister-collecting-blit
  shortcut-visible-in-label?
- in-atomic-region
- set-menu-tester
  location->window
- set-dialogs
- set-executer
  send-event
  file-creator-and-type
  run-printout
  get-double-click-time
- set-combo-box-font
- draw-tab
- draw-tab-base
  key-symbol-to-integer
  get-control-font-size
  cancel-quit
@@ -62,7 +50,8 @@
  can-show-print-setup?
  get-highlight-background-color
  get-highlight-text-color
- make-screen-bitmap)
+ make-screen-bitmap
+ check-for-break)
 
 (define-unimplemented special-control-key)
 (define (special-option-key on?) (void))
@@ -70,18 +59,13 @@
 (define-unimplemented get-font-from-user)
 (define (get-panel-background) (make-object color% "gray"))
 (define-unimplemented play-sound)
-(define-unimplemented check-for-break)
 (define-unimplemented find-graphical-system-path)
 (define (register-collecting-blit canvas x y w h on off on-x on-y off-x off-y)
   (send canvas register-collecting-blit x y w h on off on-x on-y off-x off-y))
 (define (unregister-collecting-blit canvas)
   (send canvas unregister-collecting-blits))
 (define (shortcut-visible-in-label? [mbar? #f]) #t)
-(define-unimplemented in-atomic-region)
-(define (set-menu-tester proc) (void))
 (define-unimplemented location->window)
-(define (set-dialogs . args) (void))
-(define (set-executer e) (void))
 (define-unimplemented send-event)
 (define file-creator-and-type
   (case-lambda
@@ -89,9 +73,6 @@
    [(path) (values #"????" #"????")]))
 (define-unimplemented run-printout)
 (define (get-double-click-time) 250)
-(define (set-combo-box-font f) (void))
-(define-unimplemented draw-tab)
-(define-unimplemented draw-tab-base)
 (define-unimplemented key-symbol-to-integer)
 (define (get-control-font-size) 10) ;; FIXME
 (define-unimplemented cancel-quit)
@@ -140,3 +121,5 @@
   (if (eq? 'unix (system-type))
       (make-object x11-bitmap% w h #f)
       (make-object bitmap% w h #f #t)))
+
+(define (check-for-break) #f)

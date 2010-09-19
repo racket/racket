@@ -18,7 +18,6 @@
                 frame%
                 gauge%
                 gl-context%
-                group-box%
                 group-panel%
                 item%
                 list-box%
@@ -30,7 +29,6 @@
                 printer-dc%
                 radio-box%
                 slider%
-                tab-group%
                 tab-panel%
                 window%
                 can-show-print-setup?
@@ -50,35 +48,23 @@
                 fill-private-color
                 cancel-quit
                 get-control-font-size
-                key-symbol-to-integer
-                draw-tab-base
-                draw-tab
-                set-combo-box-font
                 get-double-click-time
                 run-printout
                 file-creator-and-type
                 send-event
-                set-executer
-                set-dialogs
                 location->window
-                set-menu-tester
-                in-atomic-region
                 shortcut-visible-in-label?
                 unregister-collecting-blit
                 register-collecting-blit
                 find-graphical-system-path
-                check-for-break
                 play-sound
                 get-panel-background
                 get-font-from-user
                 get-color-from-user
-                application-pref-handler
-                application-about-handler
-                application-quit-handler
-                application-file-handler
                 special-option-key
                 special-control-key
                 get-highlight-background-color
                 get-highlight-text-color
-                make-screen-bitmap)
+                make-screen-bitmap
+                check-for-break)
   ((dynamic-require platform-lib 'platform-values)))

@@ -160,7 +160,7 @@
 	(unless horiz? (send p alignment 'left 'top))
 	(unless multi? (stretchable-in-y #f))
 	;; For Windows:
-	(wx:set-combo-box-font font)
+	; (wx:set-combo-box-font font)
         (spacing 3))
       (private-field
        [l (and label

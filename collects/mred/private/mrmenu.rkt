@@ -466,6 +466,4 @@
 
   (define (menu-or-bar-parent who p)
     (unless (or (is-a? p internal-menu<%>) (is-a? p menu-bar%))
-      (raise-type-error (constructor-name who) "built-in menu-item-container<%> object" p)))
-  
-  (wx:set-menu-tester (lambda (m) (is-a? m popup-menu%))))
+      (raise-type-error (constructor-name who) "built-in menu-item-container<%> object" p))))

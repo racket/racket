@@ -141,7 +141,6 @@
 (define-pangocairo pango_cairo_update_layout (_fun _cairo_t PangoLayout -> _void))
 (define-pango pango_layout_set_text (_fun PangoLayout [s : _string] [_int = -1] -> _void))
 (define-pangocairo pango_cairo_show_layout (_fun _cairo_t PangoLayout -> _void))
-(define-pangocairo pango_cairo_show_glyph_item (_fun _cairo_t _string _PangoGlyphItem-pointer -> _void))
 (define-pangocairo pango_cairo_show_glyph_string (_fun _cairo_t PangoFont _PangoGlyphString-pointer -> _void))
 
 (define-pango pango_layout_iter_free (_fun PangoLayoutIter -> _void)

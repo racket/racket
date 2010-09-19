@@ -7,10 +7,14 @@
          "wx/common/cursor.rkt"
          "wx/common/gl-config.rkt"
          "wx/common/procs.rkt"
+         "wx/common/handlers.rkt"
          racket/class
          racket/draw)
 
 (define gl-context<%> (class->interface gl-context%))
+
+(define (key-symbol-to-integer k)
+  (error 'key-symbol-to-integer "not yet implemented"))
 
 (provide (all-from-out "wx/platform.rkt")
          clipboard<%>
@@ -37,4 +41,9 @@
          get-top-level-windows
          begin-busy-cursor
          is-busy?
-         end-busy-cursor)
+         end-busy-cursor
+         key-symbol-to-integer
+         application-file-handler
+         application-quit-handler
+         application-about-handler
+         application-pref-handler)

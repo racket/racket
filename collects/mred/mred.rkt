@@ -43,10 +43,6 @@
            "private/check.ss")
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (wx:set-dialogs get-file put-file get-ps-setup-from-user message-box)
-
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; These functions are re-implemented in scheme/gui/base
   ;; and racket/gui/base to attach those names, instead of
   ;; just 'mred.

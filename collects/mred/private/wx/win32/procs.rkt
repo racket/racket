@@ -4,32 +4,19 @@
 (provide
  special-control-key
  special-option-key
- application-file-handler
- application-quit-handler
- application-about-handler
- application-pref-handler
  get-color-from-user
  get-font-from-user
  get-panel-background
  play-sound
- check-for-break
  find-graphical-system-path
  register-collecting-blit
  unregister-collecting-blit
  shortcut-visible-in-label?
- in-atomic-region
- set-menu-tester
  location->window
- set-dialogs
- set-executer
  send-event
  file-creator-and-type
  run-printout
  get-double-click-time
- set-combo-box-font
- draw-tab
- draw-tab-base
- key-symbol-to-integer
  get-control-font-size
  cancel-quit
  fill-private-color
@@ -50,36 +37,24 @@
  can-show-print-setup?
  get-highlight-background-color
  get-highlight-text-color
- make-screen-bitmap)
+ make-screen-bitmap
+ check-for-break)
 
 (define-unimplemented special-control-key)
 (define-unimplemented special-option-key)
-(define-unimplemented application-file-handler)
-(define-unimplemented application-quit-handler)
-(define-unimplemented application-about-handler)
-(define-unimplemented application-pref-handler)
 (define-unimplemented get-color-from-user)
 (define-unimplemented get-font-from-user)
 (define-unimplemented get-panel-background)
 (define-unimplemented play-sound)
-(define-unimplemented check-for-break)
 (define-unimplemented find-graphical-system-path)
 (define-unimplemented register-collecting-blit)
 (define-unimplemented unregister-collecting-blit)
 (define-unimplemented shortcut-visible-in-label?)
-(define-unimplemented in-atomic-region)
-(define-unimplemented set-menu-tester)
 (define-unimplemented location->window)
-(define-unimplemented set-dialogs)
-(define-unimplemented set-executer)
 (define-unimplemented send-event)
 (define-unimplemented file-creator-and-type)
 (define-unimplemented run-printout)
 (define-unimplemented get-double-click-time)
-(define-unimplemented set-combo-box-font)
-(define-unimplemented draw-tab)
-(define-unimplemented draw-tab-base)
-(define-unimplemented key-symbol-to-integer)
 (define-unimplemented get-control-font-size)
 (define-unimplemented cancel-quit)
 (define-unimplemented fill-private-color)
@@ -104,3 +79,5 @@
 (define-unimplemented get-highlight-background-color)
 (define-unimplemented get-highlight-text-color)
 (define-unimplemented make-screen-bitmap)
+
+(define (check-for-break) #f)
