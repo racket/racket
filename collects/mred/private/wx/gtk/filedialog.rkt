@@ -138,9 +138,3 @@
     (free-immobile-cell cell) ;; FIXME : don't leak
     (gtk_widget_hide dlg-gtk)
     (unbox response-box)))
-
-(define (id-to-menu-item i) i)
-(define-unimplemented get-the-x-selection)
-(define-unimplemented get-the-clipboard)
-(define-unimplemented show-print-setup)
-(define (can-show-print-setup?) #f)

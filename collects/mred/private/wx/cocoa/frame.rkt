@@ -21,9 +21,11 @@
 ;; ----------------------------------------
 
 (import-class NSWindow NSGraphicsContext NSMenu NSPanel
-              NSApplication NSAutoreleasePool NSScreen)
+              NSApplication NSAutoreleasePool NSScreen
+              NSToolbar)
 
 (define NSWindowCloseButton 0)
+(define NSWindowToolbarButton 3)
 
 (define front #f)
 
@@ -81,7 +83,14 @@
             (send empty-mb install)
             (send wx notify-responder #f)
             (queue-window-event wx (lambda ()
-                                     (send wx on-activate #f))))))])
+                                     (send wx on-activate #f))))))]
+  [-a _void (toggleToolbarShown: [_id sender])
+      (when wxb
+        (let ([wx (->wx wxb)])
+          (when wx
+            (queue-window-event wx
+                                (lambda () (send wx on-toolbar-click))))))
+      (void)])
 
 (define-objc-class MyWindow NSWindow
   #:mixins (FocusResponder KeyMouseResponder MyWindowMethods)
@@ -155,6 +164,12 @@
                [no-show? #t])
     (define cocoa (get-cocoa))
     (tellv cocoa setDelegate: cocoa)
+
+    (when (memq 'toolbar-button style)
+      (atomically
+       (let ([tb (tell (tell NSToolbar alloc) initWithIdentifier: #:type _NSString "Ok")])
+         (tellv cocoa setToolbar: tb)
+         (tellv tb setVisible: #:type _BOOL #f))))
 
     (move -11111 (if (= y -11111) 0 y))
 
@@ -459,7 +474,7 @@
 
     (define/public (on-menu-click) (void))
 
-    (def/public-unimplemented on-toolbar-click)
+    (define/public (on-toolbar-click) (void))
     (def/public-unimplemented on-menu-command)
     (def/public-unimplemented on-mdi-activate)
     (def/public-unimplemented on-close)

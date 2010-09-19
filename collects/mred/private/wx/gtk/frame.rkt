@@ -371,10 +371,6 @@
         (set! is-modified? (and mod? #t))
         (set-title saved-title)))
 
-    (define/public (create-status-line) (void))
-    (define/public (set-status-text s) (void))
-    (def/public-unimplemented status-line-exists?)
-
     (define waiting-cursor? #f)
     (define/public (set-wait-cursor-mode on?)
       (set! waiting-cursor? on?)

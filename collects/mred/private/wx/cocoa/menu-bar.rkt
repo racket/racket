@@ -119,7 +119,6 @@
 (defclass menu-bar% object%
   (define menus null)
 
-  (def/public-unimplemented number)
   (define/public (enable-top pos on?)
     (set-box! (cddr (list-ref menus pos)) on?)
     (when (eq? current-mb this)

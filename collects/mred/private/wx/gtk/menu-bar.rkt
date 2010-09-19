@@ -114,7 +114,6 @@
 	(gtk_label_set_text_with_mnemonic (gtk_bin_get_child item-gtk) 
                                           (fixup-mneumonic str)))))
     
-  (def/public-unimplemented number)
   (def/public-unimplemented enable-top)
 
   (define/public (delete which pos)
