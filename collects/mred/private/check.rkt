@@ -107,7 +107,7 @@
 
   (define check-margin-integer (check-bounded-integer 0 1000 #f))
 
-  (define check-gauge-integer (check-bounded-integer 1 10000 #f))
+  (define check-gauge-integer (check-bounded-integer 1 1000000 #f))
 
   (define (check-wheel-step cwho wheel-step)
     (when (and wheel-step

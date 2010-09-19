@@ -11,7 +11,7 @@ of the gauge.
 
 
 @defconstructor[([label (or/c label-string? false/c)]
-                 [range (integer-in 1 10000)]
+                 [range (integer-in 1 1000000)]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'horizontal 'vertical 
