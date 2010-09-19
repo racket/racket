@@ -1,6 +1,10 @@
 #lang scheme/base
-(require scheme/foreign
-         scheme/class
+(require ffi/unsafe
+         racket/class
+         racket/promise
+         racket/runtime-path
+         racket/draw/bitmap
+         (for-syntax (only-in racket/base quote))
          "../../syntax.rkt"
          "../../lock.rkt"
          "utils.rkt"
@@ -11,8 +15,8 @@
          "widget.rkt"
          "procs.rkt"
          "cursor.rkt"
+         "pixbuf.rkt"
          "../common/queue.rkt")
-(unsafe!)
 
 (provide frame%)
 
@@ -21,6 +25,8 @@
 (define GDK_GRAVITY_NORTH_WEST 1)
 (define GDK_GRAVITY_STATIC 10)
 
+(define _GList (_cpointer/null 'GList))
+(define-glib g_list_insert (_fun _GList _pointer _int -> _GList))
 
 (define-gtk gtk_window_new (_fun _int -> _GtkWidget))
 (define-gtk gtk_window_set_title (_fun _GtkWindow _string -> _void))
@@ -37,6 +43,7 @@
                                           -> _void
                                           -> (values x y)))
 (define-gtk gtk_window_set_gravity (_fun _GtkWindow _int -> _void))
+(define-gtk gtk_window_set_icon_list (_fun _GtkWindow _GList -> _void))
 
 (define-gtk gtk_window_resize (_fun _GtkWidget _int _int -> _void))
 
@@ -93,6 +100,21 @@
               (GdkEventWindowState-new_window_state evt))))
     #f))
 
+(define-runtime-path plt-16x16-file '(lib "icons/plt-16x16.png"))
+(define-runtime-path plt-32x32-file '(lib "icons/plt-32x32.png"))
+(define-runtime-path plt-48x48-file '(lib "icons/plt-48x48.png"))
+
+(define icon-list 
+  (delay
+    (let ([icons (map
+                  (lambda (fn)
+                    (bitmap->pixbuf (make-object bitmap% fn 'png/alpha)))
+                  (list plt-16x16-file
+                        plt-32x32-file
+                        plt-48x48-file))])
+      (for/fold ([l #f]) ([i (in-list icons)])
+        (g_list_insert l i -1)))))
+
 (define frame%
   (class (client-size-mixin window%)
     (init parent
@@ -120,6 +142,9 @@
          (values vbox-gtk panel-gtk))))
     (gtk_widget_show vbox-gtk)
     (gtk_widget_show panel-gtk)
+
+    (unless is-dialog?
+      (gtk_window_set_icon_list gtk (force icon-list)))
 
     (define/override (get-client-gtk) panel-gtk)
     (define/override (get-window-gtk) gtk)
