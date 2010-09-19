@@ -546,7 +546,7 @@
     [(_ (name . args) . body)
      (check-label #'name
                   stx
-                  (syntax/loc stx (r5rs:define (name . args) (#%stratified-body . body))))]
+                  (syntax/loc stx (r5rs:define (name . args) (let () (#%stratified-body . body)))))]
     [(_ . rest) #'(define . rest)]))
 
 ;; ----------------------------------------
