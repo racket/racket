@@ -375,12 +375,12 @@
     (define-values (year month) (date->year+month (version->date ver)))
     (define number (format (get '#:number-template) year ver))
     (define key (regexp-replace* #rx":" (string-downcase number) "_"))
-    (define note
-      (let ([n1 "\\url{http://plt-scheme.org/techreports/}"]
-            [n2 (get '#:note #f)])
-        (if n2 (cons (string-append n1 ";") n2) (list n1))))
     (define old? (< (version->integer ver) v:4->5))
     (define site (if old? "plt-scheme" "racket-lang"))
+    (define note
+      (let ([n1 (format "\\url{http://~a.org/techreports/}" site)]
+            [n2 (get '#:note #f)])
+        (if n2 (cons (string-append n1 ";") n2) (list n1))))
     (define maybe-s (if old? "" "s"))
     (define (mk-url dir sfx)
       (format "http://download.~a.org/doc~a/~a/~a/~a~a"
@@ -400,19 +400,15 @@
            [#:html-url  ,pdf-html]
            [note        ,@note]))))
 
-(define (make-bib-file bib)
-  (let ([file (format "~a.txt"
-                      (regexp-replace* #rx":" (hash-ref bib '#:key) "_"))])
-    (content-resource
-     (parameterize ([current-output-port (open-output-string)])
-       (display-bib bib)
-       (get-output-string (current-output-port)))
-     (web-path "www" "techreports" file))
-    file))
-
 (define old-techreports
   @page[#:file "techreports/" #:title "Old PLT Technical Reports"
-        #:part-of 'learning]{
+        #:part-of 'learning
+        #:extra-headers
+        @script/inline[type: "text/javascript"]{
+          function show_bib(n) {
+            var s = document.getElementById("bibrow"+n).style;
+            s.display = (s.display == "table-row") ? "none" : "table-row";
+          }}]{
     @p{@strong{Note:} the entries on this page are outdated, please see the new
        @techreports page.}
     @p{PLT publishes technical reports about some of its tools and libraries so
@@ -422,11 +418,20 @@
        published papers.}
     @table[width: "98%" cellspacing: 0 cellpadding: 6 border: 0
            align: 'center style: "font-size: 75%;"]{
-      @(for/list ([bib bibs] [n (in-naturals)])
-         @tr[valign: 'top bgcolor: (if (even? n) "#e0e0e0" "white")]{
-           @td[style: "white-space: nowrap;"]{@(hash-ref bib 'number)}
-           @td[align: 'left]{@i{@(without-braces (hash-ref bib 'title))}}
-           @td{@(bib-author bib)}
-           @td{@a[href: (make-bib-file bib)]{[bib]}@|nbsp|@;
-               @a[href: (hash-ref bib '#:pdf-url)]{[pdf]}@|nbsp|@;
-               @a[href: (hash-ref bib '#:html-url)]{[html]}}})}})
+      @(for/list ([bib (in-list bibs)] [n (in-naturals)])
+         (define bgcolor (if (even? n) "#e0e0e0" "white"))
+         (define bibtext
+           (parameterize ([current-output-port (open-output-string)])
+             (display-bib bib)
+             (get-output-string (current-output-port))))
+         @list{
+           @tr[valign: 'top bgcolor: bgcolor]{
+             @td[style: "white-space: nowrap;"]{@(hash-ref bib 'number)}
+             @td[align: 'left]{@i{@(without-braces (hash-ref bib 'title))}}
+             @td{@(bib-author bib)}
+             @td{@a[href: @list{javascript: show_bib(@n)@";"}]{[bib]}@|nbsp|@;
+                 @a[href: (hash-ref bib '#:pdf-url)]{[pdf]}@|nbsp|@;
+                 @a[href: (hash-ref bib '#:html-url)]{[html]}}}
+           @tr[valign: 'top bgcolor: bgcolor
+               id: @list{bibrow@n} style: "display: none;"]{
+             @td{}@td[colspan: 3]{@pre{@bibtext}}}})}})
