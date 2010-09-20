@@ -307,33 +307,45 @@
   (for/list ([sub (in-list fs)])
     (if (contract-struct? sub) (contract-name sub) sub)))
 
+(define (and-name ctc)
+  (apply build-compound-type-name 'and/c (base-and/c-ctcs ctc)))
+
+(define (and-first-order ctc)
+  (let ([tests (map contract-first-order (base-and/c-ctcs ctc))])
+    (λ (x) (for/and ([test (in-list tests)]) (test x)))))
+
 (define (and-proj ctc)
-  (let ([mk-pos-projs (map contract-projection (and/c-ctcs ctc))])
+  (let ([mk-pos-projs (map contract-projection (base-and/c-ctcs ctc))])
     (lambda (blame)
       (let ([projs (map (λ (c) (c blame)) mk-pos-projs)])
         (for/fold ([proj (car projs)])
           ([p (in-list (cdr projs))])
           (λ (v) (p (proj v))))))))
 
-(define-struct and/c (ctcs)
-  #:omit-define-syntaxes
+(define (and-stronger? this that)
+  (and (base-and/c? that)
+       (let ([this-ctcs (base-and/c-ctcs this)]
+             [that-ctcs (base-and/c-ctcs that)])
+         (and (= (length this-ctcs) (length that-ctcs))
+              (andmap contract-stronger?
+                      this-ctcs
+                      that-ctcs)))))
+
+(define-struct base-and/c (ctcs))
+(define-struct (chaperone-and/c base-and/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection and-proj
+   #:name and-name
+   #:first-order and-first-order
+   #:stronger and-stronger?))
+(define-struct (proxy-and/c base-and/c) ()
   #:property prop:contract
   (build-contract-property
    #:projection and-proj
-   #:name (λ (ctc) (apply build-compound-type-name 'and/c (and/c-ctcs ctc)))
-   #:first-order
-   (λ (ctc)
-      (let ([tests (map contract-first-order (and/c-ctcs ctc))])
-        (λ (x) (for/and ([test (in-list tests)]) (test x)))))
-   #:stronger
-   (λ (this that)
-      (and (and/c? that)
-           (let ([this-ctcs (and/c-ctcs this)]
-                 [that-ctcs (and/c-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs)))))))
+   #:name and-name
+   #:first-order and-first-order
+   #:stronger and-stronger?))
 
 (define/subexpression-pos-prop (and/c . raw-fs)
   (let ([contracts (coerce-contracts 'and/c raw-fs)])
@@ -344,7 +356,9 @@
          (flat-named-contract
           (apply build-compound-type-name 'and/c contracts)
           (λ (x) (for/and ([pred (in-list preds)]) (pred x)))))]
-      [else (make-and/c contracts)])))
+      [(andmap chaperone-contract? contracts)
+       (make-chaperone-and/c contracts)]
+      [else (make-proxy-and/c contracts)])))
 
 (define (get-any-projection c) any-projection)
 (define (any-projection b) any-function)
