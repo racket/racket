@@ -3920,15 +3920,17 @@
           (begin
             (when (L . < . refresh-l)
               (set! refresh-l L))
-            (when (or (eq? R 'display-end)
-                      (R . > . refresh-r))
-              (set! refresh-r R))
+            (unless (eq? refresh-r 'display-end)
+              (when (or (eq? R 'display-end)
+                        (R . > . refresh-r))
+                (set! refresh-r R)))
             (when (T . < . refresh-t)
               (set! refresh-t T))
-            (when (or (eq? B 'display-end)
-                      (B . > . refresh-b))
-              (set! refresh-b B))))
-
+            (unless (eq? refresh-b 'display-end)
+              (when (or (eq? B 'display-end)
+                        (B . > . refresh-b))
+                (set! refresh-b B)))))
+      
       (set! draw-cached-in-bitmap? #f)))
 
   (def/override (needs-update [snip% snip]
