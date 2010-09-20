@@ -144,98 +144,45 @@ WARNING: printf is rebound in the body of the unit to always
       (send (get-style-list) find-named-style "Standard"))
     
     (define/private (invalidate-rectangles rectangles)
-      (let ([b1 (box 0)]
-            [b2 (box 0)]
-            [b3 (box 0)]
-            [b4 (box 0)]
-            [canvases (get-canvases)])
-        (let-values ([(min-left max-right)
-                      (cond
-                        [(null? canvases)
-                         (let ([admin (get-admin)])
-                           (if admin
-                               (begin
-                                 (send admin get-view b1 b2 b3 b4)
-                                 (let* ([this-left (unbox b1)]
-                                        [this-width (unbox b3)]
-                                        [this-right (+ this-left this-width)])
-                                   (values this-left
-                                           this-right)))
-                               (values #f #f)))]
-                        [else 
-                         (let loop ([left #f]
-                                    [right #f]
-                                    [canvases canvases])
-                           (cond
-                             [(null? canvases)
-                              (values left right)]
-                             [else
-                              (let-values ([(this-left this-right)
-                                            (send (car canvases)
-                                                  call-as-primary-owner
-                                                  (λ ()
-                                                    (send (get-admin) get-view b1 b2 b3 b4)
-                                                    (let* ([this-left (unbox b1)]
-                                                           [this-width (unbox b3)]
-                                                           [this-right (+ this-left this-width)])
-                                                      (values this-left
-                                                              this-right))))])
-                                (if (and left right)
-                                    (loop (min this-left left)
-                                          (max this-right right)
-                                          (cdr canvases))
-                                    (loop this-left
-                                          this-right
-                                          (cdr canvases))))]))])])
-          (when (and min-left max-right)
-            (let loop ([left #f]
-                       [top #f]
-                       [right #f]
-                       [bottom #f]
-                       [rectangles rectangles]
-                       [refresh? #f])
-              (cond
-                [(null? rectangles)
-                 (when left
-                   (let ([width (- right left)]
-                         [height (- bottom top)])
-                     (when refresh?
-                       (for-each (λ (canvas) (send canvas refresh))
-                                 canvases))
-                     (when (and (> width 0)
-                                (> height 0))
-                       (invalidate-bitmap-cache left top width height))))]
-                [else (let* ([r (car rectangles)]
-                             
-                             [adjust (λ (w f) 
-                                       (+ w (f (case (rectangle-style r)
-                                                 [(dot hollow-ellipse) 8]
-                                                 [else 0]))))]
-                             [this-left (if (number? (rectangle-left r))
-                                            (adjust (rectangle-left r) -)
-                                            min-left)]
-                             [this-right (if (number? (rectangle-right r))
-                                             (adjust (rectangle-right r) +)
-                                             max-right)]
-                             [this-top (adjust (rectangle-top r) -)]
-                             [this-bottom (adjust (rectangle-bottom r) +)])
-                        (if (and left top right bottom)
-                            (loop (min this-left left)
-                                  (min this-top top)
-                                  (max this-right right)
-                                  (max this-bottom bottom)
-                                  (cdr rectangles)
-                                  (or refresh? 
-                                      (not (number? (rectangle-left r)))
-                                      (not (number? (rectangle-right r)))))
-                            (loop this-left 
-                                  this-top
-                                  this-right
-                                  this-bottom
-                                  (cdr rectangles)
-                                  (or refresh? 
-                                      (not (number? (rectangle-left r)))
-                                      (not (number? (rectangle-right r)))))))]))))))
+      (let loop ([left #f]
+                 [top #f]
+                 [right #f]
+                 [bottom #f]
+                 [rectangles rectangles])
+        (cond
+         [(null? rectangles)
+          (when left
+            (let ([width (if (number? right) (- right left) 'display-end)]
+                  [height (if (number? bottom) (- bottom top) 'display-end)])
+              (when (and (or (symbol? width) (> width 0))
+                         (or (symbol? height) (> height 0)))
+                (invalidate-bitmap-cache left top width height))))]
+         [else (let* ([r (car rectangles)]
+                      [adjust (λ (w f) 
+                                 (+ w (f (case (rectangle-style r)
+                                           [(dot hollow-ellipse) 8]
+                                           [else 0]))))]
+                      [this-left (if (number? (rectangle-left r))
+                                     (adjust (rectangle-left r) -)
+                                     0.0)]
+                      [this-right (if (number? (rectangle-right r))
+                                      (adjust (rectangle-right r) +)
+                                      'display-end)]
+                      [this-top (adjust (rectangle-top r) -)]
+                      [this-bottom (adjust (rectangle-bottom r) +)])
+                 (if (and left top right bottom)
+                     (loop (min this-left left)
+                           (min this-top top)
+                           (if (and (number? this-right) (number? right))
+                               (max this-right right)
+                               'display-end)
+                           (max this-bottom bottom)
+                           (cdr rectangles))
+                     (loop this-left 
+                           this-top
+                           this-right
+                           this-bottom
+                           (cdr rectangles))))])))
     
     (define/private (recompute-range-rectangles)
       (let* ([b1 (box 0)]

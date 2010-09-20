@@ -1006,8 +1006,8 @@ See also @method[editor<%> insert-file].
 
 @defmethod[(invalidate-bitmap-cache [x real? 0.0]
                                     [y real? 0.0]
-                                    [width (or/c (and/c real? (not/c negative?)) 'end) 'end]
-                                    [height (or/c (and/c real? (not/c negative?)) 'end) 'end])
+                                    [width (or/c (and/c real? (not/c negative?)) 'end 'display-end) 'end]
+                                    [height (or/c (and/c real? (not/c negative?)) 'end 'display-end) 'end])
            void?]{
 
 When @method[editor<%> on-paint] is overridden, call this method when
@@ -1018,7 +1018,13 @@ The @scheme[x], @scheme[y], @scheme[width], and @scheme[height]
  coordinates. If @scheme[width]/@scheme[height] is @scheme['end], then
  the total height/width of the editor (as reported by
  @method[editor<%> get-extent]) is used. Note that the editor's size
- can be smaller than the visible region of its @techlink{display}.
+ can be smaller than the visible region of its @techlink{display}.  If
+ @scheme[width]/@scheme[height] is @scheme['display-end], then the
+ largest height/width of the editor's views (as reported by
+ @method[editor-admin% get-max-view]) is used. If
+ @scheme[width]/@scheme[height] is not @scheme['display-end], then
+ the given @scheme[width]/@scheme[height] is constrained to the
+ editor's size.
 
 The default implementation triggers a redraw of the editor, either
  immediately or at the end of the current edit sequence (if any)

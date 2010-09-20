@@ -137,8 +137,10 @@
 
   (define update-left 0.0)
   (define update-right 0.0)
+  (define update-right-end #f)
   (define update-top 0.0)
   (define update-bottom 0.0)
+  (define update-bottom-end #f)
   (define update-nonempty? #f)
   (define no-implicit-update? #f)
 
@@ -1409,8 +1411,8 @@
                               delayedscroll-x delayedscroll-y
                               delayedscroll-w delayedscroll-h
                               #t delayedscrollbias)))
-      (let ([r (+ x w)]
-            [b (+ y h)])
+      (let ([r (if (symbol? w) x (+ x w))]
+            [b (if (symbol? h) y (+ y h))])
         (let ([x (max x 0.0)]
               [y (max y 0.0)]
               [r (max r 0.0)]
@@ -1422,51 +1424,42 @@
               (begin
                 (set! update-top y)
                 (set! update-left x)
-                (set! update-bottom (if (h . < . 0) h b))
-                (set! update-right (if (w . < . 0) w r))
+                (set! update-bottom b)
+                (set! update-bottom-end (and (symbol? h) h))
+                (set! update-right r)
+                (set! update-right-end (and (symbol? w) w))
                 (set! update-nonempty? #t))
               (begin
                 (set! update-top (min y update-top))
                 (set! update-left (min x update-left))
-                (let ([ub (if (and (h . < . 0) (update-bottom . > . 0))
-                              (- update-bottom)
-                              update-bottom)])
-                  (set! update-bottom
-                        (if (ub . < . 0)
-                            (if (and (h . < . 0) (h . < . ub))
-                                h
-                                (if (and (h . > . 0)
-                                         ((- b) . < . ub))
-                                    (- b)
-                                    ub))
-                            (max b ub))))
-                (let ([ur (if (and (w . < . 0) (update-right . > . 0))
-                              (- update-right)
-                              update-right)])
-                  (set! update-right
-                        (if (ur . < . 0)
-                            (if (and (w . < . 0) (w . < . ur))
-                                w
-                                (if (and (w . > . 0)
-                                         ((- r) . < . ur))
-                                    (- r)
-                                    ur))
-                            (max r ur))))))
+                (set! update-bottom (max b update-bottom))
+                (when (symbol? b)
+                  (if (eq? b 'display-end)
+                      (set! update-bottom-end 'display-end)
+                      (unless (eq? update-bottom-end 'display-end)
+                        (set! update-bottom-end 'end))))
+                (set! update-right (max r update-right))
+                (when (symbol? r)
+                  (if (eq? r 'display-end)
+                      (set! update-right-end 'display-end)
+                      (unless (eq? update-right-end 'display-end)
+                        (set! update-right-end 'end))))))
 
           (unless (or (positive? sequence)
                       (not s-admin)
                       flow-locked?)
             (check-recalc)
 
-            (when (update-bottom . < . 0)
-              (set! update-bottom (- update-bottom))
-              (when (update-bottom . < . real-height)
-                (set! update-bottom real-height)))
-
-            (when (update-right . < . 0)
-              (set! update-right (- update-right))
-              (when (update-right . < . real-width)
-                (set! update-right real-width)))
+            (let-boxes ([vx 0.0] [vy 0.0] [vw 0.0] [vh 0.0])
+                (when (or (eq? update-bottom-end 'display-end)
+                          (eq? update-right-end 'display-end))
+                  (send s-admin get-max-view x y w h))
+              (case update-bottom-end
+                [(end) (set! update-bottom (max update-bottom real-height))]
+                [(display-end) (set! update-bottom (max update-bottom vh))])
+              (case update-right-end
+                [(end) (set! update-right (max update-right real-width))]
+                [(display-end) (set! update-right (max update-right vw))]))
 
             (set! update-nonempty? #f)
 
@@ -1520,9 +1513,9 @@
 
   (def/override (invalidate-bitmap-cache [real? [x 0.0]] 
                                          [real? [y 0.0]]
-                                         [(make-alts nonnegative-real? (symbol-in end)) [w 'end]]
-                                         [(make-alts nonnegative-real? (symbol-in end)) [h 'end]])
-    (update x y (if (symbol? w) -1.0 w) (if (symbol? h) -1.0 h)))
+                                         [(make-alts nonnegative-real? (symbol-in end display-end)) [w 'end]]
+                                         [(make-alts nonnegative-real? (symbol-in end display-end)) [h 'end]])
+    (update x y w h))
 
   ;; ----------------------------------------
 

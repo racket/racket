@@ -277,8 +277,8 @@
   (define refresh-end 0)
   (define refresh-l 0.0)
   (define refresh-t 0.0)
-  (define refresh-r 0.0)
-  (define refresh-b 0.0)
+  (define refresh-r 0.0) ; can be 'display-end
+  (define refresh-b 0.0) ; can be 'display-end
 
   (define last-draw-l 0.0)
   (define last-draw-t 0.0)
@@ -3908,8 +3908,8 @@
              #t))))
   
   (define/public (refresh-box L T w h)
-    (let ([B (+ T h)]
-          [R (+ L w)])
+    (let ([B (if (eq? h 'display-end) h (+ T h))]
+          [R (if (eq? w 'display-end) w (+ L w))])
       (if refresh-box-unset?
           (begin
             (set! refresh-l L)
@@ -3920,11 +3920,13 @@
           (begin
             (when (L . < . refresh-l)
               (set! refresh-l L))
-            (when (R . > . refresh-r)
+            (when (or (eq? R 'display-end)
+                      (R . > . refresh-r))
               (set! refresh-r R))
             (when (T . < . refresh-t)
               (set! refresh-t T))
-            (when (B . > . refresh-b)
+            (when (or (eq? B 'display-end)
+                      (B . > . refresh-b))
               (set! refresh-b B))))
 
       (set! draw-cached-in-bitmap? #f)))
@@ -3943,10 +3945,10 @@
 
   (def/override (invalidate-bitmap-cache [real? [x 0.0]] 
                                          [real? [y 0.0]]
-                                         [(make-alts nonnegative-real? (symbol-in end)) [w 'end]]
-                                         [(make-alts nonnegative-real? (symbol-in end)) [h 'end]])
-    (let ([w (if (symbol? w) (- total-width x) w)]
-          [h (if (symbol? h) (- total-height y) h)])
+                                         [(make-alts nonnegative-real? (symbol-in end display-end)) [w 'end]]
+                                         [(make-alts nonnegative-real? (symbol-in end display-end)) [h 'end]])
+    (let ([w (if (eq? w 'end) (- total-width x) w)]
+          [h (if (eq? h 'end) (- total-height y) h)])
 
       (refresh-box x y w h)
       (when (zero? delay-refresh)
@@ -4809,9 +4811,13 @@
                                   (values left right top bottom)
                                   (values
                                    (max refresh-l left)
-                                   (min refresh-r right)
+                                   (if (eq? refresh-r 'display-end)
+                                       right
+                                       (min refresh-r right))
                                    (max refresh-t top)
-                                   (min refresh-b bottom)))])
+                                   (if (eq? refresh-b 'display-end)
+                                       bottom
+                                       (min refresh-b bottom))))])
                   (set! refresh-unset? #t)
                   (set! refresh-box-unset? #t)
                   (set! refresh-all? #f)
@@ -4884,8 +4890,12 @@
                                                       #t))
                                             (values (max refresh-l left)
                                                     (max top refresh-t)
-                                                    (min right refresh-r)
-                                                    (min bottom refresh-b)
+                                                    (if (eq? refresh-r 'display-end)
+                                                        right
+                                                        (min right refresh-r))
+                                                    (if (eq? refresh-b 'display-end)
+                                                        bottom
+                                                        (min bottom refresh-b))
                                                     #t))
                                         (values left top right bottom refresh-all?))])
                         
