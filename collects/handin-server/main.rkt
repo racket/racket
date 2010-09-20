@@ -282,7 +282,7 @@
   (parameterize ([current-directory submission-dir])
     (define magics '(#"WXME"
                      #"<<<MULTI-SUBMISSION-FILE>>>"
-                     #"#reader(lib\"read.rkt\"\"wxme\")WXME"))
+                     #"#reader(lib\"read.(?:rkt|ss)\"\"wxme\")WXME"))
     (define mlen (apply max (map bytes-length magics)))
     (define file
       ;; find the newest wxme file
