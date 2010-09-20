@@ -197,16 +197,20 @@
                    (printf "  ~a\n" path)
                    (renderer filename))))))
     (define (url) (relativize filename dirpathlist (rendered-dirpath)))
+    (define absolute-url (delay (relativize filename dirpathlist "")))
     (add-renderer path render)
     (make-keyword-procedure
      (lambda (kws kvs . args) (keyword-apply referrer kws kvs (url) args))
-     (case-lambda [(x) (if (eq? x get-resource-path) (url) (referrer (url) x))]
+     (case-lambda [(x) (if (and (pair? x) (eq? (car x) get-path))
+                         (if (cdr x) absolute-url (url))
+                         (referrer (url) x))]
                   [args (apply referrer (url) args)]))))
 
 ;; make it possible to always get the path to a resource
 (provide get-resource-path)
-(define (get-resource-path resource)
-  (resource get-resource-path))
+(define get-path (gensym))
+(define (get-resource-path resource [absolute? #f])
+  (resource (cons get-path absolute?)))
 
 ;; a convenient utility to create renderers from some output function (like
 ;; `output-xml' or `display') and some content
