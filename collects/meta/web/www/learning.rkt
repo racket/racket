@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "people.rkt" racket/list)
+(require "people.rkt" "techreports.rkt" racket/list)
 
 (provide learning)
 (define learning
@@ -86,8 +86,6 @@
        look forward to hearing from you.  All of us, no matter where we may
        live.}
     @p[align: 'right]{—@responsible-people}})
-
-(require "techreports.rkt")
 
 ;; redirection page for the previous name of this page
 (define outreach+research
