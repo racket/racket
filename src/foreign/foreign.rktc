@@ -396,8 +396,9 @@ static unsigned short *ucs4_string_to_utf16_pointer(Scheme_Object *ucs)
   long ulen;
   unsigned short *res;
   res = scheme_ucs4_to_utf16
-          (SCHEME_CHAR_STR_VAL(ucs), 0, 1+SCHEME_CHAR_STRLEN_VAL(ucs),
-           NULL, -1, &ulen, 0);
+          (SCHEME_CHAR_STR_VAL(ucs), 0, SCHEME_CHAR_STRLEN_VAL(ucs),
+           NULL, -1, &ulen, 1);
+  res[ulen] = 0;
   return res;
 }
 
@@ -414,7 +415,8 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
   int end;
   if (!utf) return scheme_false;
   for (end=0; utf[end] != 0; end++) { /**/ }
-  res = scheme_utf16_to_ucs4(utf, 0, end, NULL, -1, &ulen, 0);
+  res = scheme_utf16_to_ucs4(utf, 0, end, NULL, -1, &ulen, 1);
+  res[ulen] = 0;
   return scheme_make_sized_char_string(res, ulen, 0);
 }
 
