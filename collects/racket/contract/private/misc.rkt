@@ -117,51 +117,63 @@
              [(null? ho-contracts)
               (make-flat-or/c pred flat-contracts)]
              [(null? (cdr ho-contracts))
-              (make-or/c pred flat-contracts (car ho-contracts))]
+              (if (chaperone-contract? (car ho-contracts))
+                  (make-chaperone-single-or/c pred flat-contracts (car ho-contracts))
+                  (make-proxy-single-or/c pred flat-contracts (car ho-contracts)))]
              [else
-              (make-multi-or/c flat-contracts ho-contracts)]))))]))
+              (if (andmap chaperone-contract? ho-contracts)
+                  (make-chaperone-multi-or/c flat-contracts ho-contracts)
+                  (make-proxy-multi-or/c flat-contracts ho-contracts))]))))]))
 
-(define-struct or/c (pred flat-ctcs ho-ctc)
-  #:omit-define-syntaxes
+(define (single-or/c-projection ctc)
+  (let ([c-proc (contract-projection (single-or/c-ho-ctc ctc))]
+        [pred (single-or/c-pred ctc)])
+    (λ (blame)
+      (let ([partial-contract (c-proc blame)])
+        (λ (val)
+          (cond
+            [(pred val) val]
+            [else (partial-contract val)]))))))
+
+(define (single-or/c-name ctc)
+  (apply build-compound-type-name 
+         'or/c 
+         (single-or/c-ho-ctc ctc)
+         (single-or/c-flat-ctcs ctc)))
+
+(define (single-or/c-first-order ctc)
+  (let ([pred (single-or/c-pred ctc)]
+        [ho (contract-first-order (single-or/c-ho-ctc ctc))])
+    (λ (x) (or (ho x) (pred x)))))
+
+(define (single-or/c-stronger? this that)
+  (and (single-or/c? that)
+       (contract-stronger? (single-or/c-ho-ctc this)
+                           (single-or/c-ho-ctc that))
+       (let ([this-ctcs (single-or/c-flat-ctcs this)]
+             [that-ctcs (single-or/c-flat-ctcs that)])
+         (and (= (length this-ctcs) (length that-ctcs))
+              (andmap contract-stronger?
+                      this-ctcs
+                      that-ctcs)))))
+
+(define-struct single-or/c (pred flat-ctcs ho-ctc))
+
+(define-struct (chaperone-single-or/c single-or/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection single-or/c-projection
+   #:name single-or/c-name
+   #:first-order single-or/c-first-order
+   #:stronger single-or/c-stronger?))
+
+(define-struct (proxy-single-or/c single-or/c) ()
   #:property prop:contract
   (build-contract-property
-   #:projection
-   (λ (ctc)
-      (let ([c-proc (contract-projection (or/c-ho-ctc ctc))]
-            [pred (or/c-pred ctc)])
-        (λ (blame)
-           (let ([partial-contract (c-proc blame)])
-             (λ (val)
-                (cond
-                 [(pred val) val]
-                 [else
-                  (partial-contract val)]))))))
-
-   #:name
-   (λ (ctc)
-      (apply build-compound-type-name 
-             'or/c 
-             (or/c-ho-ctc ctc)
-             (or/c-flat-ctcs ctc)))
-
-   #:first-order
-   (λ (ctc)
-      (let ([pred (or/c-pred ctc)]
-            [ho (contract-first-order (or/c-ho-ctc ctc))])
-        (λ (x)
-           (or (ho x)
-               (pred x)))))
-
-   #:stronger
-   (λ (this that)
-      (and (or/c? that)
-           (contract-stronger? (or/c-ho-ctc this) (or/c-ho-ctc that))
-           (let ([this-ctcs (or/c-flat-ctcs this)]
-                 [that-ctcs (or/c-flat-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs)))))))
+   #:projection single-or/c-projection
+   #:name single-or/c-name
+   #:first-order single-or/c-first-order
+   #:stronger single-or/c-stronger?))
 
 (define (multi-or/c-proj ctc)
   (let* ([ho-contracts (multi-or/c-ho-ctcs ctc)]
@@ -206,41 +218,48 @@
                         candidate-proc
                         candidate-contract)]))]))))))
 
-(define-struct multi-or/c (flat-ctcs ho-ctcs)
+(define (multi-or/c-name ctc)
+  (apply build-compound-type-name 
+         'or/c 
+         (append
+          (multi-or/c-flat-ctcs ctc)
+          (reverse (multi-or/c-ho-ctcs ctc)))))
+
+(define (multi-or/c-first-order ctc)
+  (let ([flats (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))]
+        [hos (map (λ (x) (contract-first-order x)) (multi-or/c-ho-ctcs ctc))])
+    (λ (x)
+      (or (ormap (λ (f) (f x)) hos)
+          (ormap (λ (f) (f x)) flats)))))
+
+(define (multi-or/c-stronger? this that)
+  (and (multi-or/c? that)
+       (let ([this-ctcs (multi-or/c-ho-ctcs this)]
+             [that-ctcs (multi-or/c-ho-ctcs that)])
+         (and (= (length this-ctcs) (length that-ctcs))
+              (andmap contract-stronger? this-ctcs that-ctcs)))
+       (let ([this-ctcs (multi-or/c-flat-ctcs this)]
+             [that-ctcs (multi-or/c-flat-ctcs that)])
+         (and (= (length this-ctcs) (length that-ctcs))
+              (andmap contract-stronger? this-ctcs that-ctcs)))))
+
+(define-struct multi-or/c (flat-ctcs ho-ctcs))
+
+(define-struct (chaperone-multi-or/c multi-or/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection multi-or/c-proj
+   #:name multi-or/c-name
+   #:first-order multi-or/c-first-order
+   #:stronger multi-or/c-stronger?))
+
+(define-struct (proxy-multi-or/c multi-or/c) ()
   #:property prop:contract
   (build-contract-property
    #:projection multi-or/c-proj
-   #:name
-   (λ (ctc)
-      (apply build-compound-type-name 
-             'or/c 
-             (append
-              (multi-or/c-flat-ctcs ctc)
-              (reverse (multi-or/c-ho-ctcs ctc)))))
-
-   #:first-order
-   (λ (ctc)
-      (let ([flats (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))]
-            [hos (map (λ (x) (contract-first-order x)) (multi-or/c-ho-ctcs ctc))])
-        (λ (x)
-           (or (ormap (λ (f) (f x)) hos)
-               (ormap (λ (f) (f x)) flats)))))
-
-   #:stronger
-   (λ (this that)
-      (and (multi-or/c? that)
-           (let ([this-ctcs (multi-or/c-ho-ctcs this)]
-                 [that-ctcs (multi-or/c-ho-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs)))
-           (let ([this-ctcs (multi-or/c-flat-ctcs this)]
-                 [that-ctcs (multi-or/c-flat-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs)))))))
+   #:name multi-or/c-name
+   #:first-order multi-or/c-first-order
+   #:stronger multi-or/c-stronger?))
 
 (define-struct flat-or/c (pred flat-ctcs)
   #:property prop:flat-contract
