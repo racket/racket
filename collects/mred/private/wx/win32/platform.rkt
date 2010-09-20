@@ -1,5 +1,6 @@
 #lang scheme/base
-(require "button.rkt"
+(require "init.rkt"
+	 "button.rkt"
          "canvas.rkt"
          "check-box.rkt"
          "choice.rkt"

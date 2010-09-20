@@ -1,0 +1,13 @@
+#lang racket/base
+(require ffi/unsafe)
+
+(provide IDC_ARROW IDC_CROSS
+	 IDI_APPLICATION IDI_HAND IDI_QUESTION IDI_WINLOGO)
+
+(define (MAKEINTRESOURCE n) (ptr-add #f n))
+(define IDC_ARROW           (MAKEINTRESOURCE 32512))
+(define IDC_CROSS           (MAKEINTRESOURCE 32515))
+(define IDI_APPLICATION     (MAKEINTRESOURCE 32512))
+(define IDI_HAND            (MAKEINTRESOURCE 32513))
+(define IDI_QUESTION        (MAKEINTRESOURCE 32514))
+(define IDI_WINLOGO         (MAKEINTRESOURCE 32517))

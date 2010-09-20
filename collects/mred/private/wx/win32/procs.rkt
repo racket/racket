@@ -1,5 +1,7 @@
-#lang scheme/base
-(require "../../syntax.rkt")
+#lang racket/base
+(require racket/class
+	 "../../syntax.rkt"
+	 racket/draw)
 
 (provide
  special-control-key
@@ -44,25 +46,29 @@
 (define-unimplemented special-option-key)
 (define-unimplemented get-color-from-user)
 (define-unimplemented get-font-from-user)
-(define-unimplemented get-panel-background)
+(define (get-panel-background) (make-object color% "gray"))
 (define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
 (define-unimplemented register-collecting-blit)
 (define-unimplemented unregister-collecting-blit)
-(define-unimplemented shortcut-visible-in-label?)
+(define (shortcut-visible-in-label? ?) #t)
 (define-unimplemented location->window)
 (define-unimplemented send-event)
 (define-unimplemented file-creator-and-type)
 (define-unimplemented run-printout)
-(define-unimplemented get-double-click-time)
-(define-unimplemented get-control-font-size)
+(define (get-double-click-time) 500)
+(define (get-control-font-size) 10)
 (define-unimplemented cancel-quit)
 (define-unimplemented fill-private-color)
 (define-unimplemented flush-display)
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
-(define-unimplemented display-origin)
-(define-unimplemented display-size)
+(define (display-origin xb yb ?)
+  (set-box! xb 0)
+  (set-box! yb 0))
+(define (display-size xb yb ?)
+  (set-box! xb 1024)
+  (set-box! yb 768))
 (define-unimplemented bell)
 (define-unimplemented hide-cursor)
 (define-unimplemented end-busy-cursor)
@@ -76,8 +82,12 @@
 (define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)
 (define-unimplemented can-show-print-setup?)
-(define-unimplemented get-highlight-background-color)
-(define-unimplemented get-highlight-text-color)
+
+(define (get-highlight-background-color)
+  (make-object color% 0 0 0))
+(define (get-highlight-text-color)
+  (make-object color% 255 255 255))
+
 (define-unimplemented make-screen-bitmap)
 
 (define (check-for-break) #f)

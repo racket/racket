@@ -27,4 +27,6 @@
   (def/public-unimplemented on-char)
   (def/public-unimplemented on-event)
   (def/public-unimplemented on-paint)
+  (def/public-unimplemented begin-refresh-sequence)
+  (def/public-unimplemented end-refresh-sequence)
   (super-new))

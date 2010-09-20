@@ -1,10 +1,32 @@
 #lang scheme/base
 (require scheme/class
           "../../syntax.rkt"
-         "item.rkt")
+         "item.rkt"
+	 "utils.rkt"
+	 "const.rkt"
+	 "window.rkt"
+	 "wndclass.rkt")
 
 (provide button%)
 
 (defclass button% item%
-  (def/public-unimplemented set-border)
-  (super-new))
+  (inherit auto-size)
+
+  (init parent cb label x y w h style font)
+
+  (super-new [parent parent]
+	     [win32 
+	      (CreateWindowExW 0
+			       "BUTTON"
+			       label
+			       (bitwise-ior BS_PUSHBUTTON WS_CHILD WS_CLIPSIBLINGS)
+			       0 0 0 0
+			       (send parent get-win32)
+			       #f
+			       hInstance
+			       #f)]
+	     [style style])
+
+  (auto-size label 50 14)
+
+  (def/public-unimplemented set-border))
