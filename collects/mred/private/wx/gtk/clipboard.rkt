@@ -127,7 +127,7 @@
   (define/public (replaced s-box)
     ;; Called in Gtk event-dispatch thread --- atomically with respect
     ;; to any other thread
-    (when (eq? s-box self-box)
+    (when (ptr-equal? s-box self-box)
       (set! self-box #f)
       (let ([c client])
         (when c
