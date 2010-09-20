@@ -10,8 +10,7 @@
     [x
      (identifier? #'x)
      (syntax-property
-      (syntax/loc stx
-        build-hash/c)
+      (syntax/loc stx hash/c)
       'racket/contract:contract
       (vector (gensym 'ctc) (list stx) null))]
     [(h/c arg ...)
@@ -48,11 +47,11 @@
                      [app (datum->syntax stx '#%app)])
          (syntax-property
           (syntax/loc stx
-            (app build-hash/c new-arg ...))
+            (app hash/c new-arg ...))
           'racket/contract:contract
           (vector this-one (list #'h/c) null))))]))
 
-(define (build-hash/c dom rng #:immutable [immutable 'dont-care] #:flat? [flat? #f])
+(define (hash/c dom rng #:immutable [immutable 'dont-care] #:flat? [flat? #f])
   (unless (memq immutable '(#t #f dont-care))
     (error 'hash/c "expected #:immutable argument to be either #t, #f, or 'dont-care, got ~s" immutable))
   (let ([dom-ctc (if flat?
@@ -75,9 +74,9 @@
        (make-proxy-hash/c dom-ctc rng-ctc immutable)])))
 
 (define (check-hash/c ctc) 
-  (let ([dom-ctc (hash/c-dom ctc)]
-        [rng-ctc (hash/c-rng ctc)]
-        [immutable (hash/c-immutable ctc)]
+  (let ([dom-ctc (base-hash/c-dom ctc)]
+        [rng-ctc (base-hash/c-rng ctc)]
+        [immutable (base-hash/c-immutable ctc)]
         [flat? (flat-hash/c? ctc)])
     (λ (val fail [first-order? #f])
       (unless (hash? val)
@@ -111,22 +110,22 @@
 (define (hash/c-name ctc)
   (apply 
    build-compound-type-name
-   'hash/c (hash/c-dom ctc) (hash/c-rng ctc)
+   'hash/c (base-hash/c-dom ctc) (base-hash/c-rng ctc)
    (append
     (if (and (flat-hash/c? ctc)
-             (not (eq? (hash/c-immutable ctc) #t)))
+             (not (eq? (base-hash/c-immutable ctc) #t)))
         (list '#:flat? #t)
         null)
-    (case (hash/c-immutable ctc)
+    (case (base-hash/c-immutable ctc)
       [(dont-care) null]
       [(#t)
        (list '#:immutable #t)]
       [(#f)
        (list '#:immutable #f)]))))
 
-(define-struct hash/c (dom rng immutable))
+(define-struct base-hash/c (dom rng immutable))
 
-(define-struct (flat-hash/c hash/c) ()
+(define-struct (flat-hash/c base-hash/c) ()
   #:omit-define-syntaxes
 
   #:property prop:flat-contract
@@ -138,8 +137,8 @@
      (λ (blame)
        (λ (val)
          ((check-hash/c ctc) val (λ args (apply raise-blame-error blame val args)))
-         (let ([dom-proj ((contract-projection (hash/c-dom ctc)) blame)]
-               [rng-proj ((contract-projection (hash/c-rng ctc)) blame)])
+         (let ([dom-proj ((contract-projection (base-hash/c-dom ctc)) blame)]
+               [rng-proj ((contract-projection (base-hash/c-rng ctc)) blame)])
            (for ([(k v) (in-hash val)])
              (dom-proj k)
              (rng-proj v)))
@@ -147,9 +146,9 @@
 
 (define (ho-projection hash-wrapper)
   (λ (ctc)
-    (let ([dom-proc (contract-projection (hash/c-dom ctc))]
-          [rng-proc (contract-projection (hash/c-rng ctc))]
-          [immutable (hash/c-immutable ctc)])
+    (let ([dom-proc (contract-projection (base-hash/c-dom ctc))]
+          [rng-proc (contract-projection (base-hash/c-rng ctc))]
+          [immutable (base-hash/c-immutable ctc)])
       (λ (blame)
         (let ([pos-dom-proj (dom-proc blame)]
               [neg-dom-proj (dom-proc (blame-swap blame))]
@@ -183,7 +182,7 @@
                    (pos-dom-proj k))
                  proxy-prop:contracted ctc))))))))
 
-(define-struct (chaperone-hash/c hash/c) ()
+(define-struct (chaperone-hash/c base-hash/c) ()
   #:omit-define-syntaxes
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
@@ -191,7 +190,7 @@
    #:first-order hash/c-first-order
    #:projection (ho-projection chaperone-hash)))
 
-(define-struct (proxy-hash/c hash/c) ()
+(define-struct (proxy-hash/c base-hash/c) ()
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property

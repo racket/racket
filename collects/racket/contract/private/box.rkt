@@ -7,13 +7,13 @@
          (rename-out [wrap-box/c box/c]))
 
 (define/subexpression-pos-prop (box-immutable/c elem)
-  (build-box/c elem #:immutable #t))
+  (box/c elem #:immutable #t))
 
-(define-struct box/c (content immutable))
+(define-struct base-box/c (content immutable))
 
 (define (check-box/c ctc)
-  (let ([elem-ctc (box/c-content ctc)]
-        [immutable (box/c-immutable ctc)]
+  (let ([elem-ctc (base-box/c-content ctc)]
+        [immutable (base-box/c-immutable ctc)]
         [flat? (flat-box/c? ctc)])
     (λ (val fail [first-order? #f])
       (unless (box? val)
@@ -38,8 +38,8 @@
         (check val (λ _ (return #f)) #t)))))
 
 (define (box/c-name ctc)
-  (let ([elem-name (contract-name (box/c-content ctc))]
-        [immutable (box/c-immutable ctc)]
+  (let ([elem-name (contract-name (base-box/c-content ctc))]
+        [immutable (base-box/c-immutable ctc)]
         [flat? (flat-box/c? ctc)])
     (apply build-compound-type-name
            'box/c
@@ -54,7 +54,7 @@
                     (list '#:flat? #t)
                     null))))))
 
-(define-struct (flat-box/c box/c) ()
+(define-struct (flat-box/c base-box/c) ()
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name box/c-name
@@ -64,13 +64,13 @@
      (λ (blame)
        (λ (val)
          ((check-box/c ctc) val (λ args (apply raise-blame-error blame val args)))
-         (((contract-projection (box/c-content ctc)) blame) (unbox val))
+         (((contract-projection (base-box/c-content ctc)) blame) (unbox val))
          val)))))
 
 (define (ho-projection box-wrapper)
   (λ (ctc)
-    (let ([elem-ctc (box/c-content ctc)]
-          [immutable (box/c-immutable ctc)])
+    (let ([elem-ctc (base-box/c-content ctc)]
+          [immutable (base-box/c-immutable ctc)])
       (λ (blame)
         (let ([pos-elem-proj ((contract-projection elem-ctc) blame)]
               [neg-elem-proj ((contract-projection elem-ctc) (blame-swap blame))])
@@ -83,14 +83,14 @@
                              (λ (b v) (neg-elem-proj v))
                              proxy-prop:contracted ctc))))))))
 
-(define-struct (chaperone-box/c box/c) ()
+(define-struct (chaperone-box/c base-box/c) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name box/c-name
    #:first-order box/c-first-order
    #:projection (ho-projection chaperone-box)))
 
-(define-struct (proxy-box/c box/c) ()
+(define-struct (proxy-box/c base-box/c) ()
   #:property prop:contract
   (build-contract-property
    #:name box/c-name
@@ -102,7 +102,7 @@
     [x
      (identifier? #'x)
      (syntax-property
-      (syntax/loc stx build-box/c)
+      (syntax/loc stx box/c)
       'racket/contract:contract
       (vector (gensym 'ctc) (list #'x) null))]
     [(b/c arg ...)
@@ -128,11 +128,11 @@
                      [app (datum->syntax stx '#%app)])
          (syntax-property
           (syntax/loc stx
-            (app build-box/c new-arg ...))
+            (app box/c new-arg ...))
           'racket/contract:contract
           (vector this-one (list #'b/c) null))))]))
 
-(define (build-box/c elem #:immutable [immutable 'dont-care] #:flat? [flat? #f])
+(define (box/c elem #:immutable [immutable 'dont-care] #:flat? [flat? #f])
   (let ([ctc (if flat?
                  (coerce-flat-contract 'box/c elem)
                  (coerce-contract 'box/c elem))])

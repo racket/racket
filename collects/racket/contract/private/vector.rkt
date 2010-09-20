@@ -7,12 +7,12 @@
                      [wrap-vector/c vector/c])
          vector-immutable/c vector-immutableof)
 
-(define-struct vectorof (elem immutable))
+(define-struct base-vectorof (elem immutable))
 
 (define (vectorof-name c)
-  (let ([immutable (vectorof-immutable c)])
+  (let ([immutable (base-vectorof-immutable c)])
     (apply build-compound-type-name 'vectorof 
-           (contract-name (vectorof-elem c))
+           (contract-name (base-vectorof-elem c))
            (append
             (if (and (flat-vectorof? c)
                      (not (eq? immutable #t)))
@@ -23,8 +23,8 @@
                 null)))))
 
 (define (check-vectorof c) 
-  (let ([elem-ctc (vectorof-elem c)]
-        [immutable (vectorof-immutable c)]
+  (let ([elem-ctc (base-vectorof-elem c)]
+        [immutable (base-vectorof-immutable c)]
         [flat? (flat-vectorof? c)])
     (λ (val fail [first-order? #f])
       (unless (vector? val)
@@ -50,7 +50,7 @@
       (let/ec return
         (check val (λ _ (return #f)) #t)))))
 
-(define-struct (flat-vectorof vectorof) ()
+(define-struct (flat-vectorof base-vectorof) ()
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name vectorof-name
@@ -60,7 +60,7 @@
      (λ (blame) 
        (λ (val)
          ((check-vectorof ctc) val (λ args (apply raise-blame-error blame val args)))
-         (let* ([elem-ctc (vectorof-elem ctc)]
+         (let* ([elem-ctc (base-vectorof-elem ctc)]
                 [p ((contract-projection elem-ctc) blame)])
            (for ([e (in-vector val)])
              (p e)))
@@ -68,8 +68,8 @@
 
 (define (vectorof-ho-projection vector-wrapper)
   (λ (ctc)
-     (let ([elem-ctc (vectorof-elem ctc)]
-           [immutable (vectorof-immutable ctc)])
+     (let ([elem-ctc (base-vectorof-elem ctc)]
+           [immutable (base-vectorof-immutable ctc)])
        (λ (blame)
          (let ([elem-pos-proj ((contract-projection elem-ctc) blame)]
                [elem-neg-proj ((contract-projection elem-ctc) (blame-swap blame))])
@@ -87,14 +87,14 @@
                     (elem-neg-proj val))
                   proxy-prop:contracted ctc))))))))
 
-(define-struct (chaperone-vectorof vectorof) ()
+(define-struct (chaperone-vectorof base-vectorof) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name vectorof-name
    #:first-order vectorof-first-order
    #:projection (vectorof-ho-projection chaperone-vector)))
 
-(define-struct (proxy-vectorof vectorof) ()
+(define-struct (proxy-vectorof base-vectorof) ()
   #:property prop:contract
   (build-contract-property
    #:name vectorof-name
@@ -106,7 +106,7 @@
     [x
      (identifier? #'x)
      (syntax-property
-      (syntax/loc stx build-vectorof)
+      (syntax/loc stx vectorof)
       'racket/contract:contract
       (vector (gensym 'ctc) (list #'x) null))]
     [(vecof arg ...)
@@ -133,11 +133,11 @@
                      [app (datum->syntax stx '#%app)])
          (syntax-property
           (syntax/loc stx
-            (app build-vectorof new-arg ...))
+            (app vectorof new-arg ...))
           'racket/contract:contract
           (vector this-one (list #'vecof) null))))]))
 
-(define (build-vectorof c #:immutable [immutable 'dont-care] #:flat? [flat? #f])
+(define (vectorof c #:immutable [immutable 'dont-care] #:flat? [flat? #f])
   (let ([ctc (if flat?
                  (coerce-flat-contract 'vectorof c)
                  (coerce-contract 'vectorof c))])
@@ -152,15 +152,15 @@
        (make-proxy-vectorof ctc immutable)])))
 
 (define/subexpression-pos-prop (vector-immutableof c)
-  (build-vectorof c #:immutable #t))
+  (vectorof c #:immutable #t))
 
-(define-struct vector/c (elems immutable))
+(define-struct base-vector/c (elems immutable))
 
 (define (vector/c-name c)
-  (let ([immutable (vector/c-immutable c)])
+  (let ([immutable (base-vector/c-immutable c)])
     (apply build-compound-type-name 'vector/c
            (append
-            (map contract-name (vector/c-elems c))
+            (map contract-name (base-vector/c-elems c))
             (if (and (flat-vector/c? c)
                      (not (eq? immutable #t)))
                 (list '#:flat? #t)
@@ -170,8 +170,8 @@
                 null)))))
 
 (define (check-vector/c c) 
-  (let ([elem-ctcs (vector/c-elems c)]
-        [immutable (vector/c-immutable c)]
+  (let ([elem-ctcs (base-vector/c-elems c)]
+        [immutable (base-vector/c-immutable c)]
         [flat? (flat-vector/c? c)])
     (λ (val fail [first-order? #f])
       (unless (vector? val)
@@ -202,7 +202,7 @@
       (let/ec return
         (check val (λ _ (return #f)) #t)))))
 
-(define-struct (flat-vector/c vector/c) ()
+(define-struct (flat-vector/c base-vector/c) ()
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name vector/c-name
@@ -213,14 +213,14 @@
        (λ (val)
          ((check-vector/c ctc) val (λ args (apply raise-blame-error blame val args)))
          (for ([e (in-vector val)]
-               [c (in-list (vector/c-elems ctc))])
+               [c (in-list (base-vector/c-elems ctc))])
            (((contract-projection c) blame) e))
          val)))))
 
 (define (vector/c-ho-projection vector-wrapper)
   (λ (ctc)
-     (let ([elem-ctcs (vector/c-elems ctc)]
-           [immutable (vector/c-immutable ctc)])
+     (let ([elem-ctcs (base-vector/c-elems ctc)]
+           [immutable (base-vector/c-immutable ctc)])
        (λ (blame)
          (let ([elem-pos-projs (apply vector-immutable
                                       (map (λ (c) ((contract-projection c) blame)) elem-ctcs))]
@@ -241,14 +241,14 @@
                     ((vector-ref elem-neg-projs i) val))
                   proxy-prop:contracted ctc))))))))
 
-(define-struct (chaperone-vector/c vector/c) ()
+(define-struct (chaperone-vector/c base-vector/c) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:projection (vector/c-ho-projection chaperone-vector)))
 
-(define-struct (proxy-vector/c vector/c) ()
+(define-struct (proxy-vector/c base-vector/c) ()
   #:property prop:contract
   (build-contract-property
    #:name vector/c-name
@@ -260,7 +260,7 @@
     [x
      (identifier? #'x)
      (syntax-property
-      (syntax/loc stx build-vector/c)
+      (syntax/loc stx vector/c)
       'racket/contract:contract
       (vector (gensym 'ctc) (list #'x) null))]
     [(vec/c arg ...)
@@ -287,11 +287,11 @@
                      [app (datum->syntax stx '#%app)])
          (syntax-property
           (syntax/loc stx
-            (app build-vector/c new-arg ...))
+            (app vector/c new-arg ...))
           'racket/contract:contract
           (vector this-one (list #'vec/c) null))))]))
 
-(define (build-vector/c #:immutable [immutable 'dont-care] #:flat? [flat? #f] . cs)
+(define (vector/c #:immutable [immutable 'dont-care] #:flat? [flat? #f] . cs)
   (let ([ctcs (if flat?
                   (map (λ (c) (coerce-flat-contract 'vector/c c)) cs)
                   (map (λ (c) (coerce-contract 'vector/c c)) cs))])
@@ -306,4 +306,4 @@
        (make-proxy-vector/c ctcs immutable)])))
 
 (define/subexpression-pos-prop (vector-immutable/c . args)
-  (apply build-vector/c args #:immutable #t))
+  (apply vector/c args #:immutable #t))
