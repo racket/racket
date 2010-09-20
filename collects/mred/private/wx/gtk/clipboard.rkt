@@ -11,7 +11,10 @@
 (unsafe!)
 
 (provide clipboard-driver%
-         has-x-selection?)
+         has-x-selection?
+	 _GtkSelectionData
+	 gtk_selection_data_get_length
+	 gtk_selection_data_get_data)
 
 (define (has-x-selection?) #t)
 

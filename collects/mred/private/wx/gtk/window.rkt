@@ -9,13 +9,15 @@
          "../common/queue.rkt"
          "../common/local.rkt"
          "../common/delay.rkt"
+         "../common/bstr.rkt"
          "keycode.rkt"
          "keymap.rkt"
          "queue.rkt"
          "utils.rkt"
          "const.rkt"
          "types.rkt"
-         "widget.rkt")
+         "widget.rkt"
+	 "clipboard.rkt")
 
 (provide window%
          gtk->wx
@@ -95,6 +97,30 @@
 
 (define (widget-window gtk)
   (GtkWidgetT-window (cast gtk _GtkWidget _GtkWidgetT-pointer)))
+
+(define-gtk gtk_drag_dest_add_uri_targets (_fun _GtkWidget -> _void))
+(define-gtk gtk_drag_dest_set (_fun _GtkWidget _int (_pointer = #f) (_int = 0) _int -> _void))
+(define-gtk gtk_drag_dest_unset (_fun _GtkWidget -> _void))
+
+(define GTK_DEST_DEFAULT_ALL #x07)
+(define GDK_ACTION_COPY (arithmetic-shift 1 1))
+
+(define-signal-handler connect-drag-data-received "drag-data-received"
+  (_fun _GtkWidget _pointer _int _int _GtkSelectionData _uint _uint -> _void)
+  (lambda (gtk context x y data info time)
+    (let ([wx (gtk->wx gtk)])
+      (when wx
+	(let ([bstr (scheme_make_sized_byte_string
+		     (gtk_selection_data_get_data data)
+		     (gtk_selection_data_get_length data)
+		     1)])
+	  (cond
+	   [(regexp-match #rx#"^file://(.*)\r\n$" bstr)
+	    => (lambda (m)
+		 (queue-window-event wx
+				     (lambda ()
+				       (let ([path (bytes->path (cadr m))])
+					 (send wx on-drop-file path)))))]))))))
 
 ;; ----------------------------------------
 
@@ -497,8 +523,17 @@
       (gtk_widget_set_sensitive gtk on?))
     (define/public (is-window-enabled?) enabled?)
 
-    (define/public (drag-accept-files on?) (void))
-
+    (define drag-connected? #f)
+    (define/public (drag-accept-files on?)
+      (if on?
+	  (begin
+	    (unless drag-connected?
+	      (connect-drag-data-received gtk)
+	      (set! drag-connected? #t))
+	    (gtk_drag_dest_set gtk GTK_DEST_DEFAULT_ALL GDK_ACTION_COPY)
+	    (gtk_drag_dest_add_uri_targets gtk))
+	  (gtk_drag_dest_unset gtk)))
+      
     (define/public (set-focus)
       (gtk_widget_grab_focus (get-client-gtk)))
 
@@ -571,7 +606,8 @@
     (define/public (paint-children)
       (void))
 
-    (def/public-unimplemented on-drop-file)
+    (define/public (on-drop-file path) (void))
+
     (def/public-unimplemented get-handle)
     (def/public-unimplemented set-phantom-size)
 
