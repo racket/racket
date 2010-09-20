@@ -6,29 +6,41 @@
          Build-Cond
          Cond-List
          simplify
-         simple-swap
-         compile)
+         compile
+         Get-Pvar)
 
 (define hole-table (make-hash))
 
 (define the-hole (term hole))
+(define no-context #f)
+(define in-context #t)
+(define ∅ #f)
+(define context-match (make-parameter no-context))
+(define (variable-prefix? x y) 
+  (let* ([prefix-str (symbol->string x)]
+         [prefix-len (string-length prefix-str)])
+    (and (symbol? y)
+         (let ([str (symbol->string y)])
+           (and ((string-length str) . >= . prefix-len)
+                (string=? (substring str 0 prefix-len) prefix-str))))))
+(define rev (λ (x) 
+              (if (cons? x)
+                  (reverse x)
+                  x)))
 
 (define new-var-list '())
 
 (define-language L
   [e (cond [e e] ...)
      (let ((x e) ...) e)
-     ;(term-let ((x e) ...) e)
      (e e ...)
      m
      b]
   [v (cond [v v] ...)
      (let ((x v) ...) v)
-     ;(term-let ((x v) ...) v)
      (v v ...)
      b]
   [b empty
-     
      plug
      reverse
      append
@@ -51,10 +63,8 @@
      curry
      pair-path-append
      path-append
-     ; we don't have these functions yet
      variable-except?
      variable-prefix?
-     ;
      ()
      begin
      ∪
@@ -72,13 +82,11 @@
      x
      'variable
      'any
-     variable-not-otherwise-mentioned
      not
      =
      '()
-     ; ambiguous
      term-let
-     ]
+     variable-not-otherwise-mentioned]
   [bool #t
         #f]
   [Context 
@@ -89,7 +97,6 @@
          [Context e]
          [e e] ...)
    (let ((x v) ...) v ... Context e ...)
-   ;(term-let ((x v) ...) v ... Context e ...)
    (v ... Context e ...)
    hole]
   [m (matrix (x ...) (row ...) (pvar ...) (pvar ...) natural bool)]
@@ -102,6 +109,7 @@
       (cdr eq)
       (cons eq eq)
       (plug eq eq)
+      (append eq eq)
       lit-hole]
   (p (or p p)
      lit-hole
@@ -119,8 +127,7 @@
      lit-string
      lit-variable
      (lit-variable-except id ...)
-     (lit-variable-prefix id)
-     )
+     (lit-variable-prefix id))
   (scw s
        cw)
   (cw c
@@ -132,25 +139,15 @@
      '()
      cp
      #t
-     #f
-     ; no longer thought of as a constructor, at least for now...
-     ;(nt id)
-     ;lit-variable-not-otherwise-mentioned
-     ;context-match
-     )
+     #f)
   (cp (cons p p))
-  (rep (repeat p rep)
-       (repeat p cp)
-       (repeat p '()))
-  ;(pvar (variable-prefix p))
+  (rep (repeat p p))
   (id variable)
   ((match-repeat z) variable-not-otherwise-mentioned)
   (pvar variable-not-otherwise-mentioned
         (pvar pvar)
         (pvar elip))
-  (x #;(side-condition (name x variable-not-otherwise-mentioned)
-                       (not (regexp-match #rx"^[pm]" (format "~a" (term x)))))
-     (car x)
+  (x (car x)
      (cdr x)
      (cons x x)
      pvar)
@@ -176,9 +173,8 @@
                                  0
                                  bool))
         (in-hole Context
-                 (begin (Build-Term-Let (eqs_1 ...) ;(set! results (cons 
+                 (begin (Build-Term-Let (eqs_1 ...)
                                         r_1 
-                                        ;results))
                                         )
                         (matrix (x_1 ...) 
                                 (((p_1 ... -> r_2) eqs_2 ...) 
@@ -254,79 +250,6 @@
                          bool))
         (side-condition (ormap not-a-wildcard? (term (p_2 ...))))
         Drop-Front-Column-All-Wildcard)
-   
-   #;(--> (in-hole Context
-                   (matrix (x_1 x_2 ... x_3 x_4 ...)
-                           (
-                            ((p_1 p_2 ... p_3 p_4 ... -> r_1) eqs_1 ...)
-                            ...)
-                           (pvar ...)
-                           (pvar_3 ...)
-                           natural
-                           bool))
-          (in-hole Context
-                   (matrix (x_3 x_2 ... x_1 x_4 ...)
-                           (
-                            ((p_3 p_2 ... p_1 p_4 ... -> r_1) eqs_1 ...)
-                            ...)
-                           (pvar ...)
-                           (pvar_3 ...)
-                           natural
-                           bool))
-          
-          (side-condition
-           (apply = 
-                  (append (list (length (term (x_2 ...)))
-                                (length (term (x_2 ...))))
-                          (map length (term ((p_2 ...) ...))))))
-          (side-condition
-           (apply = 
-                  (append (list (length (term (x_4 ...)))
-                                (length (term (x_4 ...))))
-                          (map length (term ((p_4 ...) ...))))))
-          (side-condition (> (length (remove-duplicates (term (simplify (p_1 ...))))) (length (remove-duplicates (term (simplify (p_3 ...)))))))
-          simple-swap)
-   
-   ;   ; Front-Column-All-Wildcard (now force a swap with the backmost non-wildcard column to decrease branching)
-   ;   ;   When the front column of a matrix is all wildcard patterns, swap it with another column with at least one non-wildcard pattern.
-   ;   
-   ;   (--> (in-hole Context
-   ;                 (matrix (x_1 x_2 ... x_3 x_4 ...) 
-   ;                         ((wc p_2 ... p_3 wildcard_1 ... -> r_1)
-   ;                          (wc p_5 ... p_6 wildcard_2 ... -> r_2) 
-   ;                          ...)
-   ;                         (pvar ...)
-   ;                         (pvar_3 ...)
-   ;                         natural
-   ;                         bool))
-   ;        (in-hole Context 
-   ;                 (matrix (x_3 x_2 ... x_1 x_4 ...) 
-   ;                         ((p_3 p_2 ... wc wildcard_1 ... -> r_1)
-   ;                          (p_6 p_5 ... wc wildcard_2 ... -> r_2) 
-   ;                          ...)
-   ;                         (pvar ...)
-   ;                         (pvar_3 ...)
-   ;                         natural
-   ;                         bool))
-   ;        (side-condition
-   ;         (eqv? (length (term (x_2 ...)))
-   ;               (length (term (p_2 ...)))))
-   ;        (side-condition
-   ;         (eqv? (length (term (x_4 ...)))
-   ;               (length (term (wildcard_1 ...)))))
-   ;        (side-condition
-   ;         (apply = 
-   ;                (append (list (length (term (x_2 ...)))
-   ;                              (length (term (x_2 ...))))
-   ;                        (map length (term ((p_5 ...) ...))))))
-   ;        (side-condition
-   ;         (apply = 
-   ;                (append (list (length (term (x_4 ...)))
-   ;                              (length (term (x_4 ...))))
-   ;                        (map length (term ((wildcard_2 ...) ...))))))
-   ;        #;(side-condition (not-a-wildcard? (term p_3)))
-   ;        (side-condition (or (not-a-wildcard? (term p_3)) (ormap not-a-wildcard? (term (p_6 ...)))))
-   ;        Front-Column-All-Wildcard)
    
    ; Unroll-Or
    ;   If the first pattern of a row in the matrix is an or pattern, duplicate the row for each branch of the or.
@@ -426,15 +349,15 @@
                          natural
                          bool))
         (in-hole Context 
-                 (cond [(equal? (car ,(term pvar_1)) x_1)
+                 (cond [(equal? (car pvar_11) x_1)
                         (matrix (x_1 x_2 ...)
                                 (((p_3 p_5 ... -> r_2) eqs_1 ...))
                                 (pvar_2 ...)
                                 (pvar_3 ...)
                                 natural
                                 bool)]
-                       #;[else ∅]
                        ))
+        (where pvar_11 (Get-Temp-Name pvar_1 (pvar_2 ...)))
         (side-condition (> (term natural) 0))
         (side-condition (member (term pvar_1) (map (λ (x) (term (Get-Pvar ,x))) (append (term (Binding-Eqs (eqs_1 ...))) (term (True-Eqs (eqs_1 ...) ())) ))))
         bound-name-from-outside-repeat)
@@ -498,9 +421,6 @@
                            (pvar_3 ...)
                            natural
                            bool)))
-        
-        
-        ;(side-condition (eqv? (hash-ref hole-table (term id)) 0))
         (where (((p_* ... -> r_*) eqs_* ...) ...) (drop-first-p (same-starting-pattern 
                                                                  (nt id)
                                                                  (((cw_1 p_2 ... -> r_1) eqs_1 ...)
@@ -513,59 +433,6 @@
                                                                                      ((p_6 p_7 ... -> r_3) eqs_3 ...)
                                                                                      ...)))
         non-terminal)
-   
-   ; non-terminal (set)
-   ;   If the flag for the special "non-terminal returns a set" mode is true, and a row in the matrix begins with a non-terminal which contains a hole, 
-   ;   wrap the row in a let, which binds the result of calling the "set" function which matches the non-terminal to a special value called nt-val. 
-   ;   Inside the let but outside the matrix is a conditional to check if nt-val is not the empty set. The rest of the patterns in the row remain the same, 
-   ;   but the right hand side is adjusted to add in the results of nt-val. Union the let with the matrix formed by the other rows.
-   
-   #;(--> (in-hole Context
-                   (matrix (x_1 x_2 ...)
-                           (((p_1 p_2 ... -> r_1) eqs_1 ...)
-                            ...
-                            (((nt id) p_5 ... -> r_2) eqs_2 ...)
-                            ((p_6 p_7 ... -> r_3) eqs_3 ...)
-                            ...)
-                           (pvar_2 ...)
-                           (pvar_3 ...)
-                           natural
-                           #t))
-          (in-hole Context 
-                   (begin 
-                     (let ((nt-val (,(string->symbol (format "~s~s" (term id) '-list)) x_1)))
-                       (cond ((not (set-empty? nt-val))
-                              (matrix (x_2 ...)
-                                      (((p_* ... -> r_*) eqs_* ...) ...)#;((p_5 ... -> (set-union (set-from-list (set-map nt-val (curry pair-path-append (quote x_1)))) r_2)))
-                                      (pvar_2 ...)
-                                      (pvar_3 ...)
-                                      natural
-                                      #t))
-                             (else ∅)))
-                     (matrix (x_1 x_2 ...)
-                             (((p_** ... -> r_**) eqs_** ...) ...)#;((p_1 p_2 ... -> r_1) 
-                                                                     ...
-                                                                     (p_6 p_7 ... -> r_3) 
-                                                                     ...)
-                             (pvar_2 ...)
-                             (pvar_3 ...)
-                             natural
-                             #t)))
-          (side-condition (andmap not-a-nt? (term (p_1 ...))))
-          ;(side-condition (> (hash-ref hole-table (term id)) 0))
-          (fresh nt-val)
-          (where (((p_* ... -> r_*) eqs_* ...) ...) (drop-first-p (same-starting-pattern 
-                                                                   (nt id)
-                                                                   (((p_1 p_2 ... -> r_1 #;(set-union (set-from-list (set-map nt-val (curry pair-path-append (quote x_1)))) r_1)) eqs_1 ...)
-                                                                    ...
-                                                                    (((nt id) p_5 ... -> r_2 #;(set-union (set-from-list (set-map nt-val (curry pair-path-append (quote x_1)))) r_2)) eqs_2 ...)
-                                                                    ((p_6 p_7 ... -> r_3 #;(set-union (set-from-list (set-map nt-val (curry pair-path-append (quote x_1)))) r_3)) eqs_3 ...)
-                                                                    ...))))
-          (where (((p_** ... -> r_**) eqs_** ...) ...) (diff-starting-pattern (nt id) (((p_1 p_2 ... -> r_1) eqs_1 ...)
-                                                                                       ...
-                                                                                       ((p_6 p_7 ... -> r_3) eqs_3 ...)
-                                                                                       ...)))
-          non-terminal-set)
    
    ; Constructor
    ; If the front column is all either "constructor" patterns, or wildcard patterns, with at least one non-wildcard, then specialize the matrix based on the constructors.
@@ -646,54 +513,6 @@
                                                                              ...)))
         hole)
    
-   ; hole (non-terminal)
-   ;   If a row in the matrix contains a lit-hole in its first column, and the flag for non-terminal-set is #t, 
-   ;   then separate the row from the rest of the matrix, replacing hole with "context-match," which will subsequently 
-   ;   be transformed into a conditional based on whether or not there is a current context. Additionally, transform the 
-   ;   right-hand-side into a pair of the quote the input variable (the "path"), and the input variable. Union this with the matrix formed by the remaining rows.
-   
-   #;(--> (in-hole Context
-                   (matrix (x_1 x_2 ...)
-                           (((p_1 p_2 ... -> r_1) eqs_1 ...)
-                            ...
-                            ((lit-hole p_5 ... -> r_2) eqs_2 ...)
-                            ((p_6 p_7 ... -> r_3) eqs_3 ...)
-                            ...)
-                           (pvar_1 ...)
-                           (pvar_3 ...)
-                           natural
-                           #t))
-          (in-hole Context
-                   (begin
-                     (cond [(or (context-match) (eqv? x_1 the-hole))
-                            (matrix (x_2 ...)
-                                    (((p_* ... -> r_*) eqs_* ...) ...);((context-match p_5 ... -> (set (cons (quote x_1) x_1))))
-                                    (pvar_1 ...)
-                                    (pvar_3 ...)
-                                    natural
-                                    #t)]
-                           (else ∅))
-                     (matrix (x_1 x_2 ...)
-                             (((p_** ... -> r_**) eqs_** ...) ...)
-                             (pvar_1 ...)
-                             (pvar_3 ...)
-                             natural
-                             #t)))
-          (side-condition (andmap not-a-lit-hole? (term (p_1 ...))))
-          (where (((p_* ... -> r_*) eqs_* ...) ...) (drop-first-p (same-starting-pattern 
-                                                                   lit-hole
-                                                                   (((p_1 p_2 ... -> (set (cons (quote x_1) x_1))) eqs_1 ...)
-                                                                    ...
-                                                                    ((lit-hole p_5 ... -> (set (cons (quote x_1) x_1))) eqs_2 ...)
-                                                                    ((p_6 p_7 ... -> (set (cons (quote x_1) x_1))) eqs_3 ...)
-                                                                    ...))))
-          (where (((p_** ... -> r_**) eqs_** ...) ...) (diff-starting-pattern lit-hole 
-                                                                              (((p_1 p_2 ... -> r_1) eqs_1 ...)
-                                                                               ...
-                                                                               ((p_6 p_7 ... -> r_3) eqs_3 ...)
-                                                                               ...)))
-          hole-non-terminal)
-   
    ; in-hole (wrong number of holes)
    ;   If a row in a matrix begins with a lit-in-hole, but the number of holes in the first pattern is 0 or > 1, eliminate the row.
    
@@ -747,7 +566,7 @@
                          (pvar_1 ...)
                          (pvar_3 ...)
                          natural
-                         bool))       
+                         bool))
         
         (side-condition (eqv? 1 (term (detect-hole2 0 p_3))))
         (side-condition (not-a-lit-name? (term p_3)))
@@ -779,9 +598,6 @@
         (fresh pvar-cdr)
         (where any_* (push-name-downward (lit-name pvar p_3) (eqs_2 ...) pvar-car pvar-cdr))
         (side-condition (not-a-nt? (term p_3)))
-        
-        ;(where p_* ,(car (term any_*)))
-        ;(where (eqs_* ...) ,(cdr (term any_*)))
         in-hole-name)
    
    ; in-hole (base case)
@@ -880,7 +696,6 @@
         (fresh car-rt)
         (fresh cdr-rt)
         (side-condition (eqv? 1 (term (detect-hole2 0 (nt id)))))
-        
         in-hole-nt-name)
    
    ; hide-hole (not base case)
@@ -1054,60 +869,68 @@
                          natural
                          bool))
         (in-hole Context
-                 (begin (in-hole any_term-let
-                                  (letrec ((match-repeat
-                                            (λ ,(append (append (list (term z)) (term (binding_temp ...))) (term (bound_temp ...)) )      
-                                              (begin
-                                                (cond
-                                                  ((andmap empty? ,(append (list 'list) (term (bound_temp ...))))
-                                                   (Build-Let ;reverse
-                                                    (matrix (z x_2 ...)
-                                                            (((p_4 p_5 ... -> r_2) ,@(term (Add-Repeat-Vars (eqs_* ...) (binding_temp ...)))))
-                                                            (pvar_1 ...)
-                                                            ()
-                                                            natural
-                                                            bool)
-                                                    (binding_temp ...)))
-                                                  )
-                                                (cond
-                                                  ((andmap cons? ,(append (list 'list) (append (list (term z)) (term (bound_temp ...)))  ))
-                                                   (Build-Temp-Let
-                                                    (binding_temp ...)
-                                                    (single_binding_temp ...)
-                                                    (let ((carz (car z)))
-                                                    (matrix (carz)
-                                                            (((p_3 -> (match-repeat ,@(append 
-                                                                                       (append (list (term (cdr z))) 
-                                                                                               (term (Build-Temp-Cons (binding_temp ...) (single_binding_temp ...)))) 
-                                                                                       (term (Build-Cdr (bound_temp ...))  ))))
-                                                              eqs_* ...))
-                                                            (pvar_1 ...)
-                                                            (pvar_3 ...)
-                                                            ,(+ 1 (term natural))
-                                                            bool)))
-                                                   )
-                                                  (else ∅)
-                                                  )
-                                                )
-                                              )))
-                                    (Build-Let-Empty natural ,(map (λ (x) (term (Get-Pvar ,x))) (term (binding_temp ...)))
-                                                     (match-repeat ,@(if (> (term natural) 0)
-                                                                         (append (append (list (term x_1)) (term (binding_temp ...)) (map (λ (x) `(term ,x)) (term (pvar_22 ...)))))
-                                                                         (append (append (list (term x_1)) (term (binding_temp ...)) (term (bound_temp ...))))
-                                                                         ))
-                                                     )
-                                    )
-                                 )
-                        (matrix (x_1 x_2 ...)
-                                (((cw_1 p_2 ... -> r_1) eqs_1 ...)
-                                 ...
-                                 ((p_6 p_7 ... -> r_3) eqs_3 ...)
-                                 ...)
-                                (pvar_1 ...)
-                                (pvar_3 ...)
-                                natural
-                                bool)
-                        )
+                 (begin
+                   (in-hole any_term-let
+                            (letrec ((match-repeat
+                                      (λ ,(append (append (list (term z)) (term (binding_temp ...))) (term (bound_temp ...)) )      
+                                        (begin
+                                          (cond
+                                            ((andmap empty? ,(append (list 'list) (term (bound_temp ...))))
+                                             (Build-Let ;reverse
+                                              (Build-Temp-Let
+                                               (pvar_11 ...)
+                                               (binding_temp ...)
+                                               (matrix (z x_2 ...)
+                                                       (((p_4 p_5 ... -> r_2) ,@(term (Add-Repeat-Vars (eqs_* ...) (pvar_11 ...) (binding_temp ...)))))
+                                                       (((Get-Pvar pvar_22) bound_temp) ...)
+                                                       ()
+                                                       natural
+                                                       bool))
+                                              (binding_temp ...)))
+                                            )
+                                          (cond
+                                            ((andmap cons? ,(append (list 'list) (append (list (term z)) (term (bound_temp ...)))  ))
+                                             ;(Build-Temp-Let
+                                             ;(single_binding_temp ...)
+                                             ;(binding_temp ...)
+                                             (let ((carz (car z)))
+                                               (matrix (carz)
+                                                       (((p_3 -> (match-repeat ,@(append 
+                                                                                  (append (list (term (cdr z))) 
+                                                                                          (term (Build-Temp-Cons (pvar_11 ...) (binding_temp ...) #;(single_binding_temp ...)))) 
+                                                                                  (term (Build-Cdr (bound_temp ...))  ))))
+                                                         eqs_* ...))
+                                                       (((Get-Pvar pvar_22) bound_temp) ...)
+                                                       (pvar_3 ...)
+                                                       ,(+ 1 (term natural))
+                                                       bool))
+                                             ;)
+                                             )
+                                            (else ∅)
+                                            )
+                                          )
+                                        )))
+                              (Build-Temp-Let natural
+                                              (bound_temp ...) 
+                                              (pvar_22 ...)
+                                              (Build-Let-Empty natural ,(map (λ (x) (term (Get-Pvar ,x))) (term (binding_temp ...)))
+                                                               (match-repeat ,@(if (> (term natural) 0)
+                                                                                   (append (append (list (term x_1)) (term (binding_temp ...)) (term ((Get-Pvar pvar_22) ...)) #;(map (λ (x) `(term ,x)) (term (pvar_22 ...))) ))
+                                                                                   (append (append (list (term x_1)) (term (binding_temp ...)) (term (bound_temp ...)))))
+                                                                             )
+                                                               ))
+                              )
+                            )
+                   (matrix (x_1 x_2 ...)
+                           (((cw_1 p_2 ... -> r_1) eqs_1 ...)
+                            ...
+                            ((p_6 p_7 ... -> r_3) eqs_3 ...)
+                            ...)
+                           (pvar_1 ...)
+                           (pvar_3 ...)
+                           natural
+                           bool)
+                   )
                  )
         (where any_term-let ,(if (eqv? 0 (term natural))
                                  (begin (set! new-var-list (term (eqs_2 ...))) (let ((r (term (Build-Term-Let (eqs_2 ...) hole)))) #;(set! new-var-list (term (eqs_2 ...))) r))
@@ -1120,9 +943,9 @@
                                                         p_3 
                                                         ,(map (λ (x) (term (Get-Pvar ,x))) (append (term (Binding-Eqs (eqs_* ...))) (term (True-Eqs (eqs_* ...) ())) )) ())))))
         (where (pvar_22 ...) ,(begin
-                 ;(printf "~a\n" (remove-duplicates (map (λ (x) (term (Get-Pvar ,x 0))) (append (term (Binding-Eqs (eqs_* ...))) (term (True-Eqs (eqs_* ...) ())))) ))
-                 (remove-duplicates (map (λ (x) (term (Get-Pvar ,x 0))) (append (term (Binding-Eqs (eqs_* ...))) (term (True-Eqs (eqs_* ...) ())))) )
-                 ))
+                                ;(printf "~a\n" (remove-duplicates (map (λ (x) (term (Get-Pvar ,x 0))) (append (term (Binding-Eqs (eqs_* ...))) (term (True-Eqs (eqs_* ...) ())))) ))
+                                (remove-duplicates (map (λ (x) (term (Get-Pvar ,x 0))) (append (term (Binding-Eqs (eqs_* ...))) (term (True-Eqs (eqs_* ...) ())))) )
+                                ))
         (fresh match-repeat)
         (fresh z)
         (fresh carz)
@@ -1131,128 +954,8 @@
         (fresh ((single_binding_temp ...)
                 (pvar_11 ...)))
         (fresh ((bound_temp ...)
-                (pvar_22 ...)))  
+                (pvar_22 ...)))
         Repeat)
-   
-;   (--> (in-hole Context
-;                 (matrix (x_1 x_2 ...)
-;                         (((cw_1 p_2 ... -> r_1) eqs_1 ...)
-;                          ...
-;                          (((repeat p_3 p_4) p_5 ... -> r_2) eqs_2 ...)
-;                          ((p_6 p_7 ... -> r_3) eqs_3 ...)
-;                          ...)
-;                         (pvar_1 ...)
-;                         (pvar_3 ...)
-;                         natural
-;                         bool))
-;        (in-hole Context
-;                 (begin (in-hole any_term-let
-;                                 (Build-Temp-Let
-;                                  natural
-;                                  (bound-temp ...)
-;                                  ,(map (λ (x) (list 'term x))
-;                                        (term (pvar_22 ...)))
-;                                        ;)
-;                                  (letrec ((match-repeat
-;                                            (λ ,(append (append (list (term z)) (term (pvar_11 ...))) (map (λ (x) (term (Get-Pvar ,x))) (term (pvar_22 ...))) )       
-;                                              (begin
-;                                                (cond
-;                                                  ((andmap empty? ,(append (list 'list) (map (λ (x) (term (Get-Pvar ,x))) (term (pvar_22 ...))) ))
-;                                                   (Build-Let
-;                                                    (Restore-Temp natural (pvar_22 ...) (bound-temp ...)
-;                                                    (matrix (z x_2 ...)
-;                                                            (((p_4 p_5 ... -> r_2) ,@(term (Add-Repeat-Vars (eqs_* ...) (pvar_11 ...)))))
-;                                                            (pvar_1 ...)
-;                                                            ()
-;                                                            natural
-;                                                            bool)
-;                                                    )
-;                                                    
-;                                                    (pvar_11 ...)))
-;                                                  #;(else ∅)
-;                                                  )
-;                                                
-;                                                (cond
-;                                                  ((andmap cons? ,(append (list 'list) (append (list (term z)) (map (λ (x) (term (Get-Pvar ,x))) (term (pvar_22 ...)))  )))
-;                                                   (Build-Temp-Let
-;                                                    (binding-temp ...)
-;                                                    (pvar_11 ...)
-;                                                    (matrix ((car z))
-;                                                            (((p_3 -> (match-repeat ,@(append 
-;                                                                                       (append (list (term (cdr z))) 
-;                                                                                               (term (Build-Temp-Cons (pvar_11 ...) (binding-temp ...)))) 
-;                                                                                       (term (Build-Cdr ,(map (λ (x) (term (Get-Pvar ,x))) (term (pvar_22 ...)))  )))))
-;                                                              eqs_* ...))
-;                                                            (pvar_1 ...)
-;                                                            (pvar_3 ...)
-;                                                            ,(+ 1 (term natural))
-;                                                            bool))
-;                                                   )
-;                                                  (else ∅)
-;                                                  )
-;                                                )
-;                                              )))
-;                                    (Build-Let-Empty natural ,(map (λ (x) (term (Get-Pvar ,x))) (term (pvar_11 ...)))
-;                                                     (match-repeat ,@(if (> (term natural) 0)
-;                                                                         (append (append (list (term x_1)) (map (λ (x) (term (Get-Pvar ,x))) (term (pvar_11 ...))) ) (map (λ (x) (term (Get-Pvar ,x))) (term (pvar_22 ...))))
-;                                                                         (append (append (list (term x_1)) (map (λ (x) (term (Get-Pvar ,x))) (term (pvar_11 ...))) ) (term (bound-temp ...)))
-;                                                                                  ;(map (λ (x) (list 'term x)) (term (pvar_22 ...))))
-;                                                                             ;(map (λ (x) (term (Get-Pvar ,x)))#;(λ (x) (list 'term x)) (term (pvar_22 ...)))
-;                                                                             ))
-;                                                     )
-;                                    ))
-;                                 )
-;                        (matrix (x_1 x_2 ...)
-;                                (((cw_1 p_2 ... -> r_1) eqs_1 ...)
-;                                 ...
-;                                 ((p_6 p_7 ... -> r_3) eqs_3 ...)
-;                                 ...)
-;                                (pvar_1 ...)
-;                                (pvar_3 ...)
-;                                natural
-;                                bool)
-;                        )
-;                 )
-;        (where any_term-let ,(if (eqv? 0 (term natural))
-;                                 (begin (set! new-var-list (term (eqs_2 ...))) (let ((r (term (Build-Term-Let (eqs_2 ...) hole)))) (set! new-var-list (term (eqs_2 ...))) r))
-;                                 (begin (set! new-var-list (term (eqs_2 ...)))
-;                                        (term hole))))
-;        #;(where any_term-let ,(begin (set! new-var-list (term (eqs_2 ...))) (term (Build-Term-Let (eqs_2 ...) hole))
-;                                      ))
-;        #;(if (> -1 (term natural))
-;              (begin (printf "1 ~a ~a\n\n" (term (eqs_2 ...)) new-var-list) (term (Build-Term-Let (eqs_2 ...) hole)))
-;              (begin (printf "2 ~a ~a\n\n" (term (eqs_2 ...)) new-var-list) (set! new-var-list (term (eqs_2 ...)))
-;                     (printf "3 ~a ~a\n\n" (term (eqs_2 ...)) new-var-list)
-;                     (term hole)))
-;        (where (eqs_* ...) ,new-var-list)
-;        (where (pvar_11 ...) ,(remove-duplicates (map (λ (x) (term (Get-Pvar ,x)))
-;                                                      (term 
-;                                                       (Get-Free-Name-Patterns
-;                                                        p_3 
-;                                                        ,(map (λ (x) (term (Get-Pvar ,x))) (append (term (Binding-Eqs (eqs_* ...))) (term (True-Eqs (eqs_* ...) ())) )) ())))))
-;        (where (pvar_22 ...) ,
-;               (begin
-;                 ;(printf "~a\n" (remove-duplicates (map (λ (x) (term (Get-Pvar ,x 0))) (append (term (Binding-Eqs (eqs_* ...))) (term (True-Eqs (eqs_* ...) ())))) ))
-;                 (remove-duplicates (map (λ (x) (term (Get-Pvar ,x 0))) (append (term (Binding-Eqs (eqs_* ...))) (term (True-Eqs (eqs_* ...) ())))) )
-;                 ))
-;        (fresh match-repeat)
-;        (fresh z)
-;        ;(fresh ((pvar_11 ...) (pvar_111 ...)))
-;        ;(fresh ((pvar_22 ...) (pvar_222 ...)))
-;        (fresh ((binding-temp ...)
-;                (pvar_11 ...)))
-;        (fresh ((bound-temp ...)
-;                (pvar_22 ...)))
-;        
-;        ;        (side-condition (andmap not-a-lit-hole? (term (p_1 ...))))
-;        ;        (side-condition (andmap not-a-lit-name? (term (p_1 ...))))
-;        ;        (side-condition (andmap not-an-in-hole? (term (p_1 ...))))
-;        ;        (side-condition (andmap not-a-s? (term (p_1 ...))))
-;        ;        (side-condition (andmap not-a-rep? (term (p_1 ...))))
-;        ;        (side-condition (andmap not-a-nt? (term (p_1 ...))))
-;        ;        (side-condition (andmap not-a-side-condition? (term (p_1 ...))))
-;        
-;        Repeat)
    
    ; built-in non-terminals
    (-->
@@ -1354,7 +1057,7 @@
 
 (define natural?
   (λ (x) (and 
-          (integer? x) 
+          (exact-integer? x) 
           (not (negative? x)))))
 
 (define-metafunction L
@@ -1378,6 +1081,18 @@
    (side-condition (equal? (term pvar_3) (term (Get-Pvar pvar))))
    ]
   [(Add-Repeat-Vars (eqs ...) (pvar_1 ...))
+   (eqs ...)]
+  [(Add-Repeat-Vars ((pvar bool eq ...) eqs_2 ...) (pvar_1 ... pvar_3 pvar_2 ...) (pvar_11 ... pvar_33 pvar_22 ...))
+   (Add-Repeat-Vars (eqs_2 ... (pvar bool ,@(remove-duplicates (term (pvar_33 eq ...))))) (pvar_1 ... pvar_2 ...) (pvar_11 ... pvar_22 ...))
+   (side-condition (equal? (term pvar_3) (term (Get-Pvar pvar))))
+   (side-condition (and (equal? (length (term (pvar_1 ...))) (length (term (pvar_11 ...))))
+                        (equal? (length (term (pvar_2 ...))) (length (term (pvar_22 ...))))))
+   ]
+  [(Add-Repeat-Vars (eqs_1 ... (pvar bool eq ...) eqs_2 ...) (pvar_3 pvar_1 ...) (pvar_33 pvar_11 ...))
+   (Add-Repeat-Vars (eqs_1 ... eqs_2 ... (pvar bool ,@(remove-duplicates (term (pvar_33 eq ...))))) (pvar_1 ...) (pvar_11 ...))
+   (side-condition (equal? (term pvar_3) (term (Get-Pvar pvar))))
+   ]
+  [(Add-Repeat-Vars (eqs ...) (pvar_1 ...) (pvar_11 ...))
    (eqs ...)])
 
 (define-metafunction L
@@ -1399,75 +1114,57 @@
   [(Binding-Eqs (eqs ...))
    ()])
 
+(define-metafunction L
+  [(Minimize-Names (pvar pvar_2 ... pvar_3 pvar_4 ...))
+   (pvar_* ...)
+   (where (pvar_* ...) (Minimize-Names (pvar pvar_2 ... pvar_4 ...)))
+   (side-condition (and (equal? (term (Get-Pvar pvar)) (term (Get-Pvar pvar_3))) (<= (term (Depth pvar)) (term (Depth pvar_3)) )))
+   (side-condition (andmap (λ (x) (not (equal? (term (Get-Pvar pvar)) (term (Get-Pvar ,x))))) (term (pvar_2 ...))))]
+  [(Minimize-Names (pvar pvar_2 ... pvar_3 pvar_4 ...))
+   (pvar_* ...)
+   (where (pvar_* ...) (Minimize-Names (pvar_3 pvar_2 ... pvar_4 ...)))
+   (side-condition (and (equal? (term (Get-Pvar pvar)) (term (Get-Pvar pvar_3))) (> (term (Depth pvar)) (term (Depth pvar_3)) )))
+   (side-condition (andmap (λ (x) (not (equal? (term (Get-Pvar pvar)) (term (Get-Pvar ,x))))) (term (pvar_2 ...))))]
+  [(Minimize-Names (pvar pvar_2 ...))
+   (pvar pvar_* ...)
+   (where (pvar_* ...) (Minimize-Names (pvar_2 ...)))
+   ]
+  [(Minimize-Names ())
+   ()]
+  )
+
+(define-metafunction L
+  [(Depth (pvar elip))
+   ,(+ 1 (term (Depth pvar)))]
+  [(Depth pvar)
+   0]
+  )
+
 (define-metafunction L 
-  ; Get-Name-Patterns
-  ;(lit-in-hole p_1 p_2)  ?
-  ;(lit-hide-hole p)      ?
   [(Get-Free-Name-Patterns (lit-in-hole p_1 p_2) (pvar_1 ...) (pvar_2 ...)) 
-   ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) 
-            (append (term (Get-Free-Name-Patterns p_2 (pvar_1 ...) ()))
-                    (term (pvar_2 ...))))]
+   (Minimize-Names ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) 
+                            (append (term (Get-Free-Name-Patterns p_2 (pvar_1 ...) ()))
+                                    (term (pvar_2 ...)))))]
   [(Get-Free-Name-Patterns (lit-hide-hole p_1) (pvar_1 ...) (pvar_2 ...))
-   ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) (term (pvar_2 ...)))]
+   (Minimize-Names ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) (term (pvar_2 ...))))]
   [(Get-Free-Name-Patterns (or p_1 p_2) (pvar_1 ...) (pvar_2 ...)) 
-   ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) 
-            (append (term (Get-Free-Name-Patterns p_2 (pvar_1 ...) ()))
-                    (term (pvar_2 ...))))]
+   (Minimize-Names ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) 
+                            (append (term (Get-Free-Name-Patterns p_2 (pvar_1 ...) ()))
+                                    (term (pvar_2 ...)))))]
   [(Get-Free-Name-Patterns (cons p_1 p_2) (pvar_1 ...) (pvar_2 ...)) 
-   ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) 
-            (append (term (Get-Free-Name-Patterns p_2 (pvar_1 ...) ()))
-                    (term (pvar_2 ...))))]
+   (Minimize-Names ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) 
+                            (append (term (Get-Free-Name-Patterns p_2 (pvar_1 ...) ()))
+                                    (term (pvar_2 ...)))))]
   [(Get-Free-Name-Patterns (lit-name id p) (pvar_1 ...) (pvar_2 ...))
-   ,(append (term (Get-Free-Name-Patterns p (pvar_1 ...) ())) (append (list (term id)) (term (pvar_2 ...))))
+   (Minimize-Names ,(append (term (Get-Free-Name-Patterns p (pvar_1 ...) ())) (append (list (term id)) (term (pvar_2 ...)))))
    (side-condition (andmap (λ (x) (not (eqv? (term id) x))) (term (pvar_1 ...))))]
   [(Get-Free-Name-Patterns (repeat p_1 p_2) (pvar_1 ...) (pvar_2 ...))
-   ,(append (map (λ (x) `(,x ...)) (remove-duplicates (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())))) 
-            (append (term (Get-Free-Name-Patterns p_2 (pvar_1 ...) ()))
-                    (term (pvar_2 ...))))]
+   (Minimize-Names ,(append (map (λ (x) `(,x ...)) (remove-duplicates (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ()))))
+                            (append (term (Get-Free-Name-Patterns p_2 (pvar_1 ...) ()))
+                                    (term (pvar_2 ...)))))]
   [(Get-Free-Name-Patterns (lit-side-condition p_1 any) (pvar_1 ...) (pvar_2 ...))
-   ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) (term (pvar_2 ...)))]
+   (Minimize-Names ,(append (term (Get-Free-Name-Patterns p_1 (pvar_1 ...) ())) (term (pvar_2 ...))))]
   [(Get-Free-Name-Patterns any (pvar_1 ...) (pvar_2 ...)) ()])
-
-(term (Get-Free-Name-Patterns 1 () ()))
-(term (Get-Free-Name-Patterns (lit-name a wc) () ()))
-(term (Get-Free-Name-Patterns (lit-name a wc) (a) ()))
-(term (Get-Free-Name-Patterns (lit-name a wc) () (b)))
-(term (Get-Free-Name-Patterns (lit-name a wc) (a) (b)))
-(term (Get-Free-Name-Patterns (cons (lit-name a lit-natural) (cons (lit-name b wc) '())) () ()))
-(term (Get-Free-Name-Patterns (or (lit-name x lit-natural) (lit-name y wc)) () ()))
-(term (Get-Free-Name-Patterns (or (lit-name x wc) (lit-name z (cons (lit-name y wc) '()))) (y) ()))
-
-(define-metafunction L 
-  ; Get-Name-Patterns
-  ;(lit-in-hole p_1 p_2)  ?
-  ;(lit-hide-hole p)      ?
-  [(Get-Bound-Name-Patterns (or p_1 p_2) (pvar_1 ...) (pvar_2 ...)) 
-   ,(append (term (Get-Bound-Name-Patterns p_1 (pvar_1 ...) ())) 
-            (append (term (Get-Bound-Name-Patterns p_2 (pvar_1 ...) ()))
-                    (term (pvar_2 ...))))]
-  [(Get-Bound-Name-Patterns (cons p_1 p_2) (pvar_1 ...) (pvar_2 ...)) 
-   ,(append (term (Get-Bound-Name-Patterns p_1 (pvar_1 ...) ())) 
-            (append (term (Get-Bound-Name-Patterns p_2 (pvar_1 ...) ()))
-                    (term (pvar_2 ...))))]
-  [(Get-Bound-Name-Patterns (lit-name id p) (pvar_1 ...) (pvar_2 ...))
-   ,(append (term (Get-Bound-Name-Patterns p (pvar_1 ...) ())) (append (list (term id)) (term (pvar_2 ...))))
-   (side-condition (ormap (λ (x) (eqv? (term id) x)) (term (pvar_1 ...))))]
-  [(Get-Bound-Name-Patterns (repeat p_1 p_2) (pvar_1 ...) (pvar_2 ...))
-   ,(append (term ((,@(term (Get-Bound-Name-Patterns p_1 (pvar_1 ...) ())) ,'...)))
-            (append (term (Get-Bound-Name-Patterns p_2 (pvar_1 ...) ()))
-                    (term (pvar_2 ...))))]
-  [(Get-Bound-Name-Patterns (lit-side-condition p_1 any) (pvar_1 ...) (pvar_2 ...))
-   ,(append (term (Get-Bound-Name-Patterns p_1 (pvar_1 ...) ())) (term (pvar_2 ...)))]
-  [(Get-Bound-Name-Patterns any (pvar_1 ...) (pvar_2 ...)) ()])
-
-(term (Get-Bound-Name-Patterns 1 () ()))
-(term (Get-Bound-Name-Patterns (lit-name a wc) () ()))
-(term (Get-Bound-Name-Patterns (lit-name a wc) (a) ()))
-(term (Get-Bound-Name-Patterns (lit-name a wc) () (b)))
-(term (Get-Bound-Name-Patterns (lit-name a wc) (a) (b)))
-(term (Get-Bound-Name-Patterns (cons (lit-name a lit-natural) (cons (lit-name b wc) '())) () ()))
-(term (Get-Bound-Name-Patterns (or (lit-name x lit-natural) (lit-name y wc)) () ()))
-(term (Get-Bound-Name-Patterns (or (lit-name x wc) (lit-name z (cons (lit-name y wc) '()))) (y) ()))
 
 (define-metafunction L 
   ((Build-Let-Empty natural () any)
@@ -1489,7 +1186,7 @@
   ((Build-Temp-Let 0 () () any)
    any)
   [(Build-Temp-Let 0 (pvar_1 ...) (any_2 ...) any)
-   (let ((pvar_1 any_2)
+   (let ((pvar_1 (term any_2))
          ...)
      any)]
   ((Build-Temp-Let natural any_1 any_2 any_3)
@@ -1502,22 +1199,6 @@
      any)])
 
 (define-metafunction L 
-  ((Restore-Temp () () any)
-   any)
-  [(Restore-Temp (pvar_1 ...) (any_2 ...) any)
-   (term-let ((pvar_1 any_2)
-              ...)
-             any)]
-  ((Restore-Temp 0 () () any)
-   any)
-  [(Restore-Temp 0 (pvar_1 ...) (any_2 ...) any)
-   (term-let ((pvar_1 any_2)
-              ...)
-             any)]
-  ((Restore-Temp natural any_1 any_2 any_3)
-   any_3))
-
-(define-metafunction L 
   [(Build-Temp-Cons (pvar_1 ...) (pvar_2 ...))
    ((cons pvar_1 pvar_2) ...)])
 
@@ -1525,21 +1206,13 @@
   [(Build-Cdr (pvar_1 ...))
    ((cdr pvar_1) ...)])
 
-(term (Build-Let-Empty 
-       0
-       (Get-Free-Name-Patterns (or (lit-name x wc) (lit-name z (cons (lit-name y wc) '()))) (y) ())
-       'body-goes-here))
-
+; first pass hole detection assumes non-terminals contain no holes
 (define-metafunction L
-  ;
   ((detect-hole natural lit-hole)
    ,(+ 1 (term natural)))
-  
   ; assume we have table of non-terminals
   ((detect-hole natural (nt id))
    0)
-  ; ,(+ (term natural) (nt-struct-number-of-holes (hash-ref nt-table (term 'id)))))
-  
   ((detect-hole natural (lit-in-hole p_1 p_2))
    ,(+ (term natural) (term (detect-hole 0 p_2))))
   ((detect-hole natural (lit-hide-hole p_1))
@@ -1555,6 +1228,7 @@
   ((detect-hole natural any)
    natural))
 
+; detect holes using a table with a hole count for each non-terminal
 (define-metafunction L
   ((detect-hole2 natural lit-hole)
    ,(+ 1 (term natural)))
@@ -1575,13 +1249,6 @@
   ((detect-hole2 natural any)
    natural)
   )
-
-(term (detect-hole 0 lit-hole))
-(term (detect-hole 0 (or lit-hole lit-hole)))
-(term (detect-hole 0 (cons lit-hole (cons (lit-hide-hole lit-hole) '()))))
-(term (detect-hole 0 (repeat lit-number (cons lit-hole '()))))
-(term (detect-hole 0 (cons lit-hole (cons (lit-in-hole lit-hole lit-hole) '()))))
-(term (detect-hole 0 (cons 1 '())))
 
 ; op is either lit-in-hole or lit-hide-hole
 ; replace is either p_2 from (lit-in-hole p_1 p_2) or 'lit-hole
@@ -1619,13 +1286,12 @@
    (or (move-hole-op-inward op replace p_1) (move-hole-op-inward op replace p_2)))
   ((move-hole-op-inward op replace (cons p_1 p_2))
    (cons (move-hole-op-inward op replace p_1) (move-hole-op-inward op replace p_2)))
+  ((move-hole-op-inward op replace (repeat p_1 p_2))
+   (repeat p_1 (move-hole-op-inward op replace p_2))
+   (side-condition (eqv? 1 (term (detect-hole2 0 p_2)))))
   ((move-hole-op-inward op replace any)
    any)
   )
-
-(term (move-hole-op-inward lit-in-hole (cons 1 '()) (cons 1 (cons 2 (cons lit-hole '())))))
-#;(term (move-hole-op-inward lit-in-hole (cons 1 '()) (cons 1 (cons (nt A) '()))))
-#;(term (move-hole-op-inward lit-in-hole (cons 1 '()) (cons 1 (cons (nt A) (cons 4 (cons 5 '()))))))
 
 (define-metafunction L
   ((push-name-downward (lit-name pvar (cons p_1 p_2)) (eqs_1 ... (pvar bool eq_1 ...) eqs_2 ...) pvar_fresh1 pvar_fresh2)
@@ -1636,49 +1302,24 @@
    ((lit-name pvar_2 p_1) (eqs_1 ... (pvar bool (= pvar_2) eq_1 ...) eqs_2 ...)))
   ((push-name-downward (lit-name pvar (lit-in-hole p_1 p_2)) (eqs_1 ... (pvar bool eq_1 ...) eqs_2 ...) pvar_fresh1 pvar_fresh2)
    ((lit-in-hole (lit-name pvar_fresh1 p_1) (lit-name pvar_fresh2 p_2)) (eqs_1 ... (pvar bool (plug pvar_fresh1 pvar_fresh2) eq_1 ...) (pvar_fresh1 #f) (pvar_fresh2 #f) eqs_2 ...)))
+  ((push-name-downward (lit-name pvar (repeat p_1 p_2))  (eqs_1 ... (pvar bool eq_1 ...) eqs_2 ...) pvar_fresh1 pvar_fresh2)
+   ((repeat (lit-name pvar_fresh1 p_1) (lit-name pvar_fresh2 p_2)) (eqs_1 ... (pvar bool (cons pvar_fresh1 pvar_fresh2) eq_1 ...) (pvar_fresh1 #f) (pvar_fresh2 #f) eqs_2 ...)))
   ((push-name-downward any_1 any_2 any_3 any_4)
    (any_1 any_2))
   )
 
 ; Replace (eqv? c x) with (another-function x) where appropriate.
 (define-metafunction L
-  ;Func-Replace : (eqv? c x) -> 
-  [(Func-Replace (eqv? number x)) (eqv? number x)]
-  [(Func-Replace (eqv? 'variable x)) (eqv? 'variable x)]
-  [(Func-Replace (eqv? '() x)) (eqv? '() x)]
-  ; these are probably wrong now! example rows: (5 -> 1) (lit-number -> 2) will return (set 1)!
   [(Func-Replace (eqv? lit-number x)) (number? x)]
   [(Func-Replace (eqv? lit-natural x)) (natural? x)]
-  [(Func-Replace (eqv? lit-integer x)) (integer? x)]
+  [(Func-Replace (eqv? lit-integer x)) (exact-integer? x)]
   [(Func-Replace (eqv? lit-real x)) (real? x)]
   [(Func-Replace (eqv? lit-string x)) (string? x)]
   [(Func-Replace (eqv? lit-variable x)) (symbol? x)]
-  ; temporarily added
-  [(Func-Replace (eqv? cp x)) #t]
-  
-  ; These are functions which need to be written
   [(Func-Replace (eqv? (lit-variable-except variable ...) x)) (and (symbol? x) (andmap (λ (y) (not (equal? y x))) (quote (variable ...))))]
-  [(Func-Replace (eqv? (lit-variable-prefix variable) x)) (variable-prefix? variable x)]
-  ;[(Func-Replace (eqv? lit-variable-not-otherwise-mentioned x)) (variable-not-otherwise-mentioned? x)]
-  ;[(Func-Replace (eqv? context-match x)) (or (context-match) (eqv? x 'lit-hole))]
-  ;[(Func-Replace (eqv? (rep-match (pvar ...)) x)) (and (not (set-empty? (match-repeat x pvar ...))) (print  (match-repeat x pvar ...)))]
-  
-  ; Function given to us by define-language
-  [(Func-Replace (eqv? (nt id) x)) (set-member? (,(string->symbol (format "~s~s" (term id) '-list)) x) 'MATCHED)]
-  )
-
-
-(define-metafunction L
-  [(clean-up (∪ any ∅)) any]
-  [(clean-up (∪ any (matrix (any_1 ...) () (any_2 ...) (any_3 ...) natural bool))) any]
-  [(clean-up any) any]
-  )
-
-(define-metafunction L
-  [(add-nt-to-result x ((nt id) p ... -> r))
-   ((nt id) p ... -> (set-union (,(string->symbol (format "~s~s" (term id) '-list)) x) r))]
-  [(add-nt-to-result x (p_1 p_2 ... -> r))
-   (p_1 p_2 ... -> r)]
+  [(Func-Replace (eqv? (lit-variable-prefix variable) x)) (variable-prefix? 'variable x)]
+  [(Func-Replace (eqv? string x)) (equal? string x)]
+  [(Func-Replace (eqv? any x)) (eqv? any x)]
   )
 
 (define-metafunction L
@@ -1731,7 +1372,7 @@
                         bool)
                 x_3
                 x_4))
-   (clean-up (∪ (cond
+   (begin (cond
                   [(cons? x_1)
                    (let ((x_3 (car x_1))
                          (x_4 (cdr x_1)))
@@ -1772,7 +1413,7 @@
                         (pvar_3 ...)
                         natural
                         bool)
-                ))
+                )
    ]
   [(Build-Cond ((cw_1 ...) 
                 (matrix (x_1 x_2 ...)
@@ -1787,7 +1428,7 @@
                         bool)
                 x_3
                 x_4))
-   (clean-up (∪ (cond 
+   (begin (cond 
                   [(Func-Replace (eqv? cw_1 x_1))
                    (matrix (x_2 ...)
                            (S cw_1 (((cw_2 p_2 ... -> r_1) eqs_1 ...)
@@ -1813,7 +1454,7 @@
                         (pvar_3 ...)
                         natural
                         bool)
-                ))
+                )
    ]
   )
 
@@ -1915,252 +1556,14 @@
   )
 
 (define-metafunction L
-  def-no-overlap? : p_1 p_2 -> bool
-  ((def-no-overlap? p_1 p_1) #f)
-  ((def-no-overlap? p_1 wc) #f)
-  ((def-no-overlap? wc p_2) #f)
-  ((def-no-overlap? (cons p_1 p_2) (cons p_3 p_4))
-   ,(or (term (def-no-overlap? p_1 p_3))
-        (term (def-no-overlap? p_2 p_4))))
-  )
-
-(define no-context (λ (x) (cond ((eqv? 'lit-hole x) #t)
-                                (else #f))))
-
-(define in-context (λ (x) #t))
-
-(define context-match (make-parameter no-context))
-
-(define rev (λ (x) 
-              (if (cons? x)
-                  (reverse x)
-                  x)))
-
-(define-metafunction L
-  default-rows : (row ...) -> (row ...)
-  ((default-rows ((wc p_3 ... -> r) row ...))
-   ((wc p_3 ... -> r) row_* ...)  
-   (where (row_* ...)
-          (default-rows (row ...))))
-  ((default-rows (((nt id) p_3 ... -> r) row ...))
-   (((nt id) p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (default-rows (row ...))))
-  ((default-rows ((lit-hole p_3 ... -> r) row ...))
-   ((lit-hole p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (default-rows (row ...))))
-  ((default-rows (((repeat p_1 p_2) p_3 ... -> r) row ...))
-   (((repeat p_1 p_2) p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (default-rows (row ...))))
-  ((default-rows ((p_1 p_3 ... -> r) row ...))
-   (default-rows (row ...)))
-  ((default-rows ()) ())
-  )
-
-(define-metafunction L
-  Build-Default : m -> e
-  ((Build-Default (matrix (x_1 x_2 ...)
-                          ((p_1 p_2 ... -> r_1)
-                           ...)
-                          (pvar ...)
-                          (pvar_2 ...)
-                          natural
-                          bool))
-   (∪
-    m_default
-    (cond 
-      ((number? x_1)
-       m_number)
-      ((cons? x_1)
-       m_cons)
-      ((symbol? x_1)
-       m_variable)
-      ((string? x_1)
-       m_string)
-      (else ∅))
-    )
-   (where m_default
-          (matrix (x_1 x_2 ...)
-                  (default-rows
-                    ((p_1 p_2 ... -> r_1)
-                     ...)
-                    )
-                  (pvar ...)
-                  (pvar_2 ...)
-                  natural
-                  bool))
-   (where m_number
-          (matrix (x_1 x_2 ...)
-                  (number-rows
-                   ((p_1 p_2 ... -> r_1)
-                    ...)
-                   )
-                  (pvar ...)
-                  (pvar_2 ...)
-                  natural
-                  bool))
-   (where m_cons
-          (matrix ((car x_1) (cdr x_1) x_2 ...)
-                  (cons-rows
-                   ((p_1 p_2 ... -> r_1)
-                    ...)
-                   )
-                  (pvar ...)
-                  (pvar_2 ...)
-                  natural
-                  bool))
-   (where m_variable
-          (matrix (x_1 x_2 ...)
-                  (variable-rows
-                   ((p_1 p_2 ... -> r_1)
-                    ...)
-                   )
-                  (pvar ...)
-                  (pvar_2 ...)
-                  natural
-                  bool))
-   (where m_string
-          (matrix (x_1 x_2 ...)
-                  (string-rows
-                   ((p_1 p_2 ... -> r_1)
-                    ...)
-                   )
-                  (pvar ...)
-                  (pvar_2 ...)
-                  natural
-                  bool))
-   ))
-
-(define-metafunction L
-  number-rows : (row ...) -> (row ...)
-  ((number-rows ((lit-number p_3 ... -> r) row ...))
-   ((wc p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (number-rows (row ...))))
-  ((number-rows ((lit-real p_3 ... -> r) row ...))
-   ((lit-real p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (number-rows (row ...))))
-  ((number-rows ((lit-integer p_3 ... -> r) row ...))
-   ((lit-integer p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (number-rows (row ...))))
-  ((number-rows ((lit-natural p_3 ... -> r) row ...))
-   ((lit-natural p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (number-rows (row ...))))
-  ((number-rows ((number p_3 ... -> r) row ...))
-   ((number p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (number-rows (row ...))))
-  ((number-rows ((p_1 p_3 ... -> r) row ...))
-   (number-rows (row ...)))
-  ((number-rows ()) ())
-  )
-
-(define-metafunction L
-  cons-rows : (row ...) -> (row ...)
-  ((cons-rows (((cons p_1 p_2) p_3 ... -> r) row ...))
-   ((p_1 p_2 p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (cons-rows (row ...))))
-  ((cons-rows ((p_1 p_3 ... -> r) row ...))
-   (cons-rows (row ...)))
-  ((cons-rows ()) ())
-  )
-
-(define-metafunction L
-  variable-rows : (row ...) -> (row ...)
-  ((variable-rows ((lit-variable p_3 ... -> r) row ...))
-   ((wc p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (variable-rows (row ...))))
-  ((variable-rows (((lit-variable-except id ...) p_3 ... -> r) row ...))
-   (((lit-variable-except id ...) p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (variable-rows (row ...))))
-  ((variable-rows (((lit-variable-prefix id) p_3 ... -> r) row ...))
-   (((lit-variable-prefix id) p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (variable-rows (row ...))))
-  ((variable-rows (('variable p_3 ... -> r) row ...))
-   (('variable p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (variable-rows (row ...))))
-  ((variable-rows ((p_1 p_3 ... -> r) row ...))
-   (variable-rows (row ...)))
-  ((variable-rows ()) ())
-  )
-
-(define-metafunction L
-  string-rows : (row ...) -> (row ...)
-  ((string-rows ((lit-string p_3 ... -> r) row ...))
-   ((wc p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (string-rows (row ...))))
-  ((string-rows ((string p_3 ... -> r) row ...))
-   ((string p_3 ... -> r) row_* ...) 
-   (where (row_* ...)
-          (string-rows (row ...))))
-  ((string-rows ((p_1 p_3 ... -> r) row ...))
-   (string-rows (row ...)))
-  ((string-rows ()) ())
-  )
-
-(define-metafunction L
-  ;specialize : m -> (e ...)
-  ((specialize
-    (matrix (x_1 x_2 ...)
-            ((c_1 p_2 ... -> r_1)
-             (p_3 p_4 ... -> r_2)
-             ...)
-            (pvar ...)
-            (pvar_2 ...)
-            natural
-            bool))
-   (((Func-Replace (eqv? c_1 x_1))
-     (matrix (x_2 ...)
-             (drop-first-p 
-              (same-starting-pattern
-               c_1
-               ((c_1 p_2 ... -> r_1)
-                (p_3 p_4 ... -> r_2)
-                ...)))
-             (pvar ...)
-             (pvar_2 ...)
-             natural
-             bool))
-    any_* ...)
-   (where (any_* ...) (specialize 
-                       (matrix (x_1 x_2 ...)
-                               (diff-starting-pattern
-                                c_1
-                                ((c_1 p_2 ... -> r_1)
-                                 (p_3 p_4 ... -> r_2)
-                                 ...))
-                               (pvar ...)
-                               (pvar_2 ...)
-                               natural
-                               bool)))
-   )
-  ((specialize (matrix (x_1 x_2 ...)
-                       ()
-                       (pvar ...)
-                       (pvar_2 ...)
-                       natural
-                       bool))
+  ((Get-Temp-Name pvar_1 ((pvar_1 pvar_2) pvar_3 ...))
+   pvar_2)
+  ((Get-Temp-Name pvar_1 ((pvar_1 pvar_2) pvar_3 ...))
+   (Get-Temp-Name pvar (pvar_3 ...))
+   (side-condition (not (equal? (term pvar) (term pvar_1)))))
+  ((Get-Temp-Name pvar_1 (pvar_3 ...))
    ())
   )
-
-
-(define-metafunction L
-  ((fix-cond (any ...))
-   (cond 
-     any 
-     ... 
-     (else ∅))))
 
 (define-metafunction L
   ((Build-Term-Let ((pvar #f eq_1 ... lit-hole eq_2 ...) eqs_2 ...) r)
@@ -2180,7 +1583,7 @@
    (side-condition (andmap not-an-id? (term (eq_1 ...)))))
   
   ((Build-Term-Let ((pvar #f eq ... (= pvar_3) eq_2 ...) eqs_2 ... (pvar_3 #t eq_3 ...) eqs_3 ...) r)
-   (term-let ((pvar pvar_3))
+   (term-let ((pvar (term pvar_3)))
              (Build-Term-Let (eqs_2 ... (pvar_3 #t eq_3 ...) eqs_3 ... (pvar #t eq ... eq_2 ...)) r))
    (side-condition (andmap (λ (x) (not (redex-match L (= pvar_11) x))) (term (eq ...)))))
   
@@ -2191,7 +1594,7 @@
    (side-condition (andmap (λ (x) (not (redex-match L (= pvar_11) x))) (term (eq ...)))))
   
   ((Build-Term-Let ((pvar bool_1 (= pvar_3) eq_2 ...) eqs_2 ... (pvar_3 bool_2 eq_3 ...) eqs_3 ...) r)
-   (term (Build-Term-Let (eqs_2 ... (pvar_3 bool_2 eq_3 ...) eqs_3 ... (pvar bool_1 eq_2 ... (= pvar_3))) r))
+   (Build-Term-Let (eqs_2 ... (pvar_3 bool_2 eq_3 ...) eqs_3 ... (pvar bool_1 eq_2 ... (= pvar_3))) r)
    (side-condition (or (and (term bool_1)
                             (not (term bool_2)))
                        (and (not (term bool_1))
@@ -2345,449 +1748,12 @@
      r)
   )
 
-
-(define-metafunction L
-  ((simple-swap (matrix (x_1 x_2 ... x_3 x_4 ...)
-                        (
-                         ((p_1 p_2 ... p_3 p_4 ... -> r_1) eqs_1 ...)
-                         ...)
-                        (pvar ...)
-                        (pvar_3 ...)
-                        natural
-                        bool))
-   (matrix (x_3 x_2 ... x_1 x_4 ...)
-           (
-            ((p_3 p_2 ... p_1 p_4 ... -> r_1) eqs_1 ...)
-            ...)
-           (pvar ...)
-           (pvar_3 ...)
-           natural
-           bool)
-   (side-condition
-    (apply = 
-           (append (list (length (term (x_2 ...)))
-                         (length (term (x_2 ...))))
-                   (map length (term ((p_2 ...) ...))))))
-   (side-condition
-    (apply = 
-           (append (list (length (term (x_4 ...)))
-                         (length (term (x_4 ...))))
-                   (map length (term ((p_4 ...) ...))))))
-   (side-condition (> (length (remove-duplicates (term (simplify (p_1 ...))))) (length (remove-duplicates (term (simplify (p_3 ...))))))))
-  ((simple-swap any) any)
-  )
-
 (define-namespace-anchor here)
 
 (define/contract (compile m)
   (-> (redex-match L m) (-> any/c any/c))
-  (eval `(λ ,(second m) 
+  (eval `(λ (a) 
            (let ([results '()])
              ,(car (apply-reduction-relation* red m))
              results))
         (namespace-anchor->namespace here)))
-
-; TEST CASES
-
-(define ∅ (set))
-(define singleton set)
-(define ∪ set-union)
-
-(test-->
- red
- (term
-  (matrix (a b c)
-          ()
-          ()
-          ()
-          0
-          #f))
- (term ∅))
-
-#;(test-->
-   red
-   (term
-    (matrix ()
-            (('a 'b 1 -> 1))
-            ()
-            ()
-            0
-            #f))
-   (term ∅))
-
-(test-->
- red
- (term 
-  (matrix () 
-          (((-> 1))) 
-          ()
-          ()
-          0
-          #f))
- (term (∪ (singleton 1)
-          (matrix () 
-                  ()
-                  ()
-                  ()
-                  0
-                  #f))))
-
-(test-->
- red
- (term (matrix (a) 
-               (((wc -> 1))) 
-               ()
-               ()
-               0
-               #f))
- (term (∪ (singleton 1)
-          (matrix (a) 
-                  ()
-                  ()
-                  ()
-                  0
-                  #f))))
-
-(test-->
- red
- (term (matrix (a b) 
-               (((wc wc -> 1))
-                ((wc 12 -> 2))) 
-               ()
-               ()
-               0
-               #f))
- (term (∪ (singleton 1)
-          (matrix (a b) 
-                  (((wc 12 -> 2)))
-                  ()
-                  ()
-                  0
-                  #f))))
-
-(test-->
- red
- (term (matrix (x y z) 
-               (((wc wc wc -> 1))
-                ((wc wc wc -> 2))
-                ((wc wc wc -> 3)))
-               ()
-               ()
-               0
-               #f))
- #;(term (matrix (y x z) 
-                 ((wc wc wc -> 1)
-                  (wc wc wc -> 2)
-                  (wc wc wc -> 3))
-                 ()
-                 ))
- #;(term (matrix (z y x) 
-                 ((wc wc wc -> 1)
-                  (wc wc wc -> 2)
-                  (wc wc wc -> 3))
-                 ()))
- (term (∪ (singleton 1)
-          (matrix (x y z) 
-                  (((wc wc wc -> 2))
-                   ((wc wc wc -> 3)))
-                  ()
-                  ()
-                  0
-                  #f))))
-
-(test-->
- red
- (term (matrix (a b c) 
-               (((wc 'y 'z -> 1))
-                ((wc 'q 'r -> 2))
-                ((wc 'b 'c -> 3)))
-               ()
-               ()
-               0
-               #f))
- #;(term (matrix (b a c) 
-                 (('y wc 'z -> 1)
-                  ('q wc 'r -> 2)
-                  ('b wc 'c -> 3))
-                 ()
-                 ))
- (term (matrix (b c) 
-               ((('y 'z -> 1))
-                (('q 'r -> 2))
-                (('b 'c -> 3)))
-               ()
-               ()
-               0
-               #f)))
-
-(test-->
- red
- (term 
-  (matrix (ee a b)
-          ((('k 'a 'b -> 1))
-           (((or 'ww 'ee) 'j 'k -> 2))
-           (('d 'c 'e -> 3)))
-          ()
-          ()
-          0
-          #f))
- (term 
-  (matrix (ee a b)
-          ((('k 'a 'b -> 1))
-           (('ww 'j 'k -> 2))
-           (('ee 'j 'k -> 2))
-           (('d 'c 'e -> 3)))
-          ()
-          ()
-          0
-          #f)))
-
-#;(test-->
-   red
-   (term (matrix (a b)
-                 ((px 1 2 -> 1)
-                  (wc 3 4 -> 2))
-                 ()))
-   (term (∪ (let 
-                ((px a)) 
-              (matrix (b) 
-                      ((1 2 -> 1)) 
-                      (px))) 
-            (matrix (a b) 
-                    ((wc 3 4 -> 2)) 
-                    ()))))
-
-(test-->
- red
- (term (matrix (a b c)
-               ((((lit-name px wc) 1 2 -> 1) (px #f))
-                ((wc 3 4 -> 2)))
-               ()
-               ()
-               0
-               #f))
- (term (matrix (a b c)
-               (((wc 1 2 -> 1) (px #f a))
-                ((wc 3 4 -> 2)))
-               ()
-               ()
-               0
-               #f)))
-
-(test-->
- red
- (term (matrix (a b c)
-               ((((lit-name px lit-number) 1 2 -> 1) (px #f))
-                (((lit-name py lit-variable) 3 4 -> 2) (py #f)))
-               ()
-               ()
-               0
-               #f))
- (term (matrix (a b c)
-               (((lit-number 1 2 -> 1) (px #f a))
-                (((lit-name py lit-variable) 3 4 -> 2) (py #f)))
-               ()
-               ()
-               0
-               #f)))
-
-#;(test-->
-   red
-   (term (matrix (a b c)
-                 (((lit-name px wc) 1 2 -> 1)
-                  ((lit-name py wc) 3 4 -> 2))
-                 (px)
-                 ()
-                 0
-                 #f))
-   (term (∪ (cond ((equal? px a) 
-                   (matrix (a b c) 
-                           ((wc 1 2 -> 1)) 
-                           (px)
-                           ()
-                           0
-                           #f)) 
-                  (else ∅)) 
-            (matrix (a b c) 
-                    (((lit-name py wc) 3 4 -> 2)) 
-                    (px)
-                    ()
-                    0
-                    #f))))
-
-(test-->
- red
- (term (matrix (x y z)
-               ((('x 'y 'z -> 1))
-                ((1 2 'h -> 2)))
-               ()
-               ()
-               0
-               #f))
- (term (∪ (cond ((eqv? 'x x) 
-                 (matrix (y z) 
-                         ((('y 'z -> 1))) 
-                         ()
-                         ()
-                         0
-                         #f))
-                ((eqv? 1 x) 
-                 (matrix (y z) 
-                         (((2 'h -> 2)))
-                         ()
-                         ()
-                         0
-                         #f))
-                (else ∅))
-          (matrix (y z) 
-                  () 
-                  ()
-                  ()
-                  0
-                  #f))))
-
-(test-->
- red
- (term (matrix (a b c)
-               ((((cons 'x (cons 'y '())) 'y 'z -> 1))
-                ((1 2 'h -> 2))
-                ((wc 9 'g -> 3)))
-               ()
-               ()
-               0
-               #f))
- (term (∪ (cond 
-            ((cons? a) 
-             (matrix ((car a) (cdr a) b c) 
-                     ((('x (cons 'y '()) 'y 'z -> 1)))
-                     ()
-                     ()
-                     0
-                     #f)) 
-            ((eqv? 1 a) 
-             (matrix (b c) 
-                     (((2 'h -> 2))) 
-                     ()
-                     ()
-                     0
-                     #f))
-            (else ∅)) 
-          (matrix (b c) 
-                  (((9 'g -> 3))) 
-                  ()
-                  ()
-                  0
-                  #f))))
-
-; Contexts
-(test-->
- red
- (term 
-  (∪ (matrix () 
-             (((-> 1))) 
-             ()
-             ()
-             0
-             #f)))
- (term (∪
-        (∪ (singleton 1)
-           (matrix () 
-                   ()
-                   ()
-                   ()
-                   0
-                   #f)))))
-
-(test-->
- red
- (term 
-  (let ((px 1)) (matrix () 
-                        (((-> 1))) 
-                        ()
-                        ()
-                        0
-                        #f)))
- (term (let ((px 1))
-         (∪ (singleton 1)
-            (matrix () 
-                    ()
-                    ()
-                    ()
-                    0
-                    #f)))))
-
-(test-->
- red
- (term 
-  (cond [(cons? a) (matrix () 
-                           (((-> 1))) 
-                           ()
-                           ()
-                           0
-                           #f)]))
- (term 
-  (cond [(cons? a) 
-         (∪ (singleton 1)
-            (matrix () 
-                    ()
-                    ()
-                    ()
-                    0
-                    #f))])))
-
-(test-->
- red
- (term 
-  (cond [(cons? a) (matrix () 
-                           (((-> 1))) 
-                           ()
-                           ()
-                           0
-                           #f)]))
- (term 
-  (cond [(cons? a) 
-         (∪ (singleton 1)
-            (matrix () 
-                    ()
-                    ()
-                    ()
-                    0
-                    #f))])))
-
-(test-->
- red
- (term (cond [(cons? a)
-              (singleton 1)]
-             [(eqv? 1 a)
-              (matrix () 
-                      (((-> 2))) 
-                      ()
-                      ()
-                      0
-                      #f)]
-             [(eqv? 2 b)
-              (matrix () 
-                      (((-> 3))) 
-                      ()
-                      ()
-                      0
-                      #f)]))
- (term (cond [(cons? a)
-              (singleton 1)]
-             [(eqv? 1 a)
-              (∪ (singleton 2)
-                 (matrix () 
-                         ()
-                         ()
-                         ()
-                         0
-                         #f))]
-             [(eqv? 2 b)
-              (matrix () 
-                      (((-> 3))) 
-                      ()
-                      ()
-                      0
-                      #f)])))                
-
-(test-results)

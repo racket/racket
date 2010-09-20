@@ -1,172 +1,39 @@
 #lang racket
-(require redex)
+(require (except-in redex make-bind plug))
 (require "match.rkt")
 (require racket/set)
 (require profile)
+(require (only-in "../../private/matcher.rkt" 
+                  make-bindings
+                  make-bind
+                  make-mtch
+                  build-flat-context
+                  the-hole
+                  )
+         (lib "list.ss"))
+
+(define plug (λ (x y)
+               (cond 
+                 ((cons? x)
+                  (cons (plug (car x) y) (plug (cdr x) y)))
+                 ((or (equal? x the-hole) (equal? x (term hole)))
+                  y)
+                 (else x))))
 
 (provide test-red-rel
-         test-non-term)
+         test-non-term
+         test-redex-match)
 
+; holds symbols for language
 (define lit-table (make-hash))
+
+; holds or pattern versions of the input
 (define or-table (make-hash))
+
+; holds compiled code 
 (define nt-table (make-hash))
 
-(define set-from-list
-  (λ (lst)
-    (apply set lst)))
-
 (define-struct nt-struct (match-bool match-set))
-
-#;(define lang '(define-language T
-                (n (number_1 ... number_1 ...))
-                (m ((number_1 number_1) ...))
-                (o ((number_1 ... number_1 ...) ...))
-                (q ((number_1 ... number_1 ...) ... (number_1 ... number_1 ...) ...))
-                ))
-
-#;(define lang '(define-language T
-                (e (e e ...) (if0 e e e) x v)
-                (v (λ (x ...) e) number * +)
-                (E (v ... E e ...) (if0 E e e) hole)
-                (x (variable-except if0 λ * +)))
-  )
-
-#;(define lang-rr
-    '(reduction-relation T
-                         (--> (in-hole C (and false B))
-                              (in-hole C false)
-                              )
-                         (--> (in-hole C (and true B))
-                              (in-hole C B)
-                              )
-                         (--> (in-hole C (or false B))
-                              (in-hole C B))
-                         (--> (in-hole C (or true B))
-                              (in-hole C true))
-                         ))
-
-#;(define-metafunction λv
-    subst-vars : ((x any) ... any) -> any
-    [(subst-vars ((x_1 any_1) x_1)) any_1]
-    [(subst-vars ((x_1 any_1) (any_2 ...)))
-     ((subst-vars ((x_1 any_1) any_2)) ...)]
-    [(subst-vars (side-condition
-                  ((x_1 any_1) any_2)
-                  (not (eq? (term x_1) (term any_2)))))
-     any_2]
-    [(subst-vars ((x_1 any_1) (x_2 any_2) ... any_3))
-     (subst-vars ((x_1 any_1) (subst-vars ((x_2 any_2) ... any_3))))]
-    [(subst-vars (any)) any])
-
-(define lang-rr
-  '(reduction-relation 
-    λv
-    (--> ((x_1 any_1) x_1) 
-         any_1)
-    (--> ((x_1 any_1) (any_2 ...))
-         ,(map subst-vars (term (((x_1 any_1) any_2) ...))) )
-    (--> (side-condition
-          ((x_1 any_1) any_2)
-          (and (not (list? any_2)) 
-               (not (eq? (term x_1) (term any_2)))))
-         any_2)
-    (--> ((x_1 any_1) (x_2 any_2) (x_3 any_3) ... any_4)
-         ,(subst-vars (term ((x_1 any_1) ,(subst-vars (term ((x_2 any_2) (x_3 any_3) ... any_4)))))))
-    (--> (any)
-         any)
-    )
-  )
-
-
-#;(define-metafunction λv 
-    subst : (x any any) -> any
-    ;; 1. x_1 bound, so don't continue in λ body  
-    [(subst (x_1 any_1 (λ (x_2 ... x_1 x_3 ...) any_2)))
-     (λ (x_2 ... x_1 x_3 ...) any_2)]
-    ;; 2. general purpose capture avoiding case  
-    [(subst (side-condition
-             (x_1 any_1 (λ (x_2 ...) any_2))
-             (not (memq (term x_1) (term (x_2 ...))))))
-     ,(term-let ([(x_new ...) (variables-not-in (term (x_1 any_1 any_2)) (term (x_2 ...)))])
-                (term
-                 (λ (x_new ...) (subst (x_1 any_1 (subst-vars ((x_2 x_new) ... any_2)))))))]  
-    ;; 3. replace x_1 with e_1  
-    [(subst (x_1 any_1 x_1)) any_1]
-    ;; 4. x_1 and x_2 are different, so don't replace  
-    [(subst (side-condition
-             (x_1 any_1 x_2)
-             (not (eq? (term x_1) (term x_2))))) 
-     x_2]
-    ;; the last cases cover all other expressions  
-    [(subst (x any (e_1 e_2 ...)))
-     (,(subst (x any e_1)) (subst (x any e_2)) ...)]
-    
-    [(subst (x any (if0 e_1 e_2 e_3)))
-     (if0 (subst (x any e_1)) (subst (x any e_2)) (subst (x any e_3)))]
-    [(subst (x any number)) number]
-    [(subst (x any +)) +]
-    [(subst (x any *)) *])
-
-#;(define lang-rr 
-    '(reduction-relation
-      λv
-      (--> (x_1 any_1 (λ (x_2 ... x_1 x_3 ...) any_2))
-           (λ (x_2 ... x_1 x_3 ...) any_2))
-      (--> (side-condition
-            (x_1 any_1 (λ (x_2 ...) any_2))
-            (not (memq (term x_1) (term (x_2 ...)))))
-           ,(term-let ([(x_new ...) (variables-not-in (term (x_1 any_1 any_2)) (term (x_2 ...)))])
-                      (term
-                       (λ (x_new ...) ,(subst (term (x_1 any_1 ,(subst-vars (term ((x_2 x_new) ... any_2))))) )))) )
-      (--> (x_1 any_1 x_1) 
-           any_1)
-      (--> (side-condition
-            (x_1 any_1 x_2)
-            (not (eq? (term x_1) (term x_2))))
-           x_2)
-      (--> (x any (e_1 e_2 ...))
-           (,(subst (term (x any e_1))) ,@(map subst (term ((x any e_2) ...)))) )
-      (--> (x any (if0 e_1 e_2 e_3))
-           (if0 ,(subst (term (x any e_1))) ,(subst (term (x any e_2))) ,(subst (term (x any e_3)))))
-      (--> (x any number)
-           number)
-      (--> (x any +)
-           +)
-      (--> (x any *)
-           *)
-      )
-    )
-
-#;(define-metafunction λv 
-    subst-n : ((x any) ... any) -> any
-    [(subst-n ((x_1 any_1) (x_2 any_2) ... any_3))
-     (subst (x_1 any_1 (subst-n (x_2 any_2) ... any_3)))]
-    [(subst-n (any_3)) any_3])
-
-#;(define lang-rr '(reduction-relation 
-                    λv
-                    (--> ((x_1 any_1) (x_2 any_2) ... any_3)
-                         ,(subst (term (x_1 any_1 ,(subst-n (term ((x_2 any_2) ... any_3)))))))
-                    (--> (any_3)
-                         any_3)
-                    ) 
-    )
-
-#;(define lang-rr '(reduction-relation 
-                    λv
-                    (--> (in-hole E (* number_1 number_2)) 
-                         (in-hole E ,(* (term number_1) (term number_2))))
-                    (--> (in-hole E (+ number_1 number_2)) 
-                         (in-hole E ,(+ (term number_1) (term number_2))))
-                    (--> (in-hole E (if0 0 e_1 e_2))
-                         (in-hole E e_1))
-                    (--> (in-hole E (if0 (side-condition number_1 (not (zero? (term number_1)))) e_1 e_2))
-                         (in-hole E e_2))
-                    (--> (in-hole E (side-condition ((λ (x ...) e) v ...)
-                                                    (= (length (term (x ...)))
-                                                       (length (term (v ...))))))
-                         (in-hole E ,(subst-n (term ((x v) ... e)))))) 
-    )
 
 (define (compile-define-language-nts dl)
   (match dl
@@ -258,7 +125,6 @@
       [`(variable-prefix ,s) `(lit-variable-prefix ,s)]
       [`variable-not-otherwise-mentioned (if dl `(lit-variable-except ,@syms) `(lit-name variable-not-otherwise-mentioned (lit-variable-except ,@syms)))]
       [`hole 'lit-hole]
-      ; for now if it has an underscore assume it's a non-terminal
       [(? symbol? s)
        (if (memq s nts) 
            (if dl
@@ -286,8 +152,10 @@
          ,(loop p1)
          ,(loop p2))]
       [`(hide-hole ,p) `(lit-hide-hole ,(loop p))]
-      [`(side-condition ,p #;,g ,e)
+      [`(side-condition ,p ,e)
        `(lit-side-condition ,(loop p) ,e)]
+      [`(side-condition ,p ,e ,e2)
+       `(lit-side-condition ,(loop p) (,e ,e2))]
       [`(cross ,s) (void)]
       [e
        (if (pair? pat) 
@@ -328,7 +196,6 @@
         (hash-for-each
          or-table
          (λ (key val)
-           ;(printf "~a: ~a\n" key `(term (detect-hole2 0 ,val)))
            (hash-set! hole-table key (term (detect-hole2 0 ,val)))))
         (build-hole-table prev))))
   )
@@ -556,6 +423,59 @@
                           (remove-duplicates (term (Get-Free-Name-Patterns ,p () ()))))))]))))
        results)))
 
+(define (make-test-mtch a b c) (make-mtch a (build-flat-context b) c))
+
+; compile-redex-match: sexp[pattern] (listof symbol[non-terminals]) (listof symbols) -> sexp[def]
+(define (compile-redex-match pat nts syms)
+ ; prints for debuging
+ #;(printf "~a\n\n"
+           `(matrix (a) (,(let ((p (translate-redex pat nts syms #f)))
+                               `((,p -> 
+                                     (set! results (cons (make-test-mtch (make-bindings (list ,@(map (λ (x) `(make-bind ',(string->symbol (format "~s" (term (Get-Pvar ,x)))) (term ,x))) 
+                                                                                                     (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))) ))
+                                                                         a
+                                                                         'none)
+                                                         results))
+                                     ) 
+                                 ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))))
+                               )
+                            ) () () 0 #f)
+          )
+ #;(printf "~a\n\n" 
+          (apply-reduction-relation* 
+           red
+           `(matrix (a) (,(let ((p (translate-redex pat nts syms #f)))
+                               `((,p -> 
+                                     (set! results (cons (make-test-mtch (make-bindings (list ,@(map (λ (x) `(make-bind ',(string->symbol (format "~s" (term (Get-Pvar ,x)))) (term ,x))) 
+                                                                                                     (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))) ))
+                                                                         a
+                                                                         'none)
+                                                         results))
+                                     ) 
+                                 ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))))
+                               )
+                            ) () () 0 #f))
+          )
+  `(λ (a)
+     (let ([results '()])
+       ,(begin
+          (car
+           (apply-reduction-relation* 
+            red
+            `(matrix (a) (,(let ((p (translate-redex pat nts syms #f)))
+                             `((,p -> 
+                                   (set! results (cons (make-test-mtch (make-bindings (list ,@(map (λ (x) `(make-bind ',(string->symbol (format "~s" (term (Get-Pvar ,x)))) (term ,x))) 
+                                                                                                   (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))) ))
+                                                                       a
+                                                                       'none)
+                                                       results))
+                                   ) 
+                               ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))))
+                             )
+                          ) () () 0 #f)
+            )))
+       results)))
+
 ;; make-lang-namespace: sexp[lang] -> namespace
 (define (make-lang-namespace lang)
   (define lang-defs (compile-dl lang))
@@ -566,36 +486,43 @@
 ;; test-red-rel: sexp[lang] -> sexp[red-rel] (listof sexp[nts]) (listof symbol) -> sexp[term] -> sexp[term]
 (define (test-red-rel lang)
   (define namespace (make-lang-namespace lang))
-  (λ (rel nts syms)
+  (define nts (compile-define-language-nts lang))
+  (define syms (compile-define-language-lit lang nts))
+  (λ (rel)
     (eval (compile-reduction-relation rel nts syms) namespace)))
+
+;; test-red-match: sexp[lang] -> sexp[pat] (listof sexp[nts]) (listof symbol) -> sexp[term] -> sexp[term]
+(define (test-redex-match lang)
+  (define namespace (make-lang-namespace lang))
+  (define nts (compile-define-language-nts lang))
+  (define syms (compile-define-language-lit lang nts))
+  (λ (pat)
+    (eval (compile-redex-match pat nts syms) namespace)))
 
 ;; sexp[lang] -> sexp[non-terminal] -> sexp[term] -> boolean
 (define (test-non-term lang)
   (define namespace (make-lang-namespace lang))
   (λ (nt)
-    (eval `(λ (t) (,(string->symbol (format "~s-bool" nt)) t)) namespace)))
-
-(define-language T
-  (B true
-     false
-     (and B B))
-  (C (and C B)
-     hole))
-
-(define bool-red-test
-  (reduction-relation T
-                      (--> (in-hole C (and false B))
-                           (in-hole C false)
-                           )
-                      (--> (in-hole C (and true B))
-                           (in-hole C B)
-                           )))             
+    (eval `(λ (t) (,(string->symbol (format "~s-bool" nt)) t)) namespace)))        
 
 (caching-enabled? #f)
 
 (define ∅ #f)
 (define ∪ set-union)
 (define singleton set)
+
+(define natural?
+  (λ (x) (and 
+          (exact-integer? x) 
+          (not (negative? x)))))
+
+(define (variable-prefix? x y) 
+  (let* ([prefix-str (symbol->string x)]
+         [prefix-len (string-length prefix-str)])
+    (and (symbol? y)
+         (let ([str (symbol->string y)])
+           (and ((string-length str) . >= . prefix-len)
+                (string=? (substring str 0 prefix-len) prefix-str))))))
 
 (define no-context #f)
 
@@ -607,8 +534,3 @@
               (if (cons? x)
                   (reverse x)
                   x)))
-(define or-fun (λ (x ...) (or x ...)))
-
-(define sing-fun (λ (x) #t))
-
-(define the-hole (term hole))
