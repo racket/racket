@@ -54,8 +54,8 @@ in parallel. See also @guidesecref["effective-futures"].
  evaluation of the @racket[thunk] inside the given future, returning
  the values produced by @racket[thunk]. After @racket[touch] forces
  the evaluation of a @racket[thunk], the resulting values are retained
- by the future descriptor in place of @racket[thunk], and additional
- @racket[touch]es of the future descriptor return those values.
+ by the future in place of @racket[thunk], and additional
+ @racket[touch]es of the future return those values.
 
  Between a call to @racket[future] and @racket[touch] for a given
  future, the given @racket[thunk] may run speculatively in parallel to
@@ -68,7 +68,7 @@ in parallel. See also @guidesecref["effective-futures"].
 ]}
   
   
-@defproc[(current-future) any]{
+@defproc[(current-future) (or/c #f future?)]{
   Returns the descriptor for the future that is evaluating the current thunk.
   If not currently running inside a future thunk (or 
   futures are disabled), returns @racket[#f].
@@ -76,7 +76,7 @@ in parallel. See also @guidesecref["effective-futures"].
 
 
 @defproc[(future? [v any/c]) boolean?]{
-  Returns @racket[#t] if @racket[v] is a future-descriptor value,
+  Returns @racket[#t] if @racket[v] is a future value,
   @racket[#f] otherwise.
 }
 
