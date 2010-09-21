@@ -3612,13 +3612,18 @@ module browser threading seems wrong.
                  (parent language-specific-menu)
                  (callback
                   (λ (_1 _2) 
-                    (let ([ints (send (get-current-tab) get-ints)])
-                      (send ints reset-error-ranges))))
+                    (let* ([tab  (get-current-tab)]
+                           [ints (send tab get-ints)]
+                           [defs (send tab get-defs)])
+                      (send ints reset-error-ranges)
+                      (send defs clear-test-coverage))))
                  (help-string (string-constant clear-error-highlight-item-help-string))
                  (demand-callback
                   (λ (item)
-                    (let ([ints (send (get-current-tab) get-ints)])
-                      (send item enable (send ints get-error-ranges))))))
+                    (let* ([tab (get-current-tab)]
+                           [ints (send tab get-ints)])
+                      (send item enable (or (send ints get-error-ranges)
+                                            (send tab get-test-coverage-info-visible?)))))))
             (make-object separator-menu-item% language-specific-menu)
             (make-object menu:can-restore-menu-item%
               (string-constant create-executable-menu-item-label)
