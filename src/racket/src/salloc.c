@@ -526,6 +526,7 @@ Scheme_Object *scheme_make_external_cptr(GC_CAN_IGNORE void *cptr, Scheme_Object
 {
   Scheme_Object *o;
   o = scheme_make_cptr(NULL, typetag);
+  SCHEME_CPTR_FLAGS(o) |= 1;
   SCHEME_CPTR_VAL(o) = cptr;
   return o;
 }
@@ -547,6 +548,7 @@ Scheme_Object *scheme_make_offset_external_cptr(GC_CAN_IGNORE void *cptr, long o
 {
   Scheme_Object *o;
   o = scheme_make_offset_cptr(NULL, offset, typetag);
+  SCHEME_CPTR_FLAGS(o) |= 1;
   SCHEME_CPTR_VAL(o) = cptr;
   return o;
 }
