@@ -48,7 +48,7 @@
 	   empty true false
 
 	   signature : -> mixed one-of predicate combined
-	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list
+	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list Any
 	   Property
 	   check-property for-all ==> expect expect-within expect-member-of expect-range)
 

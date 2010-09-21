@@ -2881,7 +2881,7 @@
 (provide Integer Number Rational Real Natural 
 	 Boolean True False
 	 String Char Symbol Empty-list
-	 Unspecific)
+	 Any Unspecific)
 
 (define Integer (signature/arbitrary arbitrary-integer (predicate integer?)))
 (define Number (signature/arbitrary arbitrary-real (predicate number?)))
@@ -2903,6 +2903,8 @@
 (define Char (signature/arbitrary arbitrary-printable-ascii-string (predicate char?)))
 (define Symbol (signature/arbitrary arbitrary-symbol (predicate symbol?)))
 (define Empty-list (signature (one-of empty)))
+
+(define Any (signature (predicate (lambda (_) #t))))
 
 (define Unspecific (signature (predicate (lambda (_) #t))))
 
