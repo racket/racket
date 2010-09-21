@@ -773,7 +773,7 @@
       #t)
 
 (test (equal~? (rectangle 100 10 'solid 'red)
-               (rotate 90 (rectangle 10.001 100.0001 'solid 'red))
+               (rotate 90 (rectangle 10.0001 100.0001 'solid 'red))
                0.1)
       =>
       #t)
@@ -1577,6 +1577,18 @@
              (beside (rectangle 1 1 'solid (color 4 4 4))
                      (rectangle 1 1 'solid (color 5 5 5))
                      (rectangle 1 1 'solid (color 6 6 6)))))
+
+(let ([has-color? 
+       (λ (img) 
+         (ormap (λ (x) (or (not (equal? (color-red x)
+                                        (color-green x)))
+                           (not (equal? (color-red x)
+                                        (color-blue x)))))
+                (image->color-list img)))])
+  (test (has-color? (place-image (rectangle 1 10 "solid" "red") 2 10
+                                 (empty-scene 5 20)))
+        =>
+        #t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -774,12 +774,12 @@ has been moved out).
 
 (define (polygon-points->path points)
   (let ([path (new dc-path%)])
-    (send path move-to (round (point-x (car points))) (round (point-y (car points))))
+    (send path move-to (point-x (car points)) (point-y (car points)))
     (let loop ([points (cdr points)])
       (unless (null? points)
         (send path line-to 
-              (round (point-x (car points)))
-              (round (point-y (car points))))
+              (point-x (car points))
+              (point-y (car points)))
         (loop (cdr points))))
     (send path close)
     ;(send path line-to (round (point-x (car points))) (round (point-y (car points))))
