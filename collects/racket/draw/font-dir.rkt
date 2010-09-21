@@ -54,6 +54,7 @@
         [(script) "Chancery"]
         [(symbol) "Symbol"]
         [else (case (system-type)
+		[(windows) "Tahoma"]
                 [(macosx) "Lucida Grande"]
                 [else "Sans"])]))
 

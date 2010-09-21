@@ -4,7 +4,7 @@
 
 (define-runtime-path platform-lib
   (case (system-type)
-    [() '(lib "mred/private/wx/win32/platform.rkt")]
+    [(#;windows) '(lib "mred/private/wx/win32/platform.rkt")]
     [(macosx) '(lib "mred/private/wx/cocoa/platform.rkt")]
     [(windows unix) '(lib "mred/private/wx/gtk/platform.rkt")]))
 

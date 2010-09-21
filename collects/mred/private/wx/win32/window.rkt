@@ -5,11 +5,14 @@
           "../../syntax.rkt"
 	 "utils.rkt"
 	 "types.rkt"
+	 "const.rkt"
 	 "wndclass.rkt"
-	 "queue.rkt")
+	 "queue.rkt"
+	 "theme.rkt")
 
 (provide window%
 	 queue-window-event
+	 queue-window-refresh-event
 	 
 	 CreateWindowExW
 	 GetWindowRect)
@@ -24,6 +27,10 @@
 (define-user32 GetWindowRect (_wfun _HWND (r : (_ptr o _RECT)) -> _void -> r))
 (define-user32 GetClientRect (_wfun _HWND (r : (_ptr o _RECT)) -> _void -> r))
 
+(define-gdi32 CreateFontIndirectW (_wfun _LOGFONT-pointer -> _HFONT))
+
+(define-user32 SendMessageW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
+
 (define-user32 MoveWindow(_wfun _HWND _int _int _int _int _BOOL -> _BOOL))
 
 (define-user32 ShowWindow (_wfun _HWND _int -> _BOOL))
@@ -33,9 +40,11 @@
 (define-user32 GetDialogBaseUnits (_fun -> _LONG))
 (define measure-dc #f)
 
+(define theme-hfont #f)
+
 (define-values (dlu-x dlu-y)
   (let ([v (GetDialogBaseUnits)])
-    (values (* 1/4 (bitwise-and v #xFF))
+    (values (* 1/4 (bitwise-and v #xFFFF))
 	    (* 1/8 (arithmetic-shift v -16)))))
 
 (defclass window% object%
@@ -88,6 +97,8 @@
 
   (def/public-unimplemented set-phantom-size)
 
+  (define/public (paint-children) (void))
+
   (define/public (get-x)
     (let ([r (GetWindowRect win32)])
       (- (RECT-left r) (send parent get-x))))
@@ -119,7 +130,10 @@
   (define/public (move x y)
     (set-size x y -1 -1))
 
-  (define/public (auto-size label min-w min-h)
+  (define/public (auto-size label min-w min-h dw dh)
+    (unless theme-hfont
+      (set! theme-hfont (CreateFontIndirectW (get-theme-logfont))))
+    (SendMessageW win32 WM_SETFONT (cast theme-hfont _HFONT _LPARAM) 0)
     (unless measure-dc
       (let* ([bm (make-object bitmap% 1 1)]
 	     [dc (make-object bitmap-dc% bm)]
@@ -129,8 +143,8 @@
     (let-values ([(w h d a) (send measure-dc get-text-extent label #f #t)]
 		 [(->int) (lambda (v) (inexact->exact (floor v)))])
       (set-size -11111 -11111 
-		(max (->int w) (->int (* dlu-x min-w)))
-		(max (->int h) (->int (* dlu-y min-h))))))
+		(max (->int (+ w dw)) (->int (* dlu-x min-w)))
+		(max (->int (+ h dh)) (->int (* dlu-y min-h))))))
 
   (def/public-unimplemented popup-menu)
   (def/public-unimplemented center)
@@ -140,7 +154,10 @@
   (def/public-unimplemented refresh)
   (def/public-unimplemented screen-to-client)
   (def/public-unimplemented client-to-screen)
-  (def/public-unimplemented drag-accept-files)
+
+  (define/public (drag-accept-files on?)
+    (void))
+
   (def/public-unimplemented enable)
   (def/public-unimplemented get-position)
 
@@ -160,3 +177,6 @@
 
 (define (queue-window-event win thunk)
   (queue-event (send win get-eventspace) thunk))
+
+(define (queue-window-refresh-event win thunk)
+  (queue-refresh-event (send win get-eventspace) thunk))

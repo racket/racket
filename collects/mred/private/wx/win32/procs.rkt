@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
 	 "../../syntax.rkt"
+	 "theme.rkt"
 	 racket/draw)
 
 (provide
@@ -57,7 +58,7 @@
 (define-unimplemented file-creator-and-type)
 (define-unimplemented run-printout)
 (define (get-double-click-time) 500)
-(define (get-control-font-size) 10)
+(define (get-control-font-size) (get-theme-font-size))
 (define-unimplemented cancel-quit)
 (define-unimplemented fill-private-color)
 (define-unimplemented flush-display)

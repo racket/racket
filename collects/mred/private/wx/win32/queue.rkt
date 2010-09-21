@@ -11,6 +11,7 @@
          ;; from common/queue:
          current-eventspace
          queue-event
+         queue-refresh-event
          yield)
 
 ;; ------------------------------------------------------------
@@ -37,7 +38,7 @@
 (define msg (malloc _MSG 'raw))
 
 (define (events-ready?)
-  (GetQueueStatus QS_ALLINPUT))
+  (not (zero? (GetQueueStatus QS_ALLINPUT))))
 
 (define (install-wakeup fds)
   (pre-event-sync #t)

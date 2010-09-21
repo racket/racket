@@ -12,6 +12,7 @@
 	 _UINT
 	 _BYTE
 	 _LONG
+	 _HRESULT
 
 	 _HINSTANCE
 	 _HWND
@@ -20,6 +21,7 @@
 	 _HCURSOR
 	 _HBRUSH
 	 _HDC
+	 _HFONT
 
 	 _COLORREF
 
@@ -41,6 +43,7 @@
 (define _BOOL (make-ctype _int (lambda (v) (if v 1 0)) (lambda (v) (not (zero? v)))))
 (define _UINT _uint)
 (define _BYTE _uint8)
+(define _HRESULT _int32)
 
 (define _HINSTANCE (_cpointer/null 'HINSTANCE))
 (define _HWND (_cpointer/null 'HWND))
@@ -49,6 +52,7 @@
 (define _HCURSOR (_cpointer/null 'HCURSOR))
 (define _HBRUSH (_cpointer/null 'HBRUSH))
 (define _HDC (_cpointer/null 'HDC))
+(define _HFONT (_cpointer/null 'HFONT))
 
 (define _COLORREF _DWORD)
 

@@ -27,6 +27,6 @@
 			       #f)]
 	     [style style])
 
-  (auto-size label 50 14)
+  (auto-size label 40 12 12 0)
 
   (def/public-unimplemented set-border))

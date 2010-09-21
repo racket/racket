@@ -3,11 +3,9 @@
          racket/class
          "utils.rkt"
          "types.rkt"
-         "window.rkt"
-         "x11.rkt"
-         "win32.rkt"
 	 "../../lock.rkt"
          "../common/backing-dc.rkt"
+         "../common/delay.rkt"
          racket/draw/cairo
          racket/draw/dc
          racket/draw/bitmap
@@ -16,48 +14,22 @@
 
 (provide dc%
          do-backing-flush
-         x11-bitmap%)
+         request-flush-delay
+         cancel-flush-delay)
 
-(define-gdk gdk_cairo_create (_fun _pointer -> _cairo_t)
-  #:wrap (allocator cairo_destroy))
-
-(define x11-bitmap%
-  (class bitmap%
-    (init w h gdk-win)
-    (super-make-object (make-alternate-bitmap-kind w h))
-
-    (define pixmap (gdk_pixmap_new gdk-win w h (if gdk-win -1 24)))
-    (define s
-      (cairo_xlib_surface_create (gdk_x11_display_get_xdisplay
-                                  (gdk_drawable_get_display pixmap))
-                                 (gdk_x11_drawable_get_xid pixmap)
-                                 (gdk_x11_visual_get_xvisual
-                                  (gdk_drawable_get_visual pixmap))
-                                 w
-                                 h))
-
-    (define/override (ok?) #t)
-    (define/override (is-color?) #t)
-    (define/override (has-alpha-channel?) #f)
-    
-    (define/override (get-cairo-surface) s)
-
-    (define/override (release-bitmap-storage)
-      (atomically
-       (cairo_surface_destroy s)
-       (gobject-unref pixmap)
-       (set! s #f)))))
+(define-user32 GetDC (_wfun  _HWND -> _HDC))
+(define-user32 ReleaseDC (_wfun _HDC -> _void))
 
 (define win32-bitmap%
   (class bitmap%
-    (init w h gdk-win)
+    (init w h win32)
     (super-make-object (make-alternate-bitmap-kind w h))
 
     (define s
-      (if (not gdk-win)
+      (if (not win32)
 	  (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h)
 	  (atomically
-	   (let ([hdc (GetDC (gdk_win32_drawable_get_handle gdk-win))])
+	   (let ([hdc (GetDC win32)])
 	     (begin0
 	      (cairo_win32_surface_create_with_ddb hdc
 						   CAIRO_FORMAT_RGB24 w h)
@@ -83,15 +55,9 @@
     (super-new)
 
     (define/override (make-backing-bitmap w h)
-      (cond
-       [(and (eq? 'unix (system-type))
-             (send canvas get-canvas-background))
-	(make-object x11-bitmap% w h (widget-window (send canvas get-client-gtk)))]
-       [(and (eq? 'windows (system-type))
-             (send canvas get-canvas-background))
-	(make-object win32-bitmap% w h (widget-window (send canvas get-client-gtk)))]
-       [else
-	(super make-backing-bitmap w h)]))
+      (if (send canvas get-canvas-background)
+          (make-object win32-bitmap% w h (send canvas get-win32))
+          (super make-backing-bitmap w h)))
 
     (define/override (get-backing-size xb yb)
       (send canvas get-client-size xb yb))
@@ -109,17 +75,19 @@
       (send canvas queue-backing-flush))
 
     (define/override (request-delay)
-      (request-flush-delay (send canvas get-flush-window)))
+      (request-flush-delay canvas))
     (define/override (cancel-delay req)
       (cancel-flush-delay req))))
 
-(define (do-backing-flush canvas dc win)
+(define (do-backing-flush canvas dc hdc)
   (send dc on-backing-flush
         (lambda (bm)
           (let ([w (box 0)]
                 [h (box 0)])
             (send canvas get-client-size w h)
-            (let ([cr (gdk_cairo_create win)])
+            (let* ([surface (cairo_win32_surface_create hdc)]
+                   [cr (cairo_create surface)])
+              (cairo_surface_destroy surface)
               (let ([s (cairo_get_source cr)])
                 (cairo_pattern_reference s)
                 (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
@@ -129,3 +97,18 @@
                 (cairo_set_source cr s)
                 (cairo_pattern_destroy s))
               (cairo_destroy cr))))))
+
+(define (request-flush-delay canvas)
+  (do-request-flush-delay 
+   canvas
+   (lambda (gtk)
+     (send canvas suspend-paint-handling))
+   (lambda (gtk)
+     (send canvas resume-paint-handling))))
+
+(define (cancel-flush-delay req)
+  (when req
+    (do-cancel-flush-delay 
+     req
+     (lambda (canvas)
+       (send canvas resume-paint-handling)))))
