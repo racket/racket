@@ -870,7 +870,7 @@
                                                                                 '#,field-name)])
                                                                       (lambda (r)
                                                                         (raw r) ; error checking
-                                                                        (check-struct-wraps! r)
+                                                                        (check-lazy-wraps! type-descriptor r)
                                                                         (raw r)))))
 							      getter-names
                                                               fields)
@@ -895,10 +895,11 @@
 						      (combined (at name_ (predicate raw-predicate))
 								(at field_ (signature:property getter-name field_/no-loc)) ...)))
 						 #`(define (#,parametric-signature-name field_ ...)
-						     (make-struct-wrap-signature 'name_
-										type-descriptor
-										(list field_/no-loc ...)
-										#'name_)))
+						     (make-lazy-wrap-signature 'name_
+									       type-descriptor
+									       raw-predicate
+									       (list field_/no-loc ...)
+									       #'name_)))
 
 					   (values #,signature-name #,parametric-signature-name proc-name ...)))
 				     'stepper-define-struct-hint

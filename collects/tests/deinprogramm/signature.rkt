@@ -377,8 +377,16 @@
     (check-equal? (kons 1 '()) (kons 1 '()))
     (check-equal? (kons 1 '()) (raw-kons 1 '()))
     (check-equal? (raw-kons 1 '()) (kons 1 '())))
-      
 
+   (test-case
+    "pair-wrap"
+    (define sig (make-pair-signature integer boolean))
+    (let ((obj (apply-signature sig (cons 1 #t))))
+      (check-equal? (checked-car obj) 1)
+      (check-equal? (checked-cdr obj) #t))
+    (let ((obj (apply-signature sig (cons 1 2))))
+      (check-equal? (say-no (checked-car obj)) 'no))
+    )
 
 ))
 

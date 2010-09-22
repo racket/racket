@@ -65,7 +65,7 @@
 					       (format "~a: Argument kein ~a: ~e" 
 						       'tag '?type-name s))
 					      (current-continuation-marks))))
-					  (check-struct-wraps! s)
+					  (check-lazy-wraps! type-descriptor s)
 					  (raw-generic-access s i)))
 				       'inferred-name
 				       (syntax-e accessor))))
@@ -184,7 +184,10 @@
 							  component-signature ...)))
 					   ;; lazy signatures
 					   #'(define (?signature-constructor-name ?param ...)
-					       (make-struct-wrap-signature '?type-name type-descriptor (list ?param ...) #'?type-name)))
+					       (make-lazy-wrap-signature '?type-name 
+									 type-descriptor raw-predicate
+									 (list ?param ...)
+									 #'?type-name)))
 				       'stepper-skip-completely
 				       #t)))
 			 #'(begin

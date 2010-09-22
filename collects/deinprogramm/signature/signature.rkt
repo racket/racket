@@ -22,8 +22,9 @@
 	 procedure-signature-info-arg-signatures procedure-signature-info-return-signature
 	 make-lazy-wrap-info lazy-wrap-info-constructor lazy-wrap-info-raw-accessors
 	 prop:lazy-wrap lazy-wrap? lazy-wrap-ref
-	 make-struct-wrap-signature
-	 check-struct-wraps!
+	 make-lazy-wrap-signature
+	 check-lazy-wraps!
+	 make-pair-signature checked-car checked-cdr
 	 signature=? signature<=?)
 
 (require scheme/promise
@@ -304,11 +305,11 @@
 		   sigs2))
 	  sigs1))
 
-; Flatten out mixed signatures, and fold in in the struct-wrap
+; Flatten out mixed signatures, and fold in in the lazy-wrap
 ; signatures
 	
 (define (normalize-mixed-signatures mixed-signature sigs)
-  (fold-struct-wrap-signatures mixed-signature (flatten-mixed-signatures sigs)))
+  (fold-lazy-wrap-signatures mixed-signature (flatten-mixed-signatures sigs)))
 
 (define (flatten-mixed-signatures sigs)
   (apply append
@@ -472,9 +473,9 @@
   #:transparent)
 
 ; This situation makes trouble:
-; (make-mixed-signature (make-struct-wrap-signature ...)  (make-struct-wrap-signature ...) ...)
+; (make-mixed-signature (make-lazy-wrap-signature ...)  (make-lazy-wrap-signature ...) ...)
 
-; We need to push the `mixed' signature inside the struct-wrap
+; We need to push the `mixed' signature inside the lazy-wrap
 ; signature, which is why the struct-map signature has an implicit
 ; `mixed'.
 ; To this end, a `lazy-log-not-checked' object tracks a list of
@@ -485,107 +486,102 @@
   (mixed-signature field-signatures-list)
   #:transparent)
 
-(define (make-struct-wrap-signature name type-descriptor field-signatures syntax)
-  (really-make-struct-wrap-signature name type-descriptor #f (list field-signatures) syntax))
+(define (make-lazy-wrap-signature name type-descriptor predicate field-signatures syntax)
+  (really-make-lazy-wrap-signature name type-descriptor predicate #f (list field-signatures) syntax))
 
 ; The lists of signatures in `field-signatures-list' form an implicit mixed signature.
-(define (really-make-struct-wrap-signature name type-descriptor 
-					   mixed-signature field-signatures-list
-					   syntax)
+(define (really-make-lazy-wrap-signature name type-descriptor predicate
+					 mixed-signature field-signatures-list
+					 syntax)
   (let ((lazy-wrap-info (lazy-wrap-ref type-descriptor))
 	(not-checked (make-lazy-log-not-checked mixed-signature field-signatures-list))
-	(struct-wrap-info (make-struct-wrap-info type-descriptor field-signatures-list))
-	(predicate (lambda (thing)
-		     (and (struct? thing)
-			  (let-values (((thing-descriptor _) (struct-info thing)))
-			    (eq? thing-descriptor type-descriptor))))))
+	(lazy-wrap-signature-info (make-lazy-wrap-signature-info type-descriptor predicate field-signatures-list)))
     (let ((constructor (lazy-wrap-info-constructor lazy-wrap-info))
 	  (raw-accessors (lazy-wrap-info-raw-accessors lazy-wrap-info))
 	  (wrap-ref (lazy-wrap-info-ref-proc lazy-wrap-info))
 	  (wrap-set! (lazy-wrap-info-set!-proc lazy-wrap-info)))
-    (make-signature
-     name
-      (lambda (self thing)
+      (make-signature
+       name
+       (lambda (self thing)
 
-       (if (not (predicate thing))
-	   (signature-violation thing self #f #f)
-	   (let ((log (wrap-ref thing)))
-	     (cond
-	      ((not log)
-	       (wrap-set! thing
-			  (make-lazy-wrap-log (list not-checked) '())))
-	      ((not (let ()
-		      (define (<=? sigs1 sigs2)
-			(andmap signature<=? sigs1 sigs2))
-		      (define (check wrap-field-signatures)
-			(ormap (lambda (field-signatures)
-				 (<=? wrap-field-signatures field-signatures))
-			       field-signatures-list))
-		      (or (ormap (lambda (wrap-not-checked)
-				   (andmap check 
-					   (lazy-log-not-checked-field-signatures-list wrap-not-checked)))
-				 (lazy-wrap-log-not-checked log))
-			  (ormap check (lazy-wrap-log-checked log)))))
-	       (wrap-set! thing
-			  (make-lazy-wrap-log (cons not-checked (lazy-wrap-log-not-checked log))
-					      (lazy-wrap-log-checked log)))))))
+	 (if (not (predicate thing))
+	     (signature-violation thing self #f #f)
+	     (let ((log (wrap-ref thing)))
+	       (cond
+		((not log)
+		 (wrap-set! thing
+			    (make-lazy-wrap-log (list not-checked) '())))
+		((not (let ()
+			(define (<=? sigs1 sigs2)
+			  (andmap signature<=? sigs1 sigs2))
+			(define (check wrap-field-signatures)
+			  (ormap (lambda (field-signatures)
+				   (<=? wrap-field-signatures field-signatures))
+				 field-signatures-list))
+			(or (ormap (lambda (wrap-not-checked)
+				     (andmap check 
+					     (lazy-log-not-checked-field-signatures-list wrap-not-checked)))
+				   (lazy-wrap-log-not-checked log))
+			    (ormap check (lazy-wrap-log-checked log)))))
+		 (wrap-set! thing
+			    (make-lazy-wrap-log (cons not-checked (lazy-wrap-log-not-checked log))
+						(lazy-wrap-log-checked log)))))))
        
-       thing)
-     (delay syntax)
-     #:info-promise
-     (delay struct-wrap-info)
-     #:=?-proc
-     (lambda (this-info other-info)
-       (and (struct-wrap-info? other-info)
-	    (struct-wrap-info-field-signatures-list other-info)
-	    (eq? type-descriptor (struct-wrap-info-descriptor other-info))
-	    (andmap (lambda (this-field-signatures)
-		      (andmap (lambda (other-field-signatures)
-				(andmap signature=? this-field-signatures other-field-signatures))
-			      (struct-wrap-info-field-signatures-list other-info)))
-		    (struct-wrap-info-field-signatures-list this-info))))
-     #:<=?-proc
-     (lambda (this-info other-info)
-       (and (struct-wrap-info? other-info)
-	    (struct-wrap-info-field-signatures-list other-info) 
-	    (eq? type-descriptor (struct-wrap-info-descriptor other-info))
-	    (andmap (lambda (this-field-signatures)
-		      (ormap (lambda (other-field-signatures)
-			       (andmap signature<=? this-field-signatures other-field-signatures))
-			      (struct-wrap-info-field-signatures-list other-info)))
-		    (struct-wrap-info-field-signatures-list this-info))))))))
+	 thing)
+       (delay syntax)
+       #:info-promise
+       (delay lazy-wrap-signature-info)
+       #:=?-proc
+       (lambda (this-info other-info)
+	 (and (lazy-wrap-signature-info? other-info)
+	      (lazy-wrap-signature-info-field-signatures-list other-info)
+	      (eq? type-descriptor (lazy-wrap-signature-info-descriptor other-info))
+	      (andmap (lambda (this-field-signatures)
+			(andmap (lambda (other-field-signatures)
+				  (andmap signature=? this-field-signatures other-field-signatures))
+				(lazy-wrap-signature-info-field-signatures-list other-info)))
+		      (lazy-wrap-signature-info-field-signatures-list this-info))))
+       #:<=?-proc
+       (lambda (this-info other-info)
+	 (and (lazy-wrap-signature-info? other-info)
+	      (lazy-wrap-signature-info-field-signatures-list other-info) 
+	      (eq? type-descriptor (lazy-wrap-signature-info-descriptor other-info))
+	      (andmap (lambda (this-field-signatures)
+			(ormap (lambda (other-field-signatures)
+				 (andmap signature<=? this-field-signatures other-field-signatures))
+			       (lazy-wrap-signature-info-field-signatures-list other-info)))
+		      (lazy-wrap-signature-info-field-signatures-list this-info))))))))
 
-(define-struct struct-wrap-info (descriptor field-signatures-list) #:transparent)
+(define-struct lazy-wrap-signature-info (descriptor predicate field-signatures-list) #:transparent)
 
-(define (check-struct-wraps! thing)
-  (let-values (((descriptor skipped?) (struct-info thing)))
-    (let ((lazy-wrap-info (lazy-wrap-ref descriptor)))
-      
-      (let ((constructor (lazy-wrap-info-constructor lazy-wrap-info))
-	    (raw-accessors (lazy-wrap-info-raw-accessors lazy-wrap-info))
-	    (raw-mutators (lazy-wrap-info-raw-mutators lazy-wrap-info))
-	    (wrap-ref (lazy-wrap-info-ref-proc lazy-wrap-info))
-	    (wrap-set! (lazy-wrap-info-set!-proc lazy-wrap-info)))
+(define (check-lazy-wraps! descriptor thing)
+  (let ((lazy-wrap-info (lazy-wrap-ref descriptor)))
 
-	(let ((log (wrap-ref thing)))
-	  (when (and log (pair? (lazy-wrap-log-not-checked log)))
-	    (let loop ((field-vals (map (lambda (raw-accessor)
-					  (raw-accessor thing))
-					raw-accessors))
-		       (now-checked '())
-		       (not-checkeds (lazy-wrap-log-not-checked log)))
-	      (if (null? not-checkeds)
-		  (begin
-		    (for-each (lambda (raw-mutator field-val)
-				(raw-mutator thing field-val))
-			      raw-mutators field-vals)
-		    (wrap-set! thing
-			       (make-lazy-wrap-log '()
-						   (append now-checked
-							   (lazy-wrap-log-checked log)))))
-		  (let ((not-checked (car not-checkeds)))
-		    (let ((field-signatures-list (lazy-log-not-checked-field-signatures-list not-checked))
-			  (mixed-signature (lazy-log-not-checked-mixed-signature not-checked)))
+    (let ((constructor (lazy-wrap-info-constructor lazy-wrap-info))
+	  (raw-accessors (lazy-wrap-info-raw-accessors lazy-wrap-info))
+	  (raw-mutators (lazy-wrap-info-raw-mutators lazy-wrap-info))
+	  (wrap-ref (lazy-wrap-info-ref-proc lazy-wrap-info))
+	  (wrap-set! (lazy-wrap-info-set!-proc lazy-wrap-info)))
+
+      (let ((log (wrap-ref thing)))
+	(when (and log (pair? (lazy-wrap-log-not-checked log)))
+	  (let loop ((field-vals (map (lambda (raw-accessor)
+					(raw-accessor thing))
+				      raw-accessors))
+		     (now-checked '())
+		     (not-checkeds (lazy-wrap-log-not-checked log)))
+	    (if (null? not-checkeds)
+		(begin
+		  (for-each (lambda (raw-mutator field-val)
+			      (raw-mutator thing field-val))
+			    raw-mutators field-vals)
+		  (wrap-set! thing
+			     (make-lazy-wrap-log '()
+						 (append now-checked
+							 (lazy-wrap-log-checked log)))))
+		(let ((not-checked (car not-checkeds)))
+		  (let ((field-signatures-list (lazy-log-not-checked-field-signatures-list not-checked))
+			(mixed-signature (lazy-log-not-checked-mixed-signature not-checked)))
 		    (if (not mixed-signature) ; one-element list
 			(loop (map apply-signature (car field-signatures-list) field-vals)
 			      (cons (car field-signatures-list) now-checked)
@@ -607,34 +603,35 @@
 							    (cdr field-vals)
 							    (cons new-val new-field-vals)))
 						     (lambda ()
-						       (inner (cdr field-signatures-list)))))))))))))))))))
+						       (inner (cdr field-signatures-list))))))))))))))))))
 
 ; pushes down mixed contracts
-(define (fold-struct-wrap-signatures mixed-signature sigs)
-  (let ((struct-wrap-sigs (make-hasheq))) ; maps a type descriptor to signatures
+(define (fold-lazy-wrap-signatures mixed-signature sigs)
+  (let ((lazy-wrap-sigs (make-hasheq))) ; maps a type descriptor to signatures
 
-    (define (push-down-struct-wrap-sigs)
-      (hash-map struct-wrap-sigs
+    (define (push-down-lazy-wrap-sigs)
+      (hash-map lazy-wrap-sigs
 		(lambda (type-desc signatures)
-		  (really-make-struct-wrap-signature 
+		  (really-make-lazy-wrap-signature 
 		   (signature-name (car signatures)) type-desc 
+		   (lazy-wrap-signature-info-predicate (real-signature-info (car signatures)))
 		   mixed-signature
 		   (apply append
 			  (map (lambda (sig)
-				 (struct-wrap-info-field-signatures-list (real-signature-info sig)))
+				 (lazy-wrap-signature-info-field-signatures-list (real-signature-info sig)))
 			       signatures))
 		   (signature-syntax (car signatures))))))
   
     (let loop ((sigs sigs)
 	       (vanilla-sigs '()))
       (if (null? sigs)
-	  (append (push-down-struct-wrap-sigs)
+	  (append (push-down-lazy-wrap-sigs)
 		  (reverse vanilla-sigs))
 	  (let* ((sig (car sigs))
 		 (info (real-signature-info sig)))
-	    (if (struct-wrap-info? info)
-		(let ((type-desc (struct-wrap-info-descriptor info)))
-		  (hash-update! struct-wrap-sigs
+	    (if (lazy-wrap-signature-info? info)
+		(let ((type-desc (lazy-wrap-signature-info-descriptor info)))
+		  (hash-update! lazy-wrap-sigs
 				type-desc
 				(lambda (old)
 				  (cons sig old))
@@ -643,6 +640,88 @@
 		  (loop (cdr sigs) vanilla-sigs))
 		(loop (cdr sigs) (cons sig vanilla-sigs))))))))
 
+(define checked-pair-table (make-weak-hasheq))
+
+(define-struct checked-pair
+  (car cdr log)
+  #:mutable)
+
+(define (checked-pair-access checked-access raw-access)
+  (lambda (p)
+    (cond
+     ((hash-ref checked-pair-table
+		p
+		(lambda () #f))
+      => checked-access)
+     (else (raw-access p)))))
+
+(define checked-raw-car (checked-pair-access checked-pair-car car))
+(define checked-raw-cdr (checked-pair-access checked-pair-cdr cdr))
+
+(define (checked-raw-set! checked-set!)
+  (lambda (p new)
+    (cond
+     ((hash-ref checked-pair-table
+		p
+		(lambda () #f))
+      => (lambda (cp)
+	   (checked-set! cp new)))
+     (else 
+      (let ((cp (make-checked-pair (car p) (cdr p) #f)))
+	(checked-set! cp new)
+	(hash-set! checked-pair-table p cp))))))
+
+(define checked-raw-set-car! (checked-raw-set! set-checked-pair-car!))
+(define checked-raw-set-cdr! (checked-raw-set! set-checked-pair-cdr!))
+
+(define (checked-pair-get-log p)
+  (cond
+   ((hash-ref checked-pair-table
+	      p
+	      (lambda () #f))
+    => checked-pair-log)
+   (else #f)))
+
+(define (checked-pair-set-log! p new)
+  (cond
+   ((hash-ref checked-pair-table
+	      p
+	      (lambda () #f))
+    => (lambda (cp)
+	 (set-checked-pair-log! cp new)))
+   (else
+    (hash-set! checked-pair-table p 
+	       (make-checked-pair (car p) (cdr p) new)))))
+
+(define checked-pair-lazy-wrap-info
+  (make-lazy-wrap-info cons
+		       (list checked-raw-car checked-raw-cdr)
+		       (list checked-raw-set-car! checked-raw-set-cdr!)
+		       checked-pair-get-log
+		       checked-pair-set-log!))
+
+(define checked-pair-descriptor
+  (call-with-values
+      (lambda ()
+	(make-struct-type 'dummy-checked-pair #f 0 0 #f
+			  (list
+			   (cons prop:lazy-wrap checked-pair-lazy-wrap-info))))
+    (lambda (desc . _)
+      desc)))
+
+(define (make-pair-signature car-sig cdr-sig)
+  (make-lazy-wrap-signature 'pair checked-pair-descriptor pair? (list car-sig cdr-sig) #'pair))
+
+(define (checked-car p)
+  (car p)
+  (check-lazy-wraps! checked-pair-descriptor p)
+  (checked-raw-car p))
+
+(define (checked-cdr p)
+  (cdr p)
+  (check-lazy-wraps! checked-pair-descriptor p)
+  (checked-raw-cdr p))
+			     
 ; like apply-signature, but can track more precise blame into the signature itself
 (define-syntax apply-signature/blame
   (lambda (stx)
