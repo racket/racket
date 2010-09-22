@@ -140,7 +140,9 @@
            (tc-error/expr 
             #:return (or expected (ret (Un)))
             (string-append "No function domains matched in function application:\n"
-                           (domain-mismatches arities doms rests drests rngs (map tc-expr (syntax->list pos-args)) #f #f)))
+                           (domain-mismatches arities doms rests drests rngs
+                                              (map tc-expr (syntax->list pos-args))
+                                              #f #f #:expected expected)))
          (tc/funapp (car (syntax-e form)) kw-args
                     (ret (make-Function new-arities))
                     (map tc-expr (syntax->list pos-args)) expected)))]))
