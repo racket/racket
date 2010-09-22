@@ -6,6 +6,9 @@
          "../../lock.rkt"
          "../common/canvas-mixin.rkt"
          "../common/backing-dc.rkt"
+         "../common/event.rkt"
+         "../common/freeze.rkt"
+         "../common/queue.rkt"
          "utils.rkt"
          "types.rkt"
          "const.rkt"
@@ -34,10 +37,11 @@
 
 (define-user32 SetScrollInfo (_wfun _HWND _int _SCROLLINFO-pointer _BOOL -> _int))
 (define-user32 GetScrollPos (_wfun _HWND _int -> _int))
-(define-user32 SetScrollPos (_wfun _HWND _int _BOOL -> _int))
+(define-user32 SetScrollPos (_wfun _HWND _int _int _BOOL -> _int))
 (define-user32 GetScrollInfo (_wfun _HWND _int (i : _SCROLLINFO-pointer
                                                   = (make-SCROLLINFO (ctype-sizeof _SCROLLINFO)
-                                                                     (bitwise-ior SIF_RANGE SIF_POS SIF_PAGE)
+                                                                     (bitwise-ior SIF_RANGE SIF_POS 
+                                                                                  SIF_PAGE SIF_TRACKPOS)
                                                                      0 0 0 0 0))
                                     -> (r : _BOOL)
                                     -> (if r i (error 'GetScrollInfo "failed"))))
@@ -52,7 +56,8 @@
            [gl-config #f])
 
      (inherit get-hwnd
-              get-client-size)
+              get-client-size
+              get-eventspace)
 
      (define hscroll? (memq 'hscroll style))
      (define vscroll? (memq 'vscroll style))
@@ -74,7 +79,7 @@
 
      (define hwnd (get-hwnd))
 
-     (define/override (wndproc w msg wparam lparam)
+     (define/override (wndproc w msg wParam lParam)
        (cond
         [(= msg WM_PAINT)
          (let* ([ps (malloc 128)]
@@ -85,7 +90,13 @@
              (do-backing-flush this dc hdc))
            (EndPaint hdc ps))
          0]
-        [else (super wndproc w msg wparam lparam)]))
+        [(= msg WM_HSCROLL)
+         (on-scroll-change SB_HORZ (LOWORD wParam))
+         0]
+        [(= msg WM_VSCROLL)
+         (on-scroll-change SB_VERT (LOWORD wParam))
+         0]
+        [else (super wndproc w msg wParam lParam)]))
      
      (define dc (new dc% [canvas this]))
      (send dc start-backing-retained)
@@ -116,7 +127,7 @@
      (define/override (refresh) (queue-paint))
 
      (define/public (queue-backing-flush)
-       (InvalidateRect hwnd #f #t))
+       (InvalidateRect hwnd #f #f))
 
      (define/public (make-compatible-bitmap w h)
        (send dc make-backing-bitmap w h))
@@ -170,14 +181,13 @@
          (SetScrollInfo hwnd SB_VERT (make-info v-len v-page v-pos v-scroll-visible?) #t)))
 
      (def/public-unimplemented set-background-to-gray)
-     (def/public-unimplemented on-scroll)
 
      (define/public (get-scroll-pos which)
        (GetScrollPos hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ)))
      (define/public (get-scroll-range which)
        (let ([i (GetScrollInfo hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
-         (+ (SCROLLINFO-nMax i)
-            (SCROLLINFO-nPage i)
+         (+ (- (SCROLLINFO-nMax i)
+               (SCROLLINFO-nPage i))
             1)))
      (define/public (get-scroll-page which)
        (let ([i (GetScrollInfo hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
@@ -193,7 +203,7 @@
                                                        h-scroll-visible?)
                                                    SIF_DISABLENOSCROLL
                                                    0)))
-         (set-SCROLLINFO-nMax! i (- v (SCROLLINFO-nPage i) -1))
+         (set-SCROLLINFO-nMax! i (+ v (SCROLLINFO-nPage i) -1))
          (SetScrollInfo hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ) i #t)))
      (define/public (set-scroll-page which v)
        (let ([i (GetScrollInfo hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
@@ -203,10 +213,39 @@
                                                        h-scroll-visible?)
                                                    SIF_DISABLENOSCROLL
                                                    0)))
-         (set-SCROLLINFO-nMax! i (- (+ (SCROLLINFO-nMax i) (SCROLLINFO-nPage i))
-                                   v))
+         (set-SCROLLINFO-nMax! i (+ (- (SCROLLINFO-nMax i) (SCROLLINFO-nPage i))
+                                    v))
          (set-SCROLLINFO-nPage! i v)
          (SetScrollInfo hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ) i #t)))
+
+     (define/public (on-scroll e) (void))
+     (define/private (on-scroll-change dir part)
+       (let ([i (GetScrollInfo hwnd dir)])
+         (let ([new-pos
+                (cond
+                 [(= part SB_TOP) 0]
+                 [(= part SB_BOTTOM) (SCROLLINFO-nMax i)]
+                 [(= part SB_LINEUP) (max 0 (sub1 (SCROLLINFO-nPos i)))]
+                 [(= part SB_LINEDOWN) (min (SCROLLINFO-nMax i) (add1 (SCROLLINFO-nPos i)))]
+                 [(= part SB_PAGEUP) (max 0 (- (SCROLLINFO-nPos i) (SCROLLINFO-nPage i)))]
+                 [(= part SB_PAGEDOWN) (min (SCROLLINFO-nMax i) (+ (SCROLLINFO-nPos i) (SCROLLINFO-nPage i)))]
+                 [(= part SB_THUMBTRACK) (SCROLLINFO-nTrackPos i)]
+                 [else (SCROLLINFO-nPos i)])])
+           (unless (= new-pos (SCROLLINFO-nPos i))
+             (set-SCROLLINFO-nPos! i new-pos)
+             (set-SCROLLINFO-fMask! i SIF_POS)
+             (SetScrollInfo hwnd dir i #t)
+             (queue-window-event
+              this
+              (lambda ()
+                (on-scroll (new scroll-event%
+                                [event-type 'thumb]
+                                [direction (if (= dir SB_HORZ) 'horizontal 'vertical)]
+                                [position new-pos]))))
+             (constrained-reply (get-eventspace)
+                                (lambda ()
+                                  (let loop () (pre-event-sync #t) (when (yield) (loop))))
+                                (void))))))
 
      (define/override (definitely-wants-event? e) 
        #t)
