@@ -83,6 +83,7 @@ don't depend on any other portion of the system
   (define (reset!) (set! delayed-errors null))
   (match (reverse delayed-errors)
     [(list) (void)]
+    ;; if there's only one, we don't need multiple-error handling
     [(list (struct err (msg stx)))
      (reset!)
      (raise-typecheck-error msg stx)]
