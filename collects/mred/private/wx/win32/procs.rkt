@@ -52,7 +52,7 @@
 (define-unimplemented find-graphical-system-path)
 (define-unimplemented register-collecting-blit)
 (define-unimplemented unregister-collecting-blit)
-(define (shortcut-visible-in-label? ?) #t)
+(define (shortcut-visible-in-label? [? #f]) #t)
 (define-unimplemented location->window)
 (define-unimplemented send-event)
 (define-unimplemented file-creator-and-type)
@@ -71,7 +71,9 @@
   (set-box! xb 1024)
   (set-box! yb 768))
 (define-unimplemented bell)
-(define-unimplemented hide-cursor)
+
+(define (hide-cursor) (void))
+
 (define-unimplemented end-busy-cursor)
 (define-unimplemented is-busy?)
 (define-unimplemented begin-busy-cursor)

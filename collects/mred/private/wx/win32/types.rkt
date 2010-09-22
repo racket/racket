@@ -12,7 +12,9 @@
 	 _UINT
 	 _BYTE
 	 _LONG
+	 _SHORT
 	 _HRESULT
+         _WCHAR
 
 	 _HINSTANCE
 	 _HWND
@@ -30,7 +32,11 @@
 	 _permanent-string/utf-16
 
 	 (struct-out POINT) _POINT _POINT-pointer 
-	 (struct-out RECT) _RECT _RECT-pointer)
+	 (struct-out RECT) _RECT _RECT-pointer
+	 (struct-out MSG) _MSG _MSG-pointer
+
+         HIWORD
+         LOWORD)
 
 (define-syntax-rule (_wfun . a)
   (_fun #:abi 'stdcall . a))
@@ -44,6 +50,7 @@
 (define _UINT _uint)
 (define _BYTE _uint8)
 (define _HRESULT _int32)
+(define _WCHAR _int16)
 
 (define _HINSTANCE (_cpointer/null 'HINSTANCE))
 (define _HWND (_cpointer/null 'HWND))
@@ -77,6 +84,7 @@
 		     (cast p _pointer _string/utf-16)))))
 
 (define _LONG _long)
+(define _SHORT _short)
 
 (define-cstruct _POINT ([x _LONG]
 			[y _LONG]))
@@ -85,3 +93,16 @@
 		       [top _LONG]
 		       [right _LONG]
 		       [bottom _LONG]))
+
+(define-cstruct _MSG ([hwnd _HWND]
+		      [message _UINT]
+		      [wParam _WPARAM]
+		      [lParam _LPARAM]
+		      [time _DWORD]
+		      [pt _POINT]))
+
+(define (HIWORD v)
+  (arithmetic-shift v -16))
+(define (LOWORD v)
+  (bitwise-and v #xFFFF))
+

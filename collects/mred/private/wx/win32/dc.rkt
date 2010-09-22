@@ -18,18 +18,18 @@
          cancel-flush-delay)
 
 (define-user32 GetDC (_wfun  _HWND -> _HDC))
-(define-user32 ReleaseDC (_wfun _HDC -> _void))
+(define-user32 ReleaseDC (_wfun _HDC -> _int))
 
 (define win32-bitmap%
   (class bitmap%
-    (init w h win32)
+    (init w h hwnd)
     (super-make-object (make-alternate-bitmap-kind w h))
 
     (define s
-      (if (not win32)
+      (if (not hwnd)
 	  (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h)
 	  (atomically
-	   (let ([hdc (GetDC win32)])
+	   (let ([hdc (GetDC hwnd)])
 	     (begin0
 	      (cairo_win32_surface_create_with_ddb hdc
 						   CAIRO_FORMAT_RGB24 w h)
@@ -56,7 +56,7 @@
 
     (define/override (make-backing-bitmap w h)
       (if (send canvas get-canvas-background)
-          (make-object win32-bitmap% w h (send canvas get-win32))
+          (make-object win32-bitmap% w h (send canvas get-hwnd))
           (super make-backing-bitmap w h)))
 
     (define/override (get-backing-size xb yb)

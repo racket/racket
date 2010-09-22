@@ -14,13 +14,13 @@
         label)
 
   (super-new [parent parent]
-	     [win32 
+	     [hwnd 
 	      (CreateWindowExW 0
 			       "PLTPanel"
 			       #f
 			       (bitwise-ior WS_CHILD)
 			       0 0 w h
-			       (send parent get-win32)
+			       (send parent get-hwnd)
 			       #f
 			       hInstance
 			       #f)]
@@ -28,8 +28,6 @@
 
   (def/public-unimplemented get-label-position)
   (def/public-unimplemented set-label-position)
-  (def/public-unimplemented on-char)
-  (def/public-unimplemented on-event)
   (def/public-unimplemented on-paint)
   (define/public (set-item-cursor x y) (void))
   (def/public-unimplemented get-item-cursor))

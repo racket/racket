@@ -5,5 +5,5 @@
 (provide menu-item%)
 
 (defclass menu-item% object%
-  (def/public-unimplemented id)
+  (define/public (id) this)
   (super-new))

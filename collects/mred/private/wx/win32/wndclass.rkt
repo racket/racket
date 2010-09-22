@@ -1,6 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
 	 racket/class
+         "../../lock.rkt"
 	 "utils.rkt"
 	 "types.rkt"
 	 "const.rkt"
@@ -8,8 +9,9 @@
 
 (provide hInstance
 	 DefWindowProcW
-	 win32->wx
-	 set-win32-wx!
+	 hwnd->wx
+	 any-hwnd->wx
+	 set-hwnd-wx!
 	 MessageBoxW)
 
 ;; ----------------------------------------
@@ -17,12 +19,26 @@
 (define-user32 GetWindowLongW (_wfun _HWND _int -> _pointer))
 (define-user32 SetWindowLongW (_wfun _HWND _int _pointer -> _pointer))
 
-(define (win32->wx win32)
-  (let ([p (GetWindowLongW win32 GWLP_USERDATA)])
+(define all-cells (make-hash))
+
+(define (hwnd->wx hwnd)
+  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
     (and p (ptr-ref p _racket))))
 
-(define (set-win32-wx! win32 wx)
-  (SetWindowLongW win32 GWLP_USERDATA (malloc-immobile-cell wx)))
+(define (set-hwnd-wx! hwnd wx)
+  (let ([c (malloc-immobile-cell wx)])
+    (SetWindowLongW hwnd GWLP_USERDATA c)
+    (atomically (hash-set! all-cells (cast c _pointer _long) #t))))
+
+(define (any-hwnd->wx hwnd)
+  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
+    (and p 
+         (atomically (hash-ref all-cells (cast p _pointer _long) #f))
+         (let ([wx (ptr-ref p _racket)])
+           (and wx
+                (ptr-equal? hwnd (send wx get-hwnd))
+                wx)))))
+
 
 ;; ----------------------------------------
 
@@ -63,7 +79,7 @@
 #;(define-user32 PostQuitMessage (_wfun _int -> _void))
 
 (define (wind-proc w msg wparam lparam)
-  (let ([wx (win32->wx w)])
+  (let ([wx (hwnd->wx w)])
     (if wx
         (send wx wndproc w msg wparam lparam)
         (DefWindowProcW w msg wparam lparam))))

@@ -15,13 +15,13 @@
   (init parent cb label x y w h style font)
 
   (super-new [parent parent]
-	     [win32 
+	     [hwnd 
 	      (CreateWindowExW 0
 			       "BUTTON"
 			       label
 			       (bitwise-ior BS_PUSHBUTTON WS_CHILD WS_CLIPSIBLINGS)
 			       0 0 0 0
-			       (send parent get-win32)
+			       (send parent get-hwnd)
 			       #f
 			       hInstance
 			       #f)]

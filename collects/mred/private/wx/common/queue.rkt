@@ -30,6 +30,7 @@
          main-eventspace?
          eventspace-handler-thread
          eventspace-wait-cursor-count
+         eventspace-extra-table
 
          queue-callback
          middle-queue-key
@@ -151,7 +152,8 @@
                            done-evt 
                            [shutdown? #:mutable] 
                            done-sema 
-                           [wait-cursor-count #:mutable])
+                           [wait-cursor-count #:mutable]
+                           extra-table)
   #:property prop:evt (lambda (v)
                         (wrap-evt (eventspace-done-evt v)
                                   (lambda (_) v))))
@@ -315,7 +317,8 @@
                             (semaphore-peek-evt done-sema)
                             #f
                             done-sema
-                            0)]
+                            0
+                            (make-hash))]
           [cb-box (box #f)])
       (parameterize ([current-cb-box cb-box])
         (scheme_add_managed (current-custodian) 

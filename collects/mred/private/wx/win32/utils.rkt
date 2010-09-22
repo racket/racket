@@ -1,14 +1,16 @@
 #lang racket/base
 (require ffi/unsafe
 	 ffi/unsafe/define
-         "../common/utils.rkt")
+         "../common/utils.rkt"
+         "types.rkt")
 
 (provide define-gdi32
 	 define-user32
 	 define-kernel32
 	 define-comctl32
 	 define-uxtheme
-         define-mz)
+         define-mz
+         failed)
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))
@@ -21,3 +23,10 @@
 (define-ffi-definer define-kernel32 kernel32-lib)
 (define-ffi-definer define-comctl32 comctl32-lib)
 (define-ffi-definer define-uxtheme uxtheme-lib)
+
+(define-kernel32 GetLastError (_wfun -> _DWORD))
+
+(define (failed w who)
+  (error who "call failed (~s)"
+         (GetLastError)))
+

@@ -9,5 +9,5 @@
   (def/public-unimplemented number)
   (def/public-unimplemented enable-top)
   (def/public-unimplemented delete)
-  (def/public-unimplemented append)
+  (define/public (append m l) (void))
   (super-new))

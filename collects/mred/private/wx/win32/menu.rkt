@@ -5,6 +5,10 @@
 (provide menu%)
 
 (defclass menu% object%
+  (init label
+        callback
+        font)
+
   (def/public-unimplemented select)
   (def/public-unimplemented get-font)
   (def/public-unimplemented set-width)
@@ -15,8 +19,14 @@
   (def/public-unimplemented enable)
   (def/public-unimplemented check)
   (def/public-unimplemented checked?)
-  (def/public-unimplemented append-separator)
   (def/public-unimplemented delete-by-position)
   (def/public-unimplemented delete)
-  (def/public-unimplemented append)
+
+  (public [append-item append])
+  (define (append-item i label help-str-or-submenu chckable?)
+    (void))
+
+  (define/public (append-separator) 
+    (void))
+
   (super-new))
