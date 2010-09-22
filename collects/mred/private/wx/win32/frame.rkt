@@ -3,6 +3,7 @@
          (only-in racket/list last)
          ffi/unsafe
 	 "../../syntax.rkt"
+	 "../../lock.rkt"
 	 "../common/queue.rkt"
          "utils.ss"
          "const.ss"
@@ -88,6 +89,10 @@
             (when on? (set-frame-focus))
             (queue-window-event this (lambda () (on-activate on?))))))
       0]
+     [(and (= msg WM_COMMAND)
+           (zero? (HIWORD wParam)))
+      (queue-window-event this (lambda () (on-menu-command (LOWORD wParam))))
+      0]
      [else (super wndproc w msg wParam lParam)]))
 
   (define/public (on-close) (void))
@@ -104,7 +109,9 @@
 
   (def/public-unimplemented on-toolbar-click)
   (def/public-unimplemented on-menu-click)
-  (def/public-unimplemented on-menu-command)
+
+  (define/public (on-menu-command i) (void))
+
   (def/public-unimplemented on-mdi-activate)
 
   (define/public (enforce-size min-x min-y max-x max-y step-x step-y)
@@ -153,7 +160,11 @@
   (def/public-unimplemented iconized?)
   (def/public-unimplemented get-menu-bar)
 
-  (define/public (set-menu-bar mb) (void))
+  (define menu-bar #f)
+  (define/public (set-menu-bar mb)
+    (atomically
+     (set! menu-bar mb)
+     (send mb set-parent this)))
 
   (def/public-unimplemented set-icon)
   (def/public-unimplemented iconize)

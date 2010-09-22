@@ -6,6 +6,7 @@
          "types.rkt"
          "utils.rkt"
          "const.rkt"
+         "menu-item.rkt"
 	 racket/draw)
 
 (provide
@@ -84,7 +85,6 @@
 (define-unimplemented get-display-depth)
 (define-unimplemented is-color-display?)
 (define-unimplemented file-selector)
-(define-unimplemented id-to-menu-item)
 (define-unimplemented get-the-x-selection)
 (define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)

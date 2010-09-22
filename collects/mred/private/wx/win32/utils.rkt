@@ -10,7 +10,9 @@
 	 define-comctl32
 	 define-uxtheme
          define-mz
-         failed)
+         failed
+
+         SendMessageW)
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))
@@ -29,4 +31,6 @@
 (define (failed w who)
   (error who "call failed (~s)"
          (GetLastError)))
+
+(define-user32 SendMessageW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
 

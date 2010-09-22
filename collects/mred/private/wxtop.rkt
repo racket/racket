@@ -680,17 +680,11 @@
 	    (when mb (set! menu-bar mb))
 	    (super set-menu-bar mb))]
 	 [on-menu-command
-	  (entry-point
-	   (lambda (id)
-	     (let ([wx (wx:id-to-menu-item id)])
-	       (let ([go (lambda ()
-			   (do-command (wx->mred wx) (make-object wx:control-event% 'menu)))])
-		 (if (eq? 'windows (system-type))
-		     ;; Windows: need trampoline
-		     (wx:queue-callback 
-		      (entry-point (lambda () (go)))
-		      wx:middle-queue-key)
-		     (go))))))]
+          (entry-point
+           (lambda (id)
+             (let ([wx (wx:id-to-menu-item id)])
+               (when wx
+                 (do-command (wx->mred wx) (make-object wx:control-event% 'menu))))))]
 	 [on-menu-click
 	  (entry-point
 	   (lambda ()

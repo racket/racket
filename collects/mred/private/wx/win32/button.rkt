@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/class
           "../../syntax.rkt"
+          "../common/event.rkt"
          "item.rkt"
 	 "utils.rkt"
 	 "const.rkt"
@@ -13,6 +14,8 @@
   (inherit auto-size)
 
   (init parent cb label x y w h style font)
+
+  (define callback cb)
 
   (super-new [parent parent]
 	     [hwnd 
@@ -28,5 +31,12 @@
 	     [style style])
 
   (auto-size label 40 12 12 0)
+
+  (define/public (do-command)
+    (queue-window-event this (lambda ()
+                               (callback this
+                                         (new control-event%
+                                              [event-type 'button]
+                                              [time-stamp (current-milliseconds)])))))
 
   (def/public-unimplemented set-border))

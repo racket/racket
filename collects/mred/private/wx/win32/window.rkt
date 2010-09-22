@@ -36,8 +36,6 @@
 
 (define-gdi32 CreateFontIndirectW (_wfun _LOGFONT-pointer -> _HFONT))
 
-(define-user32 SendMessageW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
-
 (define-user32 MoveWindow(_wfun _HWND _int _int _int _int _BOOL -> (r : _BOOL)
                                 -> (unless r (failed 'MoveWindow))))
 
@@ -45,6 +43,11 @@
 
 (define SW_SHOW 5)
 (define SW_HIDE 0)
+
+(define-cstruct _NMHDR
+  ([hwndFrom _HWND]
+   [idFrom _pointer]
+   [code _UINT]))
 
 (define-user32 GetDialogBaseUnits (_fun -> _LONG))
 (define measure-dc #f)
@@ -98,6 +101,20 @@
          (do-key wParam lParam #t #f)))]
      [(= msg WM_CHAR)
       (do-key wParam lParam #t #f)
+      0]
+     [(= msg WM_COMMAND)
+      (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
+             [wx (any-hwnd->wx control-hwnd)])
+        (if wx 
+            (begin
+              (send wx do-command)
+              0)
+            (DefWindowProcW w msg wParam lParam)))]
+     [(= msg WM_NOTIFY)
+      (let* ([nmhdr (cast lParam _LPARAM _NMHDR-pointer)]
+             [control-hwnd (NMHDR-hwndFrom nmhdr)]
+             [wx (any-hwnd->wx control-hwnd)])
+        (when wx (send wx do-command)))
       0]
      [else
       (DefWindowProcW w msg wParam lParam)]))
