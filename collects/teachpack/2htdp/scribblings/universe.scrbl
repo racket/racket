@@ -356,7 +356,8 @@ All @tech{MouseEvent}s are represented via strings:
 @item{@scheme["button-up"]
  signals that the computer user has let go of a mouse button;}
 @item{@scheme["drag"]
- signals that the computer user is dragging the mouse;}
+ signals that the computer user is dragging the mouse. A dragging event
+ occurs when the mouse moves while a mouse button is pressed.}
 @item{@scheme["move"]
  signals that the computer user has moved the mouse;}
 @item{@scheme["enter"]
