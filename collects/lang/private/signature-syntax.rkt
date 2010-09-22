@@ -10,7 +10,8 @@
 	 (for-syntax scheme/base)
 	 (for-syntax syntax/stx)
 	 (for-syntax stepper/private/shared)
-	 (only-in lang/private/teachprims beginner-equal?))
+	 (only-in lang/private/teachprims beginner-equal?)
+	 (for-syntax "firstorder.rkt"))
 
 (define-for-syntax (phase-lift stx)
   (with-syntax ((?stx stx))
@@ -128,10 +129,12 @@
 						(parse-signature #f sig))
 					      (syntax->list #'(?signature ...)))))
        (with-syntax
-	   ((?call (syntax/loc stx (?signature-abstr ?signature-expr ...))))
+	   ((?call (syntax/loc stx (?signature-abstr ?signature-expr ...)))
+	    (?signature-abstr-ho (first-order->higher-order #'?signature-abstr)))
 	 #'(make-call-signature '?name
 			       (delay ?call)
-			       (delay ?signature-abstr) (delay (list ?signature-expr ...))
+			       (delay ?signature-abstr-ho)
+			       (delay (list ?signature-expr ...))
 			       ?stx))))
     (else
      (raise-syntax-error 'signature
