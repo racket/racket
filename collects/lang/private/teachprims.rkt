@@ -16,7 +16,8 @@ namespace.
 
 (require mzlib/list 
          mzlib/math
-         mzlib/etc)
+         mzlib/etc
+	 deinprogramm/signature/signature)
 
 (define-syntax (define-teach stx)
   (syntax-case stx ()
@@ -177,6 +178,18 @@ namespace.
   (lambda (a b)
     (check-second 'cons a b)
     (cons a b)))
+
+(define-teach beginner car
+  (lambda (p) (checked-car p)))
+
+(define-teach beginner first
+  (lambda (p) (checked-car p)))
+
+(define-teach beginner cdr
+  (lambda (p) (checked-cdr p)))
+
+(define-teach beginner rest
+  (lambda (p) (checked-cdr p)))
 
 (define-teach beginner list*
   (lambda x
@@ -382,6 +395,10 @@ namespace.
  beginner-member?
  beginner-remove
  beginner-cons
+ beginner-car
+ beginner-cdr
+ beginner-first
+ beginner-rest
  beginner-list*
  beginner-append
  intermediate-append

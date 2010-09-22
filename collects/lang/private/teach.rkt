@@ -2882,7 +2882,8 @@
 (provide Integer Number Rational Real Natural 
 	 Boolean True False
 	 String Char Symbol Empty-list
-	 Any Unspecific)
+	 Any Unspecific
+	 cons-of)
 
 (define Integer (signature/arbitrary arbitrary-integer (predicate integer?)))
 (define Number (signature/arbitrary arbitrary-real (predicate number?)))
@@ -2908,6 +2909,9 @@
 (define Any (signature (predicate (lambda (_) #t))))
 
 (define Unspecific (signature (predicate (lambda (_) #t))))
+
+(define (cons-of car-sig cdr-sig)
+  (make-pair-signature car-sig cdr-sig))
 
 ; QuickCheck
 
