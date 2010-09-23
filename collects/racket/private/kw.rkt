@@ -1209,14 +1209,12 @@
                            [(arity-at-least? a)
                             (b . >= . (arity-at-least-value a))]
                            [else
-                            (ormap (lambda (b a) (includes? a b))
-                                   a)])]
+                            (ormap (lambda (a) (includes? a b)) a)])]
              [(arity-at-least? b) (cond
                                    [(number? a) #f]
                                    [(arity-at-least? a)
                                     ((arity-at-least-value b) . >= . (arity-at-least-value a))]
-                                   [else (ormap (lambda (b a) (includes? b a))
-                                                a)])]
+                                   [else (ormap (lambda (a) (includes? b a)) a)])]
              [else (andmap (lambda (b) (includes? a b)) b)]))
 
           (unless (includes? b a)
