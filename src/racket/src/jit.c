@@ -5110,7 +5110,10 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   } else {
     int unbox = jitter->unbox;
 
-    if (unsafe_fl < 0) unsafe_fl = 0;
+    if (unsafe_fl < 0) {
+      has_fixnum_fast = 0;
+      unsafe_fl = 0;
+    }
 
     /* While generating a fixnum op, don't unbox! */
     jitter->unbox = 0;
@@ -11068,6 +11071,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_prolog(JIT_R1);
 
   /* Check for chaperone: */
+  ref2 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
   jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
   ref = jit_bnei_i(jit_forward(), JIT_R1, scheme_chaperone_type);
   jit_ldxi_p(JIT_R0, JIT_R0, (long)&((Scheme_Chaperone *)0x0)->val);
@@ -11075,6 +11079,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
 
   mz_patch_branch(ref);
+  mz_patch_branch(ref2);
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
   (void)mz_finish(ts_scheme_vector_length);
