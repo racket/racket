@@ -427,7 +427,9 @@
               (newline port)))
           
           (define/override (first-opened settings)
-            (for-each namespace-require/constant (htdp-lang-settings-teachpacks settings)))
+            (for ([tp (in-list (htdp-lang-settings-teachpacks settings))])
+              (with-handlers ((exn:fail? void)) ;; swallow errors here; drracket is not ready to display errors at this point
+                (for-each namespace-require/constant tp))))
           
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
