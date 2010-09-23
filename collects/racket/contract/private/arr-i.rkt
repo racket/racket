@@ -34,7 +34,7 @@
 (struct ->i (arg-ctcs arg-dep-ctcs indy-arg-ctcs
                       rng-ctcs rng-dep-ctcs indy-rng-ctcs
                       pre/post-procs
-                      mandatory-args opt-args mandatory-kwds opt-kwds rest?
+                      mandatory-args opt-args mandatory-kwds opt-kwds rest? mtd?
                       here
                       mk-wrapper
                       name-info)
@@ -149,7 +149,18 @@
                           ,@(if post-info
                                 `(#:post ,post-info ...)
                                 '()))))
-         #:first-order (λ (ctc) (λ (x) #f)) ;; WRONG
+         #:first-order
+         (λ (ctc)
+             (let ([has-rest? (->i-rest? ctc)]
+                   [mtd? (->i-mtd? ctc)]
+                   [mand-args (->i-mandatory-args ctc)]
+                   [opt-args (->i-opt-args ctc)]
+                   [mand-kwds (->i-mandatory-kwds ctc)]
+                   [opt-kwds (->i-opt-kwds ctc)])
+               (λ (val)
+                 (if has-rest?
+                     (check-procedure/more val mtd? mand-args mand-kwds opt-kwds #f)
+                     (check-procedure val mtd? mand-args opt-args mand-kwds opt-kwds #f)))))
          #:stronger (λ (this that) (eq? this that)))) ;; WRONG
 
 ;; find-ordering : (listof arg) -> (values (listof arg) (listof number)) 
@@ -731,6 +742,7 @@
                                              (istx-args an-istx))) 
                          keyword<?)
                 #,(and (istx-rst an-istx) #t)
+                #,(and (syntax-parameter-value #'making-a-method) #t)
                 (quote-module-path)
                 #,wrapper-func
                 '#(#,(for/list ([an-arg (in-list (istx-args an-istx))])
