@@ -638,7 +638,13 @@ main thread.
 See also
 @method[drracket:rep:text% initialize-console].
 
-It does not have to accept both zero and one arguments; the zero argument
+Calling this method should not raise an exception (or otherwise
+try to escape). DrRacket is not in a position to signal the errors
+as user errors when this is called. An error will cause DrRacket
+to hang.
+
+Contrary to the method contract space, this method
+does not have to accept both zero and one arguments; the zero argument
 version is for backwards compatibility and drracket tests the arity of the
 method before invoking it.
 

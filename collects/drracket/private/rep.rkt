@@ -1678,18 +1678,28 @@ TODO
         (send context disable-evaluation)
         (reset-console)
         
-        (queue-user/wait
-         (λ () ; =User=, =No-Breaks=
-           (let ([lang (drracket:language-configuration:language-settings-language user-language-settings)])
-             (cond
-               ;; this is for backwards compatibility; drracket used to
-               ;; expect this method to be a thunk (but that was a bad decision)
-               [(object-method-arity-includes? lang 'first-opened 1)
-                (send lang first-opened
-                      (drracket:language-configuration:language-settings-settings user-language-settings))]
-               [else
-                ;; this is the backwards compatible case.
-                (send lang first-opened)]))))
+        (let ([exn-raised #f]
+              [lang (drracket:language-configuration:language-settings-language user-language-settings)])
+          (queue-user/wait
+           (λ () ; =User=, =No-Breaks=
+             (with-handlers ((exn:fail? (λ (x) (set! exn-raised x))))
+               (cond
+                 ;; this is for backwards compatibility; drracket used to
+                 ;; expect this method to be a thunk (but that was a bad decision)
+                 [(object-method-arity-includes? lang 'first-opened 1)
+                  (send lang first-opened
+                        (drracket:language-configuration:language-settings-settings user-language-settings))]
+                 [else
+                  ;; this is the backwards compatible case.
+                  (send lang first-opened)]))))
+          (when exn-raised
+            (let ([sp (open-output-string)])
+              (parameterize ([current-error-port sp])
+                (drracket:init:original-error-display-handler (exn-message exn-raised) exn-raised)) 
+              (message-box (string-constant drscheme)
+                           (format "Exception raised while running the first-opened method of the language ~s:\n~a"
+                                   (send lang get-language-position)
+                                   (get-output-string sp))))))
         
         (insert-prompt)
         (send context enable-evaluation)
