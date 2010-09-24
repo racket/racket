@@ -101,6 +101,15 @@ static Scheme_Object *shared_flvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_shared_flvector (int argc, Scheme_Object *argv[]);
 #endif
 
+static Scheme_Object *fxvector (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fxvector_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fxvector_length (int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_fxvector (int argc, Scheme_Object *argv[]);
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *shared_fxvector (int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_shared_fxvector (int argc, Scheme_Object *argv[]);
+#endif
+
 static Scheme_Object *integer_to_fl (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_to_integer (int argc, Scheme_Object *argv[]);
 
@@ -140,6 +149,14 @@ static Scheme_Object *fl_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flvector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flvector_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flvector_set (int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *unsafe_fxvector_length (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_fxvector_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_fxvector_set (int argc, Scheme_Object *argv[]);
+static Scheme_Object *s16_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *s16_set (int argc, Scheme_Object *argv[]);
+static Scheme_Object *u16_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *u16_set (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_make_flrectangular (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flreal_part (int argc, Scheme_Object *argv[]);
@@ -580,6 +597,46 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("flvector-set!", p, env);
 
+  scheme_add_global_constant("fxvector",
+                             scheme_make_prim_w_arity(fxvector,
+                                                      "fxvector",
+                                                      0, -1),
+			     env);
+  scheme_add_global_constant("fxvector?",
+                             scheme_make_folding_prim(fxvector_p,
+                                                      "fxvector?",
+                                                      1, 1, 1),
+			     env);
+  scheme_add_global_constant("make-fxvector",
+                             scheme_make_immed_prim(make_fxvector,
+                                                    "make-fxvector",
+                                                    1, 2),
+			     env);
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  GLOBAL_PRIM_W_ARITY("shared-fxvector", shared_fxvector, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY("make-shared-fxvector", make_shared_fxvector, 1, 2, env);
+#else
+  GLOBAL_PRIM_W_ARITY("shared-fxvector", fxvector, 0, -1, env); 
+  GLOBAL_PRIM_W_ARITY("make-shared-fxvector", make_fxvector, 1, 2, env);
+#endif
+
+  p = scheme_make_immed_prim(fxvector_length, "fxvector-length", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("fxvector-length", p, env);
+
+  p = scheme_make_immed_prim(scheme_checked_fxvector_ref,
+                             "fxvector-ref",
+                             2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("fxvector-ref", p, env);
+
+  p = scheme_make_immed_prim(scheme_checked_fxvector_set,
+                             "fxvector-set!",
+                             3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("fxvector-set!", p, env);
+
   p = scheme_make_folding_prim(integer_to_fl, "->fl", 1, 1, 1);
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -814,6 +871,45 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-flvector-set!", p, env);
+
+  p = scheme_make_immed_prim(unsafe_fxvector_length, "unsafe-fxvector-length",
+                             1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-fxvector-length", p, env);
+
+  p = scheme_make_immed_prim(unsafe_fxvector_ref, "unsafe-fxvector-ref",
+                             2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-fxvector-ref", p, env);
+
+  p = scheme_make_immed_prim(unsafe_fxvector_set, "unsafe-fxvector-set!",
+                             3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-fxvector-set!", p, env);
+
+  p = scheme_make_immed_prim(s16_ref, "unsafe-s16vector-ref",
+                             2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
+  scheme_add_global_constant("unsafe-s16vector-ref", p, env);
+  
+  p = scheme_make_immed_prim(s16_set, "unsafe-s16vector-set!",
+                             3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-s16vector-set!", p, env);  
+
+  p = scheme_make_immed_prim(u16_ref, "unsafe-u16vector-ref",
+                             2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
+  scheme_add_global_constant("unsafe-u16vector-ref", p, env);
+  
+  p = scheme_make_immed_prim(u16_set, "unsafe-u16vector-set!",
+                             3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-u16vector-set!", p, env);  
 
   p = scheme_make_folding_prim(unsafe_make_flrectangular, "unsafe-make-flrectangular", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
@@ -3171,60 +3267,37 @@ static Scheme_Double_Vector *alloc_shared_flvector(long size)
   void *original_gc;
 
   original_gc = GC_switch_to_master_gc();
-  vec = (Scheme_Double_Vector *)scheme_malloc_fail_ok(scheme_malloc_atomic_tagged, 
-                                                      sizeof(Scheme_Double_Vector) 
-                                                      + ((size - 1) * sizeof(double)));
+  vec = scheme_alloc_flvector(size);
   GC_switch_back_from_master(original_gc);
-
-  vec->iso.so.type = scheme_flvector_type;
-  SHARED_ALLOCATED_SET(vec);
-  vec->size = size;
 
   return vec;
 }
 #endif
 
-static Scheme_Object *flvector (int argc, Scheme_Object *argv[])
+static Scheme_Object *do_flvector (const char *name, Scheme_Double_Vector *vec, int argc, Scheme_Object *argv[])
 {
   int i;
-  Scheme_Double_Vector *vec;
 
   for (i = 0; i < argc; i++) {
     if (!SCHEME_FLOATP(argv[i])) {
-      scheme_wrong_type("flvector", "inexact real", i, argc, argv);
+      scheme_wrong_type(name, "inexact real", i, argc, argv);
       return NULL;
     }
-  }
-
-  vec = scheme_alloc_flvector(argc);
-
-  for (i = 0; i < argc; i++) {
     vec->els[i] = SCHEME_FLOAT_VAL(argv[i]);
   }
 
   return (Scheme_Object *)vec;
 }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-static Scheme_Object *shared_flvector (int argc, Scheme_Object *argv[])
+static Scheme_Object *flvector (int argc, Scheme_Object *argv[])
 {
-  int i;
-  Scheme_Double_Vector *vec;
+  return do_flvector("flvector", scheme_alloc_flvector(argc), argc, argv);
+}
 
-  for (i = 0; i < argc; i++) {
-    if (!SCHEME_FLOATP(argv[i])) {
-      scheme_wrong_type("flvector", "inexact real", i, argc, argv);
-      return NULL;
-    }
-  }
-
-  vec = alloc_shared_flvector(argc);
-
-  for (i = 0; i < argc; i++) {
-    vec->els[i] = SCHEME_FLOAT_VAL(argv[i]);
-  }
-
-  return (Scheme_Object *)vec;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *flvector (int argc, Scheme_Object *argv[])
+{
+  return do_flvector("shared-flvector", scheme_alloc_shared_flvector(argc), argc, argv);
 }
 #endif
 
@@ -3236,7 +3309,7 @@ static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[])
     return scheme_false;
 }
 
-static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
+static Scheme_Object *do_make_flvector (const char *name, int as_shared, int argc, Scheme_Object *argv[])
 {
   Scheme_Double_Vector *vec;
   long size;
@@ -3245,7 +3318,7 @@ static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
     size = SCHEME_INT_VAL(argv[0]);
   else if (SCHEME_BIGNUMP(argv[0])) {
     if (SCHEME_BIGPOS(argv[0])) {
-      scheme_raise_out_of_memory("make-flvector", NULL);
+      scheme_raise_out_of_memory(name, NULL);
       return NULL;
     } else
       size = -1;
@@ -3253,14 +3326,20 @@ static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
     size = -1;
 
   if (size < 0)
-    scheme_wrong_type("make-flvector", "exact non-negative integer", 0, argc, argv);
+    scheme_wrong_type(name, "exact non-negative integer", 0, argc, argv);
 
   if (argc > 1) {
     if (!SCHEME_FLOATP(argv[1]))
-      scheme_wrong_type("make-flvector", "inexact real", 1, argc, argv);
+      scheme_wrong_type(name, "inexact real", 1, argc, argv);
   }
-
-  vec = scheme_alloc_flvector(size);
+  
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  if (as_shared)
+    vec = scheme_alloc_shared_flvector(size);
+  else
+#else
+    vec = scheme_alloc_flvector(size);
+#endif
 
   if (argc > 1) {
     int i;
@@ -3273,42 +3352,15 @@ static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
   return (Scheme_Object *)vec;
 }
 
+static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
+{
+  return do_make_flvector("make-flvector", 0, argc, argv);
+}
+
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *make_shared_flvector (int argc, Scheme_Object *argv[])
 {
-  Scheme_Double_Vector *vec;
-  long size;
-
-  if (SCHEME_INTP(argv[0]))
-    size = SCHEME_INT_VAL(argv[0]);
-  else if (SCHEME_BIGNUMP(argv[0])) {
-    if (SCHEME_BIGPOS(argv[0])) {
-      scheme_raise_out_of_memory("make-flvector", NULL);
-      return NULL;
-    } else
-      size = -1;
-  } else
-    size = -1;
-
-  if (size < 0)
-    scheme_wrong_type("make-flvector", "exact non-negative integer", 0, argc, argv);
-
-  if (argc > 1) {
-    if (!SCHEME_FLOATP(argv[1]))
-      scheme_wrong_type("make-flvector", "inexact real", 1, argc, argv);
-  }
-
-  vec = alloc_shared_flvector(size);
-
-  if (argc > 1) {
-    int i;
-    double d = SCHEME_FLOAT_VAL(argv[1]);
-    for (i = 0; i < size; i++) {
-      vec->els[i] = d;
-    }
-  }
-
-  return (Scheme_Object *)vec;
+  return do_make_flvector("make-shared-flvector", 1, argc, argv);
 }
 #endif
 
@@ -3373,6 +3425,189 @@ Scheme_Object *scheme_checked_flvector_set (int argc, Scheme_Object *argv[])
   }
 
   SCHEME_FLVEC_ELS(vec)[pos] = SCHEME_FLOAT_VAL(argv[2]);
+
+  return scheme_void;
+}
+
+/************************************************************************/
+/*                             fxvectors                               */
+/************************************************************************/
+
+Scheme_Vector *scheme_alloc_fxvector(long size)
+{
+  Scheme_Vector *vec;
+
+  vec = (Scheme_Vector *)scheme_malloc_fail_ok(scheme_malloc_atomic_tagged, 
+                                               sizeof(Scheme_Vector) 
+                                               + ((size - 1) * sizeof(Scheme_Object*)));
+  vec->iso.so.type = scheme_fxvector_type;
+  vec->size = size;
+
+  return vec;
+}
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Vector *alloc_shared_fxvector(long size)
+{
+  Scheme_Vector *vec;
+  void *original_gc;
+
+  original_gc = GC_switch_to_master_gc();
+  vec = scheme_alloc_fxvector(size);
+  GC_switch_back_from_master(original_gc);
+
+  return vec;
+}
+#endif
+
+static Scheme_Object *do_fxvector (const char *name, Scheme_Vector *vec, int argc, Scheme_Object *argv[])
+{
+  int i;
+
+  for (i = 0; i < argc; i++) {
+    if (!SCHEME_INTP(argv[i])) {
+      scheme_wrong_type(name, "fixnum", i, argc, argv);
+      return NULL;
+    }
+    vec->els[i] = argv[i];
+  }
+
+  return (Scheme_Object *)vec;
+}
+
+static Scheme_Object *fxvector (int argc, Scheme_Object *argv[])
+{
+  return do_fxvector("fxvector", scheme_alloc_fxvector(argc), argc, argv);
+}
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *fxvector (int argc, Scheme_Object *argv[])
+{
+  return do_fxvector("shared-fxvector", scheme_alloc_shared_fxvector(argc), argc, argv);
+}
+#endif
+
+static Scheme_Object *fxvector_p (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_FXVECTORP(argv[0]))
+    return scheme_true;
+  else
+    return scheme_false;
+}
+
+static Scheme_Object *do_make_fxvector (const char *name, int as_shared, int argc, Scheme_Object *argv[])
+{
+  Scheme_Vector *vec;
+  long size;
+
+  if (SCHEME_INTP(argv[0]))
+    size = SCHEME_INT_VAL(argv[0]);
+  else if (SCHEME_BIGNUMP(argv[0])) {
+    if (SCHEME_BIGPOS(argv[0])) {
+      scheme_raise_out_of_memory(name, NULL);
+      return NULL;
+    } else
+      size = -1;
+  } else
+    size = -1;
+
+  if (size < 0)
+    scheme_wrong_type(name, "exact non-negative integer", 0, argc, argv);
+
+  if (argc > 1) {
+    if (!SCHEME_INTP(argv[1]))
+      scheme_wrong_type(name, "fixnum", 1, argc, argv);
+  }
+  
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  if (as_shared)
+    vec = scheme_alloc_shared_fxvector(size);
+  else
+#else
+    vec = scheme_alloc_fxvector(size);
+#endif
+
+  {
+    int i;
+    Scheme_Object *val = ((argc > 1) ? argv[1] : scheme_make_integer(0));
+    for (i = 0; i < size; i++) {
+      vec->els[i] = val;
+    }
+  }
+
+  return (Scheme_Object *)vec;
+}
+
+static Scheme_Object *make_fxvector (int argc, Scheme_Object *argv[])
+{
+  return do_make_fxvector("make-fxvector", 0, argc, argv);
+}
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *make_shared_fxvector (int argc, Scheme_Object *argv[])
+{
+  return do_make_fxvector("make-shared-fxvector", 1, argc, argv);
+}
+#endif
+
+Scheme_Object *scheme_fxvector_length(Scheme_Object *vec)
+{
+  if (!SCHEME_FXVECTORP(vec))
+    scheme_wrong_type("fxvector-length", "fxvector", 0, 1, &vec);
+
+  return scheme_make_integer(SCHEME_FXVEC_SIZE(vec));
+}
+
+static Scheme_Object *fxvector_length (int argc, Scheme_Object *argv[])
+{
+  return scheme_fxvector_length(argv[0]);
+}
+
+Scheme_Object *scheme_checked_fxvector_ref (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *vec;
+  long len, pos;
+
+  vec = argv[0];
+  if (!SCHEME_FXVECTORP(vec))
+    scheme_wrong_type("fxvector-ref", "fxvector", 0, argc, argv);
+  
+  len = SCHEME_FXVEC_SIZE(vec);
+  pos = scheme_extract_index("fxvector-ref", 1, argc, argv, len, 0);
+
+  if (pos >= len) {
+    scheme_bad_vec_index("fxvector-ref", argv[1], 
+                         "fxvector", vec,
+                         0, len);
+    return NULL;
+  }
+
+  return SCHEME_FXVEC_ELS(vec)[pos];
+}
+
+Scheme_Object *scheme_checked_fxvector_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *vec;
+  long len, pos;
+
+  vec = argv[0];
+  if (!SCHEME_FXVECTORP(vec))
+    scheme_wrong_type("fxvector-set!", "fxvector", 0, argc, argv);
+  
+  len = SCHEME_FXVEC_SIZE(vec);
+  pos = scheme_extract_index("fxvector-set!", 1, argc, argv, len, 0);
+  
+  if (!SCHEME_INTP(argv[2]))
+    scheme_wrong_type("fxvector-set!", "fixnum", 2, argc, argv);
+
+  if (pos >= len) {
+    scheme_bad_vec_index("fxvector-set!", argv[1], 
+                         "fxvector", vec,
+                         0, len);
+    return NULL;
+  }
+
+  SCHEME_FXVEC_ELS(vec)[pos] = argv[2];
 
   return scheme_void;
 }
@@ -3557,6 +3792,63 @@ static Scheme_Object *unsafe_flvector_set (int argc, Scheme_Object *argv[])
   pos = SCHEME_INT_VAL(argv[1]);
   SCHEME_FLVEC_ELS(argv[0])[pos] = SCHEME_FLOAT_VAL(argv[2]);
 
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_fxvector_length (int argc, Scheme_Object *argv[])
+{
+  return scheme_make_integer(SCHEME_FXVEC_SIZE(argv[0]));
+}
+
+static Scheme_Object *unsafe_fxvector_ref (int argc, Scheme_Object *argv[])
+{
+  long pos;
+
+  pos = SCHEME_INT_VAL(argv[1]);
+  return SCHEME_FXVEC_ELS(argv[0])[pos];
+}
+
+static Scheme_Object *unsafe_fxvector_set (int argc, Scheme_Object *argv[])
+{
+  long pos;
+
+  pos = SCHEME_INT_VAL(argv[1]);
+  SCHEME_FXVEC_ELS(argv[0])[pos] = argv[2];
+
+  return scheme_void;
+}
+
+static Scheme_Object *s16_ref (int argc, Scheme_Object *argv[])
+{
+  long v;
+  Scheme_Object *p;
+  p = ((Scheme_Structure *)argv[0])->slots[0];
+  v = ((short *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])];
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *s16_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p;
+  p = ((Scheme_Structure *)argv[0])->slots[0];
+  ((short *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])] = (short)SCHEME_INT_VAL(argv[2]);
+  return scheme_void;
+}
+
+static Scheme_Object *u16_ref (int argc, Scheme_Object *argv[])
+{
+  long v;
+  Scheme_Object *p;
+  p = ((Scheme_Structure *)argv[0])->slots[0];
+  v = ((unsigned short *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])];
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *u16_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p;
+  p = ((Scheme_Structure *)argv[0])->slots[0];
+  ((unsigned short *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])] = (unsigned short)SCHEME_INT_VAL(argv[2]);
   return scheme_void;
 }
 

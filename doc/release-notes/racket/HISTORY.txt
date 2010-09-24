@@ -1,3 +1,7 @@
+Version 5.0.1.7
+Added fxvectors
+Added unsafe-{s,u}16-{ref,set!}
+
 Version 5.0.1.6
 Added prop:proxy-of
 

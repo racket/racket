@@ -424,7 +424,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       goto top;
     } else
       return 0;
-  } else if (SCHEME_VECTORP(obj1)) {
+  } else if (SCHEME_VECTORP(obj1)
+             || SCHEME_FXVECTORP(obj1)) {
 #   include "mzeqchk.inc"
     if ((eql->for_chaperone == 1) && (!SCHEME_IMMUTABLEP(obj1)
                                       || !SCHEME_IMMUTABLEP(obj2)))

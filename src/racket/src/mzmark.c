@@ -1453,6 +1453,34 @@ static int vector_obj_FIXUP(void *p, struct NewGC *gc) {
 #define vector_obj_IS_CONST_SIZE 0
 
 
+static int fxvector_obj_SIZE(void *p, struct NewGC *gc) {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+}
+
+static int fxvector_obj_MARK(void *p, struct NewGC *gc) {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+}
+
+static int fxvector_obj_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+}
+
+#define fxvector_obj_IS_ATOMIC 1
+#define fxvector_obj_IS_CONST_SIZE 0
+
+
 static int flvector_obj_SIZE(void *p, struct NewGC *gc) {
   Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
 

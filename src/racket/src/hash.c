@@ -1066,6 +1066,7 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
       break;
     }
   case scheme_vector_type:
+  case scheme_fxvector_type:
   case scheme_wrap_chunk_type:
     {
       int len = SCHEME_VEC_SIZE(o), i, val;
@@ -1479,6 +1480,7 @@ static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       return v1 + v2;
     }
   case scheme_vector_type:
+  case scheme_fxvector_type:
   case scheme_wrap_chunk_type:
     {
       int len = SCHEME_VEC_SIZE(o), i;

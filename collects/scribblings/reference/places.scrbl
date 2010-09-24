@@ -16,7 +16,7 @@
 
 @; ----------------------------------------------------------------------
 
-The PLT Places API enables the development of parallel programs which
+@deftech{Places} enable the development of parallel programs that
 take advantage of machines with multiple processors, cores, or
 hardware threads.
 

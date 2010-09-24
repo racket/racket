@@ -36,7 +36,9 @@
                      [_TAG         (id "_" "")]
                      [_TAG*        (id "_" "*")]
                      [TAGname      name]
-                     [f64?         (if (eq? (syntax-e #'TAG) 'f64) #'#t #'#f)])
+                     [f64?         (if (eq? (syntax-e #'TAG) 'f64) #'#t #'#f)]
+                     [s16?         (if (eq? (syntax-e #'TAG) 's16) #'#t #'#f)]
+                     [u16?         (if (eq? (syntax-e #'TAG) 'u16) #'#t #'#f)])
          #'(begin
              (define-struct TAG (ptr length))
              (provide TAG? TAG-length (rename-out [TAG s:TAG]))
@@ -57,19 +59,28 @@
              (define* (TAG-ref v i)
                (if (TAG? v)
                    (if (and (exact-nonnegative-integer? i) (< i (TAG-length v)))
-                       (if f64? ;; use JIT-inlined operation
-                           (unsafe-f64vector-ref v i)
-                           (ptr-ref (TAG-ptr v) type i))
+                       ;; use JIT-inlined operation if available:
+                       (cond
+                        [f64? (unsafe-f64vector-ref v i)]
+                        [s16? (unsafe-s16vector-ref v i)]
+                        [u16? (unsafe-u16vector-ref v i)]
+                        [else (ptr-ref (TAG-ptr v) type i)])
                        (error 'TAG-ref "bad index ~e for ~a bounds of 0..~e"
                               i 'TAG (sub1 (TAG-length v))))
                    (raise-type-error 'TAG-ref TAGname v)))
              (define* (TAG-set! v i x)
                (if (TAG? v)
                    (if (and (exact-nonnegative-integer? i) (< i (TAG-length v)))
-                       (if (and f64? ;; use JIT-inlined operation
-                                (inexact-real? x))
-                           (unsafe-f64vector-set! v i x)
-                           (ptr-set! (TAG-ptr v) type i x))
+                       ;; use JIT-inlined operation if available:
+                       (cond
+                        [(and f64? (inexact-real? x))
+                         (unsafe-f64vector-set! v i x)]
+                        [(and s16? (fixnum? x) (unsafe-fx<= -32768 x) (unsafe-fx<= x 32767))
+                         (unsafe-s16vector-set! v i x)]
+                        [(and u16? (fixnum? x) (unsafe-fx<= 0 x) (unsafe-fx<= x 65535))
+                         (unsafe-u16vector-set! v i x)]
+                        [else
+                         (ptr-set! (TAG-ptr v) type i x)])
                        (error 'TAG-set! "bad index ~e for ~a bounds of 0..~e"
                               i 'TAG (sub1 (TAG-length v))))
                    (raise-type-error 'TAG-set! TAGname v)))

@@ -596,7 +596,7 @@ static long _CHECK_TINY(long diff) { if ((diff < -128) || (diff > 127)) *(long *
 
 #define jit_ldi_s(d, is)		MOVSWLmr((is), 0,    0,    0, (d))
 #define jit_ldr_s(d, rs)		MOVSWLmr(0,    (rs), 0,    0, (d))
-#define jit_ldxr_s(d, s1, s2)		MOVSWLmr(0,    (s1), (s2), 1, (d))
+#define jit_ldxr_s(d, s1, s2)		MOVSWQmr(0,    (s1), (s2), 1, (d))
 #define jit_ldxi_s(d, rs, is)		MOVSWLmr((is), (rs), 0,    0, (d))
 
 #define jit_ldi_us(d, is)		MOVZWLmr((is), 0,    0,    0,  (d))

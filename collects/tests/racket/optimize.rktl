@@ -552,6 +552,10 @@
     (bin-exact 3.3 'flvector-ref (flvector 1.1 2.2 3.3) 2)
     (un-exact 3 'flvector-length (flvector 1.1 2.2 3.3) #t)
 
+    (bin-exact 11 'fxvector-ref (fxvector 11 21 31) 0 #t)
+    (bin-exact 31 'fxvector-ref (fxvector 11 21 31) 2)
+    (un-exact 3 'fxvector-length (fxvector 11 21 31) #t)
+
     (bin-exact #\a 'string-ref "abc\u2001" 0 #t)
     (bin-exact #\b 'string-ref "abc\u2001" 1)
     (bin-exact #\c 'string-ref "abc\u2001" 2)
@@ -594,7 +598,8 @@
       (test-setter make-vector #f 7 'vector-set! vector-set! vector-ref #t)
       (test-setter make-bytes 0 7 'bytes-set! bytes-set! bytes-ref #f)
       (test-setter make-string #\a #\7 'string-set! string-set! string-ref #f)
-      (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref #f))
+      (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref #f)
+      (test-setter make-fxvector 1 7 'fxvector-set! fxvector-set! fxvector-ref #f))
 
     (let ([v (box 1)])
       (check-error-message 'set-box! (eval `(lambda (x) (set-box! x 10))))

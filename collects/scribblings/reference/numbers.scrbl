@@ -11,6 +11,10 @@
 @(define math-eval (make-base-eval))
 @(interaction-eval #:eval math-eval (require racket/math))
 
+@(define flfx-eval (make-base-eval))
+@(interaction-eval #:eval flfx-eval (require racket/fixnum))
+@(interaction-eval #:eval flfx-eval (require racket/flonum))
+
 @title[#:tag "numbers"]{Numbers}
 
 @guideintro["numbers"]{numbers}
@@ -1064,7 +1068,7 @@ Returns @racket[#t] if @racket[v] is a @tech{flvector}, @racket[#f] otherwise.}
 
 Creates a @tech{flvector} containing the given inexact real numbers.
 
-@mz-examples[(flvector 2.0 3.0 4.0 5.0)]}
+@mz-examples[#:eval flfx-eval (flvector 2.0 3.0 4.0 5.0)]}
 
 @defproc[(make-flvector [size exact-nonnegative-integer?]
                         [x inexact-real? 0.0]) 
@@ -1073,7 +1077,7 @@ Creates a @tech{flvector} containing the given inexact real numbers.
 Creates a @tech{flvector} with @racket[size] elements, where every
 slot in the @tech{flvector} is filled with @racket[x].
 
-@mz-examples[(make-flvector 4 3.0)]}
+@mz-examples[#:eval flfx-eval (make-flvector 4 3.0)]}
 
 @defproc[(flvector-length [vec flvector?]) exact-nonnegative-integer?]{
 
@@ -1103,9 +1107,7 @@ first slot is position @racket[0], and the last slot is one less than
 
 Creates a fresh @tech{flvector} of size @racket[(- end start)], with all of the
 elements of @racket[vec] from @racket[start] (inclusive) to
-@racket[end] (exclusive).
-
-Returns a fresh copy of @racket[vec].}
+@racket[end] (exclusive).}
 
 @defproc[(in-flvector (v flvector?)) sequence?]{
 
@@ -1126,10 +1128,10 @@ Like @scheme[for/vector] or @scheme[for*/vector], but for
 @defproc[(shared-flvector [x inexact-real?] ...) flvector?]{
 
 Creates a @tech{flvector} containing the given inexact real numbers.
-When @secref["places"] are enabled, the new @tech{flvector} is 
+When @tech{places} are enabled, the new @tech{flvector} is 
 allocated in the @tech{shared memory space}.
 
-@mz-examples[(shared-flvector 2.0 3.0 4.0 5.0)]}
+@mz-examples[#:eval flfx-eval (shared-flvector 2.0 3.0 4.0 5.0)]}
 
 
 @defproc[(make-shared-flvector [size exact-nonnegative-integer?]
@@ -1138,10 +1140,10 @@ allocated in the @tech{shared memory space}.
 
 Creates a @tech{flvector} with @racket[size] elements, where every
 slot in the @tech{flvector} is filled with @racket[x].
-When @secref["places"] are enabled, the new @tech{flvector} is 
+When @tech{places} are enabled, the new @tech{flvector} is 
 allocated in the @tech{shared memory space}.
 
-@mz-examples[(make-shared-flvector 4 3.0)]}
+@mz-examples[#:eval flfx-eval (make-shared-flvector 4 3.0)]}
                        
 @section{Fixnum Operations}
 
@@ -1164,6 +1166,8 @@ replaced with
 to drop in unsafe versions of the library. Alternately, when
 encountering crashes with code that uses unsafe fixnum operations, use
 the @racketmodname[racket/fixnum] library to help debug the problems.
+
+@subsection{Fixnum Arithmetic}
 
 @deftogether[(
 @defproc[(fx+ [a fixnum?] [b fixnum?]) fixnum?]
@@ -1220,6 +1224,102 @@ Safe versions of @racket[unsafe-fx=], @racket[unsafe-fx<],
 
 Safe versions of @racket[unsafe-fx->fl] and @racket[unsafe-fl->fx].}
 
+@subsection{Fixnum Vectors}
+
+A @deftech{fxvector} is like a @tech{vector}, but it holds only
+@tech{fixnums}. The only advantage of an @tech{fxvector} over a
+@tech{vector} is that a shared version can be created with functions
+like @racket[shared-fxvector].
+
+Two @tech{fxvectors} are @racket[equal?] if they have the same length,
+and if the values in corresponding slots of the @tech{fxvectors} are
+@racket[equal?].
+
+@defproc[(fxvector? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a @tech{fxvector}, @racket[#f] otherwise.}
+
+@defproc[(fxvector [x fixnum?] ...) fxvector?]{
+
+Creates a @tech{fxvector} containing the given @tech{fixnums}.
+
+@mz-examples[#:eval flfx-eval (fxvector 2 3 4 5)]}
+
+@defproc[(make-fxvector [size exact-nonnegative-integer?]
+                        [x fixnum? 0]) 
+         fxvector?]{
+
+Creates a @tech{fxvector} with @racket[size] elements, where every
+slot in the @tech{fxvector} is filled with @racket[x].
+
+@mz-examples[#:eval flfx-eval (make-fxvector 4 3)]}
+
+@defproc[(fxvector-length [vec fxvector?]) exact-nonnegative-integer?]{
+
+Returns the length of @racket[vec] (i.e., the number of slots in the
+@tech{fxvector}).}
+
+
+@defproc[(fxvector-ref [vec fxvector?] [pos exact-nonnegative-integer?])
+         fixnum?]{
+
+Returns the @tech{fixnum} in slot @racket[pos] of
+@racket[vec]. The first slot is position @racket[0], and the last slot
+is one less than @racket[(fxvector-length vec)].}
+
+@defproc[(fxvector-set! [vec fxvector?] [pos exact-nonnegative-integer?]
+                        [x fixnum?])
+         fixnum?]{
+
+Sets the @tech{fixnum} in slot @racket[pos] of @racket[vec]. The
+first slot is position @racket[0], and the last slot is one less than
+@racket[(fxvector-length vec)].}
+
+@defproc[(fxvector-copy [vec fxvector?]
+                        [start exact-nonnegative-integer? 0]
+                        [end exact-nonnegative-integer? (vector-length v)]) 
+         fxvector?]{
+
+Creates a fresh @tech{fxvector} of size @racket[(- end start)], with all of the
+elements of @racket[vec] from @racket[start] (inclusive) to
+@racket[end] (exclusive).}
+
+@defproc[(in-fxvector (v fxvector?)) sequence?]{
+
+Produces a sequence that gives the elements of @scheme[v] in order.
+Inside a @scheme[for] form, this can be optimized to step through the
+elements of @scheme[v] efficiently as in @scheme[in-list],
+@scheme[in-vector], etc.}
+
+@deftogether[(
+@defform*[((for/fxvector (for-clause ...) body ...)
+           (for/fxvector #:length length-expr (for-clause ...) body ...))]
+@defform*[((for*/fxvector (for-clause ...) body ...)
+           (for*/fxvector #:length length-expr (for-clause ...) body ...))])]{
+
+Like @scheme[for/vector] or @scheme[for*/vector], but for
+@tech{fxvector}s.}
+
+@defproc[(shared-fxvector [x fixnum?] ...) fxvector?]{
+
+Creates a @tech{fxvector} containing the given @tech{fixnums}.
+When @tech{places} are enabled, the new @tech{fxvector} is 
+allocated in the @tech{shared memory space}.
+
+@mz-examples[#:eval flfx-eval (shared-fxvector 2 3 4 5)]}
+
+
+@defproc[(make-shared-fxvector [size exact-nonnegative-integer?]
+                               [x fixnum? 0]) 
+         fxvector?]{
+
+Creates a @tech{fxvector} with @racket[size] elements, where every
+slot in the @tech{fxvector} is filled with @racket[x].
+When @tech{places} are enabled, the new @tech{fxvector} is 
+allocated in the @tech{shared memory space}.
+
+@mz-examples[#:eval flfx-eval (make-shared-fxvector 4 3)]}
+                       
 
 @; ------------------------------------------------------------------------
 @section{Extra Constants and Functions}
@@ -1287,3 +1387,4 @@ Hence also:
 @; ----------------------------------------------------------------------
 
 @close-eval[math-eval]
+@close-eval[flfx-eval]
