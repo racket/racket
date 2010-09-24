@@ -19,6 +19,7 @@
          basic-text
          metafunction-text
          grammar-style
+         paren-style
          default-style
          label-style
          non-terminal-style
@@ -79,14 +80,19 @@
                      (if (and (lw? thing-in-hole)
                               (equal? (lw-e thing-in-hole) 'hole))
                          (list (blank) context (blank))
-                         (list (blank) context "" "[" thing-in-hole "]")))))
+                         (list (blank) 
+                               context 
+                               "" 
+                               (basic-text "[" (default-style))
+                               thing-in-hole
+                               (basic-text "]" (default-style)))))))
        (hide-hole ,(λ (args)
                      (list (blank)
                            (list-ref args 2)
                            (blank))))
        (hole ,(λ (args)
                 (let ([name (lw-e (list-ref args 2))])
-                  (list "[]" 
+                  (list (basic-text "[]" (default-style)) 
                         (basic-text (format "~a" name) (non-terminal-subscript-style))))))
        (name ,(λ (args)
                 (let ([open-paren (list-ref args 0)]
@@ -373,18 +379,6 @@
                             (map (λ (x) (format " ~s" x)) (cdr lst)))))
             (values fst snd))
           (values fst (blank)))))
-  
-  (define (combine-into-loc-wrapper to-wrap)
-    (cond
-      [(null? to-wrap) (blank)]
-      [(null? (cdr to-wrap)) (car to-wrap)]
-      [else 
-       (apply hbl-append (map make-single-pict to-wrap))]))
-  
-  (define (make-single-pict x)
-    (cond
-      [(pict? x) x]
-      [(string? x) (basic-text x (default-style))]))
   
   (define (drop-to-lw-and1 lst)
     (let loop ([lst lst])
@@ -713,6 +707,8 @@
       [(symbol? atom)
        (list (or (rewrite-atomic col span atom literal-style)
                  (make-string-token col span (symbol->string atom) (literal-style))))]
+      [(member atom '("(" ")" "[" "]" "{" "}"))
+       (list (make-string-token col span atom (paren-style)))]
       [(string? atom)
        (list (make-string-token col span atom (default-style)))]
       [else (error 'atom->tokens "unk ~s" atom)]))
@@ -757,6 +753,7 @@
   (define non-terminal-superscript-style (make-parameter `(superscript . ,(non-terminal-style))))
   (define default-style (make-parameter 'roman))
   (define grammar-style (make-parameter 'roman))
+  (define paren-style (make-parameter 'roman))
   (define metafunction-style (make-parameter 'swiss))
   (define (metafunction-text str) ((current-text) str (metafunction-style) (metafunction-font-size)))
   (define literal-style (make-parameter 'swiss))

@@ -34,6 +34,7 @@
          
          default-style
          grammar-style
+         paren-style
          label-style
          literal-style
          metafunction-style

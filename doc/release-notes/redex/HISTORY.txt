@@ -1,3 +1,6 @@
+  * added grammar-style and paren-style that give finer-grained control
+    over the typesetting styles
+
 v5.0.1
 
   * changed the matching of `where' clauses in a
