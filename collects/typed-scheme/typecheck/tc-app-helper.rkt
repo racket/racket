@@ -88,6 +88,15 @@
 ;;   unrelated to error reporting)
 ;; - if we have an expected type, we don't need to show the domains for which
 ;;   the result type is not a subtype of the expected type
+;; - we can disregard domains that are more restricted than required to get
+;;   the expected type (or all but the most liberal domain when no type is
+;;   expected)
+;;   ex: if we have the 2 following possible domains for an operator:
+;;       Fixnum -> Fixnum
+;;       Integer -> Integer
+;;     and an expected type of Integer for the result of the application,
+;;     we can disregard the Fixnum domain since it imposes a restriction that
+;;     is not necessary to get the expected type
 (define (possible-domains doms rests drests rngs expected)
 
   ;; is fun-ty subsumed by a function type in others?
@@ -103,48 +112,93 @@
 
   (define expected-ty (and expected (match expected [(tc-result1: t) t])))
   (define (returns-subtype-of-expected? fun-ty)
-    (and fun-ty ; was not skipped by a previous check
-         (or (not expected)
-             (match fun-ty
-                    [(Function: (list (arr: _ rng _ _ _)))
-                     (let ([rng (match rng
-                                       [(Values: (list (Result: t _ _)))
-                                        t]
-                                       [(ValuesDots: (list (Result: t _ _)) _ _)
-                                        t])])
-                       (subtype rng expected-ty))]))))
-  
+    (or (not expected)
+        (match fun-ty
+               [(Function: (list (arr: _ rng _ _ _)))
+                (let ([rng (match rng
+                                  [(Values: (list (Result: t _ _)))
+                                   t]
+                                  [(ValuesDots: (list (Result: t _ _)) _ _)
+                                   t])])
+                  (subtype rng expected-ty))])))
+
+  ;; original info that the error message would have used
+  ;; kept in case we discard all the cases
+  (define orig (map list doms rngs rests drests))
+
+  ;; iterate in lock step over the function types we analyze and the parts
+  ;; that we will need to print the error message, to make sure we throw
+  ;; away cases consistently
   (let loop ([cases (map (compose make-Function list make-arr)
                          doms
-                         (map (lambda (rng) ; strip filters
-                                (match rng
-                                  [(Values: (list (Result: t _ _) ...))
-                                   (-values t)]
-                                  [(ValuesDots: (list (Result: t _ _) ...) _ _)
-                                   (-values t)]))
+                         (map (match-lambda ; strip filters
+                               [(Values: (list (Result: t _ _) ...))
+                                (-values t)]
+                               [(ValuesDots: (list (Result: t _ _) ...) _ _)
+                                (-values t)])
                               rngs)
                          rests drests (make-list (length doms) null))]
-             [candidates '()])
+             ;; the parts we'll need to print the error message
+             [parts orig]
+             ;; accumulators
+             [candidates '()] ; from cases
+             [parts-acc '()]) ; from parts
+
+    ;; discard subsumed cases (supertype modulo filters)
     (if (not (null? cases))
-        ;; discard subsumed cases
         (let ([head (car cases)] [tail (cdr cases)])
           (if (is-subsumed-in? head tail)
-              (loop tail (cons #f   candidates)) ; will be skipped later
-              (loop tail (cons head candidates))))
+              (loop tail (cdr parts)
+                    candidates parts-acc) ; we discard this one
+              (loop tail (cdr parts)
+                    (cons head candidates) ; we keep this one
+                    (cons (car parts) parts-acc))))
+
         ;; keep only the domains for which the associated function type
-        ;; fits our criteria
-        (unzip4 (map cdr ; doms, rests drests
-                     (let* ([orig (map list
-                                       (reverse candidates)
-                                       doms
-                                       rngs
-                                       rests
-                                       drests)]
-                            [after (filter (compose returns-subtype-of-expected? car)
-                                           orig)])
-                       ;; if we somehow eliminate all the cases (bogus expected type)
-                       ;; fall back to the showing extra cases
-                       (if (null? after) orig after)))))))
+        ;; is consistent with the expected type
+        (let loop ([cases candidates]
+                   [parts parts-acc]
+                   ;; accumulators
+                   [candidates '()]
+                   [parts-acc '()])
+          (if (not (null? cases))
+              (if (returns-subtype-of-expected? (car cases))
+                  (loop (cdr cases) (cdr parts)
+                        (cons (car cases) candidates) ; we keep this one
+                        (cons (car parts) parts-acc))
+                  (loop (cdr cases) (cdr parts)
+                        candidates parts-acc)) ; we discard this one
+
+              ;; among the domains that fit with the expected type, we only
+              ;; need to keep the most liberal
+              ;; since we only care about permissiveness of domains, we
+              ;; reconstruct function types with a return type of any then test
+              ;; for subtyping
+              (let ([fun-tys-ret-any
+                     (map (match-lambda
+                           [(Function: (list (arr: dom _ rest drest _)))
+                            (make-Function (list (make-arr dom Univ rest drest null)))])
+                          candidates)])
+                (let loop ([cases fun-tys-ret-any]
+                           [parts parts-acc]
+                           ;; accumulators
+                           ;; final pass, we only need the parts to print the
+                           ;; error message
+                           [parts-acc '()])
+                  (if (not (null? cases))
+                      ;; if a case is a supertype of another, we discard it
+                      (let ([head (car cases)])
+                        (if (is-subsumed-in? head (remove head fun-tys-ret-any))
+                            (loop (cdr cases) (cdr parts)
+                                  parts-acc) ; we discard this one
+                            (loop (cdr cases) (cdr parts)
+                                  (cons (car parts) parts-acc)))) ; we keep this one
+
+                      ;; if we somehow eliminate all the cases (bogus expected
+                      ;; type) fall back to the showing extra cases
+                      (unzip4 (if (null? parts-acc)
+                                  orig
+                                  (reverse parts-acc)))))))))))
 
 (define (poly-fail t argtypes #:name [name #f] #:expected [expected #f])
   (match t
