@@ -15,10 +15,10 @@
      (define total-tls (length (prefix-toplevels new-prefix)))
      (define total-stxs (length (prefix-stxs new-prefix)))
      (define total-lifts (prefix-num-lifts new-prefix))
-     (eprintf "max-let-depth ~S to ~S~n" max-let-depth new-max-let-depth)
-     (eprintf "total toplevels ~S~n" total-tls)
-     (eprintf "total stxs ~S~n" total-stxs)
-     (eprintf "num-lifts ~S~n" total-lifts)
+     (log-debug (format "max-let-depth ~S to ~S~n" max-let-depth new-max-let-depth))
+     (log-debug (format "total toplevels ~S~n" total-tls))
+     (log-debug (format "total stxs ~S~n" total-stxs))
+     (log-debug (format "num-lifts ~S~n" total-lifts))
      (make-compilation-top 
       new-max-let-depth new-prefix 
       (make-splice (gen-new-forms new-prefix)))]
@@ -60,7 +60,7 @@
     [(struct module-variable (modidx sym pos phase))
      (match rw
        [(struct modvar-rewrite (self-modidx provide->toplevel))
-        (eprintf "Rewriting ~a of ~S~n" pos (mpi->path* modidx))
+        (log-debug (format "Rewriting ~a of ~S~n" pos (mpi->path* modidx)))
         (+ (hash-ref MODULE-TOPLEVEL-OFFSETS self-modidx
                      (lambda ()
                        (error 'compute-new-modvar "toplevel offset not yet computed: ~S" self-modidx)))
@@ -81,7 +81,7 @@
          (cond
            ; Primitive module like #%paramz
            [(symbol? rw)
-            (eprintf "~S from ~S~n" sym rw)
+            (log-debug (format "~S from ~S~n" sym rw))
             (values (add1 i)
                     (list* tl new-toplevels)
                     (list* (+ i toplevel-offset) remap))]
@@ -124,20 +124,20 @@
                 (length mod-toplevels))
        (error 'merge-module "Not remapping everything: ~S ~S~n" 
               mod-toplevels toplevel-remap))    
-     (eprintf "[~S] Incrementing toplevels by ~a~n"
+     (log-debug (format "[~S] Incrementing toplevels by ~a~n"
               name
-              toplevel-offset)
-     (eprintf "[~S] Incrementing lifts by ~a~n"
+              toplevel-offset))
+     (log-debug (format "[~S] Incrementing lifts by ~a~n"
               name
-              lift-offset)
-     (eprintf "[~S] Filtered mod-vars from ~a to ~a~n" 
+              lift-offset))
+     (log-debug (format "[~S] Filtered mod-vars from ~a to ~a~n" 
               name
               (length mod-toplevels)
-              (length new-mod-toplevels))
+              (length new-mod-toplevels)))
      (values (max max-let-depth mod-max-let-depth)
              (merge-prefix top-prefix new-mod-prefix)
              (lambda (top-prefix)
-               (eprintf "[~S] Updating top-levels\n" name)
+               (log-debug (format "[~S] Updating top-levels\n" name))
                (define top-lift-start (prefix-lift-start top-prefix))
                (define mod-lift-start (prefix-lift-start mod-prefix))
                (define total-lifts (prefix-num-lifts top-prefix))
