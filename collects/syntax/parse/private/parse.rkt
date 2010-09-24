@@ -598,6 +598,11 @@ Conventions:
        [#s(hpat:post _ pattern)
         #'(let ([pr (ps-add-post pr)])
             (parse:H x cx rest-x rest-cx rest-pr pattern pr es k))]
+       [#s(hpat:peek _ pattern)
+        #`(let ([saved-x x] [saved-cx cx] [saved-pr pr])
+            (parse:H x cx dummy-x dummy-cx dummy-pr pattern pr es
+                     (let ([rest-x saved-x] [rest-cx saved-cx] [rest-pr saved-pr])
+                       k)))]
        [_
         (with-syntax ([attrs (pattern-attrs (wash #'head))])
           #'(parse:S x cx

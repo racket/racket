@@ -32,7 +32,7 @@ means specifically @tech{@Spattern}.
 
 @schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
                             ~describe ~seq ~optional ~rep ~once ~between
-                            ~! ~bind ~fail ~parse)
+                            ~! ~bind ~fail ~parse ~peek)
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
@@ -76,6 +76,7 @@ means specifically @tech{@Spattern}.
                  (@#,ref[~describe h] maybe-opaque expr H-pattern)
                  (@#,ref[~commit h] H-pattern)
                  (@#,ref[~delimit-cut h] H-pattern)
+                 (~peek H-pattern)
                  proper-S-pattern]
                 [EH-pattern
                  (@#,ref[~or eh] EH-pattern ...)
@@ -713,6 +714,23 @@ pattern instead.
 
 Like the @Spattern version, @ref[~delimit-cut s], but matches a head
 pattern instead.
+}
+
+@specsubform[(@#,defhere[~peek] H-pattern)]{
+
+Matches the @racket[H-pattern] but then resets the matching position,
+so the @racket[~peek] pattern consumes no input. Used to look ahead in
+a sequence.
+
+@examples[#:eval the-eval
+(define-splicing-syntax-class nf-id (code:comment "non-final id")
+  (pattern (~seq x:id (~peek another:id))))
+
+(syntax-parse #'(a b c 1 2 3)
+  [(n:nf-id ... rest ...)
+   (printf "nf-ids are ~s\n" (syntax->datum #'(n.x ...)))
+   (printf "rest is ~s\n" (syntax->datum #'(rest ...)))])
+]
 }
 
 @specsubform[S-pattern]{

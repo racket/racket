@@ -35,3 +35,4 @@
 (define-keyword ~splicing-reflect)
 (define-keyword ~post)
 (define-keyword ~eh-var)
+(define-keyword ~peek)
