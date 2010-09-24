@@ -65,13 +65,13 @@ Here's the idea:
 
 
 ;; Compile 
-#;(eprintf "Removing existing zo file~n")
+#;(log-debug "Removing existing zo file~n")
 #;(define compiled-zo-path (build-compiled-path base (path-add-suffix name #".zo")))
 
 #;(when (file-exists? compiled-zo-path)
     (delete-file compiled-zo-path))
 
-(eprintf "Compiling module~n")
+(log-debug "Compiling module~n")
 (void (system* (find-executable-path "raco") "make" file-to-batch)) 
 
 
@@ -80,39 +80,39 @@ Here's the idea:
 (define merged-zo-path (build-compiled-path merged-source-base (path-add-suffix merged-source-name #".zo")))
 
 ;; Transformations
-(eprintf "Removing dependencies~n")
+(log-debug "Removing dependencies~n")
 (define-values (batch-nodep top-lang-info top-self-modidx)
   (nodep-file file-to-batch (excluded-modules)))
 
-(eprintf "Merging modules~n")
+(log-debug "Merging modules~n")
 (define batch-merge
   (merge-compilation-top batch-nodep))
 
-(eprintf "GC-ing top-levels~n")
+(log-debug "GC-ing top-levels~n")
 (define batch-gcd
   (gc-toplevels batch-merge))
 
-(eprintf "Alpha-varying top-levels~n")
+(log-debug "Alpha-varying top-levels~n")
 (define batch-alpha
   (alpha-vary-ctop batch-gcd))
 
 (define batch-modname
   (string->symbol (regexp-replace #rx"\\.rkt$" (path->string merged-source-name) "")))
-(eprintf "Modularizing into ~a~n" batch-modname)
+(log-debug (format "Modularizing into ~a~n" batch-modname))
 (define batch-mod
   (wrap-in-kernel-module batch-modname batch-modname top-lang-info top-self-modidx batch-alpha))
 
 ;; Output
 (define batch-final batch-mod)
 
-(eprintf "Writing merged source~n")
+(log-debug "Writing merged source~n")
 (with-output-to-file
     merged-source-path
   (lambda ()
     (pretty-print (decompile batch-final)))
   #:exists 'replace)
 
-(eprintf "Writing merged zo~n")
+(log-debug "Writing merged zo~n")
 (void
  (with-output-to-file 
      merged-zo-path
@@ -120,8 +120,6 @@ Here's the idea:
      (write-bytes (zo-marshal batch-final)))
    #:exists 'replace))
 
-(eprintf "Running merged source~n")
-(void (system* (find-executable-path "racket") (path->string merged-source-path)))
 
 
 

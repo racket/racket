@@ -57,7 +57,7 @@
                (current-directory)))
          (define-values (modvar-rewrite lang-info ctop)
            (begin
-             (fprintf (current-error-port) "Load ~S @ ~S~n" pth phase)
+             (log-debug (format "Load ~S @ ~S~n" pth phase))
              (nodep/dir
               (parameterize ([current-load-relative-directory base-directory])
                 (path->comp-top
@@ -98,7 +98,7 @@
       (when (symbol? tl)
         (hash-set! provide-ht (intern tl) i)))  
   (lambda (sym pos)
-    (eprintf "Looking up ~S@~a~n" sym pos)
+    (log-debug (format "Looking up ~S@~a~n" sym pos))
     (hash-ref provide-ht (intern sym)
               (lambda ()
                 (error 'provide->toplevel "Cannot find ~S in ~S" sym prefix)))))
@@ -114,15 +114,15 @@
                  [tl
                   (void)])
                (prefix-toplevels new-prefix))
-     (eprintf "[~S] module-variables: ~S~n" name (length (filter module-variable? (prefix-toplevels new-prefix))))
+     (log-debug (format "[~S] module-variables: ~S~n" name (length (filter module-variable? (prefix-toplevels new-prefix)))))
      (values (make-modvar-rewrite self-modidx (construct-provide->toplevel new-prefix provides))
              lang-info
              (append (requires->modlist requires phase)
                      (if (and phase (zero? phase))
-                         (begin (eprintf "[~S] lang-info : ~S~n" name lang-info) ; XXX Seems to always be #f now
+                         (begin (log-debug (format "[~S] lang-info : ~S~n" name lang-info)) ; XXX Seems to always be #f now
                                 (list (make-mod name srcname self-modidx new-prefix provides requires body empty
                                                 unexported max-let-depth dummy lang-info internal-context)))
-                         (begin (eprintf "[~S] Dropping module @ ~S~n" name phase)
+                         (begin (log-debug (format "[~S] Dropping module @ ~S~n" name phase))
                                 empty))))]              
     [else (error 'nodep-module "huh?: ~e" mod-form)]))
 
