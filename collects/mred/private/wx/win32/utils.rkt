@@ -12,7 +12,11 @@
          define-mz
          failed
 
-         SendMessageW)
+         SendMessageW SendMessageW/str
+         GetSysColor GetRValue GetGValue GetBValue
+         MoveWindow
+         ShowWindow
+         SetWindowTextW)
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))
@@ -28,9 +32,25 @@
 
 (define-kernel32 GetLastError (_wfun -> _DWORD))
 
-(define (failed w who)
+(define (failed who)
   (error who "call failed (~s)"
          (GetLastError)))
 
 (define-user32 SendMessageW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
+(define-user32 SendMessageW/str (_wfun _HWND _UINT _WPARAM _string/utf-16 -> _LRESULT)
+  #:c-id SendMessageW)
 
+(define-user32 GetSysColor (_wfun _int -> _DWORD))
+
+(define (GetRValue v) (bitwise-and v #xFF))
+(define (GetGValue v) (bitwise-and (arithmetic-shift v -8) #xFF))
+(define (GetBValue v) (bitwise-and (arithmetic-shift v -16) #xFF))
+
+(define-user32 MoveWindow(_wfun _HWND _int _int _int _int _BOOL -> (r : _BOOL)
+                                -> (unless r (failed 'MoveWindow))))
+
+(define-user32 ShowWindow (_wfun _HWND _int -> (previously-shown? : _BOOL) -> (void)))
+
+
+(define-user32 SetWindowTextW (_wfun _HWND _string/utf-16 -> (r : _BOOL)
+                                     -> (unless r (failed 'SetWindowText))))

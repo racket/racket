@@ -272,6 +272,7 @@
 (define WM_PALETTECHANGED               #x0311)
 (define WM_HOTKEY                       #x0312)
 
+(define WM_USER                         #x0400)
 
 ;; Class styles
 (define CS_VREDRAW          #x0001)
@@ -589,3 +590,10 @@
 (define MF_MENUBREAK        #x00000040)
 (define MF_UNHILITE         #x00000000)
 (define MF_HILITE           #x00000080)
+
+(define BM_SETIMAGE        #x00F7)
+(define IMAGE_BITMAP        0)
+(define BN_CLICKED          0)
+
+(define SW_SHOW 5)
+(define SW_HIDE 0)

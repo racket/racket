@@ -5,29 +5,37 @@
          "wndclass.rkt"
 	 "const.rkt")
 
-(provide panel%)
+(provide panel-mixin
+         panel%)
 
-(defclass panel% window%
-  (init parent
-        x y w h
-        style
-        label)
+(define (panel-mixin %)
+  (class %
+    (super-new)
+    
+    (define lbl-pos 'horizontal)
+    (define/public (get-label-position) lbl-pos)
+    (define/public (set-label-position pos) (set! lbl-pos pos))
+    
+    (def/public-unimplemented on-paint)
+    (define/public (set-item-cursor x y) (void))
+    (def/public-unimplemented get-item-cursor)))
 
-  (super-new [parent parent]
-	     [hwnd 
-	      (CreateWindowExW 0
-			       "PLTPanel"
-			       #f
-			       (bitwise-ior WS_CHILD)
-			       0 0 w h
-			       (send parent get-hwnd)
-			       #f
-			       hInstance
-			       #f)]
-	     [style style])
+(define panel% 
+  (class (panel-mixin window%)
+    (init parent
+          x y w h
+          style
+          label)
 
-  (def/public-unimplemented get-label-position)
-  (def/public-unimplemented set-label-position)
-  (def/public-unimplemented on-paint)
-  (define/public (set-item-cursor x y) (void))
-  (def/public-unimplemented get-item-cursor))
+    (super-new [parent parent]
+               [hwnd 
+                (CreateWindowExW 0
+                                 "PLTPanel"
+                                 #f
+                                 (bitwise-ior WS_CHILD)
+                                 0 0 w h
+                                 (send parent get-client-hwnd)
+                                 #f
+                                 hInstance
+                                 #f)]
+               [style style])))

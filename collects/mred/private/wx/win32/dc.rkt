@@ -18,7 +18,7 @@
          cancel-flush-delay)
 
 (define-user32 GetDC (_wfun  _HWND -> _HDC))
-(define-user32 ReleaseDC (_wfun _HDC -> _int))
+(define-user32 ReleaseDC (_wfun _HWND _HDC -> _int))
 
 (define win32-bitmap%
   (class bitmap%
@@ -33,7 +33,7 @@
 	     (begin0
 	      (cairo_win32_surface_create_with_ddb hdc
 						   CAIRO_FORMAT_RGB24 w h)
-	      (ReleaseDC hdc))))))
+	      (ReleaseDC hwnd hdc))))))
 
     (define/override (ok?) #t)
     (define/override (is-color?) #t)

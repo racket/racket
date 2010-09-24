@@ -36,7 +36,7 @@
          (atomically (hash-ref all-cells (cast p _pointer _long) #f))
          (let ([wx (ptr-ref p _racket)])
            (and wx
-                (ptr-equal? hwnd (send wx get-hwnd))
+                (send wx is-hwnd? hwnd)
                 wx)))))
 
 

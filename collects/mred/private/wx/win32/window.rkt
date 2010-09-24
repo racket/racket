@@ -36,14 +36,6 @@
 
 (define-gdi32 CreateFontIndirectW (_wfun _LOGFONT-pointer -> _HFONT))
 
-(define-user32 MoveWindow(_wfun _HWND _int _int _int _int _BOOL -> (r : _BOOL)
-                                -> (unless r (failed 'MoveWindow))))
-
-(define-user32 ShowWindow (_wfun _HWND _int -> (previously-shown? : _BOOL) -> (void)))
-
-(define SW_SHOW 5)
-(define SW_HIDE 0)
-
 (define-cstruct _NMHDR
   ([hwndFrom _HWND]
    [idFrom _pointer]
@@ -61,17 +53,23 @@
 
 (defclass window% object%
   (init-field parent hwnd)
-  (init style)
+  (init style
+        [extra-hwnds null])
 
   (super-new)
   
   (define eventspace (current-eventspace))
 
   (set-hwnd-wx! hwnd this)
+  (for ([extra-hwnd (in-list extra-hwnds)])
+    (set-hwnd-wx! extra-hwnd this))
 
   (define/public (get-hwnd) hwnd)
   (define/public (get-client-hwnd) hwnd)
   (define/public (get-eventspace) eventspace)
+
+  (define/public (is-hwnd? a-hwnd)
+    (ptr-equal? hwnd a-hwnd))
   
   (define/public (wndproc w msg wParam lParam)
     (cond
@@ -105,19 +103,32 @@
      [(= msg WM_COMMAND)
       (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
              [wx (any-hwnd->wx control-hwnd)])
-        (if wx 
+        (if (and wx (send wx is-command? (HIWORD wParam)))
             (begin
-              (send wx do-command)
+              (send wx do-command control-hwnd)
               0)
             (DefWindowProcW w msg wParam lParam)))]
      [(= msg WM_NOTIFY)
+      #;
       (let* ([nmhdr (cast lParam _LPARAM _NMHDR-pointer)]
              [control-hwnd (NMHDR-hwndFrom nmhdr)]
              [wx (any-hwnd->wx control-hwnd)])
         (when wx (send wx do-command)))
       0]
+     [(or (= msg WM_HSCROLL)
+          (= msg WM_VSCROLL))
+      (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
+             [wx (any-hwnd->wx control-hwnd)])
+        (if wx
+            (begin
+              (send wx control-scrolled)
+              0)
+            (DefWindowProcW w msg wParam lParam)))]
      [else
       (DefWindowProcW w msg wParam lParam)]))
+
+  (define/public (is-command? cmd) #f)
+  (define/public (control-scrolled) #f)
 
   (define/public (show on?)
     (direct-show on?))
@@ -190,21 +201,40 @@
   (define/public (move x y)
     (set-size x y -1 -1))
 
-  (define/public (auto-size label min-w min-h dw dh)
+  (define/public (set-control-font font [hwnd hwnd])
     (unless theme-hfont
       (set! theme-hfont (CreateFontIndirectW (get-theme-logfont))))
-    (SendMessageW hwnd WM_SETFONT (cast theme-hfont _HFONT _LPARAM) 0)
+    (SendMessageW hwnd WM_SETFONT (cast theme-hfont _HFONT _LPARAM) 0))
+
+  (define/public (auto-size label min-w min-h dw dh
+                            [resize
+                             (lambda (w h) (set-size -11111 -11111 w h))])
     (unless measure-dc
       (let* ([bm (make-object bitmap% 1 1)]
 	     [dc (make-object bitmap-dc% bm)]
 	     [font (make-object font% 8 'system)])
 	(send dc set-font font)
 	(set! measure-dc dc)))
-    (let-values ([(w h d a) (send measure-dc get-text-extent label #f #t)]
+    (let-values ([(w h d a) (let loop ([label label])
+                              (cond
+                               [(null? label) (values 0 0 0 0)]
+                               [(label . is-a? . bitmap%)
+                                (values (send label get-width)
+                                        (send label get-height)
+                                        0
+                                        0)]
+                               [(pair? label)
+                                (let-values ([(w1 h1 d1 a1)
+                                              (loop (car label))]
+                                             [(w2 h2 d2 a2)
+                                              (loop (cdr label))])
+                                  (values (max w1 w2) (max h1 h2)
+                                          (max d1 d1) (max a1 a2)))]
+                               [else
+                                (send measure-dc get-text-extent label #f #t)]))]
 		 [(->int) (lambda (v) (inexact->exact (floor v)))])
-      (set-size -11111 -11111 
-		(max (->int (+ w dw)) (->int (* dlu-x min-w)))
-		(max (->int (+ h dh)) (->int (* dlu-y min-h))))))
+      (resize (max (->int (+ w dw)) (->int (* dlu-x min-w)))
+              (max (->int (+ h dh)) (->int (* dlu-y min-h))))))
 
   (def/public-unimplemented popup-menu)
   (def/public-unimplemented center)
@@ -252,7 +282,7 @@
   (define/public (not-focus-child v)
     (send parent not-focus-child v))
 
-  (def/public-unimplemented gets-focus?)
+  (define/public (gets-focus?) #f)
   (def/public-unimplemented centre)
 
   (define/private (do-key wParam lParam is-char? is-up?)

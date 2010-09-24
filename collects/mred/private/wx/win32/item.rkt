@@ -1,12 +1,27 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
+         racket/draw
+         ffi/unsafe
           "../../syntax.rkt"
-         "window.rkt")
+          "../common/event.rkt"
+	 "utils.rkt"
+	 "const.rkt"
+	 "window.rkt"
+	 "wndclass.rkt"
+         "hbitmap.rkt"
+         "types.rkt")
 
 (provide item%)
 
 (defclass item% window%
-  (def/public-unimplemented set-label)
+  (inherit get-hwnd)
+
+  (super-new)
+
+  (define/override (gets-focus?) #t)
+
+  (define/public (set-label s)
+    (SetWindowTextW (get-hwnd) s))
+
   (def/public-unimplemented get-label)
-  (def/public-unimplemented command)
-  (super-new))
+  (def/public-unimplemented command))

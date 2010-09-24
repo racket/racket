@@ -5,6 +5,7 @@
 	 "../../syntax.rkt"
 	 "../../lock.rkt"
 	 "../common/queue.rkt"
+	 "../common/freeze.rkt"
          "utils.ss"
          "const.ss"
          "types.ss"
@@ -93,6 +94,11 @@
            (zero? (HIWORD wParam)))
       (queue-window-event this (lambda () (on-menu-command (LOWORD wParam))))
       0]
+     [(= msg WM_INITMENU)
+      (constrained-reply (get-eventspace)
+                         (lambda () (on-menu-click))
+                         (void))
+      0]
      [else (super wndproc w msg wParam lParam)]))
 
   (define/public (on-close) (void))
@@ -150,7 +156,6 @@
                       [(dl . > . dialog-level) #f]
                       [else 'other]))]
      [else #f]))
-
 
   (def/public-unimplemented designate-root-frame)
   (def/public-unimplemented system-menu)

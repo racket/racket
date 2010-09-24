@@ -112,13 +112,11 @@
             (queue-message-dequeue (send wx get-eventspace)
                                    hwnd)))
         ;; Not our window, so dispatch any available events
-        (let loop ()
-          (let ([v (PeekMessageW msg hwnd 0 0 PM_REMOVE)])
-            (when v
-              (TranslateMessage msg)
-              (DispatchMessageW msg)
-              (loop)))))
-    #f))
+        (let ([v (PeekMessageW msg hwnd 0 0 PM_REMOVE)])
+          (when v
+            (TranslateMessage msg)
+            (DispatchMessageW msg))))
+    #t))
 
 (define check_window_event (function-ptr check-window-event _enum_proc))
 

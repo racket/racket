@@ -24,6 +24,7 @@
 	 _HBRUSH
 	 _HDC
 	 _HFONT
+	 _HBITMAP
 
 	 _COLORREF
 
@@ -36,7 +37,9 @@
 	 (struct-out MSG) _MSG _MSG-pointer
 
          HIWORD
-         LOWORD)
+         LOWORD
+         MAKELONG
+         MAKELPARAM)
 
 (define-syntax-rule (_wfun . a)
   (_fun #:abi 'stdcall . a))
@@ -60,6 +63,7 @@
 (define _HBRUSH (_cpointer/null 'HBRUSH))
 (define _HDC (_cpointer/null 'HDC))
 (define _HFONT (_cpointer/null 'HFONT))
+(define _HBITMAP (_cpointer/null 'HBITMAP))
 
 (define _COLORREF _DWORD)
 
@@ -106,3 +110,6 @@
 (define (LOWORD v)
   (bitwise-and v #xFFFF))
 
+(define (MAKELONG a b)
+  (bitwise-ior (arithmetic-shift b 16) a))
+(define (MAKELPARAM a b) (MAKELONG a b))

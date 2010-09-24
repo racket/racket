@@ -1,42 +1,81 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
+         racket/draw
+         ffi/unsafe
           "../../syntax.rkt"
           "../common/event.rkt"
          "item.rkt"
 	 "utils.rkt"
 	 "const.rkt"
 	 "window.rkt"
-	 "wndclass.rkt")
+	 "wndclass.rkt"
+         "hbitmap.rkt"
+         "types.rkt")
 
-(provide button%)
+(provide base-button%
+         button%)
 
-(defclass button% item%
-  (inherit auto-size)
+(define base-button% 
+  (class item%
+    (inherit set-control-font auto-size get-hwnd)
 
-  (init parent cb label x y w h style font)
+    (init parent cb label x y w h style font)
 
-  (define callback cb)
+    (define callback cb)
 
-  (super-new [parent parent]
-	     [hwnd 
-	      (CreateWindowExW 0
-			       "BUTTON"
-			       label
-			       (bitwise-ior BS_PUSHBUTTON WS_CHILD WS_CLIPSIBLINGS)
-			       0 0 0 0
-			       (send parent get-hwnd)
-			       #f
-			       hInstance
-			       #f)]
-	     [style style])
+    (define bitmap?
+      (and (label . is-a? . bitmap%)
+           (send label ok?)))
 
-  (auto-size label 40 12 12 0)
+    (define/public (get-class) "BUTTON")
+    (define/public (get-flags) BS_PUSHBUTTON)
+    
+    (super-new [parent parent]
+               [hwnd 
+                (CreateWindowExW 0
+                                 (get-class)
+                                 (if (string? label)
+                                     label
+                                     "<image>")
+                                 (bitwise-ior (get-flags) WS_CHILD WS_CLIPSIBLINGS
+                                              (if bitmap?
+                                                  BS_BITMAP
+                                                  0))
+                                 0 0 0 0
+                                 (send parent get-client-hwnd)
+                                 #f
+                                 hInstance
+                                 #f)]
+               [style style])
 
-  (define/public (do-command)
-    (queue-window-event this (lambda ()
-                               (callback this
-                                         (new control-event%
-                                              [event-type 'button]
-                                              [time-stamp (current-milliseconds)])))))
+    (when bitmap?
+      (SendMessageW (get-hwnd) BM_SETIMAGE IMAGE_BITMAP 
+                    (cast (bitmap->hbitmap label) _HBITMAP _LPARAM)))
 
-  (def/public-unimplemented set-border))
+    (set-control-font font)
+
+    (define/public (auto-size-button label)
+      (cond
+       [bitmap?
+        (auto-size label 0 0 4 4)]
+       [else
+        (auto-size label 40 12 12 0)]))
+    (auto-size-button label)
+
+    (define/override (is-command? cmd)
+      (= cmd BN_CLICKED))
+
+    (define/public (do-command control-hwnd)
+      (queue-window-event this (lambda ()
+                                 (callback this
+                                           (new control-event%
+                                                [event-type 'button]
+                                                [time-stamp (current-milliseconds)])))))
+
+    (def/public-unimplemented set-border)))
+
+(define button% 
+  (class base-button%
+    (super-new)))
+
+

@@ -90,12 +90,6 @@
 (define-unimplemented show-print-setup)
 (define-unimplemented can-show-print-setup?)
 
-(define-user32 GetSysColor (_wfun _int -> _DWORD))
-
-(define (GetRValue v) (bitwise-and v #xFF))
-(define (GetGValue v) (bitwise-and (arithmetic-shift v -8) #xFF))
-(define (GetBValue v) (bitwise-and (arithmetic-shift v -16) #xFF))
-
 (define (get-highlight-background-color)
   (let ([c (GetSysColor COLOR_HIGHLIGHT)])
     (make-object color% (GetRValue c) (GetGValue c) (GetBValue c))))
