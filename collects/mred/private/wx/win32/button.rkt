@@ -15,6 +15,8 @@
 (provide base-button%
          button%)
 
+(define BM_SETSTYLE #x00F4)
+
 (define base-button% 
   (class item%
     (inherit set-control-font auto-size get-hwnd)
@@ -72,7 +74,10 @@
                                                 [event-type 'button]
                                                 [time-stamp (current-milliseconds)])))))
 
-    (def/public-unimplemented set-border)))
+    (define/public (set-border on?)
+      (SendMessageW (get-hwnd) BM_SETSTYLE
+                    (if on? BS_DEFPUSHBUTTON BS_PUSHBUTTON)
+                    1))))
 
 (define button% 
   (class base-button%

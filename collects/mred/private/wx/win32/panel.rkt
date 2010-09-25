@@ -30,7 +30,9 @@
     (super-new [parent parent]
                [hwnd 
                 (CreateWindowExW 0
-                                 "PLTPanel"
+                                 (if (send parent is-frame?)
+                                     "PLTPanel"
+                                     "PLTTabPanel")
                                  #f
                                  (bitwise-ior WS_CHILD)
                                  0 0 w h

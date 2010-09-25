@@ -34,7 +34,7 @@
 
     (define hwnd
       (CreateWindowExW 0
-                       "PLTPanel"
+                       "PLTTabPanel"
                        #f
                        (bitwise-ior WS_CHILD)
                        0 0 w h
@@ -53,7 +53,8 @@
                    [bitmap? (and (label . is-a? . bitmap%)
                                  (send label ok?))]
                    [radio-hwnd 
-                    (CreateWindowExW 0 "BUTTON"
+                    (CreateWindowExW WS_EX_TRANSPARENT
+                                     "BUTTON"
                                      (if (string? label)
                                          label
                                          "<image>")

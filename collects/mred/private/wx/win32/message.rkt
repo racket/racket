@@ -35,7 +35,7 @@
     
     (super-new [parent parent]
                [hwnd 
-                (CreateWindowExW 0
+                (CreateWindowExW (if (string? label) WS_EX_TRANSPARENT 0)
                                  (get-class)
                                  (if (string? label)
                                      label

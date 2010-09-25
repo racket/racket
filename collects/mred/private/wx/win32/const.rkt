@@ -403,6 +403,7 @@
 (define CW_USEDEFAULT       #x80000000)
 
 (define WS_EX_LAYERED       #x00080000)
+(define WS_EX_TRANSPARENT   #x00000020)
 
 (define LWA_ALPHA #x00000002)
 

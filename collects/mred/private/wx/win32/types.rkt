@@ -83,9 +83,7 @@
 			   (let ([c (malloc len _uint16 'raw)])
 			     (memcpy c p len _uint16)
 			     c))))))
-	      (lambda (p)
-		(and p
-		     (cast p _pointer _string/utf-16)))))
+	      (lambda (p) p)))
 
 (define _LONG _long)
 (define _SHORT _short)

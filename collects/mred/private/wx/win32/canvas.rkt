@@ -79,7 +79,7 @@
 
      (define hwnd (get-hwnd))
 
-     (define/override (wndproc w msg wParam lParam)
+     (define/override (wndproc w msg wParam lParam default)
        (cond
         [(= msg WM_PAINT)
          (let* ([ps (malloc 128)]
@@ -96,7 +96,7 @@
         [(= msg WM_VSCROLL)
          (on-scroll-change SB_VERT (LOWORD wParam))
          0]
-        [else (super wndproc w msg wParam lParam)]))
+        [else (super wndproc w msg wParam lParam default)]))
      
      (define dc (new dc% [canvas this]))
      (send dc start-backing-retained)

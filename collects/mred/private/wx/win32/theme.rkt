@@ -7,7 +7,9 @@
 (provide get-theme-logfont
 	 get-theme-font-face
 	 get-theme-font-size
-	 _LOGFONT-pointer)
+	 _LOGFONT-pointer
+         DrawThemeParentBackground
+         EnableThemeDialogTexture)
 
 (define _HTHEME (_cpointer 'HTHEME))
 
@@ -58,6 +60,14 @@
 				      -> (if (negative? r) 
 					     (error 'GetThemeSysFont "failed: ~s" (bitwise-and #xFFFF r))
 					     f)))
+
+(define-uxtheme DrawThemeParentBackground (_wfun _HWND _HDC _pointer -> (r : _HRESULT)
+                                                 -> (when (negative? r)
+                                                      (error 'DrawThemeParentBackground "failed: ~s" (bitwise-and #xFFFF r)))))
+
+(define-uxtheme EnableThemeDialogTexture (_wfun _HWND _DWORD -> (r : _HRESULT)
+                                                -> (when (negative? r)
+                                                     (error 'EnableThemeDialogTexture "failed: ~s" (bitwise-and #xFFFF r)))))
 
 (define BP_PUSHBUTTON 1)
 (define PBS_NORMAL 1)

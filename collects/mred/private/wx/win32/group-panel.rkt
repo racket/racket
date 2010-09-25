@@ -36,7 +36,7 @@
 
     (define client-hwnd
       (CreateWindowExW 0
-                       "PLTPanel"
+                       "PLTTabPanel"
                        #f
                        (bitwise-ior WS_CHILD WS_VISIBLE)
                        0 0 w h
@@ -53,7 +53,7 @@
       client-hwnd)
 
     (define label-h 0)
-
+    
     (set-control-font #f)
     (auto-size label 0 0 0 0
                (lambda (w h)

@@ -6,9 +6,10 @@
 	 "../../lock.rkt"
 	 "../common/queue.rkt"
 	 "../common/freeze.rkt"
-         "utils.ss"
-         "const.ss"
-         "types.ss"
+         "utils.rkt"
+         "const.rkt"
+         "types.rkt"
+         "theme.rkt"
 	 "window.rkt"
          "wndclass.rkt")
 
@@ -30,17 +31,19 @@
            on-size
            pre-on-char pre-on-event)
 
+  (define/public (create-frame parent label w h)
+    (CreateWindowExW (bitwise-ior WS_EX_LAYERED)
+                     "PLTFrame"
+                     (if label label "")
+                     WS_OVERLAPPEDWINDOW
+                     0 0 w h
+                     #f
+                     #f
+                     hInstance
+                     #f))
+
   (super-new [parent #f]
-	     [hwnd
-	      (CreateWindowExW 0 ; (bitwise-ior WS_EX_LAYERED)
-			       "PLTFrame"
-			       (if label label "")
-			       WS_OVERLAPPEDWINDOW
-			       0 0 w h
-			       #f
-			       #f
-			       hInstance
-			       #f)]
+	     [hwnd (create-frame parent label w h)]
 	     [style (cons 'invisible style)])
 
   (define hwnd (get-hwnd))
@@ -67,7 +70,7 @@
   (define/private (stdret f d)
     (if (is-dialog?) d f))
 
-  (define/override (wndproc w msg wParam lParam)
+  (define/override (wndproc w msg wParam lParam default)
     (cond
      [(= msg WM_CLOSE)
       (queue-window-event this (lambda () 
@@ -99,7 +102,7 @@
                          (lambda () (on-menu-click))
                          (void))
       0]
-     [else (super wndproc w msg wParam lParam)]))
+     [else (super wndproc w msg wParam lParam default)]))
 
   (define/public (on-close) (void))
 
@@ -147,15 +150,10 @@
   (define/override (call-pre-on-char w e)
     (pre-on-char w e))
 
-  (define dialog-level 0)
+  (define/override (get-dialog-level) 0)
+
   (define/public (frame-relative-dialog-status win) 
-    (cond
-     [(is-dialog?) (let ([dl (send win get-dialog-level)])
-                     (cond
-                      [(= dl dialog-level) 'same]
-                      [(dl . > . dialog-level) #f]
-                      [else 'other]))]
-     [else #f]))
+    #f)
 
   (def/public-unimplemented designate-root-frame)
   (def/public-unimplemented system-menu)
@@ -170,6 +168,8 @@
     (atomically
      (set! menu-bar mb)
      (send mb set-parent this)))
+  
+  (define/override (is-frame?) #t)
 
   (def/public-unimplemented set-icon)
   (def/public-unimplemented iconize)

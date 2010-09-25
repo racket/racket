@@ -74,6 +74,9 @@
 (define-user32 LoadCursorW (_wfun _HINSTANCE _pointer -> _HCURSOR))
 (define-user32 LoadIconW (_wfun _HINSTANCE _pointer -> _HICON))
 
+(define-user32 GetClassInfoW (_wfun _HINSTANCE _string/utf-16 (i : (_ptr o _WNDCLASS)) -> (r : _BOOL)
+                                    -> (if r i (failed 'GetClassInfoW))))
+
 (define-user32 DefWindowProcW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
 
 #;(define-user32 PostQuitMessage (_wfun _int -> _void))
@@ -81,7 +84,7 @@
 (define (wind-proc w msg wparam lparam)
   (let ([wx (hwnd->wx w)])
     (if wx
-        (send wx wndproc w msg wparam lparam)
+        (send wx wndproc w msg wparam lparam DefWindowProcW)
         (DefWindowProcW w msg wparam lparam))))
 
 (define hInstance (GetModuleHandleW #f))
@@ -124,5 +127,22 @@
                                        p)
 				     #f ; menu
 				     "PLTPanel")))
+
+(define controls-are-transparent? #f)
+
+(void (RegisterClassW (make-WNDCLASS 0
+				     wind-proc
+				     0
+                                     0
+				     hInstance
+				     #f
+				     (LoadCursorW #f IDC_ARROW)
+                                     (if controls-are-transparent?
+                                         #f  ; transparent
+                                         (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
+                                           (cpointer-push-tag! p 'HBRUSH)
+                                           p))
+				     #f ; menu
+				     "PLTTabPanel")))
 
 (define-user32 MessageBoxW (_fun _HWND _string/utf-16 _string/utf-16 _UINT -> _int))

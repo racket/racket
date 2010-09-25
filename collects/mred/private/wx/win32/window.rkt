@@ -22,6 +22,9 @@
 
 (define (unhide-cursor) (void))
 
+(define WM_PRINT                        #x0317)
+(define WM_PRINTCLIENT                  #x0318)
+
 (define-user32 CreateWindowExW (_wfun _DWORD
 				      _string/utf-16
 				      _string/utf-16
@@ -35,6 +38,8 @@
                                     (if r rect (failed 'GetClientRect))))
 
 (define-gdi32 CreateFontIndirectW (_wfun _LOGFONT-pointer -> _HFONT))
+(define-user32 FillRect (_wfun _HDC _RECT-pointer _HBRUSH -> (r : _int)
+                               -> (when (zero? r) (failed 'FillRect))))
 
 (define-cstruct _NMHDR
   ([hwndFrom _HWND]
@@ -50,6 +55,25 @@
   (let ([v (GetDialogBaseUnits)])
     (values (* 1/4 (bitwise-and v #xFFFF))
 	    (* 1/8 (arithmetic-shift v -16)))))
+
+(define-cstruct _LOGBRUSH
+  ([lbStyle _UINT]
+   [lbColor _COLORREF]
+   [lbHatch _pointer]))
+
+(define BS_NULL 1)
+(define transparent-logbrush (make-LOGBRUSH BS_NULL 0 #f))
+
+(define-gdi32 CreateBrushIndirect (_wfun _LOGBRUSH-pointer -> _HBRUSH))
+
+(define TRANSPARENT 1)
+(define-gdi32 SetBkMode (_wfun _HDC _int -> (r : _int)
+                               -> (when (zero? r) (failed 'SetBkMode))))
+
+(define-user32 BeginPaint (_wfun _HWND _pointer -> _HDC))
+(define-user32 EndPaint (_wfun _HDC _pointer -> _BOOL))
+(define-user32 InvalidateRect (_wfun _HWND (_or-null _RECT-pointer) _BOOL -> (r : _BOOL)
+                                     -> (unless r (failed 'InvalidateRect))))
 
 (defclass window% object%
   (init-field parent hwnd)
@@ -71,7 +95,7 @@
   (define/public (is-hwnd? a-hwnd)
     (ptr-equal? hwnd a-hwnd))
   
-  (define/public (wndproc w msg wParam lParam)
+  (define/public (wndproc w msg wParam lParam default)
     (cond
      [(= msg WM_SETFOCUS)
       (queue-window-event this (lambda () (on-set-focus)))
@@ -83,7 +107,7 @@
       (when (or (= wParam VK_MENU) (= wParam VK_F4)) ;; F4 is close
         (unhide-cursor)
         (begin0
-         (DefWindowProcW w msg wParam lParam)
+         (default w msg wParam lParam)
          (do-key wParam lParam #f #f)))]
      [(= msg WM_KEYDOWN)
       (do-key wParam lParam #f #f)
@@ -95,7 +119,7 @@
       (when (= wParam VK_MENU)
         (unhide-cursor)
         (begin0
-         (DefWindowProcW w msg wParam lParam)
+         (default w msg wParam lParam)
          (do-key wParam lParam #t #f)))]
      [(= msg WM_CHAR)
       (do-key wParam lParam #t #f)
@@ -107,7 +131,7 @@
             (begin
               (send wx do-command control-hwnd)
               0)
-            (DefWindowProcW w msg wParam lParam)))]
+            (default w msg wParam lParam)))]
      [(= msg WM_NOTIFY)
       #;
       (let* ([nmhdr (cast lParam _LPARAM _NMHDR-pointer)]
@@ -123,9 +147,9 @@
             (begin
               (send wx control-scrolled)
               0)
-            (DefWindowProcW w msg wParam lParam)))]
+            (default w msg wParam lParam)))]
      [else
-      (DefWindowProcW w msg wParam lParam)]))
+      (default w msg wParam lParam)]))
 
   (define/public (is-command? cmd) #f)
   (define/public (control-scrolled) #f)
@@ -208,7 +232,9 @@
 
   (define/public (auto-size label min-w min-h dw dh
                             [resize
-                             (lambda (w h) (set-size -11111 -11111 w h))])
+                             (lambda (w h) (set-size -11111 -11111 w h))]
+                            #:combine-width [combine-w max]
+                            #:combine-height [combine-h max])
     (unless measure-dc
       (let* ([bm (make-object bitmap% 1 1)]
 	     [dc (make-object bitmap-dc% bm)]
@@ -228,8 +254,8 @@
                                               (loop (car label))]
                                              [(w2 h2 d2 a2)
                                               (loop (cdr label))])
-                                  (values (max w1 w2) (max h1 h2)
-                                          (max d1 d1) (max a1 a2)))]
+                                  (values (combine-w w1 w2) (combine-h h1 h2)
+                                          (combine-h d1 d1) (combine-h a1 a2)))]
                                [else
                                 (send measure-dc get-text-extent label #f #t)]))]
 		 [(->int) (lambda (v) (inexact->exact (floor v)))])
@@ -240,6 +266,7 @@
   (def/public-unimplemented center)
 
   (define/public (get-parent) parent)
+  (define/public (is-frame?) #f)
 
   (define/public (refresh) (void))
   (define/public (on-resized) (void))
@@ -337,7 +364,9 @@
     ;; re-sync the display in case a stream of
     ;; events (e.g., key repeat) have a corresponding
     ;; stream of screen updates.
-    (void)))
+    (void))
+
+  (define/public (get-dialog-level) (send parent get-dialog-level)))
 
 ;; ----------------------------------------
 
