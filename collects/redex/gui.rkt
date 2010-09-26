@@ -103,8 +103,4 @@
  [default-pretty-printer
    (-> any/c output-port? exact-nonnegative-integer? (is-a?/c text%) 
        void?)]
- [pretty-print-parameters (parameter/c (-> (-> any) any))]
- [current-pretty-printer
-  (parameter/c 
-   (-> any/c output-port? exact-nonnegative-integer? (is-a?/c text%) 
-       void?))])
+ [pretty-print-parameters (parameter/c (-> (-> any) any))])

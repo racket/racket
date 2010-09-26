@@ -50,10 +50,10 @@ todo:
   (define updown-label (pick-label "↕" "^"))
   (define back-label (pick-label "↩" "<-"))
   
-  (define (stepper red term [pp (current-pretty-printer)])
+  (define (stepper red term [pp default-pretty-printer])
     (stepper/seed red (list term) pp))
   
-  (define (stepper/seed red seed [pp (current-pretty-printer)])
+  (define (stepper/seed red seed [pp default-pretty-printer])
     (define term (car seed))
     ;; all-nodes-ht : hash[sexp -o> (is-a/c node%)]
     (define all-nodes-ht (make-hash))

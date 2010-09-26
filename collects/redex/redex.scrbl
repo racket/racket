@@ -1458,7 +1458,7 @@ exploring reduction sequences.
                  [#:pp pp
                        (or/c (any -> string)
                              (any output-port number (is-a?/c text%) -> void))
-                       (current-pretty-printer)]
+                       default-pretty-printer]
                  [#:colors colors 
                   (listof 
                    (cons/c string? 
@@ -1577,7 +1577,7 @@ inserted into the editor by this library have a
                     [#:pp pp
                           (or/c (any -> string)
                                 (any output-port number (is-a?/c text%) -> void))
-                          (current-pretty-printer)]
+                          default-pretty-printer]
                     [#:colors colors 
                               (listof 
                                (cons/c string?
@@ -1607,7 +1607,7 @@ just before the PostScript is created with the graph pasteboard.
                   [t any/c] 
                   [pp (or/c (any -> string)
                             (any output-port number (is-a?/c text%) -> void))
-                      (current-pretty-printer)])
+                      default-pretty-printer])
           void?]{
 
 This function opens a stepper window for exploring the
@@ -1615,14 +1615,21 @@ behavior of its third argument in the reduction system
 described by its first two arguments. 
 
 The @racket[pp] argument is the same as to the
-@racket[traces] functions (above).
+@racket[traces] functions (above) but is here for
+backwards compatibility only and
+should not be changed for most uses, but instead adjusted with
+@racket[pretty-print-parameters]. Specifically, the 
+highlighting shown in the stepper window can be wrong if
+@racket[default-pretty-printer] does not print sufficiently similarly
+to how @racket[pretty-print] prints (when adjusted by
+@racket[pretty-print-parameters]'s behavior, of course).
 }
 
 @defproc[(stepper/seed [reductions reduction-relation?]
                        [seed (cons/c any/c (listof any/c))]
                        [pp (or/c (any -> string)
                                  (any output-port number (is-a?/c text%) -> void))
-                           (current-pretty-printer)])
+                           default-pretty-printer])
          void?]{
 
 Like @racket[stepper], this function opens a stepper window, but it
@@ -1757,15 +1764,6 @@ color used to draw the label on the edge.
   printing. Thus, @racket[f] can adjust @racket[pretty-print]'s
   parameters to adjust how printing happens.
 
-}
-                                                                       
-@defparam[current-pretty-printer pp (-> any/c
-                                        output-port?
-                                        exact-nonnegative-integer?
-                                        (is-a?/c text%)
-                                        void?)]{
-  A parameter that is used by the graphics tools to render
-  expressions. Defaults to @racket[default-pretty-printer].
 }
                                                                        
 @defproc[(default-pretty-printer [v any/c] [port output-port?] [width exact-nonnegative-integer?] [text (is-a?/c text%)]) void?]{

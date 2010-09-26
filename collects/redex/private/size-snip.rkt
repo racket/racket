@@ -9,7 +9,6 @@
          size-editor-snip%
          size-text%
          default-pretty-printer
-         current-pretty-printer
          pretty-print-parameters
          initial-char-width
          resizing-pasteboard-mixin
@@ -43,8 +42,6 @@
     ((pretty-print-parameters)
      (λ ()
        (pretty-print v port)))))
-
-(define current-pretty-printer (make-parameter default-pretty-printer))
 
 (define reflowing-snip<%>
   (interface ()
