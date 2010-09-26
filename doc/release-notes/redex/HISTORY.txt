@@ -1,3 +1,5 @@
+  * added pretty-print-parameters
+
   * added grammar-style and paren-style that give finer-grained control
     over the typesetting styles
 
