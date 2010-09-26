@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "utils.ss")
+@(require "utils.ss"
+          (only-in scribble/decode make-splice))
 
 @title[#:tag "homogeneous-vectors"]{Safe Homogenous Vectors}
 
@@ -7,24 +8,21 @@
 
 Homogenous vectors are similar to C vectors (see
 @secref["foreign:cvector"]), except that they define different types
-of vectors, each with a hard-wired type.
-
-An exception is the @schemeidfont{u8} family of bindings, which are
-just aliases for byte-string bindings: @scheme[make-u8vector],
-@scheme[u8vector]. @scheme[u8vector?], @scheme[u8vector-length],
-@scheme[u8vector-ref], @scheme[u8vector-set!],
-@scheme[list->u8vector], @scheme[u8vector->list].
+of vectors, each with a hard-wired type. An exception is the
+@schemeidfont{u8} family of bindings, which are just aliases for
+byte-string bindings; for example, @scheme[make-u8vector] is an alias
+for @racket[make-bytes].
 
 @(begin
    (require (for-syntax scheme/base))
    (define-syntax (srfi-4-vector stx)
      (syntax-case stx ()
        [(_ id elem)
-        #'(srfi-4-vector/desc id elem 
+        #'(srfi-4-vector/desc id elem make-splice
                               "Like " (scheme make-vector) ", etc., but for " (scheme elem) " elements.")]))
    (define-syntax (srfi-4-vector/desc stx)
      (syntax-case stx ()
-       [(_ id elem . desc)
+       [(_ id elem extra desc ...)
         (let ([mk
                (lambda l
                  (datum->syntax
@@ -57,7 +55,10 @@ just aliases for byte-string bindings: @scheme[make-u8vector],
                           [(list-> [lst (listof number?)]) ?]
                           [(->list [vec ?]) (listof number?)]
                           [(->cpointer [vec ?]) cpointer?])
-                 . desc)
+                 desc ...
+                 (extra
+                  (list
+                   " The " (scheme ->cpointer) " function extracts a plain pointer to the underlying array.")))
                ;; Big pain: make up relatively-correct source locations
                ;; for pieces in the _vec definition:
                (defform* [#,(datum->syntax
@@ -93,10 +94,11 @@ just aliases for byte-string bindings: @scheme[make-u8vector],
                  "Like " (scheme _cvector) ", but for vectors of " (scheme elem) " elements."))))])))
 
 
-@srfi-4-vector/desc[u8 _uint8]{
+@srfi-4-vector/desc[u8 _uint8 (lambda (x) (make-splice null))]{
 
 Like @scheme[_cvector], but for vectors of @scheme[_byte] elements. These are
-aliases for @schemeidfont{byte} operations.}
+aliases for @schemeidfont{byte} operations, where @racket[u8vector->cpointer]
+is the identity function.}
 
 @srfi-4-vector[s8 _int8]
 @srfi-4-vector[s16 _int16]

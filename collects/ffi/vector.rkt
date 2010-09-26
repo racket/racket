@@ -146,6 +146,13 @@
                      [bytes->list  u8vector->list ]
                      [list->bytes  list->u8vector ]
                      [_bytes       _u8vector      ]))
+
+(define (u8vector->cpointer v) 
+  (unless (bytes? v)
+    (raise-type-error 'u8vector->cpointer "byte string" v))
+  v)
+(provide u8vector->cpointer)
+
 ;; additional `u8vector' bindings for srfi-66
 (provide (rename-out [bytes-copy u8vector-copy] [bytes=? u8vector=?]))
 (define* (u8vector-compare v1 v2)
