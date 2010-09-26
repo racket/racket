@@ -1748,6 +1748,17 @@ the color used to fill the arrowhead and the text colors control the
 color used to draw the label on the edge.
 }
 
+@defparam[pretty-print-parameters f (-> (-> any/c) any/c)]{
+  A parameter that is used to set other @racket[pretty-print]
+  parameters. 
+  
+  Specifically, whenever @racket[default-pretty-printer] prints
+  something it calls @racket[f] with a thunk that does the actual
+  printing. Thus, @racket[f] can adjust @racket[pretty-print]'s
+  parameters to adjust how printing happens.
+
+}
+                                                                       
 @defparam[current-pretty-printer pp (-> any/c
                                         output-port?
                                         exact-nonnegative-integer?
@@ -1761,7 +1772,9 @@ color used to draw the label on the edge.
 
 This is the default value of @racket[pp] used by @racket[traces] and
 @racket[stepper] and it uses
-@racket[pretty-print].
+@racket[pretty-print]. 
+
+This function uses the value of @racket[pretty-print-parameters] to adjust how it prints.
 
 It sets the @racket[pretty-print-columns] parameter to
 @racket[width], and it sets @racket[pretty-print-size-hook]

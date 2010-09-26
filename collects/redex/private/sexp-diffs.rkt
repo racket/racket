@@ -4,7 +4,8 @@
          mrlib/graph
          scheme/pretty
          scheme/class
-         framework)
+         framework
+         "size-snip.rkt")
 
 (provide show-differences find-differences)
 
@@ -90,8 +91,10 @@
 ;; render-sexp/colors : sexp ht text -> void
 (define (render-sexp/colors sexp to-color text columns)
   (let ([start '()])
-    (parameterize ([pretty-print-columns columns])
-      (pretty-print sexp (open-output-text-editor text)))
+    ((pretty-print-parameters)
+     (λ ()
+       (parameterize ([pretty-print-columns columns])
+         (pretty-print sexp (open-output-text-editor text)))))
     (for-each 
      (λ (p) (send text highlight-range (car p) (cdr p) (send the-color-database find-color "NavajoWhite")))
      to-color)
@@ -121,32 +124,34 @@
                                      (set! pending-bytes (bytes))))
                                  1]))
                             void)])
-    (parameterize ([pretty-print-columns columns]
-                   [pretty-print-remap-stylable
-                    (λ (val)
-                      (and (wrap? val)
-                           (symbol? (wrap-content val))
-                           (wrap-content val)))]
-                   [pretty-print-size-hook
-                    (λ (val dsp? port)
-                      (if (wrap? val)
-                          (string-length (format "~s" (wrap-content val)))
-                          #f))]
-                   [pretty-print-print-hook
-                    (λ (val dsp? port)
-                      (write (wrap-content val) port))]
-                   [pretty-print-pre-print-hook
-                    (λ (obj port)
-                      (when (hash-ref diff-ht obj #f)
-                        (flush-output port)
-                        (set! start (cons position start))))]
-                   [pretty-print-post-print-hook
-                    (λ (obj port)
-                      (when (hash-ref diff-ht obj #f)
-                        (flush-output port)
-                        (set! to-color (cons (cons (car start) position) to-color))
-                        (set! start (cdr start))))])
-      (pretty-print sexp counting-port))
+    ((pretty-print-parameters)
+     (λ ()
+       (parameterize ([pretty-print-columns columns]
+                      [pretty-print-remap-stylable
+                       (λ (val)
+                         (and (wrap? val)
+                              (symbol? (wrap-content val))
+                              (wrap-content val)))]
+                      [pretty-print-size-hook
+                       (λ (val dsp? port)
+                         (if (wrap? val)
+                             (string-length (format "~s" (wrap-content val)))
+                             #f))]
+                      [pretty-print-print-hook
+                       (λ (val dsp? port)
+                         (write (wrap-content val) port))]
+                      [pretty-print-pre-print-hook
+                       (λ (obj port)
+                         (when (hash-ref diff-ht obj #f)
+                           (flush-output port)
+                           (set! start (cons position start))))]
+                      [pretty-print-post-print-hook
+                       (λ (obj port)
+                         (when (hash-ref diff-ht obj #f)
+                           (flush-output port)
+                           (set! to-color (cons (cons (car start) position) to-color))
+                           (set! start (cdr start))))])
+         (pretty-print sexp counting-port))))
     to-color))
 
 ;; does a map-like operation, but if the list is dotted, flattens the results into an actual list.
