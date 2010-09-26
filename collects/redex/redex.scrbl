@@ -1477,8 +1477,8 @@ exploring reduction sequences.
          void?]{
 
 This function opens a new window and inserts each expression
-in expr (if @racket[multiple?] is #t -- if
-@racket[multiple?] is #f, then expr is treated as a single
+in expr (if @racket[multiple?] is @racket[#t] -- if
+@racket[multiple?] is @racket[#f], then expr is treated as a single
 expression). Then, it reduces the terms until at least
 @racket[reduction-steps-cutoff] (see below) different terms are
 found, or no more reductions can occur. It inserts each new
@@ -1951,15 +1951,15 @@ This function sets @racket[dc-for-text-size]. See also
 
 @defparam[extend-language-show-union show? boolean?]{
 
-If this is #t, then a language constructed with
+If this is @racket[#t], then a language constructed with
 extend-language is shown as if the language had been
-constructed directly with @racket[language]. If it is #f, then only
+constructed directly with @racket[language]. If it is @racket[#f], then only
 the last extension to the language is shown (with
 four-period ellipses, just like in the concrete syntax).
 
 Defaultly @racket[#f].
 
-Note that the #t variant can look a little bit strange if
+Note that the @racket[#t] variant can look a little bit strange if
 @racket[....] are used and the original version of the language has
 multi-line right-hand sides.
 }
@@ -2138,7 +2138,7 @@ relation. Defaults to 4.
 Controls if the open and close quotes for strings are turned
 into “ and ” or are left as merely ".
 
-Defaults to #t.
+Defaults to @racket[#t].
 }
 
 @defparam[current-text proc (-> string? text-style/c number? pict?)]{
@@ -2161,7 +2161,7 @@ single reduction relation.
 
   This parameter is used when typesetting metafunctions to
   determine how to create the @"\u301a\u301b"
-  characters. Rather than using those characters directory
+  characters. Rather than using those characters directly
   (since glyphs tend not to be available in PostScript
   fonts), they are created by combining two ‘[’ characters
   or two ‘]’ characters together.
@@ -2195,7 +2195,7 @@ single reduction relation.
 
 }
 
-@deftech{Removing the pink background from PLT Redex rendered picts and ps files}
+@section{Removing the pink background from PLT Redex rendered picts and ps files}
 
 When reduction rules, a metafunction, or a grammar contains
 unquoted Racket code or side-conditions, they are rendered
@@ -2220,7 +2220,9 @@ another @racket[lw] that contains a rewritten version of the
 code.
 }
 
-@defform[(with-atomic-rewriter name-symbol string-or-thunk-returning-pict expression)]{
+@defform[(with-atomic-rewriter name-symbol
+                               string-or-thunk-returning-pict
+                               expression)]{
 
 This extends the current set of atomic-rewriters with one
 new one that rewrites the value of name-symbol to
@@ -2232,7 +2234,9 @@ of string-or-thunk-returning-pict is used whever the symbol
 appears in a pattern.
 }
 
-@defform[(with-compound-rewriter name-symbol proc expression)]{
+@defform[(with-compound-rewriter name-symbol
+                                 proc
+                                 expression)]{
 
 This extends the current set of compound-rewriters with one
 new one that rewrites the value of name-symbol via proc,
