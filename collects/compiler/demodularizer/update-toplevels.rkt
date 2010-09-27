@@ -1,5 +1,5 @@
 #lang racket
-(require compiler/zo-parse
+(require compiler/zo-structs
          "util.rkt")
 
 (define (update-toplevels toplevel-updater topsyntax-updater topsyntax-new-midpt)
@@ -84,9 +84,9 @@
       [(and f (not (? form?)))
        f]
       ))
-  (define update
+  (define-values (first-update update)
     (build-form-memo inner-update))
-  update)
+  first-update)
 
 (provide/contract
  [update-toplevels 

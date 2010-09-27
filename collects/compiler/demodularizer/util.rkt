@@ -12,23 +12,46 @@
 (define (eprintf . args)
   (apply fprintf (current-error-port) args))
 
+(struct nothing ())
+
+(define-syntax-rule (eprintf* . args) (void))
+
 (define (build-form-memo inner-update #:void? [void? #f])
   (define memo (make-hasheq))
   (define (update form . args)
-    (cond
-      [(hash-ref memo form #f) 
-       => (λ (x) x)]
-      [else
-       (let ()
-         (define ph (make-placeholder #f))
-         (hash-set! memo form ph)
-         (define nv (apply inner-update form args))
-         (placeholder-set! ph nv)
-         nv)]))
+    (eprintf* "Updating on ~a\n" form)
+    (define fin
+      (cond
+        [(hash-ref memo form #f) 
+         => (λ (x)
+              (eprintf* "Found in memo table\n")
+              x)]
+        [else
+         (eprintf* "Not in memo table\n")
+         (let ()
+           (define ph (make-placeholder (nothing)))
+           (hash-set! memo form ph)
+           (define nv (nothing))
+           (dynamic-wind void
+                         (λ ()
+                           (set! nv (apply inner-update form args)))
+                         (λ ()
+                           (if (nothing? nv)
+                               (eprintf* "inner-update returned nothing (or there was an escape) on ~a\n" form)
+                               (begin
+                                 (placeholder-set! ph nv)
+                                 (hash-set! memo form nv)))))
+           nv)]))
+    (eprintf* "Updating on ~a ---->\n ~a\n" form fin)
+    fin)
   (define (first-update form . args)
+    (eprintf* "Top level update on ~a\n" form)
     (define final (apply update form args))
-    (make-reader-graph final))
-  first-update)
+    (eprintf* "Top level update on ~a ---->\n ~a\n" form final)
+    (define fin (make-reader-graph final))
+    (eprintf* "Top level update on ~a ---->\n ~a [after reader-graph]\n" form fin)
+    fin)
+  (values first-update update))
 
 (define lang-info/c
   (or/c #f (vector/c module-path? symbol? any/c)))
@@ -51,6 +74,7 @@
   (((unconstrained-domain-> any/c))
    (#:void? boolean?)
    . ->* .
-   (unconstrained-domain-> any/c))]
+   (values (unconstrained-domain-> any/c)
+           (unconstrained-domain-> any/c)))]
  [lang-info/c contract?]
  [build-compiled-path ((or/c path-string? (symbols 'relative) false/c) path-string? . -> . (or/c path-string? (symbols 'same 'up)))])

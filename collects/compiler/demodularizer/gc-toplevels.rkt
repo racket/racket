@@ -134,8 +134,9 @@
        (void)]
       [(and v (not (? form?)))
        (void)]))
-  (define build-graph!** (build-form-memo build-graph!* #:void? #t))
-  (define (build-graph! lhs form) (build-graph!** form lhs))
+  (define-values (first-build-graph!** build-graph!**) 
+    (build-form-memo build-graph!* #:void? #t))
+  (define (build-graph! lhs form) (first-build-graph!** form lhs))
   build-graph!)
 
 (define (graph-dfs g start-node)
@@ -267,9 +268,9 @@
       [(and v (not (? form?)))
        v]
       ))
-  (define update
+  (define-values (first-update update)
     (build-form-memo inner-update))
-  update)
+  first-update)
 
 (provide/contract
  [gc-toplevels (compilation-top? . -> . compilation-top?)])

@@ -481,8 +481,8 @@
 (define-syntax with-type-trace
   (syntax-rules ()
     [(_ v body ...)
-     (begin body ...)
-     #;(with-continuation-mark 'zo (typeof v)
+     #;(begin body ...)
+     (with-continuation-mark 'zo (typeof v)
        (begin0 (begin body ...) (void)))]))
 
 (define (out-anything v out)
@@ -860,7 +860,8 @@
         (out-byte CPT_ESCAPE out)
         (define bstr (get-output-bytes s))
         (out-number (bytes-length bstr) out)
-        (out-bytes bstr out)])))))
+        (out-bytes bstr out)]
+       [else (error 'out-anything "~s" (current-type-trace))])))))
 
 (define-struct module-decl (content))
 
