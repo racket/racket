@@ -402,23 +402,18 @@ todo:
     
     ;; makes the last column visible
     (define (pb-last-column-visible)
-      (for-each
-       (λ (x)
-         (let ([admin (send pb get-admin)])
-           (when admin
-             (let ([w (box 0)]
-                   [h (box 0)]
-                   [sr (box 0)]
-                   [s (send x get-big-snip)])
-               (send admin get-view #f #f w h)
-               (send pb get-snip-location s #f sr #t)  
-               '(send ec scroll-to 
-                      (max 0 (- (unbox sr) (unbox w)))
-                      0
-                      (unbox w)
-                      (unbox h)
-                      #t)))))
-       (car (last-pair path))))
+      (let ([admin (send pb get-admin)]
+            [sl (box 0)]
+            [st (box 0)]
+            [sr (box 0)]
+            [sb (box 0)])
+        (when admin
+          ;; reverse so the topmost snip is the last one
+          (for ([node (in-list (reverse (car (last-pair path))))])
+            (let ([s (send node get-big-snip)])
+              (send pb get-snip-location s sl st #f)
+              (send pb get-snip-location s sr sb #t)
+              (send pb scroll-to s 0 0 (- (unbox sr) (unbox sl)) (- (unbox sb) (unbox st)) #t))))))
     
     (hash-set! all-nodes-ht term root)
     (send root set-in-path? #t)
