@@ -61,10 +61,10 @@
      (match rw
        [(struct modvar-rewrite (self-modidx provide->toplevel))
         (log-debug (format "Rewriting ~a of ~S~n" pos (mpi->path* modidx)))
-        (+ (hash-ref MODULE-TOPLEVEL-OFFSETS self-modidx
+        ((hash-ref MODULE-TOPLEVEL-OFFSETS self-modidx
                      (lambda ()
                        (error 'compute-new-modvar "toplevel offset not yet computed: ~S" self-modidx)))
-           (provide->toplevel sym pos))])]))
+         (provide->toplevel sym pos))])]))
 
 (define (filter-rewritable-module-variable? toplevel-offset mod-toplevels)
   (define-values
@@ -76,6 +76,7 @@
       (match tl
         [(and mv (struct module-variable (modidx sym pos phase)))
          (define rw (get-modvar-rewrite modidx))
+         ; XXX We probably don't need to deal with #f phase
          (unless (or (not phase) (zero? phase))
            (error 'eliminate-module-variables "Non-zero phases not supported: ~S" mv))
          (cond
@@ -99,6 +100,7 @@
          (values (add1 i)
                  (list* tl new-toplevels)
                  (list* (+ i toplevel-offset) remap))])))
+  ; XXX This would be more efficient as a vector
   (values (reverse new-toplevels)
           (reverse remap)))
 
@@ -119,7 +121,9 @@
      (define new-mod-prefix
        (struct-copy prefix mod-prefix
                     [toplevels new-mod-toplevels]))
-     (hash-set! MODULE-TOPLEVEL-OFFSETS self-modidx toplevel-offset)
+     (hash-set! MODULE-TOPLEVEL-OFFSETS self-modidx 
+                (lambda (n)
+                  (list-ref toplevel-remap n)))
      (unless (= (length toplevel-remap)
                 (length mod-toplevels))
        (error 'merge-module "Not remapping everything: ~S ~S~n" 

@@ -90,7 +90,8 @@ Here's the idea:
 
 (log-debug "GC-ing top-levels~n")
 (define batch-gcd
-  (gc-toplevels batch-merge))
+  batch-merge
+  #;(gc-toplevels batch-merge))
 
 (log-debug "Alpha-varying top-levels~n")
 (define batch-alpha
