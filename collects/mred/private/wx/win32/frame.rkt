@@ -11,13 +11,25 @@
          "types.rkt"
          "theme.rkt"
 	 "window.rkt"
-         "wndclass.rkt")
+         "wndclass.rkt"
+         "cursor.rkt")
 
-(provide frame%)
+(provide frame%
+         display-size
+         display-origin)
 
 (define-user32 SetLayeredWindowAttributes (_wfun _HWND _COLORREF _BYTE _DWORD -> _BOOL))
 (define-user32 GetActiveWindow (_wfun -> _HWND))
 (define-user32 SetFocus (_wfun _HWND -> _HWND))
+
+(define mouse-frame #f)
+
+(define (display-origin xb yb ?)
+  (set-box! xb 0)
+  (set-box! yb 0))
+(define (display-size xb yb ?)
+  (set-box! xb 1024)
+  (set-box! yb 768))
 
 (defclass frame% window%
   (init parent
@@ -29,10 +41,13 @@
 	   is-shown?
 	   get-eventspace
            on-size
-           pre-on-char pre-on-event)
+           get-size
+           get-position
+           pre-on-char pre-on-event
+           reset-cursor-in-child)
 
   (define/public (create-frame parent label w h)
-    (CreateWindowExW (bitwise-ior WS_EX_LAYERED)
+    (CreateWindowExW 0 ; (bitwise-ior WS_EX_LAYERED)
                      "PLTFrame"
                      (if label label "")
                      WS_OVERLAPPEDWINDOW
@@ -64,6 +79,7 @@
     (super show on?))
 
   (define/override (direct-show on?)
+    (when (eq? mouse-frame this) (set! mouse-frame #f))
     (register-frame-shown this on?)
     (super direct-show on?))
 
@@ -150,10 +166,69 @@
   (define/override (call-pre-on-char w e)
     (pre-on-char w e))
 
+  (define/override (generate-parent-mouse-ins mk)
+    ;; assert: in-window is always the panel child
+    (unless (eq? mouse-frame this)
+      (when mouse-frame
+        (let ([win mouse-frame])
+          (set! mouse-frame #f)
+          (send win send-leaves mk)))
+      (set! mouse-frame this))
+    #f)
+
+  (define/override (reset-cursor default)
+    (if wait-cursor-on?
+        (void (SetCursor (get-wait-cursor)))
+        (when saved-child
+          (reset-cursor-in-child saved-child default))))
+
   (define/override (get-dialog-level) 0)
 
   (define/public (frame-relative-dialog-status win) 
     #f)
+
+  (define wait-cursor-on? #f)
+  (define/public (set-wait-cursor-mode on?)
+    (set! wait-cursor-on? on?)
+    (when (eq? mouse-frame this)
+      (if on?
+          (void (SetCursor (get-wait-cursor)))
+          (reset-cursor (get-arrow-cursor)))))
+  (define/public (is-wait-cursor-on?)
+    wait-cursor-on?)
+
+  (define/override (center mode wrt)
+    (let ([sw (box 0)]
+          [sh (box 0)]
+          [w (box 0)]
+          [h (box 0)]
+          [x (box 0)]
+          [y (box 0)])
+      (display-size sw sh #f)
+      (get-size w h)
+      (MoveWindow hwnd
+                  (if (or (eq? mode 'both)
+                          (eq? mode 'horizontal))
+                      (quotient (- (unbox sw) (unbox w)) 2)
+                      (get-x))
+                  (if (or (eq? mode 'both)
+                          (eq? mode 'vertical))
+                      (quotient (- (unbox sh) (unbox h)) 2)
+                      (get-x))
+                  (unbox w)
+                  (unbox h)
+                  #t)))
+
+  (define saved-child #f)
+  (define/override (register-child child on?)
+    (unless on? (error 'register-child-in-frame "did not expect #f"))
+    (unless (or (not saved-child) (eq? child saved-child))
+      (error 'register-child-in-frame "expected only one child"))
+    (set! saved-child child))
+  (define/override (register-child-in-parent on?)
+    (void))
+
+  (define/override (get-top-frame) this)
 
   (def/public-unimplemented designate-root-frame)
   (def/public-unimplemented system-menu)

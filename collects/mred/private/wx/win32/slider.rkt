@@ -29,7 +29,7 @@
 (define SS_CENTER            #x00000001)
 
 (define THICKNESS 24)
-(define MIN_LENGTH 100)
+(define MIN_LENGTH 80)
 
 (defclass slider% item%
   (init parent cb
@@ -39,8 +39,10 @@
         style
         font)
   (inherit set-control-font
-           auto-size)
-  
+           auto-size
+           subclass-control)
+
+  (define callback cb)
   (define vertical? (memq 'vertical style))
 
   (define panel-hwnd
@@ -58,7 +60,7 @@
 
   (define slider-hwnd
     (CreateWindowExW 0
-                     "msctls_trackbar32"
+                     "PLTmsctls_trackbar32"
                      label
                      (bitwise-ior WS_CHILD WS_CLIPSIBLINGS
                                   (if vertical?
@@ -124,6 +126,8 @@
   (SendMessageW slider-hwnd TBM_SETRANGE 1 (MAKELPARAM lo hi))
   (set-value val)
 
+  (subclass-control slider-hwnd)
+
   (define/override (set-size x y w h)
     (super set-size x y w h)
     (when panel-hwnd
@@ -139,7 +143,12 @@
   (define/override (control-scrolled)
     (when value-hwnd
       (let ([val (get-value)])
-        (SetWindowTextW value-hwnd (format "~s" val)))))
+        (SetWindowTextW value-hwnd (format "~s" val))))
+    (queue-window-event this (lambda ()
+                               (callback this
+                                         (new control-event%
+                                              [event-type 'slider]
+                                              [time-stamp (current-milliseconds)])))))
 
   (define/public (set-value val)
     (SendMessageW slider-hwnd TBM_SETPOS 1 val))

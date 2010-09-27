@@ -297,7 +297,7 @@
 	       (>= (file-or-directory-modify-seconds res)
 		   (file-or-directory-modify-seconds rc)))
 	  (system- (string-append 
-		    "rc /l 0x409  /I ../../wxwindow/include/msw /I ../../wxwindow/contrib/fafa "
+		    "rc /l 0x409 "
 		    (format "/fo~a ~a" res rc)))))
 
 (check-rc "racket.res" "../racket/racket.rc")

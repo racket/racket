@@ -12,11 +12,15 @@
          define-mz
          failed
 
+         GetWindowLongW
+         SetWindowLongW
          SendMessageW SendMessageW/str
          GetSysColor GetRValue GetGValue GetBValue
          MoveWindow
          ShowWindow
-         SetWindowTextW)
+         EnableWindow
+         SetWindowTextW
+         SetCursor)
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))
@@ -36,6 +40,9 @@
   (error who "call failed (~s)"
          (GetLastError)))
 
+(define-user32 GetWindowLongW (_wfun _HWND _int -> _pointer))
+(define-user32 SetWindowLongW (_wfun _HWND _int _pointer -> _pointer))
+
 (define-user32 SendMessageW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
 (define-user32 SendMessageW/str (_wfun _HWND _UINT _WPARAM _string/utf-16 -> _LRESULT)
   #:c-id SendMessageW)
@@ -50,7 +57,10 @@
                                 -> (unless r (failed 'MoveWindow))))
 
 (define-user32 ShowWindow (_wfun _HWND _int -> (previously-shown? : _BOOL) -> (void)))
-
+(define-user32 EnableWindow (_wfun _HWND _BOOL -> _BOOL))
 
 (define-user32 SetWindowTextW (_wfun _HWND _string/utf-16 -> (r : _BOOL)
                                      -> (unless r (failed 'SetWindowText))))
+
+(define-user32 SetCursor (_wfun _HCURSOR -> _HCURSOR))
+

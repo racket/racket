@@ -27,7 +27,9 @@
           style
           font)
 
-    (inherit auto-size set-control-font)
+    (inherit auto-size set-control-font
+             is-enabled-to-root?
+             subclass-control)
 
     (define callback cb)
     (define current-value val)
@@ -54,7 +56,7 @@
                                  (send label ok?))]
                    [radio-hwnd 
                     (CreateWindowExW WS_EX_TRANSPARENT
-                                     "BUTTON"
+                                     "PLTBUTTON"
                                      (if (string? label)
                                          label
                                          "<image>")
@@ -86,6 +88,9 @@
                [hwnd hwnd]
                [extra-hwnds radio-hwnds]
                [style style])
+    
+    (for ([radio-hwnd (in-list radio-hwnds)])
+      (subclass-control radio-hwnd))
 
     (define/override (is-hwnd? a-hwnd)
       (or (ptr-equal? hwnd a-hwnd)
@@ -120,6 +125,17 @@
          (unless (= val -1)
            (SendMessageW (list-ref radio-hwnds val) BM_SETCHECK 1 0))
          (set! current-value val))))
+
+    (define buttons-enabled (make-vector (length radio-hwnds) #t))
+    (define/public (enable-button i on?)
+      (unless (eq? (and on? #t) (vector-ref buttons-enabled i))
+        (vector-set! buttons-enabled i (and on? #t))
+        (when (is-enabled-to-root?)
+          (void (EnableWindow (list-ref radio-hwnds i) on?)))))
+    (define/override (internal-enable on?)
+      (for ([radio-hwnd (in-list radio-hwnds)]
+            [radio-on? (in-vector buttons-enabled)])
+        (void (EnableWindow radio-hwnd (and on? radio-on?)))))
 
     (define/public (get-selection) current-value)
 

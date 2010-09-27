@@ -3,12 +3,17 @@
          "../../syntax.rkt"
          "button.rkt"
          "item.rkt"
+         "utils.rkt"
          "const.rkt")
 
 (provide check-box%)
 
+(define BM_GETCHECK #x00F0)
+(define BM_SETCHECK #x00F1)
+
 (defclass check-box% base-button%
-  (inherit auto-size)
+  (inherit auto-size
+           get-hwnd)
 
   (super-new)
 
@@ -17,5 +22,8 @@
   (define/override (auto-size-button label)
     (auto-size label 0 0 20 0))
 
-  (def/public-unimplemented set-value)
-  (def/public-unimplemented get-value))
+  (define/public (set-value v)
+    (void (SendMessageW (get-hwnd) BM_SETCHECK (if v 1 0) 0)))
+
+  (define/public (get-value)
+    (positive? (bitwise-and #x3 (SendMessageW (get-hwnd) BM_GETCHECK 0 0)))))

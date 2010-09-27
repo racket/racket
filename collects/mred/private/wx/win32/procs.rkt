@@ -7,6 +7,7 @@
          "utils.rkt"
          "const.rkt"
          "menu-item.rkt"
+         "frame.rkt"
 	 racket/draw)
 
 (provide
@@ -26,6 +27,7 @@
  run-printout
  get-double-click-time
  get-control-font-size
+ get-control-font-size-in-pixels?
  cancel-quit
  fill-private-color
  flush-display
@@ -64,17 +66,12 @@
 (define-unimplemented run-printout)
 (define (get-double-click-time) 500)
 (define (get-control-font-size) (get-theme-font-size))
+(define (get-control-font-size-in-pixels?) #t)
 (define-unimplemented cancel-quit)
 (define-unimplemented fill-private-color)
 (define-unimplemented flush-display)
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
-(define (display-origin xb yb ?)
-  (set-box! xb 0)
-  (set-box! yb 0))
-(define (display-size xb yb ?)
-  (set-box! xb 1024)
-  (set-box! yb 768))
 (define-unimplemented bell)
 
 (define (hide-cursor) (void))

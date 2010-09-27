@@ -29,7 +29,7 @@
    [lParam _LPARAM]))
 
 (define tab-panel% 
-  (class (panel-mixin window%)
+  (class (item-mixin (panel-mixin window%))
     (init parent
           x y w h
           style
@@ -41,7 +41,7 @@
 
     (define hwnd
       (CreateWindowExW 0
-                       "SysTabControl32"
+                       "PLTSysTabControl32"
                        ""
                        (bitwise-ior WS_CHILD WS_CLIPSIBLINGS)
                        0 0 0 0

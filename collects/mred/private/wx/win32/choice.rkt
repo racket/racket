@@ -25,13 +25,14 @@
           x y w h
           choices style font)
     (inherit auto-size set-control-font
-             set-size)
+             set-size
+             subclass-control)
 
     (define callback cb)
     
     (define hwnd
       (CreateWindowExW 0
-                       "COMBOBOX"
+                       "PLTCOMBOBOX"
                        label
                        (bitwise-ior WS_CHILD CBS_DROPDOWNLIST 
                                     WS_HSCROLL WS_VSCROLL
@@ -61,6 +62,9 @@
                (lambda (w h)
                  (set-size -11111 -11111 w (* h 8))))
 
+
+    (subclass-control hwnd)
+
     (define/override (is-command? cmd)
       (= cmd CBN_SELENDOK))
 
@@ -75,7 +79,7 @@
     (define/public (set-selection i)
       (SendMessageW hwnd CB_SETCURSEL i 0))
 
-    (define/public (get-selection i)
+    (define/public (get-selection)
       (SendMessageW hwnd CB_GETCURSEL 0 0))
 
     (define/public (number) num-choices)

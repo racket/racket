@@ -20,7 +20,8 @@
 
 (define gauge%
   (class item%
-    (inherit set-size)
+    (inherit set-size
+             subclass-control)
 
     (init parent
           label
@@ -31,7 +32,7 @@
 
     (define hwnd
       (CreateWindowExW 0
-                       "msctls_progress32"
+                       "PLTmsctls_progress32"
                        label
                        (bitwise-ior WS_CHILD WS_CLIPSIBLINGS
                                     (if (memq 'vertical style)
@@ -52,6 +53,8 @@
     (if (memq 'horizontal style)
         (set-size -11111 -11111 100 24)
         (set-size -11111 -11111 24 100))
+
+    (subclass-control hwnd)
 
     (define/public (get-value)
       (SendMessageW hwnd PBM_GETPOS 0 0))

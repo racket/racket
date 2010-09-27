@@ -19,7 +19,8 @@
 
 (define base-button% 
   (class item%
-    (inherit set-control-font auto-size get-hwnd)
+    (inherit set-control-font auto-size get-hwnd
+             subclass-control)
 
     (init parent cb label x y w h style font)
 
@@ -29,7 +30,7 @@
       (and (label . is-a? . bitmap%)
            (send label ok?)))
 
-    (define/public (get-class) "BUTTON")
+    (define/public (get-class) "PLTBUTTON")
     (define/public (get-flags) BS_PUSHBUTTON)
     
     (super-new [parent parent]
@@ -63,6 +64,8 @@
        [else
         (auto-size label 40 12 12 0)]))
     (auto-size-button label)
+
+    (subclass-control (get-hwnd))
 
     (define/override (is-command? cmd)
       (= cmd BN_CLICKED))

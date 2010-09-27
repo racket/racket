@@ -12,12 +12,10 @@
 	 hwnd->wx
 	 any-hwnd->wx
 	 set-hwnd-wx!
-	 MessageBoxW)
+	 MessageBoxW
+         _WndProc)
 
 ;; ----------------------------------------
-
-(define-user32 GetWindowLongW (_wfun _HWND _int -> _pointer))
-(define-user32 SetWindowLongW (_wfun _HWND _int _pointer -> _pointer))
 
 (define all-cells (make-hash))
 
@@ -95,7 +93,7 @@
                                      0
 				     hInstance
 				     (LoadIconW #f IDI_APPLICATION)
-				     (LoadCursorW #f IDC_ARROW)
+                                     #f
                                      (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
                                        (cpointer-push-tag! p 'HBRUSH)
                                        p)
@@ -108,7 +106,7 @@
                                      0
 				     hInstance
 				     #f
-				     (LoadCursorW #f IDC_ARROW)
+                                     #f
                                      (let ([p (ptr-add #f (+ COLOR_WINDOW 1))])
                                        (cpointer-push-tag! p 'HBRUSH)
                                        p)
@@ -121,7 +119,7 @@
                                      0
 				     hInstance
 				     #f
-				     (LoadCursorW #f IDC_ARROW)
+				     #f
                                      (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
                                        (cpointer-push-tag! p 'HBRUSH)
                                        p)
@@ -136,7 +134,7 @@
                                      0
 				     hInstance
 				     #f
-				     (LoadCursorW #f IDC_ARROW)
+				     #f
                                      (if controls-are-transparent?
                                          #f  ; transparent
                                          (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
@@ -146,3 +144,17 @@
 				     "PLTTabPanel")))
 
 (define-user32 MessageBoxW (_fun _HWND _string/utf-16 _string/utf-16 _UINT -> _int))
+
+(define (register-no-cursor orig-name)
+  (let ([i (GetClassInfoW hInstance orig-name)])
+    (set-WNDCLASS-lpszClassName! i (string-append "PLT" orig-name))
+    (set-WNDCLASS-hCursor! i #f)
+    (void (RegisterClassW i))))
+
+(register-no-cursor "BUTTON")
+(register-no-cursor "STATIC")
+(register-no-cursor "LISTBOX")
+(register-no-cursor "COMBOBOX")
+(register-no-cursor "msctls_trackbar32")
+(register-no-cursor "msctls_progress32")
+(register-no-cursor "SysTabControl32")

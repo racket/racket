@@ -238,9 +238,15 @@
 			[(windows) 1]
 			[else 2]))
 
-  (define normal-control-font (make-object wx:font% (wx:get-control-font-size) 'system))
-  (define small-control-font (make-object wx:font% (- (wx:get-control-font-size) small-delta) 'system))
-  (define tiny-control-font (make-object wx:font% (- (wx:get-control-font-size) tiny-delta small-delta) 'system))
+  (define normal-control-font (make-object wx:font% (wx:get-control-font-size) 'system
+                                           'normal 'normal #f 'default
+                                           (wx:get-control-font-size-in-pixels?)))
+  (define small-control-font (make-object wx:font% (- (wx:get-control-font-size) small-delta) 'system
+                                           'normal 'normal #f 'default
+                                           (wx:get-control-font-size-in-pixels?)))
+  (define tiny-control-font (make-object wx:font% (- (wx:get-control-font-size) tiny-delta small-delta) 'system
+                                           'normal 'normal #f 'default
+                                           (wx:get-control-font-size-in-pixels?)))
   (define view-control-font (if (eq? 'macosx (system-type))
 				(make-object wx:font% (- (wx:get-control-font-size) 1) 'system)
 				normal-control-font))

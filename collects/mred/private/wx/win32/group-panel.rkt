@@ -15,17 +15,18 @@
 
 
 (define group-panel% 
-  (class (panel-mixin window%)
+  (class (item-mixin (panel-mixin window%))
     (init parent
           x y w h
           style
           label)
 
-    (inherit auto-size set-control-font)
+    (inherit auto-size set-control-font
+             subclass-control)
 
     (define hwnd
       (CreateWindowExW 0
-                       "BUTTON"
+                       "PLTBUTTON"
                        (or label "")
                        (bitwise-ior BS_GROUPBOX WS_CHILD WS_CLIPSIBLINGS)
                        0 0 0 0
@@ -59,6 +60,10 @@
                (lambda (w h)
                  (set! label-h h)
                  (set-size -11111 -11111 (+ w 10) (+ h 10))))
+    (subclass-control hwnd)
+
+    (define/public (set-label lbl)
+      (SetWindowTextW hwnd lbl))
     
     (define/override (set-size x y w h)
       (super set-size x y w h)

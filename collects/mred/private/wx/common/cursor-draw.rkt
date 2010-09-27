@@ -8,10 +8,10 @@
          draw-ne/sw
          draw-bullseye)
 
-(define (make-cursor-image draw-proc)
+(define (make-cursor-image draw-proc [smoothing 'aligned])
   (let* ([bm (make-object bitmap% 16 16 #f #t)]
          [dc (make-object bitmap-dc% bm)])
-    (send dc set-smoothing 'aligned)
+    (send dc set-smoothing smoothing)
     (draw-proc dc 16 16)
     (send dc set-bitmap #f)
     bm))

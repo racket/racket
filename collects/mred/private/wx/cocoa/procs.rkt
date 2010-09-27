@@ -33,6 +33,7 @@
  run-printout
  get-double-click-time
  get-control-font-size
+ get-control-font-size-in-pixels?
  cancel-quit
  fill-private-color
  flush-display
@@ -75,6 +76,7 @@
 (define (get-double-click-time)
   500)
 (define (get-control-font-size) 13)
+(define (get-control-font-size-in-pixels?) #f)
 (define (cancel-quit) (void))
 (define-unimplemented fill-private-color)
 (define-unimplemented write-resource)

@@ -250,6 +250,10 @@
      (define/override (definitely-wants-event? e) 
        #t)
 
+     (define/public (on-combo-select i) (void))
+     (define/public (set-combo-text s) (void))
+     (define/public (append-combo-item s) (void))
+
      (def/public-unimplemented scroll)
      (def/public-unimplemented warp-pointer)
      (def/public-unimplemented view-start)

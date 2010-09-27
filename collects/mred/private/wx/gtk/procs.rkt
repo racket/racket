@@ -31,6 +31,7 @@
  get-double-click-time
  key-symbol-to-integer
  get-control-font-size
+ get-control-font-size-in-pixels?
  cancel-quit
  fill-private-color
  flush-display
@@ -75,6 +76,7 @@
 (define (get-double-click-time) 250)
 (define-unimplemented key-symbol-to-integer)
 (define (get-control-font-size) 10) ;; FIXME
+(define (get-control-font-size-in-pixels?) #f) ;; FIXME
 (define-unimplemented cancel-quit)
 (define-unimplemented fill-private-color)
 
