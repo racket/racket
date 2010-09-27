@@ -2195,7 +2195,7 @@ single reduction relation.
 
 }
 
-@section{Removing the pink background from PLT Redex rendered picts and ps files}
+@section[#:tag "pink"]{Removing the pink background from PLT Redex rendered picts and ps files}
 
 When reduction rules, a metafunction, or a grammar contains
 unquoted Racket code or side-conditions, they are rendered
