@@ -6936,7 +6936,6 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       }
       if (name[0] != 'f') {
         /* can return */
-        jit_retval(JIT_R0);
         CHECK_LIMIT();
         __START_TINY_JUMPS__(1);
         refdone = jit_jmpi(jit_forward());
@@ -7439,9 +7438,9 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       else
         generate_alloc_double(jitter, 0);
     }
-    if (can_chaperone)
-      mz_patch_ucbranch(pref);
   }
+  if (can_chaperone)
+    mz_patch_ucbranch(pref);
 
   return 1;
 }
@@ -11072,6 +11071,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     case 8:
     case 9:
       jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      JIT_UPDATE_THREAD_RSPTR();
       jit_retval(JIT_R0);
       mz_epilog(JIT_R1);
       break;
@@ -11612,19 +11612,16 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	case 0:
 	  if (!iii) {
 	    (void)mz_finish(ts_scheme_checked_vector_ref);
-            CHECK_LIMIT();
-            /* Might return, if arg was chaperone */
-	    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
-	    JIT_UPDATE_THREAD_RSPTR();
-	    jit_retval(JIT_R0);
-	    mz_epilog(JIT_R2);
 	  } else {
 	    (void)mz_finish(ts_scheme_checked_vector_set);
-            /* Might return, if arg was chaperone */
-	    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
-	    JIT_UPDATE_THREAD_RSPTR();
-	    mz_epilog(JIT_R2);
 	  }
+          CHECK_LIMIT();
+          /* Might return, if arg was chaperone */
+          jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+          JIT_UPDATE_THREAD_RSPTR();
+          if (!iii)
+            jit_retval(JIT_R0);
+          mz_epilog(JIT_R2);
 	  break;
 	case 1:
 	  if (!iii) {
