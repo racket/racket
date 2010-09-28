@@ -469,7 +469,7 @@ namespace.
 
 (define-teach beginner string-ith
   (lambda (s n)
-    (define f "<exact integer in [0, length of the given string (~s)]>")
+    (define f "<exact integer in [0, length of the given string (~s))>")
     (cerr 'string-ith (string? s) "<string>" s "first")
     (cerr 'string-ith (and (number? n) (integer? n) (>= n 0)) NAT n "second")
     (let ([l (string-length s)]) 
