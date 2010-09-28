@@ -1,15 +1,21 @@
 #lang racket/base
 
 (require ffi/unsafe
-         #;rackunit
-         racket/match)
+         ffi/vector
+         racket/match
+         racket/runtime-path)
 
 ;; the constants in this file are pulled from version 1.0.21 of the libsndfile header file. However,
 ;; I think it would be a mistake to specify this in the call to ffi-lib; it appears that 
 ;; this version is a conservative extension of the earlier version (1.0.17?), and I
 ;; think you'll get graceful failures if the version is wrong.
 
-(define libsndfile (ffi-lib "libsndfile"))
+(define-runtime-path mac-ffi-path "./lib/libsndfile")
+(define libsndfile 
+  (match (system-type)
+    ['unix (ffi-lib "libsndfile"   '("1.0.21" "1.0.20" ""))]
+    ['macosx (ffi-lib mac-ffi-path '("1.0.21" "1.0.20" ""))]
+    ['windows (error 'libsndfile "libsndfile not supported on windows.")]))
 
 ;; ==================== Types etc ====================
 
@@ -205,7 +211,7 @@
   -> (if (sndfile-ptr sf)
          (begin (set-sndfile-info! sf info) sf)
          ;; goofy way to get the error code:
-         (error 'sf-read "~a" (sf-strerror (make-sndfile #f #f)))))
+         (error 'sf-open "~a" (sf-strerror (make-sndfile #f #f)))))
 
 (defsndfile sf-format-check  : _sf-info-pointer -> _bool)
 
@@ -247,9 +253,9 @@
       (when found (sf-set-string sndfile st (cadr found))))))
 
 
-;; read-sound-internal : path-string [bool] -> (values/c (or/c cblock (listof (listof sample))) a-list)
+;; read-sound-internal : path-string -> (values/c (or/c cblock (listof (listof sample))) a-list)
 ;; read the data from a file. 
-(define (read-sound-internal file #:split [split-into-lists? #t])
+(define (read-sound-internal file)
   (let* ([sndfile  (sf-open file 'sfm-read)]
          [strings  (get-meta-strings sndfile)]
          [info     (sndfile-info sndfile)]
@@ -258,17 +264,14 @@
          [stype    (case (sample-type)
                      [(short) _int16] [(int) _int] [(float) _double*])]
          [readf    (sample-type->reader (sample-type))]
-         [cblock   (malloc (* frames channels) stype)]
-         [num-read (readf sndfile cblock frames)]
+         [cblock   ((sample-type->vector-maker (sample-type)) (* frames channels))]
+         [num-read (readf sndfile ((sample-type->cpointer-extractor (sample-type)) cblock) frames)]
          [_        (unless (= frames num-read)
                      (error 'read-sound-internal
                             "wanted ~s frames, but got ~s: ~s" 
                             frames num-read
-                            (sf-strerror sndfile)))]
-         [data (if split-into-lists? 
-                   (split-sound-cblock cblock stype frames channels)
-                   cblock)])
-    (begin0 (values data
+                            (sf-strerror sndfile)))])
+    (begin0 (values cblock
                     `((frames     ,frames)
                       (samplerate ,(sf-info-samplerate info))
                       (channels   ,channels)
@@ -280,9 +283,11 @@
                "error while closing file: ~s" 
                (sf-strerror sndfile))))))
 
+
 ;; split-sound-cblock : cblock ffi-type nat nat -> (listof frame)
 ;; ... where frame is (listof sample-value)
-(define (split-sound-cblock cblock stype frames channels)
+;; NOT SUPPORTING THE LIST INTERFACE RIGHT NOW (2010-09-24)
+#;(define (split-sound-cblock cblock stype frames channels)
   (let* ([data (cblock->list cblock stype (* frames channels))])
     (n-split data channels)))
 
@@ -306,11 +311,12 @@
               [(pair? d) (loop (car d)) (loop (cdr d))]))
       cblock)]))
 
+
 ;; there are some ugly hidden invariants here: what if the sample-type doesn't match
 ;; what's specified in the format? This is a question about libsndfile, and I should check it out...
 
-;; write-sound-internal/cblock
-(define (write-sound-internal/cblock file cblock format samplerate frames channels sample-type meta)
+;; write-sound-internal/s16vector
+(define (write-sound-internal/s16vector file cblock format samplerate frames channels sample-type meta)
   (check-filename-format format file)
   (let* ([writef     (sample-type->writer sample-type)]
          [info       (make-sf-info frames samplerate channels format 1 #f)]
@@ -318,13 +324,13 @@
                        (error 'write-sound-internal "bad format: ~s" format))]
          [sndfile    (sf-open file 'sfm-write info)]
          [_          (set-meta-strings sndfile meta)]
-         [num-write  (writef sndfile cblock frames)])
+         [num-write  (writef sndfile (s16vector->cpointer cblock) frames)])
     (unless (= frames num-write)
-      (error 'write-sound-internal/cblock
+      (error 'write-sound-internal/s16vector
              "wanted to write ~s frames, but wrote only ~s. ~s"
              frames num-write (sf-strerror sndfile)))
     (unless (= 0 (sf-close sndfile))
-      (error 'write-sound-internal/cblock "failed to close file: ~s" (sf-strerror sndfile)))
+      (error 'write-sound-internal/s16vector "failed to close file: ~s" (sf-strerror sndfile)))
     (void)))
 
 ;; write-sound-internal/lists : path-string (listof (listof sample)) (listof (list/c symbol? string?)) -> (void)
@@ -341,7 +347,7 @@
                            [else (guess-format file)])]
          [samplerate (cond [(assq 'samplerate meta) => cadr]
                            [else (default-samplerate)])])
-    (write-sound-internal/cblock file cblock format samplerate frames channels (sample-type) meta)))
+    (write-sound-internal/s16vector file cblock format samplerate frames channels (sample-type) meta)))
 
 (define file-format-table
   '((#rx"\\.aiff?" (aiff  pcm-16  file))
@@ -402,7 +408,6 @@
   (match-lambda
     ['short  sf-readf-short]
     ['int    sf-readf-int]
-    ['float  sf-readf-float]
     ['double sf-readf-double]))
 
 ;; return the writer that corresponds to a given sample-type
@@ -410,19 +415,33 @@
   (match-lambda
     ['short  sf-writef-short]
     ['int    sf-writef-int]
-    ['float  sf-writef-float]
     ['double sf-writef-double]))
+
+;; return the vector-maker that corresponds to a given sample-type
+(define sample-type->vector-maker
+  (match-lambda
+    ['short  make-s16vector]
+    ['int    make-s32vector]
+    ['double make-f64vector]))
+
+;; return the cpointer-extractor that corresponds to a given sample-type
+(define sample-type->cpointer-extractor
+  (match-lambda
+    ['short  s16vector->cpointer]
+    ['int    s32vector->cpointer]
+    ['double flvector->cpointer]))
+
 
 ;; ==================== Exposed Scheme interface ====================
 
-;; types of samples we handle: 'short, 'int, 'double, or 'float
+;; types of samples we handle: 'short, 'int, 'double
 (provide sample-type)
 (define sample-type
   (make-parameter
    'float (lambda (x)
-            (if (memq x '(short int float double))
+            (if (memq x '(short int double))
               x 
-              (error 'sample-type "bad type: ~s" x)))))
+              (error 'sample-type "bad or unsupported type: ~s" x)))))
 
 
 
@@ -465,25 +484,27 @@
 ;; C data.  It's 2-channel 32-bit float only. Also, it discards
 ;; all meta-information except length and sample-rate.
 
-;; read-sound/floatblock : path-string -> (list/c _pointer nat nat)
+(define global-channels 2)
+
+;; read-sound/s16vector : path-string -> (list/c _pointer nat nat)
 ;; read the file into a buffer, return the data, the number of frames,
 ;; and the sample rate.
-(provide read-sound/floatblock)
-(define (read-sound/floatblock file)
-  (parameterize ([sample-type 'float])
-    (let*-values ([(cblock meta) (read-sound-internal file #:split #f)])
+(provide read-sound/s16vector)
+(define (read-sound/s16vector file)
+  (parameterize ([sample-type 'short])
+    (let*-values ([(cblock meta) (read-sound-internal file)])
       (list cblock (cadr (assq 'frames meta)) (cadr (assq 'samplerate meta))))))
 
-;; write-sound/floatblock : _pointer nat nat path-string -> (void)
-;; write the floatblock sound to the given file as a wav.
-(provide write-sound/floatblock)
-(define (write-sound/floatblock data frames sample-rate file)
-  (write-sound-internal/cblock file data '(wav float file) 
+;; write-sound/s16vector : _pointer nat nat path-string -> (void)
+;; write the cblock sound to the given file as a wav.
+(provide write-sound/s16vector)
+(define (write-sound/s16vector data sample-rate file)
+  (write-sound-internal/s16vector file data '(wav pcm-16 file) 
                                sample-rate 
-                               frames
+                               (/ (s16vector-length data) global-channels)
                                2
-                               'float
-                               ;; for now, no meta-data possible.
+                               'short
+                               ;; meta-data not supported.
                                '()))
 
 
