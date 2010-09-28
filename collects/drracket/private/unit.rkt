@@ -2831,7 +2831,7 @@ module browser threading seems wrong.
         ;; creates a new tab and updates the GUI for that new tab
         (define/private create-new-tab
           (lambda ([filename #f])
-            (let* ([defs (new (drracket:get/extend:get-definitions-text))]
+            (let* ([defs (new (drracket:get/extend:get-definitions-text) [line-numbers? #f])]
                    [tab-count (length tabs)]
                    [new-tab (new (drracket:get/extend:get-tab)
                                  (defs defs)
