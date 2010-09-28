@@ -148,7 +148,6 @@
      (dispatch/servlet 
       start
       #:regexp servlet-regexp
-      #:namespace servlet-namespace
       #:stateless? stateless?
       #:stuffer stuffer
       #:current-directory servlet-current-directory
