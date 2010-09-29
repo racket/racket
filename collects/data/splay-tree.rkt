@@ -553,6 +553,14 @@ Options
 ;; Mem = vector: [key, value, left, right] ...
 ;; Node = nat, multiple of NODE-SIZE
 
+;; First "node" of Mem is always Scratch
+;; (node-key Scratch) = size = next *fresh* node
+;; (node-value Scratch) = #f or free-list head (Node)
+
+;; If N in free-list:
+;;   (node-key N) = number of nodes in free-list here on (self included)
+;;   (node-value N) = #f or next node in free-list
+
 (define NODE-SIZE 4)
 
 ;; min number of vector slots
@@ -569,23 +577,51 @@ Options
      [vnode-left set-vnode-left! 2]
      [vnode-right set-vnode-right! 3])
 
+(define scratch 0)
+(define (v:next mem)
+  (vnode-key mem scratch))
+(define (v:set-next! mem v)
+  (set-vnode-key! mem scratch v))
+
+(define (v:free-list mem)
+  (vnode-value mem scratch))
+
+(define (v:push-free! mem n)
+  (let ([head (v:free-list mem)])
+    (set-vnode-value! mem n head)
+    (set-vnode-key! mem n
+                    (if head
+                        (add1 (vnode-key mem head))
+                        1)))
+  (set-vnode-value! mem scratch n))
+(define (v:pop-free! mem)
+  (let* ([head (v:free-list mem)]
+         [next (vnode-value mem head)])
+    (set-vnode-value! mem scratch next)
+    head))
+
+;; number of nodes (not including scratch)
+(define (v:size mem)
+  (let ([free (v:free-list mem)])
+    (- (sub1 (quotient (v:next mem) NODE-SIZE))
+       (if free
+           (vnode-key mem free) ;; size of free list
+           0))))
+
+(define (valloc! mem)
+  (if (vnode-value mem scratch) ;; free-list head
+      (v:pop-free! mem)
+      (let ([next (v:next mem)])
+        (v:set-next! mem (+ NODE-SIZE next))
+        next)))
+
 (define (vnode! mem key value left right)
-  (let ([node (v:size mem)])
+  (let ([node (valloc! mem)])
     (set-vnode-key! mem node key)
     (set-vnode-value! mem node value)
     (set-vnode-left! mem node left)
     (set-vnode-right! mem node right)
-    (v:adjust-size! mem NODE-SIZE)
     node))
-
-;; scratch = 0, always
-;; (node-key scratch) contains size = next available node
-
-(define scratch 0)
-(define (v:size mem)
-  (vnode-key mem scratch))
-(define (v:adjust-size! mem x)
-  (set-vnode-key! mem scratch (+ x (vnode-key mem scratch))))
 
 ;; find : ... -> (values boolean node/#f)
 ;; If ok?, then node returned is one sought.
@@ -699,32 +735,9 @@ Top-down splay
 (define (v:split/drop-root mem root cmp)
   (let ([root-key (vnode-key mem root)]
         [left (vnode-left mem root)]
-        [right (vnode-right mem root)]
-        [last (- (v:size mem) NODE-SIZE)])
-
-    ;; Must update former parent(last) to point to root.
-    ;; Also update left, right if they point to last.
-    (let-values ([(last-parent last-parent-side)
-                  (let loop ([x root] [p #f] [side #f])
-                    (case (cmp (vnode-key mem last) (vnode-key mem x))
-                      ((<) (let ([xleft (vnode-left mem x)]) (and xleft (loop xleft x 'left))))
-                      ((>) (let ([xright (vnode-right mem x)]) (and xright (loop xright x 'right))))
-                      ((=) (values p side))))]
-                 [(left) (if (equal? left last) root left)]
-                 [(right) (if (equal? right last) root right)])
-      (case last-parent-side
-        ((left) (set-vnode-left! mem last-parent root))
-        ((right) (set-vnode-right! mem last-parent root))
-        ((#f) (void))) ;; last = root
-
-      ;; Overwrite root with last, null out last
-      (vector-copy! mem root mem last (+ last NODE-SIZE))
-      (set-vnode-key! mem last #f)
-      (set-vnode-value! mem last #f)
-      (set-vnode-left! mem last #f)
-      (set-vnode-right! mem last #f)
-      (v:adjust-size! mem (- NODE-SIZE))
-      (values left right))))
+        [right (vnode-right mem root)])
+    (v:push-free! mem root)
+    (values left right)))
 
 (define (v:split/root-to-left mem root)
   (let ([right (vnode-right mem root)])
@@ -740,6 +753,7 @@ Top-down splay
   (let-values ([(left right) (v:split/drop-root mem root cmp)])
     (v:join-left mem left right)))
 
+#|
 (define (v:remove-range! mem root cmp from to)
   (let loop ([root root])
     (let-values ([(ok? root)
@@ -747,28 +761,29 @@ Top-down splay
       (if (and ok? (eq? (cmp (vnode-key mem root) to) '<))
           (loop (v:delete-root mem root cmp))
           root))))
-
-#|
-;; Would require distinguishing integer/real-keyed compact-splay-trees.
-
-(define (v:contract! mem root cmp from to)
-  (let ([root (v:remove-range! cmp root from to)])
-    (v:adjust-from-node! mem root (- from to))))
-
-(define (v:expand! mem root cmp from to)
-  (v:adjust-from-node! mem root (- to from)))
-
-(define (v:adjust-from-node! mem root delta)
-  (let-values ([(ok? root)
-                (v:extreme* mem root cmp from '(> =) v:has-next? v:find-next)])
-    (when ok?
-      (let loop ([x root])
-        (when x
-          (set-vnode-key! mem x (+ (vnode-key mem x) delta))
-          (loop (vnode-left mem x))
-          (loop (vnode-right mem x)))))
-    root))
 |#
+
+(define (v:remove-range! mem root cmp from to)
+  (let*-values ([(ok? from-node) ;; least >= from
+                 (v:extreme* mem root cmp from
+                             '(> =) v:has-next? v:find-next)]
+                [(left-tree mid+right-tree)
+                 (v:split/root-to-right mem from-node)]
+                [(ok? to-node) ;; least >= to
+                 (v:extreme* mem mid+right-tree cmp to
+                             '(> =) v:has-next? v:find-next)]
+                [(mid-tree right-tree)
+                 (v:split/root-to-right mem to-node)])
+    ;; Remove everything rooted at mid-tree.
+    (let loop ([n mid-tree])
+      (when n
+        (loop (vnode-left mem n))
+        (loop (vnode-right mem n))
+        (set-vnode-left! mem n #f) ;; not strictly necessary
+        (set-vnode-right! mem n #f)
+        (v:push-free! mem n))) ;; overwrites key, value
+    ;; Join left and right trees.
+    (v:join-left mem left-tree right-tree)))
 
 (define (v:find-prev mem root)
   ;; PRE: root is node and root.left is node; ie, has-prev?
@@ -806,12 +821,14 @@ Top-down splay
   (match s
     [(compact-splay-tree mem root cmp)
      (let ([mem
-            (if (<= (+ NODE-SIZE (v:size mem)) (vector-length mem))
-                mem
-                (let ([mem* (make-vector (* (vector-length mem) 2) #f)])
-                  (vector-copy! mem* 0 mem)
-                  (set-compact-splay-tree-mem! s mem*)
-                  mem*))])
+            ;; ensure at least one free node
+            (cond [(v:free-list mem) mem]
+                  [(<= (+ NODE-SIZE (v:next mem)) (vector-length mem)) mem]
+                  [else ;; no free, can make simple copy
+                   (let ([mem* (make-vector (* (vector-length mem) 2) #f)])
+                     (vector-copy! mem* 0 mem)
+                     (set-compact-splay-tree-mem! s mem*)
+                     mem*)])])
        (let-values ([(ok? root) (v:find cmp x mem root (list v))])
          (set-compact-splay-tree-root! s root)
          (unless (eq? (vnode-value mem root) v)
@@ -822,28 +839,36 @@ Top-down splay
     [(compact-splay-tree mem root cmp)
      (let-values ([(ok? root) (v:find cmp x mem root #f)])
        (cond [ok? ;; => root is node to remove
-              (set-compact-splay-tree-root! s (v:delete-root mem root cmp))
-              (v:check-size s mem)]
+              (let ([root (v:delete-root mem root cmp)])
+                (set-compact-splay-tree-root! s root)
+                (v:check-size s mem root))]
              [else
               (set-compact-splay-tree-root! s root)]))]))
 
 (define (v:splay-tree-count s)
   (match s
     [(compact-splay-tree mem root cmp)
-     (sub1 (quotient (v:size mem) 4))]))
+     (v:size mem)]))
 
 (define (v:splay-tree-remove-range! s from to)
   (match s
     [(compact-splay-tree mem root cmp)
      (when (eq? (cmp from to) '<)
-       (set-compact-splay-tree-root! s (v:remove-range! mem root cmp from to))
-       (v:check-size s mem))]))
+       (let ([root (v:remove-range! mem root cmp from to)])
+         (set-compact-splay-tree-root! s root)
+         (v:check-size s mem root)))]))
 
-(define (v:check-size s mem)
-  (when (and (< (* 2 (v:size mem)) (vector-length mem))
+(define (v:check-size s mem root)
+  (when (and (< (* 2 (v:size mem)) (quotient (vector-length mem) NODE-SIZE))
              (>= (quotient (vector-length mem) 2) MIN-SIZE))
     (let ([mem* (make-vector (quotient (vector-length mem) 2) #f)])
-      (vector-copy! mem* 0 mem 0 (v:size mem))
+      ;; condensing copy
+      (v:set-next! mem* NODE-SIZE)
+      (let loop ([n root])
+        (when n
+          (let ([n* (vnode! mem* (vnode-key mem n) (vnode-value mem n) #f #f)])
+            (set-vnode-left! mem* n* (loop (vnode-left mem n)))
+            (set-vnode-right! mem* n* (loop (vnode-right mem n))))))
       (set-compact-splay-tree-mem! s mem*))))
 
 ;; ========
