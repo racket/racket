@@ -150,7 +150,20 @@ order of the supplied arguments' keywords.
 
 Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[procedure-proxy] must be even) add proxy properties
-or override proxy-property values of @scheme[proc].}
+or override proxy-property values of @scheme[proc].
+
+If any @scheme[prop] is @racket[proxy-prop:application-mark] and if the
+associated @racket[prop-val] is a pair, then the call to @racket[proc]
+is wrapped with @racket[with-continuation-mark] using @racket[(car
+prop-val)] as the mark key and @racket[(cdr prop-val)] as the mark
+value. In addition, if @racket[continuation-mark-set-first] with
+@racket[(car prop-val)] produces a value for the immediate
+continuation frame of the call to the proxied procedure, the value is
+also installed as an immediate value for @racket[(car prop-val)] as a
+mark during the call to @racket[wrapper-proc] (which allows tail-calls
+of proxies with respect to wrapping proxies to be detected within
+@racket[wrapper-proc]).}
+
 
 @defproc[(proxy-struct [v any/c]
                        [orig-proc (or/c struct-accessor-procedure?
@@ -537,3 +550,10 @@ descriptor} value, @scheme[#f] otherwise.}
 
 Returns @scheme[#t] if @scheme[v] is an accessor procedure produced
 by @scheme[make-proxy-property], @scheme[#f] otherwise.}
+
+
+@defthing[proxy-prop:application-mark proxy-property?]{
+
+A @tech{proxy property} that is recognized by @racket[proxy-procedure]
+and @racket[chaperone-procedure].}
+

@@ -4174,8 +4174,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
 {
   const char *what;
   Scheme_Chaperone *px;
-  Scheme_Object *v, *a[1], *a2[3], **argv2, *post, *result_v, *orig_obj;
+  Scheme_Object *v, *a[1], *a2[3], **argv2, *post, *result_v, *orig_obj, *app_mark;
   int c, i, need_restore = 0;
+  int need_pop_mark = 0;
+  Scheme_Cont_Frame_Data cframe;
 
   if (argv == MZ_RUNSTACK) {
     /* Pushing onto the runstack ensures that px->redirects won't
@@ -4221,6 +4223,26 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     return NULL;
   }
 
+  if (px->props) {
+    app_mark = scheme_hash_tree_get(px->props, scheme_app_mark_proxy_property);
+    /* app_mark should be (cons mark val) */
+    if (app_mark && !SCHEME_PAIRP(app_mark))
+      app_mark = NULL;
+  } else
+    app_mark = NULL;
+
+  if (app_mark) {
+    v = scheme_extract_one_cc_mark(NULL, SCHEME_CAR(app_mark));
+    if (v) {
+      scheme_push_continuation_frame(&cframe);
+      scheme_set_cont_mark(SCHEME_CAR(app_mark), v);
+      MZ_CONT_MARK_POS -= 2;
+      need_pop_mark = 1;
+    } else
+      need_pop_mark = 0;
+  } else
+    need_pop_mark = 0;
+
   v = _scheme_apply_multi(px->redirects, argc, argv);
   if (v == SCHEME_MULTIPLE_VALUES) {
     GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
@@ -4232,6 +4254,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     c = 1;
     a2[0] = v;
     argv2 = a2;
+  }
+
+  if (need_pop_mark) {
+    MZ_CONT_MARK_POS += 2;
+    scheme_pop_continuation_frame(&cframe);
   }
   
   if ((c == argc) || (c == (argc + 1))) {
@@ -4278,6 +4305,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
 
   if (c == argc) {
     /* No filter for the result, so tail call: */
+    if (app_mark)
+      scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
     if (auto_val) {
       if (SCHEME_CHAPERONEP(px->prev))
         return do_apply_chaperone(px->prev, c, argv2, auto_val);
@@ -4299,6 +4328,15 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        what,
                        px->redirects,
                        post);
+
+    if (app_mark) {
+      scheme_push_continuation_frame(&cframe);
+      scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
+      MZ_CONT_MARK_POS -= 2;
+      need_pop_mark = 1;
+    } else
+      need_pop_mark = 0;
+
     if (auto_val) {
       if (SCHEME_CHAPERONEP(px->prev))
         result_v = do_apply_chaperone(px->prev, argc, argv2, auto_val);
@@ -4314,6 +4352,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       v = _scheme_apply_multi(orig_obj, argc, argv2);
       result_v = NULL;
     }
+
     if (v == SCHEME_MULTIPLE_VALUES) {
       GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
       if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
@@ -4324,6 +4363,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       c = 1;
       a[0] = v;
       argv = a;
+    }
+
+    if (need_pop_mark) {
+      MZ_CONT_MARK_POS += 2;
+      scheme_pop_continuation_frame(&cframe);
     }
     
     if (!scheme_check_proc_arity(NULL, c, 0, -1, &post))

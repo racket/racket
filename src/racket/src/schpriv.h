@@ -386,6 +386,8 @@ extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 extern Scheme_Object *scheme_equal_property;
 extern Scheme_Object *scheme_proxy_of_property;
 
+extern Scheme_Object *scheme_app_mark_proxy_property;
+
 extern Scheme_Object *scheme_reduced_procedure_struct;
 
 /*========================================================================*/

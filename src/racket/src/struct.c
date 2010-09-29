@@ -38,6 +38,7 @@ READ_ONLY Scheme_Object *scheme_current_inspector_proc;
 READ_ONLY Scheme_Object *scheme_recur_symbol;
 READ_ONLY Scheme_Object *scheme_display_symbol;
 READ_ONLY Scheme_Object *scheme_write_special_symbol;
+READ_ONLY Scheme_Object *scheme_app_mark_proxy_property;
 
 READ_ONLY static Scheme_Object *location_struct;
 READ_ONLY static Scheme_Object *write_property;
@@ -169,6 +170,8 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv);
 static Scheme_Object *proxy_struct(int argc, Scheme_Object **argv);
 static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv);
 static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *make_chaperone_property_from_c(Scheme_Object *name);
 
 #define PRE_REDIRECTS 2
 
@@ -722,9 +725,13 @@ scheme_init_struct (Scheme_Env *env)
 						     1, 1, 1),
 			    env);
 
-  scheme_add_global_constant("proxy-prop:application-mark",
-                             scheme_false,
-                             env);
+  {
+    REGISTER_SO(scheme_app_mark_proxy_property);
+    scheme_app_mark_proxy_property = make_chaperone_property_from_c(scheme_intern_symbol("application-mark"));
+    scheme_add_global_constant("proxy-prop:application-mark",
+                               scheme_app_mark_proxy_property,
+                               env);
+  }
 }
 
 /*========================================================================*/
@@ -1102,6 +1109,14 @@ static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[])
   Scheme_Object *a[3];
   a[0] = make_struct_type_property_from_c(argc, argv, &a[1], &a[2], scheme_chaperone_property_type);
   return scheme_values(3, a);
+}
+
+static Scheme_Object *make_chaperone_property_from_c(Scheme_Object *name)
+{
+  Scheme_Object *a[3];
+
+  a[0] = name;
+  return make_struct_type_property_from_c(1, a, &a[1], &a[2], scheme_chaperone_property_type);
 }
 
 Scheme_Object *scheme_make_struct_type_property_w_guard(Scheme_Object *name, Scheme_Object *guard)
