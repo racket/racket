@@ -447,16 +447,12 @@ module browser threading seems wrong.
             (set! definitions-text% (make-definitions-text%)))
           definitions-text%)))
 
-    ;; TODO: get this from the configuation file
-    ;; also add a menu entry that sets this property dynamically
-    (define (show-line-numbers?) #f)
-
     ;; links two editor's together so they scroll in tandem
     (define (linked-scroller %)
       (class %
              (super-new)
              (field [linked #f])
-             (init-field line-numbers?)
+             (init-field [line-numbers? #f])
 
              (inherit insert line-start-position line-end-position)
 
@@ -491,12 +487,16 @@ module browser threading seems wrong.
                (inner (void) after-delete start length))
 
              (define/augment (after-insert start length)
+               (update-numbers)
+               #;
                (when (not line-numbers?)
-                 #;
-                 (printf "Send ~a linked ensure-length ~a\n" linked (send this last-line))
                  (when linked
                    (send linked ensure-length (send this last-line))))
                (inner (void) after-insert start length))
+
+             (define/public (update-numbers)
+               (when (and (not line-numbers?) linked)
+                 (send linked ensure-length (send this last-line))))
 
              (define/public (ensure-length length)
                (define lines (send this last-line))
@@ -1451,6 +1451,12 @@ module browser threading seems wrong.
                         change-children
                         (λ (l) (remq execute-warning-panel l)))
                  (send execute-warning-canvas set-message #f))])))
+
+        (define (show-line-numbers?)
+          (preferences:get 'drracket:show-line-numbers?))
+
+        (define/public (show-line-numbers! show)
+          (re-initialize-definitions-canvas))
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -2593,7 +2599,9 @@ module browser threading seems wrong.
             (send resizable-panel begin-container-sequence)
             
             ;; this might change the unit-window-size-percentage, so save/restore it
-            (send resizable-panel change-children (λ (l) (immediate-children resizable-panel new-children)))
+            (send resizable-panel change-children
+                  (λ (old)
+                     (immediate-children resizable-panel new-children)))
             
             (preferences:set 'drracket:unit-window-size-percentage p)
             ;; restore preferred interactions/definitions sizes
@@ -2770,27 +2778,37 @@ module browser threading seems wrong.
 
         (define (create-definitions-canvas line-numbers?)
           (define (with-line-numbers)
-                (define line-numbers-text (new (linked-scroller (uneditable scheme:text%))
-                                               [line-numbers? #t]))
-                (define shared-pane (new horizontal-pane% [parent resizable-panel]))
-                (define line-canvas (new editor-canvas%
-                                         [parent shared-pane]
-                                         [style '(hide-vscroll hide-hscroll)]
-                                         [editor line-numbers-text]
-                                         [stretchable-width #f]
-                                         [min-width 60]))
-                (send definitions-text link-to! line-numbers-text)
-                (send line-numbers-text link-to! definitions-text)
-                (new (drracket:get/extend:get-definitions-canvas)
-                     [parent shared-pane]
-                     [editor definitions-text]))
+            (define line-numbers-text (new (linked-scroller (uneditable scheme:text%))
+                                           [line-numbers? #t]))
+            (define shared-pane (new horizontal-panel% [parent resizable-panel]))
+            (define line-canvas (new editor-canvas%
+                                     [parent shared-pane]
+                                     [style '(hide-vscroll hide-hscroll)]
+                                     [editor line-numbers-text]
+                                     [stretchable-width #f]
+                                     [min-width 60]))
+            (send definitions-text link-to! line-numbers-text)
+            (send line-numbers-text link-to! definitions-text)
+            (new (drracket:get/extend:get-definitions-canvas)
+                 [parent shared-pane]
+                 [editor definitions-text]))
           (define (without-line-numbers)
-                (new (drracket:get/extend:get-definitions-canvas)
-                     [parent resizable-panel]
-                     [editor definitions-text]))
+            (send definitions-text link-to! #f)
+            (new (drracket:get/extend:get-definitions-canvas)
+                 [parent resizable-panel]
+                 [editor definitions-text]))
           (if line-numbers?
             (with-line-numbers)
             (without-line-numbers)))
+
+        (define/private (re-initialize-definitions-canvas)
+          (begin-container-sequence)
+          (set! definitions-canvas (create-definitions-canvas
+                                     (show-line-numbers?)))
+          (set! definitions-canvases (list definitions-canvas))
+          (update-shown)
+          (send (send definitions-canvas get-editor) update-numbers)
+          (end-container-sequence))
 
         (define/private (initialize-definitions-canvas)
           (unless definitions-canvas
@@ -2831,7 +2849,7 @@ module browser threading seems wrong.
         ;; creates a new tab and updates the GUI for that new tab
         (define/private create-new-tab
           (lambda ([filename #f])
-            (let* ([defs (new (drracket:get/extend:get-definitions-text) [line-numbers? #f])]
+            (let* ([defs (new (drracket:get/extend:get-definitions-text))]
                    [tab-count (length tabs)]
                    [new-tab (new (drracket:get/extend:get-tab)
                                  (defs defs)
@@ -3897,6 +3915,14 @@ module browser threading seems wrong.
                 #f
                 has-editor-on-demand)
               (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
+
+            (new menu:can-restore-menu-item%
+                 [label (string-constant show-line-numbers)]
+                 [parent (get-show-menu)]
+                 [callback (lambda (x y)
+                             (define value (preferences:get 'drracket:show-line-numbers?))
+                             (preferences:set 'drracket:show-line-numbers? (not value))
+                             (show-line-numbers! (not value)))])
             
             (make-object separator-menu-item% (get-show-menu))
             
@@ -3933,8 +3959,7 @@ module browser threading seems wrong.
         ;                          
         ;                          
         
-        (define definitions-text (new (drracket:get/extend:get-definitions-text)
-                                      [line-numbers? #f]))
+        (define definitions-text (new (drracket:get/extend:get-definitions-text)))
         
         ;; tabs : (listof tab)
         (define tabs (list (new (drracket:get/extend:get-tab)
