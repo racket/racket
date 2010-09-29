@@ -48,9 +48,11 @@ uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
   private.  (See @secref{server-setup}.)}
 
 @item{To create an installable package, run
-  @commandline{raco pack --collect <name>.plt <name>} where @tt{<name>}
-  is the name that you chose for your directory (i.e., whatever you
-  changed @filepath{handin-client} to).
+  @commandline{raco pack --collect --at-plt ++setup <name> <name>.plt <name>}
+  where @tt{<name>} is the name that you chose for your directory (i.e.,
+  whatever you changed @filepath{handin-client} to).  You can also add a
+  @tt{--replace} flag to make the installation of the resulting file
+  replace existing files (useful for creating an update package).
 
   This directory should exist in your @filepath{collects} directory:
   this can be done by making sure that the copy is in the same place the
@@ -59,7 +61,7 @@ uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
   variable.  For example, if your customized collection directory is
   called @filepath{cs1} and it is located at
   @filepath{/home/joe/intro/cs1}, then you can run
-  @commandline{PLTCOLLECTS=/home/joe/intro: raco pack --collect cs1.plt cs1}
+  @commandline{PLTCOLLECTS=/home/joe/intro: raco pack --collect ...}
   (Don't forget the colon at the end of the @envvar{PLTCOLLECTS} value;
   it is important!)
 
