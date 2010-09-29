@@ -576,6 +576,25 @@ that has the property:
 
 ]}
 
+@;{
+
+@defthing[prop:dict/contract]{
+
+
+}
+
+@deftogether[[
+@defproc[(dict-key-contract [d dict?]) contract?]
+@defproc[(dict-value-contract [d dict?]) contract?]]]{
+
+Returns the contract that @racket[d] imposes on its keys or values,
+respectively, if @racket[d] implements the @racket[prop:dict/contract]
+interface.
+}
+}
+
+@;{------------------------------------------------------------}
+
 @deftogether[(
 @defproc[(make-custom-hash [eql? (any/c any/c . -> . any/c)]
                            [hash-proc (any/c . -> . exact-integer?)]
