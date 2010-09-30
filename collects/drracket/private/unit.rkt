@@ -1452,7 +1452,7 @@ module browser threading seems wrong.
           (preferences:get 'drracket:show-line-numbers?))
 
         (define/public (show-line-numbers! show)
-          (re-initialize-definitions-canvas))
+          (re-initialize-definitions-canvas show))
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -2797,10 +2797,9 @@ module browser threading seems wrong.
             (with-line-numbers)
             (without-line-numbers)))
 
-        (define/private (re-initialize-definitions-canvas)
+        (define/private (re-initialize-definitions-canvas show)
           (begin-container-sequence)
-          (set! definitions-canvas (create-definitions-canvas
-                                     (show-line-numbers?)))
+          (set! definitions-canvas (create-definitions-canvas show))
           (set! definitions-canvases (list definitions-canvas))
           (update-shown)
           (send (send definitions-canvas get-editor) update-numbers)
@@ -3913,10 +3912,16 @@ module browser threading seems wrong.
               (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
 
             (new menu:can-restore-menu-item%
-                 [label (string-constant show-line-numbers)]
+                 [label (if (show-line-numbers?)
+                          (string-constant hide-line-numbers)
+                          (string-constant show-line-numbers))]
                  [parent (get-show-menu)]
-                 [callback (lambda (x y)
+                 [callback (lambda (self event)
                              (define value (preferences:get 'drracket:show-line-numbers?))
+                             (send self set-label
+                                   (if value
+                                     (string-constant show-line-numbers)
+                                     (string-constant hide-line-numbers)))
                              (preferences:set 'drracket:show-line-numbers? (not value))
                              (show-line-numbers! (not value)))])
             
