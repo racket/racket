@@ -28,7 +28,6 @@
  [dispatch/servlet (((request? . -> . response/c))
                     (#:regexp regexp?
                               #:current-directory path-string?
-                              #:namespace (listof module-path?)
                               #:stateless? boolean?
                               #:stuffer (stuffer/c serializable? bytes?)
                               #:manager manager?)
@@ -50,9 +49,7 @@
          #:regexp
          [servlet-regexp #rx""]
          #:current-directory 
-         [servlet-current-directory (current-directory)]
-         #:namespace 
-         [servlet-namespace empty]                  
+         [servlet-current-directory (current-directory)]              
          #:stateless? 
          [stateless? #f]
          #:stuffer
@@ -65,8 +62,7 @@
                     (body (p "Sorry, this page has expired. Please go back."))))
            (* 64 1024 1024))])
   (define servlet-box (box #f))
-  (define make-servlet-namespace
-    (make-make-servlet-namespace #:to-be-copied-module-specs servlet-namespace))
+  (define namespace-now (current-namespace))
   (filter:make
    servlet-regexp
    (servlets:make
@@ -74,10 +70,7 @@
       (or (unbox servlet-box)
           (let ([servlet
                  (parameterize ([current-custodian (make-custodian)]
-                                [current-namespace
-                                 (make-servlet-namespace
-                                  #:additional-specs
-                                  default-module-specs)])
+                                [current-namespace namespace-now])
                    (if stateless?
                        (make-stateless.servlet servlet-current-directory stuffer manager start)
                        (make-v2.servlet servlet-current-directory manager start)))])

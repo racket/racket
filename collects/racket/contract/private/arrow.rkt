@@ -965,13 +965,20 @@ v4 todo:
     (λ (blame)
       (let ([this->d-id (gensym '->d-tail-key)])
         (λ (val)
-          (check-procedure val
-                           (->d-mtd? ->d-stct)
-                           (length (->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
-                           (length (->d-optional-dom-ctcs ->d-stct)) ; optionals-length
-                           (->d-mandatory-keywords ->d-stct)
-                           (->d-optional-keywords ->d-stct)
-                           blame)
+          (if (->d-rest-ctc ->d-stct)
+              (check-procedure/more val
+                                    (->d-mtd? ->d-stct)
+                                    (length (->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
+                                    (->d-mandatory-keywords ->d-stct)
+                                    (->d-optional-keywords ->d-stct)
+                                    blame)
+              (check-procedure val
+                               (->d-mtd? ->d-stct)
+                               (length (->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
+                               (length (->d-optional-dom-ctcs ->d-stct)) ; optionals-length
+                               (->d-mandatory-keywords ->d-stct)
+                               (->d-optional-keywords ->d-stct)
+                               blame))
           (let ([kwd-proc
                  (λ (kwd-args kwd-arg-vals . raw-orig-args)
                    (let* ([orig-args (if (->d-mtd? ->d-stct)
@@ -1246,7 +1253,16 @@ v4 todo:
                   (list '#:post '...)
                   (list)))))
 
-   #:first-order (λ (ctc) (λ (x) #f))
+   #:first-order (λ (ctc)
+                   (λ (val)
+                     (let* ([mtd? (->d-mtd? ctc)]
+                            [dom-length (length (->d-mandatory-dom-ctcs ctc))]
+                            [optionals (length (->d-optional-dom-ctcs ctc))]
+                            [mandatory-kwds (->d-mandatory-keywords ctc)]
+                            [optional-kwds (->d-optional-keywords ctc)])
+                       (if (->d-rest-ctc ctc)
+                           (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds #f)
+                           (check-procedure val mtd? dom-length optionals mandatory-kwds optional-kwds #f)))))
    #:stronger (λ (this that) (eq? this that))))
 
 
@@ -1555,22 +1571,23 @@ v4 todo:
     (null? mandatory)))
 
 (define (check-procedure val mtd? dom-length optionals mandatory-kwds optional-keywords blame)
-  (unless (and (procedure? val)
-               (procedure-arity-includes?/optionals val (if mtd? (+ dom-length 1) dom-length) optionals)
-               (keywords-match mandatory-kwds optional-keywords val))
-    (raise-blame-error
-     blame
-     val
-     "expected a ~a that accepts ~a~a~a argument~a~a~a, given: ~e"
-     (if mtd? "method" "procedure")
-     (if (zero? dom-length) "no" dom-length)
-     (if (null? optionals) "" " mandatory")
-     (if (null? mandatory-kwds) "" " ordinary")
-     (if (= 1 dom-length) "" "s")
-     (if (zero? optionals) ""
-         (format " and up to ~a optional argument~a" optionals (if (= 1 optionals) "" "s")))
-     (keyword-error-text mandatory-kwds optional-keywords)
-     val)))
+  (or (and (procedure? val)
+           (procedure-arity-includes?/optionals val (if mtd? (+ dom-length 1) dom-length) optionals)
+           (keywords-match mandatory-kwds optional-keywords val))
+      (and blame
+           (raise-blame-error
+            blame
+            val
+            "expected a ~a that accepts ~a~a~a argument~a~a~a, given: ~e"
+            (if mtd? "method" "procedure")
+            (if (zero? dom-length) "no" dom-length)
+            (if (null? optionals) "" " mandatory")
+            (if (null? mandatory-kwds) "" " ordinary")
+            (if (= 1 dom-length) "" "s")
+            (if (zero? optionals) ""
+                (format " and up to ~a optional argument~a" optionals (if (= 1 optionals) "" "s")))
+            (keyword-error-text mandatory-kwds optional-keywords)
+            val))))
 
 (define (procedure-arity-includes?/optionals f base optionals)
   (cond
@@ -1620,20 +1637,21 @@ v4 todo:
                     (format-keywords-error 'optional optional-keywords))]))
      
 (define (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds blame)
-  (unless (and (procedure? val)
-               (procedure-accepts-and-more? val (if mtd? (+ dom-length 1) dom-length))
-               (keywords-match mandatory-kwds optional-kwds val))
-    (raise-blame-error
-     blame
-     val
-     "expected a ~a that accepts ~a argument~a and arbitrarily more~a, given: ~e"
-     (if mtd? "method" "procedure")
-     (cond
-       [(zero? dom-length) "no"]
-       [else dom-length])
-     (if (= 1 dom-length) "" "s")
-     (keyword-error-text mandatory-kwds optional-kwds)
-     val)))
+  (or (and (procedure? val)
+           (procedure-accepts-and-more? val (if mtd? (+ dom-length 1) dom-length))
+           (keywords-match mandatory-kwds optional-kwds val))
+      (and blame
+           (raise-blame-error
+            blame
+            val
+            "expected a ~a that accepts ~a argument~a and arbitrarily more~a, given: ~e"
+            (if mtd? "method" "procedure")
+            (cond
+              [(zero? dom-length) "no"]
+              [else dom-length])
+            (if (= 1 dom-length) "" "s")
+            (keyword-error-text mandatory-kwds optional-kwds)
+            val))))
 
 ;; timing & size tests
 

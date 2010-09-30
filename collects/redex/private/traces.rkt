@@ -130,7 +130,7 @@
 (define (traces/ps reductions pre-exprs filename
                    #:multiple? [multiple? #f] 
                    #:pred [pred (λ (x) #t)] 
-                   #:pp [pp (current-pretty-printer)] 
+                   #:pp [pp default-pretty-printer] 
                    #:racket-colors? [racket-colors? #t]
                    #:scheme-colors? [scheme-colors? racket-colors?]
                    #:colors [colors '()]
@@ -241,7 +241,7 @@
 (define (traces reductions pre-exprs 
                 #:multiple? [multiple? #f] 
                 #:pred [pred (λ (x) #t)] 
-                #:pp [pp (current-pretty-printer)] 
+                #:pp [pp default-pretty-printer] 
                 #:colors [colors '()]
                 #:racket-colors? [racket-colors? #t]
                 #:scheme-colors? [scheme-colors? racket-colors?]

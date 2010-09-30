@@ -25,7 +25,6 @@ These functions optimize the construction of dispatchers and launching of server
           [#:stateless? stateless? boolean? #f]
           [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]
           [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
-          [#:namespace namespace (listof module-path?) empty]
           [#:current-directory servlet-current-directory path-string? (current-directory)])
          dispatcher/c]{
  @racket[serve/servlet] starts a server and uses a particular dispatching sequence. For some applications, this
@@ -41,7 +40,7 @@ These functions optimize the construction of dispatchers and launching of server
  The servlet is loaded with @racket[manager] as its continuation manager. (The default manager limits the amount of memory to 64 MB and
  deals with memory pressure as discussed in the @racket[make-threshold-LRU-manager] documentation.)
  
- The modules specified by @racket[servlet-namespace] are shared with other servlets.
+ The servlet is run in the @racket[(current-namespace)].
 }
                       
 @defproc[(serve/launch/wait

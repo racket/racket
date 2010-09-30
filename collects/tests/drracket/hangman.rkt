@@ -8,7 +8,9 @@
    (define defs (send drs get-definitions-text))
    (define rep (send drs get-interactions-text))
    (set-language-level! (list #rx"How to Design Programs" #rx"Beginning Student$"))
-   (send defs load-file (collection-file-path "hangman1.rkt" "htdp" "tests"))
+   (run-one/sync
+    (lambda ()
+       (send defs load-file (collection-file-path "hangman1.rkt" "htdp" "tests"))))
    (do-execute drs)
    (insert-in-interactions drs "(hangman make-word reveal symbol?)")
    (alt-return-in-interactions drs)

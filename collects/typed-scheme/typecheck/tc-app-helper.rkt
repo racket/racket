@@ -1,7 +1,8 @@
 #lang scheme/base
 
 (require "../utils/utils.rkt" racket/match unstable/list
-         (utils tc-utils) (rep type-rep) (types utils union abbrev))
+         (only-in srfi/1 unzip4) (only-in racket/list make-list)
+         (utils tc-utils) (rep type-rep) (types utils union abbrev subtype))
 
 (provide (all-defined-out))
 
@@ -59,20 +60,91 @@
         ""))]
     [else
      (let ([label  (if expected   "Types: "   "Domains: ")]
-           [nl+spc (if expected "\n       " "\n         ")]
-           [pdoms  (map make-printable doms)])
-       (string-append
-        label
-        (stringify (if expected
-                     (map stringify-domain pdoms rests drests rngs)
-                     (map stringify-domain pdoms rests drests))
-                   nl+spc)
-        "\nArguments: "
-        arguments-str
-        "\n"
-        (if expected
-          (format "Expected result: ~a\n" (make-printable expected))
-          "")))]))
+           [nl+spc (if expected "\n       " "\n         ")])
+       ;; we restrict the domains shown in the error messages to those that
+       ;; are useful
+       (let-values ([(pdoms rngs rests drests) (possible-domains doms rests drests rngs expected)])
+         (let ([pdoms (map make-printable pdoms)])
+           (string-append
+            label
+            (stringify (if expected
+                           (map stringify-domain pdoms rests drests rngs)
+                           (map stringify-domain pdoms rests drests))
+                       nl+spc)
+            "\nArguments: "
+            arguments-str
+            "\n"
+            (if expected
+                (format "Expected result: ~a\n" (make-printable expected))
+                "")))))]))
+
+
+;; to avoid long and confusing error messages, in the case of functions with
+;; multiple similar domains (<, >, +, -, etc.), we show only the domains that
+;; are relevant to this specific error
+;; this is done in several ways:
+;; - if a case-lambda case is subsumed by another, we don't need to show it
+;;   (subsumed cases may be useful for their filter information, but this is
+;;   unrelated to error reporting)
+;; - if we have an expected type, we don't need to show the domains for which
+;;   the result type is not a subtype of the expected type
+(define (possible-domains doms rests drests rngs expected)
+
+  ;; is fun-ty subsumed by a function type in others?
+  (define (is-subsumed-in? fun-ty others)
+    ;; assumption: domains go from more specific to less specific
+    ;;  thus, a domain can only be subsumed by another that is further down
+    ;;  the list.
+    ;; this is reasonable because a more specific domain coming after a more
+    ;; general domain would never be matched
+    ;; a case subsumes another if the first one is a subtype of the other
+    (ormap (lambda (x) (subtype x fun-ty))
+           others))
+
+  (define expected-ty (and expected (match expected [(tc-result1: t) t])))
+  (define (returns-subtype-of-expected? fun-ty)
+    (and fun-ty ; was not skipped by a previous check
+         (or (not expected)
+             (match fun-ty
+                    [(Function: (list (arr: _ rng _ _ _)))
+                     (let ([rng (match rng
+                                       [(Values: (list (Result: t _ _)))
+                                        t]
+                                       [(ValuesDots: (list (Result: t _ _)) _ _)
+                                        t])])
+                       (subtype rng expected-ty))]))))
+  
+  (let loop ([cases (map (compose make-Function list make-arr)
+                         doms
+                         (map (lambda (rng) ; strip filters
+                                (match rng
+                                  [(Values: (list (Result: t _ _) ...))
+                                   (-values t)]
+                                  [(ValuesDots: (list (Result: t _ _) ...) _ _)
+                                   (-values t)]))
+                              rngs)
+                         rests drests (make-list (length doms) null))]
+             [candidates '()])
+    (if (not (null? cases))
+        ;; discard subsumed cases
+        (let ([head (car cases)] [tail (cdr cases)])
+          (if (is-subsumed-in? head tail)
+              (loop tail (cons #f   candidates)) ; will be skipped later
+              (loop tail (cons head candidates))))
+        ;; keep only the domains for which the associated function type
+        ;; fits our criteria
+        (unzip4 (map cdr ; doms, rests drests
+                     (let* ([orig (map list
+                                       (reverse candidates)
+                                       doms
+                                       rngs
+                                       rests
+                                       drests)]
+                            [after (filter (compose returns-subtype-of-expected? car)
+                                           orig)])
+                       ;; if we somehow eliminate all the cases (bogus expected type)
+                       ;; fall back to the showing extra cases
+                       (if (null? after) orig after)))))))
 
 (define (poly-fail t argtypes #:name [name #f] #:expected [expected #f])
   (match t

@@ -386,6 +386,8 @@ extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 extern Scheme_Object *scheme_equal_property;
 extern Scheme_Object *scheme_proxy_of_property;
 
+extern Scheme_Object *scheme_app_mark_proxy_property;
+
 extern Scheme_Object *scheme_reduced_procedure_struct;
 
 /*========================================================================*/
@@ -3455,6 +3457,10 @@ Scheme_Double_Vector *scheme_alloc_flvector(long size);
 Scheme_Object *scheme_checked_flvector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_flvector_set(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_flvector_length(Scheme_Object *v);
+Scheme_Vector *scheme_alloc_fxvector(long size);
+Scheme_Object *scheme_checked_fxvector_ref(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_fxvector_set(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_fxvector_length(Scheme_Object *v);
 Scheme_Object *scheme_checked_real_part (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_imag_part (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_make_rectangular (int argc, Scheme_Object *argv[]);

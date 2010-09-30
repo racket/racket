@@ -5,7 +5,13 @@
                      (only-in ffi/vector
                               f64vector?
                               f64vector-ref
-                              f64vector-set!)))
+                              f64vector-set!
+                              u16vector?
+                              u16vector-ref
+                              u16vector-set!
+                              s16vector?
+                              s16vector-ref
+                              s16vector-set!)))
 
 @title[#:tag "unsafe"]{Unsafe Operations}
 
@@ -255,6 +261,24 @@ fixnum).}
 
 Unsafe versions of @scheme[f64vector-ref] and
 @scheme[f64vector-set!].}
+
+
+@deftogether[(
+@defproc[(unsafe-s16vector-ref [vec s16vector?] [k fixnum?]) (integer-in -32768 32767)]
+@defproc[(unsafe-s16vector-set! [vec s16vector?] [k fixnum?] [n (integer-in -32768 32767)]) void?]
+)]{
+
+Unsafe versions of @scheme[s16vector-ref] and
+@scheme[s16vector-set!].}
+
+
+@deftogether[(
+@defproc[(unsafe-u16vector-ref [vec u16vector?] [k fixnum?]) (integer-in 0 65535)]
+@defproc[(unsafe-u16vector-set! [vec u16vector?] [k fixnum?] [n (integer-in 0 65535)]) void?]
+)]{
+
+Unsafe versions of @scheme[u16vector-ref] and
+@scheme[u16vector-set!].}
 
 
 @deftogether[(

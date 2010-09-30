@@ -1458,7 +1458,7 @@ exploring reduction sequences.
                  [#:pp pp
                        (or/c (any -> string)
                              (any output-port number (is-a?/c text%) -> void))
-                       (current-pretty-printer)]
+                       default-pretty-printer]
                  [#:colors colors 
                   (listof 
                    (cons/c string? 
@@ -1477,8 +1477,8 @@ exploring reduction sequences.
          void?]{
 
 This function opens a new window and inserts each expression
-in expr (if @racket[multiple?] is #t -- if
-@racket[multiple?] is #f, then expr is treated as a single
+in expr (if @racket[multiple?] is @racket[#t] -- if
+@racket[multiple?] is @racket[#f], then expr is treated as a single
 expression). Then, it reduces the terms until at least
 @racket[reduction-steps-cutoff] (see below) different terms are
 found, or no more reductions can occur. It inserts each new
@@ -1577,7 +1577,7 @@ inserted into the editor by this library have a
                     [#:pp pp
                           (or/c (any -> string)
                                 (any output-port number (is-a?/c text%) -> void))
-                          (current-pretty-printer)]
+                          default-pretty-printer]
                     [#:colors colors 
                               (listof 
                                (cons/c string?
@@ -1607,7 +1607,7 @@ just before the PostScript is created with the graph pasteboard.
                   [t any/c] 
                   [pp (or/c (any -> string)
                             (any output-port number (is-a?/c text%) -> void))
-                      (current-pretty-printer)])
+                      default-pretty-printer])
           void?]{
 
 This function opens a stepper window for exploring the
@@ -1615,14 +1615,21 @@ behavior of its third argument in the reduction system
 described by its first two arguments. 
 
 The @racket[pp] argument is the same as to the
-@racket[traces] functions (above).
+@racket[traces] functions (above) but is here for
+backwards compatibility only and
+should not be changed for most uses, but instead adjusted with
+@racket[pretty-print-parameters]. Specifically, the 
+highlighting shown in the stepper window can be wrong if
+@racket[default-pretty-printer] does not print sufficiently similarly
+to how @racket[pretty-print] prints (when adjusted by
+@racket[pretty-print-parameters]'s behavior, of course).
 }
 
 @defproc[(stepper/seed [reductions reduction-relation?]
                        [seed (cons/c any/c (listof any/c))]
                        [pp (or/c (any -> string)
                                  (any output-port number (is-a?/c text%) -> void))
-                           (current-pretty-printer)])
+                           default-pretty-printer])
          void?]{
 
 Like @racket[stepper], this function opens a stepper window, but it
@@ -1748,20 +1755,24 @@ the color used to fill the arrowhead and the text colors control the
 color used to draw the label on the edge.
 }
 
-@defparam[current-pretty-printer pp (-> any/c
-                                        output-port?
-                                        exact-nonnegative-integer?
-                                        (is-a?/c text%)
-                                        void?)]{
-  A parameter that is used by the graphics tools to render
-  expressions. Defaults to @racket[default-pretty-printer].
+@defparam[pretty-print-parameters f (-> (-> any/c) any/c)]{
+  A parameter that is used to set other @racket[pretty-print]
+  parameters. 
+  
+  Specifically, whenever @racket[default-pretty-printer] prints
+  something it calls @racket[f] with a thunk that does the actual
+  printing. Thus, @racket[f] can adjust @racket[pretty-print]'s
+  parameters to adjust how printing happens.
+
 }
                                                                        
 @defproc[(default-pretty-printer [v any/c] [port output-port?] [width exact-nonnegative-integer?] [text (is-a?/c text%)]) void?]{
 
 This is the default value of @racket[pp] used by @racket[traces] and
 @racket[stepper] and it uses
-@racket[pretty-print].
+@racket[pretty-print]. 
+
+This function uses the value of @racket[pretty-print-parameters] to adjust how it prints.
 
 It sets the @racket[pretty-print-columns] parameter to
 @racket[width], and it sets @racket[pretty-print-size-hook]
@@ -1940,15 +1951,15 @@ This function sets @racket[dc-for-text-size]. See also
 
 @defparam[extend-language-show-union show? boolean?]{
 
-If this is #t, then a language constructed with
+If this is @racket[#t], then a language constructed with
 extend-language is shown as if the language had been
-constructed directly with @racket[language]. If it is #f, then only
+constructed directly with @racket[language]. If it is @racket[#f], then only
 the last extension to the language is shown (with
 four-period ellipses, just like in the concrete syntax).
 
 Defaultly @racket[#f].
 
-Note that the #t variant can look a little bit strange if
+Note that the @racket[#t] variant can look a little bit strange if
 @racket[....] are used and the original version of the language has
 multi-line right-hand sides.
 }
@@ -2058,6 +2069,7 @@ cases appear. If it is a list of numbers, then only the selected cases appear (c
 @deftogether[[
 @defparam[label-style style text-style/c]{}
 @defparam[grammar-style style text-style/c]{}
+@defparam[paren-style style text-style/c]{}
 @defparam[literal-style style text-style/c]{}
 @defparam[metafunction-style style text-style/c]{}
 @defparam[non-terminal-style style text-style/c]{}
@@ -2077,7 +2089,12 @@ The @racket[label-style] is used for the reduction rule label
 names. The @racket[literal-style] is used for names that aren't
 non-terminals that appear in patterns. The
 @racket[metafunction-style] is used for the names of
-metafunctions. The @racket[grammar-style] is used for the ``::='' and ``|''
+metafunctions. 
+The @racket[paren-style] is used for the parentheses 
+(including ``['', ``]'', ``@"{"'', and ``@"}"'',
+as well as ``('' and ``)''), but not for the square brackets used for
+in-hole decompositions, which use the @racket[default-style].
+The @racket[grammar-style] is used for the ``::='' and ``|''
 in grammars.
 
 The @racket[non-terminal-style] is used for the names of non-terminals.
@@ -2121,7 +2138,7 @@ relation. Defaults to 4.
 Controls if the open and close quotes for strings are turned
 into “ and ” or are left as merely ".
 
-Defaults to #t.
+Defaults to @racket[#t].
 }
 
 @defparam[current-text proc (-> string? text-style/c number? pict?)]{
@@ -2144,7 +2161,7 @@ single reduction relation.
 
   This parameter is used when typesetting metafunctions to
   determine how to create the @"\u301a\u301b"
-  characters. Rather than using those characters directory
+  characters. Rather than using those characters directly
   (since glyphs tend not to be available in PostScript
   fonts), they are created by combining two ‘[’ characters
   or two ‘]’ characters together.
@@ -2178,7 +2195,7 @@ single reduction relation.
 
 }
 
-@deftech{Removing the pink background from PLT Redex rendered picts and ps files}
+@section[#:tag "pink"]{Removing the pink background from PLT Redex rendered picts and ps files}
 
 When reduction rules, a metafunction, or a grammar contains
 unquoted Racket code or side-conditions, they are rendered
@@ -2203,7 +2220,9 @@ another @racket[lw] that contains a rewritten version of the
 code.
 }
 
-@defform[(with-atomic-rewriter name-symbol string-or-thunk-returning-pict expression)]{
+@defform[(with-atomic-rewriter name-symbol
+                               string-or-thunk-returning-pict
+                               expression)]{
 
 This extends the current set of atomic-rewriters with one
 new one that rewrites the value of name-symbol to
@@ -2215,7 +2234,9 @@ of string-or-thunk-returning-pict is used whever the symbol
 appears in a pattern.
 }
 
-@defform[(with-compound-rewriter name-symbol proc expression)]{
+@defform[(with-compound-rewriter name-symbol
+                                 proc
+                                 expression)]{
 
 This extends the current set of compound-rewriters with one
 new one that rewrites the value of name-symbol via proc,

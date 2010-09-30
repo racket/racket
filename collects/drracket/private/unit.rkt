@@ -447,8 +447,99 @@ module browser threading seems wrong.
             (set! definitions-text% (make-definitions-text%)))
           definitions-text%)))
 
+    ;; links two editor's together so they scroll in tandem
+    (define (linked-scroller %)
+      (class %
+        (super-new)
+        (field [linked #f])
+        (init-field [line-numbers? #f])
+
+        (inherit insert line-start-position line-end-position)
+
+        (define/public (link-to! who)
+          (set! linked who))
+
+        #;
+        (define/override (scroll-editor-to . args)
+          (printf "Scroll editor to ~a\n" args))
+
+        #;
+        (define/override (scroll-to-position . args)
+          (printf "Scroll-to-position ~a\n" args))
+
+        (define self (gensym))
+        (define (visible? want-start want-end)
+          (define start (box 0))
+          (define end (box 0))
+          (send this get-visible-line-range start end)
+          #;
+          (printf "Visible line range ~a ~a ~a\n" (unbox start) (unbox end) self)
+          (and (>= want-start (unbox start))
+               (<= want-end (unbox end))))
+
+        (define/public (scroll-to-line start end)
+          #;
+          (printf "Need to scroll to ~a ~a ~a\n" start end self)
+          ;; dont need to scroll unless the range of lines is out of view
+          (when (not (visible? start end))
+            (send this scroll-to-position
+                  (send this line-end-position start)
+                  #f
+                  (send this line-end-position end))))
+
+        (define/augment (after-delete start length)
+          (update-numbers)
+          (inner (void) after-delete start length))
+
+        (define/augment (after-insert start length)
+          (update-numbers)
+          (inner (void) after-insert start length))
+
+        (define/public (update-numbers)
+          (when (and (not line-numbers?) linked)
+            (send linked ensure-length (send this last-line))))
+
+        ;; make sure the set of line numbers is complete
+        (define/public (ensure-length length)
+          (define lines (send this last-line))
+          (when line-numbers?
+            (when (> lines (add1 length))
+              (send this delete
+                    (line-start-position (add1 length))
+                    (line-end-position lines)
+                    #f))
+            (send this begin-edit-sequence)
+            (for ([line (in-range (add1 lines) (add1 (add1 length)))])
+              #;
+              (printf "Insert line ~a\n" line)
+              (insert (format "~a\n" line)))
+            (send this end-edit-sequence)))
+
+        (define/override (on-paint . args)
+          (define start (box 0))
+          (define end (box 0))
+          (define (current-time) (current-inexact-milliseconds))
+          ;; pass #f to avoid getting visible line ranges from multiple sources
+          (send this get-visible-line-range start end #f)
+          #;
+          (printf "text: Repaint at ~a to ~a at ~a!\n" (unbox start) (unbox end) (current-time))
+          ;; update the linked editor when the main widget is redrawn
+          (when (and (not line-numbers?) linked)
+            #;
+            (printf "Send linked scroll to ~a ~a ~a\n" (unbox start) (unbox end) self)
+            (send linked scroll-to-line (unbox start) (unbox end)))
+          (super on-paint . args))
+        ))
+
+    ;; an editor that does not respond to key presses
+    (define (uneditable %)
+      (class %
+             (super-new)
+             (define/override (on-char . stuff) (void))))
+
     (define (make-definitions-text%)
       (let ([definitions-super%
+              (linked-scroller
               ((get-program-editor-mixin)
                (text:first-line-mixin
                 (drracket:module-language:module-language-put-file-mixin
@@ -461,7 +552,7 @@ module browser threading seems wrong.
                        (drracket:rep:drs-autocomplete-mixin
                         (λ (x) x)
                         (text:normalize-paste-mixin
-                         text:info%)))))))))))])
+                         text:info%))))))))))))])
         (class* definitions-super% (definitions-text<%>)
           (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line)
           
@@ -1356,6 +1447,12 @@ module browser threading seems wrong.
                         change-children
                         (λ (l) (remq execute-warning-panel l)))
                  (send execute-warning-canvas set-message #f))])))
+
+        (define (show-line-numbers?)
+          (preferences:get 'drracket:show-line-numbers?))
+
+        (define/public (show-line-numbers! show)
+          (re-initialize-definitions-canvas show))
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -2460,6 +2557,16 @@ module browser threading seems wrong.
           (set! interactions-shown? (not interactions-shown?))
           (unless  interactions-shown?
             (set! definitions-shown? #t)))
+
+        (define (immediate-children parent children)
+          (define (immediate child)
+            (let loop ([child child])
+              (define immediate-parent (send child get-parent))
+              (if (eq? immediate-parent parent)
+                child
+                (loop immediate-parent))))
+          (for/list ([child children])
+            (immediate child)))
         
         (define/override (update-shown)
           (super update-shown)
@@ -2488,7 +2595,9 @@ module browser threading seems wrong.
             (send resizable-panel begin-container-sequence)
             
             ;; this might change the unit-window-size-percentage, so save/restore it
-            (send resizable-panel change-children (λ (l) new-children))
+            (send resizable-panel change-children
+                  (λ (old)
+                     (immediate-children resizable-panel new-children)))
             
             (preferences:set 'drracket:unit-window-size-percentage p)
             ;; restore preferred interactions/definitions sizes
@@ -2662,12 +2771,44 @@ module browser threading seems wrong.
         (define/override (get-canvas)
           (initialize-definitions-canvas)
           definitions-canvas)
+
+        (define (create-definitions-canvas line-numbers?)
+          (define (with-line-numbers)
+            (define line-numbers-text (new (linked-scroller (uneditable scheme:text%))
+                                           [line-numbers? #t]))
+            (define shared-pane (new horizontal-panel% [parent resizable-panel]))
+            (define line-canvas (new editor-canvas%
+                                     [parent shared-pane]
+                                     [style '(hide-vscroll hide-hscroll)]
+                                     [editor line-numbers-text]
+                                     [stretchable-width #f]
+                                     [min-width 60]))
+            (send definitions-text link-to! line-numbers-text)
+            (send line-numbers-text link-to! definitions-text)
+            (new (drracket:get/extend:get-definitions-canvas)
+                 [parent shared-pane]
+                 [editor definitions-text]))
+          (define (without-line-numbers)
+            (send definitions-text link-to! #f)
+            (new (drracket:get/extend:get-definitions-canvas)
+                 [parent resizable-panel]
+                 [editor definitions-text]))
+          (if line-numbers?
+            (with-line-numbers)
+            (without-line-numbers)))
+
+        (define/private (re-initialize-definitions-canvas show)
+          (begin-container-sequence)
+          (set! definitions-canvas (create-definitions-canvas show))
+          (set! definitions-canvases (list definitions-canvas))
+          (update-shown)
+          (send (send definitions-canvas get-editor) update-numbers)
+          (end-container-sequence))
+
         (define/private (initialize-definitions-canvas)
           (unless definitions-canvas
-            (set! definitions-canvas
-                  (new (drracket:get/extend:get-definitions-canvas)
-                       (parent resizable-panel)
-                       (editor definitions-text)))))
+            (set! definitions-canvas (create-definitions-canvas
+                                       (show-line-numbers?)))))
         
         (define/override (get-delegated-text) definitions-text)
         (define/override (get-open-here-editor) definitions-text)
@@ -3769,6 +3910,20 @@ module browser threading seems wrong.
                 #f
                 has-editor-on-demand)
               (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
+
+            (new menu:can-restore-menu-item%
+                 [label (if (show-line-numbers?)
+                          (string-constant hide-line-numbers)
+                          (string-constant show-line-numbers))]
+                 [parent (get-show-menu)]
+                 [callback (lambda (self event)
+                             (define value (preferences:get 'drracket:show-line-numbers?))
+                             (send self set-label
+                                   (if value
+                                     (string-constant show-line-numbers)
+                                     (string-constant hide-line-numbers)))
+                             (preferences:set 'drracket:show-line-numbers? (not value))
+                             (show-line-numbers! (not value)))])
             
             (make-object separator-menu-item% (get-show-menu))
             

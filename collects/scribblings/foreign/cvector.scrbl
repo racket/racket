@@ -25,7 +25,8 @@ needed.}
 @defproc[(make-cvector [type ctype?] [length exact-nonnegative-integer?]) cvector?]{
 
 Allocates a C vector using the given @scheme[type] and
-@scheme[length].}
+@scheme[length]. The resulting vector is not guaranteed to 
+contain any particular values.}
 
 
 @defproc[(cvector [type ctype?] [val any/c] ...) cvector?]{

@@ -548,6 +548,15 @@ vector_obj {
 		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
 }
 
+fxvector_obj {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+
+ mark:
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+}
+
 flvector_obj {
   Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
 

@@ -1151,4 +1151,52 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define (f x)
+    (call-with-immediate-continuation-mark
+     'z
+     (lambda (val)
+       (list val
+             (continuation-mark-set->list (current-continuation-marks) 'z)))))
+  (define saved null)
+  (define g (chaperone-procedure
+             f
+             (lambda (a)
+               (set! saved (cons (continuation-mark-set-first #f 'z)
+                                 saved))
+               (values (lambda (r) r)
+                       a))
+             proxy-prop:application-mark
+             (cons 'z 12)))
+  (define h (chaperone-procedure
+             g
+             (lambda (a)
+               (values (lambda (r) r)
+                       a))
+             proxy-prop:application-mark
+             (cons 'z 9)))
+  (define i (chaperone-procedure
+             f
+             (lambda (a)
+               (set! saved (cons (continuation-mark-set-first #f 'z)
+                                 saved))
+               a)
+             proxy-prop:application-mark
+             (cons 'z 11)))
+  (define j (chaperone-procedure
+             i
+             (lambda (a) a)
+             proxy-prop:application-mark
+             (cons 'z 12)))
+  (test (list 12 '(12)) g 10)
+  (test '(#f) values saved)
+  (test (list 12 '(12 9)) h 10)
+  (test '(9 #f) values saved)
+  (test (list 11 '(11)) i 10)
+  (test '(#f 9 #f) values saved)
+  (test (list 11 '(11)) j 10)
+  (test '(12 #f 9 #f) values saved))
+
+;; ----------------------------------------
+
 (report-errs)

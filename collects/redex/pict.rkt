@@ -59,6 +59,8 @@
 (provide/contract
  [label-style (parameter/c text-style/c)]
  [literal-style (parameter/c text-style/c)]
+ [grammar-style (parameter/c text-style/c)]
+ [paren-style (parameter/c text-style/c)]
  [metafunction-style (parameter/c text-style/c)]
  [default-style (parameter/c text-style/c)]
  [non-terminal-style (parameter/c text-style/c)]

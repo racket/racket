@@ -5,6 +5,7 @@
 
 (require scheme/unsafe/ops
          scheme/flonum
+         scheme/fixnum
          scheme/foreign)
 
 (let ()
@@ -270,6 +271,31 @@
               #:pre (lambda () (f64vector-set! v 2 0.0)) 
               #:post (lambda (x) (list x (f64vector-ref v 2)))
               #:literal-ok? #f))
+
+  (test-bin 95 'unsafe-fxvector-ref (fxvector 10 95 187) 1)
+  (test-un 5 'unsafe-fxvector-length (fxvector 11 20 31 45 57))
+  (let ([v (fxvector 10 95 187)])
+    (test-tri (list (void) 274) 'unsafe-fxvector-set! v 2 274
+              #:pre (lambda () (fxvector-set! v 2 0)) 
+              #:post (lambda (x) (list x (fxvector-ref v 2)))
+              #:literal-ok? #f))
+
+  (test-bin 95 'unsafe-s16vector-ref (s16vector 10 95 187) 1)
+  (let ([v (s16vector 10 95 187)])
+    (test-tri (list (void) 274) 'unsafe-s16vector-set! v 2 274
+              #:pre (lambda () (s16vector-set! v 2 0)) 
+              #:post (lambda (x) (list x (s16vector-ref v 2)))
+              #:literal-ok? #f))
+  (test-bin -32768 'unsafe-s16vector-ref (s16vector 10 -32768 187) 1)
+  (test-bin 32767 'unsafe-s16vector-ref (s16vector 10 32767 187) 1)
+
+  (test-bin 95 'unsafe-u16vector-ref (u16vector 10 95 187) 1)
+  (let ([v (u16vector 10 95 187)])
+    (test-tri (list (void) 274) 'unsafe-u16vector-set! v 2 274
+              #:pre (lambda () (u16vector-set! v 2 0)) 
+              #:post (lambda (x) (list x (u16vector-ref v 2)))
+              #:literal-ok? #f))
+  (test-bin 65535 'unsafe-u16vector-ref (u16vector 10 65535 187) 1)
 
   (for ([star (list values (add-star "star"))])
     (define-struct posn (x [y #:mutable] z))

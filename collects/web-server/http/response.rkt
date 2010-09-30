@@ -264,7 +264,7 @@
                          (- (cdr range) (car range)))
                        converted-ranges)))
         (with-handlers ([exn:fail? (lambda (exn) (network-error 'output-file (exn-message exn)))])
-          (call-with-input-file file-path
+          (call-with-input-file* file-path
             (lambda (input)
               (if (= (length converted-ranges) 1)
                   ; Single ranges (in 200 or 206 responses) are sent straight out

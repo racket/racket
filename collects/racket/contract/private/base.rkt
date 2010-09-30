@@ -48,13 +48,11 @@ improve method arity mismatch contract violation error messages?
            (((contract-projection c)
              (make-blame loc name (contract-name c) pos neg usr #t))
             v)])
-      (if (and name 
-               (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
+      (if (and (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
                (procedure? new-val)
-               (not (eq? name (object-name new-val))))
-          (let ([name (if (symbol? name)
-                          name
-                          (string->symbol (format "~a" name)))])
+               (object-name v)
+               (not (eq? (object-name v) (object-name new-val))))
+          (let ([vs-name (object-name v)])
             (cond
               [(contracted-function? new-val)
                ;; when PR11222 is fixed, change these things:
@@ -63,10 +61,10 @@ improve method arity mismatch contract violation error messages?
                ;;   - change (struct-out contracted-function) 
                ;;     in arrow.rkt to make-contracted-function
                (make-contracted-function 
-                (procedure-rename (contracted-function-proc new-val) name)
+                (procedure-rename (contracted-function-proc new-val) vs-name)
                 (contracted-function-ctc new-val))]
               [else
-               (procedure-rename new-val name)]))
+               (procedure-rename new-val vs-name)]))
           new-val))))
 
 (define-syntax (recursive-contract stx)

@@ -108,8 +108,7 @@ Suppose you would like to start a server for a stateless Web servlet @filepath{s
  (serve/servlet start #:stateless? #t)
 ]
 
-@bold{Warning:} If you put the call to @racket[serve/servlet] in a @racketmodname[web-server] module directly it will not work correctly. 
-Consider the following module:
+You can also put the call to @racket[serve/servlet] in the @racketmodname[web-server] module directly:
 @racketmod[
  web-server
  (require web-server/servlet-env)
@@ -122,11 +121,7 @@ Consider the following module:
  
  (serve/servlet start #:stateless? #t)
 ]
-First, if this module is not saved in a file (e.g., @filepath{servlet.rkt}), then the serialization layer cannot locate the definitions of the 
-serialized continuations. Second, due to an unfortunately subtle bug that we have not yet corrected,
-every time the continuation link is clicked, @racket[serve/servlet] will
-run and attempt to start a Web server instance and open a browser window. These problems do not occur if your servlet is saved in a file
-and if @racket[serve/servlet] is run in another module.
+Like always, you don't even need to save the file.
 
 @section{Full API}
 
@@ -194,13 +189,13 @@ and if @racket[serve/servlet] is run in another module.
  as its continuation manager. (The default manager limits the amount of memory to 64 MB and
  deals with memory pressure as discussed in the @racket[make-threshold-LRU-manager] documentation.)
  
- The modules specified by @racket[servlet-namespace] are shared with other servlets.
- 
  The server files are rooted at @racket[server-root-path] (which is defaultly the distribution root.)
  File paths, in addition to the @filepath["htdocs"] directory under @racket[server-root-path] may be
  provided with @racket[extra-files-paths]. These paths are checked first, in the order they appear in the list.
  
- Other servlets are served from @racket[servlets-root].
+ Other servlets are served from @racket[servlets-root]. 
+ The modules specified by @racket[servlet-namespace] are shared between servlets found in @racket[servlets-root] and the current namespace (and therefore
+ the @racket[start] procedure.)
  
  If a file cannot be found, @racket[file-not-found-responder] is used to generate an error response.
  

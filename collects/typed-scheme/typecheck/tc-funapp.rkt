@@ -58,7 +58,7 @@
       (tc-error/expr 
        #:return (or expected (ret (Un)))
        (string-append "No function domains matched in function application:\n"
-                      (domain-mismatches t doms rests drests rngs argtys-t #f #f))))]
+                      (domain-mismatches t doms rests drests rngs argtys-t #f #f #:expected expected))))]
     ;; any kind of dotted polymorphic function without mandatory keyword args
     [((tc-result1: (and t (PolyDots: 
                            (and vars (list fixed-vars ... dotted-var))
