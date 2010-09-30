@@ -2,7 +2,7 @@
 
 (provide go go/text)
 
-(require rackunit rackunit/text-ui
+(require rackunit rackunit/text-ui racket/file
          mzlib/etc scheme/port
          compiler/compiler
          scheme/match mzlib/compile
@@ -134,7 +134,9 @@
                                      (check-not-exn (λ () (cfile (build-path path p)))))))))
   (test-suite "compiling"
               (mk shootout)
-              (mk common)))
+              (delete-directory/files (build-path shootout "compiled"))
+              (mk common)
+              (delete-directory/files (build-path common "compiled"))))
 
 (provide go go/text just-one compile-benchmarks)
 
