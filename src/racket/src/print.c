@@ -1808,7 +1808,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 		  || SCHEME_EOFP(obj)
 		  || SAME_TYPE(scheme_always_evt_type, SCHEME_TYPE(obj))
 		  || SAME_TYPE(scheme_never_evt_type, SCHEME_TYPE(obj))
-		  || SAME_TYPE(scheme_struct_property_type, SCHEME_TYPE(obj)))) {
+		  || SAME_TYPE(scheme_struct_property_type, SCHEME_TYPE(obj))
+                  || SAME_OBJ(scheme_app_mark_proxy_property, obj))) {
     /* Check whether this is a global constant */
     Scheme_Object *val;
     val = scheme_hash_get(global_constants_ht, obj);
