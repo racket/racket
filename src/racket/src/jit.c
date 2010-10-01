@@ -7206,6 +7206,54 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
   return direction;
 }
 
+static int generate_three_args(Scheme_App_Rec *app, mz_jit_state *jitter)
+/* de-sync's rs.
+   Puts arguments in R0, R1, and R2. */
+{
+  int c1, c2;
+
+  c1 = is_constant_and_avoids_r1(app->args[1]);
+  c2 = is_constant_and_avoids_r1(app->args[2]);
+
+  if (c1 && c2) {
+    /* we expect this to be a common case for `vector-set!'-like operations,
+       where the vector and index are immediate and teh value is computed */
+    mz_runstack_skipped(jitter, 2);
+    mz_rs_dec(1); /* no sync */
+    CHECK_RUNSTACK_OVERFLOW();
+    mz_runstack_pushed(jitter, 1);
+
+    generate(app->args[3], jitter, 0, 0, 0, JIT_R0, NULL);
+    CHECK_LIMIT();
+
+    mz_rs_str(JIT_R0);
+    
+    generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL);
+    CHECK_LIMIT();
+    generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL);
+    CHECK_LIMIT();
+
+    mz_rs_ldr(JIT_R2); /* no sync */
+    mz_rs_inc(1);
+    mz_runstack_popped(jitter, 1);
+    mz_runstack_unskipped(jitter, 2);
+    CHECK_LIMIT();
+  } else {
+    generate_app(app, NULL, 3, jitter, 0, 0, 2);
+    CHECK_LIMIT();
+    
+    mz_rs_ldxi(JIT_R2, 2);
+    mz_rs_ldr(JIT_R0);
+    mz_rs_ldxi(JIT_R1, 1);
+    
+    mz_rs_inc(3); /* no sync */
+    mz_runstack_popped(jitter, 3);
+    CHECK_LIMIT();
+  }
+
+  return 1;
+}
+
 static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
                                 Branch_Info *for_branch, int branch_short)
 /* de-sync'd ok */
@@ -8701,15 +8749,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       int is_u;
       is_u = IS_NAMED_PRIM(rator, "unsafe-u16vector-set!");
 
-      generate_app(app, NULL, 3, jitter, 0, 0, 2);
-      CHECK_LIMIT();
-
-      mz_rs_ldxi(JIT_R2, 2);
-      mz_rs_ldr(JIT_R0);
-      mz_rs_ldxi(JIT_R1, 1);
-
-      mz_rs_inc(3); /* no sync */
-      mz_runstack_popped(jitter, 3);
+      generate_three_args(app, jitter);
       CHECK_LIMIT();
 
       jit_ldxi_p(JIT_R0, JIT_R0, (long)&(((Scheme_Structure *)0x0)->slots[0]));
