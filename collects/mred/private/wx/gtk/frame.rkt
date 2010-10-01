@@ -45,6 +45,7 @@
                                           -> (values x y)))
 (define-gtk gtk_window_set_gravity (_fun _GtkWindow _int -> _void))
 (define-gtk gtk_window_set_icon_list (_fun _GtkWindow _GList -> _void))
+(define-gtk gtk_window_fullscreen (_fun _GtkWindow -> _void))
 
 (define-gtk gtk_window_resize (_fun _GtkWidget _int _int -> _void))
 
@@ -162,6 +163,9 @@
                [extra-gtks (list panel-gtk)])
 
     (set-size x y w h)
+
+    (when (memq 'hide-menu-bar style)
+      (gtk_window_fullscreen gtk))
 
     (connect-delete gtk)
     (connect-configure gtk)

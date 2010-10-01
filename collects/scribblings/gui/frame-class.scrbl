@@ -87,7 +87,8 @@ some platforms:
  frame's title bar (Mac OS X); a click on the toolbar button triggers
  a call to @method[frame% on-toolbar-button-click]}
  @item{@scheme['hide-menu-bar] --- hides the menu bar and dock when
- the frame is active (Mac OS X)}
+ the frame is active (Mac OS X) or asks the window manager to make
+ the frame fullscreen (X)}
 
  @item{@scheme['float] --- causes the frame to stay in front of all
  other non-floating windows (Windows and Mac OS X always, X when
