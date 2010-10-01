@@ -222,6 +222,18 @@
   (test #t ptr-equal? #f (ptr-add (ptr-add #f 8) -8))
   )
 
+;; Test cstruct alignment
+(let ()
+  (define-cstruct _stuff ([a _int16]
+                          [b _int32]
+                          [c _int16])
+    #:alignment 2)
+  (define v (make-stuff 1 2 3))
+  (test 8 ctype-sizeof _stuff)
+  (test 3 stuff-c v)
+  (test 1 ptr-ref v _int16 0)
+  (test 3 ptr-ref v _int16 3))
+
 (delete-test-files)
 
 (report-errs)

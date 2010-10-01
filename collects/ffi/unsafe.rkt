@@ -1131,21 +1131,24 @@
 ;; ----------------------------------------------------------------------------
 ;; Struct wrappers
 
-(define (compute-offsets types)
-  (let loop ([ts types] [cur 0] [r '()])
-    (if (null? ts)
-      (reverse r)
-      (let* ([algn (ctype-alignof (car ts))]
-             [pos  (+ cur (modulo (- (modulo cur algn)) algn))])
-        (loop (cdr ts)
-              (+ pos (ctype-sizeof (car ts)))
-              (cons pos r))))))
+(define (compute-offsets types alignment)
+  (let ([alignment (if (memq alignment '(#f 1 2 4 8 16))
+                       alignment
+                       #f)])
+    (let loop ([ts types] [cur 0] [r '()])
+      (if (null? ts)
+          (reverse r)
+          (let* ([algn (or alignment (ctype-alignof (car ts)))]
+                 [pos  (+ cur (modulo (- (modulo cur algn)) algn))])
+            (loop (cdr ts)
+                  (+ pos (ctype-sizeof (car ts)))
+                  (cons pos r)))))))
 
 ;; Simple structs: call this with a list of types, and get a type that marshals
 ;; C structs to/from Scheme lists.
 (define* (_list-struct #:alignment [alignment #f] . types)
   (let ([stype   (make-cstruct-type types #f alignment)]
-        [offsets (compute-offsets types)]
+        [offsets (compute-offsets types alignment)]
         [len     (length types)])
     (make-ctype stype
       (lambda (vals)
@@ -1251,12 +1254,13 @@
                 (define _TYPE-pointer/null _TYPE/null)
                 (let*-values ([(stype ...)  (values slot-type ...)]
                               [(types)      (list stype ...)]
-                              [(offsets)    (compute-offsets types)]
+                              [(alignment-v) alignment]
+                              [(offsets)    (compute-offsets types alignment-v)]
                               [(offset ...) (apply values offsets)])
                   (define all-tags (cons TYPE-tag super-tags))
                   (define _TYPE*
                     ;; c->scheme adjusts all tags
-                    (let* ([cst (make-cstruct-type types #f alignment)]
+                    (let* ([cst (make-cstruct-type types #f alignment-v)]
                            [t (_cpointer TYPE-tag cst)]
                            [c->s (ctype-c->scheme t)])
                       (make-ctype cst (ctype-scheme->c t)
