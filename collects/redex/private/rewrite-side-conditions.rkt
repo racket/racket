@@ -38,6 +38,10 @@
     (define ((expect-identifier src) stx)
       (unless (identifier? stx)
         (raise-syntax-error what "expected an identifier" src stx)))
+    
+    ;; call this and discard the result to ensure that all names are at the right ellipsis depths. 
+    (extract-names all-nts what bind-names? orig-stx) 
+    
     (let loop ([term orig-stx])
       (syntax-case term (side-condition variable-except variable-prefix hole name in-hole hide-hole side-condition cross)
         [(side-condition pre-pat (and))

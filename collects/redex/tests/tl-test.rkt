@@ -1206,6 +1206,18 @@
                 #rx"different depths"
                 2)
   
+  (test-syn-err (redex-match
+                 grammar
+                 ((name x any) (name x any_2) ...))
+                #rx"different depths"
+                2)
+  
+  (test-syn-err (define-language bad-lang5
+                 (e ((name x any) (name x any_2) ...)))
+                #rx"different depths"
+                2)
+
+  
   (test-syn-err (reduction-relation 
                  grammar
                  (--> 1 2)
