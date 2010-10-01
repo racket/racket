@@ -8639,46 +8639,44 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-set!")
                || IS_NAMED_PRIM(rator, "unsafe-flvector-set!")) {
       int is_f64;
-      is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-set!");
-      if (can_unbox_inline(app->args[3], 5, JIT_FPR_NUM-1, 1)) {
-        int got_two;
-        if (is_constant_and_avoids_r1(app->args[1])
-            && is_constant_and_avoids_r1(app->args[2])) {
-          mz_runstack_skipped(jitter, 3);
-          got_two = 0;
-        } else {
-          got_two = 1;
-          mz_runstack_skipped(jitter, 1);
-          generate_app(app, NULL, 2, jitter, 0, 0, 2);
-        }
-        jitter->unbox++;
-        generate(app->args[3], jitter, 0, 0, 0, JIT_R0, NULL); /* to FP reg */
-        CHECK_LIMIT();
-        --jitter->unbox;
-        --jitter->unbox_depth;
-        if (!got_two) {
-          generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL);
-          CHECK_LIMIT();
-          generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL);
-          mz_runstack_unskipped(jitter, 3);
-        } else {
-          mz_rs_ldr(JIT_R0);
-          mz_rs_ldxi(JIT_R1, 1);
-          mz_rs_inc(2); /* no sync */
-          mz_runstack_popped(jitter, 2);
-          mz_runstack_unskipped(jitter, 1);
-        }
-      } else {
-        generate_app(app, NULL, 3, jitter, 0, 0, 2);
-        CHECK_LIMIT();
+      int can_direct, got_two;
 
-        mz_rs_ldxi(JIT_R0, 2);
-        jit_ldxi_d_fppush(JIT_FPR0, JIT_R0, &((Scheme_Double *)0x0)->double_val);  
+      is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-set!");
+
+      if (is_constant_and_avoids_r1(app->args[1])
+          && is_constant_and_avoids_r1(app->args[2])) {
+        mz_runstack_skipped(jitter, 3);
+        got_two = 0;
+      } else {
+        got_two = 1;
+        mz_runstack_skipped(jitter, 1);
+        generate_app(app, NULL, 2, jitter, 0, 0, 2);
+      }
+
+      if (can_unbox_inline(app->args[3], 5, JIT_FPR_NUM-1, 1))
+        can_direct = 2;
+      else if (can_unbox_directly(app->args[3]))
+        can_direct = 1;
+      else
+        can_direct = 0;
+
+      jitter->unbox++;
+      generate_unboxed(app->args[3], jitter, can_direct, 1);
+      --jitter->unbox;
+      --jitter->unbox_depth;
+      CHECK_LIMIT();
+      
+      if (!got_two) {
+        generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL);
+        CHECK_LIMIT();
+        generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL);
+        mz_runstack_unskipped(jitter, 3);
+      } else {
         mz_rs_ldr(JIT_R0);
         mz_rs_ldxi(JIT_R1, 1);
-
-        mz_rs_inc(3); /* no sync */
-        mz_runstack_popped(jitter, 3);
+        mz_rs_inc(2); /* no sync */
+        mz_runstack_popped(jitter, 2);
+        mz_runstack_unskipped(jitter, 1);
       }
       CHECK_LIMIT();
 
