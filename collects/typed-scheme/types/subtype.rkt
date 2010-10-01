@@ -263,7 +263,6 @@
 	      [((== -Fixnum =t) (Base: 'Integer _)) A0]
 
               [((Base: 'Nonnegative-Flonum _) (Base: 'Flonum _)) A0]
-              [((Base: 'Nonnegative-Flonum _) (Base: 'InexactComplex _)) A0]
               [((Base: 'Nonnegative-Flonum _) (Base: 'Number _)) A0]
 
               [((Base: 'InexactComplex _) (Base: 'Number _)) A0]
