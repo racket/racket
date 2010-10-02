@@ -3,6 +3,7 @@
          racket/draw
          ffi/unsafe
           "../../syntax.rkt"
+          "../../lock.rkt"
           "../common/event.rkt"
          "item.rkt"
 	 "utils.rkt"
@@ -18,6 +19,8 @@
 (define CB_SETCURSEL #x014E)
 (define CB_GETCURSEL #x0147)
 (define CBN_SELENDOK 9)
+(define CB_ADDSTRING #x0143)
+(define CB_RESETCONTENT #x014B)
 
 (define choice% 
   (class item%
@@ -59,7 +62,8 @@
     (set-control-font font)
     ;; setting the choice height somehow sets the 
     ;; popup-menu size, not the control that you see
-    (auto-size choices 0 0 40 0
+    (auto-size (if (null? choices) (list "Choice") choices)
+               0 0 40 0
                (lambda (w h)
                  (set-size -11111 -11111 w (* h 8))))
 
@@ -85,6 +89,18 @@
 
     (define/public (number) num-choices)
 
-    (def/public-unimplemented clear)
-    (def/public-unimplemented append)))
+    (define/public (clear)
+      (atomically
+       (SendMessageW hwnd CB_RESETCONTENT 0 0)
+       (set! num-choices 0)))
+
+
+    (public [append* append])
+    (define (append* str)
+      (atomically
+       (SendMessageW/str hwnd CB_ADDSTRING 0 str)
+       (set! num-choices (add1 num-choices))
+       (when (= 1 num-choices) (set-selection 0))))))
+
+
 

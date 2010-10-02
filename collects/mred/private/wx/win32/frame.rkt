@@ -24,8 +24,14 @@
 
 (define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
 
+(define-user32 DrawMenuBar (_wfun _HWND -> (r : _BOOL)
+                                  -> (unless r (failed 'DrawMenuBar))))
+
+(define-user32 IsZoomed (_wfun _HWND -> _BOOL))
+
 (define-user32 SystemParametersInfoW (_wfun _UINT _UINT _pointer _UINT -> (r : _BOOL)
                                             -> (unless r (failed 'SystemParametersInfo))))
+
 
 (define SPI_GETWORKAREA            #x0030)
 
@@ -99,6 +105,9 @@
                      hInstance
                      #f))
 
+  (define saved-title (or label ""))
+  (define hidden-zoomed? #f)
+
   (super-new [parent #f]
 	     [hwnd (create-frame parent label w h style)]
 	     [style (cons 'invisible style)])
@@ -124,7 +133,11 @@
     ;; atomic mode
     (when (eq? mouse-frame this) (set! mouse-frame #f))
     (register-frame-shown this on?)
-    (super direct-show on?))
+    (when (and (not on?) (is-shown?))
+      (set! hidden-zoomed? (is-maximized?)))
+    (super direct-show on? (if hidden-zoomed?
+                               SW_SHOWMAXIMIZED
+                               SW_SHOW)))
 
   (define/private (stdret f d)
     (if (is-dialog?) d f))
@@ -275,9 +288,25 @@
 
   (def/public-unimplemented designate-root-frame)
   (def/public-unimplemented system-menu)
-  (def/public-unimplemented set-modified)
-  (def/public-unimplemented is-maximized?)
-  (def/public-unimplemented maximize)
+
+  (define modified? #f)
+  (define/public (set-modified on?)
+    (unless (eq? modified? (and on? #t))
+      (set! modified? (and on? #t))
+      (set-title saved-title)))
+
+  (define/public (is-maximized?)
+    (if (is-shown?)
+        hidden-zoomed?
+        (IsZoomed hwnd)))
+  
+  (define/public (maximize on?)
+    (if (is-shown?)
+        (set! hidden-zoomed? (and on? #t))
+        (ShowWindow hwnd (if on?
+                             SW_MAXIMIZE
+                             SW_RESTORE))))
+    
   (def/public-unimplemented iconized?)
   (def/public-unimplemented get-menu-bar)
 
@@ -286,6 +315,9 @@
     (atomically
      (set! menu-bar mb)
      (send mb set-parent this)))
+
+  (define/public (draw-menu-bar)
+    (DrawMenuBar hwnd))
   
   (define/override (is-frame?) #t)
 
@@ -294,5 +326,8 @@
 
   (def/public-unimplemented iconize)
   (define/public (set-title s)
-    (SetWindowTextW (get-hwnd) s)))
+    (atomically
+     (set! saved-title s)
+     (SetWindowTextW (get-hwnd) (string-append s (if modified? "*" ""))))))
+
 

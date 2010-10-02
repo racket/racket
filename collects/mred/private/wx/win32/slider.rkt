@@ -143,8 +143,7 @@
 
   (define/override (control-scrolled)
     (when value-hwnd
-      (let ([val (get-value)])
-        (SetWindowTextW value-hwnd (format "~s" val))))
+      (set-text (get-value)))
     (queue-window-event this (lambda ()
                                (callback this
                                          (new control-event%
@@ -152,7 +151,12 @@
                                               [time-stamp (current-milliseconds)])))))
 
   (define/public (set-value val)
-    (SendMessageW slider-hwnd TBM_SETPOS 1 val))
+    (SendMessageW slider-hwnd TBM_SETPOS 1 val)
+    (when value-hwnd
+      (set-text val)))
+  
+  (define/private (set-text val)
+    (SetWindowTextW value-hwnd (format "~s" val)))
     
   (define/public (get-value)
     (SendMessageW slider-hwnd TBM_GETPOS 0 0)))

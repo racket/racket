@@ -181,12 +181,12 @@
     (atomically (direct-show on?)))
 
   (define shown? #f)
-  (define/public (direct-show on?)
+  (define/public (direct-show on? [on-mode SW_SHOW])
     ;; atomic mode
     (set! shown? (and on? #t))
     (register-child-in-parent on?)
     (unless on? (not-focus-child this))
-    (ShowWindow hwnd (if on? SW_SHOW SW_HIDE)))
+    (ShowWindow hwnd (if on? on-mode SW_HIDE)))
   (unless (memq 'invisible style)
     (show #t))
   

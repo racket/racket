@@ -1,5 +1,6 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
+         (only-in racket/list take drop)
          ffi/unsafe
          "../../lock.rkt"
          "../../syntax.rkt"
@@ -22,22 +23,35 @@
     (define hmenu (CreateMenu))
 
     (define menus null)
+    (define parent #f)
 
     (define/public (set-label-top pos str)
-      (void)) ;; FIXME
+      (send (list-ref menus pos) set-menu-label hmenu pos str)
+      (refresh))
       
     (def/public-unimplemented number)
     (def/public-unimplemented enable-top)
+
     (define/public (delete which pos)
-      (void)) ;; FIXME
+      (atomically
+       (set! menus (append (take menus pos)
+                           (drop menus (add1 pos))))
+       (RemoveMenu hmenu pos MF_BYPOSITION)
+       (refresh)))
+
+    (define/private (refresh)
+      (when parent
+        (send parent draw-menu-bar)))
 
     (public [append-item append])
     (define (append-item m lbl)
       (let ([l (append menus (list m))])
         (atomically
          (set! menus l)
-         (send m set-parent this lbl hmenu))))
+         (send m set-parent this lbl hmenu)))
+      (refresh))
 
     (define/public (set-parent f)
       (SetMenu (send f get-hwnd) hmenu)
-      (DrawMenuBar (send f get-hwnd)))))
+      (set! parent f)
+      (send parent draw-menu-bar))))

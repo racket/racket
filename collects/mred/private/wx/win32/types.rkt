@@ -113,5 +113,6 @@
   (bitwise-and v #xFFFF))
 
 (define (MAKELONG a b)
-  (bitwise-ior (arithmetic-shift b 16) a))
+  (bitwise-ior (arithmetic-shift b 16) 
+               (bitwise-and a #xFFFF)))
 (define (MAKELPARAM a b) (MAKELONG a b))

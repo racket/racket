@@ -17,12 +17,6 @@
   (let ([wb (hash-ref ids id #f)])
     (and wb (weak-box-value wb))))
 
-(define-user32 GetMenuState (_wfun _HMENU _UINT _UINT -> _UINT))
-(define-user32 CheckMenuItem (_wfun _HMENU _UINT _UINT -> _DWORD))
-(define-user32 ModifyMenuW (_wfun _HMENU _UINT _UINT _UINT_PTR _string/utf-16
-                                  -> (r : _BOOL)
-                                  -> (unless r (failed 'ModifyMenuW))))
-
 (defclass menu-item% object%
 
   (define id

@@ -254,4 +254,7 @@
      (def/public-unimplemented scroll)
      (def/public-unimplemented warp-pointer)
      (def/public-unimplemented view-start)
-     (def/public-unimplemented set-resize-corner))))
+
+     (define/public (set-resize-corner on?)
+       (void)))))
+

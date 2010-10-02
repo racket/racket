@@ -6,7 +6,7 @@
 
 (define my-txt #f)
 (define my-lb #f)
-(define noisy? #t)
+(define noisy? #f)
 
 (define mdi-frame #f)
 (define (mdi)

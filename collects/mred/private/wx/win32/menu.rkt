@@ -48,6 +48,12 @@
         (proc (car items) pos)]
        [else (loop (cdr items) (add1 pos))])))
 
+  (define/public (set-menu-label bar-hmenu pos str)
+    (ModifyMenuW bar-hmenu pos
+                 (bitwise-ior MF_BYPOSITION MF_STRING MF_POPUP)
+                 (cast hmenu _HMENU _UINT_PTR)
+                 str))
+
   (define/public (set-label id str)
     (with-item
      id
@@ -78,9 +84,14 @@
      (lambda (i pos)
        (send i get-check hmenu pos))))
 
-  (def/public-unimplemented delete-by-position)
+  (define/public (delete-by-position pos)
+    (RemoveMenu hmenu pos MF_BYPOSITION))
+
   (define/public (delete id)
-    (void))
+    (with-item
+     id
+     (lambda (i pos)
+       (RemoveMenu hmenu pos MF_BYPOSITION))))
 
   (public [append-item append])
   (define (append-item id label help-str-or-submenu chckable?)
