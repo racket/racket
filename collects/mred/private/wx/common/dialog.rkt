@@ -31,10 +31,9 @@
       (unless on?
         (set! dialog-level 0))
       (unless on?
-        (atomically
-         (when close-sema
-           (semaphore-post close-sema)
-           (set! close-sema #f))))
+        (when close-sema
+          (semaphore-post close-sema)
+          (set! close-sema #f)))
       (super direct-show on?))
 
     (define/override (show on?)

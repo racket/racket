@@ -34,8 +34,6 @@
 (define empty-mb (new menu-bar%))
 (define root-fake-frame #f)
 
-(define dialog-level-counter 0)
-
 (define all-windows (make-hash))
 
 (define-objc-mixin (MyWindowMethods Superclass)
@@ -52,7 +50,8 @@
       (queue-window*-event wxb (lambda (wx)
                                  (unless (other-modal? wx)
                                    (when (send wx on-close)
-                                     (send wx direct-show #f)))))
+                                     (atomically
+                                      (send wx direct-show #f))))))
       #f]
   [-a _void (windowDidResize: [_id notification])
       (when wxb
@@ -187,21 +186,10 @@
        (tell NSGraphicsContext graphicsContextWithWindow: cocoa)))
 
     (define is-a-dialog? is-dialog?)
-    (define dialog-level 0)
     (define/public (frame-is-dialog?) is-a-dialog?)
-    (define/public (frame-relative-dialog-status win) 
-      ;; called in event-pump thread
-      (cond
-       [is-a-dialog? (let ([dl (send win get-dialog-level)])
-                       (cond
-                        [(= dl dialog-level) 'same]
-                        [(dl . > . dialog-level) #f]
-                        [else 'other]))]
-       [else #f]))
-    
-    (define/override (get-dialog-level) 
-      ;; called in event-pump thread
-      dialog-level)
+
+    (define/public (frame-relative-dialog-status win) #f)
+    (define/override (get-dialog-level) 0)
 
     (define/public (clean-up)
       ;; When a window is resized, then any drawing that is in flight
@@ -215,65 +203,63 @@
     (define/public (get-sheet) child-sheet)
     (define/public (set-sheet s) (set! child-sheet s))
 
+    (define caption? (not (memq 'no-caption style)))
+    (define/public (can-have-sheet?) caption?)
+
     (define/public (direct-show on?)
-      (as-entry
-       (lambda ()
-         (when (and (not on?)
-                    (eq? front this))
-           (set! front #f)
-           (send empty-mb install))
-         (if on?
-             (show-children)
-             (hide-children))
-         (if on?
-             (begin
-               (when is-a-dialog?
-                 (set! dialog-level-counter (add1 dialog-level-counter))
-                 (set! dialog-level dialog-level-counter))
-               (if (and is-a-dialog?
-                        (let ([p (get-parent)])
-                          (and p 
-                               (not (send p get-sheet)))))
+      ;; in atomic mode
+      (when (and (not on?)
+                 (eq? front this))
+        (set! front #f)
+        (send empty-mb install))
+      (if on?
+          (show-children)
+          (hide-children))
+      (if on?
+          (if (and is-a-dialog?
                    (let ([p (get-parent)])
-                     (send p set-sheet this)
-                     (tell (tell NSApplication sharedApplication)
-                           beginSheet: cocoa
-                           modalForWindow: (send p get-cocoa)
-                           modalDelegate: #f
-                           didEndSelector: #:type _SEL #f
-                           contextInfo: #f))
-                   (tellv cocoa makeKeyAndOrderFront: #f)))
-             (begin
-               (when is-a-dialog?
-                 (set! dialog-level 0)
-                 (let ([p (get-parent)])
-                   (when (and p
-                              (eq? this (send p get-sheet)))
-                     (send p set-sheet #f)
-                     (tell (tell NSApplication sharedApplication)
-                           endSheet: cocoa))))
-               (tellv cocoa orderOut: #f)
-               (let ([next
-                      (atomically
-                       (with-autorelease
-                        (let ([wins (tell (tell NSApplication sharedApplication) orderedWindows)])
-                          (begin0
-                           (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
-                             (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
-                               (and (tell #:type _BOOL win isVisible)
-                                    win)))))))])
-                 (cond
-                  [next (tellv next makeKeyWindow)]
-                  [root-fake-frame (send root-fake-frame install-mb)]
-                  [else (void)]))))
-         (register-frame-shown this on?)
-         (let ([num (tell #:type _NSInteger cocoa windowNumber)])
-           (if on?
-               (hash-set! all-windows num this)
-               (hash-remove! all-windows num)))
-         (when on?
-           (let ([b (eventspace-wait-cursor-count (get-eventspace))])
-             (set-wait-cursor-mode (not (zero? b))))))))
+                     (and p 
+                          (send p can-have-sheet?)
+                          (not (send p get-sheet)))))
+              (let ([p (get-parent)])
+                (send p set-sheet this)
+                (tell (tell NSApplication sharedApplication)
+                      beginSheet: cocoa
+                      modalForWindow: (send p get-cocoa)
+                      modalDelegate: #f
+                      didEndSelector: #:type _SEL #f
+                      contextInfo: #f))
+              (tellv cocoa makeKeyAndOrderFront: #f))
+          (begin
+            (when is-a-dialog?
+              (let ([p (get-parent)])
+                (when (and p
+                           (eq? this (send p get-sheet)))
+                  (send p set-sheet #f)
+                  (tell (tell NSApplication sharedApplication)
+                        endSheet: cocoa))))
+            (tellv cocoa orderOut: #f)
+            (let ([next
+                   (atomically
+                    (with-autorelease
+                     (let ([wins (tell (tell NSApplication sharedApplication) orderedWindows)])
+                       (begin0
+                        (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
+                          (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
+                            (and (tell #:type _BOOL win isVisible)
+                                 win)))))))])
+              (cond
+               [next (tellv next makeKeyWindow)]
+               [root-fake-frame (send root-fake-frame install-mb)]
+               [else (void)]))))
+      (register-frame-shown this on?)
+      (let ([num (tell #:type _NSInteger cocoa windowNumber)])
+        (if on?
+            (hash-set! all-windows num this)
+            (hash-remove! all-windows num)))
+      (when on?
+        (let ([b (eventspace-wait-cursor-count (get-eventspace))])
+          (set-wait-cursor-mode (not (zero? b))))))
     
     (define/override (show on?)
       (let ([es (get-eventspace)])
@@ -290,7 +276,8 @@
                                     (do-paint-children)
                                     (semaphore-post s)))
                   (sync/timeout 1 s))))))
-      (direct-show on?))
+      (atomically
+       (direct-show on?)))
 
     (define/private (do-paint-children)
       (when saved-child
@@ -300,7 +287,8 @@
 
     (define/public (destroy)
       (when child-sheet (send child-sheet destroy))
-      (direct-show #f))
+      (atomically
+       (direct-show #f)))
 
     (define/override (hide-children)
       (when saved-child
