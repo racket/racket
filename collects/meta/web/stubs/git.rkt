@@ -151,6 +151,7 @@
   @ul*{
   @~ Ubuntu:
      @pre{sudo add-apt-repository ppa:git-core/ppa
+          sudo apt-get update
           sudo apt-get install git-core}
   @~ OSX using macports:
      @pre{sudo port selfupdate
@@ -210,8 +211,8 @@
   server, is via ssh.  (Access is controlled via a tool called “gitolite” —
   more on this below.)  The username and hostname of the server is
   "git@at-git-racket" — and you should be able to connect to this account using
-  the ssh identity key that corresponds to the public key that you gave me.  To
-  try it, run
+  the ssh identity key that corresponds to the public key that you use with the
+  git server.  To try it, run
   @pre{ssh git@at-git-racket}
   and the server (gitolite, actually) should reply with information about your
   current permissions.  The exact details of this is not important for now,
@@ -2449,8 +2450,8 @@
    @pre{git push my-fork :my-branch}
    Using an empty branch name for the local branch that you push is the way to
    delete remote branches.  (As with local branches, this might lead to losing
-   commits, so be careful.  If you make a mistake, let me know, since it is
-   likely easy to fix.)}
+   commits, so be careful.  As always, git has a few safety mechanisms in
+   place, so even if did this by mistake, it is very likely recoverable.)}
 @h3{Using a clone of your private repository, pushing changes to the public
     one:}
 @ol*{
