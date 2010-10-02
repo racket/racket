@@ -531,7 +531,7 @@ supplies dictionary-operation implementations for a structure
 type. The property value must be a vector of ten procedures (some
 optional) that are applied only to instances of the structure type
 that has the property:
-
+     
 @itemize[
 
  @item{@scheme[_ref] : a procedure like @scheme[dict-ref] that accepts
@@ -576,21 +576,38 @@ that has the property:
 
 ]}
 
-@;{
+@defthing[prop:dict/contract struct-type-property?]{
 
-@defthing[prop:dict/contract]{
+A structure type property for defining dictionaries with
+contracts. The value associated with @racket[prop:dict/contract] must
+be a list of two immutable vectors:
 
+@racketblock[
+(list _dict-vector
+      (vector _type-key-contract
+              _type-value-contract
+              _type-iter-contract
+              _instance-key-contract
+              _instance-value-contract
+              _instance-iter-contract))
+]
 
+The first vector must be suitable as a value for @racket[prop:dict]
+(in addition, it must be an immutable vector). The second vector must
+contain six elements; each of the first three is a contract for the
+dictionary type's keys, values, and positions, respectively. Each of
+the second three is either @racket[#f] or a procedure used to extract
+the contract from a dictionary instance.
 }
 
 @deftogether[[
 @defproc[(dict-key-contract [d dict?]) contract?]
-@defproc[(dict-value-contract [d dict?]) contract?]]]{
+@defproc[(dict-value-contract [d dict?]) contract?]
+@defproc[(dict-iter-contract [d dict?]) contract?]]]{
 
-Returns the contract that @racket[d] imposes on its keys or values,
-respectively, if @racket[d] implements the @racket[prop:dict/contract]
-interface.
-}
+Returns the contract that @racket[d] imposes on its keys, values, or
+iterators, respectively, if @racket[d] implements the
+@racket[prop:dict/contract] interface.
 }
 
 @;{------------------------------------------------------------}
