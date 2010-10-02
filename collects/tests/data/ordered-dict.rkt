@@ -227,6 +227,18 @@
 
 (provide performance)
 
+(define (deep-test [test 'splay])
+  (let ([mk (case test
+              ((splay) mksplay)
+              ((adj) mkadj)
+              ((skip) mkskip))])
+    (for ([seed (in-range 100)])
+      (random-seed seed)
+      (printf "seed = ~s\n" seed)
+      (p "test" dict-test mk #t))))
+
+(provide deep-test)
+
 #|
 Recent run:
 
