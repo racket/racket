@@ -33,7 +33,8 @@
     (define/public (get-class) "PLTBUTTON")
     (define/public (get-flags) BS_PUSHBUTTON)
     
-    (super-new [parent parent]
+    (super-new [callback cb]
+               [parent parent]
                [hwnd 
                 (CreateWindowExW 0
                                  (get-class)

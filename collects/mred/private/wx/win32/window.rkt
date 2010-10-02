@@ -43,7 +43,7 @@
 (define-user32 CreateWindowExW (_wfun _DWORD
 				      _string/utf-16
 				      _string/utf-16
-				      _DWORD
+				      _UDWORD
 				      _int _int _int _int
 				      _HWND _HMENU _HINSTANCE _pointer
 				      -> _HWND))
@@ -92,8 +92,6 @@
 
 (define-user32 BeginPaint (_wfun _HWND _pointer -> _HDC))
 (define-user32 EndPaint (_wfun _HDC _pointer -> _BOOL))
-(define-user32 InvalidateRect (_wfun _HWND (_or-null _RECT-pointer) _BOOL -> (r : _BOOL)
-                                     -> (unless r (failed 'InvalidateRect))))
 
 (defclass window% object%
   (init-field parent hwnd)
@@ -110,6 +108,7 @@
 
   (define/public (get-hwnd) hwnd)
   (define/public (get-client-hwnd) hwnd)
+  (define/public (get-focus-hwnd) hwnd)
   (define/public (get-eventspace) eventspace)
 
   (define/public (is-hwnd? a-hwnd)
@@ -125,24 +124,24 @@
          [(= msg WM_KILLFOCUS)
           (queue-window-event this (lambda () (on-kill-focus)))
           0]
-         [(= msg WM_SYSKEYDOWN)
-          (when (or (= wParam VK_MENU) (= wParam VK_F4)) ;; F4 is close
-            (unhide-cursor)
-            (begin0
-             (default w msg wParam lParam)
-             (do-key wParam lParam #f #f)))]
+         [(and (= msg WM_SYSKEYDOWN)
+               (or (= wParam VK_MENU) (= wParam VK_F4))) ;; F4 is close
+          (unhide-cursor)
+          (begin0
+           (default w msg wParam lParam)
+           (do-key wParam lParam #f #f))]
          [(= msg WM_KEYDOWN)
           (do-key wParam lParam #f #f)
           0]
          [(= msg WM_KEYUP)
           (do-key wParam lParam #f #t)
           0]
-         [(= msg WM_SYSCHAR)
-          (when (= wParam VK_MENU)
-            (unhide-cursor)
-            (begin0
-             (default w msg wParam lParam)
-             (do-key wParam lParam #t #f)))]
+         [(and (= msg WM_SYSCHAR)
+               (= wParam VK_MENU))
+          (unhide-cursor)
+          (begin0
+           (default w msg wParam lParam)
+           (do-key wParam lParam #t #f))]
          [(= msg WM_CHAR)
           (do-key wParam lParam #t #f)
           0]
@@ -155,12 +154,14 @@
                   0)
                 (default w msg wParam lParam)))]
          [(= msg WM_NOTIFY)
-          #;
           (let* ([nmhdr (cast lParam _LPARAM _NMHDR-pointer)]
-          [control-hwnd (NMHDR-hwndFrom nmhdr)]
-          [wx (any-hwnd->wx control-hwnd)])
-          (when wx (send wx do-command)))
-          0]
+                 [control-hwnd (NMHDR-hwndFrom nmhdr)]
+                 [wx (any-hwnd->wx control-hwnd)])
+            (if (and wx (send wx is-command? (LOWORD (NMHDR-code nmhdr))))
+                (begin
+                  (send wx do-command control-hwnd)
+                  0)
+                (default w msg wParam lParam)))]
          [(or (= msg WM_HSCROLL)
               (= msg WM_VSCROLL))
           (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
@@ -177,10 +178,11 @@
   (define/public (control-scrolled) #f)
 
   (define/public (show on?)
-    (direct-show on?))
+    (atomically (direct-show on?)))
 
   (define shown? #f)
   (define/public (direct-show on?)
+    ;; atomic mode
     (set! shown? (and on? #t))
     (register-child-in-parent on?)
     (unless on? (not-focus-child this))
@@ -361,9 +363,9 @@
   (define/public (no-cursor-handle-here)
     (send parent cursor-updated-here))
 
-  (define/public (set-focus)
+  (define/public (set-focus [child-hwnd hwnd])
     (when (can-accept-focus?)
-      (set-top-focus this null hwnd)))
+      (set-top-focus this null child-hwnd)))
 
   (define/public (can-accept-focus?)
     (child-can-accept-focus?))

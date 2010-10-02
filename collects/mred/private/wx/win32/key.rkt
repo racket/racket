@@ -217,7 +217,9 @@
                       [e (new key-event%
                               [key-code (if is-up?
                                            'release
-                                           id)]
+                                           (if (equal? id #\033)
+                                               'escape
+                                               id))]
                               [shift-down shift-down?]
                               [control-down control-down?]
                               [meta-down #f]

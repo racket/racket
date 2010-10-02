@@ -38,28 +38,57 @@
   (def/public-unimplemented get-font)
   (def/public-unimplemented set-width)
   (def/public-unimplemented set-title)
-  (def/public-unimplemented set-label)
+
+  (define/private (with-item id proc)
+    (let loop ([items items] [pos 0])
+      (cond
+       [(null? items) (void)]
+       [(and (car items)
+             (eq? id (send (car items) id)))
+        (proc (car items) pos)]
+       [else (loop (cdr items) (add1 pos))])))
+
+  (define/public (set-label id str)
+    (with-item
+     id
+     (lambda (i pos)
+       (send i set-label hmenu pos str))))
+
   (def/public-unimplemented set-help-string)
   (def/public-unimplemented number)
 
   (define/public (enable id on?)
-    (for ([i (in-list items)]
-          [pos (in-naturals)])
-      (when (and i (eq? id (send i id)))
-        (void
-         (EnableMenuItem hmenu pos (bitwise-ior MF_BYPOSITION
-                                                (if on? MF_ENABLED MF_GRAYED)))))))
+    (with-item
+     id
+     (lambda (i pos)
+       (void
+        (EnableMenuItem hmenu pos 
+                        (bitwise-ior MF_BYPOSITION
+                                     (if on? MF_ENABLED MF_GRAYED)))))))
 
-  (def/public-unimplemented check)
-  (def/public-unimplemented checked?)
+  (define/public (check id on?)
+    (with-item
+     id
+     (lambda (i pos)
+       (send i set-check hmenu pos on?))))
+
+  (define/public (checked? id)
+    (with-item
+     id
+     (lambda (i pos)
+       (send i get-check hmenu pos))))
+
   (def/public-unimplemented delete-by-position)
-  (def/public-unimplemented delete)
+  (define/public (delete id)
+    (void))
 
   (public [append-item append])
   (define (append-item id label help-str-or-submenu chckable?)
     (let ([i (id-to-menu-item id)])
       (when i
-        (let ([id (send i set-parent this label chckable?)])
+        (let ([id (send i set-parent this label chckable?
+                        (and (help-str-or-submenu . is-a? . menu%)
+                             help-str-or-submenu))])
           (atomically
            (set! items (append items (list i)))
            (AppendMenuW hmenu (bitwise-ior MF_STRING) (cast id _long _pointer) label))))))

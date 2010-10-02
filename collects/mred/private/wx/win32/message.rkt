@@ -60,7 +60,8 @@
 
     (define/public (get-class) "PLTSTATIC")
     
-    (super-new [parent parent]
+    (super-new [callback void]
+               [parent parent]
                [hwnd 
                 (CreateWindowExW (if (string? label) WS_EX_TRANSPARENT 0)
                                  (get-class)

@@ -6,6 +6,7 @@
 	 "../../lock.rkt"
 	 "../common/queue.rkt"
 	 "../common/freeze.rkt"
+	 "../common/dialog.rkt"
          "utils.ss"
          "const.ss"
          "types.ss"
@@ -50,13 +51,11 @@
 
 (define dialog-proc (function-ptr dlgproc _DialogProc))
 
-(define dialog-level-counter 0)
-
 (define dialog% 
-  (class frame%
+  (class (dialog-mixin frame%)
     (super-new)
 
-    (define/override (create-frame parent label w h)
+    (define/override (create-frame parent label w h style)
       (let ([hwnd
              (CreateDialogIndirectParamW hInstance
                                          (make-DLGTEMPLATE
@@ -70,23 +69,4 @@
         (MoveWindow hwnd 0 0 w h #t)
         hwnd))
 
-    (define/override (is-dialog?) #t)
-
-    (define dialog-level 0)
-    (define/override (get-dialog-level) dialog-level)
-    
-    (define/override (frame-relative-dialog-status win) 
-      (let ([dl (send win get-dialog-level)])
-        (cond
-         [(= dl dialog-level) 'same]
-         [(dl . > . dialog-level) #f]
-         [else 'other])))
-
-    (define/override (direct-show on?)
-      (when on?
-        (set! dialog-level-counter (add1 dialog-level-counter))
-        (set! dialog-level dialog-level-counter))
-      (unless on?
-        (set! dialog-level 0))
-      (super direct-show on?))))
-
+    (define/override (is-dialog?) #t)))

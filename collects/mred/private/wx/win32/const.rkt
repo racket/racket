@@ -598,3 +598,7 @@
 
 (define SW_SHOW 5)
 (define SW_HIDE 0)
+
+(define HORZRES       8)
+(define VERTRES       10)
+

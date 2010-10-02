@@ -22,14 +22,38 @@
 (define-user32 GetActiveWindow (_wfun -> _HWND))
 (define-user32 SetFocus (_wfun _HWND -> _HWND))
 
+(define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
+
+(define-user32 SystemParametersInfoW (_wfun _UINT _UINT _pointer _UINT -> (r : _BOOL)
+                                            -> (unless r (failed 'SystemParametersInfo))))
+
+(define SPI_GETWORKAREA            #x0030)
+
+(define (display-size xb yb ?)
+  (atomically
+   (let ([hdc (GetDC #f)])
+     (set-box! xb (GetDeviceCaps hdc HORZRES))
+     (set-box! yb (GetDeviceCaps hdc VERTRES))
+     (ReleaseDC #f hdc))))
+
+(define (display-origin xb yb avoid-bars?)
+  (if avoid-bars?
+      (let ([r (make-RECT 0 0 0 0)])
+        (SystemParametersInfoW SPI_GETWORKAREA 0 r 0)
+        (set-box! xb (RECT-left r))
+        (set-box! yb (RECT-top r)))
+      (begin
+        (set-box! xb 0)
+        (set-box! yb 0))))
+
 (define mouse-frame #f)
 
-(define (display-origin xb yb ?)
-  (set-box! xb 0)
-  (set-box! yb 0))
-(define (display-size xb yb ?)
-  (set-box! xb 1024)
-  (set-box! yb 768))
+(define WS_EX_TOOLWINDOW        #x00000080)
+(define WS_EX_TOPMOST           #x00000008)
+(define WS_EX_WINDOWEDGE        #x00000100)
+(define WS_EX_PALETTEWINDOW     (bitwise-ior WS_EX_WINDOWEDGE 
+                                             WS_EX_TOOLWINDOW 
+                                             WS_EX_TOPMOST))
 
 (defclass frame% window%
   (init parent
@@ -46,11 +70,29 @@
            pre-on-char pre-on-event
            reset-cursor-in-child)
 
-  (define/public (create-frame parent label w h)
-    (CreateWindowExW 0 ; (bitwise-ior WS_EX_LAYERED)
+  (define/public (create-frame parent label w h style)
+    (CreateWindowExW (if (memq 'float style)
+                         (bitwise-ior WS_EX_TOOLWINDOW
+                                      (if (memq 'no-caption style)
+                                          WS_EX_TOPMOST
+                                          WS_EX_PALETTEWINDOW))
+                         0)
                      "PLTFrame"
                      (if label label "")
-                     WS_OVERLAPPEDWINDOW
+                     (bitwise-ior
+                      WS_POPUP
+                      (if (memq 'no-resize-border style)
+                          0
+                          (bitwise-ior WS_THICKFRAME
+                                       WS_BORDER
+                                       WS_MAXIMIZEBOX))
+                      (if (memq 'no-system-menu style)
+                          0
+                          WS_SYSMENU)
+                      (if (memq 'no-caption style)
+                          0
+                          (bitwise-ior WS_CAPTION
+                                       WS_MINIMIZEBOX)))
                      0 0 w h
                      #f
                      #f
@@ -58,7 +100,7 @@
                      #f))
 
   (super-new [parent #f]
-	     [hwnd (create-frame parent label w h)]
+	     [hwnd (create-frame parent label w h style)]
 	     [style (cons 'invisible style)])
 
   (define hwnd (get-hwnd))
@@ -79,6 +121,7 @@
     (super show on?))
 
   (define/override (direct-show on?)
+    ;; atomic mode
     (when (eq? mouse-frame this) (set! mouse-frame #f))
     (register-frame-shown this on?)
     (super direct-show on?))
@@ -154,7 +197,7 @@
 
   (define/private (set-frame-focus)
     (when focus-window-path
-      (SetFocus (send (last focus-window-path) get-hwnd))))
+      (SetFocus (send (last focus-window-path) get-focus-hwnd))))
 
   (define/override (child-can-accept-focus?)
     #t)
@@ -246,6 +289,10 @@
   
   (define/override (is-frame?) #t)
 
-  (def/public-unimplemented set-icon)
+  (define/public (set-icon bm mask [mode 'both])
+    (void))
+
   (def/public-unimplemented iconize)
-  (def/public-unimplemented set-title))
+  (define/public (set-title s)
+    (SetWindowTextW (get-hwnd) s)))
+

@@ -29,7 +29,8 @@
 
     (inherit auto-size set-control-font
              is-enabled-to-root?
-             subclass-control)
+             subclass-control
+             set-focus)
 
     (define callback cb)
     (define current-value val)
@@ -84,7 +85,8 @@
     (unless (= val -1)
       (SendMessageW (list-ref radio-hwnds val) BM_SETCHECK 1 0))
     
-    (super-new [parent parent]
+    (super-new [callback cb]
+               [parent parent]
                [hwnd hwnd]
                [extra-hwnds radio-hwnds]
                [style style])
@@ -115,7 +117,19 @@
                                                     [time-stamp (current-milliseconds)])))))))
 
 
-    (def/public-unimplemented button-focus)
+    (define focused 0)
+
+    (define/public (button-focus i)
+      (if (= i -1)
+          (min focused (length radio-hwnds))
+          (begin
+            (set! focused i)
+            (set-focus (list-ref radio-hwnds i)))))
+
+    (define/override (get-focus-hwnd)
+      (if (= focused -1)
+          hwnd
+          (list-ref radio-hwnds focused)))
 
     (define/public (set-selection val)
       (atomically

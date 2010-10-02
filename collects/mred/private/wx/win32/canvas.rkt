@@ -18,11 +18,8 @@
 
 (provide canvas%)
 
-(define-user32 GetDC (_wfun _HWND -> _HDC))
 (define-user32 BeginPaint (_wfun _HWND _pointer -> _HDC))
 (define-user32 EndPaint (_wfun _HDC _pointer -> _BOOL))
-(define-user32 InvalidateRect (_wfun _HWND (_or-null _RECT-pointer) _BOOL -> (r : _BOOL)
-                                     -> (unless r (failed 'InvalidateRect))))
 (define-user32 ShowScrollBar (_wfun _HWND _int _BOOL -> (r : _BOOL)
                                     -> (unless r (failed 'ShowScrollbar))))
 

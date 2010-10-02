@@ -1,6 +1,9 @@
 #lang scheme/base
 (require ffi/unsafe
          scheme/class
+         "utils.rkt"
+         "types.rkt"
+         "const.rkt"
           "../../syntax.rkt")
 
 (provide menu-item%
@@ -13,6 +16,12 @@
 (define (id-to-menu-item id)
   (let ([wb (hash-ref ids id #f)])
     (and wb (weak-box-value wb))))
+
+(define-user32 GetMenuState (_wfun _HMENU _UINT _UINT -> _UINT))
+(define-user32 CheckMenuItem (_wfun _HMENU _UINT _UINT -> _DWORD))
+(define-user32 ModifyMenuW (_wfun _HMENU _UINT _UINT _UINT_PTR _string/utf-16
+                                  -> (r : _BOOL)
+                                  -> (unless r (failed 'ModifyMenuW))))
 
 (defclass menu-item% object%
 
@@ -30,12 +39,36 @@
   (define parent #f)
   (define label #f)
   (define checkable? #f)
+  (define submenu #f)
 
-  (define/public (set-parent p lbl chkbl?)
+  (define/public (set-parent p lbl chkbl? subm)
     (set! parent p)
     (set! label lbl)
     (set! checkable? chkbl?)
     id)
+
+  (define/public (set-label hmenu pos str)
+    (if submenu
+        (ModifyMenuW hmenu pos
+                     (bitwise-ior MF_BYPOSITION MF_STRING MF_POPUP)
+                     (cast (send submenu get-hmenu) _HMENU _UINT_PTR)
+                     str)
+        (ModifyMenuW hmenu pos
+                     (bitwise-ior MF_BYPOSITION MF_STRING 
+                                  (GetMenuState hmenu pos MF_BYPOSITION))
+                     id
+                     str)))
+
+  (define/public (set-check hmenu pos on?)
+    (void
+     (CheckMenuItem hmenu pos (bitwise-ior MF_BYPOSITION
+                                           (if on?
+                                               MF_CHECKED
+                                               MF_UNCHECKED)))))
+
+  (define/public (get-check hmenu pos)
+    (let ([s (GetMenuState hmenu pos MF_BYPOSITION)])
+      (not (zero? (bitwise-and s MF_CHECKED)))))
 
   (public [get-id id])
   (define (get-id) id)

@@ -46,7 +46,8 @@
                        hInstance
                        #f))
 
-    (super-new [parent parent]
+    (super-new [callback void]
+               [parent parent]
                [hwnd hwnd]
                [style style])
 

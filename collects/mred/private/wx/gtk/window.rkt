@@ -475,15 +475,15 @@
 
     (define shown? #f)
     (define/public (direct-show on?)
-      (atomically
-       (if on?
-           (gtk_widget_show gtk)
-           (gtk_widget_hide gtk))
-       (set! shown? (and on? #t))
-       (register-child-in-parent on?))
+      (if on?
+          (gtk_widget_show gtk)
+          (gtk_widget_hide gtk))
+      (set! shown? (and on? #t))
+      (register-child-in-parent on?)
       (when on? (reset-child-dcs)))
     (define/public (show on?)
-      (direct-show on?))
+      (atomically
+       (direct-show on?)))
     (define/public (reset-child-dcs) (void))
     (define/public (is-shown?) shown?)
     (define/public (is-shown-to-root?)

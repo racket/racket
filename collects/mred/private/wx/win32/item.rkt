@@ -28,7 +28,12 @@
   (class %
     (inherit on-set-focus
              on-kill-focus
-             try-mouse)
+             try-mouse
+             wndproc)
+
+    (init-field [callback void])
+    (define/public (command e)
+      (callback this e))
 
     (define old-control-procs null)
 
@@ -51,7 +56,7 @@
             (queue-window-event this (lambda () (on-kill-focus)))
             (default w msg wParam lParam)]
            [else
-            (default w msg wParam lParam)])))
+            (wndproc w msg wParam lParam default)])))
     
     (define/public (default-ctlproc w msg wParam lParam)
       (let loop ([l old-control-procs])
@@ -72,6 +77,6 @@
     (define/public (set-label s)
       (SetWindowTextW (get-hwnd) s))
     
-    (def/public-unimplemented get-label)
-    (def/public-unimplemented command)))
+    (def/public-unimplemented get-label)))
+
 

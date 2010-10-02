@@ -4,12 +4,14 @@
 (provide _wfun
 	 
 	 _DWORD 	
+	 _UDWORD 	
 	 _ATOM
 	 _WPARAM
 	 _LPARAM
 	 _LRESULT
 	 _BOOL
 	 _UINT
+	 _UINT_PTR
 	 _BYTE
 	 _LONG
 	 _SHORT
@@ -45,12 +47,14 @@
   (_fun #:abi 'stdcall . a))
 
 (define _DWORD _int32)
+(define _UDWORD _uint32)
 (define _ATOM _int)
 (define _WPARAM _long)
 (define _LPARAM _long)
 (define _LRESULT _long)
 (define _BOOL (make-ctype _int (lambda (v) (if v 1 0)) (lambda (v) (not (zero? v)))))
 (define _UINT _uint)
+(define _UINT_PTR _ulong)
 (define _BYTE _uint8)
 (define _HRESULT _int32)
 (define _WCHAR _int16)

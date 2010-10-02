@@ -51,7 +51,8 @@
 
     (SendMessageW hwnd CB_SETCURSEL 0 0)
 
-    (super-new [parent parent]
+    (super-new [callback cb]
+               [parent parent]
                [hwnd hwnd]
                [style style])
 

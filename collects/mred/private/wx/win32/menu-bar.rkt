@@ -23,10 +23,13 @@
 
     (define menus null)
 
-    (def/public-unimplemented set-label-top)
+    (define/public (set-label-top pos str)
+      (void)) ;; FIXME
+      
     (def/public-unimplemented number)
     (def/public-unimplemented enable-top)
-    (def/public-unimplemented delete)
+    (define/public (delete which pos)
+      (void)) ;; FIXME
 
     (public [append-item append])
     (define (append-item m lbl)

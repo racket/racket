@@ -90,7 +90,8 @@
 
   (define hwnd (or panel-hwnd slider-hwnd))
 
-  (super-new [parent parent]
+  (super-new [callback cb]
+             [parent parent]
              [hwnd hwnd]
              [extra-hwnds
               (if panel-hwnd

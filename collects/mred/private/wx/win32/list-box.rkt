@@ -78,7 +78,8 @@
     (for ([s (in-list choices)])
       (SendMessageW/str hwnd LB_ADDSTRING 0 s))
 
-    (super-new [parent parent]
+    (super-new [callback cb]
+               [parent parent]
                [hwnd hwnd]
                [style style])
 

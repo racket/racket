@@ -20,7 +20,10 @@
          ShowWindow
          EnableWindow
          SetWindowTextW
-         SetCursor)
+         SetCursor
+         GetDC
+         ReleaseDC
+         InvalidateRect)
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))
@@ -64,3 +67,8 @@
 
 (define-user32 SetCursor (_wfun _HCURSOR -> _HCURSOR))
 
+(define-user32 GetDC (_wfun  _HWND -> _HDC))
+(define-user32 ReleaseDC (_wfun _HWND _HDC -> _int))
+
+(define-user32 InvalidateRect (_wfun _HWND (_or-null _RECT-pointer) _BOOL -> (r : _BOOL)
+                                     -> (unless r (failed 'InvalidateRect))))

@@ -17,9 +17,6 @@
          request-flush-delay
          cancel-flush-delay)
 
-(define-user32 GetDC (_wfun  _HWND -> _HDC))
-(define-user32 ReleaseDC (_wfun _HWND _HDC -> _int))
-
 (define win32-bitmap%
   (class bitmap%
     (init w h hwnd)
