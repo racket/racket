@@ -12,13 +12,6 @@
          (struct-out t-subst) (struct-out i-subst) (struct-out i-subst/starred) (struct-out i-subst/dotted)
          substitution/c make-simple-substitution)
 
-(define (subst v t e) (substitute t v e))
-
-(d/c (make-simple-substitution vs ts)
-  (([vs (listof symbol?)] [ts (listof Type/c)]) () #:pre-cond (= (length vs) (length ts)) . ->d . [_ substitution/c])
-  (for/hash ([v (in-list vs)] [t (in-list ts)])
-    (values v (t-subst t))))
-
 (d-s/c subst-rhs () #:transparent)
 (d-s/c (t-subst subst-rhs) ([type Type/c]) #:transparent)
 (d-s/c (i-subst subst-rhs) ([types (listof Type/c)]) #:transparent)
@@ -26,6 +19,16 @@
 (d-s/c (i-subst/dotted subst-rhs) ([types (listof Type/c)] [dty Type/c] [dbound symbol?]) #:transparent)
 
 (define substitution/c (hash/c symbol? subst-rhs? #:immutable #t))
+
+(define (subst v t e) (substitute t v e))
+
+(d/c (make-simple-substitution vs ts)
+  (([vs (listof symbol?)] [ts (listof Type/c)]) ()
+   #:pre (vs ts) (= (length vs) (length ts))
+    . ->i . [_ substitution/c])
+  (for/hash ([v (in-list vs)] [t (in-list ts)])
+    (values v (t-subst t))))
+
 
 ;; substitute : Type Name Type -> Type
 (d/c (substitute image name target #:Un [Un (get-union-maker)])
