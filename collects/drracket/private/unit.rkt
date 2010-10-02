@@ -540,7 +540,6 @@ module browser threading seems wrong.
     (define (make-definitions-text%)
       (let ([definitions-super%
               (linked-scroller
-              ((get-program-editor-mixin)
                (text:first-line-mixin
                 (drracket:module-language:module-language-put-file-mixin
                  (scheme:text-mixin
@@ -552,7 +551,8 @@ module browser threading seems wrong.
                        (drracket:rep:drs-autocomplete-mixin
                         (λ (x) x)
                         (text:normalize-paste-mixin
-                         text:info%))))))))))))])
+                         text:info%)))))))))))])
+        ((get-program-editor-mixin)
         (class* definitions-super% (definitions-text<%>)
           (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line)
           
@@ -910,7 +910,7 @@ module browser threading seems wrong.
            (is-a? (drracket:language-configuration:language-settings-language next-settings)
                   drracket:module-language:module-language<%>))
           (inherit set-max-undo-history)
-          (set-max-undo-history 'forever))))
+          (set-max-undo-history 'forever)))))
     
     ;; is-lang-line? : string -> boolean
     ;; given the first line in the editor, this returns #t if it is a #lang line.

@@ -137,35 +137,78 @@ If the namespace does not, they are colored the unbound color.
     ;; adds a begin/end-edit-sequence to the insertion and deletion
     ;;  to ensure that the on-change method isn't called until after
     ;;  the arrows are cleared.
-    (define clearing-text-mixin
-      (mixin ((class->interface text%)) ()
-        
-        (inherit begin-edit-sequence end-edit-sequence)
-        (define/augment (on-delete start len)
-          (begin-edit-sequence)
-          (inner (void) on-delete start len))
-        (define/augment (after-delete start len)
-          (inner (void) after-delete start len)
-          (clean-up)
-          (end-edit-sequence))
-        
-        (define/augment (on-insert start len)
-          (begin-edit-sequence)
-          (inner (void) on-insert start len))
-        (define/augment (after-insert start len)
-          (inner (void) after-insert start len)
-          (clean-up)
-          (end-edit-sequence))
-        
-        (define/private (clean-up)
-          (let ([st (find-syncheck-text this)])
-            (when (and st
-                       (is-a? st drracket:unit:definitions-text<%>))
-              (let ([tab (send st get-tab)])
-                (send tab syncheck:clear-error-message)
-                (send tab syncheck:clear-highlighting)))))
-        
-        (super-new)))
+    (define (clearing-text-mixin super%)
+      (define-local-member-name set-do-cleanup)
+      
+      (define cs-clearing<%>
+        (interface ()
+          set-do-cleanup))
+      
+      ;; the commented out definition of extra
+      ;; is because of PR 11279. When it is fixed, use it
+      ;; instead of this one.
+      (define (extra super%)
+        (class super%
+          (inherit set-do-cleanup)
+          (define/augment (begin-metadata-changes)
+            (set-do-cleanup #f)
+            (inner (void) begin-metadata-changes))
+          (define/augment (end-metadata-changes)
+            (set-do-cleanup #t)
+            (inner (void) end-metadata-changes))
+          (super-new)))
+      
+      #;
+      (define extra
+        (mixin (cs-clearing<%> drracket:unit:definitions-text<%>) ()
+          (inherit set-do-cleanup)
+          (define/augment (begin-metadata-changes)
+            (set-do-cleanup #f)
+            (inner (void) begin-metadata-changes))
+          (define/augment (end-metadata-changes)
+            (set-do-cleanup #t)
+            (inner (void) end-metadata-changes))
+          (super-new)))
+
+      (define basic
+        (mixin ((class->interface text%)) (cs-clearing<%>)
+          (inherit begin-edit-sequence end-edit-sequence)
+          (define/augment (on-delete start len)
+            (begin-edit-sequence)
+            (inner (void) on-delete start len))
+          (define/augment (after-delete start len)
+            (inner (void) after-delete start len)
+            (clean-up)
+            (end-edit-sequence))
+          
+          (define/augment (on-insert start len)
+            (begin-edit-sequence)
+            (inner (void) on-insert start len))
+          (define/augment (after-insert start len)
+            (inner (void) after-insert start len)
+            (clean-up)
+            (end-edit-sequence))
+          
+          (define do-cleanup #t)
+          (define/public (set-do-cleanup s)
+            (set! do-cleanup s))
+          
+          (define/private (clean-up)
+            (when do-cleanup
+              (let ([st (find-syncheck-text this)])
+                (when (and st
+                           (is-a? st drracket:unit:definitions-text<%>))
+                  (let ([tab (send st get-tab)])
+                    (send tab syncheck:clear-error-message)
+                    (send tab syncheck:clear-highlighting))))))
+          
+          (super-new)))
+      
+      (cond
+        [(implementation? super% drracket:unit:definitions-text<%>)
+         (extra (basic super%))]
+        [else
+         (basic super%)]))
     
     (define make-syncheck-text%
       (λ (super%)
