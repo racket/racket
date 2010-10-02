@@ -42,7 +42,6 @@ TODO
 
 ;; run a thunk, and if an exception is raised, make it possible to cut the
 ;; stack so that the surrounding context is hidden
-(define stack-checkpoint (make-parameter #f))
 (define checkpoints (make-weak-hasheq))
 (define (call-with-stack-checkpoint thunk)
   (define checkpoint #f)
