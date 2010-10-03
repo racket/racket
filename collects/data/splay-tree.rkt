@@ -865,10 +865,13 @@ Top-down splay
       ;; condensing copy
       (v:set-next! mem* NODE-SIZE)
       (let loop ([n root])
-        (when n
-          (let ([n* (vnode! mem* (vnode-key mem n) (vnode-value mem n) #f #f)])
-            (set-vnode-left! mem* n* (loop (vnode-left mem n)))
-            (set-vnode-right! mem* n* (loop (vnode-right mem n))))))
+        (cond [n
+               (let ([n* (vnode! mem* (vnode-key mem n) (vnode-value mem n) #f #f)])
+                 (set-vnode-left! mem* n* (loop (vnode-left mem n)))
+                 (set-vnode-right! mem* n* (loop (vnode-right mem n)))
+                 n*)]
+              [else #f]))
+      (set-compact-splay-tree-root! s NODE-SIZE)
       (set-compact-splay-tree-mem! s mem*))))
 
 ;; ========

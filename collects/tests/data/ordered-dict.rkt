@@ -227,12 +227,12 @@
 
 (provide performance)
 
-(define (deep-test [test 'splay])
+(define (deep-test [test 'splay] [count 100])
   (let ([mk (case test
               ((splay) mksplay)
               ((adj) mkadj)
               ((skip) mkskip))])
-    (for ([seed (in-range 100)])
+    (for ([seed (in-range count)])
       (random-seed seed)
       (printf "seed = ~s\n" seed)
       (p "test" dict-test mk #t))))
