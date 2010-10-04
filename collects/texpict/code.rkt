@@ -309,26 +309,26 @@
 	   mode 'id
 	   (text (substring str 1) `(italic . ,(current-code-font)) (current-font-size)))]
 	 [(and (code-scripts-enabled)
-	       (regexp-match #rx"^(.+)_([0-9a-z]+)\\^([0-9a-z]+)$" str))
+	       (regexp-match #rx"^(.+)_([0-9a-z()+-]+)\\^([0-9a-z()+-]+)$" str))
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (cc-superimpose
 			    (text (caddr m) `(subscript . ,(current-code-font)) (current-font-size))
 			    (text (cadddr m) `(superscript . ,(current-code-font)) (current-font-size)))))]
 	 [(and (code-scripts-enabled)
-	       (regexp-match #rx"^(.+)\\^([0-9a-z]+)_([0-9a-z]+)$" str))
+	       (regexp-match #rx"^(.+)\\^([0-9a-z()+-]+)_([0-9a-z()+-]+)$" str))
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (cc-superimpose
 			    (text (cadddr m) `(subscript . ,(current-code-font)) (current-font-size))
 			    (text (caddr m) `(superscript . ,(current-code-font)) (current-font-size)))))]
 	 [(and (code-scripts-enabled)
-	       (regexp-match #rx"^(.+)\\^([0-9a-z]+)$" str))
+	       (regexp-match #rx"^(.+)\\^([0-9a-z()+-]+)$" str))
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (text (caddr m) `(superscript . ,(current-code-font)) (current-font-size))))]
 	 [(and (code-scripts-enabled)
-	       (regexp-match #rx"^(.+)_([0-9a-z]+)$" str))
+	       (regexp-match #rx"^(.+)_([0-9a-z()+-]+)$" str))
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (text (caddr m) `(subscript . ,(current-code-font)) (current-font-size))))]
