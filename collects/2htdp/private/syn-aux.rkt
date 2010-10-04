@@ -78,8 +78,16 @@
                  ;; -- the coercion that comes with it 
                  (values (cadar Spec) (caddar Spec))
                  (loop (cdr kwds) (cdr Spec)))))
-         (list key (coercion (cdr x))))
+         (list (mk-kwd key) (coercion (cdr x))))
        spec))
+
+;; Syntax -> Syntax 
+;; eventually: convert syntax to keyword
+(define (mk-kwd key)
+  (define key:id (symbol->string (syntax-e key)))
+  (define key:wd (string->keyword key:id))
+  ;  (displayln key:wd)
+  key)
 
 ;; Symbol Syntax Syntax [Listof Kw] -> true
 ;; effect: if state0 looks like a clause, raise special error 
