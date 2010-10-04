@@ -1689,12 +1689,12 @@
                                        (redex-match L (pvar_10 bool_10 eq_10 ... (= (side-condition eq_2 (redex-match L (eqs_4 ... (,(term eq_2) #t eq_4 ...) eqs_5 ...) (term ((pvar bool eq ...) ...))))) eq_11 ...) x)
                                        (redex-match L (pvar_10 bool_10 eq_10 ... (cons 
                                                                                   (side-condition  eq_2 (redex-match L (eqs_4 ... (,(term eq_2) #t eq_4 ...) eqs_5 ...) (term ((pvar bool eq ...) ...))))
-                                                                                  (side-condition  eq_6 (redex-match L (eqs_6 ... (,(term eq_6) #t eq_6 ...) eqs_7 ...) (term ((pvar bool eq ...) ...))))
+                                                                                  (side-condition  eq_6 (redex-match L (eqs_6 ... (,(term eq_6) #t eq_8 ...) eqs_7 ...) (term ((pvar bool eq ...) ...))))
                                                                                   )
                                                                eq_11 ...) x)
                                        (redex-match L (pvar_10 bool_10 eq_10 ... (plug 
                                                                                   (side-condition  eq_2 (redex-match L (eqs_4 ... (,(term eq_2) #t eq_4 ...) eqs_5 ...) (term ((pvar bool eq ...) ...))))
-                                                                                  (side-condition  eq_6 (redex-match L (eqs_6 ... (,(term eq_6) #t eq_6 ...) eqs_7 ...) (term ((pvar bool eq ...) ...))))
+                                                                                  (side-condition  eq_6 (redex-match L (eqs_6 ... (,(term eq_6) #t eq_8 ...) eqs_7 ...) (term ((pvar bool eq ...) ...))))
                                                                                   )
                                                                eq_11 ...) x)
                                        )
@@ -1713,12 +1713,12 @@
                                        (redex-match L (pvar_10 bool_10 eq_10 ... (= (side-condition eq_2 (redex-match L (eqs_4 ... (,(term eq_2) #t eq_4 ...) eqs_5 ...) (term ((pvar bool eq ...) ...))))) eq_11 ...) x)
                                        (redex-match L (pvar_10 bool_10 eq_10 ... (cons 
                                                                                   (side-condition  eq_2 (redex-match L (eqs_4 ... (,(term eq_2) #t eq_4 ...) eqs_5 ...) (term ((pvar bool eq ...) ...))))
-                                                                                  (side-condition  eq_6 (redex-match L (eqs_6 ... (,(term eq_6) #t eq_6 ...) eqs_7 ...) (term ((pvar bool eq ...) ...))))
+                                                                                  (side-condition  eq_6 (redex-match L (eqs_6 ... (,(term eq_6) #t eq_8 ...) eqs_7 ...) (term ((pvar bool eq ...) ...))))
                                                                                   )
                                                                eq_11 ...) x)
                                        (redex-match L (pvar_10 bool_10 eq_10 ... (plug 
                                                                                   (side-condition  eq_2 (redex-match L (eqs_4 ... (,(term eq_2) #t eq_4 ...) eqs_5 ...) (term ((pvar bool eq ...) ...))))
-                                                                                  (side-condition  eq_6 (redex-match L (eqs_6 ... (,(term eq_6) #t eq_6 ...) eqs_7 ...) (term ((pvar bool eq ...) ...))))
+                                                                                  (side-condition  eq_6 (redex-match L (eqs_6 ... (,(term eq_6) #t eq_8 ...) eqs_7 ...) (term ((pvar bool eq ...) ...))))
                                                                                   )
                                                                eq_11 ...) x)
                                        )
