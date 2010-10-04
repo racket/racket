@@ -187,7 +187,6 @@
     [#:frees (λ (frees) (combine-frees (map frees (list t f o))))]
     [#:fold-rhs (*Result (type-rec-id t) (filter-rec-id f) (object-rec-id o))])
 
-;; types : Listof[Type]
 (dt Values ([rs (listof Result?)]) 
     [#:frees (λ (f) (combine-frees (map f rs)))]
     [#:fold-rhs (*Values (map type-rec-id rs))])
