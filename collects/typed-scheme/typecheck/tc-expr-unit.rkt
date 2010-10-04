@@ -2,7 +2,6 @@
 
 
 (require (rename-in "../utils/utils.rkt" [private private-in])
-         syntax/kerncase mzlib/trace
          racket/match (prefix-in - scheme/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt" "tc-funapp.rkt"
@@ -149,8 +148,9 @@
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
-;; tc-id : identifier -> tc-result
-(define (tc-id id)
+;; tc-id : identifier -> tc-results
+(d/c (tc-id id)
+  (--> identifier? tc-results?)
   (let* ([ty (lookup-type/lexical id)])
     (ret ty
          (make-FilterSet (-not-filter (-val #f) id) 
@@ -208,7 +208,8 @@
                     t)]))))
 
 ;; tc-expr/check : syntax tc-results -> tc-results
-(define (tc-expr/check/internal form expected)
+(d/c (tc-expr/check/internal form expected)
+  (--> syntax? tc-results? tc-results?)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax-object->datum form))
     ;; the argument must be syntax
@@ -219,13 +220,14 @@
            (lambda args
              (define te (apply ret args))
              (check-below te expected))])
-      (kernel-syntax-case* form #f 
-        (letrec-syntaxes+values find-method/who) ;; letrec-syntaxes+values is not in kernel-syntax-case literals
+      (syntax-parse form
+        #:literal-sets (kernel-literals)
+        #:literals (find-method/who)
         [stx
-         (syntax-property form 'typechecker:with-handlers)
+         #:when (syntax-property form 'typechecker:with-handlers)
          (check-subforms/with-handlers/check form expected)]
         [stx 
-         (syntax-property form 'typechecker:ignore-some)
+         #:when (syntax-property form 'typechecker:ignore-some)
          (let ([ty (check-subforms/ignore form)])
            (unless ty
              (int-err "internal error: ignore-some"))
@@ -251,7 +253,7 @@
         [(#%variable-reference . _)
          (tc-error/expr #:return (ret expected) "#%variable-reference is not supported by Typed Scheme")]
         ;; identifiers
-        [x (identifier? #'x) 
+        [x:identifier
            (check-below (tc-id #'x) expected)]
         ;; w-c-m
         [(with-continuation-mark e1 e2 e3)
@@ -270,31 +272,31 @@
         [(begin e . es) (tc-exprs/check (syntax->list #'(e . es)) expected)]
         [(begin0 e . es)
          (begin (tc-exprs/check (syntax->list #'es) Univ)
-                (tc-expr/check #'e expected))]          
+                (tc-expr/check #'e expected))]
         ;; if
         [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
         ;; lambda
         [(#%plain-lambda formals . body)
-         (tc/lambda/check form #'(formals) #'(body) expected)]        
+         (tc/lambda/check form #'(formals) #'(body) expected)]
         [(case-lambda [formals . body] ...)
-         (tc/lambda/check form #'(formals ...) #'(body ...) expected)] 
+         (tc/lambda/check form #'(formals ...) #'(body ...) expected)]
         ;; send
         [(let-values (((_) meth))
-           (let-values (((_ _) (#%plain-app find-method/who _ rcvr _)))
+           (let-values (((_ _) (~and find-app (#%plain-app find-method/who _ rcvr _))))
              (#%plain-app _ _ args ...)))
-         (tc/send #'rcvr #'meth #'(args ...) expected)]        
+         (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
         ;; let
         [(let-values ([(name ...) expr] ...) . body)
          (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
         [(letrec-values ([(name) expr]) name*)
-         (and (identifier? #'name*) (free-identifier=? #'name #'name*))
+         #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*))
          (match expected
            [(tc-result1: t)
             (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
-           [(tc-results: ts) 
+           [(tc-results: ts)
             (tc-error/expr #:return (ret (Un)) "Expected ~a values, but got only 1" (length ts))])]
         [(letrec-values ([(name ...) expr] ...) . body)
-         (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]        
+         (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]
         ;; other
         [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a\n" (syntax->datum form))]
         ))))
@@ -307,17 +309,18 @@
   ;; do the actual typechecking of form
   ;; internal-tc-expr : syntax -> Type    
   (define (internal-tc-expr form)
-    (kernel-syntax-case* form #f 
-      (letrec-syntaxes+values #%datum #%app lambda find-method/who) ;; letrec-syntaxes+values is not in kernel-syntax-case literals
+    (syntax-parse form
+      #:literal-sets (kernel-literals)
+      #:literals (#%app lambda find-method/who)
       ;; 
       [stx
-       (syntax-property form 'typechecker:with-handlers)
+       #:when (syntax-property form 'typechecker:with-handlers)
        (let ([ty (check-subforms/with-handlers form)])
          (unless ty
            (int-err "internal error: with-handlers"))
          ty)]
       [stx 
-       (syntax-property form 'typechecker:ignore-some)
+       #:when (syntax-property form 'typechecker:ignore-some)
        (let ([ty (check-subforms/ignore form)])
          (unless ty
            (int-err "internal error: ignore-some"))
@@ -342,9 +345,9 @@
        (tc/lambda form #'(formals ...) #'(body ...))]  
       ;; send
       [(let-values (((_) meth))
-         (let-values (((_ _) (#%plain-app find-method/who _ rcvr _)))
+         (let-values (((_ _) (~and find-app (#%plain-app find-method/who _ rcvr _))))
            (#%plain-app _ _ args ...)))
-       (tc/send #'rcvr #'meth #'(args ...))]
+       (tc/send #'find-app #'rcvr #'meth #'(args ...))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body form)]
@@ -365,7 +368,7 @@
       [(#%variable-reference . _)
        (tc-error/expr #:return (ret (Un)) "#%variable-reference is not supported by Typed Scheme")]
       ;; identifiers
-      [x (identifier? #'x) (tc-id #'x)]                 
+      [x:identifier (tc-id #'x)]
       ;; application        
       [(#%plain-app . _) (tc/app form)]
       ;; if
@@ -402,17 +405,20 @@
            (add-typeof-expr form r)
            r)]))))
 
-(define (tc/send rcvr method args [expected #f])
+(d/c (tc/send form rcvr method args [expected #f])
+  (-->* (syntax? syntax? syntax? syntax?) ((-or/c tc-results? #f)) tc-results?)
   (match (tc-expr rcvr)
     [(tc-result1: (Instance: (and c (Class: _ _ methods))))
      (match (tc-expr method)
        [(tc-result1: (Value: (? symbol? s)))
         (let* ([ftype (cond [(assq s methods) => cadr]
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
-               [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)])
-          (if expected
-              (begin (check-below ret-ty expected) expected)
-              ret-ty))]
+               [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)]
+               [retval (if expected
+                           (begin (check-below ret-ty expected) expected)
+                           ret-ty)])
+          (add-typeof-expr form retval)
+          retval)]
        [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
     [(tc-result1: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
 
