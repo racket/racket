@@ -1246,10 +1246,12 @@
       ;;  test coverage
       ;;
       
+      ;; WARNING: much code copied from "collects/lang/htdp-langs.rkt"
+      
       (define test-coverage-enabled (make-parameter #t))
       (define current-test-coverage-info (make-thread-cell #f))
       
-      (define (initialize-test-coverage-point key expr)
+      (define (initialize-test-coverage-point expr)
         (unless (thread-cell-ref current-test-coverage-info)
           (let ([ht (make-hasheq)])
             (thread-cell-set! current-test-coverage-info ht)
@@ -1272,15 +1274,19 @@
                        (send rep set-test-coverage-info ht on-sd off-sd #f)))))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
-            (hash-set! ht key (mcons #f expr)))))
+            (hash-set! ht expr #;(box #f) (mcons #f #f)))))
       
-      (define (test-covered key)
-        (let ([ht (thread-cell-ref current-test-coverage-info)])
-          (and ht
-               (let ([v (hash-ref ht key)])
-                 (and v
-                      (with-syntax ([v v])
-                        #'(set-mcar! v #t)))))))
+      (define (test-covered expr)
+        (let* ([ht (or (thread-cell-ref current-test-coverage-info)
+                       (error 'deinprogramm-langs
+                              "internal-error: no test-coverage table"))]
+               [v (hash-ref ht expr
+                    (lambda ()
+                      (error 'deinprogramm-langs
+                             "internal-error: expression not found: ~.s"
+                             expr)))])
+          #; (lambda () (set-box! v #t))
+          (with-syntax ([v v]) #'(#%plain-app set-mcar! v #t))))
       
       (define-values/invoke-unit et:stacktrace@
         (import et:stacktrace-imports^) (export (prefix et: et:stacktrace^)))

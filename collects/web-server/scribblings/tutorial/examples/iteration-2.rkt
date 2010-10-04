@@ -2,13 +2,13 @@
 
 ;; A blog is a (listof post)
 ;; and a post is a (make-post title body)
-(define-struct post (title body))
+(struct post (title body))
 
 ;; BLOG: blog
 ;; The static blog.
 (define BLOG 
-  (list (make-post "First Post" "This is my first post")
-        (make-post "Second Post" "This is another post")))
+  (list (post "First Post" "This is my first post")
+        (post "Second Post" "This is another post")))
 
 ;; start: request -> html-response
 ;; Consumes a request and produces a page that displays all of the
@@ -21,7 +21,7 @@
                   [else
                    BLOG]))]
     (render-blog-page a-blog request)))
-  
+
 
 ;; can-parse-post?: bindings -> boolean
 ;; Produces true if bindings contains values for 'title and 'body.
@@ -33,8 +33,8 @@
 ;; parse-post: bindings -> post
 ;; Consumes a bindings, and produces a post out of the bindings.
 (define (parse-post bindings)
-  (make-post (extract-binding/single 'title bindings)
-             (extract-binding/single 'body bindings)))
+  (post (extract-binding/single 'title bindings)
+        (extract-binding/single 'body bindings)))
 
 ;; render-blog-page: blog request -> html-response
 ;; Consumes a blog and a request, and produces an html-response page
@@ -48,8 +48,6 @@
            (input ((name "title")))
            (input ((name "body")))
            (input ((type "submit")))))))
-
-
 
 ;; render-post: post -> html-response
 ;; Consumes a post, produces an html-response fragment of the post.

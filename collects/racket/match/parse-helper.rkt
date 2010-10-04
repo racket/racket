@@ -85,43 +85,47 @@
         (let ([super (list-ref (extract-struct-info (syntax-local-value
                                                      struct-name))
                                5)])
-          (cond [(equal? super #t) '()] ;; no super type exists
-                [(equal? super #f) '()] ;; super type is unknown
-                [else (cons super (get-lineage super))])))
+          (cond [(equal? super #t) (values #t '())] ;; no super type exists
+                [(equal? super #f) (values #f '())] ;; super type is unknown
+                [else 
+                 (let-values ([(complete? lineage) (get-lineage super)])
+                   (values complete?
+                           (cons super lineage)))])))
       (unless pred
         (raise-syntax-error 'match (format "structure ~a does not have an associated predicate"
                                            (syntax->datum struct-name))
                             stx struct-name))
-      (let* (;; the accessors come in reverse order
-             [acc (reverse acc)]
-             ;; remove the first element, if it's #f
-             [acc (cond [(null? acc) acc]
-                        [(not (car acc)) (cdr acc)]
-                        [else acc])])
-        (make-Struct pred
-                     (syntax-property 
-                      pred 
-                      'disappeared-use (list struct-name))
-                     (get-lineage (cert struct-name))
-                     acc
-                     (cond [(eq? '_ (syntax-e pats))                            
-                            (map make-Dummy acc)]
-                           [(syntax->list pats)
-                            =>
-                            (lambda (ps)
-                              (unless (= (length ps) (length acc))
-                                (raise-syntax-error
-                                 'match
-                                 (format "~a structure ~a: expected ~a but got ~a"
-                                         "wrong number for fields for"
-                                         (syntax->datum struct-name) (length acc)
-                                         (length ps))
-                                 stx pats))
-                              (map parse ps))]
-                           [else (raise-syntax-error
-                                  'match
-                                  "improper syntax for struct pattern"
-                                  stx pats)]))))))
+      (let-values ([(complete? lineage) (get-lineage (cert struct-name))])
+        (let* (;; the accessors come in reverse order
+               [acc (reverse acc)]
+               ;; remove the first element, if it's #f
+               [acc (cond [(null? acc) acc]
+                          [(not (car acc)) (cdr acc)]
+                          [else acc])])
+          (make-Struct pred
+                       (syntax-property 
+                        pred 
+                        'disappeared-use (list struct-name))
+                       lineage complete?
+                       acc
+                       (cond [(eq? '_ (syntax-e pats))                            
+                              (map make-Dummy acc)]
+                             [(syntax->list pats)
+                              =>
+                              (lambda (ps)
+                                (unless (= (length ps) (length acc))
+                                  (raise-syntax-error
+                                   'match
+                                   (format "~a structure ~a: expected ~a but got ~a"
+                                           "wrong number for fields for"
+                                           (syntax->datum struct-name) (length acc)
+                                           (length ps))
+                                   stx pats))
+                                (map parse ps))]
+                             [else (raise-syntax-error
+                                    'match
+                                    "improper syntax for struct pattern"
+                                    stx pats)])))))))
 
 (define (trans-match pred transformer pat)
   (make-And (list (make-Pred pred) (make-App transformer pat))))

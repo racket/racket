@@ -135,7 +135,7 @@
                   (if launch-path 
                       (string-append server-url launch-path)
                       server-url))
-          (printf "Click 'Stop' at any time to terminate the Web Server.\n"))
+          (printf "Stop this program at any time to terminate the Web Server.\n"))
         (let ([bye (lambda ()
                      (when banner? (printf "\nWeb Server stopped.\n"))
                      (shutdown-server))])

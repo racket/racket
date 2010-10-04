@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (for-template scheme/base "runtime.rkt" scheme/stxparam)
+(require (for-template scheme/base "runtime.rkt" scheme/stxparam racket/unsafe/ops)
          syntax/boundmap
          syntax/stx
          "patterns.rkt"
@@ -60,12 +60,13 @@
       #`[(pred #,x) (let ([tmps (accs #,x)] ...) body)]))
   (cond
     [(eq? 'box k)
-     (compile-con-pat (list #'unbox) #'box? (compose list Box-p))]
+     (compile-con-pat (list #'unsafe-unbox*) #'box? (compose list Box-p))]
     [(eq? 'pair k)
-     (compile-con-pat (list #'car #'cdr) #'pair?
+     (compile-con-pat (list #'unsafe-car #'unsafe-cdr) #'pair?
                       (lambda (p) (list (Pair-a p) (Pair-d p))))]
     [(eq? 'mpair k)
-     (compile-con-pat (list #'mcar #'mcdr) #'mpair?
+     ; XXX These should be unsafe-mcar* when mpairs have chaperones
+     (compile-con-pat (list #'unsafe-mcar #'unsafe-mcdr) #'mpair?
                       (lambda (p) (list (MPair-a p) (MPair-d p))))]
     [(eq? 'string k)  (constant-pat #'string?)]
     [(eq? 'number k)  (constant-pat #'number?)]
@@ -104,10 +105,10 @@
                                    esc)]
                                  [(n ...) ns])
                      #`[(#,arity)
-                        (let ([tmps (vector-ref #,x n)] ...)
+                        (let ([tmps (unsafe-vector*-ref #,x n)] ...)
                           body)]))))])])
        #`[(vector? #,x)
-          (case (vector-length #,x)
+          (case (unsafe-vector*-length #,x)
             clauses ...
             [else (#,esc)])])]
     ;; it's a structure
@@ -115,6 +116,9 @@
      ;; all the rows are structures with the same predicate
      (let* ([s (Row-first-pat (car rows))]
             [accs (Struct-accessors s)]
+            [accs (if (Struct-complete? s)
+                      (build-list (length accs) (λ (i) #`(λ (x) (unsafe-struct*-ref x #,i))))
+                      accs)]
             [pred (Struct-pred s)])
        (compile-con-pat accs pred Struct-ps))]
     [else (error 'match-compile "bad key: ~a" k)]))

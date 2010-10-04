@@ -10,7 +10,7 @@
   (with-mark
    
    test-coverage-enabled
-   test-covered   
+   test-covered
    initialize-test-coverage-point
    
    profile-key
@@ -73,33 +73,28 @@
   
   
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       ;; Test case coverage instrumenter
+  ;; Test case coverage instrumenter
  
-       ;; The next procedure is called by `annotate' and `annotate-top' to wrap
-       ;; expressions with test suite coverage information.  Returning the
-       ;; first argument means no tests coverage information is collected.
+  ;; The next procedure is called by `annotate' and `annotate-top' to wrap
+  ;; expressions with test suite coverage information.  Returning the
+  ;; first argument means no tests coverage information is collected.
  
-       ;; test-coverage-point : syntax syntax phase -> syntax
-       ;; sets a test coverage point for a single expression
-       (define (test-coverage-point body expr phase)
-         (if (and (test-coverage-enabled)
-                  (zero? phase)
-                  (syntax-position expr))
-             (let* ([key (gensym 'test-coverage-point)])
-               (initialize-test-coverage-point key expr)
-               (let ([thunk (test-covered key)])
-                 (cond
-                   [(procedure? thunk)
-                    (with-syntax ([body body]
-                                  [thunk thunk])
-                      #'(begin (#%plain-app thunk) body))]
-                   [(syntax? thunk)
-                    (with-syntax ([body body]
-                                  [thunk thunk])
-                      #'(begin thunk body))]
-                   [else
-                    body])))
-             body))
+  ;; test-coverage-point : syntax syntax phase -> syntax
+  ;; sets a test coverage point for a single expression
+  (define (test-coverage-point body expr phase)
+    (if (and (test-coverage-enabled)
+             (zero? phase)
+             (syntax-position expr))
+      (begin (initialize-test-coverage-point expr)
+             (let ([thunk (test-covered expr)])
+               (cond [(procedure? thunk)
+                      (with-syntax ([body body] [thunk thunk])
+                        #'(begin (#%plain-app thunk) body))]
+                     [(syntax? thunk)
+                      (with-syntax ([body body] [thunk thunk])
+                        #'(begin thunk body))]
+                     [else body])))
+      body))
 
 
 
@@ -227,39 +222,32 @@
     (let ([p (syntax-property orig 'method-arity-error)]
           [p2 (syntax-property orig 'inferred-name)])
       (let ([new (if p
-                     (syntax-property new 'method-arity-error p)
-                     new)])
+                   (syntax-property new 'method-arity-error p)
+                   new)])
         (if p2
             (syntax-property new 'inferred-name p2)
             new))))
   
   (define (annotate-let expr phase varss-stx rhss-stx bodys-stx)
     (let ([varss (syntax->list varss-stx)]
-          [rhss (syntax->list rhss-stx)]
+          [rhss  (syntax->list rhss-stx)]
           [bodys (syntax->list bodys-stx)])
       (let ([rhsl (map
                    (lambda (vars rhs)
                      (annotate-named
-                      (syntax-case vars ()
-                        [(id)
-                         (syntax id)]
-                        [_else #f])
+                      (syntax-case vars () [(id) (syntax id)] [_else #f])
                       rhs
                       phase))
                    varss
                    rhss)]
-            [bodyl (map
-                    (lambda (body)
-                      (annotate body phase))
-                    bodys)])
+            [bodyl (map (lambda (body) (annotate body phase))
+                        bodys)])
         (rebuild expr (append (map cons bodys bodyl)
                               (map cons rhss rhsl))))))
   
   (define (annotate-seq expr bodys-stx annotate phase)
     (let* ([bodys (syntax->list bodys-stx)]
-           [bodyl (map (lambda (b)
-                         (annotate b phase))
-                       bodys)])
+           [bodyl (map (lambda (b) (annotate b phase)) bodys)])
       (rebuild expr (map cons bodys bodyl))))
   
   (define orig-inspector (current-code-inspector))
@@ -268,45 +256,30 @@
     (syntax-recertify new orig orig-inspector #f))
   
   (define (rebuild expr replacements)
-    (let loop ([expr expr]
-               [same-k (lambda () expr)]
-               [diff-k (lambda (x) x)])
+    (let loop ([expr expr] [same-k (lambda () expr)] [diff-k (lambda (x) x)])
       (let ([a (assq expr replacements)])
-        (if a
-            (diff-k (cdr a))
-            (cond
-              [(pair? expr) (loop (car expr)
-                                  (lambda ()
-                                    (loop (cdr expr)
-                                          same-k
-                                          (lambda (y)
-                                            (diff-k (cons (car expr) y)))))
-                                  (lambda (x)
-                                    (loop (cdr expr)
-                                          (lambda ()
-                                            (diff-k (cons x (cdr expr))))
-                                          (lambda (y)
-                                            (diff-k (cons x y))))))]
-              [(vector? expr)
-               (loop (vector->list expr)
-                     same-k
-                     (lambda (x) (diff-k (list->vector x))))]
-              [(box? expr) (loop (unbox expr)
-                                 same-k
-                                 (lambda (x)
-                                   (diff-k (box x))))]
-              [(syntax? expr) (if (identifier? expr)
-                                  (same-k)
-                                  (loop (syntax-e expr)
-                                        same-k
-                                        (lambda (x)
-                                          (diff-k
-                                           (datum->syntax
-                                            expr
-                                            x
-                                            expr
-                                            expr)))))]
-              [else (same-k)])))))
+        (cond
+          [a (diff-k (cdr a))]
+          [(pair? expr)
+           (loop (car expr)
+                 (lambda ()
+                   (loop (cdr expr) same-k
+                         (lambda (y) (diff-k (cons (car expr) y)))))
+                 (lambda (x)
+                   (loop (cdr expr)
+                         (lambda () (diff-k (cons x (cdr expr))))
+                         (lambda (y) (diff-k (cons x y))))))]
+          [(vector? expr)
+           (loop (vector->list expr) same-k
+                 (lambda (x) (diff-k (list->vector x))))]
+          [(box? expr)
+           (loop (unbox expr) same-k (lambda (x) (diff-k (box x))))]
+          [(syntax? expr)
+           (if (identifier? expr)
+             (same-k)
+             (loop (syntax-e expr) same-k
+                   (lambda (x) (diff-k (datum->syntax expr x expr expr)))))]
+          [else (same-k)]))))
   
   (define (append-rebuild expr end)
     (cond
