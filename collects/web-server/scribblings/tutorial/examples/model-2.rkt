@@ -2,25 +2,25 @@
 
 ;; A blog is a (make-blog home posts)
 ;; where home is a string, posts is a (listof post)
-(define-struct blog (home posts) #:mutable #:prefab)
+(struct blog (home posts) #:mutable #:prefab)
 
 ;; and post is a (make-post blog title body comments)
 ;; where title is a string, body is a string,
 ;; and comments is a (listof string)
-(define-struct post (title body comments) #:mutable #:prefab)
+(struct post (title body comments) #:mutable #:prefab)
 
 ;; initialize-blog! : path? -> blog
 ;; Reads a blog from a path, if not present, returns default
 (define (initialize-blog! home)
   (local [(define (log-missing-exn-handler exn)
-            (make-blog
+            (blog
              (path->string home)
-             (list (make-post "First Post"
-                              "This is my first post"
-                              (list "First comment!"))
-                   (make-post "Second Post"
-                              "This is another post"
-                              (list)))))
+             (list (post "First Post"
+                         "This is my first post"
+                         (list "First comment!"))
+                   (post "Second Post"
+                         "This is another post"
+                         (list)))))
           (define the-blog
             (with-handlers ([exn? log-missing-exn-handler])
               (with-input-from-file home read)))]
@@ -41,7 +41,7 @@
 (define (blog-insert-post! a-blog title body)
   (set-blog-posts! 
    a-blog
-   (cons (make-post title body empty) (blog-posts a-blog)))
+   (cons (post title body empty) (blog-posts a-blog)))
   (save-blog! a-blog))
 
 ;; post-insert-comment!: blog post string -> void

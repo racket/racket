@@ -19,22 +19,22 @@
                     ,(render-posts make-url)
                     (form ((action
                             ,(make-url insert-post-handler)))
-                     (input ((name "title")))
-                     (input ((name "body")))
-                     (input ((type "submit")))))))
+                          (input ((name "title")))
+                          (input ((name "body")))
+                          (input ((type "submit")))))))
           
           ;; parse-post: bindings -> post
           ;; Extracts a post out of the bindings.
           (define (parse-post bindings)
-            (make-post (extract-binding/single 'title bindings)
-                       (extract-binding/single 'body bindings)
-                       (list)))
+            (post (extract-binding/single 'title bindings)
+                  (extract-binding/single 'body bindings)
+                  (list)))
           
           (define (insert-post-handler request)
             (blog-insert-post!
              BLOG (parse-post (request-bindings request)))
             (render-blog-page (redirect/get)))]
-
+    
     (send/suspend/dispatch response-generator)))
 
 ;; render-post-detail-page: post request -> html-response
@@ -65,10 +65,10 @@
              (parse-comment (request-bindings request))
              a-post
              request))
-
+          
           (define (back-handler request)
             (render-blog-page request))]
-
+    
     (send/suspend/dispatch response-generator)))
 
 ;; render-confirm-add-comment-page :
@@ -97,7 +97,7 @@
           
           (define (cancel-handler request)
             (render-post-detail-page a-post request))]
-
+    
     (send/suspend/dispatch response-generator)))
 
 ;; render-post: post (handler -> string) -> html-response

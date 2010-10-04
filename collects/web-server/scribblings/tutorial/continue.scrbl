@@ -62,9 +62,9 @@ By the end of this tutorial, we'll have a simple blogging application.
 We start by considering our data definitions.  We want to represent a
 list of posts.  Let's say that a post is:
 
-@racketblock[(define-struct post (title body))]
+@racketblock[(struct post (title body))]
 
-@(defstruct post ([title string?] [body string?]))
+@(defstruct* post ([title string?] [body string?]))
 
 @bold{Exercise.} Make a few examples of posts.
 
@@ -75,8 +75,8 @@ A blog, then, will be a list of posts:
 As a very simple example of a blog:
 
 @racketblock[
-(define BLOG (list (make-post "First Post!"
-                              "Hey, this is my first post!")))
+(define BLOG (list (post "First Post!"
+                         "Hey, this is my first post!")))
 ]
 
 Now that we have a sample blog structure, let's get our web
@@ -172,7 +172,7 @@ an @racket[html-response] representing that content.
 As an example, we want:
 
 @racketblock[
-    (render-post (make-post "First post!" "This is a first post."))
+    (render-post (post "First post!" "This is a first post."))
 ]
 
 to produce:
@@ -229,8 +229,8 @@ should produce:
 While
 
 @racketblock[
-(render-posts (list (make-post "Post 1" "Body 1")
-                    (make-post "Post 2" "Body 2")))
+(render-posts (list (post "Post 1" "Body 1")
+                    (post "Post 2" "Body 2")))
 ]
 
 should produce:
@@ -441,9 +441,9 @@ Earlier, we had said that a @racket[blog] was a list of @racket[post]s,
 but because we want to allow the blog to be changed, let's revisit our
 definition so that a blog is a mutable structure:
 
-@racketblock[(define-struct blog (posts) #:mutable)]
+@racketblock[(struct blog (posts) #:mutable)]
 
-@defstruct[blog ([posts (listof post?)])]
+@defstruct*[blog ([posts (listof post?)])]
 
 Mutable structures provide functions to change the fields of a
 structure; in this case, we now have a structure mutator called
@@ -484,7 +484,7 @@ the same blog.
 Next, let's extend the application so that each post can hold a list
 of comments.  We refine the data definition of a blog to be:
 
-@defstruct[post ([title string?] [body string?] [comments (listof string?)]) #:mutable]
+@defstruct*[post ([title string?] [body string?] [comments (listof string?)]) #:mutable]
 
 @bold{Exercise.} Write the updated data structure definition for posts.  Make
 sure to make the structure mutable, since we intend to add comments to
@@ -504,7 +504,7 @@ comments in an itemized list.
 
 @bold{Exercise.} Because we've extended a post to include comments, other
 post-manipulating parts of the application may need to be adjusted,
-such as uses of @racket[make-post].  Identify and fix any other part of the
+such as uses of @racket[post].  Identify and fix any other part of the
 application that needs to accommodate the post's new structure.
 
 @centerline{------------}
@@ -736,8 +736,8 @@ between the model of our blog, and the web application that uses that
 model.  Let's isolate the model: it's all the stuff near the top:
 
 @racketblock[
-    (define-struct blog (posts) #:mutable)
-    (define-struct post (title body comments) #:mutable)
+    (struct blog (posts) #:mutable)
+    (struct post (title body comments) #:mutable)
     (define BLOG ...)
     (define (blog-insert-post! ...) ...)
     (define (post-insert-comment! ...) ...)
@@ -794,7 +794,7 @@ started running---which is exactly what we want when restoring the blog data fro
 Our blog structure definition now looks like:
 
 @racketblock[
-    (define-struct blog (posts) #:mutable #:prefab)
+    (struct blog (posts) #:mutable #:prefab)
 ]
 
 Now @racket[blog] structures can be read from the outside world with @racket[read] and written
@@ -809,7 +809,7 @@ At this point, we @emph{can} read and write the blog to disk. Now let's actually
 First, we'll make a place to record in the model where the blog lives on disk. So, we need to change
 the blog structure again. Now it will be:
 
-@defstruct[blog ([home string?] [posts (listof post?)]) #:mutable]
+@defstruct*[blog ([home string?] [posts (listof post?)]) #:mutable]
 
 @bold{Exercise.} Write the new structure definition for blogs.
 
@@ -820,14 +820,14 @@ Then, we'll make a function that allows our application to initialize the blog:
 @code:comment{Reads a blog from a path, if not present, returns default}
 (define (initialize-blog! home)
   (local [(define (log-missing-exn-handler exn)
-            (make-blog
+            (blog
              (path->string home)
-             (list (make-post "First Post"
-                              "This is my first post"
-                              (list "First comment!"))
-                   (make-post "Second Post"
-                              "This is another post"
-                              (list)))))
+             (list (post "First Post"
+                         "This is my first post"
+                         (list "First comment!"))
+                   (post "Second Post"
+                         "This is another post"
+                         (list)))))
           (define the-blog
             (with-handlers ([exn? log-missing-exn-handler])
               (with-input-from-file home read)))]
@@ -983,7 +983,7 @@ By adding a new comments table, we are more in accord with the relational style.
 
 A @racket[blog] structure will simply be a container for the database handle:
 
-@defstruct[blog ([db sqlite:db?])]
+@defstruct*[blog ([db sqlite:db?])]
 
 @bold{Exercise.} Write the @racket[blog] structure definition. (It does not need to be mutable or serializable.)
 
@@ -993,7 +993,7 @@ We can now write the code to initialize a @racket[blog] structure:
 @code:comment{Sets up a blog database (if it doesn't exist)}
 (define (initialize-blog! home)
   (define db (sqlite:open home))
-  (define the-blog (make-blog db))
+  (define the-blog (blog db))
   (with-handlers ([exn? void])
     (sqlite:exec/ignore db
                         (string-append
@@ -1056,7 +1056,7 @@ However, we cannot tell from this structure
 what blog this posts belongs to, and therefore, what database; so, we could not extract the title or body values,
 since we do not know what to query. Therefore, we should associate the blog with each post:
 
-@defstruct[post ([blog blog?] [id integer?])]
+@defstruct*[post ([blog blog?] [id integer?])]
 
 @bold{Exercise.} Write the structure definition for posts.
 
@@ -1067,7 +1067,7 @@ The only function that creates posts is @racket[blog-posts]:
 @code:comment{Queries for the post ids}
 (define (blog-posts a-blog)
   (local [(define (row->post a-row)
-            (make-post 
+            (post 
              a-blog
              (vector-ref a-row 0)))
           (define rows (sqlite:select
