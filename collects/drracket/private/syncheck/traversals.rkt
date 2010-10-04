@@ -1137,18 +1137,6 @@
                         #t
                         'none)))))
 
-          
-          (let ([admin (send src get-admin)])
-            (when admin 
-              (let-values ([(w h) (send admin get-view-size)]
-                           [(x y) (send src position-location (- pos 1))])
-                (send src scroll-editor-to 
-                      (max 0 (- x (* .1 w)))
-                      (max 0 (- y (* .1 h)))
-                      w h
-                      #t
-                      'none))))
-
           (send src set-position (- pos 1) (+ pos span -1))
           (send src end-edit-sequence))))
 
