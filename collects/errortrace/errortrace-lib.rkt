@@ -66,7 +66,7 @@
 ;; expressions with test suite coverage information.  Returning the
 ;; first argument means no tests coverage information is collected.
 
-;; test-coverage-point : syntax syntax -> (values syntax info)
+;; test-coverage-point : syntax syntax integer -> (values syntax info)
 ;; sets a test coverage point for a single expression
 (define (test-coverage-point body expr phase)
   (if (and (test-coverage-enabled) (zero? phase))
@@ -240,10 +240,8 @@
         (with-syntax ([key (datum->syntax #f key (quote-syntax here))]
                       [expr expr]
                       [register-executed-once register-executed-once]);<- 3D!
-          (syntax
-           (begin
-             (register-executed-once 'key)
-             expr))))
+          #'(begin (register-executed-once 'key)
+                   expr)))
       expr))
 
 (define (get-execute-counts)

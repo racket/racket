@@ -85,20 +85,17 @@
          (if (and (test-coverage-enabled)
                   (zero? phase)
                   (syntax-position expr))
-             (let* ([key (gensym 'test-coverage-point)])
-               (initialize-test-coverage-point key expr)
-               (let ([thunk (test-covered key)])
-                 (cond
-                   [(procedure? thunk)
-                    (with-syntax ([body body]
-                                  [thunk thunk])
-                      #'(begin (#%plain-app thunk) body))]
-                   [(syntax? thunk)
-                    (with-syntax ([body body]
-                                  [thunk thunk])
-                      #'(begin thunk body))]
-                   [else
-                    body])))
+             (begin (initialize-test-coverage-point expr)
+                    (let ([thunk (test-covered expr)])
+                      (cond [(procedure? thunk)
+                             (with-syntax ([body body]
+                                           [thunk thunk])
+                               #'(begin (#%plain-app thunk) body))]
+                            [(syntax? thunk)
+                             (with-syntax ([body body]
+                                           [thunk thunk])
+                               #'(begin thunk body))]
+                            [else body])))
              body))
 
 
