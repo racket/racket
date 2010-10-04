@@ -116,6 +116,9 @@
      ;; all the rows are structures with the same predicate
      (let* ([s (Row-first-pat (car rows))]
             [accs (Struct-accessors s)]
+            [accs (if (Struct-complete? s)
+                      (build-list (length accs) (λ (i) #`(λ (x) (unsafe-struct*-ref x #,i))))
+                      accs)]
             [pred (Struct-pred s)])
        (compile-con-pat accs pred Struct-ps))]
     [else (error 'match-compile "bad key: ~a" k)]))
