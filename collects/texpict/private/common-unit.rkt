@@ -1,8 +1,8 @@
-
 #lang scheme/unit
 
   (require scheme/gui/base
-           scheme/class)
+           scheme/class
+           racket/list)
   
   (require "common-sig.ss")
 
@@ -613,8 +613,11 @@
 		      ctl-superimpose
 		      cbl-superimpose)
 	(let ([make-superimpose 
-	       (lambda (get-h get-v get-th)
+	       (lambda (get-h get-v get-th name)
 		 (lambda boxes
+                   (unless (andmap pict? boxes)
+                     (error name "expected all picts as arguments, got ~a"
+                            (apply string-append (add-between (map (λ (x) (format "~e" x)) boxes) " "))))
 		   (let ([max-w (apply max (map pict-width boxes))]
 			 [max-h (apply max (map pict-height boxes))]
 			 [max-a (apply max (map pict-ascent boxes))]
@@ -672,22 +675,22 @@
 	      [tline (lambda (m v md d mac a) (- mac (- v a)))]
 	      [bline (lambda (m v md d mac a) (- md d))]
 	      [c (lambda (m v . rest) (quotient* (- m v) 2))])
-	  (values
-	   (make-superimpose lb rt norm)
-	   (make-superimpose lb lb norm)
-	   (make-superimpose lb c norm)
-	   (make-superimpose lb tline tbase)
-	   (make-superimpose lb bline bbase)
-	   (make-superimpose rt rt norm)
-	   (make-superimpose rt lb norm)
-	   (make-superimpose rt c norm)
-	   (make-superimpose rt tline tbase)
-	   (make-superimpose rt bline bbase)
-	   (make-superimpose c rt norm)
-	   (make-superimpose c lb norm)
-	   (make-superimpose c c norm)
-	   (make-superimpose c tline tbase)
-	   (make-superimpose c bline bbase))))
+          (values
+           (make-superimpose lb rt norm 'lt-superimpose)
+           (make-superimpose lb lb norm 'lb-superimpose)
+           (make-superimpose lb c norm 'lc-superimpose)
+           (make-superimpose lb tline tbase 'ltl-superimpose)
+           (make-superimpose lb bline bbase 'lbl-superimpose)
+           (make-superimpose rt rt norm 'rt-superimpose)
+           (make-superimpose rt lb norm 'rb-superimpose)
+           (make-superimpose rt c norm 'rc-superimpose)
+           (make-superimpose rt tline tbase 'rtl-superimpose)
+           (make-superimpose rt bline bbase 'rbl-superimpose)
+           (make-superimpose c rt norm 'ct-superimpose)
+           (make-superimpose c lb norm 'cb-superimpose)
+           (make-superimpose c c norm 'cc-superimpose)
+           (make-superimpose c tline tbase 'ctl-superimpose)
+           (make-superimpose c bline bbase 'cbl-superimpose))))
 
       (define table
 	(case-lambda
