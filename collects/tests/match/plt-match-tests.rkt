@@ -179,7 +179,7 @@
                     (else #f)))
                 (check-true (origin? (make-point 0 0)))
                 (check-false (origin? (make-point 1 1)))))
-   ; This test ensures that the unsafe struct optimization is correct
+   ; These tests ensures that the unsafe struct optimization is correct
    (test-case "struct patterns (with opaque parent)"
               (let ()
                 (define-struct opq (any))
@@ -191,6 +191,21 @@
                       (else #f)))
                   (check-true (origin? (make-point 'a 0 0)))
                   (check-false (origin? (make-point 'a 1 1))))))
+   (test-case "struct patterns (with fake struct info)"
+              (let ()
+                (define (point? x)
+                  (and (list? x) (= 2 (length x))))
+                (define-syntax point
+                  (list #f #f #'point? (list #'cadr #'car) (list #f #f) #t))
+                (define (origin? pt)
+                  (match pt
+                    ((struct point (0 1)) #t)
+                    (else #f)))
+                (check-true (origin? (list 0 1)))
+                (check-false (origin? (list 1 1)))
+                (check-false (origin? (list 1 1 1)))
+                (check-false (origin? (list 1)))
+                (check-false (origin? 1))))
    ))
 
 (define nonlinear-tests

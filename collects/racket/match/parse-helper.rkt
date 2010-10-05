@@ -106,7 +106,7 @@
                        (syntax-property 
                         pred 
                         'disappeared-use (list struct-name))
-                       lineage complete?
+                       lineage (and (checked-struct-info? v) complete?)
                        acc
                        (cond [(eq? '_ (syntax-e pats))                            
                               (map make-Dummy acc)]
