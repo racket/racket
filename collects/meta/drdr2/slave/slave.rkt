@@ -98,7 +98,7 @@
        (close-output-port op)))))
 
 (define (main)
-  ; commandline
+  ; XXX commandline
   (define port 4532)
   (define *password* "foo")
   ; XXX
