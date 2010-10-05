@@ -1,4 +1,4 @@
-#lang scheme/gui
+#lang racket/gui
 
 #| TODO: 
    -- yield instead of sync
@@ -21,6 +21,8 @@
          "private/stop.ss"
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
+
+(provide (all-from-out "private/keywords.rkt"))
 
 (define-primitive stop-with make-stop-the-world)
 
