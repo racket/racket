@@ -25,7 +25,7 @@ at least theoretically.
  ;; provide macros
  rep utils typecheck infer env private types)
 
-(define optimize? (make-parameter #f))
+(define optimize? (make-parameter #t))
 (define-for-syntax enable-contracts? #f)
 (define show-input? (make-parameter #f))
 

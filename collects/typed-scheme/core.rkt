@@ -20,9 +20,12 @@
 
 (define (mb-core stx)
   (syntax-parse stx
-    [(mb (~optional (~and #:optimize (~bind [opt? #'#t]))) forms ...)
+    [(mb (~optional (~or (~and #:optimize    (~bind [opt? #'#t])) ; kept for backward compatibility
+                         (~and #:no-optimize (~bind [opt? #'#f]))))
+         forms ...)
      (let ([pmb-form (syntax/loc stx (#%plain-module-begin forms ...))])
-       (parameterize ([optimize? (or (optimize?) (attribute opt?))])
+       (parameterize ([optimize? (or (and (not (attribute opt?)) (optimize?))
+                                     (and (attribute opt?) (syntax-e (attribute opt?))))])
          (tc-setup 
           stx pmb-form 'module-begin new-mod tc-module after-code
           (with-syntax*
