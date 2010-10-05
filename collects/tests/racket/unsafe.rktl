@@ -231,6 +231,9 @@
                 #:pre (lambda () (set-box! b 12))
                 #:post (lambda (x) (list x (unbox b)))
                 #:literal-ok? #f)))
+  (test-un 3 'unsafe-unbox* (chaperone-box (box 3)
+                                           (lambda (b v) v)
+                                           (lambda (b v) v)))
 
   (for ([star (list values (add-star "vector"))])
     (test-bin 5 (star 'unsafe-vector-ref) #(1 5 7) 1)
@@ -240,6 +243,13 @@
                 #:pre (lambda () (vector-set! v 2 0)) 
                 #:post (lambda (x) (list x (vector-ref v 2)))
                 #:literal-ok? #f)))
+  (test-bin 5 'unsafe-vector*-ref (chaperone-vector #(1 5 7)
+                                                    (lambda (v i x) x)
+                                                    (lambda (v i x) x))
+            1)
+  (test-un 3 'unsafe-vector*-length (chaperone-vector #(1 5 7)
+                                                      (lambda (v i x) x)
+                                                      (lambda (v i x) x)))
 
   (test-bin 53 'unsafe-bytes-ref #"157" 1)
   (test-un 3 'unsafe-bytes-length #"157")

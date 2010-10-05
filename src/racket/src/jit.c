@@ -6751,8 +6751,10 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
           (void)jit_calli(bad_flvector_length_code);
         else if (for_fx)
           (void)jit_calli(bad_fxvector_length_code);
-        else
+        else {
           (void)jit_calli(bad_vector_length_code);
+          jit_retval(JIT_R0);
+        }
         /* bad_vector_length_code may unpack a proxied object */
 
         __START_TINY_JUMPS__(1);
@@ -6870,6 +6872,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       ref = jit_bnei_i(jit_forward(), JIT_R1, scheme_chaperone_type);
       (void)jit_calli(unbox_code);
       ref2 = jit_jmpi(jit_forward());
+      jit_retval(JIT_R0);
       mz_patch_branch(ref);
       CHECK_LIMIT();
       __END_TINY_JUMPS__(1);

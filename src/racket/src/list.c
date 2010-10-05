@@ -154,7 +154,9 @@ static Scheme_Object *unsafe_mcdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_mcar (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_set_box_star (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *chaperone_hash_key(const char *name, Scheme_Object *table, Scheme_Object *key);
 static Scheme_Object *chaperone_hash_tree_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val);
@@ -781,7 +783,7 @@ scheme_init_unsafe_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant("unsafe-unbox", p, env);
 
-  p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox*", 1, 1);
+  p = scheme_make_immed_prim(unsafe_unbox_star, "unsafe-unbox*", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant("unsafe-unbox*", p, env);
 
@@ -789,7 +791,7 @@ scheme_init_unsafe_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-set-box!", p, env);
 
-  p = scheme_make_immed_prim(unsafe_set_box, "unsafe-set-box*!", 2, 2);
+  p = scheme_make_immed_prim(unsafe_set_box_star, "unsafe-set-box*!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-set-box*!", p, env);
 }
@@ -3434,8 +3436,25 @@ static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[])
   return SCHEME_BOX_VAL(argv[0]);
 }
 
+static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_NP_CHAPERONEP(argv[0]))
+    return chaperone_unbox(argv[0]);
+  else
+    return SCHEME_BOX_VAL(argv[0]);
+}
+
 static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[])
 {
   SCHEME_BOX_VAL(argv[0]) = argv[1];
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_set_box_star (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_NP_CHAPERONEP(argv[0]))
+    chaperone_set_box(argv[0], argv[1]);
+  else
+    SCHEME_BOX_VAL(argv[0]) = argv[1];
   return scheme_void;
 }
