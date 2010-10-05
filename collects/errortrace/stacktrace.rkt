@@ -1,9 +1,9 @@
-#lang scheme/base
-(require scheme/unit
+#lang racket/base
+(require racket/unit
          syntax/kerncase
          syntax/stx
-         (for-template scheme/base)
-         (for-syntax scheme/base)) ; for matching
+         (for-template racket/base)
+         (for-syntax racket/base)) ; for matching
 
 (provide stacktrace@ stacktrace^ stacktrace-imports^)
 (define-signature stacktrace-imports^

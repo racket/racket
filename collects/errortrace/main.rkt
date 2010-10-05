@@ -1,4 +1,3 @@
-
-(module main scheme/base
-  (require "errortrace.ss")
-  (provide (all-from-out "errortrace.ss")))
+#lang racket/base
+(require "errortrace.rkt")
+(provide (all-from-out "errortrace.rkt"))

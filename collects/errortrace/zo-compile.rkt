@@ -1,6 +1,5 @@
-
 (module zo-compile mzscheme
-  (require "errortrace-lib.ss")
+  (require "errortrace-lib.rkt")
   
   (provide zo-compile)
 
@@ -10,6 +9,3 @@
 	(if (null? (use-compiled-file-paths))
 	    (orig stx immediate-eval?)
 	    (orig (errortrace-annotate stx) immediate-eval?))))))
-
-
-

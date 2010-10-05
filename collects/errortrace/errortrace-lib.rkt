@@ -1,15 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Poor man's stack-trace-on-exceptions/profiler.
 ;; See manual for information.
 
-(require "stacktrace.ss"
-         "errortrace-key.ss"
-         scheme/contract
-         scheme/unit
-         scheme/runtime-path
-         (for-template scheme/base)
-         (for-syntax scheme/base))
+(require "stacktrace.rkt"
+         "errortrace-key.rkt"
+         racket/contract
+         racket/unit
+         racket/runtime-path
+         (for-template racket/base)
+         (for-syntax racket/base))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test coverage run-time support
@@ -195,7 +195,7 @@
 ;; Stacktrace instrumenter
 
 (define-runtime-path key-syntax
-  '(lib "errortrace-key-syntax.ss" "errortrace"))
+  '(lib "errortrace-key-syntax.rkt" "errortrace"))
 
 (define dynamic-errortrace-key
   (dynamic-require key-syntax 'errortrace-key-syntax))
@@ -436,7 +436,7 @@
 (define (make-errortrace-compile-handler)
   (let ([orig (current-compile)]
         [reg (namespace-module-registry (current-namespace))])
-    (namespace-attach-module (namespace-anchor->namespace orig-namespace) 'scheme/base)
+    (namespace-attach-module (namespace-anchor->namespace orig-namespace) 'racket/base)
     (namespace-attach-module (namespace-anchor->namespace orig-namespace) 'errortrace/errortrace-key)
     (lambda (e immediate-eval?)
       (orig
