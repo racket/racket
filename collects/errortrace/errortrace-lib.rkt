@@ -11,11 +11,6 @@
          (for-template scheme/base)
          (for-syntax scheme/base))
 
-(define oprintf
-  (let ([op (current-output-port)])
-    (λ args
-      (apply fprintf op args))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test coverage run-time support
 (define test-coverage-enabled (make-parameter #f))
@@ -57,7 +52,7 @@
             #f)))]))
 
 (define (annotate-covered-file filename-path [display-string #f])
-  (annotate-file filename-path 
+  (annotate-file filename-path
                  (map (λ (c) (cons (car c) (if (cdr c) 1 0))) (get-coverage))
                  display-string))
 
@@ -245,11 +240,11 @@
       expr))
 
 (define (get-execute-counts)
-  (hash-map execute-info (lambda (k v) (cons (mcar v)
-                                             (mcdr v)))))
+  (hash-map execute-info
+            (lambda (k v) (cons (mcar v) (mcdr v)))))
 
-(define (annotate-executed-file name [display-string "^.,"])
-  (annotate-file name (get-execute-counts) display-string))
+(define (annotate-executed-file filename-path [display-string "^.,"])
+  (annotate-file filename-path (get-execute-counts) display-string))
 
 ;; shared functionality for annotate-executed-file and annotate-covered-file
 (define (annotate-file name counts display-string)
@@ -372,13 +367,13 @@
   (let* ([sel (if sort-time? cadr car)]
          [counts (sort (filter (lambda (c) (positive? (car c)))
                                (get-profile-results))
-                       (lambda (a b) (< (sel a) (sel b))))]
+                       < #:key sel)]
          [total 0])
     (for-each
      (lambda (c)
        (set! total (+ total (sel c)))
        (printf "=========================================================\n")
-       (printf "time = ~a : no. = ~a : ~e in ~s\n"
+       (printf "time = ~a : no. = ~a : ~.s in ~s\n"
                (cadr c) (car c) (caddr c) (cadddr c))
        ;; print call paths
        (when paths?
@@ -393,7 +388,7 @@
               (printf "\n")))
           (sort (cadddr (cdr c)) (lambda (a b) (> (car a) (car b)))))))
      counts)
-    (printf "Total samples: ~a\n" total)))
+    (printf "Total sample ~a: ~a\n" (if sort-time? "time" "counts") total)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

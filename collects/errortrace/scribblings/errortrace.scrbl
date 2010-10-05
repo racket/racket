@@ -254,7 +254,7 @@ This list is snapshot of the current state of the computation.}
             [filename-path path-string?]
             [display-string (or/c string? #t #f) "^.,"]) 
            void?])]{
-                                                                     
+
 Writes the named file to the @scheme[current-output-port], inserting an
 additional line between each source line to reflect execution counts
 (as reported by @scheme[get-coverage-counts] or @scheme[get-execute-counts]).
