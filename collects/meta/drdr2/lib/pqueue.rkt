@@ -30,9 +30,7 @@
 
 (define (pqueue-dequeue! pq)
   (match-define (pqueue dir) pq)
-  (match (sort (directory-list (pqueue-dest dir))
-               string<=? 
-               #:key path->string)
+  (match (directory-list (pqueue-dest dir))
     [(list-rest choice _)
      (define dest 
        (build-path (pqueue-dest dir) choice))
