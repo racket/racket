@@ -7353,7 +7353,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
 static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int base_offset, 
                               int for_fl, int unsafe, 
                               int unbox_flonum, int result_ignored, int can_chaperone, 
-                              int for_struct, int for_fx)
+                              int for_struct, int for_fx, int check_mutable)
 /* R0 has vector. In set mode, R2 has value; if not unboxed, not unsafe, or can chaperone,
    RUNSTACK has space for a temporary (intended for R2).
    If int_ready, R1 has num index (for safe mode) and V1 has pre-computed offset,
@@ -7421,6 +7421,10 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
         jit_ldxi_i(JIT_R2, JIT_R0, (int)&SCHEME_FXVEC_SIZE(0x0));
       } else if (!for_fl) {
         (void)jit_bnei_i(reffail, JIT_R2, scheme_vector_type);
+        if (check_mutable) {
+          jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0));
+          (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
+        }
         jit_ldxi_i(JIT_R2, JIT_R0, (int)&SCHEME_VEC_SIZE(0x0));
       } else {
         (void)jit_bnei_i(reffail, JIT_R2, scheme_flvector_type);
@@ -7945,12 +7949,12 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         if (!which) {
           /* vector-ref is relatively simple and worth inlining */
           generate_vector_op(jitter, 0, 0, base_offset, 0, unsafe, 
-                             0, 0, can_chaperone, for_struct, for_fx);
+                             0, 0, can_chaperone, for_struct, for_fx, 0);
           CHECK_LIMIT();
 	} else if (which == 3) {
           /* flvector-ref is relatively simple and worth inlining */
           generate_vector_op(jitter, 0, 0, base_offset, 1, unsafe, 
-                             unbox, 0, can_chaperone, for_struct, for_fx);
+                             unbox, 0, can_chaperone, for_struct, for_fx, 0);
           CHECK_LIMIT();
 	} else if (which == 1) {
           if (unsafe) {
@@ -8002,12 +8006,12 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	if (!which) {
           /* vector-ref is relatively simple and worth inlining */
           generate_vector_op(jitter, 0, 1, base_offset, 0, unsafe, 
-                             0, 0, can_chaperone, for_struct, for_fx);
+                             0, 0, can_chaperone, for_struct, for_fx, 0);
           CHECK_LIMIT();
 	} else if (which == 3) {
           /* flvector-ref is relatively simple and worth inlining */
           generate_vector_op(jitter, 0, 1, base_offset, 1, unsafe, 
-                             unbox, 0, can_chaperone, for_struct, for_fx);
+                             unbox, 0, can_chaperone, for_struct, for_fx, 0);
           CHECK_LIMIT();
 	} else if (which == 1) {
           if (unsafe) {
@@ -8155,7 +8159,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "set-box!")
                || IS_NAMED_PRIM(rator, "unsafe-set-box*!")) {
-      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3;
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *reffail;
       int unsafe;
 
       LOG_IT(("inlined set-box!\n"));
@@ -8174,9 +8178,14 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       ref = jit_beqi_i(jit_forward(), JIT_R2, scheme_box_type);
       if (ref3)
         mz_patch_branch(ref3);
+      reffail = _jit.x.pc;
       (void)jit_calli(set_box_code);
       ref2 = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
+      if (!unsafe) {
+        jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0));
+        (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
+      }
       __END_TINY_JUMPS__(1);
 
       (void)jit_stxi_p(&SCHEME_BOX_VAL(0x0), JIT_R0, JIT_R1);
@@ -8422,11 +8431,12 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       int simple, constval, can_delay_vec, can_delay_index;
       int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
       int pushed, flonum_arg;
-      int can_chaperone = 1, for_struct = 0, for_fx = 0;
+      int can_chaperone = 1, for_struct = 0, for_fx = 0, check_mutable = 0;
 
-      if (IS_NAMED_PRIM(rator, "vector-set!"))
+      if (IS_NAMED_PRIM(rator, "vector-set!")) {
 	which = 0;
-      else if (IS_NAMED_PRIM(rator, "fxvector-set!")) {
+        check_mutable = 1;
+      } else if (IS_NAMED_PRIM(rator, "fxvector-set!")) {
 	which = 0;
         for_fx = 1;
       } else if (IS_NAMED_PRIM(rator, "unsafe-vector-set!")) {
@@ -8594,13 +8604,13 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
           /* vector-set! is relatively simple and worth inlining */
           generate_vector_op(jitter, 1, 0, base_offset, 0, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
-                             for_struct, for_fx);
+                             for_struct, for_fx, check_mutable);
           CHECK_LIMIT();
 	} else if (which == 3) {
           /* flvector-set! is relatively simple and worth inlining */
           generate_vector_op(jitter, 1, 0, base_offset, 1, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
-                             for_struct, for_fx);
+                             for_struct, for_fx, 0);
           CHECK_LIMIT();
 	} else if (which == 1) {
           if (unsafe) {
@@ -8643,13 +8653,13 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
           /* vector-set! is relatively simple and worth inlining */
           generate_vector_op(jitter, 1, 1, base_offset, 0, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
-                             for_struct, for_fx);
+                             for_struct, for_fx, check_mutable);
           CHECK_LIMIT();
 	} else if (which == 3) {
           /* flvector-set! is relatively simple and worth inlining */
           generate_vector_op(jitter, 1, 1, base_offset, 1, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
-                             for_struct, for_fx);
+                             for_struct, for_fx, 0);
           CHECK_LIMIT();
 	} else if (which == 1) {
           if (unsafe) {

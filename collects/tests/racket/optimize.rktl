@@ -601,6 +601,15 @@
       (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref #f)
       (test-setter make-fxvector 1 7 'fxvector-set! fxvector-set! fxvector-ref #f))
 
+    (err/rt-test (apply (list-ref (list (lambda (v) (vector-set! v 0 #t))) (random 1)) 
+                        (list (vector-immutable 1 2 3))))
+    (err/rt-test (apply (list-ref (list (lambda (s) (string-set! s 0 #\a))) (random 1)) 
+                        (list "123")))
+    (err/rt-test (apply (list-ref (list (lambda (s) (bytes-set! s 0 0))) (random 1)) 
+                        (list #"123")))
+    (err/rt-test (apply (list-ref (list (lambda (b) (set-box! b #t))) (random 1)) 
+                        (list (box-immutable 1))))
+    
     (let ([v (box 1)])
       (check-error-message 'set-box! (eval `(lambda (x) (set-box! x 10))))
       (tri0 (void) '(lambda (b i v) (set-box! b v))
