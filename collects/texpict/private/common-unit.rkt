@@ -1,7 +1,7 @@
-#lang scheme/unit
+#lang racket/unit
 
-  (require scheme/gui/base
-           scheme/class
+  (require racket/gui/base
+           racket/class
            racket/list)
   
   (require "common-sig.ss")
