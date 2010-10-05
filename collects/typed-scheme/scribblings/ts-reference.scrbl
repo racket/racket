@@ -217,15 +217,25 @@ by @racket[read].}
 @defform[(U t ...)]{is the union of the types @racket[t ...].
  @ex[(λ: ([x : Real])(if (> 0 x) "yes" 'no))]}
 @defform[(case-lambda fun-ty ...)]{is a function that behaves like all of
-  the @racket[fun-ty]s, considered in order from first to last. 
-  The @racket[fun-ty]s must all be function
-  types constructed with @racket[->].}
+  the @racket[fun-ty]s, considered in order from first to last.  The @racket[fun-ty]s must all be function
+  types constructed with @racket[->].
+  @ex[(: add-map : (case-lambda 
+                     [(Listof Integer) -> (Listof Integer)]
+                     [(Listof Integer) (Listof Integer) -> (Listof Integer)]))]
+  For the definition of @racket[add-map] look into @racket[case-lambda:].}
+
 @defform/none[(t t1 t2 ...)]{is the instantiation of the parametric type
   @racket[t] at types @racket[t1 t2 ...]}
 @defform[(All (v ...) t)]{is a parameterization of type @racket[t], with
   type variables @racket[v ...].  If @racket[t] is a function type
       constructed with @racket[->], the outer pair of parentheses
-      around the function type may be omitted.}
+      around the function type may be omitted.
+      @ex[(: list-lenght : (All (A) (Listof A) -> Natural))
+          (define (list-lenght lst)
+            (if (null? lst)
+                0
+                (add1 (list-lenght (cdr lst)))))]}
+
 @defform[(values t ...)]{is the type of a sequence of multiple values, with
 types @racket[t ...].  This can only appear as the return type of a
 function.
@@ -235,12 +245,15 @@ function.
 @defform/none[i]{where @racket[i] is an identifier can be a reference to a type
 name or a type variable}
 @defform[(Rec n t)]{is a recursive type where @racket[n] is bound to the
-recursive type in the body @racket[t]}
+recursive type in the body @racket[t]
+@ex[(define-type IntList (Rec List (Pair Integer (U List Null))))
+    
+    (define-type (List A) (Rec List (Pair A (U List Null))))]}
 
 
 @subsection{Other Types}
 
-@defform[(Option t)]{Either @racket[t] of @racket[#f]}
+@defform[(Option t)]{Either @racket[t] or @racket[#f]}
 
 @section[#:tag "special-forms"]{Special Form Reference}
 
@@ -259,8 +272,31 @@ creating new types, and annotating expressions.
 Local bindings, like @racket[let], each with
 associated types.  In the second form, @racket[_t0] is the type of the
 result of @racket[_loop] (and thus the result of the entire
-expression as well as the final expression in @racket[body]).
-Type annotations are optional.}
+			      expression as well as the final
+				expression in @racket[body]).
+				Type annotations are optional.
+@ex[(: filter-even : (Listof Natural) (Listof Natural) -> (Listof Natural))
+    (define (filter-even lst accum)
+      (if (null? lst)
+          accum
+          (let: ([first : Natural (car lst)]
+                 [rest  : (Listof Natural) (cdr lst)])
+                (if (even? first)
+                    (filter-even rest (cons first accum))
+                    (filter-even rest accum)))))
+    (filter-even (list 1 2 3 4 5 6) null)]
+
+@ex[(: filter-even-loop : (Listof Natural) -> (Listof Natural))
+    (define (filter-even-loop lst)
+      (let: loop : (Listof Natural) 
+            ([accum : (Listof Natural) null]
+             [lst   : (Listof Natural) lst])
+            (cond 
+              [(null? lst)       accum]
+              [(even? (car lst)) (loop (cons (car lst) accum) (cdr lst))]
+              [else              (loop accum (cdr lst))])))
+    (filter-even-loop (list 1 2 3 4))]}
+
 @deftogether[[
 @defform[(letrec: ([v : t e] ...) . body)]
 @defform[(let*: ([v : t e] ...) . body)]
@@ -294,7 +330,16 @@ A polymorphic function, abstracted over the type variables
 of the formal, and in any type expressions in the @racket[body].}
 @defform[(case-lambda: [formals body] ...)]{
 A function of multiple arities.  Note that each @racket[formals] must have a
-different arity.}
+different arity.
+@ex[(define add-map 
+      (case-lambda:
+       [([lst : (Listof Integer)])
+        (map add1 lst)]
+       [([lst1 : (Listof Integer)]
+         [lst2 : (Listof Integer)])
+        (map + lst1 lst2)]))] 
+For the type declaration of @racket[add-map] look at @racket[case-lambda].}
+
 @defform[(pcase-lambda: (a ...) [formals body] ...)]{
 A polymorphic function of multiple arities.}
 @defform/subs[(opt-lambda: formals . body)
@@ -383,7 +428,18 @@ annotations are optional.
 These forms define variables, with annotated types.  The first form
 defines @racket[v] with type @racket[t] and value @racket[e].  The
 second and third forms defines a function @racket[f] with appropriate
-types.  In most cases, use of @racket[:] is preferred to use of @racket[define:].}
+types.  In most cases, use of @racket[:] is preferred to use of @racket[define:].
+
+@ex[(define: foo : Integer 10)
+
+    (define: (add [first : Integer]
+                  [rest  : Integer]) : Integer 
+      (+ first rest))
+    
+    (define: (A) (poly-app [func : (A A -> A)] 
+                           [first : A]
+                           [rest  : A]) : A 
+      (func first rest))]}
 
 
 
@@ -423,7 +479,10 @@ The first form defines @racket[name] as type, with the same meaning as
 @racket[t].  The second form is equivalent to
 @racket[(define-type name (All (v ...) t))].  Type names may
 refer to other types defined in the same module, but
-cycles among them are prohibited.}
+cycles among them are prohibited.
+
+@ex[(define-type IntStr (U Integer String))
+    (define-type (ListofPairs A) (Listof (Pair A A)))]}
 
 @subsection{Generating Predicates Automatically}
 @defform[(define-predicate name t)]{
@@ -436,7 +495,9 @@ Defines @racket[name] as a predicate for the type @racket[t].
 
 @defform[(: v t)]{This declares that @racket[v] has type @racket[t].
 The definition of @racket[v] must appear after this declaration.  This
-can be used anywhere a definition form may be used.}
+can be used anywhere a definition form may be used.
+@ex[(: var1 Integer)
+    (: var2 String)]}
 
 @defform[(provide: [v t] ...)]{This declares that the @racket[v]s have
 the types @racket[t], and also provides all of the @racket[v]s.}
@@ -453,7 +514,14 @@ This is legal only in expression contexts.}
 @defform[(inst e t ...)]{Instantiate the type of @racket[e] with types
 @racket[t ...].  @racket[e] must have a polymorphic type with the
 appropriate number of type variables. This is legal only in expression
-contexts.}
+contexts.
+@ex[(foldl (inst cons Integer Integer) null (list 1 2 3 4))]
+        
+@ex[(: fold-list : (All (A) (Listof A) -> (Listof A)))
+    (define (fold-list lst)
+      (foldl (inst cons A A) null lst))
+    
+    (fold-list (list "1" "2" "3" "4"))]}
 
 @litchar|{#{e @ t ...}}| This is identical to @racket[(inst e t ...)].
 
@@ -482,6 +550,23 @@ structure predicate has the appropriate Typed Racket filter type so
 that it may be used as a predicate in @racket[if] expressions in Typed
 Racket.
 
+
+@ex[(module UNTYPED racket/base
+      (define n 100)
+      
+      (define-struct IntTree 
+        (elem left right))
+      
+      (provide n (struct-out IntTree)))
+    
+    (module TYPED typed/racket
+      (require/typed 'UNTYPED 
+                     [n Natural]
+                     [struct IntTree 
+                       ([elem  : Integer]
+                        [left  : IntTree]
+                        [right : IntTree])]))]
+
 @index["opaque"]{The fourth case} defines a new type @racket[t].  @racket[pred], imported from
 module @racket[m], is a predicate for this type.  The type is defined
 as precisely those values to which @racket[pred] produces
@@ -494,8 +579,24 @@ enforce the specified types.  If this contract fails, the module
 
 Some types, notably polymorphic types constructed with @racket[All],
 cannot be converted to contracts and raise a static error when used in
-a @racket[require/typed] form.}
+a @racket[require/typed] form. Here is an example of using 
+@racket[case-lambda] in @racket[require/typed].
 
+@(racketblock
+  (require/typed racket/base
+                 [file-or-directory-modify-seconds 
+                  (case-lambda
+                    [String -> Exact-Nonnegative-Integer]
+                    [String (Option Exact-Nonnegative-Integer) 
+                            -> 
+                            (U Exact-Nonnegative-Integer Void)]
+                    [String (Option Exact-Nonnegative-Integer) (-> Any) 
+                            ->
+                            Any])]))
+
+@racket[file-or-directory-modify-seconds] has some arguments which are optional. 
+So we need to use @racket[case-lambda].}
+ 
 @section{Libraries Provided With Typed Racket}
 
 The @racketmodname[typed/racket] language corresponds to the
