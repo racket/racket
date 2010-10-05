@@ -7359,8 +7359,8 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
                               int for_struct, int for_fx, int check_mutable)
 /* R0 has vector. In set mode, R2 has value; if not unboxed, not unsafe, or can chaperone,
    RUNSTACK has space for a temporary (intended for R2).
-   If int_ready, R1 has num index (for safe mode) and V1 has pre-computed offset,
-   otherwise R1 has fixnum index */
+   If int_ready, R1 has num index (for safe or can-chaperone mode) and V1 has pre-computed
+   offset, otherwise (when not int_ready) R1 has fixnum index */
 {
   GC_CAN_IGNORE jit_insn *ref, *reffail, *pref;
 
@@ -7997,7 +7997,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
           mz_rs_sync();
       
 	offset = SCHEME_INT_VAL(app->rand2);
-        if (!unsafe)
+        if (!unsafe || can_chaperone)
           (void)jit_movi_p(JIT_R1, offset);
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
@@ -11540,7 +11540,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* *** {vector,string,bytes}_{ref,set}_[check_index_]code *** */
   /* R0 is vector/string/bytes, R1 is index (Scheme number in check-index mode), 
      V1 is vector/string/bytes offset in non-check-index mode (and for
-     vector, it includes the offset to the start of the elements array.
+     vector, it includes the offset to the start of the elements array).
      In set mode, value is on run stack. */
   for (iii = 0; iii < 2; iii++) { /* ref, set */
     for (ii = 0; ii < 4; ii++) { /* vector, string, bytes, fx */
