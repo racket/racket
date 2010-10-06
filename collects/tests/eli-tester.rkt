@@ -62,12 +62,12 @@
                [prefix (continuation-mark-set->list (current-continuation-marks)
                                                     failure-prefix-mark)])
           (error 'loc "~a" (form prefix 'e fmt arg ...)))))
-  (define (t1 x)
+  (define (test-1 x)
     #`(let ([x (safe #,x)])
         (unless (and (eq? 'values (car x)) (= 2 (length x)) (cadr x))
           #,(blame x "expected: non-#f single value\n     got: ~a"
                    #'(show x)))))
-  (define (t2 x y [eval2? #t])
+  (define (test-2 x y [eval2? #t])
     #`(let* ([x (safe #,x)]                   [xtag (car x)]
              [y #,(if eval2? #`(safe #,y) y)] [ytag (car y)])
         (cond
@@ -96,13 +96,13 @@
                       #,(blame x "bad error message, expected ~a: ~s\ngot: ~s"
                                "an exception satisfying" #'yerr #'xerr))]
                    [else (error 'test "bad error specification: ~e" yerr)]))])))
-  (define (te x y) (t2 x #`(list 'error #,y #f) #f))
+  (define (test-error x y) (test-2 x #`(list 'error #,y #f) #f))
   (define (try t . args)
     #`(let ([c (test-context)])
         (with-handlers ([exn? (lambda (e) (set-mcdr! c (cons e (mcdr c))))])
           (set-mcar! c (add1 (mcar c)))
           #,(apply t args))))
-  (define (tb x) x)
+  (define (test-0 x) x)
   (let loop ([xs (map (lambda (x)
                         (let ([e (syntax-e x)])
                           (if (or (memq e '(do => <= =error> <error=))
@@ -129,23 +129,24 @@
                          (cdr r))
                         r))]
                  [(list* 'do x r) ; to avoid counting non-test exprs as tests
-                  (cons (tb x) r)]
-                 [(list* x '=> y r)      (cons (try t2 x y) r)]
-                 [(list* y '<= x r)      (cons (try t2 x y) r)]
-                 [(list* x '=error> y r) (cons (try te x y) r)]
-                 [(list* y '<error= x r) (cons (try te x y) r)]
+                  (cons (test-0 x) r)]
+                 [(list* x '=> y r)      (cons (try test-2 x y) r)]
+                 [(list* y '<= x r)      (cons (try test-2 x y) r)]
+                 [(list* x '=error> y r) (cons (try test-error x y) r)]
+                 [(list* y '<error= x r) (cons (try test-error x y) r)]
                  [(list* x r)
                   ;; if x = (test ...), then it's implicitly in a `do'
                   ;; (not really needed, but avoids an extra count of tests)
                   (syntax-case x (test)
-                    [(test x0 x1 ...) (cons (tb x) r)]
-                    [_ (cons (try t1 x) r)])]
+                    [(test x0 x1 ...) (cons (test-0 x) r)]
+                    [_ (cons (try test-1 x) r)])]
                  [(list) '()]))])
       (if (pair? t)
           (loop (cdr t) (cons (car t) r))
           #`(lambda () #,@(reverse r))))))
 
-(define (run-tests thunk force-new-context?)
+;; pass 'quiet to have nothing printed on success
+(define (run-tests thunk force-new-context? #:on-pass [pass 'loud])
   (if (and (test-context) (not force-new-context?))
       (thunk)
       (let ([c (mcons 0 '())])
@@ -157,15 +158,25 @@
              (test-context #f)
              (let ([num (mcar c)] [exns (mcdr c)])
                (if (null? exns)
-                   (printf "~a test~a passed\n" num (if (= num 1) "" "s"))
+                   (case pass
+                     [(loud) (printf "~a test~a passed\n" num (if (= num 1) "" "s"))]
+                     [(quiet) (void)])
                    (error 'test "~a/~a test failures:~a" (length exns) num
                           (string-append*
                            (append-map (lambda (e) (list "\n" (exn-message e)))
                                        (reverse exns))))))))))))
 
+(define-syntax-rule (define-test name force-context)
+  (define-syntax (name stx)
+    (syntax-case stx ()
+      [(_ #:on-pass pass x0 x (... ...))
+       #'(run-tests #:on-pass pass (test-thunk x0 x (... ...)) force-context)]
+      [(_ x0 x (... ...))
+       #'(run-tests (test-thunk x0 x (... ...)) force-context)])))
+
 (provide test test*)
-(define-syntax-rule (test  x0 x ...) (run-tests (test-thunk x0 x ...) #f))
-(define-syntax-rule (test* x0 x ...) (run-tests (test-thunk x0 x ...) #t))
+(define-test test  #f)
+(define-test test* #t)
 
 #; ; test the `test' macro
 
