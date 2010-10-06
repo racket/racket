@@ -45,7 +45,7 @@ exec racket -qu "$0" ${1+"$@"}
     (when (directory-exists? "compiled")
       (delete-directory/files "compiled")))
 
-  (define (mk-typed-scheme bm)
+  (define (mk-typed-racket-non-optimizing bm)
     (unless (directory-exists? "typed/compiled")
       (make-directory "typed/compiled"))
     (parameterize ([current-namespace (make-base-namespace)]
@@ -53,7 +53,7 @@ exec racket -qu "$0" ${1+"$@"}
       (let ([name (format "~a-non-optimizing.rkt" bm)])
         (compile-file (format "typed/~a" name)
                       (build-path "typed/compiled" (path-add-suffix name #".zo"))))))
-  (define (mk-typed-scheme-optimizing bm)
+  (define (mk-typed-racket bm)
     (unless (directory-exists? "typed/compiled")
       (make-directory "typed/compiled"))
     (parameterize ([current-namespace (make-base-namespace)]
@@ -84,19 +84,19 @@ exec racket -qu "$0" ${1+"$@"}
                 extract-racket-times
                 clean-up-zo
                 '())
-     (make-impl 'typed-scheme
+     (make-impl 'typed-racket-non-optimizing
                 void
-                mk-typed-scheme
+                mk-typed-racket-non-optimizing
                 (lambda (bm)
-                  (system (format "racket run.rkt ~a typed-scheme" bm)))
+                  (system (format "racket run.rkt ~a typed-racket-non-optimizing" bm)))
                 extract-racket-times
                 clean-up-typed
                 '())
-     (make-impl 'typed-scheme-optimizing
+     (make-impl 'typed-racket
                 void
-                mk-typed-scheme-optimizing
+                mk-typed-racket
                 (lambda (bm)
-                  (system (format "racket run.rkt ~a typed-scheme-optimizing" bm)))
+                  (system (format "racket run.rkt ~a typed-racket" bm)))
                 extract-racket-times
                 clean-up-typed
                 '())
