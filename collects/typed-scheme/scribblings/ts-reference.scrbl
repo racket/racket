@@ -624,11 +624,12 @@ Typed Racket provides a type-driven optimizer that rewrites well-typed
 programs to potentially make them faster. It should in no way make
 your programs slower or unsafe.
 
-Typed Racket's optimizer is not currently turned on by default. If you
-want to activate it, you must add the @racket[#:optimize] keyword when
-specifying the language of your program:
+Typed Racket's optimizer is turned on by default. If you want to
+deactivate it (for debugging, for instance), you must add the
+@racket[#:no-optimize] keyword when specifying the language of your
+program:
 
-@racketmod[typed/racket #:optimize]
+@racketmod[typed/racket #:no-optimize]
 
 @section{Legacy Forms}
 
