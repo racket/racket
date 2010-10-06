@@ -29,7 +29,7 @@
               [m    (or (regexp-match-positions prog-rx prog)
                         (error 'evaluator "bad program contents in ~e" file))]
               [prog (string-append (substring prog (caadr m) (cdadr m))
-                                   (if optimize? "\n#:optimize\n" "\n")
+                                   (if (not optimize?) "\n#:no-optimize\n" "\n")
                                    (substring prog (cdar m)))]
               [evaluator (make-module-evaluator prog)]
               [out       (get-output evaluator)])
