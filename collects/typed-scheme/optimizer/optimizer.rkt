@@ -86,6 +86,7 @@
                      [optimize (syntax-parser
                                 [e:expr
                                  #:when (and (not (syntax-property #'e 'typechecker:ignore))
+                                             (not (syntax-property #'e 'typechecker:ignore-some))
                                              (not (syntax-property #'e 'typechecker:with-handlers)))
                                  #:with e*:opt-expr #'e
                                  #'e*.opt]
