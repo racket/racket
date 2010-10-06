@@ -180,7 +180,7 @@ The @scheme[ssl-accept/enable-break] procedure is analogous to
 Analogous to @racket[tcp-abandon-port].}
 
 
-@defproc[(ssl-addresses [p ssl-port?][port-numbers? any/c #f]) void?]{
+@defproc[(ssl-addresses [p (or/c ssl-port? ssl-listener?)][port-numbers? any/c #f]) void?]{
 
 Analogous to @racket[tcp-addresses].}
 
