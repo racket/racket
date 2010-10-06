@@ -126,6 +126,7 @@ Use cases, explained:
    case-lambda
    if
    quote
+   quote-syntax
    letrec-syntaxes+values
    with-continuation-mark
    #%expression
