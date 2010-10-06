@@ -55,19 +55,20 @@
 
 ;; keeps track of expressions that always evaluate to true or always evaluate
 ;; to false, so that the optimizer can eliminate dead code
+;; 3 possible values: 'tautology 'contradiction 'neither
 (define tautology-contradiction-table (make-hasheq))
 
-(define-values (add-tautology add-contradiction)
+(define-values (add-tautology add-contradiction add-neither)
   (let ()
     (define ((mk t?) e)
       (when (optimize?)
         (hash-set! tautology-contradiction-table e t?)))
-    (values (mk #t) (mk #f))))
-(define-values (tautology? contradiction?)
+    (values (mk 'tautology) (mk 'contradiction) (mk 'neither))))
+(define-values (tautology? contradiction? neither?)
   (let ()
     (define ((mk t?) e)
       (eq? t? (hash-ref tautology-contradiction-table e 'not-there)))
-    (values (mk #t) (mk #f))))
+    (values (mk 'tautology) (mk 'contradiction) (mk 'neither))))
 
 (p/c [add-typeof-expr (syntax? tc-results? . -> . any/c)]
      [type-of (syntax? . -> . tc-results?)]
@@ -79,5 +80,7 @@
      [make-struct-table-code (-> syntax?)]
      [add-tautology (syntax? . -> . any/c)]
      [add-contradiction (syntax? . -> . any/c)]
+     [add-neither (syntax? . -> . any/c)]
      [tautology? (syntax? . -> . boolean?)]
-     [contradiction? (syntax? . -> . boolean?)])
+     [contradiction? (syntax? . -> . boolean?)]
+     [neither? (syntax? . -> . boolean?)])

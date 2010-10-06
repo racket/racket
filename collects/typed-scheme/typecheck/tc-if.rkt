@@ -58,10 +58,22 @@
          ;(printf "new-els-props: ~a\n" new-els-props)
 
          ;; record reachability
-         (when (not (unbox flag+))
-           (add-contradiction tst))
-         (when (not (unbox flag-))
-           (add-tautology tst))
+         ;; since we may typecheck a given piece of code multiple times in different
+         ;; contexts, we need to take previous results into account
+         (cond [(and (not (unbox flag+)) ; maybe contradiction
+                     ;; to be an actual contradiction, we must have either previously
+                     ;; recorded this test as a contradiction, or have never seen it
+                     ;; before
+                     (not (tautology? tst))
+                     (not (neither? tst)))
+                (add-contradiction tst)]
+               [(and (not (unbox flag-)) ; maybe tautology
+                     ;; mirror case
+                     (not (contradiction? tst))
+                     (not (neither? tst)))
+                (add-tautology tst)]
+               [else
+                (add-neither tst)])
 
          ;; if we have the same number of values in both cases
          (cond [(= (length ts) (length us))
