@@ -19,6 +19,7 @@
          compiler/embed
          wxme/wxme
          setup/dirs
+         test-engine/racket-tests
          
          ;; this module is shared between the drscheme's namespace (so loaded here) 
          ;; and the user's namespace in the teaching languages
@@ -547,6 +548,22 @@
                                      (get-module)
                                      (htdp-lang-settings-teachpacks settings)
                                      (drscheme:rep:current-rep)))
+          
+          (define/override (front-end/interaction port settings)
+            (let ([t (super front-end/interaction port settings)]
+                  [done? #f])
+              (λ ()
+                (cond
+                  [done? eof]
+                  [else
+                   (let ([ans (t)])
+                     (cond
+                       [(eof-object? ans)
+                        (set! done? #t)
+                        #`(test)]
+                       [else
+                        ans]))]))))
+
 
           (define keywords #f)
           (define/augment (capability-value key)
