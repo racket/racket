@@ -1046,6 +1046,8 @@
     (for ([i (in-range 1 symtabsize)])
       (read-sym cp i))
     
+    #;(for ([(i v) (in-dict (cport-symtab cp))])
+      (printf "~a = ~a\n" i (placeholder-get v)) )
     (set-cport-pos! cp shared-size)
     (make-reader-graph
      (read-marshalled 'compilation-top-type cp))))
