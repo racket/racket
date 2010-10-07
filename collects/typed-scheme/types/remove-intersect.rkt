@@ -28,6 +28,10 @@
               (overlap (resolve-once t1) (resolve-once t2)))]
          [(list (? Mu?) _) (overlap (unfold t1) t2)]
          [(list _ (? Mu?)) (overlap t1 (unfold t2))]
+         
+         [(list (Refinement: t _ _) t2) (overlap t t2)]
+         [(list t1 (Refinement: t _ _)) (overlap t1 t)]
+         
          [(list (Union: e) t)
           (ormap (lambda (t*) (overlap t* t)) e)]
          [(list t (Union: e))
