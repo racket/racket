@@ -40,21 +40,24 @@
 
   (match f-ty
     ;; apply of simple function
-    [(tc-result1: (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ...)))
+    [(tc-result1: (and t (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ...))))
      ;; special case for (case-lambda)
      (when (null? doms)
        (tc-error/expr #:return (ret (Un))
                       "empty case-lambda given as argument to apply"))
-     (match-let ([arg-tys (map tc-expr/t fixed-args)]
-                 [(tc-result1: tail-ty) (single-value tail)])
+     (match-let* ([arg-tres (map tc-expr fixed-args)]
+                  [arg-tys (map (match-lambda [(tc-result1: t _ _) t]) arg-tres)]
+                  [(tc-result1: tail-ty) (single-value tail)])
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond 
            ;; we've run out of cases to try, so error out           
            [(null? doms*)
-            (tc-error/expr #:return (ret (Un))
-                           (string-append 
-                            "Bad arguments to function in apply:\n"
-                            (domain-mismatches f-ty doms rests drests rngs arg-tys tail-ty #f)))]
+            (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty #f
+                               #:return (ret (Un))
+                               #:msg-thunk (lambda (dom)
+                                             (string-append 
+                                              "Bad arguments to function in apply:\n"
+                                              dom)))]
            ;; this case of the function type has a rest argument
            [(and (car rests*)
                  ;; check that the tail expression is a subtype of the rest argument
@@ -76,7 +79,8 @@
            [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     ;; apply of simple polymorphic function
     [(tc-result1: (Poly: vars (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
-     (let*-values ([(arg-tys) (map tc-expr/t fixed-args)]
+     (let*-values ([(arg-tres) (map tc-expr fixed-args)]
+                   [(arg-tys) (map (match-lambda [(tc-result1: t _ _) t]) arg-tres)]
                    [(tail-ty tail-bound) (match (tc-expr/t tail)
                                            [(ListDots: tail-ty tail-bound)
                                             (values tail-ty tail-bound)]
@@ -84,11 +88,13 @@
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (match f-ty 
-                  [(tc-result1: (Poly-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
-                   (tc-error/expr #:return (ret (Un))
-                                 (string-append 
-                                  "Bad arguments to polymorphic function in apply:\n"
-                                  (domain-mismatches f-ty doms rests drests rngs arg-tys tail-ty tail-bound)))])]
+                  [(tc-result1: (and t (Poly-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))))
+                   (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty tail-bound
+                                      #:return (ret (Un))
+                                      #:msg-thunk (lambda (dom)
+                                                    (string-append 
+                                                     "Bad arguments to polymorphic function in apply:\n"
+                                                     dom)))])]
                ;; the actual work, when we have a * function and a list final argument
                [(and (car rests*)
                      (not tail-bound)
@@ -129,7 +135,8 @@
                     "Function has no cases")]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
                             (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
-     (let*-values ([(arg-tys) (map tc-expr/t fixed-args)]
+     (let*-values ([(arg-tres) (map tc-expr fixed-args)]
+                   [(arg-tys) (map (match-lambda [(tc-result1: t _ _) t]) arg-tres)]
                    [(tail-ty tail-bound) (match (tc-expr/t tail)
                                            [(ListDots: tail-ty tail-bound)
                                             (values tail-ty tail-bound)]
@@ -138,11 +145,13 @@
          (define (finish substitution) (do-ret (subst-all substitution (car rngs*))))
          (cond [(null? doms*)
                 (match f-ty 
-                  [(tc-result1: (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
-                   (tc-error/expr #:return (ret (Un))
-                                 (string-append 
-                                  "Bad arguments to polymorphic function in apply:\n"
-                                  (domain-mismatches f-ty doms rests drests rngs arg-tys tail-ty tail-bound)))])]
+                  [(tc-result1: (and t (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1)))))
+                   (domain-mismatches f args t doms rests drests rngs arg-tres tail-ty tail-bound
+                                      #:return (ret (Un))
+                                      #:msg-thunk (lambda (dom)
+                                                    (string-append 
+                                                     "Bad arguments to polymorphic function in apply:\n"
+                                                     dom)))])]
                ;; the actual work, when we have a * function and a list final argument
                [(and (car rests*)
                      (not tail-bound)

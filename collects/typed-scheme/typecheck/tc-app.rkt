@@ -137,15 +137,19 @@
               (match a
                 [(arr: dom rng rest #f ktys) (make-arr* dom rng #:rest rest)]))])
        (if (null? new-arities)
-           (tc-error/expr 
+           (domain-mismatches
+            (car (syntax-e form)) (cdr (syntax-e form))
+            arities doms rests drests rngs
+            (map tc-expr (syntax->list pos-args))
+            #f #f #:expected expected
             #:return (or expected (ret (Un)))
-            (string-append "No function domains matched in function application:\n"
-                           (domain-mismatches arities doms rests drests rngs
-                                              (map tc-expr (syntax->list pos-args))
-                                              #f #f #:expected expected)))
-         (tc/funapp (car (syntax-e form)) kw-args
-                    (ret (make-Function new-arities))
-                    (map tc-expr (syntax->list pos-args)) expected)))]))
+            #:msg-thunk
+            (lambda (dom)
+              (string-append "No function domains matched in function application:\n"
+                             dom)))
+           (tc/funapp (car (syntax-e form)) kw-args
+                      (ret (make-Function new-arities))
+                      (map tc-expr (syntax->list pos-args)) expected)))]))
 
 (define (type->list t)
   (match t

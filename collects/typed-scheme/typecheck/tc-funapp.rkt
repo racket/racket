@@ -3,9 +3,8 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt" "tc-metafunctions.rkt"
          "tc-app-helper.rkt" "find-annotation.rkt"
-         "tc-subst.rkt" "check-below.rkt"
          (prefix-in c: racket/contract)
-         syntax/parse racket/match racket/list unstable/sequence
+         syntax/parse racket/match racket/list
          ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
          racket/bool racket/unsafe/ops
          (only-in racket/private/class-internal make-object do-make-object)
@@ -16,7 +15,7 @@
          (types utils abbrev union subtype resolve convenience type-table substitute)
          (utils tc-utils)
          (except-in (env type-env-structs tvar-env index-env) extend)
-         (rep type-rep filter-rep object-rep rep-utils)
+         (rep type-rep filter-rep rep-utils)
          (r:infer infer)
          '#%paramz
          (for-template
@@ -37,7 +36,7 @@
                (let ([substitution (infer vars ... a)])
                  (and substitution
                       (tc/funapp1 f-stx args-stx (subst-all substitution a) argtys expected #:check #f))))
-             (poly-fail t argtys #:name (and (identifier? f-stx) f-stx) #:expected expected))))]))
+             (poly-fail f-stx args-stx t argtys #:name (and (identifier? f-stx) f-stx) #:expected expected))))]))
 
 (d/c (tc/funapp f-stx args-stx ftype0 argtys expected)
   (syntax? syntax? tc-results? (c:listof tc-results?) (c:or/c #f tc-results?) . c:-> . tc-results?)
@@ -55,10 +54,11 @@
         ;; we call the separate function so that we get the appropriate filters/objects
         (tc/funapp1 f-stx args-stx a argtys expected #:check #f))
       ;; if nothing matched, error
-      (tc-error/expr 
-       #:return (or expected (ret (Un)))
-       (string-append "No function domains matched in function application:\n"
-                      (domain-mismatches t doms rests drests rngs argtys-t #f #f #:expected expected))))]
+      (domain-mismatches f-stx args-stx t doms rests drests rngs argtys #f #f
+                         #:expected expected #:return (or expected (ret (Un)))
+                         #:msg-thunk (lambda (dom)
+                                       (string-append "No function domains matched in function application:\n"
+                                                      dom))))]
     ;; any kind of dotted polymorphic function without mandatory keyword args
     [((tc-result1: (and t (PolyDots: 
                            (and vars (list fixed-vars ... dotted-var))
@@ -127,41 +127,3 @@
     [((tc-result1: f-ty) _) 
      (tc-error/expr #:return (ret (Un))
                     "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))
-
-
-;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
-(d/c (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
-  ((syntax? syntax? arr? (c:listof tc-results?) (c:or/c #f tc-results?)) (#:check boolean?) . c:->* . tc-results?)
-  (match* (ftype0 argtys)
-    ;; we check that all kw args are optional
-    [((arr: dom (Values: (and results (list (Result: t-r f-r o-r) ...))) rest #f (and kws (list (Keyword: _ _ #f) ...)))
-      (list (tc-result1: t-a phi-a o-a) ...))
-     (when check?
-       (cond [(and (not rest) (not (= (length dom) (length t-a))))
-              (tc-error/expr #:return (ret t-r)
-                             "Wrong number of arguments, expected ~a and got ~a" (length dom) (length t-a))]
-             [(and rest (< (length t-a) (length dom)))
-              (tc-error/expr #:return (ret t-r)
-                             "Wrong number of arguments, expected at least ~a and got ~a" (length dom) (length t-a))])
-       (for ([dom-t (if rest (in-sequence-forever dom rest) (in-list dom))] 
-             [a (in-list (syntax->list args-stx))]
-             [arg-t (in-list t-a)])
-         (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
-     (let* ([dom-count (length dom)]
-            [arg-count (+ dom-count (if rest 1 0) (length kws))])
-       (let-values
-           ([(o-a t-a) (for/lists (os ts)
-                         ([nm (in-range arg-count)]
-                          [oa (in-sequence-forever (in-list o-a) (make-Empty))]
-                          [ta (in-sequence-forever (in-list t-a) (Un))])
-                         (values (if (>= nm dom-count) (make-Empty) oa)
-                                 ta))])
-         (define-values (t-r f-r o-r)
-           (for/lists (t-r f-r o-r) 
-             ([r (in-list results)])
-             (open-Result r o-a t-a)))
-         (ret t-r f-r o-r)))]
-    [((arr: _ _ _ drest '()) _)
-     (int-err "funapp with drest args ~a ~a NYI" drest argtys)]
-    [((arr: _ _ _ _ kws) _)
-     (int-err "funapp with keyword args ~a NYI" kws)]))
