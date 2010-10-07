@@ -5,6 +5,7 @@
          scribble/srcdoc
          (for-syntax scheme/base
                      scheme/path
+                     scheme/list
                      syntax/path-spec
                      (for-syntax scheme/base)))
 
@@ -55,35 +56,41 @@
                                    (syntax->list #'(spec ...))]
                                   [_ null]))
                               (syntax->list #'(content ...))))]
+                       [(doc-req ...)
+                        (map
+                         strip-context
+                         (append-map (lambda (c)
+                                       (syntax-case c (#%plain-app void quote-syntax require/doc)
+                                         [(#%plain-app void (quote-syntax (require/doc spec ...)))
+                                          (syntax->list #'(spec ...))]
+                                         [_ null]))
+                                     (syntax->list #'(content ...))))]
                        [(req ...)
                         (map
                          strip-context
-                         (apply
-                          append
-                          (map (lambda (c)
-                                 (syntax-case c (#%require #%plain-app void quote-syntax require/doc)
-                                   [(#%require spec ...)
-                                    (let loop ([specs (syntax->list #'(spec ...))])
-                                      (cond
-                                       [(null? specs) '()]
-                                       [else (let ([spec (car specs)])
-                                               (syntax-case spec (for-syntax for-meta)
-                                                 [(for-syntax . spec) (loop (cdr specs))]
-                                                 [(for-meta . spec) (loop (cdr specs))]
-                                                 [(for-template . spec) (loop (cdr specs))]
-                                                 [(for-label . spec) (loop (cdr specs))]
-                                                 [(just-meta . spec) (loop (cdr specs))]
-                                                 [_ (cons #`(for-label #,spec) (loop (cdr specs)))]))]))]
-                                   [(#%plain-app void (quote-syntax (require/doc spec ...)))
-                                    (syntax->list #'(spec ...))]
-                                   [_ null]))
-                               (syntax->list #'(content ...)))))]
+                         (append-map (lambda (c)
+                                       (syntax-case c (#%require)
+                                         [(#%require spec ...)
+                                          (let loop ([specs (syntax->list #'(spec ...))])
+                                            (cond
+                                              [(null? specs) '()]
+                                              [else (let ([spec (car specs)])
+                                                      (syntax-case spec (for-syntax for-meta)
+                                                        [(for-syntax . spec) (loop (cdr specs))]
+                                                        [(for-meta . spec) (loop (cdr specs))]
+                                                        [(for-template . spec) (loop (cdr specs))]
+                                                        [(for-label . spec) (loop (cdr specs))]
+                                                        [(just-meta . spec) (loop (cdr specs))]
+                                                        [_ (cons #`(for-label #,spec) (loop (cdr specs)))]))]))]
+                                         [_ null]))
+                                     (syntax->list #'(content ...))))]
                        [orig-tag (datum->syntax #f 'orig)])
            ;; This template is matched in `filter-info', below
            #`(begin
                (#%require (for-label #,(strip-context #'lang))
                           (for-label #,(strip-context orig-path)) 
                           req ...)
+               (require doc-req ...)
                (drop-first (quote-syntax id) (def-it orig-tag content)) ...))]))))
 
 (define-syntax (include-extracted stx)
