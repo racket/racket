@@ -2148,7 +2148,7 @@ some part of a grammar, reduction relation, or
 metafunction. It defaults to slideshow's @racket[text] function.
 }
 
-@defparam[set-arrow-pict! proc (-> symbol? (-> pict?) void?)]{
+@defproc[(set-arrow-pict! [arrow symbol?] [proc  (-> pict?)]) void?]{
 
 This functions sets the pict for a given reduction-relation
 symbol. When typesetting a reduction relation that uses the
