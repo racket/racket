@@ -108,6 +108,7 @@ typedef struct Thread_Local_Variables {
   struct NewGC *GC_instance_;
   unsigned long GC_gen0_alloc_page_ptr_;
   unsigned long GC_gen0_alloc_page_end_;
+  int GC_gen0_alloc_only_;
   void *bignum_cache_[BIGNUM_CACHE_SIZE];
   int cache_count_;
   struct Scheme_Hash_Table *toplevels_ht_;
@@ -206,6 +207,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Thread *scheme_main_thread_;
   struct Scheme_Thread *scheme_first_thread_;
   struct Scheme_Thread_Set *scheme_thread_set_top_;
+  struct Scheme_Current_LWC *scheme_current_lwc_;
   int num_running_threads_;
   int swap_no_setjmp_;
   int thread_swap_count_;
@@ -402,6 +404,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define GC_instance XOA (scheme_get_thread_local_variables()->GC_instance_)
 #define GC_gen0_alloc_page_ptr XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_page_ptr_)
 #define GC_gen0_alloc_page_end XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_page_end_)
+#define GC_gen0_alloc_only XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_only_)
 #define GC_variable_stack XOA (scheme_get_thread_local_variables()->GC_variable_stack_)
 #define bignum_cache XOA (scheme_get_thread_local_variables()->bignum_cache_)
 #define cache_count XOA (scheme_get_thread_local_variables()->cache_count_)
@@ -502,6 +505,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)
 #define scheme_first_thread XOA (scheme_get_thread_local_variables()->scheme_first_thread_)
 #define scheme_thread_set_top XOA (scheme_get_thread_local_variables()->scheme_thread_set_top_)
+#define scheme_current_lwc XOA (scheme_get_thread_local_variables()->scheme_current_lwc_)
 #define num_running_threads XOA (scheme_get_thread_local_variables()->num_running_threads_)
 #define swap_no_setjmp XOA (scheme_get_thread_local_variables()->swap_no_setjmp_)
 #define thread_swap_count XOA (scheme_get_thread_local_variables()->thread_swap_count_)

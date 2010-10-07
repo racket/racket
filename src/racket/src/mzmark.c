@@ -3315,6 +3315,39 @@ static int mark_cont_mark_chain_FIXUP(void *p, struct NewGC *gc) {
 #define mark_cont_mark_chain_IS_CONST_SIZE 1
 
 
+static int mark_lightweight_cont_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
+}
+
+static int mark_lightweight_cont_MARK(void *p, struct NewGC *gc) {
+  Scheme_Lightweight_Continuation *lw = (Scheme_Lightweight_Continuation *)p;
+
+  gcMARK2(lw->saved_lwc, gc);
+  gcMARK2(lw->stack_slice, gc);
+  gcMARK2(lw->runstack_slice, gc);
+  gcMARK2(lw->cont_mark_stack_slice, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
+}
+
+static int mark_lightweight_cont_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Lightweight_Continuation *lw = (Scheme_Lightweight_Continuation *)p;
+
+  gcFIXUP2(lw->saved_lwc, gc);
+  gcFIXUP2(lw->stack_slice, gc);
+  gcFIXUP2(lw->runstack_slice, gc);
+  gcFIXUP2(lw->cont_mark_stack_slice, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
+}
+
+#define mark_lightweight_cont_IS_ATOMIC 0
+#define mark_lightweight_cont_IS_CONST_SIZE 1
+
+
 #endif  /* FUN */
 
 /**********************************************************************/
@@ -5722,6 +5755,8 @@ static int future_MARK(void *p, struct NewGC *gc) {
   gcMARK2(f->prev, gc);
   gcMARK2(f->next, gc);
   gcMARK2(f->next_waiting_atomic, gc);
+  gcMARK2(f->next_waiting_lwc, gc);
+  gcMARK2(f->suspended_lw, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5748,6 +5783,8 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(f->prev, gc);
   gcFIXUP2(f->next, gc);
   gcFIXUP2(f->next_waiting_atomic, gc);
+  gcFIXUP2(f->next_waiting_lwc, gc);
+  gcFIXUP2(f->suspended_lw, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

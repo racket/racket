@@ -114,6 +114,7 @@ We should also test deep continuations.
                      (with-continuation-mark
                          'x 1
                        (current-continuation-marks))))])
+   (sleep 0.1)
    (list (continuation-mark-set->list (touch f1) 'x)
          (continuation-mark-set->list (touch f2) 'x))))
 
@@ -170,7 +171,7 @@ We should also test deep continuations.
 ;on a worker thread
 (let ([f1 (future (λ () (current-future)))]
       [f2 (future (λ () (current-future)))]) 
-  (sleep 3)
+  (sleep 0.1)
   (check-equal? #t (equal? f1 (touch f1))) 
   (check-equal? #f (equal? f2 (touch f1)))
   (check-equal? #t (equal? f2 (touch f2)))

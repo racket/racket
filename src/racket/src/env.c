@@ -475,8 +475,9 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_stack_check();
   scheme_init_overflow();
 
-  init_toplevel_local_offsets_hashtable_caches();
+  scheme_init_thread_lwc();
 
+  init_toplevel_local_offsets_hashtable_caches();
 
 #ifdef TIME_STARTUP_PROCESS
   printf("pre-process @ %ld\n", scheme_get_process_milliseconds());

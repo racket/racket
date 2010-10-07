@@ -1334,6 +1334,19 @@ mark_cont_mark_chain {
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Chain));
 }
 
+mark_lightweight_cont {
+ mark:
+  Scheme_Lightweight_Continuation *lw = (Scheme_Lightweight_Continuation *)p;
+
+  gcMARK2(lw->saved_lwc, gc);
+  gcMARK2(lw->stack_slice, gc);
+  gcMARK2(lw->runstack_slice, gc);
+  gcMARK2(lw->cont_mark_stack_slice, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
+}
+
 END fun;
 
 /**********************************************************************/
@@ -2353,6 +2366,8 @@ future {
   gcMARK2(f->prev, gc);
   gcMARK2(f->next, gc);
   gcMARK2(f->next_waiting_atomic, gc);
+  gcMARK2(f->next_waiting_lwc, gc);
+  gcMARK2(f->suspended_lw, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

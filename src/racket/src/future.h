@@ -35,6 +35,7 @@ typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
 #define WAITING_FOR_PRIM 2
 #define FINISHED 3
 #define PENDING_OVERSIZE 4
+#define WAITING_FOR_REQUEUE 5
 
 #define FSRC_OTHER 0
 #define FSRC_RATOR 1
@@ -55,6 +56,7 @@ typedef struct future_t {
 
   /* Runtime call stuff */
   int rt_prim; /* flag to indicate waiting for a prim call */
+  int want_lw; /* flag to indicate waiting for lw capture */
   int rt_prim_is_atomic;
   double time_of_request;
   const char *source_of_request;
@@ -81,7 +83,12 @@ typedef struct future_t {
   Scheme_Object *arg_s2;
   Scheme_Object **arg_S2;
   int arg_i2;
+
   Scheme_Thread *arg_p;
+  struct Scheme_Current_LWC *lwc;
+  struct Scheme_Future_Thread_State *fts;
+
+  struct Scheme_Lightweight_Continuation *suspended_lw;
 
   Scheme_Object *retval_s;
   void *retval_p; /* use only with conservative GC */
@@ -99,8 +106,8 @@ typedef struct future_t {
   struct future_t *prev;
   struct future_t *next;
 
-  int waiting_atomic;
   struct future_t *next_waiting_atomic;
+  struct future_t *next_waiting_lwc;
 } future_t;
 
 /* Primitive instrumentation stuff */

@@ -769,6 +769,8 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   size_t allocate_size;
   void *addr;
 
+  if (GC_gen0_alloc_only) return NULL;
+
 #ifdef NEWGC_BTC_ACCOUNT
   if(GC_out_of_memory) {
 #ifdef MZ_USE_PLACES 
@@ -1119,7 +1121,7 @@ inline static void *allocate(const size_t request_size, const int type)
   unsigned long newptr;
 
   if(request_size == 0) return (void *) zero_sized;
-  
+
   allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
   if(allocate_size > MAX_OBJECT_SIZE)  return allocate_big(request_size, type);
 
@@ -1131,6 +1133,8 @@ inline static void *allocate(const size_t request_size, const int type)
   if(OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
 
+    if (GC_gen0_alloc_only) return NULL;
+    
 #ifdef MZ_USE_PLACES
     if (postmaster_and_master_gc(gc)) { return allocate_medium(request_size, type); }
 #endif

@@ -62,6 +62,9 @@ struct jit_local_state {
 #endif
   int   r0_can_be_tmp;
   int	argssize;
+#ifdef JIT_X86_64
+  int   argpushes;
+#endif
 };
 
 /* 3-parameter operation */
@@ -347,6 +350,19 @@ struct jit_local_state {
 #define jit_pushr_l(rs) jit_pushr_i(rs)
 #define jit_popr_l(rs)  jit_popr_i(rs)
 
+/* For getting certain arguments (e.g., after pointer, int, and pointer) 
+   before we set up the local frame: */
+#define JIT_PREARG JIT_R0
+#ifdef JIT_X86_64
+# define jit_getprearg__p(r) (MOVQrr(_EDI, r))
+# define jit_getprearg_pip_p(r) (MOVQrr(_ECX, r))
+# define jit_getprearg_pipp_p(r) (MOVQrr(JIT_R(8), r))
+#else
+# define jit_getprearg__p(r) (jit_ldxi_p(r, JIT_SP, 4))
+# define jit_getprearg_pip_p(r) (jit_ldxi_p(r, JIT_SP, 16))
+# define jit_getprearg_pipp_p(r) (jit_ldxi_p(r, JIT_SP, 20))
+#endif
+
 #ifdef JIT_X86_64
 # define jit_base_prolog() (PUSHQr(_EBP), MOVQrr(_ESP, _EBP), PUSHQr(_EBX), PUSHQr(_R12), PUSHQr(_R13))
 # define jit_prolog(n) (_jitl.nextarg_geti = 0, jit_base_prolog())
@@ -359,7 +375,7 @@ struct jit_local_state {
 
 #ifdef JIT_X86_64
 /* Stack isn't used for arguments: */
-# define jit_prepare_i(ni)	(_jitl.argssize = 0)
+# define jit_prepare_i(ni)	(_jitl.argssize = (ni), _jitl.argpushes = _jitl.argssize)
 #else
 # ifdef _CALL_DARWIN
   /* Stack must stay 16-byte aligned: */
@@ -375,12 +391,13 @@ struct jit_local_state {
 #define jit_prepare_f(nf)	(_jitl.argssize += (nf))
 #define jit_prepare_d(nd)	(_jitl.argssize += 2 * (nd))
 #ifdef JIT_X86_64
-# define jit_pusharg_i(rs)	(_jitl.argssize++, MOVQrr(rs, JIT_CALLTMPSTART + _jitl.argssize - 1))
-# define jit_normal_pushonlyarg_i(rs) (_jitl.argssize++, MOVQrr(rs, _EDI))
-# define jit_save_argstate(curstate)	curstate = _jitl.argssize;
-# define jit_restore_argstate(curstate)	_jitl.argssize = curstate;
+# define jit_pusharg_i(rs)	(_jitl.argpushes--, MOVQrr(rs, JIT_CALLTMPSTART + _jitl.argpushes))
+# define jit_normal_pushonlyarg_i(rs) (_jitl.argpushes--, MOVQrr(rs, _EDI))
+# define jit_save_argstate(curstate)	curstate = _jitl.argpushes;
+# define jit_restore_argstate(curstate)	_jitl.argpushes = curstate;
 # define jit_finish(sub)        (jit_shift_args(), (void)jit_calli((sub)), jit_restore_locals())
 # define jit_normal_finish(sub) jit_calli((sub))
+# define jit_return_pop_insn_len() 0
 # define jit_reg_is_arg(reg) ((reg == _EDI) || (reg ==_ESI) || (reg == _EDX))
 # define jit_finishr(reg)	((jit_reg_is_arg((reg)) ? MOVQrr(reg, JIT_REXTMP) : (void)0), \
                                  jit_shift_args(), \
@@ -389,12 +406,12 @@ struct jit_local_state {
 /* R12 and R13 are callee-save, instead of EDI and ESI */
 # define jit_shift_args() \
    (MOVQrr(_ESI, _R12), MOVQrr(_EDI, _R13), \
-   (_jitl.argssize--  \
-    ? (MOVQrr(JIT_CALLTMPSTART + _jitl.argssize, jit_arg_reg_order[0]),  \
-       (_jitl.argssize--  \
-        ? (MOVQrr(JIT_CALLTMPSTART + _jitl.argssize, jit_arg_reg_order[1]),  \
-           (_jitl.argssize--  \
-            ? MOVQrr(JIT_CALLTMPSTART, jit_arg_reg_order[2])  \
+   (_jitl.argssize  \
+    ? (MOVQrr(JIT_CALLTMPSTART, jit_arg_reg_order[0]),  \
+       ((_jitl.argssize > 1)  \
+        ? (MOVQrr(JIT_CALLTMPSTART + 1, jit_arg_reg_order[1]),  \
+           ((_jitl.argssize > 2)  \
+            ? MOVQrr(JIT_CALLTMPSTART + 2, jit_arg_reg_order[2])  \
             : (void)0)) \
         : (void)0)) \
     : (void)0))
@@ -407,6 +424,7 @@ struct jit_local_state {
 # define jit_restore_argstate(curstate)	_jitl.argssize = curstate;
 # define jit_finish(sub)        ((void)jit_calli((sub)), ADDLir(sizeof(long) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
 # define jit_finishr(reg)	(jit_callr((reg)), ADDLir(sizeof(long) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
+# define jit_return_pop_insn_len() 3 /* size of ADDLir() */
 # define jit_normal_finish(sub) jit_finish(sub)
 #endif
 #define jit_pusharg_l(rs) jit_pusharg_i(rs)
@@ -418,7 +436,7 @@ struct jit_local_state {
 #define	jit_arg_l()	        (_jitl.nextarg_geti++)
 #define	jit_arg_p()	        (_jitl.nextarg_geti++)
 #define jit_arg_reg(p)          (jit_arg_reg_order[p])
-static int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
+static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #else
 #define	jit_arg_c()		((_jitl.framesize += sizeof(int)) - sizeof(int))
 #define	jit_arg_uc()		((_jitl.framesize += sizeof(int)) - sizeof(int))

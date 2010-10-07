@@ -8323,6 +8323,276 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
 }
 
 /*========================================================================*/
+/*                        lightweight continuations                       */
+/*========================================================================*/
+
+/* A lightweight continuation is one that contains only frames from
+   JIT-generated code. The code here manages capture and restore for
+   the runstack and mark stack, while the rest is in the JIT. */
+
+struct Scheme_Lightweight_Continuation {
+  MZTAG_IF_REQUIRED /* scheme_rt_lightweight_cont */
+  Scheme_Current_LWC *saved_lwc;
+  void *stack_slice;
+  Scheme_Object **runstack_slice;
+  Scheme_Cont_Mark *cont_mark_stack_slice;
+};
+
+void scheme_init_thread_lwc(void) XFORM_SKIP_PROC
+{
+  scheme_current_lwc = (Scheme_Current_LWC *)malloc(sizeof(Scheme_Current_LWC));
+}
+
+void scheme_fill_lwc_start(void) XFORM_SKIP_PROC
+{
+  scheme_current_lwc->runstack_start = MZ_RUNSTACK;
+  scheme_current_lwc->cont_mark_stack_start = MZ_CONT_MARK_STACK;
+  scheme_current_lwc->cont_mark_pos_start = MZ_CONT_MARK_POS;
+}
+
+void scheme_fill_lwc_end(void) XFORM_SKIP_PROC
+{
+  scheme_current_lwc->runstack_end = MZ_RUNSTACK;
+  scheme_current_lwc->cont_mark_stack_end = MZ_CONT_MARK_STACK;
+  scheme_current_lwc->cont_mark_pos_end = MZ_CONT_MARK_POS;
+  scheme_fill_stack_lwc_end();
+}
+
+void scheme_clear_lwc(void) XFORM_SKIP_PROC
+{
+}
+
+Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_Thread *p,
+                                                                         Scheme_Current_LWC *p_lwc,
+                                                                         void **storage)
+  XFORM_SKIP_PROC
+/* This function explicitly coorperates with the GC by storing the
+   pointers it needs to save across a collection in `storage'. Also,
+   if allocation fails, it can abort and return NULL. The combination
+   allows it to work in a thread for runing futures (where allocation
+   and GC in general ae disallowed). */
+{
+  long len, i, j, pos;
+  Scheme_Object **runstack_slice;
+  Scheme_Cont_Mark *cont_mark_stack_slice;
+  Scheme_Current_LWC *lwc;
+  Scheme_Cont_Mark *seg;
+  Scheme_Lightweight_Continuation *lw;
+  void *stack;
+
+#ifndef MZ_PRECISE_GC
+  return NULL;
+#endif
+
+  storage[1] = p;
+
+  lw = MALLOC_ONE_RT(Scheme_Lightweight_Continuation);
+  if (!lw) return NULL;
+#ifdef MZTAG_REQUIRED
+  lw->type = scheme_rt_lightweight_cont;
+#endif
+
+  storage[0] = lw;
+
+  lwc = (Scheme_Current_LWC *)scheme_malloc_atomic(sizeof(Scheme_Current_LWC));
+  if (!lwc) return NULL;
+
+  memcpy(lwc, p_lwc, sizeof(Scheme_Current_LWC));
+
+  lw = (Scheme_Lightweight_Continuation *)storage[0];
+  lw->saved_lwc = lwc;
+
+  stack = scheme_save_lightweight_continuation_stack(p_lwc);
+  if (!stack) return NULL;
+
+  lw = (Scheme_Lightweight_Continuation *)storage[0];
+  lw->stack_slice = stack;
+
+  len = lwc->runstack_start - lwc->runstack_end;
+  runstack_slice = MALLOC_N(Scheme_Object*, len);
+  if (!runstack_slice) return NULL;
+
+  lw = (Scheme_Lightweight_Continuation *)storage[0];
+  lw->runstack_slice = runstack_slice;
+  memcpy(runstack_slice, lw->saved_lwc->runstack_end, len * sizeof(Scheme_Object *));
+
+  /* The runstack may contain pointers to itself, but they are just 
+     cleared slots where a register containing the runstack pointer
+     was handy; zero out such slots to avoid retaining a runstack
+     unnecessarily: */
+  for (i = 0; i < len; i++) {
+    if (((unsigned long)runstack_slice[i] >= (unsigned long)lwc->runstack_end)
+        && ((unsigned long)runstack_slice[i] <= (unsigned long)lwc->runstack_start))
+      runstack_slice[i] = 0;
+  }
+
+  len = lwc->cont_mark_stack_end - lwc->cont_mark_stack_start;
+
+  if (len) {
+    cont_mark_stack_slice = MALLOC_N(Scheme_Cont_Mark, len);
+    if (!cont_mark_stack_slice) return NULL;
+    lw = (Scheme_Lightweight_Continuation *)storage[0];
+  } else
+    cont_mark_stack_slice = NULL;
+
+  lw->cont_mark_stack_slice = cont_mark_stack_slice;
+
+  lwc = lw->saved_lwc;
+  p = (Scheme_Thread *)storage[1];
+
+  for (j = 0; j < len; j++) {
+    i = j + lwc->cont_mark_stack_start;
+
+    seg = p->cont_mark_stack_segments[i >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+    pos = i & SCHEME_MARK_SEGMENT_MASK;
+    
+    memcpy(cont_mark_stack_slice + i, seg + pos, sizeof(Scheme_Cont_Mark));
+  }
+
+  return lw;
+}
+
+Scheme_Object **scheme_adjust_runstack_argument(Scheme_Lightweight_Continuation *lw,
+                                                Scheme_Object **arg)
+  XFORM_SKIP_PROC
+{
+  if (arg == lw->saved_lwc->runstack_end)
+    return lw->runstack_slice;
+  else
+    return arg;
+}
+
+static void *apply_lwc_k()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Lightweight_Continuation *lw = (Scheme_Lightweight_Continuation *)p->ku.k.p1;
+  Scheme_Object *result = (Scheme_Object *)p->ku.k.p2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  return scheme_apply_lightweight_continuation(lw, result);
+}
+
+Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw,
+                                                     Scheme_Object *result) XFORM_SKIP_PROC
+{
+  long len, cm_len, cm_pos_delta, cm_delta, i, cm;
+  Scheme_Cont_Mark *seg;
+  Scheme_Object **rs;
+ 
+  len = lw->saved_lwc->runstack_start - lw->saved_lwc->runstack_end;
+ 
+  if (!scheme_check_runstack(len)) {
+    /* This will not happen when restoring a future-thread-captured
+       continuation in a future thread. */
+    scheme_current_thread->ku.k.p1 = lw;
+    scheme_current_thread->ku.k.p2 = result;
+    return (Scheme_Object *)scheme_enlarge_runstack(len, apply_lwc_k);
+  }
+  
+  /* FIXME: check whether the C stack is big enough */
+
+  /* application of a lightweight continuation forms a lightweight continuation: */
+  scheme_current_lwc->runstack_start = MZ_RUNSTACK;
+  scheme_current_lwc->cont_mark_stack_start = MZ_CONT_MARK_STACK;
+  scheme_current_lwc->cont_mark_pos_start = MZ_CONT_MARK_POS + 2;
+
+  cm_len = lw->saved_lwc->cont_mark_stack_end - lw->saved_lwc->cont_mark_stack_start;
+  if (cm_len) {
+    /* install captured continuation marks, adjusting the pos
+       to match the new context: */
+    seg = lw->cont_mark_stack_slice;
+    cm_pos_delta = MZ_CONT_MARK_POS + 2 - lw->saved_lwc->cont_mark_pos_start;
+    for (i = 0; i < cm_len; i++) {
+      MZ_CONT_MARK_POS = seg[i].pos + cm_pos_delta;
+      scheme_set_cont_mark(seg[i].key, seg[i].val);
+    }
+    MZ_CONT_MARK_POS = lw->saved_lwc->cont_mark_pos_end + cm_pos_delta;
+  }
+
+  cm_delta = (long)MZ_CONT_MARK_STACK - (long)lw->saved_lwc->cont_mark_stack_end;
+
+  rs = MZ_RUNSTACK - len;
+  MZ_RUNSTACK = rs;
+
+  memcpy(rs, lw->runstack_slice, len * sizeof(Scheme_Object*));
+  
+  /* If SCHEME_EVAL_WAITING appears in the runstack slice, it
+     indicates that a cm position follows: */
+  for (i = 0; i < len; i++) {
+    if (rs[i] == SCHEME_EVAL_WAITING) {
+      cm = SCHEME_INT_VAL(rs[i+1]);
+      cm += cm_delta;
+      rs[i+1] = scheme_make_integer(cm);
+    }
+  }
+
+  return scheme_apply_lightweight_continuation_stack(lw->saved_lwc, lw->stack_slice, result);
+}
+
+int scheme_push_marks_from_lightweight_continuation(Scheme_Lightweight_Continuation *lw, 
+                                                    Scheme_Cont_Frame_Data *d)
+{
+  Scheme_Thread *p;
+  long pos, len, delta;
+  Scheme_Cont_Mark *seg;
+
+  len = (lw->saved_lwc->cont_mark_stack_end
+         - lw->saved_lwc->cont_mark_stack_start);
+
+  if (len) {
+    scheme_push_continuation_frame(d);
+
+    p = scheme_current_thread;
+    seg = lw->cont_mark_stack_slice;
+
+    delta = MZ_CONT_MARK_POS + 2 - lw->saved_lwc->cont_mark_pos_start;
+      
+    for (pos = 0; pos < len; pos++) {
+      MZ_CONT_MARK_POS = seg[pos].pos + delta;
+      scheme_set_cont_mark(seg[pos].key, seg[pos].val);
+    }
+
+    MZ_CONT_MARK_POS = lw->saved_lwc->cont_mark_pos_end + delta;
+
+    return 1;
+  }
+
+  return 0;
+}
+
+int scheme_push_marks_from_thread(Scheme_Thread *p2, Scheme_Cont_Frame_Data *d)
+{
+  Scheme_Thread *p;
+  long i, pos, delta;
+  Scheme_Cont_Mark *seg;
+
+  if (p2->cont_mark_stack) {
+    scheme_push_continuation_frame(d);
+
+    p = scheme_current_thread;
+
+    delta = MZ_CONT_MARK_POS - p2->cont_mark_pos;
+    if (delta < 0) delta = 0;
+      
+    for (i = 0; i < p2->cont_mark_stack; i++) {
+      seg = p2->cont_mark_stack_segments[i >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+      pos = i & SCHEME_MARK_SEGMENT_MASK;
+
+      MZ_CONT_MARK_POS = seg[pos].pos + delta;
+      scheme_set_cont_mark(seg[pos].key, seg[pos].val);
+    }
+
+    MZ_CONT_MARK_POS = p2->cont_mark_pos + delta;
+
+    return 1;
+  }
+
+  return 0;
+}
+
+/*========================================================================*/
 /*                             dynamic-wind                               */
 /*========================================================================*/
 
@@ -9494,6 +9764,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_dyn_wind_cell, mark_dyn_wind_cell);
   GC_REG_TRAV(scheme_rt_dyn_wind_info, mark_dyn_wind_info);
   GC_REG_TRAV(scheme_cont_mark_chain_type, mark_cont_mark_chain);
+  GC_REG_TRAV(scheme_rt_lightweight_cont, mark_lightweight_cont);
 }
 
 END_XFORM_SKIP;

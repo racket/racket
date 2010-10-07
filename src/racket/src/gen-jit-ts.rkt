@@ -16,6 +16,21 @@
     [(#\v) "void"]
     [else (error 'char->type "unknown: ~e" c)]))
 
+(define (is-pointer-type? c)
+  (case c
+    [(#\s) #t]
+    [(#\t) #t]
+    [(#\S) #t]
+    [(#\b) #t]
+    [(#\n) #t]
+    [(#\m) #f]
+    [(#\p) #t]
+    [(#\i) #f]
+    [(#\l) #f]
+    [(#\z) #f]
+    [(#\v) #f]
+    [else (error 'char->type "unknown: ~e" c)]))
+
 (define (type->arg-string t)
   (let* ([t (symbol->string t)])
     (substring t 0 (- (string-length t) 2))))
@@ -105,13 +120,24 @@
     case SIG_@|ts|:
       {
          prim_@|ts| f = (prim_@|ts|)future->prim_func;
-         @(if (string=? result-type "void") "" @string-append{@|result-type| retval;})
+         @(if (string=? result-type "void") "" @string-append{GC_CAN_IGNORE @|result-type| retval;})
          @(if (equal? arg-types '("Scheme_Object*")) @string-append{receive_special_result(future, future->arg_s0, 1);} "")
+         @(string-join
+           (for/list ([t (in-string (type->arg-string t))]
+                      [i (in-naturals)])
+             @string-append{LOCALIZE(@(char->type t), arg_@|(string t)|@|(number->string i)|);})
+           " ")
+         @(string-join
+           (for/list ([t (in-string (type->arg-string t))]
+                      [i (in-naturals)]
+                      #:when (is-pointer-type? t))
+             @string-append{future->arg_@|(string t)|@|(number->string i)| = NULL;})
+           " ")
          @(if (string=? result-type "void") "" "retval = ")
          f(@(string-join
               (for/list ([t (in-string (type->arg-string t))]
                          [i (in-naturals)])
-                 @string-append{future->arg_@|(string t)|@|(number->string i)|})
+                 @string-append{arg_@|(string t)|@|(number->string i)|})
              ", "));
          @(if (string=? result-type "void") "" @string-append{future->retval_@(substring ts (sub1 (string-length ts))) = retval;})
          @(if (string=? result-type "Scheme_Object*") @string-append{send_special_result(future, retval);} "")

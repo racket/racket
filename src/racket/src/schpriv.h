@@ -2254,6 +2254,53 @@ typedef struct {
 Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *obj, int drop_code, 
 						   Scheme_Native_Closure_Data *case_lam);
 
+typedef struct Scheme_Current_LWC {
+  /* !! All of these fields are treated as atomic by the GC !! */
+  Scheme_Object **runstack_start;
+  MZ_MARK_STACK_TYPE cont_mark_stack_start;
+  MZ_MARK_POS_TYPE cont_mark_pos_start;
+  void *stack_start;
+  Scheme_Object **runstack_end;
+  Scheme_Object **runstack_base_end;
+  MZ_MARK_STACK_TYPE cont_mark_stack_end;
+  MZ_MARK_POS_TYPE cont_mark_pos_end;
+  void *frame_end;
+  void *stack_end;
+  void *original_dest;
+  void *saved_v1;
+  double saved_save_fp;
+} Scheme_Current_LWC;
+
+void scheme_init_thread_lwc(void);
+void scheme_fill_lwc_start(void);
+void scheme_fill_lwc_end(void);
+void scheme_fill_stack_lwc_end(void);
+void scheme_clear_lwc(void);
+
+THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Current_LWC *scheme_current_lwc);
+
+Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Closed_Prim *code,
+                                                       void *data,
+                                                       int argc, 
+                                                       Scheme_Object **argv);
+void *scheme_save_lightweight_continuation_stack(Scheme_Current_LWC *lwc);
+Scheme_Object *scheme_apply_lightweight_continuation_stack(Scheme_Current_LWC *lwc, void *stack, 
+                                                           Scheme_Object *result);
+
+struct Scheme_Lightweight_Continuation;
+typedef struct Scheme_Lightweight_Continuation Scheme_Lightweight_Continuation;
+Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_Thread *p,
+                                                                         Scheme_Current_LWC *p_lwc,
+                                                                         void **storage);
+Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continuation *captured,
+                                                     Scheme_Object *result);
+Scheme_Object **scheme_adjust_runstack_argument(Scheme_Lightweight_Continuation *captured,
+                                                Scheme_Object **arg);
+
+int scheme_push_marks_from_thread(Scheme_Thread *p2, Scheme_Cont_Frame_Data *d);
+int scheme_push_marks_from_lightweight_continuation(Scheme_Lightweight_Continuation *captured, 
+                                                    Scheme_Cont_Frame_Data *d);
+
 #define scheme_new_frame(n) scheme_new_special_frame(n, 0)
 #define scheme_extend_env(f, e) (f->basic.next = e, f)
 #define scheme_next_frame(e) ((e)->basic.next)
