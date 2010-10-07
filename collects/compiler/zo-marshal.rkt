@@ -68,20 +68,22 @@
     
     (out-compilation-top 
      (λ (v #:error? [error? #f])
-       (cond
-         [(hash? v) (error 'create-symbol-table "current type trace: ~a" (current-type-trace))]
-         [(closure? v)
-          (let ([pos (share! v)])
-            (if (encountered? v)
-                pos
-                (encounter! v)))]
-         [error? ; If we would error if this were not present, then we must share it
-          (encounter! v)
-          (share! v)]
-         [(encountered? v)
-          (share! v)]
-         [else
-          (encounter! v)]))
+         (cond
+           [(hash? v) (error 'create-symbol-table "current type trace: ~a" (current-type-trace))]
+           [(closure? v)
+            (let ([pos (share! v)])
+              (if (encountered? v)
+                  pos
+                  (encounter! v)))]
+           [(member v (rest (continuation-mark-set->list (current-continuation-marks) 'cycle)))
+            #f]
+           [error? ; If we would error if this were not present, then we must share it
+            (encounter! v)
+            (share! v)]
+           [(encountered? v)
+            (share! v)]
+           [else
+            (encounter! v)]))
      (λ (v)
        (unencounter! v))
      (open-output-nowhere))
@@ -455,7 +457,7 @@
 
 (define (shareable? v)
   (define never-share-this?
-    (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void? hash? ))
+    (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void? hash?))
   (define always-share-this?
     (or-pred? v closure?))
   (or always-share-this?
@@ -481,11 +483,18 @@
 (define-syntax with-type-trace
   (syntax-rules ()
     [(_ v body ...)
-     #;(begin body ...)
-     (with-continuation-mark 'zo (typeof v)
+     (begin body ...)
+     #;(with-continuation-mark 'zo (typeof v)
+       (begin0 (begin body ...) (void)))]))
+
+(define-syntax with-cycle-check
+  (syntax-rules ()
+    [(_ v body ...)
+     (with-continuation-mark 'cycle v
        (begin0 (begin body ...) (void)))]))
 
 (define (out-anything v out)
+  (with-cycle-check v
   (with-type-trace v
   (out-shared 
    v out
@@ -861,7 +870,7 @@
         (define bstr (get-output-bytes s))
         (out-number (bytes-length bstr) out)
         (out-bytes bstr out)]
-       [else (error 'out-anything "~s" (current-type-trace))])))))
+       [else (error 'out-anything "~s" (current-type-trace))]))))))
 
 (define-struct module-decl (content))
 

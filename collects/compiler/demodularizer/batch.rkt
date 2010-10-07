@@ -76,6 +76,7 @@ Here's the idea:
 
 
 (define merged-source-path (path-add-suffix file-to-batch #".merged.rkt"))
+(define merged-struct-path (path-add-suffix file-to-batch #".mergeds.rkt"))
 (define-values (merged-source-base merged-source-name _1) (split-path merged-source-path))
 (define merged-zo-path (build-compiled-path merged-source-base (path-add-suffix merged-source-name #".zo")))
 
@@ -111,6 +112,13 @@ Here's the idea:
     merged-source-path
   (lambda ()
     (pretty-print (decompile batch-final)))
+  #:exists 'replace)
+
+(log-debug "Writing merged struct~n")
+(with-output-to-file
+    merged-struct-path
+  (lambda ()
+    (pretty-write batch-final))
   #:exists 'replace)
 
 (log-debug "Writing merged zo~n")
