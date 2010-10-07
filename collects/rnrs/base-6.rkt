@@ -458,7 +458,7 @@
 ;;   Need bindings like R5RS, but int-def body like Racket
 
 (define-syntax-rule (r6rs:letrec bindings . body)
-  (r5rs:letrec bindings (#%stratified-body . body)))
+  (r5rs:letrec bindings (let () (#%stratified-body . body))))
 
 (define-syntax-rule (r6rs:letrec* bindings . body)
   (letrec bindings (#%stratified-body . body)))
@@ -523,7 +523,7 @@
      (andmap identifier? (syntax->list #'(id ...)))
      (syntax/loc stx (lambda (id ...) (#%stratified-body . body)))]
     [(_ args . body)
-     (syntax/loc stx (r5rs:lambda args (#%stratified-body . body)))]))
+     (syntax/loc stx (r5rs:lambda args (let () (#%stratified-body . body))))]))
 
 (define-for-syntax (check-label id orig-stx def)
   ;; This test shouldn't be needed, and it interferes
