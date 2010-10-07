@@ -70,8 +70,8 @@ in parallel. See also @guidesecref["effective-futures"].
   
 @defproc[(current-future) (or/c #f future?)]{
   Returns the descriptor of the future whose thunk execution is the
-  current continuation. If a future thunk uses @racket[touch], the
-  future executions can be nested, in which case the descriptor of the
+  current continuation. If a future thunk itself uses @racket[touch],
+  future-thunk executions can be nested, in which case the descriptor of the
   most immediately executing future is returned. If the current
   continuation is not a future-thunk execution, the result is @racket[#f].
 }
