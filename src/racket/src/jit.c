@@ -13336,6 +13336,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     }
   }
 
+#ifdef MZ_USE_LWC
   /* native_starter_code */
   {
     native_starter_code = (LWC_Native_Starter)jit_get_ip().ptr;
@@ -13350,7 +13351,6 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     CHECK_LIMIT();
   }
 
-#ifdef MZ_USE_LWC
   /* continuation_apply_indirect_code */
   {
     int in;
