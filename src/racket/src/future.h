@@ -89,6 +89,7 @@ typedef struct future_t {
   struct Scheme_Future_Thread_State *fts;
 
   struct Scheme_Lightweight_Continuation *suspended_lw;
+  int maybe_suspended_lw; /* set to 1 with suspended_lw untl test in runtime thread */
 
   Scheme_Object *retval_s;
   void *retval_p; /* use only with conservative GC */

@@ -1016,6 +1016,8 @@ typedef struct Scheme_Thread {
 
   struct Scheme_Thread *nester, *nestee;
 
+  struct future_t *current_ft;
+
   double sleep_end; /* blocker has starting sleep time */
   int block_descriptor;
   Scheme_Object *blocker; /* semaphore or port */

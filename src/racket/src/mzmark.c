@@ -1678,6 +1678,8 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   
   gcMARK2(pr->nester, gc);
   gcMARK2(pr->nestee, gc);
+
+  gcMARK2(pr->current_ft, gc);
   
   gcMARK2(pr->blocker, gc);
   gcMARK2(pr->overflow, gc);
@@ -1790,6 +1792,8 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(pr->nester, gc);
   gcFIXUP2(pr->nestee, gc);
+
+  gcFIXUP2(pr->current_ft, gc);
   
   gcFIXUP2(pr->blocker, gc);
   gcFIXUP2(pr->overflow, gc);

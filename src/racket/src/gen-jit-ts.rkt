@@ -84,7 +84,7 @@
      double tm;
      @(if (string=? result-type "void") "" @string-append{@|result-type| retval;})
 
-     future = fts->current_ft;
+     future = fts->thread->current_ft;
      future->prim_protocol = SIG_@|ts|;
      future->prim_func = f;
      tm = scheme_get_inexact_milliseconds();
@@ -99,7 +99,7 @@
        "\n")
      @(if (equal? arg-types '("Scheme_Object*")) @string-append{send_special_result(future, @(car arg-names));} "")
      future_do_runtimecall(fts, (void*)f, 0);
-     future = fts->current_ft;
+     future = fts->thread->current_ft;
      @(if (string=? result-type "void") "" @string-append{retval = @|fretval|;})
      @(if (string=? result-type "void") "" @string-append{@|fretval| = 0;})
      @(if (string=? result-type "Scheme_Object*") @string-append{receive_special_result(future, retval, 1);} "")

@@ -645,6 +645,7 @@ int GC_is_allocated(void *p)
 */
 THREAD_LOCAL_DECL(unsigned long GC_gen0_alloc_page_ptr = 0);
 THREAD_LOCAL_DECL(unsigned long GC_gen0_alloc_page_end = 0);
+THREAD_LOCAL_DECL(int GC_gen0_alloc_only = 0);
 
 /* miscellaneous variables */
 static const char *zero_sized[4]; /* all 0-sized allocs get this */

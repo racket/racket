@@ -2286,7 +2286,6 @@ Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Closed_Prim *code,
 void *scheme_save_lightweight_continuation_stack(Scheme_Current_LWC *lwc);
 Scheme_Object *scheme_apply_lightweight_continuation_stack(Scheme_Current_LWC *lwc, void *stack, 
                                                            Scheme_Object *result);
-
 struct Scheme_Lightweight_Continuation;
 typedef struct Scheme_Lightweight_Continuation Scheme_Lightweight_Continuation;
 Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_Thread *p,
@@ -2296,6 +2295,8 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
                                                      Scheme_Object *result);
 Scheme_Object **scheme_adjust_runstack_argument(Scheme_Lightweight_Continuation *captured,
                                                 Scheme_Object **arg);
+
+int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *captured);
 
 int scheme_push_marks_from_thread(Scheme_Thread *p2, Scheme_Cont_Frame_Data *d);
 int scheme_push_marks_from_lightweight_continuation(Scheme_Lightweight_Continuation *captured, 

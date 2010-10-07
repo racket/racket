@@ -192,14 +192,13 @@ We should also test deep continuations.
 (let* ([fs (build-list 20 (λ (n) (future (λ () (current-future)))))]
        [retvalfs (map touch fs)]) 
   (check-equal? 20 (length (remove-duplicates retvalfs))))
-  
-              
-              
-              
-              
-              
-              
-              
-              
-              
 
+;; Check `current-future' more, specially trying to get
+;; the runtime thread to nest `touch'es:
+(let loop ([i 20][f (future (lambda () (current-future)))])
+  (if (zero? i)
+      (check-equal? f (touch f))
+      (loop (sub1 i)
+            (future (lambda ()
+                      (and (eq? (touch f) f)
+                           (current-future)))))))

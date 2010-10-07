@@ -69,9 +69,11 @@ in parallel. See also @guidesecref["effective-futures"].
   
   
 @defproc[(current-future) (or/c #f future?)]{
-  Returns the descriptor for the future that is evaluating the current thunk.
-  If not currently running inside a future thunk (or 
-  futures are disabled), returns @racket[#f].
+  Returns the descriptor of the future whose thunk execution is the
+  current continuation. If a future thunk uses @racket[touch], the
+  future executions can be nested, in which case the descriptor of the
+  most immediately executing future is returned. If the current
+  continuation is not a future-thunk execution, the result is @racket[#f].
 }
 
 
@@ -81,7 +83,7 @@ in parallel. See also @guidesecref["effective-futures"].
 }
 
 @defproc[(processor-count) exact-positive-integer?]{
-  Returns the number of parallel computations units (e.g., processors
+  Returns the number of parallel computation units (e.g., processors
   or cores) that are available on the current machine.
 }
 

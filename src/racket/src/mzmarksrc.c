@@ -661,6 +661,8 @@ thread_val {
   
   gcMARK2(pr->nester, gc);
   gcMARK2(pr->nestee, gc);
+
+  gcMARK2(pr->current_ft, gc);
   
   gcMARK2(pr->blocker, gc);
   gcMARK2(pr->overflow, gc);

@@ -6,7 +6,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_siS_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -18,7 +18,7 @@
     future->arg_S2 = g53;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -32,7 +32,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_iSs_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -44,7 +44,7 @@
     future->arg_s2 = g56;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -58,7 +58,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_s_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -68,7 +68,7 @@
       future->arg_s0 = g57;
   send_special_result(future, g57);
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -82,7 +82,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_n_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -92,7 +92,7 @@
       future->arg_n0 = g58;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -106,7 +106,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG__s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -116,7 +116,7 @@
   
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -130,7 +130,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_ss_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -141,7 +141,7 @@
     future->arg_s1 = g60;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -155,7 +155,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_tt_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -166,7 +166,7 @@
     future->arg_t1 = g62;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -180,7 +180,7 @@
   double tm;
   MZ_MARK_STACK_TYPE retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_ss_m;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -191,7 +191,7 @@
     future->arg_s1 = g64;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_m;
   future->retval_m = 0;
   
@@ -205,7 +205,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_Sl_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -216,7 +216,7 @@
     future->arg_l1 = g66;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -230,7 +230,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_l_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -240,7 +240,7 @@
       future->arg_l0 = g67;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -254,7 +254,7 @@
   double tm;
   
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_bsi_v;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -266,7 +266,7 @@
     future->arg_i2 = g70;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   
   
   
@@ -280,7 +280,7 @@
   double tm;
   
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_iiS_v;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -292,7 +292,7 @@
     future->arg_S2 = g73;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   
   
   
@@ -306,7 +306,7 @@
   double tm;
   
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_ss_v;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -317,7 +317,7 @@
     future->arg_s1 = g75;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   
   
   
@@ -331,7 +331,7 @@
   double tm;
   
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_b_v;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -341,7 +341,7 @@
       future->arg_b0 = g76;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   
   
   
@@ -355,7 +355,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_sl_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -366,7 +366,7 @@
     future->arg_l1 = g78;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -380,7 +380,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_iS_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -391,7 +391,7 @@
     future->arg_S1 = g80;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -405,7 +405,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_S_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -415,7 +415,7 @@
       future->arg_S0 = g81;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -429,7 +429,7 @@
   double tm;
   
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_s_v;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -439,7 +439,7 @@
       future->arg_s0 = g82;
   send_special_result(future, g82);
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   
   
   
@@ -453,7 +453,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_iSi_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -465,7 +465,7 @@
     future->arg_i2 = g85;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -479,7 +479,7 @@
   double tm;
   
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_siS_v;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -491,7 +491,7 @@
     future->arg_S2 = g88;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   
   
   
@@ -505,7 +505,7 @@
   double tm;
   void* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_z_p;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -515,7 +515,7 @@
       future->arg_z0 = g89;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_p;
   future->retval_p = 0;
   
@@ -529,7 +529,7 @@
   double tm;
   Scheme_Object* retval;
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_si_s;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -540,7 +540,7 @@
     future->arg_i1 = g91;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
   receive_special_result(future, retval, 1);
@@ -554,7 +554,7 @@
   double tm;
   
 
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   future->prim_protocol = SIG_sis_v;
   future->prim_func = f;
   tm = scheme_get_inexact_milliseconds();
@@ -566,7 +566,7 @@
     future->arg_s2 = g94;
   
   future_do_runtimecall(fts, (void*)f, 0);
-  future = fts->current_ft;
+  future = fts->thread->current_ft;
   
   
   

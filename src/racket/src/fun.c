@@ -8474,6 +8474,27 @@ static void *apply_lwc_k()
   return scheme_apply_lightweight_continuation(lw, result);
 }
 
+int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw)
+{
+#ifdef DO_STACK_CHECK
+  /* enough room on C stack? */
+  unsigned long size;
+  size = (unsigned long)lw->saved_lwc->stack_start - (unsigned long)lw->saved_lwc->stack_end;
+  
+  {
+# define SCHEME_PLUS_STACK_DELTA(x) ((x) - size)
+# include "mzstkchk.h"
+    {
+      return 0;
+    }
+  }
+
+  return 1;
+#else
+  return 0;
+#endif
+}
+
 Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw,
                                                      Scheme_Object *result) XFORM_SKIP_PROC
 {
@@ -8490,8 +8511,6 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
     scheme_current_thread->ku.k.p2 = result;
     return (Scheme_Object *)scheme_enlarge_runstack(len, apply_lwc_k);
   }
-  
-  /* FIXME: check whether the C stack is big enough */
 
   /* application of a lightweight continuation forms a lightweight continuation: */
   scheme_current_lwc->runstack_start = MZ_RUNSTACK;
