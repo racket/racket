@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket
 
-(require htdp/error)
+(require htdp/error "check-aux.rkt")
 
 ;                                                   
 ;                                                   

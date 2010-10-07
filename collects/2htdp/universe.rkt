@@ -134,13 +134,15 @@
                    [(V) (set! rec? #'V)]
                    [_ (err '#'record? stx)])))]
             [args 
-             (->args 'big-bang stx (syntax w) (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
-       #`(let* ([esp (make-eventspace)]
-                [thd (eventspace-handler-thread esp)])
-           (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
-             (parameterize ([current-eventspace esp])
-               (let ([o (new (if #,rec? aworld% world%) [world0 w] #,@args)])
-                 (send o last))))))]))
+             (->args 'big-bang stx #'w #'(clause ...) WldSpec ->rec? "world")])
+       #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args)))]))
+
+(require (only-in 2htdp/image circle))
+(define (main) 
+  (big-bang 10
+            (on-tick sub1)
+            (stop-when zero?)
+            (to-draw (lambda (x) (circle (+ 30 x) 'solid 'red)))))
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
@@ -215,23 +217,45 @@
  )
 
 (define-syntax (universe stx)
-  (define legal "not a legal clause in a universe description")
   (syntax-case stx ()
     [(universe) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u bind ...)
      (let*
-         ([args (->args 'universe stx (syntax u) (syntax (bind ...)) AllSpec UniSpec void "universe")]
-          [domain (map (compose syntax-e car) args)])
+         ([args (->args 'universe stx #'u #'(bind ...) UniSpec void "universe")]
+          [domain (map (lambda (x)
+                         (if (keyword? x)
+                             (string->symbol (keyword->string x))
+                             x))
+                       args)])
        (cond
          [(not (memq 'on-new domain))
           (raise-syntax-error #f "missing on-new clause" stx)]
          [(not (memq 'on-msg domain))
           (raise-syntax-error #f "missing on-msg clause" stx)]
          [else ; (and (memq #'on-new domain) (memq #'on-msg domain))
-          #`(let* ([esp (make-eventspace)]
-                   [thd (eventspace-handler-thread esp)])
-              (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
-                (parameterize ([current-eventspace esp])
-                  (send (new universe% [universe0 u] #,@args) last))))]))]))
+          #`(run-it ((new-universe universe%) u #,@args))]))]))
 
+;                                          
+;                                          
+;                                          
+;      ;               ;;;                 
+;                     ;                    
+;    ;;;    ;; ;;   ;;;;;;  ;; ;;;   ;;;;  
+;      ;     ;;  ;    ;      ;;     ;    ; 
+;      ;     ;   ;    ;      ;       ;;;;; 
+;      ;     ;   ;    ;      ;      ;    ; 
+;      ;     ;   ;    ;      ;      ;   ;; 
+;    ;;;;;  ;;; ;;; ;;;;;;  ;;;;;    ;;; ;;
+;                                          
+;                                          
+;                                          
+;                                          
+
+;; (-> Object) -> Any
+(define (run-it o)
+  (define esp (make-eventspace))
+  (define thd (eventspace-handler-thread esp))
+  (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
+    (parameterize ([current-eventspace esp])
+      (send (o) last))))

@@ -1,4 +1,4 @@
-#lang scheme/gui
+#lang racket/gui
 
 (require (for-syntax "syn-aux.ss")
          "checked-cell.ss"
@@ -30,14 +30,16 @@
 (define universe%
   (last-mixin
    (clock-mixin
-    (class* object% (start-stop<%>) (inspect #f) (super-new)
+    (class* object% (start-stop<%>) 
+      (inspect #f) 
+      (super-new)
       (init-field        ;; type Result
        ; = (make-bundle [Listof World] Universe [Listof Mail])
        universe0         ;; the initial state of the universe
        on-new            ;; Universe World -> Result
        on-msg            ;; Universe World Message -> Result
-       tick              ;; Universe -> Result
-       (state #f)         ;; Boolean 
+       ;; tick              ;; Universe -> Result
+       (state #f)        ;; Boolean 
        (on-disconnect    ;; Universe World -> Result
         (lambda (u w) (make-bundle u '() '())))
        (to-string #f)    ;; Universe -> String 
@@ -98,7 +100,9 @@
       (def/cback private (pdisconnect iworld) on-disconnect
         (kill iworld))
       
-      (def/cback public (ptock) tick)
+      ;; tick, tock : deal with a tick event for this world 
+      (def/cback pubment (ptock) (lambda (w) (pptock w)))
+      (define/public (pptock w) (void))
       
       ;; IWorld -> Void 
       ;; effect: remove from given iworld from iworlds 
