@@ -42,7 +42,7 @@
 	       (non-signatures
 		(filter (lambda (maybe)
 			  (syntax-case maybe (:)
-			    ((: ?id ?cnt)
+			    ((: ?id ?sig)
 			     (begin
 			       (when (not (identifier? #'?id))
 				 (raise-syntax-error #f
@@ -50,18 +50,18 @@
 						     #'?id))
 			       (cond
 				((bound-identifier-mapping-get table #'?id (lambda () #f))
-				 => (lambda (old-cnt-stx)
-				      (unless (equal? (syntax->datum old-cnt-stx)
-							(syntax->datum #'?cnt))
+				 => (lambda (old-sig-stx)
+				      (unless (equal? (syntax->datum old-sig-stx)
+							(syntax->datum #'?sig))
 					(raise-syntax-error #f
 							    "Zweite Signaturdeklaration für denselben Namen."
 							    maybe))))
 				(else
-				 (bound-identifier-mapping-put! table #'?id #'?cnt)))
+				 (bound-identifier-mapping-put! table #'?id #'?sig)))
 			       #f))
 			    ((: ?id)
 			     (raise-syntax-error #f "Bei dieser Signaturdeklaration fehlt die Signatur" maybe))
-			    ((: ?id ?cnt ?stuff0 ?stuff1 ...)
+			    ((: ?id ?sig ?stuff0 ?stuff1 ...)
 			     (raise-syntax-error #f "In der :-Form werden ein Name und eine Signatur erwartet; da steht noch mehr"
 						 (syntax/loc #'?stuff0
 							     (?stuff0 ?stuff1 ...))))
@@ -96,11 +96,11 @@
 			      (map (lambda (id)
 				     (cond
 				      ((bound-identifier-mapping-get signature-table id (lambda () #f))
-				       => (lambda (cnt)
+				       => (lambda (sig)
 					    (bound-identifier-mapping-put! signature-table id #f) ; check for orphaned signatures
 					    (with-syntax ((?id id)
-							  (?cnt cnt))
-					      #'(?id (signature ?cnt)))))
+							  (?sig sig))
+					      #'(?id (signature ?sig)))))
 				      (else
 				       id)))
 				   (syntax->list #'(?id ...))))
@@ -159,9 +159,9 @@
 			(reverse (syntax->list #'(defined-id ...)))))
 	    ;; Now handle signatures:
 	    (let ((top-level (reverse (syntax->list (syntax (e1 ...))))))
-	      (let-values (((cnt-table expr-list)
+	      (let-values (((sig-table expr-list)
 			    (extract-signatures top-level)))
-		(expand-signature-expressions cnt-table expr-list)))))
+		(expand-signature-expressions sig-table expr-list)))))
 	 ((frm e3s e1s def-ids)
 	  (let loop ((e3s #'e3s)
 		     (e1s #'e1s)
