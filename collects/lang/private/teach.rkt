@@ -894,12 +894,12 @@
 						      (combined (at name_ (predicate raw-predicate))
 								(at field_ (signature:property getter-name field_/no-loc)) ...)))
 						 #`(define (#,parametric-signature-name field_ ...)
-						     (let* ((sigs (list field_ ...))
+						     (let* ((sigs (list field_/no-loc ...))
 							    (sig
 							     (make-lazy-wrap-signature 'name_ #t
 										       type-descriptor
 										       raw-predicate
-										       (list field_/no-loc ...)
+										       sigs
 										       #'name_)))
 						       (let ((arbs (map signature-arbitrary sigs)))
 							 (when (andmap values arbs)
