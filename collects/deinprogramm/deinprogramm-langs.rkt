@@ -191,7 +191,12 @@
 
 		 ;; hack: the test-engine code knows about the test~object name; we do, too
 		 (namespace-set-variable-value! 'test~object (build-test-engine))
-		 ;; record test-case failures with the test engine
+		 (uncaught-exception-handler
+		  (let ((previous (uncaught-exception-handler)))
+		    (lambda (exc)
+		      (display-results)
+		      (previous exc))))
+		 ;; record signature violations with the test engine
 		 (signature-violation-proc
 		  (lambda (obj signature message blame)
 		    (cond
