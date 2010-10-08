@@ -880,6 +880,12 @@
       =>
       (text "ab" 18 "blue"))
 
+;; make sure this doesn't crash (there was a bug that would be triggered by drawing these guys)
+(test (equal? (scale 0.1 (text "Howdy!" 12 'black))
+              (scale 0.1 (text "Howdy!" 12 'red)))
+      =>
+      #f)
+      
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; triangle

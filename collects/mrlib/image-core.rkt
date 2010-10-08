@@ -905,10 +905,11 @@ the mask bitmap and the original bitmap are all together in a single bytes!
     (set-bitmap-rendered-mask! bitmap new-mask)))
 
 (define (text->font text)
+  (define adjusted-size (min (max (inexact->exact (round (text-size text))) 1) 255))
   (cond
     [(text-face text)
      (send the-font-list find-or-create-font
-           (text-size text)
+           adjusted-size
            (text-face text)
            (text-family text)
            (text-style text) 
@@ -916,7 +917,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
            (text-underline text))]
     [else
      (send the-font-list find-or-create-font
-           (text-size text)
+           adjusted-size
            (text-family text)
            (text-style text) 
            (text-weight text)
