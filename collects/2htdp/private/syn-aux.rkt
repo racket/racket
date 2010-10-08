@@ -23,7 +23,7 @@
     [(_ the-list super-list define-create
         (kw:identifier 
          (~optional kw-alt:identifier 
-                    #:defaults ((kw-alt (datum->syntax stx (gensym)))))
+                    #:defaults ((kw-alt #'kw #;(datum->syntax stx (gensym)))))
          (~optional (~seq DEFAULT default:expr))
          coerce:expr) ...)
      (let* ([defs (attribute default)])
@@ -31,10 +31,9 @@
            ;; define and create list of keywords and associated values 
            (define-for-syntax the-list
              (append super-list
-                     (list 
-                      (list #'kw     #'kw (coerce ''kw) default)
-                      #;
-                      (list #'kw-alt #'kw (coerce ''kw-alt) default)) 
+                     (list (list #'kw     #'kw-alt (coerce ''kw) default)
+                           #;
+                           (list #'kw-alt #'kw (coerce ''kw-alt) default))
                      ...))
            ;; define and provide keywords
            (provide (rename-out (kw  kw-alt) ...))
@@ -47,9 +46,22 @@
            (define-syntax (define-create stx)
              (syntax-case stx ()
                [(_ para (... ...))
-                (let* [[kwds (map cadr the-list)]
-                       [defs (map cadddr the-list)]
-                       [args (lambda (para*)
+                (let*-values
+                    ([(kwds defs) 
+                      (let L ([the-list the-list][kwds '()][defs '()])
+                        (if (null? the-list)
+                            (values kwds defs)
+                            (let* ([kw-alt-c-d (car the-list)]
+                                   [kw0 (car kw-alt-c-d)]
+                                   [kw1 (cadr kw-alt-c-d)]
+                                   [coe (caddr kw-alt-c-d)]
+                                   [def (cadddr kw-alt-c-d)])
+                              (if (eq? (syntax-e kw0) (syntax-e kw1))
+                                  (L (cdr the-list) (cons kw0 kwds) (cons def defs))
+                                  (L (cdr the-list)
+                                     (list* kw0 kw1 kwds)
+                                     (list* def def defs))))))]
+                     [(args) (lambda (para*)
                                (append 
                                 para*
                                 (foldr (lambda (x d rst)
@@ -61,16 +73,14 @@
                                          ;; properly here and have default values
                                          ;; for everything. big-bang and universe
                                          ;; check already that defaults are provided. 
-                                         ; (displayln x)
-                                         ; (displayln d)
                                          (if d
                                              (append (list k `(,x ,d)) rst)
                                              (append (list k x) rst)))
                                        '() 
                                        kwds
                                        defs)))]
-                       [body (lambda (para*)
-                               (map (lambda (x) `(,x ,x)) (append para* kwds)))]]
+                     [(body) (lambda (para*)
+                               (map (lambda (x) `(,x ,x)) (append para* kwds)))])
                   (let ([para* (syntax->list #'(para (... ...)))])
                     #`(lambda (%)
                         (lambda #,(args  para*)
@@ -110,14 +120,11 @@
                 (list (mk-kwd key) (coercion (cdr x))))
               spec)))
 
-(define (tee x) (displayln 'tee) (displayln x) x)
-
 ;; Syntax -> Syntax 
 ;; eventually: convert syntax to keyword
 (define (mk-kwd key)
   (define key:id (symbol->string (syntax-e key)))
   (define key:wd (string->keyword key:id))
-  ;  (displayln key:wd)
   key:wd)
 
 ;; Symbol Syntax Syntax [Listof Kw] -> true

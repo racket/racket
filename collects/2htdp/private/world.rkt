@@ -66,7 +66,8 @@
        (on-release K)    ;; World KeyEvent -> World 
        (on-mouse K)      ;; World Nat Nat MouseEvent -> World 
        (on-receive #f)   ;; (U #f (World S-expression -> World))
-       (on-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
+       (on-draw #f)
+       (to-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
        (stop-when False) ;; World -> Boolean 
        (record? #f))     ;; Boolean 
       
@@ -135,12 +136,12 @@
       ;; -----------------------------------------------------------------------
       (field
        (draw   (cond
-                 [(procedure? on-draw) on-draw]
-                 [(pair? on-draw)      (first on-draw)]
-                 [else on-draw]))
+                 [(procedure? to-draw) to-draw]
+                 [(pair? to-draw)      (first to-draw)]
+                 [else to-draw]))
        (live   (not (boolean? draw)))
-       (width  (if (pair? on-draw) (second on-draw) #f))
-       (height (if (pair? on-draw) (third on-draw) #f)))
+       (width  (if (pair? to-draw) (second to-draw) #f))
+       (height (if (pair? to-draw) (third to-draw) #f)))
       
       ;; the visible world 
       (field [enable-images-button void] ;; used if stop-when call produces #t
