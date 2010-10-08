@@ -806,7 +806,7 @@ in a way that depends on the setting of @racket[(sandbox-output)] or
 
 @defproc[(get-uncovered-expressions [evaluator (any/c . -> . any)]
                                     [prog? any/c #t]
-                                    [src any/c 'program])
+                                    [src any/c _default-src])
          (listof syntax?)]{
 
 Retrieves uncovered expression from an evaluator, as longs as the
@@ -828,11 +828,11 @@ program to ensure that your tests cover the whole code.
 
 The second optional argument, @racket[src], specifies that the result
 should be filtered to hold only @tech{syntax objects} whose source
-matches @racket[src]. The default, @racket['program], is the source
-associated with the input program by the default
-@racket[sandbox-reader]---which provides only @tech{syntax objects}
-from the input program (and not from required modules or expressions
-that were passed to the evaluator). A @racket[#f] avoids filtering.
+matches @racket[src]. The default is the source that was used in the
+program code, if there was one.  Note that @racket['program] is used as
+the source value if the input program was given as S-expressions or as a
+string (and in these cases it will be the default for filtering).  If given
+@racket[#f], the result is the unfiltered list of expressions.
 
 The resulting list of @tech{syntax objects} has at most one expression
 for each position and span.  Thus, the contents may be unreliable, but
