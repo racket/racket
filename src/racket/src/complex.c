@@ -99,10 +99,13 @@ Scheme_Object *scheme_complex_normalize(const Scheme_Object *o)
 #ifdef MZ_USE_SINGLE_FLOATS
   if (SCHEME_FLTP(c->i)) {
     if (!SCHEME_FLTP(c->r)) {
+      Scheme_Object *v;
       if (SCHEME_DBLP(c->r)) {
-	c->i = scheme_make_double(SCHEME_FLT_VAL(c->i));
+        v = scheme_make_double(SCHEME_FLT_VAL(c->i));
+        c->i = v;
       } else {
-	c->r = scheme_make_float(scheme_get_val_as_float(c->r));
+        v = scheme_make_float(scheme_get_val_as_float(c->r));
+	c->r = v;
       }
     }
   }

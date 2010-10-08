@@ -1125,13 +1125,6 @@ int scheme_minus_zero_p(double d)
   return minus_zero_p(d);
 }
 
-#ifdef MZ_USE_SINGLE_FLOATS
-static int rational_flt_p(float f) {
-  return !(MZ_IS_NAN(f)
-           || MZ_IS_INFINITY(f));
-}
-#endif
-
 static int rational_dbl_p(double f) {
   return !(MZ_IS_NAN(f)
            || MZ_IS_INFINITY(f));
