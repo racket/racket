@@ -121,12 +121,12 @@
       {
          prim_@|ts| f = (prim_@|ts|)future->prim_func;
          @(if (string=? result-type "void") "" @string-append{GC_CAN_IGNORE @|result-type| retval;})
-         @(if (equal? arg-types '("Scheme_Object*")) @string-append{receive_special_result(future, future->arg_s0, 1);} "")
          @(string-join
            (for/list ([t (in-string (type->arg-string t))]
                       [i (in-naturals)])
-             @string-append{LOCALIZE(@(char->type t), arg_@|(string t)|@|(number->string i)|);})
+             @string-append{JIT_TS_LOCALIZE(@(char->type t), arg_@|(string t)|@|(number->string i)|);})
            " ")
+         @(if (equal? arg-types '("Scheme_Object*")) @string-append{receive_special_result(future, future->arg_s0, 1);} "")
          @(string-join
            (for/list ([t (in-string (type->arg-string t))]
                       [i (in-naturals)]

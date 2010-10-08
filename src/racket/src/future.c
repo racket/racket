@@ -1535,7 +1535,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
         scheme_new_mark_segment(p_seg);
         break;
       }
-# define LOCALIZE(t, f) GC_CAN_IGNORE t f = future->f
+# define JIT_TS_LOCALIZE(t, f) GC_CAN_IGNORE t f = future->f
 # include "jit_ts_runtime_glue.c"
     default:
       scheme_signal_error("unknown protocol %d", future->prim_protocol);
