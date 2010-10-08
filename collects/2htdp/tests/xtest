@@ -1,0 +1,32 @@
+#!/bin/tcsh
+
+gracket bad-draw.rkt
+echo "--- bad-draw.rkt ---" echo ""
+racket batch-io.rkt 
+echo "--- batch-io.rkt  ---" echo ""
+gracket clause-once.rkt
+echo "--- clause-once.rkt ---" echo ""
+gracket full-scene-visible.rkt 
+echo "--- full-scene-visible.rkt  ---" echo ""
+gracket image-equality-performance-htdp.rkt 
+echo "--- image-equality-performance-htdp.rkt  ---" echo ""
+gracket image-equality-performance.rkt 
+echo "--- image-equality-performance.rkt  ---" echo ""
+gracket mouse-evt.rkt 
+echo "--- mouse-evt.rkt  ---" echo ""
+gracket on-tick-defined.rkt 
+echo "--- on-tick-defined.rkt  ---" echo ""
+gracket perform-robby.rkt 
+echo "--- perform-robby.rkt  ---" echo ""
+gracket profile-robby.rkt 
+echo "--- profile-robby.rkt  ---" echo ""
+gracket release.rkt
+echo "--- release.rkt ---" echo ""
+gracket stop.rkt 
+echo "--- stop.rkt  ---" echo ""
+gracket test-image.rkt 
+echo "--- test-image.rkt  ---" echo ""
+gracket ufo-rename.rkt 
+echo "--- ufo-rename.rkt  ---" echo ""
+gracket world0-stops.rkt 
+
