@@ -3,10 +3,11 @@
 (provide module-begin)
 
 (require deinprogramm/define-record-procedures
+	 deinprogramm/signature/signature
 	 deinprogramm/signature/signature-syntax)
 
 (require (for-syntax scheme/base)
-	 (for-syntax mzlib/list)
+	 (for-syntax racket/list)
 	 (for-syntax syntax/boundmap)
 	 (for-syntax syntax/kerncase))
 
@@ -40,32 +41,31 @@
       (lambda (lostx) 
 	(let* ((table (make-bound-identifier-mapping))
 	       (non-signatures
-		(filter (lambda (maybe)
-			  (syntax-case maybe (:)
-			    ((: ?id ?sig)
-			     (begin
-			       (when (not (identifier? #'?id))
-				 (raise-syntax-error #f
-						     "Nach dem : sollte ein Bezeichner stehen; da steht was anderes."
-						     #'?id))
-			       (cond
-				((bound-identifier-mapping-get table #'?id (lambda () #f))
-				 => (lambda (old-sig-stx)
-				      (unless (equal? (syntax->datum old-sig-stx)
-							(syntax->datum #'?sig))
-					(raise-syntax-error #f
-							    "Zweite Signaturdeklaration für denselben Namen."
-							    maybe))))
-				(else
-				 (bound-identifier-mapping-put! table #'?id #'?sig)))
-			       #f))
-			    ((: ?id)
-			     (raise-syntax-error #f "Bei dieser Signaturdeklaration fehlt die Signatur" maybe))
-			    ((: ?id ?sig ?stuff0 ?stuff1 ...)
-			     (raise-syntax-error #f "In der :-Form werden ein Name und eine Signatur erwartet; da steht noch mehr"
-						 (syntax/loc #'?stuff0
-							     (?stuff0 ?stuff1 ...))))
-			    (_ #t)))
+		(filter-map (lambda (maybe)
+			      (syntax-case maybe (:)
+				((: ?exp ?sig)
+				 (not (identifier? #'?exp))
+				 #'(apply-signature/blame (signature ?sig) ?exp))
+				((: ?id ?sig)
+				 (begin
+				   (cond
+				    ((bound-identifier-mapping-get table #'?id (lambda () #f))
+				     => (lambda (old-sig-stx)
+					  (unless (equal? (syntax->datum old-sig-stx)
+							  (syntax->datum #'?sig))
+					    (raise-syntax-error #f
+								"Zweite Signaturdeklaration für denselben Namen."
+								maybe))))
+				    (else
+				     (bound-identifier-mapping-put! table #'?id #'?sig)))
+				   #f))
+				((: ?id)
+				 (raise-syntax-error #f "Bei dieser Signaturdeklaration fehlt die Signatur" maybe))
+				((: ?id ?sig ?stuff0 ?stuff1 ...)
+				 (raise-syntax-error #f "In der :-Form werden ein Name und eine Signatur erwartet; da steht noch mehr"
+						     (syntax/loc #'?stuff0
+								 (?stuff0 ?stuff1 ...))))
+				(_ maybe)))
 			lostx)))
 	  (values table non-signatures))))
 

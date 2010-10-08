@@ -6,10 +6,11 @@
 		     (module-begin intermediate-module-begin)
 		     (module-begin advanced-module-begin)))
 
-(require lang/private/signature-syntax)
+(require deinprogramm/signature/signature
+	 lang/private/signature-syntax)
 
 (require (for-syntax scheme/base)
-	 (for-syntax mzlib/list)
+	 (for-syntax racket/list)
 	 (for-syntax syntax/boundmap)
 	 (for-syntax syntax/kerncase))
 
@@ -45,35 +46,33 @@
       (lambda (lostx) 
 	(let* ((table (make-bound-identifier-mapping))
 	       (non-signatures
-		(filter (lambda (maybe)
-			  (syntax-case maybe (:)
-			    ((: ?id ?sig)
-			     (begin
-			       (when (not (identifier? #'?id))
-				 (raise-syntax-error #f
-						     "Something that's not an identifier after the :"
-						     #'?id))
-			       
-			       (let ((real-id (first-order->higher-order #'?id)))
-				 (cond
-				  ((bound-identifier-mapping-get table real-id (lambda () #f))
-				   => (lambda (old-sig-stx)
-					(unless (equal? (syntax->datum old-sig-stx)
-							(syntax->datum #'?sig))
-					  (raise-syntax-error #f
-							      "Second signature declaration for the same name."
-							      maybe))))
-				  (else
-				   (bound-identifier-mapping-put! table real-id #'?sig)))
-				 #f)))
-			    ((: ?id)
-			     (raise-syntax-error #f "Signature declaration is missing a signature." maybe))
-			    ((: ?id ?sig ?stuff0 ?stuff1 ...)
-			     (raise-syntax-error #f "The : form expects a name and a signature; there is more."
-						 (syntax/loc #'?stuff0
-							     (?stuff0 ?stuff1 ...))))
-			    (_ #t)))
-			lostx)))
+		(filter-map (lambda (maybe)
+			      (syntax-case maybe (:)
+				((: ?exp ?sig)
+				 (not (identifier? #'?exp))
+				 #'(apply-signature/blame (signature ?sig) ?exp))
+				((: ?id ?sig)
+				 (begin
+				   (let ((real-id (first-order->higher-order #'?id)))
+				     (cond
+				      ((bound-identifier-mapping-get table real-id (lambda () #f))
+				       => (lambda (old-sig-stx)
+					    (unless (equal? (syntax->datum old-sig-stx)
+							    (syntax->datum #'?sig))
+					      (raise-syntax-error #f
+								  "Second signature declaration for the same name."
+								  maybe))))
+				      (else
+				       (bound-identifier-mapping-put! table real-id #'?sig)))
+				     #f)))
+				((: ?id)
+				 (raise-syntax-error #f "Signature declaration is missing a signature." maybe))
+				((: ?id ?sig ?stuff0 ?stuff1 ...)
+				 (raise-syntax-error #f "The : form expects a name and a signature; there is more."
+						     (syntax/loc #'?stuff0
+								 (?stuff0 ?stuff1 ...))))
+				(_ maybe)))
+			    lostx)))
 	  (values table non-signatures))))
 
     (define local-expand-stop-list 
