@@ -110,35 +110,31 @@
                      skipto/cdr skipto/third ;; application of insert-test
                      '(syntax-e cdr cdr syntax-e car) ;; lambda
                      )))
-      #`(begin
-          (let ([test-engine (namespace-variable-value
+      #`(let ([test-engine (namespace-variable-value
                             'test~object #f builder (current-namespace))])
-            (when test-engine
-              (begin
-                (send test-engine reset-info)
-                (insert-test test-engine
-                             (lambda ()
-                               #,(with-stepper-syntax-properties
-                                  (['stepper-hint hint-tag]
-                                   ['stepper-hide-reduction #t]
-                                   ['stepper-use-val-as-final #t])
-                                  (quasisyntax/loc stx
-                                    (#,checker-proc-stx
-                                     #,(with-stepper-syntax-properties
-                                        (['stepper-hide-reduction #t])
-                                        #`(car 
-                                           #,(with-stepper-syntax-properties
-                                              (['stepper-hide-reduction #t])
-                                              #`(list
-                                                 (lambda () #,test-expr)
-                                                 #,(syntax/loc stx (void))))))
-                                     #,@embedded-stxes
-                                     #,src-info
-                                     #,(with-stepper-syntax-properties
-                                        (['stepper-no-lifting-info #t]
-                                         ['stepper-hide-reduction #t])
-                                        #'test-engine)))))))))
-          (test))))
+	  (when test-engine
+	    (insert-test test-engine
+			 (lambda ()
+			   #,(with-stepper-syntax-properties
+			      (['stepper-hint hint-tag]
+			       ['stepper-hide-reduction #t]
+			       ['stepper-use-val-as-final #t])
+			      (quasisyntax/loc stx
+				(#,checker-proc-stx
+				 #,(with-stepper-syntax-properties
+				    (['stepper-hide-reduction #t])
+				    #`(car 
+				       #,(with-stepper-syntax-properties
+					  (['stepper-hide-reduction #t])
+					  #`(list
+					     (lambda () #,test-expr)
+					     #,(syntax/loc stx (void))))))
+				 #,@embedded-stxes
+				 #,src-info
+				 #,(with-stepper-syntax-properties
+				    (['stepper-no-lifting-info #t]
+				     ['stepper-hide-reduction #t])
+				    #'test-engine))))))))))
 
 (define-for-syntax (check-context?)
   (let ([c (syntax-local-context)])
@@ -302,6 +298,12 @@
           [else
            #t])))
 
+(define (reset-tests)
+  (let ([test-engine (namespace-variable-value
+		      'test~object #f builder (current-namespace))])
+    (when test-engine
+      (send test-engine reset-info))))
+
 (define (builder)
   (let ([te (build-test-engine)])
     (namespace-set-variable-value! 'test~object te (current-namespace))
@@ -348,7 +350,7 @@
       #'(display-results*)
       'test-call #t)]))
 
-(provide run-tests display-results test builder)
+(provide run-tests display-results test builder reset-tests)
 
 (define (build-test-engine)
   (let ([engine (make-object scheme-test%)])

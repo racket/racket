@@ -767,13 +767,28 @@
                                      (drscheme:rep:current-rep)
 				     '#%deinprogramm))
 
-	  ;; DeinProgramm addition: needed for test boxes; see the code
-	  ;; in collects/drscheme/private/language.ss
-	  (define/override (front-end/interaction port settings)
-	    (let ((reader (get-reader)))
-	      (lambda ()
-		(reader (object-name port) port))))
-	    
+          (define/override (front-end/interaction port settings)
+            (let ([reader (get-reader)] ;; DeinProgramm addition:
+					;; needed for test boxes; see
+					;; the code in
+					;; collects/drscheme/private/language.ss
+		  [start? #t]
+                  [done? #f])
+              (λ ()
+                (cond
+		  [start?
+		   (set! start? #f)
+		   #'(reset-tests)]
+                  [done? eof]
+                  [else
+                   (let ([ans (reader (object-name port) port)])
+                     (cond
+                       [(eof-object? ans)
+                        (set! done? #t)
+                        #`(test)]
+                       [else
+                        ans]))]))))
+
           (define/augment (capability-value key)
             (case key
               [(drscheme:teachpack-menu-items) deinprogramm-teachpack-callbacks]
