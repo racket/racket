@@ -16,7 +16,7 @@
 
 (require deinprogramm/define-record-procedures)
 
-(require (only-in lang/private/teachprims beginner-equal? beginner-equal~?))
+(require (only-in lang/private/teachprims define-teach beginner-equal? beginner-equal~?))
 
 (require (for-syntax deinprogramm/syntax-checkers))
 
@@ -394,32 +394,34 @@
 (define (cons? obj)
   (pair? obj))
 
-(define (DMdA-cons f r)
-  (make-pair f r))
+(define-teach DMdA cons
+  (lambda (f r)
+    (make-pair f r)))
 
-(define (DMdA-append . args)
-  (let loop ((args args)
-	     (seen-rev '()))
-    (when (not (null? args))
-      (let ((arg (car args)))
-	(when (and (not (null? arg))
-		   (not (pair? arg)))
-	  (raise
-	   (make-exn:fail:contract
-	    (string->immutable-string
-	     (format "Argument zu append keine Liste, sondern ~e; restliche Argumente:~a"
-		     arg
-		     (apply string-append
-			    (map (lambda (arg)
-				   (format " ~e" arg))
-				 (append (reverse seen-rev)
-					 (list '<...>)
-					 (cdr args))))))
-	    (current-continuation-marks))))
-	(loop (cdr args)
-	      (cons arg seen-rev)))))
+(define-teach DMdA append
+  (lambda args
+    (let loop ((args args)
+	       (seen-rev '()))
+      (when (not (null? args))
+	(let ((arg (car args)))
+	  (when (and (not (null? arg))
+		     (not (pair? arg)))
+	    (raise
+	     (make-exn:fail:contract
+	      (string->immutable-string
+	       (format "Argument zu append keine Liste, sondern ~e; restliche Argumente:~a"
+		       arg
+		       (apply string-append
+			      (map (lambda (arg)
+				     (format " ~e" arg))
+				   (append (reverse seen-rev)
+					   (list '<...>)
+					   (cdr args))))))
+	      (current-continuation-marks))))
+	  (loop (cdr args)
+		(cons arg seen-rev)))))
   
-  (apply append args))
+  (apply append args)))
 
 (define fold
   (lambda (unit combine lis)
@@ -815,9 +817,10 @@
 	 (format "~a: Testresultat ist nicht boolesch: ~e" where b))
 	(current-continuation-marks)))))
 
-(define (DMdA-not b)
-  (verify-boolean b 'not)
-  (not b))
+(define-teach DMdA not
+  (lambda (b)
+    (verify-boolean b 'not)
+    (not b)))
 
 (define (boolean=? a b)
   (verify-boolean a 'boolean=?)
@@ -862,10 +865,11 @@
 	 ;;  that isn't a value.
 	 #'id)]))
 
-(define (DMdA-write-string s)
-  (when (not (string? s))
-    (error "Argument von write-string ist keine Zeichenkette"))
-  (display s))
+(define-teach DMdA write-string
+  (lambda (s)
+    (when (not (string? s))
+      (error "Argument von write-string ist keine Zeichenkette"))
+    (display s)))
 
 (define (write-newline)
   (newline))
