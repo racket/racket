@@ -354,7 +354,7 @@
 	    (send text set-clickback
 		  start (send text get-end-position)
 		  (lambda (t s e)
-		    (highlight-error line column pos span src-editor))
+		    (highlight-error source line column pos span src-editor))
 		  #f #f)
 	    (set-clickback-style text start "blue")))
 	(send text insert ", ")
@@ -416,25 +416,28 @@
 	    (format (string-constant test-engine-at-line-column)
 		    line col))))
 
-    (define (highlight-error line column position span src-editor)
+    (define (highlight-error source line column position span src-editor)
       (when (and current-rep src-editor)
 	(cond
 	 [(is-a? src-editor text:basic<%>)
 	  (let ((highlight
 		 (lambda ()
-		   (send current-rep highlight-errors
-			 (list (make-srcloc src-editor
-					    line
-					    column
-					    position span)) #f)
-                   (let ([frame (send current-tab get-frame)])
-                     (unless (send current-tab is-current-tab?)
-                       (let loop ([tabs (send frame get-tabs)] [i 0])
-                         (unless (null? tabs)
-                           (if (eq? (car tabs) current-tab)
-                               (send frame change-to-nth-tab i)
-                               (loop (cdr tabs) (add1 i))))))
-                     (send frame show #t)))))
+		   (let ((error-src (if (send src-editor port-name-matches? source) ; definitions or REPL?
+					src-editor
+					current-rep)))
+		     (send current-rep highlight-errors
+			   (list (make-srcloc error-src
+					      line
+					      column
+					      position span)) #f)
+		     (let ([frame (send current-tab get-frame)])
+		       (unless (send current-tab is-current-tab?)
+			 (let loop ([tabs (send frame get-tabs)] [i 0])
+			   (unless (null? tabs)
+			     (if (eq? (car tabs) current-tab)
+				 (send frame change-to-nth-tab i)
+				 (loop (cdr tabs) (add1 i))))))
+		       (send frame show #t))))))
             (queue-callback highlight))])))
 
     (define (highlight-check-error srcloc src-editor)
@@ -442,12 +445,12 @@
              [src-span (lambda (l) (car (cddddr l)))]
              [position (src-pos srcloc)]
              [span (src-span srcloc)])
-	(highlight-error (cadr srcloc) (caddr srcloc)
+	(highlight-error (car srcloc) (cadr srcloc) (caddr srcloc)
 			 position span
-			 src-editor)))
+			 src-editor))) 
 
     (define (highlight-error/syntax stx src-editor)
-      (highlight-error (syntax-line stx) (syntax-column stx)
+      (highlight-error (syntax-source stx) (syntax-line stx) (syntax-column stx)
 		       (syntax-position stx) (syntax-span stx)
 		       src-editor))
 
