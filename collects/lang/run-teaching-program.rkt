@@ -64,7 +64,9 @@
                                       ;; this definition pulls the test~object binding from the user's namespace
                                       ;; over to the one that is used in the REPL when module->namepsace
                                       ;; grabs a hold of this module to make a namespace for the REPL
-                                      `(,#'(define test~object (namespace-variable-value 'test~object))
+                                      `(,(syntax-property
+					  #'(define test~object (namespace-variable-value 'test~object))
+					  'test-call #t)
                                         (,#'test)))
                                   '()))))
               rep)))]
