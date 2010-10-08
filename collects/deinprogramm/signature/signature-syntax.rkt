@@ -132,6 +132,10 @@
 				 ?access
 				 ?signature-expr
 				 ?stx)))
+    ((signature ?stuff ...)
+     (raise-syntax-error #f
+			 "`signature' als Operator ergibt keinen Sinn"
+			 stx))
     ((?signature-abstr ?signature ...)
      (identifier? #'?signature-abstr)
      (with-syntax ((?stx (phase-lift stx))
@@ -139,6 +143,7 @@
 		   ((?signature-expr ...) (map (lambda (sig)
 						(parse-signature #f sig))
 					      (syntax->list #'(?signature ...)))))
+
        (with-syntax
 	   ((?call (syntax/loc stx (?signature-abstr ?signature-expr ...))))
 	 #'(make-call-signature '?name
@@ -146,7 +151,7 @@
 			       (delay ?signature-abstr) (delay (list ?signature-expr ...))
 			       ?stx))))
     (else
-     (raise-syntax-error 'signature
+     (raise-syntax-error #f
 			 "ungültige Signatur" stx))))
 
 ; regrettable

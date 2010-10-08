@@ -122,6 +122,10 @@
 				 ?access
 				 ?signature-expr
 				 ?stx)))
+    ((signature ?stuff ...)
+     (raise-syntax-error #f
+			 "`signature' makes no sense as an operator"
+			 stx))
     ((?signature-abstr ?signature ...)
      (identifier? #'?signature-abstr)
      (with-syntax ((?stx (phase-lift stx))
@@ -138,7 +142,7 @@
 			       (delay (list ?signature-expr ...))
 			       ?stx))))
     (else
-     (raise-syntax-error 'signature
+     (raise-syntax-error #f
 			 "invalid signature" stx))))
 
 ; regrettable
