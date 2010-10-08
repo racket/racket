@@ -5,6 +5,7 @@
 (require rackunit
 	 deinprogramm/define-record-procedures
 	 deinprogramm/signature/signature
+	 deinprogramm/signature/signature-german
 	 deinprogramm/signature/signature-syntax)
 
 (require scheme/promise)

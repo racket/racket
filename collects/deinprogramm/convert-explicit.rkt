@@ -4,7 +4,7 @@
 (require mzlib/pretty
 	 mzlib/struct)
 
-(require deinprogramm/signature/signature)
+(require deinprogramm/signature/signature-german)
 
 (require scheme/include)
 (include "convert-explicit.scm")

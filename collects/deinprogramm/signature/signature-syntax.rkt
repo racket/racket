@@ -7,6 +7,7 @@
 	 -> mixed one-of predicate combined property list-of)
 
 (require deinprogramm/signature/signature
+	 deinprogramm/signature/signature-german
 	 scheme/promise
 	 (for-syntax scheme/base)
 	 (for-syntax syntax/stx)

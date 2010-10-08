@@ -17,7 +17,8 @@ namespace.
 (require mzlib/list 
          mzlib/math
          mzlib/etc
-	 deinprogramm/signature/signature)
+	 deinprogramm/signature/signature
+	 deinprogramm/signature/signature-english)
 
 (define-syntax (define-teach stx)
   (syntax-case stx ()

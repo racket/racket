@@ -42,6 +42,7 @@
            "set-result.ss"
            (only racket/base define-struct)
 	   racket/struct-info
+	   deinprogramm/signature/signature-english
 	   (all-except deinprogramm/signature/signature signature-violation)
 	   (all-except lang/private/signature-syntax property)
 	   (rename lang/private/signature-syntax signature:property property)
