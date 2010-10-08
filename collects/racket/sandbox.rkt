@@ -439,23 +439,37 @@
         [(path?   inp) (open-input-file inp)]
         [else #f]))
 
-;; Gets an input spec returns a list of syntaxes.  The input can be a list of
-;; sexprs/syntaxes, or a list with a single input port spec
-;; (path/string/bytes) value.
+;; Gets an input spec returns a list of syntaxes and a default source to filter
+;; uncovered expressions with.  The input can be a list of sexprs/syntaxes, or
+;; a list with a single input port spec (path/string/bytes) value.  Note that
+;; the source can be a filtering function.
 (define (input->code inps source n)
   (if (null? inps)
-    '()
+    (values '() source)
     (let ([p (input->port (car inps))])
       (cond [(and p (null? (cdr inps)))
              (port-count-lines! p)
-             (parameterize ([current-input-port p])
-               (begin0 ((sandbox-reader) (or (object-name p) source))
-                 ;; close a port if we opened it
-                 (unless (eq? p (car inps)) (close-input-port p))))]
+             (let ([source (or (object-name p)
+                               ;; just in case someone uses a function as the
+                               ;; source...
+                               (if (procedure? source)
+                                 (lambda (x) (eq? x source))
+                                 source))])
+               (parameterize ([current-input-port p])
+                 (begin0 (values ((sandbox-reader) source) source)
+                   ;; close a port if we opened it
+                   (unless (eq? p (car inps)) (close-input-port p)))))]
             [p (error 'input->code "ambiguous inputs: ~e" inps)]
+            [(andmap syntax? inps)
+             (values inps
+                     (let ([srcs (remove-duplicates (map syntax-source inps)
+                                                    equal?)])
+                       (if (null? (cdr srcs))
+                         (car srcs)
+                         (lambda (x) (memq x srcs)))))]
             [else (let loop ([inps inps] [n n] [r '()])
                     (if (null? inps)
-                      (reverse r)
+                      (values (reverse r) source)
                       (loop (cdr inps) (and n (add1 n))
                             ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
                             ;; (starting from the `n' argument)
@@ -482,8 +496,9 @@
              (dynamic-require 'racket/class #f))
            (namespace-attach-module orig-ns 'racket/class))]))
 
-;; Returns a single (module ...) or (begin ...) expression (a `begin' list
-;; will be evaluated one by one -- the language might not have a `begin').
+;; Returns a single (module ...) or (begin ...) expression (a `begin' list will
+;; be evaluated one by one -- the language might not have a `begin'), and a
+;; default source to filter uncovered expressions with.
 ;;
 ;; FIXME: inserting `#%require's here is bad if the language has a
 ;; `#%module-begin' that processes top-level forms specially.
@@ -494,16 +509,19 @@
 ;; it comes from `#%kernel', so it's always present through
 ;; transitive requires.
 (define (build-program language requires input-program)
+  (define-values (prog-stxs source) (input->code input-program 'program 1))
   (let* ([body (append (if (and (pair? requires) (eq? 'begin (car requires)))
                          (cdr requires)
                          (map (lambda (r) (list #'#%require r)) requires))
-                       (input->code input-program 'program 1))]
+                       prog-stxs)]
          [use-lang (lambda (lang) `(module program ,lang . ,body))])
-    (cond [(decode-language language) => use-lang]
-          [(module-path? language) (use-lang language)]
-          [(and (list? language) (eq? 'begin (car language)))
-           (append language body)]
-          [else (error 'make-evaluator "bad language spec: ~e" language)])))
+    (values (cond [(decode-language language) => use-lang]
+                  [(module-path? language) (use-lang language)]
+                  [(and (list? language) (eq? 'begin (car language)))
+                   (append language body)]
+                  [else (error 'make-evaluator "bad language spec: ~e"
+                               language)])
+            source)))
 
 (define (decode-language language)
   (cond [(and (list? language)
@@ -630,6 +648,7 @@
   (define user-cust-box (make-custodian-box user-cust #t))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
+  (define default-coverage-source-filter #f)
   (define input-ch      (make-channel))
   (define result-ch     (make-channel))
   (define busy-sema     (make-semaphore 1))
@@ -692,9 +711,11 @@
             ;; first set up the environment
             (init-hook)
             ((sandbox-init-hook))
-            ;; now read and evaluate the input program
+            ;; now read and evaluate the input program (in the user context)
             (evaluate-program
-             (if (procedure? program-maker) (program-maker) program-maker)
+             (let-values ([(prog src) (program-maker)])
+               (when coverage? (set! default-coverage-source-filter src))
+               prog)
              limit-thunk
              (and coverage? (lambda (es+get) (set! uncovered es+get))))))
          (channel-put result-ch 'ok))
@@ -710,19 +731,24 @@
                (define run
                  (if (evaluator-message? expr)
                      (case (evaluator-message-msg expr)
-                       [(thunk) (limit-thunk (car (evaluator-message-args expr)))]
+                       [(thunk) (limit-thunk
+                                 (car (evaluator-message-args expr)))]
                        [(thunk*) (car (evaluator-message-args expr))]
                        [else (error 'sandbox "internal error (bad message)")])
                      (limit-thunk
                       (lambda ()
                         (set! n (add1 n))
-                        (eval* (map (lambda (expr) (cons '#%top-interaction expr))
-                                    (input->code (list expr) 'eval n)))))))
-               (channel-put result-ch (cons 'vals 
-                                            (call-with-break-parameterization
-                                             break-paramz
-                                             (lambda ()
-                                               (call-with-values run list))))))
+                        (eval* (map (lambda (expr)
+                                      (cons '#%top-interaction expr))
+                                    (let-values ([(code _)
+                                                  (input->code (list expr)
+                                                               'eval n)])
+                                      code)))))))
+               (channel-put result-ch
+                            (cons 'vals
+                                  (call-with-break-parameterization
+                                   break-paramz
+                                   (lambda () (call-with-values run list))))))
              (loop)))))))
   (define (get-user-result)
     (if (and (sandbox-propagate-breaks)
@@ -765,12 +791,17 @@
                   (cond [(eof-object? r) (terminate+kill! #t #t)]
                         [(eq? (car r) 'exn) (raise (cdr r))]
                         [else (apply values (cdr r))]))]))
-  (define (get-uncovered [prog? #t] [src 'program])
+  (define (get-uncovered [prog? #t] [src default-coverage-source-filter])
     (unless uncovered
       (error 'get-uncovered-expressions "no coverage information"))
     (let ([uncovered (if prog? (car uncovered) ((cadr uncovered)))])
       (if src
-        (filter (lambda (x) (equal? src (syntax-source x))) uncovered)
+        ;; when given a list of syntaxes, the src is actually a function that
+        ;; checks the input source value (which does a union of the sources)
+        (filter (if (procedure? src)
+                  (lambda (x) (src (syntax-source x)))
+                  (lambda (x) (equal? src (syntax-source x))))
+                uncovered)
         uncovered)))
   (define (output-getter p)
     (if (procedure? p) (user-eval (make-evaluator-message 'thunk (list p))) p))
@@ -926,7 +957,8 @@
          input-program #:allow-read [allow null] #:language [reqlang #f])
   ;; this is for a complete module input program
   (define (make-program)
-    (let ([prog (input->code (list input-program) 'program #f)])
+    (let-values ([(prog source)
+                  (input->code (list input-program) 'program #f)])
       (unless (= 1 (length prog))
         (error 'make-evaluator "expecting a single `module' program; ~a"
                (if (zero? (length prog))
@@ -935,7 +967,7 @@
       (syntax-case* (car prog) (module) literal-identifier=?
         [(module modname lang body ...)
          (if (or (not reqlang) (equal? reqlang (syntax->datum #'lang)))
-           (car prog)
+           (values (car prog) source)
            (error 'make-evaluator
                   "module code used `~e' for a language, expecting `~e'"
                   (syntax->datum #'lang) reqlang))]
