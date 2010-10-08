@@ -171,7 +171,7 @@
 		       (with-syntax ((base-signature
 				      (stepper-syntax-property
 				       #'(define ?type-name 
-					   (signature (predicate real-predicate)))
+					   (signature ?type-name (predicate real-predicate)))
 				       'stepper-skip-completely 
 				       #t))
 				     (constructor-signature
