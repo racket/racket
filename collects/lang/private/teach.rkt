@@ -865,13 +865,11 @@
 
 					   #,@(map-with-index (lambda (i name field-name)
 								#`(define #,name
-                                                                    (let ([raw (make-struct-field-accessor
+								    (let ([raw (make-struct-field-accessor
                                                                                 raw-generic-access
                                                                                 #,i
                                                                                 '#,field-name)])
                                                                       (lambda (r)
-                                                                        (raw r) ; error checking
-                                                                        (check-lazy-wraps! type-descriptor r)
                                                                         (raw r)))))
 							      getter-names
                                                               fields)
@@ -896,7 +894,7 @@
 						      (combined (at name_ (predicate raw-predicate))
 								(at field_ (signature:property getter-name field_/no-loc)) ...)))
 						 #`(define (#,parametric-signature-name field_ ...)
-						     (make-lazy-wrap-signature 'name_
+						     (make-lazy-wrap-signature 'name_ #t
 									       type-descriptor
 									       raw-predicate
 									       (list field_/no-loc ...)
@@ -2912,7 +2910,7 @@
 (define Unspecific (signature (predicate (lambda (_) #t))))
 
 (define (cons-of car-sig cdr-sig)
-  (make-pair-signature car-sig cdr-sig))
+  (make-pair-signature #t car-sig cdr-sig))
 
 ; QuickCheck
 

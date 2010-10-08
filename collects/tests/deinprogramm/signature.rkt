@@ -261,6 +261,38 @@
     (let ((obj (apply-signature ctr (kons 1 #t))))
       (check-equal? (kar obj) 1)
       (check-equal? (kdr obj) #t))
+    (check-equal? (say-no (apply-signature ctr (kons 1 2))) 'no)
+    )
+
+   (test-case
+    "record-wrap/lazy"
+    (define-struct pare (kar kdr extra)
+      #:mutable
+      #:property prop:lazy-wrap
+      (make-lazy-wrap-info
+       (lambda (kar kdr) (kons kar kdr))
+       (list (lambda (x) (pare-kar x)) (lambda (x) (pare-kdr x)))
+       (list (lambda (x v) (set-pare-kar! x v))
+	     (lambda (x v) (set-pare-kdr! x v)))
+       (lambda (x) (pare-extra x)) (lambda (x v) (set-pare-extra! x v))))
+    (define (kons kar kdr)
+      (make-pare kar kdr #f))
+    (define (kar p)
+      (check-lazy-wraps! struct:pare p)
+      (pare-kar p))
+    (define (kdr p)
+      (check-lazy-wraps! struct:pare p)
+      (pare-kdr p))
+    (define (pare-of kar-sig kdr-sig)
+      (make-lazy-wrap-signature 'pare #f 
+				struct:pare
+				pare?
+				(list kar-sig kdr-sig)
+				#f))
+    (define ctr (pare-of integer boolean))
+    (let ((obj (apply-signature ctr (kons 1 #t))))
+      (check-equal? (kar obj) 1)
+      (check-equal? (kdr obj) #t))
     (let ((obj (apply-signature ctr (kons 1 2))))
       (check-equal? (say-no (kar obj)) 'no))
     )
@@ -270,11 +302,53 @@
     (let ((count 0))
       (define counting-integer
 	(make-predicate-signature 'counting-integer 
-				 (lambda (obj)
-				   (set! count (+ 1 count))
-				   (integer? obj))
-				 'integer-marker))
+				  (lambda (obj)
+				    (set! count (+ 1 count))
+				    (integer? obj))
+				  'integer-marker))
       (define-record-procedures-parametric pare pare-of kons pare? (kar kdr))
+      (define ctr (signature (pare-of counting-integer boolean)))
+      (let ((obj (apply-signature ctr (apply-signature ctr (kons 1 #t)))))
+	(check-equal? count 1)
+	(check-equal? (kar obj) 1)
+	(check-equal? count 1)
+	(check-equal? (kdr obj) #t)
+	(check-equal? count 1))))
+
+   (test-case
+    "record-wrap-2/lazy"
+    (let ((count 0))
+      (define counting-integer
+	(make-predicate-signature 'counting-integer 
+				  (lambda (obj)
+				    (set! count (+ 1 count))
+				    (integer? obj))
+				  'integer-marker))
+
+      (define-struct pare (kar kdr extra)
+	#:mutable
+	#:property prop:lazy-wrap
+	(make-lazy-wrap-info
+	 (lambda (kar kdr) (kons kar kdr))
+	 (list (lambda (x) (pare-kar x)) (lambda (x) (pare-kdr x)))
+	 (list (lambda (x v) (set-pare-kar! x v))
+	       (lambda (x v) (set-pare-kdr! x v)))
+	 (lambda (x) (pare-extra x)) (lambda (x v) (set-pare-extra! x v))))
+      (define (kons kar kdr)
+	(make-pare kar kdr #f))
+      (define (kar p)
+	(check-lazy-wraps! struct:pare p)
+	(pare-kar p))
+      (define (kdr p)
+	(check-lazy-wraps! struct:pare p)
+	(pare-kdr p))
+      (define (pare-of kar-sig kdr-sig)
+	(make-lazy-wrap-signature 'pare #f 
+				  struct:pare
+				  pare?
+				  (list kar-sig kdr-sig)
+				  #f))
+
       (define ctr (signature (pare-of counting-integer boolean)))
       (let ((obj (apply-signature ctr (apply-signature ctr (kons 1 #t)))))
 	(check-equal? count 0)
@@ -283,9 +357,8 @@
 	(check-equal? (kdr obj) #t)
 	(check-equal? count 1))))
 
-
    (test-case
-    "record-wrap-2"
+    "record-wrap-3"
     (let ((count 0))
       (define counting-integer
 	(make-predicate-signature 'counting-integer 
@@ -293,7 +366,56 @@
 				   (set! count (+ 1 count))
 				   (integer? obj))
 				 'integer-marker))
+
       (define-record-procedures-parametric pare pare-of kons pare? (kar kdr))
+      (define ctr (signature (pare-of counting-integer boolean)))
+      (let ((obj (apply-signature ctr (apply-signature ctr (kons 1 #t)))))
+	(check-equal? count 1)
+	(check-equal? (kar obj) 1)
+	(check-equal? count 1)
+	(check-equal? (kdr obj) #t)
+	(check-equal? count 1)
+	;; after checking, the system should remember that it did so
+	(let ((obj-2 (apply-signature ctr obj)))
+	  (check-equal? count 1)
+	  (check-equal? (kar obj) 1)
+	  (check-equal? count 1)
+	  (check-equal? (kdr obj) #t)
+	  (check-equal? count 1)))))
+
+   (test-case
+    "record-wrap-3/lazy"
+    (let ((count 0))
+      (define counting-integer
+	(make-predicate-signature 'counting-integer 
+				 (lambda (obj)
+				   (set! count (+ 1 count))
+				   (integer? obj))
+				 'integer-marker))
+      (define-struct pare (kar kdr extra)
+	#:mutable
+	#:property prop:lazy-wrap
+	(make-lazy-wrap-info
+	 (lambda (kar kdr) (kons kar kdr))
+	 (list (lambda (x) (pare-kar x)) (lambda (x) (pare-kdr x)))
+	 (list (lambda (x v) (set-pare-kar! x v))
+	       (lambda (x v) (set-pare-kdr! x v)))
+	 (lambda (x) (pare-extra x)) (lambda (x v) (set-pare-extra! x v))))
+      (define (kons kar kdr)
+	(make-pare kar kdr #f))
+      (define (kar p)
+	(check-lazy-wraps! struct:pare p)
+	(pare-kar p))
+      (define (kdr p)
+	(check-lazy-wraps! struct:pare p)
+	(pare-kdr p))
+      (define (pare-of kar-sig kdr-sig)
+	(make-lazy-wrap-signature 'pare #f 
+				  struct:pare
+				  pare?
+				  (list kar-sig kdr-sig)
+				  #f))
+
       (define ctr (signature (pare-of counting-integer boolean)))
       (let ((obj (apply-signature ctr (apply-signature ctr (kons 1 #t)))))
 	(check-equal? count 0)
@@ -345,13 +467,102 @@
       
       ;; one wrap each for (my-list-of %a), one for (my-list-of counting-integer)
       (let  ((l1 (build-list 10)))
+	(check-equal? count 10)
+	(let ((len1 (list-length l1)))
+	  (check-equal? count 10)))))
+
+   (test-case
+    "double-wrap/lazy"
+    (let ((count 0))
+      (define counting-integer
+	(make-predicate-signature 'counting-integer 
+				 (lambda (obj)
+				   (set! count (+ 1 count))
+				   (integer? obj))
+				 'integer-marker))
+
+      (define-struct pare (kar kdr extra)
+	#:mutable
+	#:property prop:lazy-wrap
+	(make-lazy-wrap-info
+	 (lambda (kar kdr) (raw-kons kar kdr))
+	 (list (lambda (x) (pare-kar x)) (lambda (x) (pare-kdr x)))
+	 (list (lambda (x v) (set-pare-kar! x v))
+	       (lambda (x v) (set-pare-kdr! x v)))
+	 (lambda (x) (pare-extra x)) (lambda (x v) (set-pare-extra! x v))))
+      (define (raw-kons kar kdr)
+	(make-pare kar kdr #f))
+      (define (kar p)
+	(check-lazy-wraps! struct:pare p)
+	(pare-kar p))
+      (define (kdr p)
+	(check-lazy-wraps! struct:pare p)
+	(pare-kdr p))
+      (define (pare-of kar-sig kdr-sig)
+	(make-lazy-wrap-signature 'pare #f 
+				  struct:pare
+				  pare?
+				  (list kar-sig kdr-sig)
+				  #f))
+
+
+      (define empty-list (signature (predicate null?)))
+
+      (define my-list-of
+	(lambda (x)
+	  (signature (mixed empty-list
+			    (pare-of x (my-list-of x))))))
+      
+      (define/signature kons (signature (%a (my-list-of %a) -> (pare-of %a (my-list-of %a))))
+	raw-kons)
+      
+      (define/signature build-list (signature (integer -> (my-list-of counting-integer)))
+	(lambda (n)
+	  (if (= n 0)
+	      '()
+	      (kons n (build-list (- n 1))))))
+
+      (define/signature list-length (signature ((my-list-of counting-integer) -> integer))
+	(lambda (lis)
+	  (cond
+	   ((null? lis) 0)
+	   ((pare? lis)
+	    (+ 1 (list-length (kdr lis)))))))
+      
+      ;; one wrap each for (my-list-of %a), one for (my-list-of counting-integer)
+      (let  ((l1 (build-list 10)))
 	(check-equal? count 0)
 	(let ((len1 (list-length l1)))
 	  (check-equal? count 10)))))
 
    (test-case
     "mixed wrap"
-    (define-record-procedures-parametric pare pare-of raw-kons pare? (kar kdr))
+
+    (define-struct pare (kar kdr extra)
+      #:mutable
+      #:property prop:lazy-wrap
+      (make-lazy-wrap-info
+       (lambda (kar kdr) (raw-kons kar kdr))
+       (list (lambda (x) (pare-kar x)) (lambda (x) (pare-kdr x)))
+       (list (lambda (x v) (set-pare-kar! x v))
+	     (lambda (x v) (set-pare-kdr! x v)))
+       (lambda (x) (pare-extra x)) (lambda (x v) (set-pare-extra! x v))))
+    (define (raw-kons kar kdr)
+      (make-pare kar kdr #f))
+    (define (kar p)
+      (check-lazy-wraps! struct:pare p)
+      (pare-kar p))
+    (define (kdr p)
+      (check-lazy-wraps! struct:pare p)
+      (pare-kdr p))
+    (define (pare-of kar-sig kdr-sig)
+      (make-lazy-wrap-signature 'pare #f 
+				struct:pare
+				pare?
+				(list kar-sig kdr-sig)
+				#f))
+
+
     (define sig1 (signature (pare-of integer boolean)))
     (define sig2 (signature (pare-of boolean integer)))
     (define sig (signature (mixed sig1 sig2)))
@@ -381,7 +592,7 @@
 
    (test-case
     "pair-wrap"
-    (define sig (make-pair-signature integer boolean))
+    (define sig (make-pair-signature #f integer boolean))
     (let ((obj (apply-signature sig (cons 1 #t))))
       (check-equal? (checked-car obj) 1)
       (check-equal? (checked-cdr obj) #t))

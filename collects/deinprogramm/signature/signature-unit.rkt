@@ -413,16 +413,18 @@
   (mixed-signature field-signatures-list)
   #:transparent)
 
-(define (make-lazy-wrap-signature name type-descriptor predicate field-signatures syntax)
-  (really-make-lazy-wrap-signature name type-descriptor predicate #f (list field-signatures) syntax))
+(define (make-lazy-wrap-signature name eager-checking? type-descriptor predicate field-signatures syntax)
+  (really-make-lazy-wrap-signature name eager-checking? 
+				   type-descriptor predicate #f (list field-signatures) syntax))
 
 ; The lists of signatures in `field-signatures-list' form an implicit mixed signature.
-(define (really-make-lazy-wrap-signature name type-descriptor predicate
+(define (really-make-lazy-wrap-signature name eager-checking? type-descriptor predicate
 					 mixed-signature field-signatures-list
 					 syntax)
   (let ((lazy-wrap-info (lazy-wrap-ref type-descriptor))
 	(not-checked (make-lazy-log-not-checked mixed-signature field-signatures-list))
-	(lazy-wrap-signature-info (make-lazy-wrap-signature-info type-descriptor predicate field-signatures-list)))
+	(lazy-wrap-signature-info
+	 (make-lazy-wrap-signature-info eager-checking? type-descriptor predicate field-signatures-list)))
     (let ((constructor (lazy-wrap-info-constructor lazy-wrap-info))
 	  (raw-accessors (lazy-wrap-info-raw-accessors lazy-wrap-info))
 	  (wrap-ref (lazy-wrap-info-ref-proc lazy-wrap-info))
@@ -453,6 +455,9 @@
 		 (wrap-set! thing
 			    (make-lazy-wrap-log (cons not-checked (lazy-wrap-log-not-checked log))
 						(lazy-wrap-log-checked log)))))))
+
+	 (when eager-checking?
+	   (check-lazy-wraps! type-descriptor thing))
        
 	 thing)
        (delay syntax)
@@ -479,7 +484,7 @@
 			       (lazy-wrap-signature-info-field-signatures-list other-info)))
 		      (lazy-wrap-signature-info-field-signatures-list this-info))))))))
 
-(define-struct lazy-wrap-signature-info (descriptor predicate field-signatures-list) #:transparent)
+(define-struct lazy-wrap-signature-info (eager-checking? descriptor predicate field-signatures-list) #:transparent)
 
 (define (check-lazy-wraps! descriptor thing)
   (let ((lazy-wrap-info (lazy-wrap-ref descriptor)))
@@ -539,15 +544,19 @@
     (define (push-down-lazy-wrap-sigs)
       (hash-map lazy-wrap-sigs
 		(lambda (type-desc signatures)
-		  (really-make-lazy-wrap-signature 
-		   (signature-name (car signatures)) type-desc 
-		   (lazy-wrap-signature-info-predicate (real-signature-info (car signatures)))
-		   mixed-signature
-		   (apply append
-			  (map (lambda (sig)
-				 (lazy-wrap-signature-info-field-signatures-list (real-signature-info sig)))
-			       signatures))
-		   (signature-syntax (car signatures))))))
+		  (let* ((sig (car signatures))
+			 (info (real-signature-info (car signatures))))
+		    (really-make-lazy-wrap-signature 
+		     (signature-name sig) 
+		     (lazy-wrap-signature-info-eager-checking? info)
+		     type-desc 
+		     (lazy-wrap-signature-info-predicate info)
+		     mixed-signature
+		     (apply append
+			    (map (lambda (sig)
+				   (lazy-wrap-signature-info-field-signatures-list (real-signature-info sig)))
+				 signatures))
+		     (signature-syntax sig))))))
   
     (let loop ((sigs sigs)
 	       (vanilla-sigs '()))
@@ -636,8 +645,9 @@
     (lambda (desc . _)
       desc)))
 
-(define (make-pair-signature car-sig cdr-sig)
-  (make-lazy-wrap-signature 'pair checked-pair-descriptor pair? (list car-sig cdr-sig) #'pair))
+(define (make-pair-signature eager-checking? car-sig cdr-sig)
+  (make-lazy-wrap-signature 'pair eager-checking? 
+			    checked-pair-descriptor pair? (list car-sig cdr-sig) #'pair))
 
 (define (checked-car p)
   (car p)
