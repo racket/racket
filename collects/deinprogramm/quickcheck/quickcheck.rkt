@@ -12,6 +12,7 @@
 	 arbitrary-mixed arbitrary-one-of
 	 arbitrary-pair
 	 arbitrary-list
+	 arbitrary-tuple arbitrary-record
 	 arbitrary-vector
 	 arbitrary-string
 	 arbitrary-ascii-string arbitrary-printable-ascii-string
