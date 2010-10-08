@@ -15,7 +15,7 @@
  (all-from-except beginner: deinprogramm/DMdA procedures
 		  set! define-record-procedures-2 eq? equal?
 		  quote
-		  make-pair pair? first rest
+		  make-pair pair? cons? first rest
 		  length map for-each reverse append list list-ref fold
 		  symbol? string->symbol symbol->string
 		  apply))

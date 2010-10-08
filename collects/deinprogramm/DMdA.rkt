@@ -25,8 +25,6 @@
 
 (provide provide lib planet rename-out require #%datum #%module-begin #%top-interaction) ; so we can use this as a language
 
-(provide cons) ; hack, for the stepper
-
 (provide (all-from-out deinprogramm/define-record-procedures))
 (provide (all-from-out test-engine/scheme-tests))
 (provide signature define-contract :
@@ -246,8 +244,12 @@
   (empty list "die leere Liste")
   (make-pair (%a (list %a) -> (list %a))
 	     "erzeuge ein Paar aus Element und Liste")
+  ((DMdA-cons cons) (%a -> boolean)
+	     "erzeuge ein Paar aus Element und Liste")
   (pair? (%a -> boolean)
 	 "feststellen, ob ein Wert ein Paar ist")	
+  (cons? (%a -> boolean)
+	 "feststellen, ob ein Wert ein Paar ist")
   (empty? (%a -> boolean)
 	  "feststellen, ob ein Wert die leere Liste ist")
   
@@ -388,6 +390,12 @@
 
 (define (empty? obj)
   (null? obj))
+
+(define (cons? obj)
+  (pair? obj))
+
+(define (DMdA-cons f r)
+  (make-pair f r))
 
 (define (DMdA-append . args)
   (let loop ((args args)
