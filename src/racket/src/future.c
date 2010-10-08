@@ -547,7 +547,12 @@ void scheme_future_block_until_gc()
 # else
     {
       int _eax, _ebx, _ecx, _edx, op = 0;
-      asm ("cpuid" : "=a" (_eax), "=b" (_ebx), "=c" (_ecx), "=d" (_edx) : "a" (op));
+      /* we can't always use EBX, so save and restore it: */
+      asm ("pushl %%ebx \n\t"
+           "cpuid \n\t" 
+           "movl %%ebx, %1 \n\t"
+           "popl  %%ebx"
+           : "=a" (_eax), "=r" (_ebx), "=c" (_ecx), "=d" (_edx) : "a" (op));
     }
 # endif
 #endif

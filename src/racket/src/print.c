@@ -80,6 +80,7 @@ typedef struct Scheme_Print_Params {
   char print_unreadable;
   char print_pair_curly, print_mpair_curly;
   char print_reader;
+  char print_long_bools;
   char can_read_pipe_quote;
   char case_sens;
   char honu_mode;
@@ -989,6 +990,7 @@ print_to_string(Scheme_Object *obj,
     params.print_hash_table = 0;
     params.print_unreadable = 1;
     params.print_reader = 1;
+    params.print_long_bools = 0;
     params.print_pair_curly = 0;
     params.print_mpair_curly = 1;
     params.can_read_pipe_quote = 1;
@@ -1053,6 +1055,8 @@ print_to_string(Scheme_Object *obj,
     params.can_read_pipe_quote = SCHEME_TRUEP(v);
     v = scheme_get_param(config, MZCONFIG_CASE_SENS);
     params.case_sens = SCHEME_TRUEP(v);
+    v = scheme_get_param(config, MZCONFIG_PRINT_LONG_BOOLEAN);
+    params.print_long_bools = SCHEME_TRUEP(v);
     if (check_honu) {
       v = scheme_get_param(config, MZCONFIG_HONU_MODE);
       params.honu_mode = SCHEME_TRUEP(v);
@@ -2234,6 +2238,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact(pp, CPT_TRUE);
       else if (pp->honu_mode)
 	print_utf8_string(pp, "true", 0, 4);
+      else if (pp->print_long_bools)
+	print_utf8_string(pp, "#true", 0, 5);
       else
 	print_utf8_string(pp, "#t", 0, 2);
     }
@@ -2243,6 +2249,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact(pp, CPT_FALSE);
       else if (pp->honu_mode)
 	print_utf8_string(pp, "false", 0, 5);
+      else if (pp->print_long_bools)
+	print_utf8_string(pp, "#false", 0, 6);
       else
 	print_utf8_string(pp, "#f", 0, 2);
     }

@@ -433,6 +433,8 @@
 
      (define show-inexactness? (pretty-print-show-inexactness))
      (define exact-as-decimal? (pretty-print-exact-as-decimal))
+
+     (define long-bools? (print-boolean-long-form))
      
      (define vector->repeatless-list
        (if print-vec-length?
@@ -912,7 +914,9 @@
             [(hide? obj)
              (wr* pport (hide-val obj) depth display? qd)]
 	    [(boolean? obj)
-	     (out (if obj "#t" "#f"))]
+	     (out (if long-bools?
+                      (if obj "#true" "#false")
+                      (if obj "#t" "#f")))]
 	    [(number? obj)
 	     (when (and show-inexactness?
 			(inexact? obj))

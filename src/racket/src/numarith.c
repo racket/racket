@@ -1043,8 +1043,8 @@ UNSAFE_FL1(unsafe_fl_sqrt, sqrt, pos_sqrt)
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    double v;                                                 \
-   if (!SCHEME_FLOATP(argv[0])) scheme_wrong_type(sname, "inexact-real", 0, argc, argv); \
-   if (!SCHEME_FLOATP(argv[1])) scheme_wrong_type(sname, "inexact-real", 1, argc, argv); \
+   if (!SCHEME_DBLP(argv[0])) scheme_wrong_type(sname, "flonum", 0, argc, argv); \
+   if (!SCHEME_DBLP(argv[1])) scheme_wrong_type(sname, "flonum", 1, argc, argv); \
    v = SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]);   \
    return scheme_make_double(v);                             \
  }
@@ -1058,7 +1058,7 @@ SAFE_FL(fl_div, "fl/", /)
  static Scheme_Object *name(int argc, Scheme_Object *argv[])  \
  {                                                            \
    double v;                                                              \
-   if (!SCHEME_FLOATP(argv[0])) scheme_wrong_type(sname, "inexact-real", 0, argc, argv); \
+   if (!SCHEME_DBLP(argv[0])) scheme_wrong_type(sname, "flonum", 0, argc, argv); \
    v = SCHEME_DBL_VAL(argv[0]);                                           \
    v = op(v);                                                             \
    return scheme_make_double(v);                                          \

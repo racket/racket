@@ -219,6 +219,15 @@ A parameter that controls printing vectors; defaults to
 A parameter that controls printing hash tables; defaults to
 @racket[#f]. See @secref["print-hashtable"] for more information.}
 
+
+@defboolparam[print-boolean-long-form on?]{
+
+A parameter that controls printing of booleans. When the parameter's
+value is true, @racket[#t] and @racket[#f] print as @litchar{#true}
+and @litchar{#false}, otherwise they print as @litchar{#t}
+and @litchar{#f}.}
+
+
 @defboolparam[print-reader-abbreviations on?]{
 
 A parameter that controls printing of two-element lists that start

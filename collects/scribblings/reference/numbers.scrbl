@@ -11,11 +11,7 @@
 @(define math-eval (make-base-eval))
 @(interaction-eval #:eval math-eval (require racket/math))
 
-@(define flfx-eval (make-base-eval))
-@(interaction-eval #:eval flfx-eval (require racket/fixnum))
-@(interaction-eval #:eval flfx-eval (require racket/flonum))
-
-@title[#:tag "numbers"]{Numbers}
+@title[#:tag "numbers" #:style '(toc)]{Numbers}
 
 @guideintro["numbers"]{numbers}
 
@@ -27,6 +23,9 @@ represented are also @deftech{rational numbers}, except for
 @as-index{@racket[+nan.0]} (@as-index{not-a-number}). Among the
 rational numbers, some are @deftech{integers}, because @racket[round]
 applied to the number produces the same number.
+
+@margin-note/ref{See @secref["parse-number"] for information on the
+syntax of number literals.}
 
 Orthogonal to those categories, each number is also either an
 @deftech{exact number} or an @deftech{inexact number}. Unless
@@ -46,8 +45,9 @@ Inexact real numbers are implemented as either single- or
 double-precision @as-index{IEEE floating-point numbers}---the latter
 by default, and the former only when support for 32-bit inexact
 numbers is specifically enabled when the run-time system is built, and
-when computation starts with numerical constants specified as
-single-precision numbers.
+only when a computation starts with numerical constants specified as
+single-precision numbers. Inexact real numbers that are represented as
+double-precision floating-point numbers are @deftech{flonums}.
 
 The precision and size of exact numbers is limited only by available
 memory (and the precision of operations that can produce irrational
@@ -85,8 +85,10 @@ exact, and when they are @racket[=] (except for @racket[+nan.0],
 @racket[+0.0], and @racket[-0.0], as noted above). Two numbers are
 @racket[equal?] when they are @racket[eqv?].
 
+@local-table-of-contents[]
+
 @; ----------------------------------------
-@section{Number Types}
+@section[#:tag "number-types"]{Number Types}
 
 @defproc[(number? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v]
  is a number, @racket[#f] otherwise.
@@ -150,6 +152,12 @@ Return @racket[#t] if @racket[v] is a @techlink{fixnum}, @racket[#f]
 otherwise.}
 
 
+@defproc[(flonum? [v any/c]) boolean?]{
+
+Return @racket[#t] if @racket[v] is a @techlink{flonum}, @racket[#f]
+otherwise.}
+
+
 @defproc[(zero? [z number?]) boolean?]{ Returns @racket[(= 0 z)].
 
 @mz-examples[(zero? 0) (zero? -0.0)]}
@@ -201,9 +209,13 @@ otherwise.}
 
 @mz-examples[(exact->inexact 1) (exact->inexact 1.0)]}
 
+@; ----------------------------------------
+@section[#:tag "generic-numbers"]{Generic Numerics}
+
+Most Racket numeric operations work on any kind of number. 
 
 @; ----------------------------------------
-@section{Arithmetic}
+@subsection{Arithmetic}
 
 @defproc[(+ [z number?] ...) number?]{
 
@@ -412,7 +424,7 @@ Among the real numbers within @racket[(abs tolerance)] of @racket[x],
 ]}
 
 @; ----------------------------------------
-@section{Number Comparison}
+@subsection{Number Comparison}
 
 @defproc[(= [z number?] [w number?] ...+) boolean?]{ Returns
  @racket[#t] if all of the arguments are numerically equal,
@@ -453,7 +465,7 @@ Among the real numbers within @racket[(abs tolerance)] of @racket[x],
 
 
 @; ------------------------------------------------------------------------
-@section{Powers and Roots}
+@subsection{Powers and Roots}
 
 @defproc[(sqrt [z number?]) number?]{
 
@@ -512,7 +524,7 @@ Returns the natural logarithm of @racket[z].  The result is normally
 
 
 @; ------------------------------------------------------------------------
-@section{Trignometric Functions}
+@subsection{Trignometric Functions}
 
 @defproc[(sin [z number?]) number?]{
 
@@ -574,7 +586,7 @@ In the two-argument case, the result is roughly the same as @racket[(/
 @mz-examples[(atan 0.5) (atan 2 1) (atan -2 -1) (atan 1+05.i) (atan +inf.0 -inf.0)]}
 
 @; ------------------------------------------------------------------------
-@section{Complex Numbers}
+@subsection{Complex Numbers}
 
 @defproc[(make-rectangular [x real?] [y real?]) number?]{
 
@@ -623,7 +635,7 @@ Returns the imaginary part of the complex number @racket[z] in
 @mz-examples[(angle -3) (angle 3.0) (angle 3+4i) (angle +inf.0+inf.0i)]}
 
 @; ------------------------------------------------------------------------
-@section{Bitwise Operations}
+@subsection{Bitwise Operations}
 
 @section-index{logical operators}
 
@@ -721,7 +733,7 @@ both in binary and as integers.
 @mz-examples[(integer-length 8) (integer-length -8)]}
 
 @; ------------------------------------------------------------------------
-@section{Random Numbers}
+@subsection{Random Numbers}
 
 @defproc*[([(random [k (integer-in 1 4294967087)]
                     [generator pseudo-random-generator?
@@ -801,7 +813,7 @@ Like @racket[vector->pseudo-random-generator], but changes
 generator.}
 
 @; ------------------------------------------------------------------------
-@section{Number--String Conversions}
+@subsection{Number--String Conversions}
 
 @section-index["numbers" "machine representations"]
 @section-index["numbers" "floating-point"]
@@ -946,383 +958,7 @@ for the machine running Racket, @racket[#f] if the native encoding
 is little-endian.}
 
 @; ------------------------------------------------------------------------
-@section{Inexact-Real (Flonum) Operations}
-
-@defmodule[racket/flonum]
-
-The @racketmodname[racket/flonum] library provides operations like
-@racket[fl+] that consume and produce only real @tech{inexact
-numbers}, which are also known as @deftech{flonums}. Flonum-specific
-operations provide can better performance when used consistently, and
-they are as safe as generic operations like @racket[+].
-
-@guidealso["fixnums+flonums"]
-
-@subsection{Flonum Arithmetic}
-
-@deftogether[(
-@defproc[(fl+ [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(fl- [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(fl* [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(fl/ [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(flabs [a inexact-real?]) inexact-real?]
-)]{
-
-Like @racket[+], @racket[-], @racket[*], @racket[/], and @racket[abs],
-but constrained to consume @tech{flonums}. The result is always a
-@tech{flonum}.}
-
-@deftogether[(
-@defproc[(fl=   [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(fl<   [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(fl>   [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(fl<=  [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(fl>=  [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(flmin [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(flmax [a inexact-real?] [b inexact-real?]) inexact-real?]
-)]{
-
-Like @racket[=], @racket[<], @racket[>], @racket[<=], @racket[>=],
-@racket[min], and @racket[max], but constrained to consume
-@tech{flonums}.}
-
-@deftogether[(
-@defproc[(flround    [a inexact-real?]) inexact-real?]
-@defproc[(flfloor    [a inexact-real?]) inexact-real?]
-@defproc[(flceiling  [a inexact-real?]) inexact-real?]
-@defproc[(fltruncate [a inexact-real?]) inexact-real?]
-)]{
-
-Like @racket[round], @racket[floor], @racket[ceiling], and
-@racket[truncate], but constrained to consume @tech{flonums}.}
-
-@deftogether[(
-@defproc[(flsin  [a inexact-real?]) inexact-real?]
-@defproc[(flcos  [a inexact-real?]) inexact-real?]
-@defproc[(fltan  [a inexact-real?]) inexact-real?]
-@defproc[(flasin [a inexact-real?]) inexact-real?]
-@defproc[(flacos [a inexact-real?]) inexact-real?]
-@defproc[(flatan [a inexact-real?]) inexact-real?]
-@defproc[(fllog  [a inexact-real?]) inexact-real?]
-@defproc[(flexp  [a inexact-real?]) inexact-real?]
-@defproc[(flsqrt [a inexact-real?]) inexact-real?]
-)]{
-
-Like @racket[sin], @racket[cos], @racket[tan], @racket[asin],
-@racket[acos], @racket[atan], @racket[log], @racket[exp], and
-@racket[flsqrt], but constrained to consume and produce
-@tech{flonums}. The result is @racket[+nan.0] when a number outside
-the range @racket[-1.0] to @racket[1.0] is given to @racket[flasin] or
-@racket[flacos], or when a negative number is given to @racket[fllog]
-or @racket[flsqrt].}
-
-
-@defproc[(->fl [a exact-integer?]) inexact-real?]{
-
-Like @racket[exact->inexact], but constrained to consume exact
-integers, so the result is always a @tech{flonum}.}
-
-
-@defproc[(fl->exact-integer [a inexact-real?]) exact-integer?]{
-
-Like @racket[inexact->exact], but constrained to consume an
-@tech{integer} @tech{flonum}, so the result is always an exact
-integer.}
-
-
-@deftogether[(
-@defproc[(make-flrectangular [a inexact-real?] [b inexact-real?]) 
-         (and/c complex? inexact? (not/c real?))]
-@defproc[(flreal-part [a (and/c complex? inexact? (not/c real?))]) inexact-real?]
-@defproc[(flimag-part [a (and/c complex? inexact? (not/c real?))]) inexact-real?]
-)]{
-
-Like @racket[make-rectangular], @racket[real-part], and
-@racket[imag-part], but both parts of the complex number must be
-inexact.}
-
-
-@subsection{Flonum Vectors}
-
-A @deftech{flvector} is like a @tech{vector}, but it holds only
-inexact real numbers. This representation can be more compact, and
-unsafe operations on @tech{flvector}s (see
-@racketmodname[racket/unsafe/ops]) can execute more efficiently than
-unsafe operations on @tech{vectors} of inexact reals.
-
-An f64vector as provided by @racketmodname[ffi/vector] stores the
-same kinds of values as an @tech{flvector}, but with extra
-indirections that make f64vectors more convenient for working with
-foreign libraries. The lack of indirections make unsafe
-@tech{flvector} access more efficient.
-
-Two @tech{flvectors} are @racket[equal?] if they have the same length,
-and if the values in corresponding slots of the @tech{flvectors} are
-@racket[equal?].
-
-@defproc[(flvector? [v any/c]) boolean?]{
-
-Returns @racket[#t] if @racket[v] is a @tech{flvector}, @racket[#f] otherwise.}
-
-@defproc[(flvector [x inexact-real?] ...) flvector?]{
-
-Creates a @tech{flvector} containing the given inexact real numbers.
-
-@mz-examples[#:eval flfx-eval (flvector 2.0 3.0 4.0 5.0)]}
-
-@defproc[(make-flvector [size exact-nonnegative-integer?]
-                        [x inexact-real? 0.0]) 
-         flvector?]{
-
-Creates a @tech{flvector} with @racket[size] elements, where every
-slot in the @tech{flvector} is filled with @racket[x].
-
-@mz-examples[#:eval flfx-eval (make-flvector 4 3.0)]}
-
-@defproc[(flvector-length [vec flvector?]) exact-nonnegative-integer?]{
-
-Returns the length of @racket[vec] (i.e., the number of slots in the
-@tech{flvector}).}
-
-
-@defproc[(flvector-ref [vec flvector?] [pos exact-nonnegative-integer?])
-         inexact-real?]{
-
-Returns the inexact real number in slot @racket[pos] of
-@racket[vec]. The first slot is position @racket[0], and the last slot
-is one less than @racket[(flvector-length vec)].}
-
-@defproc[(flvector-set! [vec flvector?] [pos exact-nonnegative-integer?]
-                        [x inexact-real?])
-         inexact-real?]{
-
-Sets the inexact real number in slot @racket[pos] of @racket[vec]. The
-first slot is position @racket[0], and the last slot is one less than
-@racket[(flvector-length vec)].}
-
-@defproc[(flvector-copy [vec flvector?]
-                        [start exact-nonnegative-integer? 0]
-                        [end exact-nonnegative-integer? (vector-length v)]) 
-         flvector?]{
-
-Creates a fresh @tech{flvector} of size @racket[(- end start)], with all of the
-elements of @racket[vec] from @racket[start] (inclusive) to
-@racket[end] (exclusive).}
-
-@defproc[(in-flvector (v flvector?)) sequence?]{
-
-Produces a sequence that gives the elements of @scheme[v] in order.
-Inside a @scheme[for] form, this can be optimized to step through the
-elements of @scheme[v] efficiently as in @scheme[in-list],
-@scheme[in-vector], etc.}
-
-@deftogether[(
-@defform*[((for/flvector (for-clause ...) body ...)
-           (for/flvector #:length length-expr (for-clause ...) body ...))]
-@defform*[((for*/flvector (for-clause ...) body ...)
-           (for*/flvector #:length length-expr (for-clause ...) body ...))])]{
-
-Like @scheme[for/vector] or @scheme[for*/vector], but for
-@tech{flvector}s.}
-
-@defproc[(shared-flvector [x inexact-real?] ...) flvector?]{
-
-Creates a @tech{flvector} containing the given inexact real numbers.
-When @tech{places} are enabled, the new @tech{flvector} is 
-allocated in the @tech{shared memory space}.
-
-@mz-examples[#:eval flfx-eval (shared-flvector 2.0 3.0 4.0 5.0)]}
-
-
-@defproc[(make-shared-flvector [size exact-nonnegative-integer?]
-                        [x inexact-real? 0.0]) 
-         flvector?]{
-
-Creates a @tech{flvector} with @racket[size] elements, where every
-slot in the @tech{flvector} is filled with @racket[x].
-When @tech{places} are enabled, the new @tech{flvector} is 
-allocated in the @tech{shared memory space}.
-
-@mz-examples[#:eval flfx-eval (make-shared-flvector 4 3.0)]}
-                       
-@section{Fixnum Operations}
-
-@defmodule[racket/fixnum]
-
-The @racketmodname[racket/fixnum] library provides operations like
-@racket[fx+] that consume and produce only fixnums. The operations in
-this library are meant to be safe versions of unsafe operations like
-@racket[unsafe-fx+]. These safe operations are generally no faster
-than using generic primitives like @racket[+].
-
-The expected use of the @racketmodname[racket/fixnum] library is for
-code where the @racket[require] of @racketmodname[racket/fixnum] is
-replaced with
-
-@racketblock[(require (filtered-in
-                       (λ (name) (regexp-replace #rx"unsafe-" name ""))
-                       racket/unsafe/ops))]
-
-to drop in unsafe versions of the library. Alternately, when
-encountering crashes with code that uses unsafe fixnum operations, use
-the @racketmodname[racket/fixnum] library to help debug the problems.
-
-@subsection{Fixnum Arithmetic}
-
-@deftogether[(
-@defproc[(fx+ [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fx- [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fx* [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxquotient  [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxremainder [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxmodulo    [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxabs       [a fixnum?]) fixnum?]
-)]{
-
-Safe versions of @racket[unsafe-fx+], @racket[unsafe-fx-],
-@racket[unsafe-fx*], @racket[unsafe-fxquotient],
-@racket[unsafe-fxremainder], @racket[unsafe-fxmodulo], and
-@racket[unsafe-fxabs]. The
-@exnraise[exn:fail:contract:non-fixnum-result] if the arithmetic
-result would not be a fixnum.}
-
-
-@deftogether[(
-@defproc[(fxand [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxior [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxxor [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxnot [a fixnum?]) fixnum?]
-@defproc[(fxlshift [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxrshift [a fixnum?] [b fixnum?]) fixnum?]
-)]{
-
-Safe versions of @racket[unsafe-fxand], @racket[unsafe-fxior],
-@racket[unsafe-fxxor], @racket[unsafe-fxnot],
-@racket[unsafe-fxlshift], and @racket[unsafe-fxrshift].  The
-@exnraise[exn:fail:contract:non-fixnum-result] if the arithmetic
-result would not be a fixnum.}
-
-
-@deftogether[(
-@defproc[(fx=   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fx<   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fx>   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fx<=  [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fx>=  [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fxmin [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxmax [a fixnum?] [b fixnum?]) fixnum?]
-)]{
-
-Safe versions of @racket[unsafe-fx=], @racket[unsafe-fx<],
- @racket[unsafe-fx>], @racket[unsafe-fx<=], @racket[unsafe-fx>=],
- @racket[unsafe-fxmin], and @racket[unsafe-fxmax].}
-
-@deftogether[(
-@defproc[(fx->fl [a fixnum?]) inexact-real?]
-@defproc[(fl->fx [a inexact-real?]) fixnum?]
-)]{
-
-Safe versions of @racket[unsafe-fx->fl] and @racket[unsafe-fl->fx].}
-
-@subsection{Fixnum Vectors}
-
-A @deftech{fxvector} is like a @tech{vector}, but it holds only
-@tech{fixnums}. The only advantage of an @tech{fxvector} over a
-@tech{vector} is that a shared version can be created with functions
-like @racket[shared-fxvector].
-
-Two @tech{fxvectors} are @racket[equal?] if they have the same length,
-and if the values in corresponding slots of the @tech{fxvectors} are
-@racket[equal?].
-
-@defproc[(fxvector? [v any/c]) boolean?]{
-
-Returns @racket[#t] if @racket[v] is a @tech{fxvector}, @racket[#f] otherwise.}
-
-@defproc[(fxvector [x fixnum?] ...) fxvector?]{
-
-Creates a @tech{fxvector} containing the given @tech{fixnums}.
-
-@mz-examples[#:eval flfx-eval (fxvector 2 3 4 5)]}
-
-@defproc[(make-fxvector [size exact-nonnegative-integer?]
-                        [x fixnum? 0]) 
-         fxvector?]{
-
-Creates a @tech{fxvector} with @racket[size] elements, where every
-slot in the @tech{fxvector} is filled with @racket[x].
-
-@mz-examples[#:eval flfx-eval (make-fxvector 4 3)]}
-
-@defproc[(fxvector-length [vec fxvector?]) exact-nonnegative-integer?]{
-
-Returns the length of @racket[vec] (i.e., the number of slots in the
-@tech{fxvector}).}
-
-
-@defproc[(fxvector-ref [vec fxvector?] [pos exact-nonnegative-integer?])
-         fixnum?]{
-
-Returns the @tech{fixnum} in slot @racket[pos] of
-@racket[vec]. The first slot is position @racket[0], and the last slot
-is one less than @racket[(fxvector-length vec)].}
-
-@defproc[(fxvector-set! [vec fxvector?] [pos exact-nonnegative-integer?]
-                        [x fixnum?])
-         fixnum?]{
-
-Sets the @tech{fixnum} in slot @racket[pos] of @racket[vec]. The
-first slot is position @racket[0], and the last slot is one less than
-@racket[(fxvector-length vec)].}
-
-@defproc[(fxvector-copy [vec fxvector?]
-                        [start exact-nonnegative-integer? 0]
-                        [end exact-nonnegative-integer? (vector-length v)]) 
-         fxvector?]{
-
-Creates a fresh @tech{fxvector} of size @racket[(- end start)], with all of the
-elements of @racket[vec] from @racket[start] (inclusive) to
-@racket[end] (exclusive).}
-
-@defproc[(in-fxvector (v fxvector?)) sequence?]{
-
-Produces a sequence that gives the elements of @scheme[v] in order.
-Inside a @scheme[for] form, this can be optimized to step through the
-elements of @scheme[v] efficiently as in @scheme[in-list],
-@scheme[in-vector], etc.}
-
-@deftogether[(
-@defform*[((for/fxvector (for-clause ...) body ...)
-           (for/fxvector #:length length-expr (for-clause ...) body ...))]
-@defform*[((for*/fxvector (for-clause ...) body ...)
-           (for*/fxvector #:length length-expr (for-clause ...) body ...))])]{
-
-Like @scheme[for/vector] or @scheme[for*/vector], but for
-@tech{fxvector}s.}
-
-@defproc[(shared-fxvector [x fixnum?] ...) fxvector?]{
-
-Creates a @tech{fxvector} containing the given @tech{fixnums}.
-When @tech{places} are enabled, the new @tech{fxvector} is 
-allocated in the @tech{shared memory space}.
-
-@mz-examples[#:eval flfx-eval (shared-fxvector 2 3 4 5)]}
-
-
-@defproc[(make-shared-fxvector [size exact-nonnegative-integer?]
-                               [x fixnum? 0]) 
-         fxvector?]{
-
-Creates a @tech{fxvector} with @racket[size] elements, where every
-slot in the @tech{fxvector} is filled with @racket[x].
-When @tech{places} are enabled, the new @tech{fxvector} is 
-allocated in the @tech{shared memory space}.
-
-@mz-examples[#:eval flfx-eval (make-shared-fxvector 4 3)]}
-                       
-
-@; ------------------------------------------------------------------------
-@section{Extra Constants and Functions}
+@subsection{Extra Constants and Functions}
 
 @note-lib[racket/math]
 
@@ -1385,6 +1021,11 @@ Hence also:
 }
 
 @; ----------------------------------------------------------------------
-
 @close-eval[math-eval]
-@close-eval[flfx-eval]
+@; ----------------------------------------------------------------------
+
+@include-section["flonums.scrbl"]
+@include-section["fixnums.scrbl"]
+
+@; ----------------------------------------------------------------------
+

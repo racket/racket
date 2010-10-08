@@ -6748,6 +6748,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "inexact-real?")) {
     generate_inlined_type_test(jitter, app, SCHEME_FLOAT_TYPE, scheme_double_type, 0, for_branch, branch_short, need_sync);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "flonum?")) {
+    generate_inlined_type_test(jitter, app, scheme_double_type, scheme_double_type, 0, for_branch, branch_short, need_sync);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "procedure?")) {
     generate_inlined_type_test(jitter, app, scheme_prim_type, scheme_proc_chaperone_type, 1, for_branch, branch_short, need_sync);
     return 1;

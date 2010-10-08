@@ -129,10 +129,12 @@ printed form of its exact negation.
 
 @section{Printing Booleans}
 
-The constant @scheme[#t] prints as @litchar{#t}, and the constant
-@scheme[#f] prints as @litchar{#f} in all modes (@scheme[display],
-@scheme[write], and @scheme[print]). For the purposes of printing
-enclosing datatypes, a symbol is @tech{quotable}.
+The constant @scheme[#t] prints as @litchar{#true} or @litchar{#t} in
+all modes (@scheme[display], @scheme[write], and @scheme[print]),
+depending on the value of @racket[print-boolean-long-form], and the
+constant @scheme[#f] prints as @litchar{#false} or @litchar{#f}. For
+the purposes of printing enclosing datatypes, a symbol is
+@tech{quotable}.
 
 @section[#:tag "print-pairs"]{Printing Pairs and Lists}
 

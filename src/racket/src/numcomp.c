@@ -563,8 +563,8 @@ UNSAFE_FX_X(unsafe_fx_max, >, bin_max, argv[0], argv[1], FX_SEL_ID)
 #define SAFE_FL_X(name, sname, op, T, F)                       \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   if (!SCHEME_FLOATP(argv[0])) scheme_wrong_type(sname, "inexact-real", 0, argc, argv); \
-   if (!SCHEME_FLOATP(argv[1])) scheme_wrong_type(sname, "inexact-real", 1, argc, argv); \
+   if (!SCHEME_DBLP(argv[0])) scheme_wrong_type(sname, "flonum", 0, argc, argv); \
+   if (!SCHEME_DBLP(argv[1])) scheme_wrong_type(sname, "flonum", 1, argc, argv); \
    if (SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]))   \
      return T;                                               \
    else                                                      \

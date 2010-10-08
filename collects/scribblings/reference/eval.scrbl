@@ -92,8 +92,8 @@ contain a module declaration), or @racket[#f] for any other load.
 The default load handler reads forms from the file in
 @racket[read-syntax] mode with line-counting enabled for the file
 port, unless the path has a @racket[".zo"] suffix. It also
-@racket[parameterize]s each read to set both
-@racket[read-accept-compiled] and @racket[read-accept-reader] to
+@racket[parameterize]s each read to set @racket[read-accept-compiled],
+@racket[read-accept-reader], and @racket[read-accept-lang] to
 @racket[#t]. In addition, if @racket[load-on-demand-enabled] is
 @racket[#t], then @racket[read-on-demand-source] is effectively set to
 the @tech{cleanse}d, absolute form of @racket[path] during the
@@ -126,6 +126,7 @@ If the second argument to the load handler is a symbol, then:
        (read-accept-infix-dot #t)
        (read-accept-quasiquote #t)
        (read-accept-reader #t)
+       (read-accept-lang #t)
        ]}
 
  @item{If the read result is not a @racketidfont{module} form, or if a

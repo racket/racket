@@ -1,3 +1,13 @@
+Version 5.0.1.8
+Added #true and #false, and changed #t/#T and #f/#F to
+ require a delimiter afterward
+Added print-boolean-long-form
+Added read-accept-lang, which is set to #t when 
+ reading a module
+Added flonum?
+Changed continuation-marks to accept a #f argument
+ to produce an empty set of marks
+
 Version 5.0.1.7
 Added fxvectors
 Added unsafe-{s,u}16-{ref,set!}

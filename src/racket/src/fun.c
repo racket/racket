@@ -7677,6 +7677,20 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   return (Scheme_Object *)set;
 }
 
+static Scheme_Object *make_empty_marks()
+{
+  /* empty marks */
+  Scheme_Cont_Mark_Set *set;
+  
+  set = MALLOC_ONE_TAGGED(Scheme_Cont_Mark_Set);
+  set->so.type = scheme_cont_mark_set_type;
+  set->chain = NULL;
+  set->cmpos = 1;
+  set->native_stack_trace = NULL;
+  
+  return (Scheme_Object *)set;
+}
+
 Scheme_Object *scheme_current_continuation_marks(Scheme_Object *prompt_tag)
 {
   return continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
@@ -7717,8 +7731,9 @@ cont_marks(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *prompt_tag;
 
-  if (!SCHEME_CONTP(argv[0]) && !SCHEME_ECONTP(argv[0]) && !SCHEME_THREADP(argv[0]))
-    scheme_wrong_type("continuation-marks", "continuation or thread", 0, argc, argv);
+  if (SCHEME_TRUEP(argv[0])
+      && !SCHEME_CONTP(argv[0]) && !SCHEME_ECONTP(argv[0]) && !SCHEME_THREADP(argv[0]))
+    scheme_wrong_type("continuation-marks", "continuation, thread, or #f", 0, argc, argv);
 
   if (argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
@@ -7729,7 +7744,9 @@ cont_marks(int argc, Scheme_Object *argv[])
   } else
     prompt_tag = scheme_default_prompt_tag;
 
-  if (SCHEME_ECONTP(argv[0])) {
+  if (SCHEME_FALSEP(argv[0])) {
+    return make_empty_marks();
+  } else if (SCHEME_ECONTP(argv[0])) {
     if (!scheme_escape_continuation_ok(argv[0])) {
       scheme_arg_mismatch("continuation-marks",
 			  "escape continuation not in the current thread's continuation: ",
@@ -7758,16 +7775,7 @@ cont_marks(int argc, Scheme_Object *argv[])
     }
 
     if (!(t->running & MZTHREAD_RUNNING)) {
-      /* empty marks */
-      Scheme_Cont_Mark_Set *set;
-
-      set = MALLOC_ONE_TAGGED(Scheme_Cont_Mark_Set);
-      set->so.type = scheme_cont_mark_set_type;
-      set->chain = NULL;
-      set->cmpos = 1;
-      set->native_stack_trace = NULL;
-
-      return (Scheme_Object *)set;
+      return make_empty_marks();
     } else {
       scheme_start_atomic(); /* just in case */
 

@@ -416,4 +416,13 @@
 
 ;; ----------------------------------------
 
+(parameterize ([print-boolean-long-form #f])
+  (test "#t" pretty-format #t)
+  (test "#f" pretty-format #f))
+(parameterize ([print-boolean-long-form #t])
+  (test "#true" pretty-format #t)
+  (test "#false" pretty-format #f))
+
+;; ----------------------------------------
+
 (report-errs)

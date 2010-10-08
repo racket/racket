@@ -47,14 +47,15 @@ continuation's frames to the marks that were present when
 @racket[call-with-current-continuation] or
 @racket[call-with-composable-continuation] was invoked.
 
-@defproc[(continuation-marks [cont (or/c continuation? thread?)]
+@defproc[(continuation-marks [cont (or/c continuation? thread? #f)]
                              [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          continuation-mark-set?]{
 
 Returns an opaque value containing the set of continuation marks for
 all keys in the continuation @racket[cont] (or the current
 continuation of @racket[cont] if it is a thread) up to the prompt
-tagged by @racket[prompt-tag].  If @racket[cont] is an escape
+tagged by @racket[prompt-tag]. If @racket[cont] is @racket[#f], the
+resulting set of continuation marks is empty. If @racket[cont] is an escape
 continuation (see @secref["prompt-model"]), then the current
 continuation must extend @racket[cont], or the
 @exnraise[exn:fail:contract]. If @racket[cont] was not captured with

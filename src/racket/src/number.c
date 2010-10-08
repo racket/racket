@@ -63,6 +63,7 @@ static Scheme_Object *exact_nonnegative_integer_p (int argc, Scheme_Object *argv
 static Scheme_Object *exact_positive_integer_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fixnum_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *inexact_real_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *flonum_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *exact_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *even_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_or (int argc, Scheme_Object *argv[]);
@@ -348,6 +349,10 @@ scheme_init_number (Scheme_Env *env)
   p = scheme_make_folding_prim(inexact_real_p, "inexact-real?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("inexact-real?", p, env);
+
+  p = scheme_make_folding_prim(flonum_p, "flonum?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("flonum?", p, env);
 
   scheme_add_global_constant("exact?", 
 			     scheme_make_folding_prim(exact_p,
@@ -1308,6 +1313,16 @@ inexact_real_p (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *n = argv[0];
   if (SCHEME_FLOATP(n))
+    return scheme_true;
+  else
+    return scheme_false;
+}
+
+static Scheme_Object *
+flonum_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *n = argv[0];
+  if (SCHEME_DBLP(n))
     return scheme_true;
   else
     return scheme_false;
@@ -2636,10 +2651,10 @@ Scheme_Object *scheme_checked_make_flrectangular (int argc, Scheme_Object *argv[
 
   a = argv[0];
   b = argv[1];
-  if (!SCHEME_FLOATP(a))
-    scheme_wrong_type("make-rectangular", "inexact-real", 0, argc, argv);
-  if (!SCHEME_FLOATP(b))
-    scheme_wrong_type("make-rectangular", "inexact-real", 1, argc, argv);
+  if (!SCHEME_DBLP(a))
+    scheme_wrong_type("make-rectangular", "flonum", 0, argc, argv);
+  if (!SCHEME_DBLP(b))
+    scheme_wrong_type("make-rectangular", "flonum", 1, argc, argv);
 
   return scheme_make_complex(a, b);
 }
@@ -3279,11 +3294,11 @@ static Scheme_Object *do_flvector (const char *name, Scheme_Double_Vector *vec, 
   int i;
 
   for (i = 0; i < argc; i++) {
-    if (!SCHEME_FLOATP(argv[i])) {
-      scheme_wrong_type(name, "inexact real", i, argc, argv);
+    if (!SCHEME_DBLP(argv[i])) {
+      scheme_wrong_type(name, "flonum", i, argc, argv);
       return NULL;
     }
-    vec->els[i] = SCHEME_FLOAT_VAL(argv[i]);
+    vec->els[i] = SCHEME_DBL_VAL(argv[i]);
   }
 
   return (Scheme_Object *)vec;
@@ -3329,8 +3344,8 @@ static Scheme_Object *do_make_flvector (const char *name, int as_shared, int arg
     scheme_wrong_type(name, "exact non-negative integer", 0, argc, argv);
 
   if (argc > 1) {
-    if (!SCHEME_FLOATP(argv[1]))
-      scheme_wrong_type(name, "inexact real", 1, argc, argv);
+    if (!SCHEME_DBLP(argv[1]))
+      scheme_wrong_type(name, "flonum", 1, argc, argv);
   }
   
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
@@ -3343,7 +3358,7 @@ static Scheme_Object *do_make_flvector (const char *name, int as_shared, int arg
 
   if (argc > 1) {
     int i;
-    double d = SCHEME_FLOAT_VAL(argv[1]);
+    double d = SCHEME_DBL_VAL(argv[1]);
     for (i = 0; i < size; i++) {
       vec->els[i] = d;
     }
@@ -3414,8 +3429,8 @@ Scheme_Object *scheme_checked_flvector_set (int argc, Scheme_Object *argv[])
   len = SCHEME_FLVEC_SIZE(vec);
   pos = scheme_extract_index("flvector-set!", 1, argc, argv, len, 0);
   
-  if (!SCHEME_FLOATP(argv[2]))
-    scheme_wrong_type("flvector-set!", "inexact real", 2, argc, argv);
+  if (!SCHEME_DBLP(argv[2]))
+    scheme_wrong_type("flvector-set!", "flonum", 2, argc, argv);
 
   if (pos >= len) {
     scheme_bad_vec_index("flvector-set!", argv[1], 
@@ -3424,7 +3439,7 @@ Scheme_Object *scheme_checked_flvector_set (int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  SCHEME_FLVEC_ELS(vec)[pos] = SCHEME_FLOAT_VAL(argv[2]);
+  SCHEME_FLVEC_ELS(vec)[pos] = SCHEME_DBL_VAL(argv[2]);
 
   return scheme_void;
 }
@@ -3675,7 +3690,7 @@ static Scheme_Object *fl_to_fx (int argc, Scheme_Object *argv[])
 
   if (!SCHEME_DBLP(argv[0])
       || !scheme_is_integer(argv[0]))
-    scheme_wrong_type("fl->fx", "inexact-real integer", 0, argc, argv);
+    scheme_wrong_type("fl->fx", "flonum integer", 0, argc, argv);
 
   d = SCHEME_DBL_VAL(argv[0]);
   v = (long)d;
@@ -3693,7 +3708,7 @@ static Scheme_Object *fl_to_fx (int argc, Scheme_Object *argv[])
   static Scheme_Object * fl_ ## op (int argc, Scheme_Object *argv[])    \
   {                                                                     \
     double v;                                                           \
-    if (!SCHEME_DBLP(argv[0])) scheme_wrong_type("fl" #op, "inexact-real", 0, argc, argv); \
+    if (!SCHEME_DBLP(argv[0])) scheme_wrong_type("fl" #op, "flonum", 0, argc, argv); \
     v = scheme_double_ ## op (SCHEME_DBL_VAL(argv[0]));                  \
     return scheme_make_double(v);                                        \
   }
@@ -3790,7 +3805,7 @@ static Scheme_Object *unsafe_flvector_set (int argc, Scheme_Object *argv[])
   long pos;
 
   pos = SCHEME_INT_VAL(argv[1]);
-  SCHEME_FLVEC_ELS(argv[0])[pos] = SCHEME_FLOAT_VAL(argv[2]);
+  SCHEME_FLVEC_ELS(argv[0])[pos] = SCHEME_DBL_VAL(argv[2]);
 
   return scheme_void;
 }
@@ -3872,7 +3887,7 @@ static Scheme_Object *fl_to_integer (int argc, Scheme_Object *argv[])
       return o;
   }
    
-  scheme_wrong_type("fl->exact-integer", "inexact-real integer", 0, argc, argv);
+  scheme_wrong_type("fl->exact-integer", "flonum integer", 0, argc, argv);
   return NULL;
 }
 
