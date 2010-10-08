@@ -101,7 +101,7 @@
 (define-syntax (provide-extracted stx)
   (syntax-case stx ()
     [(_ orig-path)
-     (with-syntax ([(_begin reqs (_drop-first (_quote-syntax id) def) ...)
+     (with-syntax ([(_begin reqs doc-reqs (_drop-first (_quote-syntax id) def) ...)
                     (extract #'orig-path stx)])
        #'(begin
            (require (for-label (only-in orig-path))) ;; creates build dependency
@@ -137,6 +137,7 @@
                                       [(box? stx) #`(box #,(loop (unbox stx)))]
                                       [else #`(quote #,stx)]))]))])
                   #`(begin #,(quote-syntax/loc reqs)
+                           #,(quote-syntax/loc doc-reqs)
                            #,@(filter
                                values
                                (map (lambda (i d)
