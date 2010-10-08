@@ -110,7 +110,17 @@
  (cddaar #'cdr #'cdr #'car #'car)
  (cddadr #'cdr #'cdr #'car #'cdr)
  (cdddar #'cdr #'cdr #'cdr #'car)
- (cddddr #'cdr #'cdr #'cdr #'cdr))
+ (cddddr #'cdr #'cdr #'cdr #'cdr)
+ (first   #'car)
+ (second  #'car #'cdr)
+ (third   #'car #'cdr #'cdr)
+ (fourth  #'car #'cdr #'cdr #'cdr)
+ (fifth   #'car #'cdr #'cdr #'cdr #'cdr)
+ (sixth   #'car #'cdr #'cdr #'cdr #'cdr #'cdr)
+ (seventh #'car #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr)
+ (eighth  #'car #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr)
+ (ninth   #'car #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr)
+ (tenth   #'car #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr #'cdr))
 
 (define-syntax-class pair-derived-opt-expr
   #:commit
