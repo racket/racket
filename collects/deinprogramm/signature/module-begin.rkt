@@ -48,11 +48,16 @@
 				 (raise-syntax-error #f
 						     "Nach dem : sollte ein Bezeichner stehen; da steht was anderes."
 						     #'?id))
-			       (when (bound-identifier-mapping-get table #'?id (lambda () #f))
-				 (raise-syntax-error #f
-						     "Zweite Signaturdeklaration für denselben Namen."
-						     maybe))
-			       (bound-identifier-mapping-put! table #'?id #'?cnt)
+			       (cond
+				((bound-identifier-mapping-get table #'?id (lambda () #f))
+				 => (lambda (old-cnt-stx)
+				      (unless (equal? (syntax->datum old-cnt-stx)
+							(syntax->datum #'?cnt))
+					(raise-syntax-error #f
+							    "Zweite Signaturdeklaration für denselben Namen."
+							    maybe))))
+				(else
+				 (bound-identifier-mapping-put! table #'?id #'?cnt)))
 			       #f))
 			    ((: ?id)
 			     (raise-syntax-error #f "Bei dieser Signaturdeklaration fehlt die Signatur" maybe))

@@ -55,11 +55,16 @@
 						     #'?id))
 			       
 			       (let ((real-id (first-order->higher-order #'?id)))
-				 (when (bound-identifier-mapping-get table real-id (lambda () #f))
-				   (raise-syntax-error #f
-						       "Second signature declaration for the same name."
-						       maybe))
-				 (bound-identifier-mapping-put! table real-id #'?cnt)
+				 (cond
+				  ((bound-identifier-mapping-get table real-id (lambda () #f))
+				   => (lambda (old-cnt-stx)
+					(unless (equal? (syntax->datum old-cnt-stx)
+							(syntax->datum #'?cnt))
+					  (raise-syntax-error #f
+							      "Second signature declaration for the same name."
+							      maybe))))
+				  (else
+				   (bound-identifier-mapping-put! table real-id #'?cnt)))
 				 #f)))
 			    ((: ?id)
 			     (raise-syntax-error #f "Signature declaration is missing a signature." maybe))
