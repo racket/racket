@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss"
           racket/serialize
-          (for-label racket/serialize))
+          (for-label racket/serialize
+                     racket/fasl))
 
 @(define ser-eval (make-base-eval))
 @(interaction-eval #:eval ser-eval (require racket/serialize))
@@ -22,12 +23,12 @@ See @scheme[serialize] for an enumeration of serializable values.}
 
 Returns a value that encapsulates the value @scheme[v]. This value
 includes only readable values, so it can be written to a stream with
-@scheme[write], later read from a stream using @scheme[read], and then
-converted to a value like the original using
-@scheme[deserialize]. Serialization followed by deserialization
-produces a value with the same graph structure and mutability as the
-original value, but the serialized value is a plain tree (i.e., no
-sharing).
+@scheme[write] or @racket[s-exp->fasl], later read from a stream using
+@scheme[read] or @racket[fasl->s-exp], and then converted to a value
+like the original using @scheme[deserialize]. Serialization followed
+by deserialization produces a value with the same graph structure and
+mutability as the original value, but the serialized value is a plain
+tree (i.e., no sharing).
 
 The following kinds of values are serializable:
 

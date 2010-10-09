@@ -16,4 +16,5 @@
 @include-section["readtables.scrbl"]
 @include-section["custom-write.scrbl"]
 @include-section["serialization.scrbl"]
+@include-section["fasl.scrbl"]
 
