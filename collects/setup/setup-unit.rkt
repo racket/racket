@@ -63,6 +63,15 @@
       (build-path "compiled" (compile-mode))
       (build-path "compiled")))
 
+  (unless (make-user)
+    (current-library-collection-paths
+     (if (member main-collects-dir (current-library-collection-paths))
+       (list main-collects-dir)
+       '())))
+
+  (current-library-collection-paths
+   (map simple-form-path (current-library-collection-paths)))
+
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
       (apply fprintf p (string-append name-str ": " task s "\n") args)))
@@ -952,15 +961,6 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; setup-unit Body                ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (unless (make-user)
-    (current-library-collection-paths
-     (if (member main-collects-dir (current-library-collection-paths))
-       (list main-collects-dir)
-       '())))
-
-  (current-library-collection-paths
-   (map simple-form-path (current-library-collection-paths)))
 
   (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))

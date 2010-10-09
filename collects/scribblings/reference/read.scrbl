@@ -243,15 +243,14 @@ A parameter that controls parsing input with @litchar{`} or
 @defboolparam[read-accept-reader on?]{
 
 A parameter that controls whether @litchar{#reader}, @litchar{#lang},
-and @litchar{#!} followed by a space are allowed for selecting a
-parser. See @secref["parse-reader"] for more information.}
+or @litchar{#!} are allowed for selecting a parser. See
+@secref["parse-reader"] for more information.}
 
 @defboolparam[read-accept-lang on?]{
 
 A parameter that (along with @racket[read-accept-reader] controls
-whether @litchar{#lang} and @litchar{#!} followed by a space are
-allowed for selecting a parser. See @secref["parse-reader"] for more
-information.}
+whether @litchar{#lang} and @litchar{#!} are allowed for selecting a
+parser. See @secref["parse-reader"] for more information.}
 
 @defparam[current-reader-guard proc (any/c . -> . any)]{
 

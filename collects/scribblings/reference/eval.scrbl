@@ -340,7 +340,8 @@ The default read interaction handler accepts @racket[_src] and
 @racket[_in] and returns
 
 @racketblock[
-(parameterize ([read-accept-reader #t])
+(parameterize ([read-accept-reader #t]
+               [read-accept-lang #f])
   (read-syntax _src _in))
 ]}
 

@@ -835,8 +835,7 @@ file, possibly after comment forms, to specify the syntax of a module.
 
 If the @racket[read-accept-reader] or @racket[read-accept-lang]
 @tech{parameter} is set to @racket[#f], then if the reader encounters
-@litchar{#lang} or @litchar{#!} followed by a space, the
-@exnraise[exn:fail:read].
+@litchar{#lang} or equivalent @litchar{#!}, the @exnraise[exn:fail:read].
 
 @subsection{S-Expression Reader Language}
 

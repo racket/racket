@@ -129,6 +129,8 @@ static int scheme_ellipses(mzchar* buffer, int length);
 
 #define mzSPAN(port, pos)  ()
 
+#define NOT_ENABLED_str " not enabled in the current context"
+
 #define isdigit_ascii(n) ((n >= '0') && (n <= '9'))
 
 #define scheme_isxdigit(n) (isdigit_ascii(n) || ((n >= 'a') && (n <= 'f')) || ((n >= 'A') && (n <= 'F')))
@@ -1429,7 +1431,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      return cpld;
 	    } else {
 	      scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation,
-			      "read: #~ compiled expressions not currently enabled");
+			      "read: #~ compiled expressions" NOT_ENABLED_str);
 	      return NULL;
 	    }
 	  }
@@ -1507,7 +1509,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      return read_box(port, stxsrc, line, col, pos, ht, indentation, params);
 	    else {
 	      scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation,
-			      "read: #& expressions not currently enabled");
+			      "read: #& expressions" NOT_ENABLED_str);
 	      return NULL;
 	    }
 	  }
@@ -1534,7 +1536,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                     if (!params->can_read_reader
                         || !params->can_read_lang) {
                       scheme_read_err(port, stxsrc, line, col, pos, 6, 0, indentation,
-                                      "read: #lang expressions not currently enabled");
+                                      "read: #lang" NOT_ENABLED_str);
                       return NULL;
                     }
                     v = read_lang(port, stxsrc, line, col, pos, get_info, ht, indentation, params, 0);
@@ -1619,7 +1621,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 		if (!params->can_read_reader) {
 		  scheme_read_err(port, stxsrc, line, col, pos, 7, 0, indentation,
-				  "read: #reader expressions not currently enabled");
+				  "read: #reader" NOT_ENABLED_str);
 		  return NULL;
 		}
 
@@ -1810,9 +1812,10 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
             goto start_over;
           } else if ((ch < 128) && is_lang_nonsep_char(ch)) {
             Scheme_Object *v;
-            if (!params->can_read_reader) {
+            if (!params->can_read_reader
+                || !params->can_read_lang) {
               scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation,
-                              "read: #! reader expressions not currently enabled");
+                              "read: #!" NOT_ENABLED_str);
               return NULL;
             }
             v = read_lang(port, stxsrc, line, col, pos, get_info, ht, indentation, params, ch);
@@ -1903,7 +1906,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 	      if (!params->can_read_graph)
 		scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-				"read: #..# expressions not currently enabled");
+				"read: #..# expressions" NOT_ENABLED_str);
 
 	      if (digits > MAX_GRAPH_ID_DIGITS)
 		scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
@@ -1934,7 +1937,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 	      if (!params->can_read_graph)
 		scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-				 "read: #..= expressions not currently enabled");
+				 "read: #..= expressions" NOT_ENABLED_str);
 
 	      if (digits > MAX_GRAPH_ID_DIGITS)
 		scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,

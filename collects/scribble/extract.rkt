@@ -7,6 +7,7 @@
                      scheme/path
                      scheme/list
                      syntax/path-spec
+                     syntax/modread
                      (for-syntax scheme/base)))
 
 (provide include-extracted
@@ -35,14 +36,15 @@
                    n-path)])
     (let ([s-exp 
            (parameterize ([current-namespace (make-base-namespace)]
-                          [read-accept-reader #t]
                           [current-load-relative-directory
                            (path-only path)])
              (expand
-              (with-input-from-file path
-                (lambda ()
-                  (port-count-lines! (current-input-port))
-                  (read-syntax path)))))])
+              (with-module-reading-parameterization
+               (lambda ()
+                 (with-input-from-file path
+                   (lambda ()
+                     (port-count-lines! (current-input-port))
+                     (read-syntax path)))))))])
       (syntax-case s-exp ()
         [(mod name lang
               (mod-beg

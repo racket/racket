@@ -7,6 +7,7 @@
            mzlib/contract
            mzlib/list
            scheme/gui/dynamic
+           syntax/modread
            "image.ss"
            "editor.ss"
            "private/compat.ss")
@@ -578,17 +579,9 @@
   ;; ----------------------------------------
 
   (define plain-params
-    (parameterize ([current-readtable #f]
-                   [read-accept-reader #f]
-                   [read-case-sensitive #t]
-                   [read-accept-graph #f]
-                   [read-accept-box #f]
-                   [read-accept-bar-quote #t]
-                   [read-decimal-as-inexact #t]
-                   [read-accept-dot #t]
-                   [read-accept-quasiquote #f]
-                   [read-accept-compiled #f])
-      (current-parameterization)))
+    (with-module-reading-parameterization
+     (lambda ()
+      (current-parameterization))))
 
   (define (plain-read port)
     (call-with-parameterization 

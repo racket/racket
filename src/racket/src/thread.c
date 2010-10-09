@@ -6789,7 +6789,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_CAN_READ_QUASI, scheme_true);
   init_param(cells, paramz, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
   init_param(cells, paramz, MZCONFIG_CAN_READ_READER, scheme_false);
-  init_param(cells, paramz, MZCONFIG_CAN_READ_LANG, scheme_false);
+  init_param(cells, paramz, MZCONFIG_CAN_READ_LANG, scheme_true);
   init_param(cells, paramz, MZCONFIG_LOAD_DELAY_ENABLED, init_load_on_demand ? scheme_true : scheme_false);
   init_param(cells, paramz, MZCONFIG_DELAY_LOAD_INFO, scheme_false);
 

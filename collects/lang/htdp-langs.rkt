@@ -556,7 +556,8 @@
                                      (drscheme:rep:current-rep)))
           
           (define/override (front-end/interaction port settings)
-            (let ([t (super front-end/interaction port settings)]
+            (let ([t (parameterize ([read-accept-lang #f])
+                       (super front-end/interaction port settings))]
 		  [start? #t]
                   [done? #f])
               (λ ()
@@ -825,9 +826,10 @@
                         (parameterize ([current-custodian nc])
                           (thread (λ () 
                                     (with-handlers ((exn? (λ (x) (set! exn x))))
-                                      (parameterize ([read-accept-reader #t]
-                                                     [current-namespace (make-base-namespace)])
-                                        (compile-file filename))))))])
+                                      (parameterize ([current-namespace (make-base-namespace)])
+                                        (with-module-reading-parameterization
+                                         (lambda ()
+                                           (compile-file filename))))))))])
                    (thread
                     (λ ()
                       (thread-wait t)

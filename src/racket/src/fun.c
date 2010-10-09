@@ -9564,6 +9564,7 @@ scheme_default_read_handler(int argc, Scheme_Object *argv[])
 
   config = scheme_current_config();
   config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
+  config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_false);
 
   scheme_push_continuation_frame(&cframe);
   scheme_install_config(config);

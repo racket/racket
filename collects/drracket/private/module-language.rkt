@@ -378,7 +378,8 @@
       
       (define/override (front-end/interaction port settings)
         (λ ()
-          (let ([v (parameterize ([read-accept-reader #t])
+          (let ([v (parameterize ([read-accept-reader #t]
+                                  [read-accept-lang #f])
                      (with-stack-checkpoint
                       ((current-read-interaction) 
                        (object-name port)

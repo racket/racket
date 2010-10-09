@@ -1016,9 +1016,10 @@
                         (parameterize ([current-custodian nc])
                           (thread (lambda () 
                                     (with-handlers ((exn? (lambda (x) (set! exn x))))
-                                      (parameterize ([read-accept-reader #t]
-						     [current-namespace (make-base-namespace)])
-                                        (compile-file filename))))))])
+                                      (parameterize ([current-namespace (make-base-namespace)])
+                                        (with-module-reading-parameterization
+                                         (lambda ()
+                                           (compile-file filename))))))))])
                    (thread
                     (lambda ()
                       (thread-wait t)
