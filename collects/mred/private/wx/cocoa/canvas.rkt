@@ -27,7 +27,8 @@
 
 ;; ----------------------------------------
 
-(import-class NSView NSGraphicsContext NSScroller NSComboBox NSWindow NSImageView)
+(import-class NSView NSGraphicsContext NSScroller NSComboBox NSWindow 
+              NSImageView NSTextFieldCell)
 
 (import-protocol NSComboBoxDelegate)
 
@@ -116,11 +117,22 @@
 (define-cocoa NSSetFocusRingStyle (_fun _int -> _void))
 (define-cocoa NSRectFill (_fun _NSRect -> _void))
 
+(define bezel-cell
+  (tell (tell NSTextFieldCell alloc) initTextCell: #:type _NSString ""))
+(tellv bezel-cell setBezeled: #:type _BOOL #t)
+
 (define-objc-class FocusView NSView 
   [on?]
   (-a _void (setFocusState: [_BOOL is-on?])
       (set! on? is-on?))
   (-a _void (drawRect: [_NSRect r])
+      (let ([f (tell #:type _NSRect self frame)])
+        (tellv bezel-cell 
+               drawWithFrame: #:type _NSRect (make-NSRect (make-NSPoint 2 2)
+                                                          (let ([s (NSRect-size r)])
+                                                            (make-NSSize (- (NSSize-width s) 4)
+                                                                         (- (NSSize-height s) 4))))
+               inView: self))
       (when on?
         (let ([ctx (tell NSGraphicsContext currentContext)])
           (tellv ctx saveGraphicsState)
