@@ -556,8 +556,7 @@
                                      (drscheme:rep:current-rep)))
           
           (define/override (front-end/interaction port settings)
-            (let ([t (parameterize ([read-accept-lang #f])
-                       (super front-end/interaction port settings))]
+            (let ([t (super front-end/interaction port settings)]
 		  [start? #t]
                   [done? #f])
               (λ ()
@@ -567,7 +566,8 @@
 		   #'(reset-tests)]
                   [done? eof]
                   [else
-                   (let ([ans (t)])
+                   (let ([ans (parameterize ([read-accept-lang #f])
+                                (t))])
                      (cond
                        [(eof-object? ans)
                         (set! done? #t)
