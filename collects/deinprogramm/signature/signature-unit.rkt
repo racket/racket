@@ -588,7 +588,8 @@
      ((hash-ref checked-pair-table
 		p
 		(lambda () #f))
-      => checked-access)
+      => (lambda (eph)
+	   (checked-access (ephemeron-value eph))))
      (else (raw-access p)))))
 
 (define checked-raw-car (checked-pair-access checked-pair-car car))
@@ -600,12 +601,12 @@
      ((hash-ref checked-pair-table
 		p
 		(lambda () #f))
-      => (lambda (cp)
-	   (checked-set! cp new)))
+      => (lambda (eph)
+	   (checked-set! (ephemeron-value eph) new)))
      (else 
       (let ((cp (make-checked-pair (car p) (cdr p) #f)))
 	(checked-set! cp new)
-	(hash-set! checked-pair-table p cp))))))
+	(hash-set! checked-pair-table p (make-ephemeron p cp)))))))
 
 (define checked-raw-set-car! (checked-raw-set! set-checked-pair-car!))
 (define checked-raw-set-cdr! (checked-raw-set! set-checked-pair-cdr!))
@@ -615,7 +616,8 @@
    ((hash-ref checked-pair-table
 	      p
 	      (lambda () #f))
-    => checked-pair-log)
+    => (lambda (eph)
+	 (checked-pair-log (ephemeron-value eph))))
    (else #f)))
 
 (define (checked-pair-set-log! p new)
@@ -623,11 +625,12 @@
    ((hash-ref checked-pair-table
 	      p
 	      (lambda () #f))
-    => (lambda (cp)
-	 (set-checked-pair-log! cp new)))
+    => (lambda (eph)
+	 (set-checked-pair-log! (ephemeron-value eph) new)))
    (else
     (hash-set! checked-pair-table p 
-	       (make-checked-pair (car p) (cdr p) new)))))
+	       (make-ephemeron p
+			       (make-checked-pair (car p) (cdr p) new))))))
 
 (define checked-pair-lazy-wrap-info
   (make-lazy-wrap-info cons
