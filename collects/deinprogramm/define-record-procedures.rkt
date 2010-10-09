@@ -12,8 +12,7 @@
          mzlib/pretty
 	 deinprogramm/signature/signature
 	 deinprogramm/signature/signature-german
-	 deinprogramm/signature/signature-syntax
-	 (only-in deinprogramm/quickcheck/quickcheck arbitrary-record))
+	 deinprogramm/signature/signature-syntax)
 
 (require (for-syntax scheme/base)
          (for-syntax deinprogramm/syntax-checkers)

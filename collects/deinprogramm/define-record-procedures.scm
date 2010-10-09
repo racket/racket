@@ -183,17 +183,10 @@
 							  component-signature ...)))
 					   ;; lazy signatures
 					   #'(define (?signature-constructor-name ?param ...)
-					       (let* ((sigs (list ?param ...))
-						      (sig
-						       (make-lazy-wrap-signature '?type-name #t
-										 type-descriptor raw-predicate
-										 sigs
-										 #'?type-name)))
-						 (let ((arbs (map signature-arbitrary sigs)))
-						   (when (andmap values arbs)
-						     (set-signature-arbitrary! sig
-									       (apply arbitrary-record ?constructor arbs))))
-						 sig)))
+					       (make-lazy-wrap-signature '?type-name #t
+									 type-descriptor raw-predicate
+									 (list ?param ...)
+									 #'?type-name)))
 				       'stepper-skip-completely
 				       #t)))
 			 #'(begin

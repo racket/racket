@@ -312,30 +312,20 @@
 				 (coarbitrary arbitrary-cdr
 					      (cdr p) gen)))))
 
-(define (make-tuple-transformer  arbitrary-els)
-  (lambda (lis gen)
-    (let recur ((arbitrary-els arbitrary-els)
-		(lis lis))
-      (if (null? arbitrary-els)
-	  gen
-	  ((arbitrary-transformer (car arbitrary-els))
-	   (car lis)
-	   (recur (cdr arbitrary-els)
-		  (cdr lis)))))))
-
 ; a tuple is just a non-uniform list 
 (define (arbitrary-tuple . arbitrary-els)
   (make-arbitrary (apply lift->generator
 			 list
 			 (map arbitrary-generator arbitrary-els))
-		  (make-tuple-transformer arbitrary-els)))
-
-; like a tuple, just with a different constructor
-(define (arbitrary-record make . arbitrary-els)
-  (make-arbitrary (apply lift->generator
-			 make
-			 (map arbitrary-generator arbitrary-els))
-		  (make-tuple-transformer arbitrary-els)))
+		  (lambda (lis gen)
+		    (let recur ((arbitrary-els arbitrary-els)
+				(lis lis))
+		      (if (null? arbitrary-els)
+			  gen
+			  ((arbitrary-transformer (car arbitrary-els))
+			   (car lis)
+			   (recur (cdr arbitrary-els)
+				  (cdr lis))))))))
 
 (define (arbitrary-sequence choose-sequence sequence->list arbitrary-el)
   (make-arbitrary (sized

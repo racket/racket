@@ -894,18 +894,11 @@
 						      (combined (at name_ (predicate raw-predicate))
 								(at field_ (signature:property getter-name field_/no-loc)) ...)))
 						 #`(define (#,parametric-signature-name field_ ...)
-						     (let* ((sigs (list field_/no-loc ...))
-							    (sig
-							     (make-lazy-wrap-signature 'name_ #t
-										       type-descriptor
-										       raw-predicate
-										       sigs
-										       #'name_)))
-						       (let ((arbs (map signature-arbitrary sigs)))
-							 (when (andmap values arbs)
-							   (set-signature-arbitrary! sig
-										     (apply arbitrary-record #,constructor-name arbs))))
-						       sig)))
+						     (make-lazy-wrap-signature 'name_ #t
+									       type-descriptor
+									       raw-predicate
+									       (list field_/no-loc ...)
+									       #'name_)))
 
 					   (values #,signature-name #,parametric-signature-name proc-name ...)))
 				     'stepper-define-struct-hint
