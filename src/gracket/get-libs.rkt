@@ -58,27 +58,31 @@
           ["libpng14.14.dylib" 192224]
           ["PSMTabBarControl.tgz" 107171])])]
     [(windows)
-     '(["freetype6.dll" 535264]
-       ["libgobject-2.0-0.dll" 316586]
-       ["libatk-1.0-0.dll" 153763]
-       ["libgtk-win32-2.0-0.dll" 4740156]
-       ["libcairo-2.dll" 921369]
-       ["libjpeg-7.dll" 233192]
-       ["libexpat-1.dll" 143096]
-       ["libpango-1.0-0.dll" 336626]
-       ["libfontconfig-1.dll" 279059]
-       ["libpangocairo-1.0-0.dll" 95189]
-       ["libgdk-win32-2.0-0.dll" 827670]
-       ["libpangoft2-1.0-0.dll" 679322]
-       ["libgdk_pixbuf-2.0-0.dll" 252150]
-       ["libpangowin32-1.0-0.dll" 102210]
-       ["libgio-2.0-0.dll" 669318]
-       ["libpng14-14.dll" 219305]
-       ["libglib-2.0-0.dll" 1110713]
-       ["libwimp.dll" 69632]
-       ["libgmodule-2.0-0.dll" 31692]
-       ["zlib1.dll" 55808]
-       ["gtkrc" 1181])]))
+     (let ([basic '(["libjpeg-7.dll" 233192]
+                    ["libcairo-2.dll" 921369]
+                    ["libpango-1.0-0.dll" 336626]
+                    ["libexpat-1.dll" 143096]
+                    ["libpng14-14.dll" 219305]
+                    ["zlib1.dll" 55808]
+                    ["freetype6.dll" 535264]
+                    ["libfontconfig-1.dll" 279059]                    
+                    ["libglib-2.0-0.dll" 1110713]
+                    ["libgobject-2.0-0.dll" 316586]
+                    ["libgmodule-2.0-0.dll" 31692]
+                    ["libpangocairo-1.0-0.dll" 95189]
+                    ["libpangowin32-1.0-0.dll" 102210]
+                    ["libpangoft2-1.0-0.dll" 679322])])
+       (if (getenv "PLT_WIN_GTK")
+           (append
+            basic
+            '(["libatk-1.0-0.dll" 153763]
+              ["libgtk-win32-2.0-0.dll" 4740156]
+              ["libgdk-win32-2.0-0.dll" 827670]
+              ["libgdk_pixbuf-2.0-0.dll" 252150]
+              ["libgio-2.0-0.dll" 669318]
+              ["libwimp.dll" 69632]
+              ["gtkrc" 1181]))
+           basic))]))
 
 (define explained? #f)
 

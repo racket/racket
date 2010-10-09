@@ -311,6 +311,7 @@
 	    '("libracket3mxxxxxxx.dll")
 	    '("delayimp.lib")
 	    exe "" #t))
+(system- "mt.exe -manifest ../../../Racket.exe.manifest -outputresource:../../../Racket.exe;1")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -343,6 +344,7 @@
 	    '("advapi32.lib" 
 	      "delayimp.lib") 
 	    "../../../GRacket.exe" " /subsystem:windows" #t))
+(system- "mt.exe -manifest ../../../GRacket.exe.manifest -outputresource:../../../GRacket.exe;1")
 
 (system- "cl.exe /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj")
 (system- "lib.exe -def:../../racket/dynsrc/mzdyn.def -out:mzdyn3m.lib")
