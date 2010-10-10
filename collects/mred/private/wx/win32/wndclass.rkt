@@ -9,6 +9,7 @@
 
 (provide hInstance
 	 DefWindowProcW
+         background-hbrush
 	 hwnd->wx
 	 any-hwnd->wx
 	 set-hwnd-wx!
@@ -87,6 +88,10 @@
 
 (define hInstance (GetModuleHandleW #f))
 
+(define background-hbrush (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
+                            (cpointer-push-tag! p 'HBRUSH)
+                            p))
+ 
 (void (RegisterClassW (make-WNDCLASS CS_OWNDC
 				     wind-proc
 				     0
@@ -94,9 +99,7 @@
 				     hInstance
 				     (LoadIconW #f IDI_APPLICATION)
                                      #f
-                                     (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
-                                       (cpointer-push-tag! p 'HBRUSH)
-                                       p)
+                                     background-hbrush
 				     #f ; menu
 				     "PLTFrame")))
 
@@ -118,9 +121,7 @@
 				     hInstance
 				     #f
 				     #f
-                                     (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
-                                       (cpointer-push-tag! p 'HBRUSH)
-                                       p)
+                                     background-hbrush
 				     #f ; menu
 				     "PLTPanel")))
 

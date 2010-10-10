@@ -107,7 +107,7 @@
                           16 16
                           ai xi))))
 
+  (define/public (ok?) (and handle #t))
   (define/public (get-handle) handle)
 
-  (def/public-unimplemented ok?)
   (super-new))

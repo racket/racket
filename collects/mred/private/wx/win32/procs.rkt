@@ -58,7 +58,7 @@
 (define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
 (define (register-collecting-blit . args) (void))
-(define-unimplemented unregister-collecting-blit)
+(define (unregister-collecting-blit . args) (void))
 (define (shortcut-visible-in-label? [? #f]) #t)
 (define-unimplemented location->window)
 (define-unimplemented send-event)

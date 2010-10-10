@@ -28,6 +28,13 @@
 (define-user32 ShowScrollBar (_wfun _HWND _int _BOOL -> (r : _BOOL)
                                     -> (unless r (failed 'ShowScrollbar))))
 
+(define-gdi32 CreateSolidBrush (_wfun _COLORREF -> _HBRUSH))
+(define-gdi32 SelectObject (_wfun _HDC _pointer -> _pointer))
+(define-gdi32 DeleteObject (_wfun _pointer -> (r : _BOOL)
+                                  -> (unless r (failed 'DeleteObject))))
+(define-user32 FillRect (_wfun _HDC _RECT-pointer _HBRUSH -> (r : _int)
+                               -> (when (zero? r) (failed 'FillRect))))
+
 (define _HRGN _pointer)
 (define-user32 GetDCEx (_wfun _HWND _HRGN _DWORD -> _HDC))
 (define DCX_WINDOW           #x00000001)
@@ -149,9 +156,15 @@
          (let* ([ps (malloc 128)]
                 [hdc (BeginPaint w ps)])
            (unless (positive? paint-suspended)
-             (unless (do-backing-flush this dc hdc)
-               (queue-paint))
-             (do-backing-flush this dc hdc))
+             (let* ([hbrush (if transparent?
+                                background-hbrush
+                                (CreateSolidBrush bg-colorref))])
+               (let ([r (GetClientRect canvas-hwnd)])
+                 (FillRect hdc r hbrush))
+               (unless transparent?
+                 (DeleteObject hbrush))
+               (unless (do-backing-flush this dc hdc)
+                 (queue-paint))))
            (EndPaint hdc ps))
          0]
         [(= msg WM_NCPAINT)
@@ -250,10 +263,16 @@
 
      (define transparent? (memq 'transparent style))
      (define bg-col (make-object color% "white"))
+     (define bg-colorref #xFFFFFF)
      (define/public (get-canvas-background) (if transparent?
                                                 #f
                                                 bg-col))
-     (define/public (set-canvas-background col) (set! bg-col col))
+     (define/public (set-canvas-background col)
+       (atomically
+        (set! bg-col col)
+        (set! bg-colorref (make-COLORREF (send col red)
+                                         (send col green)
+                                         (send col blue)))))
 
      (define h-scroll-visible? hscroll?)
      (define v-scroll-visible? vscroll?)

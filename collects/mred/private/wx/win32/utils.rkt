@@ -15,7 +15,7 @@
          GetWindowLongW
          SetWindowLongW
          SendMessageW SendMessageW/str
-         GetSysColor GetRValue GetGValue GetBValue
+         GetSysColor GetRValue GetGValue GetBValue make-COLORREF
          MoveWindow
          ShowWindow
          EnableWindow
@@ -59,6 +59,10 @@
 (define (GetRValue v) (bitwise-and v #xFF))
 (define (GetGValue v) (bitwise-and (arithmetic-shift v -8) #xFF))
 (define (GetBValue v) (bitwise-and (arithmetic-shift v -16) #xFF))
+(define (make-COLORREF r g b) (bitwise-ior
+                               r
+                               (arithmetic-shift g 8)
+                               (arithmetic-shift b 16)))
 
 (define-user32 MoveWindow(_wfun _HWND _int _int _int _int _BOOL -> (r : _BOOL)
                                 -> (unless r (failed 'MoveWindow))))

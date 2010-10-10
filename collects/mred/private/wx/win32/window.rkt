@@ -22,7 +22,8 @@
 	 queue-window-refresh-event
 	 
 	 CreateWindowExW
-	 GetWindowRect)
+	 GetWindowRect
+         GetClientRect)
 
 (define (unhide-cursor) (void))
 
