@@ -17,6 +17,7 @@
 	 _SHORT
 	 _HRESULT
          _WCHAR
+         _SIZE_T
 
 	 _HINSTANCE
 	 _HWND
@@ -27,6 +28,7 @@
 	 _HDC
 	 _HFONT
 	 _HBITMAP
+         _HANDLE
 
 	 _COLORREF
 
@@ -58,6 +60,7 @@
 (define _BYTE _uint8)
 (define _HRESULT _int32)
 (define _WCHAR _int16)
+(define _SIZE_T _long)
 
 (define _HINSTANCE (_cpointer/null 'HINSTANCE))
 (define _HWND (_cpointer/null 'HWND))
@@ -68,6 +71,7 @@
 (define _HDC (_cpointer/null 'HDC))
 (define _HFONT (_cpointer/null 'HFONT))
 (define _HBITMAP (_cpointer/null 'HBITMAP))
+(define _HANDLE (_cpointer/null 'HANDLE))
 
 (define _COLORREF _DWORD)
 

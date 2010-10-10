@@ -71,7 +71,7 @@
 (define-user32 RegisterClassW (_wfun _WNDCLASS-pointer -> _ATOM))
 (define-kernel32 GetModuleHandleW (_wfun _pointer -> _HINSTANCE))
 (define-user32 LoadCursorW (_wfun _HINSTANCE _pointer -> _HCURSOR))
-(define-user32 LoadIconW (_wfun _HINSTANCE _pointer -> _HICON))
+(define-user32 LoadIconW (_wfun _HINSTANCE _string/utf-16 -> _HICON))
 
 (define-user32 GetClassInfoW (_wfun _HINSTANCE _string/utf-16 (i : (_ptr o _WNDCLASS)) -> (r : _BOOL)
                                     -> (if r i (failed 'GetClassInfoW))))
@@ -97,7 +97,7 @@
 				     0
                                      0
 				     hInstance
-				     (LoadIconW #f IDI_APPLICATION)
+				     (LoadIconW hInstance "WXSTD_FRAME")
                                      #f
                                      background-hbrush
 				     #f ; menu

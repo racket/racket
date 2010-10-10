@@ -3,6 +3,7 @@
           "../../syntax.rkt"
          "window.rkt"
          "wndclass.rkt"
+         "utils.rkt"
 	 "const.rkt"
          "cursor.rkt")
 

@@ -4,6 +4,7 @@
          (only-in racket/list drop take)
          "../../lock.rkt"
          "../../syntax.rkt"
+         "../common/event.rkt"
          "utils.rkt"
          "types.rkt"
          "const.rkt"
@@ -16,14 +17,24 @@
                                   -> (unless r (failed 'AppendMenuW))))
 (define-user32 EnableMenuItem (_wfun _HMENU _UINT _UINT -> _BOOL))
 
+(define-user32 TrackPopupMenu(_wfun _HMENU _UINT _int _int _int _HWND (_or-null _RECT-pointer)
+                                    -> _int))
+
+(define TPM_LEFTBUTTON  #x0000)
+(define TPM_RIGHTBUTTON #x0002)
+(define TPM_NONOTIFY    #x0080)
+(define TPM_RETURNCMD   #x0100)
+
 (defclass menu% object%
   (init lbl
-        callback
+        cb
         font)
 
   (define label lbl)
   (define parent #f)
   (define items null)
+
+  (define callback cb)
 
   (define hmenu (CreatePopupMenu))
 
@@ -41,6 +52,20 @@
   (def/public-unimplemented get-font)
   (def/public-unimplemented set-width)
   (def/public-unimplemented set-title)
+
+  (define/public (popup gx gy hwnd call-callback)
+    (let ([cmd (TrackPopupMenu hmenu
+                               (bitwise-ior
+                                TPM_LEFTBUTTON
+                                TPM_RIGHTBUTTON
+                                TPM_NONOTIFY
+                                TPM_RETURNCMD)
+                               gx gy
+                               0 hwnd #f)])
+      (let* ([e (new popup-event% [event-type 'menu-popdown])])
+        (unless (zero? cmd)
+          (send e set-menu-id cmd))
+        (call-callback (lambda () (callback this e))))))
 
   (define/private (with-item id proc)
     (let loop ([items items] [pos 0])

@@ -12,6 +12,7 @@
          define-mz
          failed
 
+	 CreateWindowExW
          GetWindowLongW
          SetWindowLongW
          SendMessageW SendMessageW/str
@@ -47,6 +48,13 @@
   (error who "call failed (~s)"
          (GetLastError)))
 
+(define-user32 CreateWindowExW (_wfun _DWORD
+				      _string/utf-16
+				      _string/utf-16
+				      _UDWORD
+				      _int _int _int _int
+				      _HWND _HMENU _HINSTANCE _pointer
+				      -> _HWND))
 (define-user32 GetWindowLongW (_wfun _HWND _int -> _pointer))
 (define-user32 SetWindowLongW (_wfun _HWND _int _pointer -> _pointer))
 

@@ -212,6 +212,8 @@
     (when (pair? focus-window-path)
       (SetFocus (send (last focus-window-path) get-focus-hwnd))))
 
+  (define/override (can-accept-focus?)
+    #f)
   (define/override (child-can-accept-focus?)
     #t)
 

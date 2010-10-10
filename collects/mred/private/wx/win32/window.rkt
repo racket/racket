@@ -21,7 +21,6 @@
 	 queue-window-event
 	 queue-window-refresh-event
 	 
-	 CreateWindowExW
 	 GetWindowRect
          GetClientRect)
 
@@ -41,13 +40,6 @@
 (define HTHSCROLL           6)
 (define HTVSCROLL           7)
 
-(define-user32 CreateWindowExW (_wfun _DWORD
-				      _string/utf-16
-				      _string/utf-16
-				      _UDWORD
-				      _int _int _int _int
-				      _HWND _HMENU _HINSTANCE _pointer
-				      -> _HWND))
 (define-user32 GetWindowRect (_wfun _HWND (rect : (_ptr o _RECT)) -> (r : _BOOL) ->
                                     (if r rect (failed 'GetWindowRect))))
 (define-user32 GetClientRect (_wfun _HWND (rect : (_ptr o _RECT)) -> (r : _BOOL) ->
@@ -305,7 +297,14 @@
       (resize (max (->int (+ w dw)) (->int (* dlu-x min-w)))
               (max (->int (+ h dh)) (->int (* dlu-y min-h))))))
 
-  (def/public-unimplemented popup-menu)
+  (define/public (popup-menu m x y)
+    (let ([gx (box x)]
+          [gy (box y)])
+      (client-to-screen gx gy)
+      (send m popup (unbox gx) (unbox gy)
+            hwnd
+            (lambda (thunk) (queue-window-event this thunk)))))
+
   (def/public-unimplemented center)
 
   (define/public (get-parent) parent)
