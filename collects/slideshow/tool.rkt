@@ -349,7 +349,7 @@ pict snip :
          ;; if the require fails, then we cannot display the pict.
          ;; this can happen when, for example, there is no mred module
          ;; in the namespace
-         (let ([pict? (with-handlers ((exn? (λ (x) #f)))
+         (let ([pict? (with-handlers ((exn:fail? (λ (x) #f)))
                         (dynamic-require 'texpict/mrpict 'pict?))])
            (and pict?
                 (pict? x))))
@@ -357,7 +357,7 @@ pict snip :
        pict->image-snip
        ;; Namespace setup:
        (λ () 
-         (with-handlers ((exn? void))
+         (with-handlers ((exn:fail? void))
            ;; code running in this thunk cannot fail, or else drscheme gets wedged.
            (dynamic-require 'texpict/mrpict #f))))
         
