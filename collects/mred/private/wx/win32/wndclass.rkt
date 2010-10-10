@@ -100,16 +100,14 @@
 				     #f ; menu
 				     "PLTFrame")))
 
-(void (RegisterClassW (make-WNDCLASS CS_OWNDC
+(void (RegisterClassW (make-WNDCLASS 0 ; using CS_OWNDC creates trouble when resizing?
 				     wind-proc
 				     0
                                      0
 				     hInstance
 				     #f
                                      #f
-                                     (let ([p (ptr-add #f (+ COLOR_WINDOW 1))])
-                                       (cpointer-push-tag! p 'HBRUSH)
-                                       p)
+                                     #f ; transparent
 				     #f ; menu
 				     "PLTCanvas")))
 
