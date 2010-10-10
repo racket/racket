@@ -391,24 +391,28 @@
 		 (send event button-down?))
 	(set-focus)
 	(on-focus #t))
-      
-      (when (and media
-                 (not (send media get-printing)))
-        (using-admin
-         (when media
-           (set-custom-cursor
-            (send media adjust-cursor event)))
-         (when media
-           (send media on-event event))))
-      
-      (when (send event dragging?)
-        (let-boxes ([cw 0]
-                    [ch 0])
-            (get-client-size cw ch)
-          (when (or (x . < . 0)
-                    (y . < . 0)
-                    (x . > . cw)
-                    (y . > . ch))
+
+      (let ([out-of-client?
+             (let-boxes ([cw 0]
+                         [ch 0])
+                 (get-client-size cw ch)
+               (or (x . < . 0)
+                   (y . < . 0)
+                   (x . > . cw)
+                   (y . > . ch)))])
+
+        (when (and media
+                   (not (send media get-printing)))
+          (using-admin
+           (when media
+             (set-custom-cursor
+              (and (not out-of-client?)
+                   (send media adjust-cursor event))))
+           (when media
+             (send media on-event event))))
+        
+        (when (send event dragging?)
+          (when out-of-client?
             ;; Dragging outside the canvas: auto-generate more events because the buffer
             ;; is probably scrolling. But make sure we're shown.
             (when (is-shown-to-root?)

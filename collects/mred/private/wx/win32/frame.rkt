@@ -209,7 +209,7 @@
       (SetFocus child-hwnd)))
 
   (define/private (set-frame-focus)
-    (when focus-window-path
+    (when (pair? focus-window-path)
       (SetFocus (send (last focus-window-path) get-focus-hwnd))))
 
   (define/override (child-can-accept-focus?)
@@ -280,7 +280,8 @@
     (unless on? (error 'register-child-in-frame "did not expect #f"))
     (unless (or (not saved-child) (eq? child saved-child))
       (error 'register-child-in-frame "expected only one child"))
-    (set! saved-child child))
+    (set! saved-child child)
+    (send child set-arrow-cursor))
   (define/override (register-child-in-parent on?)
     (void))
 

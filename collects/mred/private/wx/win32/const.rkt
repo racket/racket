@@ -612,3 +612,10 @@
 (define HORZRES       8)
 (define VERTRES       10)
 
+(define CBS_DROPDOWNLIST #x0003)
+(define CB_INSERTSTRING #x014A)
+(define CB_SETCURSEL #x014E)
+(define CB_GETCURSEL #x0147)
+(define CBN_SELENDOK 9)
+(define CB_ADDSTRING #x0143)
+(define CB_RESETCONTENT #x014B)

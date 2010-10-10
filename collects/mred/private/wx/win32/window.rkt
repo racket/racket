@@ -129,21 +129,21 @@
           (unhide-cursor)
           (begin0
            (default w msg wParam lParam)
-           (do-key wParam lParam #f #f))]
+           (do-key w wParam lParam #f #f))]
          [(= msg WM_KEYDOWN)
-          (do-key wParam lParam #f #f)
+          (do-key w wParam lParam #f #f)
           0]
          [(= msg WM_KEYUP)
-          (do-key wParam lParam #f #t)
+          (do-key w wParam lParam #f #t)
           0]
          [(and (= msg WM_SYSCHAR)
                (= wParam VK_MENU))
           (unhide-cursor)
           (begin0
            (default w msg wParam lParam)
-           (do-key wParam lParam #t #f))]
+           (do-key w wParam lParam #t #f))]
          [(= msg WM_CHAR)
-          (do-key wParam lParam #t #f)
+          (do-key w wParam lParam #t #f)
           0]
          [(= msg WM_COMMAND)
           (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
@@ -391,10 +391,10 @@
   (define/public (get-top-frame)
     (send parent get-top-frame))
   
-  (define/private (do-key wParam lParam is-char? is-up?)
+  (define/private (do-key w wParam lParam is-char? is-up?)
     (let ([e (make-key-event #f wParam lParam is-char? is-up? hwnd)])
       (and e
-           (if (definitely-wants-event? e)
+           (if (definitely-wants-event? w e)
                (begin
                  (queue-window-event this (lambda () (dispatch-on-char/sync e)))
                  #t)
@@ -495,10 +495,10 @@
                                      c))))))
         (when (memq type '(left-down right-down middle-down))
           (set-focus))
-        (handle-mouse-event (make-e type)))))
+        (handle-mouse-event control-hwnd (make-e type)))))
 
-  (define (handle-mouse-event e)
-    (if (definitely-wants-event? e)
+  (define/private (handle-mouse-event w e)
+    (if (definitely-wants-event? w e)
         (begin
           (queue-window-event this (lambda () (dispatch-on-event/sync e)))
           #t)
@@ -513,8 +513,10 @@
         (begin
           (set! mouse-in? #t)
           (let ([parent-cursor (generate-parent-mouse-ins mk)])
-            (handle-mouse-event (mk 'enter))
-            (or cursor-handle parent-cursor)))))
+            (handle-mouse-event #f (mk 'enter))
+            (let ([c (or cursor-handle parent-cursor)])
+              (set! effective-cursor-handle c)
+              c)))))
 
   (define/public (generate-parent-mouse-ins mk)
     (send parent generate-mouse-ins this mk))
@@ -523,14 +525,14 @@
     (set! mouse-in? #f)
     (let ([e (mk 'leave)])
       (if (eq? (current-eventspace) (get-eventspace))
-          (handle-mouse-event e)
+          (handle-mouse-event #f e)
           (queue-window-event this
                               (lambda () (dispatch-on-event/sync e))))))
 
   (define/public (send-child-leaves mk)
     #f)
 
-  (define/public (definitely-wants-event? e) 
+  (define/public (definitely-wants-event? w e)
     #f)
 
   (define/public (dispatch-on-char/sync e)

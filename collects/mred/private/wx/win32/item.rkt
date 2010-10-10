@@ -56,7 +56,10 @@
             (queue-window-event this (lambda () (on-kill-focus)))
             (default w msg wParam lParam)]
            [else
-            (wndproc w msg wParam lParam default)])))
+            (wndproc-for-ctlproc w msg wParam lParam default)])))
+
+    (define/public (wndproc-for-ctlproc w msg wParam lParam default)
+      (wndproc w msg wParam lParam default))
     
     (define/public (default-ctlproc w msg wParam lParam)
       (let loop ([l old-control-procs])

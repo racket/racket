@@ -3,7 +3,8 @@
           "../../syntax.rkt"
          "window.rkt"
          "wndclass.rkt"
-	 "const.rkt")
+	 "const.rkt"
+         "cursor.rkt")
 
 (provide panel-mixin
          panel%)
@@ -35,10 +36,11 @@
 
     (define mouse-in-child #f)
     (define/override (generate-mouse-ins in-window mk)
-      (unless (eq? in-window mouse-in-child)
-        (when mouse-in-child
-          (send mouse-in-child send-leaves mk))
-        (set! mouse-in-child in-window))
+      (unless (eq? in-window this)
+        (unless (eq? in-window mouse-in-child)
+          (when mouse-in-child
+            (send mouse-in-child send-leaves mk))
+          (set! mouse-in-child in-window)))
       (super generate-mouse-ins in-window mk))
 
     (define/override (reset-cursor default)
@@ -89,4 +91,12 @@
                                  #f
                                  hInstance
                                  #f)]
-               [style style])))
+               [style style])
+
+    ;; For panel in a frame, adjust default cursor to arrow:
+    (define arrow-cursor? #f)
+    (define/public (set-arrow-cursor) (set! arrow-cursor? #t))
+    (define/override (generate-parent-mouse-ins mk)
+      (or (super generate-parent-mouse-ins mk)
+          (and arrow-cursor?
+               (get-arrow-cursor))))))

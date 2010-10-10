@@ -44,7 +44,8 @@
     (define callback void)
 
     (inherit auto-size set-control-font
-             is-shown-to-root?)
+             is-shown-to-root?
+             subclass-control)
 
     (define hwnd
       (CreateWindowExW 0
@@ -73,6 +74,8 @@
                [parent parent]
                [hwnd hwnd]
                [style style])
+
+    (subclass-control hwnd)
 
     (define/override (get-client-hwnd)
       client-hwnd)

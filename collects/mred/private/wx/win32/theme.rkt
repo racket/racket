@@ -1,5 +1,6 @@
 #lang racket/base
 (require ffi/unsafe
+         ffi/unsafe/alloc
          "utils.ss"
          "const.ss"
          "types.ss")
@@ -8,7 +9,11 @@
 	 get-theme-font-face
 	 get-theme-font-size
 	 _LOGFONT-pointer
+         OpenThemeData
+         CloseThemeData
          DrawThemeParentBackground
+         DrawThemeBackground
+         DrawThemeEdge
          EnableThemeDialogTexture)
 
 (define _HTHEME (_cpointer 'HTHEME))
@@ -45,10 +50,12 @@
    [lfPitchAndFamily  _BYTE]
    [lfFaceName _FaceName])) ; 32 of them
 
-(define-uxtheme OpenThemeData (_wfun _HWND _string/utf-16 -> _HTHEME))
 (define-uxtheme CloseThemeData (_wfun _HTHEME -> (r : _HRESULT)
 				      -> (when (negative? r)
-					   (error 'CloseThemeData "failed: ~s" (bitwise-and #xFFFF r)))))
+					   (error 'CloseThemeData "failed: ~s" (bitwise-and #xFFFF r))))
+  #:wrap (deallocator))
+(define-uxtheme OpenThemeData (_wfun _HWND _string/utf-16 -> _HTHEME)
+  #:wrap (allocator CloseThemeData))
 (define-uxtheme GetThemeFont (_wfun _HTHEME _HDC _int _int _int (f : (_ptr o _LOGFONT))
 				    -> (r : _HRESULT)
 				    -> (if (negative? r) 
@@ -61,9 +68,15 @@
 					     (error 'GetThemeSysFont "failed: ~s" (bitwise-and #xFFFF r))
 					     f)))
 
+(define-uxtheme DrawThemeBackground (_wfun _HTHEME _HDC _int _int _RECT-pointer (_or-null _RECT-pointer) -> (r : _HRESULT)
+                                           -> (when (negative? r)
+                                                (error 'DrawThemeBackground "failed: ~s" (bitwise-and #xFFFF r)))))
 (define-uxtheme DrawThemeParentBackground (_wfun _HWND _HDC _pointer -> (r : _HRESULT)
                                                  -> (when (negative? r)
                                                       (error 'DrawThemeParentBackground "failed: ~s" (bitwise-and #xFFFF r)))))
+(define-uxtheme DrawThemeEdge (_wfun _HWND _HDC _int _int _RECT-pointer _int _int _RECT-pointer -> (r : _HRESULT)
+                                     -> (when (negative? r)
+                                          (error 'DrawThemeEdge "failed: ~s" (bitwise-and #xFFFF r)))))
 
 (define-uxtheme EnableThemeDialogTexture (_wfun _HWND _DWORD -> (r : _HRESULT)
                                                 -> (when (negative? r)

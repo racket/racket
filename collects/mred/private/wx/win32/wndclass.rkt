@@ -100,7 +100,7 @@
 				     #f ; menu
 				     "PLTFrame")))
 
-(void (RegisterClassW (make-WNDCLASS 0 ; not CS_OWNDC !
+(void (RegisterClassW (make-WNDCLASS CS_OWNDC
 				     wind-proc
 				     0
                                      0
