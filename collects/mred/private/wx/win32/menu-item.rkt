@@ -39,6 +39,7 @@
     (set! parent p)
     (set! label lbl)
     (set! checkable? chkbl?)
+    (set! submenu subm)
     id)
 
   (define/public (set-label hmenu pos str)

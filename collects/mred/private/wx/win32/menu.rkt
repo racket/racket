@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/class
          ffi/unsafe
+         (only-in racket/list drop take)
          "../../lock.rkt"
          "../../syntax.rkt"
          "utils.rkt"
@@ -25,6 +26,8 @@
   (define items null)
 
   (define hmenu (CreatePopupMenu))
+
+  (define/public (get-hmenu) hmenu)
 
   (define/public (set-parent p lbl parent-hmenu)
     (set! label lbl)
@@ -60,8 +63,10 @@
      (lambda (i pos)
        (send i set-label hmenu pos str))))
 
-  (def/public-unimplemented set-help-string)
-  (def/public-unimplemented number)
+  (define/public (set-help-string id str)
+    (void))
+
+  (define/public (number) (length items))
 
   (define/public (enable id on?)
     (with-item
@@ -84,25 +89,37 @@
      (lambda (i pos)
        (send i get-check hmenu pos))))
 
+  (define/private (remove-item! pos)
+    (set! items 
+          (append (take items pos)
+                  (drop items (add1 pos)))))
+
   (define/public (delete-by-position pos)
-    (RemoveMenu hmenu pos MF_BYPOSITION))
+    (atomically
+     (remove-item! pos)
+     (RemoveMenu hmenu pos MF_BYPOSITION)))
 
   (define/public (delete id)
     (with-item
      id
      (lambda (i pos)
-       (RemoveMenu hmenu pos MF_BYPOSITION))))
+       (atomically
+        (remove-item! pos)
+        (RemoveMenu hmenu pos MF_BYPOSITION)))))
 
   (public [append-item append])
   (define (append-item id label help-str-or-submenu chckable?)
     (let ([i (id-to-menu-item id)])
       (when i
-        (let ([id (send i set-parent this label chckable?
-                        (and (help-str-or-submenu . is-a? . menu%)
-                             help-str-or-submenu))])
+        (let* ([submenu (and (help-str-or-submenu . is-a? . menu%)
+                             help-str-or-submenu)]
+               [id (send i set-parent this label chckable?
+                         submenu)])
           (atomically
            (set! items (append items (list i)))
-           (AppendMenuW hmenu (bitwise-ior MF_STRING) (cast id _long _pointer) label))))))
+           (if submenu
+               (AppendMenuW hmenu (bitwise-ior MF_POPUP MF_STRING) (send submenu get-hmenu) label)
+               (AppendMenuW hmenu (bitwise-ior MF_STRING) (cast id _long _pointer) label)))))))
 
   (define/public (append-separator) 
     (atomically
