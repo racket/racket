@@ -37,6 +37,9 @@
 (define ETS_NORMAL 1)
 (define ETS_DISABLE 4)
 
+(define HTHSCROLL           6)
+(define HTVSCROLL           7)
+
 (define-cstruct _SCROLLINFO
   ([cbSize _UINT]
    [fMask _UINT]
@@ -61,7 +64,7 @@
 
 (define canvas% 
   (canvas-mixin
-   (class (item-mixin window%)
+   (class (canvas-autoscroll-mixin (item-mixin window%))
      (init parent
            x y w h
            style
@@ -72,7 +75,10 @@
               get-client-size
               get-eventspace
               set-control-font
-              subclass-control)
+              subclass-control
+              is-auto-scroll? get-virtual-width get-virtual-height
+              reset-auto-scroll
+              refresh-for-autoscroll)
 
      (define hscroll? (memq 'hscroll style))
      (define vscroll? (memq 'vscroll style))
@@ -182,7 +188,17 @@
      (define/public (get-dc) dc)
 
      (define/override (on-resized)
-       (send dc reset-backing-retained))
+       (reset-dc))
+
+     (define/private (reset-dc)
+       (send dc reset-backing-retained)
+       (send dc set-auto-scroll
+             (if (get-virtual-width)
+                 (get-virtual-h-pos)
+                 0)
+             (if (get-virtual-height)
+                 (get-virtual-v-pos)
+                 0)))
 
      (define/override (get-client-hwnd)
        canvas-hwnd)
@@ -232,9 +248,6 @@
         (unless (zero? paint-suspended)
           (set! paint-suspended (sub1 paint-suspended)))))
 
-     (define/public (get-virtual-size w h)
-       (get-client-size w h))
-
      (define transparent? (memq 'transparent style))
      (define bg-col (make-object color% "white"))
      (define/public (get-canvas-background) (if transparent?
@@ -254,11 +267,10 @@
           (set! v-scroll-visible? (and v? #t))
           (ShowScrollBar canvas-hwnd SB_VERT v?))))
 
-     (define/public (set-scrollbars h-step v-step
-                                    h-len v-len
-                                    h-page v-page
-                                    h-pos v-pos
-                                    auto?)
+     (define/override (do-set-scrollbars h-step v-step
+                                         h-len v-len
+                                         h-page v-page
+                                         h-pos v-pos)
        (define (make-info len page pos vis?)
          (make-SCROLLINFO (ctype-sizeof _SCROLLINFO)
                           (bitwise-ior (if vis? SIF_DISABLENOSCROLL 0)
@@ -270,6 +282,15 @@
          (SetScrollInfo canvas-hwnd SB_HORZ (make-info h-len h-page h-pos h-scroll-visible?) #t))
        (when vscroll?
          (SetScrollInfo canvas-hwnd SB_VERT (make-info v-len v-page v-pos v-scroll-visible?) #t)))
+
+    (define/override (reset-dc-for-autoscroll)
+      (reset-dc)
+      (refresh))
+
+    (define/override (get-virtual-h-pos)
+      (GetScrollPos canvas-hwnd SB_HORZ))
+    (define/override (get-virtual-v-pos)
+      (GetScrollPos canvas-hwnd SB_VERT))
 
      (def/public-unimplemented set-background-to-gray)
 
@@ -326,21 +347,41 @@
              (set-SCROLLINFO-nPos! i new-pos)
              (set-SCROLLINFO-fMask! i SIF_POS)
              (SetScrollInfo canvas-hwnd dir i #t)
-             (queue-window-event
-              this
-              (lambda ()
-                (on-scroll (new scroll-event%
-                                [event-type 'thumb]
-                                [direction (if (= dir SB_HORZ) 'horizontal 'vertical)]
-                                [position new-pos]))))
+             (if (is-auto-scroll?)
+                 (refresh-for-autoscroll)
+                 (queue-window-event
+                  this
+                  (lambda ()
+                    (on-scroll (new scroll-event%
+                                    [event-type 'thumb]
+                                    [direction (if (= dir SB_HORZ) 'horizontal 'vertical)]
+                                    [position new-pos])))))
              (constrained-reply (get-eventspace)
                                 (lambda ()
                                   (let loop () (pre-event-sync #t) (when (yield) (loop))))
                                 (void))))))
 
-     (define/override (definitely-wants-event? w e) 
-       (or (e . is-a? . key-event%)
-           (ptr-equal? w canvas-hwnd)))
+     (define/override (definitely-wants-event? w msg wParam e) 
+       (cond
+        [(e . is-a? . key-event%)
+         ;; All key events to canvas, event for combo:
+         #t]
+        [(and (or (= wParam HTVSCROLL)
+                  (= wParam HTHSCROLL))
+              (or (= msg WM_NCLBUTTONDOWN)
+                  (= msg WM_NCRBUTTONDOWN)
+                  (= msg WM_NCMBUTTONDOWN)
+                  (= msg WM_NCLBUTTONDBLCLK)
+                  (= msg WM_NCRBUTTONDBLCLK)
+                  (= msg WM_NCMBUTTONDBLCLK)
+                  (= msg WM_NCLBUTTONUP)
+                  (= msg WM_NCRBUTTONUP)
+                  (= msg WM_NCMBUTTONUP)))
+         ;; let scrollbar handle event:
+         #f]
+        [else
+         ;; otherwise, just handle events to canvas:
+         (ptr-equal? w canvas-hwnd)]))
 
      (define/public (on-combo-select i) (void))
      (define/public (set-combo-text s) (void))
@@ -359,9 +400,14 @@
            (ptr-equal? canvas-hwnd a-hwnd)
            (ptr-equal? combo-hwnd a-hwnd)))
 
-     (def/public-unimplemented scroll)
+     (define/public (scroll x y)
+       (when (x . > . 0)
+         (set-scroll-pos 'horizontal (->long (* x (get-scroll-range 'horizontal)))))
+       (when (y . > . 0)
+         (set-scroll-pos 'vertical (->long (* y (get-scroll-range 'vertical)))))
+       (when (is-auto-scroll?) (refresh-for-autoscroll)))
+
      (def/public-unimplemented warp-pointer)
-     (def/public-unimplemented view-start)
 
      (define/public (set-resize-corner on?)
        (void)))))

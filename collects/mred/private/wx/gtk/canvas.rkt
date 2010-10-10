@@ -193,7 +193,6 @@
               set-auto-size 
               adjust-client-delta infer-client-delta
               is-auto-scroll? get-virtual-width get-virtual-height
-              reset-auto-scroll
               refresh-for-autoscroll)
 
      (define is-combo? (memq 'combo style))

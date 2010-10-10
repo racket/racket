@@ -129,21 +129,21 @@
           (unhide-cursor)
           (begin0
            (default w msg wParam lParam)
-           (do-key w wParam lParam #f #f))]
+           (do-key w msg wParam lParam #f #f))]
          [(= msg WM_KEYDOWN)
-          (do-key w wParam lParam #f #f)
+          (do-key w msg wParam lParam #f #f)
           0]
          [(= msg WM_KEYUP)
-          (do-key w wParam lParam #f #t)
+          (do-key w msg wParam lParam #f #t)
           0]
          [(and (= msg WM_SYSCHAR)
                (= wParam VK_MENU))
           (unhide-cursor)
           (begin0
            (default w msg wParam lParam)
-           (do-key w wParam lParam #t #f))]
+           (do-key w msg wParam lParam #t #f))]
          [(= msg WM_CHAR)
-          (do-key w wParam lParam #t #f)
+          (do-key w msg wParam lParam #t #f)
           0]
          [(= msg WM_COMMAND)
           (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
@@ -391,10 +391,10 @@
   (define/public (get-top-frame)
     (send parent get-top-frame))
   
-  (define/private (do-key w wParam lParam is-char? is-up?)
+  (define/private (do-key w msg wParam lParam is-char? is-up?)
     (let ([e (make-key-event #f wParam lParam is-char? is-up? hwnd)])
       (and e
-           (if (definitely-wants-event? w e)
+           (if (definitely-wants-event? w msg wParam e)
                (begin
                  (queue-window-event this (lambda () (dispatch-on-char/sync e)))
                  #t)
@@ -406,52 +406,52 @@
   (define/public (try-mouse w msg wParam lParam)
     (cond
      [(= msg WM_NCRBUTTONDOWN)
-      (do-mouse w #t 'right-down wParam lParam)]
+      (do-mouse w msg #t 'right-down wParam lParam)]
      [(= msg WM_NCRBUTTONUP)
-      (do-mouse w #t 'right-up wParam lParam)]
+      (do-mouse w msg #t 'right-up wParam lParam)]
      [(= msg WM_NCRBUTTONDBLCLK)
-      (do-mouse w #t 'right-down wParam lParam)]
+      (do-mouse w msg #t 'right-down wParam lParam)]
      [(= msg WM_NCMBUTTONDOWN)
-      (do-mouse w #t 'middle-down wParam lParam)]
+      (do-mouse w msg #t 'middle-down wParam lParam)]
      [(= msg WM_NCMBUTTONUP)
-      (do-mouse w #t 'middle-up wParam lParam)]
+      (do-mouse w msg #t 'middle-up wParam lParam)]
      [(= msg WM_NCMBUTTONDBLCLK)
-      (do-mouse w #t 'middle-down wParam lParam)]
+      (do-mouse w msg #t 'middle-down wParam lParam)]
      [(= msg WM_NCLBUTTONDOWN)
-      (do-mouse w #t 'left-down wParam lParam)]
+      (do-mouse w msg #t 'left-down wParam lParam)]
      [(= msg WM_NCLBUTTONUP)
-      (do-mouse w #t 'left-up wParam lParam)]
+      (do-mouse w msg #t 'left-up wParam lParam)]
      [(= msg WM_NCLBUTTONDBLCLK)
-      (do-mouse w #t 'left-down wParam lParam)]
+      (do-mouse w msg #t 'left-down wParam lParam)]
      [(and (= msg WM_NCMOUSEMOVE)
            (not (= wParam HTVSCROLL))
            (not (= wParam HTHSCROLL)))
-      (do-mouse w #t 'motion wParam lParam)]
+      (do-mouse w msg #t 'motion wParam lParam)]
      [(= msg WM_RBUTTONDOWN)
-      (do-mouse w #f 'right-down wParam lParam)]
+      (do-mouse w msg #f 'right-down wParam lParam)]
      [(= msg WM_RBUTTONUP)
-      (do-mouse w #f 'right-up wParam lParam)]
+      (do-mouse w msg #f 'right-up wParam lParam)]
      [(= msg WM_RBUTTONDBLCLK)
-      (do-mouse w #f 'right-down wParam lParam)]
+      (do-mouse w msg #f 'right-down wParam lParam)]
      [(= msg WM_MBUTTONDOWN)
-      (do-mouse w #f 'middle-down wParam lParam)]
+      (do-mouse w msg #f 'middle-down wParam lParam)]
      [(= msg WM_MBUTTONUP)
-      (do-mouse w #f 'middle-up wParam lParam)]
+      (do-mouse w msg #f 'middle-up wParam lParam)]
      [(= msg WM_MBUTTONDBLCLK)
-      (do-mouse w #f 'middle-down wParam lParam)]
+      (do-mouse w msg #f 'middle-down wParam lParam)]
      [(= msg WM_LBUTTONDOWN)
-      (do-mouse w #f 'left-down wParam lParam)]
+      (do-mouse w msg #f 'left-down wParam lParam)]
      [(= msg WM_LBUTTONUP)
-      (do-mouse w #f 'left-up wParam lParam)]
+      (do-mouse w msg #f 'left-up wParam lParam)]
      [(= msg WM_LBUTTONDBLCLK)
-      (do-mouse w #f 'left-down wParam lParam)]
+      (do-mouse w msg #f 'left-down wParam lParam)]
      [(= msg WM_MOUSEMOVE)
-      (do-mouse w #f 'motion wParam lParam)]
+      (do-mouse w msg #f 'motion wParam lParam)]
      [(= msg WM_MOUSELEAVE)
-      (do-mouse w #f 'leave wParam lParam)]
+      (do-mouse w msg #f 'leave wParam lParam)]
      [else #f]))
 
-  (define/private (do-mouse control-hwnd nc? type wParam lParam)
+  (define/private (do-mouse control-hwnd msg nc? type wParam lParam)
     (let ([x (LOWORD lParam)]
           [y (HIWORD lParam)]
           [flags (if nc? 0 wParam)]
@@ -495,10 +495,10 @@
                                      c))))))
         (when (memq type '(left-down right-down middle-down))
           (set-focus))
-        (handle-mouse-event control-hwnd (make-e type)))))
+        (handle-mouse-event control-hwnd msg wParam (make-e type)))))
 
-  (define/private (handle-mouse-event w e)
-    (if (definitely-wants-event? w e)
+  (define/private (handle-mouse-event w msg wParam e)
+    (if (definitely-wants-event? w msg wParam e)
         (begin
           (queue-window-event this (lambda () (dispatch-on-event/sync e)))
           #t)
@@ -513,7 +513,7 @@
         (begin
           (set! mouse-in? #t)
           (let ([parent-cursor (generate-parent-mouse-ins mk)])
-            (handle-mouse-event #f (mk 'enter))
+            (handle-mouse-event (get-client-hwnd) 0 0 (mk 'enter))
             (let ([c (or cursor-handle parent-cursor)])
               (set! effective-cursor-handle c)
               c)))))
@@ -525,14 +525,14 @@
     (set! mouse-in? #f)
     (let ([e (mk 'leave)])
       (if (eq? (current-eventspace) (get-eventspace))
-          (handle-mouse-event #f e)
+          (handle-mouse-event (get-client-hwnd) 0 0 e)
           (queue-window-event this
                               (lambda () (dispatch-on-event/sync e))))))
 
   (define/public (send-child-leaves mk)
     #f)
 
-  (define/public (definitely-wants-event? w e)
+  (define/public (definitely-wants-event? w msg wParam e)
     #f)
 
   (define/public (dispatch-on-char/sync e)
