@@ -9,7 +9,7 @@
       [(windows) (if (getenv "PLT_WIN_GTK")
                      gtk-lib
                      '(lib "mred/private/wx/win32/platform.rkt"))]
-      [(maxcosx) '(lib "mred/private/wx/cocoa/platform.rkt")]
+      [(macosx) '(lib "mred/private/wx/cocoa/platform.rkt")]
       [(unix) gtk-lib])))
 
 (define-values (button%
