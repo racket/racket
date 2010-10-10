@@ -2,11 +2,115 @@
 (require racket/class
          "backing-dc.rkt")
 
-(provide canvas-mixin)
+(provide canvas-autoscroll-mixin
+         canvas-mixin)
 
+;; Implements canvas autoscroll, applied *before* platform-specific canvas
+;; methods:
+(define (canvas-autoscroll-mixin %)
+  (class %
+    (super-new)
+
+    (inherit get-client-size
+             refresh)
+
+    (define auto-scroll? #f)
+    (define virtual-height #f)
+    (define virtual-width #f)
+
+    (define/public (is-auto-scroll?) auto-scroll?)
+    (define/public (get-virtual-height) virtual-height)
+    (define/public (get-virtual-width) virtual-width)
+    
+    (define/public (set-scrollbars h-step v-step
+                                   h-len v-len
+                                   h-page v-page
+                                   h-pos v-pos
+                                   auto?)
+       (cond
+        [auto?
+         (set! auto-scroll? #t)
+         (set! virtual-width (and (positive? h-len) h-len))
+         (set! virtual-height (and (positive? v-len) v-len))
+         (reset-auto-scroll h-pos v-pos)
+         (refresh-for-autoscroll)]
+        [else
+         (let ([a? auto-scroll?])
+           (set! auto-scroll? #f)
+           (set! virtual-width #f)
+           (set! virtual-height #f)
+           (when a? (reset-dc-for-autoscroll))) ; disable scroll offsets
+         (do-set-scrollbars h-step v-step
+                            h-len v-len
+                            h-page v-page
+                            h-pos v-pos)]))
+
+    ;; To be overridden:
+    (define/public (do-set-scrollbars h-step v-step
+                                      h-len v-len
+                                      h-page v-page
+                                      h-pos v-pos)
+      (void))
+
+    (define/public (reset-auto-scroll h-pos v-pos)
+      (let ([xb (box 0)]
+            [yb (box 0)])
+        (get-client-size xb yb)
+        (let ([cw (unbox xb)]
+              [ch (unbox yb)])
+          (let ([h-len (if virtual-width
+                           (max 0 (- virtual-width cw))
+                           0)]
+                [v-len (if virtual-height
+                           (max 0 (- virtual-height ch))
+                           0)]
+                [h-page (if virtual-width
+                            cw
+                            0)]
+                [v-page (if virtual-height
+                            ch
+                            0)])
+            (do-set-scrollbars 1 1
+                               h-len v-len
+                               h-page v-page
+                               h-pos v-pos)))))
+
+    ;; To be overridden:
+    (define/public (reset-dc-for-autoscroll)
+      (void))
+
+    (define/public (refresh-for-autoscroll)
+      (reset-dc-for-autoscroll)
+      (refresh))
+    
+    (define/public (view-start xb yb)
+      (if auto-scroll?
+          (begin
+            (set-box! xb (if virtual-width
+                             (get-virtual-h-pos)
+                             0))
+            (set-box! yb (if virtual-height
+                             (get-virtual-v-pos)
+                             0)))
+          (begin
+            (set-box! xb 0)
+            (set-box! yb 0))))
+    
+    ;; To be overridden:
+    (define/public (get-virtual-h-pos) 0)
+    (define/public (get-virtual-v-pos) 0)
+    
+    (define/public (get-virtual-size xb yb)
+      (get-client-size xb yb)
+      (when virtual-width (set-box! xb virtual-width))
+      (when virtual-height (set-box! yb virtual-height)))))
+
+;; Implements canvas refresh, applied *after* platform-specific canvas
+;; methods:
 (define (canvas-mixin %)
   (class %
     (super-new)
+
     (inherit request-canvas-flush-delay
              cancel-canvas-flush-delay
              queue-canvas-refresh-event

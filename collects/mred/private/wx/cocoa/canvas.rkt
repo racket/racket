@@ -178,7 +178,7 @@
 
 (define canvas%
   (canvas-mixin
-   (class window%
+   (class (canvas-autoscroll-mixin window%)
      (init parent
            x y w h
            style
@@ -195,16 +195,15 @@
               register-as-child
               get-size get-position
               set-focus
-              client-to-screen)
+              client-to-screen
+              is-auto-scroll? get-virtual-width get-virtual-height
+              reset-auto-scroll
+              refresh-for-autoscroll)
 
      (define vscroll-ok? (and (memq 'vscroll style) #t))
      (define vscroll? vscroll-ok?)
      (define hscroll-ok? (and (memq 'hscroll style) #t))
      (define hscroll? hscroll-ok?)
-
-     (define auto-scroll? #f)
-     (define virtual-height #f)
-     (define virtual-width #f)
 
      (define wants-focus? (not (memq 'no-focus style)))
      (define is-combo? (memq 'combo style))
@@ -309,8 +308,8 @@
        (when (dc . is-a? . dc%)
          (send dc reset-backing-retained)
          (send dc set-auto-scroll
-               (if auto-scroll? (scroll-pos h-scroller) 0)
-               (if auto-scroll? (scroll-pos v-scroller) 0)))
+               (if (is-auto-scroll?) (scroll-pos h-scroller) 0)
+               (if (is-auto-scroll?) (scroll-pos v-scroller) 0)))
        (when refresh? (refresh)))
 
      (define/override (get-client-size xb yb)
@@ -380,7 +379,7 @@
                   (is-shown-to-root?))
          (atomically (resume-all-reg-blits)))
        (fix-dc)
-       (when auto-scroll?
+       (when (is-auto-scroll?)
          (reset-auto-scroll 0 0))
        (on-size 0 0))
 
@@ -406,69 +405,25 @@
              (get-size w h)
              (do-set-size (unbox x) (unbox y) (unbox w) (unbox h))))))
 
-     (define/public (set-scrollbars h-step v-step
-                                    h-len v-len
-                                    h-page v-page
-                                    h-pos v-pos
-                                    auto?)
-       (cond
-        [auto?
-         (set! auto-scroll? #t)
-         (set! virtual-width (and (positive? h-len) h-len))
-         (set! virtual-height (and (positive? v-len) v-len))
-         (reset-auto-scroll h-pos v-pos)
-         (refresh-for-autoscroll)]
-        [else
-         (let ([a? auto-scroll?])
-           (set! auto-scroll? #f)
-           (when a? (fix-dc))) ; disable scroll offsets
-         (scroll-range h-scroller h-len)
-         (scroll-page h-scroller h-page)
-         (scroll-pos h-scroller h-pos)
-         (when h-scroller
-           (tell (scroller-cocoa h-scroller) setEnabled: #:type _BOOL (and h-step (positive? h-len))))
-         (scroll-range v-scroller v-len)
-         (scroll-page v-scroller v-page)
-         (scroll-pos v-scroller v-pos)
-         (when v-scroller
-           (tell (scroller-cocoa v-scroller) setEnabled: #:type _BOOL (and v-step (positive? v-len))))
-         (set! virtual-width #f)
-         (set! virtual-height #f)]))
+     (define/override (do-set-scrollbars h-step v-step
+                                         h-len v-len
+                                         h-page v-page
+                                         h-pos v-pos)
+       (scroll-range h-scroller h-len)
+       (scroll-page h-scroller h-page)
+       (scroll-pos h-scroller h-pos)
+       (when h-scroller
+         (tell (scroller-cocoa h-scroller) setEnabled: #:type _BOOL (and h-step (positive? h-len))))
+       (scroll-range v-scroller v-len)
+       (scroll-page v-scroller v-page)
+       (scroll-pos v-scroller v-pos)
+       (when v-scroller
+         (tell (scroller-cocoa v-scroller) setEnabled: #:type _BOOL (and v-step (positive? v-len)))))
 
-     (define/private (reset-auto-scroll h-pos v-pos)
-       (let ([xb (box 0)]
-             [yb (box 0)])
-         (get-client-size xb yb)
-         (let ([cw (unbox xb)]
-               [ch (unbox yb)])
-           (let ([h-len (if virtual-width
-                            (max 0 (- virtual-width cw))
-                            0)]
-                 [v-len (if virtual-height
-                            (max 0 (- virtual-height ch))
-                            0)]
-                 [h-page (if virtual-width
-                             cw
-                             0)]
-                 [v-page (if virtual-height
-                             ch
-                             0)])
-             (scroll-range h-scroller h-len)
-             (scroll-page h-scroller h-page)
-             (scroll-pos h-scroller h-pos)
-             (when h-scroller
-               (tell (scroller-cocoa h-scroller) setEnabled: #:type _BOOL (positive? h-len)))
-             (scroll-range v-scroller v-len)
-             (scroll-page v-scroller v-page)
-             (scroll-pos v-scroller v-pos)
-             (when v-scroller
-               (tell (scroller-cocoa v-scroller) setEnabled: #:type _BOOL (positive? v-len)))))))
+     (define/override (reset-dc-for-autoscroll)
+       (fix-dc))
 
-     (define/private (refresh-for-autoscroll)
-       (fix-dc)
-       (refresh))
-
-     (define (update which scroll- v)
+     (define/private (update which scroll- v)
        (if (eq? which 'vertical)
            (scroll- v-scroller v)
            (scroll- h-scroller v)))
@@ -629,7 +584,7 @@
                      'thumb]
                     [else #f])])
               (when kind
-                (if auto-scroll?
+                (if (is-auto-scroll?)
                     (refresh-for-autoscroll)
                     (on-scroll (new scroll-event%
                                     [event-type kind]
@@ -690,22 +645,15 @@
      (define/public (scroll x y)
        (when (x . > . 0) (scroll-pos h-scroller (* x (scroll-range h-scroller))))
        (when (y . > . 0) (scroll-pos v-scroller (* y (scroll-range v-scroller))))
-       (when auto-scroll? (refresh-for-autoscroll)))
+       (when (is-auto-scroll?) (refresh-for-autoscroll)))
 
      (def/public-unimplemented warp-pointer)
 
-     (define/public (view-start xb yb)
-       (if auto-scroll?
-           (begin
-             (set-box! xb (if virtual-width
-                              (scroll-pos h-scroller)
-                              0))
-             (set-box! yb (if virtual-height
-                              (scroll-pos v-scroller)
-                              0)))
-           (begin
-             (set-box! xb 0)
-             (set-box! yb 0))))
+     (define/override (get-virtual-h-pos)
+       (scroll-pos h-scroller))
+
+     (define/override (get-virtual-v-pos)
+       (scroll-pos v-scroller))
 
      (define/public (set-resize-corner on?)
        (void))
@@ -720,11 +668,6 @@
 
      (define/public (is-flipped?)
        (tell #:type _BOOL (get-cocoa-content) isFlipped))
-
-     (define/public (get-virtual-size xb yb)
-       (get-client-size xb yb)
-       (when virtual-width (set-box! xb virtual-width))
-       (when virtual-height (set-box! yb virtual-height)))
 
      (define blits null)
      (define reg-blits null)

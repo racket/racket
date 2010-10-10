@@ -181,7 +181,7 @@
 
 (define canvas%
   (canvas-mixin
-   (class (client-size-mixin window%)
+   (class (canvas-autoscroll-mixin (client-size-mixin window%))
      (init parent
            x y w h
            style
@@ -191,17 +191,16 @@
      (inherit get-gtk set-size get-size get-client-size 
               on-size get-top-win
               set-auto-size 
-              adjust-client-delta infer-client-delta)
+              adjust-client-delta infer-client-delta
+              is-auto-scroll? get-virtual-width get-virtual-height
+              reset-auto-scroll
+              refresh-for-autoscroll)
 
      (define is-combo? (memq 'combo style))
      (define has-border? (or (memq 'border style)
                              (memq 'control-border style)))
 
      (define margin (if has-border? 1 0))
-
-     (define auto-scroll? #f)
-     (define virtual-height #f)
-     (define virtual-width #f)
 
      (define-values (client-gtk gtk 
                                 hscroll-adj vscroll-adj hscroll-gtk vscroll-gtk resize-box
@@ -386,10 +385,10 @@
        (send dc reset-backing-retained)
        (refresh)
        (send dc set-auto-scroll
-             (if virtual-width
+             (if (get-virtual-width)
                  (gtk_adjustment_get_value hscroll-adj)
                  0)
-             (if virtual-height
+             (if (get-virtual-height)
                  (gtk_adjustment_get_value vscroll-adj)
                  0)))
 
@@ -438,48 +437,15 @@
                 (gtk_adjustment_configure adj 0 0 1 1 1 1)
                 (gtk_adjustment_configure adj pos 0 (+ len page) 1 page page))))))
 
-     (define/public (set-scrollbars h-step v-step
-                                    h-len v-len
-                                    h-page v-page
-                                    h-pos v-pos
-                                    auto?)
-       (let ([h-page (if (zero? h-len) 0 h-page)]
-             [v-page (if (zero? v-len) 0 v-page)])
-         (cond
-          [auto?
-           (set! auto-scroll? #t)
-           (set! virtual-width (and (positive? h-len) hscroll-gtk h-len))
-           (set! virtual-height (and (positive? v-len) vscroll-gtk v-len))
-           (reset-auto-scroll h-pos v-pos)
-           (refresh-for-autoscroll)]
-          [else
-           (configure-adj hscroll-adj hscroll-gtk h-len h-page h-pos)
-           (configure-adj vscroll-adj vscroll-gtk v-len v-page v-pos)])))
+     (define/override (do-set-scrollbars h-step v-step
+                                         h-len v-len
+                                         h-page v-page
+                                         h-pos v-pos)
+       (configure-adj hscroll-adj hscroll-gtk h-len h-page h-pos)
+       (configure-adj vscroll-adj vscroll-gtk v-len v-page v-pos))
 
-     (define/private (reset-auto-scroll h-pos v-pos)
-       (let ([xb (box 0)]
-             [yb (box 0)])
-         (get-client-size xb yb)
-         (let ([cw (unbox xb)]
-               [ch (unbox yb)])
-           (let ([h-len (if virtual-width
-                            (max 0 (- virtual-width cw))
-                            0)]
-                 [v-len (if virtual-height
-                            (max 0 (- virtual-height ch))
-                            0)]
-                 [h-page (if virtual-width
-                             cw
-                             0)]
-                 [v-page (if virtual-height
-                             ch
-                             0)])
-             (configure-adj hscroll-adj hscroll-gtk h-len h-page h-pos)
-             (configure-adj vscroll-adj vscroll-gtk v-len v-page v-pos)))))
-
-     (define/private (refresh-for-autoscroll)
-       (reset-dc)
-       (refresh))
+     (define/override (reset-dc-for-autoscroll)
+       (reset-dc))
 
      (define/private (dispatch which proc [default (void)])
        (if (eq? which 'vertical)
@@ -559,7 +525,7 @@
      (def/public-unimplemented set-background-to-gray)
 
      (define/public (do-scroll direction)
-       (if auto-scroll?
+       (if (is-auto-scroll?)
            (refresh-for-autoscroll)
            (on-scroll (new scroll-event%
                            [event-type 'thumb]
@@ -572,29 +538,16 @@
         (lambda ()
           (when hscroll-adj (gtk_adjustment_set_value hscroll-adj x))
           (when vscroll-adj (gtk_adjustment_set_value vscroll-adj y))))
-       (when auto-scroll? (refresh-for-autoscroll)))
+       (when (is-auto-scroll?) (refresh-for-autoscroll)))
 
      (def/public-unimplemented warp-pointer)
 
-     (define/public (view-start xb yb)
-       (if auto-scroll?
-           (begin
-             (set-box! xb (if virtual-width
-                              (gtk_adjustment_get_value hscroll-adj)
-                              0))
-             (set-box! yb (if virtual-height
-                              (gtk_adjustment_get_value vscroll-adj)
-                              0)))
-           (begin
-             (set-box! xb 0)
-             (set-box! yb 0))))
+     (define/override (get-virtual-h-pos)
+      (gtk_adjustment_get_value hscroll-adj))
+    (define/override (get-virtual-v-pos)
+      (gtk_adjustment_get_value vscroll-adj))
 
      (define/public (set-resize-corner on?) (void))
-     
-     (define/public (get-virtual-size xb yb)
-       (get-client-size xb yb)
-       (when virtual-width (set-box! xb virtual-width))
-       (when virtual-height (set-box! yb virtual-height)))
 
      (define reg-blits null)
      
