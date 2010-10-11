@@ -207,14 +207,18 @@
 	     (delay (make-mixed-info (force alternative-signatures-promise)))
 	     #:arbitrary-promise
 	     (delay
-	       (let ((arbitraries (map force (map signature-arbitrary-promise (force alternative-signatures-promise)))))
-		 (if (andmap values arbitraries)
-		     (arbitrary-mixed 
-		      (map (lambda (sig arb)
-			     (cons (signature->predicate sig)
-				   arb))
-			   (force alternative-signatures-promise) arbitraries))
-		     #f)))
+	       (let* ((arbitrary-promises (map signature-arbitrary-promise alternative-signatures))
+		      (raising-promises
+		       (map (lambda (prm)
+			      (delay
+				(or (force prm)
+				    (error "Signatur hat keinen Generator")))) ; #### src location
+			    arbitrary-promises)))
+		 (arbitrary-mixed
+		  (map (lambda (sig arbp)
+			 (cons (signature->predicate sig)
+			       arbp))
+		       alternative-signatures raising-promises))))
 	     #:=?-proc
 	     (lambda (this-info other-info)
 	       (and (mixed-info? other-info)

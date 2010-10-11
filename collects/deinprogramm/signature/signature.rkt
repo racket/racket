@@ -58,7 +58,7 @@
       (display "#<signature>" port)))))
 
 (define (make-signature name enforcer syntax-promise
-		       #:arbitrary-promise (arbitrary-promise #f)
+		       #:arbitrary-promise (arbitrary-promise (delay #f))
 		       #:info-promise (info-promise (delay #f))
 		       #:<=?-proc (<=?-proc
 				   (lambda (this-info other-info)
