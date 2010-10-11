@@ -421,33 +421,29 @@ Returns a mutable hash table with the same mappings, same
 key-comparison mode, and same key-holding strength as @scheme[hash].}
 
 
-@defproc[(eq-hash-code [v any/c]) exact-integer?]{
+@defproc[(eq-hash-code [v any/c]) fixnum?]{
 
-Returns an exact integer; for any two @scheme[eq?] values, the
-returned integer is the same. Furthermore, for the result integer
-@scheme[_k] and any other exact integer @scheme[_j], @scheme[(= _k _j)]
-implies @scheme[(eq? _k _j)].}
+Returns a @tech{fixnum}; for any two calls with @scheme[eq?] values,
+the returned number is the same.
+
+@margin-note{Equal @tech{fixnums} are always @racket[eq?].}}
 
 
-@defproc[(eqv-hash-code [v any/c]) exact-integer?]{
+@defproc[(eqv-hash-code [v any/c]) fixnum?]{
 
-Returns an exact integer; for any two @scheme[eqv?] values, the
-returned integer is the same. Furthermore, for the result integer
-@scheme[_k] and any other exact integer @scheme[_j], @scheme[(= _k _j)]
-implies @scheme[(eq? _k _j)].}
+Returns a @tech{fixnum}; for any two calls with @scheme[eqv?] values,
+the returned number is the same.}
 
 
 @defproc[(equal-hash-code [v any/c]) exact-integer?]{
 
-Returns an exact integer; for any two @scheme[equal?] values, the
-returned integer is the same.  Furthermore, for the result integer
-@scheme[_k] and any other exact integer @scheme[_j], @scheme[(= _k _j)]
-implies @scheme[(eq? _k _j)]. A has code is computed even when
+Returns a @tech{fixnum}; for any two calls with @scheme[equal?] values,
+the returned number is the same. A hash code is computed even when
 @scheme[v] contains a cycle through pairs, vectors, boxes, and/or
 inspectable structure fields. See also @scheme[prop:equal+hash].}
 
-@defproc[(equal-secondary-hash-code [v any/c]) exact-integer?]{
+
+@defproc[(equal-secondary-hash-code [v any/c]) fixnum?]{
 
 Like @scheme[equal-hash-code], but computes a secondary value suitable
 for use in double hashing.}
-
