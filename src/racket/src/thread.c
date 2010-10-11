@@ -3688,10 +3688,10 @@ static int check_sleep(int need_activity, int sleep_now)
       }
 
       if (merge_time) {
-	double d = p->sleep_end;
+	double d;
 	double t;
 
-	d = (d - scheme_get_inexact_milliseconds());
+	d = (p_time - scheme_get_inexact_milliseconds());
 
 	t = (d / 1000);
 	if (t <= 0) {
