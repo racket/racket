@@ -717,16 +717,7 @@
                 (cons win r)))))))
      
      (define/public (register-collecting-blit x y w h on off on-x on-y off-x off-y)
-       (let ([on (if (and (zero? on-x)
-                          (zero? on-y)
-                          (= (send on get-width) w)
-                          (= (send on get-height) h))
-                     on
-                     (let ([bm (make-object bitmap% w h)])
-                       (let ([dc (make-object bitmap-dc% on)])
-                         (send dc draw-bitmap-section on 0 0 on-x on-y w h)
-                         (send dc set-bitmap #f)
-                         bm)))])
+       (let ([on (fix-bitmap-size on w h on-x on-y)])
          (let ([img (bitmap->image on)])
            (atomically
             (set! blits (cons (list x y w h img) blits))

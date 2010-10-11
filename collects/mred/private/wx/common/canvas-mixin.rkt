@@ -1,9 +1,11 @@
 #lang racket/base
 (require racket/class
+         racket/draw
          "backing-dc.rkt")
 
 (provide canvas-autoscroll-mixin
-         canvas-mixin)
+         canvas-mixin
+         fix-bitmap-size)
 
 ;; Implements canvas autoscroll, applied *before* platform-specific canvas
 ;; methods:
@@ -160,3 +162,16 @@
       (when (or paint-queued
                 (not (send (get-dc) can-backing-flush?)))
         (do-on-paint #f #f)))))
+
+;; useful for fixing the size of a collecting blit:
+(define (fix-bitmap-size on w h on-x on-y)
+  (if (and (zero? on-x)
+           (zero? on-y)
+           (= (send on get-width) w)
+           (= (send on get-height) h))
+      on
+      (let ([bm (make-object bitmap% w h)])
+        (let ([dc (make-object bitmap-dc% on)])
+          (send dc draw-bitmap-section on 0 0 on-x on-y w h)
+          (send dc set-bitmap #f)
+          bm))))
