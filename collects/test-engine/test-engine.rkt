@@ -150,8 +150,8 @@
 
     (define/private (clear-results event-space)
       (when event-space
-	(parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
-	  ((dynamic-require 'scheme/gui 'queue-callback)
+	(parameterize ([(dynamic-require 'mred/mred 'current-eventspace) event-space])
+	  ((dynamic-require 'mred/mred 'queue-callback)
 	   (lambda () (send test-display report-success))))))
 
     (define/public (summarize-results port)
@@ -181,12 +181,12 @@
     (define/public (display-results rep event-space)
       (cond
        [(and rep event-space)
-	(parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
-	  ((dynamic-require 'scheme/gui 'queue-callback)
+	(parameterize ([(dynamic-require 'mred/mred 'current-eventspace) event-space])
+	  ((dynamic-require 'mred/mred 'queue-callback)
 	   (lambda () (send rep display-test-results test-display))))]
        [event-space 
-	(parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
-	  ((dynamic-require 'scheme/gui 'queue-callback) (lambda () (send test-display display-results))))]
+	(parameterize ([(dynamic-require 'mred/mred 'current-eventspace) event-space])
+	  ((dynamic-require 'mred/mred 'queue-callback) (lambda () (send test-display display-results))))]
        [else (send test-display display-results)]))
 
     (define/public (display-untested port)
