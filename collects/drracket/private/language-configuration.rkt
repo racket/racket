@@ -1536,6 +1536,11 @@
                     (define/override (get-one-line-summary) one-line-summary)
                     (inherit get-module get-transformer-module get-init-code
                              use-namespace-require/copy-from-setting?)
+                    (define/override (front-end/interaction port settings)
+                      (let ([t (super front-end/interaction port settings)])
+                        (λ ()
+                          (parameterize ([read-accept-lang #f])
+                            (t)))))
                     (define/augment (capability-value key)
                       (cond
                         [(eq? key 'drscheme:autocomplete-words) 
