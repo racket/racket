@@ -1,5 +1,6 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
+         ffi/unsafe
           "../../syntax.rkt"
          "window.rkt"
          "wndclass.rkt"
@@ -13,7 +14,8 @@
 (define (panel-mixin %)
   (class %
     (inherit is-enabled-to-root?
-             reset-cursor-in-child)
+             reset-cursor-in-child
+             get-client-hwnd)
 
     (super-new)
 
@@ -63,6 +65,9 @@
             (send w send-leaves mk)
             #t)
           #f))
+
+    (define/override (wants-mouse-capture? control-hwnd)
+      (ptr-equal? (get-client-hwnd) control-hwnd))
 
     (define lbl-pos 'horizontal)
     (define/public (get-label-position) lbl-pos)

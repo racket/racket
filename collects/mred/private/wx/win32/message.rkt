@@ -31,13 +31,29 @@
 (define IMAGE_ICON 1)
 
 (define-user32 LoadIconW (_wfun _HINSTANCE _LONG -> _HICON))
+(define-kernel32 GetModuleFileNameW (_wfun _pointer _pointer _DWORD -> _DWORD))
+
+(define-shell32 ExtractIconW (_wfun _HINSTANCE _string/utf-16 _UINT -> (r : _HICON)
+                                    -> (or r (failed 'ExtractIconW))))
+                                           
+(define ERROR_INSUFFICIENT_BUFFER 122)
 
 (define app-icon
   (delay
     (let ()
-      ;; GetModuleFileNameW(NULL, name, 1023);
-      ;; icn = ExtractIconW(NULL, name, 0);
-      (LoadIconW #f IDI_APPLICATION))))
+      (let ([path
+             (let loop ([size 1024])
+               (let ([p (make-bytes (* (ctype-sizeof _WCHAR) 1024))])
+                 (let ([r (GetModuleFileNameW #f p size)])
+                   (cond
+                    [(and (or (zero? r) (= r size))
+                          (= (GetLastError) ERROR_INSUFFICIENT_BUFFER))
+                     (loop (* size 2))]
+                    [(zero? r) (failed 'GetModuleFileNameW)]
+                    [else (cast p _gcpointer _string/utf-16)]))))])
+        (if path
+            (ExtractIconW hInstance path 0)
+            (LoadIconW #f IDI_APPLICATION))))))
 (define warning-icon
   (delay
     (LoadIconW #f IDI_WARNING)))

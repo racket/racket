@@ -380,6 +380,9 @@
                                   (let loop () (pre-event-sync #t) (when (yield) (loop))))
                                 (void))))))
 
+     (define/override (wants-mouse-capture? control-hwnd)
+       (ptr-equal? canvas-hwnd control-hwnd))
+
      (define/override (definitely-wants-event? w msg wParam e) 
        (cond
         [(e . is-a? . key-event%)

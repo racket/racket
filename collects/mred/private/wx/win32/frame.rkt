@@ -234,6 +234,13 @@
       (set! mouse-frame this))
     #f)
 
+  (define/override (send-child-leaves mk)
+    (if (eq? mouse-frame this)
+        (if saved-child
+            (send saved-child send-leaves mk)
+            #f)
+        #f))
+
   (define/override (reset-cursor default)
     (if wait-cursor-on?
         (void (SetCursor (get-wait-cursor)))

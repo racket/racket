@@ -98,7 +98,7 @@
 		 (lambda (w h)
 		   (check-range-integer '(method top-level-window<%> resize) w)
 		   (check-range-integer '(method top-level-window<%> resize) h)
-		   (send wx set-size -1 -1 w h)))]
+		   (send wx set-size -11111 -11111 w h)))]
 
 	[get-focus-window (entry-point
 			   (lambda () (let ([w (send wx get-focus-window)])

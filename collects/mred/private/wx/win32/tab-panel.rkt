@@ -97,7 +97,10 @@
     (define tab-height 0)
 
     (set-control-font #f)
-    (auto-size choices 0 0 0 0 #:combine-width +
+    (auto-size (if (null? choices)
+                   '("Choice")
+                   choices)
+               0 0 0 0 #:combine-width +
                (lambda (w h)
                  (set! tab-height (+ h 6))
                  (set-size -11111 -11111 

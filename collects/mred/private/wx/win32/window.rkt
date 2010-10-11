@@ -54,6 +54,9 @@
 (define-user32 FillRect (_wfun _HDC _RECT-pointer _HBRUSH -> (r : _int)
                                -> (when (zero? r) (failed 'FillRect))))
 
+(define-user32 SetCapture (_wfun _HWND -> _HWND))
+(define-user32 ReleaseCapture (_wfun -> _BOOL))
+
 (define-cstruct _NMHDR
   ([hwndFrom _HWND]
    [idFrom _pointer]
@@ -248,7 +251,7 @@
         (let ([r (GetWindowRect hwnd)])
           (MoveWindow hwnd 
                       (if (= x -11111) (RECT-left r) x)
-                      (if (= y -11111) (RECT-right r) y)
+                      (if (= y -11111) (RECT-top r) y)
                       (if (= w -1) (- (RECT-right r) (RECT-left r)) w)
                       (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)
                       #t))
@@ -480,6 +483,12 @@
                     [alt-down #f]
                     [time-stamp 0]
                     [caps-down #f]))])
+        (unless nc?
+          (when (wants-mouse-capture? control-hwnd)
+            (when (memq type '(left-down right-down middle-down))
+              (SetCapture control-hwnd))
+            (when (memq type '(left-up right-up middle-up))
+              (ReleaseCapture))))
         (if mouse-in?
             (if (send-child-leaves (lambda (type) (make-e type)))
                 (cursor-updated-here)
@@ -530,6 +539,9 @@
                               (lambda () (dispatch-on-event/sync e))))))
 
   (define/public (send-child-leaves mk)
+    #f)
+
+  (define/public (wants-mouse-capture? control-hwnd)
     #f)
 
   (define/public (definitely-wants-event? w msg wParam e)
