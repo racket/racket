@@ -6,8 +6,10 @@
 [Integer -Integer]
 [Real -Real]
 [Exact-Rational -ExactRational]
-[Float -Flonum]
-[Nonnegative-Float -NonnegativeFlonum]
+[Float -Flonum] ;; these 2 are the default, 64-bit floats, can be optimized
+[Nonnegative-Float -NonnegativeFlonum] ;; associated test is: flonum? 
+[Inexact-Real -InexactReal] ;; any inexact real. could be 32- or 64-bit float
+                            ;; associated test is: inexact-real?
 [Exact-Positive-Integer -ExactPositiveInteger]
 [Exact-Nonnegative-Integer -ExactNonnegativeInteger]
 [Positive-Fixnum -PositiveFixnum]

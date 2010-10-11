@@ -233,9 +233,10 @@
 	      ;; value types              
 	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
 	      ;; now we encode the numeric hierarchy - bletch
+              [((Base: 'Integer _) (== -Real =t)) A0]
 	      [((Base: 'Integer _) (Base: 'Number _)) A0]
+              [((Base: 'Flonum _)  (Base: 'Inexact-Real _)) A0]
 	      [((Base: 'Flonum _)  (== -Real =t)) A0]
-	      [((Base: 'Integer _)  (== -Real =t)) A0]
 	      [((Base: 'Flonum _)  (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
 	      [((Base: 'Integer _) (Base: 'Exact-Rational _)) A0]
@@ -263,9 +264,13 @@
 	      [((== -Fixnum =t) (Base: 'Integer _)) A0]
 
               [((Base: 'Nonnegative-Flonum _) (Base: 'Flonum _)) A0]
+              [((Base: 'Nonnegative-Flonum _) (Base: 'Inexact-Real _)) A0]
               [((Base: 'Nonnegative-Flonum _) (Base: 'Number _)) A0]
 
-              [((Base: 'InexactComplex _) (Base: 'Number _)) A0]
+              [((Base: 'Inexact-Real _) (== -Real =t)) A0]
+              [((Base: 'Inexact-Real _) (Base: 'Number _)) A0]
+
+              [((Base: 'Inexact-Complex _) (Base: 'Number _)) A0]
 
               
               ;; values are subtypes of their "type"
@@ -273,7 +278,7 @@
 	      [((Value: (and n (? number?) (? exact?) (? rational?))) (Base: 'Exact-Rational _)) A0]
 	      [((Value: (? exact-nonnegative-integer? n)) (== -Nat =t)) A0]
 	      [((Value: (? exact-positive-integer? n)) (Base: 'Exact-Positive-Integer _)) A0]	      
-	      [((Value: (? inexact-real? n)) (Base: 'Flonum _)) A0]
+	      [((Value: (? flonum? n)) (Base: 'Flonum _)) A0]
 	      [((Value: (? real? n)) (== -Real =t)) A0]
 	      [((Value: (? number? n)) (Base: 'Number _)) A0]
 

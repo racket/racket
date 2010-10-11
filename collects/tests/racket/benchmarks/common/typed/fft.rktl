@@ -11,7 +11,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (: pi Float)
-(define pi (assert (atan 0 -1) inexact-real?))
+(define pi (assert (atan 0 -1) flonum?))
 
 ;;; FFT -- This is an FFT benchmark written by Harry Barrow.
 ;;; It tests a variety of floating point operations,

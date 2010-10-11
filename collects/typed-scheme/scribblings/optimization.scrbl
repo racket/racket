@@ -39,18 +39,17 @@ For example, the following programs both typecheck:
              (f 3.5)]
 
 However, the second one uses more informative types: the
-@racket[Float] type includes only
-@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
-"inexact numbers"]{inexact}
-@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{real numbers}
+@racket[Float] type includes only 64-bit floating-point numbers
 whereas the
 @racket[Real] type includes both exact and
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
 "inexact numbers"]{inexact}
-@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{real numbers}.
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{real numbers}
+and the @racket[Inexact-Real] type includes both 32- and 64-bit
+floating-point numbers.
 Typed Racket's optimizer can optimize the latter program to use
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
-"inexact numbers"]{inexact}
+"inexact numbers"]{float}
 -specific operations whereas it cannot do anything with the
 former program.
 
@@ -65,7 +64,9 @@ instance, the result of @racket[(* 2.0 0)] is @racket[0] which is not
 a @racket[Float]. This can result in missed optimizations. To prevent
 this, when mixing floating-point numbers and exact reals, coerce exact
 reals to floating-point numbers using @racket[exact->inexact]. This is
-not necessary when using @racket[+] or @racket[-].
+not necessary when using @racket[+] or @racket[-]. When mixing
+floating-point numbers of different precisions, results use the
+highest precision possible.
 
 On a similar note, the @racket[Inexact-Complex] type is preferable to
 the @racket[Complex] type for the same reason. Typed Racket can keep

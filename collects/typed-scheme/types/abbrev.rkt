@@ -153,17 +153,20 @@
 ;; Numeric hierarchy
 (define -Number (make-Base 'Number #'number?))
 
-(define -InexactComplex (make-Base 'InexactComplex
+(define -InexactComplex (make-Base 'Inexact-Complex
                                    #'(and/c number?
                                             (lambda (x)
-                                              (and (inexact-real? (imag-part x))
-                                                   (inexact-real? (real-part x)))))))
+                                              (and (flonum? (imag-part x))
+                                                   (flonum? (real-part x)))))))
 
-(define -Flonum (make-Base 'Flonum #'inexact-real?))
+;; default 64-bit floats
+(define -Flonum (make-Base 'Flonum #'flonum?))
 (define -NonnegativeFlonum (make-Base 'Nonnegative-Flonum
-                                      #'(and/c inexact-real?
+                                      #'(and/c flonum?
                                                (or/c positive? zero?)
                                                (lambda (x) (not (eq? x -0.0))))))
+;; could be 32- or 64-bit floats
+(define -InexactReal (make-Base 'Inexact-Real #'inexact-real?))
 
 (define -ExactRational 
   (make-Base 'Exact-Rational #'(and/c number? rational? exact?)))
@@ -177,7 +180,7 @@
   (make-Base 'Negative-Fixnum #'(and/c number? fixnum? negative?)))
 
 (define -Zero (-val 0))
-(define -Real (*Un -Flonum -ExactRational))
+(define -Real (*Un -InexactReal -ExactRational))
 (define -Fixnum (*Un -PositiveFixnum -NegativeFixnum -Zero))
 (define -NonnegativeFixnum (*Un -PositiveFixnum -Zero))
 (define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))

@@ -39,6 +39,7 @@ any expression of this type will not evaluate to a value.}
 @defidform[Real]
 @defidform[Float]
 @defidform[Nonnegative-Float]
+@defidform[Inexact-Real]
 @defidform[Exact-Rational]
 @defidform[Integer]
 @defidform[Natural]
@@ -50,7 +51,11 @@ any expression of this type will not evaluate to a value.}
 @defidform[Zero]
 )]{These types represent the hierarchy of @rtech{numbers} of Racket.
 @racket[Integer] includes only @rtech{integers} that are @rtech{exact
-numbers}, corresponding to the predicate @racket[exact-integer?]. 
+numbers}, corresponding to the predicate @racket[exact-integer?].
+@racket{Real} includes both exact and inexact reals.
+An @racket{Inexact-Real} can be either 32- or 64-bit floating-point
+numbers. @racket{Float} is restricted to 64-bit floats, which are the
+default in Racket.
 
 @ex[
 7
