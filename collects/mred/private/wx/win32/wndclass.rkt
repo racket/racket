@@ -58,7 +58,7 @@
 			_HWND _UINT _WPARAM _LPARAM -> _LRESULT))
 
 (define-cstruct _WNDCLASS ([style _UINT]
-			   [lpfnWndProc _WndProc]
+			   [lpfnWndProc _fpointer]
 			   [cbClsExtra _int]
 			   [cbWndExtra _int]
 			   [hInstace _HINSTANCE]
@@ -77,6 +77,8 @@
                                     -> (if r i (failed 'GetClassInfoW))))
 
 (define-user32 DefWindowProcW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
+(define-user32 DefWindowProcW/raw _fpointer
+  #:c-id DefWindowProcW)
 
 #;(define-user32 PostQuitMessage (_wfun _int -> _void))
 
@@ -86,6 +88,8 @@
         (send wx wndproc w msg wparam lparam DefWindowProcW)
         (DefWindowProcW w msg wparam lparam))))
 
+(define wind-proc-ptr (function-ptr wind-proc _WndProc))
+
 (define hInstance (GetModuleHandleW #f))
 
 (define background-hbrush (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
@@ -93,7 +97,7 @@
                             p))
  
 (void (RegisterClassW (make-WNDCLASS CS_OWNDC
-				     wind-proc
+				     wind-proc-ptr
 				     0
                                      0
 				     hInstance
@@ -104,7 +108,7 @@
 				     "PLTFrame")))
 
 (void (RegisterClassW (make-WNDCLASS 0 ; using CS_OWNDC creates trouble when resizing?
-				     wind-proc
+				     wind-proc-ptr
 				     0
                                      0
 				     hInstance
@@ -114,19 +118,8 @@
 				     #f ; menu
 				     "PLTCanvas")))
 
-(void (RegisterClassW (make-WNDCLASS CS_OWNDC
-                                     DefWindowProcW
-				     0
-                                     0
-				     hInstance
-				     #f
-                                     #f
-                                     #f
-				     #f
-				     "PLTBlitTarget")))
-
 (void (RegisterClassW (make-WNDCLASS 0
-				     wind-proc
+				     wind-proc-ptr
 				     0
                                      0
 				     hInstance
@@ -139,7 +132,7 @@
 (define controls-are-transparent? #f)
 
 (void (RegisterClassW (make-WNDCLASS 0
-				     wind-proc
+				     wind-proc-ptr
 				     0
                                      0
 				     hInstance

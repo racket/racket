@@ -442,11 +442,11 @@
      
      (define/private (register-one-blit x y w h on-hbitmap off-hbitmap)
        (atomically
-        (let ([hwnd (create-gc-window canvas-hwnd x y w h)])
+        (let ([hdc (create-gc-dc canvas-hwnd)])
           (let ([r (scheme_add_gc_callback
-                    (make-gc-show-desc hwnd on-hbitmap w h)
-                    (make-gc-hide-desc hwnd off-hbitmap w h))])
-            (cons hwnd r)))))
+                    (make-gc-show-desc hdc on-hbitmap x y w h)
+                    (make-gc-hide-desc hdc off-hbitmap x y w h))])
+            (cons hdc r)))))
      
      (define/public (register-collecting-blit x y w h on off on-x on-y off-x off-y)
        (let ([on (fix-bitmap-size on w h on-x on-y)]
@@ -459,7 +459,7 @@
      (define/public (unregister-collecting-blits)
        (atomically
         (for ([r (in-list reg-blits)])
-          (DestroyWindow (car r))
+          (ReleaseDC canvas-hwnd (car r))
           (scheme_remove_gc_callback (cdr r)))
         (set! reg-blits null))))))
 
