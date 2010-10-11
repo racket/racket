@@ -177,7 +177,7 @@ automatically. The resulting port is thread-safe, but not kill-safe
 (i.e., if a thread is terminated or suspended while using the port,
 the port may become damaged).
 
-The @scheme[read-in], @scheme[close], @scheme[get-lcoation],
+The @scheme[read-in], @scheme[close], @scheme[get-location],
 @scheme[count-lines!], @scheme[init-position], and
 @scheme[buffer-mode] procedures are the same as for
 @scheme[make-input-port].
@@ -191,14 +191,14 @@ not used when a peek request has an associated progress event.
 
 The @scheme[buffering?] argument determines whether @scheme[read-in]
 can be called to read more characters than are immediately demanded by
-the user of the new port. If @scheme[buffer] mode is not @scheme[#f],
+the user of the new port. If @scheme[buffer-mode] is not @scheme[#f],
 then @scheme[buffering?] determines the initial buffer mode, and
 @scheme[buffering?] is enabled after a buffering change only if the
 new mode is @scheme['block].
 
 If @scheme[on-consumed] is not @scheme[#f], it is called when data is
 read from the port, as opposed to merely peeked. The argument to
-@scheme[on-consume] is the result value of the port's reading
+@scheme[on-consumed] is the result value of the port's reading
 procedure, so it can be an integer or any result from
 @scheme[read-in].}
 
