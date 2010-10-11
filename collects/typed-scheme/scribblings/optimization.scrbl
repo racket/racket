@@ -68,7 +68,7 @@ not necessary when using @racket[+] or @racket[-]. When mixing
 floating-point numbers of different precisions, results use the
 highest precision possible.
 
-On a similar note, the @racket[Inexact-Complex] type is preferable to
+On a similar note, the @racket[Float-Complex] type is preferable to
 the @racket[Complex] type for the same reason. Typed Racket can keep
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
 "inexact numbers"]{inexact}
@@ -93,8 +93,8 @@ present and
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
 "inexact numbers"]{inexact}
 for the literal to be of type
-@racket[Inexact-Complex]; @racket[0.0+1.0i] is of type
-@racket[Inexact-Complex] but @racket[+1.0i] is not.
+@racket[Float-Complex]; @racket[0.0+1.0i] is of type
+@racket[Float-Complex] but @racket[+1.0i] is not.
 To get the most of
 Typed Racket's optimizer, you should also favor rectangular
 coordinates over polar coordinates.

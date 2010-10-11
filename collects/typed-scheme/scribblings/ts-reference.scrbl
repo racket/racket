@@ -35,7 +35,7 @@ any expression of this type will not evaluate to a value.}
 @deftogether[(
 @defidform[Number]
 @defidform[Complex]
-@defidform[Inexact-Complex]
+@defidform[Float-Complex]
 @defidform[Real]
 @defidform[Float]
 @defidform[Nonnegative-Float]
