@@ -21,10 +21,115 @@ the settings above should match r5rs
          (prefix-in fw: framework))
 
 (define language (make-parameter "<<not a language>>"))
+(define defs-prefix (make-parameter ""))
 
 ;; set-language : boolean -> void
 (define (set-language close-dialog?)
-  (set-language-level! (language) close-dialog?))
+  (if (eq? (car (language)) 'module)
+      (set-module-language! close-dialog?)
+      (set-language-level! (language) close-dialog?)))
+
+
+;                                             
+;                                             
+;                                             
+;                                             
+;                        ;;         ;;        
+;                        ;;         ;;        
+;   ;;;;; ;;    ;;;   ;;;;;  ;; ;;  ;;   ;;;; 
+;   ;;;;;;;;;  ;;;;;  ;;;;;  ;; ;;  ;;  ;; ;;;
+;   ;; ;;  ;; ;;;  ;;;;; ;;  ;; ;;  ;; ;;;;;;;
+;   ;; ;;  ;; ;;;  ;;;;; ;;  ;; ;;  ;; ;;;    
+;   ;; ;;  ;;  ;;;;;  ;;;;;  ;;;;;  ;;  ;; ;; 
+;   ;; ;;  ;;   ;;;   ;;;;;  ;;;;;  ;;   ;;;; 
+;                                             
+;                                             
+;                                             
+;                                             
+
+(define (module-lang)
+  (parameterize ([language '(module "racket")]
+                 [defs-prefix "#lang racket\n"])
+    
+    (check-top-of-repl)
+    
+    (prepare-for-test-expression)
+    
+    (test-expression "'|.|" "'|.|")
+    (test-expression '("(equal? (list " image ") (list " image "))") 
+                     "#t")
+    (test-expression "(define x 1)(define x 2)" #rx"duplicate definition for identifier in: x" "")
+    
+    (test-expression "(define-struct spider (legs))(make-spider 4)" 
+                     "#<spider>"
+                     "define-values: cannot re-define a constant: struct:spider\n#<spider>")
+    
+    (test-expression "(sqrt -1)" "0+1i")
+    
+    (test-expression "class" (regexp "class: bad syntax in: class"))
+    (test-expression "shared" (regexp "shared: bad syntax in: shared"))
+    
+    (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of \"\\.\"" "")
+    (test-expression "'(1 . 2)" "'(1 . 2)")
+    
+    (test-expression "(define (f define) 1)" "" "define-values: cannot re-define a constant: f")
+    (test-expression "(define (f car) 1)" "" "define-values: cannot re-define a constant: f")
+    (test-expression "(define (f empty) 1)" "" "define-values: cannot re-define a constant: f")
+    
+    (test-expression "call/cc" "#<procedure:call-with-current-continuation>")
+    
+    (test-expression "(error 'a \"~a\" 1)" "{stop-multi.png} {stop-22x22.png} a: 1")
+    (test-expression "(error \"a\" \"a\")" "{stop-multi.png} {stop-22x22.png} a \"a\"")
+    
+    (test-expression "(time 1)" 
+                     #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
+    
+    (test-expression "true" "#t")
+    (test-expression "mred^" 
+                     #rx"unbound identifier in module in: mred\\^"
+                     #rx"reference to undefined identifier: mred\\^")
+    (test-expression "(eq? 'a 'A)" "#f")
+    (test-expression "(set! x 1)" 
+                     #rx"set!: unbound identifier in module in: x"
+                     #rx"set!: cannot set undefined variable: x")
+    (test-expression "(define qqq 2) (set! qqq 1)" "")
+    (test-expression "(cond [(= 1 2) 3])" "")
+    (test-expression "(cons 1 2)" "'(1 . 2)")
+    (test-expression "(+ (list 1) 2)" (regexp (regexp-quote "+: expects type <number> as 1st argument, given: '(1); other arguments were: 2")))
+    (test-expression "'(1)" "'(1)")
+    (test-expression "(define shrd (box 1)) (list shrd shrd)"
+                     "'(#&1 #&1)"
+                     "define-values: cannot re-define a constant: shrd\n'(#&1 #&1)")
+    (test-expression "(local ((define x x)) 1)" "1")
+    (test-expression "(letrec ([x x]) 1)" "1")
+    (test-expression "(if 1 1 1)" "1")
+    (test-expression "(+ 1)" "1")
+    
+    (test-expression "1.0" "1.0")
+    (test-expression "#i1.0" "1.0")
+    (test-expression "4/3" "{number 4/3 \"1 1/3\" mixed}")
+    (test-expression "1/3" "{number 1/3 \"1/3\" mixed}")
+    (test-expression "-4/3" "{number -4/3 \"-1 1/3\" mixed}")
+    (test-expression "-1/3" "{number -1/3 \"-1/3\" mixed}")
+    (test-expression "3/2" "{number 3/2 \"1 1/2\" mixed}")
+    (test-expression "1/2" "{number 1/2 \"1/2\" mixed}")
+    (test-expression "-1/2" "{number -1/2 \"-1/2\" mixed}")
+    (test-expression "-3/2" "{number -3/2 \"-1 1/2\" mixed}")
+    (test-expression "+1/3i" "0+1/3i")
+    (test-expression "+1/2i" "0+1/2i")
+    (test-expression "779625/32258" "{number 779625/32258 \"24 5433/32258\" mixed}")
+    (test-expression "(exact? 1.5)" "#f")
+    
+    (test-expression "(let ([f (lambda (x) x)]) f)" "#<procedure:f>")
+    (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
+    
+    (test-expression "(list 1)" "'(1)")
+    (test-expression "(car (list))" "{stop-multi.png} {stop-22x22.png} car: expects argument of type <pair>; given '()")
+    
+    (test-expression "(current-command-line-arguments)" "'#()")
+    (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
+    
+    (test-expression "#lang racket" #rx"module: illegal use \\(not at top-level\\)" #rx"read: #lang not enabled in the current context")))
 
 
 ;                                                                               
@@ -121,8 +226,11 @@ the settings above should match r5rs
     (test-expression "(car (list))" "{stop-multi.png} {stop-22x22.png} car: expects argument of type <pair>; given ()")
     
     (test-expression "(current-command-line-arguments)" "#()")
-    (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")))
-
+    (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
+    
+    (test-expression "#lang racket"
+                     ""
+                     #rx"read: #lang not enabled in the current context")))
 
 ;                                      
 ;                                      
@@ -225,7 +333,11 @@ the settings above should match r5rs
     
     (test-expression "argv" "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: argv")
     (test-expression "(define-syntax app syntax-case)" 
-                     "{stop-22x22.png} macro-transformer: only a `syntax-rules' form is allowed in: syntax-case")))
+                     "{stop-22x22.png} macro-transformer: only a `syntax-rules' form is allowed in: syntax-case")
+    
+    (test-expression "#lang racket"
+                     (regexp (regexp-quote "#%module-begin: illegal use (not a module body) in: (#%module-begin)"))
+                     #rx"read: #lang not enabled in the current context")))
 
 
 ;                                                             
@@ -385,7 +497,11 @@ the settings above should match r5rs
                      "reference to an identifier before its definition: argv")
     (test-expression "(define-syntax app syntax-case)"
                      "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")))
+                     "reference to an identifier before its definition: define-syntax")
+    
+    (test-expression "#lang racket"
+                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "read: #lang not enabled in the current context")))
 
 
 ;                                                                            
@@ -548,7 +664,11 @@ the settings above should match r5rs
     
     (test-expression "(define-syntax app syntax-case)" 
                      "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")))
+                     "reference to an identifier before its definition: define-syntax")
+    
+    (test-expression "#lang racket"
+                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "read: #lang not enabled in the current context")))
 
 
 ;                                                                                          
@@ -703,7 +823,11 @@ the settings above should match r5rs
     
     (test-expression "(define-syntax app syntax-case)" 
                      "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")))
+                     "reference to an identifier before its definition: define-syntax")
+    
+    (test-expression "#lang racket"
+                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "read: #lang not enabled in the current context")))
 
 
 
@@ -856,7 +980,11 @@ the settings above should match r5rs
     
     (test-expression "(define-syntax app syntax-case)" 
                      "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")))
+                     "reference to an identifier before its definition: define-syntax")
+    
+    (test-expression "#lang racket"
+                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "read: #lang not enabled in the current context")))
 
 
 
@@ -1011,7 +1139,11 @@ the settings above should match r5rs
     
     (test-expression "(define-syntax app syntax-case)" 
                      "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")))
+                     "reference to an identifier before its definition: define-syntax")
+    
+    (test-expression "#lang racket"
+                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "read: #lang not enabled in the current context")))
 
 
 
@@ -1076,7 +1208,7 @@ the settings above should match r5rs
       (fw:test:menu-select "Testing" "Disable tests"))
     (do-execute drs)
     (let* ([interactions (send drs get-interactions-text)]
-           [short-lang (car (last-pair (language)))]
+           [short-lang (last (language))]
            [get-line (lambda (n) (send interactions get-text 
                                        (send interactions paragraph-start-position n)
                                        (send interactions paragraph-end-position n)))]
@@ -1267,7 +1399,7 @@ the settings above should match r5rs
                 (lambda () (fw:test:menu-select "Insert" "Insert Image..."))
                 (simplify-path (build-path (collection-path "icons") "recycle.png")))]
               [(string? item)
-               (type-in-definitions drs item)]
+               (insert-in-definitions drs item)]
               [(eq? item 'xml)
                (fw:test:menu-select "Insert" "Insert XML Box")
                (for-each fw:test:keystroke (string->list "<a><b>"))]
@@ -1291,6 +1423,7 @@ the settings above should match r5rs
               [(procedure? expected)
                "FAILED: ~s ~s expected ~s to pass predicate ~s, got ~s\n"]))])
     (clear-definitions drs)
+    (insert-in-definitions drs (defs-prefix))
     (cond
       [(pair? expression) (for-each handle-insertion expression)]
       [else (handle-insertion expression)])
@@ -1305,13 +1438,19 @@ the settings above should match r5rs
       (when (regexp-match re:out-of-sync got)
         (error 'text-expression "got out of sync message"))
       (unless (check-expectation defs-expected got)
-        (printf (make-err-msg defs-expected) 
-                'definitions (language) expression defs-expected got)))
+        (fprintf (current-error-port)
+                 (make-err-msg defs-expected) 
+                 'definitions (language) expression defs-expected got)))
     
-    (let ([s (make-semaphore 0)])
+    (let ([s (make-semaphore 0)]
+          [dp (defs-prefix)])
       (queue-callback
        (λ ()
-         (send definitions-text select-all)
+         ;; select all except the defs-prefix
+         (send definitions-text set-position
+               (string-length dp)
+               (send definitions-text last-position))
+         
          (send definitions-text copy)
          (send interactions-text set-position
                (send interactions-text last-position)
@@ -1332,24 +1471,33 @@ the settings above should match r5rs
         (when (regexp-match re:out-of-sync got)
           (error 'text-expression "got out of sync message"))
         (unless (check-expectation repl-expected got)
-          (printf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got))))))
+          (fprintf (current-error-port)
+                   (make-err-msg repl-expected)
+                   'interactions
+                   (language)
+                   expression repl-expected got))))))
 
 
 (define-syntax (go stx)
   (syntax-case stx ()
     [(_ arg)
      (identifier? (syntax arg))
-     (syntax (begin (printf ">> starting ~a\n" (syntax->datum #'arg))
+     (syntax (begin (flush-output)
+                    (printf ">> starting ~a\n" (syntax->datum #'arg))
+                    (flush-output)
                     (arg)
-                    (printf ">> finished ~a\n" (syntax->datum #'arg))))]))
+                    (flush-output)
+                    (printf ">> finished ~a\n" (syntax->datum #'arg))
+                    (flush-output)))]))
 
 (define (run-test)
+  (go module-lang)
+  (go r5rs)
   (go beginner)
   (go beginner/abbrev)
   (go intermediate)
   (go intermediate/lambda)
   (go advanced)
-  (go pretty-big)
-  (go r5rs))
+  (go pretty-big))
 
 (fire-up-drscheme-and-run-tests run-test)
