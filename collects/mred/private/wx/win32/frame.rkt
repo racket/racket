@@ -31,7 +31,11 @@
 
 (define-user32 SystemParametersInfoW (_wfun _UINT _UINT _pointer _UINT -> (r : _BOOL)
                                             -> (unless r (failed 'SystemParametersInfo))))
-
+(define-cstruct _MINMAXINFO ([ptReserved _POINT]
+                             [ptMaxSize _POINT]
+                             [ptMaxPosition _POINT]
+                             [ptMinTrackSize _POINT]
+                             [ptMaxTrackSize _POINT]))
 
 (define SPI_GETWORKAREA            #x0030)
 
@@ -108,6 +112,11 @@
   (define saved-title (or label ""))
   (define hidden-zoomed? #f)
 
+  (define min-width #f)
+  (define min-height #f)
+  (define max-width #f)
+  (define max-height #f)
+
   (super-new [parent #f]
 	     [hwnd (create-frame parent label w h style)]
 	     [style (cons 'invisible style)])
@@ -174,7 +183,29 @@
                          (lambda () (on-menu-click))
                          (void))
       0]
+     [(= msg WM_GETMINMAXINFO)
+      (let ([mmi (cast lParam _LPARAM _MINMAXINFO-pointer)])
+        (when (or max-width max-height)
+          (set-MINMAXINFO-ptMaxTrackSize!
+           mmi
+           (make-POINT (or max-width
+                           (POINT-x (MINMAXINFO-ptMaxTrackSize mmi)))
+                       (or max-height
+                           (POINT-y (MINMAXINFO-ptMaxTrackSize mmi))))))
+        (when (or min-width min-height)
+          (set-MINMAXINFO-ptMinTrackSize!
+           mmi
+           (make-POINT (or min-width
+                           (POINT-x (MINMAXINFO-ptMinTrackSize mmi)))
+                       (or min-height
+                           (POINT-y (MINMAXINFO-ptMinTrackSize mmi)))))))
+      0]
      [else (super wndproc w msg wParam lParam default)]))
+
+  (define/override (set-size x y w h)
+    (unless (and (= w -1) (= h -1))
+      (maximize #f))
+    (super set-size x y w h))
 
   (define/public (on-close) (void))
 
@@ -196,7 +227,10 @@
   (def/public-unimplemented on-mdi-activate)
 
   (define/public (enforce-size min-x min-y max-x max-y step-x step-y)
-    (void))
+    (set! min-width (max 1 min-x))
+    (set! min-height (max 1 min-y))
+    (set! max-width (and (positive? max-x) max-x))
+    (set! max-height (and (positive? max-y) max-y)))
 
   (define focus-window-path #f)
   (define/override (not-focus-child v)
@@ -312,10 +346,10 @@
   
   (define/public (maximize on?)
     (if (is-shown?)
-        (set! hidden-zoomed? (and on? #t))
         (ShowWindow hwnd (if on?
                              SW_MAXIMIZE
-                             SW_RESTORE))))
+                             SW_RESTORE))
+        (set! hidden-zoomed? (and on? #t))))
     
   (def/public-unimplemented iconized?)
   (def/public-unimplemented get-menu-bar)
