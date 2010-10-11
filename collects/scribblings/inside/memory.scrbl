@@ -1066,6 +1066,19 @@ foreign function to be called. The following protocols are supported:
  corresponds to @cpp{void (*)(void*, void*, void*, int, int, int, int,
  int, int, int, int, int)}.}
 
+ @item{@racket['osapi_ptr_int->void] corresponds to @cpp{void
+ (*)(void*, int)}, but using the stdcall calling convention
+ under Windows.}
+
+ @item{@racket['osapi_ptr_ptr->void] corresponds to @cpp{void
+ (*)(void*, void*)}, but using the stdcall calling convention
+ under Windows.}
+
+ @item{@racket['osapi_ptr_int_int_int_int_ptr_int_int_long->void]
+ corresponds to @cpp{void (*)(void*, int, int, int, int, void*,
+ int, int, long)}, but using the stdcall calling convention
+ under Windows.}
+
 ]
 
 After the protocol symbol, the vector should contain a pointer to a
