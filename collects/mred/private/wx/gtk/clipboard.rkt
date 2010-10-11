@@ -94,16 +94,20 @@
         ;; In clipboard mode (as opposed to X selection), we can get the data
         ;; now, so it's ready if anyone asks:
         (let ([all-data (for/list ([t (in-list types)])
-                          (send c get-data t))])
-          (let ([target-strings (malloc 'raw _byte (+ (length types) (apply + (map string-utf-8-length types))))]
+                          (send c get-data t))]
+	      [types (for/list ([t (in-list types)])
+		       (if (equal? t "TEXT")
+			   "UTF8_STRING"
+			   t))])
+          (let ([target-strings (malloc 'raw _byte (+ (length types)
+						      (apply + (map string-utf-8-length types))))]
                 [targets (malloc _GtkTargetEntry (length types))])
-            (for/fold ([offset 0])
-                ([str (in-list types)]
-                 [i (in-naturals)])
+            (for/fold ([offset 0]) ([str (in-list types)]
+				    [i (in-naturals)])
               (let ([t (cast (ptr-add targets i _GtkTargetEntry) _pointer _GtkTargetEntry-pointer)])
                 (set-GtkTargetEntry-target! t (ptr-add target-strings offset))
-                (set-GtkTargetEntry-flags! t i)
-                (set-GtkTargetEntry-info! t 0))
+                (set-GtkTargetEntry-flags! t 0)
+                (set-GtkTargetEntry-info! t i))
               (let ([bstr (string->bytes/utf-8 str)])
                 (memcpy target-strings offset bstr 0 (bytes-length bstr))
                 (let ([offset (+ offset (bytes-length bstr))])
@@ -158,7 +162,10 @@
                                        (gtk_selection_data_get_length v)
                                        1)])
                             (gtk_selection_data_free v)
-                            bstr)))])
+                            bstr)))]
+	  [format (if (equal? format "TEXT")
+		      "UTF8_STRING"
+		      format)])
       (process (gtk_clipboard_wait_for_contents cb (gdk_atom_intern format #t)))))
 
   (define/public (get-text-data)
