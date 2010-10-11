@@ -14,7 +14,6 @@
 (define-gdi32 CreateCompatibleDC (_wfun _HDC -> _HDC))
 (define-gdi32 DeleteDC (_wfun _HDC -> (r : _BOOL)
                               -> (unless r (failed 'DeleteDC))))
-(define-gdi32 SelectObject (_wfun _HDC _HBITMAP -> _HBITMAP))
 
 (define (bitmap->hbitmap bm)
   (let* ([w (send bm get-width)]

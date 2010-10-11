@@ -16,6 +16,8 @@
          "window.rkt"
          "dc.rkt"
          "item.rkt"
+         "hbitmap.rkt"
+         "gcwin.rkt"
          "theme.rkt")
 
 (provide canvas%)
@@ -29,11 +31,13 @@
                                     -> (unless r (failed 'ShowScrollbar))))
 
 (define-gdi32 CreateSolidBrush (_wfun _COLORREF -> _HBRUSH))
-(define-gdi32 SelectObject (_wfun _HDC _pointer -> _pointer))
 (define-gdi32 DeleteObject (_wfun _pointer -> (r : _BOOL)
                                   -> (unless r (failed 'DeleteObject))))
 (define-user32 FillRect (_wfun _HDC _RECT-pointer _HBRUSH -> (r : _int)
                                -> (when (zero? r) (failed 'FillRect))))
+
+(define-user32 DestroyWindow (_wfun _HWND -> (r : _BOOL)
+                                    -> (unless r (failed 'DestroyWindow))))
 
 (define _HRGN _pointer)
 (define-user32 GetDCEx (_wfun _HWND _HRGN _DWORD -> _HDC))
@@ -432,5 +436,31 @@
      (def/public-unimplemented warp-pointer)
 
      (define/public (set-resize-corner on?)
-       (void)))))
+       (void))
+
+     (define reg-blits null)
+     
+     (define/private (register-one-blit x y w h on-hbitmap off-hbitmap)
+       (atomically
+        (let ([hwnd (create-gc-window canvas-hwnd x y w h)])
+          (let ([r (scheme_add_gc_callback
+                    (make-gc-show-desc hwnd on-hbitmap w h)
+                    (make-gc-hide-desc hwnd off-hbitmap w h))])
+            (cons hwnd r)))))
+     
+     (define/public (register-collecting-blit x y w h on off on-x on-y off-x off-y)
+       (let ([on (fix-bitmap-size on w h on-x on-y)]
+             [off (fix-bitmap-size off w h off-x off-y)])
+         (let ([on-hbitmap (bitmap->hbitmap on)]
+               [off-hbitmap (bitmap->hbitmap off)])
+           (atomically
+            (set! reg-blits (cons (register-one-blit x y w h on-hbitmap off-hbitmap) reg-blits))))))
+     
+     (define/public (unregister-collecting-blits)
+       (atomically
+        (for ([r (in-list reg-blits)])
+          (DestroyWindow (car r))
+          (scheme_remove_gc_callback (cdr r)))
+        (set! reg-blits null))))))
+
 

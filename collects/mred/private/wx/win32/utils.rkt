@@ -30,7 +30,8 @@
          GetMenuState
          CheckMenuItem
          ModifyMenuW
-         RemoveMenu)
+         RemoveMenu
+         SelectObject)
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))
@@ -100,3 +101,5 @@
                                   -> (unless r (failed 'ModifyMenuW))))
 (define-user32 RemoveMenu (_wfun _HMENU _UINT _UINT -> (r : _BOOL)
                                  -> (unless r (failed 'RemoveMenu))))
+
+(define-gdi32 SelectObject (_wfun _HDC _pointer -> _pointer))

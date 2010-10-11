@@ -114,6 +114,17 @@
 				     #f ; menu
 				     "PLTCanvas")))
 
+(void (RegisterClassW (make-WNDCLASS CS_OWNDC
+                                     DefWindowProcW
+				     0
+                                     0
+				     hInstance
+				     #f
+                                     #f
+                                     #f
+				     #f
+				     "PLTBlitTarget")))
+
 (void (RegisterClassW (make-WNDCLASS 0
 				     wind-proc
 				     0
