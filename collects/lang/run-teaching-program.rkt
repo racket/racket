@@ -57,7 +57,6 @@
                 #f
                 `(,#'module ,module-name ,language-module 
                             ,@(map (λ (x) `(require ,x)) teachpacks)
-                            ,@body-exps
                             ,@(if enable-testing?
                                   (if (null? body-exps)
                                       '() 
@@ -65,24 +64,26 @@
                                       ;; over to the one that is used in the REPL when module->namepsace
                                       ;; grabs a hold of this module to make a namespace for the REPL
                                       `(,(syntax-property
-					  #'(define test~object (namespace-variable-value 'test~object))
-					  'test-call #t)
-                                        (,#'test)))
-                                  '()))))
+                                          #'(define test~object (namespace-variable-value 'test~object))
+                                          'test-call #t)))
+                                  '())
+                            ,@body-exps)))
               rep)))]
         [(require)
          (set! state 'done-or-exn)
          (stepper-syntax-property
-          (quasisyntax
-           (let ([done-already? #f])
-             (dynamic-wind
-              void
-              (lambda () 
-                (dynamic-require ''#,module-name #f))  ;; work around a bug in dynamic-require
-              (lambda () 
-                (unless done-already?
-                  (set! done-already? #t)
-                  (current-namespace (module->namespace ''#,module-name)))))))
+          #`(let ([done-already? #f])
+              (dynamic-wind
+               void
+               (lambda () 
+                 (dynamic-require ''#,module-name #f))  ;; work around a bug in dynamic-require
+               (lambda () 
+                 (unless done-already?
+                   (set! done-already? #t)
+                   #,(if enable-testing? 
+                         #'(test) 
+                         #'(begin))
+                   (current-namespace (module->namespace ''#,module-name))))))
           'stepper-skip-completely
           #t)]
         [(done-or-exn)
