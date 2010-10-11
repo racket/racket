@@ -5,6 +5,7 @@
 (define (map-key-code v)
   (hash-ref
    #hash((#xff08 . #\backspace)
+         (#xffff . #\rubout)
          (#xff09 . #\tab)
          (#xff0a . #\newline)
          (#xff0d . #\return)
