@@ -42,7 +42,7 @@
     set-get-outer-panel)
 
   (define area%
-    (class100* mred% (area<%>) (mk-wx get-wx-pan mismatches prnt
+    (class100* mred% (area<%>) (mk-wx get-wx-pan get-outer-wx-pan mismatches prnt
 				      ;; for keyword use:
 				      [min-width no-val]
 				      [min-height no-val]
@@ -54,10 +54,9 @@
 	  (unless (eq? min-height no-val) (check-non#f-dimension cwho min-height)))
 	(mismatches))
       (private-field 
-       [get-wx-outer-panel get-wx-pan]
+       [get-wx-outer-panel get-outer-wx-pan]
        [parent prnt])
       (public
-        [set-get-outer-panel (lambda (get-wx-outer-pan) (set! get-wx-outer-panel get-wx-outer-pan))]
 	[get-parent (lambda () parent)]
 	[get-top-level-window (entry-point (lambda () (wx->mred (send wx get-top-level))))]
 	[(minw min-width) (param get-wx-outer-panel min-width)]
@@ -88,7 +87,7 @@
     [vert-margin no-val])
 
   (define (make-subarea% %) ; % implements area<%>
-    (class100* % (subarea<%>) (mk-wx get-wx-pan mismatches parent
+    (class100* % (subarea<%>) (mk-wx get-wx-pan get-outer-wx-pan mismatches parent
 				     ;; for keyword use
 				     [horiz-margin no-val]
 				     [vert-margin no-val])
@@ -101,7 +100,7 @@
 	[(hm horiz-margin) (param get-wx-panel x-margin)]
 	[(vm vert-margin) (param get-wx-panel y-margin)])
       (sequence 
-	(super-init mk-wx get-wx-panel mismatches parent)
+	(super-init mk-wx get-wx-panel get-outer-wx-pan mismatches parent)
 	(unless (eq? horiz-margin no-val) (hm horiz-margin))
 	(unless (eq? vert-margin no-val) (vm vert-margin)))))
 
@@ -125,7 +124,7 @@
     (interface (window<%> subarea<%>)))
 
   (define (make-window% top? %) ; % implements area<%>
-    (class100* % (window<%>) (mk-wx get-wx-panel mismatches lbl parent crsr
+    (class100* % (window<%>) (mk-wx get-wx-panel get-outer-wx-panel mismatches lbl parent crsr
 				    ;; for keyword use
 				    [enabled #t])
       (private-field [label lbl][cursor crsr])
@@ -234,5 +233,5 @@
       (private-field
        [wx #f])
       (sequence
-	(super-init (lambda () (set! wx (mk-wx)) wx) get-wx-panel mismatches parent)
+	(super-init (lambda () (set! wx (mk-wx)) wx) get-wx-panel get-outer-wx-panel mismatches parent)
 	(unless enabled (enable #f))))))

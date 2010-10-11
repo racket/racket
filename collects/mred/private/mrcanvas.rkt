@@ -91,7 +91,7 @@
       (sequence
 	(as-entry
 	 (lambda ()
-	   (super-init (lambda () (set! wx (mk-wx)) wx) (lambda () wx) mismatches #f parent #f))))))
+	   (super-init (lambda () (set! wx (mk-wx)) wx) (lambda () wx) (lambda () wx) mismatches #f parent #f))))))
 
   (define default-paint-cb (lambda (canvas dc) (void)))
 

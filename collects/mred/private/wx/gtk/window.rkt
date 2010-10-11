@@ -416,31 +416,34 @@
         (unless (= h -1) (set! save-h h))
         (set! save-w (max save-w client-delta-w))
         (set! save-h (max save-h client-delta-h))
-        (really-set-size gtk save-x save-y save-w save-h)))
+        (really-set-size gtk x y save-x save-y save-w save-h)))
 
     (define/public (save-size x y w h)
       (set! save-w w)
       (set! save-h h))
 
-    (define/public (really-set-size gtk x y w h)
+    (define/public (really-set-size gtk given-x given-y x y w h)
       (send parent set-child-size gtk x y w h))
 
     (define/public (set-child-size child-gtk x y w h)
       (gtk_widget_set_size_request child-gtk w h)
       (gtk_widget_size_allocate child-gtk (make-GtkAllocation x y w h)))
 
-    (define on-size-queued? #f)
     (define/public (remember-size w h)
       ;; called in event-pump thread
       (unless (and (= save-w w)
                    (= save-h h))
         (set! save-w w)
         (set! save-h h)
-        (unless on-size-queued?
-          (set! on-size-queued? #t)
-          (queue-window-event this (lambda () 
-                                     (set! on-size-queued? #f)
-                                     (on-size w h))))))
+        (queue-on-size)))
+
+    (define on-size-queued? #f)
+    (define/public (queue-on-size)
+      (unless on-size-queued?
+        (set! on-size-queued? #t)
+        (queue-window-event this (lambda () 
+                                   (set! on-size-queued? #f)
+                                   (on-size 0 0)))))
 
     (define client-delta-w 0)
     (define client-delta-h 0)

@@ -81,7 +81,7 @@
       (sequence
 	(when (string? label)
 	  (set! label (string->immutable-string label)))
-	(super-init (lambda () (set! wx (mk-wx)) wx) (lambda () wx) mismatches label parent cursor)
+	(super-init (lambda () (set! wx (mk-wx)) wx) (lambda () wx) (lambda () wx) mismatches label parent cursor)
 	(unless (hidden-child?)
 	  (as-exit (lambda () (send parent after-new-child this)))))))
 

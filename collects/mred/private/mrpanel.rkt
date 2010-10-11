@@ -52,7 +52,8 @@
                                                  this this (mred->wx-container parent) null
                                                  #f))
                            wx)
-			 (lambda () wx) 
+			 (lambda () wx)
+			 (lambda () wx)
 			 (lambda ()
 			   (check-container-ready cwho parent))
 			 parent)
@@ -95,6 +96,7 @@
 							  this this (mred->wx-container parent) style
                                                           (get-initial-label)))
                                  wx)
+			 (lambda () wx) 
 			 (lambda () wx) 
 			 (lambda () (check-container-ready cwho parent))
 			 #f parent #f)

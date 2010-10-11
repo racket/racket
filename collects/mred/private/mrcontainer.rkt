@@ -42,7 +42,7 @@
     [alignment no-val])
 
   (define (make-container% %) ; % implements area<%>
-    (class100* % (area-container<%> internal-container<%>) (mk-wx get-wx-pan mismatches parent
+    (class100* % (area-container<%> internal-container<%>) (mk-wx get-wx-pan get-wx-outer-pan mismatches parent
 								  ;; for keyword use
 								  [border no-val]
 								  [spacing no-val]
@@ -122,7 +122,7 @@
 			 (check-instance '(method area-container<%> delete-child) subwindow<%> 'subwindow<%> #f c)
 			 (send (get-wx-panel) delete-child (mred->wx c))))])
       (sequence
-	(super-init mk-wx get-wx-panel mismatches parent)
+	(super-init mk-wx get-wx-panel get-wx-outer-pan mismatches parent)
 	(unless (eq? border no-val) (bdr border))
 	(unless (eq? spacing no-val) (spc spacing))
 	(unless (eq? alignment no-val) (set-alignment . alignment)))))
@@ -131,9 +131,8 @@
     (interface (window<%> area-container<%>)))
 
   (define (make-area-container-window% %) ; % implements window<%> (and area-container<%>)
-    (class100* % (area-container-window<%>) (mk-wx get-wx-pan mismatches label parent cursor) 
-      (private-field [get-wx-panel get-wx-pan])
+    (class100* % (area-container-window<%>) (mk-wx get-wx-pan get-wx-outer-pan mismatches label parent cursor) 
       (sequence
-	(super-init mk-wx get-wx-panel mismatches label parent cursor)))))
+	(super-init mk-wx get-wx-pan get-wx-outer-pan mismatches label parent cursor)))))
 
 

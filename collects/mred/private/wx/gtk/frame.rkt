@@ -133,7 +133,8 @@
              pre-on-char pre-on-event
              get-client-delta get-size
              get-parent get-eventspace
-             adjust-client-delta)
+             adjust-client-delta
+             queue-on-size)
 
     (define gtk (as-gtk-window-allocation
                  (gtk_window_new GTK_WINDOW_TOPLEVEL)))
@@ -254,21 +255,15 @@
                                 -11111)))))
 
     (define/public (set-top-position x y)
-      (when (and (vector? saved-enforcements)
-                 (or (x . < . (vector-ref saved-enforcements 0))
-                     (let ([max-x (vector-ref saved-enforcements 1)])
-                       (and (max-x . > . -1) (x . > . max-x)))
-                     (y . < . (vector-ref saved-enforcements 2))
-                     (let ([max-y (vector-ref saved-enforcements 3)])
-                       (and (max-y . > . -1) (y . > . max-y)))))
-        (enforce-size 0 0 -1 -1 1 1))
-      (gtk_widget_set_uposition gtk
-                                (if (= x -11111) -2 x)
-                                (if (= y -11111) -2 y)))
+      (unless (and (= x -11111) (= y -11111))
+        (gtk_widget_set_uposition gtk
+                                  (if (= x -11111) -2 x)
+                                  (if (= y -11111) -2 y))))
 
-    (define/override (really-set-size gtk x y w h)
+    (define/override (really-set-size gtk x y processed-x processed-y w h)
       (set-top-position x y)
-      (gtk_window_resize gtk (max 1 w) (max 1 h)))
+      (gtk_window_resize gtk (max 1 w) (max 1 h))
+      (queue-on-size))
 
     (define/override (show on?)
       (let ([es (get-eventspace)])

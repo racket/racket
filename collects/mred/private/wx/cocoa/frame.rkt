@@ -397,7 +397,12 @@
                                                    (+ px (/ (- pw w) 2)))
                                                  ;; keep current x position:
                                                  (NSPoint-x (NSRect-origin f)))
+                                             ;; keep current y position:
                                              (- (NSPoint-y (NSRect-origin f))
+                                                ;; we have to subtract add the titlebar height, for some reason:
+                                                (if caption?
+                                                    (- 22)
+                                                    0)
                                                 (- h
                                                    (NSSize-height (NSRect-size f)))))
                                (make-NSSize w h))

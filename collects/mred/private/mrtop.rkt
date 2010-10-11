@@ -49,7 +49,7 @@
   (define basic-top-level-window%
     (class100* (make-area-container-window% (make-window% #t (make-container% area%))) (top-level-window<%>) 
 	       (mk-wx mismatches label parent)
-      (inherit show set-get-outer-panel)
+      (inherit show)
       (rename [super-set-label set-label])
       (private
 	[wx-object->proxy
@@ -138,8 +138,9 @@
                               (when status-message
                                 (send status-message set-label s)))])
       (sequence 
-	(super-init (lambda () (set! wx (mk-wx finish)) wx) (lambda () wx-panel) mismatches label parent arrow-cursor)
-        (set-get-outer-panel (lambda () mid-panel)))))
+	(super-init (lambda () (set! wx (mk-wx finish)) wx) 
+                    (lambda () wx-panel) (lambda () mid-panel)
+                    mismatches label parent arrow-cursor))))
 
 
   (define frame%
