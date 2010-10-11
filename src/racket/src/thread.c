@@ -7439,11 +7439,21 @@ void scheme_remove_gc_callback(Scheme_Object *key)
   }
 }
 
+#if defined(_MSC_VER)
+# define mzOSAPI WINAPI
+#else
+# define mzOSAPI /* empty */
+#endif
+
 typedef void (*gccb_Ptr_Ptr_Ptr_Int_to_Void)(void*, void*, void*, int);
 typedef void (*gccb_Ptr_Ptr_Ptr_to_Void)(void*, void*, void*);
 typedef void (*gccb_Ptr_Ptr_Float_to_Void)(void*, void*, float);
 typedef void (*gccb_Ptr_Ptr_Double_to_Void)(void*, void*, double);
 typedef void (*gccb_Ptr_Ptr_Ptr_Nine_Ints)(void*,void*,void*,int,int,int,int,int,int,int,int,int);
+typedef void (mzOSAPI *gccb_OSapi_Ptr_Int_to_Void)(void*, int);
+typedef void (mzOSAPI *gccb_OSapi_Ptr_Ptr_to_Void)(void*, void*);
+typedef void (mzOSAPI *gccb_OSapi_Ptr_Four_Ints_Ptr_Int_Int_Long_to_Void)(void*, int, int, int, int, 
+                                                                          void*, int, int, long);
 
 #ifdef DONT_USE_FOREIGN
 # define scheme_extract_pointer(x) NULL
@@ -7539,6 +7549,43 @@ static void run_gc_callbacks(int pre)
           i9 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[13]);
 
           proc(a, b, c, i1, i2, i3, i4, i5, i6, i7, i8, i9);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "osapi_ptr_ptr->void")) {
+          gccb_OSapi_Ptr_Ptr_to_Void proc;
+          void *a, *b;
+
+          proc = (gccb_OSapi_Ptr_Ptr_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+
+          proc(a, b);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "osapi_ptr_int->void")) {
+          gccb_OSapi_Ptr_Int_to_Void proc;
+          void *a;
+          int i;
+
+          proc = (gccb_OSapi_Ptr_Int_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          i = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[3]);
+
+          proc(a, i);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "osapi_ptr_int_int_int_int_ptr_int_int_long->void")) {
+          gccb_OSapi_Ptr_Four_Ints_Ptr_Int_Int_Long_to_Void proc;
+          void *a, *b;
+          int i1, i2, i3, i4, i5, i6;
+          long l1;
+
+          proc = (gccb_OSapi_Ptr_Four_Ints_Ptr_Int_Int_Long_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          i1 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[3]);
+          i2 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[4]);
+          i3 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[5]);
+          i4 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[6]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[7]);
+          i5 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[8]);
+          i6 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[9]);
+          l1 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[10]);
+
+          proc(a, i1, i2, i3, i4, b, i5, i6, l1);
         }
         prev = desc;
       }
