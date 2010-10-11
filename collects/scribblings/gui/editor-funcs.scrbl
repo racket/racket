@@ -213,7 +213,8 @@ Opens @racket[filename] (in @racket['binary] mode) and checks whether it looks
                                  [end-position (or/c exact-nonnegative-integer? (one/of 'end)) 'end]
                                  [snip-filter ((is-a?/c snip%) . -> . any/c) (lambda (s) s)]
                                  [port-name any/c text-editor]
-                                 [expect-to-read-all? any/c #f])
+                                 [expect-to-read-all? any/c #f]
+                                 [#:lock-while-reading? lock-while-reading? any/c #f])
          input-port]{
 
 Creates an input port that draws its content from @racket[text-editor].
@@ -252,7 +253,10 @@ The result port must not be used if @racket[text-editor] changes in any
 @method[snip-admin% recounted]). The
 @method[text% get-revision-number] method can be used to detect any of these changes.
 
-
+To help guard against such uses, if @racket[lock-while-reading?] argument is
+a true value, then @racket[open-input-text-editor] will lock the @racket[text-editor]
+before it returns and unlock it after it is safe to use the above methods. (In some
+cases, it will not lock the editor at all, if using those methods are always safe.)
 
 }
 

@@ -1,11 +1,10 @@
-(module snipfile mzscheme
-  (require mzlib/class
-	   mzlib/etc
-	   mzlib/port
+(module snipfile racket/base
+  (require racket/class
+           racket/port
 	   syntax/moddep
-	   (prefix wx: "kernel.ss")
-	   (prefix wx: "wxme/snip.ss")
-	   (prefix wx: "wxme/cycle.ss")
+           (prefix-in wx: "kernel.ss")
+	   (prefix-in wx: "wxme/snip.ss")
+	   (prefix-in wx: "wxme/cycle.ss")
 	   "check.ss"
 	   "editor.ss")
 		
@@ -72,7 +71,8 @@
   ;; starting at position `start-in'
   ;; and ending at position `end'.
   (define open-input-text-editor 
-    (opt-lambda (text [start 0] [end 'end] [snip-filter values] [port-name text] [expect-to-read-all? #f])
+    (lambda (text [start 0] [end 'end] [snip-filter values] [port-name text] [expect-to-read-all? #f]
+                  #:lock-while-reading? [lock-while-reading? #f])
       ;; Check arguments:
       (unless (text . is-a? . text%)
 	(raise-type-error 'open-input-text-editor "text% object" text))
@@ -105,24 +105,33 @@
 		;; It's all text, and it's short enough: just read it into a string
 		(open-input-string (send text get-text start end) port-name)
 		;; It's all text, so the reading process is simple:
-		(let ([start start])
-		  (let-values ([(pipe-r pipe-w) (make-pipe)])
+                (let ([start start])
+                  (when lock-while-reading? (send text lock #t))
+                  (let-values ([(pipe-r pipe-w) (make-pipe)])
 		    (make-input-port/read-to-peek
-		     port-name
+                     port-name
 		     (lambda (s)
 		       (let ([v (read-bytes-avail!* s pipe-r)])
 			 (if (eq? v 0)
 			     (let ([n (min 4096 (- end start))])
 			       (if (zero? n)
 				   (begin
-				     (close-output-port pipe-w)
-				     eof)
+                                     (close-output-port pipe-w)
+				     (when lock-while-reading?
+                                       (set! lock-while-reading? #f)
+                                       (send text lock #f))
+                                     eof)
 				   (begin
 				     (write-string (send text get-text start (+ start n)) pipe-w)
 				     (set! start (+ start n))
-				     (read-bytes-avail!* s pipe-r))))
+				     (let ([ans (read-bytes-avail!* s pipe-r)])
+                                       (when lock-while-reading?
+                                         (when (eof-object? ans)
+                                           (set! lock-while-reading? #f)
+                                           (send text lock #f)))
+                                       ans))))
 			     v)))
-		     (lambda (s skip general-peek)
+                     (lambda (s skip general-peek)
 		       (let ([v (peek-bytes-avail!* s skip #f pipe-r)])
 			 (if (eq? v 0)
 			     (general-peek s skip)
@@ -184,17 +193,21 @@
 		       [port (make-input-port/read-to-peek
 			      port-name
 			      (lambda (s)
-				(let ([v (read-bytes-avail!* s pipe-r)])
-				  (if (eq? v 0)
-				      (read-chars s)
-				      v)))
-			      (lambda (s skip general-peek)
+                                (let* ([v (read-bytes-avail!* s pipe-r)]
+                                       [res (if (eq? v 0) (read-chars s) v)])
+                                  (when (eof-object? res)
+                                    (when lock-while-reading? 
+                                      (set! lock-while-reading? #f)
+                                      (send text lock #f)))
+                                  res))
+                              (lambda (s skip general-peek)
 				(let ([v (peek-bytes-avail!* s skip #f pipe-r)])
 				  (if (eq? v 0)
 				      (general-peek s skip)
 				      v)))
 			      close)])
-		  (if (is-a? snip wx:string-snip%)
+		  (when lock-while-reading? (send text lock #t))
+                  (if (is-a? snip wx:string-snip%)
 		      ;; Special handling for initial snip string in
 		      ;; case it starts too early:
 		      (let* ([snip-start (gsp snip)]
@@ -235,7 +248,7 @@
 			  (apply values last-time-values)
 			  (call-with-values (lambda () (call-with-continuation-prompt
                                                         (lambda () (eval 
-                                                                    (datum->syntax-object
+                                                                    (datum->syntax
                                                                      #f
                                                                      (cons '#%top-interaction exp)
                                                                      exp)))
@@ -271,7 +284,7 @@
       p))
 
   (define open-output-text-editor 
-    (opt-lambda (text [start 'end] [special-filter values] [port-name text])
+    (lambda (text [start 'end] [special-filter values] [port-name text])
       (define pos (if (eq? start 'end)
 		      (send text last-position)
 		      (min start

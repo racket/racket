@@ -259,7 +259,32 @@
     (test 'hello 'read (read p))
     (test 'there 'read (read p))
     (test 'res 'read (read p))
-    (test #t 'read (is-a? (read p) image-snip%))))
+    (test #t 'read (is-a? (read p) image-snip%)))
+  
+  
+  (let ()
+    (define t (new text%))
+    (send t insert (make-string 5000 #\a))
+    (define p (open-input-text-editor t #:lock-while-reading? #t))
+    (define locked-first (send t is-locked?))
+    (void (read p))  ;; read the (big) symbol
+    (void (read p))  ;; read eof
+    (define locked-last (send t is-locked?))
+    (test #t 'lock-while-reading?1 (and locked-first (not locked-last))))
+  
+  (let ()
+    (define t (new text%))
+    (send t insert (make-string 5000 #\a))
+    (send t insert (make-object image-snip%))
+    (define p (open-input-text-editor t #:lock-while-reading? #t))
+    (define locked-first (send t is-locked?))
+    (void (read p))  ;; read the (big) symbol
+    (void (read p))  ;; read the image
+    (void (read p))  ;; read eof
+    (define locked-last (send t is-locked?))
+    (test #t 'lock-while-reading?2 
+          (and locked-first
+               (not locked-last)))))
 
 (let ()
   (define x (new text%))
