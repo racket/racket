@@ -84,7 +84,7 @@
 
 (let ((n-failures
        (if to-run
-           (if (test (format "tests/~a.rkt" to-run)) 0 1)
+           (if (test to-run) 0 1)
            (for/fold ((n-failures 0))
              ((gen (in-directory tests-dir)))
              (+ n-failures (if (test gen) 0 1))))))
