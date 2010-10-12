@@ -291,9 +291,8 @@ Dieser Testfall überprüft experimentell, ob die @tech{Eigenschaft}
 @emph{Wichtig:} @scheme[check-property] funktioniert nur für
 Eigenschaften, bei denen aus den Signaturen sinnvoll Werte generiert
 werden können.  Dies ist für die meisten eingebauten Signaturen der
-Fall, aber nicht für Signaturvariablen und Signaturen, die mit @scheme[predicate],
-@scheme[property] oder @scheme[define-record-procedures] definiert
-wurden.  In diesen Fällen erzeugt @scheme[check-property] eine Fehlermeldung.
+Fall, aber nicht für Signaturvariablen und Signaturen, die mit @scheme[predicate]
+erzeugt wurden.  In diesen Fällen erzeugt @scheme[check-property] eine Fehlermeldung.
 }
 
 @section{Parametrische Record-Typ-Definitionen}
