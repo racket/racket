@@ -3,6 +3,7 @@
          racket/draw
          (only-in racket/list last)
          ffi/unsafe
+         ffi/unsafe/alloc
 	 "../../syntax.rkt"
 	 "../../lock.rkt"
 	 "../common/queue.rkt"
@@ -44,8 +45,13 @@
                            [yHotspot _DWORD]
                            [hbmMask _HBITMAP]
                            [hbmColor _HBITMAP]))
+
+(define-user32 DestroyIcon (_wfun _HICON -> (r : _BOOL)
+                                  -> (unless r (failed 'DestroyIcon)))
+  #:wrap (deallocator))
 (define-user32 CreateIconIndirect (_wfun _ICONINFO-pointer -> (r : _HICON)
-                                         -> (or r (failed 'CreateIconIndirect))))
+                                         -> (or r (failed 'CreateIconIndirect)))
+  #:wrap (allocator DestroyIcon))
 
 (define SPI_GETWORKAREA            #x0030)
 
@@ -378,23 +384,36 @@
   
   (define/override (is-frame?) #t)
 
+  ;; Retain to aviod GC of the icon:
+  (define small-hicon #f)
+  (define big-hicon #f)
+
   (define/public (set-icon bm mask [mode 'both])
-    (let ([hicon (CreateIconIndirect
-                  (make-ICONINFO
-                   #t 0 0
-                   (let* ([bm (make-object bitmap% (send bm get-width) (send bm get-height))]
-                          [dc (make-object bitmap-dc% bm)])
-                     (send dc set-brush "black" 'solid)
-                     (send dc draw-rectangle 0 0 (send bm get-width) (send bm get-height))
-                     (send dc set-bitmap #f)
-                     (bitmap->hbitmap bm #:b&w? #t))
-                   (bitmap->hbitmap bm #:mask mask)))])
+    (let* ([bg-hbitmap
+            (let* ([bm (make-object bitmap% (send bm get-width) (send bm get-height))]
+                   [dc (make-object bitmap-dc% bm)])
+              (send dc set-brush "black" 'solid)
+              (send dc draw-rectangle 0 0 (send bm get-width) (send bm get-height))
+              (send dc set-bitmap #f)
+              (bitmap->hbitmap bm #:b&w? #t))]
+           [main-hbitmap (bitmap->hbitmap bm #:mask mask)]
+           [hicon (CreateIconIndirect
+                   (make-ICONINFO
+                    #t 0 0
+                    bg-hbitmap
+                    main-hbitmap))])
+      (DeleteObject bg-hbitmap)
+      (DeleteObject main-hbitmap)
       (when (or (eq? mode 'small)
                 (eq? mode 'both))
-        (SendMessageW hwnd WM_SETICON 0 (cast hicon _HICON _LPARAM)))
+        (atomically
+         (set! small-hicon hicon)
+         (SendMessageW hwnd WM_SETICON 0 (cast hicon _HICON _LPARAM))))
       (when (or (eq? mode 'big)
                 (eq? mode 'both))
-        (SendMessageW hwnd WM_SETICON 1 (cast hicon _HICON _LPARAM)))))
+        (atomically
+         (set! big-hicon hicon)
+         (SendMessageW hwnd WM_SETICON 1 (cast hicon _HICON _LPARAM))))))
 
   (def/public-unimplemented iconize)
   (define/public (set-title s)

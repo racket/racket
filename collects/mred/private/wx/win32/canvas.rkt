@@ -31,13 +31,8 @@
                                     -> (unless r (failed 'ShowScrollbar))))
 
 (define-gdi32 CreateSolidBrush (_wfun _COLORREF -> _HBRUSH))
-(define-gdi32 DeleteObject (_wfun _pointer -> (r : _BOOL)
-                                  -> (unless r (failed 'DeleteObject))))
 (define-user32 FillRect (_wfun _HDC _RECT-pointer _HBRUSH -> (r : _int)
                                -> (when (zero? r) (failed 'FillRect))))
-
-(define-user32 DestroyWindow (_wfun _HWND -> (r : _BOOL)
-                                    -> (unless r (failed 'DestroyWindow))))
 
 (define _HRGN _pointer)
 (define-user32 GetDCEx (_wfun _HWND _HRGN _DWORD -> _HDC))
@@ -89,7 +84,8 @@
               subclass-control
               is-auto-scroll? get-virtual-width get-virtual-height
               reset-auto-scroll
-              refresh-for-autoscroll)
+              refresh-for-autoscroll
+              on-size)
 
      (define hscroll? (memq 'hscroll style))
      (define vscroll? (memq 'vscroll style))
@@ -228,7 +224,8 @@
                 [w (if (= w -1) (- (RECT-right r) (RECT-left r)) w)]
                 [h (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)])
            (MoveWindow canvas-hwnd 0 0 (max 1 (- w COMBO-WIDTH)) h #t)
-           (MoveWindow combo-hwnd 0 0 (max 1 w) (- h 2) #t))))
+           (MoveWindow combo-hwnd 0 0 (max 1 w) (- h 2) #t)))
+       (on-size 0 0))
 
      ;; The `queue-paint' and `paint-children' methods
      ;; are defined by `canvas-mixin' from ../common/canvas-mixin

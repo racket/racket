@@ -20,7 +20,8 @@
 (define base-button% 
   (class item%
     (inherit set-control-font auto-size get-hwnd
-             subclass-control)
+             subclass-control
+             remember-label-bitmap)
 
     (init parent cb label x y w h style font)
 
@@ -53,8 +54,10 @@
                [style style])
 
     (when bitmap?
-      (SendMessageW (get-hwnd) BM_SETIMAGE IMAGE_BITMAP 
-                    (cast (bitmap->hbitmap label #:bg #xFFFFFF) _HBITMAP _LPARAM)))
+      (let ([hbitmap (bitmap->hbitmap label #:bg #xFFFFFF)])
+        (remember-label-bitmap hbitmap)
+        (SendMessageW (get-hwnd) BM_SETIMAGE IMAGE_BITMAP 
+                      (cast hbitmap _HBITMAP _LPARAM))))
 
     (set-control-font font)
 

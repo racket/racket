@@ -64,7 +64,8 @@
 (define message%
   (class item%
     (inherit auto-size set-size set-control-font get-hwnd
-             subclass-control)
+             subclass-control
+             remember-label-bitmap)
 
     (init parent label
           x y
@@ -100,8 +101,10 @@
     (subclass-control (get-hwnd))
 
     (when bitmap?
-      (SendMessageW (get-hwnd) STM_SETIMAGE IMAGE_BITMAP 
-                    (cast (bitmap->hbitmap label) _HBITMAP _LPARAM)))
+      (let ([hbitmap (bitmap->hbitmap label)])
+        (remember-label-bitmap hbitmap)
+        (SendMessageW (get-hwnd) STM_SETIMAGE IMAGE_BITMAP 
+                      (cast hbitmap _HBITMAP _LPARAM))))
     (when (symbol? label)
       (SendMessageW (get-hwnd) STM_SETIMAGE IMAGE_ICON
                     (cast (force (case label
@@ -111,7 +114,7 @@
                           _HICON _LPARAM)))
     
     (set-control-font font)
-      
+    
     (if (symbol? label)
         (set-size -11111 -11111 32 32)
         (auto-size label 0 0 0 0))))

@@ -1,6 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
 	 ffi/unsafe/define
+	 ffi/unsafe/alloc
          "../common/utils.rkt"
          "types.rkt")
 
@@ -14,11 +15,18 @@
          failed
 
          GetLastError
+         DestroyWindow
+         NotifyWindowDestroy
 	 CreateWindowExW
          GetWindowLongW
          SetWindowLongW
          SendMessageW SendMessageW/str
          GetSysColor GetRValue GetGValue GetBValue make-COLORREF
+         CreateBitmap
+         CreateCompatibleBitmap
+         DeleteObject
+         CreateCompatibleDC
+         DeleteDC
          MoveWindow
          ShowWindow
          EnableWindow
@@ -53,13 +61,20 @@
   (error who "call failed (~s)"
          (GetLastError)))
 
+(define-user32 DestroyWindow (_wfun _HWND -> (r : _BOOL)
+                                    -> (unless r (failed 'DestroyWindow)))
+  #:wrap (deallocator))
+(define NotifyWindowDestroy ((deallocator) void))
+
 (define-user32 CreateWindowExW (_wfun _DWORD
 				      _string/utf-16
 				      _string/utf-16
 				      _UDWORD
 				      _int _int _int _int
 				      _HWND _HMENU _HINSTANCE _pointer
-				      -> _HWND))
+				      -> _HWND)
+  #:wrap (allocator DestroyWindow))
+
 (define-user32 GetWindowLongW (_wfun _HWND _int -> _pointer))
 (define-user32 SetWindowLongW (_wfun _HWND _int _pointer -> _pointer))
 
@@ -88,8 +103,30 @@
 
 (define-user32 SetCursor (_wfun _HCURSOR -> _HCURSOR))
 
-(define-user32 GetDC (_wfun  _HWND -> _HDC))
-(define-user32 ReleaseDC (_wfun _HWND _HDC -> _int))
+(define-user32 _GetDC (_wfun  _HWND -> _HDC)
+  #:c-id GetDC)
+(define (GetDC hwnd)
+  (((allocator (lambda (hdc) (ReleaseDC hwnd hdc)))
+    _GetDC)
+   hwnd))
+
+(define-user32 ReleaseDC (_wfun _HWND _HDC -> _int)
+  #:wrap (deallocator cadr))
+
+(define-gdi32 DeleteObject (_wfun _pointer -> (r : _BOOL)
+                                  -> (unless r (failed 'DeleteObject)))
+  #:wrap (deallocator))
+
+(define-gdi32 CreateCompatibleBitmap (_wfun _HDC _int _int -> _HBITMAP)
+  #:wrap (allocator DeleteObject))
+(define-gdi32 CreateBitmap (_wfun _int _int _UINT _UINT _pointer -> _HBITMAP)
+  #:wrap (allocator DeleteObject))
+
+(define-gdi32 DeleteDC (_wfun _HDC -> (r : _BOOL)
+                              -> (unless r (failed 'DeleteDC)))
+  #:wrap (deallocator))
+(define-gdi32 CreateCompatibleDC (_wfun _HDC -> _HDC)
+  #:wrap (allocator DeleteDC))
 
 (define-user32 InvalidateRect (_wfun _HWND (_or-null _RECT-pointer) _BOOL -> (r : _BOOL)
                                      -> (unless r (failed 'InvalidateRect))))

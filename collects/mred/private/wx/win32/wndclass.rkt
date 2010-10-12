@@ -13,6 +13,7 @@
 	 hwnd->wx
 	 any-hwnd->wx
 	 set-hwnd-wx!
+         unregister-hwnd
 	 MessageBoxW
          _WndProc)
 
@@ -38,6 +39,11 @@
                 (send wx is-hwnd? hwnd)
                 wx)))))
 
+(define (unregister-hwnd hwnd)
+  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
+    (when p
+      (free-immobile-cell p)
+      (SetWindowLongW hwnd GWLP_USERDATA #f))))
 
 ;; ----------------------------------------
 

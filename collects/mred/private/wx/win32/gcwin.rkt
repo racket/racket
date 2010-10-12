@@ -21,8 +21,6 @@
 (define-gdi32 SelectObject/raw _fpointer
   #:c-id SelectObject)
 
-(define-gdi32 CreateCompatibleDC (_wfun _HDC -> _HDC))
-
 (define SRCCOPY #x00CC0020)
 
 (define blit-hdc (CreateCompatibleDC #f))

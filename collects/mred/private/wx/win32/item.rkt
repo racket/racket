@@ -76,6 +76,11 @@
     (super-new)
     
     (define/override (gets-focus?) #t)
+
+    ;; Retain to avoid GC of the bitmaps:
+    (define label-hbitmaps null)
+    (define/public (remember-label-bitmap hbitmap)
+      (set! label-hbitmaps (cons hbitmap label-hbitmaps)))
     
     (define/public (set-label s)
       (SetWindowTextW (get-hwnd) s))

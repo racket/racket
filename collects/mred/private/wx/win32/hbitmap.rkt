@@ -10,12 +10,6 @@
 
 (provide bitmap->hbitmap)
 
-(define-gdi32 CreateCompatibleBitmap (_wfun _HDC _int _int -> _HBITMAP))
-(define-gdi32 CreateBitmap (_wfun _int _int _UINT _UINT _pointer -> _HBITMAP))
-(define-gdi32 CreateCompatibleDC (_wfun _HDC -> _HDC))
-(define-gdi32 DeleteDC (_wfun _HDC -> (r : _BOOL)
-                              -> (unless r (failed 'DeleteDC))))
-
 (define (bitmap->hbitmap bm 
                          #:mask [mask-bm #f]
                          #:b&w? [b&w? #f] 
