@@ -678,7 +678,7 @@
 (define (handle-*-request r w)
   (let* ([proto (regexp-match-peek #rx#"^[^\r\n]*(?=\r?\n)" r 0 (* 4 1024))]
          [proto (and proto (car proto))])
-    ((cond [(not proto) (error 'handin "no protocol line" proto)]
+    ((cond [(not proto) (error 'handin "no protocol line")]
            [(equal? #"handin" proto) handle-handin-request]
            [(regexp-match? #rx#"(?i:http/[0-9.]+)$" proto) handle-http-request]
            [else (error 'handin "unknown protocol: ~e" proto)])
