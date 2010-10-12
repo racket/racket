@@ -302,7 +302,14 @@
     (lexer
      [(:+ scheme-whitespace)
       (ret lexeme 'white-space #f start-pos end-pos 'continue)]
-     [(:or "#t" "#f" "#T" "#F" character
+     [(:: (:or "#true" "#false" "#t" "#f" "#T" "#F")
+          (:* (:~ identifier-delims)))
+      (ret lexeme 
+           (if (member lexeme '("#true" "#false" "#t" "#f" "#T" "#F"))
+               'constant 
+               'error)
+           #f start-pos end-pos 'datum)]
+     [(:or character
            (make-num digit2 radix2)
            (make-num digit8 radix8)
            (make-num digit10 (:? radix10))
