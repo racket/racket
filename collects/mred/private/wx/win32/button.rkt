@@ -54,7 +54,7 @@
 
     (when bitmap?
       (SendMessageW (get-hwnd) BM_SETIMAGE IMAGE_BITMAP 
-                    (cast (bitmap->hbitmap label) _HBITMAP _LPARAM)))
+                    (cast (bitmap->hbitmap label #:bg #xFFFFFF) _HBITMAP _LPARAM)))
 
     (set-control-font font)
 

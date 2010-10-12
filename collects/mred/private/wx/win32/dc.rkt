@@ -13,6 +13,7 @@
          ffi/unsafe/alloc)
 
 (provide dc%
+         win32-bitmap%
          do-backing-flush
          request-flush-delay
          cancel-flush-delay)
@@ -23,14 +24,21 @@
     (super-make-object (make-alternate-bitmap-kind w h))
 
     (define s
-      (if (not hwnd)
-	  (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h)
-	  (atomically
-	   (let ([hdc (GetDC hwnd)])
-	     (begin0
-	      (cairo_win32_surface_create_with_ddb hdc
-						   CAIRO_FORMAT_RGB24 w h)
-	      (ReleaseDC hwnd hdc))))))
+      (let ([s
+             (if (not hwnd)
+                 (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h)
+                 (atomically
+                  (let ([hdc (GetDC hwnd)])
+                    (begin0
+                     (cairo_win32_surface_create_with_ddb hdc
+                                                          CAIRO_FORMAT_RGB24 w h)
+                     (ReleaseDC hwnd hdc)))))])
+        ;; initialize bitmap to white:
+        (let ([cr (cairo_create s)])
+          (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
+          (cairo_paint cr)
+          (cairo_destroy cr))
+        s))
 
     (define/override (ok?) #t)
     (define/override (is-color?) #t)

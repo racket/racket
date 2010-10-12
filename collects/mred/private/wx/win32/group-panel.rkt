@@ -49,6 +49,7 @@
     (super-new [callback void]
                [parent parent]
                [hwnd hwnd]
+               [extra-hwnds (list client-hwnd)]
                [style style])
 
     (define/override (get-client-hwnd)

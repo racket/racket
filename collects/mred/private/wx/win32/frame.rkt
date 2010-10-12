@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/class
+         racket/draw
          (only-in racket/list last)
          ffi/unsafe
 	 "../../syntax.rkt"
@@ -12,6 +13,7 @@
          "theme.rkt"
 	 "window.rkt"
          "wndclass.rkt"
+         "hbitmap.rkt"
          "cursor.rkt")
 
 (provide frame%
@@ -36,6 +38,14 @@
                              [ptMaxPosition _POINT]
                              [ptMinTrackSize _POINT]
                              [ptMaxTrackSize _POINT]))
+
+(define-cstruct _ICONINFO ([fIcon _BOOL]
+                           [xHotspot _DWORD]
+                           [yHotspot _DWORD]
+                           [hbmMask _HBITMAP]
+                           [hbmColor _HBITMAP]))
+(define-user32 CreateIconIndirect (_wfun _ICONINFO-pointer -> (r : _HICON)
+                                         -> (or r (failed 'CreateIconIndirect))))
 
 (define SPI_GETWORKAREA            #x0030)
 
@@ -119,7 +129,7 @@
 
   (super-new [parent #f]
 	     [hwnd (create-frame parent label w h style)]
-	     [style (cons 'invisible style)])
+	     [style (cons 'deleted style)])
 
   (define hwnd (get-hwnd))
   (SetLayeredWindowAttributes hwnd 0 255 LWA_ALPHA)
@@ -147,6 +157,9 @@
     (super direct-show on? (if hidden-zoomed?
                                SW_SHOWMAXIMIZED
                                SW_SHOW)))
+
+  (define/public (destroy)
+    (direct-show #f))
 
   (define/private (stdret f d)
     (if (is-dialog?) d f))
@@ -366,7 +379,22 @@
   (define/override (is-frame?) #t)
 
   (define/public (set-icon bm mask [mode 'both])
-    (void))
+    (let ([hicon (CreateIconIndirect
+                  (make-ICONINFO
+                   #t 0 0
+                   (let* ([bm (make-object bitmap% (send bm get-width) (send bm get-height))]
+                          [dc (make-object bitmap-dc% bm)])
+                     (send dc set-brush "black" 'solid)
+                     (send dc draw-rectangle 0 0 (send bm get-width) (send bm get-height))
+                     (send dc set-bitmap #f)
+                     (bitmap->hbitmap bm #:b&w? #t))
+                   (bitmap->hbitmap bm #:mask mask)))])
+      (when (or (eq? mode 'small)
+                (eq? mode 'both))
+        (SendMessageW hwnd WM_SETICON 0 (cast hicon _HICON _LPARAM)))
+      (when (or (eq? mode 'big)
+                (eq? mode 'both))
+        (SendMessageW hwnd WM_SETICON 1 (cast hicon _HICON _LPARAM)))))
 
   (def/public-unimplemented iconize)
   (define/public (set-title s)

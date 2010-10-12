@@ -8,6 +8,7 @@
          "const.rkt"
          "menu-item.rkt"
          "frame.rkt"
+         "dc.rkt"
 	 racket/draw)
 
 (provide
@@ -41,8 +42,6 @@
  is-color-display?
  file-selector
  id-to-menu-item
- get-the-x-selection
- get-the-clipboard
  show-print-setup
  can-show-print-setup?
  get-highlight-background-color
@@ -54,7 +53,11 @@
 (define-unimplemented special-option-key)
 (define-unimplemented get-color-from-user)
 (define-unimplemented get-font-from-user)
-(define (get-panel-background) (make-object color% "gray"))
+
+(define (get-panel-background)
+  (let ([c (GetSysColor COLOR_BTNFACE)])
+    (make-object color% (GetRValue c) (GetGValue c) (GetBValue c))))
+
 (define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
 (define (register-collecting-blit canvas x y w h on off on-x on-y off-x off-y)
@@ -74,18 +77,17 @@
 (define (flush-display) (void))
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
-(define-unimplemented bell)
+
+(define-user32 MessageBeep (_wfun _UINT -> _BOOL))
+(define (bell)
+  (void (MessageBeep MB_OK)))
 
 (define (hide-cursor) (void))
 
-(define-unimplemented end-busy-cursor)
-(define-unimplemented is-busy?)
-(define-unimplemented begin-busy-cursor)
 (define (get-display-depth) 32)
+
 (define-unimplemented is-color-display?)
 (define-unimplemented file-selector)
-(define-unimplemented get-the-x-selection)
-(define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)
 (define (can-show-print-setup?) #f)
 
@@ -96,6 +98,8 @@
   (let ([c (GetSysColor COLOR_HIGHLIGHTTEXT)])
     (make-object color% (GetRValue c) (GetGValue c) (GetBValue c))))
 
-(define-unimplemented make-screen-bitmap)
+(define/top (make-screen-bitmap [exact-positive-integer? w]
+                                [exact-positive-integer? h])
+  (make-object win32-bitmap% w h #f))
 
 (define (check-for-break) #f)

@@ -47,8 +47,6 @@
  is-color-display?
  file-selector
  id-to-menu-item
- get-the-x-selection
- get-the-clipboard
  show-print-setup
  can-show-print-setup?
  get-highlight-background-color
@@ -108,8 +106,6 @@
 (define (get-display-depth) 32)
 (define-unimplemented is-color-display?)
 (define (id-to-menu-item id) id)
-(define-unimplemented get-the-x-selection)
-(define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)
 (define (can-show-print-setup?) #t)
 

@@ -183,7 +183,7 @@
     (register-child-in-parent on?)
     (unless on? (not-focus-child this))
     (ShowWindow hwnd (if on? on-mode SW_HIDE)))
-  (unless (memq 'invisible style)
+  (unless (memq 'deleted style)
     (show #t))
   
   (def/public-unimplemented on-drop-file)
@@ -256,7 +256,6 @@
                       (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)
                       #t))
         (MoveWindow hwnd x y w h #t))
-    (on-size w h)
     (unless (and (= w -1) (= h -1))
       (on-resized))
     (refresh))

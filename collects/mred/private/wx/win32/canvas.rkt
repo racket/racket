@@ -278,6 +278,10 @@
                                          (send col green)
                                          (send col blue)))))
 
+     (define wants-focus? (not (memq 'no-focus style)))
+     (define/override (can-accept-focus?)
+       wants-focus?)
+
      (define h-scroll-visible? hscroll?)
      (define v-scroll-visible? vscroll?)
      (define/public (show-scrollbars h? v?)
