@@ -132,33 +132,32 @@
            (default w msg wParam lParam)
            (do-key w msg wParam lParam #f #f))]
          [(= msg WM_KEYDOWN)
-          (do-key w msg wParam lParam #f #f)
-          0]
+          (do-key w msg wParam lParam #f #f default)]
          [(= msg WM_KEYUP)
-          (do-key w msg wParam lParam #f #t)
-          0]
+          (do-key w msg wParam lParam #f #t default)]
          [(and (= msg WM_SYSCHAR)
                (= wParam VK_MENU))
           (unhide-cursor)
           (begin0
            (default w msg wParam lParam)
-           (do-key w msg wParam lParam #t #f))]
+           (do-key w msg wParam lParam #t #f void))]
          [(= msg WM_CHAR)
-          (do-key w msg wParam lParam #t #f)
-          0]
+          (do-key w msg wParam lParam #t #f default)]
          [(= msg WM_COMMAND)
           (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
-                 [wx (any-hwnd->wx control-hwnd)])
-            (if (and wx (send wx is-command? (HIWORD wParam)))
+                 [wx (any-hwnd->wx control-hwnd)]
+                 [cmd (HIWORD wParam)])
+            (if (and wx (send wx is-command? cmd))
                 (begin
-                  (send wx do-command control-hwnd)
+                  (send wx do-command cmd control-hwnd)
                   0)
                 (default w msg wParam lParam)))]
          [(= msg WM_NOTIFY)
           (let* ([nmhdr (cast lParam _LPARAM _NMHDR-pointer)]
                  [control-hwnd (NMHDR-hwndFrom nmhdr)]
-                 [wx (any-hwnd->wx control-hwnd)])
-            (if (and wx (send wx is-command? (LOWORD (NMHDR-code nmhdr))))
+                 [wx (any-hwnd->wx control-hwnd)]
+                 [cmd (LOWORD (NMHDR-code nmhdr))])
+            (if (and wx (send wx is-command? cmd))
                 (begin
                   (send wx do-command control-hwnd)
                   0)
@@ -398,17 +397,18 @@
   (define/public (get-top-frame)
     (send parent get-top-frame))
   
-  (define/private (do-key w msg wParam lParam is-char? is-up?)
+  (define/private (do-key w msg wParam lParam is-char? is-up? default)
     (let ([e (make-key-event #f wParam lParam is-char? is-up? hwnd)])
-      (and e
-           (if (definitely-wants-event? w msg wParam e)
-               (begin
-                 (queue-window-event this (lambda () (dispatch-on-char/sync e)))
-                 #t)
-               (constrained-reply (get-eventspace)
-                                  (lambda () (dispatch-on-char e #t))
-                                  #t)))))
-
+      (if (and e
+               (if (definitely-wants-event? w msg wParam e)
+                   (begin
+                     (queue-window-event this (lambda () (dispatch-on-char/sync e)))
+                     #t)
+                   (constrained-reply (get-eventspace)
+                                      (lambda () (dispatch-on-char e #t))
+                                      #t)))
+          0
+          (default w msg wParam lParam))))
 
   (define/public (try-mouse w msg wParam lParam)
     (cond

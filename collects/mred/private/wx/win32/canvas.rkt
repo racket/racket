@@ -418,7 +418,7 @@
      (define/override (is-command? cmd)
        (= cmd CBN_SELENDOK))
 
-     (define/public (do-command control-hwnd)
+     (define/public (do-command cmd control-hwnd)
        (let ([i (SendMessageW combo-hwnd CB_GETCURSEL 0 0)])
          (queue-window-event this (lambda () (on-combo-select i)))))
 

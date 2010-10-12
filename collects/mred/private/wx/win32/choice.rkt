@@ -14,6 +14,10 @@
 
 (provide choice%)
 
+(define CBN_DROPDOWN        7)
+(define CBN_CLOSEUP         8)
+(define CBN_SELENDCANCEL    10)
+
 (define choice% 
   (class item%
     (init parent cb label
@@ -62,10 +66,27 @@
 
     (subclass-control hwnd)
 
+    (define choice-dropped? #f)
+
+    (define/override (ctlproc w msg wParam lParam default)
+      (cond
+       [(and choice-dropped?
+             (or (= msg WM_KEYDOWN)
+                 (= msg WM_KEYUP)
+                 (= msg WM_SYSCHAR)
+                 (= msg WM_CHAR)))
+        (default w msg wParam lParam)]
+       [else (super ctlproc w msg wParam lParam default)]))
+
     (define/override (is-command? cmd)
+      (when (= cmd CBN_DROPDOWN)
+        (set! choice-dropped? #t))
+      (when (= cmd CBN_CLOSEUP)
+        (queue-window-event this (lambda ()
+                                   (set! choice-dropped? #f))))
       (= cmd CBN_SELENDOK))
 
-    (define/public (do-command control-hwnd)
+    (define/public (do-command cmd control-hwnd)
       (queue-window-event this (lambda ()
                                  (callback this
                                            (new control-event%

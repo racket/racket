@@ -74,7 +74,7 @@
     (define/override (is-command? cmd)
       (= cmd BN_CLICKED))
 
-    (define/public (do-command control-hwnd)
+    (define/public (do-command cmd control-hwnd)
       (queue-window-event this (lambda ()
                                  (callback this
                                            (new control-event%

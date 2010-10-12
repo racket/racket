@@ -115,7 +115,7 @@
     (define/override (is-command? cmd)
       (= cmd 64985))
 
-    (define/public (do-command control-hwnd)
+    (define/public (do-command cmd control-hwnd)
       (queue-window-event this (lambda ()
                                  (callback this
                                            (new control-event%

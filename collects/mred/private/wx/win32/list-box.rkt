@@ -25,6 +25,9 @@
 (define LBS_EXTENDEDSEL       #x0800)
 (define LBS_DISABLENOSCROLL   #x1000)
 
+(define LBN_SELCHANGE       1)
+(define LBN_DBLCLK          2)
+
 (define LB_ERR -1)
 
 (define LB_ADDSTRING          #x0180)
@@ -87,6 +90,22 @@
     (set-size -11111 -11111 40 60)
 
     (subclass-control hwnd)
+
+    (define callback cb)
+
+    (define/override (is-command? cmd)
+      (or (= cmd LBN_SELCHANGE)
+          (= cmd LBN_DBLCLK)))
+    
+    (define/public (do-command cmd control-hwnd)
+      (queue-window-event this (lambda ()
+                                 (callback this
+                                           (new control-event%
+                                                [event-type (if (= cmd LBN_SELCHANGE)
+                                                                'list-box
+                                                                'list-box-dclick)]
+                                                [time-stamp (current-milliseconds)])))))
+
 
     (define num (length choices))
     (define/public (number) num)
