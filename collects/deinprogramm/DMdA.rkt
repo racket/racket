@@ -914,7 +914,7 @@
 (define (false? x)
   (eq? x #f))
 
-(define true (signature (one-of #f)))
+(define true (signature (one-of #t)))
 (define false (signature (one-of #f)))
 
 (define string (signature/arbitrary arbitrary-printable-ascii-string (predicate string?)))
