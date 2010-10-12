@@ -1738,8 +1738,8 @@ position with respect to the @racket[if] form.
 
 @defform/subs[#:literals (else =>)
               (cond cond-clause ...)
-              ([cond-clause [test-expr then-expr ...+]
-                            [else then-expr ...+]
+              ([cond-clause [test-expr then-body ...+]
+                            [else then-body ...+]
                             [test-expr => proc-expr]
                             [test-expr]])]{
 
@@ -1750,10 +1750,10 @@ A @racket[cond-clause] that starts with @racket[else] must be the last
 
 If no @racket[cond-clause]s are present, the result is @|void-const|.
 
-If only a @racket[[else then-expr ...+]] is present, then the
-@racket[then-expr]s are evaluated. The results from all but the last
-@racket[then-expr] are ignored. The results of the last
-@racket[then-expr], which is in tail position with respect to the
+If only a @racket[[else then-body ...+]] is present, then the
+@racket[then-body]s are evaluated. The results from all but the last
+@racket[then-body] are ignored. The results of the last
+@racket[then-body], which is in tail position with respect to the
 @racket[cond] form, are the results for the whole @racket[cond]
 form.
 
@@ -1763,10 +1763,10 @@ the remaining @racket[cond-clause]s, in tail position with respect to
 the original @racket[cond] form. Otherwise, evaluation depends on the
 form of the @racket[cond-clause]:
 
-@specsubform[[test-expr then-expr ...+]]{The @racket[then-expr]s are
+@specsubform[[test-expr then-body ...+]]{The @racket[then-body]s are
 evaluated in order, and the results from all but the last
-@racket[then-expr] are ignored. The results of the last
-@racket[then-expr], which is in tail position with respect to the
+@racket[then-body] are ignored. The results of the last
+@racket[then-body], which is in tail position with respect to the
 @racket[cond] form, provides the result for the whole @racket[cond]
 form.}
 
@@ -1860,8 +1860,8 @@ position with respect to the original @racket[or] form.
 
 @defform/subs[#:literals (else)
               (case val-expr case-clause ...)
-              ([case-clause [(datum ...) then-expr ...+]
-                            [else then-expr ...+]])]{
+              ([case-clause [(datum ...) then-body ...+]
+                            [else then-body ...+]])]{
 
 Evaluates @racket[val-expr] and uses the result to select a
 @racket[case-clause]. The selected clause is the first one with a
@@ -1872,7 +1872,7 @@ result of @racket[val-expr]. If no such @racket[datum] is present, the
 @racket[case] form is @|void-const|.
 
 For the selected @racket[case-clause], the results of the last
-@racket[then-expr], which is in tail position with respect to the
+@racket[then-body], which is in tail position with respect to the
 @racket[case] form, are the results for the whole @racket[case] form.
 
 A @racket[case-clause] that starts with @racket[else] must be the last
@@ -2202,12 +2202,12 @@ classifications:
 
 @guideintro["when+unless"]{@racket[when] and @racket[unless]}
 
-@defform[(when test-expr expr ...)]{
+@defform[(when test-expr body ...+)]{
 
 Evaluates @racket[test-expr]. If the result is @racket[#f], then
 the result of the @racket[when] expression is
-@|void-const|. Otherwise, the @racket[expr]s are evaluated, and the
-last @racket[expr] is in tail position with respect to the
+@|void-const|. Otherwise, the @racket[body]s are evaluated, and the
+last @racket[body] is in tail position with respect to the
 @racket[when] form.
 
 @mz-examples[
@@ -2218,9 +2218,9 @@ last @racket[expr] is in tail position with respect to the
   (display " there"))
 ]}
 
-@defform[(unless test-expr expr ...)]{
+@defform[(unless test-expr body ...+)]{
 
-Equivalent to @racket[(when (not test-expr) expr ...)].
+Equivalent to @racket[(when (not test-expr) body ...+)].
 
 @mz-examples[
 (unless (positive? 5)

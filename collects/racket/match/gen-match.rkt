@@ -58,7 +58,7 @@
                    (let ([mk (lambda (unm rhs)
                                (make-Row (for/list ([p (syntax->list pats)])
                                            (parse/cert p cert))
-                                         #`(begin . #,rhs) unm null))])
+                                         #`(let-values () . #,rhs) unm null))])
                      (syntax-case* rhs (=>)
                        (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
                        [((=> unm) . rhs) (mk #'unm #'rhs)]

@@ -526,12 +526,12 @@
 		       (with-handlers () ,@body)))
 	 (teval `(test ,val 'with-handlers-begin
 		       (with-handlers ([void void]) ,@body)))
-	 (syntax-test (datum->syntax #f `(when (positive? 1) ,@body) #f))
-	 (syntax-test (datum->syntax #f `(unless (positive? -1) ,@body) #f))
-	 (syntax-test (datum->syntax #f `(cond [(positive? 1) ,@body][else #f]) #f))
-	 (syntax-test (datum->syntax #f `(cond [(positive? -1) 0][else ,@body]) #f))
-	 (syntax-test (datum->syntax #f `(case (positive? 1) [(#t) ,@body][else -12]) #f))
-	 (syntax-test (datum->syntax #f `(cond [#t ,@body]) #f))
+	 (teval `(test ,val 'when-begin (when (positive? 1) ,@body)))
+	 (teval `(test ,val 'unless-begin (unless (positive? -1) ,@body)))
+	 (teval `(test ,val 'cons-begin (cond [(positive? 1) ,@body][else #f])))
+	 (teval `(test ,val 'cons-else-begin (cond [(positive? -1) 0][else ,@body])))
+         (teval `(test ,val 'case-begin (case (positive? 1) [(#t) ,@body][else -12])))
+	 (teval `(test ,val 'cond-only-begin (cond [#t ,@body])))
 	 (syntax-test (datum->syntax #f `(do ((x 1)) (#t ,@body) ,@body) #f))
 	 (syntax-test (datum->syntax #f `(begin0 12 ,@body) #f)))])
   (wrap 5 '((begin (define x 5)) x))
@@ -791,7 +791,6 @@
 (syntax-test #'(lambda () (void (define x 2)) 1))
 (syntax-test #'(cond [(< 2 3) (define x 2)] [else 5]))
 (syntax-test #'(cond [else (define x 2)]))
-(syntax-test #'(cond [else (define x 2) 0]))
 
 ;; No good way to test in mzc:
 (error-test #'(define x (values)) exn:application:arity?)

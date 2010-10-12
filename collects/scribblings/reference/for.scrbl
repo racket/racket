@@ -339,7 +339,7 @@ parallel iterations.}
 
 @defform/subs[(do ([id init-expr step-expr-maybe] ...)
                   (stop?-expr finish-expr ...)
-                expr ...+)
+                expr ...)
               ([step-expr-maybe code:blank
                                 step-expr])]{
 

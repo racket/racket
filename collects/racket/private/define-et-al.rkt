@@ -41,7 +41,8 @@
 	     (list (quote-syntax if)
 		   (stx-car (stx-cdr x))
 		   (list*
-		    (quote-syntax begin)
+		    (quote-syntax let-values)
+                    (quote-syntax ())
 		    (stx-cdr (stx-cdr x)))
                    (quote-syntax (void)))
 	     x)
@@ -61,7 +62,8 @@
 		   (cadr l)
 		   (quote-syntax (void))
 		   (list*
-		    (quote-syntax begin)
+		    (quote-syntax let-values)
+                    (quote-syntax ())
 		    (cddr l)))
 	     x)
 	    (raise-syntax-error

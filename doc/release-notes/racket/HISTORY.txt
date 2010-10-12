@@ -1,4 +1,6 @@
 Version 5.0.1.8
+Changed body of `when', `unless', `cond' clauses, `case'
+ clauses, and `match' clauses to be internal-definition contexts
 Added #true and #false, and changed #t/#T and #f/#F to
  require a delimiter afterward
 Added print-boolean-long-form

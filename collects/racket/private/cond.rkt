@@ -67,18 +67,14 @@
                                                 (serror
                                                  "missing expressions in `else' clause"
                                                  line)
-                                                (if first?
-                                                    ;; first => be careful not to introduce a splicable begin...
-                                                    `(,(quote-syntax if) #t ,(cons (quote-syntax begin) value) (void))
-                                                    ;; we're in an `if' branch already...
-                                                    (cons (quote-syntax begin) value)))
+                                                (list* (quote-syntax let-values) (quote-syntax ()) value))
                                             (if (stx-null? value)
                                                 (let ([gen (gen-temp-id 'c)])
                                                   `(,(quote-syntax let-values) ([(,gen) ,test])
                                                     (,(quote-syntax if) ,gen ,gen ,(loop rest #f))))
                                                 (list
                                                  (quote-syntax if) test
-                                                 (cons (quote-syntax begin) value)
+                                                 (list* (quote-syntax let-values) (quote-syntax ()) value)
                                                  (loop rest #f))))))))))))
                 in-form)))])
       (values

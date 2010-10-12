@@ -27,13 +27,13 @@
                ((_ v)
                 (syntax (#%expression (begin v (void)))))
                ((_ v (else e1 e2 ...))
-                (syntax/loc x (#%expression (begin v e1 e2 ...))))
+                (syntax/loc x (#%expression (begin v (let-values () e1 e2 ...)))))
                ((_ v ((k ...) e1 e2 ...))
-                (syntax/loc x (if (case-test v (k ...)) (begin e1 e2 ...) (void))))
+                (syntax/loc x (if (case-test v (k ...)) (let-values () e1 e2 ...) (void))))
                ((self v ((k ...) e1 e2 ...) c1 c2 ...)
                 (syntax/loc x (let ((x v))
                                 (if (case-test x (k ...))
-                                    (begin e1 e2 ...)
+                                    (let-values () e1 e2 ...)
                                     (self x c1 c2 ...)))))
                ((_ v (bad e1 e2 ...) . rest)
                 (raise-syntax-error 
@@ -74,20 +74,11 @@
 				     orig-x))))
 			     (syntax->list (syntax (var ...)))
 			     (syntax->list (syntax (step ...))))))
-	   (syntax-case (syntax (e1 ...)) ()
-	     (() (syntax/loc
-		  orig-x
-		  (let doloop ((var init) ...)
-		    (if e0
-                        (void)
-			(begin c ... (doloop step ...))))))
-	     ((e1 e2 ...)
-	      (syntax/loc
-	       orig-x
-	       (let doloop ((var init) ...)
-		 (if e0
-		     (begin e1 e2 ...)
-		     (begin c ... (doloop step ...))))))))))))
+	   (syntax/loc orig-x
+             (let doloop ((var init) ...)
+               (if e0
+                   (begin (void) e1 ...)
+                   (begin c ... (doloop step ...))))))))))
   
   (define-syntax parameterize
     (lambda (stx)
