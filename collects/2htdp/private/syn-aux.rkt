@@ -22,19 +22,14 @@
   (syntax-parse stx #:literals (DEFAULT) 
     [(_ the-list super-list define-create
         (kw:identifier 
-         (~optional kw-alt:identifier 
-                    #:defaults ((kw-alt #'kw #;(datum->syntax stx (gensym)))))
+         (~optional kw-alt:identifier #:defaults ((kw-alt #'kw)))
          (~optional (~seq DEFAULT default:expr))
          coerce:expr) ...)
      (let* ([defs (attribute default)])
        #`(begin
            ;; define and create list of keywords and associated values 
            (define-for-syntax the-list
-             (append super-list
-                     (list (list #'kw     #'kw-alt (coerce ''kw) default)
-                           #;
-                           (list #'kw-alt #'kw (coerce ''kw-alt) default))
-                     ...))
+             (list* (list #'kw #'kw-alt (coerce ''kw) default) ... super-list))
            ;; define and provide keywords
            (provide (rename-out (kw  kw-alt) ...))
            (provide kw ...) 
@@ -43,11 +38,15 @@
                        (raise-syntax-error 'kw "used out of context" x))
                      ...))
            
+           ;; a macro for creating functions that instantiate the proper object
+           ;; (define-create para ...) :: additional parameters for the new func
            (define-syntax (define-create stx)
              (syntax-case stx ()
                [(_ para (... ...))
                 (let*-values
-                    ([(kwds defs) 
+                    ([(kwds defs)
+                      (values (map car the-list) '())
+                      #;
                       (let L ([the-list the-list][kwds '()][defs '()])
                         (if (null? the-list)
                             (values kwds defs)
@@ -61,32 +60,16 @@
                                   (L (cdr the-list)
                                      (list* kw0 kw1 kwds)
                                      (list* def def defs))))))]
+                     ;; the defaults list defs is no longer needed
                      [(args) (lambda (para*)
-                               (append 
-                                para*
-                                (foldr (lambda (x d rst)
-                                         (define k (string->keyword 
-                                                    (symbol->string
-                                                     (syntax-e x))))
-                                         ;; This 'if' doesn't work because 
-                                         ;; I don't know how to use 'attribute'
-                                         ;; properly here and have default values
-                                         ;; for everything. big-bang and universe
-                                         ;; check already that defaults are provided. 
-                                         (if d
-                                             (append (list k `(,x ,d)) rst)
-                                             (append (list k x) rst)))
-                                       '() 
-                                       kwds
-                                       defs)))]
+                               (append para* (foldr cons '() kwds)))]
                      [(body) (lambda (para*)
                                (map (lambda (x) `(,x ,x)) (append para* kwds)))])
                   (let ([para* (syntax->list #'(para (... ...)))])
                     #`(lambda (%)
-                        (lambda #,(args  para*)
+                        (lambda #,(args para*)
                           (lambda ()
-                            (define o (new % #,@(body para*)))
-                            o)))))]))))]))
+                            (new % #,@(body para*)))))))]))))]))
 
 #|
   transform the clauses into the initial arguments specification 
@@ -107,6 +90,20 @@
   (define spec (clauses-use-kwd (syntax->list clauses) ->rec? msg kwds))
   (duplicates? tag spec)
   (not-a-clause tag stx state0 kwds)
+  (map (lambda (s) 
+         (define kw (first s))
+         (define kw-alt (second s))
+         (define r
+           (let loop ([spec spec])
+             (cond
+               [(null? spec) #false]
+               [(or (free-identifier=? (caar spec) kw)
+                    (free-identifier=? (caar spec) kw-alt))
+                (syntax->list (cdar spec))]
+               [else (loop (cdr spec))])))
+         (if r ((third s) r) (fourth s)))
+       Spec)
+  #;
   (apply append
          (map (lambda (x) 
                 (define kw (car x))
@@ -186,14 +183,14 @@
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
-           [_ (err tag p)])))]
+           [_ (displayln p) (err tag p)])))]
     [(_ arity except extra)
      (lambda (tag)
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
            extra
-           [_ (err tag p)])))]))
+           [_ (displayln p) (err tag p)])))]))
 
 (define (err spec p . xtras)
   (raise-syntax-error (cadr spec)

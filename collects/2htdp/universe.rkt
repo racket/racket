@@ -311,19 +311,15 @@
     [(universe) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u bind ...)
-     (let*
-         ([args (->args 'universe stx #'u #'(bind ...) UniSpec void "universe")]
-          [domain (map (lambda (x)
-                         (if (keyword? x)
-                             (string->symbol (keyword->string x))
-                             x))
-                       args)])
+     (let* ([args
+             (->args 'universe stx #'u #'(bind ...) UniSpec void "universe")]
+            [dom (map (compose car syntax->datum) (syntax->list #'(bind ...)))])
        (cond
-         [(not (memq 'on-new domain))
+         [(not (memq 'on-new dom))
           (raise-syntax-error #f "missing on-new clause" stx)]
-         [(not (memq 'on-msg domain))
+         [(not (memq 'on-msg dom))
           (raise-syntax-error #f "missing on-msg clause" stx)]
-         [else ; (and (memq #'on-new domain) (memq #'on-msg domain))
+         [else ; (and (memq #'on-new dom) (memq #'on-msg dom))
           #`(run-it ((new-universe universe%) u #,@args))]))]))
 
 ;                                          

@@ -64,13 +64,13 @@
        (on-release K)    ;; World KeyEvent -> World 
        (on-mouse K)      ;; World Nat Nat MouseEvent -> World 
        (on-receive #f)   ;; (U #f (World S-expression -> World))
-       (on-draw #f)
-       (to-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
+       (on-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
        (stop-when False) ;; World -> Boolean 
        (record? #f))     ;; Boolean 
       
       ;; -----------------------------------------------------------------------
       (field
+       [to-draw on-draw]
        [world
         (new checked-cell% [msg "World"] [value0 world0] [ok? check-with]
              [display (and state (or name "your world program's state"))])])
