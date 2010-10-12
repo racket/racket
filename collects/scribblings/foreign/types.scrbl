@@ -104,7 +104,13 @@ respectively; the ones with no prefix are signed.}
             [_uword ctype?]
             [_long ctype?]
             [_slong ctype?]
-            [_ulong ctype?])]{
+            [_ulong ctype?]
+            [_llong ctype?]
+            [_sllong ctype?]
+            [_ullong ctype?]
+            [_intptr ctype?]
+            [_sintptr ctype?]
+            [_uintptr ctype?])]{
 
 Aliases for basic integer types. The @scheme[_byte] aliases correspond
 to @scheme[_int8]. The @scheme[_short] and @scheme[_word] aliases

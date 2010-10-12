@@ -45,42 +45,40 @@
 (define* _uword _uint16)
 (define* _sword _int16)
 
-;; _short etc is a convenient name for whatever is the compiler's `short'
-;; (_short is signed)
-(provide _short _ushort _sshort)
-(define-values (_short _ushort _sshort)
-  (case (compiler-sizeof 'short)
-    [(2) (values _int16 _uint16 _int16)]
-    [(4) (values _int32 _uint32 _int32)]
-    [else (error 'foreign "internal error: bad compiler size for `short'")]))
-
-;; _int etc is a convenient name for whatever is the compiler's `int'
-;; (_int is signed)
-(provide _int _uint _sint)
-(define-values (_int _uint _sint)
+;; utility for the next few definitions
+(define (sizeof->3ints c-type)
   (case (compiler-sizeof 'int)
     [(2) (values _int16 _uint16 _int16)]
     [(4) (values _int32 _uint32 _int32)]
     [(8) (values _int64 _uint64 _int64)]
-    [else (error 'foreign "internal error: bad compiler size for `int'")]))
+    [else (error 'foreign "internal error: bad compiler size for `~s'"
+                 c-type)]))
+
+;; _short etc is a convenient name for whatever is the compiler's `short'
+;; (_short is signed)
+(provide _short _ushort _sshort)
+(define-values (_short _ushort _sshort) (sizeof->3ints 'short))
+
+;; _int etc is a convenient name for whatever is the compiler's `int'
+;; (_int is signed)
+(provide _int _uint _sint)
+(define-values (_int _uint _sint) (sizeof->3ints 'int))
 
 ;; _long etc is a convenient name for whatever is the compiler's `long'
 ;; (_long is signed)
 (provide _long _ulong _slong)
-(define-values (_long _ulong _slong)
-  (case (compiler-sizeof 'long)
-    [(4) (values _int32 _uint32 _int32)]
-    [(8) (values _int64 _uint64 _int64)]
-    [else (error 'foreign "internal error: bad compiler size for `long'")]))
+(define-values (_long _ulong _slong) (sizeof->3ints 'long))
 
 ;; _llong etc is a convenient name for whatever is the compiler's `long long'
 ;; (_llong is signed)
 (provide _llong _ullong _sllong)
-(define-values (_llong _ullong _sllong)
-  (case (compiler-sizeof '(long long))
-    [(4) (values _int32 _uint32 _int32)]
-    [(8) (values _int64 _uint64 _int64)]
-    [else (error 'foreign "internal error: bad compiler size for `llong'")]))
+(define-values (_llong _ullong _sllong) (sizeof->3ints '(long long)))
+
+;; _intptr etc is a convenient name for whatever is the integer
+;; equivalent of the compiler's pointer (see `intptr_t') (_intptr is
+;; signed)
+(provide _intptr _uintptr _sintptr)
+(define-values (_intptr _uintptr _sintptr) (sizeof->3ints '(void *)))
 
 ;; ----------------------------------------------------------------------------
 ;; Getting and setting library objects
