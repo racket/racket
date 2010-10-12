@@ -218,6 +218,13 @@
 (define-local-member-name
   draw-bitmap-section/mask-offset)
 
+;; We make different font map for each smoothing
+;; kind because the smoothing choice the first
+;; time a font is used in a given map seems to stick,
+;; at least for the Quartz and Win32 back-ends.
+;; (But we create the font maps on demand.)
+(define font-maps (make-vector 4 #f))
+
 (define (dc-mixin backend%)
   (defclass* dc% backend% (dc<%>)
     (super-new)
@@ -255,8 +262,9 @@
     (define/public (in-cairo-context cb)
       (with-cr (void) cr (cb cr)))
 
-    ;; pango context:
-    (define context #f)
+    ;; pango contexts, one per smoothing kind:
+    (define contexts (make-vector (vector-length font-maps) #f))
+    (define desc-layoutss (make-vector (vector-length font-maps) #f))
 
     (define black (send the-color-database find-color "black"))
     (define pen (send the-pen-list find-or-create-pen "black" 1 'solid))
@@ -438,9 +446,8 @@
       (get-font-metrics-key effective-scale-x effective-scale-y))
 
     (define/override (reset-cr cr)
-      (set! context #f)
-      (set! current-smoothing #f)
-      (reset-layouts!)
+      (set! contexts (make-vector (vector-length font-maps) #f))
+      (set! desc-layoutss (make-vector (vector-length font-maps) #f))
       (do-reset-matrix cr)
       (when clipping-region
         (send clipping-region install-region cr scroll-dx scroll-dy)))
@@ -474,22 +481,21 @@
     (define current-smoothing #f)
 
     (define (set-font-antialias context smoothing)
-      (let ([smoothing (dc-adjust-smoothing smoothing)])
-        (unless (eq? current-smoothing smoothing)
-          (set! current-smoothing smoothing)
-          (let ([o (pango_cairo_context_get_font_options context)]
-                [o2 (cairo_font_options_create)])
-            (when o
-              (cairo_font_options_copy o2 o))
-            (cairo_font_options_set_antialias
-             o2 
-             (case smoothing
-               [(default) CAIRO_ANTIALIAS_SUBPIXEL] ; should be DEFAULT?
-               [(unsmoothed) CAIRO_ANTIALIAS_NONE]
-               [(partly-smoothed) CAIRO_ANTIALIAS_GRAY]
-               [(smoothed) CAIRO_ANTIALIAS_SUBPIXEL]))
-            (pango_cairo_context_set_font_options context o2)
-            (cairo_font_options_destroy o2)))))
+      (let ([o (pango_cairo_context_get_font_options context)]
+            [o2 (cairo_font_options_create)])
+        (when o
+          (cairo_font_options_copy o2 o))
+        (cairo_font_options_set_antialias
+         o2 
+         (case smoothing
+           [(default) (if (eq? (system-type) 'macosx)
+                          CAIRO_ANTIALIAS_SUBPIXEL
+                          CAIRO_ANTIALIAS_DEFAULT)]
+           [(unsmoothed) CAIRO_ANTIALIAS_NONE]
+           [(partly-smoothed) CAIRO_ANTIALIAS_GRAY]
+           [(smoothed) CAIRO_ANTIALIAS_SUBPIXEL]))
+        (pango_cairo_context_set_font_options context o2)
+        (cairo_font_options_destroy o2)))
 
     (define alpha 1.0)
     (def/public (get-alpha) alpha)
@@ -998,9 +1004,6 @@
              (draw cr #t #t)))
        (cairo_restore cr)))
 
-    (define desc-layouts (make-weak-hasheq))
-    (define/private (reset-layouts!) (set! desc-layouts (make-weak-hasheq)))
-
     (inherit get-size)
     (def/public (draw-text [string? s] [real? x] [real? y]
                            [any? [combine? #f]]
@@ -1064,10 +1067,23 @@
                     (substring s offset))]
              [blank? (string=? s "")]
              [s (if (and (not draw?) blank?) " " s)]
-             [rotate? (and draw? (not (zero? angle)))])
-        (unless context
-          (set! context (pango_cairo_create_context cr)))
-        (set-font-antialias context (send font get-smoothing))
+             [rotate? (and draw? (not (zero? angle)))]
+             [smoothing-index (case (dc-adjust-smoothing (send font get-smoothing))
+                                [(default) 0]
+                                [(unsmoothed) 1]
+                                [(partly-smoothed) 2]
+                                [(smoothed) 3])]
+             [context (or (vector-ref contexts smoothing-index)
+                          (let ([c (pango_font_map_create_context
+                                    (let ([fm (vector-ref font-maps smoothing-index)])
+                                      (or fm
+                                          (let ([fm (pango_cairo_font_map_new)])
+                                            (vector-set! font-maps smoothing-index fm)
+                                            fm))))])
+                            (pango_cairo_update_context cr c)
+                            (vector-set! contexts smoothing-index c)
+                            (set-font-antialias c (dc-adjust-smoothing (send font get-smoothing)))
+                            c))])
         (when draw?
           (when (eq? text-mode 'solid)
             (unless rotate?
@@ -1161,9 +1177,15 @@
                                    (not (fl= 1.0 effective-scale-y)))
                                #f
                                (get-size-cache desc))]
-                    [layouts (let ([attr-layouts (or (hash-ref desc-layouts desc #f)
+                    [layouts (let ([attr-layouts (or (hash-ref (let ([t (vector-ref desc-layoutss smoothing-index)])
+                                                                 (or t
+                                                                     (let ([t (make-weak-hasheq)])
+                                                                       (vector-set! desc-layoutss smoothing-index t)
+                                                                       t)))
+                                                               desc 
+                                                               #f)
                                                      (let ([layouts (make-hasheq)])
-                                                       (hash-set! desc-layouts desc layouts)
+                                                       (hash-set! (vector-ref desc-layoutss smoothing-index) desc layouts)
                                                        layouts))])
                                (or (hash-ref attr-layouts attrs #f)
                                    (let ([layouts (make-hasheq)])
@@ -1573,9 +1595,10 @@
        #f
        cr
        (let ([desc (get-pango font)]
-             [attrs (send font get-pango-attrs)])
-         (unless context
-           (set! context (pango_cairo_create_context cr)))
+             [attrs (send font get-pango-attrs)]
+             [context (or (for/or ([c (in-vector contexts)])
+                            c)
+                          (pango_cairo_create_context cr))])
          (let ([layout (pango_layout_new context)])
            (pango_layout_set_font_description layout desc)
            (pango_layout_set_text layout (string c))

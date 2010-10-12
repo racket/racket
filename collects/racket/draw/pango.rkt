@@ -111,30 +111,20 @@
   #:wrap (deallocator))
 
 (define-pangocairo pango_cairo_font_map_get_default (_fun -> PangoFontMap)) ;; not an allocator
+(define-pangocairo pango_cairo_font_map_new (_fun -> PangoFontMap)
+  #:wrap (allocator g_object_unref))
 
-(define-pangocairo pango_cairo_create_context (_fun _cairo_t -> PangoContext)
-  #:wrap (allocator g_object_unref)
-  ;; The convenince function pango_cairo_create_context() is in 1.22 and later
-  #:make-fail (lambda (id)
-                (let ([pango_cairo_font_map_create_context
-                       (get-ffi-obj 'pango_cairo_font_map_create_context pangocairo-lib
-                                    (_fun PangoFontMap -> PangoContext)
-                                    (lambda () #f))]
-                      [pango_cairo_update_context 
-                       (get-ffi-obj 'pango_cairo_update_context pangocairo-lib
-                                    (_fun _cairo_t PangoContext -> _void)
-                                    (lambda () #f))])
-                  (if (and pango_cairo_font_map_create_context
-                           pango_cairo_update_context)
-                      (lambda ()
-                        (lambda (cr)
-                          (call-as-atomic
-                           (lambda ()
-                             (let ([ctx (pango_cairo_font_map_create_context
-                                         (pango_cairo_font_map_get_default))])
-                               (pango_cairo_update_context cr ctx)
-                               ctx)))))
-                      (make-not-available id)))))
+(define-pango pango_font_map_create_context (_fun PangoFontMap -> PangoContext)
+  #:wrap (allocator g_object_unref))
+(define-pangocairo pango_cairo_update_context (_fun _cairo_t PangoContext -> _void))
+
+;; The convenince function pango_cairo_create_context() is in 1.22 and later
+(provide pango_cairo_create_context)
+(define (pango_cairo_create_context cr)
+  (let ([ctx (pango_font_map_create_context
+              (pango_cairo_font_map_get_default))])
+    (pango_cairo_update_context cr ctx)
+    ctx))
 
 (define-pangocairo pango_cairo_create_layout (_fun _cairo_t -> PangoLayout)
   #:wrap (allocator g_object_unref))
