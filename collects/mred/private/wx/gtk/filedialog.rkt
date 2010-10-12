@@ -72,7 +72,7 @@
   (define dlg (gtk_file_chooser_dialog_new 
                message (and parent (send parent get-gtk))
                (case type
-                 [(dir) 'select-directory]
+                 [(dir) 'select-folder]
                  [(put) 'save]
                  [else 'open])
                "gtk-cancel" 'cancel
