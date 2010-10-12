@@ -2,8 +2,9 @@
 (require racket/class
          racket/draw
          ffi/unsafe
-          "../../syntax.rkt"
-          "../common/event.rkt"
+         "../../syntax.rkt"
+         "../../lock.rkt"
+         "../common/event.rkt"
 	 "utils.rkt"
 	 "const.rkt"
 	 "window.rkt"
@@ -83,7 +84,17 @@
       (set! label-hbitmaps (cons hbitmap label-hbitmaps)))
     
     (define/public (set-label s)
-      (SetWindowTextW (get-hwnd) s))
+      (if (s . is-a? . bitmap%)
+          (let ([hbitmap (bitmap->hbitmap s)])
+            (atomically
+             (set! label-hbitmaps (list hbitmap))
+             (SendMessageW (get-hwnd) 
+                           (get-setimage-message)
+                           IMAGE_BITMAP 
+                           (cast hbitmap _HBITMAP _LPARAM))))
+          (SetWindowTextW (get-hwnd) s)))
+
+    (define/public (get-setimage-message) BM_SETIMAGE)
     
     (def/public-unimplemented get-label)))
 
