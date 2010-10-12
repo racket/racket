@@ -1,32 +1,32 @@
 #;
 (
-nested-let-loop.rkt line 58 col 38 - r - unbox inexact-complex
-nested-let-loop.rkt line 58 col 40 - s - unbox inexact-complex
-nested-let-loop.rkt line 58 col 36 - + - unboxed binary inexact complex
-nested-let-loop.rkt line 58 col 35 - (#%app + r s) - unboxed inexact complex
+nested-let-loop.rkt line 58 col 38 - r - unbox float-complex
+nested-let-loop.rkt line 58 col 40 - s - unbox float-complex
+nested-let-loop.rkt line 58 col 36 - + - unboxed binary float complex
+nested-let-loop.rkt line 58 col 35 - (#%app + r s) - unboxed float complex
 nested-let-loop.rkt line 51 col 8 - r - unboxed var -> table
 nested-let-loop.rkt line 49 col 6 - loop1 - unboxed function -> table
 nested-let-loop.rkt line 49 col 6 - loop1 - fun -> unboxed fun
 nested-let-loop.rkt line 53 col 10 - r - unboxed complex variable
 nested-let-loop.rkt line 58 col 38 - r - leave var unboxed
-nested-let-loop.rkt line 58 col 40 - s - unbox inexact-complex
-nested-let-loop.rkt line 58 col 36 - + - unboxed binary inexact complex
-nested-let-loop.rkt line 58 col 35 - (#%app + r s) - unboxed inexact complex
+nested-let-loop.rkt line 58 col 40 - s - unbox float-complex
+nested-let-loop.rkt line 58 col 36 - + - unboxed binary float complex
+nested-let-loop.rkt line 58 col 35 - (#%app + r s) - unboxed float complex
 nested-let-loop.rkt line 56 col 18 - s - unboxed var -> table
 nested-let-loop.rkt line 54 col 16 - loop2 - unboxed function -> table
 nested-let-loop.rkt line 54 col 16 - loop2 - fun -> unboxed fun
 nested-let-loop.rkt line 58 col 38 - r - leave var unboxed
 nested-let-loop.rkt line 58 col 40 - s - leave var unboxed
-nested-let-loop.rkt line 58 col 36 - + - unboxed binary inexact complex
+nested-let-loop.rkt line 58 col 36 - + - unboxed binary float complex
 nested-let-loop.rkt line 58 col 21 - loop1 - unboxed call site
 nested-let-loop.rkt line 58 col 28 - cdr - pair
 nested-let-loop.rkt line 58 col 21 - loop1 - call to fun with unboxed args
 nested-let-loop.rkt line 59 col 38 - s - leave var unboxed
-nested-let-loop.rkt line 59 col 40 - (#%app car x) - unbox inexact-complex
+nested-let-loop.rkt line 59 col 40 - (#%app car x) - unbox float-complex
 nested-let-loop.rkt line 59 col 41 - car - pair
-nested-let-loop.rkt line 59 col 48 - (#%app car y) - unbox inexact-complex
+nested-let-loop.rkt line 59 col 48 - (#%app car y) - unbox float-complex
 nested-let-loop.rkt line 59 col 49 - car - pair
-nested-let-loop.rkt line 59 col 36 - + - unboxed binary inexact complex
+nested-let-loop.rkt line 59 col 36 - + - unboxed binary float complex
 nested-let-loop.rkt line 59 col 21 - loop2 - unboxed call site
 nested-let-loop.rkt line 59 col 28 - cdr - pair
 nested-let-loop.rkt line 59 col 21 - loop2 - call to fun with unboxed args

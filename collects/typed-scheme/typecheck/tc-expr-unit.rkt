@@ -47,10 +47,10 @@
      -NonnegativeFlonum]
     [(~var i (3d flonum?)) -Flonum]
     [(~var i (3d real?)) -Real]
-    ;; a complex number can't have an inexact imaginary part and an exact real part
+    ;; a complex number can't have a float imaginary part and an exact real part
     [(~var i (3d (conjoin number? (lambda (x) (and (flonum? (imag-part x))
                                                    (flonum? (real-part x)))))))
-     -InexactComplex]
+     -FloatComplex]
     [(~var i (3d number?)) -Number]
     [i:str -String]
     [i:char -Char]

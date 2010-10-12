@@ -143,7 +143,7 @@
 [complex? (make-pred-ty N)]
 [rational? (make-pred-ty -Real)]
 [exact? (asym-pred N B (-FS -top (-not-filter -ExactRational 0)))]
-[inexact? (asym-pred N B  (-FS -top (-not-filter (Un -InexactReal -InexactComplex) 0)))]
+[inexact? (asym-pred N B  (-FS -top (-not-filter (Un -InexactReal -FloatComplex) 0)))]
 [fixnum? (make-pred-ty -Fixnum)]
 [positive? (cl->* (-> -Fixnum B : (-FS (-filter -PositiveFixnum 0) -top))
                   (-> -Integer B : (-FS (-filter -ExactPositiveInteger 0) -top))
@@ -234,7 +234,7 @@
                   (list (->* (list -InexactReal -Flonum) (Un -InexactReal -Flonum) -Flonum))
                   (list (->* (list) -InexactReal -InexactReal))
                   (list (->* (list) -Real -Real))
-                  (list (->* (list) (Un -InexactComplex -Flonum) -InexactComplex))
+                  (list (->* (list) (Un -FloatComplex -Flonum) -FloatComplex))
                   (list (->* (list) N N))))]
 [+ (apply cl->*
           (append (list (->* (list -Pos) -Nat -Pos))
@@ -247,9 +247,9 @@
                   (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list) -InexactReal -InexactReal))
                   (list (->* (list) -Real -Real))
-                  (list (->* (list) (Un -Real -InexactComplex) -InexactComplex))
-                  (list (->* (list -InexactComplex) N -InexactComplex))
-                  (list (->* (list N -InexactComplex) N -InexactComplex))
+                  (list (->* (list) (Un -Real -FloatComplex) -FloatComplex))
+                  (list (->* (list -FloatComplex) N -FloatComplex))
+                  (list (->* (list N -FloatComplex) N -FloatComplex))
                   (list (->* (list) N N))))]
 
 [- (apply cl->*
@@ -259,9 +259,9 @@
                   (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list -InexactReal) -InexactReal -InexactReal))
                   (list (->* (list -Real) -Real -Real))
-                  (list (->* (list) (Un -Real -InexactComplex) -InexactComplex))
-                  (list (->* (list -InexactComplex) N -InexactComplex))
-                  (list (->* (list N -InexactComplex) N -InexactComplex))
+                  (list (->* (list) (Un -Real -FloatComplex) -FloatComplex))
+                  (list (->* (list -FloatComplex) N -FloatComplex))
+                  (list (->* (list N -FloatComplex) N -FloatComplex))
                   (list (->* (list N) N N))))]
 [/ (apply cl->*
           (append (list (->* (list -Integer) -Integer -ExactRational))
@@ -272,8 +272,8 @@
                   (list (->* (list -InexactReal -Flonum) -InexactReal -Flonum))
                   (list (->* (list -InexactReal) -InexactReal -InexactReal))
                   (list (->* (list -Real) -Real -Real))
-                  (list (->* (list (Un -Flonum -InexactComplex)) (Un -Real -InexactComplex) -InexactComplex))
-                  (list (->* (list -InexactComplex) -InexactComplex -InexactComplex))
+                  (list (->* (list (Un -Flonum -FloatComplex)) (Un -Real -FloatComplex) -FloatComplex))
+                  (list (->* (list -FloatComplex) -FloatComplex -FloatComplex))
                   (list (->* (list N) N N))))]
 
 [max (cl->* (->* (list -PositiveFixnum) -Fixnum -PositiveFixnum)
@@ -311,7 +311,7 @@
              (-> -Flonum -Flonum)
              (-> -InexactReal -InexactReal)
              (-> -Real -Real)
-             (-> -InexactComplex -InexactComplex)
+             (-> -FloatComplex -FloatComplex)
              (-> N N))]
 
 [sub1 (cl->* (-> -Pos -Nat)
@@ -320,7 +320,7 @@
              (-> -Flonum -Flonum)
              (-> -InexactReal -InexactReal)
              (-> -Real -Real)
-             (-> -InexactComplex -InexactComplex)
+             (-> -FloatComplex -FloatComplex)
              (-> N N))]
 
 [quotient (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . -NonnegativeFixnum)
@@ -374,7 +374,7 @@
                  (-Flonum . -> . -Flonum)           ; no conversion
                  (-InexactReal . -> . -InexactReal) ; no conversion
                  (-Real . -> . -Flonum)
-                 (N . -> . -InexactComplex))]
+                 (N . -> . -FloatComplex))]
 [inexact->exact (cl->*
                  (-Real . -> . -ExactRational)
                  (N . -> . N))]
@@ -383,17 +383,17 @@
 [ceiling rounder]
 [truncate rounder]
 [round rounder]
-[make-rectangular (cl->* (-Flonum -Flonum . -> . -InexactComplex)
+[make-rectangular (cl->* (-Flonum -Flonum . -> . -FloatComplex)
                          (-Real -Real . -> . N))]
-[make-polar (cl->* (-Flonum -Flonum . -> . -InexactComplex)
+[make-polar (cl->* (-Flonum -Flonum . -> . -FloatComplex)
                    (-Real -Real . -> . N))]
-[real-part (cl->* (-InexactComplex . -> . -Flonum)
+[real-part (cl->* (-FloatComplex . -> . -Flonum)
                   (N . -> . -Real))]
-[imag-part (cl->* (-InexactComplex . -> . -Flonum)
+[imag-part (cl->* (-FloatComplex . -> . -Flonum)
                   (N . -> . -Real))]
-[magnitude (cl->* (-InexactComplex . -> . -Flonum)
+[magnitude (cl->* (-FloatComplex . -> . -Flonum)
                   (N . -> . -Real))]
-[angle     (cl->* (-InexactComplex . -> . -Flonum)
+[angle     (cl->* (-FloatComplex . -> . -Flonum)
                   (N . -> . -Real))]
 [numerator   (cl->* (-ExactRational . -> . -Integer)
                     (-Real . -> . -Real))]
@@ -407,28 +407,28 @@
              (-Integer -Nat . -> . -Integer)
              (-Integer -Integer . -> . -ExactRational)
              (-Real -Integer . -> . -Real)
-             (-InexactComplex -InexactComplex . -> . -InexactComplex)
+             (-FloatComplex -FloatComplex . -> . -FloatComplex)
              (N N . -> . N))]
 [sqrt (cl->*
        (-Nat . -> . -Real)
        (-NonnegativeFlonum . -> . -NonnegativeFlonum)
-       (-InexactComplex . -> . -InexactComplex)
+       (-FloatComplex . -> . -FloatComplex)
        (N . -> . N))]
 [log (cl->*
       (-Pos . -> . -Real)
-      (-InexactComplex . -> . -InexactComplex)
+      (-FloatComplex . -> . -FloatComplex)
       (N . -> . N))]
 [exp  (cl->* (-Flonum . -> . -Flonum)
              (-InexactReal . -> . -InexactReal)
              (-Real . -> . -Real)
-             (-InexactComplex . -> . -InexactComplex)
+             (-FloatComplex . -> . -FloatComplex)
              (N . -> . N))]
-[cos  (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-InexactComplex . -> . -InexactComplex) (N . -> . N))]
-[sin  (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-InexactComplex . -> . -InexactComplex) (N . -> . N))]
-[tan  (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-InexactComplex . -> . -InexactComplex) (N . -> . N))]
-[acos (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-InexactComplex . -> . -InexactComplex) (N . -> . N))]
-[asin (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-InexactComplex . -> . -InexactComplex) (N . -> . N))]
-[atan (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-InexactComplex . -> . -InexactComplex) (N . -> . N) (-Real -Real . -> . N))]
+[cos  (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N))]
+[sin  (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N))]
+[tan  (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N))]
+[acos (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N))]
+[asin (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N))]
+[atan (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N) (-Real -Real . -> . N))]
 [gcd  (cl->* (null -Fixnum . ->* . -Fixnum) (null -Integer . ->* . -Integer))]
 [lcm  (null -Integer . ->* . -Integer)]
 
@@ -442,15 +442,15 @@
             (-> -Flonum -NonnegativeFlonum)
             (-> -InexactReal -InexactReal)
             (-> -Real -Real)
-            (-> -InexactComplex -InexactComplex)
+            (-> -FloatComplex -FloatComplex)
             (-> N N))]
-[conjugate (cl->* (-InexactComplex . -> . -InexactComplex)
+[conjugate (cl->* (-FloatComplex . -> . -FloatComplex)
                   (N . -> . N))]
-[sinh (cl->* (-InexactComplex . -> . -InexactComplex)
+[sinh (cl->* (-FloatComplex . -> . -FloatComplex)
              (N . -> . N))]
-[cosh (cl->* (-InexactComplex . -> . -InexactComplex)
+[cosh (cl->* (-FloatComplex . -> . -FloatComplex)
              (N . -> . N))]
-[tanh (cl->* (-InexactComplex . -> . -InexactComplex)
+[tanh (cl->* (-FloatComplex . -> . -FloatComplex)
              (N . -> . N))]
 
 ;; unsafe numeric ops
@@ -480,9 +480,9 @@
 [unsafe-flexp fl-rounder]
 [unsafe-flsqrt fl-rounder]
 [unsafe-fx->fl (cl->* (-Nat . -> . -NonnegativeFlonum) (-Integer . -> . -Flonum))]
-[unsafe-make-flrectangular (-Flonum -Flonum . -> . -InexactComplex)]
-[unsafe-flreal-part (-InexactComplex . -> . -Flonum)]
-[unsafe-flimag-part (-InexactComplex . -> . -Flonum)]
+[unsafe-make-flrectangular (-Flonum -Flonum . -> . -FloatComplex)]
+[unsafe-flreal-part (-FloatComplex . -> . -Flonum)]
+[unsafe-flimag-part (-FloatComplex . -> . -Flonum)]
 
 [unsafe-fx+ fx+-type]
 [unsafe-fx- fx--type]
@@ -560,9 +560,9 @@
 [flexp fl-unop]
 [flsqrt fl-unop]
 [->fl (-Integer . -> . -Flonum)]
-[make-flrectangular (-Flonum -Flonum . -> . -InexactComplex)]
-[flreal-part (-InexactComplex . -> . -Flonum)]
-[flimag-part (-InexactComplex . -> . -Flonum)]
+[make-flrectangular (-Flonum -Flonum . -> . -FloatComplex)]
+[flreal-part (-FloatComplex . -> . -Flonum)]
+[flimag-part (-FloatComplex . -> . -Flonum)]
 
 ;; safe flvector ops
 

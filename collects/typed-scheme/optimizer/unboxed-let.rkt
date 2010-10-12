@@ -7,7 +7,7 @@
          (for-template scheme/base)
          (types abbrev utils type-table)
          (rep type-rep)
-         (optimizer utils inexact-complex))
+         (optimizer utils float-complex))
 
 (provide unboxed-let-opt-expr)
 
@@ -35,7 +35,7 @@
            #:with (~var operator (unboxed-let-opt-expr-internal #t)) #'let-e
            #:with unboxed-info (dict-ref unboxed-funs-table #'loop-fun #f)
            #:when (syntax->datum #'unboxed-info)
-           #:with (~var e* (inexact-complex-call-site-opt-expr
+           #:with (~var e* (float-complex-call-site-opt-expr
                             #'unboxed-info #'operator.opt))
            this-syntax
            #:with opt
@@ -59,12 +59,12 @@
                  ;; clauses of form ((v) rhs), currently only supports 1 lhs var
                  (partition
                   (lambda (p)
-                    (and (isoftype? (cadr p) -InexactComplex)
+                    (and (isoftype? (cadr p) -FloatComplex)
                          (could-be-unboxed-in? (car (syntax-e (car p)))
                                                #'(begin body ...))))
                   (map syntax->list (syntax->list #'(clause ...)))))
                 ((function-candidates others)
-                 ;; extract function bindings that have inexact-complex arguments
+                 ;; extract function bindings that have float-complex arguments
                  ;; we may be able to pass arguments unboxed
                  ;; this covers loop variables
                  (partition
@@ -84,7 +84,7 @@
                                                                (and rests #f)
                                                                (and drests #f)
                                                                (and kws '())))))
-                           ;; at least 1 argument has to be of type inexact-complex
+                           ;; at least 1 argument has to be of type float-complex
                            ;; and can be unboxed
                            (syntax-parse (cadr p)
                              [((~literal #%plain-lambda) params body ...)
@@ -107,7 +107,7 @@
                                             (dict-set! unboxed-funs-table fun-name
                                                        (list (reverse unboxed)
                                                              (reverse boxed))))]
-                                      [(and (equal? (car doms) -InexactComplex)
+                                      [(and (equal? (car doms) -FloatComplex)
                                             (could-be-unboxed-in?
                                              (car params) #'(begin body ...)))
                                        ;; we can unbox
@@ -169,7 +169,7 @@
       #:literal-sets (kernel-literals)
       
       ;; can be used in a complex arithmetic expr, can be a direct child
-      [exp:inexact-complex-arith-opt-expr
+      [exp:float-complex-arith-opt-expr
        #:when (not (identifier? #'exp))
        (or (direct-child-of? v #'exp)
            (ormap rec (syntax->list #'exp)))]
@@ -212,7 +212,7 @@
 
 ;; very simple escape analysis for functions
 ;; if a function is ever used in a non-operator position, we consider it escapes
-;; if it doesn't escape, we may be able to pass its inexact complex args unboxed
+;; if it doesn't escape, we may be able to pass its float complex args unboxed
 ;; if we are in a let loop, don't consider functions that escape by being the
 ;; sole thing in the let's body as escaping, since they would only escape to
 ;; a call site that we control, which is fine
@@ -266,13 +266,13 @@
 ;; let clause whose rhs is going to be unboxed (turned into multiple bindings)
 (define-syntax-class unboxed-let-clause
   #:commit
-  (pattern ((v:id) rhs:unboxed-inexact-complex-opt-expr)
+  (pattern ((v:id) rhs:unboxed-float-complex-opt-expr)
            #:with id #'v
            #:with real-binding #'rhs.real-binding
            #:with imag-binding #'rhs.imag-binding
            #:with (bindings ...) #'(rhs.bindings ...)))
 
-;; let clause whose rhs is a function with some inexact complex arguments
+;; let clause whose rhs is a function with some float complex arguments
 ;; these arguments may be unboxed
 ;; the new function will have all the unboxed arguments first, then all the boxed
 (define-syntax-class unboxed-fun-clause

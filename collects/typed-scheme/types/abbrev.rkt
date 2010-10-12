@@ -153,11 +153,11 @@
 ;; Numeric hierarchy
 (define -Number (make-Base 'Number #'number?))
 
-(define -InexactComplex (make-Base 'Inexact-Complex
-                                   #'(and/c number?
-                                            (lambda (x)
-                                              (and (flonum? (imag-part x))
-                                                   (flonum? (real-part x)))))))
+(define -FloatComplex (make-Base 'Float-Complex
+                                 #'(and/c number?
+                                          (lambda (x)
+                                            (and (flonum? (imag-part x))
+                                                 (flonum? (real-part x)))))))
 
 ;; default 64-bit floats
 (define -Flonum (make-Base 'Flonum #'flonum?))

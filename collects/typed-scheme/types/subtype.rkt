@@ -270,7 +270,7 @@
               [((Base: 'Inexact-Real _) (== -Real =t)) A0]
               [((Base: 'Inexact-Real _) (Base: 'Number _)) A0]
 
-              [((Base: 'Inexact-Complex _) (Base: 'Number _)) A0]
+              [((Base: 'Float-Complex _) (Base: 'Number _)) A0]
 
               
               ;; values are subtypes of their "type"

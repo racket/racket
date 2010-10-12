@@ -1,8 +1,8 @@
 #lang s-exp "type-env-lang.rkt"
 
 [Complex -Number]
-[Float-Complex -InexactComplex] ; for consistency with float vs inexact-real
-[Inexact-Complex -InexactComplex] ; for backward compatiblity
+[Float-Complex -FloatComplex] ; for consistency with float vs inexact-real
+[Inexact-Complex -FloatComplex] ; for backward compatiblity
 [Number -Number]
 [Integer -Integer]
 [Real -Real]

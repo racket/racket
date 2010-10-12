@@ -4,7 +4,7 @@
          racket/pretty
          (for-template scheme/base)
          "../utils/utils.rkt"
-         (optimizer utils number fixnum float inexact-complex vector string
+         (optimizer utils number fixnum float float-complex vector string
                     pair sequence box struct dead-code apply unboxed-let))
 
 (provide optimize-top)
@@ -26,7 +26,7 @@
   (pattern e:number-opt-expr          #:with opt #'e.opt)
   (pattern e:fixnum-opt-expr          #:with opt #'e.opt)
   (pattern e:float-opt-expr           #:with opt #'e.opt)
-  (pattern e:inexact-complex-opt-expr #:with opt #'e.opt)
+  (pattern e:float-complex-opt-expr   #:with opt #'e.opt)
   (pattern e:vector-opt-expr          #:with opt #'e.opt)
   (pattern e:string-opt-expr          #:with opt #'e.opt)
   (pattern e:pair-opt-expr            #:with opt #'e.opt)
