@@ -579,14 +579,16 @@
        #t)
      (define/public (on-combo-select i) (void))
 
+     (define clear-bg? (and (not (memq 'transparent canvas-style)) 
+                            (not (memq 'no-autoclear canvas-style))))
      (define bg-col (make-object color% "white"))
      (define/public (get-canvas-background) (if (memq 'transparent canvas-style)
                                                 #f
                                                 bg-col))
      (define/public (set-canvas-background col) (set! bg-col col))
+     (define/public (get-canvas-background-for-backing) (and clear-bg? bg-col))
      (define/public (get-canvas-background-for-clearing) 
-       (and (not (memq 'transparent canvas-style)) 
-            (not (memq 'no-autoclear canvas-style)) 
+       (and clear-bg?
             bg-col))
 
      (define/public (reject-partial-update r)

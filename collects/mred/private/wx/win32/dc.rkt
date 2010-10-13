@@ -3,6 +3,7 @@
          racket/class
          "utils.rkt"
          "types.rkt"
+         "gl-context.rkt"
 	 "../../lock.rkt"
          "../common/backing-dc.rkt"
          "../common/delay.rkt"
@@ -58,6 +59,16 @@
     (define canvas cnvs)
 
     (super-new)
+
+    (define gl #f)
+    (define/override (get-gl-context)
+      (or gl
+          (let ([v (create-gl-context (GetDC (send canvas get-client-hwnd))
+                                      (send canvas get-gl-config)
+                                      #f)])
+	    (when v (set! gl v))
+	    v)))
+      
 
     (define/override (make-backing-bitmap w h)
       (if (send canvas get-canvas-background)

@@ -537,7 +537,8 @@
   (define/public (send-leaves mk)
     (set! mouse-in? #f)
     (let ([e (mk 'leave)])
-      (if (eq? (current-eventspace) (get-eventspace))
+      (if (eq? (current-thread) 
+               (eventspace-handler-thread (get-eventspace)))
           (handle-mouse-event (get-client-hwnd) 0 0 e)
           (queue-window-event this
                               (lambda () (dispatch-on-event/sync e))))))

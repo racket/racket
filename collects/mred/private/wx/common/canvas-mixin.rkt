@@ -120,7 +120,7 @@
              on-paint
              queue-backing-flush
              get-dc
-             get-canvas-background)
+             get-canvas-background-for-backing)
     
     ;; Avoid multiple queued paints, and also allow cancel
     ;; of queued paint:
@@ -146,7 +146,7 @@
             (send dc suspend-flush)
             (send dc ensure-ready)
             (send dc erase) ; start with a clean slate
-            (let ([bg (get-canvas-background)])
+            (let ([bg (get-canvas-background-for-backing)])
               (when bg 
                 (let ([old-bg (send dc get-background)])
                   (send dc set-background bg)

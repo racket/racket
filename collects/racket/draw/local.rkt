@@ -34,6 +34,7 @@
   ;; dc-backend<%>
   call-with-cr-lock
   get-cr
+  release-cr
   end-cr
   reset-cr
   flush-cr

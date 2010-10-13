@@ -75,7 +75,7 @@
            x y w h
            style
            [ignored-name #f]
-           [gl-config #f])
+           [gl-conf #f])
 
      (inherit get-hwnd
               get-client-size
@@ -156,13 +156,16 @@
          (let* ([ps (malloc 128)]
                 [hdc (BeginPaint w ps)])
            (unless (positive? paint-suspended)
-             (let* ([hbrush (if transparent?
-                                background-hbrush
-                                (CreateSolidBrush bg-colorref))])
-               (let ([r (GetClientRect canvas-hwnd)])
-                 (FillRect hdc r hbrush))
-               (unless transparent?
-                 (DeleteObject hbrush))
+             (let* ([hbrush (if no-autoclear?
+                                #f
+                                (if transparent?
+                                    background-hbrush
+                                    (CreateSolidBrush bg-colorref)))])
+               (when hbrush
+                 (let ([r (GetClientRect canvas-hwnd)])
+                   (FillRect hdc r hbrush))
+                 (unless transparent?
+                   (DeleteObject hbrush)))
                (unless (do-backing-flush this dc hdc)
                  (queue-paint))))
            (EndPaint hdc ps))
@@ -199,6 +202,9 @@
      (send dc start-backing-retained)
 
      (define/public (get-dc) dc)
+
+     (define gl-config gl-conf)
+     (define/public (get-gl-config) gl-config)
 
      (define/override (on-resized)
        (reset-dc))
@@ -262,12 +268,16 @@
         (unless (zero? paint-suspended)
           (set! paint-suspended (sub1 paint-suspended)))))
 
+     (define no-autoclear? (memq 'no-autoclear style))
      (define transparent? (memq 'transparent style))
      (define bg-col (make-object color% "white"))
      (define bg-colorref #xFFFFFF)
      (define/public (get-canvas-background) (if transparent?
                                                 #f
                                                 bg-col))
+     (define/public (get-canvas-background-for-backing) (and (not transparent?)
+                                                             (not no-autoclear?)
+                                                             bg-col))
      (define/public (set-canvas-background col)
        (atomically
         (set! bg-col col)

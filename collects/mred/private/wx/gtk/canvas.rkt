@@ -497,6 +497,7 @@
                                                 #f
                                                 bg-col))
      (define/public (set-canvas-background col) (set! bg-col col))
+     (define/public (get-canvas-background-for-backing) (and clear-bg? bg-col))
      (define/public (get-canvas-background-for-clearing) 
        ;; called in event-dispatch mode
        (if clear-bg?

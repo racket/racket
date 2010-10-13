@@ -38,8 +38,7 @@
     (inherit call-with-cr-lock
              internal-get-bitmap
              internal-set-bitmap
-             reset-cr
-             erase)
+             reset-cr)
 
     (super-new)
 
@@ -57,6 +56,7 @@
     (define retained-cr #f)
     (define retained-counter 0)
     (define needs-flush? #f)
+    (define nada? #t)
 
     ;; called with a procedure that is applied to a bitmap;
     ;;  returns #f if there's nothing to flush
@@ -64,7 +64,8 @@
       (cond
        [(not retained-cr) #f]
        [(positive? retained-counter) 
-        (proc (internal-get-bitmap)) 
+        (unless nada?
+          (proc (internal-get-bitmap)))
         #t]
        [else 
         (reset-backing-retained proc)
@@ -113,8 +114,13 @@
               cr))))
 
     (define/override (release-cr cr)
+      (set! nada? #f)
       (when (zero? flush-suspends)
         (queue-backing-flush)))
+
+    (define/override (erase)
+      (super erase)
+      (set! nada? #t))
 
     (define flush-suspends 0)
     (define req #f)
