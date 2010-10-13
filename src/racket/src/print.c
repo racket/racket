@@ -3813,7 +3813,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
 {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(_vec)[0];
   Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)SCHEME_VEC_ELS(_vec)[1];
-  PrintParams * volatile pp = (PrintParams *)SCHEME_VEC_ELS(_vec)[2];
+  PrintParams * volatile pp = (PrintParams *)SCHEME_VEC_ELS(_vec)[2], *sub_pp;
   Scheme_Object * volatile save_port;
   mz_jmp_buf escape, * volatile save;
   volatile long save_max;
@@ -3863,34 +3863,43 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
 	pp->print_port = argv[1];
 
         if (notdisplay > 1) {
+          /* If printing to a string, flush again, now that pp is
+             directed to a port, in case we clone pp below: */
+          print_this_string(pp, NULL, 0, 0);
+        }
+
+        if (notdisplay > 1) {
           if (argc > 2) {
             Scheme_Object *qq_depth = argv[2];
             if (!scheme_nonneg_exact_p(qq_depth))
               scheme_wrong_type("print/recursive", "nonnegative exact integer", 2, argc, argv);
-            pp = copy_print_params(pp);
+            sub_pp = copy_print_params(pp);
             if (scheme_bin_gt(qq_depth, scheme_make_integer(REASONABLE_QQ_DEPTH))) {
               notdisplay = 3 + REASONABLE_QQ_DEPTH;
               qq_depth = scheme_bin_minus(qq_depth, scheme_make_integer(REASONABLE_QQ_DEPTH));
-              pp->depth_delta = qq_depth;
+              sub_pp->depth_delta = qq_depth;
             } else {
-              pp->depth_delta = scheme_make_integer(0);
+              sub_pp->depth_delta = scheme_make_integer(0);
               notdisplay = 3 + SCHEME_INT_VAL(qq_depth);
             }
           } else if (pp->depth_delta) {
             notdisplay = 3;
             if (!SAME_OBJ(pp->depth_delta, scheme_make_integer(0))) {
-              pp = copy_print_params(pp);
-              pp->depth_delta = scheme_make_integer(0);
-            }
-          }
-        }
+              sub_pp = copy_print_params(pp);
+              sub_pp->depth_delta = scheme_make_integer(0);
+            } else
+              sub_pp = pp;
+          } else
+            sub_pp = pp;
+        } else
+          sub_pp = pp;
 
-	/* Recur */
-	print(argv[0], notdisplay, 0, ht, mt, pp);
+        /* Recur */
+	print(argv[0], notdisplay, 0, ht, mt, sub_pp);
 
 	/* Flush print cache, to ensure that future writes to the
 	   port go after printed data. */
-	print_this_string(pp, NULL, 0, 0);
+	print_this_string(sub_pp, NULL, 0, 0);
       }
 
       pp->print_port = save_port;
