@@ -19,17 +19,17 @@
 
 
 (test
- (roundtrip
+ #;(roundtrip
     (compilation-top 0 
                      (prefix 0 empty empty)
                      (list 1 (list 2 3) (list 2 3) 4 5)))
  ; XXX This should work, but closures have a field that is gensym'ed
- #;(roundtrip
+ 
+ (roundtrip
   (compilation-top 0 
                    (prefix 0 empty empty)
                    (let* ([ph (make-placeholder #f)]
-                          [x (indirect 
-                              (closure 
+                          [x (application (closure 
                                (lam 'name
                                     empty
                                     0 
@@ -39,7 +39,33 @@
                                     empty
                                     0
                                     ph)
-                               'name))])
+                               'name) empty)])
+                     (placeholder-set! ph x)
+                     (let ([c (make-reader-graph x)])
+                       (closure (lam 'name2
+                                     empty
+                                     0
+                                     empty
+                                     #f
+                                     #()
+                                     empty
+                                     0
+                                     (seq (list c c))) 'name2)))))
+ #;(roundtrip
+  (compilation-top 0 
+                   (prefix 0 empty empty)
+                   (let* ([ph (make-placeholder #f)]
+                          [x (closure 
+                               (lam 'name
+                                    empty
+                                    0 
+                                    empty
+                                    #f
+                                    #()
+                                    empty
+                                    0
+                                    ph)
+                               'name)])
                      (placeholder-set! ph x)
                      (make-reader-graph x))))
  
@@ -76,24 +102,24 @@
       (toplevel 0 0 #f #f)
       #(racket/language-info get-info #f)
       #t)))
- (roundtrip 
+ #;(roundtrip 
     (compilation-top 0 
                      (prefix 0 empty empty)
                      (current-directory)))
  
- (roundtrip 
+ #;(roundtrip 
     (compilation-top 0 
                      (prefix 0 empty empty)
                      (list (current-directory))))
  
- (roundtrip
+ #;(roundtrip
     (compilation-top                                            
      0                                                          
      (prefix 0 empty empty)
      (cons #hash()
            #hash())))
  
- (roundtrip
+ #;(roundtrip
     (compilation-top                                            
      0                                                          
      (prefix 0 empty empty)

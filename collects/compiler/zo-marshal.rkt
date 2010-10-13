@@ -95,6 +95,9 @@
   (define-values (symbol-table shared-obj-pos)
     (create-symbol-table))
   
+  (for ([(i v) (in-dict symbol-table)])
+    (printf "~a: ~a\n" i v))
+  
   ; vector output-port -> (listof number) number
   ; writes symbol-table to outp
   ; returns the file positions of each value in the symbol table and the end of the symbol table
