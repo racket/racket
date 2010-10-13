@@ -9,6 +9,7 @@
          "menu-item.rkt"
          "frame.rkt"
          "dc.rkt"
+         "filedialog.rkt"
 	 racket/draw)
 
 (provide
@@ -87,7 +88,6 @@
 (define (get-display-depth) 32)
 
 (define-unimplemented is-color-display?)
-(define-unimplemented file-selector)
 (define-unimplemented show-print-setup)
 (define (can-show-print-setup?) #f)
 

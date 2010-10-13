@@ -16,8 +16,6 @@
 
 (provide dialog%)
 
-(define _WORD _short)
-
 (define-cstruct _DLGTEMPLATE
   ([style _DWORD]
    [dwExtendedStyle _DWORD]

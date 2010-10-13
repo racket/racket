@@ -3,6 +3,7 @@
 
 (provide _wfun
 	 
+	 _WORD 	
 	 _DWORD 	
 	 _UDWORD 	
 	 _ATOM
@@ -14,6 +15,7 @@
 	 _UINT_PTR
 	 _BYTE
 	 _LONG
+	 _ULONG
 	 _SHORT
 	 _HRESULT
          _WCHAR
@@ -35,6 +37,7 @@
 	 _fnpointer
 
 	 _permanent-string/utf-16
+         utf-16-length
 
 	 (struct-out POINT) _POINT _POINT-pointer 
 	 (struct-out RECT) _RECT _RECT-pointer
@@ -48,6 +51,7 @@
 (define-syntax-rule (_wfun . a)
   (_fun #:abi 'stdcall . a))
 
+(define _WORD _int16)
 (define _DWORD _int32)
 (define _UDWORD _uint32)
 (define _ATOM _int)
@@ -77,23 +81,28 @@
 
 (define _fnpointer (_or-null _fpointer))
 
+(define (utf-16-length s)
+  (for/fold ([len 0]) ([c (in-string s)])
+    (+ len
+       (if ((char->integer c) . > . #xFFFF)
+           2
+           1))))
+
 (define _permanent-string/utf-16
   (make-ctype _pointer
 	      (lambda (s)
-		(and s
+		(and s                     
 		     (let ([v (malloc _gcpointer)])
 		       (ptr-set! v _string/utf-16 s)
 		       (let ([p (ptr-ref v _gcpointer)])
-			 (let ([len (let loop ([i 0])
-				      (if (zero? (ptr-ref p _uint16 i))
-					  (add1 i)
-					  (loop (add1 i))))])
+			 (let ([len (+ 1 (utf-16-length s))])
 			   (let ([c (malloc len _uint16 'raw)])
 			     (memcpy c p len _uint16)
 			     c))))))
 	      (lambda (p) p)))
 
 (define _LONG _long)
+(define _ULONG _ulong)
 (define _SHORT _short)
 
 (define-cstruct _POINT ([x _LONG]
