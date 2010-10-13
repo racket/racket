@@ -287,7 +287,8 @@
      
      (define dc (new dc% [canvas this]))
 
-     (when (memq 'gl style)
+     (define for-gl? (memq 'gl style))
+     (when for-gl?
        (prepare-widget-gl-context client-gtk gl-config))
 
      (gtk_widget_realize gtk)
@@ -355,12 +356,14 @@
        (queue-window-refresh-event this thunk))
 
      (define/public (paint-or-queue-paint)
-       (or (do-backing-flush this dc (if is-combo?
-                                         (get-subwindow client-gtk)
-                                         (widget-window client-gtk)))
-           (begin
-             (queue-paint)
-             #f)))
+       (if for-gl?
+	   (queue-paint)
+	   (or (do-backing-flush this dc (if is-combo?
+					     (get-subwindow client-gtk)
+					     (widget-window client-gtk)))
+	       (begin
+		 (queue-paint)
+		 #f))))
 
      (define/public (on-paint) (void))
 
@@ -376,7 +379,8 @@
 
      (define/public (queue-backing-flush)
        ;; called atomically (not expecting exceptions)
-       (gtk_widget_queue_draw client-gtk))
+       (unless for-gl?
+         (gtk_widget_queue_draw client-gtk)))
      
      (define/override (reset-child-dcs)
        (when (dc . is-a? . dc%)
