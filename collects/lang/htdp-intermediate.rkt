@@ -47,11 +47,12 @@
            #%top-interaction
 	   empty true false
 
-	   signature : -> mixed one-of predicate combined
-	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list Any
-	   cons-of
-	   Property 
-	   check-property for-all ==> expect expect-within expect-member-of expect-range)
+; 	   signature : -> mixed one-of predicate combined
+; 	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list Any
+; 	   cons-of
+; 	   Property 
+; 	   check-property for-all ==> expect expect-within expect-member-of expect-range
+	   )
 
   ;; procedures:
   (provide-and-document
