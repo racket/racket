@@ -47,7 +47,7 @@
 
 ;; utility for the next few definitions
 (define (sizeof->3ints c-type)
-  (case (compiler-sizeof 'int)
+  (case (compiler-sizeof c-type)
     [(2) (values _int16 _uint16 _int16)]
     [(4) (values _int32 _uint32 _int32)]
     [(8) (values _int64 _uint64 _int64)]

@@ -234,6 +234,11 @@
   (test 1 ptr-ref v _int16 0)
   (test 3 ptr-ref v _int16 3))
 
+;; Test intptr:
+(let ([v (malloc _pointer)])
+  (ptr-set! v _pointer (ptr-add #f 107))
+  (test 107 ptr-ref v _intptr))
+
 (delete-test-files)
 
 (report-errs)
