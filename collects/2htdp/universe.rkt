@@ -3,6 +3,8 @@
 ;; DONT USE to-draw IN THIS FILE 
 
 #| TODO: 
+   -- check that on-release is only defined if on-key is defined 
+
    -- yield instead of sync
    -- run callbacks in user eventspace
    -- make timer fire just once; restart after on-tick callback finishes
@@ -41,31 +43,29 @@
 (define new-universe (create-universe universe0))
 
 (define-keywords AllSpec '() define-all
-  ;; -- on-tick must specify a tick handler; it may specify a clock-tick rate
-  [on-tick   
-   DEFAULT #'#f
-   (function-with-arity
-    1 
-    except
-    [(_ f rate) 
-     #'(list 
-        (proc> 'on-tick (f2h f) 1)
-        (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
-              "positive number" "rate"))])]
+  ;; -- on-tick must specify a tick handler: World -> World 
+  ;; it may specify a clock-tick rate
+  [on-tick DEFAULT #'#f
+           (function-with-arity
+            1 
+            except
+            [(_ f rate) 
+             #'(list 
+                (proc> 'on-tick (f2h f) 1)
+                (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
+                      "positive number" "rate"))])]
   ;; -- state specifies whether to display the current state 
-  [state
-   DEFAULT #'#f
-   (expr-with-check bool> "expected a boolean (show state or not)")]
-  ;; -- check-with must specify a predicate 
-  [check-with
-   DEFAULT #'True
-   (function-with-arity 1)])
+  [state DEFAULT #'#f (expr-with-check bool> "expected a boolean")]
+  ;; Any -> Boolean 
+  ;; -- check-with: all states should specify this predicate 
+  [check-with DEFAULT #'True (function-with-arity 1)])
 
 ;  (create-world world0)
 (define-keywords WldSpec AllSpec create-world
-  ;; -- on-draw must specify a rendering function; it may specify dimensions
-  [on-draw to-draw
-           DEFAULT #'#f
+  ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
+  ;; on-draw must specify a rendering function; 
+  ;;   it may specify dimensions
+  [on-draw to-draw DEFAULT #'#f
            (function-with-arity 
             1 
             except
@@ -73,42 +73,36 @@
              #'(list (proc> 'to-draw (f2h f) 1) 
                      (nat> 'to-draw width "width")
                      (nat> 'to-draw height "height"))])]
-  ;; -- on-mouse must specify a mouse event handler 
-  [on-mouse
-   DEFAULT #'K
-   (function-with-arity 4)]
-  ;; -- on-key must specify a key event handler 
-  [on-key
-   DEFAULT #'K
-   (function-with-arity 2)]
-  ;; -- on-release must specify a release event handler 
-  [on-release
-   DEFAULT #'K
-   (function-with-arity 2)]
+  ;; World Nat Nat MouseEvent -> World 
+  ;; on-mouse must specify a mouse event handler 
+  [on-mouse DEFAULT #f (function-with-arity 4)]
+  ;; World KeyEvent -> World 
+  ;; on-key must specify a key event handler 
+  [on-key DEFAULT #f (function-with-arity 2)]
+  ;; World KeyEvent -> World 
+  ;; on-release must specify a release event handler 
+  [on-release DEFAULT #'K (function-with-arity 2)]
+  ;; (U #f (World S-expression -> World))
   ;; -- on-receive must specify a receive handler 
-  [on-receive
-   DEFAULT #'#f
-   (function-with-arity 2)]
+  [on-receive DEFAULT #'#f (function-with-arity 2)]
+  ;; World -> Boolean 
   ;; -- stop-when must specify a predicate; it may specify a rendering function
-  [stop-when
-   DEFAULT #'False
-   (function-with-arity 
-    1
-    except
-    [(_ stop? last-picture)
-     #'(list (proc> 'stop-when (f2h stop?) 1)
-             (proc> 'stop-when (f2h last-picture) 1))])]
+  [stop-when DEFAULT #'False
+             (function-with-arity 
+              1
+              except
+              [(_ stop? last-picture)
+               #'(list (proc> 'stop-when (f2h stop?) 1)
+                       (proc> 'stop-when (f2h last-picture) 1))])]
+  ;; (U #f Boolean)
   ;; -- should the session be recorded and turned into PNGs and an animated GIF
-  [record?
-   DEFAULT #'#f
-   (expr-with-check bool> "expected a boolean (to record? or not)")]
-  [name
-   DEFAULT #'#f
-   (expr-with-check string> "expected a name (string) for the world")]
+  [record? DEFAULT #'#f (expr-with-check bool> "expected a boolean")]
+  ;; (U #f String)
+  ;; -- name specifies one string 
+  [name DEFAULT #'#f (expr-with-check string> "expected a string")]
+  ;; (U #f IP)  
   ;; -- register must specify the internet address of a host (e.g., LOCALHOST)
-  [register
-   DEFAULT #'#f
-   (expr-with-check ip> "expected a host (ip address)")])
+  [register DEFAULT #'#f (expr-with-check ip> "expected a host (ip address)")])
 
 ;  (create-universe universe0)
 (define-keywords UniSpec AllSpec create-universe
@@ -155,15 +149,15 @@
          )
 
 (provide-primitives
-         make-package ;; World Sexp -> Package
-         package?     ;; Any -> Boolean 
-         run-movie    ;; [Listof Image] -> true 
-         mouse-event?  ;; Any -> Boolean : MOUSE-EVTS
-         mouse=?       ;; MOUSE-EVTS MOUSE-EVTS -> Boolean 
-         key-event?    ;; Any -> Boolean : KEY-EVTS
-         key=?         ;; KEY-EVTS KEY-EVTS -> Boolean
-         ;; IP : a string that points to a machine on the net 
-         )
+ make-package ;; World Sexp -> Package
+ package?     ;; Any -> Boolean 
+ run-movie    ;; [Listof Image] -> true 
+ mouse-event?  ;; Any -> Boolean : MOUSE-EVTS
+ mouse=?       ;; MOUSE-EVTS MOUSE-EVTS -> Boolean 
+ key-event?    ;; Any -> Boolean : KEY-EVTS
+ key=?         ;; KEY-EVTS KEY-EVTS -> Boolean
+ ;; IP : a string that points to a machine on the net 
+ )
 
 (provide LOCALHOST     ;; IP
          )

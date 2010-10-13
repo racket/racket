@@ -50,23 +50,9 @@
    (clock-mixin
     (class* object% (start-stop<%>)
       (inspect #f)
-      
-      (init-field
-       world0            ;; World
-       (name #f)         ;; (U #f String)
-       (state #f)        ;; Boolean 
-       (register #f)     ;; (U #f IP)
-       (check-with True) ;; Any -> Boolean 
-       )
-      
-      (init
-       (on-key K)        ;; World KeyEvent -> World 
-       (on-release K)    ;; World KeyEvent -> World 
-       (on-mouse K)      ;; World Nat Nat MouseEvent -> World 
-       (on-receive #f)   ;; (U #f (World S-expression -> World))
-       (on-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
-       (stop-when False) ;; World -> Boolean 
-       (record? #f))     ;; Boolean 
+      (init-field world0)
+      (init-field name state register check-with on-key on-mouse)
+      (init on-release on-receive on-draw stop-when record?)
       
       ;; -----------------------------------------------------------------------
       (field
@@ -159,6 +145,29 @@
           (create-frame)
           (show fst-scene)))
       
+      (define/private (deal-with-key %)
+        (if (not on-key) %
+            (class %
+              (super-new)
+              (define/override (on-char e) 
+                (when live
+                  (let ([e:str (key-event->parts e)])
+                    (if (string=? e:str "release")
+                        (prelease (key-release->parts e))
+                        (pkey e:str))))))))
+      
+      (define/private (deal-with-mouse %)
+        (if (not on-mouse) %
+            (class %
+              (super-new)
+              (define/override (on-event e)
+                (define-values (x y me) (mouse-event->parts e))
+                (when live
+                  (cond
+                    [(and (<= 0 x width) (<= 0 y height)) (pmouse x y me)]
+                    [(member me '("leave" "enter")) (pmouse x y me)]
+                    [else (void)]))))))
+      
       ;; effect: create, show and set the-frame
       (define/pubment (create-frame)
         (define play-back:cust (make-custodian))
@@ -170,24 +179,9 @@
                            (label (if name (format "~a" name) "World"))
                            (alignment '(center center))
                            (style '(no-resize-border metal))))
-        (define editor-canvas 
-          (new (class editor-canvas%
-                 (super-new)
-                 ;; deal with keyboard events 
-                 (define/override (on-char e) 
-                   (when live
-                     (let ([e:str (key-event->parts e)])
-                       (if (string=? e:str "release")
-                           (prelease (key-release->parts e))
-                           (pkey e:str)))))
-                 ;; deal with mouse events if live and within range 
-                 (define/override (on-event e)
-                   (define-values (x y me) (mouse-event->parts e))
-                   (when live
-                     (cond
-                       [(and (<= 0 x width) (<= 0 y height)) (pmouse x y me)]
-                       [(member me '("leave" "enter")) (pmouse x y me)]
-                       [else (void)]))))
+        
+        (define editor-canvas
+          (new (deal-with-key (deal-with-mouse editor-canvas%))
                (parent frame)
                (editor visible)
                (stretchable-width #f)
