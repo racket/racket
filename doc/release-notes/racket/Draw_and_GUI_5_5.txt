@@ -84,6 +84,9 @@ Changes to the drawing toolbox:
    the foreground in the color specified by
    `get-highlight-text-color', if any.
 
+ * OpenGL drawing in a canvas requires supplying 'gl as a style when
+   creating the `canvas%' instance.
+
 Changes to the GUI toolbox:
 
  [Nothing to report, yet.]

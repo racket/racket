@@ -9,7 +9,6 @@
          "dialog.rkt"
          "frame.rkt"
          "gauge.rkt"
-         "gl-context.rkt"
          "group-panel.rkt"
          "item.rkt"
          "list-box.rkt"

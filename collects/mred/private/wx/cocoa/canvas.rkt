@@ -3,6 +3,7 @@
          ffi/unsafe
          racket/class
          racket/draw
+         racket/draw/gl-context
          racket/draw/color
          "pool.rkt"
          "utils.rkt"
@@ -28,7 +29,8 @@
 ;; ----------------------------------------
 
 (import-class NSView NSGraphicsContext NSScroller NSComboBox NSWindow 
-              NSImageView NSTextFieldCell)
+              NSImageView NSTextFieldCell 
+              NSOpenGLView NSOpenGLPixelFormat)
 
 (import-protocol NSComboBoxDelegate)
 
@@ -55,7 +57,7 @@
                                                  (make-NSSize 32000 32000))))
             (tellv ctx restoreGraphicsState)))))))
 
-(define-objc-class MyView NSView 
+(define-objc-mixin (MyViewMixin Superclass)
   #:mixins (FocusResponder KeyMouseTextResponder CursorDisplayer) 
   [wxb]
   (-a _void (drawRect: [_NSRect r])
@@ -79,6 +81,14 @@
       (when wxb 
         (let ([wx (->wx wxb)])
           (when wx (send wx do-scroll 'vertical scroller))))))
+
+(define-objc-class MyView NSView 
+  #:mixins (MyViewMixin)
+  [wxb])
+
+(define-objc-class MyGLView NSOpenGLView
+  #:mixins (MyViewMixin)
+  [wxb])
 
 (define-objc-class FrameView NSView 
   []
@@ -172,6 +182,39 @@
         (let ([wx (->wx wxb)])
           (when wx
             (queue-window-event wx (lambda () (send wx fix-dc))))))))
+
+(define NSOpenGLPFADoubleBuffer 5)
+(define NSOpenGLPFAStereo 6)
+(define NSOpenGLPFAColorSize 8)
+(define NSOpenGLPFAAlphaSize 11)
+(define NSOpenGLPFADepthSize 12)
+(define NSOpenGLPFAStencilSize 13)
+(define NSOpenGLPFAAccumSize 14)
+(define NSOpenGLPFAOffScreen 53)
+(define NSOpenGLPFASampleBuffers 55)
+(define NSOpenGLPFASamples 56)
+(define NSOpenGLPFAMultisample 59)
+
+(define (gl-config->pixel-format conf)
+  (let ([conf (or conf (new gl-config%))])
+    (tell (tell NSOpenGLPixelFormat alloc)
+          initWithAttributes: #:type (_list i _int)
+          (append
+           (if (send conf get-double-buffered) (list NSOpenGLPFADoubleBuffer) null)
+           (if (send conf get-stereo) (list NSOpenGLPFAStereo) null)
+           (list
+            NSOpenGLPFADepthSize (send conf get-depth-size)
+            NSOpenGLPFAStencilSize (send conf get-stencil-size)
+            NSOpenGLPFAAccumSize (send conf get-accum-size))
+           #;
+           (let ([ms (send conf get-multisample-size)])
+             (if (zero? ms)
+                 null
+                 (list NSOpenGLPFAMultisample
+                       NSOpenGLPFASampleBuffers
+                       NSOpenGLPFASamples ms)))
+           (list 0)))))
+        
   
 (define-struct scroller (cocoa [range #:mutable] [page #:mutable]))
 (define scroll-width (tell #:type _CGFloat NSScroller scrollerWidth))
@@ -259,6 +302,9 @@
 
      (define/override (get-cocoa-content) content-cocoa)
 
+     (define is-gl? (and (not is-combo?) (memq 'gl style)))
+     (define/public (can-gl?) is-gl?)
+
      (super-new 
       [parent parent]
       [cocoa
@@ -283,8 +329,12 @@
                              (make-NSSize (max 0 (- w (* 2 x-margin)))
                                           (max 0 (- h (* 2 y-margin)))))])
          (as-objc-allocation
-          (tell (tell (if is-combo? MyComboBox MyView) alloc) 
-                initWithFrame: #:type _NSRect r))))
+          (if (or is-combo? (not (memq 'gl style)))
+              (tell (tell (if is-combo? MyComboBox MyView) alloc) 
+                    initWithFrame: #:type _NSRect r)
+              (tell (tell MyGLView alloc) 
+                    initWithFrame: #:type _NSRect r
+                    pixelFormat: (gl-config->pixel-format gl-config))))))
      (tell #:type _void cocoa addSubview: content-cocoa)
      (set-ivar! content-cocoa wxb (->wxb this))
 

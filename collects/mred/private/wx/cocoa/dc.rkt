@@ -5,6 +5,7 @@
          racket/draw/cairo
          racket/draw/bitmap
          racket/draw/local
+         racket/draw/gl-context
          "types.rkt"
          "utils.rkt"
          "window.rkt"
@@ -16,6 +17,8 @@
 (provide dc%
          quartz-bitmap%
          do-backing-flush)
+
+(import-class NSOpenGLContext)
 
 (define quartz-bitmap%
   (class bitmap%
@@ -45,6 +48,23 @@
     (define canvas cnvs)
 
     (super-new)
+
+    (define gl #f)
+    (define/override (get-gl-context)
+      (and (send canvas can-gl?)
+           (let ([gl-ctx (tell (send canvas get-cocoa-content) openGLContext)])
+             (or gl
+                 (let ([g (new (class gl-context%
+                                 (define/override (do-call-as-current t)
+                                   (dynamic-wind
+                                       (lambda () (tellv gl-ctx makeCurrentContext))
+                                       t
+                                       (lambda () (tellv NSOpenGLContext clearCurrentContext))))
+                                 (define/override (do-swap-buffers)
+                                   (tellv gl-ctx flushBuffer))
+                                 (super-new)))])
+                   (set! gl g)
+                   g)))))
 
     ;; Use a quartz bitmap so that text looks good:
     (define/override (make-backing-bitmap w h) (make-object quartz-bitmap% w h))
