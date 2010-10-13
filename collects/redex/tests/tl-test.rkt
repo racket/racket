@@ -1,8 +1,8 @@
-(module tl-test scheme
+#lang racket
   (require "../reduction-semantics.ss"
            "test-util.ss"
            (only-in "../private/matcher.ss" make-bindings make-bind)
-           scheme/match
+           racket/match
            "../private/struct.ss")
   
   (reset-count)
@@ -2080,4 +2080,5 @@
     (test-bad-equiv-arg test-->)
     (test-bad-equiv-arg test-->>))
 
-  (print-tests-passed 'tl-test.ss))
+  (print-tests-passed 'tl-test.ss)
+  
