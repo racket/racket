@@ -168,10 +168,12 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 /*                           ctl-C handler                                */
 /*========================================================================*/
 
-#ifndef NO_USER_BREAK_HANDLER
+#if !defined(NO_USER_BREAK_HANDLER) || defined(DOS_FILE_SYSTEM)
 
 static void *break_handle;
 static void *signal_handle;
+
+# ifndef NO_USER_BREAK_HANDLER
 
 static void user_break_hit(int ignore)
 {
@@ -188,6 +190,17 @@ static void user_break_hit(int ignore)
 #   endif
 #  endif
 }
+
+# endif
+
+# ifdef DOS_FILE_SYSTEM
+static BOOL WINAPI ConsoleBreakHandler(DWORD op)
+{
+  scheme_break_main_thread_at(break_handle);
+  scheme_signal_received_at(signal_handle);
+  return TRUE;
+}
+#endif
 
 #endif
 
@@ -314,10 +327,15 @@ static int main_after_stack(void *data)
  }
 #endif
 
-#ifndef NO_USER_BREAK_HANDLER
+#if !defined(NO_USER_BREAK_HANDLER) || defined(DOS_FILE_SYSTEM)
  break_handle = scheme_get_main_thread_break_handle();
  signal_handle = scheme_get_signal_handle();
+# ifndef NO_USER_BREAK_HANDLER
  MZ_SIGSET(SIGINT, user_break_hit);
+# endif
+# ifdef DOS_FILE_SYSTEM
+ SetConsoleCtrlHandler(ConsoleBreakHandler, TRUE);      
+# endif
 #endif
 
   rval = run_from_cmd_line(argc, argv, scheme_basic_env, cont_run);

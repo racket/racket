@@ -105,6 +105,7 @@ static HWND console_hwnd;
 static int has_stdio, stdio_kills_prog;
 static HANDLE waiting_sema;
 static void *orig_signal_handle;
+static void *orig_break_handle;
 
 typedef HWND (WINAPI* gcw_proc)();
 
@@ -122,7 +123,7 @@ static BOOL WINAPI ConsoleHandler(DWORD op)
   if (stdio_kills_prog) {
     ReleaseSemaphore(waiting_sema, 1, NULL);
   } else {
-    scheme_break_main_thread();
+    scheme_break_main_thread_at(orig_break_handle);
     scheme_signal_received_at(orig_signal_handle);
   }
   return TRUE;
@@ -164,6 +165,7 @@ static void MrEdSchemeMessages(char *msg, ...)
       has_stdio = 1;
       waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
       orig_signal_handle = scheme_get_signal_handle();
+      orig_break_handle = scheme_get_main_thread_break_handle();
       SetConsoleCtrlHandler(ConsoleHandler, TRUE);      
 
       {
