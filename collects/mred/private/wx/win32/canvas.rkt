@@ -89,6 +89,7 @@
 
      (define hscroll? (memq 'hscroll style))
      (define vscroll? (memq 'vscroll style))
+     (define for-gl? (memq 'gl style))
 
      (define panel-hwnd
        (and (memq 'combo style)
@@ -155,19 +156,21 @@
         [(= msg WM_PAINT)
          (let* ([ps (malloc 128)]
                 [hdc (BeginPaint w ps)])
-           (unless (positive? paint-suspended)
-             (let* ([hbrush (if no-autoclear?
-                                #f
-                                (if transparent?
-                                    background-hbrush
-                                    (CreateSolidBrush bg-colorref)))])
-               (when hbrush
-                 (let ([r (GetClientRect canvas-hwnd)])
-                   (FillRect hdc r hbrush))
-                 (unless transparent?
-                   (DeleteObject hbrush)))
-               (unless (do-backing-flush this dc hdc)
-                 (queue-paint))))
+           (if for-gl?
+               (queue-paint)
+               (unless (positive? paint-suspended)
+                 (let* ([hbrush (if no-autoclear?
+                                    #f
+                                    (if transparent?
+                                        background-hbrush
+                                        (CreateSolidBrush bg-colorref)))])
+                   (when hbrush
+                     (let ([r (GetClientRect canvas-hwnd)])
+                       (FillRect hdc r hbrush))
+                     (unless transparent?
+                       (DeleteObject hbrush)))
+                   (unless (do-backing-flush this dc hdc)
+                     (queue-paint)))))
            (EndPaint hdc ps))
          0]
         [(= msg WM_NCPAINT)
@@ -254,7 +257,8 @@
      (define/override (refresh) (queue-paint))
 
      (define/public (queue-backing-flush)
-       (InvalidateRect canvas-hwnd #f #f))
+       (unless for-gl?
+         (InvalidateRect canvas-hwnd #f #f)))
 
      (define/public (make-compatible-bitmap w h)
        (send dc make-backing-bitmap w h))
