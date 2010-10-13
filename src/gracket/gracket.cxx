@@ -1755,10 +1755,12 @@ static void MrEdSleep(float secs, void *fds)
 }
 
 #ifdef mred_BREAK_HANDLER
+static void *break_handle;
+static void *signal_handle;
 static void user_break_hit(int ignore)
 {
-  scheme_break_main_thread();
-  scheme_signal_received();
+  scheme_break_main_thread_at(break_handle);
+  scheme_signal_received_at(signal_handle);
 
 #  ifdef SIGSET_NEEDS_REINSTALL
   MZ_SIGSET(SIGINT, user_break_hit);
@@ -2220,6 +2222,8 @@ static Scheme_Object *console_inport;
 static HWND console_hwnd;
 static int has_stdio, stdio_kills_prog;
 static HANDLE waiting_sema;
+static void *break_handle;
+static void *signal_handle;
 
 typedef HWND (WINAPI* gcw_proc)();
 
@@ -2290,7 +2294,9 @@ static void MrEdSchemeMessages(char *msg, ...)
     if (!wx_in_terminal) {
       has_stdio = 1;
       waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
-      SetConsoleCtrlHandler(ConsoleHandler, TRUE);      
+      break_handle = scheme_get_main_thread_break_handle();
+      signal_handle = scheme_get_signal_handle();
+      SetConsoleCtrlHandler(ConsoleHandler, TRUE);
 
 
       {
@@ -3161,6 +3167,8 @@ wxFrame *MrEdApp::OnInit(void)
   wxscheme_early_gl_init();
 
 #ifdef mred_BREAK_HANDLER
+  break_handle = scheme_get_main_thread_break_handle();
+  signal_handle = scheme_get_signal_handle();
 # ifdef OS_X
   _signal_nobind(SIGINT, user_break_hit);
 # else
