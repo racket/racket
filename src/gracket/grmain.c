@@ -104,6 +104,7 @@ static Scheme_Object *console_inport;
 static HWND console_hwnd;
 static int has_stdio, stdio_kills_prog;
 static HANDLE waiting_sema;
+static void *orig_signal_handle;
 
 typedef HWND (WINAPI* gcw_proc)();
 
@@ -122,7 +123,7 @@ static BOOL WINAPI ConsoleHandler(DWORD op)
     ReleaseSemaphore(waiting_sema, 1, NULL);
   } else {
     scheme_break_main_thread();
-    scheme_signal_received();
+    scheme_signal_received_at(orig_signal_handle);
   }
   return TRUE;
 }
@@ -162,6 +163,7 @@ static void MrEdSchemeMessages(char *msg, ...)
     if (!wx_in_terminal) {
       has_stdio = 1;
       waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
+      orig_signal_handle = scheme_get_signal_handle();
       SetConsoleCtrlHandler(ConsoleHandler, TRUE);      
 
       {
@@ -199,7 +201,10 @@ static void MrEdSchemeMessages(char *msg, ...)
   } else {
     char *buffer;
     DWORD wrote;
-    buffer = (char *)malloc(5 * strlen(msg));
+    /* FIXME: multiplying by 5 and adding 80 works for
+       all the cases where printf mode is currently used 
+       for the function, but it's completely a hack. */
+    buffer = (char *)malloc((5 * strlen(msg)) + 80);
     vsprintf(buffer, msg, args);
     WriteConsole(console_out, buffer, strlen(buffer), &wrote, NULL);
     free(buffer);
