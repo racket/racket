@@ -313,6 +313,14 @@
       (term (f 1)))
     (test rhs-eval-count 2))
   
+  (let ()
+    (define-language L)
+    (define-extended-language E L
+      (v ((bar X_1) X_1))
+      ((X Y) any))
+    (test (and (redex-match E v (term ((bar 1) 1))) #t) #t)
+    (test (redex-match E v (term ((bar 1) 2))) #f))
+  
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        

@@ -1844,7 +1844,7 @@
          (raise-syntax-error 'define-extended-language "expected an identifier" stx #'orig-lang))
        (check-rhss-not-empty stx (cdddr (syntax->list stx)))
        (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)])
-         (with-syntax ([((new-nt-names orig) ...) (append (pull-out-names 'define-language stx #'(names ...)) 
+         (with-syntax ([((new-nt-names orig) ...) (append (pull-out-names 'define-extended-language stx #'(names ...)) 
                                                           (map (λ (x) #`(#,x #f)) old-names))])
            #'(begin
                (define define-language-name (extend-language orig-lang (names rhs ...) ...))
@@ -1877,7 +1877,9 @@
                   (syntax->list (syntax/loc stx (name ...)))))
      (with-syntax ([((r-rhs ...) ...) (map (lambda (rhss) (map (λ (x) (rewrite-side-conditions/check-errs
                                                                        (append (language-id-nts #'lang 'define-extended-language)
-                                                                               (syntax->datum #'(name ...)))
+                                                                               (map (λ (x) (syntax-case x ()
+                                                                                             [(x y) (syntax-e #'x)]))
+                                                                                    (pull-out-names 'define-extended-language stx #'(name ...))))
                                                                        'define-extended-language
                                                                        #f
                                                                        x))
