@@ -19,7 +19,7 @@
 ;; Implemented by subclasses:
 (defclass gl-context% object%
   (define lock-thread #f)
-  (define lock (make-semaphore))
+  (define lock (make-semaphore 1))
   
   (define/private (with-gl-lock t)
     (if (eq? lock-thread (current-thread))

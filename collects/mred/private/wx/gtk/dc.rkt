@@ -86,9 +86,9 @@
     (define gl #f)
     (define/override (get-gl-context)
       (or gl
-          (create-widget-gl-context
-           (send canvas get-client-gtk)
-           (send canvas get-gl-config))))
+          (let ([v (create-widget-gl-context (send canvas get-client-gtk))])
+	    (when v (set! gl v))
+	    v)))
 
     (define/override (make-backing-bitmap w h)
       (cond

@@ -7,7 +7,8 @@
          "types.rkt"
          "utils.rkt")
 
-(provide create-widget-gl-context)
+(provide prepare-widget-gl-context
+	 create-widget-gl-context)
 
 (define gdkglext-lib
   (ffi-lib "libgdkglext-x11-1.0" '("0")))
@@ -30,6 +31,7 @@
 
 (define-gtkglext gdk_gl_config_new (_fun (_list i _int) -> (_or-null _GdkGLConfig)))
 (define-gtkglext gdk_gl_config_new_for_screen (_fun _GdkScreen (_list i _int) -> (_or-null _GdkGLConfig)))
+
 (define-gtk gtk_widget_get_screen (_fun _GtkWidget -> _GdkScreen))
 
 (define-gtkglext gtk_widget_set_gl_capability (_fun _GtkWidget
@@ -73,18 +75,20 @@
 ;; ----------------------------------------
 
 (define (config->GdkGLConfig d conf)
-  (gdk_gl_config_new_for_screen d
-                                (list GDK_GL_USE_GL 1
-                                      GDK_GL_DOUBLEBUFFER (if (send conf get-double-buffered) 1 0)
-                                      GDK_GL_STEREO (if (send conf get-stereo) 1 0)
-                                      GDK_GL_DEPTH_SIZE (send conf get-depth-size)
-                                      GDK_GL_STENCIL_SIZE (send conf get-stencil-size)
-                                      GDK_GL_ACCUM_RED_SIZE (send conf get-accum-size)
-                                      GDK_GL_ACCUM_GREEN_SIZE (send conf get-accum-size)
-                                      GDK_GL_ACCUM_BLUE_SIZE (send conf get-accum-size)
-                                      GDK_GL_ACCUM_ALPHA_SIZE (send conf get-accum-size)
-                                      GDK_GL_SAMPLES (send conf get-multisample-size)
-                                      GDK_GL_ATTRIB_LIST_NONE 0)))
+  (gdk_gl_config_new (append
+		      (list GDK_GL_RGBA)
+		      (if (send conf get-double-buffered) (list GDK_GL_DOUBLEBUFFER) null)
+		      (if (send conf get-stereo) (list GDK_GL_STEREO) null)
+		      (list
+		       GDK_GL_DEPTH_SIZE (send conf get-depth-size)
+		       GDK_GL_STENCIL_SIZE (send conf get-stencil-size)
+		       GDK_GL_ACCUM_RED_SIZE (send conf get-accum-size)
+		       GDK_GL_ACCUM_GREEN_SIZE (send conf get-accum-size)
+		       GDK_GL_ACCUM_BLUE_SIZE (send conf get-accum-size)
+		       GDK_GL_ACCUM_ALPHA_SIZE (send conf get-accum-size))
+		      #;
+		      (list GDK_GL_SAMPLES (send conf get-multisample-size))
+		      (list GDK_GL_ATTRIB_LIST_NONE))))
 
 ;; ----------------------------------------
 
@@ -96,7 +100,7 @@
     (define/override (draw:do-call-as-current t)
       (dynamic-wind
           (lambda ()
-            (gdk_gl_drawable_gl_begin gl drawable))
+            (gdk_gl_drawable_gl_begin drawable gl))
           t
           (lambda ()
             (gdk_gl_drawable_gl_end drawable))))
@@ -114,19 +118,23 @@
     (set! inited? #t)
     (gdk_gl_init 0 #f)))
 
-(define (create-widget-gl-context gtk config)
+(define (prepare-widget-gl-context gtk config)
   (init!)
-  (let ([config (config->GdkGLConfig (gtk_widget_get_screen gtk)
+  (let ([config (config->GdkGLConfig #f ; (gtk_widget_get_screen gtk)
                                      (or config
                                          (new gl-config%)))])
-    (and config
-         (gtk_widget_set_gl_capability gtk
-                                       config
-                                       #f
-                                       #t
-                                       #f)
-         (let ([gl (gtk_widget_get_gl_context gtk)])
-           (and gl
-              (new gl-context% 
-                   [gl gl]
-                   [drawable (gtk_widget_get_gl_window gtk)]))))))
+    (when config
+	  (gtk_widget_set_gl_capability gtk
+					config
+					#f
+					#t
+					0))))
+
+(define (create-widget-gl-context gtk)
+  (init!)
+  (let ([gl (gtk_widget_get_gl_context gtk)])
+    (and gl
+	 (new gl-context% 
+	      [gl gl]
+	      [drawable (gtk_widget_get_gl_window gtk)]))))
+

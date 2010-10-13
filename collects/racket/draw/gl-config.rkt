@@ -11,7 +11,7 @@
   (define/public (get-double-buffered) double-buffered?)
   (define/public (set-double-buffered v) (set! double-buffered? (and v #t)))
 
-  (define stereo? #t)
+  (define stereo? #f)
   (define/public (get-stereo) stereo?)
   (define/public (set-stereo v) (set! stereo? (and v #t)))
 
