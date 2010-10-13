@@ -210,6 +210,9 @@
     (define/public (erase)
       (void))
 
+    (define/public (get-gl-context)
+      #f)
+
     (super-new)))
 
 (define hilite-color (send the-color-database find-color "black"))
@@ -1609,6 +1612,7 @@
                      (install-alternate-face c layout font desc attrs context)
                      (zero? (pango_layout_get_unknown_glyphs_count layout))))
             (g_object_unref layout))))))
-    
-    )
+
+    (void))
+
   dc%)

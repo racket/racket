@@ -186,7 +186,7 @@
            x y w h
            style
            [ignored-name #f]
-           [gl-config #f])
+           [gl-conf #f])
 
      (inherit get-gtk set-size get-size get-client-size 
               on-size get-top-win
@@ -336,6 +336,9 @@
 
      (define/override (get-client-gtk) client-gtk)
      (define/override (handles-events? gtk) (not (ptr-equal? gtk combo-button-gtk)))
+
+     (define gl-config gl-conf)
+     (define/public (get-gl-config) gl-config)
 
      (define/override (get-client-delta)
        (values margin margin))

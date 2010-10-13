@@ -5,25 +5,20 @@
          "wx/common/queue.rkt"
          "wx/common/clipboard.rkt"
          "wx/common/cursor.rkt"
-         "wx/common/gl-config.rkt"
          "wx/common/procs.rkt"
          "wx/common/handlers.rkt"
          racket/class
          racket/draw)
-
-(define gl-context<%> (class->interface gl-context%))
 
 (define (key-symbol-to-integer k)
   (error 'key-symbol-to-integer "not yet implemented"))
 
 (provide (all-from-out "wx/platform.rkt")
          clipboard<%>
-         gl-context<%>
          (all-from-out "wx/common/event.rkt"
                        "wx/common/timer.rkt"
                        "wx/common/clipboard.rkt"
                        "wx/common/cursor.rkt"
-                       "wx/common/gl-config.rkt"
                        "wx/common/procs.rkt")
          (all-from-out racket/draw)
 

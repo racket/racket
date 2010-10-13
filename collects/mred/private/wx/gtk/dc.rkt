@@ -6,6 +6,7 @@
          "window.rkt"
          "x11.rkt"
          "win32.rkt"
+         "gl-context.rkt"
 	 "../../lock.rkt"
          "../common/backing-dc.rkt"
          racket/draw/cairo
@@ -81,6 +82,13 @@
     (define canvas cnvs)
 
     (super-new)
+
+    (define gl #f)
+    (define/override (get-gl-context)
+      (or gl
+          (create-widget-gl-context
+           (send canvas get-client-gtk)
+           (send canvas get-gl-config))))
 
     (define/override (make-backing-bitmap w h)
       (cond

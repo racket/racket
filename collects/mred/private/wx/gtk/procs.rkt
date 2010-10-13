@@ -81,8 +81,6 @@
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
 
-(define _GdkScreen (_cpointer 'GdkScreen))
-(define-gdk gdk_screen_get_default (_fun -> _GdkScreen))
 (define-gdk gdk_screen_get_width (_fun _GdkScreen -> _int))
 (define-gdk gdk_screen_get_height (_fun _GdkScreen -> _int))
 

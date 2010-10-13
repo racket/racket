@@ -37,7 +37,6 @@
    dialog%
    frame%
    gauge%
-   gl-context%
    group-panel%
    item%
    list-box%

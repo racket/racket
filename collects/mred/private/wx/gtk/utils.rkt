@@ -41,6 +41,8 @@
 
          define-signal-handler
 
+         gdk_screen_get_default
+
 	 ;; for declaring derived structures:
 	 _GtkObject)
 
@@ -203,3 +205,5 @@
                        (cons ((ctype-c->scheme elem) (g-slist-data gl))
                              (L (g-slist-next gl)))))
                  (g_slist_free gl)))))
+
+(define-gdk gdk_screen_get_default (_fun -> _GdkScreen))

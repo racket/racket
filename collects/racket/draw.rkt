@@ -11,7 +11,9 @@
          "draw/dc-intf.rkt"
          "draw/bitmap-dc.rkt"
          "draw/post-script-dc.rkt"
-         "draw/ps-setup.rkt")
+         "draw/ps-setup.rkt"
+         "draw/gl-config.rkt"
+         "draw/gl-context.rkt")
 
 (provide color%
          color-database<%> the-color-database
@@ -27,4 +29,6 @@
          bitmap-dc%
          post-script-dc%
          ps-setup% current-ps-setup
-         get-face-list)
+         get-face-list
+         gl-config%
+         gl-context<%>)

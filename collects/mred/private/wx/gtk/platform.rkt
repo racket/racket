@@ -9,7 +9,6 @@
          "dialog.rkt"
          "frame.rkt"
          "gauge.rkt"
-         "gl-context.rkt"
          "group-panel.rkt"
          "item.rkt"
          "list-box.rkt"
@@ -37,7 +36,6 @@
    dialog%
    frame%
    gauge%
-   gl-context%
    group-panel%
    item%
    list-box%
