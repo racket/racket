@@ -921,8 +921,8 @@
 (define symbol (signature/arbitrary arbitrary-symbol (predicate symbol?)))
 (define empty-list (signature (one-of empty)))
 
-(define unspecific (signature (predicate (lambda (_) #t))))
-(define any (signature (predicate (lambda (_) #t))))
+(define unspecific (signature unspecific %unspecific))
+(define any (signature any %any))
 
 ;; aus collects/lang/private/teach.ss
 

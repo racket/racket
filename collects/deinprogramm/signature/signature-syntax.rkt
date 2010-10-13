@@ -94,10 +94,10 @@
     (?id
      (identifier? #'?id)
      (with-syntax ((?stx (phase-lift stx))
-		   (?name name))
+		   (?name (or name (syntax->datum #'?id))))
        (let ((name (symbol->string (syntax->datum #'?id))))
 	 (if (char=? #\% (string-ref name 0))
-	     #'(make-type-variable-signature '?id ?stx)
+	     #'(make-type-variable-signature '?name ?stx)
 	     (with-syntax
 		 ((?raise
 		   (syntax/loc #'?stx

@@ -2916,9 +2916,9 @@
 (define Symbol (signature/arbitrary arbitrary-symbol (predicate symbol?)))
 (define Empty-list (signature (one-of empty)))
 
-(define Any (signature (predicate (lambda (_) #t))))
+(define Any (signature Any %Any))
 
-(define Unspecific (signature (predicate (lambda (_) #t))))
+(define Unspecific (signature Unspecific %Unspecific))
 
 (define (cons-of car-sig cdr-sig)
   (make-pair-signature #t car-sig cdr-sig))
