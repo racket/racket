@@ -410,7 +410,8 @@
 	      (syntax->list (quote-syntax 
 			     (#%datum
 			      #%top
-			      empty true false)))))
+			      empty true false
+			      )))))
 
     (define (identifier/non-kw? stx)
       (and (identifier? stx)
@@ -1129,7 +1130,7 @@
 					 "expected a ~a after an open parenthesis, but found ~a"
 					 (if lex-ok?
 					     "name"
-					     "defined name or a primitive operation name")
+					     "defined function name or a primitive operation name")
 					 what))])
 		      (unless (and (identifier? fun) (or lex-ok? undef-check? (not lex?)))
 			(bad-app (if lex?
@@ -1167,7 +1168,7 @@
 			"expected a ~a after an open parenthesis, but nothing's there"
 			(if lex-ok?
 			    "name"
-			    "defined name or a primitive operation name")))]
+			    "defined function name or a primitive operation name")))]
 		   [_else (bad-use-error '#%app stx)])))])
 	(values (mk-app #f) (mk-app #t))))
 
@@ -2264,7 +2265,7 @@
 	     '|function call|
 	       stx
 	       #f
-	       "expected a defined name or a primitive operation name after an ~
+	       "expected a defined function name or a primitive operation name after an ~
                 open parenthesis, but nothing's there")]
 	   [_else (bad-use-error '#%app stx)]))))
 
