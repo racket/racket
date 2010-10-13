@@ -35,6 +35,8 @@ EXPORTS
  scheme_kill_thread
  scheme_break_thread
  scheme_break_main_thread
+ scheme_break_main_thread_at
+ scheme_get_main_thread_break_handle
  scheme_set_break_main_target
  scheme_thread_block
  scheme_thread_block_enable_break

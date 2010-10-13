@@ -81,6 +81,8 @@ Scheme_Object *(*scheme_thread_w_details)(Scheme_Object *thunk,
 void (*scheme_kill_thread)(Scheme_Thread *p);
 void (*scheme_break_thread)(Scheme_Thread *p);
 void (*scheme_break_main_thread)();
+void (*scheme_break_main_thread_at)(void *);
+void *(*scheme_get_main_thread_break_handle)();
 void (*scheme_set_break_main_target)(Scheme_Thread *p);
 void (*scheme_thread_block)(float sleep_time);
 void (*scheme_thread_block_enable_break)(float sleep_time, int enable);

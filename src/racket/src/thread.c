@@ -3981,14 +3981,26 @@ static void exit_or_escape(Scheme_Thread *p)
   select_thread();
 }
 
-void scheme_break_main_thread()
+void scheme_break_main_thread_at(void *p)
 /* This function can be called from an interrupt handler. 
    On some platforms, it will even be called from multiple
    OS threads. In the case of multiple threads, there's a
    tiny chance that a single Ctl-C will trigger multiple
    break exceptions. */
 {
-  delayed_break_ready = 1;
+  *(volatile short *)p = 1;
+}
+
+void scheme_break_main_thread()
+/* Calling this function from an arbitary
+   thread is dangerous when therad locals are enabled. */
+{
+  scheme_break_main_thread_at((void *)&delayed_break_ready);
+}
+
+void *scheme_get_main_thread_break_handle()
+{
+  return (void *)&delayed_break_ready;
 }
 
 void scheme_set_break_main_target(Scheme_Thread *p)

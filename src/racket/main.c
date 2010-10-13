@@ -172,10 +172,13 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 
 #ifndef NO_USER_BREAK_HANDLER
 
+static void *break_handle;
+static void *signal_handle;
+
 static void user_break_hit(int ignore)
 {
-  scheme_break_main_thread();
-  scheme_signal_received();
+  scheme_break_main_thread_at(break_handle);
+  scheme_signal_received_at(signal_handle);
 
 #  ifdef SIGSET_NEEDS_REINSTALL
   MZ_SIGSET(SIGINT, user_break_hit);
@@ -314,7 +317,9 @@ static int main_after_stack(void *data)
 #endif
 
 #ifndef NO_USER_BREAK_HANDLER
-  MZ_SIGSET(SIGINT, user_break_hit);
+ break_handle = scheme_get_main_thread_break_handle();
+ signal_handle = scheme_get_signal_handle();
+ MZ_SIGSET(SIGINT, user_break_hit);
 #endif
 
   rval = run_from_cmd_line(argc, argv, scheme_basic_env, cont_run);
