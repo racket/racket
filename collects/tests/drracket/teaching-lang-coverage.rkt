@@ -49,7 +49,7 @@
         (t #rx"Intermediate Student$"
            "(define-struct s (a b))"
            '())
-        (t #rx"Intermediate Student$"
+        (t #rx"Advanced Student$"
            #<<--
 (define-struct foo (x))
 
