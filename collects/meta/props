@@ -1395,7 +1395,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/get-defs-test.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/hangman.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/io.rkt" drdr:command-line (gracket *)
-"collects/tests/drracket/language-test.rkt" drdr:command-line (gracket *) drdr:timeout 600
+"collects/tests/drracket/language-test.rkt" responsible (robby matthias) drdr:command-line (gracket *) drdr:timeout 600
 "collects/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket *) drdr:timeout 120
@@ -1406,10 +1406,10 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/sample-solutions-one-window.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/stepper-test.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *)
-"collects/tests/drracket/teaching-lang-coverage.rkt" drdr:command-line (gracket *)
-"collects/tests/drracket/teaching-lang-save-file.rkt" drdr:command-line (gracket *)
-"collects/tests/drracket/teachpack.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/test-engine-test.rkt" drdr:command-line (gracket *)
+"collects/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (gracket *)
+"collects/tests/drracket/teaching-lang-save-file.rkt" responsible (robby matthias) drdr:command-line (gracket *)
+"collects/tests/drracket/teachpack.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/time-keystrokes.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/errortrace/alert.rkt" responsible (eli)
 "collects/tests/framework" responsible (robby)
