@@ -15,6 +15,7 @@
   (only-in '#%kernel [apply kernel:apply])
   (only-in racket/private/pre-base new-apply-proc) 
   scheme/promise scheme/system
+  racket/function
   racket/mpair
   racket/base
   (only-in string-constants/private/only-once maybe-print-message)
@@ -1020,3 +1021,5 @@
 [module-compiled-language-info
  (-> -Compiled-Module-Expression
      (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
+
+[compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
