@@ -38,12 +38,14 @@
     'byu "Brigham Young University"
     #:location "Provo, UT"
     #:url "http://faculty.cs.byu.edu/~jay/"
+    #:pubs "http://faculty.cs.byu.edu/~jay/home/#(part._pubs)"
     (person 'jay "Jay McCarthy"
             #:url "http://faculty.cs.byu.edu/~jay/"))
    (place ; -------------------------------------------------------------------
     'calpoly "California Polytechnic State University"
     #:location "San Luis Obispo, CA"
     #:url "http://users.csc.calpoly.edu/~clements/"
+    #:pubs "http://www.brinckerhoff.org/clements/papers/"
     (person 'clements "John Clements"
             #:url "http://users.csc.calpoly.edu/~clements/"))
    (place ; -------------------------------------------------------------------
