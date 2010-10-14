@@ -11,6 +11,7 @@
 (define-appserv CGContextFlush (_fun _CGContextRef -> _void))
 (define-appserv CGContextTranslateCTM (_fun _CGContextRef _CGFloat _CGFloat -> _void))
 (define-appserv CGContextScaleCTM (_fun _CGContextRef _CGFloat _CGFloat -> _void))
+(define-appserv CGContextRotateCTM (_fun _CGContextRef _CGFloat -> _void))
 (define-appserv CGContextSaveGState (_fun _CGContextRef -> _void))
 (define-appserv CGContextRestoreGState (_fun _CGContextRef -> _void))
 (define-appserv CGContextSetRGBFillColor (_fun _CGContextRef _CGFloat _CGFloat _CGFloat _CGFloat -> _void))

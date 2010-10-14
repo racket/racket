@@ -4,7 +4,17 @@
 
 (provide ps-setup%
          current-ps-setup
-         paper-sizes)
+         paper-sizes
+         
+         get-native
+         get-native-copy
+         set-native)
+
+(define-local-member-name
+  get-native
+  get-native-copy
+  set-native
+  get-all-numerics)
 
 (define paper-sizes
   '(("A4 210 x 297\n mm" 595 842)
@@ -36,6 +46,16 @@
     (define trans-x 0.0)
     (define trans-y 0.0)
 
+    (define native #f)
+    (define native-copier #f)
+    (define/public (get-native) native)
+    (define/public (get-native-copy) 
+      (values (and native (native-copier native))
+              native-copier))
+    (define/public (set-native n copier)
+      (set! native n)
+      (set! native-copier copier))
+
     (def/public (copy-from [ps-setup% source]
                            [any? [filename? #f]])
       (set! command (send source get-command))
@@ -44,7 +64,19 @@
       (set! mode (send source get-mode))
       (set! orientation (send source get-orientation))
       (set! paper-name (send source get-paper-name))
-      (set! preview-command (send source get-preview-command)))
+      (set! preview-command (send source get-preview-command))
+      (set!-values (native native-copier) (send source get-native-copy))
+      (set!-values (editor-margin-x editor-margin-y
+                                    margin-x margin-y
+                                    scale-x scale-y
+                                    trans-x trans-y)
+                   (send source get-all-numerics)))
+
+    (define/public (get-all-numerics)
+      (values editor-margin-x editor-margin-y
+              margin-x margin-y
+              scale-x scale-y
+              trans-x trans-y))
      
     (def/public (get-editor-margin [(make-box nonnegative-real?) x]
                                    [(make-box nonnegative-real?) y])

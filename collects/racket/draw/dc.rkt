@@ -26,7 +26,13 @@
 (provide dc-mixin
          dc-backend<%>
          default-dc-backend%
-         install-bitmap-dc-class!)
+         install-bitmap-dc-class!
+         do-set-pen!
+         do-set-brush!)
+
+(define-local-member-name
+  do-set-pen!
+  do-set-brush!)
 
 (define 2pi (* 2 pi))
 
@@ -505,7 +511,7 @@
     (def/public (set-alpha [(real-in 0.0 1.0) n])
       (set! alpha n))
 
-    (define/private (set-pen! p)
+    (define/public (do-set-pen! p)
       (set! pen-stipple-s #f)
       (let ([o pen])
         (send p adjust-lock 1)
@@ -515,11 +521,11 @@
     (define/public (set-pen . args)
       (case-args
        args
-       [([pen% p]) (set-pen! p) (reset-align!)]
+       [([pen% p]) (do-set-pen! p) (reset-align!)]
        [([(make-alts string? color%) col]
          [pen-width? width]
          [pen-style-symbol? style])
-        (set-pen! (send the-pen-list find-or-create-pen col width style))
+        (do-set-pen! (send the-pen-list find-or-create-pen col width style))
         (reset-align!)]
        (method-name 'dc% 'set-pen)))
 
@@ -528,7 +534,7 @@
     (define/private (pen-draws?)
       (not (eq? (send pen get-style) 'transparent)))
 
-    (define/private (set-brush! b)
+    (define/public (do-set-brush! b)
       (set! brush-stipple-s #f)
       (let ([o brush])
         (send b adjust-lock 1)
@@ -538,10 +544,10 @@
     (define/public (set-brush . args)
       (case-args
        args
-       [([brush% b]) (set-brush! b)]
+       [([brush% b]) (do-set-brush! b)]
        [([(make-alts string? color%) col]
          [brush-style-symbol? style])
-        (set-brush! (send the-brush-list find-or-create-brush col style))]
+        (do-set-brush! (send the-brush-list find-or-create-brush col style))]
        (method-name 'dc% 'set-brush)))
 
     (define/public (get-brush) brush)

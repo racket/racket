@@ -11,6 +11,8 @@
          "finfo.rkt" ; file-creator-and-type
          "filedialog.rkt"
          "dc.rkt"
+         "printer-dc.rkt"
+         "../common/printer.rkt"
          "menu-bar.rkt"
          "agl.rkt"
          "../../lock.rkt"
@@ -72,7 +74,9 @@
 (define-unimplemented send-event)
 (define (begin-refresh-sequence) (void))
 (define (end-refresh-sequence) (void))
-(define-unimplemented run-printout)
+
+(define run-printout (make-run-printout printer-dc%))
+
 (define (get-double-click-time)
   500)
 (define (get-control-font-size) 13)
@@ -108,7 +112,6 @@
 (define (get-display-depth) 32)
 (define-unimplemented is-color-display?)
 (define (id-to-menu-item id) id)
-(define-unimplemented show-print-setup)
 (define (can-show-print-setup?) #t)
 
 (define/top (make-screen-bitmap [exact-positive-integer? w]

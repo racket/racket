@@ -1243,6 +1243,9 @@
 			     (send canvas refresh))))])
       (set! do-clock clock)
       (make-object button% "Clip Clock" hp3 (lambda (b e) (clock #t)))
+      (make-object button% "Print Setup" hp4 (lambda (b e) (let ([c (get-page-setup-from-user)])
+                                                             (when c
+                                                               (send (current-ps-setup) copy-from c)))))
       (make-object slider% "Alpha" 0 10 hp4
                    (lambda (s e)
                      (let ([a (/ (send s get-value) 10.0)])

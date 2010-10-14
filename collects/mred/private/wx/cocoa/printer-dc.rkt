@@ -1,14 +1,168 @@
 #lang racket/base
 (require racket/class
-         racket/draw/dc)
+         racket/math
+         racket/draw/local
+         racket/draw/dc
+         racket/draw/cairo
+         racket/draw/bitmap
+         racket/draw/bitmap-dc
+         racket/draw/record-dc
+         racket/draw/ps-setup
+         ffi/unsafe
+         ffi/unsafe/objc
+         "dc.rkt"
+         "cg.rkt"
+         "utils.rkt"
+         "types.rkt")
 
-(provide printer-dc%)
+(provide printer-dc%
+         show-print-setup)
 
-(define dc-backend%
-  (class default-dc-backend%
-    (init [parent #f])
-    
-    (super-new)))
+(import-class NSPrintOperation NSView NSGraphicsContext
+              NSPrintInfo NSDictionary NSPageLayout)
+
+(define NSPortraitOrientation  0)
+(define NSLandscapeOrientation 1)
+
+(define-objc-class PrinterView NSView
+  [wxb]
+  [-a _BOOL (knowsPageRange: [_NSRange-pointer rng])
+      (set-NSRange-location! rng 1)
+      (set-NSRange-length! rng (let ([wx (->wx wxb)])
+                                 (if wx
+                                     (send wx get-page-count)
+                                     0)))
+      #t]
+  [-a _NSRect (rectForPage: [_NSInteger n])
+      (let ([wx (->wx wxb)])
+        (if wx
+            (send wx get-rect-for-page n)
+            (make-NSRect (make-NSPoint 0 0)
+                         (make-NSSize 10 10))))]
+  [-a _void (beginPageInRect: [_NSRect aRect] atPlacement: [_NSPoint location])
+      (let ([wx (->wx wxb)])
+        (when wx
+          (send wx start-page-at aRect)))
+      (super-tell #:type _void beginPageInRect: #:type _NSRect aRect atPlacement:  #:type _NSPoint location)]
+  [-a _void (drawPageBorderWithSize: [_NSSize size])
+      (let ([wx (->wx wxb)])
+        (when wx
+          (send wx draw-print-page self size)))])
+
+(define (make-print-info [prev #f])
+  (as-objc-allocation-with-retain
+   (tell (tell NSPrintInfo alloc)
+         initWithDictionary:
+         (if prev
+             (tell prev dictionary)
+             (tell NSDictionary dictionary)))))
+
+
+(define (install-pss-to-print-info pss print-info)
+  (tellv print-info setOrientation: #:type _int (if (eq? (send pss get-orientation) 'landscape)
+                                                    NSLandscapeOrientation
+                                                    NSPortraitOrientation))
+  (tellv print-info setScalingFactor: #:type _CGFloat (let ([x (box 0)]
+                                                            [y (box 0)])
+                                                        (send pss get-scaling x y)
+                                                        (unbox y))))
+
+(define (show-print-setup parent)
+  (let* ([pss (current-ps-setup)]
+         [print-info (let ([pi (send pss get-native)])
+                       (or pi
+                           (let ([pi (make-print-info)])
+                             (send pss set-native pi make-print-info)
+                             pi)))])
+    (install-pss-to-print-info pss print-info)
+    (tell (tell NSPageLayout pageLayout) runModalWithPrintInfo: print-info)
+    (let ([o (tell #:type _int print-info orientation)])
+      (send pss set-orientation (if (= o NSLandscapeOrientation)
+                                    'landscape
+                                    'portrait)))
+    (let ([s (tell #:type _CGFloat print-info scalingFactor)])
+      (send pss set-scaling s s))))
 
 (define printer-dc%
-  (dc-mixin dc-backend%))
+  (class (record-dc-mixin (dc-mixin bitmap-dc-backend%))
+    (init [parent #f])
+
+    (super-make-object (make-object quartz-bitmap% 1 1))
+
+    (inherit get-recorded-command
+             reset-recording)
+
+    (define pages null)
+    (define/override (end-page)
+      (set! pages (cons (get-recorded-command) pages))
+      (reset-recording))
+
+    (define print-info (or (let-values ([(pi copier)
+                                         (send (current-ps-setup)
+                                               get-native-copy)])
+                             pi)
+                           (make-print-info)))
+      
+    (install-pss-to-print-info (current-ps-setup) print-info)
+
+    (define-values (page-width page-height page-scaling)
+      (let ([s (NSRect-size (tell #:type _NSRect print-info imageablePageBounds))]
+            [scaling (tell #:type _CGFloat print-info scalingFactor)])
+        (values (NSSize-width s)
+                (NSSize-height s)
+                scaling)))
+
+    (define/override (get-size)
+      (values (/ page-width page-scaling) (/ page-height page-scaling)))
+
+    (define current-page 0)
+
+    (define/public (get-page-count) (length pages))
+    (define/public (get-rect-for-page i)
+      (make-NSRect (make-NSPoint 0 (* (sub1 i) page-height))
+                   (make-NSSize page-width page-height)))
+    (define/public (start-page-at r)
+      (set! current-page (inexact->exact (round (/ (NSPoint-y (NSRect-origin r)) page-height)))))
+    (define/public (draw-print-page view-cocoa s)
+      (let ([f (tell #:type _NSRect view-cocoa frame)])
+        (tellv view-cocoa lockFocus)
+
+        (let ([cg (tell #:type _CGContextRef (tell NSGraphicsContext currentContext) graphicsPort)]
+              [s (tell #:type _NSSize print-info paperSize)]
+              [b (tell #:type _NSRect print-info imageablePageBounds)])
+          (CGContextTranslateCTM cg 0 (/ (NSSize-height s) page-scaling))
+          (CGContextScaleCTM cg 1 -1)
+          (CGContextTranslateCTM cg 
+                                 (/ (NSPoint-x (NSRect-origin b)) page-scaling)
+                                 (/ (- (NSSize-height s)
+                                       (+ (NSPoint-y (NSRect-origin b))
+                                          (NSSize-height (NSRect-size b))))
+                                    page-scaling))
+          (let* ([surface (cairo_quartz_surface_create_for_cg_context cg 
+                                                                      (inexact->exact (ceiling page-width))
+                                                                      (inexact->exact (ceiling page-height)))]
+                 [cr (cairo_create surface)])
+            (cairo_surface_destroy surface)
+            (let ([dc (make-object (dc-mixin
+                                    (class default-dc-backend%
+                                      (define/override (get-cr) cr)
+                                      (super-new))))])
+              (let ([proc (list-ref (reverse pages) current-page)])
+                (proc dc)))
+            (cairo_destroy cr)))
+
+        (tellv view-cocoa unlockFocus)))
+
+    (define/override (end-doc)
+      (define view-cocoa (as-objc-allocation-with-retain
+                          (tell (tell PrinterView alloc) 
+                                initWithFrame: #:type _NSRect (make-NSRect
+                                                               (make-NSPoint 0 0)
+                                                               (make-NSSize 10 10)))))
+      (define op-cocoa (as-objc-allocation-with-retain
+                        (tell NSPrintOperation printOperationWithView: view-cocoa
+                              printInfo: print-info)))
+
+      (set-ivar! view-cocoa wxb (->wxb this))
+
+      (tellv op-cocoa runOperation))))
