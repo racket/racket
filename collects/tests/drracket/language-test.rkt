@@ -435,10 +435,10 @@ the settings above should match r5rs
                      "define: cannot redefine name: shrd\n(cons (cons 1 empty) (cons (cons 1 empty) empty))")
     (test-expression "(local ((define x x)) 1)"
                      "local: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
+                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
     (test-expression "(letrec ([x x]) 1)"
                      "letrec: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
+                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
     (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
     
@@ -483,7 +483,7 @@ the settings above should match r5rs
     
     (test-expression "(let ([f (lambda (x) x)]) f)"
                      "let: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
+                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
     (test-expression ",1"
                      "read: illegal use of comma")
     
@@ -601,10 +601,10 @@ the settings above should match r5rs
                      "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
     (test-expression "(local ((define x x)) 1)"
                      "local: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
+                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
     (test-expression "(letrec ([x x]) 1)"
                      "letrec: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
+                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
     (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
     
@@ -649,7 +649,7 @@ the settings above should match r5rs
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
                      "let: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
+                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
     (test-expression ",1"
                      "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
     
