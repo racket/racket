@@ -126,13 +126,18 @@
            #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
            #:with (opt-others:opt-let-clause ...) #'(others ...)
            #:with opt
-           (begin (log-optimization "unboxed let bindings" this-syntax)
+           (begin (when (not (null? (syntax->list #'(opt-candidates.id ...))))
+                    ;; only log when we actually optimize
+                    (log-optimization "unboxed let bindings" this-syntax))
                   ;; add the unboxed bindings to the table, for them to be used by
                   ;; further optimizations
                   (for ((v (in-list (syntax->list #'(opt-candidates.id ...))))
                         (r (in-list (syntax->list #'(opt-candidates.real-binding ...))))
                         (i (in-list (syntax->list #'(opt-candidates.imag-binding ...)))))
                        (dict-set! unboxed-vars-table v (list r i)))
+                  ;; in the case where no bindings are unboxed, we create a let
+                  ;; that is equivalent to the original, but with all parts
+                  ;; optimized
                   #`(letk.key ...
                         (opt-candidates.bindings ... ...
                          opt-functions.res ...

@@ -1,8 +1,5 @@
 #;
 (
-dead-substructs.rkt line 22 col 2 - (let-values () (quote 1)) - unboxed let bindings
-dead-substructs.rkt line 22 col 2 - (let-values () (quote 2)) - unboxed let bindings
-dead-substructs.rkt line 22 col 2 - (let-values () (#%app error (quote eh?))) - unboxed let bindings
 1
 2
 )
