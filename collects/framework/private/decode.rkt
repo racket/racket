@@ -1,6 +1,6 @@
-#lang scheme/base
-(require (for-syntax scheme/base file/gunzip net/base64))
-(provide (except-out (all-from-out scheme/base) #%module-begin)
+#lang racket/base
+(require (for-syntax racket/base file/gunzip net/base64))
+(provide (except-out (all-from-out racket/base) #%module-begin)
          (rename-out [module-begin #%module-begin]))
 
 (define-syntax (module-begin stx)
