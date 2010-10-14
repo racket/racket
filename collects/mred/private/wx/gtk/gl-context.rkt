@@ -65,10 +65,8 @@
 (define-gdkglext gdk_gl_drawable_gl_end (_fun _GdkGLDrawable -> _void))
 (define-gdkglext gdk_gl_drawable_swap_buffers (_fun _GdkGLDrawable -> _void))
 
-(define-gdkglext gdk_gl_pixmap_destroy (_fun _GdkGLPixmap -> _void)
-  #:wrap (deallocator))
-(define-gdkglext gdk_gl_pixmap_new (_fun _GdkGLConfig _GdkPixmap _pointer -> _GdkGLPixmap)
-  #:wrap (allocator gdk_gl_pixmap_destroy))
+(define-gdkglext gdk_pixmap_set_gl_capability (_fun _GdkPixmap _GdkGLConfig _pointer
+						    -> _GdkGLPixmap))
 
 (define GDK_GL_RGBA_TYPE 0)
 
@@ -172,11 +170,14 @@
   (let ([config (config->GdkGLConfig #f config #f)])
     (when config
       (let ([gdkpx (send bm get-gdk-pixmap)])
-        (let ([glpx (gdk_gl_pixmap_new config gdkpx #f)])
+        (let ([glpx (gdk_pixmap_set_gl_capability gdkpx config #f)])
           (and glpx
-               (let ([gl (gdk_gl_context_new glpx #f #t GDK_GL_RGBA_TYPE)])
+               (let ([gl
+		      ;; currently uses "indirect" mode --- can we
+		      ;; reliably use direct in some environments?
+		      (gdk_gl_context_new glpx #f #f GDK_GL_RGBA_TYPE)])
                  (and gl
-                      (new gl-context% 
-                           [gl gl]
-                           [drawable glpx])))))))))
-
+                      (send bm install-gl-context
+			    (new gl-context% 
+				 [gl gl]
+				 [drawable glpx]))))))))))
