@@ -8,13 +8,18 @@ A @scheme[gl-context<%>] object represents a context for drawing with
  @scheme[gl-context<%>] object, call @method[dc<%> get-gl-context] of
  the target drawing context.
 
-Only canvas @scheme[dc<%>] and @scheme[bitmap-dc%] objects support
- OpenGL (always under Windows and Mac OS X, sometimes under X), and in
- the case of a @scheme[bitmap-dc%], the context is usable only when
- the target bitmap is non-monochrome. When the target bitmap for a
- @scheme[bitmap-dc%] context is changed via @method[bitmap-dc%
- set-bitmap], the associated OpenGL context is reset, but the
- @scheme[gl-context<%>] keeps its identity. Canvas contexts are double
+Only canvas @scheme[dc<%>] and @scheme[bitmap-dc%] objects containing
+ a bitmap from @racket[make-gl-bitmap] support OpenGL (always under
+ Windows and Mac OS X, sometimes under X).  Normal @racket[dc<%>]
+ drawing and OpenGL drawing can be mixed in a @scheme[bitmap-dc%], but
+ a canvas that uses the @racket['gl] style to support OpenGL does not
+ reliably support normal @racket[dc<%>] drawing; use a bitmap if you
+ need to mix drawing modes, and use a canvas to maximize OpenGL
+ performance.
+
+When the target bitmap for a @scheme[bitmap-dc%] context is changed
+ via @method[bitmap-dc% set-bitmap], the associated
+ @scheme[gl-context<%>] changes. Canvas contexts are normally double
  buffered, and bitmap contexts are single buffered.
 
 The @schememodname[racket/gui/base] library provides no OpenGL
@@ -24,7 +29,7 @@ The @schememodname[racket/gui/base] library provides no OpenGL
  context, connecting it to windows and bitmaps.
 
 Only one OpenGL context can be active at a time across all threads and
- eventspaces. Except under Mac OS X, OpenGL contexts are not protected
+ eventspaces. OpenGL contexts are not protected
  against interference among threads; that is, if a thread selects one
  of its OpenGL contexts, then other threads can write into the context
  via OpenGL commands. However, if all threads issue OpenGL commands

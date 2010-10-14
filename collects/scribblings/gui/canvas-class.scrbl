@@ -45,10 +45,11 @@ The @scheme[style] argument indicates one or more of the following styles:
  @item{@scheme['resize-corner] --- leaves room for a resize control at the canvas's
                                   bottom right when only one scrollbar is visible}
 
- @item{@scheme['gl] --- enables OpenGL drawing to the canvas, and usually
-       combined with @racket['no-autoclear]; call the @method[dc<%>
-       get-gl-context] method of the canvas's drawing context as
-       produced by @method[canvas<%> get-dc]}
+ @item{@scheme['gl] --- creates a canvas for OpenGL drawing instead of
+       normal @racket[dc<%>] drawing; call the @method[dc<%>
+       get-gl-context] method on the result of @method[canvas<%>
+       get-dc]; this style is usually combined with
+       @racket['no-autoclear]}
 
  @item{@scheme['no-autoclear] --- prevents automatic erasing of the
        canvas before calls to @method[canvas% on-paint]} 

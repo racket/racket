@@ -123,6 +123,7 @@ make-eventspace
 make-gui-empty-namespace
 make-gui-namespace
 make-screen-bitmap
+make-gl-bitmap
 map-command-as-meta-key
 menu%
 menu-bar%

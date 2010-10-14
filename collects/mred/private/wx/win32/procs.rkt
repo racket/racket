@@ -48,6 +48,7 @@
  get-highlight-background-color
  get-highlight-text-color
  make-screen-bitmap
+ make-gl-bitmap
  check-for-break)
 
 (define-unimplemented special-control-key)
@@ -100,6 +101,11 @@
 
 (define/top (make-screen-bitmap [exact-positive-integer? w]
                                 [exact-positive-integer? h])
+  (make-object win32-bitmap% w h #f))
+
+(define/top (make-gl-bitmap [exact-positive-integer? w]
+                            [exact-positive-integer? h]
+                            [gl-config% c])
   (make-object win32-bitmap% w h #f))
 
 (define (check-for-break) #f)

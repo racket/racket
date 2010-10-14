@@ -11,6 +11,7 @@
          "widget.rkt"
          "window.rkt"
          "dc.rkt"
+         "gl-context.rkt"
          "../common/handlers.rkt")
 
 (provide
@@ -50,6 +51,7 @@
  get-highlight-background-color
  get-highlight-text-color
  make-screen-bitmap
+ make-gl-bitmap
  check-for-break)
 
 (define-unimplemented special-control-key)
@@ -117,5 +119,12 @@
   (if (eq? 'unix (system-type))
       (make-object x11-bitmap% w h #f)
       (make-object bitmap% w h #f #t)))
+
+(define/top (make-gl-bitmap [exact-positive-integer? w]
+                            [exact-positive-integer? h]
+                            [gl-config% c])
+  (let ([bm (make-object x11-bitmap% w h #f)])
+    (create-and-install-gl-context bm c)
+    bm))
 
 (define (check-for-break) #f)

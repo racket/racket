@@ -206,12 +206,11 @@
             NSOpenGLPFADepthSize (send conf get-depth-size)
             NSOpenGLPFAStencilSize (send conf get-stencil-size)
             NSOpenGLPFAAccumSize (send conf get-accum-size))
-           #;
            (let ([ms (send conf get-multisample-size)])
              (if (zero? ms)
                  null
                  (list NSOpenGLPFAMultisample
-                       NSOpenGLPFASampleBuffers
+                       NSOpenGLPFASampleBuffers 1
                        NSOpenGLPFASamples ms)))
            (list 0)))))
         

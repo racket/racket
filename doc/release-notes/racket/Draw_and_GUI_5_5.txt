@@ -1,4 +1,4 @@
-Changes to the drawing toolbox:
+Changes:
 
  * The drawing portion of the old GUI toolbox is now available as a
    separate layer: `racket/draw'. This layer can be used from plain
@@ -15,7 +15,7 @@ Changes to the drawing toolbox:
 
    Drawing to a canvas always draws into a bitmap that is kept
    offscreen and periodically flushed onto the screen. The new
-   `suspend-flush' and `resume-fluah' methods of `canvas%' provide
+   `suspend-flush' and `resume-flush' methods of `canvas%' provide
    some control over the timing of the flushes, which in many cases
    avoids the need for (additional) double buffering of canvas
    content.
@@ -85,8 +85,9 @@ Changes to the drawing toolbox:
    `get-highlight-text-color', if any.
 
  * OpenGL drawing in a canvas requires supplying 'gl as a style when
-   creating the `canvas%' instance.
+   creating the `canvas%' instance. OpenGL and normal dc<%> drawing no
+   longer mix reliably in a canvas.
 
-Changes to the GUI toolbox:
+   OpenG drawing to a bitmap requires a bitmap created with
+   `make-gl-bitmap'.
 
- [Nothing to report, yet.]

@@ -12,6 +12,7 @@
          "filedialog.rkt"
          "dc.rkt"
          "menu-bar.rkt"
+         "agl.rkt"
          "../../lock.rkt"
          "../common/handlers.rkt")
 
@@ -52,6 +53,7 @@
  get-highlight-background-color
  get-highlight-text-color
  make-screen-bitmap
+ make-gl-bitmap
  check-for-break)
 
 (import-class NSScreen NSCursor)
@@ -112,6 +114,11 @@
 (define/top (make-screen-bitmap [exact-positive-integer? w]
                                 [exact-positive-integer? h])
   (make-object quartz-bitmap% w h))
+
+(define/top (make-gl-bitmap [exact-positive-integer? w]
+                            [exact-positive-integer? h]
+                            [gl-config% c])
+  (create-gl-bitmap w h c))
 
 ;; ------------------------------------------------------------
 ;; Text & highlight color

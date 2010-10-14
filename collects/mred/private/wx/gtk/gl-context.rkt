@@ -2,13 +2,18 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/define
+         ffi/unsafe/alloc
          (prefix-in draw: racket/draw/gl-context)
          racket/draw/gl-config
          "types.rkt"
          "utils.rkt")
 
 (provide prepare-widget-gl-context
-	 create-widget-gl-context)
+	 create-widget-gl-context
+
+         create-and-install-gl-context
+         get-gdk-pixmap
+         install-gl-context)
 
 (define gdkglext-lib
   (ffi-lib "libgdkglext-x11-1.0" '("0")))
@@ -23,6 +28,8 @@
 (define _GdkGLContext (_cpointer/null 'GdkGLContext))
 (define _GdkGLDrawable (_cpointer 'GdkGLDrawable))
 (define _GdkGLConfig (_cpointer 'GdkGLConfig))
+(define _GdkGLPixmap _GdkGLDrawable)
+(define _GdkPixmap _pointer)
 
 (define-gdkglext gdk_gl_init (_fun (_ptr i _int)
                                    (_ptr i _pointer)
@@ -45,11 +52,25 @@
 (define-gtkglext gtk_widget_get_gl_context (_fun _GtkWidget -> _GdkGLContext))
 (define-gtkglext gtk_widget_get_gl_window (_fun _GtkWidget -> _GdkGLDrawable))
 
+(define-gdkglext gdk_gl_context_destroy (_fun _GdkGLContext -> _void)
+  #:wrap (deallocator))
+
+(define-gdkglext gdk_gl_context_new (_fun _GdkGLDrawable _GdkGLContext _gboolean _int
+                                          -> _GdkGLContext)
+  #:wrap (allocator gdk_gl_context_destroy))
+
 (define-gdkglext gdk_gl_drawable_gl_begin (_fun _GdkGLDrawable
                                                 _GdkGLContext
                                                 -> _gboolean))
 (define-gdkglext gdk_gl_drawable_gl_end (_fun _GdkGLDrawable -> _void))
 (define-gdkglext gdk_gl_drawable_swap_buffers (_fun _GdkGLDrawable -> _void))
+
+(define-gdkglext gdk_gl_pixmap_destroy (_fun _GdkGLPixmap -> _void)
+  #:wrap (deallocator))
+(define-gdkglext gdk_gl_pixmap_new (_fun _GdkGLConfig _GdkPixmap _pointer -> _GdkGLPixmap)
+  #:wrap (allocator gdk_gl_pixmap_destroy))
+
+(define GDK_GL_RGBA_TYPE 0)
 
 (define GDK_GL_USE_GL                     1)
 (define GDK_GL_BUFFER_SIZE                2)
@@ -74,10 +95,12 @@
 
 ;; ----------------------------------------
 
-(define (config->GdkGLConfig d conf)
+(define (config->GdkGLConfig d conf can-double?)
   (gdk_gl_config_new (append
 		      (list GDK_GL_RGBA)
-		      (if (send conf get-double-buffered) (list GDK_GL_DOUBLEBUFFER) null)
+                      (if can-double?
+                          (if (send conf get-double-buffered) (list GDK_GL_DOUBLEBUFFER) null)
+                          null)
 		      (if (send conf get-stereo) (list GDK_GL_STEREO) null)
 		      (list
 		       GDK_GL_DEPTH_SIZE (send conf get-depth-size)
@@ -122,7 +145,8 @@
   (init!)
   (let ([config (config->GdkGLConfig #f ; (gtk_widget_get_screen gtk)
                                      (or config
-                                         (new gl-config%)))])
+                                         (new gl-config%))
+                                     #t)])
     (when config
 	  (gtk_widget_set_gl_capability gtk
 					config
@@ -137,4 +161,22 @@
 	 (new gl-context% 
 	      [gl gl]
 	      [drawable (gtk_widget_get_gl_window gtk)]))))
+
+
+(define-local-member-name
+  get-gdk-pixmap
+  install-gl-context)
+
+(define (create-and-install-gl-context bm config)
+  (init!)
+  (let ([config (config->GdkGLConfig #f config #f)])
+    (when config
+      (let ([gdkpx (send bm get-gdk-pixmap)])
+        (let ([glpx (gdk_gl_pixmap_new config gdkpx #f)])
+          (and glpx
+               (let ([gl (gdk_gl_context_new glpx #f #t GDK_GL_RGBA_TYPE)])
+                 (and gl
+                      (new gl-context% 
+                           [gl gl]
+                           [drawable glpx])))))))))
 

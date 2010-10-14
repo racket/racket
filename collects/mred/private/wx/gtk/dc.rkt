@@ -37,6 +37,14 @@
                                  w
                                  h))
 
+    ;; `get-gdk-pixmap' and `install-gl-context' are
+    ;; localized in "gl-context.rkt"
+    (define/public (get-gdk-pixmap) pixmap)
+    (define/public (install-gl-context new-gl) (set! gl new-gl))
+
+    (define gl #f)
+    (define/override (get-bitmap-gl-context) gl)
+
     (define/override (ok?) #t)
     (define/override (is-color?) #t)
     (define/override (has-alpha-channel?) #f)

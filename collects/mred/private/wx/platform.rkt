@@ -70,5 +70,6 @@
                 get-highlight-background-color
                 get-highlight-text-color
                 make-screen-bitmap
+                make-gl-bitmap
                 check-for-break)
   ((dynamic-require platform-lib 'platform-values)))

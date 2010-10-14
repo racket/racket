@@ -206,6 +206,9 @@
           (set! s #f)
           (destroy s2))))
 
+    (define/public (get-bitmap-gl-context)
+      #f)
+
     (define/private (check-ok who)
       (unless s
         (error (method-name 'bitmap% who) "bitmap is not ok")))

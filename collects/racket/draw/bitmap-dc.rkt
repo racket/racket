@@ -83,6 +83,11 @@
     
     (super-new)
 
+    (def/override (get-gl-context)
+      (let ([bm (internal-get-bitmap)])
+        (and bm
+             (send bm get-bitmap-gl-context))))
+
     (def/public (set-bitmap [(make-or-false bitmap%) v])
       (internal-set-bitmap v))
 

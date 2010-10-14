@@ -276,6 +276,20 @@ Strips shortcut ampersands from @racket[label], removes parenthesized
 }
 
 
+@defproc[(make-gl-bitmap [width exact-positive-integer?]
+                         [height exact-positive-integer?]
+                         [config (is-a?/c gl-config%)])
+         (is-a/c? bitmap%)]{
+
+Creates a bitmap that supports both normal @racket[dc<%>] drawing an
+OpenGL drawing through a context returned by @xmethod[dc<%> get-gl-context].
+
+For @racket[dc<%>] drawing, an OpenGL-supporting bitmap draws like a
+bitmap frmo @racket[make-screen-bitmap] on some platforms, while it
+draws like a bitmap instantiated directly from @racket[bitmap%] on
+other platforms.}
+
+
 @defproc[(make-gui-empty-namespace) namespace?]{
 
 Like @racket[make-base-empty-namespace], but with
