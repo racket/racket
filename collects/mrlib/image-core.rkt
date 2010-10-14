@@ -557,14 +557,18 @@ has been moved out).
                 (text-weight shape)
                 (text-underline shape))]
     [(flip? shape)
-     (let ([bitmap (flip-shape shape)])
-       (make-flip (flip-flipped? shape)
-                  (make-bitmap (bitmap-raw-bitmap bitmap)
-                               (bitmap-raw-mask bitmap)
-                               (bitmap-angle bitmap)
-                               (* x-scale (bitmap-x-scale bitmap))
-                               (* y-scale (bitmap-y-scale bitmap))
-                               #f #f)))]))
+     (cond
+       [(and (= 1 x-scale) (= 1 y-scale))
+        shape]
+       [else
+        (let ([bitmap (flip-shape shape)])
+          (make-flip (flip-flipped? shape)
+                     (make-bitmap (bitmap-raw-bitmap bitmap)
+                                  (bitmap-raw-mask bitmap)
+                                  (bitmap-angle bitmap)
+                                  (* x-scale (bitmap-x-scale bitmap))
+                                  (* y-scale (bitmap-y-scale bitmap))
+                                  #f #f)))])]))
 
 (define (scale-color color x-scale y-scale)
   (cond
