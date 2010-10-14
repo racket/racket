@@ -106,6 +106,6 @@
 (define/top (make-gl-bitmap [exact-positive-integer? w]
                             [exact-positive-integer? h]
                             [gl-config% c])
-  (make-object win32-bitmap% w h #f))
+  (make-object win32-bitmap% w h #f c))
 
 (define (check-for-break) #f)

@@ -21,7 +21,7 @@
 
 (define win32-bitmap%
   (class bitmap%
-    (init w h hwnd)
+    (init w h hwnd [gl-config #f])
     (super-make-object (make-alternate-bitmap-kind w h))
 
     (define s
@@ -40,6 +40,14 @@
           (cairo_paint cr)
           (cairo_destroy cr))
         s))
+    
+    (define gl (and gl-config
+                    (let ([hdc (cairo_win32_surface_get_dc s)])
+                      (set-cpointer-tag! hdc 'HDC)
+                      (create-gl-context hdc 
+                                         gl-config
+                                         #t))))
+    (define/override (get-bitmap-gl-context) gl)
 
     (define/override (ok?) #t)
     (define/override (is-color?) #t)
