@@ -552,7 +552,7 @@ path/s is either such a string or a list of them.
 "collects/2htdp/tests/full-scene-visible.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/image-equality-performance-htdp.rkt" responsible (robby) drdr:command-line (gracket-text "-t" *)
 "collects/2htdp/tests/image-equality-performance.rkt" responsible (robby) drdr:command-line (gracket-text *)
-"collects/2htdp/tests/jpr-bug.rkt" drdr:command-line (gracket "-t" *)
+"collects/2htdp/tests/jpr-bug.rkt" drdr:command-line #f
 "collects/2htdp/tests/mouse-evt.rkt" drdr:command-line #f
 "collects/2htdp/tests/mp.rkt" drdr:command-line #f
 "collects/2htdp/tests/perform-robby.rkt" drdr:command-line (gracket *)
@@ -1339,7 +1339,7 @@ path/s is either such a string or a list of them.
 "collects/teachpack/2htdp/universe.ss" drdr:command-line (gracket-text "-t" *)
 "collects/teachpack/balls.ss" drdr:command-line (mzc *)
 "collects/teachpack/deinprogramm/image.ss" drdr:command-line (gracket-text "-t" *)
-"collects/teachpack/deinprogramm/image2.ss" drdr:command-line #f
+"collects/teachpack/deinprogramm/image2.ss" drdr:command-line (gracket "-t" *)
 "collects/teachpack/deinprogramm/line3d.ss" drdr:command-line (gracket-text "-t" *)
 "collects/teachpack/deinprogramm/sound.ss" drdr:command-line (gracket-text "-t" *)
 "collects/teachpack/deinprogramm/turtle.ss" drdr:command-line (gracket-text "-t" *)
