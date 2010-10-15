@@ -406,7 +406,8 @@
           (using-admin
            (when media
              (set-custom-cursor
-              (and (not out-of-client?)
+              (and (or (not out-of-client?)
+                       (send event dragging?))
                    (send media adjust-cursor event))))
            (when media
              (send media on-event event))))

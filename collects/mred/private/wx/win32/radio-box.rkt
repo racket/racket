@@ -30,8 +30,7 @@
     (inherit auto-size set-control-font
              is-enabled-to-root?
              subclass-control
-             set-focus
-             remember-label-bitmap)
+             set-focus)
 
     (define callback cb)
     (define current-value val)
@@ -46,6 +45,8 @@
                        #f
                        hInstance
                        #f))
+
+    (define label-bitmaps null)
 
     (define radio-hwnds
       (let loop ([y 0] [w 0] [labels labels])
@@ -73,17 +74,17 @@
                                      #f)])
               (when bitmap?
                 (let ([hbitmap (bitmap->hbitmap label)])
-                  (remember-label-bitmap hbitmap)
+                  (set! label-bitmaps (cons hbitmap label-bitmaps))
                   (SendMessageW radio-hwnd BM_SETIMAGE IMAGE_BITMAP 
                                 (cast hbitmap _HBITMAP _LPARAM))))
               (ShowWindow radio-hwnd SW_SHOW)
               (set-control-font font radio-hwnd)
-              (let-values ([(w h) 
+              (let-values ([(w1 h) 
                             (auto-size label 0 0 20 4 (lambda (w h)
                                                         (MoveWindow radio-hwnd 0 (+ y SEP) w h #t)
                                                         (values w h)))])
                 (cons radio-hwnd
-                      (loop (+ y SEP h) (max w h) (cdr labels))))))))
+                      (loop (+ y SEP h) (max w1 w) (cdr labels))))))))
 
     (unless (= val -1)
       (SendMessageW (list-ref radio-hwnds val) BM_SETCHECK 1 0))

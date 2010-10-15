@@ -79,6 +79,7 @@
 
 (define theme-hfont #f)
 
+#;
 (define-values (dlu-x dlu-y)
   (let ([v (GetDialogBaseUnits)])
     (values (* 1/4 (bitwise-and v #xFFFF))
@@ -108,7 +109,9 @@
 
   (super-new)
   
-  (define eventspace (current-eventspace))
+  (define eventspace (if parent
+                         (send parent get-eventspace)
+                         (current-eventspace)))
 
   (set-hwnd-wx! hwnd this)
   (for ([extra-hwnd (in-list extra-hwnds)])
@@ -288,7 +291,9 @@
                             [resize
                              (lambda (w h) (set-size -11111 -11111 w h))]
                             #:combine-width [combine-w max]
-                            #:combine-height [combine-h max])
+                            #:combine-height [combine-h max]
+                            #:scale-w [scale-w 1]
+                            #:scale-h [scale-h 1])
     (unless measure-dc
       (let* ([bm (make-object bitmap% 1 1)]
 	     [dc (make-object bitmap-dc% bm)]
@@ -313,8 +318,8 @@
                                [else
                                 (send measure-dc get-text-extent label #f #t)]))]
 		 [(->int) (lambda (v) (inexact->exact (floor v)))])
-      (resize (max (->int (+ w dw)) (->int (* dlu-x min-w)))
-              (max (->int (+ h dh)) (->int (* dlu-y min-h))))))
+      (resize (->int (* scale-h (max (+ w dw) min-w)))
+              (->int (* scale-w (max (+ h dh) min-h))))))
 
   (define/public (popup-menu m x y)
     (let ([gx (box x)]
@@ -431,7 +436,7 @@
                    (begin
                      (queue-window-event this (lambda () (dispatch-on-char/sync e)))
                      #t)
-                   (constrained-reply (get-eventspace)
+                   (constrained-reply eventspace
                                       (lambda () (dispatch-on-char e #t))
                                       #t)))
           0
@@ -542,7 +547,7 @@
         (begin
           (queue-window-event this (lambda () (dispatch-on-event/sync e)))
           #t)
-        (constrained-reply (get-eventspace)
+        (constrained-reply eventspace
                            (lambda () (dispatch-on-event e #t))
                            #t)))
 
@@ -565,7 +570,7 @@
     (set! mouse-in? #f)
     (let ([e (mk 'leave)])
       (if (eq? (current-thread) 
-               (eventspace-handler-thread (get-eventspace)))
+               (eventspace-handler-thread eventspace))
           (handle-mouse-event (get-client-hwnd) 0 0 e)
           (queue-window-event this
                               (lambda () (dispatch-on-event/sync e))))))

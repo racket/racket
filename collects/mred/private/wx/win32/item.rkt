@@ -79,15 +79,15 @@
     (define/override (gets-focus?) #t)
 
     ;; Retain to avoid GC of the bitmaps:
-    (define label-hbitmaps null)
+    (define label-hbitmap #f)
     (define/public (remember-label-bitmap hbitmap)
-      (set! label-hbitmaps (cons hbitmap label-hbitmaps)))
+      (set! label-hbitmap hbitmap))
     
     (define/public (set-label s)
       (if (s . is-a? . bitmap%)
           (let ([hbitmap (bitmap->hbitmap s)])
             (atomically
-             (set! label-hbitmaps (list hbitmap))
+             (set! label-hbitmap hbitmap)
              (SendMessageW (get-hwnd) 
                            (get-setimage-message)
                            IMAGE_BITMAP 

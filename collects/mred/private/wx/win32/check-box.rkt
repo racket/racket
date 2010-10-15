@@ -19,6 +19,9 @@
 
   (define/override (get-flags) (bitwise-ior BS_AUTOCHECKBOX))
 
+  (define/override (get-button-background)
+    (GetSysColor COLOR_BTNFACE))
+
   (define/override (auto-size-button label)
     (auto-size label 0 0 20 0))
 

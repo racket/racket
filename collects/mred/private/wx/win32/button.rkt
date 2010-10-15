@@ -54,19 +54,22 @@
                [style style])
 
     (when bitmap?
-      (let ([hbitmap (bitmap->hbitmap label #:bg #xFFFFFF)])
+      (let ([hbitmap (bitmap->hbitmap label #:bg (get-button-background))])
         (remember-label-bitmap hbitmap)
         (SendMessageW (get-hwnd) BM_SETIMAGE IMAGE_BITMAP 
                       (cast hbitmap _HBITMAP _LPARAM))))
 
     (set-control-font font)
 
+    (define/public (get-button-background)
+      #xFFFFFF)
+
     (define/public (auto-size-button label)
       (cond
        [bitmap?
         (auto-size label 0 0 4 4)]
        [else
-        (auto-size label 40 12 12 0)]))
+        (auto-size label 60 20 12 0 #:scale-w 1.1 #:scale-h 1.1)]))
     (auto-size-button label)
 
     (subclass-control (get-hwnd))

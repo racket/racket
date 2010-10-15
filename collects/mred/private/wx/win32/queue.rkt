@@ -69,9 +69,9 @@
     (atomically (hash-remove! t id))
     (let ([msg (malloc-msg)])
       (let loop ()
-        (let ([v (PeekMessageW msg #f 0 0 PM_REMOVE)])
+        (let ([v (PeekMessageW msg hwnd 0 0 PM_REMOVE)])
           ;; Since we called PeekMeessage in a thread other than the
-          ;;  event-pump thread, see `other-peek-evt' so the pump
+          ;;  event-pump thread, set `other-peek-evt' so the pump
           ;;  knows to check again.
           (unless (sync/timeout 0 peek-other-peek-evt)
             (semaphore-post other-peek-evt))
