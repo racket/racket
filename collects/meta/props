@@ -1923,6 +1923,7 @@ path/s is either such a string or a list of them.
 "collects/tests/web-server/run-all-tests.rkt" drdr:timeout 300
 "collects/tests/web-server/servlet-env/env.rkt" drdr:command-line (mzc *)
 "collects/tests/web-server/servlet-env/insta.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/web-server/stress" drdr:command-line #f
 "collects/tests/web-server/template/examples/blog-xexpr.rkt" drdr:command-line (mzc *)
 "collects/tests/web-server/template/examples/blog.rkt" drdr:command-line (mzc *)
 "collects/tests/xml" responsible (jay)
