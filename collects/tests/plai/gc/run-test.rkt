@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket
 (require tests/eli-tester
-         scheme/runtime-path)
+         racket/runtime-path)
 
 (define-runtime-path here ".")
 
@@ -31,7 +31,7 @@
        (test
         (test-mutator m)))
      (void))
- #;(for ([m (in-directory (build-path here "bad-mutators") #rx"rkt$")])
+ (for ([m (in-directory (build-path here "bad-mutators") #rx"rkt$")])
    (test
     (test-mutator m) =error> #rx""))
  
