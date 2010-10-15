@@ -6,6 +6,7 @@
          plai/private/gc-core
          scheme/gui/dynamic
          (only-in plai/test-harness
+                  exn:plai? equal~?
                   plai-error generic-test test halt-on-errors print-only-errors)
          (for-syntax scheme)
          (for-syntax plai/private/gc-transformer)
@@ -500,9 +501,18 @@
   (syntax-case stx ()
     [(_ e1 e2)
      (quasisyntax/loc stx
-       (mutator-let ([e1-addr e1]
-                     [e2-addr e2])
-                    (test e1 e2)))]))
+       (generic-test 
+        (λ () e1) 
+        (λ (result-value)
+          (define expected-val e2)
+          (values
+           (cond
+             [(exn:plai? result-value) result-value]
+             [(equal~? result-value expected-val) true]
+             [else false])
+           expected-val))
+        (quote (heap-loc #,(syntax->datum #'e1)))
+        (format "at line ~a" #,(syntax-line stx))))]))
 
 (define-for-syntax (flat-heap-value? v)
   (or (number? v) (boolean? v)))
@@ -521,5 +531,17 @@
   (syntax-case stx (mutator-quote)
     [(_ mutator-expr scheme-datum)
      (quasisyntax/loc stx
-       (mutator-let ([v1 mutator-expr])
-                    (test (gc->scheme v1) (expand-scheme scheme-datum))))]))
+       (generic-test 
+        (λ () 
+          (mutator-let ([v1 mutator-expr])
+                       (gc->scheme v1))) 
+        (λ (result-value)
+          (define expected-val (expand-scheme scheme-datum))
+          (values
+           (cond
+             [(exn:plai? result-value) result-value]
+             [(equal~? result-value expected-val) true]
+             [else false])
+           expected-val))
+        (quote #,(syntax->datum #'mutator-expr))
+        (format "at line ~a" #,(syntax-line stx))))]))

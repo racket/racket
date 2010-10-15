@@ -94,7 +94,7 @@
 ;;; expression in a thunk.  More importantly, they automatically specify the
 ;;; line number of the test as the comment.
 
-(provide generic-test)
+(provide generic-test equal~?)
 (define (abridged v)
   (if (abridged-test-output)
       empty
