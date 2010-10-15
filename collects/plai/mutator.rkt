@@ -329,10 +329,12 @@
               (raise-syntax-error 'allocator-setup "expected a literal number" #'heap-size)))]
          [_
           (raise-syntax-error 'mutator allocator-setup-error-msg (syntax/loc #'setup (allocator-setup . setup)))])
-       #`(#%module-begin
+       (quasisyntax/loc stx
+         (#%module-begin
           #,(allocator-setup-internal #'setup)
-          (mutator-top-interaction . module-expr)
-          ...))]
+          #,@(for/list ([me (in-list (syntax->list #'(module-expr ...)))])
+               (quasisyntax/loc me
+                 (mutator-top-interaction . #,me))))))]
     [(_ first-expr module-expr ...)
      (raise-syntax-error 'mutator allocator-setup-error-msg #'first-expr)]
     [(_)
