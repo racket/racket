@@ -114,20 +114,22 @@
 	(gtk_label_set_text_with_mnemonic (gtk_bin_get_child item-gtk) 
                                           (fixup-mneumonic str)))))
     
-  (def/public-unimplemented enable-top)
+  (define/public (enable-top pos on?)
+    (gtk_widget_set_sensitive (car (list-ref menus pos)) on?))
 
   (define/public (delete which pos)
-    (set! menus (let loop ([menus menus]
-                           [pos pos])
-                  (cond
-                   [(null? menus) menus]
-                   [(zero? pos) 
-                    (gtk_container_remove gtk (caar menus))
-                    (gtk_menu_item_set_submenu (caar menus) #f)
-                    (cdr menus)]
-                   [else (cons (car menus)
-                               (loop (cdr menus)
-                                     pos))]))))
+    (atomically
+     (set! menus (let loop ([menus menus]
+                            [pos pos])
+                   (cond
+                    [(null? menus) menus]
+                    [(zero? pos) 
+                     (gtk_container_remove gtk (caar menus))
+                     (gtk_menu_item_set_submenu (caar menus) #f)
+                     (cdr menus)]
+                    [else (cons (car menus)
+                                (loop (cdr menus)
+                                      (sub1 pos)))])))))
 
   (public [append-menu append])
   (define (append-menu menu title)
