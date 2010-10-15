@@ -611,8 +611,7 @@
 
     (define/public (on-drop-file path) (void))
 
-    (def/public-unimplemented get-handle)
-    (def/public-unimplemented set-phantom-size)
+    (define/public (get-handle) (get-gtk))
 
     (define/public (popup-menu m x y)
       (let ([gx (box x)]
@@ -639,12 +638,7 @@
     (define/public (get-client-delta)
       (values 0 0))
 
-    (def/public-unimplemented get-position)
-    (def/public-unimplemented fit)
-
-    (define/public (gets-focus?) #t)
-
-    (def/public-unimplemented centre)))
+    (define/public (gets-focus?) #t)))
 
 (define (queue-window-event win thunk)
   (queue-event (send win get-eventspace) thunk))

@@ -245,8 +245,6 @@
   (define/public (is-shown?)
     shown?)
 
-  (def/public-unimplemented set-phantom-size)
-
   (define/public (paint-children) (void))
 
   (define/public (get-x)
@@ -365,10 +363,6 @@
 
   (define/public (on-drop-file p) (void))
 
-  (define/public (get-position x y)
-    (set-box! x (get-x))
-    (set-box! y (get-y)))
-
   (define/public (get-client-size w h)
     (let ([r (GetClientRect (get-client-hwnd))])
       (set-box! w (- (RECT-right r) (RECT-left r)))
@@ -418,7 +412,6 @@
     (send parent not-focus-child v))
 
   (define/public (gets-focus?) #f)
-  (def/public-unimplemented centre)
 
   (define/public (register-child child on?)
     (void))

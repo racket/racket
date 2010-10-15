@@ -808,8 +808,10 @@
                                  (values 0 0 0 0 1 1)
                                  (when (not media)
                                    (let ([dc (get-dc)])
-                                     (send dc set-background (get-canvas-background))
-                                     (send dc clear)))))])
+                                     (let ([bg (get-canvas-background)])
+                                       (when bg
+                                         (send dc set-background bg)
+                                         (send dc clear)))))))])
 
                 (if (not (and (= scroll-width hnum-scrolls)
                               (= scroll-height vnum-scrolls)

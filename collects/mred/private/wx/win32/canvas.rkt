@@ -330,8 +330,6 @@
     (define/override (get-virtual-v-pos)
       (GetScrollPos canvas-hwnd SB_VERT))
 
-     (def/public-unimplemented set-background-to-gray)
-
      (define/public (get-scroll-pos which)
        (GetScrollPos canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ)))
      (define/public (get-scroll-range which)

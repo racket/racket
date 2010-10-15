@@ -73,9 +73,7 @@
     (define/public (get-label-position) lbl-pos)
     (define/public (set-label-position pos) (set! lbl-pos pos))
     
-    (def/public-unimplemented on-paint)
-    (define/public (set-item-cursor x y) (void))
-    (def/public-unimplemented get-item-cursor)))
+    (define/public (set-item-cursor x y) (void))))
 
 (define panel% 
   (class (panel-mixin window%)

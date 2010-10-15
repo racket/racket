@@ -49,9 +49,7 @@
                     (cons child children)
                     (remq child children))))))
 
-    (def/public-unimplemented on-paint)
-    (define/public (set-item-cursor x y) (void))
-    (def/public-unimplemented get-item-cursor)))
+    (define/public (set-item-cursor x y) (void))))
 
 (define panel%
   (class (panel-mixin window%)

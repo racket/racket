@@ -419,14 +419,8 @@
 			  (raise-mismatch-error 'container-redraw 
 						"result from place-children is not a list of 4-integer lists with the correct length: "
 						l))
-			(when hidden-child
-			  ;; This goes with the hack for macos and macosx below
-			  (send hidden-child set-phantom-size width height))
 			(panel-redraw children children-info (if hidden-child
-								 (cons (list 0 0 width 
-									     (if (memq (system-type) '(macos macosx)) ;; Yucky hack
-										 (child-info-y-min (car children-info)) 
-										 height))
+								 (cons (list 0 0 width height)
 								       (let ([dy (child-info-y-min (car children-info))])
 									 (map (lambda (i)
 										(list (+ (car i) tab-h-border)

@@ -183,7 +183,7 @@
       (gtk_fixed_move panel-gtk child-gtk x y)
       (gtk_widget_set_size_request child-gtk w h))
 
-    (define/public (on-close) (void))
+    (define/public (on-close) #t)
 
     (define/public (set-menu-bar mb)
       (let ([mb-gtk (send mb get-gtk)])
@@ -357,11 +357,15 @@
         (set-box! x (+ (unbox x) dx cdx))
         (set-box! y (+ (unbox y) dy cdy))))
 
-    (def/public-unimplemented on-toolbar-click)
-    (def/public-unimplemented on-menu-click)
-    (def/public-unimplemented on-menu-command)
+    (define/public (on-toolbar-click) (void))
+    (define/public (on-menu-click) (void))
+
+    (define/public (on-menu-command c) (void))
+
     (def/public-unimplemented on-mdi-activate)
-    (def/public-unimplemented on-activate)
+
+    (define/public (on-activate on?) (void))
+
     (def/public-unimplemented designate-root-frame)
     (def/public-unimplemented system-menu)
 

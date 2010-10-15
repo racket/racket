@@ -525,8 +525,6 @@
 
      (define/public (set-combo-text t) (void))
 
-     (def/public-unimplemented set-background-to-gray)
-
      (define/public (do-scroll direction)
        (if (is-auto-scroll?)
            (refresh-for-autoscroll)

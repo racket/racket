@@ -70,9 +70,7 @@
       (super show on?)
       (fix-dc))
     
-    (def/public-unimplemented on-paint)
-    (define/public (set-item-cursor x y) (void))
-    (def/public-unimplemented get-item-cursor)))
+    (define/public (set-item-cursor x y) (void))))
 
 (defclass panel% (panel-mixin window%)
   (init parent

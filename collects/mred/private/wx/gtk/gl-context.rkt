@@ -16,9 +16,11 @@
          install-gl-context)
 
 (define gdkglext-lib
-  (ffi-lib "libgdkglext-x11-1.0" '("0")))
+  (with-handlers ([exn:fail? (lambda (exn) #f)])
+    (ffi-lib "libgdkglext-x11-1.0" '("0"))))
 (define gtkglext-lib
-  (ffi-lib "libgtkglext-x11-1.0" '("0")))
+  (with-handlers ([exn:fail? (lambda (exn) #f)])
+    (ffi-lib "libgtkglext-x11-1.0" '("0"))))
 
 (define-ffi-definer define-gdkglext gdkglext-lib
   #:default-make-fail make-not-available)
@@ -34,9 +36,10 @@
 (define-gdkglext gdk_gl_init (_fun (_ptr i _int)
                                    (_ptr i _pointer)
                                    -> _void)
-  #:fail void)
+  #:fail (lambda () void))
 
-(define-gtkglext gdk_gl_config_new (_fun (_list i _int) -> (_or-null _GdkGLConfig)))
+(define-gtkglext gdk_gl_config_new (_fun (_list i _int) -> (_or-null _GdkGLConfig))
+  #:fail (lambda () (lambda args #f)))
 (define-gtkglext gdk_gl_config_new_for_screen (_fun _GdkScreen (_list i _int) -> (_or-null _GdkGLConfig)))
 
 (define-gtk gtk_widget_get_screen (_fun _GtkWidget -> _GdkScreen))
@@ -47,9 +50,10 @@
                                                     _gboolean
                                                     _int
                                                     -> _gboolean)
-  #:fail (lambda args #f))
+  #:fail (lambda () (lambda args #f)))
 
-(define-gtkglext gtk_widget_get_gl_context (_fun _GtkWidget -> _GdkGLContext))
+(define-gtkglext gtk_widget_get_gl_context (_fun _GtkWidget -> _GdkGLContext)
+  #:fail (lambda () (lambda args #f)))
 (define-gtkglext gtk_widget_get_gl_window (_fun _GtkWidget -> _GdkGLDrawable))
 
 (define-gdkglext gdk_gl_context_destroy (_fun _GdkGLContext -> _void)

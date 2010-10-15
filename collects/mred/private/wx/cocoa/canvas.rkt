@@ -691,8 +691,6 @@
        ;; Called in Cocoa event-handling mode
        in-menu-click?)
 
-     (def/public-unimplemented set-background-to-gray)
-
      (define/public (scroll x y)
        (when (x . > . 0) (scroll-pos h-scroller (* x (scroll-range h-scroller))))
        (when (y . > . 0) (scroll-pos v-scroller (* y (scroll-range v-scroller))))

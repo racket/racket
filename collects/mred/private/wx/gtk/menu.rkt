@@ -219,7 +219,8 @@
   (def/public-unimplemented set-title)
 
   (def/public-unimplemented set-help-string)
-  (def/public-unimplemented number)
+
+  (define/public (number) (length items))
 
   (define/private (find-gtk item)
     (for/or ([i items])

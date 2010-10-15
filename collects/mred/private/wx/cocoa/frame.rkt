@@ -468,9 +468,9 @@
     (define/public (on-menu-click) (void))
 
     (define/public (on-toolbar-click) (void))
-    (def/public-unimplemented on-menu-command)
+    (define/public (on-menu-command c) (void))
     (def/public-unimplemented on-mdi-activate)
-    (def/public-unimplemented on-close)
+    (define/public (on-close) #t)
     (define/public (designate-root-frame)
       (set! root-fake-frame this))
     (def/public-unimplemented system-menu)
@@ -479,10 +479,6 @@
       (let ([b (tell cocoa standardWindowButton: #:type _NSInteger NSWindowCloseButton)])
         (tellv b setDocumentEdited: #:type _BOOL on?)))
     
-    (define/public (create-status-line) (void))
-    (define/public (set-status-text s) (void))
-    (def/public-unimplemented status-line-exists?)
-
     (define/public (is-maximized?)
       (tell #:type _BOOL cocoa isZoomed))
     (define/public (maximize on?)

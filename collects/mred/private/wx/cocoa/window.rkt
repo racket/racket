@@ -643,8 +643,7 @@
       (set! sticky-cursor? #f)
       (send (get-parent) end-no-cursor-rects))
 
-    (def/public-unimplemented get-handle)
-    (def/public-unimplemented set-phantom-size)
+    (define/public (get-handle) (get-cocoa))
 
     (define/public (popup-menu m x y)
       (send m do-popup (get-cocoa-content) x (flip-client y)
@@ -652,7 +651,7 @@
               (queue-window-event this thunk))))
 
     (define/public (center a b) (void))
-    (def/public-unimplemented refresh)
+    (define/public (refresh) (void))
 
     (define/public (screen-to-client xb yb)
       (let ([p (tell #:type _NSPoint (get-cocoa-content) 
@@ -677,8 +676,6 @@
           (set-box! xb (inexact->exact (floor (NSPoint-x p))))
           (set-box! yb (inexact->exact (floor new-y))))))
       
-    (def/public-unimplemented fit)
-
     (define cursor-handle #f)
     (define sticky-cursor? #f)
     (define/public (set-cursor c)
@@ -707,9 +704,7 @@
     (define/public (can-be-responder?) #t)
 
     (define/public (on-color-change)
-      (send parent on-color-change))
-    
-    (def/public-unimplemented centre)))
+      (send parent on-color-change))))
 
 
 ;; ----------------------------------------

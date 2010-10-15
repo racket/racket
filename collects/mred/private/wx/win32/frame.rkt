@@ -92,7 +92,6 @@
 	   get-eventspace
            on-size
            get-size
-           get-position
            pre-on-char pre-on-event
            reset-cursor-in-child)
 
@@ -226,7 +225,7 @@
       (maximize #f))
     (super set-size x y w h))
 
-  (define/public (on-close) (void))
+  (define/public (on-close) #t)
 
   (define/override (is-shown-to-root?)
     (is-shown?))
