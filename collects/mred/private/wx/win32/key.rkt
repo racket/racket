@@ -194,7 +194,7 @@
                                         ;; shift was pressed, so swap role of shifted and unshifted
                                         (values s id sa a)
                                         (values id s a sa))))
-                                (values (try-generate-release) #f #f #f))
+                                (values (and is-up? (try-generate-release)) #f #f #f))
                             (cond
                              [(and (not is-up?) (= wParam VK_CONTROL))
                               ;; Don't generate control-key down events:

@@ -29,8 +29,11 @@
       (send (list-ref menus pos) set-menu-label hmenu pos str)
       (refresh))
       
-    (def/public-unimplemented number)
-    (def/public-unimplemented enable-top)
+    (define/public (number) (length menus))
+
+    (define/public (enable-top pos on?)
+      (send (list-ref menus pos) enable-self hmenu pos on?)
+      (refresh))
 
     (define/public (delete which pos)
       (atomically

@@ -102,6 +102,11 @@
                         (bitwise-ior MF_BYPOSITION
                                      (if on? MF_ENABLED MF_GRAYED)))))))
 
+  (define/public (enable-self parent-hmenu pos on?)
+    (EnableMenuItem parent-hmenu pos  
+                    (bitwise-ior MF_BYPOSITION
+                                 (if on? MF_ENABLED MF_GRAYED))))
+
   (define/public (check id on?)
     (with-item
      id

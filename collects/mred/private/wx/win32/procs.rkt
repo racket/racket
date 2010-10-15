@@ -8,6 +8,7 @@
          "const.rkt"
          "menu-item.rkt"
          "frame.rkt"
+         "window.rkt"
          "dc.rkt"
          "printer-dc.rkt"
          "../common/printer.rkt"
@@ -60,7 +61,6 @@
  check-for-break)
 
 (define-unimplemented find-graphical-system-path)
-(define-unimplemented location->window)
 (define-unimplemented send-event)
 (define-unimplemented cancel-quit)
 (define-unimplemented write-resource)

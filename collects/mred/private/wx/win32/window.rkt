@@ -20,7 +20,8 @@
 (provide window%
 	 queue-window-event
 	 queue-window-refresh-event
-	 
+         location->window
+
 	 GetWindowRect
          GetClientRect)
 
@@ -54,8 +55,19 @@
 (define-user32 FillRect (_wfun _HDC _RECT-pointer _HBRUSH -> (r : _int)
                                -> (when (zero? r) (failed 'FillRect))))
 
+(define-shell32 DragAcceptFiles (_wfun _HWND _BOOL -> _void))
+
+(define _HDROP _pointer)
+(define-shell32 DragQueryPoint (_wfun _HDROP (p : (_ptr o _POINT)) -> (r : _BOOL)
+                                      -> (if r p (failed 'DragQueryPoint))))
+(define-shell32 DragQueryFileW (_wfun _HDROP _UINT _pointer _UINT -> _UINT))
+(define-shell32 DragFinish (_wfun _HDROP -> _void))
+
 (define-user32 SetCapture (_wfun _HWND -> _HWND))
 (define-user32 ReleaseCapture (_wfun -> _BOOL))
+
+(define-user32 WindowFromPoint (_fun _POINT -> _HWND))
+(define-user32 GetParent (_fun _HWND -> _HWND))
 
 (define-cstruct _NMHDR
   ([hwndFrom _HWND]
@@ -171,6 +183,9 @@
                   (send wx control-scrolled)
                   0)
                 (default w msg wParam lParam)))]
+         [(= msg WM_DROPFILES)
+          (handle-drop-files wParam)
+          0]
          [else
           (default w msg wParam lParam)])))
 
@@ -190,8 +205,6 @@
   (unless (memq 'deleted style)
     (show #t))
   
-  (def/public-unimplemented on-drop-file)
-
   (define/public (on-size w h) (void))
 
   (define/public (on-set-focus) (void))
@@ -331,7 +344,21 @@
       (set-box! y (POINT-y p))))
 
   (define/public (drag-accept-files on?)
-    (void))
+    (DragAcceptFiles (get-hwnd) on?))
+
+  (define/private (handle-drop-files wParam)
+    (let* ([hdrop (cast wParam _WPARAM _HDROP)]
+           [pt (DragQueryPoint hdrop)]
+           [count (DragQueryFileW hdrop #xFFFFFFFF #f 0)])
+      (for ([i (in-range count)])
+        (let* ([len (DragQueryFileW hdrop i #f 0)]
+               [b (malloc (add1 len) _int16)])
+          (DragQueryFileW hdrop i b (add1 len))
+          (let ([s (cast b _pointer _string/utf-16)])
+            (queue-window-event this (lambda () (on-drop-file (string->path s)))))))
+      (DragFinish hdrop)))
+
+  (define/public (on-drop-file p) (void))
 
   (define/public (get-position x y)
     (set-box! x (get-x))
@@ -601,3 +628,11 @@
 
 (define (queue-window-refresh-event win thunk)
   (queue-refresh-event (send win get-eventspace) thunk))
+
+(define (location->window x y)
+  (let ([hwnd (WindowFromPoint (make-POINT x y))])
+    (let loop ([hwnd hwnd])
+      (and hwnd
+           (or (let ([wx (any-hwnd->wx hwnd)])
+                 (and wx (send wx get-top-frame)))
+               (loop (GetParent hwnd)))))))
