@@ -284,32 +284,58 @@
       (check-top-level-parent/false 'get-color-from-user parent)
       (check-instance 'get-color-from-user wx:color% 'color% #t color)
       (check-style 'get-color-from-user #f null style)
-      (if (not (eq? (system-type) 'unix))
+      (if (eq? (wx:color-from-user-platform-mode) 'dialog)
 	  (wx:get-color-from-user message (and parent (mred->wx parent)) color)
 	  (letrec ([ok? #f]
 		   [f (make-object dialog% "Choose Color" parent)]
 		   [done (lambda (ok) (lambda (b e) (set! ok? ok) (send f show #f)))]
 		   [canvas (make-object (class canvas%
                                           (define/override (on-paint)
-                                            (repaint #f #f))
+                                            (repaint void))
 					  (super-new [parent f])))]
+                   [platform-p (and (string? (wx:color-from-user-platform-mode))
+                                    (new horizontal-panel%
+                                         [parent f]
+                                         [alignment '(right center)]))]
 		   [p (make-object vertical-pane% f)]
-		   [repaint (lambda (s e)
-			      (let ([c (make-object wx:color% 
-						    (send red get-value)
-						    (send green get-value)
-						    (send blue get-value))])
-				(wx:fill-private-color (send canvas get-dc) c)))]
-		   [make-color-slider (lambda (l) (make-object slider% l 0 255 p repaint))]
+		   [repaint (lambda (ext)
+			      (let ([c (get-current-color)])
+                                (ext c)
+                                (wx:fill-private-color (send canvas get-dc) c)))]
+                   [update-and-repaint (lambda (s e)
+                                         (repaint
+                                          (lambda (c)
+                                            (when platform-p
+                                              (wx:get-color-from-user c)))))]
+		   [make-color-slider (lambda (l) (make-object slider% l 0 255 p update-and-repaint))]
 		   [red (make-color-slider "Red:")]
 		   [green (make-color-slider "Green:")]
 		   [blue (make-color-slider "Blue:")]
-		   [bp (make-object horizontal-pane% f)])
-	    (when color
-	      (send red set-value (send color red))
-	      (send green set-value (send color green))
-	      (send blue set-value (send color blue)))
-            (ok-cancel
+		   [bp (make-object horizontal-pane% f)]
+                   [get-current-color
+                    (lambda ()
+                      (make-object wx:color% 
+                                   (send red get-value)
+                                   (send green get-value)
+                                   (send blue get-value)))]
+                   [install-color
+                    (lambda (color)
+            	      (send red set-value (send color red))
+                      (send green set-value (send color green))
+                      (send blue set-value (send color blue))
+                      (send canvas refresh))])
+            (when platform-p
+              (new button%
+                   [parent platform-p]
+                   [label (wx:color-from-user-platform-mode)]
+                   [callback (lambda (b e) (wx:get-color-from-user 'show))])
+              (wx:get-color-from-user (or color
+                                          (make-object wx:color% 0 0 0)))
+              (send (mred->wx f) set-color-callback (lambda ()
+                                                      (install-color
+                                                       (wx:get-color-from-user 'get)))))
+            (when color (install-color color))
+	    (ok-cancel
              (lambda ()
                (make-object button% "Cancel" bp (done #f)))
              (lambda ()
@@ -321,7 +347,4 @@
 	    (send f center)
 	    (send f show #t)
 	    (and ok?
-		 (make-object wx:color% 
-			      (send red get-value)
-			      (send green get-value)
-			      (send blue get-value)))))])))
+                 (get-current-color))))])))

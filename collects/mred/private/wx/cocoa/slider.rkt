@@ -52,8 +52,10 @@
       (tellv cocoa setMinValue: #:type _double* lo)
       (tellv cocoa setMaxValue: #:type _double* hi)
       (tellv cocoa setDoubleValue: #:type _double* val)
-      (tellv cocoa setNumberOfTickMarks: #:type _NSUInteger (add1 (- hi lo)))
-      (tellv cocoa setAllowsTickMarkValuesOnly: #:type _BOOL #t)
+      ;; heuristic: show up to tick marks:
+      (when ((- hi lo) . < . 64)
+        (tellv cocoa setNumberOfTickMarks: #:type _NSUInteger (add1 (- hi lo)))
+        (tellv cocoa setAllowsTickMarkValuesOnly: #:type _BOOL #t))
       (tellv cocoa setFrame: #:type _NSRect (make-NSRect 
                                              (make-NSPoint 0 0)
                                              (make-NSSize (if vert? 24 32)

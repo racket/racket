@@ -11,6 +11,8 @@
          "dc.rkt"
          "printer-dc.rkt"
          "../common/printer.rkt"
+         (except-in "../common/default-procs.rkt"
+                    get-panel-background)
          "filedialog.rkt"
 	 racket/draw)
 
@@ -18,6 +20,7 @@
  special-control-key
  special-option-key
  get-color-from-user
+ color-from-user-platform-mode
  get-font-from-user
  get-panel-background
  play-sound
@@ -53,36 +56,34 @@
  make-gl-bitmap
  check-for-break)
 
-(define-unimplemented special-control-key)
-(define-unimplemented special-option-key)
-(define-unimplemented get-color-from-user)
 (define-unimplemented get-font-from-user)
+(define-unimplemented play-sound)
+(define-unimplemented find-graphical-system-path)
+(define-unimplemented location->window)
+(define-unimplemented send-event)
+(define-unimplemented cancel-quit)
+(define-unimplemented write-resource)
+(define-unimplemented get-resource)
+
+(define-unimplemented get-color-from-user)
+(define (color-from-user-platform-mode) #f)
 
 (define (get-panel-background)
   (let ([c (GetSysColor COLOR_BTNFACE)])
     (make-object color% (GetRValue c) (GetGValue c) (GetBValue c))))
 
-(define-unimplemented play-sound)
-(define-unimplemented find-graphical-system-path)
 (define (register-collecting-blit canvas x y w h on off on-x on-y off-x off-y)
   (send canvas register-collecting-blit x y w h on off on-x on-y off-x off-y))
 (define (unregister-collecting-blit canvas)
   (send canvas unregister-collecting-blits))
 (define (shortcut-visible-in-label? [? #f]) #t)
-(define-unimplemented location->window)
-(define-unimplemented send-event)
-(define-unimplemented file-creator-and-type)
 
 (define run-printout (make-run-printout printer-dc%))
 
 (define (get-double-click-time) 500)
 (define (get-control-font-size) (get-theme-font-size))
 (define (get-control-font-size-in-pixels?) #t)
-(define-unimplemented cancel-quit)
-(define-unimplemented fill-private-color)
 (define (flush-display) (void))
-(define-unimplemented write-resource)
-(define-unimplemented get-resource)
 
 (define-user32 MessageBeep (_wfun _UINT -> _BOOL))
 (define (bell)
@@ -92,7 +93,7 @@
 
 (define (get-display-depth) 32)
 
-(define-unimplemented is-color-display?)
+(define (is-color-display?) #t)
 
 (define (can-show-print-setup?) #t)
 

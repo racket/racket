@@ -68,7 +68,10 @@
       (and (super-tell resignFirstResponder)
            (let ([wx (->wx wxb)])
              (when wx (send wx is-responder wx #f))
-             #t))])
+             #t))]
+  [-a _void (changeColor: [_id sender])
+      (let ([wx (->wx wxb)])
+        (when wx (send wx on-color-change)))])
 
 (import-class NSArray)
 (import-protocol NSTextInput)
@@ -702,6 +705,9 @@
     
     (define/public (gets-focus?) #f)
     (define/public (can-be-responder?) #t)
+
+    (define/public (on-color-change)
+      (send parent on-color-change))
     
     (def/public-unimplemented centre)))
 

@@ -5,6 +5,7 @@
          racket/class
          racket/draw
          "filedialog.rkt"
+         "colordialog.rkt"
          "types.rkt"
          "utils.rkt"
          "style.rkt"
@@ -14,12 +15,14 @@
          "printer-dc.rkt"
          "gl-context.rkt"
          "../common/printer.rkt"
+         "../common/default-procs.rkt"
          "../common/handlers.rkt")
 
 (provide
  special-control-key
  special-option-key
  get-color-from-user
+ color-from-user-platform-mode
  get-font-from-user
  get-panel-background
  play-sound
@@ -56,36 +59,29 @@
  make-gl-bitmap
  check-for-break)
 
-(define-unimplemented special-control-key)
-(define (special-option-key on?) (void))
-(define-unimplemented get-color-from-user)
 (define-unimplemented get-font-from-user)
-(define (get-panel-background) (make-object color% "gray"))
 (define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
+(define-unimplemented location->window)
+(define-unimplemented send-event)
+(define-unimplemented key-symbol-to-integer)
+(define-unimplemented cancel-quit)
+(define-unimplemented write-resource)
+(define-unimplemented get-resource)
+
+(define (color-from-user-platform-mode) 'dialog)
+
 (define (register-collecting-blit canvas x y w h on off on-x on-y off-x off-y)
   (send canvas register-collecting-blit x y w h on off on-x on-y off-x off-y))
 (define (unregister-collecting-blit canvas)
   (send canvas unregister-collecting-blits))
 (define (shortcut-visible-in-label? [mbar? #f]) #t)
-(define-unimplemented location->window)
-(define-unimplemented send-event)
-(define file-creator-and-type
-  (case-lambda
-   [(path cr ty) (void)]
-   [(path) (values #"????" #"????")]))
 
 (define run-printout (make-run-printout printer-dc%))
 
 (define (get-double-click-time) 250)
-(define-unimplemented key-symbol-to-integer)
 (define (get-control-font-size) 10) ;; FIXME
 (define (get-control-font-size-in-pixels?) #f) ;; FIXME
-(define-unimplemented cancel-quit)
-(define-unimplemented fill-private-color)
-
-(define-unimplemented write-resource)
-(define-unimplemented get-resource)
 
 (define-gdk gdk_screen_get_width (_fun _GdkScreen -> _int))
 (define-gdk gdk_screen_get_height (_fun _GdkScreen -> _int))
@@ -102,7 +98,7 @@
 
 (define (hide-cursor) (void))
 
-(define-unimplemented is-color-display?)
+(define (is-color-display?) #t)
 
 (define (id-to-menu-item i) i)
 (define (can-show-print-setup?) #t)

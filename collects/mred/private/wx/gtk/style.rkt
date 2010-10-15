@@ -7,12 +7,6 @@
 (provide get-selected-text-color
          get-selected-background-color)
 
-(define-cstruct _GdkColor
-  ([pixel _uint32]
-   [red _uint16]
-   [green _uint16]
-   [blue _uint16]))
-
 (define-cstruct _GTypeInstance
   ([class _pointer]))
 

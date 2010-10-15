@@ -496,7 +496,14 @@
       (tellv cocoa miniaturize: cocoa))
 
     (define/public (set-title s)
-      (tellv cocoa setTitle: #:type _NSString s))))
+      (tellv cocoa setTitle: #:type _NSString s))
+
+
+    (define color-callback void)
+    (define/public (set-color-callback cb)
+      (set! color-callback cb))
+    (define/override (on-color-change)
+      (queue-window-event this (lambda () (color-callback))))))
 
 ;; ----------------------------------------
 

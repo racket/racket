@@ -31,6 +31,7 @@
          eventspace-handler-thread
          eventspace-wait-cursor-count
          eventspace-extra-table
+         eventspace-adjust-external-modal!
 
          queue-callback
          middle-queue-key
@@ -153,7 +154,8 @@
                            [shutdown? #:mutable] 
                            done-sema 
                            [wait-cursor-count #:mutable]
-                           extra-table)
+                           extra-table
+                           [external-modal #:mutable])
   #:property prop:evt (lambda (v)
                         (wrap-evt (eventspace-done-evt v)
                                   (lambda (_) v))))
@@ -318,7 +320,8 @@
                             #f
                             done-sema
                             0
-                            (make-hash))]
+                            (make-hash)
+                            0)]
           [cb-box (box #f)])
       (parameterize ([current-cb-box cb-box])
         (scheme_add_managed (current-custodian) 
@@ -437,14 +440,22 @@
             (lambda (k v) k)))
 
 (define (other-modal? win)
-  ;; called in atmoic mode in eventspace's thread
-  (let loop ([frames (get-top-level-windows)]) 
-    (and (pair? frames)
-         (let ([status (send (car frames) frame-relative-dialog-status win)])
-           (case status
-             [(#f) (loop (cdr frames))]
-             [(same) #f]
-             [(other) #t])))))
+  ;; called in atomic mode in eventspace's thread
+  (let ([es (send win get-eventspace)])
+    (or (positive? (eventspace-external-modal es))
+        (let loop ([frames (get-top-level-windows es)]) 
+          (and (pair? frames)
+               (let ([status (send (car frames) frame-relative-dialog-status win)])
+                 (case status
+                   [(#f) (loop (cdr frames))]
+                   [(same) #f]
+                   [(other) #t])))))))
+
+(define (eventspace-adjust-external-modal! es amt)
+  (atomically
+   (set-eventspace-external-modal! 
+    es
+    (+ (eventspace-external-modal es) amt))))
 
 (define (queue-quit-event)
   ;; called in event-pump thread

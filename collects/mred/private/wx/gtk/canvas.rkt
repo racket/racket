@@ -98,11 +98,6 @@
 (define-gobj g_object_set_bool (_fun _GtkWidget _string _gboolean [_pointer = #f] -> _void)
   #:c-id g_object_set)
 
-(define-cstruct _GdkColor ([pixel _uint32]
-                           [red _uint16]
-                           [green _uint16]
-                           [blue _uint16]))
-
 (define-gdk gdk_gc_unref (_fun _pointer -> _void)
   #:wrap (deallocator))
 (define-gdk gdk_gc_new (_fun _GdkWindow -> _pointer)

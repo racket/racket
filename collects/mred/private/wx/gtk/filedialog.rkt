@@ -8,6 +8,7 @@
          "utils.rkt"
          "widget.rkt"
          "queue.rkt"
+         "stddialog.rkt"
          "../common/handlers.rkt"
          "../common/queue.rkt")
 
@@ -18,20 +19,6 @@
 (define _GtkFileChooserAction 
   (_enum (list 'open 'save 'select-folder 'create-folder)))
 
-(define _GtkResponse
-  (_enum 
-   '(none = -1
-     reject = -2
-     accept = -3
-     delete-event = -4
-     ok = -5
-     cancel = -6
-     close = -7
-     yes = -8
-     no = -9
-     apply = -10
-     help = -11)
-   _fixint))
 ;; FIXME: really there are varargs here, but we don't need them for
 ;; our purposes
 (define-gtk gtk_file_chooser_dialog_new 
@@ -69,21 +56,22 @@
                        extension ;; always ignored
                        filters style parent)
   (define type (car style)) ;; the rest of `style' is irrelevant on Gtk
-  (define dlg (gtk_file_chooser_dialog_new 
-               message (and parent (send parent get-gtk))
-               (case type
-                 [(dir) 'select-folder]
-                 [(put) 'save]
-                 [else 'open])
-               "gtk-cancel" 'cancel
-               ;; no stock names for "Select"
-               (case type
-                 [(dir) "Choose"]
-                 [(put) "gtk-save"]
-                 [(get) "gtk-open"]
-                 [(multi) "Choose"])
-               'accept
-               #f))
+  (define dlg (as-gtk-window-allocation
+               (gtk_file_chooser_dialog_new 
+                message (and parent (send parent get-gtk))
+                (case type
+                  [(dir) 'select-folder]
+                  [(put) 'save]
+                  [else 'open])
+                "gtk-cancel" 'cancel
+                ;; no stock names for "Select"
+                (case type
+                  [(dir) "Choose"]
+                  [(put) "gtk-save"]
+                  [(get) "gtk-open"]
+                  [(multi) "Choose"])
+                'accept
+                #f)))
   (when (eq? 'multi type)
     (gtk_file_chooser_set_select_multiple dlg #t))
   (when filename
@@ -97,15 +85,15 @@
          (gtk_file_filter_set_name ff name)
          (gtk_file_filter_add_pattern ff glob)
          (gtk_file_chooser_add_filter dlg ff))]))
-  (define ans (and (= -3 (show-dialog dlg
-                                      (lambda (v)
-                                        (or (not (= v -3))
-                                            ;; FIXME: for get mode, probably should check file vs.
-                                            ;;  directory name
-                                            (not (eq? type 'put))
-                                            (not (file-exists? (gtk_file_chooser_get_filename dlg)))
-                                            ;; FIXME: need to ask "replace the file? here
-                                            #t))))
+  (define ans (and (eq? 'accept (show-dialog dlg
+                                             (lambda (v)
+                                               (or (not (eq? v 'accept))
+                                                   ;; FIXME: for get mode, probably should check file vs.
+                                                   ;;  directory name
+                                                   (not (eq? type 'put))
+                                                   (not (file-exists? (gtk_file_chooser_get_filename dlg)))
+                                                   ;; FIXME: need to ask "replace the file? here
+                                                   #t))))
                    (if (eq? type 'multi)
                        (gtk_file_chooser_get_filenames dlg)
                        (gtk_file_chooser_get_filename dlg))))
@@ -113,28 +101,3 @@
   ans)
 
 (define-gtk gtk_main_iteration_do (_fun _gboolean -> _gboolean))
-
-(define-signal-handler connect-response "response"
-  (_fun _GtkWidget _int _pointer -> _void)
-  (lambda (gtk id data)
-    (let* ([p (ptr-ref data _racket)]
-           [response-sema (car p)]
-           [response-box (cdr p)])
-      (set-box! response-box id)
-      (semaphore-post response-sema))))
-
-(define (show-dialog dlg-gtk
-                     [validate? (lambda (val) #t)])
-  (let* ([response-sema (make-semaphore)]
-         [response-box (box #f)]
-         [cell (malloc-immobile-cell (cons response-sema
-                                           response-box))])
-    (connect-response dlg-gtk cell)
-    (gtk_widget_show dlg-gtk)
-    (let loop ()
-      (yield response-sema)
-      (unless (validate? (unbox response-box))
-        (loop)))
-    (free-immobile-cell cell) ;; FIXME : don't leak
-    (gtk_widget_hide dlg-gtk)
-    (unbox response-box)))

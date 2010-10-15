@@ -10,19 +10,26 @@
          "window.rkt"
          "finfo.rkt" ; file-creator-and-type
          "filedialog.rkt"
+         "colordialog.rkt"
          "dc.rkt"
          "printer-dc.rkt"
          "../common/printer.rkt"
          "menu-bar.rkt"
          "agl.rkt"
          "../../lock.rkt"
-         "../common/handlers.rkt")
+         "../common/handlers.rkt"
+         (except-in "../common/default-procs.rkt"
+                    special-control-key
+                    special-option-key
+                    file-creator-and-type))
+
 
 (provide
  application-file-handler
  application-quit-handler
  application-about-handler
  application-pref-handler
+ color-from-user-platform-mode
  get-color-from-user
  get-font-from-user
  get-panel-background
@@ -60,20 +67,20 @@
 
 (import-class NSScreen NSCursor)
 
-
-(define-unimplemented get-color-from-user)
 (define-unimplemented get-font-from-user)
-(define (get-panel-background) (make-object color% "gray"))
 (define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
+(define-unimplemented send-event)
+(define-unimplemented write-resource)
+(define-unimplemented get-resource)
+
+(define (color-from-user-platform-mode) "Show Picker")
+
 (define (register-collecting-blit canvas x y w h on off on-x on-y off-x off-y)
   (send canvas register-collecting-blit x y w h on off on-x on-y off-x off-y))
 (define (unregister-collecting-blit canvas)
   (send canvas unregister-collecting-blits))
 (define (shortcut-visible-in-label? [x #f]) #f)
-(define-unimplemented send-event)
-(define (begin-refresh-sequence) (void))
-(define (end-refresh-sequence) (void))
 
 (define run-printout (make-run-printout printer-dc%))
 
@@ -82,9 +89,6 @@
 (define (get-control-font-size) 13)
 (define (get-control-font-size-in-pixels?) #f)
 (define (cancel-quit) (void))
-(define-unimplemented fill-private-color)
-(define-unimplemented write-resource)
-(define-unimplemented get-resource)
 
 (define (check-for-break) #f)
 
@@ -110,7 +114,7 @@
   (tellv NSCursor setHiddenUntilMouseMoves: #:type _BOOL #t))
 
 (define (get-display-depth) 32)
-(define-unimplemented is-color-display?)
+(define (is-color-display?) #t)
 (define (id-to-menu-item id) id)
 (define (can-show-print-setup?) #t)
 

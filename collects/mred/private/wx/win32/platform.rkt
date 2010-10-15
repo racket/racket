@@ -80,6 +80,7 @@
    play-sound
    get-panel-background
    get-font-from-user
+   color-from-user-platform-mode
    get-color-from-user
    special-option-key
    special-control-key
