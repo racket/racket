@@ -24,6 +24,7 @@
  get-color-from-user
  color-from-user-platform-mode
  get-font-from-user
+ font-from-user-platform-mode
  get-panel-background
  play-sound
  find-graphical-system-path
@@ -59,7 +60,6 @@
  make-gl-bitmap
  check-for-break)
 
-(define-unimplemented get-font-from-user)
 (define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
 (define-unimplemented location->window)
@@ -70,6 +70,9 @@
 (define-unimplemented get-resource)
 
 (define (color-from-user-platform-mode) 'dialog)
+
+(define (font-from-user-platform-mode) #f)
+(define-unimplemented get-font-from-user)
 
 (define (register-collecting-blit canvas x y w h on off on-x on-y off-x off-y)
   (send canvas register-collecting-blit x y w h on off on-x on-y off-x off-y))

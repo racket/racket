@@ -16,6 +16,7 @@
          "../common/printer.rkt"
          "menu-bar.rkt"
          "agl.rkt"
+         "sound.rkt"
          "../../lock.rkt"
          "../common/handlers.rkt"
          (except-in "../common/default-procs.rkt"
@@ -31,6 +32,7 @@
  application-pref-handler
  color-from-user-platform-mode
  get-color-from-user
+ font-from-user-platform-mode
  get-font-from-user
  get-panel-background
  play-sound
@@ -67,14 +69,15 @@
 
 (import-class NSScreen NSCursor)
 
-(define-unimplemented get-font-from-user)
-(define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
 (define-unimplemented send-event)
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
 
 (define (color-from-user-platform-mode) "Show Picker")
+
+(define-unimplemented get-font-from-user)
+(define (font-from-user-platform-mode) #f)
 
 (define (register-collecting-blit canvas x y w h on off on-x on-y off-x off-y)
   (send canvas register-collecting-blit x y w h on off on-x on-y off-x off-y))

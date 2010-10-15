@@ -73,7 +73,7 @@
 							  [(3) 'unsmoothed])
 							(send sip get-value)))))]
 	       [bp (instantiate horizontal-pane% (f) [stretchable-height #f])]
-	       [ms-button (if (eq? (system-type) 'windows)
+	       [ms-button (if (eq? (wx:font-from-user-platform-mode) 'dialog)
 			      (begin0
 			       (make-object button% "Use System Dialog..." bp
 					    (lambda (b e)

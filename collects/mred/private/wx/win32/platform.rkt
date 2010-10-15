@@ -79,6 +79,7 @@
    find-graphical-system-path
    play-sound
    get-panel-background
+   font-from-user-platform-mode
    get-font-from-user
    color-from-user-platform-mode
    get-color-from-user
