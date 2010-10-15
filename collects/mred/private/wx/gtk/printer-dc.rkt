@@ -8,7 +8,6 @@
          racket/draw/record-dc
          racket/draw/ps-setup
          ffi/unsafe
-         ffi/unsafe/objc
          ffi/unsafe/alloc
          "../common/queue.rkt"
          "widget.rkt"
