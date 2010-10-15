@@ -36,7 +36,6 @@
  file-creator-and-type
  run-printout
  get-double-click-time
- key-symbol-to-integer
  get-control-font-size
  get-control-font-size-in-pixels?
  cancel-quit
@@ -60,14 +59,14 @@
  make-gl-bitmap
  check-for-break)
 
-(define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
 (define-unimplemented location->window)
 (define-unimplemented send-event)
-(define-unimplemented key-symbol-to-integer)
 (define-unimplemented cancel-quit)
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
+
+(define-unimplemented play-sound)
 
 (define (color-from-user-platform-mode) 'dialog)
 
