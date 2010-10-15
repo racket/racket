@@ -148,7 +148,7 @@ Under Mac OS X, if a control-key press is combined with a mouse button
 
 Returns the type of the event; see @scheme[mouse-event%] for
 information about each event type. See also @method[mouse-event%
-set-event-type] .
+set-event-type].
 
 }
 
@@ -260,7 +260,7 @@ Under Mac OS X, if a control-key press is combined with a mouse button
            void?]{
 
 Sets the type of the event; see @scheme[mouse-event%] for information
-about each event type. See also @method[mouse-event% get-event-type] .
+about each event type. See also @method[mouse-event% get-event-type].
 
 }
 

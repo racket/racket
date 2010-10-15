@@ -11,6 +11,7 @@
          "style.rkt"
          "widget.rkt"
          "window.rkt"
+         "frame.rkt"
          "dc.rkt"
          "printer-dc.rkt"
          "gl-context.rkt"
@@ -60,7 +61,6 @@
  check-for-break)
 
 (define-unimplemented find-graphical-system-path)
-(define-unimplemented location->window)
 (define-unimplemented send-event)
 (define-unimplemented cancel-quit)
 (define-unimplemented write-resource)
@@ -85,14 +85,6 @@
 (define (get-control-font-size) 10) ;; FIXME
 (define (get-control-font-size-in-pixels?) #f) ;; FIXME
 
-(define-gdk gdk_screen_get_width (_fun _GdkScreen -> _int))
-(define-gdk gdk_screen_get_height (_fun _GdkScreen -> _int))
-
-(define (display-origin x y all?) (set-box! x 0) (set-box! y 0))
-(define (display-size w h all?)
-  (let ([s (gdk_screen_get_default)])
-    (set-box! w (gdk_screen_get_width s))
-    (set-box! h (gdk_screen_get_height s))))
 (define (get-display-depth) 32)
 
 (define-gdk gdk_display_beep (_fun _GdkDisplay -> _void))

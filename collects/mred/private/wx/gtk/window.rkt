@@ -478,6 +478,7 @@
 
     (define shown? #f)
     (define/public (direct-show on?)
+      ;; atomic mode
       (if on?
           (gtk_widget_show gtk)
           (gtk_widget_hide gtk))

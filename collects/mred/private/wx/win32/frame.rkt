@@ -237,8 +237,8 @@
   (define/override (get-y)
     (RECT-top (GetWindowRect hwnd)))
 
-  (def/public-unimplemented on-toolbar-click)
-  (def/public-unimplemented on-menu-click)
+  (define/public (on-toolbar-click) (void))
+  (define/public (on-menu-click) (void))
 
   (define/public (on-menu-command i) (void))
 
@@ -348,7 +348,7 @@
 
   (define/override (get-top-frame) this)
 
-  (def/public-unimplemented designate-root-frame)
+  (define/public (designate-root-frame) (void))
   (def/public-unimplemented system-menu)
 
   (define modified? #f)

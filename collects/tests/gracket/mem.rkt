@@ -1,5 +1,4 @@
-
-; run with gracket -u -- -f mem.rktl
+#lang racket/gui
 
 (require mzlib/class100)
 
@@ -28,13 +27,12 @@
 	      allocated))
   v)
 
-(when subwindows?
-  (namespace-set-variable-value!
-   'sub-collect-frame
-   (make-object frame% "sub-collect"))
-  (namespace-set-variable-value!
-   'sub-collect-panel
-   (make-object panel% sub-collect-frame)))
+(define sub-collect-frame
+  (and subwindows?
+       (make-object frame% "sub-collect")))
+(define sub-collect-panel
+  (and subwindows?
+       (make-object panel% sub-collect-frame)))
 
 (define permanent-ready? #f)
 (define mb-lock (make-semaphore 1))

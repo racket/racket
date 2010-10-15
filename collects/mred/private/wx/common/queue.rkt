@@ -190,6 +190,7 @@
                                     -> _pointer))
 
 (define (shutdown-eventspace! e ignored)
+  ;; atomic mode
   (unless (eventspace-shutdown? e)
     (set-eventspace-shutdown?! e #t)
     (semaphore-post (eventspace-done-sema e))

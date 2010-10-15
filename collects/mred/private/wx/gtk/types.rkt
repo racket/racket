@@ -104,6 +104,7 @@
 (define-cstruct _GdkEventCrossing ([type _GdkEventType]
                                    [window _GdkWindow]
                                    [send_event _byte]
+                                   [subwindow _GdkWindow]
                                    [time _uint32]
                                    [x _double]
                                    [y _double]

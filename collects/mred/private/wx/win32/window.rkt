@@ -327,7 +327,7 @@
             hwnd
             (lambda (thunk) (queue-window-event this thunk)))))
 
-  (def/public-unimplemented center)
+  (define/public (center a b) (void))
 
   (define/public (get-parent) parent)
   (define/public (is-frame?) #f)

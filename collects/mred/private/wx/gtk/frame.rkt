@@ -13,12 +13,14 @@
          "window.rkt"
          "client-window.rkt"
          "widget.rkt"
-         "procs.rkt"
          "cursor.rkt"
          "pixbuf.rkt"
          "../common/queue.rkt")
 
-(provide frame%)
+(provide frame%
+         display-origin
+         display-size
+         location->window)
 
 ;; ----------------------------------------
 
@@ -120,6 +122,9 @@
        ;; a glist:
        (for/fold ([l #f]) ([i (in-list icons)])
 	 (g_list_insert l i -1))))))
+
+;; used for location->window
+(define all-frames (make-hasheq))
 
 (define frame%
   (class (client-size-mixin window%)
@@ -296,10 +301,15 @@
       (void))
 
     (define/override (direct-show on?)
+      ;; atomic mode
+      (if on?
+          (hash-set! all-frames this #t)
+          (hash-remove! all-frames this))
       (super direct-show on?)
       (register-frame-shown this on?))
 
     (define/public (destroy)
+      ;; atomic mode
       (direct-show #f))
 
     (define/override (on-client-size w h)
@@ -366,7 +376,8 @@
 
     (define/public (on-activate on?) (void))
 
-    (def/public-unimplemented designate-root-frame)
+    (define/public (designate-root-frame) (void))
+
     (def/public-unimplemented system-menu)
 
     (define/public (set-modified mod?)
@@ -421,3 +432,23 @@
                                     (string-append s "*")
                                     s)))))
 
+;; ----------------------------------------
+
+(define-gdk gdk_screen_get_width (_fun _GdkScreen -> _int))
+(define-gdk gdk_screen_get_height (_fun _GdkScreen -> _int))
+
+(define (display-origin x y all?) (set-box! x 0) (set-box! y 0))
+(define (display-size w h all?)
+  (let ([s (gdk_screen_get_default)])
+    (set-box! w (gdk_screen_get_width s))
+    (set-box! h (gdk_screen_get_height s))))
+
+(define (location->window x y)
+  (for/or ([f (in-hash-keys all-frames)])
+    (let ([fx (send f get-x)]
+          [fw (send f get-width)])
+      (and (<= fx x (+ fx fw))
+           (let ([fy (send f get-y)]
+                 [fh (send f get-height)])
+             (<= fy y (+ fy fh)))
+           f))))
