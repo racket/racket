@@ -10,31 +10,62 @@
 (provide hInstance
 	 DefWindowProcW
          background-hbrush
-	 hwnd->wx
-	 any-hwnd->wx
 	 set-hwnd-wx!
-         unregister-hwnd
+	 set-hwnd-ctlproc!
+         hwnd->wx
+         hwnd->ctlproc
+	 any-hwnd->wx
+	 unregister-hwnd
 	 MessageBoxW
          _WndProc)
 
 ;; ----------------------------------------
+;; We use the "user data" field of an HWND to
+;;  store a weak pointer back to the Racket object.
+;;  The weak pointer must be wrapped in an immuable cell.
+;;  In addition, if we need to save a control's old
+;;  ctlproc, we put it in the same immutable cell.
+;; So:
+;;  <user-data>   = (make-immutable-cell <remembered>)
+;;  <remembered>  = <wx-weak-box>
+;;                | (cons <ctlproc> <wx-weak-box>)
+;;  <wx-weak-box> = (make-weak-box <object%>)
 
 (define all-cells (make-hash))
 
-(define (hwnd->wx hwnd)
-  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
-    (and p (ptr-ref p _racket))))
-
 (define (set-hwnd-wx! hwnd wx)
-  (let ([c (malloc-immobile-cell wx)])
+  (let ([c (malloc-immobile-cell (make-weak-box wx))])
     (SetWindowLongW hwnd GWLP_USERDATA c)
     (atomically (hash-set! all-cells (cast c _pointer _long) #t))))
+
+(define (set-hwnd-ctlproc! hwnd ctlproc)
+  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
+    (ptr-set! p _racket (cons (ptr-ref p _racket) ctlproc))))
+
+(define (hwnd->wx hwnd)
+  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
+    (and p (let ([wb (ptr-ref p _racket)])
+             (and wb
+                  (weak-box-value (if (pair? wb) 
+                                      (car wb) 
+                                      wb)))))))
+
+(define (hwnd->ctlproc hwnd)
+  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
+    (and p (let ([wb (ptr-ref p _racket)])
+             (and wb
+                  (pair? wb)
+                  (cdr wb))))))
 
 (define (any-hwnd->wx hwnd)
   (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
     (and p 
          (atomically (hash-ref all-cells (cast p _pointer _long) #f))
-         (let ([wx (ptr-ref p _racket)])
+         (let ([wx (let ([wb (ptr-ref p _racket)])
+                     (and wb 
+                          (weak-box-value (if (pair? wb)
+                                              (car wb)
+                                              wb))))])
            (and wx
                 (send wx is-hwnd? hwnd)
                 wx)))))

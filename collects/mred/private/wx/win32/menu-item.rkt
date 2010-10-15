@@ -4,6 +4,7 @@
          "utils.rkt"
          "types.rkt"
          "const.rkt"
+          "../../lock.rkt"
           "../../syntax.rkt")
 
 (provide menu-item%
@@ -14,7 +15,7 @@
 (define ids (make-hash))
 
 (define (id-to-menu-item id)
-  (let ([wb (hash-ref ids id #f)])
+  (let ([wb (atomically (hash-ref ids id #f))])
     (and wb (weak-box-value wb))))
 
 (defclass menu-item% object%
@@ -22,12 +23,12 @@
   (define id
     (let loop ()
       (let ([id (add1 (random #x7FFE))])
-        (let ([wb (hash-ref ids id #f)])
+        (let ([wb (atomically (hash-ref ids id #f))])
           (if (and wb
                    (weak-box-value wb))
               (loop)
               (begin
-                (hash-set! ids id (make-weak-box this))
+                (atomically (hash-set! ids id (make-weak-box this)))
                 id))))))
 
   (define parent #f)

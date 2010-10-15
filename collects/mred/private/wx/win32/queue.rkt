@@ -88,6 +88,7 @@
       (free-msg msg))))
 
 (define (queue-message-dequeue es hwnd)
+  ;; in atomic mode
   (let ([t (eventspace-extra-table es)]
         [id (cast hwnd _HWND _long)])
     (unless (hash-ref t id #f)
@@ -98,6 +99,7 @@
 (define msg (malloc-msg))
 
 (define (check-window-event hwnd data)
+  ;; in atomic mode
   (let* ([root (let loop ([hwnd hwnd])
                  (let ([p (GetWindow hwnd GW_OWNER)])
                    (if p
@@ -123,6 +125,7 @@
 (define check_window_event (function-ptr check-window-event _enum_proc))
 
 (define (dispatch-all-ready)
+  ;; in atomic mode
   (pre-event-sync #f)
 
   ;; Windows uses messages above #x4000 to hilite items in the task bar,

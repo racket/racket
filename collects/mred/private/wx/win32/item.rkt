@@ -20,8 +20,9 @@
     (if wx
         (send wx ctlproc w msg wParam lParam
               (lambda (w msg wParam lParam)
-                (send wx default-ctlproc w msg wParam lParam)))
-        (send wx default-ctlproc w msg wParam lParam))))
+                ((hwnd->ctlproc w) w msg wParam lParam)))
+        (let ([default-ctlproc (hwnd->ctlproc w)])
+          (default-ctlproc w msg wParam lParam)))))
 
 (define control_proc (function-ptr control-proc _WndProc))
 
@@ -36,14 +37,11 @@
     (define/public (command e)
       (callback this e))
 
-    (define old-control-procs null)
-
     (super-new)
     
     (define/public (subclass-control hwnd)
       (let ([old-control-proc (function-ptr (GetWindowLongW hwnd GWLP_WNDPROC) _WndProc)])
-        (set! old-control-procs (cons (cons hwnd old-control-proc)
-                                      old-control-procs))
+        (set-hwnd-ctlproc! hwnd old-control-proc)
         (SetWindowLongW hwnd GWLP_WNDPROC control_proc)))
     
     (define/public (ctlproc w msg wParam lParam default)
@@ -60,15 +58,7 @@
             (wndproc-for-ctlproc w msg wParam lParam default)])))
 
     (define/public (wndproc-for-ctlproc w msg wParam lParam default)
-      (wndproc w msg wParam lParam default))
-    
-    (define/public (default-ctlproc w msg wParam lParam)
-      (let loop ([l old-control-procs])
-        (cond
-         [(null? l) (error 'default-ctlproc "cannot find control in: ~e for: ~e" this w)]
-         [(ptr-equal? (caar l) w)
-          ((cdar l) w msg wParam lParam)]
-         [else (loop (cdr l))])))))
+      (wndproc w msg wParam lParam default))))
 
 (define item% 
   (class (item-mixin window%)

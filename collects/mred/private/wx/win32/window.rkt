@@ -174,7 +174,7 @@
                  [cmd (LOWORD (NMHDR-code nmhdr))])
             (if (and wx (send wx is-command? cmd))
                 (begin
-                  (send wx do-command control-hwnd)
+                  (send wx do-command cmd control-hwnd)
                   0)
                 (default w msg wParam lParam)))]
          [(or (= msg WM_HSCROLL)
