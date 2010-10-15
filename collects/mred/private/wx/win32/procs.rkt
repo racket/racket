@@ -14,6 +14,7 @@
          (except-in "../common/default-procs.rkt"
                     get-panel-background)
          "filedialog.rkt"
+         "colordialog.rkt"
 	 racket/draw)
 
 (provide
@@ -65,8 +66,7 @@
 (define-unimplemented write-resource)
 (define-unimplemented get-resource)
 
-(define-unimplemented get-color-from-user)
-(define (color-from-user-platform-mode) #f)
+(define (color-from-user-platform-mode) 'dialog)
 
 (define (get-panel-background)
   (let ([c (GetSysColor COLOR_BTNFACE)])
