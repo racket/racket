@@ -12,6 +12,7 @@
 	 define-comdlg32
 	 define-shell32
 	 define-uxtheme
+	 define-winmm
          define-mz
          failed
 
@@ -49,6 +50,7 @@
 (define comdlg32-lib (ffi-lib "comdlg32.dll"))
 (define shell32-lib (ffi-lib "shell32.dll"))
 (define uxtheme-lib (ffi-lib "uxtheme.dll"))
+(define winmm-lib (ffi-lib "winmm.dll"))
 
 (define-ffi-definer define-gdi32 gdi32-lib)
 (define-ffi-definer define-user32 user32-lib)
@@ -57,6 +59,7 @@
 (define-ffi-definer define-comdlg32 comdlg32-lib)
 (define-ffi-definer define-shell32 shell32-lib)
 (define-ffi-definer define-uxtheme uxtheme-lib)
+(define-ffi-definer define-winmm winmm-lib)
 
 (define-kernel32 GetLastError (_wfun -> _DWORD))
 

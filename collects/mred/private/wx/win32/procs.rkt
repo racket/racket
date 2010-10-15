@@ -15,6 +15,7 @@
                     get-panel-background)
          "filedialog.rkt"
          "colordialog.rkt"
+         "sound.rkt"
 	 racket/draw)
 
 (provide
@@ -58,7 +59,6 @@
  make-gl-bitmap
  check-for-break)
 
-(define-unimplemented play-sound)
 (define-unimplemented find-graphical-system-path)
 (define-unimplemented location->window)
 (define-unimplemented send-event)
