@@ -9,6 +9,8 @@
          "menu-item.rkt"
          "frame.rkt"
          "dc.rkt"
+         "printer-dc.rkt"
+         "../common/printer.rkt"
          "filedialog.rkt"
 	 racket/draw)
 
@@ -70,7 +72,9 @@
 (define-unimplemented location->window)
 (define-unimplemented send-event)
 (define-unimplemented file-creator-and-type)
-(define-unimplemented run-printout)
+
+(define run-printout (make-run-printout printer-dc%))
+
 (define (get-double-click-time) 500)
 (define (get-control-font-size) (get-theme-font-size))
 (define (get-control-font-size-in-pixels?) #t)
@@ -89,8 +93,8 @@
 (define (get-display-depth) 32)
 
 (define-unimplemented is-color-display?)
-(define-unimplemented show-print-setup)
-(define (can-show-print-setup?) #f)
+
+(define (can-show-print-setup?) #t)
 
 (define (get-highlight-background-color)
   (let ([c (GetSysColor COLOR_HIGHLIGHT)])
