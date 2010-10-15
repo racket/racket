@@ -11,7 +11,9 @@
          "widget.rkt"
          "window.rkt"
          "dc.rkt"
+         "printer-dc.rkt"
          "gl-context.rkt"
+         "../common/printer.rkt"
          "../common/handlers.rkt")
 
 (provide
@@ -72,7 +74,9 @@
   (case-lambda
    [(path cr ty) (void)]
    [(path) (values #"????" #"????")]))
-(define-unimplemented run-printout)
+
+(define run-printout (make-run-printout printer-dc%))
+
 (define (get-double-click-time) 250)
 (define-unimplemented key-symbol-to-integer)
 (define (get-control-font-size) 10) ;; FIXME
@@ -101,8 +105,7 @@
 (define-unimplemented is-color-display?)
 
 (define (id-to-menu-item i) i)
-(define-unimplemented show-print-setup)
-(define (can-show-print-setup?) #f)
+(define (can-show-print-setup?) #t)
 
 (define (get-highlight-background-color)
   (let-values ([(r g b) (get-selected-background-color)])

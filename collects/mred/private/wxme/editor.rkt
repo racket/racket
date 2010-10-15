@@ -744,9 +744,7 @@
                      [any? [parent #f]] ; checked in ../editor.ss
                      [bool? [force-page-bbox? #t]]
                      [bool? [as-eps? #f]])
-    (let ([ps? (case (system-type)
-                 [(macosx windows) (eq? output-mode 'postscript)]
-                 [else #t])]
+    (let ([ps? (eq? output-mode 'postscript)]
           [parent (or parent
                       (extract-parent))])
       (cond

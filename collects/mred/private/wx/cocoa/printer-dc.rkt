@@ -67,6 +67,8 @@
                                                         (send pss get-scaling x y)
                                                         (unbox y))))
 
+(define NSOkButton 1)
+
 (define (show-print-setup parent)
   (let* ([pss (current-ps-setup)]
          [print-info (let ([pi (send pss get-native)])
@@ -75,13 +77,17 @@
                              (send pss set-native pi make-print-info)
                              pi)))])
     (install-pss-to-print-info pss print-info)
-    (tell (tell NSPageLayout pageLayout) runModalWithPrintInfo: print-info)
-    (let ([o (tell #:type _int print-info orientation)])
-      (send pss set-orientation (if (= o NSLandscapeOrientation)
-                                    'landscape
-                                    'portrait)))
-    (let ([s (tell #:type _CGFloat print-info scalingFactor)])
-      (send pss set-scaling s s))))
+    (if (= (tell #:type _NSInteger (tell NSPageLayout pageLayout) runModalWithPrintInfo: print-info)
+           NSOkButton)
+        (begin
+          (let ([o (tell #:type _int print-info orientation)])
+            (send pss set-orientation (if (= o NSLandscapeOrientation)
+                                          'landscape
+                                          'portrait)))
+          (let ([s (tell #:type _CGFloat print-info scalingFactor)])
+            (send pss set-scaling s s))
+          #t)
+        #f)))
 
 (define printer-dc%
   (class (record-dc-mixin (dc-mixin bitmap-dc-backend%))
