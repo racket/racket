@@ -52,7 +52,7 @@
 	   scheme/class
            "../posn.rkt"
 	   (only lang/private/teachprims
-                 beginner-equal? beginner-equal~?
+                 beginner-equal? beginner-equal~? teach-equal?
                  advanced-cons advanced-list*))
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
@@ -3003,7 +3003,7 @@
 	      #t))))))
 
 (define (expect v1 v2)
-  (quickcheck:property () (beginner-equal? v1 v2)))
+  (quickcheck:property () (teach-equal? v1 v2)))
 
 (define (ensure-real who n val)
   (unless (real? val)
@@ -3028,7 +3028,7 @@
 (define (expect-member-of val . candidates)
   (quickcheck:property () 
 		       (ormap (lambda (cand)
-				(beginner-equal? val cand))
+				(teach-equal? val cand))
 			      candidates)))
 
 (define Property (signature (predicate (lambda (x)

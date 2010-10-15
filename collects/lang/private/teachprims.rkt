@@ -242,7 +242,7 @@ namespace.
 (define-teach beginner exit
   (lambda () (exit)))
 
-(define (tequal? a b epsilon)
+(define (tequal? x y epsilon)
   (let* ([ht (make-hash)] ;; make-hash
          [union-find (lambda (a)
                        (let loop ([prev a]
@@ -264,14 +264,48 @@ namespace.
                                 #t
                                 (begin
                                   (hash-set! ht b a)
-                                  #f))))])
-    (let ? ([a a][b b])
+                                  #f))))]
+	 [fail (lambda (fmt arg)
+		 (raise (make-exn:fail:contract (if (or (eq? arg x)
+							(eq? arg y))
+						    (format fmt arg)
+						    (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
+						(current-continuation-marks))))])
+    (let ? ([a x][b y])
       (cond
         [(real? a)
          (and (real? b)
               (beginner-=~ a b epsilon))]
+	[(procedure? a)
+	 (fail "first argument of equality cannot be a procedure, given ~e" a)]
+	[(procedure? b)
+	 (fail "second argument of equality cannot be a procedure, given ~e" b)]
         [(union-equal!? a b) #t]
         [else (equal?/recur a b ?)]))))
+
+(define (teach-equal? x y)
+
+  (define (fail fmt arg)
+    (raise (make-exn:fail:contract (if (or (eq? arg x)
+					   (eq? arg y))
+				       (format fmt arg)
+				       (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
+				   (current-continuation-marks))))
+
+  (let recur ([a x] [b y])
+    (cond
+     [(procedure? a)
+      (fail "first argument of equality cannot be a procedure, given ~e" a)]
+     [(procedure? b)
+      (fail "second argument of equality cannot be a procedure, given ~e" b)]
+     [(and (number? a)
+	   (inexact? a))
+      (fail "first argument of equality cannot be an inexact number, given ~e" a)]
+     [(and (number? b)
+	   (inexact? b))
+      (fail "first argument of equality cannot be an inexact number, given ~e" b)]
+     [else
+      (equal?/recur a b recur)])))
 
 (define-teach beginner equal?
   (lambda (a b)
@@ -423,7 +457,8 @@ namespace.
  advanced-make-immutable-hash
  advanced-make-immutable-hasheq
  advanced-make-immutable-hasheqv
- cyclic-list?)
+ cyclic-list?
+ teach-equal?)
 
 ;; -----------------------------------------------------------------------------
 ;; auxiliary stuff, ignore

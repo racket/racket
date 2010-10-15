@@ -156,7 +156,7 @@
                actual INEXACT-NUMBERS-FMT #t)
   (error-check (lambda (v) (not (procedure? v))) actual FUNCTION-FMT #f)
   (send (send test-engine get-info) add-check)
-  (run-and-check (lambda (v1 v2 _) (beginner-equal? v1 v2))
+  (run-and-check (lambda (v1 v2 _) (teach-equal? v1 v2))
                  (lambda (src format v1 v2 _) (make-unequal src format v1 v2))
                  test actual #f src test-engine 'check-expect))
 
@@ -247,7 +247,7 @@
 (define (check-member-of-values-expected test first-actual actuals src test-engine)
   (error-check (lambda (v) (not (procedure? v))) first-actual CHECK-MEMBER-OF-FUNCTION-FMT #f)
   (send (send test-engine get-info) add-check)
-  (run-and-check (lambda (v2 v1 _) (memf (lambda (i) (beginner-equal? v1 i)) v2))
+  (run-and-check (lambda (v2 v1 _) (memf (lambda (i) (teach-equal? v1 i)) v2))
                  (lambda (src format v1 v2 _) (make-not-mem src format v1 v2))
                  test (cons first-actual actuals) #f src test-engine 'check-member-of))
 

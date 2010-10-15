@@ -16,7 +16,7 @@
 
 (require deinprogramm/define-record-procedures)
 
-(require (only-in lang/private/teachprims define-teach beginner-equal? beginner-equal~?))
+(require (only-in lang/private/teachprims define-teach teach-equal? beginner-equal~?))
 
 (require (for-syntax deinprogramm/syntax-checkers))
 
@@ -1078,7 +1078,7 @@
 	      #t))))))
 
 (define (expect v1 v2)
-  (quickcheck:property () (beginner-equal? v1 v2)))
+  (quickcheck:property () (teach-equal? v1 v2)))
 
 (define (ensure-real who n val)
   (unless (real? val)
@@ -1103,7 +1103,7 @@
 (define (expect-member-of val . candidates)
   (quickcheck:property () 
 		       (ormap (lambda (cand)
-				(beginner-equal? val cand))
+				(teach-equal? val cand))
 			      candidates)))
 
 (define property (signature (predicate (lambda (x)

@@ -12,7 +12,7 @@
 	 (for-syntax scheme/base)
 	 (for-syntax syntax/stx)
 	 (for-syntax stepper/private/shared)
-	 (only-in lang/private/teachprims beginner-equal?))
+	 (only-in lang/private/teachprims teach-equal?))
 
 (define-for-syntax (phase-lift stx)
   (with-syntax ((?stx stx))
@@ -50,7 +50,7 @@
 			   (syntax->list #'((?temp ?exp) ...)))))
        #'(let ((?temp ?exp) ...)
 	   ?check ...
-	   (make-case-signature '?name (list ?temp ...) beginner-equal? ?stx)))))
+	   (make-case-signature '?name (list ?temp ...) teach-equal? ?stx)))))
     ((predicate ?exp)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name))
