@@ -1739,6 +1739,167 @@
                   (continuation-mark-set->list (current-continuation-marks) 'x)))))
         a)))))
 
+
+;; ----------------------------------------
+;; Tests related to cotinuations that capture pre-thunk frames
+
+;; Simple case:
+(let ([t
+       (lambda (wrapper)
+         (test
+          '(pre1 mid1 post1 pre2 mid1 post1 post2)
+          'cc1
+          (let ([k #f]
+                [recs null])
+            (define (queue v) (set! recs (cons v recs)))
+            (call-with-continuation-prompt
+             (lambda ()
+               (dynamic-wind
+                   (lambda ()
+                     (queue 'pre1) 
+                     (call-with-composable-continuation
+                      (lambda (k0)
+                        (set! k k0))))
+                   (lambda () (queue 'mid1))
+                   (lambda () (queue 'post1)))))
+            (wrapper
+             (lambda ()
+               (dynamic-wind
+                   (lambda () (queue 'pre2))
+                   (lambda () (k))
+                   (lambda () (queue 'post2)))))
+            (reverse recs))))])
+  (t (lambda (f) (f)))
+  (t call-with-continuation-prompt))
+
+;; Mix in some extra dynamic winds:
+(test
+ '(pre1 mid1 post1 pre2 mid1 post1 post2 pre2 mid1 post1 post2)
+ 'cc2
+ (let ([k #f]
+       [k2 #f]
+       [recs null])
+   (define (queue v) (set! recs (cons v recs)))
+   (call-with-continuation-prompt
+    (lambda ()
+      (call-with-continuation-prompt
+       (lambda ()
+         (dynamic-wind
+             (lambda ()
+               (queue 'pre1) 
+               ((call-with-composable-continuation
+                 (lambda (k0)
+                   (set! k k0)
+                   void))))
+             (lambda () (queue 'mid1))
+             (lambda () (queue 'post1)))))
+      (let/ec esc
+        (dynamic-wind
+            (lambda () (queue 'pre2))
+            (lambda () 
+              (k (lambda ()
+                   (let/cc k0
+                     (set! k2 k0))))
+              (esc))
+            (lambda () (queue 'post2))))))
+   (call-with-continuation-prompt
+    (lambda () (k2)))
+   (reverse recs)))
+
+;; Even more dynamic-winds:
+(test
+ '(pre0 pre1 mid1 post1 post0 
+        pre1.5 pre2 pre0 mid1 post1 post0 post2 post1.5 
+        pre3 pre1.5 pre2 pre0 mid1 post1 post0 post2 post1.5 post3)
+ 'cc3
+ (let ([k #f]
+       [k2 #f]
+       [recs null])
+   (define (queue v) (set! recs (cons v recs)))
+   (call-with-continuation-prompt
+    (lambda ()
+      (dynamic-wind
+          (lambda ()
+            (queue 'pre0))
+          (lambda ()
+            (dynamic-wind
+                (lambda ()
+                  (queue 'pre1) 
+                  ((call-with-composable-continuation
+                    (lambda (k0)
+                      (set! k k0)
+                      void))))
+                (lambda () (queue 'mid1))
+                (lambda () (queue 'post1))))
+          (lambda ()
+            (queue 'post0)))))
+   (call-with-continuation-prompt
+    (lambda ()
+      (dynamic-wind
+          (lambda () (queue 'pre1.5))
+          (lambda ()
+            (dynamic-wind
+                (lambda () (queue 'pre2))
+                (lambda () (k (lambda ()
+                                (call-with-composable-continuation
+                                 (lambda (k0)
+                                   (set! k2 k0))))))
+                (lambda () (queue 'post2))))
+          (lambda () (queue 'post1.5)))))
+   (call-with-continuation-prompt
+    (lambda ()
+      (dynamic-wind
+          (lambda () (queue 'pre3))
+          (lambda () (k2))
+          (lambda () (queue 'post3)))))
+   (reverse recs)))
+
+;; Arrange for the captured pre-thunk to trigger extra cloning
+;; of dynmaic wind records in continuation application:
+(test
+ '(pre1 pre2 post2 post1 pre1 pre2 post2 post1 last pre2 post2 post1)
+ 'cc4
+ (let ([k #f]
+       [k2 #f]
+       [recs null]
+       [tag (make-continuation-prompt-tag)])
+   (define (queue v) (set! recs (cons v recs)))
+   (call-with-continuation-prompt
+    (lambda ()
+      (dynamic-wind
+       (lambda ()
+         (queue 'pre1) 
+         ((call-with-composable-continuation
+           (lambda (k0)
+             (set! k k0)
+             void))))
+       (lambda () 
+         (dynamic-wind
+          (lambda () (queue 'pre2))
+          (lambda ()
+            ((call-with-composable-continuation
+              (lambda (k0)
+                (set! k2 k0)
+                void))))
+          (lambda () (queue 'post2))))
+       (lambda () (queue 'post1)))))
+   (let ([k3
+          (call-with-continuation-prompt
+           (lambda ()
+            (call-with-continuation-prompt
+             (lambda ()
+               (k2 (lambda ()
+                     (call-with-composable-continuation
+                      (lambda (k0)
+                        (abort-current-continuation tag (lambda () k0)))))))))
+           tag)])
+     (queue 'last)
+     (call-with-continuation-prompt
+      (lambda ()
+        (k void))
+      tag))
+   (reverse recs)))
+
 ;; ----------------------------------------
 ;; Try long chain of composable continuations
 
@@ -1804,4 +1965,3 @@
             (k (lambda () (abort-current-continuation
                            (default-continuation-prompt-tag)
                            (lambda () 45))))))))
-
