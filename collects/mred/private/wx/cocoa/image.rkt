@@ -6,16 +6,19 @@
          "utils.rkt"
          "types.rkt"
          "const.rkt"
+         "cg.rkt"
          "../../lock.rkt"
          (only-in '#%foreign ffi-callback))
 
 (provide bitmap->image)
 
-(import-class NSImage)
+(import-class NSImage NSGraphicsContext)
 
 (define _CGImageRef (_cpointer 'CGImageRef))
 (define _CGColorSpaceRef (_cpointer 'CGColorSpaceRef))
 (define _CGDataProviderRef (_cpointer 'GCDataProviderRef))
+
+(define _CGRect _NSRect)
 
 (define _size_t _long)
 (define _off_t _long)
@@ -35,6 +38,8 @@
                                     _bool ; shouldInterpolate
                                     _int ; intent
                                     -> _CGImageRef))
+
+(define-appserv CGContextDrawImage (_fun _CGContextRef _CGRect _CGImageRef -> _void))
 
 (define free-it
   (ffi-callback free (list _pointer) _void #f #t))
@@ -79,7 +84,22 @@
                                     0)])
          (CGDataProviderRelease provider)
          (CGColorSpaceRelease cs)
+         ;; This works on 10.6 and later:
+         #;
          (as-objc-allocation
           (tell (tell NSImage alloc) 
                 initWithCGImage: #:type _CGImageRef image
-                size: #:type _NSSize (make-NSSize w h))))))))
+                size: #:type _NSSize (make-NSSize w h)))
+         ;; To work with older versions:
+         (let* ([size (make-NSSize w h)]
+                [i (as-objc-allocation
+                    (tell (tell NSImage alloc) 
+                          initWithSize: #:type _NSSize size))])
+           (tellv i lockFocus)
+           (CGContextDrawImage
+            (tell #:type _CGContextRef (tell NSGraphicsContext currentContext) graphicsPort)
+            (make-NSRect (make-NSPoint 0 0) size)
+            image)
+           (tellv i unlockFocus)
+           i))))))
+
