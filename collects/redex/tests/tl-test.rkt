@@ -551,6 +551,25 @@
     (test (term (g 0)) 2))
   
   (let ()
+    (define-language L 
+      (v 1 (v)))
+    (define-metafunction L
+      f : v -> v
+      [(f (v)) 
+       any_1
+       (where any_1 (f v))])
+    
+    (define-extended-language M
+      L
+      (v .... 2))
+    (define-metafunction/extension f M
+      g : v -> v
+      [(g 2) 2]))
+
+(current-traced-metafunctions 'all)
+(term (g (2)))
+  
+  (let ()
     (define-metafunction empty-language
       [(f (number_1 number_2))
        number_3
