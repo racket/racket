@@ -182,11 +182,13 @@
   (public [append-item append])
   (define (append-item i label help-str-or-submenu chckable?)
     (atomically
-     (let ([item-gtk ((if (and chckable?
-                               (not (help-str-or-submenu . is-a? . menu%)))
-                          gtk_check_menu_item_new_with_mnemonic
-                          gtk_menu_item_new_with_mnemonic)
-                      (fixup-mneumonic label))])
+     (let ([item-gtk (let ([label (fixup-mneumonic label)])
+                       (as-gtk-allocation
+                        ((if (and chckable?
+                                  (not (help-str-or-submenu . is-a? . menu%)))
+                             gtk_check_menu_item_new_with_mnemonic
+                             gtk_menu_item_new_with_mnemonic)
+                         label)))])
        (if (help-str-or-submenu . is-a? . menu%)
            (let ([submenu help-str-or-submenu])
              (let ([gtk (send submenu get-gtk)])
@@ -208,7 +210,7 @@
 
   (define/public (append-separator)
     (atomically
-     (let ([item-gtk (gtk_separator_menu_item_new)])
+     (let ([item-gtk (as-gtk-allocation (gtk_separator_menu_item_new))])
        (set! items (append items (list (list (new separator-item-handler%) item-gtk #f #f))))
        (gtk_menu_shell_append gtk item-gtk)
        (gtk_widget_show item-gtk))))

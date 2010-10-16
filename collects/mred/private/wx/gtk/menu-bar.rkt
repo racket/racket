@@ -135,7 +135,9 @@
   (define (append-menu menu title)
     (send menu set-parent this)
     (atomically
-     (let* ([item (gtk_menu_item_new_with_mnemonic (fixup-mneumonic title))]
+     (let* ([item (let ([title (fixup-mneumonic title)])
+                    (as-gtk-allocation
+                     (gtk_menu_item_new_with_mnemonic title)))]
             [item-wx (new top-menu% [parent this] [gtk item])])
        (connect-select item)
        (set! menus (append menus (list (list item menu item-wx))))
