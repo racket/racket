@@ -1521,8 +1521,16 @@
         (syntax->list stuffs)))
      (syntax->list extras))))
 
-(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pat name relation?)
-  (let ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
+(define (build-metafunction lang cases parent-cases/wrong-lang wrap dom-contract-pat codom-contract-pat name relation?)
+  (let ([parent-cases (map (λ (parent-case) 
+                             (make-metafunc-case
+                              (compile-pattern lang (metafunc-case-lhs-pat parent-case) #t)
+                              (metafunc-case-rhs parent-case)
+                              (metafunc-case-lhs-pat parent-case)
+                              (metafunc-case-src-loc parent-case)
+                              (metafunc-case-id parent-case)))
+                           parent-cases/wrong-lang)]
+        [dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
         [codom-compiled-pattern (compile-pattern lang codom-contract-pat #f)])
     (values
      (wrap
@@ -1546,6 +1554,7 @@
                                                         (metafunc-proc-cases r)))
                                         (cover-case id c))))
                                   (relation-coverage))))]
+               [all-cases (append cases parent-cases)]
                [metafunc
                 (λ (exp)
                   (let ([cache-ref (hash-ref cache exp not-in-cache)])
@@ -1556,7 +1565,7 @@
                            (redex-error name
                                         "~s is not in my domain"
                                         `(,name ,@exp))))
-                       (let loop ([cases (append cases parent-cases)]
+                       (let loop ([cases all-cases]
                                   [num (- (length parent-cases))])
                          (cond
                            [(null? cases) 
