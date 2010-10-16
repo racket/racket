@@ -533,6 +533,13 @@
   
   (let ()
     (define-metafunction empty-language
+      [(f any) 1])
+    (define-metafunction/extension f empty-language
+      [(g any) 2])
+    (test (term (g 0)) 2))
+  
+  (let ()
+    (define-metafunction empty-language
       [(f (number_1 number_2))
        number_3
        (where number_3 ,(+ (term number_1) (term number_2)))])
