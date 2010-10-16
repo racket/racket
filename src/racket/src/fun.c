@@ -5141,7 +5141,7 @@ static Scheme_Overflow *clone_overflows(Scheme_Overflow *overflow, void *limit, 
 }
 
 static Scheme_Dynamic_Wind *clone_dyn_wind(Scheme_Dynamic_Wind *dw, 
-                                           Scheme_Object *limit_prompt_tag, int limit_depth,
+                                           Scheme_Object *limit_prompt_tag, int limit_depth, int limit_count,
                                            Scheme_Dynamic_Wind *tail, 
                                            int keep_tail, int composable)
 {
@@ -5152,6 +5152,8 @@ static Scheme_Dynamic_Wind *clone_dyn_wind(Scheme_Dynamic_Wind *dw,
     if (dw->depth == limit_depth)
       break;
     if (composable && limit_prompt_tag && (dw->prompt_tag == limit_prompt_tag))
+      break;
+    if (cnt == limit_count)
       break;
     scheme_ensure_dw_id(dw);
     naya = MALLOC_ONE_RT(Scheme_Dynamic_Wind);
@@ -5525,13 +5527,15 @@ static MZ_MARK_STACK_TYPE exec_dyn_wind_pres(Scheme_Dynamic_Wind_List *dwl,
 {
   Scheme_Thread *p = scheme_current_thread;
   int old_cac = scheme_continuation_application_count;
+  int need_clone = 0;
+  Scheme_Dynamic_Wind *dw;
 
   for (; dwl; dwl = dwl->next) {
     if (dwl->dw->pre) {
-      p->dw = dwl->dw->prev;
       p->next_meta = dwl->meta_depth + dwl->dw->next_meta;
       if (dwl->meta_depth > 0) {
-        scheme_apply_dw_in_meta(dwl->dw, 0, dwl->meta_depth, cont);
+        if (!skip_dws)
+          scheme_apply_dw_in_meta(dwl->dw, 0, dwl->meta_depth, cont);
       } else {
         /* Restore the needed part of the mark stack for this
            dynamic-wind context. Clear cached info on restore
@@ -5555,6 +5559,19 @@ static MZ_MARK_STACK_TYPE exec_dyn_wind_pres(Scheme_Dynamic_Wind_List *dwl,
       }
       p = scheme_current_thread;
     }
+
+    if (p->dw != dwl->dw->prev) {
+      /* something happened in the pre-thunk to change the
+         continuation that we're building */
+      need_clone = 1;
+    }
+    
+    if (need_clone) {
+      dw = clone_dyn_wind(dwl->dw, NULL, -1, 1, p->dw, 0, 0);
+      dw->next_meta = p->next_meta;
+    } else
+      dw = dwl->dw;
+    p->dw = dw;
   }
   return copied_cms;
 }
@@ -5603,7 +5620,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   else if (prompt) {
     Scheme_Dynamic_Wind *dw;
     if (p->dw) {
-      dw = clone_dyn_wind(p->dw, prompt_tag, -1, NULL, 0, composable);
+      dw = clone_dyn_wind(p->dw, prompt_tag, -1, -1, NULL, 0, composable);
       cont->dw = dw;
       cont->next_meta = p->next_meta;
     } else
@@ -6031,7 +6048,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
         p->next_meta = common_next_meta;
         if (p->dw) { /* can be empty if there's only the implicit prompt */
           /* also, there may be no dw with prompt_tag if there's only the implicit prompt */
-          all_dw = clone_dyn_wind(p->dw, cont->prompt_tag, -1, NULL, 1, 0);
+          all_dw = clone_dyn_wind(p->dw, cont->prompt_tag, -1, -1, NULL, 1, 0);
           for (dw = all_dw; dw && !SAME_OBJ(dw->prompt_tag, cont->prompt_tag); dw = dw->prev) {
             p->dw = p->dw->prev;
           }
@@ -6048,8 +6065,12 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     if (cont->dw) {
       int meta_depth;
 
+      /* The allow_dw chain that we build up here is actually
+         premature, in that the tail to splice onto may change
+         in pre-thunks. It doesn't usually happen, and we can 
+         detect that case in exec_dyn_wind_pres() in re-clone. */
       common_depth = (p->dw ? p->dw->depth : -1);
-      all_dw = clone_dyn_wind(cont->dw, NULL, cont->common_dw_depth, p->dw, 0, 0);
+      all_dw = clone_dyn_wind(cont->dw, NULL, cont->common_dw_depth, -1, p->dw, 0, 0);
 
       if ((common_depth != -1) && (common_depth != all_dw->depth)) {
         /* Move p->next_meta to the last added dw's next_meta. */
@@ -6077,7 +6098,6 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
       copied_cms = exec_dyn_wind_pres(dwl, dwl_len, cont, copied_cms, clear_cm_caches, &sub_conts,
                                       cont->skip_dws);
       p = scheme_current_thread;
-      p->dw = all_dw;
       p->next_meta = cont->next_meta;      
     }
   }
@@ -8734,6 +8754,17 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
 
   p = scheme_current_thread;
 
+  if (pre) {
+    ASSERT_SUSPEND_BREAK_ZERO();
+    p->suspend_break++;
+    pre(data);
+    p = scheme_current_thread;
+    --p->suspend_break;
+  }
+
+  /* set up `dw' after pre(), in case a continuation
+     is captured in pre() and composed later */
+
   dw = MALLOC_ONE_RT(Scheme_Dynamic_Wind);
 #ifdef MZTAG_REQUIRED
   dw->type = scheme_rt_dyn_wind;
@@ -8748,14 +8779,6 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
   else
     dw->depth = 0;
   dw->next_meta = p->next_meta;
-
-  if (pre) {
-    ASSERT_SUSPEND_BREAK_ZERO();
-    p->suspend_break++;
-    pre(data);
-    p = scheme_current_thread;
-    --p->suspend_break;
-  }
 
   p->next_meta = 0;
   p->dw = dw;
