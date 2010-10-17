@@ -50,7 +50,9 @@
 
          begin-busy-cursor
          end-busy-cursor
-         is-busy?)
+         is-busy?
+
+         scheme_register_process_global)
 
 ;; ------------------------------------------------------------
 ;; This module must be instantiated only once:

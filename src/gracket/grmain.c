@@ -18,6 +18,11 @@ static int wx_in_terminal = 0;
 struct Scheme_Env;
 static char *get_gr_init_filename(struct Scheme_Env *env);
 
+#ifdef wx_xt
+# define PRE_FILTER_CMDLINE_ARGUMENTS
+static void pre_filter_cmdline_arguments(int *argc, char ***argv);
+#endif
+
 #define UNIX_INIT_FILENAME "~/.gracketrc"
 #define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rktd"
 #define MACOS9_INIT_FILENAME "PREFERENCES:gracketrc.rktd"
@@ -93,7 +98,15 @@ static void yield_indefinitely()
 #endif
 }
 
+/***********************************************************************/
+/*                        Win32 handling                               */
+/***********************************************************************/
+
 #ifdef WIN32
+
+/* ---------------------------------------- */
+/*             stdio to console             */
+/* ---------------------------------------- */
 
 static void MrEdSchemeMessages(char *, ...);
 static Scheme_Object *stdin_pipe;
@@ -495,6 +508,10 @@ static int parse_command_line(char ***_command, char *buf)
   return count;
 }
 
+/* ---------------------------------------- */
+/*           command-line parsing           */
+/* ---------------------------------------- */
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
   LPWSTR m_lpCmdLine;
@@ -580,5 +597,88 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
 # ifdef MZ_PRECISE_GC
 END_XFORM_SKIP;
 # endif
+
+#endif
+
+/***********************************************************************/
+/*                      X11 flag handling                              */
+/***********************************************************************/
+
+#ifdef wx_xt
+
+typedef struct {
+  char *flag;
+  int arg_count;
+} X_flag_entry;
+
+#define SINGLE_INSTANCE "-singleInstance"
+
+X_flag_entry X_flags[] = {
+  { "-display", 1 },
+  { "-geometry", 1 },
+  { "-bg", 1 },
+  { "-background", 1 },
+  { "-fg", 1 },
+  { "-foreground", 1 },
+  { "-fn", 1 },
+  { "-font", 1 },
+  { "-iconic", 0 },
+  { "-name", 1 },
+  { "-rv", 0 },
+  { "-reverse", 0 },
+  { "+rv", 0 },
+  { "-selectionTimeout", 1 },
+  { "-synchronous", 0 },
+  { "-title", 1 },
+  { "-xnllanguage", 1 },
+  { "-xrm", 1 },
+  { SINGLE_INSTANCE, 0},
+  { NULL, 0 }
+};
+
+static int filter_x_readable(char **argv, int argc)
+  XFORM_SKIP_PROC
+{
+  int pos = 1, i;
+
+  while (pos < argc) {
+    for (i = 0; X_flags[i].flag; i++) {
+      if (!strcmp(X_flags[i].flag, argv[pos]))
+	break;
+    }
+
+    if (!X_flags[i].flag)
+      return pos;
+    else {
+      int newpos = pos + X_flags[i].arg_count + 1;
+      if (newpos > argc) {
+	printf("%s: X Window System flag \"%s\" expects %d arguments, %d provided\n",
+	       argv[0], argv[pos], X_flags[i].arg_count, argc - pos - 1);
+	exit(-1);
+      }
+      pos = newpos;
+    }
+  }
+
+  return pos;
+}
+
+static void pre_filter_cmdline_arguments(int *argc, char ***argv)
+  XFORM_SKIP_PROC
+{
+  int pos;
+  char **naya;
+
+  pos = filter_x_readable(*argv, *argc);
+  if (pos > 1) {
+    scheme_register_process_global("PLT_X11_ARGUMENT_COUNT", (void *)(long)pos);
+    scheme_register_process_global("PLT_X11_ARGUMENTS", *argv);
+    naya = malloc((*argc - (pos - 1)) * sizeof(char *));
+    memcpy(naya, *argv + (pos - 1), (*argc - (pos - 1)) * sizeof(char *));
+    naya[0] = (*argv)[0];
+    *argv = naya;
+    *argc -= (pos - 1);
+  }
+}
 
 #endif

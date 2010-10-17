@@ -307,35 +307,40 @@ static int main_after_stack(void *data)
 #endif
 
 #ifdef WINDOWS_UNICODE_MAIN
- {
-   char *a;
-   int i, j, l;
-   argv = (char **)malloc(sizeof(char*)*argc);
-   for (i = 0; i < argc; i++) {
-     for (j = 0; wargv[i][j]; j++) {
-     }
-     l = scheme_utf8_encode((unsigned int*)wargv[i], 0, j, 
-			    NULL, 0,
-			    1 /* UTF-16 */);
-     a = malloc(l + 1);
-     scheme_utf8_encode((unsigned int *)wargv[i], 0, j, 
-			(unsigned char *)a, 0,
-			1 /* UTF-16 */);
-	 a[l] = 0;
-     argv[i] = a;
-   }
- }
+  {
+    char *a;
+    int i, j, l;
+    argv = (char **)malloc(sizeof(char*)*argc);
+    for (i = 0; i < argc; i++) {
+      for (j = 0; wargv[i][j]; j++) {
+      }
+      l = scheme_utf8_encode((unsigned int*)wargv[i], 0, j, 
+                             NULL, 0,
+                             1 /* UTF-16 */);
+      a = malloc(l + 1);
+      scheme_utf8_encode((unsigned int *)wargv[i], 0, j, 
+                         (unsigned char *)a, 0,
+                         1 /* UTF-16 */);
+      a[l] = 0;
+      argv[i] = a;
+    }
+  }
 #endif
 
+
 #if !defined(NO_USER_BREAK_HANDLER) || defined(DOS_FILE_SYSTEM)
- break_handle = scheme_get_main_thread_break_handle();
- signal_handle = scheme_get_signal_handle();
+  break_handle = scheme_get_main_thread_break_handle();
+  signal_handle = scheme_get_signal_handle();
 # ifndef NO_USER_BREAK_HANDLER
- MZ_SIGSET(SIGINT, user_break_hit);
+  MZ_SIGSET(SIGINT, user_break_hit);
 # endif
 # ifdef DOS_FILE_SYSTEM
- SetConsoleCtrlHandler(ConsoleBreakHandler, TRUE);      
+  SetConsoleCtrlHandler(ConsoleBreakHandler, TRUE);      
 # endif
+#endif
+
+#ifdef PRE_FILTER_CMDLINE_ARGUMENTS
+  pre_filter_cmdline_arguments(&argc, &MAIN_argv);
 #endif
 
   rval = run_from_cmd_line(argc, argv, scheme_basic_env, cont_run);

@@ -2553,7 +2553,8 @@ void *scheme_register_process_global(const char *key, void *val)
   long len;
 
 #if defined(MZ_USE_MZRT)
-  mzrt_mutex_lock(process_global_lock);
+  if (process_global_lock)
+    mzrt_mutex_lock(process_global_lock);
 #endif
 
   for (pg = process_globals; pg; pg = pg->next) {
@@ -2575,7 +2576,8 @@ void *scheme_register_process_global(const char *key, void *val)
   }
 
 #if defined(MZ_USE_MZRT)
-  mzrt_mutex_unlock(process_global_lock);
+  if (process_global_lock)
+    mzrt_mutex_unlock(process_global_lock);
 #endif
 
   return old_val;
