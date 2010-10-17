@@ -8358,6 +8358,8 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
    JIT-generated code. The code here manages capture and restore for
    the runstack and mark stack, while the rest is in the JIT. */
 
+#ifdef MZ_USE_JIT
+
 struct Scheme_Lightweight_Continuation {
   MZTAG_IF_REQUIRED /* scheme_rt_lightweight_cont */
   Scheme_Current_LWC *saved_lwc;
@@ -8638,6 +8640,12 @@ int scheme_push_marks_from_thread(Scheme_Thread *p2, Scheme_Cont_Frame_Data *d)
 
   return 0;
 }
+
+#else
+
+void scheme_init_thread_lwc(void) XFORM_SKIP_PROC { }
+
+#endif
 
 /*========================================================================*/
 /*                             dynamic-wind                               */
