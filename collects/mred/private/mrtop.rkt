@@ -122,8 +122,10 @@
        [finish (entry-point
 		(lambda (top-level hide-panel?)
 		  (set! mid-panel (make-object wx-vertical-panel% #f this top-level null #f))
+                  (send mid-panel skip-subwindow-events? #t)
                   (send (send mid-panel area-parent) add-child mid-panel)
 		  (set! wx-panel (make-object wx-vertical-panel% #f this mid-panel null #f))
+                  (send wx-panel skip-subwindow-events? #t)
 		  (send (send wx-panel area-parent) add-child wx-panel)
 		  (send top-level set-container wx-panel)
 		  (when hide-panel?
