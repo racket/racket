@@ -564,10 +564,9 @@
       (v .... 2))
     (define-metafunction/extension f M
       g : v -> v
-      [(g 2) 2]))
+      [(g 2) 2])
 
-(current-traced-metafunctions 'all)
-(term (g (2)))
+    (term (g (2))))
   
   (let ()
     (define-metafunction empty-language
