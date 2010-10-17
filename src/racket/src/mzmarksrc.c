@@ -1336,6 +1336,8 @@ mark_cont_mark_chain {
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Chain));
 }
 
+#ifdef MZ_USE_JIT
+
 mark_lightweight_cont {
  mark:
   Scheme_Lightweight_Continuation *lw = (Scheme_Lightweight_Continuation *)p;
@@ -1348,6 +1350,8 @@ mark_lightweight_cont {
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
 }
+
+#endif
 
 END fun;
 
