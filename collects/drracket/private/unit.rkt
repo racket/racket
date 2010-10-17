@@ -3441,10 +3441,12 @@ module browser threading seems wrong.
               (hash-set! capability-menu-items menu (cons this-one old-ones)))))
         
         (define/private (update-items/capability menu)
-          (let ([new-items (begin '(get-items/capability menu)
-                                  (send menu get-items))])
-            (for-each (λ (i) (send i delete)) (send menu get-items))
-            (for-each (λ (i) (send i restore)) new-items)))
+          (let* ([old-items (send menu get-items)]
+                 [new-items (begin '(get-items/capability menu)
+                                   old-items)])
+            (unless (equal? old-items new-items)
+              (for-each (λ (i) (send i delete)) old-items)
+              (for-each (λ (i) (send i restore)) new-items))))
         (define/private (get-items/capability menu)
           (let loop ([capability-items (reverse (hash-ref capability-menu-items menu '()))]
                      [all-items (send menu get-items)]
