@@ -3321,6 +3321,8 @@ static Scheme_Object *do_make_flvector (const char *name, int as_shared, int arg
 {
   Scheme_Double_Vector *vec;
   long size;
+  double d;
+  int i;
 
   if (SCHEME_INTP(argv[0]))
     size = SCHEME_INT_VAL(argv[0]);
@@ -3348,14 +3350,14 @@ static Scheme_Object *do_make_flvector (const char *name, int as_shared, int arg
 #endif
     vec = scheme_alloc_flvector(size);
 
-  if (argc > 1) {
-    int i;
-    double d = SCHEME_DBL_VAL(argv[1]);
-    for (i = 0; i < size; i++) {
-      vec->els[i] = d;
-    }
+  if (argc > 1)
+    d = SCHEME_DBL_VAL(argv[1]);
+  else
+    d = 0.0;
+  for (i = 0; i < size; i++) {
+    vec->els[i] = d;
   }
-
+  
   return (Scheme_Object *)vec;
 }
 
