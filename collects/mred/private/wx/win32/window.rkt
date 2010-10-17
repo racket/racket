@@ -2,6 +2,7 @@
 (require ffi/unsafe
 	 racket/class
 	 racket/draw
+	 racket/draw/bstr
          "../../syntax.rkt"
          "../common/freeze.rkt"
          "../common/queue.rkt"
@@ -102,6 +103,17 @@
 (define-user32 BeginPaint (_wfun _HWND _pointer -> _HDC))
 (define-user32 EndPaint (_wfun _HDC _pointer -> _BOOL))
 
+(define WM_IS_GRACKET (cast (scheme_register_process_global "PLT_WM_IS_GRACKET" #f)
+                            _pointer
+                            _UINT_PTR))
+(define GRACKET_GUID (cast (scheme_register_process_global "PLT_GRACKET_GUID" #f)
+                           _pointer
+                           _bytes))
+(define-cstruct _COPYDATASTRUCT
+  ([dwData _pointer]
+   [cbData _DWORD]
+   [lpData _pointer]))
+
 (defclass window% object%
   (init-field parent hwnd)
   (init style
@@ -188,6 +200,15 @@
                 (default w msg wParam lParam)))]
          [(= msg WM_DROPFILES)
           (handle-drop-files wParam)
+          0]
+         ;; for single-instance applications:
+         [(and (= msg WM_IS_GRACKET)
+               (positive? WM_IS_GRACKET))
+          ;; return 79 to indicate that this is a GRacket window
+          79]
+         ;; also for single-instance:
+         [(= msg WM_COPYDATA)
+          (handle-copydata lParam)
           0]
          [else
           (default w msg wParam lParam)])))
@@ -618,6 +639,49 @@
     (void))
 
   (define/public (get-dialog-level) (send parent get-dialog-level)))
+
+;; ----------------------------------------
+
+(define (handle-copydata lParam)
+  (let* ([cd (cast lParam _LPARAM _COPYDATASTRUCT-pointer)]
+         [data (COPYDATASTRUCT-lpData cd)]
+         [guid-len (bytes-length GRACKET_GUID)]
+         [data-len (COPYDATASTRUCT-cbData cd)])
+    (when (and (data-len
+                . > . 
+                (+ guid-len (ctype-sizeof _DWORD)))
+               (bytes=? GRACKET_GUID
+                        (scheme_make_sized_byte_string data
+                                                       guid-len
+                                                       0))
+               (bytes=? #"OPEN"
+                        (scheme_make_sized_byte_string (ptr-add data guid-len)
+                                                       4
+                                                       0)))
+      ;; The command line's argv (sans argv[0]) is
+      ;; expressed as a DWORD for the number of args,
+      ;; followed by each arg. Each arg is a DWORD
+      ;; for the number of chars and then the chars
+      (let ([args
+             (let ([count (ptr-ref data _DWORD 'abs (+ guid-len 4))])
+               (let loop ([i 0] [delta (+ guid-len 4 (ctype-sizeof _DWORD))])
+                 (if (or (= i count)
+                         ((+ delta (ctype-sizeof _DWORD)) . > . data-len))
+                     null
+                     (let ([len (ptr-ref (ptr-add data delta) _DWORD)]
+                           [delta (+ delta (ctype-sizeof _DWORD))])
+                       (if ((+ delta len) . > . data-len)
+                           null
+                           (let ([s (scheme_make_sized_byte_string 
+                                     (ptr-add data delta)
+                                     len
+                                     1)])
+                             (if (or (bytes=? s #"")
+                                     (regexp-match? #rx"\0" s))
+                                 null
+                                 (cons (bytes->path s)
+                                       (loop (add1 i) (+ delta len))))))))))])
+        (map queue-file-event args)))))
 
 ;; ----------------------------------------
 
