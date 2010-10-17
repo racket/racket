@@ -9823,7 +9823,9 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_dyn_wind_cell, mark_dyn_wind_cell);
   GC_REG_TRAV(scheme_rt_dyn_wind_info, mark_dyn_wind_info);
   GC_REG_TRAV(scheme_cont_mark_chain_type, mark_cont_mark_chain);
+#ifdef MZ_USE_JIT
   GC_REG_TRAV(scheme_rt_lightweight_cont, mark_lightweight_cont);
+#endif
 }
 
 END_XFORM_SKIP;

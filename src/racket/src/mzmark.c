@@ -3319,6 +3319,8 @@ static int mark_cont_mark_chain_FIXUP(void *p, struct NewGC *gc) {
 #define mark_cont_mark_chain_IS_CONST_SIZE 1
 
 
+#ifdef MZ_USE_JIT
+
 static int mark_lightweight_cont_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
@@ -3351,6 +3353,8 @@ static int mark_lightweight_cont_FIXUP(void *p, struct NewGC *gc) {
 #define mark_lightweight_cont_IS_ATOMIC 0
 #define mark_lightweight_cont_IS_CONST_SIZE 1
 
+
+#endif
 
 #endif  /* FUN */
 
