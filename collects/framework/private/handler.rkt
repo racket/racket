@@ -181,22 +181,42 @@
   (let ([recently-opened-files
          (preferences:get
           'framework:recently-opened-files/pos)])
-    (for ([item (send menu get-items)]) (send item delete))
-
-    (for ([recent-list-item recently-opened-files])
-      (let ([filename (car recent-list-item)])
+    (unless (menu-items-still-same? recently-opened-files menu)
+      (for ([item (send menu get-items)]) (send item delete))
+      
+      (for ([recent-list-item recently-opened-files])
         (new menu-item%
-          [parent menu]
-          [label (gui-utils:trim-string
-                  (regexp-replace* #rx"&" (path->string filename) "\\&\\&")
-                  200)]
-          [callback (λ (x y) (open-recent-list-item recent-list-item))])))
-    (new separator-menu-item% [parent menu])
-    (new menu-item%
-      [parent menu]
-      [label (string-constant show-recent-items-window-menu-item)]
-      [callback (λ (x y) (show-recent-items-window))])
+             [parent menu]
+             [label (recent-list-item->menu-label recent-list-item)]
+             [callback (λ (x y) (open-recent-list-item recent-list-item))]))
+      (new separator-menu-item% [parent menu])
+      (new menu-item%
+           [parent menu]
+           [label (string-constant show-recent-items-window-menu-item)]
+           [callback (λ (x y) (show-recent-items-window))]))
     (void)))
+
+(define (recent-list-item->menu-label recent-list-item)
+  (let ([filename (car recent-list-item)])
+    (gui-utils:trim-string
+     (regexp-replace* #rx"&" (path->string filename) "\\&\\&")
+     200)))
+
+;; this function must mimic what happens in install-recent-items
+;; it returns #t if all of the labels of menus are the same, or approximation to
+;; the menus actually being different
+(define (menu-items-still-same? recently-opened-files menu)
+  (let ([current-items 
+         (map (λ (x) (and (is-a? x labelled-menu-item<%>) (send x get-label)))
+              (send menu get-items))]
+        ;; the new-items variable shoudl match up to what install-recent-items actually does when it creates the menu 
+        [new-items 
+         (append 
+          (for/list ([recent-list-item recently-opened-files])
+            (recent-list-item->menu-label recent-list-item))
+          (list #f 
+                (string-constant show-recent-items-window-menu-item)))])
+    (equal? current-items new-items)))
 
 ;; open-recent-list-item : recent-list-item -> void
 (define (open-recent-list-item recent-list-item)
