@@ -1411,7 +1411,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/teaching-lang-save-file.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/teachpack.rkt" responsible (robby matthias) drdr:command-line (gracket *)
-"collects/tests/drracket/test-engine-test.rkt" drdr:command-line (gracket *)
+"collects/tests/drracket/test-engine-test.rkt" responsible (sperber) drdr:command-line (gracket *) drdr:timeout 240
 "collects/tests/drracket/time-keystrokes.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/errortrace/alert.rkt" responsible (eli)
 "collects/tests/framework" responsible (robby)
