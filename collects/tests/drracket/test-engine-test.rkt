@@ -12,7 +12,7 @@
 (define (set-language close-dialog?)
   (set-language-level! (language) close-dialog?))
 
-(define (common)
+(define (common-test-engine)
     (test-expression "(check-expect 1 1)"
 		     "The test passed!"
 		     #:repl-expected "Both tests passed!")
@@ -26,7 +26,7 @@
 		     #:check-failures-expected
 		     (list (make-check-expect-failure "1" "2" 1 0))))
 
-(define (common-*sl)
+(define (common-signatures-*sl)
   (test-expression "(: foo Integer) (define foo 5)"
 		   ""
 		   #:repl-expected "define: cannot redefine name: foo")
@@ -36,13 +36,13 @@
 		   #:signature-violations-expected
 		   (list (make-signature-violation "\"bar\"" 1 7))))
 
-(define (common-DMdA)
+(define (common-signatures-DMdA)
   (test-expression "(: foo integer) (define foo 5)"
 		   ""
-		   #:repl-expected "define: cannot redefine name: foo")
+		   #:repl-expected "define: Zweite Definition für denselben Namen")
   (test-expression "(: foo integer) (define foo \"bar\")"
 		   ""
-		   #:repl-expected "define: cannot redefine name: foo"
+		   #:repl-expected "define: Zweite Definition für denselben Namen"
 		   #:signature-violations-expected
 		   (list (make-signature-violation "\"bar\"" 1 7))))
 
@@ -65,8 +65,7 @@
 (define (beginner)
   (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-*sl)))
+    (common-test-engine)))
 
 
 ;                                                                            
@@ -89,8 +88,7 @@
   (parameterize ([language (list "How to Design Programs" 
                                  #rx"Beginning Student with List Abbreviations(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-*sl)))
+    (common-test-engine)))
 
 
 ;                                                                                          
@@ -112,8 +110,7 @@
 (define (intermediate)
   (parameterize ([language (list "How to Design Programs" #rx"Intermediate Student(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-*sl)))
+    (common-test-engine)))
 
 ;                                                                                    
 ;                                                                                    
@@ -136,8 +133,7 @@
   (parameterize ([language (list "How to Design Programs" 
                                  #rx"Intermediate Student with lambda(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-*sl)))
+    (common-test-engine)))
 
 
 ;                                                                           
@@ -160,33 +156,33 @@
 (define (advanced)
   (parameterize ([language (list "How to Design Programs" #rx"Advanced Student(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-*sl)))
+    (common-test-engine)
+    (common-signatures-*sl)))
 
 
 (define (DMdA-beginner)
   (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion - Anfänger(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-DMdA)))
+    (common-test-engine)
+    (common-signatures-DMdA)))
 
 (define (DMdA-vanilla)
   (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-DMdA)))
+    (common-test-engine)
+    (common-signatures-DMdA)))
 
 (define (DMdA-assignments)
   (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion mit Zuweisungen(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-DMdA)))
+    (common-test-engine)
+    (common-signatures-DMdA)))
 
 (define (DMdA-advanced)
   (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion - fortgeschritten(;|$)")])
     (prepare-for-test-expression)
-    (common)
-    (common-DMdA)))
+    (common-test-engine)
+    (common-signatures-DMdA)))
 
 (define (prepare-for-test-expression)
   (let ([drs (wait-for-drscheme-frame)])
