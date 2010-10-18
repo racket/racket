@@ -264,7 +264,7 @@
 
 (define-for-syntax (within-signature-syntax-error stx name)
   (raise-syntax-error #f
-		      "darf nur in Verträgen vorkommen"
+		      "darf nur in Signaturen vorkommen"
 		      name))
 
 ;; Expression -> Expression
