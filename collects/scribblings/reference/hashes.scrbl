@@ -435,7 +435,7 @@ Returns a @tech{fixnum}; for any two calls with @scheme[eqv?] values,
 the returned number is the same.}
 
 
-@defproc[(equal-hash-code [v any/c]) exact-integer?]{
+@defproc[(equal-hash-code [v any/c]) fixnum?]{
 
 Returns a @tech{fixnum}; for any two calls with @scheme[equal?] values,
 the returned number is the same. A hash code is computed even when
