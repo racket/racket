@@ -824,6 +824,8 @@
 									      #,@(map-with-index (lambda (i _)
 												   #`(recur (raw-generic-access r #,i)))
 												 fields))))
+                                                                (cons prop:custom-print-quotable
+                                                                      'never)
 								(cons prop:custom-write
                                                                       ;; Need a transparent-like printer, but hide auto field.
                                                                       ;; This simplest way to do that is to create an instance
