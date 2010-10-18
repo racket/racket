@@ -110,6 +110,7 @@
 (test-generator [(a b c)] (in-mlist (mlist 'a 'b 'c)))
 (test-generator [(a b c)] #(a b c))
 (test-generator [(a b c)] (in-vector #(a b c)))
+(test-generator [(a b c)] (in-vector (chaperone-vector #(a b c) (lambda (vec i val) val) (lambda (vec i val) val))))
 (test-generator [(b c d)] (in-vector #(a b c d) 1))
 (test-generator [(b c d)] (in-vector #(a b c d e) 1 4))
 (test-generator [(b d f)] (in-vector #(a b c d e f g h) 1 7 2))
