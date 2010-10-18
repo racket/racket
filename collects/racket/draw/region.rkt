@@ -8,7 +8,11 @@
          "dc-intf.ss"
          "point.ss")
 
-(provide region%)
+(provide region%
+
+         get-paths
+         set-paths!
+         internal-get-dc)
 
 (define-local-member-name
   get-paths
