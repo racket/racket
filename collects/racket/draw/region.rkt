@@ -264,18 +264,18 @@
         (set! paths (list (cons p 'any)))))
 
     (define/private (check-compatible r who)
-      (unless (eq? dc (send r internal-get-dc))
+      (unless (equal? dc (send r internal-get-dc))
         (raise-mismatch-error (method-name 'region% who)
                               "different built-in dc for given region: " 
                               r)))
 
     (def/public (intersect [region% r])
-      (check-compatible r (lambda () (method-name 'region% 'union)))
+      (check-compatible r 'union)
       (modifying 'intersect)
       (set! paths (append paths (send r get-paths))))
 
     (def/public (subtract [region% r])
-      (check-compatible r (lambda () (method-name 'region% 'subtract)))
+      (check-compatible r 'subtract)
       (unless (null? paths)
         (let ([add-paths (send r get-paths)])
           (unless (null? add-paths)
