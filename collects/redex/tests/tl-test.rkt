@@ -549,7 +549,8 @@
     (define-metafunction/extension f empty-language
       [(g any) 2])
     (test (term (g 0)) 2))
-  
+
+  #:
   (let ()
     (define-language L 
       (v 1 (v)))
