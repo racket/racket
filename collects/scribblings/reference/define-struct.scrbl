@@ -21,7 +21,7 @@
                               (code:line #:inspector inspector-expr)
                               (code:line #:auto-value auto-expr)
                               (code:line #:guard guard-expr)
-                              (code:line #:property prop-expr val-exr)
+                              (code:line #:property prop-expr val-expr)
                               (code:line #:transparent)
                               (code:line #:prefab)
                               (code:line #:constructor-name constructor-id)
