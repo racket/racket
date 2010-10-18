@@ -3983,7 +3983,6 @@ static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht,
   a[1] = o;
   if (notdisplay >= 3) {
     a[2] = scheme_bin_plus(pp->depth_delta, scheme_make_integer(notdisplay - 3));
-    pp->depth_delta = a[2];
   } else
     a[2] = (notdisplay ? scheme_true : scheme_false);
 
