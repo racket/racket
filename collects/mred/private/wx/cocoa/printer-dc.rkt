@@ -10,6 +10,7 @@
          racket/draw/ps-setup
          ffi/unsafe
          ffi/unsafe/objc
+         "../../lock.rkt"
          "dc.rkt"
          "cg.rkt"
          "utils.rkt"
@@ -19,10 +20,13 @@
          show-print-setup)
 
 (import-class NSPrintOperation NSView NSGraphicsContext
-              NSPrintInfo NSDictionary NSPageLayout)
+              NSPrintInfo NSDictionary NSPageLayout
+              NSNumber)
 
 (define NSPortraitOrientation  0)
 (define NSLandscapeOrientation 1)
+
+(define-cocoa NSPrintScalingFactor _id)
 
 (define-objc-class PrinterView NSView
   [wxb]
@@ -57,15 +61,33 @@
              (tell prev dictionary)
              (tell NSDictionary dictionary)))))
 
+(define (get-scaling-factor print-info)
+  ;; 10.6 only:
+  #;
+  (tell #:type _CGFloat print-info scalingFactor)
+  (atomically
+   (with-autorelease
+    (tell #:type _double
+          (tell (tell print-info dictionary) 
+                objectForKey: NSPrintScalingFactor)
+          doubleValue))))
 
 (define (install-pss-to-print-info pss print-info)
   (tellv print-info setOrientation: #:type _int (if (eq? (send pss get-orientation) 'landscape)
                                                     NSLandscapeOrientation
                                                     NSPortraitOrientation))
-  (tellv print-info setScalingFactor: #:type _CGFloat (let ([x (box 0)]
-                                                            [y (box 0)])
-                                                        (send pss get-scaling x y)
-                                                        (unbox y))))
+  (let ([scale (let ([x (box 0)]
+                     [y (box 0)])
+                 (send pss get-scaling x y)
+                 (unbox y))])
+    ;; 10.6 only:
+    #;
+    (tellv print-info setScalingFactor: #:type _CGFloat scale)
+    (atomically
+     (with-autorelease
+      (tellv (tell print-info dictionary) 
+             setObject: (tell NSNumber numberWithDouble: #:type _double scale)
+             forKey: NSPrintScalingFactor)))))
 
 (define NSOkButton 1)
 
@@ -84,7 +106,7 @@
             (send pss set-orientation (if (= o NSLandscapeOrientation)
                                           'landscape
                                           'portrait)))
-          (let ([s (tell #:type _CGFloat print-info scalingFactor)])
+          (let ([s (get-scaling-factor print-info)])
             (send pss set-scaling s s))
           #t)
         #f)))
@@ -113,7 +135,7 @@
 
     (define-values (page-width page-height page-scaling)
       (let ([s (NSRect-size (tell #:type _NSRect print-info imageablePageBounds))]
-            [scaling (tell #:type _CGFloat print-info scalingFactor)])
+            [scaling (get-scaling-factor print-info)])
         (values (NSSize-width s)
                 (NSSize-height s)
                 scaling)))
