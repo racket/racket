@@ -129,6 +129,7 @@
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
       (when wx
+        (send (send wx get-top-win) on-focus-child #t)
         (queue-window-event wx (lambda () (send wx on-set-focus))))
       #f)))
 (define-signal-handler connect-focus-out "focus-out-event"
@@ -136,6 +137,7 @@
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
       (when wx
+        (send (send wx get-top-win) on-focus-child #f)
         (queue-window-event wx (lambda () (send wx on-kill-focus))))
       #f)))
 (define (connect-focus gtk)

@@ -175,6 +175,7 @@
 
     (connect-delete gtk)
     (connect-configure gtk)
+    (connect-focus gtk)
 
     (define saved-title (or label ""))
     (define is-modified? #f)
@@ -353,6 +354,22 @@
 		    (g_list_insert l i -1))])
 	   (gtk_window_set_icon_list gtk l)
 	   (g_list_free l))))))
+    
+    (define child-has-focus? #f)
+    (define reported-activate #f)
+    (define queued-active? #f)
+    (define/public (on-focus-child on?)
+      ;; atomic mode
+      (set! child-has-focus? on?)
+      (unless queued-active?
+	(set! queued-active? #t)
+	(queue-window-event this
+			    (lambda ()
+			      (let ([on? child-has-focus?])
+				(set! queued-active? #f)
+				(unless (eq? on? reported-activate)
+				  (set! reported-activate on?)
+				  (on-activate on?)))))))
     
     (define/override (call-pre-on-event w e)
       (pre-on-event w e))

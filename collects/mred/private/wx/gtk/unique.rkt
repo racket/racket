@@ -3,6 +3,7 @@
          ffi/unsafe/define
          racket/draw/bstr
          net/base64
+	 "../common/queue.rkt"
          "types.rkt"
          "utils.rkt")
 
@@ -41,6 +42,16 @@
 (define-signal-handler connect-message-received "message-received"
   (_fun _UniqueApp _int _UniqueMessageData _uint -> _int)
   (lambda (app cmd data time)
+    (let ([d (unique_message_data_get data)])
+      (with-handlers ([exn:fail? (lambda (exn)
+				   (log-error 
+				    (format "error handling single-instance message: ~s"
+					    (exn-message exn))))])
+	(let* ([p (open-input-bytes d)]
+	       [vec (read p)])
+	  (for-each
+	   queue-file-event
+	   (map string->path (vector->list vec))))))
     UNIQUE_RESPONSE_OK))
 
 (define-mz gethostname (_fun _pointer _long -> _int)
@@ -65,7 +76,7 @@
               (format "~a~a~a" host path (version)))))))
 
 (define (encode s)
-  (regexp-replace* #rx"\r\n" (base64-encode (string->bytes/utf-8 s)) ""))
+  (regexp-replace* #rx"=|\r\n" (base64-encode (string->bytes/utf-8 s)) ""))
 
 (define (send-command-line app)
   (let ([msg (unique_message_data_new)]
@@ -83,4 +94,4 @@
         (when (= (send-command-line app)
                  UNIQUE_RESPONSE_OK)
           (exit 0)))
-      (connect-message-received app))))
+      (void (connect-message-received app)))))
