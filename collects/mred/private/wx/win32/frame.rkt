@@ -81,6 +81,19 @@
                                              WS_EX_TOOLWINDOW 
                                              WS_EX_TOPMOST))
 
+(define-cstruct _WINDOWPLACEMENT
+  ([length _UINT]
+   [flags _UINT]
+   [showCmd _UINT]
+   [ptMinPosition _POINT]
+   [ptMaxPosition _POINT]
+   [rcNormalPosition _RECT]))
+
+(define-user32 GetWindowPlacement (_wfun _HWND _WINDOWPLACEMENT-pointer -> (r : _BOOL)
+                                         -> (unless r (failed 'GetWindowPlacement))))
+
+(define-user32 IsIconic (_fun _HWND -> _BOOL))
+
 (defclass frame% window%
   (init parent
 	label
@@ -91,7 +104,6 @@
 	   is-shown?
 	   get-eventspace
            on-size
-           get-size
            pre-on-char pre-on-event
            reset-cursor-in-child)
 
@@ -139,6 +151,17 @@
   (define hwnd (get-hwnd))
   (SetLayeredWindowAttributes hwnd 0 255 LWA_ALPHA)
 
+  ;; record delta between size and client size
+  ;; for getting the client size when the frame 
+  ;; is iconized:
+  (define-values (client-dw client-dh)
+    (let ([w (box 0)] [h (box 0)]
+          [cw (box 0)] [ch (box 0)])
+      (get-size w h)
+      (get-client-size cw ch)
+      (values (- (unbox w) (unbox cw)) 
+              (- (unbox h) (unbox  ch)))))
+
   (define/public (is-dialog?) #f)
 
   (define/override (show on?)
@@ -176,13 +199,13 @@
 				 (when (on-close)
 				   (direct-show #f))))
       0]
-     [(= msg WM_SIZE)
-      (unless (= wParam SIZE_MINIMIZED)
-        (queue-window-event this (lambda () (on-size 0 0))))
+     [(and (= msg WM_SIZE)
+           (not (= wParam SIZE_MINIMIZED)))
+      (queue-window-event this (lambda () (on-size 0 0)))
       (stdret 0 1)]
      [(= msg WM_MOVE)
       (queue-window-event this (lambda () (on-size 0 0)))
-      0]
+      (stdret 0 1)]
      [(= msg WM_ACTIVATE)
       (let ([state (LOWORD wParam)]
             [minimized (HIWORD wParam)])
@@ -231,11 +254,6 @@
     (is-shown?))
   (define/override (is-enabled-to-root?)
     #t)
-
-  (define/override (get-x)
-    (RECT-left (GetWindowRect hwnd)))
-  (define/override (get-y)
-    (RECT-top (GetWindowRect hwnd)))
 
   (define/public (on-toolbar-click) (void))
   (define/public (on-menu-click) (void))
@@ -369,7 +387,67 @@
                              SW_RESTORE))
         (set! hidden-zoomed? (and on? #t))))
     
-  (def/public-unimplemented iconized?)
+  (define/public (iconized?)
+    (IsIconic hwnd))
+
+  (define/public (iconize on?)
+    (when (is-shown?)
+      (when (or on? (not (iconized?)))
+        (ShowWindow hwnd (if on? SW_MINIMIZE SW_RESTORE)))))
+
+  (define/private (get-placement)
+    (let ([wp (make-WINDOWPLACEMENT 
+               (ctype-sizeof _WINDOWPLACEMENT)
+               0
+               0
+               (make-POINT 0 0)
+               (make-POINT 0 0)
+               (make-RECT 0 0 0 0))])
+      (GetWindowPlacement hwnd wp)
+      wp))
+
+  (define/override (get-size w h)
+    (if (iconized?)
+        (let ([wp (get-placement)])
+          (let ([r (WINDOWPLACEMENT-rcNormalPosition wp)])
+            (set-box! w (- (RECT-right r) (RECT-left r)))
+            (set-box! h (- (RECT-bottom r) (RECT-top r)))))
+        (super get-size w h)))
+
+  (define/override (get-client-size w h)
+    (if (iconized?)
+        (begin
+          (get-size w h)
+          (set-box! w (max 1 (- (unbox w) client-dw)))
+          (set-box! h (max 1 (- (unbox h) client-dh))))
+        (super get-client-size w h)))
+
+  (define/override (get-x)
+    (if (iconized?)
+        (let ([wp (get-placement)])
+          (RECT-left (WINDOWPLACEMENT-rcNormalPosition wp)))
+        (RECT-left (GetWindowRect hwnd))))
+
+  (define/override (get-y)
+    (if (iconized?)
+        (let ([wp (get-placement)])
+          (RECT-top (WINDOWPLACEMENT-rcNormalPosition wp)))
+        (RECT-top (GetWindowRect hwnd))))
+
+  (define/override (get-width)
+    (if (iconized?)
+        (let ([w (box 0)])
+          (get-size w (box 0))
+          (unbox w))
+        (super get-width)))
+
+  (define/override (get-height)
+    (if (iconized?)
+        (let ([h (box 0)])
+          (get-size (box 0) h)
+          (unbox h))
+        (super get-height)))
+
   (def/public-unimplemented get-menu-bar)
 
   (define menu-bar #f)
@@ -414,7 +492,6 @@
          (set! big-hicon hicon)
          (SendMessageW hwnd WM_SETICON 1 (cast hicon _HICON _LPARAM))))))
 
-  (def/public-unimplemented iconize)
   (define/public (set-title s)
     (atomically
      (set! saved-title s)

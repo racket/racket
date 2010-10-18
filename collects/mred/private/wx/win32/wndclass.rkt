@@ -177,9 +177,7 @@
 				     #f
                                      (if controls-are-transparent?
                                          #f  ; transparent
-                                         (let ([p (ptr-add #f (+ COLOR_BTNFACE 1))])
-                                           (cpointer-push-tag! p 'HBRUSH)
-                                           p))
+                                         background-hbrush)
 				     #f ; menu
 				     "PLTTabPanel")))
 

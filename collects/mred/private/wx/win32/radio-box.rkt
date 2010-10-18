@@ -58,7 +58,7 @@
                    [bitmap? (and (label . is-a? . bitmap%)
                                  (send label ok?))]
                    [radio-hwnd 
-                    (CreateWindowExW WS_EX_TRANSPARENT
+                    (CreateWindowExW 0
                                      "PLTBUTTON"
                                      (if (string? label)
                                          label

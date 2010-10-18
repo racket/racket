@@ -269,11 +269,13 @@
   (define/public (paint-children) (void))
 
   (define/public (get-x)
-    (let ([r (GetWindowRect hwnd)])
-      (- (RECT-left r) (send parent get-x))))
+    (let ([r (GetWindowRect hwnd)]
+          [pr (GetWindowRect (send parent get-client-hwnd))])
+      (- (RECT-left r) (RECT-left pr))))
   (define/public (get-y)
-    (let ([r (GetWindowRect hwnd)])
-      (- (RECT-top r) (send parent get-y))))
+    (let ([r (GetWindowRect hwnd)]
+          [pr (GetWindowRect (send parent get-client-hwnd))])
+      (- (RECT-top r) (RECT-top pr))))
 
   (define/public (get-width)
     (let ([r (GetWindowRect hwnd)])
