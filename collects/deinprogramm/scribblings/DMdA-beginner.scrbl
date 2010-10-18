@@ -153,7 +153,7 @@ Diese Form liefert die Signatur mit der Notation @scheme[sig].
 Diese Form erklärt @scheme[sig] zur gültigen Signatur für @scheme[id].
 }
 
-@subsection{Eingebaute Verträge}
+@subsection{Eingebaute Signaturen}
 
 @defidform[number]{
 Signatur für beliebige Zahlen.
