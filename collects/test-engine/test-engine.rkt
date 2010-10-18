@@ -126,6 +126,7 @@
     (define display-rep #f)
     (define display-event-space #f)
     (define silent-mode #t)
+    (define test-run-since-last-display? #f)
 
     (super-instantiate ())
 
@@ -172,11 +173,13 @@
 		[(mixed-results)
 		 (display-results display-rep display-event-space)]))))
        (else
-	(display-disabled port))))
+	(display-disabled port)))
+      (set! test-run-since-last-display? #f))
 
     (define/private (display-success port event-space count)
-      (clear-results event-space)
-      (send test-display display-success-summary port count))
+      (when test-run-since-last-display?
+	(clear-results event-space)
+	(send test-display display-success-summary port count)))
 
     (define/public (display-results rep event-space)
       (cond
@@ -190,16 +193,19 @@
        [else (send test-display display-results)]))
 
     (define/public (display-untested port)
-      (unless silent-mode
-        (send test-display display-untested-summary port)))
+      (when (and test-run-since-last-display?
+		 (not silent-mode))
+	(send test-display display-untested-summary port)))
 
     (define/public (display-disabled port)
-      (send test-display display-disabled-summary port))
+      (when test-run-since-last-display?
+	(send test-display display-disabled-summary port)))
 
     (define/pubment (initialize-test test)
       (inner (void) initialize-test test))
 
     (define/pubment (run-test test)
+      (set! test-run-since-last-display? #t)
       (inner (void) run-test test))
 
     (define/pubment (run-testcase testcase)
