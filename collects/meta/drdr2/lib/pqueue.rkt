@@ -1,5 +1,8 @@
-#lang racket
-(require mzlib/os)
+#lang racket/base
+(require mzlib/os
+         racket/contract
+         racket/file
+         racket/match)
 
 (struct pqueue (dir))
 
