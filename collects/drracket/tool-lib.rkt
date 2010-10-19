@@ -31,7 +31,9 @@ all of the names in the tools library, for use defining keybindings
 
 (require/doc (for-label errortrace/errortrace-key
                         racket/pretty 
-                        mzlib/pconvert))
+                        mzlib/pconvert
+                        syntax/toplevel
+                        ))
 
 (define-values/invoke-unit/infer drracket@)
 (provide-signature-elements drracket:tool-cm^) ;; provide all of the classes & interfaces
@@ -134,18 +136,30 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:eval:set-basic-parameters
-  (-> (listof (is-a?/c snip-class%)) void?)
-  (snipclasses)
-  @{sets the parameters that are shared between the repl's
-    initialization and @racket[drracket:eval:build-user-eventspace/custodian]
+  (->* ((listof (is-a?/c snip-class%)))
+       (#:gui-modules? boolean?)
+       void?)
+  ((snipclasses)
+   ((gui-modules #t)))
+  @{Sets the parameters that are shared between the repl's
+    initialization and @racket[drracket:eval:build-user-eventspace/custodian].
     
     Specifically, it sets these parameters:
     @itemize[
              @item{@racket[current-namespace] has been set to a newly
                     created empty namespace. This namespace has the following modules 
-                    copied (with @racket[namespace-attach-module])
+                    shared (with @racket[namespace-attach-module])
                     from DrRacket's original namespace:
-                    @itemize[@item{@racket['mzscheme]}@item{@racket['mred]}]
+                    @itemize[@item{@racketmodname[racket/base]} 
+                              @item{@racketmodname['#%foreign]}
+                              @item{@racketmodname[mzlib/pconvert-prop]}
+                              @item{@racketmodname[planet/terse-info]}]
+                    If the @racket[gui-modules?] parameter is a true value, then
+                    these modules are also shared:
+                    @itemize[@item{@racketmodname[mred/mred]} 
+                              @item{@racketmodname[mrlib/cache-image-snip]}
+                              @item{@racketmodname[mrlib/image-core]}
+                              @item{@racketmodname[mrlib/matrix-snip]}]
                     }
               @item{@racket[read-curly-brace-as-paren]
                      is @racket[#t]; }
@@ -170,16 +184,18 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:eval:expand-program
-  (-> (or/c port? drracket:language:text/pos?)
-      drracket:language-configuration:language-settings?
-      boolean?
-      (-> void?)
-      (-> void?)
-      (-> (or/c eof-object? syntax? (cons/c string? any/c))
-          (-> any)
-          any)
-      void?)
-  (input language-settings eval-compile-time-part? init kill-termination iter)
+  (->* ((or/c port? drracket:language:text/pos?)
+        drracket:language-configuration:language-settings?
+        boolean?
+        (-> void?)
+        (-> void?)
+        (-> (or/c eof-object? syntax? (cons/c string? any/c))
+            (-> any)
+            any))
+       (#:gui-modules? boolean?)
+       void?)
+  ((input language-settings eval-compile-time-part? init kill-termination iter)
+   ((gui-modules? #t)))
   
   @{Use this function to expand the contents of the definitions
     window for use with external program processing tools.
@@ -187,8 +203,8 @@ all of the names in the tools library, for use defining keybindings
     This function uses
     @racket[drracket:eval:build-user-eventspace/custodian]
     to build the user's environment.
-    The arguments @racket[language-settings], @racket[init], and
-    @racket[kill-termination] are passed to
+    The arguments @racket[language-settings], @racket[init], 
+    @racket[kill-termination], and @racket[gui-modules?] are passed to
     @racket[drracket:eval:build-user-eventspace/custodian].
     
     The @racket[input] argument specifies the source of the program.
@@ -234,19 +250,18 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:eval:traverse-program/multiple
-  (drracket:language-configuration:language-settings?
-   (-> void?)
-   (-> void?)
-   . -> .
-   ((or/c port? drracket:language:text/pos?)
-    ((or/c eof-object? syntax? (cons/c string? any/c))
-     (-> any)
-     . -> .
-     any)
-    boolean?
-    . -> .
-    void?))
-  (language-settings init kill-termination)
+  (->* (drracket:language-configuration:language-settings?
+        (-> void?)
+        (-> void?))
+       (#:gui-modules? boolean?)
+       (-> (or/c port? drracket:language:text/pos?)
+           (-> (or/c eof-object? syntax? (cons/c string? any/c))
+               (-> any)
+               any)
+           boolean?
+           void?))
+  ((language-settings init kill-termination)
+   ((gui-modules #t)))
   
   @{This function is similar to
     @racket[drracket:eval:expand-program/multiple]
@@ -257,17 +272,19 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:eval:expand-program/multiple
-  (-> drracket:language-configuration:language-settings?
-      boolean?
-      (-> void?)
-      (-> void?)
-      (-> (or/c port? drracket:language:text/pos?)
-          (-> (or/c eof-object? syntax? (cons/c string? any/c))
-              (-> any)
-              any)
-          boolean?
-          void?))
-  (language-settings eval-compile-time-part? init kill-termination)
+  (->* (drracket:language-configuration:language-settings?
+        boolean?
+        (-> void?)
+        (-> void?))
+       (#:gui-modules? boolean?)
+       (-> (or/c port? drracket:language:text/pos?)
+           (-> (or/c eof-object? syntax? (cons/c string? any/c))
+               (-> any)
+               any)
+           boolean?
+           void?))
+  ((language-settings eval-compile-time-part? init kill-termination)
+   ((gui-modules? #t)))
   
   @{This function is just like
     @racket[drracket:eval:expand-program]
@@ -289,9 +306,10 @@ all of the names in the tools library, for use defining keybindings
   (->* (drracket:language-configuration:language-settings?
         (-> void?)
         (-> void?))
-       ()
+       (#:gui-modules? boolean?)
        (values eventspace? custodian?))
-  ((language-settings init kill-termination) ())
+  ((language-settings init kill-termination) 
+   ((gui-modules? #t)))
   
   @{This function creates a custodian and an eventspace (on the
     new custodian) to expand the user's program. It does not
@@ -305,7 +323,8 @@ all of the names in the tools library, for use defining keybindings
              @item{ @racket[current-custodian] is set to a new custodian.
                     }@item{
                            In addition, it calls
-                           @racket[drracket:eval:set-basic-parameters].
+                           @racket[drracket:eval:set-basic-parameters],
+                           passing the @racket[#:gui-modules?] parameter along.
                            }]
     
     The @racket[language-settings] argument is the current

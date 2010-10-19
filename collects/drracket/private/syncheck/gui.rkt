@@ -1331,6 +1331,7 @@ If the namespace does not, they are colored the unbound color.
                           (send (send the-tab get-defs) syncheck:init-arrows)
                           
                           (drracket:eval:expand-program
+                           #:gui-modules? #f
                            (drracket:language:make-text/pos definitions-text 0 (send definitions-text last-position))
                            (send definitions-text get-next-settings)
                            #t
