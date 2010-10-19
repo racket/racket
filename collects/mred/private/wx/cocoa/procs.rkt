@@ -44,6 +44,7 @@
  file-creator-and-type
  run-printout
  get-double-click-time
+ get-control-font-face
  get-control-font-size
  get-control-font-size-in-pixels?
  cancel-quit
@@ -89,6 +90,7 @@
 
 (define (get-double-click-time)
   500)
+(define (get-control-font-face) "Lucida Grande")
 (define (get-control-font-size) 13)
 (define (get-control-font-size-in-pixels?) #f)
 (define (cancel-quit) (void))

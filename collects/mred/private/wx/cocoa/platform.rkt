@@ -65,6 +65,7 @@
    flush-display
    fill-private-color
    cancel-quit
+   get-control-font-face
    get-control-font-size
    get-control-font-size-in-pixels?
    get-double-click-time

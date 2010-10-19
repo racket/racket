@@ -37,6 +37,7 @@
  file-creator-and-type
  run-printout
  get-double-click-time
+ get-control-font-face
  get-control-font-size
  get-control-font-size-in-pixels?
  cancel-quit
@@ -81,9 +82,42 @@
 
 (define run-printout (make-run-printout printer-dc%))
 
-(define (get-double-click-time) 250)
-(define (get-control-font-size) 10) ;; FIXME
-(define (get-control-font-size-in-pixels?) #f) ;; FIXME
+(define _GtkSettings (_cpointer 'GtkSettings))
+(define-gtk gtk_settings_get_default (_fun -> _GtkSettings))
+(define-gobj g_object_get/int (_fun _GtkSettings _string (r : (_ptr o _int)) (_pointer = #f) 
+				    -> _void
+				    -> r)
+  #:c-id g_object_get)
+(define-gobj g_object_get/string (_fun _GtkSettings _string (r : (_ptr o _pointer)) (_pointer = #f)
+				       -> _void
+				       -> r)
+  #:c-id g_object_get)
+
+(define (get-double-click-time)
+  (let ([s (gtk_settings_get_default)])
+    (if s
+	(g_object_get/int s "gtk-double-click-time")
+	250)))
+(define (get-control-font proc default)
+  (or
+   (let ([s (gtk_settings_get_default)])
+     (and s
+	  (let ([f (g_object_get/string s "gtk-font-name")])
+	    (and f
+		 (begin0
+		  (cond
+		   [(regexp-match #rx"^(.*) ([0-9]+)$" (cast f _pointer _string))
+		    => (lambda (m) (proc (cdr m)))]
+		   [else #f])
+		  (g_free f))))))
+   default))
+(define (get-control-font-size)
+  (get-control-font (lambda (m) (string->number (cadr m)))
+		    10))
+(define (get-control-font-face)
+  (get-control-font (lambda (m) (car m))
+		    "Sans"))
+(define (get-control-font-size-in-pixels?) #f)
 
 (define (get-display-depth) 32)
 
