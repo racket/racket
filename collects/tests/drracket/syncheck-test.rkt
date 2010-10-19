@@ -898,10 +898,12 @@ trigger runtime errors in check syntax.
       (when (send defs in-edit-sequence?)
         (error 'syncheck-test.rkt "still in edit sequence for ~s" input))
       
-      (when (send drs syncheck:error-report-visible?)
-        (fprintf (current-error-port)
-                 "FAILED ~s\n   error report window is visible\n"
-                 input))
+      (let ([err (send drs syncheck:get-error-report-contents)]) 
+        (when err
+          (fprintf (current-error-port)
+                   "FAILED ~s\n   error report window is visible:\n   ~a\n"
+                   input
+                   err)))
       
       ;; need to check for syntax error here
       (let ([got (get-annotated-output drs)])

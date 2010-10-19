@@ -1022,7 +1022,8 @@ If the namespace does not, they are colored the unbound color.
     (define syncheck-frame<%>
       (interface ()
         syncheck:button-callback
-        syncheck:error-report-visible?))
+        syncheck:error-report-visible?
+        syncheck:get-error-report-contents))
     
     (define tab-mixin
       
@@ -1153,6 +1154,10 @@ If the namespace does not, they are colored the unbound color.
         (define/public-final (syncheck:error-report-visible?)
           (and (is-a? report-error-parent-panel area-container<%>)
                (member report-error-panel (send report-error-parent-panel get-children))))
+        
+        (define/public-final (syncheck:get-error-report-contents)
+          (and (syncheck:error-report-visible?)
+               (send (send report-error-canvas get-editor) get-text)))
         
         (define/public (hide-error-report) 
           (when (syncheck:error-report-visible?)
