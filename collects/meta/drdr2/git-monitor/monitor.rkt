@@ -16,7 +16,7 @@
    #:argv argv
    #:once-each
    [("--interval") num "Monitoring interval" (monitoring-interval (string->number num))]
-   [("--repo") dir "Local Git repository" (repo dir)]
+   [("--repo") dir "Local Git repository" (repo (string->path dir))]
    [("--pushes") dir "Persistent queue of pushes" (push-queue dir)]
    [("--db") spec "Specification of database" (the-db spec)])
   ; Setup the queue to receive push information
@@ -38,9 +38,9 @@
        ;  Add it to the queue
        (pqueue-enqueue! pushes push-info)
        ; Add it to the long term database
-       (db-set! db "push-info" new push-info)
+       (db-set! db push-info "push-info" new)
        ; Update the latest push in the short term database
-       (db-set! db "monitor" "last-push" new)))
+       (db-set! db new "monitor" "last-push")))
     ; Wait
     (sleep (monitoring-interval))
     (loop))
