@@ -101,7 +101,7 @@
   ; XXX commandline
   (define port 4532)
   (define *password* "foo")
-  ; XXX
+  ; XXX make web server to view recent things
   (define (log! fmt . vals)
     (apply printf fmt vals))
   ; XXX use ssl
