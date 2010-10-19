@@ -106,7 +106,7 @@
                                            #'test-engine))))))))
              'stepper-skipto
              (append skipto/third ;; let
-                     skipto/third skipto/second ;; unless (it expands into a begin)
+                     skipto/third skipto/third ;; unless (it expands into (if (let-values () ...))
                      skipto/cdr skipto/third ;; application of insert-test
                      '(syntax-e cdr cdr syntax-e car) ;; lambda
                      )))
