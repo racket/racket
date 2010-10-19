@@ -154,7 +154,9 @@ Returns @scheme[#f] if the bitmap is monochrome, @scheme[#t] otherwise.
                       [bg-color (or/c (is-a?/c color%) false/c) #f])
            boolean?]{
 
-Loads a bitmap from a file format that read from @racket[in].
+Loads a bitmap from a file format that read from @racket[in], unless
+ the bitmap was produced by @racket[make-screen-bitmap] or 
+ @xmethod[canvas% make-bitmap] (in which case @|MismatchExn|).
  If the bitmap is in use by a
  @scheme[bitmap-dc%] object or a control, the image data is not
  loaded. The bitmap changes its size and depth to match that of 

@@ -26,9 +26,17 @@
     (super-make-object (make-alternate-bitmap-kind w h))
 
     (define s
-      (cairo_quartz_surface_create CAIRO_FORMAT_ARGB32
-                                   w
-                                   h))
+      (let ([s (cairo_quartz_surface_create CAIRO_FORMAT_ARGB32
+                                            w
+                                            h)])
+        ;; initialize bitmap to empty - needed?
+        #;
+        (let ([cr (cairo_create s)])
+          (cairo_set_operator cr CAIRO_OPERATOR_CLEAR)
+          (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
+          (cairo_paint cr)
+          (cairo_destroy cr))
+        s))
 
     (define/override (ok?) #t)
     (define/override (is-color?) #t)

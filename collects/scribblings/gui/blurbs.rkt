@@ -4,7 +4,8 @@
            scribble/manual
            scribble/scheme
            scribble/decode
-           (for-label scheme/gui/base)
+           (for-label scheme/gui/base
+                      scheme/base)
            (for-syntax scheme/base))
 
   (provide (except-out (all-defined-out) p define-inline))

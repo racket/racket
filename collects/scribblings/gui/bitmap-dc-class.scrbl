@@ -98,12 +98,6 @@ Fills @scheme[color] with the color of the current pixel at position
 successfully obtained, the return value is @scheme[#t], otherwise the
 result is @scheme[#f].
 
-Under X, interleaving drawing commands with @method[bitmap-dc%
-get-pixel] calls (for the same @scheme[bitmap-dc%] object) incurs a
-substantial performance penalty, except for interleaved calls to
-@method[bitmap-dc% set-pixel], @method[bitmap-dc% set-argb-pixels],
-and @method[bitmap-dc% get-argb-pixels].
-
 }
 
 @defmethod[(set-argb-pixels [x real?]
@@ -115,10 +109,9 @@ and @method[bitmap-dc% get-argb-pixels].
            void?]{
 
 
-Sets a rectangle of pixels in the bitmap, subject to the same
- rules and performance characteristics of 
-@method[bitmap-dc% set-pixel], except that the block set is likely to be faster than the
- sequence of individual sets.
+Sets a rectangle of pixels in the bitmap, unless
+ the DC's current bitmap was produced by @racket[make-screen-bitmap] or 
+ @xmethod[canvas% make-bitmap] (in which case @|MismatchExn|).
 
 The pixel RGB values are taken from @scheme[pixels]. The first byte
  represents an alpha value, the second byte represents a red value to
@@ -129,10 +122,11 @@ The pixel RGB values are taken from @scheme[pixels]. The first byte
  order, left to right then top to bottom.
 
 If @scheme[alpha?] is false, then the alpha value for each pixel is
- ignored. If @scheme[alpha?] is true, then each
+ used only if the DC's current bitmap has an alpha channel. If @scheme[alpha?] is true, then each
  pixel is set based @italic{only} on the alpha value, but inverted to serve
- as a mask. Thus, the same
- @scheme[pixels] byte string is in general used with two bitmaps, one
+ as a mask. Thus, when working with bitmaps that have an associated mask
+ bitmap instead of an alpha channel, the same
+ @scheme[pixels] byte string is used with two bitmaps: one
  (the main image) for the pixel values and one (the mask) for the
  alpha values.
 

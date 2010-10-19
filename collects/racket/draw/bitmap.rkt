@@ -210,7 +210,7 @@
       #f)
 
     (define/private (check-ok who)
-      (unless s
+      (unless (ok?)
         (error (method-name 'bitmap% who) "bitmap is not ok")))
 
     (define locked 0)
@@ -409,12 +409,31 @@
                       (unsafe-bytes-set! dest (fx+ pos B) (premult al (unsafe-bytes-ref r (fx+ spos 2))))))))))
         (cairo_surface_mark_dirty s)))
 
+    (define/private (call-with-alt-bitmap x y w h proc)
+      (let* ([bm (make-object bitmap% w h #f #t)]
+             [cr (cairo_create (send bm get-cairo-surface))])
+        (let ([p (cairo_get_source cr)])
+          (cairo_pattern_reference p)
+          (cairo_set_source_surface cr (get-cairo-surface) (- x) (- y))
+          (cairo_new_path cr)
+          (cairo_rectangle cr 0 0 w h)
+          (cairo_fill cr)
+          (cairo_set_source cr p)
+          (cairo_pattern_destroy p))
+        (cairo_destroy cr)
+        (proc bm)
+        (send bm release-bitmap-storage)))
+
     (def/public (save-file [(make-alts path-string? output-port?) out]
                            [save-kind-symbol? [kind 'unknown]]
                            [quality-integer? [quality 75]])
-      (check-alternate 'save-file)
       (check-ok 'save-file)
-      (do-save-file out kind quality))
+      (if alt?
+          (call-with-alt-bitmap 
+           0 0 width height
+           (lambda (bm)
+             (send bm save-file out kind quality)))
+          (do-save-file out kind quality)))
 
     (define/private (do-save-file out kind quality)
       (if (path-string? out)
@@ -534,7 +553,13 @@
         (raise-mismatch-error (method-name 'bitmap% 'get-argb-pixels)
                               "byte string is too short: "
                               bstr))
-      (check-alternate 'get-argb-pixels)
+      (if alt?
+          (call-with-alt-bitmap
+           x y w h 
+           (lambda (bm) (send bm get-argb-pixels 0 0 w h bstr get-alpha?)))
+          (do-get-argb-pixels x y w h bstr get-alpha?)))
+
+    (define/private (do-get-argb-pixels x y w h bstr get-alpha?)
       ;; Fill range that is beyond edge of picture:
       (if get-alpha?
           (for* ([i (in-range width (+ x w))]
