@@ -10,6 +10,7 @@
          "types.rkt"
          "const.rkt"
          "window.rkt"
+         "font.rkt"
          "../common/event.rkt")
 (unsafe!)
 (objc-unsafe!)
@@ -27,8 +28,12 @@
   [-a _id (preparedCellAtColumn: [_NSInteger column] row: [_NSInteger row])
       (let ([wx (->wx wxb)])
         (tell
-         (tell (tell NSCell alloc) initTextCell: #:type _NSString 
-               (if wx (send wx get-row row) "???"))
+         (let ([c (tell (tell NSCell alloc) initTextCell: #:type _NSString 
+                        (if wx (send wx get-row row) "???"))]
+               [font (send wx get-cell-font)])
+           (when font
+             (tellv c setFont: font))
+           c)
          autorelease))]
   [-a _void (doubleClicked: [_id sender])
       (queue-window*-event wxb (lambda (wx) (send wx clicked 'list-box-dclick)))]
@@ -105,6 +110,10 @@
   (tellv content-cocoa setDoubleAction: #:type _SEL (selector doubleClicked:))
 
   (def/public-unimplemented get-label-font)
+
+  (define cell-font (and font (font->NSFont font)))
+  (define/public (get-cell-font)
+    cell-font)
 
   (define/public (get-selection)
     (tell #:type _NSInteger content-cocoa selectedRow))

@@ -50,6 +50,10 @@
 			   20 'decorative 
 			   'normal 'bold
 			   #f))
+(define italic-font (send the-font-list find-or-create-font
+                          13 'roman
+                          'italic 'normal
+                          #f))
 (define ($ font) (or font normal-control-font))
 
 (define (make-h&s cp f)
@@ -2253,7 +2257,7 @@
       (make-radio-box "Stretchiness" '("Normal" "All Stretchy")
 		      p1 void))
     (define font-radio
-      (make-radio-box "Label Font" '("Normal" "Small" "Tiny" "Big")
+      (make-radio-box "Label Font" '("Normal" "Small" "Tiny" "Big" "Italic")
 		      p1 void))
     (define enabled-radio
       (make-radio-box "Initially" '("Enabled" "Disabled")
@@ -2276,7 +2280,8 @@
 		      (list-ref (list #f
 				      small-control-font
 				      tiny-control-font
-				      special-font)
+				      special-font
+                                      italic-font)
 				(send font-radio get-selection))
 		      (positive? (send enabled-radio get-selection))
 		      (positive? (send selection-radio get-selection))

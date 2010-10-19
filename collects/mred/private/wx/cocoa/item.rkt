@@ -2,10 +2,11 @@
 (require scheme/class
          scheme/foreign
          ffi/objc
-          "../../syntax.rkt"
+         "../../syntax.rkt"
          "window.rkt"
          "const.rkt"
-         "types.rkt")
+         "types.rkt"
+         "font.rkt")
 (unsafe!)
 (objc-unsafe!)
 
@@ -17,7 +18,9 @@
                        systemFontOfSize: #:type _CGFloat 13))
 
 (define (install-control-font cocoa font)
-  (tellv cocoa setFont: sys-font))
+  (if font
+      (tellv cocoa setFont: (font->NSFont font))
+      (tellv cocoa setFont: sys-font)))
 
 (defclass item% window%
   (inherit get-cocoa)

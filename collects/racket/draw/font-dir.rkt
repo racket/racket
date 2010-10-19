@@ -49,9 +49,14 @@
     (define/private (default-font s)
       (case s
         [(modern) "Monospace"]
-        [(roman) "Serif"]
+        [(roman) (case (system-type)
+                   [(windows) "Times New Roman"]
+                   [(macosx) "Times"]
+                   [else "Serif"])]
         [(decorative swiss) "Helvetica"]
-        [(script) "Chancery"]
+        [(script) (case (system-type)
+                    [(macosx) "Apple Chancery"]
+                    [else "Chancery"])]
         [(symbol) "Symbol"]
         [else (case (system-type)
 		[(windows) "Tahoma"]
