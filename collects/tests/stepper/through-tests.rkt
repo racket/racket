@@ -14,7 +14,7 @@
          )
 
 
-(provide run-test run-tests run-all-tests run-all-tests-except)
+(provide run-test run-tests/s run-all-tests run-all-tests-except)
 
 (define list-of-tests null)
 
@@ -57,7 +57,7 @@
         (run-one-test/helper maybe-test)
         (error 'run-test "test not found: ~.s" name))))
 
-(define (run-tests names)
+(define (run-tests/s names)
   (ormap/no-shortcut run-test names))
 
 
@@ -68,12 +68,7 @@
 (define (andmap/no-shortcut f args)
   (foldl (lambda (a b) (and a b)) #t (map f args)))
 
-(t 'mz1 m:mz
-   (for-each (lambda (x) x) '(1 2 3))
-   :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
-   :: ... -> (... {2} ...)
-   :: ... -> (... {3} ...)
-   :: ... -> {(void)})
+
 
 ;; new test case language:
 ;; an expected is (listof step)
@@ -105,17 +100,12 @@
 ;; * a `finished-stepping' is added if no error was specified
 ;; * a `{...}' is replaced with `(hilite ...)'
 
-(t 'mz-app m:mz
-   (+ 3 4)
-   :: {(+ 3 4)} -> {7})
-
-(t 'mz-app2 m:mz
-   ((lambda (x) (+ x 3)) 4)
-   :: {((lambda (x) (+ x 3)) 4)} -> {(+ 4 3)} -> {7})
-
-(t 'mz-if m:mz
-   (if 3 4 5)
-   :: {(if 3 4 5)} -> {4})
+ (t 'mz1 m:mz
+   (for-each (lambda (x) x) '(1 2 3))
+   :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
+   :: ... -> (... {2} ...)
+   :: ... -> (... {3} ...)
+   :: ... -> {(void)})
 
 (t 'simple-if m:upto-int/lam
    (if true false true)
@@ -126,44 +116,6 @@
    :: (if {(if true false true)} false true) -> (if {false} false true)
    :: {(if false false true)} -> {true})
 
-(t 'direct-app m:mz
-   ((lambda (x) x) 3)
-   :: {((lambda (x) x) 3)} -> {3})
-
-;   (m:mz "((lambda (x) x) (begin (+ 3 4) (+ 4 5)))"
-;		      `((before-after ((begin (hilite (+ 3 4)) (+ 4 5)))
-;				      ((begin (hilite 7) (+ 4 5))))
-;			(before-after ((hilite (begin 7 (+ 4 5)))) ((hilite (+ 4 5))))
-;                        (before-after ((hilite (+ 4 5))) ((hilite 9)))
-;			(finished-stepping)))
-
-(t 'curried m:mz
-   ((lambda (a) (lambda (b) (+ a b))) 14)
-   :: {((lambda (a) (lambda (b) (+ a b))) 14)}
-   -> {(lambda (b) (+ 14 b))})
-
-(t 'case-lambda m:mz
-   ((case-lambda ((a) 3) ((b c) (+ b c))) 5 6)
-   :: {((case-lambda ((a) 3) ((b c) (+ b c))) 5 6)}
-   -> {(+ 5 6)}
-   -> {11})
-
-;; not really a part of base mzscheme anymore
-#;(t '2armed-if m:mz
-     (if 3 4)
-     :: {(if 3 4)} -> {4})
-
-;(m:mz "((call-with-current-continuation call-with-current-continuation) (call-with-current-continuation call-with-current-continuation))"
-;                  `((before-after (((hilite ,h-p) (call-with-current-continuation call-with-current-continuation))) ((call-with-current-continuation call-with-current-continuation))
-;                    (((hilite ,h-p) (call-with-current-continuation call-with-current-continuation))) ((lambda args ...)))
-;                    (before-after (((lambda args ...) (hilite ,h-p))) ((call-with-current-continuation call-with-current-continuation))
-;                    (((lambda args ...) (hilite ,h-p))) ((lambda args ...)))))
-
-;(m:mz '(begin (define g 3) g)
-;                  `((before-after ((hilite ,h-p)) (g)
-;                    ((hilite ,h-p)) 3)))
-
-;(syntax-object->datum (cadr (annotate-expr test2 'mzscheme 0 (lambda (x) x))))
 
 (t 'top-def m:upto-int/lam
    (define a (+ 3 4))
@@ -1464,8 +1416,69 @@
      -> (define (f x) (local ((define-struct a (b c))) x)) {(define-struct a_1 (b c))} {1})
   
   
-
+  ;; oh dear heavens; putting these tests early on seems to "mess up" the namespace
+  ;; so that test~object can't be seen by the teaching-language tests.  This is almost
+  ;; certainly the stepper test framework doing something stupid.
   
+  #;(t 'mz1 m:mz
+   (for-each (lambda (x) x) '(1 2 3))
+   :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
+   :: ... -> (... {2} ...)
+   :: ... -> (... {3} ...)
+   :: ... -> {(void)})
+
+(t 'mz-app m:mz
+   (+ 3 4)
+   :: {(+ 3 4)} -> {7})
+
+(t 'mz-app2 m:mz
+   ((lambda (x) (+ x 3)) 4)
+   :: {((lambda (x) (+ x 3)) 4)} -> {(+ 4 3)} -> {7})
+
+(t 'mz-if m:mz
+   (if 3 4 5)
+   :: {(if 3 4 5)} -> {4})
+
+(t 'direct-app m:mz
+   ((lambda (x) x) 3)
+   :: {((lambda (x) x) 3)} -> {3})
+
+;   (m:mz "((lambda (x) x) (begin (+ 3 4) (+ 4 5)))"
+;		      `((before-after ((begin (hilite (+ 3 4)) (+ 4 5)))
+;				      ((begin (hilite 7) (+ 4 5))))
+;			(before-after ((hilite (begin 7 (+ 4 5)))) ((hilite (+ 4 5))))
+;                        (before-after ((hilite (+ 4 5))) ((hilite 9)))
+;			(finished-stepping)))
+
+(t 'curried m:mz
+   ((lambda (a) (lambda (b) (+ a b))) 14)
+   :: {((lambda (a) (lambda (b) (+ a b))) 14)}
+   -> {(lambda (b) (+ 14 b))})
+
+(t 'case-lambda m:mz
+   ((case-lambda ((a) 3) ((b c) (+ b c))) 5 6)
+   :: {((case-lambda ((a) 3) ((b c) (+ b c))) 5 6)}
+   -> {(+ 5 6)}
+   -> {11})
+
+;; not really a part of base mzscheme anymore
+#;(t '2armed-if m:mz
+     (if 3 4)
+     :: {(if 3 4)} -> {4})
+
+;(m:mz "((call-with-current-continuation call-with-current-continuation) (call-with-current-continuation call-with-current-continuation))"
+;                  `((before-after (((hilite ,h-p) (call-with-current-continuation call-with-current-continuation))) ((call-with-current-continuation call-with-current-continuation))
+;                    (((hilite ,h-p) (call-with-current-continuation call-with-current-continuation))) ((lambda args ...)))
+;                    (before-after (((lambda args ...) (hilite ,h-p))) ((call-with-current-continuation call-with-current-continuation))
+;                    (((lambda args ...) (hilite ,h-p))) ((lambda args ...)))))
+
+;(m:mz '(begin (define g 3) g)
+;                  `((before-after ((hilite ,h-p)) (g)
+;                    ((hilite ,h-p)) 3)))
+
+;(syntax-object->datum (cadr (annotate-expr test2 'mzscheme 0 (lambda (x) x))))
+
+    
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
     (parameterize (#;[disable-stepper-error-handling #t]
@@ -1474,8 +1487,8 @@
                    #;[show-all-steps #t])
       #;(run-tests '(check-expect forward-ref check-within check-within-bad check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
-      (run-tests '(local-struct/i local-struct/ilam))
-      #;(run-all-tests)))
+      (run-all-tests)
+      #;(run-test 'simple-if)))
   
   
 
