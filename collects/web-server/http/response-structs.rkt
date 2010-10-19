@@ -77,10 +77,11 @@
          #:message [message #"Okay"]
          #:seconds [seconds (current-seconds)]
          #:mime-type [mime-type TEXT/HTML-MIME-TYPE]
-         #:headers [hdrs empty])
+         #:headers [hdrs empty]
+         #:preamble [preamble #""])
   (make-response/full 
    code message seconds mime-type hdrs
-   (list (string->bytes/utf-8 (xexpr->string xexpr)))))
+   (list preamble (string->bytes/utf-8 (xexpr->string xexpr)))))
 
 (provide/contract
  [struct response/basic
@@ -106,7 +107,7 @@
  [response/c contract?]
  [make-xexpr-response 
   ((pretty-xexpr/c)
-   (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:headers (listof header?))
+   (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:headers (listof header?) #:preamble bytes?)
    . ->* . response/full?)]
  [normalize-response ((response/c) (boolean?) . ->* . (or/c response/full? response/incremental?))]
  [TEXT/HTML-MIME-TYPE bytes?])

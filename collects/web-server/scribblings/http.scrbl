@@ -237,13 +237,14 @@ Here is an example typical of what you will find in many applications:
                               [#:message message bytes? #"Okay"]
                               [#:seconds seconds number? (current-seconds)]
                               [#:mime-type mime-type bytes? TEXT/HTML-MIME-TYPE]
-                              [#:headers headers (listof header?) empty])
+                              [#:headers headers (listof header?) empty]
+                              [#:preamble preamble bytes? #""])
          response/full?]{
  Equivalent to
  @racketblock[
  (make-response/full 
   code message seconds mime-type headers
-  (list (string->bytes/utf-8 (xexpr->string xexpr))))
+  (list preamble (string->bytes/utf-8 (xexpr->string xexpr))))
  ]}
                          
 @defproc[(normalize-response [response response/c] [close? boolean? #f])
