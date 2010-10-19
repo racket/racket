@@ -40,11 +40,8 @@ before the pattern compiler is invoked.
 (define-values (make-bindings bindings-table bindings?)
   (let () 
     (define-struct bindings (table) #:inspector (make-inspector)) ;; for testing, add inspector
-    (values (lambda (table)
-              (unless (and (list? table)
-                           (andmap (λ (x) (or (bind? x) (mismatch-bind? x))) table))
-                (error 'make-bindings "expected <(listof (union rib mismatch-rib))>, got ~e" table))
-              (make-bindings table))
+    (define mt-bindings (make-bindings null))
+    (values (lambda (table) (if (null? table) mt-bindings (make-bindings table)))
             bindings-table
             bindings?)))
 
@@ -1190,17 +1187,11 @@ before the pattern compiler is invoked.
         [raw-match (match-list/raw patterns exp hole-info)])
     
     (and (not (null? raw-match))
-         
-         (let* (;; combined-matches : (listof (listof mtch))
-                ;; a list of complete possibilities for matches 
-                ;; (analagous to multiple matches of a single non-terminal)
-                [combined-matches (map combine-matches raw-match)]
-                
-                ;; flattened-matches : (union #f (listof bindings))
-                [flattened-matches (if (null? combined-matches)
-                                       #f
-                                       (apply append combined-matches))])
-           flattened-matches))))
+         (let loop ([raw-match raw-match])
+	   (cond
+	    [(null? raw-match) '()]
+	    [else (append (combine-matches (car raw-match))
+			  (loop (cdr raw-match)))])))))
 
 ;; match-list/raw : (listof (union repeat compiled-pattern)) 
 ;;                  sexp
@@ -1487,8 +1478,13 @@ before the pattern compiler is invoked.
 (define (combine-matches matchess)
   (let loop ([matchess matchess])
     (cond
-      [(null? matchess) (list (make-mtch (make-bindings null) (build-flat-context '()) none))]
+      [(null? matchess) combine-matches-base-case]
       [else (combine-pair (car matchess) (loop (cdr matchess)))])))
+
+;; this 'inlines' build-flat-context so that the definition can remain here, near where it is used.
+(define combine-matches-base-case (list (make-mtch (make-bindings null)
+						   '() #;(build-flat-context '()) 
+						   none)))
 
 ;; combine-pair : (listof mtch) (listof mtch) -> (listof mtch)
 (define (combine-pair fst snd)
