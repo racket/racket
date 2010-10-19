@@ -142,6 +142,7 @@
                    ((current-module-name-resolver) '(lib "deinprogramm/signature/signature.ss") #f #f)])
               (run-in-user-thread
                (lambda ()
+                 (when (getenv "PLTDRHTDPNOCOMPILED") (use-compiled-file-paths '()))
                  (read-accept-quasiquote (get-accept-quasiquote?))
                  (namespace-attach-module drs-namespace ''drscheme-secrets)
                  (namespace-attach-module drs-namespace set-result-module-name)                 
@@ -558,7 +559,7 @@
                 (cond
 		  [start?
 		   (set! start? #f)
-		   #'(reset-tests)]
+		   #'(#%plain-app reset-tests)]
                   [done? eof]
                   [else
                    (let ([ans (parameterize ([read-accept-lang #f])
@@ -566,7 +567,7 @@
                      (cond
                        [(eof-object? ans)
                         (set! done? #t)
-                        #`(test)]
+                        #`(#%plain-app test)]
                        [else
                         ans]))]))))
 
