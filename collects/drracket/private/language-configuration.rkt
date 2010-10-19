@@ -1,5 +1,6 @@
 #lang racket/base
-  (require racket/unit
+  (require mred/mred ;; ensure that this module is always loaded since it is shared below for pretty big
+           racket/unit
            mrlib/hierlist
            racket/class
            racket/contract
@@ -14,7 +15,7 @@
            (only-in mzlib/struct make-->vector))
   
   (define original-output (current-output-port))
-  (define (printfo . args) (apply fprintf original-output args))
+  (define (oprintf . args) (apply fprintf original-output args))
   
   (define-values (sc-use-language-in-source sc-choose-a-language mouse-event-uses-shortcut-prefix?)
     (let* ([shortcut-prefix (get-default-shortcut-prefix)]
@@ -1501,6 +1502,14 @@
   
     (define (pretty-big-mixin %)
       (class %
+        ;; since check syntax no longer shares the gui libraries, 
+        ;; we always share it explicitly here
+        (define/override (on-execute setting run-in-user-thread)
+          (let ([mred-name ((current-module-name-resolver) 'mred/mred #f #f)])
+            (run-in-user-thread
+             (λ ()
+               (namespace-attach-module drracket:init:system-namespace mred-name))))
+          (super on-execute setting run-in-user-thread))
         (define/override (default-settings) 
           (let ([s (super default-settings)])
             (make-simple-settings+assume (drracket:language:simple-settings-case-sensitive s)
