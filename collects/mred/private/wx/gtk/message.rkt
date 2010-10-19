@@ -66,6 +66,7 @@
                                  (release-pixbuf pixbuf)))
                               (as-gtk-allocation
                                (gtk_label_new_with_mnemonic "<bad-image>")))))]
+             [font font]
              [no-show? (memq 'deleted style)])
 
   (when (string? label)

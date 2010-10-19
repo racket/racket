@@ -21,6 +21,7 @@
 (define-gtk gtk_combo_box_remove_text (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_combo_box_set_active (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_combo_box_get_active (_fun _GtkWidget -> _int))
+(define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
 
 (define-signal-handler connect-changed "changed"
   (_fun _GtkWidget -> _void)
@@ -52,6 +53,8 @@
              [no-show? (memq 'deleted style)])
 
   (gtk_combo_box_set_active gtk 0)
+
+  (install-control-font (gtk_bin_get_child gtk) font)
 
   (set-auto-size)
 

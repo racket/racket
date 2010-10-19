@@ -26,6 +26,7 @@
 (define-gtk gtk_toggle_button_set_active (_fun _GtkWidget _gboolean -> _void))
 (define-gtk gtk_toggle_button_get_active (_fun _GtkWidget -> _gboolean))
 (define-gtk gtk_widget_is_focus (_fun _GtkWidget -> _gboolean))
+(define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
 
 (define-signal-handler connect-clicked "clicked"
   (_fun _GtkWidget -> _void)
@@ -64,6 +65,7 @@
                                           [else
                                            (gtk_radio_button_new_with_mnemonic #f "<bad bitmap>")])])
                           (gtk_box_pack_start gtk radio-gtk #t #t 0)
+                          (install-control-font (gtk_bin_get_child radio-gtk) font)
                           (gtk_widget_show radio-gtk)
                           radio-gtk))))
   (for ([radio-gtk (in-list (cdr radio-gtks))])

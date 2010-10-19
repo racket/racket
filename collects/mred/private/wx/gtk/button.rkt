@@ -38,7 +38,7 @@
         [gtk_new_with_mnemonic gtk_button_new_with_mnemonic]
         [gtk_new gtk_button_new])
   (init-field [event-type 'button])
-  (inherit get-gtk set-auto-size is-window-enabled?
+  (inherit get-gtk get-client-gtk set-auto-size is-window-enabled?
            get-window-gtk)
 
   (super-new [parent parent]
@@ -58,6 +58,7 @@
                    [else
                     (as-gtk-allocation (gtk_new_with_mnemonic "<bad>"))])]
              [callback cb]
+             [font font]
              [no-show? (memq 'deleted style)])
   (define gtk (get-gtk))
   
@@ -80,6 +81,9 @@
   (define/public (queue-clicked)
     ;; Called from event-handling thread
     (queue-window-event this (lambda () (clicked))))
+
+  (define/override (get-label-gtk)
+    (gtk_bin_get_child (get-client-gtk)))
 
   (define/override (set-label s)
     (cond

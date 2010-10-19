@@ -116,6 +116,7 @@
              [gtk gtk]
              [extra-gtks (list client-gtk selection)]
              [callback cb]
+             [font font]
              [no-show? (memq 'deleted style)])
 
   (set-auto-size)
