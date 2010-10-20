@@ -55,7 +55,7 @@
   (define arity-error "expects at least ~a arguments, given ~e")
   
   ;; String [format: String[expected] Any[given]
-  (define proc-error "procedure expected as ~s argument, given ~e")
+  (define proc-error "a function was expected as ~s argument, given ~e")
   
   ;; check-proc :
   ;;   sym (... *->* ...) num (union sym str) (union sym str) -> void
@@ -74,5 +74,5 @@
 	    [else (format "multiple arities (~s)" arity-of-f)])))))
 
   ;; String [format: String[expected], String[position] Number[given]  
-  (define arity-error2 "procedure of ~a expected as ~s argument, given procedure of ~a ")
+  (define arity-error2 "a function that expects ~a expected as ~s argument, given a function that expects ~a ")
   )

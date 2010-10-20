@@ -41,7 +41,7 @@
              'stepper-skipto
              (append skipto/cdr
                      skipto/third))])))))
-    
+#;    
   (define (appropriate-use what)
     (case what
      [(constructor)
@@ -63,9 +63,7 @@
 	   (identifier? #'id)
 	   (raise-syntax-error
 	    #f
-	    (format "this is a ~a, so it must be ~a (which requires using a parenthesis before the name)"
-		    what
-		    (appropriate-use what))
+	    (format "found a use that does not follow an open parenthesis")
 	    stx
 	    #f)]
 	  [(id . rest)
@@ -73,8 +71,7 @@
 	     (unless (= l arity)
 	       (raise-syntax-error
 		#f
-		(format "this ~a expects ~a argument~a, here it is provided ~a argument~a"
-			what 
+		(format "this function expects ~a argument~a, here it is provided ~a argument~a"
 			arity (if (= 1 arity) "" "s")
 			l (if (= 1 l) "" "s"))
 		stx

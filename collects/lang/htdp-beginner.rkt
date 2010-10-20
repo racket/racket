@@ -4,13 +4,15 @@
 
 (module htdp-beginner scheme/base
   (require mzlib/etc
-           mzlib/list
-           syntax/docprovide
+	   mzlib/list
+	   syntax/docprovide
+           "private/rewrite-error-message.rkt"
+           (for-syntax "private/rewrite-error-message.rkt")
            (for-syntax scheme/base))
 
   ;; Implements the forms:
-  (require "private/teach.rkt"
-           "private/teach-module-begin.rkt"
+  (require "private/teach.ss"
+           "private/teach-module-begin.ss"
            test-engine/scheme-tests)
 
   ;; syntax:
@@ -84,18 +86,17 @@
                     (lambda (stx)
                       (syntax-case stx ()
                         [(id . args)
-                         (syntax/loc stx (beginner-app orig-name . args))]
+                         (syntax/loc stx
+                           (with-handlers ([exn:fail:contract? (compose raise rewrite-contract-error-message)])
+                             (beginner-app orig-name . args)))]
                         [_else
                          (raise-syntax-error
                           #f
                           (format
-                           "this ~a must be ~a; expected an open parenthesis before the ~a name"
-                           what
-                           something
-                           what)
+                           "found a use that does not follow an open parenthesis")
                           stx)]))
                     #'orig-name)))))]))
-      
+  
   ;; procedures:
   (provide-and-document/wrap
    procedures

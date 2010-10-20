@@ -13,9 +13,8 @@
 (define (arity-check t r f a)
   (unless (and (procedure? f) (procedure-arity-includes? f a))
     (if (= a 1)
-        (hocheck t "~a argument must be a <procedure> that accepts one argument, given ~e" r f)
-        (hocheck t "~a argument must be a <procedure> that accepts ~a arguments, given ~e" r a f))))
-
+        (hocheck t "~a argument must be a function that accepts one argument, given ~e" r f)
+        (hocheck t "~a argument must be a function that accepts ~a arguments, given ~e" r a f))))
 
 (define-syntax-rule
   (boolean-test-wrapper tag (f z ...))
@@ -27,12 +26,12 @@
       (define f@x (f z ...))
       (if (boolean? f@x)
           f@x
-          (error tag "the results of ~a must be of type <boolean>, produced ~e" name f@x)))
+          (error tag "expected a boolean from ~a, but received ~e" name f@x)))
     g))
 
 (define (list-check? name msg l)
   (unless (beginner-list? l) 
-    (hocheck name "~a argument must be of type <list>, given ~e" msg l)))
+    (hocheck name "expected a list for the ~a argument, given ~e" msg l)))
 
 ;; --- refined function definitions --- 
 
@@ -43,7 +42,7 @@
       (arity-check 'name "first" f 1)
       (list-check? 'name "second" l)
       (unless (beginner-list? l) 
-        (hocheck 'name "second argument must be of type <list>, given ~e" l))
+        (hocheck 'name "expected a list for the second argument, given ~e" l))
       (define g (boolean-test-wrapper 'name (f x)))
       (name g l))))
 

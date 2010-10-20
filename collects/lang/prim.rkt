@@ -44,9 +44,7 @@
                     [_
                      (raise-syntax-error
                       #f
-                      (string-append
-                       "this primitive operator must be applied to arguments; "
-                       "expected an open parenthesis before the operator name")
+                      "found a use that does not follow an open parenthesis"
                       stx)])))
               ((syntax-local-certifier #t)
                #'impl))))]))
@@ -59,7 +57,7 @@
        (let ([args (syntax->list (syntax (arg ...)))])
          (for-each (lambda (id)
                      (unless (identifier? id)
-                       (raise-syntax-error #f "not an identifier" stx id)))
+                       (raise-syntax-error #f "expected a variable" stx id)))
                    (cons (syntax name)
                          args))
 	 (let ([new-args (generate-temporaries args)])
@@ -72,9 +70,7 @@
 					 (raise-syntax-error
 					  #f
 					  (format
-					   "primitive operator ~a expects a defined procedure name (usually `~a') in this position"
-					   'name
-					   '#,arg)
+					   "expects a function in this position")
 					  s
 					  (#,#'syntax #,new-arg)))))
 			       args new-args)]
@@ -113,18 +109,20 @@
                                (syntax/loc s (tagged-impl wrapped-arg ...))
                                )]
                             [(_ . rest)
-                             (raise-syntax-error
-                              #f
-                              (format
-                               "primitive operator requires ~a arguments"
-                               num-arguments)
-                              s)]
+                             (let ([num-actuals (length (syntax->list #'rest))])
+                               (raise-syntax-error
+                                #f
+                                (format
+                                 "this function expects ~a argument~a, here it is provided ~a argument~a"
+                                 num-arguments
+                                 (if (= num-arguments 1) "" "s")
+                                 num-actuals
+                                 (if (= num-actuals 1) "" "s"))
+                                s))]
                             [_
                              (raise-syntax-error
                               #f
-                              (string-append
-                               "this primitive operator must be applied to arguments; "
-                               "expected an open parenthesis before the operator name")
+                              "found a use that does not follow an open parenthesis"
                               s)])))
                       ((syntax-local-certifier #t)
                        #'impl))))))))]))

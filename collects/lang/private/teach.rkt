@@ -40,15 +40,16 @@
            scheme/match
            "set-result.rkt"
            (only racket/base define-struct)
-           racket/struct-info
-           deinprogramm/signature/signature-english
-           (all-except deinprogramm/signature/signature signature-violation)
-           (all-except lang/private/signature-syntax property)
-           (rename lang/private/signature-syntax signature:property property)
-           (all-except deinprogramm/quickcheck/quickcheck property)
-           (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
-           test-engine/racket-tests
-           scheme/class
+           "rewrite-error-message.rkt"
+	   racket/struct-info
+	   deinprogramm/signature/signature-english
+	   (all-except deinprogramm/signature/signature signature-violation)
+	   (all-except lang/private/signature-syntax property)
+	   (rename lang/private/signature-syntax signature:property property)
+	   (all-except deinprogramm/quickcheck/quickcheck property)
+	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
+	   test-engine/racket-tests
+	   scheme/class
            "../posn.rkt"
            (only lang/private/teachprims
                  beginner-equal? beginner-equal~? teach-equal?
@@ -256,8 +257,7 @@
        name
        stx
        #f
-       "found a use of `~a' that does not follow an open parenthesis"
-       name))
+       "found a use that does not follow an open parenthesis"))
 
     ;; Use for messages "expected ..., found <something else>"
     (define (something-else v)
@@ -265,6 +265,7 @@
 	(cond
 	 [(number? v) "a number"]
 	 [(string? v) "a string"]
+         [(list? v) "a part"]
 	 [else "something else"])))
     
     (define (ordinal n)
@@ -319,11 +320,9 @@
 		      (when b
 			(teach-syntax-error
 			 'duplicate
-			 name
+			 stx
 			 #f
-			 (if (binding-in-this-module? b)
-			     "this name was defined previously and cannot be re-defined"
-			     "this name has a built-in meaning and cannot be re-defined")))))
+                         "~a was defined previously and cannot be re-defined" (syntax-e name)))))
 		  names)
         (if assign
             (with-syntax ([(name ...) (if (eq? assign #t)
@@ -394,11 +393,10 @@
 	 who
 	 stx
 	 (cadr exprs)
-	 "expected only one expression ~a, but found ~a extra part"
+	 "expected only one expression ~a, but found ~a extra part~a"
 	 where
-	 (if (null? (cddr exprs))
-	     "one"
-	     "at least one"))))
+         (sub1 (length exprs))
+         (if (> (length exprs) 2) "s" ""))))
 
     (define (check-single-result-expr exprs where enclosing-expr will-bind)
       (check-single-expression where
@@ -540,7 +538,7 @@
 	      'define
 	      stx
 	      names
-	      "expected a function name for a definition, but the name is missing"))
+	      "expected a name for the function, but nothing's there"))
 	   (let loop ([names names][pos 0])
 	     (unless (null? names)
 	       (unless (identifier/non-kw? (car names))
@@ -548,10 +546,10 @@
 		  'define
 		  stx
 		  (car names)
-		  "expected a name for ~a, but found ~a"
+		  "expected ~a, but found ~a"
 		  (cond
-		   [(zero? pos) "a function"]
-		   [else (format "the function's ~a argument" (ordinal pos))])
+		   [(zero? pos) "the name of the function"]
+		   [else "a variable"])
 		  (something-else/kw (car names))))
 	       (loop (cdr names) (add1 pos))))
 	   (when (null? (cdr names))
@@ -559,14 +557,14 @@
 	      'define
 	      stx
 	      (syntax name-seq)
-	      "expected at least one argument name after the function name, but found none"))
+	      "expected at least one variable after the function name, but found none"))
 	   (let ([dup (check-duplicate-identifier (cdr names))])
 	     (when dup
 	       (teach-syntax-error
 		'define
 		stx
 		dup
-		"found an argument name that was used more than once: ~a"
+		"found a variable that was used more than once: ~a"
 		(syntax-e dup))))
 	   (check-single-result-expr (syntax->list (syntax (expr ...)))
 				     #f
@@ -604,7 +602,7 @@
 	 (identifier/non-kw? (syntax name))
 	 (let ([exprs (syntax->list (syntax (expr ...)))])
 	   (check-single-expression 'define
-				    (format "after the defined name ~a"
+				    (format "after the variable name ~a"
 					    (syntax-e (syntax name)))
 				    stx
 				    exprs
@@ -617,7 +615,7 @@
 	  'define
 	  stx
 	  (syntax non-name)
-	  "expected a function name, constant name, or function header for `define', but found ~a"
+	  "expected a variable name, or a function name and its variables (in parentheses), but found ~a"
 	  (something-else/kw (syntax non-name)))]
 	;; Missing name:
 	[(_)
@@ -625,8 +623,7 @@
 	  'define
 	  stx
 	  #f
-	  "expected a function name, constant name, or function header after `define', ~
-         but nothing's there")]
+	  "expected a variable name, or a function name and its variables (in parentheses), but nothing's there")]
 	[_else
 	 (bad-use-error 'define stx)]))
 
@@ -668,7 +665,7 @@
 	  'lambda
 	  stx
 	  #f
-	  "found a `lambda' expression that is not a function definition")]
+	  "found a lambda that is not a function definition")]
 	[_else
 	 (bad-use-error 'lambda stx)]))
 
@@ -691,7 +688,7 @@
                              'lambda
                              rhs
                              arg
-                             "expected a name for a function argument, but found ~a"
+                             "expected a variable, but found ~a"
                              (something-else/kw arg))))
                         args)
               (when (null? args)
@@ -699,14 +696,14 @@
                  'lambda
                  rhs
                  (syntax arg-seq)
-                 "expected at least one argument name in the sequence after `lambda', but found none"))
+                 "expected at least one variable after lambda, but found none"))
               (let ([dup (check-duplicate-identifier args)])
                 (when dup
                   (teach-syntax-error
                    'lambda
                    rhs
                    dup
-                   "found an argument name that was used more than once: ~a"
+                   "found a variable that was used more than once: ~a"
                    (syntax-e dup))))
               (check-single-result-expr (syntax->list (syntax (lexpr ...)))
                                         #f
@@ -719,7 +716,7 @@
              'lambda
              rhs
              (syntax args)
-             "expected a sequence of function arguments after `lambda', but found ~a"
+             "expected at least one variable (in parentheses) after lambda, but found ~a"
              (something-else (syntax args)))]
            ;; Bad lambda, no args:
            [(lam)
@@ -727,7 +724,7 @@
              'lambda
              rhs
              (syntax args)
-             "expected a sequence of function arguments after `lambda', but nothing's there")]
+             "expected at least one variable (in parentheses) after lambda, but nothing's there")]
            [_else 'ok])]
         [_else 'ok]))
 
@@ -753,7 +750,7 @@
 	  'define-struct
 	  stx
 	  (syntax name)
-	  "expected a structure type name after `define-struct', but found ~a"
+	  "expected the structure name after define-struct, but found ~a"
 	  (something-else/kw (syntax name)))]
 	;; Main case (`rest' is for nice error messages):
 	[(_ name_ (field_ ...) . rest)
@@ -767,7 +764,7 @@
 		 'define-struct
 		 stx
 		 field
-		 "expected a structure field name, found ~a"
+		 "expected a field name, but found ~a"
 		 (something-else field)))
 	      (let ([sym (syntax-e field)])
 		(when (hash-table-get ht sym (lambda () #f))
@@ -785,11 +782,9 @@
 		'define-struct
 		stx
 		(car rest)
-		"expected nothing after the field name sequence in `define-struct', ~
-               but found ~a extra part"
-		(if (null? (cdr rest))
-		    "one"
-		    "at least one"))))
+		"expected nothing after the field names, but found ~a extra part~a"
+                (length rest)
+                (if (> (length rest) 1) "s" ""))))
 	   (let-values ([(struct: constructor-name predicate-name getter-names setter-names)
 			 (make-struct-names name fields stx)]
 			[(field-count) (length fields)]
@@ -973,22 +968,20 @@
 	  'define-struct
 	  stx
 	  (syntax something)
-	  "expected a sequence of field names after the structure type name in `define-struct', ~
-         but found ~a"
+	  "expected at least one field name after the structure name, but found ~a"
 	  (something-else (syntax something)))]
 	[(_ name_)
 	 (teach-syntax-error
 	  'define-struct
 	  stx
 	  (syntax something)
-	  "expected a sequence of field names after the structure type name in `define-struct', ~
-         but nothing's there")]
+	  "expected at least one field name (in parentheses) after the structure name, but nothing's there")]
 	[(_)
 	 (teach-syntax-error
 	  'define-struct
 	  stx
 	  #f
-	  "expected a structure type name after `define-struct', but nothing's there")]
+	  "expected the structure name after define-struct, but nothing's there")]
 	[_else (bad-use-error 'define-struct stx)]))
 
     (define (beginner-define-struct/proc stx)
@@ -1148,14 +1141,11 @@
 				       '|function call|
 					 stx
 					 fun
-					 "expected a ~a after an open parenthesis, but found ~a"
-					 (if lex-ok?
-					     "name"
-					     "defined function name or a primitive operation name")
+					 "expected a function after the open parenthesis, but found ~a"
 					 what))])
 		      (unless (and (identifier? fun) (or lex-ok? undef-check? (not lex?)))
 			(bad-app (if lex?
-				     "a function argument name"
+				     "a variable"
 				     (something-else fun))))
 		      ;; The following check disallows calling thunks.
 		      ;; It's disabled because we need to allow calls to
@@ -1165,31 +1155,29 @@
 			  '|function call|
 			    stx
 			    #f
-			    "expected an argument after the function name for a function call, ~
-                             but nothing's there"))
+			    "expected an argument after the function, but nothing's there"))
 		      (cond
 		       [(and (not lex-ok?) (binding-in-this-module? binding))
 			;; An application of something defined as a constant
-			(bad-app "something else")]
+			(bad-app "a variable")]
 		       [(or lex-ok? (and binding (not (binding-in-this-module? binding))))
-			(syntax/loc stx (#%app rator rand ...))]
+                        (with-syntax ([new-rator (syntax-property #'rator 'was-in-app-position #t)])
+                          (syntax/loc stx (#%app new-rator rand ...)))]
 		       [else
 			;; We don't know what rator is, yet, and it might be local:
-			(quasisyntax/loc 
-			 stx 
-			 (#%app values #,(quasisyntax/loc
-					  stx
-					  (beginner-app-continue rator rand ...))))]))]
+                        (with-syntax ([new-rator (syntax-property #'rator 'was-in-app-position #t)])
+                          (quasisyntax/loc 
+                              stx 
+                            (#%app values #,(quasisyntax/loc
+                                                stx
+                                              (beginner-app-continue new-rator rand ...)))))]))]
 		   [(_)
 		    (teach-syntax-error
 		     '|function call|
 		       stx
 		       #f
 		       (format
-			"expected a ~a after an open parenthesis, but nothing's there"
-			(if lex-ok?
-			    "name"
-			    "defined function name or a primitive operation name")))]
+			"expected a function after the open parenthesis, but nothing's there"))]
 		   [_else (bad-use-error '#%app stx)])))])
 	(values (mk-app #f) (mk-app #t))))
 
@@ -1206,46 +1194,61 @@
 		   ;; Something for which we probably need to report an error,
 		   ;;  but let beginner-app take care of it:
 		   (syntax/loc stx (beginner-app rator rand ...)))
-	       ;; Something undefined; let beginner-top take care of it:
-	       (syntax/loc stx (#%app rator rand ...))))]))
 
+               ;; Something undefined; let beginner-top take care of it:
+               (with-syntax ([new-rator (syntax-property #'rator 'was-in-app-position #t)])
+                 (syntax/loc stx (#%app new-rator rand ...)))
+               ))]))
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; top-level variables (beginner)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+    
     ;; Report errors for undefined names (but only in modules)
-
+    
     (define (beginner-top/proc stx)
       (syntax-case stx ()
         [(_ . id)
-	 ;; If we're in a module, we'll need to check that the name
-	 ;;  is bound....
-	 (if (and (not (identifier-binding #'id))
-		  (syntax-source-module #'id))
+         ;; If we're in a module, we'll need to check that the name
+         ;;  is bound....
+         (if (and (not (identifier-binding #'id))
+                  (syntax-source-module #'id))
 	     ;; ... but it might be defined later in the module, so
 	     ;; delay the check.
              (stepper-ignore-checker 
               (syntax/loc stx (#%app values (beginner-top-continue id))))
-	     (syntax/loc stx (#%top . id)))]))
-
+             (with-syntax ([rewriter
+                            (if (syntax-property #'id 'was-in-app-position)
+                                'rewrite-lookup-error-message/rator
+                                'rewrite-lookup-error-message/rand)])
+               (syntax/loc stx
+                 (with-handlers ([exn:fail:contract:variable?
+                                  (compose raise rewriter)])
+                   (#%top . id)))))]))
+    
     (define (beginner-top-continue/proc stx)
       (syntax-case stx ()
         [(_ id)
-	 ;; If there's still no binding, it's an "unknown name" error.
-	 (if (not (identifier-binding #'id))
-	     (teach-syntax-error
-	      'unknown
-	      #'id
-	      #f
-	      "name is not defined, not a parameter, and not a primitive name")
-	     ;; Don't use #%top here; id might have become bound to something
-	     ;;  that isn't a value.
-	     #'id)]))
+         ;; If there's still no binding, it's an "unknown name" error.
+         (if (not (identifier-binding #'id))
+             (if (syntax-property #'id 'was-in-app-position)
+                 (teach-syntax-error
+                  'unknown
+                  #'id
+                  #f
+                  "this function is not defined")
+                 (teach-syntax-error
+                  'unknown
+                  #'id
+                  #f
+                  "this variable is not defined"))
+             ;; Don't use #%top here; id might have become bound to something
+             ;;  that isn't a value.
+             #'id)]))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; cond
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+    
     (define (beginner-cond/proc stx)
       (ensure-expression
        stx
@@ -1256,7 +1259,7 @@
 	     'cond
 	     stx
 	     #f
-	     "expected a question--answer clause after `cond', but nothing's there")]
+	     "expected a clause after cond, but nothing's there")]
 	   [(_ clause ...)
 	    (let* ([clauses (syntax->list (syntax (clause ...)))]
 		   [check-preceding-exprs
@@ -1284,8 +1287,8 @@
 				'cond
 				stx
 				clause
-				"found an `else' clause that isn't the last clause ~
-                                    in its `cond' expression"))
+				"found an else clause that isn't the last clause ~
+                                    in its cond expression"))
 			     (with-syntax ([new-test (stepper-syntax-property (syntax #t) 'stepper-else #t)])
 			       (syntax/loc clause (new-test answer))))]
 			  [(question answer)
@@ -1297,14 +1300,14 @@
 			    'cond
 			    stx
 			    clause
-			    "expected a question--answer clause, but found an empty clause")]
+			    "expected a clause with a question and an answer, but found an empty part")]
 			  [(question?)
 			   (check-preceding-exprs clause)
 			   (teach-syntax-error
 			    'cond
 			    stx
 			    clause
-			    "expected a clause with a question and answer, but found a clause with only one part")]
+			    "expected a clause with a question and an answer, but found a clause with only one part")]
 			  [(question? answer? ...)
 			   (check-preceding-exprs clause)
 			   (let ([parts (syntax->list clause)])
@@ -1320,14 +1323,14 @@
 			      'cond
 			      stx
 			      parts
-			      "expected a clause with one question and one answer, but found a clause with ~a parts"
+			      "expected a clause with a question and an answer, but found a clause with ~a parts"
 			      (length parts)))]
 			  [_else
 			   (teach-syntax-error
 			    'cond
 			    stx
 			    clause
-			    "expected a question--answer clause, but found ~a"
+			    "expected a clause with a question and an answer, but found ~a"
 			    (something-else clause))]))
 		      clauses)])
 		;; Add `else' clause for error (always):
@@ -1347,7 +1350,7 @@
 	    'else
 	    expr
 	    #f
-	    "not allowed here, because this is not an immediate question in a `cond' clause"))
+	    "not allowed here, because this is not a question in a clause"))
 	 (syntax-case stx (set! x)
 	   [(set! e expr) (bad #'e)]
 	   [(e . expr) (bad #'e)]
@@ -1374,7 +1377,7 @@
 	       'if
 	       stx
 	       #f
-	       "expected one question expression and two answer expressions, but found ~a expression~a"
+	       "expected a question and two answers, but found ~a part~a"
 	       (if (zero? n) "no" n)
 	       (if (= n 1) "" "s")))]
 	   [_else (bad-use-error 'if stx)]))))
@@ -1402,7 +1405,7 @@
 				where
 				stx
 				#f
-				"expected at least two expressions after `~a', but found ~a"
+				"expected at least two expressions after ~a, but found ~a"
 				where
 				(if (zero? n) "no expressions" "only one expression")))
 			     (let loop ([clauses-consumed 0]
@@ -1441,7 +1444,7 @@
 	      'quote
 	      stx
 	      #f
-	      "expected a name after a ', found ~a"
+	      "expected the name of the symbol after the quote, found ~a"
 	      (something-else sym)))
 	   (syntax/loc stx (quote expr)))]
 	[_else (bad-use-error 'quote stx)]))
@@ -1640,7 +1643,7 @@
 				    'local
 				    stx
 				    orig
-				    "expected only definitions within the definition sequence, but found ~a"
+				    "expected a definition, but found ~a"
 				    (something-else orig))]))
 			      l origs)))]
 		     [val-defns
@@ -1679,7 +1682,7 @@
 		     'local
 		     stx
 		     dup
-		     "found a name that was defined locally more than once: ~a"
+		     "~a was defined locally more than once"
 		     (syntax-e dup)))
 		  (let ([exprs (syntax->list (syntax exprs))])
 		    (check-single-expression 'local
@@ -1740,14 +1743,14 @@
 	     'local
 	     stx
 	     (syntax def-non-seq)
-	     "expected a parenthesized definition sequence after `local', but found ~a"
+	     "expected at least one definition (in square brackets) after local, but found ~a"
 	     (something-else (syntax def-non-seq)))]
 	   [(_)
 	    (teach-syntax-error
 	     'local
 	     stx
 	     #f
-	     "expected a parenthesized definition sequence after `local', but nothing's there")]
+             "expected at least one definition (in square brackets) after local, but nothing's there")]
 	   [_else (bad-use-error 'local stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1885,12 +1888,12 @@
 			       who
 			       orig-stx
 			       name
-			       "expected a name for a local binding, but found ~a"
+			       "expected a variable for the binding, but found ~a"
 			       (something-else/kw name))))]
 			 [(name . exprs)
 			  (identifier/non-kw? (syntax name))
 			  (check-single-expression who
-						   (format "after the name `~a'"
+						   (format "after the name ~a"
 							   (syntax-e (syntax name)))
 						   binding
 						   (syntax->list (syntax exprs))
@@ -1900,16 +1903,14 @@
 			   who
 			   orig-stx
 			   (syntax something)
-			   "expected a name after the parenthesis for a ~a local definition, but found ~a"
-			   who
+                           "expected a variable after the square bracket, but found ~a"
 			   (something-else/kw (syntax something)))]
 			 [_else
 			  (teach-syntax-error
 			   who
 			   orig-stx
 			   binding
-			   "expected a parenthesized name and expression for a ~a local definition, but found ~a"
-			   who
+                           "expected a binding with a variable and an expression, but found ~a"
 			   (something-else binding))]))
 		     bindings)
 	   (unless (eq? who 'let*)
@@ -1922,7 +1923,7 @@
 		  who
 		  orig-stx
 		  dup
-		  "found a name that was defined locally more than once: ~a"
+		  "~a was defined locally more than once"
 		  (syntax-e dup)))))
 	   (let ([exprs (syntax->list (syntax exprs))])
 	     (check-single-expression who 
@@ -1935,7 +1936,7 @@
 	  who
 	  orig-stx
 	  (syntax binding-non-seq)
-	  "expected a parenthesized sequence of local name definitions after `~a', but found ~a"
+          "expected at least one binding (in parentheses) after ~a, but found ~a"
 	  who
 	  (something-else (syntax binding-non-seq)))]
 	[(_)
@@ -1943,7 +1944,7 @@
 	  who
 	  orig-stx
 	  #f
-	  "expected a sequence of local name definitions after `~a', but nothing's there"
+          "expected at least one binding (in parentheses) after ~a, but nothing's there"
 	  who)]
 	[_else
 	 (bad-use-error who stx)]))
@@ -1992,8 +1993,7 @@
 			'recur
 			stx
 			(syntax empty-seq)
-			"expected a non-empty sequence of bindings after the function name, ~
-                    but found an empty sequence")]
+			"expected at least one binding (in parentheses) after the function name, but found none")]
 		      [(_form fname . rest)
 		       (identifier/non-kw? (syntax fname))
 		       (bad-let-form 'recur (syntax (_form . rest)) stx)]
@@ -2002,14 +2002,14 @@
 			'recur
 			stx
 			#f
-			"expected a function name after `recur', but found ~a"
+			"expected a function name after recur, but found ~a"
 			(something-else/kw (syntax fname)))]
 		      [(_form)
 		       (teach-syntax-error
 			'recur
 			stx
 			#f
-			"expected a function name after `recur', but nothing's there")]
+			"expected a function name after recur, but nothing's there")]
 		      [_else
 		       (bad-use-error 'recur stx)])))))])
 	(values (mk #f) (mk #t))))
@@ -2032,7 +2032,7 @@
 			     'lambda
 			     stx
 			     arg
-			     "expected a name for a function argument, but found ~a"
+			     "expected a variable, but found ~a"
 			     (something-else/kw arg))))
 			args)
 	      (when (null? args)
@@ -2040,14 +2040,14 @@
 		 'lambda
 		 stx
 		 (syntax arg-seq)
-		 "expected at least one argument name in the sequence after `lambda', but found none"))
+		 "expected at least one variable after lambda, but found none"))
 	      (let ([dup (check-duplicate-identifier args)])
 		(when dup
 		  (teach-syntax-error
 		   'lambda
 		   stx
 		   dup
-		   "found an argument name that is used more than once: ~a"
+		   "found a variable that is used more than once: ~a"
 		   (syntax-e dup))))
 	      (check-single-expression 'lambda
 				       "within lambda"
@@ -2061,14 +2061,14 @@
 	     'lambda
 	     stx
 	     (syntax args)
-	     "expected a sequence of function arguments after `lambda', but found ~a"
+             "expected at least one variable (in parentheses) after lambda, but found ~a"
 	     (something-else (syntax args)))]
 	   [(_)
 	    (teach-syntax-error
 	     'lambda
 	     stx
 	     #f
-	     "expected a sequence of argument names after `lambda', but nothing's there")]
+             "expected at least one variable (in parentheses) after lambda, but nothing's there")]
 	   [_else
 	    (bad-use-error 'lambda stx)]))))
 
@@ -2082,7 +2082,7 @@
 	  [(_ expr ...)
 	   (begin
 	     (check-single-expression 'quote
-				      "after the `quote' keyword"
+				      "after the quote keyword"
 				      stx
 				      (syntax->list (syntax (expr ...)))
 				      ;; Don't expand expr!
@@ -2106,7 +2106,7 @@
 			  'quasiquote
 			  stx
 			  #f
-			  "misuse of `quasiquote'")]
+			  "misuse of quasiquote")]
 			[_else (bad-use-error 'quasiquote stx)])]
 		 [depth 0])
 	(syntax-case stx (intermediate-unquote intermediate-unquote-splicing intermediate-quasiquote)
@@ -2121,7 +2121,7 @@
 	    'quasiquote
 	    stx
 	    #f
-	    "misuse of `unquote' within a quasiquoting backquote")]
+	    "misuse of unquote within a quasiquoting backquote")]
 	  [((intermediate-unquote-splicing x) . rest)
 	   (if (zero? depth)
 	       (with-syntax ([rest (loop (syntax rest) depth)])
@@ -2137,7 +2137,7 @@
 	    'quasiquote
 	    stx
 	    #f
-	    "misuse of ,@ or `unquote-splicing' within a quasiquoting backquote")]
+	    "misuse of ,@ or unquote-splicing within a quasiquoting backquote")]
 	  [(intermediate-quasiquote x)
 	   (with-syntax ([x (loop (syntax x) (add1 depth))]
 			 [qq (stx-car stx)])
@@ -2156,14 +2156,14 @@
        'unquote
        stx
        #f
-       "misuse of a comma or `unquote', not under a quasiquoting backquote"))
+       "misuse of a comma or unquote, not under a quasiquoting backquote"))
     
     (define (intermediate-unquote-splicing/proc stx)
       (teach-syntax-error
        'unquote-splicing
        stx
        #f
-       "misuse of ,@ or `unquote-splicing', not under a quasiquoting backquote"))
+       "misuse of ,@ or unquote-splicing, not under a quasiquoting backquote"))
     
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; time
@@ -2176,7 +2176,7 @@
 	 (syntax-case stx ()
 	   [(_ . exprs)
 	    (check-single-expression 'time 
-				     "after `time'"
+				     "after time"
 				     stx
 				     (syntax->list (syntax exprs))
 				     null)
@@ -2249,7 +2249,7 @@
 			     'lambda
 			     stx
 			     name
-			     "expected a name for an argument, but found ~a"
+                             "expected a variable, but found ~a"
 			     (something-else/kw name))))
 			names)
 	      (let ([dup (check-duplicate-identifier names)])
@@ -2258,10 +2258,10 @@
 		   'lambda
 		   stx
 		   dup
-		   "found an argument name that is used more than once: ~a"
+                   "found a variable that is used more than once: ~a"
 		   (syntax-e dup))))
 	      (check-single-expression 'lambda 
-				       "after the argument-name sequence"
+				       "after the variables"
 				       stx
 				       (syntax->list (syntax exprs))
 				       names)
@@ -2271,14 +2271,14 @@
 	     'lambda
 	     stx
 	     (syntax arg-non-seq)
-	     "expected a parenthesized sequence of argument names after `lambda', but found ~a"
+             "expected at least one variable (in parentheses) after lambda, but found ~a"
 	     (something-else (syntax arg-non-seq)))]
 	   [(_)
 	    (teach-syntax-error
 	     'lambda
 	     stx
 	     #f
-	     "expected a sequence of argument names after `lambda', but nothing's there")]
+             "expected at least one variable (in parentheses) after lambda, but nothing's there")]
 	   [_else
 	    (bad-use-error 'lambda stx)]))))
 
@@ -2292,14 +2292,14 @@
        (lambda ()
 	 (syntax-case stx ()
 	   [(_ rator rand ...)
-	    (syntax/loc stx (#%app rator rand ...))]
+            (with-syntax ([new-rator (syntax-property #'rator 'was-in-app-position #t)])
+              (syntax/loc stx (#%app new-rator rand ...)))]
 	   [(_)
 	    (teach-syntax-error
 	     '|function call|
 	       stx
 	       #f
-	       "expected a defined function name or a primitive operation name after an ~
-                open parenthesis, but nothing's there")]
+	       "expected a function after the open parenthesis, but nothing's there")]
 	   [_else (bad-use-error '#%app stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2333,14 +2333,14 @@
 					   'set!
 					   stx
 					   (syntax id)
-					   "expected a defined name after `set!', but found a keyword"))))))
+					   "expected a variable after set!, but found a ~a" (syntax-e #'id)))))))
 			   ;; Now try lexical:
 			   (when (eq? 'lexical (identifier-binding (syntax id)))
 			     (teach-syntax-error
 			      'set!
 			      stx
 			      (syntax id)
-			      "expected a defined name after `set!', but found a function argument name")))
+                              "expected a mutable variable after set!, but found a variable that cannot be modified")))
 			 ;; If we're in a module, we'd like to check here whether
 			 ;;  the identier is bound, but we need to delay that check
 			 ;;  in case the id is defined later in the module. So only
@@ -2354,7 +2354,7 @@
 				'unknown
 				#'id
 				#f
-				"name is not defined")]
+				"this variable is not defined")]
 			      [(and (list? binding)
 				    (or (not (module-path-index? (car binding)))
 					(let-values ([(path rel) (module-path-index-split (car binding))])
@@ -2363,7 +2363,7 @@
 				'unknown
 				#'id
 				#f
-				"cannot set a primitive name")])))
+                                "expected a mutable variable after set!, but found a variable that cannot be modified")])))
 			 ;; Check the RHS
 			 (check-single-expression 'set!
 						  "for the new value"
@@ -2382,14 +2382,14 @@
 			'set!
 			stx
 			(syntax id)
-			"expected a defined name after `set!', but found ~a"
+			"expected a variable after set!, but found ~a"
 			(something-else (syntax id)))]
 		      [(_)
 		       (teach-syntax-error
 			'set!
 			stx
 			(syntax id)
-			"expected a defined name after `set!', but nothing's there")]
+			"expected a variable after set!, but nothing's there")]
 		      [_else (bad-use-error 'set! stx)])))))])
 	(values (proc #f)
 		(proc #t))))
@@ -2409,7 +2409,7 @@
 		      [(_ q expr ...)
 		       (let ([exprs (syntax->list (syntax (expr ...)))])
 			 (check-single-expression who
-						  (format "for the answer in `~a'"
+						  (format "for the answer in ~a"
 							  who)
 						  stx
 						  exprs
@@ -2422,7 +2422,7 @@
 			who
 			stx
 			#f
-			"expected a question expression after `~a', but nothing's there"
+			"expected a question after ~a, but nothing's there"
 			who)]
 		      [_else
 		       (bad-use-error who stx)])))))])
@@ -2454,7 +2454,7 @@
 	     'let
 	     stx
 	     #f
-	     "bad syntax for named `let'")]
+	     "bad syntax for named let")]
 	   [(_ . rest)
 	    (syntax/loc stx (intermediate-let . rest))]
 	   [_else
@@ -2472,7 +2472,7 @@
 	  'begin
 	  stx
 	  #f
-	  "expected a sequence of expressions after `begin', but nothing's there")]
+	  "expected at least one expression after begin, but nothing's there")]
 	[(_ e ...)
 	 (stepper-syntax-property (syntax/loc stx (let () e ...))
                           'stepper-hint
@@ -2491,7 +2491,7 @@
 	  'begin
 	  stx
 	  #f
-	  "expected a sequence of expressions after `begin0', but nothing's there")]
+	  "expected at least one expression after begin0, but nothing's there")]
 	[(_ e ...)
 	 (syntax/loc stx (begin0 e ...))]
 	[_else
@@ -2511,13 +2511,13 @@
 	     'case
 	     stx
 	     #f
-	     "expected an expression after `case', but nothing's there")]
+	     "expected an expression after case, but nothing's there")]
 	   [(_ expr)
 	    (teach-syntax-error
 	     'case
 	     stx
 	     #f
-	     "expected a choices--answer clause after the expression following `case', but nothing's there")]
+	     "expected a clause with choices and an answer after the expression, but nothing's there")]
 	   [(_ v-expr clause ...)
 	    (let ([clauses (syntax->list (syntax (clause ...)))])
 	      (for-each
@@ -2530,8 +2530,8 @@
 			 'case
 			 stx
 			 clause
-			 "found an `else' clause that isn't the last clause ~
-                                    in its `case' expression"))
+			 "found an else clause that isn't the last clause ~
+                                    in its case expression"))
 		      (let ([answers (syntax->list (syntax (answer ...)))])
 			(check-single-expression 'case
 						 "for the answer in a case clause"
@@ -2552,23 +2552,23 @@
 					    'case
 					    stx
 					    e
-					    "expected a name (for a symbol) or a number as a choice value, but found ~a"
+					    "expected a symbol (without its quote) or a number as a choice, but found ~a"
 					    (something-else e)))))
 				     elems))]
 			[_else (teach-syntax-error
 				'case
 				stx
 				choices
-				"expected a parenthesized sequence of choice values, but found ~a"
+				"expected at least one choice (in parentheses), but found ~a"
 				(something-else choices))])
 		      (when (stx-null? choices)
 			(teach-syntax-error
 			 'case
 			 stx
 			 choices
-			 "expected at least once choice in a parenthesized sequence of choice values, but nothing's there"))
+			 "expected at least one choice (in parentheses), but nothing's there"))
 		      (check-single-expression 'case
-					       "for the answer in a `case' clause"
+					       "for the answer in a case clause"
 					       clause
 					       answers
 					       null))]
@@ -2577,13 +2577,13 @@
 		     'case
 		     stx
 		     clause
-		     "expected a choices--answer clause, but found an empty clause")]
+		     "expected a clause with at least one choice (in parentheses) and an answer, but found an empty part")]
 		   [_else
 		    (teach-syntax-error
 		     'case
 		     stx
 		     clause
-		     "expected a choices--answer clause, but found ~a"
+		     "expected a clause with at least one choice (in parentheses) and an answer, but found ~a"
 		     (something-else clause))]))
 	       clauses)
 	      ;; Add `else' clause for error, if necessary:
@@ -2743,7 +2743,7 @@
 	     [(_ expr ...)
 	      (begin
 		(check-single-expression 'delay
-					 "after the `delay' keyword"
+					 "after the delay keyword"
 					 stx
 					 (syntax->list (syntax (expr ...)))
 					 null)
@@ -2793,20 +2793,20 @@
 		       'shared
 		       stx
 		       (syntax a)
-		       "expected a name for the binding, but found ~a"
+		       "expected a variable for the binding, but found ~a"
 		       (something-else/kw (syntax a)))]
 		     [()
 		      (teach-syntax-error
 		       'shared
 		       stx
 		       (syntax a)
-		       "expected a name for a binding, but nothing's there")]
+		       "expected a variable for a binding, but nothing's there")]
 		     [_else
 		      (teach-syntax-error
 		       'shared
 		       stx
 		       binding
-		       "expected a name--expression pair for a binding, but found ~a"
+		       "expected a binding with a variable and an expression, but found ~a"
 		       (something-else binding))]))
 		 bindings)
 		(check-single-expression 'shared
@@ -2819,14 +2819,14 @@
 	       'shared
 	       stx
 	       (syntax bad-bind)
-	       "expected a sequence of bindings after `shared', but found ~a"
+	       "expected at least one binding (in parentheses) after shared, but found ~a"
 	       (something-else (syntax bad-bind)))]
 	     [(_)
 	      (teach-syntax-error
 	       'shared
 	       stx
 	       (syntax bad-bind)
-	       "expected a sequence of bindings after `shared', but nothing's there")]
+	       "expected at least one binding (in parentheses) after shared, but nothing's there")]
 	     [_else (bad-use-error 'shared stx)])
 
 	   ;; The main implementation

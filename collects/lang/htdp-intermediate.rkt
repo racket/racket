@@ -1,10 +1,12 @@
 (module htdp-intermediate scheme/base
-  (require "private/teach.rkt"
-           "private/teachprims.rkt"
-           "private/teach-module-begin.rkt"
-           mzlib/etc
-           mzlib/list
-           syntax/docprovide
+
+  (require "private/teach.ss"
+           "private/teachprims.ss"
+	   "private/teach-module-begin.ss"
+           "private/rewrite-error-message.rkt"
+	   mzlib/etc
+	   mzlib/list
+	   syntax/docprovide
            test-engine/scheme-tests)
 
   ;; syntax:
