@@ -16,7 +16,8 @@
          "queue.rkt"
          "theme.rkt"
          "cursor.rkt"
-         "key.rkt")
+         "key.rkt"
+         "font.rkt")
 
 (provide window%
 	 queue-window-event
@@ -306,41 +307,45 @@
   (define/public (set-control-font font [hwnd hwnd])
     (unless theme-hfont
       (set! theme-hfont (CreateFontIndirectW (get-theme-logfont))))
-    (SendMessageW hwnd WM_SETFONT (cast theme-hfont _HFONT _LPARAM) 0))
+    (let ([hfont (if font
+                     (font->hfont font)
+                     theme-hfont)])
+      (SendMessageW hwnd WM_SETFONT (cast hfont _HFONT _LPARAM) 0)))
 
-  (define/public (auto-size label min-w min-h dw dh
+  (define/public (auto-size font label min-w min-h dw dh
                             [resize
                              (lambda (w h) (set-size -11111 -11111 w h))]
                             #:combine-width [combine-w max]
                             #:combine-height [combine-h max]
                             #:scale-w [scale-w 1]
                             #:scale-h [scale-h 1])
-    (unless measure-dc
-      (let* ([bm (make-object bitmap% 1 1)]
-	     [dc (make-object bitmap-dc% bm)]
-	     [font (make-object font% 8 'system)])
-	(send dc set-font font)
-	(set! measure-dc dc)))
-    (let-values ([(w h d a) (let loop ([label label])
-                              (cond
-                               [(null? label) (values 0 0 0 0)]
-                               [(label . is-a? . bitmap%)
-                                (values (send label get-width)
-                                        (send label get-height)
-                                        0
-                                        0)]
-                               [(pair? label)
-                                (let-values ([(w1 h1 d1 a1)
-                                              (loop (car label))]
-                                             [(w2 h2 d2 a2)
-                                              (loop (cdr label))])
-                                  (values (combine-w w1 w2) (combine-h h1 h2)
-                                          (combine-h d1 d1) (combine-h a1 a2)))]
-                               [else
-                                (send measure-dc get-text-extent label #f #t)]))]
-		 [(->int) (lambda (v) (inexact->exact (floor v)))])
-      (resize (->int (* scale-h (max (+ w dw) min-w)))
-              (->int (* scale-w (max (+ h dh) min-h))))))
+    (atomically
+     (unless measure-dc
+       (let* ([bm (make-object bitmap% 1 1)]
+              [dc (make-object bitmap-dc% bm)])
+         (set! measure-dc dc)))
+     (send measure-dc set-font (or font
+                                   (make-object font% 8 'system)))
+     (let-values ([(w h d a) (let loop ([label label])
+                               (cond
+                                [(null? label) (values 0 0 0 0)]
+                                [(label . is-a? . bitmap%)
+                                 (values (send label get-width)
+                                         (send label get-height)
+                                         0
+                                         0)]
+                                [(pair? label)
+                                 (let-values ([(w1 h1 d1 a1)
+                                               (loop (car label))]
+                                              [(w2 h2 d2 a2)
+                                               (loop (cdr label))])
+                                   (values (combine-w w1 w2) (combine-h h1 h2)
+                                           (combine-h d1 d1) (combine-h a1 a2)))]
+                                [else
+                                 (send measure-dc get-text-extent label #f #t)]))]
+                  [(->int) (lambda (v) (inexact->exact (floor v)))])
+       (resize (->int (* scale-h (max (+ w dw) min-w)))
+               (->int (* scale-w (max (+ h dh) min-h)))))))
 
   (define/public (popup-menu m x y)
     (let ([gx (box x)]

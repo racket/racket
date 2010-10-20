@@ -58,7 +58,7 @@
     (define label-h 0)
     
     (set-control-font #f)
-    (auto-size label 0 0 0 0
+    (auto-size #f label 0 0 0 0
                (lambda (w h)
                  (set! label-h h)
                  (set-size -11111 -11111 (+ w 10) (+ h 10))))

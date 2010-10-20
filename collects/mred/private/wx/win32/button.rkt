@@ -64,13 +64,13 @@
     (define/public (get-button-background)
       #xFFFFFF)
 
-    (define/public (auto-size-button label)
+    (define/public (auto-size-button font label)
       (cond
        [bitmap?
-        (auto-size label 0 0 4 4)]
+        (auto-size font label 0 0 4 4)]
        [else
-        (auto-size label 60 20 12 0 #:scale-w 1.1 #:scale-h 1.1)]))
-    (auto-size-button label)
+        (auto-size font label 60 20 12 0 #:scale-w 1.1 #:scale-h 1.1)]))
+    (auto-size-button font label)
 
     (subclass-control (get-hwnd))
 

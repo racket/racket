@@ -118,7 +118,7 @@
 
     (if (symbol? label)
         (set-size -11111 -11111 32 32)
-        (auto-size label 0 0 0 0))
+        (auto-size font label 0 0 0 0))
 
     (define/override (get-setimage-message)
       STM_SETIMAGE)))

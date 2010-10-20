@@ -18,6 +18,12 @@
      (ffi-lib "libgobject-2.0-0")
      (ffi-lib "libpango-1.0-0")]))
 
+(define pangowin32-lib 
+  (case (system-type)
+    [(windows) 
+     (ffi-lib "libpangowin32-1.0-0")]
+    [else #f]))
+
 (define pangocairo-lib 
   (case (system-type)
     [(macosx)
@@ -40,6 +46,8 @@
 (define-ffi-definer define-pango pango-lib
   #:provide provide)
 (define-ffi-definer define-pangocairo pangocairo-lib
+  #:provide provide)
+(define-ffi-definer define-pangowin32 pangowin32-lib
   #:provide provide)
 (define-ffi-definer define-glib glib-lib
   #:provide provide)
@@ -108,6 +116,8 @@
 
 
 (define-glib g_object_unref (_fun _pointer -> _void)
+  #:wrap (deallocator))
+(define-glib g_free (_fun _pointer -> _void)
   #:wrap (deallocator))
 
 (define-pangocairo pango_cairo_font_map_get_default (_fun -> PangoFontMap)) ;; not an allocator
@@ -211,6 +221,21 @@
 (define-pango pango_font_description_set_weight (_fun PangoFontDescription _int -> _void))
 (define-pango pango_font_description_set_size (_fun PangoFontDescription _int -> _void))
 (define-pango pango_font_description_set_absolute_size (_fun PangoFontDescription _double* -> _void))
+
+(define _PangoWin32FontCache (_cpointer 'PangoWin32FontCache))
+(define _HFONT (_cpointer 'HFONT))
+(define _LOGFONT-pointer _pointer)
+(define-pangowin32 pango_win32_font_map_for_display (_fun -> PangoFontMap)
+  #:make-fail make-not-available)
+(define-pangowin32 pango_win32_font_logfont (_fun PangoFont -> _LOGFONT-pointer)
+  #:make-fail make-not-available
+  #:wrap (allocator g_free))
+(define-pangowin32 pango_win32_font_cache_unload (_fun _PangoWin32FontCache _HFONT -> _void)
+  #:make-fail make-not-available)
+(define-pangowin32 pango_win32_font_cache_load (_fun _PangoWin32FontCache _LOGFONT-pointer -> _HFONT)
+  #:make-fail make-not-available)
+(define-pangowin32 pango_win32_font_cache_new (_fun -> _PangoWin32FontCache)
+  #:make-fail make-not-available)
 
 (define-enum
   0

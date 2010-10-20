@@ -112,7 +112,8 @@
   (define value-h 0)
 
   (if panel-hwnd
-      (auto-size (list (format "~s" lo)
+      (auto-size font
+                 (list (format "~s" lo)
                        (format "~s" hi))
                  0 0 0 0 (lambda (w h)
                            (set! value-w w)

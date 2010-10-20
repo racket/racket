@@ -22,8 +22,8 @@
   (define/override (get-button-background)
     (GetSysColor COLOR_BTNFACE))
 
-  (define/override (auto-size-button label)
-    (auto-size label 0 0 20 0))
+  (define/override (auto-size-button font label)
+    (auto-size font label 0 0 20 0))
 
   (define/public (set-value v)
     (void (SendMessageW (get-hwnd) BM_SETCHECK (if v 1 0) 0)))

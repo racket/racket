@@ -58,7 +58,8 @@
     (set-control-font font)
     ;; setting the choice height somehow sets the 
     ;; popup-menu size, not the control that you see
-    (auto-size (if (null? choices) (list "Choice") choices)
+    (auto-size font
+               (if (null? choices) (list "Choice") choices)
                0 0 40 0
                (lambda (w h)
                  (set-size -11111 -11111 w (* h 8))))

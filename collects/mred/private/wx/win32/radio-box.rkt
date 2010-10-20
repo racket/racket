@@ -80,9 +80,10 @@
               (ShowWindow radio-hwnd SW_SHOW)
               (set-control-font font radio-hwnd)
               (let-values ([(w1 h) 
-                            (auto-size label 0 0 20 4 (lambda (w h)
-                                                        (MoveWindow radio-hwnd 0 (+ y SEP) w h #t)
-                                                        (values w h)))])
+                            (auto-size font label 0 0 20 4
+                                       (lambda (w h)
+                                         (MoveWindow radio-hwnd 0 (+ y SEP) w h #t)
+                                         (values w h)))])
                 (cons radio-hwnd
                       (loop (+ y SEP h) (max w1 w) (cdr labels))))))))
 

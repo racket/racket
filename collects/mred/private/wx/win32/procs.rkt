@@ -85,7 +85,7 @@
 (define run-printout (make-run-printout printer-dc%))
 
 (define (get-double-click-time) 500)
-(define (get-control-font-face) "Tahoma")
+(define (get-control-font-face) (get-theme-font-face))
 (define (get-control-font-size) (get-theme-font-size))
 (define (get-control-font-size-in-pixels?) #t)
 (define (flush-display) (void))
