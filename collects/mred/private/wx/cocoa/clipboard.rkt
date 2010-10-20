@@ -56,7 +56,9 @@
             [a (tell NSArray arrayWithObjects:
                      #:type (_list i _NSString) (map map-type types)
                      count: #:type _NSUInteger (length types))])
-        (set! counter (tell #:type _NSInteger pb clearContents))
+        (set! counter (tell #:type _NSInteger pb 
+                            declareTypes: a 
+                            owner: #f))
         (set! client c)
         (for ([type (in-list types)])
           (let* ([bstr (send c get-data type)]
