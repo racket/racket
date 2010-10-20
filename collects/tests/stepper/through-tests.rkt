@@ -23,7 +23,10 @@
     [(list name models string expected-steps)
      (when (assq name list-of-tests)
        (error 'add-test "name ~v is already in the list of tests" name))
-     (set! list-of-tests (append list-of-tests (list (list name (list models string expected-steps)))))]))
+     (set! list-of-tests 
+           (append list-of-tests 
+                   (list (list name
+                               (list models string expected-steps)))))]))
 
 (define (t1 name models string expected-steps)
   (add-test (list name models string expected-steps)))
@@ -1460,23 +1463,27 @@
   (t 'local-struct/i m:intermediate
      (define (f x) (local ((define-struct a (b c))) x))  (f 1)
      :: (define (f x) (local ((define-struct a (b c))) x)) {(f 1)}
-     -> (define (f x) (local ((define-struct a (b c))) x)) {(define-struct a_1 (b c))} {1})
+     -> (define (f x) (local ((define-struct a (b c))) x)) 
+     {(define-struct a_1 (b c))} {1})
   
   (t 'local-struct/ilam m:intermediate-lambda
      (define (f x) (local ((define-struct a (b c))) x))  (f 1)
      :: (define (f x) (local ((define-struct a (b c))) x)) {(f 1)}
-     -> (define (f x) (local ((define-struct a (b c))) x)) {((lambda (x) (local ((define-struct a (b c))) x)) 1)}
-     -> (define (f x) (local ((define-struct a (b c))) x)) {(define-struct a_1 (b c))} {1})
+     -> (define (f x) (local ((define-struct a (b c))) x)) 
+     {((lambda (x) (local ((define-struct a (b c))) x)) 1)}
+     -> (define (f x) (local ((define-struct a (b c))) x)) 
+     {(define-struct a_1 (b c))} {1})
   
   
  
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
-    (parameterize (#;[disable-stepper-error-handling #t]
+    (parameterize ([disable-stepper-error-handling #t]
                    #;[display-only-errors #t]
                    #;[store-steps #f]
                    #;[show-all-steps #t])
-      #;(run-tests '(check-expect forward-ref check-within check-within-bad check-error check-error-bad))
+      #;(run-tests '(check-expect forward-ref check-within check-within-bad
+                                  check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
       #;(run-all-tests)
       (run-tests '(check-expect))))
