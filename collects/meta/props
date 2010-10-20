@@ -1861,6 +1861,7 @@ path/s is either such a string or a list of them.
 "collects/tests/srpersist/srptests.rktl" drdr:command-line #f
 "collects/tests/stepper" responsible (clements)
 "collects/tests/stepper/already-defined.rktl" drdr:command-line #f
+"collects/tests/stepper/automatic-tests.rkt" drdr:timeout 600
 "collects/tests/stepper/bad-letrec-test.rktl" drdr:command-line #f
 "collects/tests/stepper/constructor-redexes.rktl" drdr:command-line #f
 "collects/tests/stepper/global-prim-reduction.rktl" drdr:command-line #f
