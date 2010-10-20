@@ -106,7 +106,14 @@
                                            #'test-engine))))))))
              'stepper-skipto
              (append skipto/third ;; let
-                     skipto/third skipto/third ;; unless (it expands into (if (let-values () ...))
+                     skipto/third skipto/second
+                     ;; something funny going on here; I can't see how Mike's 
+                     ;; fix could ever have worked.  Possibly related: this
+                     ;; file is still written in the mzscheme language?
+                     ;; ... no, that doesn't seem to pan out.
+                     ;; okay, I really don't understand why, but it appears 
+                     ;; that in this context, 'when' is still expanding
+                     ;; into a begin, rather than a (let-values () ...)
                      skipto/cdr skipto/third ;; application of insert-test
                      '(syntax-e cdr cdr syntax-e car) ;; lambda
                      )))
