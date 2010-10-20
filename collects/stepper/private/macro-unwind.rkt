@@ -244,7 +244,7 @@
                              (syntax-property stx 'user-source))
                         (eq? user-position
                              (syntax-property stx 'user-position)))
-                   (syntax-case stx (if begin)
+                   (syntax-case stx (if begin let-values)
                      ;; the else clause disappears when it's a
                      ;; language-inserted else clause
                      [(if test result)
@@ -254,7 +254,7 @@
                             (loop (syntax else-clause)))]
                      ;; else clause appears momentarily in 'before,' even
                      ;; though it's a 'skip-completely'
-                     [(begin . rest) null]
+                     [(let-values () . rest) null]
                      [else-stx
                       (error 'unwind-cond
                              "expected an if, got: ~.s"

@@ -13,8 +13,7 @@
            "model-settings.ss"
            "shared.ss"
            "my-macros.ss"
-           (for-syntax scheme/base)
-           #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss"))
+           (for-syntax scheme/base))
 
   (provide/contract 
    [reconstruct-completed (syntax? 

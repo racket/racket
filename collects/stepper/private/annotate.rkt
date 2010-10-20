@@ -146,36 +146,37 @@
                
                
                [rewritten
-                (kernel:kernel-syntax-case stx #f
-                                           
-                                           ; cond :
-                                           [(if test (begin then) else-stx)
-                                            (let ([origin (syntax-property stx 'origin)]
-                                                  [rebuild-if
-                                                   (lambda (new-cond-test)
-                                                     (let* ([new-then (recur-regular (syntax then))]
-                                                            [rebuilt (stepper-syntax-property
-                                                                      (rebuild-stx `(if ,(recur-regular (syntax test))
-                                                                                        ,new-then
-                                                                                        ,(recur-in-cond (syntax else-stx) new-cond-test))
-                                                                                   stx)
-                                                                      'stepper-hint
-                                                                      'comes-from-cond)])
-                                                       ; move the stepper-else mark to the if, if it's present:
-                                                       (if (stepper-syntax-property (syntax test) 'stepper-else)
-                                                           (stepper-syntax-property rebuilt 'stepper-else #t)
-                                                           rebuilt)))])
-                                              (cond [(cond-test stx) ; continuing an existing 'cond'
-                                                     (rebuild-if cond-test)]
-                                                    [(and origin (pair? origin) (eq? (syntax-e (car origin)) 'cond)) ; starting a new 'cond'
-                                                     (rebuild-if (lambda (test-stx) 
-                                                                   (and (eq? (syntax-source stx) (syntax-source test-stx))
-                                                                        (eq? (syntax-position stx) (syntax-position test-stx)))))]
-                                                    [else ; not from a 'cond' at all.
-                                                     (rebuild-stx `(if ,@(map recur-regular (list (syntax test) (syntax (begin then)) (syntax else-stx)))) stx)]))]
-                                           [(begin body) ; else clauses of conds; ALWAYS AN ERROR CALL
-                                            (cond-test stx)
-                                            (stepper-syntax-property stx 'stepper-skip-completely #t)]
+                (kernel:kernel-syntax-case 
+                 stx
+                 #f
+                 ; cond :
+                 [(#%if test (#%let () then) else-stx)
+                  (let ([origin (syntax-property stx 'origin)]
+                        [rebuild-if
+                         (lambda (new-cond-test)
+                           (let* ([new-then (recur-regular (syntax then))]
+                                  [rebuilt (stepper-syntax-property
+                                            (rebuild-stx `(if ,(recur-regular (syntax test))
+                                                              ,new-then
+                                                              ,(recur-in-cond (syntax else-stx) new-cond-test))
+                                                         stx)
+                                            'stepper-hint
+                                            'comes-from-cond)])
+                             ; move the stepper-else mark to the if, if it's present:
+                             (if (stepper-syntax-property (syntax test) 'stepper-else)
+                                 (stepper-syntax-property rebuilt 'stepper-else #t)
+                                 rebuilt)))])
+                    (cond [(cond-test stx) ; continuing an existing 'cond'
+                           (rebuild-if cond-test)]
+                          [(and origin (pair? origin) (eq? (syntax-e (car origin)) 'cond)) ; starting a new 'cond'
+                           (rebuild-if (lambda (test-stx) 
+                                         (and (eq? (syntax-source stx) (syntax-source test-stx))
+                                              (eq? (syntax-position stx) (syntax-position test-stx)))))]
+                          [else ; not from a 'cond' at all.
+                           (rebuild-stx `(if ,@(map recur-regular (list (syntax test) (syntax (begin then)) (syntax else-stx)))) stx)]))]
+                 [(begin body) ; else clauses of conds; ALWAYS AN ERROR CALL
+                  (cond-test stx)
+                  (stepper-syntax-property stx 'stepper-skip-completely #t)]
                                            
                                            ; wrapper on a local.  This is necessary because teach.ss expands local into a trivial let wrapping a bunch of
                                            ;  internal defines, and therefore the letrec-values on which I want to hang the 'stepper-hint doesn't yet
