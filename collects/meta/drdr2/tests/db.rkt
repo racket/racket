@@ -18,6 +18,15 @@
        (for ([j (in-range 10)])
          (test
           (db-ref db (number->string i) (number->string j)) =>
-          (num (+ i j))))))
+          (num (+ i j))))
+       
+       (for ([j (in-range 10)])
+         (test
+          (db-set! db (num (* i j)) (number->string i) (number->string j))))
+       
+       (for ([j (in-range 10)])
+         (test
+          (db-ref db (number->string i) (number->string j)) =>
+          (num (* i j))))))
     
     (db-close! db))))
