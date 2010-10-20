@@ -5,7 +5,9 @@
 
 (let ((outer-namespace (current-namespace)))
   (parameterize ([display-only-errors #t]
-		 [current-output-port (open-output-string)]
+                 ;; display-only-errors is insufficient, because the evals
+                 ;; actually cause output.  So we just eat stdout.
+                 [current-output-port (open-output-string)]
 		 [current-namespace (make-base-namespace)])
     ;; make sure the tests' print-convert sees the teaching languages' properties
     #;(namespace-attach-module outer-namespace 'mzlib/pconvert-prop (current-namespace))
