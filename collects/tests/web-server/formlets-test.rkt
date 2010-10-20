@@ -384,6 +384,13 @@
                       (option ((value "1")) 2)
                       (option ((value "2")) 3))))
       (test-equal? "multiselect-input"
+                   (test-display (multiselect-input (list 1 2 3) #:attributes '([test "val"])))
+                   '((select
+                      ((multiple "true") (name "input_0") (test "val"))
+                      (option ((value "0")) 1)
+                      (option ((value "1")) 2)
+                      (option ((value "2")) 3))))
+      (test-equal? "multiselect-input"
                    (test-display (multiselect-input (list 1 2 3) #:multiple? #t))
                    '((select
                       ((multiple "true") (name "input_0"))
@@ -431,6 +438,13 @@
                    (test-display (select-input (list 1 2 3)))
                    '((select
                       ((name "input_0"))
+                      (option ((value "0")) 1)
+                      (option ((value "1")) 2)
+                      (option ((value "2")) 3))))
+      (test-equal? "select-input"
+                   (test-display (select-input (list 1 2 3) #:attributes '([test "val"])))
+                   '((select
+                      ((name "input_0") [test "val"])
                       (option ((value "0")) 1)
                       (option ((value "1")) 2)
                       (option ((value "2")) 3))))

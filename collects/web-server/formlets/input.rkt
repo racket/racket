@@ -174,6 +174,7 @@
                    attrs))))))
 
 (define (multiselect-input l
+                           #:attributes [attrs empty]
                            #:multiple? [multiple? #t]
                            #:selected? [selected? (λ (x) #f)]
                            #:display [display (λ (x) x)])
@@ -198,7 +199,8 @@
    (make-input*
     (lambda (name)
       `(select (,@(if multiple? '([multiple "true"]) empty)
-                [name ,name])
+                [name ,name]
+                ,@attrs)
                ,@(for/list ([(vn e) (in-hash value->element)])
                    (define v (number->string vn))
                    `(option ([value ,v]
@@ -208,11 +210,13 @@
                             ,(display e))))))))
 
 (define (select-input l 
+                      #:attributes [attrs empty]
                       #:selected? [selected? (λ (x) #f)]
                       #:display [display (λ (x) x)])
   (cross
    (pure first)
    (multiselect-input l
+                      #:attributes attrs
                       #:multiple? #f
                       #:selected? selected?
                       #:display display)))
@@ -280,20 +284,25 @@
        . ->* .
        (formlet/c (or/c false/c binding?)))]
  [button ((bytes? bytes?)
-          (#:disabled boolean?
-                      #:value (or/c false/c bytes?)
-                      #:attributes (listof (list/c symbol? string?)))
+          (#:disabled
+           boolean?
+           #:value (or/c false/c bytes?)
+           #:attributes (listof (list/c symbol? string?)))
           . ->* .
           (formlet/c (or/c false/c binding?)))]
  [multiselect-input ((sequence?)
-                     (#:multiple? boolean?
-                                  #:selected? (any/c . -> . boolean?)
-                                  #:display (any/c . -> . pretty-xexpr/c))
+                     (#:attributes 
+                      (listof (list/c symbol? string?))
+                      #:multiple? boolean?
+                      #:selected? (any/c . -> . boolean?)
+                      #:display (any/c . -> . pretty-xexpr/c))
                      . ->* .
                      (formlet/c (listof any/c)))]
  [select-input ((sequence?)
-                (#:selected? (any/c . -> . boolean?)
-                             #:display (any/c . -> . pretty-xexpr/c))
+                (#:attributes 
+                 (listof (list/c symbol? string?))
+                 #:selected? (any/c . -> . boolean?)
+                 #:display (any/c . -> . pretty-xexpr/c))
                 . ->* .
                 (formlet/c any/c))]
  [textarea-input (()

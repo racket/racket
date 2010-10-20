@@ -367,18 +367,20 @@ These @tech{formlet}s are the main combinators for form input.
 }      
                                                              
 @defproc[(multiselect-input [l sequence?]
+                            [#:attributes attrs (listof (list/c symbol? string?)) empty]
                             [#:multiple? multiple? boolean? #t]
                             [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]
                             [#:display display (any/c . -> . xexpr/c) (λ (x) x)])
         (formlet/c list?)]{
- This @tech{formlet} renders using an SELECT element with an OPTION for each element of the sequence. If @racket[multiple?] is @racket[#t], then multiple options may be selected. An element is selected if @racket[selected?] returns @racket[#t]. Elements are displayed with @racket[display].
+ This @tech{formlet} renders using an SELECT element with the attributes given with an OPTION for each element of the sequence. If @racket[multiple?] is @racket[#t], then multiple options may be selected. An element is selected if @racket[selected?] returns @racket[#t]. Elements are displayed with @racket[display].
 }
 
 @defproc[(select-input [l sequence?]
+                       [#:attributes attrs (listof (list/c symbol? string?)) empty]
                        [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]
                        [#:display display (any/c . -> . xexpr/c) (λ (x) x)])
         (formlet/c any/c)]{
- This @tech{formlet} renders using an SELECT element with an OPTION for each element of the sequence. An element is selected if @racket[selected?] returns @racket[#t]. Elements are displayed with @racket[display].
+ This @tech{formlet} renders using an SELECT element with the attributes given with an OPTION for each element of the sequence. An element is selected if @racket[selected?] returns @racket[#t]. Elements are displayed with @racket[display].
 }
                           
 @defproc[(required [f (formlet/c (or/c false/c binding?))])
