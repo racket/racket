@@ -1,5 +1,7 @@
 #lang racket
 
+(require racket/runtime-path)
+
 (define (flip n bit)
   (define new-bit (expt 2 bit))
   (bitwise-xor new-bit n))
@@ -30,6 +32,10 @@
     (run-file bs)))
 
 
+(define collects-dir 
+  (find-executable-path (find-system-path 'exec-file)
+			(find-system-path 'collects-dir)))
+
 (command-line 
  #:once-each
  ["-s" seed "random seed" (set! sd (string->number seed))]
@@ -38,11 +44,8 @@
   (set! fl file)]
  ["-d" dir* "dir to run" (set! dir dir*)]
  ["-c" "run over all collections"
- (set! dir (find-executable-path (find-system-path 'exec-file)
-				 (find-system-path 'collects-dir)))]
+ (set! dir collects-dir)]
   #:args () (void))
-
-(displayln dir)
 
 (cond [fl (run fl)]
       [dir (for ([p (in-directory dir)]
