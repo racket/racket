@@ -696,7 +696,9 @@ Defines a reduction relation casewise, one case for each of the
 clauses beginning with @racket[-->] (or with @racket[arrow], if
 specified). Each of the @racket[pattern]s
 refers to the @racket[language], and binds variables in the
-@|tttterm|. 
+@|tttterm|. If present, the pattern following the @racket[#:domain]
+keyword specifies what terms the reduction relation operates on and
+is checked when the relation is used.
 
 Following the @|pattern| and @|tterm| can be the name of the
 reduction rule, declarations of some fresh variables, and/or
