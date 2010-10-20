@@ -171,5 +171,8 @@
   (define/public (get-text-data)
     (or (gtk_clipboard_wait_for_text cb) ""))
 
+  (define/public (get-bitmap-data)
+    #f)
+  
   (super-new))
 

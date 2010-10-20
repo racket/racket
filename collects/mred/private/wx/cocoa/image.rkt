@@ -2,17 +2,23 @@
 (require ffi/unsafe
          ffi/unsafe/objc
          racket/class
+         racket/draw/cairo
+         racket/draw/local
          "../common/bstr.rkt"
          "utils.rkt"
          "types.rkt"
          "const.rkt"
          "cg.rkt"
+         "bitmap.rkt"
          "../../lock.rkt"
          (only-in '#%foreign ffi-callback))
 
-(provide bitmap->image)
+(provide bitmap->image
+         image->bitmap)
 
 (import-class NSImage NSGraphicsContext)
+
+(define NSCompositeCopy 1)
 
 (define _CGImageRef (_cpointer 'CGImageRef))
 (define _CGColorSpaceRef (_cpointer 'CGColorSpaceRef))
@@ -103,3 +109,28 @@
            (tellv i unlockFocus)
            i))))))
 
+(define (image->bitmap i)
+  (let* ([s (tell #:type _NSSize i size)]
+         [w (NSSize-width s)]
+         [h (NSSize-height s)]
+         [bm (make-object quartz-bitmap% 
+                          (inexact->exact (ceiling w))
+                          (inexact->exact (ceiling h)))]
+         [surface (let ([s (send bm get-cairo-surface)])
+                    (cairo_surface_flush s)
+                    s)]
+         [cg (cairo_quartz_surface_get_cg_context surface)]
+         [gc (tell NSGraphicsContext
+                   graphicsContextWithGraphicsPort: #:type _pointer cg
+                   flipped: #:type _BOOL #f)])
+    (CGContextSaveGState cg)
+    (CGContextTranslateCTM cg 0 h)
+    (CGContextScaleCTM cg 1 -1)
+    (tellv NSGraphicsContext saveGraphicsState)
+    (tellv NSGraphicsContext setCurrentContext: gc)
+    (let ([r (make-NSRect (make-NSPoint 0 0) (make-NSSize w h))])
+      (tellv i drawInRect: #:type _NSRect r fromRect: #:type _NSRect r 
+             operation: #:type _int NSCompositeCopy fraction: #:type _CGFloat 1.0))
+    (tellv NSGraphicsContext restoreGraphicsState)
+    (CGContextRestoreGState cg)
+    bm))

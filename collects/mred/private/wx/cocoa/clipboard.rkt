@@ -4,6 +4,7 @@
          ffi/unsafe/objc
          "utils.rkt"
          "types.rkt"
+         "image.rkt"
          "../common/bstr.rkt"
           "../../syntax.rkt"
           "../../lock.rkt")
@@ -11,7 +12,7 @@
 (provide clipboard-driver%
          has-x-selection?)
 
-(import-class NSPasteboard NSArray NSData)
+(import-class NSPasteboard NSArray NSData NSImage NSGraphicsContext)
 (import-protocol NSPasteboardOwner)
 
 (define (has-x-selection?) #f)
@@ -85,4 +86,12 @@
         (and data
              (let ([len (tell #:type _NSUInteger data length)]
                    [bstr (tell #:type _pointer data bytes)])
-               (scheme_make_sized_byte_string bstr len 1))))))))
+               (scheme_make_sized_byte_string bstr len 1)))))))
+
+  (define/public (get-bitmap-data)
+    (atomically
+     (with-autorelease
+      (let ([i (tell (tell NSImage alloc) 
+                     initWithPasteboard: (tell NSPasteboard generalPasteboard))])
+        (and i
+             (image->bitmap i)))))))

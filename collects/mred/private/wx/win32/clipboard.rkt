@@ -152,5 +152,8 @@
 
   (define/public (get-text-data)
     (or (get-data "TEXT" #t) ""))
+
+  (define/public (get-bitmap-data)
+    #f)
                 
   (super-new))

@@ -28,7 +28,7 @@
 (define _cairo_t (_cpointer 'cairo_t))
 (define _cairo_pattern_t (_cpointer 'cairo_pattern_t))
 (define _cairo_font_options_t (_cpointer/null 'cairo_font_options_t))
-(define _CGContextRef _pointer)
+(define _CGContextRef (_cpointer 'CGContextRef))
 
 (define-cstruct _cairo_matrix_t ([xx _double*]
                                  [yx _double*]
@@ -55,10 +55,15 @@
   (_fun _CGContextRef _uint _uint -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
+(define-cairo cairo_quartz_surface_get_cg_context
+  (_fun _cairo_surface_t -> _CGContextRef)
+  #:make-fail make-not-available)
+
 (define-cairo cairo_win32_surface_create
   (_fun _pointer -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
+
 (define-cairo cairo_surface_create_similar
   (_fun _cairo_surface_t _int _int _int -> _cairo_surface_t))
 

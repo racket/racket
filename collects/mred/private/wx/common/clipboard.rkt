@@ -37,7 +37,7 @@
     (eq? c (send driver get-client)))
 
   (def/public (get-clipboard-bitmap [exact-integer? timestamp])
-    #f)
+    (send driver get-bitmap-data))
   (def/public-unimplemented set-clipboard-bitmap)
   (def/public (get-clipboard-data [string? type]
                                   [exact-integer? timestamp])
