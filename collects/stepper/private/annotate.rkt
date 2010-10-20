@@ -150,7 +150,7 @@
                  stx
                  #f
                  ; cond :
-                 [(#%if test (#%let () then) else-stx)
+                 [(if test (let-values () then) else-stx)
                   (let ([origin (syntax-property stx 'origin)]
                         [rebuild-if
                          (lambda (new-cond-test)
