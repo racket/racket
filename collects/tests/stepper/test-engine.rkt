@@ -6,7 +6,6 @@
          lang/run-teaching-program
          (only-in srfi/13 string-contains)
          scheme/contract
-         #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
          "language-level-model.ss")
 
 
@@ -92,11 +91,6 @@
 ;; read the code for the comparison given in "compare-steps", below.
 
 ;; run the named test, return #t if a failure occurred during the test.
-
-;; WARNING: evaluating code expanded using run-teaching-program causes mutation of the
-;; current namespace.  Unfortunately, wrapping a parameterize around each test (i.e., in this
-;; file) causes unacceptable slowdown and severe weirdness.  I tried saving and restoring 
-;; the namespace through mutation, and got severe weirdness again.
 
 (define (run-one-test name models exp-str expected-steps)
   (unless (display-only-errors)
@@ -269,21 +263,6 @@
              #f)))
 
 
-
-;; DEBUGGING TO TRY TO FIND OUT WHY THIS DOESN'T WORK IN AN AUTOMATED TESTER:
-;; test-sequence : ll-model? string? steps? -> (void)
-;; given a language model and an expression and a sequence of steps,
-;; check to see whether the stepper produces the desired steps
-;;define (test-sequence the-ll-model exp-str expected-steps error-box)
-#;(match mz
-  [(struct ll-model (namespace-spec teachpack-specs render-settings show-lambdas-as-lambdas? enable-testing?))
-   (let* ([p2 (open-input-string "134")]
-          [module-id (gensym "stepper-module-name-")]
-          ;; thunk this so that syntax errors happen within the error handlers:
-          [expanded-thunk 
-           (lambda () (expand-teaching-program p2 read-syntax namespace-spec teachpack-specs #f module-id enable-testing?))])
-     (display (expanded-thunk))
-     (test-sequence/core render-settings show-lambdas-as-lambdas? expanded-thunk '() (box #f)))])
 
 
 
