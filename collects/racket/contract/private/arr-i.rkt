@@ -676,8 +676,9 @@
                                                                         'racket/contract:negative-position 
                                                                         this->i)
                                                                        'racket/contract:contract-on-boundary 
-                                                                       (gensym '->i-indy-boundary))
-                                                                    val blame))))
+                                                                       (gensym '->i-indy-boundary)) 
+                                                                    val blame
+                                                                    un-dep))))
                                              args+rst)))
                 ;; then the non-dependent argument contracts that are themselves dependend on
                 (list #,@(filter values
@@ -711,7 +712,8 @@
                                                                                     this->i)
                                                                                    'racket/contract:contract-on-boundary 
                                                                                    (gensym '->i-indy-boundary))
-                                                                                val blame)))))
+                                                                                val blame
+                                                                                un-dep)))))
                                                      (istx-ress an-istx))))
                       #''())
                 #,(if (istx-ress an-istx)

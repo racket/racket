@@ -173,30 +173,34 @@
               (vector)
               (begin-lifted (box #f)))))))]))
 
-;; this macro optimizes 'e' as a contract 
+;; this macro optimizes 'e' as a contract,
+;; using otherwise-id if it does not recognize 'e'.
 (define-syntax (opt/direct stx)
   (syntax-case stx ()
-    [(_ e val-e blame-e)
-     (let*-values ([(info) (make-opt/info #'ctc
-                                          #'val
-                                          #'blame
-                                          #f
-                                          '()
-                                          #f
-                                          #f
-                                          #'this
-                                          #'that)]
-                   [(next lifts superlifts partials _ __ stronger-ribs) (opt/i info #'e)])
-       #`(let ([ctc e] ;;; hm... what to do about this?!
-               [val val-e]
-               [blame blame-e])
-           #,(bind-superlifts
-              superlifts
-              (bind-lifts
-               lifts
-               (bind-superlifts
-                partials
-                next)))))]))
+    [(_ e val-e blame-e otherwise-id)
+     (identifier? #'otherwise-id)
+     (if (top-level-unknown? #'e)
+         #'(otherwise-id e val-e blame-e)
+         (let*-values ([(info) (make-opt/info #'ctc
+                                              #'val
+                                              #'blame
+                                              #f
+                                              '()
+                                              #f
+                                              #f
+                                              #'this
+                                              #'that)]
+                       [(next lifts superlifts partials _ __ stronger-ribs) (opt/i info #'e)])
+           #`(let ([ctc e] ;;; hm... what to do about this?!
+                   [val val-e]
+                   [blame blame-e])
+               #,(bind-superlifts
+                  superlifts
+                  (bind-lifts
+                   lifts
+                   (bind-superlifts
+                    partials
+                    next))))))]))
 
 (define-syntax (begin-lifted stx)
   (syntax-case stx ()

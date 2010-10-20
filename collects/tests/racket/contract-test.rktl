@@ -2605,6 +2605,70 @@
 			   'neg)
 	 #f))
 
+  (test/spec-passed/result
+   '->i48
+   '(let ([x '()])
+      ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+		      [res () (begin
+				(set! x (cons 'res-eval x))
+				(λ (res)
+				   (set! x (cons 'res-check x))))])
+		 (λ (arg) 
+		    (set! x (cons 'body x)))
+		 'pos
+		 'neg)
+       1)
+      x)
+   '(res-check res-eval body arg-eval))
+
+  (test/spec-passed/result
+   '->i49
+   '(let ([x '()])
+     ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+		     [_ () (begin
+			     (set! x (cons 'res-eval x))
+			     (λ (res)
+				(set! x (cons 'res-check x))))])
+		(λ (arg) 
+		   (set! x (cons 'body x)))
+		'pos
+		'neg)
+      1)
+     x)
+   '(res-check body res-eval arg-eval))
+
+  (test/spec-passed/result
+   '->i50
+   '(let ([x '()])
+     ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+		     [res (begin
+			    (set! x (cons 'res-eval x))
+			    (λ (res)
+			       (set! x (cons 'res-check x))))])
+		(λ (arg) 
+		   (set! x (cons 'body x)))
+		'pos
+		'neg)
+      1)
+     x)
+   '(res-check body res-eval arg-eval))
+
+  (test/spec-passed/result
+   '->i51
+   '(let ([x '()])
+     ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+		     [_ (begin
+			  (set! x (cons 'res-eval x))
+			  (λ (res)
+			     (set! x (cons 'res-check x))))])
+		(λ (arg) 
+		   (set! x (cons 'body x)))
+		'pos
+		'neg)
+      1)
+     x)
+   '(res-check body res-eval arg-eval))
+
   (test/pos-blame
    '->i-arity1
    '(contract (->i ([x number?]) () any) (λ () 1) 'pos 'neg))
