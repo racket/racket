@@ -1,8 +1,7 @@
 #lang scheme
 
 (require "through-tests.ss" 
-         "test-engine.ss"
-         test-engine/racket-tests)
+         "test-engine.ss")
 
 (let ((outer-namespace (current-namespace)))
   (parameterize ([display-only-errors #t]
