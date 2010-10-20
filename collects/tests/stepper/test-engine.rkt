@@ -176,12 +176,18 @@
             (disable-stepper-error-handling))))
     (error-display-handler current-error-display-handler)))
 
+(define-namespace-anchor n-anchor)
+
 ;; call-iter-on-each : (-> syntax?) (syntax? (-> 'a) -> 'a) -> void/c
 ;; call the given iter on each syntax in turn (iter bounces control
 ;; back to us by calling the followup-thunk).
 (define (call-iter-on-each stx-thunk iter)
-  (parameterize ([current-namespace (make-base-empty-namespace)])
-    (namespace-require 'racket/base)
+  (let ([ns (make-base-namespace)])
+    ;; gets structures to print correctly. Copied from fix in command-line tests.
+    (namespace-attach-module (namespace-anchor->empty-namespace n-anchor)
+                             'mzlib/pconvert-prop
+                             ns)
+  (parameterize ([current-namespace ns])
     (namespace-require 'test-engine/racket-tests)
     ;; make the test engine happy by adding a binding for test~object:
     (namespace-set-variable-value! 'test~object #f)
@@ -190,7 +196,7 @@
              [followup-thunk (if (eof-object? next) void iter-loop)]
              [expanded (expand next)])
         ;;(printf "~v\n" expanded)
-        (iter expanded followup-thunk)))))
+        (iter expanded followup-thunk))))))
 
 
 (define (warn error-box who fmt . args)

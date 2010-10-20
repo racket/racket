@@ -1478,5 +1478,5 @@
                    #;[show-all-steps #t])
       #;(run-tests '(check-expect forward-ref check-within check-within-bad check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
-      (run-all-tests)
-      #;(run-tests '(cond1))))
+      #;(run-all-tests)
+      (run-tests '(check-expect))))
