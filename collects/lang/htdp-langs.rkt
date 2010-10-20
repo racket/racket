@@ -662,7 +662,7 @@
           
           (inherit default-settings)
           (define/override (metadata->settings metadata)
-            (let* ([table (metadata->table metadata)] ;; extract the table
+            (let* ([table (massage-metadata (metadata->table metadata))] ;; extract the table
                    [ssv (assoc 'htdp-settings table)])
               (if ssv
                   (let ([settings-list (vector->list (cadr ssv))])
@@ -672,11 +672,18 @@
                         (default-settings)))
                   (default-settings))))
           
+          (define/private (massage-metadata md)
+            (if (and (list? md)
+                     (andmap (λ (x) (and (pair? x) (symbol? (car x)))) md))
+                md
+                '()))
+          
           (define/private (metadata->table metadata)
-            (let ([p (open-input-string metadata)])
-              (regexp-match #rx"\n#reader" p) ;; skip to reader
-              (read p) ;; skip module
-              (read p)))
+            (with-handlers ((exn:fail:read? (λ (x) #f)))
+              (let ([p (open-input-string metadata)])
+                (regexp-match #rx"\n#reader" p) ;; skip to reader
+                (read p) ;; skip module
+                (read p))))
           
           (define/override (get-metadata-lines) 3)
           
