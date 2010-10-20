@@ -1,5 +1,5 @@
 #lang racket/base
-  (require mred/mred ;; ensure that this module is always loaded since it is shared below for pretty big
+  (require (prefix-in : mred/mred) ;; ensure that this module is always loaded since it is shared below for pretty big
            racket/unit
            mrlib/hierlist
            racket/class
