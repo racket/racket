@@ -16,3 +16,10 @@ DrDr2 is a network of message passing servers.
 - The analyzer records data for the renderer and informs the notifier
 
 - The renderer queries the database
+
+----
+
+DrDr2 uses the MongoDB database for storage
+
+DrDr2 is monitored using Monit
+
