@@ -850,7 +850,8 @@
   (let ([lang-gen (compile lang what)])
     (let-values ([(pats srcs)
                   (cond [(metafunc-proc? mf/rr)
-                         (values (map metafunc-case-lhs-pat (metafunc-proc-cases mf/rr))
+                         (values (map (λ (case) ((metafunc-case-lhs+ case) lang)) 
+                                      (metafunc-proc-cases mf/rr))
                                  (metafunction-srcs mf/rr))]
                         [(reduction-relation? mf/rr)
                          (values (map (λ (rwp) ((rewrite-proc-lhs rwp) lang)) (reduction-relation-make-procs mf/rr))

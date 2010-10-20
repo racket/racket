@@ -800,6 +800,32 @@
           generated)
         '((4 4) (4 3) (3 4)))
   
+  ; Extension reinterprets the LHSs of the base relation
+  ; relative to the new language.
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define R
+      (reduction-relation L (--> x yes)))
+    (define S (extend-reduction-relation R M))
+    (test (let/ec k (check-reduction-relation S k)) 2))
+  
+  ; Extension reinterprets the `where' clauses of the base relation
+  ; relative to new language.
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define R
+      (reduction-relation
+       L
+       (--> () ()
+            (where x 2))))
+    (define S (extend-reduction-relation R M))
+    
+    (test (with-handlers ([exn:fail:redex:generation-failure? (const #f)])
+            (check-reduction-relation S (λ (_) #t) #:attempts 1 #:print? #f))
+          #t))
+  
   (let ([generated '()]
         [fixed '()]
         [fix add1])
@@ -999,6 +1025,32 @@
              [(f 0) 0])
            (check-metafunction f void #:prepare car #:print? #f)))
         #rx"rg-test broke the contract")
+  
+  ; Extension reinterprets the LHSs of the base metafunction
+  ; relative to the new language.
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define-metafunction L 
+      [(f x) yes])
+    (define-metafunction/extension f M
+      g : any -> any)
+    (test (let/ec k (check-metafunction g k)) '(2)))
+  
+  ; Extension reinterprets the `where' clauses of the base metafunction
+  ; relative to the new language.
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define-metafunction L 
+      [(f)
+       _
+       (where x 2)])
+    (define-metafunction/extension f M
+      g : any -> any)
+    (test (with-handlers ([exn:fail:redex:generation-failure? (const #f)])
+            (check-metafunction g (λ (_) #t) #:attempts 1 #:print? #f))
+          #t))
   
   (test (output (λ () (check-metafunction m (λ (_) #t)))) #rx"no counterexamples")
   (test (output (λ () (check-metafunction m (curry eq? 1))))

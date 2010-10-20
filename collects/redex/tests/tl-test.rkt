@@ -375,6 +375,14 @@
   (test (with-handlers ((exn? (λ (x) 'exn-raised))) (term (f mis-match)) 'no-exn)
         'exn-raised)
 
+  ;; test redex-match in RHS and side-condition
+  (let ()
+    (define-metafunction empty-language
+      [(f)
+       ,(and (redex-match empty-language number 7) #t)
+       (side-condition (redex-match empty-language number 7))])
+    (test (term (f)) #t))
+  
   (define-metafunction grammar
     [(h (M_1 M_2)) ((h M_2) (h M_1))]
     [(h number_1) ,(+ (term number_1) 1)])
@@ -419,6 +427,37 @@
      (term-let ((y 'z))
                (in-domain? (f y)))
      #f))
+  
+  ; Extension reinterprets the base meta-function's contract
+  ; according to the new language.
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define-metafunction L
+      f : x -> x
+      [(f x) x])
+    (define-metafunction/extension f M
+      [(g q) q])
+    
+    (with-handlers ([(λ (x) 
+                       (and (exn:fail? x)
+                            (regexp-match? #rx"no clauses matched"
+                                           (exn-message x))))
+                     (λ (_) #f)])
+      (test (begin (term (g 2)) #t) #t))
+    
+    (test (in-domain? (g 2)) #t))
+  
+  ; in-domain? interprets base meta-function LHSs according to
+  ; the new language.
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define-metafunction L
+      [(f x) x])
+    (define-metafunction/extension f M
+      [(g q) q])
+    (test (in-domain? (g 2)) #t))
   
   ;; mutually recursive metafunctions
   (define-metafunction grammar
@@ -531,8 +570,6 @@
     (test (term (g 11 17)) 11)
     (test (term (h 11 17)) 11))
 
-  ; We'd like this expression not to raise an error.
-  #;
   (let ()
     (define-language L 
       (v 1))
@@ -552,8 +589,6 @@
       [(g any) 2])
     (test (term (g 0)) 2))
   
-  ; We'd like this expression not to raise an error.
-  #;
   (let ()
     (define-language L 
       (v 1 (v)))
@@ -570,7 +605,20 @@
       g : v -> v
       [(g 2) 2])
 
-    (term (g (2))))
+    (test (term (g (2))) 2))
+  
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define-metafunction L 
+      [(f)
+       yes
+       (where x 2)]
+      [(f)
+       no])
+    (define-metafunction/extension f M
+      g : -> any)
+    (test (term (g)) 'yes))
   
   (let ()
     (define-metafunction empty-language

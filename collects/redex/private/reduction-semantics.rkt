@@ -1100,7 +1100,7 @@
 
 (define-struct metafunction (proc))
 
-(define-struct metafunc-case (cp rhs lhs-pat src-loc id))
+(define-struct metafunc-case (lhs rhs lhs+ src-loc id))
 
 ;; Intermediate structures recording clause "extras" for typesetting.
 (define-struct metafunc-extra-side-cond (expr))
@@ -1213,21 +1213,21 @@
                   (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
                     (raise-syntax-error syn-error-name "the extended and extending metafunctions cannot share a name" orig-stx prev-metafunction))
                   (parse-extras #'((stuff ...) ...))
-                  (let*-values ([(lhs-namess lhs-namess/ellipsess)
-                                 (let loop ([lhss (syntax->list (syntax (lhs ...)))])
-                                   (if (null? lhss)
-                                       (values null null)
-                                       (let-values ([(namess namess/ellipsess)
-                                                     (loop (cdr lhss))]
-                                                    [(names names/ellipses)
-                                                     (extract-names lang-nts syn-error-name #t (car lhss))])
-                                         (values (cons names namess)
-                                                 (cons names/ellipses namess/ellipsess)))))])
+                  (let-values ([(lhs-namess lhs-namess/ellipsess)
+                                (let loop ([lhss (syntax->list (syntax (lhs ...)))])
+                                  (if (null? lhss)
+                                      (values null null)
+                                      (let-values ([(namess namess/ellipsess)
+                                                    (loop (cdr lhss))]
+                                                   [(names names/ellipses)
+                                                    (extract-names lang-nts syn-error-name #t (car lhss))])
+                                        (values (cons names namess)
+                                                (cons names/ellipses namess/ellipsess)))))])
                     (with-syntax ([(rhs/wheres ...)
                                    (map (λ (sc/b rhs names names/ellipses)
                                           (bind-withs
                                            syn-error-name '()  
-                                           #'lang lang-nts
+                                           #'effective-lang lang-nts
                                            sc/b 'flatten
                                            #`(list (term #,rhs))
                                            names names/ellipses))
@@ -1238,7 +1238,7 @@
                                    (map (λ (sc/b rhs names names/ellipses) 
                                           (bind-withs
                                            syn-error-name '()  
-                                           #'lang lang-nts
+                                           #'effective-lang lang-nts
                                            sc/b 'predicate
                                            #`#t
                                            names names/ellipses))
@@ -1304,10 +1304,12 @@
                                                         [dsc `dom-side-conditions-rewritten])
                                                     (let ([cases (map (λ (pat rhs-fn rg-lhs src)
                                                                         (make-metafunc-case
-                                                                         (compile-pattern lang pat #t) rhs-fn rg-lhs src (gensym)))
+                                                                         (λ (effective-lang) (compile-pattern effective-lang pat #t))
+                                                                         rhs-fn
+                                                                         rg-lhs src (gensym)))
                                                                       sc
-                                                                      (list rhs-fns ...)
-                                                                      `(rg-side-conditions-rewritten ...)
+                                                                      (list (λ (effective-lang) rhs-fns) ...)
+                                                                      (list (λ (effective-lang) `rg-side-conditions-rewritten) ...)
                                                                       `(clause-src ...))]
                                                           [parent-cases 
                                                            #,(if prev-metafunction
@@ -1522,8 +1524,12 @@
      (syntax->list extras))))
 
 (define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pat name relation?)
-  (let ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
-        [codom-compiled-pattern (compile-pattern lang codom-contract-pat #f)])
+  (let* ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
+         [codom-compiled-pattern (compile-pattern lang codom-contract-pat #f)]
+         [all-cases (append cases parent-cases)]
+         [lhss-at-lang (map (λ (case) ((metafunc-case-lhs case) lang)) all-cases)]
+         [rhss-at-lang (map (λ (case) ((metafunc-case-rhs case) lang)) all-cases)]
+         [ids (map metafunc-case-id all-cases)])
     (values
      (wrap
       (letrec ([cache (make-hash)]
@@ -1556,22 +1562,25 @@
                            (redex-error name
                                         "~s is not in my domain"
                                         `(,name ,@exp))))
-                       (let loop ([cases (append cases parent-cases)]
+                       (let loop ([ids ids]
+                                  [lhss lhss-at-lang]
+                                  [rhss rhss-at-lang]
                                   [num (- (length parent-cases))])
                          (cond
-                           [(null? cases) 
+                           [(null? ids) 
                             (if relation?
                                 (begin 
                                   (cache-result exp #f #f)
                                   #f)
                                 (redex-error name "no clauses matched for ~s" `(,name . ,exp)))]
                            [else
-                            (let ([pattern (metafunc-case-cp (car cases))]
-                                  [rhs (metafunc-case-rhs (car cases))]
-                                  [id (metafunc-case-id (car cases))])
+                            (let ([pattern (car lhss)]
+                                  [rhs (car rhss)]
+                                  [id (car ids)]
+                                  [continue (λ () (loop (cdr ids) (cdr lhss) (cdr rhss) (+ num 1)))])
                               (let ([mtchs (match-pattern pattern exp)])
                                 (cond
-                                  [(not mtchs) (loop (cdr cases) (+ num 1))]
+                                  [(not mtchs) (continue)]
                                   [relation? 
                                    (let ([ans
                                           (ormap (λ (mtch) (ormap values (rhs traced-metafunc (mtch-bindings mtch))))
@@ -1584,7 +1593,7 @@
                                         (log-coverage id)
                                         #t]
                                        [else
-                                        (loop (cdr cases) (+ num 1))]))]
+                                        (continue)]))]
                                   [else
                                    (let ([anss (apply append
                                                       (filter values
@@ -1594,7 +1603,7 @@
                                      (for-each (λ (ans) (hash-set! ht ans #t)) anss)
                                      (cond
                                        [(null? anss)
-                                        (loop (cdr cases) (+ num 1))]
+                                        (continue)]
                                        [(not (= 1 (hash-count ht)))
                                         (redex-error name "~a matched ~s ~a different ways and returned different results" 
                                                      (if (< num 0)
@@ -1627,7 +1636,7 @@
         traced-metafunc))
      (if dom-compiled-pattern
          (λ (exp) (and (match-pattern dom-compiled-pattern exp) #t))
-         (λ (exp) (and (ormap (λ (case) (match-pattern (metafunc-case-cp case) exp)) cases) 
+         (λ (exp) (and (ormap (λ (lhs) (match-pattern lhs exp)) lhss-at-lang) 
                        #t))))))
 
 (define current-traced-metafunctions (make-parameter '()))
