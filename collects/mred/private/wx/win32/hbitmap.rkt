@@ -8,7 +8,8 @@
          "utils.rkt"
          "const.rkt")
 
-(provide bitmap->hbitmap)
+(provide bitmap->hbitmap
+         hbitmap->bitmap)
 
 (define (bitmap->hbitmap bm 
                          #:mask [mask-bm #f]
@@ -56,4 +57,40 @@
       (DeleteDC hdc)
       hbitmap)))
 
+(define-cstruct _BITMAP
+  ([bmType _LONG]
+   [bmWidth _LONG]
+   [bmHeight _LONG]
+   [bmWidthBytes _LONG]
+   [bmPlanes _WORD]
+   [bmBitsPixel _WORD]
+   [bmBits _pointer]))
 
+(define-gdi32 GetObjectW (_wfun _pointer _int _pointer -> (r : _int)
+                                -> (when (zero? r) (failed 'GetObject))))
+
+(define (hbitmap->bitmap hbitmap)
+  (let* ([bmi (let ([b (make-BITMAP 0 0 0 0 0 0 #f)])
+                (GetObjectW hbitmap (ctype-sizeof _BITMAP) b)
+                b)]
+         [w (BITMAP-bmWidth bmi)]
+         [h (BITMAP-bmHeight bmi)]
+         [screen-hdc (GetDC #f)]
+         [hdc (CreateCompatibleDC screen-hdc)]
+         [old-hbitmap (SelectObject hdc hbitmap)]
+         [bm (make-object bitmap% w h (= 1 (BITMAP-bmBitsPixel bmi)) #t)])
+    (ReleaseDC #f screen-hdc)
+    (let* ([s (cairo_win32_surface_create hdc)]
+           [cr (cairo_create (send bm get-cairo-surface))])
+      (let ([p (cairo_get_source cr)])
+        (cairo_pattern_reference p)
+        (cairo_set_source_surface cr s 0 0)
+        (cairo_new_path cr)
+        (cairo_rectangle cr 0 0 w h)
+        (cairo_fill cr)
+        (cairo_set_source cr p)
+        (cairo_pattern_destroy p))
+      (cairo_destroy cr)
+      (SelectObject hdc old-hbitmap)
+      (DeleteDC hdc)
+      bm)))

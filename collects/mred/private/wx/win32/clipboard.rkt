@@ -9,7 +9,8 @@
          "utils.rkt"
          "const.rkt"
          "../../syntax.rkt"
-         "wndclass.rkt")
+         "wndclass.rkt"
+         "hbitmap.rkt")
 
 (provide clipboard-driver%
          has-x-selection?)
@@ -27,6 +28,31 @@
                    #f))
 
 (define CF_UNICODETEXT      13)
+(define CF_BITMAP           2)
+(define CF_DIB              8)
+
+(define DIB_RGB_COLORS      0)
+(define SRCCOPY             #x00CC0020)
+
+(define-cstruct _BITMAPINFOHEADER
+  ([biSize _DWORD]
+   [biWidth _LONG]
+   [biHeight _LONG]
+   [biPlanes _WORD]
+   [biBitCount _WORD]
+   [biCompression _DWORD]
+   [biSizeImage _DWORD]
+   [biXPelsPerMeter _LONG]
+   [biYPelsPerMeter _LONG]
+   [biClrUsed _DWORD]
+   [biClrImportant _DWORD]))
+
+(define-cstruct _BITMAPCOREHEADER
+  ([bcSize _DWORD]
+   [bcWidth _LONG]
+   [bcHeight _LONG]
+   [bcPlanes _WORD]
+   [bcBitCount _WORD]))
 
 (define-user32 GetClipboardOwner (_wfun -> _HWND))
 (define-user32 OpenClipboard (_wfun _HWND -> _BOOL))
@@ -59,6 +85,10 @@
   #:wrap (deallocator cadr))
 
 (define-user32 GetClipboardData (_wfun _UINT -> _HANDLE))
+
+(define-gdi32 StretchDIBits(_wfun _HDC _int _int _int _int _int _int _int _int
+                                  _pointer _BITMAPINFOHEADER-pointer _UINT _DWORD
+                                  -> _int))
 
 (define GHND #x0042)
 
@@ -154,6 +184,75 @@
     (or (get-data "TEXT" #t) ""))
 
   (define/public (get-bitmap-data)
-    #f)
+    (atomically
+     (and (OpenClipboard clipboard-owner-hwnd)
+          (begin0
+           (get-bitmap-from-clipboard)
+           (CloseClipboard)))))
                 
   (super-new))
+
+
+(define (get-bitmap-from-clipboard)
+  ;; atomic mode
+  (cond
+   ;; I think we should be able to use CF_BITMAP always, but
+   ;; it doesn't work right under Windows XP with a particular 
+   ;; image created by copying in Firefox. So, we do things the
+   ;; hard way.
+   [(GetClipboardData CF_DIB)
+    => (lambda (bits)
+         (let ([bmi (cast (GlobalLock bits) _pointer _BITMAPINFOHEADER-pointer)])
+           (let ([w (BITMAPINFOHEADER-biWidth bmi)]
+                 [h (BITMAPINFOHEADER-biHeight bmi)]
+                 [bits/pp (BITMAPINFOHEADER-biBitCount bmi)])
+             (let* ([screen-hdc (GetDC #f)]
+                    [hdc (CreateCompatibleDC screen-hdc)]
+                    [hbitmap (if (= bits/pp 1)
+                                 (CreateBitmap w h 1 1 #f)
+                                 (CreateCompatibleBitmap screen-hdc w h))]
+                    [old-hbitmap (SelectObject hdc hbitmap)]
+                    [psize (PaletteSize bmi)])
+               (ReleaseDC #f screen-hdc)
+               (StretchDIBits hdc 0 0 w h
+                              0 0 w h
+                              (ptr-add bmi (+ (BITMAPINFOHEADER-biSize bmi) psize))
+                              bmi DIB_RGB_COLORS SRCCOPY)
+               (SelectObject hdc old-hbitmap)
+               (GlobalUnlock bits)
+               (DeleteDC hdc)
+               (begin0
+                (hbitmap->bitmap hbitmap)
+                (DeleteObject hbitmap))))))]
+   [(GetClipboardData CF_BITMAP)
+    => (lambda (hbitmap)
+         (hbitmap->bitmap hbitmap))]
+   [else #f]))
+
+;; Copied from MS example:
+
+(define (DibNumColors bmc? bmi)
+  ;; /*  With the BITMAPINFO format headers, the size of the palette
+  ;;  *  is in biClrUsed, whereas in the BITMAPCORE - style headers, it
+  ;;  *  is dependent on the bits per pixel ( = 2 raised to the power of
+  ;;  *  bits/pixel).
+  ;;  */
+  (if (and (not bmc?)
+           (not (zero? (BITMAPINFOHEADER-biClrUsed bmi))))
+      (BITMAPINFOHEADER-biClrUsed bmi)
+      (let ([bits (BITMAPINFOHEADER-biBitCount bmi)])
+        (case bits
+          [(1) 2]
+          [(4) 16]
+          [(8) 256]
+          [else
+           ;; A 24 bitcount DIB has no color table
+           0]))))
+
+(define (PaletteSize bmi)
+  (let* ([bmc? (= (BITMAPINFOHEADER-biSize bmi)
+                  (ctype-sizeof _BITMAPCOREHEADER))]
+         [num-colors (DibNumColors bmc? bmi)])
+    (if bmc?
+        (* num-colors 3)
+        (* num-colors 4))))
