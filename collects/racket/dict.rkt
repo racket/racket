@@ -73,33 +73,33 @@
   (->i ([d (and/c dict? dict-mutable?)]
         [k (d) (dict-key-contract d)]
         [value (d) (dict-value-contract d)])
-       [_ void?]))
+       [_r void?]))
 (define dict-set-contract
   (->i ([d (and/c dict? dict-can-functional-set?)]
         [k (d) (dict-key-contract d)]
         [value (d) (dict-value-contract d)])
-       [_ dict?]))
+       [_r dict?]))
 (define dict-remove!-contract
   (->i ([d (and/c dict? dict-mutable? dict-can-remove-keys?)]
         [k (d) (dict-key-contract d)])
-       [_ void?]))
+       [_r void?]))
 (define dict-remove-contract
   (->i ([d (and/c dict? dict-can-functional-set? dict-can-remove-keys?)]
         [k (d) (dict-key-contract d)])
-       [_ dict?]))
+       [_r dict?]))
 (define dict-count-contract
   (-> dict? exact-nonnegative-integer?))
 (define dict-iterate-first-contract
-  (->i ([d dict?]) [_ (d) (or/c #f (dict-iter-contract d))]))
+  (->i ([d dict?]) [_r (d) (or/c #f (dict-iter-contract d))]))
 (define dict-iterate-next-contract
   (->i ([d dict?] [iter (d) (dict-iter-contract d)])
-       [_ (d) (or/c #f (dict-iter-contract d))]))
+       [_r (d) (or/c #f (dict-iter-contract d))]))
 (define dict-iterate-key-contract
   (->i ([d dict?] [iter (d) (dict-iter-contract d)])
-       [_ (d) (dict-key-contract d)]))
+       [_r (d) (dict-key-contract d)]))
 (define dict-iterate-value-contract
   (->i ([d dict?] [iter (d) (dict-iter-contract d)])
-       [_ (d) (dict-value-contract d)]))
+       [_r (d) (dict-value-contract d)]))
 
 (define prop:dict-contract
   (vector-immutable/c dict-ref-contract
@@ -150,45 +150,45 @@
   (->i ([d (and/c dict? dict-mutable?)]
         [k (d) (dict-key-contract d)]
         [default (d) (or/c (dict-value-contract d) (-> (dict-value-contract d)))]) ;; use if/c ?
-       [_ (d) (dict-value-contract d)])]
+       [_r (d) (dict-value-contract d)])]
  [dict-set!
   dict-set!-contract]
  [dict-set
   dict-set-contract]
  [dict-set*!
   (->i ([d (and/c dict? dict-mutable?)])
-       #:rest [_ (d) (let ([key/c (dict-key-contract d)]
-                           [val/c (dict-value-contract d)])
-                       (letrec ([args/c
-                                 (recursive-contract
-                                  (or/c null
-                                        (cons/c key/c (cons/c val/c args/c))))])
-                         (and/c even-length-list/c
-                                args/c)))]
-       [_ void?])]
+       #:rest [rst (d) (let ([key/c (dict-key-contract d)]
+                             [val/c (dict-value-contract d)])
+                         (letrec ([args/c
+                                   (recursive-contract
+                                    (or/c null
+                                          (cons/c key/c (cons/c val/c args/c))))])
+                           (and/c even-length-list/c
+                                  args/c)))]
+       [_r void?])]
  [dict-set*
   (->i ([d (and/c dict? dict-can-functional-set?)])
-       #:rest [_ (d) (let ([key/c (dict-key-contract d)]
-                           [val/c (dict-value-contract d)])
-                       (letrec ([args/c
-                                 (recursive-contract
-                                  (or/c null
-                                        (cons/c key/c (cons/c val/c args/c))))])
-                         (and/c even-length-list/c
-                                args/c)))]
-       [_ dict?])]
+       #:rest [rst (d) (let ([key/c (dict-key-contract d)]
+                             [val/c (dict-value-contract d)])
+                         (letrec ([args/c
+                                   (recursive-contract
+                                    (or/c null
+                                          (cons/c key/c (cons/c val/c args/c))))])
+                           (and/c even-length-list/c
+                                  args/c)))]
+       [_r dict?])]
  [dict-update!
   (->i ([d (and/c dict? dict-mutable?)]
         [k (d) (dict-key-contract d)]
         [update (d) (-> (dict-value-contract d) (dict-value-contract d))])
        ([default (d) (or/c (dict-value-contract d) (-> (dict-value-contract d)))]) ;; use if/c
-       [_ void?])]
+       [_r void?])]
  [dict-update
   (->i ([d (and/c dict? dict-can-functional-set?)]
         [k (d) (dict-key-contract d)]
         [update (d) (-> (dict-value-contract d) (dict-value-contract d))])
        ([default (d) (or/c (dict-value-contract d) (-> (dict-value-contract d)))]) ;; use if/c ?
-       [_ dict?])]
+       [_r dict?])]
  [dict-remove!
   dict-remove!-contract]
  [dict-remove
@@ -206,20 +206,20 @@
 
  [dict-map
   (->i ([d dict?] [proc (d) (-> (dict-key-contract d) (dict-value-contract d) any)])
-       [_ list?])]
+       [_r list?])]
  [dict-for-each
   (->i ([d dict?] [proc (d) (-> (dict-key-contract d) (dict-value-contract d) any)])
-       [_ void?])]
+       [_r void?])]
 
  [dict-keys
   (->i ([d dict?])
-       [_ (d) (listof (dict-key-contract d))])]
+       [_r (d) (listof (dict-key-contract d))])]
  [dict-values
   (->i ([d dict?])
-       [_ (d) (listof (dict-value-contract d))])]
+       [_r (d) (listof (dict-value-contract d))])]
  [dict->list
   (->i ([d dict?])
-       [_ (d) (listof (cons/c (dict-key-contract d) (dict-value-contract d)))])])
+       [_r (d) (listof (cons/c (dict-key-contract d) (dict-value-contract d)))])])
 
 (provide prop:dict
 

@@ -446,39 +446,39 @@ Levels are indexed starting at 1, as in the paper.
        ([d any/c])
        any)]
  [skip-list-set!
-  (->i ([s skip-list?] [k (s) (key-c s)] [v (s) (val-c s)]) [_ void?])]
+  (->i ([s skip-list?] [k (s) (key-c s)] [v (s) (val-c s)]) [_r void?])]
  [skip-list-remove!
-  (->i ([s skip-list?] [k (s) (key-c s)]) [_ void?])]
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_r void?])]
  [skip-list-count
   (-> skip-list? exact-nonnegative-integer?)]
 
  [skip-list-remove-range!
   (->i ([s skip-list?] [from (s) (key-c s)] [to (s) (key-c s)])
-       [_ void?])]
+       [_r void?])]
  [skip-list-contract! 
   (->i ([s adjustable-skip-list?] [from (s) (key-c s)] [to (s) (key-c s)])
-       [_ void?])]
+       [_r void?])]
  [skip-list-expand!
   (->i ([s adjustable-skip-list?] [from (s) (key-c s)] [to (s) (key-c s)])
-       [_ void?])]
+       [_r void?])]
 
  [skip-list-iterate-first
   (-> skip-list? (or/c skip-list-iter? #f))]
  [skip-list-iterate-next
   (-> skip-list? skip-list-iter? (or/c skip-list-iter? #f))]
  [skip-list-iterate-key
-  (->i ([s skip-list?] [i skip-list-iter?]) [_ (s) (key-c s)])]
+  (->i ([s skip-list?] [i skip-list-iter?]) [_r (s) (key-c s)])]
  [skip-list-iterate-value
-  (->i ([s skip-list?] [i skip-list-iter?]) [_ (s) (val-c s)])]
+  (->i ([s skip-list?] [i skip-list-iter?]) [_r (s) (val-c s)])]
 
  [skip-list-iterate-greatest/<=?
-  (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_r (or/c skip-list-iter? #f)])]
  [skip-list-iterate-greatest/<?
-  (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_r (or/c skip-list-iter? #f)])]
  [skip-list-iterate-least/>=?
-  (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_r (or/c skip-list-iter? #f)])]
  [skip-list-iterate-least/>?
-  (->i ([s skip-list?] [k (s) (key-c s)]) [_ (or/c skip-list-iter? #f)])]
+  (->i ([s skip-list?] [k (s) (key-c s)]) [_r (or/c skip-list-iter? #f)])]
 
  [skip-list-iterate-least
   (-> skip-list? (or/c skip-list-iter? #f))]

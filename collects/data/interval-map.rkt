@@ -219,36 +219,36 @@
         [start (im) (key-c im)]
         [end (im) (key-c im)]
         [v (im) (val-c im)])
-       [_ void?])]
+       [_r void?])]
  [interval-map-update*!
   (->i ([im interval-map?]
         [start (im) (key-c im)]
         [end (im) (key-c im)]
         [f (im) (-> (val-c im) (val-c im))])
        ([default any/c]) ;; imprecise
-       [_ void?])]
+       [_r void?])]
  [interval-map-cons*!
   (->i ([im interval-map?]
         [start (im) (key-c im)]
         [end (im) (key-c im)]
         [v any/c]) ;; imprecise
        ([d any/c]) ;; imprecise
-       [_ void?])]
+       [_r void?])]
  [interval-map-remove!
   (->i ([im interval-map?]
         [start (im) (or/c -inf.0 (key-c im))]
         [end (im) (or/c +inf.0 (key-c im))])
-       [_ void?])]
+       [_r void?])]
  [interval-map-contract!
   (->i ([im interval-map?]
         [start (im) (key-c im)]
         [end (im) (key-c im)])
-       [_ void?])]
+       [_r void?])]
  [interval-map-expand!
   (->i ([im interval-map?]
         [start (im) (key-c im)]
         [end (im) (key-c im)])
-       [_ void?])]
+       [_r void?])]
 
  [interval-map-iterate-first
   (-> interval-map?
@@ -258,10 +258,10 @@
       (or/c interval-map-iter? #f))]
  [interval-map-iterate-key
   (->i ([im interval-map?] [i interval-map-iter?])
-       [_ (im) (let ([k (key-c im)]) (cons/c k k))])]
+       [_r (im) (let ([k (key-c im)]) (cons/c k k))])]
  [interval-map-iterate-value
   (->i ([im interval-map?] [i interval-map-iter?])
-       [_ (im) (val-c im)])]
+       [_r (im) (val-c im)])]
 
  [interval-map-iter?
   (-> any/c boolean?)])

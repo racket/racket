@@ -1110,42 +1110,42 @@ Top-down splay
        ([default any/c])
        any)]
  [splay-tree-set!
-  (->i ([s splay-tree?] [key (s) (key-c s)] [v (s) (val-c s)]) [_ void?])]
+  (->i ([s splay-tree?] [key (s) (key-c s)] [v (s) (val-c s)]) [_r void?])]
  [splay-tree-remove!
-  (->i ([s splay-tree?] [key (s) (key-c s)]) [_ void?])]
+  (->i ([s splay-tree?] [key (s) (key-c s)]) [_r void?])]
  [splay-tree-remove-range!
-  (->i ([s splay-tree?] [from (s) (key-c s)] [to (s) (key-c s)]) [_ void?])]
+  (->i ([s splay-tree?] [from (s) (key-c s)] [to (s) (key-c s)]) [_r void?])]
  [splay-tree-count
   (-> splay-tree? exact-nonnegative-integer?)]
  [splay-tree->list
-  (->i ([s splay-tree?]) [_ (s) (listof (cons/c (key-c s) (val-c s)))])]
+  (->i ([s splay-tree?]) [_r (s) (listof (cons/c (key-c s) (val-c s)))])]
 
  [splay-tree-contract!
   (->i ([s adjustable-splay-tree?]
         [from (s) (key-c s)] [to (s) (key-c s)])
-       [_ void?])]
+       [_r void?])]
  [splay-tree-expand!
   (->i ([s adjustable-splay-tree?]
         [from (s) (key-c s)] [to (s) (key-c s)])
-       [_ void?])]
+       [_r void?])]
 
  [splay-tree-iterate-first
   (-> splay-tree? (or/c splay-tree-iter? #f))]
  [splay-tree-iterate-next
   (-> splay-tree? splay-tree-iter? (or/c splay-tree-iter? #f))]
  [splay-tree-iterate-key
-  (->i ([s splay-tree?] [i splay-tree-iter?]) [_ (s) (key-c s)])]
+  (->i ([s splay-tree?] [i splay-tree-iter?]) [_r (s) (key-c s)])]
  [splay-tree-iterate-value
-  (->i ([s splay-tree?] [i splay-tree-iter?]) [_ (s) (val-c s)])]
+  (->i ([s splay-tree?] [i splay-tree-iter?]) [_r (s) (val-c s)])]
 
  [splay-tree-iterate-greatest/<=?
-  (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
+  (->i ([s splay-tree?] [k (s) (key-c s)]) [_r (or/c splay-tree-iter? #f)])]
  [splay-tree-iterate-greatest/<?
-  (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
+  (->i ([s splay-tree?] [k (s) (key-c s)]) [_r (or/c splay-tree-iter? #f)])]
  [splay-tree-iterate-least/>=?
-  (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
+  (->i ([s splay-tree?] [k (s) (key-c s)]) [_r (or/c splay-tree-iter? #f)])]
  [splay-tree-iterate-least/>?
-  (->i ([s splay-tree?] [k (s) (key-c s)]) [_ (or/c splay-tree-iter? #f)])]
+  (->i ([s splay-tree?] [k (s) (key-c s)]) [_r (or/c splay-tree-iter? #f)])]
 
  [splay-tree-iterate-least
   (-> splay-tree? (or/c splay-tree-iter? #f))]

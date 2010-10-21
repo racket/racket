@@ -14,12 +14,12 @@
 
 (define extreme-contract
   (->i ([d ordered-dict?])
-       [_ (d) (or/c #f (dict-iter-contract d))]))
+       [_r (d) (or/c #f (dict-iter-contract d))]))
 
 (define search-contract
   (->i ([d ordered-dict?]
         [k (d) (dict-key-contract d)])
-       [_ (d) (or/c #f (dict-iter-contract d))]))
+       [_r (d) (or/c #f (dict-iter-contract d))]))
 
 (define prop:ordered-dict-contract
   (let ([e extreme-contract]
