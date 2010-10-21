@@ -10,7 +10,7 @@
 (define jpeg-lib 
   (case (system-type)
     [(macosx) (ffi-lib "libjpeg.62")]
-    [(unix) (ffi-lib "libjpeg" '("62"))]
+    [(unix) (ffi-lib "libjpeg" '("62" ""))]
     [(windows) (ffi-lib "libjpeg-7.dll")]))
 
 (define JPEG_LIB_VERSION
