@@ -532,18 +532,6 @@
     (test (term (h 11 17)) 11))
   
   (let ()
-    (define-language L 
-      (v 1))
-    (define-extended-language M
-      L
-      (v .... 2))
-    (define-metafunction L
-      [(f v) v])
-    (define-metafunction/extension f M
-      [(g 17) 17])
-    (test (term (g 2)) 2))
-  
-  (let ()
     (define-metafunction empty-language
       [(f any) 1])
     (define-metafunction/extension f empty-language
