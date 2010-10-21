@@ -13,7 +13,6 @@ Code is maintainable.
 
 Code is fast.
 
-The following suggestions are about creating maintainable and fast
-code. The production of correct code is a project for life, and depends to
-a high degree on reflection---i.e., thinking about what you are doing and
-not just doing it.
+This guide is about creating maintainable code and it touches on
+correctness and speed on occasion. For the former, formulate test suites;
+for the latter, start with stress test suites.

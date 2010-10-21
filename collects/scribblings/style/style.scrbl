@@ -22,7 +22,16 @@ This document spells out these criteria, and it is also a call for
  meta-code, and the same ideas apply. If you have suggestions, contact the
  authors via email.
 
+@bold{Note} We understand that some of the files in the code base do not
+ live up to these standards. Help us improve these files. If you need to
+ edit and understand a file that fails in some ways, take the time to
+ reorganize it properly as soon as the comprehension step takes longer than
+ a few minutes. Because if understanding takes a lot of time, it is likely
+ that the file isn't maintainable. Whoever touches the file next will be
+ grateful.
+
 @; -----------------------------------------------------------------------------
 
 @include-section["correct-maintain-speed.scrbl"]
+@include-section["size.scrbl"]
 @include-section["textual.scrbl"]
