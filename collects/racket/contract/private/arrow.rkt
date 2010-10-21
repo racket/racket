@@ -51,6 +51,19 @@ v4 todo:
   #:property prop:procedure 0
   #:property prop:contracted 1)
 
+(define contract-key (gensym 'contract-key))
+
+(define-for-syntax (check-tail-contract num-rng-ctcs rng-ctcs rng-checkers call-gen)
+  #`(call-with-immediate-continuation-mark
+     contract-key
+     (λ (m)
+       (cond
+         [(and m
+               (= (length m) #,num-rng-ctcs)
+               (andmap procedure-closure-contents-eq? m (list . #,rng-ctcs)))
+          #,(call-gen #'())]
+         [else #,(call-gen rng-checkers)]))))
+
 (define-syntax (unconstrained-domain-> stx)
   (syntax-case stx ()
     [(_ rngs ...)
@@ -58,7 +71,7 @@ v4 todo:
                    [(proj-x ...) (generate-temporaries #'(rngs ...))]
                    [(p-app-x ...) (generate-temporaries #'(rngs ...))]
                    [(res-x ...) (generate-temporaries #'(rngs ...))])
-       #'(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
+       #`(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
            (let ([proj-x (contract-projection rngs-x)] ...)
              (define name
                (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...))
@@ -73,10 +86,19 @@ v4 todo:
                       val
                       (make-keyword-procedure
                        (λ (kwds kwd-vals . args)
-                         (apply values res-checker kwd-vals args))
+                         #,(check-tail-contract 
+                            (length (syntax->list #'(rngs ...)))
+                            #'(p-app-x ...)
+                            (list #'res-checker)
+                            (λ (s) #`(apply values #,@s kwd-vals args))))
                        (λ args
-                         (apply values res-checker args)))
-                      proxy-prop:contracted ctc)))))
+                         #,(check-tail-contract 
+                            (length (syntax->list #'(rngs ...)))
+                            #'(p-app-x ...)
+                            (list #'res-checker)
+                            (λ (s) #`(apply values #,@s args)))))
+                      proxy-prop:contracted ctc
+                      proxy-prop:application-mark (cons contract-key (list p-app-x ...)))))))
              (define ctc
                (if (and (chaperone-contract? rngs-x) ...)
                    (make-chaperone-contract
@@ -110,19 +132,7 @@ v4 todo:
        (let-values ([(vr va) (procedure-keywords val)])
          (and va (equal? vr contract-req-kwds) (equal? va contract-opt-kwds)))))
 
-(define contract-key (gensym 'contract-key))
-
 (define-for-syntax (create-chaperone blame val pre post this-args doms opt-doms dom-rest req-kwds opt-kwds rngs)
-  (define (check-tail-contract num-rng-ctcs rng-ctcs rng-checkers call-gen)
-    #`(call-with-immediate-continuation-mark
-       contract-key
-       (λ (m)
-         (cond
-           [(and m
-                 (= (length m) #,num-rng-ctcs)
-                 (andmap procedure-closure-contents-eq? m (list . #,rng-ctcs)))
-            #,(call-gen #'())]
-           [else #,(call-gen rng-checkers)]))))
   (with-syntax ([blame blame]
                 [val val])
     (with-syntax ([(pre ...) 

@@ -9794,6 +9794,17 @@ so that propagation occurs.
              (f 3))
            (c)))
   
+  (ctest 1
+         'tail-unconstrained-domain-arrow
+         (let ([c (counter)])
+           (letrec ([f 
+                     (contract (unconstrained-domain-> c)
+                               (λ (x) (if (zero? x) x (f (- x 1))))
+                               'pos
+                               'neg)])
+             (f 3))
+           (c)))
+  
   (ctest 2
          'tail-multiple-value-arrow
          (let ([c (counter)])
