@@ -5,7 +5,8 @@
          racket/class
          "rbtree.rkt"
          "../../lock.rkt"
-         "handlers.rkt")
+         "handlers.rkt"
+         "once.rkt")
 
 (provide queue-evt
          set-check-queue!
@@ -53,15 +54,6 @@
          is-busy?
 
          scheme_register_process_global)
-
-;; ------------------------------------------------------------
-;; This module must be instantiated only once:
-
-(define-mz scheme_register_process_global (_fun _string _pointer -> _pointer))
-(let ([v (scheme_register_process_global "GRacket-support-initialized"
-                                         (cast 1 _scheme _pointer))])
-  (when v
-    (error "cannot start GRacket a second time in the same process")))
 
 ;; ------------------------------------------------------------
 ;; Create a Scheme evt that is ready when a queue is nonempty

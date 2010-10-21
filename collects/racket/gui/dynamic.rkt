@@ -18,5 +18,7 @@
 (define-namespace-anchor anchor)
 
 (define (gui-dynamic-require sym)
-  (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
-    (dynamic-require 'mred sym)))
+  (if (gui-available?)
+      (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
+        (dynamic-require 'mred sym))
+      (error "racket/gui/base is not available")))
