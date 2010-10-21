@@ -711,8 +711,7 @@
                                               360)
                                (bitmap-x-scale bitmap)
                                (bitmap-y-scale bitmap)
-                               #f
-                               #f)))]))
+                               (make-hash))))]))
 
 ;; rotate-point : point angle -> point
 (define (rotate-point p θ)
