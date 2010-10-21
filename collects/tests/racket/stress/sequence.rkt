@@ -1,12 +1,13 @@
 #lang racket
 (require tests/stress)
 
-; seqn-first
-; This ignores the greater flexiblity of seqn-first to have more than single-valued sequences
+;; stream-first
+;; This ignores the greater flexiblity of stream-first to have more than
+;; single-valued sequences
 (stress
  200
- ["seqn-first"
-  (seqn-first (in-naturals))]
+ ["stream-first"
+  (stream-first (in-naturals))]
  ["for/or (val)"
   (define s (in-naturals))
   (for/or ([n s])
@@ -15,12 +16,12 @@
   (for/or ([n (in-naturals)])
     n)])
 
-; seqn-length
-; The for/fold must be rewritten slightly differently for multi-valued
+;; stream-length
+;; The for/fold must be rewritten slightly differently for multi-valued
 (stress
  20
- ["seqn-length"
-  (seqn-length (in-range 2000))]
+ ["stream-length"
+  (stream-length (in-range 2000))]
  ["for/fold (val)"
   (define s (in-range 2000))
   (for/fold ([len 0])
@@ -31,12 +32,12 @@
     ([i (in-range 2000)])
     (add1 len))])
 
-; seqn-ref
-; Ditto
+;; stream-ref
+;; Ditto
 (stress
  20
- ["seqn-ref"
-  (seqn-ref (in-range 2000) 200)]
+ ["stream-ref"
+  (stream-ref (in-range 2000) 200)]
  ["for/or val"
   (define s (in-range 2000))
   (for/or ([e s]
@@ -49,12 +50,12 @@
            #:when (i . = . 199))
     e)])
 
-; seqn-andmap
-; ditto
+;; stream-andmap
+;; ditto
 (stress
  20
- ["seqn-andmap"
-  (seqn-andmap number? (in-range 2000))]
+ ["stream-andmap"
+  (stream-andmap number? (in-range 2000))]
  ["for/and val"
   (define s (in-range 2000))
   (for/and ([e s])
@@ -63,12 +64,12 @@
   (for/and ([e (in-range 2000)])
     (number? e))])
 
-; seqn-ormap
-; ditto
+;; stream-ormap
+;; ditto
 (stress
  20
- ["seqn-ormap"
-  (seqn-ormap string? (in-range 2000))]
+ ["stream-ormap"
+  (stream-ormap string? (in-range 2000))]
  ["for/and val"
   (define s (in-range 2000))
   (for/or ([e s])
@@ -77,12 +78,12 @@
   (for/or ([e (in-range 2000)])
     (string? e))])
 
-; seqn-fold
-; The for/fold must be rewritten slightly differently for multi-valued
+;; stream-fold
+;; The for/fold must be rewritten slightly differently for multi-valued
 (stress
  20
- ["seqn-fold"
-  (seqn-fold + 0 (in-range 2000))]
+ ["stream-fold"
+  (stream-fold + 0 (in-range 2000))]
  ["for/fold (val)"
   (define s (in-range 2000))
   (for/fold ([sum 0])
@@ -93,12 +94,12 @@
     ([i (in-range 2000)])
     (+ i sum))])
 
-; seqn-count
-; The for/fold must be rewritten slightly differently for multi-valued
+;; stream-count
+;; The for/fold must be rewritten slightly differently for multi-valued
 (stress
  20
- ["seqn-count"
-  (seqn-count even? (in-range 2000))]
+ ["stream-count"
+  (stream-count even? (in-range 2000))]
  ["for/fold (val)"
   (define s (in-range 2000))
   (for/fold ([num 0])
@@ -110,4 +111,3 @@
     ([i (in-range 2000)]
      #:when (even? i))
     (add1 num))])
-
