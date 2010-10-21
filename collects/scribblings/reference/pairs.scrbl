@@ -668,29 +668,34 @@ Like @scheme[assoc], but finds an element using the predicate
 @(interaction-eval #:eval list-eval
                    (require racket/list (only-in racket/function negate)))
 
-@defthing[empty null?]{The empty list.
+@defthing[empty null?]{
+The empty list.
 @mz-examples[#:eval list-eval
 empty
 (eq? empty null)
 ]}
 
-@defproc[(cons? [v any/c]) boolean?]{The same as @scheme[(pair? v)].
+@defproc[(cons? [v any/c]) boolean?]{
+The same as @scheme[(pair? v)].
 @mz-examples[#:eval list-eval
 (cons? '(1 2))
 ]}
 
-@defproc[(empty? [v any/c]) boolean?]{The same as @scheme[(null? v)].
+@defproc[(empty? [v any/c]) boolean?]{
+The same as @scheme[(null? v)].
 @mz-examples[#:eval list-eval
 (empty? '(1 2))
 (empty? '())
 ]}
 
-@defproc[(first [lst list?]) any/c]{The same as @scheme[(car lst)], but only for lists (that are not empty).
+@defproc[(first [lst list?]) any/c]{
+The same as @scheme[(car lst)], but only for lists (that are not empty).
 @mz-examples[#:eval list-eval
 (first '(1 2 3 4 5 6 7 8 9 10))
 ]}
 
-@defproc[(rest [lst list?]) list?]{The same as @scheme[(cdr lst)], but only for lists (that are not empty).
+@defproc[(rest [lst list?]) list?]{
+The same as @scheme[(cdr lst)], but only for lists (that are not empty).
 
 @mz-examples[#:eval list-eval
 (rest '(1 2 3 4 5 6 7 8 9 10))

@@ -1,5 +1,5 @@
-(module sequence "pre-base.rkt"
-  (require "list.rkt")
+(module stream "private/pre-base.rkt"
+  (require "private/list.rkt")
   
   (define empty-stream
     (make-do-sequence

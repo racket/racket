@@ -23,6 +23,7 @@
          racket/cmdline
          racket/promise
          racket/bool
+         racket/stream
          racket/local
          racket/system
          (for-syntax racket/base))
@@ -50,6 +51,7 @@
                        racket/cmdline
                        racket/promise
                        racket/bool
+                       racket/stream
                        racket/local
                        racket/system)
          (for-syntax (all-from-out racket/base)))

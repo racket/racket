@@ -5,11 +5,6 @@
           (for-label racket/generator
                      racket/mpair))
 
-@(define generator-eval
-   (let ([the-eval (make-base-eval)])
-     (the-eval '(require racket/generator))
-     the-eval))
-
 @(define (info-on-seq where what)
    @margin-note{See @secref[where] for information on using @|what| as
                 sequences.})
@@ -326,6 +321,8 @@ in the sequence.
 @; ----------------------------------------------------------------------
 @section{Additional Sequence Operations}
 
+@note-lib[racket/stream]
+
 @defthing[empty-stream sequence?]{
   A sequence with no elements.}
 
@@ -440,6 +437,11 @@ in the sequence.
 @; ----------------------------------------------------------------------
 @section{Iterator Generators}
 @defmodule[racket/generator]
+
+@(define generator-eval
+   (let ([the-eval (make-base-eval)])
+     (the-eval '(require racket/generator))
+     the-eval))
 
 @defform[(generator () body ...)]{
   Creates a function that returns a value through @scheme[yield], each
