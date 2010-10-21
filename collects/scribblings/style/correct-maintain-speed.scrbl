@@ -16,3 +16,7 @@ Code is fast.
 This guide is about creating maintainable code and it touches on
 correctness and speed on occasion. For the former, formulate test suites;
 for the latter, start with stress test suites.
+
+If the above is too many words, remember this slogan:
+@nested[#:style 'inset]{ Favor readers over writers.
+ --- Yaron Minsky, JaneStreet, 2010 at Northeastern}
