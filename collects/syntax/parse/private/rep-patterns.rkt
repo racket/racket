@@ -105,6 +105,7 @@ A HeadPattern is one of
   (hpat:reflect Base stx Arguments (listof SAttr) id (listof IAttr))
   (hpat:post Base HeadPattern)
   (hpat:peek Base HeadPattern)
+  (hpat:peek-not Base HeadPattern)
 |#
 
 (define-struct hpat:var (attrs name parser argu nested-attrs attr-count commit?) #:prefab)
@@ -119,6 +120,7 @@ A HeadPattern is one of
 (define-struct hpat:reflect (attrs obj argu attr-decls name nested-attrs) #:prefab)
 (define-struct hpat:post (attrs pattern) #:prefab)
 (define-struct hpat:peek (attrs pattern) #:prefab)
+(define-struct hpat:peek-not (attrs pattern) #:prefab)
 
 #|
 An EllipsisHeadPattern is
@@ -192,7 +194,8 @@ A SideClause is one of
       (hpat:commit? x)
       (hpat:reflect? x)
       (hpat:post? x)
-      (hpat:peek? x)))
+      (hpat:peek? x)
+      (hpat:peek-not? x)))
 
 (define (ellipsis-head-pattern? x)
   (ehpat? x))
@@ -224,7 +227,7 @@ A SideClause is one of
                   action:do action:post
                   hpat:var hpat:seq hpat:action hpat:and hpat:or hpat:describe
                   hpat:optional hpat:delimit hpat:commit hpat:reflect hpat:post
-                  hpat:peek
+                  hpat:peek hpat:peek-not
                   ehpat)))
 
 ;; ----
@@ -374,6 +377,9 @@ A SideClause is one of
 
 (define (create-hpat:peek pattern)
   (make hpat:peek (pattern-attrs pattern) pattern))
+
+(define (create-hpat:peek-not pattern)
+  (make hpat:peek-not null pattern))
 
 ;; ----
 

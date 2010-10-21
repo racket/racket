@@ -29,7 +29,18 @@ Allow reflected syntax classes in conventions.
 
 Rename "conventions" to "convention-set"?
 
+Unify convention-sets and literal-sets?
+
 For documentation, talk about "primary attributes" vs "nested
 attributes". Helps explain ~eh-var and #:auto-nested-attributes.
+
+For documentation, deftech "term-sequence", use consistently in
+H-pattern docs, etc.
+
+Add documentation sections:
+  - Pattern matching model
+  - Static semantics (attributes)
+
+Add syntax exception variant with more information.
 
 Fix syntaxes pinpointed for repetition constraint violations.

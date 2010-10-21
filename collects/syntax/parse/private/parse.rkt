@@ -603,6 +603,23 @@ Conventions:
             (parse:H x cx dummy-x dummy-cx dummy-pr pattern pr es
                      (let ([rest-x saved-x] [rest-cx saved-cx] [rest-pr saved-pr])
                        k)))]
+       [#s(hpat:peek-not () subpattern)
+        #`(let* ([fh0 fail-handler]
+                 [pr0 pr]
+                 [es0 es]
+                 [fail-to-succeed
+                  (lambda (fs)
+                    (let ([rest-x x]
+                          [rest-cx cx]
+                          [rest-pr pr])
+                      k))])
+            ;; ~not implicitly prompts to be safe,
+            ;; but ~! not allowed within ~not (unless within ~delimit-cut, etc)
+            ;; (statically checked!)
+            (with ([fail-handler fail-to-succeed]
+                   [cut-prompt fail-to-succeed]) ;; to be safe
+              (parse:H x cx rest-x rest-cx rest-pr subpattern pr es
+                       (fh0 (failure pr0 es0)))))]
        [_
         (with-syntax ([attrs (pattern-attrs (wash #'head))])
           #'(parse:S x cx

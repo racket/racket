@@ -120,7 +120,8 @@
         (quote-syntax ~reflect)
         (quote-syntax ~splicing-reflect)
         (quote-syntax ~eh-var)
-        (quote-syntax ~peek)))
+        (quote-syntax ~peek)
+        (quote-syntax ~peek-not)))
 
 (define (reserved? stx)
   (and (identifier? stx)
@@ -464,7 +465,7 @@ A syntax class is integrable if
            (wrong-syntax stx "action pattern not allowed here")]))
   (syntax-case stx (~var ~literal ~datum ~and ~or ~not ~rest ~describe
                     ~seq ~optional ~! ~bind ~fail ~parse ~do
-                    ~post ~peek ~delimit-cut ~commit ~reflect
+                    ~post ~peek ~peek-not ~delimit-cut ~commit ~reflect
                     ~splicing-reflect)
     [wildcard
      (wildcard? #'wildcard)
@@ -550,6 +551,10 @@ A syntax class is integrable if
      (disappeared! stx)
      (check-head!
       (parse-pat:peek stx decls))]
+    [(~peek-not . rest)
+     (disappeared! stx)
+     (check-head!
+      (parse-pat:peek-not stx decls))]
     [(~parse . rest)
      (disappeared! stx)
      (check-action!
@@ -1027,6 +1032,12 @@ A syntax class is integrable if
     [(~peek pattern)
      (let ([p (parse-head-pattern #'pattern decls)])
        (create-hpat:peek p))]))
+
+(define (parse-pat:peek-not stx decls)
+  (syntax-case stx (~peek-not)
+    [(~peek-not pattern)
+     (let ([p (parse-head-pattern #'pattern decls)])
+       (create-hpat:peek-not p))]))
 
 (define (parse-pat:parse stx decls)
   (syntax-case stx (~parse)

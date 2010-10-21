@@ -32,7 +32,7 @@ means specifically @tech{@Spattern}.
 
 @schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
                             ~describe ~seq ~optional ~rep ~once ~between
-                            ~! ~bind ~fail ~parse ~peek)
+                            ~! ~bind ~fail ~parse ~peek ~peek-not)
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
@@ -77,6 +77,7 @@ means specifically @tech{@Spattern}.
                  (@#,ref[~commit h] H-pattern)
                  (@#,ref[~delimit-cut h] H-pattern)
                  (~peek H-pattern)
+                 (~peek-not H-pattern)
                  proper-S-pattern]
                 [EH-pattern
                  (@#,ref[~or eh] EH-pattern ...)
@@ -730,6 +731,25 @@ a sequence.
   [(n:nf-id ... rest ...)
    (printf "nf-ids are ~s\n" (syntax->datum #'(n.x ...)))
    (printf "rest is ~s\n" (syntax->datum #'(rest ...)))])
+]
+}
+
+@specsubform[(@#,defhere[~peek-not] H-pattern)]{
+
+Like @racket[~peek], but succeeds if the subpattern fails and fails if
+the subpattern succeeds. On success, the @racket[~peek-not] resets the
+matching position, so the pattern consumes no input. Used to look
+ahead in a sequence. None of the subpattern's attributes are bound
+outside of the @scheme[~peek-not]-pattern.
+
+@myexamples[
+(define-splicing-syntax-class final (code:comment "final term")
+  (pattern (~seq x (~peek-not _))))
+
+(syntax-parse #'(a b c)
+  [((~or f:final o:other) ...)
+   (printf "finals are ~s\n" (syntax->datum #'(f.x ...)))
+   (printf "others are ~s\n" (syntax->datum #'(o ...)))])
 ]
 }
 
