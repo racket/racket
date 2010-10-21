@@ -1,7 +1,7 @@
 (module sequence "pre-base.rkt"
   (require "list.rkt")
   
-  (define empty-seqn
+  (define empty-stream
     (make-do-sequence
      (λ ()
        (values
@@ -12,10 +12,10 @@
         (λ (val) #t)
         (λ (pos val) #t)))))
   
-  (define (seqn->list s)
+  (define (stream->list s)
     (for/list ([v s]) v))
   
-  (define-syntax-rule (-seqn-cons vs s)
+  (define-syntax-rule (-stream-cons vs s)
     (make-do-sequence
      (λ ()
        (define-values (more? next) (sequence-generate s))
@@ -30,31 +30,31 @@
           (or (zero? pos) (more?)))
         (λ _ #t)
         (λ _ #t)))))
-  (define seqn-cons
+  (define stream-cons
     (case-lambda
       [()
-       (error 'seqn-cons "expects a sequence to extend, but received no arguments")]
+       (error 'stream-cons "expects a sequence to extend, but received no arguments")]
       [(s)
-       (-seqn-cons (values) s)]
+       (-stream-cons (values) s)]
       [(v s)
-       (-seqn-cons (values v) s)]
+       (-stream-cons (values v) s)]
       [vs*s
        ; XXX double reverse is bad but moving split-at causes a problem I can't figure
        (define s*vs (reverse vs*s))
-       (-seqn-cons (apply values (reverse (cdr s*vs))) (car s*vs))]))
+       (-stream-cons (apply values (reverse (cdr s*vs))) (car s*vs))]))
   
-  (define (seqn-first s)
+  (define (stream-first s)
     (define-values (more? next) (sequence-generate s))
     (unless (more?)
-      (error 'seqn-first "expects a sequence with at least one element"))
+      (error 'stream-first "expects a sequence with at least one element"))
     (next))
   
-  (define (seqn-rest s)
+  (define (stream-rest s)
     (make-do-sequence
      (λ ()
        (define-values (more? next) (sequence-generate s))
        (unless (more?)
-         (error 'seqn-rest "expects a sequence with at least one element"))
+         (error 'stream-rest "expects a sequence with at least one element"))
        (next)
        (values
         (λ (pos) (next))
@@ -64,16 +64,16 @@
         (λ _ #t)
         (λ _ #t)))))
   
-  (define (seqn-length s)
+  (define (stream-length s)
     (define-values (more? next) (sequence-generate s))
     (let loop ([i 0])
       (if (more?)
           (begin (next) (loop (add1 i)))
           i)))
   
-  (define (seqn-ref s i)
+  (define (stream-ref s i)
     (unless (and (exact-integer? i) (i . >= . 0))
-      (error 'seqn-ref "expects an exact non-negative index, but got ~e" i))
+      (error 'stream-ref "expects an exact non-negative index, but got ~e" i))
     (define-values (more? next) (sequence-generate s))
     (let loop ([n i])
       (cond
@@ -83,18 +83,18 @@
          (next)
          (loop (sub1 n))]
         [else
-         (error 'seqn-ref "expects a sequence with at least ~e element(s)" i)])))
+         (error 'stream-ref "expects a sequence with at least ~e element(s)" i)])))
   
-  (define (seqn-tail s i)
+  (define (stream-tail s i)
     (unless (and (exact-integer? i) (i . >= . 0))
-      (error 'seqn-tail "expects an exact non-negative index, but got ~e" i))
+      (error 'stream-tail "expects an exact non-negative index, but got ~e" i))
     (make-do-sequence
      (λ ()
        (define-values (more? next) (sequence-generate s))
        (let loop ([n i])
          (unless (zero? n)
            (unless (more?)
-             (error 'seqn-tail "expects a sequence with at least ~e element(s)" i))
+             (error 'stream-tail "expects a sequence with at least ~e element(s)" i))
            (next)
            (loop (sub1 n))))
        (values
@@ -105,7 +105,7 @@
         (λ _ #t)
         (λ _ #t)))))
   
-  (define (-seqn-append s0 l)
+  (define (-stream-append s0 l)
     (if (null? l)
         s0
         (make-do-sequence
@@ -133,14 +133,14 @@
             (λ _ #t)
             (λ _ #t))))))
   
-  (define (seqn-append . l)
+  (define (stream-append . l)
     (unless (andmap sequence? l)
-      (error 'seqn-append "expects only sequence arguments, given ~e" l))
-    (-seqn-append empty-seqn l))
+      (error 'stream-append "expects only sequence arguments, given ~e" l))
+    (-stream-append empty-stream l))
   
-  (define (seqn-map f s)
+  (define (stream-map f s)
     (unless (procedure? f)
-      (error 'seqn-map "expects a procedure as the first argument, given ~e" f))
+      (error 'stream-map "expects a procedure as the first argument, given ~e" f))
     (make-do-sequence
      (λ ()
        (define-values (more? next) (sequence-generate s))
@@ -152,37 +152,37 @@
         (λ _ #t)
         (λ _ #t)))))
   
-  (define (seqn-andmap f s)
+  (define (stream-andmap f s)
     (define-values (more? next) (sequence-generate s))
     (let loop ()
       (if (more?)
           (and (call-with-values next f) (loop))
           #t)))
   
-  (define (seqn-ormap f s)
+  (define (stream-ormap f s)
     (define-values (more? next) (sequence-generate s))
     (let loop ()
       (if (more?)
           (or (call-with-values next f) (loop))
           #f)))
   
-  (define (seqn-for-each f s)
+  (define (stream-for-each f s)
     (define-values (more? next) (sequence-generate s))
     (let loop ()
       (when (more?)
         (call-with-values next f) 
         (loop))))
   
-  (define (seqn-fold f i s)
+  (define (stream-fold f i s)
     (define-values (more? next) (sequence-generate s))
     (let loop ([i i])
       (if (more?)
           (loop (call-with-values next (λ e (apply f i e))))
           i)))
   
-  (define (seqn-filter f s)
+  (define (stream-filter f s)
     (unless (procedure? f)
-      (error 'seqn-filter "expects a procedure as the first argument, given ~e" f))
+      (error 'stream-filter "expects a procedure as the first argument, given ~e" f))
     (make-do-sequence
      (λ ()
        (define-values (more? next) (sequence-generate s))
@@ -204,7 +204,7 @@
         (λ _ #t)
         (λ _ #t)))))
   
-  (define (seqn-add-between s e)
+  (define (stream-add-between s e)
     (make-do-sequence
      (λ ()
        (define-values (more? next) (sequence-generate s))
@@ -222,9 +222,9 @@
         (λ _ #t)
         (λ _ #t)))))
   
-  (define (seqn-count f s)
+  (define (stream-count f s)
     (unless (procedure? f)
-      (error 'seqn-count "expects a procedure as the first argument, given ~e" f))
+      (error 'stream-count "expects a procedure as the first argument, given ~e" f))
     (define-values (more? next) (sequence-generate s))
     (let loop ([n 0])
       (if (more?)
@@ -233,20 +233,20 @@
               (loop n))
           n)))
   
-  (provide empty-seqn
-           seqn->list
-           seqn-cons
-           seqn-first
-           seqn-rest
-           seqn-length
-           seqn-ref
-           seqn-tail
-           seqn-append
-           seqn-map
-           seqn-andmap
-           seqn-ormap
-           seqn-for-each
-           seqn-fold
-           seqn-filter
-           seqn-add-between
-           seqn-count))
+  (provide empty-stream
+           stream->list
+           stream-cons
+           stream-first
+           stream-rest
+           stream-length
+           stream-ref
+           stream-tail
+           stream-append
+           stream-map
+           stream-andmap
+           stream-ormap
+           stream-for-each
+           stream-fold
+           stream-filter
+           stream-add-between
+           stream-count))
