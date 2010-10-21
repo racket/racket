@@ -959,7 +959,11 @@ The @scheme[show-errors?] argument is no longer used.
 
 
 @defmethod[(insert-image [filename (or/c path-string? #f) #f]
-                         [type (or/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict) 'unknown]
+                         [type (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                                         'gif 'gif/mask 'gif/alpha 
+                                         'jpeg 'png 'png/mask 'png/alpha
+                                         'xbm 'xpm 'bmp 'pict)
+                               'unknown/alpha]
                          [relative-path? any/c #f]
                          [inline? any/c #t])
            void?]{
@@ -1521,7 +1525,10 @@ Creates a @scheme[editor-snip%] with either a sub-editor from
 
 
 @defmethod[(on-new-image-snip [filename path?]
-                              [kind (or/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
+                              [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                                              'gif 'gif/mask 'gif/alpha 
+                                              'jpeg 'png 'png/mask 'png/alpha
+                                              'xbm 'xpm 'bmp 'pict)]
                               [relative-path? any/c]
                               [inline? any/c])
            (is-a?/c image-snip%)]{

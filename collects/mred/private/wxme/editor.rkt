@@ -506,7 +506,7 @@
       snip))
 
   (def/public (insert-image [(make-or-false path-string?) [filename #f]]
-                            [symbol? [type 'unknown]]
+                            [image-type? [type 'unknown/alpha]]
                             [any? [relative? #f]]
                             [any? [inline-img? #t]])
     (let ([filename (or filename
@@ -518,7 +518,7 @@
           (insert snip)))))
 
   (def/public (on-new-image-snip [path-string? filename]
-                                 [symbol? type]
+                                 [image-type? type]
                                  [any? relative?]
                                  [any? inline-img?])
     (make-object image-snip% filename type relative? inline-img?))

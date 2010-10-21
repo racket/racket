@@ -54,7 +54,9 @@
 
          caret-status?
 
-         selected-text-color)
+         selected-text-color
+
+         image-type?)
 
 (define (symbol-list? l)
   (and (list? l) (andmap symbol? l)))
@@ -864,6 +866,12 @@
 
 (define black-color (make-object color% 0 0 0))
 
+(define image-type?
+  (symbol-in unknown unknown/mask unknown/alpha
+             gif gif/mask gif/alpha
+             jpeg png png/mask png/alpha
+             xbm xpm bmp pict))
+
 (defclass* image-snip% internal-snip% (equal<%>)
   (inherit-field s-admin
                  s-flags)
@@ -894,10 +902,7 @@
    [([bitmap% bm] [(make-or-false bitmap%) [mask #f]])
     (set-bitmap bm mask)]
    [([(make-or-false path-string?) [name #f]]
-     [(symbol-in unknown unknown/mask gif gif/mask
-                 jpeg png png/mask
-                 xbm xpm bmp pict)
-      [kind 'unknown]]
+     [image-type? [kind 'unknown]]
      [bool? [relative-path? #f]]
      [bool? [inline? #t]])
     (load-file name kind relative-path? inline?)]
