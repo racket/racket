@@ -537,25 +537,6 @@
     (define-metafunction/extension f empty-language
       [(g any) 2])
     (test (term (g 0)) 2))
-
-  #:
-  (let ()
-    (define-language L 
-      (v 1 (v)))
-    (define-metafunction L
-      f : v -> v
-      [(f (v)) 
-       any_1
-       (where any_1 (f v))])
-    
-    (define-extended-language M
-      L
-      (v .... 2))
-    (define-metafunction/extension f M
-      g : v -> v
-      [(g 2) 2])
-
-    (term (g (2))))
   
   (let ()
     (define-metafunction empty-language
