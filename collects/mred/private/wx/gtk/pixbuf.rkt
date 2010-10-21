@@ -3,18 +3,22 @@
          ffi/unsafe
          ffi/unsafe/alloc
          racket/draw
+         racket/draw/local
+         racket/draw/cairo
          "../../lock.rkt"
          "../common/bstr.rkt"
          "utils.rkt"
          "types.rkt"
          (only-in '#%foreign ffi-callback))
 
-(provide _GdkPixbuf
-         bitmap->pixbuf
+(provide bitmap->pixbuf
+         pixbuf->bitmap
+         
+         _GdkPixbuf
          gtk_image_new_from_pixbuf
          release-pixbuf)
 
-(define _GdkPixbuf (_cpointer 'GdkPixbuf))
+(define _GdkPixbuf (_cpointer/null 'GdkPixbuf))
 
 (define release-pixbuf ((deallocator) g_object_unref))
 
@@ -30,6 +34,10 @@
 						  _pointer  ; destroy data
 						  -> _GdkPixbuf)
   #:wrap (allocator release-pixbuf))
+
+(define-gdk gdk_cairo_set_source_pixbuf (_fun _cairo_t _GdkPixbuf _double* _double* -> _void))
+(define-gdk gdk_pixbuf_get_width (_fun _GdkPixbuf -> _int))
+(define-gdk gdk_pixbuf_get_height (_fun _GdkPixbuf -> _int))
 
 (define free-it (ffi-callback free
                               (list _pointer)
@@ -59,3 +67,15 @@
                                  (* w 4)
                                  free-it
                                  #f)))))
+
+(define (pixbuf->bitmap pixbuf)
+  (let* ([w (gdk_pixbuf_get_width pixbuf)]
+         [h (gdk_pixbuf_get_height pixbuf)]
+         [bm (make-object bitmap% w h #f #t)]
+         [s (send bm get-cairo-surface)]
+         [cr (cairo_create s)])
+    (gdk_cairo_set_source_pixbuf cr pixbuf 0 0)
+    (cairo_rectangle cr 0 0 w h)
+    (cairo_fill cr)
+    (cairo_destroy cr)
+    bm))

@@ -1,14 +1,15 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/alloc
          "../../syntax.rkt"
          "../../lock.rkt"
          "../common/queue.rkt"
          "../common/local.rkt"
          "../common/bstr.rkt"
           "utils.rkt"
-          "types.rkt")
-(unsafe!)
+          "types.rkt"
+          "pixbuf.rkt")
 
 (provide clipboard-driver%
          has-x-selection?
@@ -22,6 +23,13 @@
 (define _GtkClipboard (_cpointer 'GtkClipboard))
 (define _GtkDisplay _pointer)
 (define _GtkSelectionData (_cpointer 'GtkSelectionData))
+
+(define _freed-string (make-ctype _pointer 
+                                  (lambda (s) s)
+                                  (lambda (p)
+                                    (let ([s (cast p _pointer _string)])
+                                      (g_free p)
+                                      s))))
 
 ;; Recent versions of Gtk provide function calls to
 ;;  access data, but use structure when the functions are
@@ -54,7 +62,9 @@
   #:fail (lambda () GtkSelectionDataT-length))
 (define-gtk gtk_selection_data_get_data (_fun _GtkSelectionData -> _pointer)
   #:fail (lambda () GtkSelectionDataT-data))
-(define-gtk gtk_clipboard_wait_for_text (_fun _GtkClipboard -> _string))
+(define-gtk gtk_clipboard_wait_for_text (_fun _GtkClipboard -> _freed-string))
+(define-gtk gtk_clipboard_wait_for_image (_fun _GtkClipboard -> _GdkPixbuf)
+  #:wrap (allocator gobject-unref))
 
 (define-cstruct _GtkTargetEntry ([target _pointer]
                                  [flags _uint]
@@ -172,7 +182,10 @@
     (or (gtk_clipboard_wait_for_text cb) ""))
 
   (define/public (get-bitmap-data)
-    #f)
+    (let ([pixbuf (gtk_clipboard_wait_for_image cb)])
+      (and pixbuf
+           (begin0
+            (pixbuf->bitmap pixbuf)
+            (gobject-unref pixbuf)))))
   
   (super-new))
-

@@ -28,6 +28,7 @@
          g_free
          _gpath/free
          _GSList
+         gfree
 
          g_object_set_data
          g_object_get_data
@@ -132,6 +133,7 @@
                                v)))))
 
 (define-glib g_free (_fun _pointer -> _void))
+(define gfree ((deallocator) g_free))
 
 (define-gobj g_object_set_data (_fun _GtkWidget _string _pointer -> _void))
 (define-gobj g_object_get_data (_fun _GtkWidget _string -> _pointer))
