@@ -6,8 +6,8 @@
    (place ; -------------------------------------------------------------------
     'neu "Northeastern University"
     #:location "Boston, MA"
-    #:url "http://www.ccs.neu.edu/scheme/"
-    #:pubs "http://www.ccs.neu.edu/scheme/pubs/"
+    #:url "http://www.ccs.neu.edu/racket/"
+    #:pubs "http://www.ccs.neu.edu/racket/pubs/"
     (person 'matthias "Matthias Felleisen"
             #:url "http://www.ccs.neu.edu/home/matthias/")
     (person 'eli "Eli Barzilay"
