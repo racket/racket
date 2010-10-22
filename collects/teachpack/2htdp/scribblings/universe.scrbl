@@ -208,7 +208,7 @@ current world. The clock ticks at the rate of 28 times per second.}}
                [rate-expr (and/c real? positive?)])]{
 tells DrRacket to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
-current world. The clock ticks at the rate of @scheme[rate-expr].}}
+current world. The clock ticks every @scheme[rate-expr] seconds.}}
 
 @item{A @tech{KeyEvent} represents key board events. 
 
@@ -1011,8 +1011,8 @@ optional handlers:
               #:contracts
               ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
                [rate-expr (and/c real? positive?)])]{ 
- tells DrRacket to apply @scheme[tick-expr] as above but use the specified
- clock tick rate instead of the default.}
+ tells DrRacket to apply @scheme[tick-expr] as above; the clock ticks
+ every  @scheme[rate-expr] seconds.}
 }
 
 @item{
