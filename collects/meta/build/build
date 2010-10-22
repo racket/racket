@@ -76,7 +76,7 @@ defbuild() {
 # required).  Warning: an `eval "foo=\"bar\""' is used to assign values.
 msets "/machines/D" "workdir=/var/tmp" "moveto=" "copytobak=" \
       "configure_args=" "LDFLAGS=" "ext_lib_paths=" "renice="
-# defbuild "ccs-solaris" "sparc-solaris" "moveto=/proj/scheme" \
+# defbuild "ccs-solaris" "sparc-solaris" "moveto=/proj/racket" \
 #          "ext_lib_paths=/arch/unix/packages/openssl-0.9.7e"
 defbuild "pitcairn"    "i386-win32" \
          "workdir=f:" # no "/..." path (that can get interpreted as a flag)
@@ -90,7 +90,7 @@ defbuild "macintel"    "i386-osx-mac" \
          "configure_args=--enable-sdk=/Developer/SDKs/MacOSX10.4u.sdk"
 # defbuild "galaga"      "i386-linux-ubuntu-hardy"
 defbuild "champlain"   "i386-linux-f12"
-defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/scheme"
+defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
 # defbuild "punge"       "i386-linux-ubuntu-jaunty" "renice=20"
 # defbuild "bjorn"       "i386-linux-gcc2"
 # defbuild "chicago"     "i386-linux-debian"
