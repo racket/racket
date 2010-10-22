@@ -22,10 +22,11 @@
 
 (define (run fname [seed (or sd (+ 1 (random (expt 2 30))))])
   (printf "DrDr Ignore! random-seed ~s\n" seed)
+  (printf "name: ~a\n" fname)
+  (flush-output)
   (random-seed seed)
   (define bs (file->bytes fname))
   (define len (* 8 (bytes-length bs)))
-  (printf "name: ~a\n" fname)
   (for ([i (in-range (quotient len 10000))])
     (flip-file bs (random len)))
   (with-handlers ([void void])
