@@ -1720,6 +1720,8 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/contmark.rktl" drdr:command-line #f
 "collects/tests/racket/contract-mzlib-test.rktl" responsible (robby) drdr:command-line (racket "-qr" *)
 "collects/tests/racket/contract-opt-tests.rkt" drdr:command-line (racket "-f" *)
+"collects/tests/racket/contract-stress-argmin.rkt" responsible (robby)
+"collects/tests/racket/contract-stress-take-right.rkt" responsible (robby)
 "collects/tests/racket/contract-test.rktl" responsible (robby) drdr:command-line #f
 "collects/tests/racket/control.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/date.rktl" drdr:command-line (racket "-f" *)
