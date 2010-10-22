@@ -51,11 +51,14 @@
 		6)]
 	     [button-panel (make-object horizontal-panel% dialog)]
 	     [cancel? #t]
-	     [ok (make-object button% "OK" 
-			      button-panel
-			      (lambda x
-				(set! cancel? #f)
-				(send dialog show #f)))]
+	     [ok (new button%
+                      [label "OK"]
+                      [parent button-panel]
+                      [style '(border)]
+                      [callback
+                       (lambda x
+                         (set! cancel? #f)
+                         (send dialog show #f))])]
 	     [cancel (make-object button% "Cancel"
 				  button-panel
 				  (lambda x
@@ -76,8 +79,11 @@
 		      (send random-slider get-value)
 		      (lambda (x) (make-vector (send random-slider get-value) 'o)))]
 		    [(prebuilt)
-		     (board-board (list-ref boards (send prebuilt get-selection)))]))))
+                     (to-vectors (board-board (list-ref boards (send prebuilt get-selection))))]))))
       (new-board)))
+  
+  (define (to-vectors lsts)
+    (apply vector (map (λ (x) (apply vector x)) lsts)))
   
   '(define (build-vector n f)
     (list->vector
