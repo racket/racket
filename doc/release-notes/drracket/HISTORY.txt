@@ -1,3 +1,7 @@
+------------------------------
+        Version 5.0.2
+------------------------------
+
    . Added image->color-list and color-list->bitmap to 
      2htdp/image
 
