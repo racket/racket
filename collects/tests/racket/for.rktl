@@ -350,7 +350,7 @@
               (maker) (maker) (maker))))
 
 ;; New operators
-(require racket/private/sequence)
+(require racket/stream)
 
 (test '(0 1 2) 'stream->list (stream->list (in-range 3)))
 (arity-test stream->list 1 1)
