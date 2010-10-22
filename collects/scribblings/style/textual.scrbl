@@ -45,7 +45,7 @@ entity deserves at least one line.
 @; -----------------------------------------------------------------------------
 @section{Line Width}
 
-A line in Racket is at most 80 characters wide.
+A line in Racket is at most 100 characters wide.
 
 If you use Emacs to edit, create a line with ";; " followed by ctrl-U 77
 and "-". Okay, use DrRacket to create such lines by holding down the dash
