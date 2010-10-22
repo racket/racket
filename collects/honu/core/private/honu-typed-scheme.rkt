@@ -600,6 +600,8 @@ if (foo){
   #;
   (emit-remark "Honu unparsed begin" stx)
   (debug "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))
+  #'(void)
+  #;
   (syntax-case stx ()
     [(_) #'(void)]
     [(_ . body)

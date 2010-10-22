@@ -20,8 +20,8 @@
          syntax/stx
          (for-syntax "util.ss"
                      macro-debugger/emit)
-         (for-syntax syntax/private/stxparse/runtime-prose
-                     syntax/private/stxparse/runtime
+         (for-syntax syntax/parse/private/runtime-report
+                     syntax/parse/private/runtime
                      )
          (for-template racket/base))
 
@@ -61,7 +61,7 @@
        [else (loop (stx-cdr start) (add1 count))]))))
 
 (define-primitive-splicing-syntax-class (infix-macro-class left-expression context)
-  #:attrs (result)
+  #:attributes (result)
   #:description "infix-macro"
   (lambda (stx fail)
     (cond
@@ -77,11 +77,11 @@
                                             (sub1 (syntax-object-position full-stx (introducer rest)))]
                                           [parsed (introducer (used))])
                                     (debug "Result is ~a. Object position is ~a out of expression ~a\n" parsed position (syntax->datum full-stx))
-                                    (list rest position parsed))))]
+                                    (list position parsed))))]
       [else (fail)])))
 
 (define-primitive-splicing-syntax-class (honu-transformer context)
-  #:attrs (result)
+  #:attributes (result)
   #:description "honu-expr"
   (lambda (stx fail)
     (debug "Honu expr from transformer `~a' in context ~a transformer ~a\n" (syntax->datum stx) context (get-transformer stx))
@@ -93,21 +93,24 @@
          (debug "Parsed honu-syntax rest ~a position ~a out ~a\n"
                  #'rest (syntax-object-position stx #'rest)
                  #'(honu-unparsed-begin expr ...))
-         (list #'rest (syntax-object-position stx #'rest)
+         (list (syntax-object-position stx #'rest)
                #'(honu-unparsed-begin expr ...))]
         [else #f]
          #;
         [else #f => (lambda (exprs)
                                (debug "Ignoring honu-syntax 1!\n")
-                               (list  0 #''()))]
+                               (list 0 #''()))]
         )]
      [(get-transformer stx) => (lambda (transformer)
                                  (define introducer (make-syntax-introducer))
                                  (debug "Transforming honu macro ~a\n" (stx-car stx))
                                  (let-values ([(used rest)
                                                (transformer (introducer stx) context)])
-                                   (debug "Result is ~a. Object position is ~a out of expression ~a\n" used (syntax-object-position stx (introducer rest)) (syntax->datum stx))
-                                   (list (introducer rest) (syntax-object-position stx (introducer rest))
+                                   (debug "Result is ~a. Object position is ~a out of expression ~a\n\n" used (syntax-object-position stx (introducer rest)) (syntax->datum stx))
+                                   (debug "Used is ~a\n" (syntax->datum (introducer (used))))
+                                   (list (syntax-object-position stx (introducer rest))
+                                         (list #f)
+                                         #;
                                          (introducer (used)))))]
      
      [else (fail)])))
@@ -141,7 +144,7 @@
                                  (debug "Transforming honu macro ~a\n" (car stx))
                                  (let-values ([(used rest)
                                                (transformer (introducer stx) context)])
-                                   (list (introducer rest) (syntax-object-position stx rest)
+                                   (list (syntax-object-position stx rest)
                                          (introducer (used)))))]
      
      [else (syntax-case stx ()
