@@ -670,15 +670,15 @@
                 (list #,@(filter values (map (λ (arg) 
                                                (and (arg/res-vars arg)
                                                     #`(λ (#,@(arg/res-vars arg) val blame)
-                                                        (opt/direct #,(syntax-property
-                                                                       (syntax-property 
-                                                                        (arg/res-ctc arg)
-                                                                        'racket/contract:negative-position 
-                                                                        this->i)
-                                                                       'racket/contract:contract-on-boundary 
-                                                                       (gensym '->i-indy-boundary)) 
-                                                                    val blame
-                                                                    un-dep))))
+                                                        ;; this used to use opt/direct, but opt/direct duplicates code (bad!)
+                                                        (un-dep #,(syntax-property
+                                                                   (syntax-property 
+                                                                    (arg/res-ctc arg)
+                                                                    'racket/contract:negative-position 
+                                                                    this->i)
+                                                                   'racket/contract:contract-on-boundary 
+                                                                   (gensym '->i-indy-boundary)) 
+                                                                val blame))))
                                              args+rst)))
                 ;; then the non-dependent argument contracts that are themselves dependend on
                 (list #,@(filter values
@@ -705,15 +705,15 @@
                                                                               'racket/contract:contract-on-boundary 
                                                                               (gensym '->i-indy-boundary))))
                                                                 #`(λ (#,@(arg/res-vars arg) val blame)
-                                                                    (opt/direct #,(syntax-property
-                                                                                   (syntax-property 
-                                                                                    (arg/res-ctc arg)
-                                                                                    'racket/contract:positive-position
-                                                                                    this->i)
-                                                                                   'racket/contract:contract-on-boundary 
-                                                                                   (gensym '->i-indy-boundary))
-                                                                                val blame
-                                                                                un-dep)))))
+                                                                    ;; this used to use opt/direct, but opt/direct duplicates code (bad!)
+                                                                    (un-dep #,(syntax-property
+                                                                               (syntax-property 
+                                                                                (arg/res-ctc arg)
+                                                                                'racket/contract:positive-position
+                                                                                this->i)
+                                                                               'racket/contract:contract-on-boundary 
+                                                                               (gensym '->i-indy-boundary))
+                                                                            val blame)))))
                                                      (istx-ress an-istx))))
                       #''())
                 #,(if (istx-ress an-istx)
