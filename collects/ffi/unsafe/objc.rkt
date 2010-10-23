@@ -188,7 +188,8 @@
 (define-objc objc_addClass (_fun _objc_class-pointer -> _void)
   #:fail (lambda () #f))
 
-(define-objc object_getClass (_fun _id -> _Class))
+(define-objc object_getClass (_fun _id -> _Class)
+  #:fail (lambda () #f))
 
 (provide class_addMethod)
 (define (class_addMethod cls sel imp ty enc)
@@ -207,7 +208,11 @@
   #:fail (lambda () #f))
 
 (define-objc/private objc_msgSend _fpointer)
-(define-objc/private objc_msgSend_fpret _fpointer)
+(define-objc/private objc_msgSend_fpret _fpointer
+  #:fail (lambda ()
+           ;; If objc_msgSend_fpret is not available, assume that
+           ;; it's the same as objc_msgSend
+           objc_msgSend))
 (define-objc/private objc_msgSend_stret _fpointer)
 (define-objc/private objc_msgSendSuper _fpointer)
 (define objc_msgSendSuper_fpret objc_msgSendSuper) ; why no fpret variant?
@@ -631,6 +636,11 @@
       (class_addProtocol id proto)
       (add-protocol-the-hard-way id proto)))
 
+(define (object-get-class id)
+  (if object_getClass
+      (object_getClass id)
+      (ptr-ref id _Class)))
+
 (define (layout->string l)
   (case l
     [(uint8) "C"]
@@ -730,7 +740,7 @@
                                    [_ (error "oops")])
                                  '())]
                             [in-cls (if in-class?
-                                        #'(object_getClass cls)
+                                        #'(object-get-class cls)
                                         #'cls)]
                             [atomic? (or (free-identifier=? #'kind #'+a)
                                          (free-identifier=? #'kind #'-a))])
@@ -807,4 +817,4 @@
 (provide objc-is-a?)
 
 (define (objc-is-a? v c)
-  (ptr-equal? (object_getClass v) c))
+  (ptr-equal? (object-get-class v) c))

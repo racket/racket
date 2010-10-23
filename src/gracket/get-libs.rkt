@@ -56,7 +56,9 @@
           ["libpixman-1.0.dylib" 499440]
           ["libgthread-2.0.0.dylib" 21728]
           ["libpng14.14.dylib" 192224]
-          ["PSMTabBarControl.tgz" 107171])])]
+          ["PSMTabBarControl.tgz" 107171])]
+       [(ppc-macosx) 
+        '()])]
     [(windows)
      (let ([basic '(["libjpeg-7.dll" 233192]
                     ["libcairo-2.dll" 921369]

@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/system)
+#lang racket
+(require racket/system)
 
 (define from (vector-ref (current-command-line-arguments) 0))
 (define to (path->string (simplify-path (build-path (collection-path "scheme") 'up 'up "lib/") #f)))
