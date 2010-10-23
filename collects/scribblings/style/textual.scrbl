@@ -2,54 +2,106 @@
 
 @(require "shared.rkt")
 
+@(define-syntax-rule
+  (good form code ...)
+  (racketmod #:file (tt "good") racket form code ...))
+
 @title{Textual Matters}
+
+Simple textual conventions help eyes find pieces of code quickly. Here are
+some of those that are easy to check---some automatically and some
+manually. If you find yourself editing a file that violates some of the
+constraints below, edit it into the proper shape.
 
 @; -----------------------------------------------------------------------------
 @section{Indentation}
 
-DrRacket indents code. Use it. If you wish to be a real friend of PLT, use
-DrRacket all the time, and do request features and changes for things you
-don't like.
+DrRacket indents code and it is the only tool that everyone in PLT agrees
+on. So use DrRacket's indentation style. Here is what this means.
+@nested[#:style 'inset]{
+ For every file in the repository, DrRacket's "indent all" functions leaves
+ the file alone.}
+That's all there is to it.
 
-Real friends of PLT use DrRacket to write their programs, and they don't
-override DrRacket's indentation style. They accept it and leave it alone.
-The resulting uniformity helps guide eyes.
+If you prefer to use some other editor (emacs, vi/m, etc), program it so
+that it follows DrRacket's indentation style.
 
-@margin-note{Okay, okay. We are using emacs to write this guide.} Minor
-friends of PLT use Emacs and/or vi(m).  Nevertheless, these minor friends
-adjust their chosen editor so that it follows DrRacket's way of indenting
-code.
+Examples:
 
-One of the most important disagreements may concern @scheme[if]. So once
-and for all:
-
-@(racketmod
+@racketmod[#:file
+@tt{good}
 racket
-#:file good
+
 (if (positive? x)
     (send rocket-object launch)
     (redirect (- x)))
-)
+]
 
-@(racketmod
+@racketmod[#:file
+@tt{bad}
 racket
-#:file bad
+
 (if (positive? x)
   (send rocket-object launch)
   (redirect (- x)))
-)
+]
 
-Also note that the then- and else-branches are separate entities, and each
-entity deserves at least one line.
+@margin-note{we need more of these rules}
+
+@; -----------------------------------------------------------------------------
+@section{Line Breaks}
+
+Next to indentation, proper line breaks are critical.
+
+For an @scheme[if] expression, put each alternative on a separate line.
+
+@racketmod[#:file
+@tt{good}
+racket
+
+(if (positive? x)
+    (send rocket-object launch)
+    (redirect (- x)))
+]
+
+@racketmod[#:file
+@tt{bad}
+racket
+
+(if (positive? x) (send rocket-object launch)
+    (redirect (- x)))
+]
+
+Each definition and each local definition deserves at least one line.
+
+@racketmod[#:file
+@tt{good}
+racket
+
+(define (start-reactor x)
+  (define width (* 10 x))
+  (define height (* 3 x))
+  ...)
+]
+
+@racketmod[#:file
+@tt{bad}
+racket
+
+(define (start-reactor x)
+  (define width (* 10 x)) (define height (* 3 x))
+  ...)
+]
+@margin-note{we need more of these rules}
 
 @; -----------------------------------------------------------------------------
 @section{Line Width}
 
-A line in Racket is at most 100 characters wide.
+A line in a Racket file is at most 102 characters wide.
 
-If you use Emacs to edit, create a line with ";; " followed by ctrl-U 77
-and "-". Okay, use DrRacket to create such lines by holding down the dash
-key.
+When you create a file, add a line with ";; " followed by ctrl-U 99 and "-".
+When you separate "sections" of code in a file, insert the same line. This
+provides some line-width orientation in the middle of a file, too.
 
 @; -----------------------------------------------------------------------------
 @section{Where to Put Parentheses}
