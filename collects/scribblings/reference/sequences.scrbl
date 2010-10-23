@@ -41,6 +41,8 @@ built-in datatypes, the sequence datatype includes the following:
 
  @item{input ports (see @secref["ports"])}
 
+ @item{streams (see @secref["streams"])}
+
 ]
 
 In addition, @scheme[make-do-sequence] creates a sequence given a thunk
@@ -208,12 +210,14 @@ in the sequence.
 @defproc[(in-producer [producer procedure?] [stop any/c] [args any/c] ...)
          sequence?]{
   Returns a sequence that contains values from sequential calls to
-  @scheme[producer].  @scheme[stop] identifies the value that marks the
-  end of the sequence --- this value is not included in the sequence.
-  @scheme[stop] can be a predicate or a value that is tested against the
-  results with @scheme[eq?].  Note that you must use a predicate
-  function if the stop value is itself a function, or if the
-  @scheme[producer] returns multiple values.}
+  @scheme[producer].  A @scheme[stop] value returned by
+  @racket[producer] marks the end of the sequence (and the
+  @racket[stop] value is not included in the sequence); @scheme[stop]
+  can be a predicate that is applied to the results of @racket[producer],
+  or it can be a value that is tested against the result of 
+  with @scheme[eq?].  (You must use a predicate for @racket[stop]
+  function if the stop value is itself a function or if
+  @scheme[producer] returns multiple values.)}
 
 @defproc[(in-value [v any/c]) sequence?]{
   Returns a sequence that produces a single value: @scheme[v].  This
@@ -319,7 +323,18 @@ in the sequence.
         c)]]}
 
 @; ----------------------------------------------------------------------
-@section{Additional Sequence Operations}
+@section{Sequence Generators}
+
+@defproc[(sequence-generate [seq sequence?])
+         (values (-> boolean?) (-> any))]{
+  Returns two thunks to extract elements from the sequence.  The first
+  returns @scheme[#t] if more values are available for the sequence.
+  The second returns the next element (which may be multiple values)
+  from the sequence; if no more elements are available, the
+  @exnraise[exn:fail:contract].}
+
+@; ----------------------------------------------------------------------
+@section[#:tag "streams"]{Streams}
 
 @note-lib[racket/stream]
 
@@ -422,17 +437,6 @@ in the sequence.
   Returns the number of elements in @scheme[s] for which @scheme[f]
   returns a true result.  If @scheme[s] is infinite, this function does
   not terminate.}
-
-@; ----------------------------------------------------------------------
-@section{Sequence Generators}
-
-@defproc[(sequence-generate [seq sequence?])
-         (values (-> boolean?) (-> any))]{
-  Returns two thunks to extract elements from the sequence.  The first
-  returns @scheme[#t] if more values are available for the sequence.
-  The second returns the next element (which may be multiple values)
-  from the sequence; if no more elements are available, the
-  @exnraise[exn:fail:contract].}
 
 @; ----------------------------------------------------------------------
 @section{Iterator Generators}
