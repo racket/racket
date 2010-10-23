@@ -13,12 +13,12 @@
    (ffi-lib "libpng14.14.dylib")
    (ffi-lib "libcairo.2.dylib")]
   [(windows) 
-   (ffi-lib "zlib1")
-   (ffi-lib "libpng14-14")
-   (ffi-lib "libexpat-1")
-   (ffi-lib "freetype6")
-   (ffi-lib "libfontconfig-1")
-   (ffi-lib "libcairo-2")])
+   (ffi-lib "zlib1.dll")
+   (ffi-lib "libpng14-14.dll")
+   (ffi-lib "libexpat-1.dll")
+   (ffi-lib "freetype6.dll")
+   (ffi-lib "libfontconfig-1.dll")
+   (ffi-lib "libcairo-2.dll")])
 
 (define-ffi-definer define-cairo cairo-lib
   #:provide provide-protected)

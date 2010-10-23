@@ -17,33 +17,38 @@
    (ffi-lib "libintl.8.dylib")
    (ffi-lib "libpango-1.0.0.dylib")]
   [(windows) 
-   (ffi-lib "libglib-2.0-0")
-   (ffi-lib "libgmodule-2.0-0")
-   (ffi-lib "libgobject-2.0-0")
-   (ffi-lib "libpango-1.0-0")])
+   (ffi-lib "libglib-2.0-0.dll")
+   (ffi-lib "libgmodule-2.0-0.dll")
+   (ffi-lib "libgobject-2.0-0.dll")
+   (ffi-lib "libpango-1.0-0.dll")])
 
 (define-runtime-lib pangowin32-lib 
   [(unix) #f]
   [(macosx)]
   [(windows) 
-   (ffi-lib "libpangowin32-1.0-0")])
+   (ffi-lib "libpangowin32-1.0-0.dll")])
 
 (define-runtime-lib pangocairo-lib 
   [(unix) (ffi-lib "libpangocairo-1.0" '("0"))]
   [(macosx)
    (ffi-lib "libpangocairo-1.0.0.dylib")]
   [(windows) 
-   (ffi-lib "libpangowin32-1.0-0")
-   (ffi-lib "libexpat-1")
-   (ffi-lib "freetype6")
-   (ffi-lib "libfontconfig-1")
-   (ffi-lib "libpangoft2-1.0-0")
-   (ffi-lib "libpangocairo-1.0-0")])
+   (ffi-lib "libpangowin32-1.0-0.dll")
+   (ffi-lib "libexpat-1.dll")
+   (ffi-lib "freetype6.dll")
+   (ffi-lib "libfontconfig-1.dll")
+   (ffi-lib "libpangoft2-1.0-0.dll")
+   (ffi-lib "libpangocairo-1.0-0.dll")])
 
 (define-runtime-lib glib-lib 
+  [(unix) (ffi-lib "libglib-2.0" '("0"))]
+  [(macosx) (ffi-lib "libglib-2.0.0")]
+  [(windows) (ffi-lib "libglib-2.0-0.dll")])
+
+(define-runtime-lib gobj-lib 
   [(unix) (ffi-lib "libgobject-2.0" '("0"))]
   [(macosx) (ffi-lib "libgobject-2.0.0")]
-  [(windows) (ffi-lib "libgobject-2.0-0")])
+  [(windows) (ffi-lib "libgobject-2.0-0.dll")])
 
 (define-ffi-definer define-pango pango-lib
   #:provide provide)
@@ -52,6 +57,8 @@
 (define-ffi-definer define-pangowin32 pangowin32-lib
   #:provide provide)
 (define-ffi-definer define-glib glib-lib
+  #:provide provide)
+(define-ffi-definer define-gobj gobj-lib
   #:provide provide)
 
 (define PangoContext (_cpointer 'PangoContext))
@@ -117,7 +124,7 @@
 (provide (struct-out PangoGlyphItem))
 
 
-(define-glib g_object_unref (_fun _pointer -> _void)
+(define-gobj g_object_unref (_fun _pointer -> _void)
   #:wrap (deallocator))
 (define-glib g_free (_fun _pointer -> _void)
   #:wrap (deallocator))
