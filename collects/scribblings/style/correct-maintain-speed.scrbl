@@ -21,7 +21,7 @@ three points. Specifically, it spells out suggestions @emph{that you can
 check} and that everyone else can check.
 
 @; -----------------------------------------------------------------------------
-@section{Correctness}
+@section[#:tag "correctness"]{Correctness}
 
 @nested[#:style 'inset]{I have bug reports, therefore I exist. -- Matthias,
 watching Matthew, Robby, Shriram and others create the original code base}
@@ -96,8 +96,9 @@ In order to document code, refer to the
  and make use of other useful cross-references.
 
 Code comprehension also requires adherence to basic elements of style and
- some internal documentation. The rest of this document is about these
- elements of style, including some suggestions on internal documentation.
+ some internal documentation. The rest of this document is mostly about
+ these elements of style, including some suggestions on internal
+ documentation.
 
 @; -----------------------------------------------------------------------------
 @section{Speed}
@@ -131,4 +132,5 @@ Stress tests don't normally have an expected output, so they never
  improvement, just document the weakness in the external library and move
  on.
 
-We are not perfectionist. We produce reasonable software.
+We are not perfectionists. We produce reasonable software.
+

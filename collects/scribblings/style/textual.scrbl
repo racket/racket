@@ -11,7 +11,10 @@
 Simple textual conventions help eyes find pieces of code quickly. Here are
 some of those that are easy to check---some automatically and some
 manually. If you find yourself editing a file that violates some of the
-constraints below, edit it into the proper shape.
+constraints below, edit it into the proper
+shape. @margin-note{@bold{Warning}: On rare occasion a unit test may depend
+on the indentation of a file. This is extremely rare but you should be
+aware of it.}
 
 @; -----------------------------------------------------------------------------
 @section{Indentation}
@@ -21,7 +24,9 @@ on. So use DrRacket's indentation style. Here is what this means.
 @nested[#:style 'inset]{
  For every file in the repository, DrRacket's "indent all" functions leaves
  the file alone.}
-That's all there is to it.
+That's all there is to it. @margin-note{See @secref{correctness}. If you
+really believe that DrRacket indents some construct improperly, submit a
+bug report. When the bug report is closed, the discussion is finished.}
 
 If you prefer to use some other editor (emacs, vi/m, etc), program it so
 that it follows DrRacket's indentation style.

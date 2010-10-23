@@ -3,12 +3,12 @@
 @(require "shared.rkt")
 
 @title{How to Program Racket}
-@author{Matthias Felleisen, Matthew Flatt}
+@author{Matthias Felleisen, Matthew Flatt, Robby Findler, Jay McCarthy}
 
 @; -----------------------------------------------------------------------------
 
 Since 1995 PLT has grown from a handful of people who worked on/with the
- repository to three dozen and more. In addition, Racekt is an open source
+ repository to three dozen and more. In addition, Racket is an open source
  project, meaning other people study the code in the repository and use it
  as an implicit guide to Racket programming. To manage the growth of the PLT
  developer basis and to showcase good Racket coding, every contribution
@@ -33,5 +33,6 @@ This document spells out these criteria, and it is also a call for
 @; -----------------------------------------------------------------------------
 
 @include-section["correct-maintain-speed.scrbl"]
+@include-section["some-performance.scrbl"]
 @include-section["size.scrbl"]
 @include-section["textual.scrbl"]
