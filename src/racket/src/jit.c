@@ -7051,7 +7051,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
           (void)jit_calli(bad_fxvector_length_code);
         else {
           (void)jit_calli(bad_vector_length_code);
-          jit_retval(JIT_R0);
+          /* can return with updated R0 */
         }
         /* bad_vector_length_code may unpack a proxied object */
 
@@ -8725,7 +8725,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     mz_rs_sync();
     JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
     mz_prepare(0);
-    mz_finish(scheme_current_future);
+    (void)mz_finish(scheme_current_future);
     jit_retval(JIT_R0);
     return 1;
   } else if (!for_branch) {
