@@ -2,21 +2,14 @@
 (require ffi/unsafe
          racket/stxparam
          (for-syntax racket/base)
-         "atomic.rkt")
+         "atomic.rkt"
+         "define.rkt")
 
 (define objc-lib (ffi-lib "libobjc"))
 
-(define-syntax define-objc/private
-  (syntax-rules ()
-    [(_ id type)
-     (define-objc/private id id type)]
-    [(_ id c-id type)
-     (define id (get-ffi-obj 'c-id objc-lib type))]))
-
-(define-syntax-rule (define-objc id type)
-  (begin
-    (provide id)
-    (define-objc/private id id type)))
+(define-ffi-definer define-objc objc-lib
+  #:provide provide-protected)
+(define-ffi-definer define-objc/private objc-lib)
 
 ;; ----------------------------------------
 
@@ -50,13 +43,150 @@
 
 ;; ----------------------------------------
 
+;; These structures and functions are used for Objective-C 
+;; version prior to 2.0:
+
+(define-cstruct _objc_ivar
+  ([name _pointer]
+   [ivar_type _pointer]
+   [ivar_offset _int]))
+
+(define-cstruct _objc_ivar_list
+  ([ivar_count _int]
+   ;; and then an array of objc_ivar
+   ))
+
+(define-cstruct _objc_class
+  ([isa _pointer] ; _objc_class-pointer
+   [super_class _pointer] ; _objc_class-pointer
+   [name _pointer] ; string
+   [version _long]
+   [info _long]
+   [instance_size _long]
+   [ivars (_or-null _objc_ivar_list-pointer)]
+   [methodLists _pointer]
+   [cache _pointer]
+   [protocols _pointer]))
+
+(define-cstruct _objc_protocol_list
+  ([next _pointer]
+   [count _int] ; 1
+   [protocol _pointer]))
+
+(define-cstruct _objc_cache
+  ([mask _uint] ; 0, since one bucket allocated
+   [occupied _uint]
+   [buckets _pointer] ; really an array
+   ))
+
+(define CLS_CLASS		#x1)
+(define CLS_META		#x2)
+
+(define (strcpy s)
+  (let* ([n (cast s _string _bytes)]
+         [p (malloc 'raw (add1 (bytes-length n)))])
+    (memcpy p n (add1 (bytes-length n)))
+    p))
+
+(define (allocate-class-pair-the-hard-way superclass name)
+  (let* ([super (cast superclass _Class _objc_class-pointer)]
+         [root (let loop ([super super])
+                 (let ([s (objc_class-super_class super)])
+                   (if s
+                       (loop (cast s _pointer _objc_class-pointer))
+                       super)))]
+         [name (strcpy name)]
+         [malloc+memcpy (lambda (c)
+                          (let ([p (malloc 'raw 1 _objc_class)])
+                            (memcpy p c 1 _objc_class)
+                            (set-cpointer-tag! p objc_class-tag)
+                            p))]
+         [empty-cache (lambda ()
+                        (let ([p (malloc 'raw 1 _objc_cache)])
+                          (memset p 0 1 _objc_cache)
+                          p))]
+         [meta-super (cast (objc_class-isa super) _pointer _objc_class-pointer)]
+         [new-meta (malloc+memcpy
+                    (make-objc_class (objc_class-isa root)
+                                     meta-super
+                                     name
+                                     0
+                                     CLS_META
+                                     (objc_class-instance_size meta-super)
+                                     #f
+                                     #f
+                                     (empty-cache)
+                                     #f))]
+         [new (malloc+memcpy
+               (make-objc_class new-meta
+                                super
+                                name
+                                0
+                                CLS_CLASS
+                                (objc_class-instance_size super)
+                                #f
+                                #f
+                                (empty-cache)
+                                #f))])
+    (cast new _objc_class-pointer _Class)))
+
+(define (add-ivar-the-hard-way class field-name field-name-type)
+  (let* ([class (cast class _Class _objc_class-pointer)]
+         [ivars (or (objc_class-ivars class)
+                    (make-objc_ivar_list 0))]
+         [count (objc_ivar_list-ivar_count ivars)]
+         [array-start (+ (ctype-sizeof _int)
+                         (- (max (ctype-alignof _objc_ivar)
+                                 (ctype-sizeof _int))
+                            (ctype-sizeof _int)))]
+         [old-size (+ array-start
+                      (* count
+                         (ctype-sizeof _objc_ivar)))]
+         [new-ivars (malloc 'raw (+ old-size (ctype-sizeof _objc_ivar)))]
+         [new-ivar (ptr-add new-ivars old-size)])
+    (set-cpointer-tag! new-ivars objc_ivar_list-tag)
+    (set-cpointer-tag! new-ivar objc_ivar-tag)
+    (memcpy new-ivars ivars old-size)
+    (set-objc_ivar_list-ivar_count! new-ivars (add1 (objc_ivar_list-ivar_count ivars)))
+    (set-objc_ivar-name! new-ivar (strcpy field-name))
+    (set-objc_ivar-ivar_type! new-ivar (strcpy field-name-type))
+    (set-objc_ivar-ivar_offset! new-ivar (objc_class-instance_size class))
+    (set-objc_class-ivars! class new-ivars)
+    (set-objc_class-instance_size! class (+ (objc_class-instance_size class)
+                                            ;; Assumes pointer size:
+                                            (ctype-sizeof _pointer)))))
+
+(define (add-protocol-the-hard-way c p)
+  (let* ([c (cast c _Class _objc_class-pointer)]
+         [malloc+memcpy (lambda (c)
+                          (let ([p (malloc 'raw 1 _objc_protocol_list)])
+                            (memcpy p c 1 _objc_protocol_list)
+                            p))]
+         [protos (malloc+memcpy
+                  (make-objc_protocol_list
+                   (objc_class-protocols c)
+                   1
+                   p))])
+    (set-objc_class-protocols! c protos)
+    #t))
+
+;; ----------------------------------------
+
 (define-objc objc_lookUpClass (_fun _string -> _Class))
-(define-objc objc_getProtocol (_fun _string -> _Protocol))
+
+(define-objc objc_getProtocol (_fun _string -> _Protocol)
+  #:fail (lambda () (lambda (name)
+                      (cast (objc_lookUpClass name) _Class _Protocol))))
 
 (define-objc sel_registerName (_fun _string -> _SEL))
 
-(define-objc objc_allocateClassPair (_fun _Class _string _long -> _Class))
-(define-objc objc_registerClassPair (_fun _Class -> _void))
+(define-objc objc_allocateClassPair (_fun _Class _string _long -> _Class)
+  #:fail (lambda () #f))
+(define-objc objc_registerClassPair (_fun _Class -> _void)
+  #:fail (lambda () #f))
+
+(define-objc objc_addClass (_fun _objc_class-pointer -> _void)
+  #:fail (lambda () #f))
 
 (define-objc object_getClass (_fun _id -> _Class))
 
@@ -65,13 +195,16 @@
   ((get-ffi-obj 'class_addMethod objc-lib (_fun _Class _SEL ty _string -> _BOOL))
    cls sel imp enc))
 
-(define-objc class_addIvar (_fun _Class _string _long _uint8 _string -> _BOOL))
+(define-objc class_addIvar (_fun _Class _string _long _uint8 _string -> _BOOL)
+  #:fail (lambda () #f))
+
 (define-objc object_getInstanceVariable (_fun _id _string [p : (_ptr o _pointer)]
                                               -> [ivar : _Ivar] 
                                               -> (values ivar p)))
 (define-objc object_setInstanceVariable (_fun _id _string _pointer -> _Ivar))
 
-(define-objc class_addProtocol (_fun _Class _Protocol -> _BOOL))
+(define-objc class_addProtocol (_fun _Class _Protocol -> _BOOL)
+  #:fail (lambda () #f))
 
 (define-objc/private objc_msgSend _fpointer)
 (define-objc/private objc_msgSend_fpret _fpointer)
@@ -419,15 +552,15 @@
            (syntax/loc stx
              (begin
                (define superclass-id superclass)
-               (define id (objc_allocateClassPair superclass-id id-str 0))
-               (void (class_addProtocol id proto)) ...
+               (define id (allocate-class-pair superclass-id id-str))
+               (void (add-protocol id proto)) ...
                (add-ivar id 'ivar) ...
                (let-syntax ([ivar (make-ivar-form 'ivar)] ...)
                  (add-method whole-stx id superclass-id method) ...
                  (mixin id superclass-id '(ivar ...)) ...
                  (add-method whole-stx id superclass-id dealloc-method) ...
                  (void))
-               (objc_registerClassPair id))))))]
+               (register-class-pair id))))))]
     [(_ id superclass (ivar ...) method ...)
      #'(define-objc-class id superclass #:mixins () #:protocols () (ivar ...) method ...)]
     [(_ id superclass #:mixins (mixin ...) (ivar ...) method ...)
@@ -459,7 +592,7 @@
                    [proto-id proto] ...)
                (lambda (to-id superclass-id ivars)
                  (check-expected-ivars 'id ivars '(ivar ...))
-                 (void (class_addProtocol to-id proto-id)) ...
+                 (void (add-protocol to-id proto-id)) ...
                  (let-syntax ([ivar (make-ivar-form 'ivar)] ...)
                    (add-method whole-stx to-id superclass-id method) ...
                    (void))
@@ -482,6 +615,21 @@
           (quasisyntax/loc stx (#,(quasisyntax/loc #'sym #'(get-ivar self sym)) 
                                 arg ...))]
          [_ (quasisyntax/loc #'sym (get-ivar self sym))])))))
+
+(define (allocate-class-pair superclass-id id-str)
+  (if objc_allocateClassPair
+      (objc_allocateClassPair superclass-id id-str 0)
+      (allocate-class-pair-the-hard-way superclass-id id-str)))
+
+(define (register-class-pair id)
+  (if objc_registerClassPair
+      (objc_registerClassPair id)
+      (objc_addClass (cast id _Class _objc_class-pointer))))
+
+(define (add-protocol id proto)
+  (if class_addProtocol
+      (class_addProtocol id proto)
+      (add-protocol-the-hard-way id proto)))
 
 (define (layout->string l)
   (case l
@@ -612,11 +760,15 @@
   m)
 
 (define (add-ivar cls name)
-  (void (class_addIvar cls
-                       (symbol->string name)
-                       (ctype-sizeof _pointer)
-                       (sub1 (integer-length (ctype-alignof _pointer)))
-                       (layout->string (ctype->layout _pointer)))))
+  (if class_addIvar
+      (void (class_addIvar cls
+                           (symbol->string name)
+                           (ctype-sizeof _pointer)
+                           (sub1 (integer-length (ctype-alignof _pointer)))
+                           (layout->string (ctype->layout _pointer))))
+      (add-ivar-the-hard-way cls
+                             (symbol->string name)
+                             (layout->string (ctype->layout _pointer)))))
 
 (define-for-syntax (do-super-tell stx)
   (syntax-case stx ()
