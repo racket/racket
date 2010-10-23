@@ -79,6 +79,16 @@
    [buckets _pointer] ; really an array
    ))
 
+(define-cstruct _objc_method
+  ([method_name _SEL]
+   [method_types _pointer]
+   [method_imp _fpointer]))
+
+(define-cstruct _objc_method_list
+  ([obsolete _pointer]
+   [method_count _int] ; 1
+   [method _objc_method]))
+
 (define CLS_CLASS		#x1)
 (define CLS_META		#x2)
 
@@ -170,6 +180,19 @@
     (set-objc_class-protocols! c protos)
     #t))
 
+(define (add-method-the-hard-way class sel imp types)
+  (let* ([malloc+memcpy (lambda (c)
+                          (let ([p (malloc 'raw 1 _objc_method_list)])
+                            (memcpy p c 1 _objc_method_list)
+                            (set-cpointer-tag! p objc_method_list-tag)
+                            p))]
+         [methods (malloc+memcpy
+                   (make-objc_method_list
+                    #f
+                    1
+                    (make-objc_method sel (strcpy types) imp)))])
+    (class_addMethods class methods)))
+
 ;; ----------------------------------------
 
 (define-objc objc_lookUpClass (_fun _string -> _Class))
@@ -191,10 +214,18 @@
 (define-objc object_getClass (_fun _id -> _Class)
   #:fail (lambda () #f))
 
-(provide class_addMethod)
+(define-objc class_addMethod/raw (_fun _Class _SEL _fpointer _string -> _BOOL)
+  #:c-id class_addMethod
+  #:fail (lambda () #f))
+(define-objc class_addMethods (_fun _Class _objc_method_list-pointer -> _void)
+  #:fail (lambda () #f))
+
 (define (class_addMethod cls sel imp ty enc)
-  ((get-ffi-obj 'class_addMethod objc-lib (_fun _Class _SEL ty _string -> _BOOL))
-   cls sel imp enc))
+  (let ([imp (function-ptr imp ty)])
+    (if class_addMethod/raw
+        (class_addMethod/raw cls sel imp enc)
+        (add-method-the-hard-way cls sel imp enc))))
+
 
 (define-objc class_addIvar (_fun _Class _string _long _uint8 _string -> _BOOL)
   #:fail (lambda () #f))
