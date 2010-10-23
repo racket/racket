@@ -546,14 +546,24 @@ void scheme_future_block_until_gc()
     }
 # else
     {
+#  if defined(i386) || defined(__i386__)
+#   define MZ_PUSH_EBX "pushl %%ebx"
+#   define MZ_POP_EBX "popl %%ebx"
+#  endif
+#  if defined(__x86_64) || defined(__x86_64__) || defined(__amd64__)
+#   define MZ_PUSH_EBX "pushq %%rbx"
+#   define MZ_POP_EBX "popq %%rbx"
+#  endif
       int _eax, _ebx, _ecx, _edx, op = 0;
       /* we can't always use EBX, so save and restore it: */
-      asm ("pushl %%ebx \n\t"
+      asm (MZ_PUSH_EBX "\n\t"
            "cpuid \n\t" 
            "movl %%ebx, %1 \n\t"
-           "popl  %%ebx"
+           MZ_POP_EBX
            : "=a" (_eax), "=r" (_ebx), "=c" (_ecx), "=d" (_edx) : "a" (op));
     }
+#  undef MZ_PUSH_EBX
+#  undef MZ_POP_EBX
 # endif
 #endif
   }
