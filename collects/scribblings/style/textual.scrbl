@@ -51,7 +51,7 @@ racket
   (redirect (- x)))
 ]
 
-@margin-note{we need more of these rules}
+@margin-note{We need more of these rules}
 
 @; -----------------------------------------------------------------------------
 @section{Line Breaks}
@@ -97,7 +97,7 @@ racket
   (define width (* 10 x)) (define height (* 3 x))
   ...)
 ]
-@margin-note{we need more of these rules}
+@margin-note{We need more of these rules}
 
 @; -----------------------------------------------------------------------------
 @section{Line Width}

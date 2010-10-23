@@ -5,7 +5,7 @@
 @nested[#:style 'inset]{ Favor readers over writers.
  --- Yaron Minsky, JaneStreet, 2010 at Northeastern}
 
-Write code that is correct; maintainable; and fast. The ordering of this
+Write code that is correct; maintainable; and fast. The ordering of these
 adjectives is critical: correct is more important than maintainable;
 maintainable is more important than fast; and fast is important to include,
 because nobody wants to live with slow programs.
@@ -31,14 +31,14 @@ watching Matthew, Robby, Shriram and others create the original code base}
 
 Correctness is a perfectionist goal beyond the reach of PLT.  All software
  has mistakes. If they are unknown, the software isn't being used. The goal
- is, however, not to ensure some basic level of correctness before a
+ is, however, to ensure some basic level of correctness before a
  feature is released and to ensure that the same mistake isn't introduced
  again.
 
 Formulate test suites. Use unit testing. Use random testing. Use fuzz
  testing. Test!
 
-Run the test suites before you commit. Read drdr's emails; don't ignore
+Run the test suites before you commit. Read DrDr's emails; don't ignore
  them.
 
 Add tests to test suites during debugging. That is, first, write an
@@ -112,8 +112,8 @@ elsewhere.
 
 Just as for correctness, strive for basic tests, that is, tests that
  exercise your code on reasonably large inputs. While a regular test suite
- for a universe display deal with a 50 x 50 display window, the stress test
- suite should check whether universe event handlers and drawing routines
+ for a Universe display deals with a 50 x 50 display window, the stress test
+ suite should check whether Universe event handlers and drawing routines
  can cope with laptop size displays or even a 30in display. Or, if you were
  to write a library for a queue data structure, a regular test suite
  ensures that it deals correctly with enqueue and dequeue for small
