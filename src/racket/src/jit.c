@@ -2613,7 +2613,8 @@ static int is_constant_and_avoids_r1(Scheme_Object *obj)
     return (t >= _scheme_compiled_values_types_);
 }
 
-static int is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Object *wrt)
+static int is_relatively_constant_and_avoids_r1_maybe_fp(Scheme_Object *obj, Scheme_Object *wrt,
+                                                         int fp_ok)
 {
   Scheme_Type t;
 
@@ -2622,9 +2623,10 @@ static int is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Objec
 
   t = SCHEME_TYPE(obj);
   if (SAME_TYPE(t, scheme_local_type)) {
-    /* Must have clearing, other-clears, or flonum flag set */
+    /* Must have clearing, other-clears, or flonum flag set,
+       otherwise is_constant_and_avoids_r1() would have returned 1. */
     if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
-      return 0;
+      return fp_ok;
     else {
       Scheme_Type t2 = SCHEME_TYPE(wrt);
       if (t2 == scheme_local_type) {
@@ -2636,6 +2638,18 @@ static int is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Objec
   }
 
   return 0;
+}
+
+static int is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Object *wrt)
+{
+  return is_relatively_constant_and_avoids_r1_maybe_fp(obj, wrt, 0);
+}
+
+static int can_reorder_unboxing(Scheme_Object *rand, Scheme_Object *rand2)
+{
+  /* Can we reorder `rand' and `rand2', given that we want floating-point
+     results (so it's ok for `rand' to be a floating-point local)? */
+  return is_relatively_constant_and_avoids_r1_maybe_fp(rand, rand2, 1);
 }
 
 /*========================================================================*/
@@ -4778,7 +4792,7 @@ static int can_fast_double(int arith, int cmp, int two_args)
 
 #ifdef CAN_INLINE_ALLOC
 # ifdef JIT_USE_FP_OPS
-#define DECL_FP_GLUE(op) static void call_ ## op(void) {  save_fp = scheme_double_ ## op(save_fp); }
+#define DECL_FP_GLUE(op) static void call_ ## op(void) XFORM_SKIP_PROC {  save_fp = scheme_double_ ## op(save_fp); }
 DECL_FP_GLUE(sin)
 DECL_FP_GLUE(cos)
 DECL_FP_GLUE(tan)
@@ -5279,7 +5293,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     if (!args_unboxed && rand)
       scheme_signal_error("internal error: invalid mode");
 
-    if (inlined_flonum1 && !inlined_flonum2) {
+    if (inlined_flonum1 && !inlined_flonum2 && can_reorder_unboxing(rand, rand2)) {
       GC_CAN_IGNORE Scheme_Object *tmp;
       reversed = !reversed;
       cmp = -cmp;

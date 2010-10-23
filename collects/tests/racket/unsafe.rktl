@@ -370,4 +370,22 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; A regression test to check that unsafe-fl/ doesn't
+;; reorder its arguments when it isn't safe to do so, where the
+;; unsafeness of the reordering has to do with safe-for-space
+;; clearing of a variable that is used multiple times.
+
+(let ()
+  (define weird #f)
+  (set! weird 
+        (lambda (get-M)
+          (let* ([M  (get-M)]
+                 [N1 (unsafe-fl/ M (unsafe-fllog M))])
+            (get-M) ; triggers safe-for-space clearing of M
+            N1)))
+  
+  (test 15388.0 floor (* 1000.0 (weird (lambda () 64.0)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
