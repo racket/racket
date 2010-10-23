@@ -11,24 +11,23 @@
   (provide define-runtime-path
            define-runtime-paths
            define-runtime-path-list
+           define-runtime-module-path
            runtime-paths)
   
   (define-for-syntax ext-file-table (make-hasheq))
 
-  (define (lookup-in-table tag-stx p)
+  (define (lookup-in-table var-ref p)
     ;; This function is designed to cooperate with a table embedded
     ;; in an executable by create-embedding-executable.
-    (let ([mpi (syntax-source-module tag-stx)])
+    (let ([modname (variable-reference->resolved-module-path var-ref)])
       (let ([p (hash-ref
                 table
-                (cons (cond
-                        [(module-path-index? mpi)
-                         (resolved-module-path-name (module-path-index-resolve mpi))]
-                        [(symbol? mpi) mpi]
-                        [else #f])
+                (cons (resolved-module-path-name modname)
                       (if (path? p)
                           (path->bytes p)
-                          p))
+                          (if (and (pair? p) (eq? 'module (car p)))
+                              (list 'module (cadr p))
+                              p)))
                 #f)])
         (and p
              (car p)
@@ -36,11 +35,13 @@
                     [p (if (bytes? p)
                            (bytes->path p)
                            p)])
-               (if (absolute-path? p)
-                   p
-                   (parameterize ([current-directory (find-system-path 'orig-dir)])
-                     (or (find-executable-path (find-system-path 'exec-file) p #t)
-                         (build-path (current-directory) p)))))))))
+               (if (symbol? p)
+                   (module-path-index-join (list 'quote p) #f) ; make it a module path index
+                   (if (absolute-path? p)
+                       p
+                       (parameterize ([current-directory (find-system-path 'orig-dir)])
+                         (or (find-executable-path (find-system-path 'exec-file) p #t)
+                             (build-path (current-directory) p))))))))))
 
   (define (resolve-paths tag-stx get-base paths)
     (let ([base #f])
@@ -85,18 +86,24 @@
                                    (null? (cdr strs)))
                               (list "mzlib")
                               (append (cddr p) (drop-right strs 1)))))]
+                [(and (list? p)
+		      ((length p) . = . 3)
+		      (eq? 'module (car p))
+                      (or (not (caddr p))
+                          (variable-reference? (caddr p))))
+                 (let ([p (cadr p)]
+                       [vr (caddr p)])
+                   (unless (module-path? p)
+                     (error 'runtime-path "not a module path: ~.s" p))
+                   (module-path-index-join p (and vr
+                                                  (variable-reference->resolved-module-path vr))))]
                 [else (error 'runtime-path "unknown form: ~.s" p)])))
            paths)))
   
-  (define-for-syntax (register-ext-files tag-stx paths)
-    (let ([mpi (syntax-source-module tag-stx)])
-      (let ([modname (cond
-                       [(module-path-index? mpi) (module-path-index-resolve mpi)]
-                       [(symbol? mpi) mpi]
-                       [else (error 'register-ext-files
-                                    "cannot determine source")])])
-        (let ([files (hash-ref ext-file-table modname null)])
-          (hash-set! ext-file-table modname (append paths files))))))
+  (define-for-syntax (register-ext-files var-ref paths)
+    (let ([modname (variable-reference->resolved-module-path var-ref)])
+      (let ([files (hash-ref ext-file-table modname null)])
+        (hash-set! ext-file-table modname (append paths files)))))
     
   (define-syntax (-define-runtime-path stx)
     (syntax-case stx ()
@@ -111,23 +118,22 @@
                         #'orig-stx
                         id)))
                    ids)
-         (let ([tag (datum->syntax #'orig-stx 'tag #'orig-stx)])
-           #`(begin
-               (define-values (id ...)
-                 (let-values ([(id ...) expr])
-                   (let ([get-dir (lambda ()
-                                    #,(datum->syntax
-                                       tag
-                                       `(,#'this-expression-source-directory)
-                                       tag))])
-                     (apply to-values (resolve-paths (quote-syntax #,tag) 
-                                                     get-dir
-                                                     (to-list id ...))))))
-               (begin-for-syntax
-                 (register-ext-files 
-                  (quote-syntax #,tag) 
-                  (let-values ([(id ...) expr])
-                    (to-list id ...)))))))]))
+         #`(begin
+             (define-values (id ...)
+               (let-values ([(id ...) expr])
+                 (let ([get-dir (lambda ()
+                                  #,(datum->syntax
+                                     #'orig-stx
+                                     `(,#'this-expression-source-directory)
+                                     #'orig-stx))])
+                   (apply to-values (resolve-paths (#%variable-reference)
+                                                   get-dir
+                                                   (to-list id ...))))))
+             (begin-for-syntax
+              (register-ext-files 
+               (#%variable-reference)
+               (let-values ([(id ...) expr])
+                 (to-list id ...))))))]))
   
   (define-syntax (define-runtime-path stx)
     (syntax-case stx ()
@@ -140,6 +146,10 @@
   (define-syntax (define-runtime-path-list stx)
     (syntax-case stx ()
       [(_ id expr) #`(-define-runtime-path #,stx (id) expr values list)]))
+  
+  (define-syntax (define-runtime-module-path stx)
+    (syntax-case stx ()
+      [(_ id expr) #`(-define-runtime-path #,stx (id) `(module ,expr ,(#%variable-reference)) list values)]))
   
   (define-syntax (runtime-paths stx)
     (syntax-case stx ()

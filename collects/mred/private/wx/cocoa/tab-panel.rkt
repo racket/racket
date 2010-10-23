@@ -1,21 +1,24 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
-          "../../syntax.rkt"
-          "types.rkt"
-          "utils.rkt"
-          "window.rkt"
-          "panel.rkt"
-          "../common/event.rkt"
-          "../common/procs.rkt")
-(unsafe!)
-(objc-unsafe!)
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
+         racket/runtime-path
+         "../../syntax.rkt"
+         "types.rkt"
+         "utils.rkt"
+         "window.rkt"
+         "panel.rkt"
+         "../common/event.rkt"
+         "../common/procs.rkt"
+         (for-syntax racket/base))
 
 (provide tab-panel%)
 
+(define-runtime-path psm-tab-bar-dir
+  '(so "PSMTabBarControl.framework"))
+
 ;; Load PSMTabBarControl:
-(void (ffi-lib "PSMTabBarControl.framework/PSMTabBarControl"))
+(void (ffi-lib (build-path psm-tab-bar-dir "PSMTabBarControl")))
 (define NSNoTabsNoBorder 6)
 
 (import-class NSView NSTabView NSTabViewItem PSMTabBarControl)

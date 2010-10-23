@@ -2,7 +2,7 @@
 (require scheme/runtime-path (for-syntax scheme/base))
 (provide (all-defined-out))
 
-(define-runtime-path platform-lib
+(define-runtime-module-path platform-lib
   (let ([gtk-lib
          '(lib "mred/private/wx/gtk/platform.rkt")])
     (case (system-type)

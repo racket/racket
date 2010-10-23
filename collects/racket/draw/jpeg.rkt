@@ -5,13 +5,13 @@
          ffi/unsafe/atomic
          setup/dirs
          "bstr.rkt"
-         "utils.rkt")
+         "utils.rkt"
+         "libs.rkt")
 
-(define jpeg-lib 
-  (case (system-type)
-    [(macosx) (ffi-lib "libjpeg.62")]
-    [(unix) (ffi-lib "libjpeg" '("62" ""))]
-    [(windows) (ffi-lib "libjpeg-7.dll")]))
+(define-runtime-lib jpeg-lib 
+  [(unix) (ffi-lib "libjpeg" '("62" ""))]
+  [(macosx) (ffi-lib "libjpeg.62.dylib")]
+  [(windows) (ffi-lib "libjpeg-7.dll")])
 
 (define JPEG_LIB_VERSION
   (case (system-type)

@@ -5,19 +5,19 @@
          ffi/unsafe/atomic
          setup/dirs
          "bstr.rkt"
-         "utils.rkt")
+         "utils.rkt"
+         "libs.rkt")
 
-(define png-lib 
-  (case (system-type)
-    [(macosx) (ffi-lib "libpng14" '("14" #f))]
-    [(unix) 
-     (case (string->symbol (path->string (system-library-subpath #f)))
-       [(i386-freebsd) (ffi-lib "libpng")]
-       [else
-	(ffi-lib "libpng12" '("0" ""))])]
-    [(windows) 
-     (ffi-lib "zlib1.dll")
-     (ffi-lib "libpng14-14.dll")]))
+(define-runtime-lib png-lib 
+  [(unix) 
+   (case (string->symbol (path->string (system-library-subpath #f)))
+     [(i386-freebsd) (ffi-lib "libpng")]
+     [else
+      (ffi-lib "libpng12" '("0" ""))])]
+  [(macosx) (ffi-lib "libpng14.14.dylib")]
+  [(windows) 
+   (ffi-lib "zlib1.dll")
+   (ffi-lib "libpng14-14.dll")])
 
 (define-ffi-definer define-png png-lib
   #:provide provide)

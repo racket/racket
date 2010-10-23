@@ -3,19 +3,22 @@
          ffi/unsafe/define
          ffi/unsafe/alloc
          setup/dirs
+         "libs.rkt"
          "utils.rkt")
 
-(define cairo-lib 
-  (case (system-type)
-    [(macosx) (ffi-lib "libcairo.2")]
-    [(unix) (ffi-lib "libcairo" '("2"))]
-    [(windows) 
-     (ffi-lib "zlib1")
-     (ffi-lib "libpng14-14")
-     (ffi-lib "libexpat-1")
-     (ffi-lib "freetype6")
-     (ffi-lib "libfontconfig-1")
-     (ffi-lib "libcairo-2")]))
+(define-runtime-lib cairo-lib
+  [(unix) (ffi-lib "libcairo" '("2"))]
+  [(macosx) 
+   (ffi-lib "libpixman-1.0.dylib")
+   (ffi-lib "libpng14.14.dylib")
+   (ffi-lib "libcairo.2.dylib")]
+  [(windows) 
+   (ffi-lib "zlib1")
+   (ffi-lib "libpng14-14")
+   (ffi-lib "libexpat-1")
+   (ffi-lib "freetype6")
+   (ffi-lib "libfontconfig-1")
+   (ffi-lib "libcairo-2")])
 
 (define-ffi-definer define-cairo cairo-lib
   #:provide provide-protected)

@@ -5,43 +5,45 @@
          ffi/unsafe/atomic
          setup/dirs
          "cairo.rkt"
-         "utils.rkt")
+         "utils.rkt"
+         "libs.rkt")
 
-(define pango-lib 
-  (case (system-type)
-    [(macosx)
-     (ffi-lib "libpango-1.0.0")]
-    [(unix) (ffi-lib "libpango-1.0" '("0"))]
-    [(windows) 
-     (ffi-lib "libglib-2.0-0")
-     (ffi-lib "libgmodule-2.0-0")
-     (ffi-lib "libgobject-2.0-0")
-     (ffi-lib "libpango-1.0-0")]))
+(define-runtime-lib pango-lib 
+  [(unix) (ffi-lib "libpango-1.0" '("0"))]
+  [(macosx) 
+   (ffi-lib "libglib-2.0.0.dylib")
+   (ffi-lib "libgmodule-2.0.0.dylib")
+   (ffi-lib "libgobject-2.0.0.dylib")
+   (ffi-lib "libintl.8.dylib")
+   (ffi-lib "libpango-1.0.0.dylib")]
+  [(windows) 
+   (ffi-lib "libglib-2.0-0")
+   (ffi-lib "libgmodule-2.0-0")
+   (ffi-lib "libgobject-2.0-0")
+   (ffi-lib "libpango-1.0-0")])
 
-(define pangowin32-lib 
-  (case (system-type)
-    [(windows) 
-     (ffi-lib "libpangowin32-1.0-0")]
-    [else #f]))
+(define-runtime-lib pangowin32-lib 
+  [(unix) #f]
+  [(macosx)]
+  [(windows) 
+   (ffi-lib "libpangowin32-1.0-0")])
 
-(define pangocairo-lib 
-  (case (system-type)
-    [(macosx)
-     (ffi-lib "libpangocairo-1.0.0")]
-    [(unix) (ffi-lib "libpangocairo-1.0" '("0"))]
-    [(windows) 
-     (ffi-lib "libpangowin32-1.0-0")
-     (ffi-lib "libexpat-1")
-     (ffi-lib "freetype6")
-     (ffi-lib "libfontconfig-1")
-     (ffi-lib "libpangoft2-1.0-0")
-     (ffi-lib "libpangocairo-1.0-0")]))
+(define-runtime-lib pangocairo-lib 
+  [(unix) (ffi-lib "libpangocairo-1.0" '("0"))]
+  [(macosx)
+   (ffi-lib "libpangocairo-1.0.0.dylib")]
+  [(windows) 
+   (ffi-lib "libpangowin32-1.0-0")
+   (ffi-lib "libexpat-1")
+   (ffi-lib "freetype6")
+   (ffi-lib "libfontconfig-1")
+   (ffi-lib "libpangoft2-1.0-0")
+   (ffi-lib "libpangocairo-1.0-0")])
 
-(define glib-lib 
-  (case (system-type)
-    [(macosx) (ffi-lib "libgobject-2.0.0")]
-    [(unix) (ffi-lib "libgobject-2.0" '("0"))]
-    [else #f]))
+(define-runtime-lib glib-lib 
+  [(unix) (ffi-lib "libgobject-2.0" '("0"))]
+  [(macosx) (ffi-lib "libgobject-2.0.0")]
+  [(windows) (ffi-lib "libgobject-2.0-0")])
 
 (define-ffi-definer define-pango pango-lib
   #:provide provide)

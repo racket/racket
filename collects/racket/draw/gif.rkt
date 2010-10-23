@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket/base
 (require "lzw.rkt")
 
 ;; FIXME: still need to handle transparency
