@@ -3276,6 +3276,7 @@ static Scheme_Double_Vector *alloc_shared_flvector(long size)
 
   original_gc = GC_switch_to_master_gc();
   vec = scheme_alloc_flvector(size);
+  SHARED_ALLOCATED_SET(vec); 
   GC_switch_back_from_master(original_gc);
 
   return vec;
@@ -3463,6 +3464,7 @@ static Scheme_Vector *alloc_shared_fxvector(long size)
 
   original_gc = GC_switch_to_master_gc();
   vec = scheme_alloc_fxvector(size);
+  SHARED_ALLOCATED_SET(vec); 
   GC_switch_back_from_master(original_gc);
 
   return vec;

@@ -731,6 +731,9 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
     case scheme_place_bi_channel_type:
       new_so = so;
       break;
+    case scheme_place_type:
+      new_so = ((Scheme_Place *) so)->channel;
+      break;
     case scheme_char_type:
       new_so = scheme_make_char(SCHEME_CHAR_VAL(so));
       break;
@@ -746,10 +749,10 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       }
       break;
     case scheme_float_type:
-      new_so = scheme_make_char(SCHEME_FLT_VAL(so));
+      new_so = scheme_make_float(SCHEME_FLT_VAL(so));
       break;
     case scheme_double_type:
-      new_so = scheme_make_char(SCHEME_DBL_VAL(so));
+      new_so = scheme_make_double(SCHEME_DBL_VAL(so));
       break;
     case scheme_complex_type:
       {
@@ -886,7 +889,8 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 
     case scheme_resolved_module_path_type:
     default:
-      scheme_log_abort("cannot copy object");
+      printf("places deep copy cannot copy object of type %hi at %p\n", so->type, so);
+      scheme_log_abort("places deep copy cannot copy object");
       abort();
       break;
   }
