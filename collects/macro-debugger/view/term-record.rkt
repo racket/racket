@@ -55,6 +55,17 @@
     
     (define steps-position #f)
 
+    (define/private (status msg)
+      (send stepper change-status msg))
+    (define-syntax with-status
+      (syntax-rules ()
+        [(ws msg #:immediate . body)
+         (begin (send stepper change-status msg #t)
+                (begin0 (let () . body)))]
+        [(ws msg . body)
+         (begin (send stepper change-status msg)
+                (begin0 (let () . body)))]))
+
     (super-new)
 
     (define-syntax define-guarded-getters
@@ -114,22 +125,24 @@
         (with-handlers ([(lambda (e) #t)
                          (lambda (e)
                            (set! raw-deriv-oops e))])
-          (set! raw-deriv
-                (parse-derivation
-                 (events->token-generator events))))))
+          (with-status "Parsing expansion derivation" #:immediate
+            (set! raw-deriv
+                  (parse-derivation
+                   (events->token-generator events)))))))
 
     ;; recache-deriv! : -> void
     (define/private (recache-deriv!)
       (unless (or deriv deriv-hidden?)
         (recache-raw-deriv!)
         (when raw-deriv
-          (let ([process (send/i stepper widget<%> get-preprocess-deriv)])
-            (let ([d (process raw-deriv)])
-              (when (not d)
-                (set! deriv-hidden? #t))
-              (when d
-                (set! deriv d)
-                (set! shift-table (compute-shift-table d))))))))
+          (with-status "Processing expansion derivation" #:immediate
+            (let ([process (send/i stepper widget<%> get-preprocess-deriv)])
+              (let ([d (process raw-deriv)])
+                (when (not d)
+                  (set! deriv-hidden? #t))
+                (when d
+                  (set! deriv d)
+                  (set! shift-table (compute-shift-table d)))))))))
 
     ;; recache-synth! : -> void
     (define/private (recache-synth!)
@@ -140,38 +153,40 @@
       (unless (or raw-steps raw-steps-oops)
         (recache-synth!)
         (when deriv
-          (let ([show-macro? (or (send/i stepper widget<%> get-show-macro?)
-                                 (lambda (id) #t))])
-            (with-handlers ([(lambda (e) #t)
-                             (lambda (e)
-                               (set! raw-steps-oops e))])
-              (let-values ([(raw-steps* binders* definites* estx* error*)
-                            (parameterize ((macro-policy show-macro?))
-                              (reductions+ deriv))])
-                (set! raw-steps raw-steps*)
-                (set! raw-steps-estx estx*)
-                (set! raw-steps-exn error*)
-                (set! raw-steps-binders binders*)
-                (set! raw-steps-definites definites*)))))))
+          (with-status "Computing reduction steps" #:immediate
+            (let ([show-macro? (or (send/i stepper widget<%> get-show-macro?)
+                                   (lambda (id) #t))])
+              (with-handlers ([(lambda (e) #t)
+                               (lambda (e)
+                                 (set! raw-steps-oops e))])
+                (let-values ([(raw-steps* binders* definites* estx* error*)
+                              (parameterize ((macro-policy show-macro?))
+                                (reductions+ deriv))])
+                  (set! raw-steps raw-steps*)
+                  (set! raw-steps-estx estx*)
+                  (set! raw-steps-exn error*)
+                  (set! raw-steps-binders binders*)
+                  (set! raw-steps-definites definites*))))))))
 
     ;; recache-steps! : -> void
     (define/private (recache-steps!)
       (unless (or steps)
         (recache-raw-steps!)
         (when raw-steps
-          (set! steps
-                (and raw-steps
-                     (let* ([filtered-steps 
-                             (if (send/i config config<%> get-show-rename-steps?)
-                                 raw-steps
-                                 (filter (lambda (x) (not (rename-step? x)))
-                                         raw-steps))]
-                            [processed-steps
-                             (if (send/i config config<%> get-one-by-one?)
-                                 (reduce:one-by-one filtered-steps)
-                                 filtered-steps)])
-                       (cursor:new processed-steps))))
-          (restore-position))))
+          (with-status "Processing reduction steps"
+            (set! steps
+                  (and raw-steps
+                       (let* ([filtered-steps 
+                               (if (send/i config config<%> get-show-rename-steps?)
+                                   raw-steps
+                                   (filter (lambda (x) (not (rename-step? x)))
+                                           raw-steps))]
+                              [processed-steps
+                               (if (send/i config config<%> get-one-by-one?)
+                                   (reduce:one-by-one filtered-steps)
+                                   filtered-steps)])
+                         (cursor:new processed-steps))))
+            (restore-position)))))
 
     ;; reduce:one-by-one : (list-of step) -> (list-of step)
     (define/private (reduce:one-by-one rs)
@@ -268,37 +283,40 @@
 
     ;; display-initial-term : -> void
     (define/public (display-initial-term)
-      (cond [raw-deriv-oops
-             (send/i displayer step-display<%> add-internal-error
-                     "derivation" raw-deriv-oops #f events)]
-            [else
-             (send/i displayer step-display<%> add-syntax (wderiv-e1 deriv))]))
+      (with-status "Rendering term"
+        (cond [raw-deriv-oops
+               (send/i displayer step-display<%> add-internal-error
+                       "derivation" raw-deriv-oops #f events)]
+              [else
+               (send/i displayer step-display<%> add-syntax (wderiv-e1 deriv))])))
 
     ;; display-final-term : -> void
     (define/public (display-final-term)
       (recache-steps!)
-      (cond [(syntax? raw-steps-estx)
-             (send/i displayer step-display<%> add-syntax raw-steps-estx
-                     #:binders raw-steps-binders
-                     #:shift-table shift-table
-                     #:definites raw-steps-definites)]
-            [(exn? raw-steps-exn)
-             (send/i displayer step-display<%> add-error raw-steps-exn)]
-            [else (display-oops #f)]))
+      (with-status "Rendering term"
+        (cond [(syntax? raw-steps-estx)
+               (send/i displayer step-display<%> add-syntax raw-steps-estx
+                       #:binders raw-steps-binders
+                       #:shift-table shift-table
+                       #:definites raw-steps-definites)]
+              [(exn? raw-steps-exn)
+               (send/i displayer step-display<%> add-error raw-steps-exn)]
+              [else (display-oops #f)])))
 
     ;; display-step : -> void
     (define/public (display-step)
       (recache-steps!)
-      (cond [steps
-             (let ([step (cursor:next steps)])
-               (if step
-                   (send/i displayer step-display<%> add-step step
-                           #:shift-table shift-table)
-                   (send/i displayer step-display<%> add-final raw-steps-estx raw-steps-exn
-                           #:binders raw-steps-binders
-                           #:shift-table shift-table
-                           #:definites raw-steps-definites)))]
-            [else (display-oops #t)]))
+      (with-status "Rendering step"
+        (cond [steps
+               (let ([step (cursor:next steps)])
+                 (if step
+                     (send/i displayer step-display<%> add-step step
+                             #:shift-table shift-table)
+                     (send/i displayer step-display<%> add-final raw-steps-estx raw-steps-exn
+                             #:binders raw-steps-binders
+                             #:shift-table shift-table
+                             #:definites raw-steps-definites)))]
+              [else (display-oops #t)])))
 
     ;; display-oops : boolean -> void
     (define/private (display-oops show-syntax?)

@@ -24,22 +24,19 @@
       (hash-remove! stepper-frames s))
 
     (define/public (add-obsoleted-warning)
-      (hash-for-each stepper-frames
-                     (lambda (stepper-frame flags)
-                       (unless (memq 'no-obsolete flags)
-                         (send/i stepper-frame stepper-frame<%> add-obsoleted-warning)))))
+      (for ([(stepper-frame flags) (in-hash stepper-frames)])
+        (unless (memq 'no-obsolete flags)
+          (send/i stepper-frame stepper-frame<%> add-obsoleted-warning))))
     (define/public (add-trace events)
-      (hash-for-each stepper-frames
-                     (lambda (stepper-frame flags)
-                       (unless (memq 'no-new-traces flags)
-                         (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
-                                add-trace events)))))
+      (for ([(stepper-frame flags) (in-hash stepper-frames)])
+        (unless (memq 'no-new-traces flags)
+          (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
+                  add-trace events))))
     (define/public (add-deriv deriv)
-      (hash-for-each stepper-frames
-                     (lambda (stepper-frame flags)
-                       (unless (memq 'no-new-traces flags)
-                         (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
-                                add-deriv deriv)))))
+      (for ([(stepper-frame flags) (in-hash stepper-frames)])
+        (unless (memq 'no-new-traces flags)
+          (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
+                  add-deriv deriv))))
 
     (define/public (new-stepper [flags '()])
       (define stepper-frame (new-stepper-frame))
