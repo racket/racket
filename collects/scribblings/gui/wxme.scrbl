@@ -165,10 +165,12 @@ in a @tech{WXME} stream. The interface has two methods:
 Called at most once per @tech{WXME} stream to initialize the data
 type's stream-specific information. This method usually does nothing.}
 
-@defmethod[(read-snip [text-only? Boolean?]
+@defmethod[(read-snip [text-only? boolean?]
                       [version exact-nonnegative-integer?]
                       [stream (is-a?/c stream<%>)])
-           any/c]{
+           (if text-only?
+               bytes?
+               any/c)]{
 
 Called when an instance of the data type is encountered in the
 stream. This method reads the data and returns either bytes to be
