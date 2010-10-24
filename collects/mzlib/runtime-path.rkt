@@ -11,7 +11,7 @@
   (provide define-runtime-path
            define-runtime-paths
            define-runtime-path-list
-           define-runtime-module-path
+           define-runtime-module-path-index
            runtime-paths)
   
   (define-for-syntax ext-file-table (make-hasheq))
@@ -147,7 +147,7 @@
     (syntax-case stx ()
       [(_ id expr) #`(-define-runtime-path #,stx (id) expr values list)]))
   
-  (define-syntax (define-runtime-module-path stx)
+  (define-syntax (define-runtime-module-path-index stx)
     (syntax-case stx ()
       [(_ id expr) #`(-define-runtime-path #,stx (id) `(module ,expr ,(#%variable-reference)) list values)]))
   

@@ -1,8 +1,8 @@
-#lang scheme/base
-(require scheme/runtime-path (for-syntax scheme/base))
+#lang racket/base
+(require racket/runtime-path (for-syntax racket/base))
 (provide (all-defined-out))
 
-(define-runtime-module-path platform-lib
+(define-runtime-module-path-index platform-lib
   (let ([gtk-lib
          '(lib "mred/private/wx/gtk/platform.rkt")])
     (case (system-type)
