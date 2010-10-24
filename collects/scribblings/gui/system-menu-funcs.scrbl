@@ -113,7 +113,9 @@ When the current eventspace is the initial eventspace, this procedure
 The default handler queues a callback to the
 @method[window<%> on-drop-file] method of the most-recently activated frame in the main eventspace (see
 @scheme[get-top-level-edit-target-window]), if
- drag-and-drop is enabled for that frame.
+ drag-and-drop is enabled for that frame. Otherwise, it saves
+ the filename and re-queues the handler event when the application
+ file handler is later changed.
 
 When the application is @italic{not} running and user double-clicks an
  application-handled file or drags a file onto the application's icon,

@@ -25,6 +25,11 @@ static char *get_gr_init_filename(struct Scheme_Env *env);
 static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 #endif
 
+#ifdef wx_mac
+# define PRE_FILTER_CMDLINE_ARGUMENTS
+static void pre_filter_cmdline_arguments(int *argc, char ***argv);
+#endif
+
 #define UNIX_INIT_FILENAME "~/.gracketrc"
 #define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rktd"
 #define MACOS9_INIT_FILENAME "PREFERENCES:gracketrc.rktd"
@@ -863,3 +868,27 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv)
 }
 
 #endif
+
+/***********************************************************************/
+/*                   Mac OS X flag handling                            */
+/***********************************************************************/
+
+#ifdef wx_mac
+
+static void pre_filter_cmdline_arguments(int *argc, char ***argv)
+  XFORM_SKIP_PROC
+{
+  if ((*argc > 1) && !strncmp((*argv)[1], "-psn_", 5)) {
+    /* Finder adds "-psn_" when you double-click on the application.
+       Drop it. */
+    char **new_argv;
+    new_argv = (char **)malloc(((*argc) - 1) * sizeof(char *));
+    new_argv[0] = (*argv)[0];
+    memcpy(new_argv + 1, (*argv) + 2, ((*argc) - 2) * sizeof(char *));
+    (*argc)--;
+    *argv = new_argv;
+  }
+}
+
+#endif
+

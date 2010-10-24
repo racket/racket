@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide application-file-handler
          application-quit-handler
@@ -7,10 +7,16 @@
 
          nothing-application-pref-handler)
 
-(define afh void)
+(define saved-files null)
+(define afh (lambda (f)
+              (set! saved-files (cons f saved-files))))
 (define application-file-handler
   (case-lambda
-   [(proc) (set! afh proc)]
+   [(proc) 
+    (set! afh proc)
+    (let ([sf saved-files])
+      (set! saved-files null)
+      (for-each proc (reverse sf)))]
    [() afh]))
 
 (define aqh void)
