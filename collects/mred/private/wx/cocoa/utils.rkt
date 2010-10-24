@@ -18,7 +18,8 @@
          with-autorelease
          clean-menu-label
          ->wxb
-         ->wx)
+         ->wx
+         old-cocoa?)
 
 (define cocoa-lib (ffi-lib (format "/System/Library/Frameworks/Cocoa.framework/Cocoa")))
 (define cf-lib (ffi-lib (format "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")))
@@ -69,3 +70,7 @@
 (define (->wx wxb)
   (and wxb
        (weak-box-value wxb)))
+
+;; FIXME: need a better test:
+(define old-cocoa? (equal? (path->string (system-library-subpath #f))
+                           "ppc-macosx"))

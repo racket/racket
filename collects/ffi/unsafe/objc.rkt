@@ -112,9 +112,14 @@
                             (set-cpointer-tag! p objc_class-tag)
                             p))]
          [empty-cache (lambda ()
+                        ;; If you try things the hard way with Obj-C 2.0,
+                        ;;  you need to set up the cache. For ealier
+                        ;;  versions, you need to set the cache to #f.
+                        #;
                         (let ([p (malloc 'raw 1 _objc_cache)])
                           (memset p 0 1 _objc_cache)
-                          p))]
+                          p)
+                        #f)]
          [meta-super (cast (objc_class-isa super) _pointer _objc_class-pointer)]
          [new-meta (malloc+memcpy
                     (make-objc_class (objc_class-isa root)

@@ -564,10 +564,17 @@
         [(scroller val)
          (when scroller
            (set-scroller-page! scroller val)
-           (tellv (scroller-cocoa scroller) setKnobProportion:
-                  #:type _CGFloat (max (min 1.0 (/ val 
-                                                   (+ val (exact->inexact (scroller-range scroller)))))
-                                       0.0)))]
+           (let ([proportion
+                  (max (min 1.0 (/ val 
+                                   (+ val (exact->inexact (scroller-range scroller)))))
+                       0.0)])
+             (if old-cocoa?
+                 (tellv (scroller-cocoa scroller) 
+                        setFloatValue: #:type _float (tell #:type _float (scroller-cocoa scroller)  
+                                                           floatValue)
+                        knobProportion: #:type _CGFloat proportion)
+                 (tellv (scroller-cocoa scroller) setKnobProportion:
+                        #:type _CGFloat proportion))))]
         [(scroller)
          (if scroller
              (scroller-page scroller)
