@@ -9,8 +9,6 @@
          ;; Fails if `mred/private/dynamic' is not declared
          ;;  (without loading it if not):
          (module->language-info 'mred/private/dynamic #f)
-         ;; Fails if `mred/private/dynamic' is not instantiated:
-         (module->namespace 'mred/private/dynamic)
          ;; Double check that it seems to have started ok:
          (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
               'done))))
@@ -18,7 +16,7 @@
 (define-namespace-anchor anchor)
 
 (define (gui-dynamic-require sym)
-  (if (gui-available?)
-      (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
-        (dynamic-require 'mred sym))
-      (error "racket/gui/base is not available")))
+  (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
+    (if (gui-available?)
+        (dynamic-require 'mred sym)
+        (error "racket/gui/base is not available"))))
