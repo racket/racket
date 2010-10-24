@@ -18,6 +18,7 @@
          scheme/list
          (for-syntax racket/base)
          (for-label racket/base
+                    racket/contract
                     racket/class))
 
 (provide defproc defproc* defstruct defstruct*
