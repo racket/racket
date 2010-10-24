@@ -1,5 +1,8 @@
 Stepper
 -------
+Changes for v5.0.2:
+
+Bug fixes, Big Bang working again. Define-struct in local not working.
 
 Changes for v5.0.1:
 
