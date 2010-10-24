@@ -10,12 +10,17 @@
 
 (define-runtime-lib jpeg-lib 
   [(unix) (ffi-lib "libjpeg" '("62" ""))]
-  [(macosx) (ffi-lib "libjpeg.62.dylib")]
+  [(macosx) 
+   ;; for PPC, it's actually version 8!
+   (ffi-lib "libjpeg.62.dylib")]
   [(windows) (ffi-lib "libjpeg-7.dll")])
 
 (define JPEG_LIB_VERSION
   (case (system-type)
-    [(macosx) 62]
+    [(macosx) (if (string=? "ppc-macosx" 
+                            (path->string (system-library-subpath #f)))
+                  80
+                  62)]
     [(unix) 62]
     [(windows) 70]))
 
@@ -64,6 +69,16 @@
   (case JPEG_LIB_VERSION
     [(62) _int]
     [else (make-cstruct-type (list _int _int))]))
+
+(define _prog_scan_size
+  (case JPEG_LIB_VERSION
+    [(62 70) (make-cstruct-type (list _int _int _int _int))]
+    [else (make-cstruct-type (list _int _int _int _int _int _pointer _int))]))
+
+(define _comp_info_size
+  (case JPEG_LIB_VERSION
+    [(62 70) _pointer]
+    [else (make-cstruct-type (list _pointer _bool))]))
 
 (define-cstruct _jpeg_decompress_struct ([err _jpeg_error_mgr-pointer]
                                          [mem _jpeg_memory_mgr-pointer]
@@ -134,7 +149,7 @@
 
                                          [data_precision _int]
 
-                                         [comp_info _pointer]
+                                         [comp_info&is_baseline _comp_info_size]
 
                                          [progressive_mode _bool]
                                          [arith_code _bool]
@@ -236,10 +251,7 @@
                                          [MCU_membership_9 _int]
                                          [MCU_membership_10 _int]
 
-                                         [Ss _int]
-                                         [Se _int]
-                                         [Ah _int]
-                                         [Al _int]
+                                         [prog_scan _prog_scan_size] ; Ss, Se, Ah, Al
 
                                          [unread_marker _int]
 
@@ -443,10 +455,7 @@
                                        [MCU_membership_9 _int]
                                        [MCU_membership_10 _int]
 
-                                       [Ss _int]
-                                       [Se _int]
-                                       [Ah _int]
-                                       [Al _int]
+                                       [prog_scan _prog_scan_size] ; Ss, Se, Ah, Al
 
                                        [master _pointer]
                                        [main _pointer]
