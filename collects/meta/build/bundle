@@ -209,7 +209,7 @@
                    (if (and (directory-exists? "racket") (not *btgz?*))
                      (filtered-map
                       (lambda (x) ; only directories contain stuff we need
-                        (and (directory-exists? x) (get-tree x)))
+                        (and (directory-exists? x) (get-tree x "racket")))
                       (dir-list))
                      (let ([trees (filtered-map
                                    (lambda (x)
