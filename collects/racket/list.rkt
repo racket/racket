@@ -101,7 +101,7 @@
 
 (define (take list0 n0)
   (unless (exact-nonnegative-integer? n0)
-    (raise-type-error 'take "non-negative exact integer" n0))
+    (raise-type-error 'take "non-negative exact integer" 1 list0 n0))
   (let loop ([list list0] [n n0])
     (cond [(zero? n) '()]
           [(pair? list) (cons (car list) (loop (cdr list) (sub1 n)))]
@@ -109,7 +109,7 @@
 
 (define (split-at list0 n0)
   (unless (exact-nonnegative-integer? n0)
-    (raise-type-error 'split-at "non-negative exact integer" n0))
+    (raise-type-error 'split-at "non-negative exact integer" 1 list0 n0))
   (let loop ([list list0] [n n0] [pfx '()])
     (cond [(zero? n) (values (reverse pfx) list)]
           [(pair? list) (loop (cdr list) (sub1 n) (cons (car list) pfx))]
@@ -118,14 +118,14 @@
 (define (drop list n)
   ;; could be defined as `list-tail', but this is better for errors anyway
   (unless (exact-nonnegative-integer? n)
-    (raise-type-error 'drop "non-negative exact integer" n))
+    (raise-type-error 'drop "non-negative exact integer" 1 list n))
   (or (drop* list n) (too-large 'drop list n)))
 
 ;; take/drop-right are originally from srfi-1, uses the same lead-pointer trick
 
 (define (take-right list n)
   (unless (exact-nonnegative-integer? n)
-    (raise-type-error 'take-right "non-negative exact integer" n))
+    (raise-type-error 'take-right "non-negative exact integer" 1 list n))
   (let loop ([list list]
              [lead (or (drop* list n) (too-large 'take-right list n))])
     ;; could throw an error for non-lists, but be more like `take'
@@ -167,7 +167,7 @@
 ;; General note: many non-tail recursive, which are just as fast in mzscheme
 
 (define (add-between l x)
-  (cond [(not (list? l)) (raise-type-error 'add-between "list" l)]
+  (cond [(not (list? l)) (raise-type-error 'add-between "list" 0 l x)]
         [(null? l) null]
         [(null? (cdr l)) l]
         [else (cons (car l)
@@ -299,8 +299,8 @@
 ;; But that one is slower than this, probably due to value packaging
 (define (partition pred l)
   (unless (and (procedure? pred) (procedure-arity-includes? pred 1))
-    (raise-type-error 'partition "procedure (arity 1)" pred))
-  (unless (list? l) (raise-type-error 'partition "proper list" l))
+    (raise-type-error 'partition "procedure (arity 1)" 0 pred l))
+  (unless (list? l) (raise-type-error 'partition "proper list" 1 pred l))
   (let loop ([l l] [i '()] [o '()])
     (if (null? l)
       (values (reverse i) (reverse o))
@@ -317,9 +317,9 @@
 (define (filter-not f list)
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
-    (raise-type-error 'filter-not "procedure (arity 1)" f))
+    (raise-type-error 'filter-not "procedure (arity 1)" 0 f list))
   (unless (list? list)
-    (raise-type-error 'filter-not "proper list" list))
+    (raise-type-error 'filter-not "proper list" 1 f list))
   ;; accumulating the result and reversing it is currently slightly
   ;; faster than a plain loop
   (let loop ([l list] [result null])
@@ -332,13 +332,13 @@
 (define (mk-min cmp name f xs)
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
-    (raise-type-error name "procedure (arity 1)" f))
+    (raise-type-error name "procedure (arity 1)" 0 f xs))
   (unless (and (list? xs)
                (pair? xs))
-    (raise-type-error name "non-empty list" xs))
+    (raise-type-error name "non-empty list" 1 f xs))
   (let ([init-min-var (f (car xs))])
     (unless (real? init-min-var)
-      (raise-type-error name "procedure that returns real numbers" f))
+      (raise-type-error name "procedure that returns real numbers" 0 f xs))
     (let loop ([min (car xs)]
                [min-var init-min-var]
                [xs (cdr xs)])
@@ -347,7 +347,7 @@
         [else
          (let ([new-min (f (car xs))])
            (unless (real? new-min)
-             (raise-type-error name "procedure that returns real numbers" f))
+             (raise-type-error name "procedure that returns real numbers" 0 f xs))
            (cond
              [(cmp new-min min-var)
               (loop (car xs) new-min (cdr xs))]
