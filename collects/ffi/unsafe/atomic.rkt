@@ -118,9 +118,9 @@
                       (loop (sub1 i)))))
                 f
                 (lambda ()
+                  (start-breakable-atomic)
                   (set! old-paramz paramz)
                   (set! old-break-paramz break-paramz)
-                  (start-breakable-atomic)
                   (let loop ([i extra-depth])
                     (unless (zero? i)
                       (start-breakable-atomic)
