@@ -2,7 +2,6 @@
 
 (require (for-syntax racket/base
                      "location.rkt")
-         srfi/1
          "base.rkt"
          "check-info.rkt"
          "format.rkt"
@@ -34,39 +33,50 @@
          check-not-equal?
          fail)
 
+
+(define USE-ERROR-HANDLER? #f)
+
+;; default-check-handler : exn -> any
+(define (default-check-handler e)
+  (let ([out (open-output-string)])
+    ;;(display "check failed\n" out)
+    (parameterize ((current-output-port out))
+      (display-delimiter)
+      (cond [(exn:test:check? e)
+             (display-failure)
+             (newline)
+             (display-check-info-stack
+              (exn:test:check-stack e))]
+            [(exn? e)
+             (display-error)
+             (newline)
+             (display-exn e)])
+      (display-delimiter))
+    (cond [USE-ERROR-HANDLER?
+           ((error-display-handler) (get-output-string out)
+            ;; So that DrRacket won't recognize exn:fail:syntax, etc
+            (make-exn (exn-message exn) (exn-continuation-marks exn)))]
+          [else
+           (display (get-output-string out) (current-error-port))])))
+
 ;; parameter current-check-handler : (-> exn any)
 (define current-check-handler
   (make-parameter
-   (lambda (e)
-     (cond
-      [(exn:test:check? e)
-       (display-delimiter)
-       (display-failure)(newline)
-       (display-check-info-stack
-        (exn:test:check-stack e))
-       (display-delimiter)]
-      [(exn? e)
-       (display-delimiter)
-       (display-error)(newline)
-       (display-exn e)
-       (display-delimiter)]))
+   default-check-handler
    (lambda (v)
      (if (procedure? v)
          v
          (raise-type-error 'current-check-handler "procedure" v)))))
 
 ;; check-around : ( -> a) -> a
-(define check-around
-  (lambda (thunk)
-    (with-handlers
-        ([exn? (current-check-handler)])
-      (thunk))))
+(define (check-around thunk)
+  (with-handlers ([exn? (current-check-handler)])
+    (thunk)))
 
 ;; top-level-check-around : ( -> a) -> a
-(define top-level-check-around
-  (lambda (thunk)
-    (check-around thunk)
-    (void)))
+(define (top-level-check-around thunk)
+  (check-around thunk)
+  (void))
 
 ;; parameter current-check-around : (( -> a) -> a)
 (define current-check-around
