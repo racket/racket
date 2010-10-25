@@ -54,6 +54,9 @@ to a later element takes precedence over the later element.}
 Returns @scheme[#t] if @scheme[set] has no members, @scheme[#f]
 otherwise.}
 
+@defproc[(set-count [set set?]) exact-nonnegative-integer?]{
+
+Returns the number of elements in @scheme[set].}
 
 @defproc[(set-member? [set set?] [v any/c]) boolean?]{
 
