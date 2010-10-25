@@ -1,6 +1,7 @@
 Version 5.0.2, October 2010
 Changed body of `when', `unless', `cond' clauses, `case'
  clauses, and `match' clauses to be internal-definition contexts
+Swapped unsafe-vector*-ref with unsafe-vector-ref, etc.
 Added ->i to the contract library, improved ->*, adding #:pre and
  #:post, as well as making the optional arguments clause optional.
 Added #true and #false, and changed #t/#T and #f/#F to

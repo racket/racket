@@ -51,8 +51,8 @@
            #:with opt
            (begin (log-optimization "in-vector" #'op)
                   #'(let* ((i   v*.opt)
-                           (len (unsafe-vector*-length i)))
-                      (values (lambda (x) (unsafe-vector*-ref i x))
+                           (len (unsafe-vector-length i)))
+                      (values (lambda (x) (unsafe-vector-ref i x))
                               (lambda (x) (unsafe-fx+ 1 x))
                               0
                               (lambda (x) (unsafe-fx< x len))

@@ -105,10 +105,10 @@
                                    esc)]
                                  [(n ...) ns])
                      #`[(#,arity)
-                        (let ([tmps (unsafe-vector*-ref #,x n)] ...)
+                        (let ([tmps (unsafe-vector-ref #,x n)] ...)
                           body)]))))])])
        #`[(vector? #,x)
-          (case (unsafe-vector*-length #,x)
+          (case (unsafe-vector-length #,x)
             clauses ...
             [else (#,esc)])])]
     ;; it's a structure
@@ -117,7 +117,7 @@
      (let* ([s (Row-first-pat (car rows))]
             [accs (Struct-accessors s)]
             [accs (if (Struct-complete? s)
-                      (build-list (length accs) (λ (i) #`(λ (x) (unsafe-struct*-ref x #,i))))
+                      (build-list (length accs) (λ (i) #`(λ (x) (unsafe-struct-ref x #,i))))
                       accs)]
             [pred (Struct-pred s)])
        (compile-con-pat accs pred Struct-ps))]

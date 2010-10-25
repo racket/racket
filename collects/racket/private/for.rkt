@@ -420,7 +420,7 @@
   (define (:vector-gen v start stop step)
     (values
      ;; pos->element
-     (lambda (i) (unsafe-vector*-ref v i))
+     (lambda (i) (unsafe-vector-ref v i))
      ;; next-pos
      ;; Minor optimisation.  I assume add1 is faster than \x.x+1
      (if (= step 1) add1 (lambda (i) (+ i step)))
@@ -1236,9 +1236,9 @@
   (define-sequence-syntax *in-vector
     (lambda () #'in-vector)
     (vector-like-gen #'vector?
-                     #'unsafe-vector*-length
+                     #'unsafe-vector-length
                      #'in-vector
-                     #'unsafe-vector*-ref))
+                     #'unsafe-vector-ref))
 
   (define-sequence-syntax *in-string
     (lambda () #'in-string)
