@@ -1872,9 +1872,9 @@ static Scheme_Object *make_two_element_ivector(Scheme_Object *a, Scheme_Object *
 
 #ifdef MZ_USE_LWC
 # ifdef JIT_RUNSTACK_BASE
-#  define SAVE_RS_BASE_REG(x) jit_stxi_p((int)&((Scheme_Current_LWC *)0x0)->runstack_base_end, JIT_R0, JIT_RUNSTACK_BASE)
+#  define SAVE_RS_BASE_REG() jit_stxi_p((int)&((Scheme_Current_LWC *)0x0)->runstack_base_end, JIT_R0, JIT_RUNSTACK_BASE)
 # else
-#  define SAVE_RS_BASE_REG(x) (void)0
+#  define SAVE_RS_BASE_REG() (void)0
 # endif
 # define adjust_lwc_return_address(pc) ((jit_insn *)((char *)(pc) - jit_return_pop_insn_len()))
 # define mz_finish_lwe(d, refr) (mz_tl_ldi_p(JIT_R0, tl_scheme_current_lwc), \
