@@ -975,6 +975,7 @@ path/s is either such a string or a list of them.
 "collects/macro-debugger/view/debug.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/macro-debugger/view/extensions.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/macro-debugger/view/frame.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/macro-debugger/view/gui-util.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/macro-debugger/view/hiding-panel.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/macro-debugger/view/prefs.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/macro-debugger/view/step-display.rkt" drdr:command-line (gracket-text "-t" *)
