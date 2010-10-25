@@ -283,21 +283,25 @@ void init_ephemerons(GCTYPE *gc) {
   gc->num_last_seen_ephemerons = 0;
 }
 
-static void mark_ready_ephemerons(GCTYPE *gc)
+static int mark_ready_ephemerons(GCTYPE *gc)
 {
   GC_Ephemeron *waiting = NULL, *next, *eph;
+  int did_one = 0;
 
   for (eph = gc->ephemerons; eph; eph = next) {
     next = eph->next;
     if (is_marked(gc, eph->key)) {
       gcMARK2(eph->val, gc);
       gc->num_last_seen_ephemerons++;
+      did_one = 1;
     } else {
       eph->next = waiting;
       waiting = eph;
     }
   }
   gc->ephemerons = waiting;
+
+  return did_one;
 }
 
 static void zero_remaining_ephemerons(GCTYPE *gc)

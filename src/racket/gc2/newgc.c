@@ -2974,6 +2974,14 @@ static void propagate_marks(NewGC *gc)
     propagate_marks_worker(gc, mark_table, p);
   }
 }
+
+static void propagate_marks_plus_ephemerons(NewGC *gc) 
+{
+  do {
+    propagate_marks(gc);
+  } while (mark_ready_ephemerons(gc));
+}
+
 #ifdef MZ_USE_PLACES
 static void promote_marked_gen0_big_pages(NewGC *gc) {
   mpage *page;
@@ -4162,17 +4170,13 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
-  propagate_marks(gc);
-  mark_ready_ephemerons(gc); 
-  propagate_marks(gc); 
+  propagate_marks_plus_ephemerons(gc);
 
   check_finalizers(gc, 1);
-  mark_ready_ephemerons(gc);
-  propagate_marks(gc);
+  propagate_marks_plus_ephemerons(gc);
 
   check_finalizers(gc, 2);
-  mark_ready_ephemerons(gc);
-  propagate_marks(gc);
+  propagate_marks_plus_ephemerons(gc);
 
   if(gc->gc_full) zero_weak_finalizers(gc);
   do_ordered_level3(gc); propagate_marks(gc);
