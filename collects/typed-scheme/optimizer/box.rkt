@@ -21,8 +21,8 @@
 (define-syntax-class box-op
   #:commit
   ;; we need the * versions of these unsafe operations to be chaperone-safe
-  (pattern (~literal unbox)    #:with unsafe #'unsafe-unbox*)
-  (pattern (~literal set-box!) #:with unsafe #'unsafe-set-box*!))
+  (pattern (~literal unbox)    #:with unsafe #'unsafe-unbox)
+  (pattern (~literal set-box!) #:with unsafe #'unsafe-set-box!))
 
 (define-syntax-class box-opt-expr
   #:commit

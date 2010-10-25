@@ -14,8 +14,8 @@
 (define-syntax-class vector-op
   #:commit
   ;; we need the * versions of these unsafe operations to be chaperone-safe
-  (pattern (~literal vector-ref)  #:with unsafe #'unsafe-vector*-ref)
-  (pattern (~literal vector-set!) #:with unsafe #'unsafe-vector*-set!))
+  (pattern (~literal vector-ref)  #:with unsafe #'unsafe-vector-ref)
+  (pattern (~literal vector-set!) #:with unsafe #'unsafe-vector-set!))
 
 (define-syntax-class vector-expr
   #:commit
@@ -43,7 +43,7 @@
   (pattern (#%plain-app (~and op (~literal vector-length)) v:expr)
            #:with opt
            (begin (log-optimization "vector-length" #'op)
-                  #`(unsafe-vector*-length #,((optimize) #'v))))
+                  #`(unsafe-vector-length #,((optimize) #'v))))
   ;; same for flvector-length
   (pattern (#%plain-app (~and op (~literal flvector-length)) v:expr)
            #:with opt

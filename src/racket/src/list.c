@@ -3431,12 +3431,12 @@ static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
-static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[])
+static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[])
 {
   return SCHEME_BOX_VAL(argv[0]);
 }
 
-static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[])
+static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[])
 {
   if (SCHEME_NP_CHAPERONEP(argv[0]))
     return chaperone_unbox(argv[0]);
@@ -3444,13 +3444,13 @@ static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[])
     return SCHEME_BOX_VAL(argv[0]);
 }
 
-static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[])
+static Scheme_Object *unsafe_set_box_star (int argc, Scheme_Object *argv[])
 {
   SCHEME_BOX_VAL(argv[0]) = argv[1];
   return scheme_void;
 }
 
-static Scheme_Object *unsafe_set_box_star (int argc, Scheme_Object *argv[])
+static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[])
 {
   if (SCHEME_NP_CHAPERONEP(argv[0]))
     chaperone_set_box(argv[0], argv[1]);
