@@ -1,8 +1,7 @@
-#lang scheme/base
+#lang racket/base
 (require (for-syntax syntax/parse
-                     scheme/base)
-         scheme/foreign)
-(unsafe!)
+                     racket/base)
+         ffi/unsafe)
 
 (provide (protect-out define-ffi-definer)
          provide-protected

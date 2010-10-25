@@ -143,8 +143,8 @@ static int mark_weak_box(void *p, struct NewGC *gc)
   gcMARK2(wb->secondary_erase, gc);
 
   if (wb->val) {
-    wb->next = gc->weak_boxes;
-    gc->weak_boxes = wb;
+    wb->next = gc->weak_boxes[wb->is_late];
+    gc->weak_boxes[wb->is_late] = wb;
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
@@ -160,7 +160,7 @@ static int fixup_weak_box(void *p, struct NewGC *gc)
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
 }
 
-void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
+void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late)
 {
   GCTYPE *gc = GC_get_GC();
   GC_Weak_Box *w;
@@ -179,25 +179,38 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
   w->type = gc->weak_box_tag;
   w->val = p;
   w->secondary_erase = secondary;
+  w->is_late = is_late;
   w->soffset = soffset;
 
   return w;
 }
 
 static void init_weak_boxes(GCTYPE *gc) {
-  gc->weak_boxes = NULL;
+  gc->weak_boxes[0] = NULL;
+  gc->weak_boxes[1] = NULL;
 }
 
-static void zero_weak_boxes(GCTYPE *gc)
+static void zero_weak_boxes(GCTYPE *gc, int is_late)
 {
   GC_Weak_Box *wb;
 
-  wb = gc->weak_boxes;
+  wb = gc->weak_boxes[is_late];
   while (wb) {
     if (!is_marked(gc, wb->val)) {
       wb->val = NULL;
       if (wb->secondary_erase) {
         void **p;
+        mpage *page;
+
+        /* it's possible for the secondary to be in an old generation
+           and therefore on an mprotected page: */
+        page = pagemap_find_page(gc->page_maps, wb->secondary_erase);
+        if (page->mprotected) {
+          page->mprotected = 0;
+          mmu_write_unprotect_page(gc->mmu, page->addr, APAGE_SIZE);
+          GC_MP_CNT_INC(mp_mark_cnt);
+        }
+
         p = (void **)GC_resolve(wb->secondary_erase);
         *(p + wb->soffset) = NULL;
         wb->secondary_erase = NULL;

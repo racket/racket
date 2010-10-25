@@ -2322,7 +2322,7 @@ void free_cl_cif_args(void *ignored, void *p)
   {
     /* put data in immobile, weak box */
     void **tmp;
-    tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0));
+    tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0, 1));
     cl_cif_args->data = (struct immobile_box*)tmp;
   }
   }{
@@ -2378,6 +2378,13 @@ static void save_errno_values(int kind)
       scheme_wrong_type(MYNAME, "@syms",0, argc, argv);
       return NULL;
     })
+}
+
+/*****************************************************************************/
+
+/* (make-stubborn-will-executor) -> #<will-executor> */
+@cdefine[make-stubborn-will-executor 0]{
+  return scheme_make_stubborn_will_executor();
 }
 
 /*****************************************************************************/

@@ -146,6 +146,10 @@ Racket allocates the following kinds of memory objects:
    `secondary + soffset' is zeroed, the `secondary' pointer in the
    weak box should also be zeroed.
 
+ * Late Weak Box - A weak box that holds onto its reference until
+   level-2 finalizers are queued (see below). Late weak boxes are
+   created with GC_malloc_late_weak_box().
+
  * Weak Array - The object has the following structure:
 
      struct {
@@ -206,12 +210,8 @@ This function installs a finalizer to be queued for invocation when
 `p' would otherwise be collected. All ready finalizers should be
 called at the end of a collection. (A finalization can trigger calls
 back to the collector, but such a collection will not run more
-finalizers.)
-
-The `p' object isn't actually collected when a finalizer is queued,
-since the finalizer will receive `p' as an argument. (Hence, weak
-references aren't zeroed, either.) `p' must point to the beginning of
-a tagged (if `tagged' is 1) or xtagged (if `tagged' is 0) object.
+finalizers.) The `p' argument must point to the beginning of a tagged
+(if `tagged' is 1) or xtagged (if `tagged' is 0) object.
 
 The `level' argument refers to an ordering of finalizers. It can be 1,
 2, or 3. During a collection, level 1 finalizers are queued first,
@@ -220,36 +220,20 @@ traversed. Next, level 2 finalizers are queued in the same way. Thus,
 if a level 1 object refers to a level 2 object, the level 1 object
 will be queued for finalization, and only sometime after the finalizer
 is run and the object is again no longer referenced can the level 2
-object be finalized.
-
-Level 3 finalizers are even later. Not only are they after level 1 and
-2, but a level 3 finalizer is only enqueued if no other level-3
-finalizer refers to the object. Note that cycles among level-3
-finalizers can prevent finalization and collection. (But it's also
-possible that other finalizers will break a finalization cycle among a
-set of level 3 finalizers.)
+object be finalized. Finally, level 3 finalizers are queued.
 
 The `f' and `data' arguments define the finalizer closure to be called
 for `p'. If a finalizer is already installed for `p', it is replaced,
 and `oldf' and `olddata' are filled with the old closure. If `f' is
 NULL, any existing finalizer is removed and no new one is
-installed.
+installed. The single-callback rulle applies across level 1 and level
+2 finalizers (but scheme_register_finalizer(), etc., in "salloc.c" can
+merge them).
 
-To break cycles among level-3 finalizers, the collector must also
-provide GC_finalization_weak_ptr():
-
-  void GC_finalization_weak_ptr(void **p, int offset);
-
-This function registers the address of a "weak" pointer for level-3
-finalization. When checking for references among level-3 finalized
-objects, `*(p + offset)' is set to NULL. The mark procedure for the
-object `p' will see the NULL value, preventing it from marking
-whatever `p + object' normally references. After level-3 finalizers
-are enqueued, `*(p + offset)' is reset to its original value (and
-marked if the object `p' is already marked).
-
-When the object `p' is collected, all weak pointer registrations are
-removed automatically.
+The `p' object isn't actually collected when a finalizer is queued,
+since the finalizer will receive `p' as an argument. Weak references
+are cleared after level 1 fnalizers are queued, while "late weak box"
+references are cleared after level 2 finalizers are clear.
 
 Functions versus Macros
 -----------------------

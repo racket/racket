@@ -1473,10 +1473,11 @@
                regexp-replace regexp-replace*)
              (caar rs) str (cadar rs)) (cdr rs)))))
 
-;; A facility for running finalizers using executors.  #%foreign has a C-based
-;; version that uses finalizers, but that leads to calling Scheme from the GC
-;; which is not a good idea.
-(define killer-executor (make-will-executor))
+;; A facility for running finalizers using executors. The "stubborn" kind
+;; of will executor is provided by '#%foreign, and it doesn't get GC'ed if
+;; any finalizers are attached to it (while the normal kind can get GCed
+;; even if a thread that is otherwise inaccessible is blocked on the executor).
+(define killer-executor (make-stubborn-will-executor))
 (define killer-thread #f)
 
 (define* (register-finalizer obj finalizer)
@@ -1487,4 +1488,3 @@
               (thread (lambda ()
                         (let loop () (will-execute killer-executor) (loop))))))))
   (will-register killer-executor obj finalizer))
-

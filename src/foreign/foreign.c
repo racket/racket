@@ -2963,7 +2963,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
     {
       /* put data in immobile, weak box */
       void **tmp;
-      tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0));
+      tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0, 1));
       cl_cif_args->data = (struct immobile_box*)tmp;
     }
 #   else /* MZ_PRECISE_GC undefined */
@@ -3018,6 +3018,16 @@ static Scheme_Object *foreign_lookup_errno(int argc, Scheme_Object *argv[])
   }
   scheme_wrong_type(MYNAME, "'EINTR, 'EEXIST, or 'EAGAIN",0, argc, argv);
   return NULL;
+}
+#undef MYNAME
+
+/*****************************************************************************/
+
+/* (make-stubborn-will-executor) -> #<will-executor> */
+#define MYNAME "make-stubborn-will-executor"
+static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_stubborn_will_executor();
 }
 #undef MYNAME
 
@@ -3189,6 +3199,8 @@ void scheme_init_foreign(Scheme_Env *env)
     scheme_make_prim_w_arity(foreign_saved_errno, "saved-errno", 0, 0), menv);
   scheme_add_global("lookup-errno",
     scheme_make_prim_w_arity(foreign_lookup_errno, "lookup-errno", 1, 1), menv);
+  scheme_add_global("make-stubborn-will-executor",
+    scheme_make_prim_w_arity(foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), menv);
   s = scheme_intern_symbol("void");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -3487,6 +3499,8 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "saved-errno", 0, 0), menv);
   scheme_add_global("lookup-errno",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), menv);
+  scheme_add_global("make-stubborn-will-executor",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-stubborn-will-executor", 0, 0), menv);
   scheme_add_global("_void", scheme_false, menv);
   scheme_add_global("_int8", scheme_false, menv);
   scheme_add_global("_uint8", scheme_false, menv);

@@ -1911,89 +1911,6 @@ inline static void check_finalizers(NewGC *gc, int level)
   }
 }
 
-inline static void do_ordered_level3(NewGC *gc)
-{
-  struct finalizer *temp;
-  Mark2_Proc *mark_table = gc->mark_table;
-
-  for(temp = GC_resolve(gc->finalizers); temp; temp = GC_resolve(temp->next))
-    if(!marked(gc, temp->p)) {
-      GCDEBUG((DEBUGOUTF,
-               "LVL3: %p is not marked. Marking payload (%p)\n", 
-               temp, temp->p));
-      set_backtrace_source(temp, BT_FINALIZER);
-      if(temp->tagged) mark_table[*(unsigned short*)temp->p](temp->p, gc);
-      if(!temp->tagged) GC_mark_xtagged(temp->p);
-    }
-}
-
-void GC_finalization_weak_ptr(void **p, int offset)
-{
-  NewGC *gc = GC_get_GC();
-  Weak_Finalizer *wfnl;
-
-  gc->park[0] = p; wfnl = GC_malloc_atomic(sizeof(Weak_Finalizer));
-  p = gc->park[0]; gc->park[0] = NULL;
-  wfnl->p = p; wfnl->offset = offset * sizeof(void*); wfnl->saved = NULL;
-  wfnl->next = gc->weak_finalizers; gc->weak_finalizers = wfnl;
-}
-
-inline static void mark_weak_finalizer_structs(NewGC *gc)
-{
-  Weak_Finalizer *work;
-
-  GCDEBUG((DEBUGOUTF, "MARKING WEAK FINALIZERS.\n"));
-  for(work = gc->weak_finalizers; work; work = work->next) {
-    set_backtrace_source(&gc->weak_finalizers, BT_ROOT);
-    gcMARK2(work, gc);
-  }
-}
-
-inline static void repair_weak_finalizer_structs(NewGC *gc)
-{
-  Weak_Finalizer *work;
-  Weak_Finalizer *prev;
-
-  gcFIXUP2(gc->weak_finalizers, gc);
-  work = gc->weak_finalizers; prev = NULL;
-  while(work) {
-    gcFIXUP2(work->next, gc);
-    if(!marked(gc, work->p)) {
-      if(prev) prev->next = work->next;
-      if(!prev) gc->weak_finalizers = work->next;
-      work = GC_resolve(work->next);
-    } else {
-      gcFIXUP2(work->p, gc);
-      prev = work;
-      work = work->next;
-    }
-  }
-}
-
-inline static void zero_weak_finalizers(NewGC *gc)
-{
-  Weak_Finalizer *wfnl;
-
-  for(wfnl = GC_resolve(gc->weak_finalizers); wfnl; wfnl = GC_resolve(wfnl->next)) {
-    wfnl->saved = *(void**)(NUM(GC_resolve(wfnl->p)) + wfnl->offset);
-    *(void**)(NUM(GC_resolve(wfnl->p)) + wfnl->offset) = NULL;
-  }
-}
-
-inline static void reset_weak_finalizers(NewGC *gc)
-{
-  Weak_Finalizer *wfnl;
-
-  for(wfnl = GC_resolve(gc->weak_finalizers); wfnl; wfnl = GC_resolve(wfnl->next)) {
-    if(marked(gc, wfnl->p)) {
-      set_backtrace_source(wfnl, BT_WEAKLINK);
-      gcMARK2(wfnl->saved, gc); 
-    }
-    *(void**)(NUM(GC_resolve(wfnl->p)) + wfnl->offset) = wfnl->saved;
-    wfnl->saved = NULL;
-  }
-}
-
 /*****************************************************************************/
 /* weak boxes and arrays                                                     */
 /*****************************************************************************/
@@ -4152,7 +4069,6 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
   mark_backpointers(gc);
   TIME_STEP("backpointered");
   mark_finalizer_structs(gc);
-  mark_weak_finalizer_structs(gc);
   TIME_STEP("pre-rooted");
   mark_roots(gc);
   mark_immobiles(gc);
@@ -4175,16 +4091,12 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
   check_finalizers(gc, 1);
   propagate_marks_plus_ephemerons(gc);
 
-  check_finalizers(gc, 2);
-  propagate_marks_plus_ephemerons(gc);
+  TIME_STEP("marked");
 
-  if(gc->gc_full) zero_weak_finalizers(gc);
-  do_ordered_level3(gc); propagate_marks(gc);
-  check_finalizers(gc, 3); propagate_marks(gc);
-  if(gc->gc_full) {
-    reset_weak_finalizers(gc); 
-    propagate_marks(gc);
-  }
+  zero_weak_boxes(gc, 0); 
+  zero_weak_arrays(gc);
+  zero_remaining_ephemerons(gc);
+
 #ifndef NEWGC_BTC_ACCOUNT
   /* we need to clear out the stack pages. If we're doing memory accounting,
      though, we might as well leave them up for now and let the accounting
@@ -4194,13 +4106,16 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
   clear_stack_pages(gc);  
 #endif
 
-  TIME_STEP("marked");
-
-  zero_weak_boxes(gc); 
-  zero_weak_arrays(gc);
-  zero_remaining_ephemerons(gc);
-
   TIME_STEP("zeroed");
+
+  check_finalizers(gc, 2);
+  propagate_marks(gc);
+  zero_weak_boxes(gc, 1);
+
+  check_finalizers(gc, 3);
+  propagate_marks(gc);
+
+  TIME_STEP("finalized2");
 
   if(gc->gc_full)
 #ifdef MZ_USE_PLACES
@@ -4217,7 +4132,6 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 #endif
   TIME_STEP("cleaned");
   repair_finalizer_structs(gc);
-  repair_weak_finalizer_structs(gc);
   repair_roots(gc);
   repair_immobiles(gc);
 #ifdef MZ_USE_PLACES

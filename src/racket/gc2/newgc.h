@@ -68,13 +68,6 @@ typedef struct MarkSegment {
   void **top;
 } MarkSegment;
 
-typedef struct Weak_Finalizer {
-  void *p;
-  int offset;
-  void *saved;
-  struct Weak_Finalizer *next;
-} Weak_Finalizer;
-
 typedef struct GC_Thread_Info {
   void *thread;
   int owner;
@@ -154,7 +147,6 @@ typedef struct NewGC {
   /* Finalization */
   Fnl *run_queue;
   Fnl *last_in_queue;
-  Weak_Finalizer *weak_finalizers;
 
   struct NewGC *primoridal_gc;
   unsigned long max_heap_size;
@@ -239,7 +231,7 @@ typedef struct NewGC {
 
   Roots roots;
   GC_Weak_Array *weak_arrays;
-  GC_Weak_Box   *weak_boxes;
+  GC_Weak_Box   *weak_boxes[2];
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
   struct MMU     *mmu;

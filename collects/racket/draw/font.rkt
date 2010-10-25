@@ -1,5 +1,6 @@
 #lang scheme/base
 (require scheme/class
+         ffi/unsafe
          ffi/unsafe/atomic
          "syntax.ss"
          "pango.ss"

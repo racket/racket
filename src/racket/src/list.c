@@ -3068,7 +3068,7 @@ static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[])
 Scheme_Object *scheme_make_weak_box(Scheme_Object *v)
 {
 #ifdef MZ_PRECISE_GC
-  return (Scheme_Object *)GC_malloc_weak_box(v, NULL, 0);
+  return (Scheme_Object *)GC_malloc_weak_box(v, NULL, 0, 0);
 #else
   Scheme_Small_Object *obj;
 
@@ -3078,6 +3078,24 @@ Scheme_Object *scheme_make_weak_box(Scheme_Object *v)
 
   obj->u.ptr_val = v;
   scheme_weak_reference((void **)(void *)&obj->u.ptr_val);
+
+  return (Scheme_Object *)obj;
+#endif
+}
+
+Scheme_Object *scheme_make_late_weak_box(Scheme_Object *v)
+{
+#ifdef MZ_PRECISE_GC
+  return (Scheme_Object *)GC_malloc_weak_box(v, NULL, 0, 1);
+#else
+  Scheme_Small_Object *obj;
+
+  obj = MALLOC_ONE_TAGGED_WEAK(Scheme_Small_Object);
+
+  obj->iso.so.type = scheme_weak_box_type;
+
+  obj->u.ptr_val = v;
+  scheme_late_weak_reference((void **)(void *)&obj->u.ptr_val);
 
   return (Scheme_Object *)obj;
 #endif

@@ -242,7 +242,7 @@ GC2_EXTERN void GC_free(void *);
    Lets the collector optionally reverse an allocation immediately.
    [Generally a no-op.] */
 
-GC2_EXTERN void *GC_malloc_weak_box(void *p, void **secondary, int soffset);
+  GC2_EXTERN void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late);
 /* 
    Allocate a weak box. See README for details. */
 
@@ -279,10 +279,6 @@ typedef void (*GC_finalization_proc)(void *p, void *data);
 GC2_EXTERN void GC_set_finalizer(void *p, int tagged, int level, 
 				 GC_finalization_proc f, void *data, 
 				 GC_finalization_proc *oldf, void **olddata);
-/*
-   See README for details. */
-
-GC2_EXTERN void GC_finalization_weak_ptr(void **p, int offset);
 /*
    See README for details. */
 

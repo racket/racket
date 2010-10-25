@@ -270,7 +270,7 @@ typedef struct {
   Scheme_Custodian *val;
 } Scheme_Custodian_Weak_Box;
 
-# define MALLOC_MREF() (Scheme_Custodian_Reference *)scheme_make_weak_box(NULL)
+# define MALLOC_MREF() (Scheme_Custodian_Reference *)scheme_make_late_weak_box(NULL)
 # define CUSTODIAN_FAM(x) ((Scheme_Custodian_Weak_Box *)x)->val
 # define xCUSTODIAN_FAM(x) SCHEME_BOX_VAL(x)
 #else
@@ -1432,7 +1432,7 @@ Scheme_Custodian_Reference *scheme_add_managed(Scheme_Custodian *m, Scheme_Objec
   }
 
 #ifdef MZ_PRECISE_GC
-  b = scheme_make_weak_box(NULL);
+  b = scheme_make_late_weak_box(NULL);
 #else
   b = MALLOC_ONE_WEAK(Scheme_Object*);
 #endif
@@ -1833,7 +1833,7 @@ static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[])
   /* 3m  */
   {
     Scheme_Object *wb, *pr, *prev;
-    wb = GC_malloc_weak_box(cb, NULL, 0);
+    wb = GC_malloc_weak_box(cb, NULL, 0, 1);
     pr = scheme_make_raw_pair(wb, cb->cust->cust_boxes);
     cb->cust->cust_boxes = pr;
     cb->cust->num_cust_boxes++;
@@ -7279,6 +7279,7 @@ typedef struct WillExecutor {
   Scheme_Object so;
   Scheme_Object *sema;
   ActiveWill *first, *last;
+  int is_stubborn;
 } WillExecutor;
 
 static void activate_will(void *o, void *data) 
@@ -7287,8 +7288,13 @@ static void activate_will(void *o, void *data)
   WillExecutor *w;
   Scheme_Object *proc;
 
-  w = (WillExecutor *)scheme_ephemeron_key(data);
-  proc = scheme_ephemeron_value(data);
+  if (SCHEME_PAIRP(data)) {
+    w = (WillExecutor *)SCHEME_CAR(data);
+    proc = SCHEME_CDR(data);
+  } else {
+    w = (WillExecutor *)scheme_ephemeron_key(data);
+    proc = scheme_ephemeron_value(data);
+  }
 
   if (w) {
     a = MALLOC_ONE_RT(ActiveWill);
@@ -7335,6 +7341,17 @@ static Scheme_Object *make_will_executor(int argc, Scheme_Object **argv)
   w->first = NULL;
   w->last = NULL;
   w->sema = sema;
+  w->is_stubborn = 0;
+
+  return (Scheme_Object *)w;
+}
+
+Scheme_Object *scheme_make_stubborn_will_executor()
+{
+  WillExecutor *w;
+
+  w = (WillExecutor *)make_will_executor(0, NULL);
+  w->is_stubborn = 1;
 
   return (Scheme_Object *)w;
 }
@@ -7354,8 +7371,12 @@ static Scheme_Object *register_will(int argc, Scheme_Object **argv)
     scheme_wrong_type("will-register", "will-executor", 0, argc, argv);
   scheme_check_proc_arity("will-register", 1, 2, argc, argv);
 
-  /* If we lose track of the will executor, then drop the finalizer. */
-  e = scheme_make_ephemeron(argv[0], argv[2]);
+  if (((WillExecutor *)argv[0])->is_stubborn)
+    e = scheme_make_pair(argv[0], argv[2]);
+  else {
+    /* If we lose track of the will executor, then drop the finalizer. */
+    e = scheme_make_ephemeron(argv[0], argv[2]);
+  }
 
   scheme_add_scheme_finalizer(argv[1], activate_will, e);
 

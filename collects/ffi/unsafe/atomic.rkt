@@ -1,7 +1,6 @@
-#lang scheme/base
-(require scheme/foreign
-         (for-syntax scheme/base))
-(unsafe!)
+#lang racket/base
+(require ffi/unsafe
+         (for-syntax racket/base))
 
 (provide (protect-out start-atomic
                       end-atomic

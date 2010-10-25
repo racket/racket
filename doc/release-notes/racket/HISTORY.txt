@@ -1,3 +1,6 @@
+Internal: weak boxes are cleared before non-will-like
+ finalizers; use late-weak boxes to get the old behavior
+
 Version 5.0.2, October 2010
 Changed body of `when', `unless', `cond' clauses, `case'
  clauses, and `match' clauses to be internal-definition contexts

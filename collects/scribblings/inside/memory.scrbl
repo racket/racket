@@ -915,16 +915,16 @@ To remove an added finalizer, use @cpp{scheme_subtract_finalizer}.}
            [void* data])]{
 
 Installs a ``will''-like finalizer, similar to @scheme[will-register].
- Scheme finalizers are called one at a time, requiring the collector
+ Will-like finalizers are called one at a time, requiring the collector
  to prove that a value has become inaccessible again before calling
- the next Racket finalizer. Finalizers registered with
+ the next will-like finalizer. Finalizers registered with
  @cpp{scheme_register_finalizer} or @cpp{scheme_add_finalizer} are
- not called until all Racket finalizers have been exhausted.
+ not called until all will-like finalizers have been exhausted.
 
 See @cpp{scheme_register_finalizer}, above, for information about
  the arguments.
 
-There is currently no facility to remove a ``will''-like finalizer.}
+There is currently no facility to remove a will-like finalizer.}
 
 @function[(void scheme_add_finalizer_once
            [void* p]

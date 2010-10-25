@@ -714,7 +714,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
     if (table->weak) {
 #ifdef MZ_PRECISE_GC
       void *kb;
-      kb = GC_malloc_weak_box((void *)key, (void **)bucket, (void **)&bucket->val - (void **)bucket);
+      kb = GC_malloc_weak_box((void *)key, (void **)bucket, (void **)&bucket->val - (void **)bucket, 0);
       bucket->key = (char *)kb;
 #else
       char *kb;

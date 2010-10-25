@@ -402,6 +402,8 @@ MZ_EXTERN char *scheme_strdup_eternal(const char *str);
 MZ_EXTERN void *scheme_malloc_fail_ok(void *(*f)(size_t), size_t);
 
 #ifndef MZ_PRECISE_GC
+MZ_EXTERN void scheme_late_weak_reference(void **p);
+MZ_EXTERN void scheme_late_weak_reference_indirect(void **p, void *v);
 MZ_EXTERN void scheme_weak_reference(void **p);
 MZ_EXTERN void scheme_weak_reference_indirect(void **p, void *v);
 MZ_EXTERN void scheme_unweak_reference(void **p);
@@ -1093,10 +1095,13 @@ MZ_EXTERN Scheme_Object *scheme_unbox(Scheme_Object *obj);
 MZ_EXTERN void scheme_set_box(Scheme_Object *b, Scheme_Object *v);
 
 MZ_EXTERN Scheme_Object *scheme_make_weak_box(Scheme_Object *v);
+MZ_EXTERN Scheme_Object *scheme_make_late_weak_box(Scheme_Object *v);
 
 MZ_EXTERN Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object *val);
 MZ_EXTERN Scheme_Object *scheme_ephemeron_value(Scheme_Object *o);
 MZ_EXTERN Scheme_Object *scheme_ephemeron_key(Scheme_Object *o);
+
+MZ_EXTERN Scheme_Object *scheme_make_stubborn_will_executor();
 
 MZ_EXTERN Scheme_Object *scheme_load(const char *file);
 MZ_EXTERN Scheme_Object *scheme_load_extension(const char *filename, Scheme_Env *env);
