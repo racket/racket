@@ -3031,6 +3031,22 @@ static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Objec
 }
 #undef MYNAME
 
+/* (make-late-weak-box val) -> #<weak-box> */
+#define MYNAME "make-late-weak-box"
+static Scheme_Object *foreign_make_late_weak_box(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_late_weak_box(argv[0]);
+}
+#undef MYNAME
+
+/* (make-late-weak-hasheq) -> #<hash> */
+#define MYNAME "make-late-weak-hasheq"
+static Scheme_Object *foreign_make_late_weak_hasheq(int argc, Scheme_Object *argv[])
+{
+  return (Scheme_Object *)scheme_make_bucket_table(20, SCHEME_hash_late_weak_ptr);
+}
+#undef MYNAME
+
 /*****************************************************************************/
 
 void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
@@ -3201,6 +3217,10 @@ void scheme_init_foreign(Scheme_Env *env)
     scheme_make_prim_w_arity(foreign_lookup_errno, "lookup-errno", 1, 1), menv);
   scheme_add_global("make-stubborn-will-executor",
     scheme_make_prim_w_arity(foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), menv);
+  scheme_add_global("make-late-weak-box",
+    scheme_make_prim_w_arity(foreign_make_late_weak_box, "make-late-weak-box", 1, 1), menv);
+  scheme_add_global("make-late-weak-hasheq",
+    scheme_make_prim_w_arity(foreign_make_late_weak_hasheq, "make-late-weak-hasheq", 0, 0), menv);
   s = scheme_intern_symbol("void");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -3501,6 +3521,10 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), menv);
   scheme_add_global("make-stubborn-will-executor",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-stubborn-will-executor", 0, 0), menv);
+  scheme_add_global("make-late-weak-box",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-late-weak-box", 1, 1), menv);
+  scheme_add_global("make-late-weak-hasheq",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-late-weak-hasheq", 0, 0), menv);
   scheme_add_global("_void", scheme_false, menv);
   scheme_add_global("_int8", scheme_false, menv);
   scheme_add_global("_uint8", scheme_false, menv);

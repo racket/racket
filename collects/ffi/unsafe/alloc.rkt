@@ -5,7 +5,7 @@
 (provide allocator deallocator retainer 
          (rename-out [deallocator releaser]))
 
-(define allocated (make-weak-hasheq))
+(define allocated (make-late-weak-hasheq))
 
 (define (deallocate v)
   ;; Called as a finalizer, we we assume that the

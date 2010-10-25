@@ -30,7 +30,7 @@
         (tell
          (let ([c (tell (tell NSCell alloc) initTextCell: #:type _NSString 
                         (if wx (send wx get-row row) "???"))]
-               [font (send wx get-cell-font)])
+               [font (and wx (send wx get-cell-font))])
            (when font
              (tellv c setFont: font))
            c)

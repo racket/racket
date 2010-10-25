@@ -83,7 +83,7 @@
                     ["libglib-2.0-0.dll" 1110713]
                     ["libgobject-2.0-0.dll" 316586]
                     ["libgmodule-2.0-0.dll" 31692]
-                    ["libpangocairo-1.0-0.dll" 95189]
+                    ["libpangocairo-1.0-0.dll" 94625]
                     ["libpangowin32-1.0-0.dll" 102210]
                     ["libpangoft2-1.0-0.dll" 679322])])
        (if (getenv "PLT_WIN_GTK")

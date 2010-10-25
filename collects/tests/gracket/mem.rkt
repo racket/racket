@@ -4,7 +4,7 @@
 
 (define source-dir (current-load-relative-directory))
 
-(define num-times 8)
+(define num-times 80)
 (define num-threads 3)
 
 (define dump-stats? #f)
@@ -152,6 +152,7 @@
 
 	(when (and edit? insert?)
 	    (let ([e edit])
+              (send e begin-edit-sequence)
 	      (when load-file?
 		(send e load-file (build-path source-dir "mem.ss")))
 	      (let loop ([i 20])
@@ -163,7 +164,8 @@
 		(send e insert s))
 	      (send e insert #\newline)
 	      (send e insert "done")
-	      (send e set-modified #f)))
+	      (send e set-modified #f)
+              (send e end-edit-sequence)))
 	
 	(when menus?
 	  (let ([f (remember tag (make-object frame% "MB Frame 0"))])

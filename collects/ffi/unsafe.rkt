@@ -16,7 +16,8 @@
          _float _double _double*
          _bool _pointer _gcpointer _scheme (rename-out [_scheme _racket]) _fpointer function-ptr
          memcpy memmove memset
-         malloc-immobile-cell free-immobile-cell)
+         malloc-immobile-cell free-immobile-cell
+         make-late-weak-box make-late-weak-hasheq)
 
 (define-syntax define*
   (syntax-rules ()
@@ -1477,6 +1478,8 @@
 ;; of will executor is provided by '#%foreign, and it doesn't get GC'ed if
 ;; any finalizers are attached to it (while the normal kind can get GCed
 ;; even if a thread that is otherwise inaccessible is blocked on the executor).
+;; Also it registers level-2 finalizers (which are run after non-late weak
+;; boxes are cleared).
 (define killer-executor (make-stubborn-will-executor))
 (define killer-thread #f)
 

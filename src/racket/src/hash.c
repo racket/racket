@@ -541,7 +541,12 @@ scheme_make_bucket_table (int size, int type)
     table->buckets = ba;
   }
 
-  table->weak = (type == SCHEME_hash_weak_ptr);
+  if (type == SCHEME_hash_weak_ptr)
+    table->weak = 1;
+  else if (type == SCHEME_hash_late_weak_ptr)
+    table->weak = 2;
+  else
+    table->weak = 0;
   
   return table;
 }
@@ -714,15 +719,21 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
     if (table->weak) {
 #ifdef MZ_PRECISE_GC
       void *kb;
-      kb = GC_malloc_weak_box((void *)key, (void **)bucket, (void **)&bucket->val - (void **)bucket, 0);
+      kb = GC_malloc_weak_box((void *)key, (void **)bucket, (void **)&bucket->val - (void **)bucket, 
+                              (table->weak > 1));
       bucket->key = (char *)kb;
 #else
       char *kb;
       kb = (char *)MALLOC_ONE_WEAK(void *);
       bucket->key = kb;
       *(void **)bucket->key = (void *)key;
-      scheme_weak_reference_indirect((void **)bucket->key, (void *)key);
-      scheme_weak_reference_indirect((void **)&bucket->val, (void *)key);
+      if (table->weak > 1) {
+        scheme_late_weak_reference_indirect((void **)bucket->key, (void *)key);
+        scheme_late_weak_reference_indirect((void **)&bucket->val, (void *)key);
+      } else {
+        scheme_weak_reference_indirect((void **)bucket->key, (void *)key);
+        scheme_weak_reference_indirect((void **)&bucket->val, (void *)key);
+      }
 #endif
     } else
       bucket->key = (char *)key;

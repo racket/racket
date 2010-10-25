@@ -7371,14 +7371,15 @@ static Scheme_Object *register_will(int argc, Scheme_Object **argv)
     scheme_wrong_type("will-register", "will-executor", 0, argc, argv);
   scheme_check_proc_arity("will-register", 1, 2, argc, argv);
 
-  if (((WillExecutor *)argv[0])->is_stubborn)
+  if (((WillExecutor *)argv[0])->is_stubborn) {
     e = scheme_make_pair(argv[0], argv[2]);
-  else {
+    scheme_add_finalizer(argv[1], activate_will, e);
+  } else {
     /* If we lose track of the will executor, then drop the finalizer. */
     e = scheme_make_ephemeron(argv[0], argv[2]);
+    scheme_add_scheme_finalizer(argv[1], activate_will, e);
   }
 
-  scheme_add_scheme_finalizer(argv[1], activate_will, e);
 
   return scheme_void;
 }

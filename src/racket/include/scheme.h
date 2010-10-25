@@ -824,7 +824,8 @@ typedef struct Scheme_Bucket_Table
   int size; /* power of 2 */
   int count;
   Scheme_Bucket **buckets;
-  char weak, with_home;
+  char weak; /* 1 => normal weak, 2 => late weak */
+  char with_home;
   void (*make_hash_indices)(void *v, long *h1, long *h2);
   int (*compare)(void *v1, void *v2);
   Scheme_Object *mutex;
@@ -835,7 +836,8 @@ enum {
   SCHEME_hash_string,
   SCHEME_hash_ptr,
   SCHEME_hash_bound_id,
-  SCHEME_hash_weak_ptr
+  SCHEME_hash_weak_ptr,
+  SCHEME_hash_late_weak_ptr
 };
 
 typedef struct Scheme_Env Scheme_Env;

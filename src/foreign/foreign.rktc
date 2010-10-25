@@ -2387,6 +2387,16 @@ static void save_errno_values(int kind)
   return scheme_make_stubborn_will_executor();
 }
 
+/* (make-late-weak-box val) -> #<weak-box> */
+@cdefine[make-late-weak-box 1]{
+  return scheme_make_late_weak_box(argv[0]);
+}
+
+/* (make-late-weak-hasheq) -> #<hash> */
+@cdefine[make-late-weak-hasheq 0]{
+  return (Scheme_Object *)scheme_make_bucket_table(20, SCHEME_hash_late_weak_ptr);
+}
+
 /*****************************************************************************/
 
 void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
