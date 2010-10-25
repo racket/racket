@@ -7,7 +7,7 @@
          racket/vector)
 
 (define (make-gvector #:capacity [capacity 10])
-  (make-gvector (make-vector capacity #f) 0))
+  (gvector (make-vector capacity #f) 0))
 
 (define gvector*
   (let ([gvector
