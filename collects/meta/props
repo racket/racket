@@ -1188,7 +1188,7 @@ path/s is either such a string or a list of them.
 "collects/redex/examples/church.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/combinators.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/compatible-closure.rkt" drdr:command-line (mzc *)
-"collects/redex/examples/delim-cont/tests.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/delim-cont/test.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/letrec.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/omega.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/r6rs/r6rs-tests.rkt" drdr:command-line (mzc *)
