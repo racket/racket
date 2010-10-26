@@ -1,6 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require scheme/list scheme/string scheme/dict scheme/promise scheme/function)
+(require "shared.rkt")
 
 ;; bib values are hash tables mapping field names (symbols) to strings.
 ;; Keywords can also be used for the field names, which makes them meta-fields

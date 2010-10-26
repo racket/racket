@@ -1,3 +1,3 @@
-#lang at-exp s-exp "shared.rkt"
+#lang racket/base
 
-(require "index.rkt" "version.rkt")
+(require "shared.rkt" "index.rkt" "version.rkt")

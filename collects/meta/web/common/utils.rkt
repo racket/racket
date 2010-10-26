@@ -1,6 +1,6 @@
-#lang at-exp s-exp scribble/html
+#lang at-exp racket/base
 
-(require (for-syntax scheme/base))
+(require scribble/html (for-syntax scheme/base))
 
 (provide in-here)
 (define-syntax (in-here stx)

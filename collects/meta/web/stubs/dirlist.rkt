@@ -1,4 +1,4 @@
-#lang at-exp s-exp "../common.rkt"
+#lang meta/web
 
 ;; This stub is to generate fancy directory listings with the Racket style
 

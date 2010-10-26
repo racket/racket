@@ -1,6 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "community.rkt")
+(require "shared.rkt" "community.rkt")
 
 (provide help)
 (define help

@@ -1,7 +1,6 @@
-#lang at-exp s-exp "../common.rkt"
+#lang meta/web
 
-(require "../common/resources.rkt"
-         (prefix-in www: (only-in "../www/shared.rkt" the-resources))
+(require (prefix-in www: (only-in "../www/shared.rkt" the-resources))
          racket/port)
 
 (define-context "stubs/blog" #:resources www:the-resources)

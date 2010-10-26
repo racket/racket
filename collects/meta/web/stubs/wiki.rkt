@@ -1,4 +1,4 @@
-#lang at-exp s-exp "../common.rkt"
+#lang meta/web
 
 (require (prefix-in www: (only-in "../www/shared.rkt" the-resources)))
 

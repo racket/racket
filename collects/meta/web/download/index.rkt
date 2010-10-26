@@ -1,6 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "data.rkt" "../www/download.rkt")
+(require "shared.rkt" "data.rkt" "../www/download.rkt")
 
 (define (in-ftp . paths)
   (string-join (cons "/var/ftp/pub/racket" paths) "/"))

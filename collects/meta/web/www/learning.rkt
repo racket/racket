@@ -1,6 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "people.rkt" "techreports.rkt")
+(require "shared.rkt" "people.rkt" "techreports.rkt")
 
 (provide learning)
 (define learning

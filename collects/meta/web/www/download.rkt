@@ -1,6 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "../download/download-pages.rkt")
+(require "shared.rkt" "../download/download-pages.rkt")
 
 (provide download-button download)
 

@@ -1,8 +1,7 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require syntax-color/module-lexer
-         setup/xref
-         scribble/xref)
+(require "shared.rkt"
+         syntax-color/module-lexer setup/xref scribble/xref)
 
 (provide code)
 

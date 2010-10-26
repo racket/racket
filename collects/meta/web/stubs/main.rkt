@@ -1,4 +1,4 @@
-#lang at-exp s-exp "../common.rkt"
+#lang racket/base
 
 (provide planet)
 

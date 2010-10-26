@@ -1,4 +1,6 @@
-#lang at-exp s-exp scribble/html
+#lang at-exp racket/base
+
+(require scribble/html (only-in scribble/html/htmllang #%top))
 
 ;; list of a header paragraphs and sub paragraphs (don't use `p' since it looks
 ;; like they should not be nested)

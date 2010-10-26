@@ -1,5 +1,3 @@
-#lang at-exp s-exp "../common.rkt"
-
-(provide (all-from-out "../common.rkt"))
+#lang meta/web
 
 (define+provide-context "www")

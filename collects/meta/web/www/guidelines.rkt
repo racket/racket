@@ -1,8 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(define name i)
-
-(define (url str) (tt (a href: str str)))
+(require "shared.rkt")
 
 (define styles
   @style/inline{

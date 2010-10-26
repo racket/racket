@@ -1,6 +1,8 @@
-#lang at-exp s-exp scribble/html
+#lang at-exp racket/base
 
-(require (for-syntax racket/base syntax/name) "utils.rkt" "resources.rkt")
+(require scribble/html (only-in scribble/html/htmllang #%top)
+         (for-syntax racket/base syntax/name)
+         "utils.rkt" "resources.rkt")
 
 (define-for-syntax (process-contents who layouter stx xs)
   (let loop ([xs xs] [kws '()] [id? #f])
@@ -16,7 +18,7 @@
                                           (syntax-local-name))])
                             (if name (list '#:id `',name) '())))]
                        ;; delay body, allow definitions
-                       [body #`(lambda () (text #,@xs))])
+                       [body #`(lambda () (begin/text #,@xs))])
            #'(layouter id ... x ... body))])))
 
 (define (get-path who id file sfx dir)

@@ -1,4 +1,6 @@
-#lang at-exp s-exp scribble/html
+#lang at-exp racket/base
+
+(require scribble/html (only-in scribble/html/htmllang #%top))
 
 ;; These are some resources that are shared across different toplevel
 ;; sites.  They could be included from a single place, but then when one
@@ -24,20 +26,20 @@
                                 href: url title: "default"))))
 
 (define page-sizes
-  @text{
+  @list{
     margin-left: auto;
     margin-right: auto;
     width: 45em;
   })
 (define font-family
-  @text{
+  @list{
     font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
   })
 
 (define navbar-style
   ;; All of these are made to apply only inside `racketnav', so the styles can
   ;; be used in places with their own CSS (eg, blog.racket-lang.org)
-  @text{
+  @list{
     .racketnav {
       background-color: #000;
       color: #fff;
@@ -86,7 +88,7 @@
   })
 
 (define racket-style
-  @text{
+  @list{
     @; ---- generic styles ----
     html {
       overflow-y: scroll;

@@ -1,6 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "data.rkt")
+(require "shared.rkt" "data.rkt")
 
 (define version.txt
   (plain (format "~s" `((recent ,current-version) (stable ,current-version)))))

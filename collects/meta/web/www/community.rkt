@@ -1,6 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "people.rkt" "irc.rkt"
+(require "shared.rkt" "people.rkt" "irc.rkt"
          "../minis/lists.rkt"
          "../stubs/blog.rkt" "../stubs/git.rkt"
          (prefix-in pre: "../stubs/pre.rkt"))

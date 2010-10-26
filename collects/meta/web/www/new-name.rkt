@@ -1,4 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
+
+(require "shared.rkt")
 
 (define name i)
 

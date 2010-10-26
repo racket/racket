@@ -1,4 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
+
+(require "shared.rkt")
 
 (define (make-all place person)
   ;; The first person in a place is the one responsible for it
