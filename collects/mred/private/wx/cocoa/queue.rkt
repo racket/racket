@@ -58,6 +58,16 @@
 (tellv app setDelegate: app-delegate)
 (tellv app activateIgnoringOtherApps: #:type _BOOL #t)
 
+;; For some reason, nextEventMatchingMask:... gets stuck if the
+;;  display changes, and it doesn't even send the 
+;;  `applicationDidChangeScreenParameters:' callback. Unstick
+;;  it by posting a dummy event, since we fortunately can receive
+;;  a callback via CGDisplayRegisterReconfigurationCallback().
+(define-appserv CGDisplayRegisterReconfigurationCallback 
+  (_fun (_fun #:atomic? #t -> _void) _pointer -> _int32))
+(define (on-screen-changed) (post-dummy-event))
+(CGDisplayRegisterReconfigurationCallback on-screen-changed #f)
+
 ;; ------------------------------------------------------------
 ;; Create an event to post when MzScheme has been sleeping but is
 ;;  ready to wake up
