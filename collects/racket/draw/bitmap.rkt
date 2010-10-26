@@ -440,7 +440,8 @@
            0 0 width height
            (lambda (bm)
              (send bm save-file out kind quality)))
-          (do-save-file out kind quality)))
+          (do-save-file out kind quality))
+      #t)
 
     (define/private (do-save-file out kind quality)
       (if (path-string? out)

@@ -11,7 +11,7 @@
 
 (define-struct lsd (width height gt? res sort? gt-size bg-idx ratio))
 (define-struct img-desc (left top width height lct? interlace? sort? lct-size))
-(define-struct image (desc data ct))
+(define-struct image (desc data ct transparent))
 
 (define current-color-table
   (make-parameter #f))
@@ -111,7 +111,7 @@
   (define lzw-data (read-data-subblocks p))
   (lzw-decompress image-data coding-bits lzw-data))
 
-(define (read-image p)
+(define (read-image p transparent-color)
   (define id (read-img-desc p))
   (define data (make-bytes (* (img-desc-width id) (img-desc-height id))))
   (when-debugging
@@ -124,7 +124,7 @@
      (when (img-desc-lct? id)
        (print-argbs (current-color-table))))
     (read-image-table data p)
-    (make-image id data (current-color-table))))
+    (make-image id data (current-color-table) transparent-color)))
 
 (define (read-gif p just-one?)
   (define version (read-header p))
@@ -139,7 +139,7 @@
      (print-argbs global-table)))
   (parameterize ([current-color-table global-table])
     (define parsed-blocks
-      (let loop ([parsed-blocks null])
+      (let loop ([parsed-blocks null] [transparent-color #f])
         (let ([id (read-byte p)])
           (cond 
             [(eof-object? id)
@@ -147,13 +147,36 @@
             [(= id #x3b)
              (reverse parsed-blocks)]
             [(= id #x2c)
-             (let ([i (read-image p)])
+             (let ([i (read-image p transparent-color)])
                (if just-one?
                    i
-                   (loop (cons i parsed-blocks))))]
+                   (loop (cons i parsed-blocks) transparent-color)))]
+            [(= id #x21)
+             ;; Extension
+             (let ([ext (read-byte p)])
+               (cond
+                [(= ext #xF9)
+                 ;; Graphic control
+                 (read-byte p) ; size = 4
+                 (read-byte p) ; disposal
+                 (read-byte p) (read-byte p) ; delay time
+                 (let ([t (read-byte p)]) ; transparent color
+                   (read-byte p) ; 0-sized block
+                   (loop parsed-blocks t))]
+                [(= ext #xFE)
+                 ;; comment block
+                 (let loop ()
+                   (let ([size (read-byte p)])
+                     (unless (zero? size)
+                       (read-bytes size p)
+                       (loop))))
+                 (loop parsed-blocks transparent-color)]
+                [else
+                 (log-warning (format "gif: unhandled extension block type 0x~x in ~e" ext p))
+                 (loop parsed-blocks transparent-color)]))]
             [else
-             (log-warning (format "gif: unhandled block type 0x~x" id))
-             (loop parsed-blocks)]))))
+             (log-warning (format "gif: unhandled block type 0x~x in ~e" id p))
+             (loop parsed-blocks transparent-color)]))))
     parsed-blocks))
 
 (define (gif->rgba-rows in)
@@ -162,7 +185,9 @@
            [len (bytes-length data)]
            [ct (image-ct i)]
            [w (img-desc-width (image-desc i))]
-           [h (img-desc-height (image-desc i))])
+           [h (img-desc-height (image-desc i))]
+           [t (let ([v (image-transparent i)])
+                (and v (* v 3)))])
       (values
        w
        h
@@ -172,6 +197,9 @@
             (let ([yp (* w j)])
               (for ([i (in-range w)])
                 (let ([pos (* 3 (bytes-ref data (+ yp i)))])
+                  (when (eq? pos t)
+                    ;; transparent
+                    (bytes-set! bstr (+ 3 (* i 4)) 0))
                   (bytes-set! bstr (* i 4) (bytes-ref ct pos))
                   (bytes-set! bstr (+ 1 (* i 4)) (bytes-ref ct (+ 1 pos)))
                   (bytes-set! bstr (+ 2 (* i 4)) (bytes-ref ct (+ 2 pos))))))
