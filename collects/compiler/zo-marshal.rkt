@@ -44,8 +44,8 @@
   ; calculates what values show up in the compilation top more than once
   ; closures are always included even if they only show up once
   (define (create-symbol-table)
-    (define encountered (make-hash))
-    (define shared (make-hash))
+    (define encountered (make-hasheq))
+    (define shared (make-hasheq))
     (define (encountered? v)
       ((hash-ref encountered v 0) . > . 0))
     (define (encounter! v)
@@ -66,11 +66,17 @@
             (hash-set! shared v pos) 
             pos)))
     
-    (out-compilation-top 
-     (λ (v #:error? [error? #f])
+    (define (do-pass)
+      (out-compilation-top 
+       (λ (v #:error? [error? #f])
          (cond
-           [(hash? v) (error 'create-symbol-table "current type trace: ~a" (current-type-trace))]
+           #;[(contains-a-cycle? v)
+            #f]
+           [(hash? v) 
+            (error 'create-symbol-table "current type trace: ~a" (current-type-trace))]
            [(closure? v)
+            #;(when (cyclic-closure? v)
+              (record-contains-a-cycle!))
             (let ([pos (share! v)])
               (if (encountered? v)
                   pos
@@ -84,18 +90,54 @@
             (share! v)]
            [else
             (encounter! v)]))
-     (λ (v)
-       (unencounter! v))
-     (open-output-nowhere))
+       (λ (v)
+         (unencounter! v))
+       (open-output-nowhere)))
+    
+    ;(do-pass)
+    ;(hash-remove-all! shared)
+    ;(hash-remove-all! encountered)
+    (do-pass)
     
     (define symbol-table (make-vector (hash-count shared) (not-ready)))
-    (hash-map shared (λ (k v) (vector-set! symbol-table (sub1 v) k)))
-    (values symbol-table shared-obj-pos))
+    
+    ; Closures go first in the symbol table
+    ; to avoid...
+    ;  Reading symtab#1 where it references symtab #2
+    ;  Symtab#2 is a closure
+    ;  Symtab#2 references symtab#1
+    ;  Thus, there is a "cycle" reading symtab#1
+    ;  and cycles are only allowed in closures.
+    ; XXX Can we get the following?
+    ;  [1 |-> (closure ... #2 ...)]
+    ;  [2 |-> (closure ... #1 ...)]
+    ; JM: We can fabricate one, definitely, but I don't think
+    ;     we could possibly parse it. And I don't think the 
+    ;     compiler would ever make one.
+    (define sorted-shared-objs
+      (sort (hash-keys shared)
+            (λ (x y) 
+              ; Move closures to the left
+              (closure? x))))
+    (define relabeling (make-vector (hash-count shared) #f))
+    (for ([obj sorted-shared-objs]
+          [actual-pos (in-naturals)])
+      (define pos (hash-ref shared obj))
+      (vector-set! relabeling (sub1 pos) (add1 actual-pos))
+      (vector-set! symbol-table actual-pos obj))
+    
+    (define (relabeled-shared-obj-pos v #:error? [error? #f])
+      (define old-pos
+        (shared-obj-pos v #:error? error?))
+      (and old-pos
+           (vector-ref relabeling (sub1 old-pos))))
+    
+    (values symbol-table relabeled-shared-obj-pos))
   
   (define-values (symbol-table shared-obj-pos)
     (create-symbol-table))
   
-  (for ([(i v) (in-dict symbol-table)])
+  #;(for ([(i v) (in-dict symbol-table)])
     (printf "~a: ~a\n" i v))
   
   ; vector output-port -> (listof number) number
