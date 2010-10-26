@@ -969,9 +969,9 @@
          (if (or (not reqlang) (equal? reqlang (syntax->datum #'lang)))
            (values (car prog) source)
            (error 'make-evaluator
-                  "module code used `~e' for a language, expecting `~e'"
+                  "module code used `~.s' for a language, expecting `~.s'"
                   (syntax->datum #'lang) reqlang))]
-        [_else (error 'make-evaluator "expecting a `module' program; got ~e"
+        [_else (error 'make-evaluator "expecting a `module' program; got ~.s"
                       (syntax->datum (car prog)))])))
   (make-evaluator* void
                    (if (path? input-program) (cons input-program allow) allow)
