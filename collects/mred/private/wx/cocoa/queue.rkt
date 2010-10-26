@@ -66,7 +66,8 @@
 (define-appserv CGDisplayRegisterReconfigurationCallback 
   (_fun (_fun #:atomic? #t -> _void) _pointer -> _int32))
 (define (on-screen-changed) (post-dummy-event))
-(CGDisplayRegisterReconfigurationCallback on-screen-changed #f)
+(void
+ (CGDisplayRegisterReconfigurationCallback on-screen-changed #f))
 
 ;; ------------------------------------------------------------
 ;; Create an event to post when MzScheme has been sleeping but is
