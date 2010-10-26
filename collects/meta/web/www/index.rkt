@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "code.rkt" "download.rkt" "learning.rkt" racket/string)
+(require "code.rkt" "download.rkt" "learning.rkt")
 
 (define (doc s)
   (string-append "http://docs.racket-lang.org/" s))

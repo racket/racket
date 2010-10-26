@@ -42,7 +42,7 @@
       @option[selected: 'true value: (caddr s)]{@(cadr s)}
       @option[value: (cadr s)]{@(car s)})))
 
-(require "../www/main.rkt" racket/string)
+(require "../www/main.rkt")
 
 (define (cgi-link from . to)
   (apply symlink (format "/www/cgi-bin/~a" from) to))

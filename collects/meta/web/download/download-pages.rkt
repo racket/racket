@@ -1,7 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "data.rkt" "installer-pages.rkt" (prefix-in pre: "../stubs/pre.rkt")
-         racket/list)
+(require "data.rkt" "installer-pages.rkt" (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide render-download-page)
 

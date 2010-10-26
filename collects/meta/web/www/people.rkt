@@ -63,8 +63,6 @@
 (provide (struct-out place)  all-places find-place
          (struct-out person) all-people find-person)
 
-(require racket/list)
-
 (define-values (all-places find-place all-people find-person)
   (let ()
     (define places0

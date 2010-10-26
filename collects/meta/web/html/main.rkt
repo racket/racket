@@ -7,9 +7,10 @@
          ;; provide a `text' alias and an `include' alias
          (rename-out [begin/text text] [include/text include])
          ;; main functionality
-         (all-from-out "xml.rkt" "html.rkt" "resource.rkt"))
+         (all-from-out "xml.rkt" "html.rkt" "resource.rkt"
+                       racket/list racket/string))
 
-(require "xml.rkt" "html.rkt" "resource.rkt"
+(require "xml.rkt" "html.rkt" "resource.rkt" racket/list racket/string
          scribble/text scribble/text/syntax-utils (for-syntax racket/base))
 
 (define-syntax (top stx)

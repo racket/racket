@@ -1,7 +1,7 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "bib.rkt" (prefix-in - version/utils) racket/list racket/string
-         "people.rkt" "../download/data.rkt")
+(require "people.rkt" "../download/data.rkt"
+         "bib.rkt" (prefix-in - version/utils))
 
 ;; New style TR entries -------------------------------------------------------
 

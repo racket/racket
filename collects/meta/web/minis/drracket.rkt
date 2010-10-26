@@ -9,7 +9,7 @@
 (define index
   (page #:title "DrRacket" #:extra-headers (delay headers) (center-div logo)))
 
-(require racket/list (only-in "../www/main.rkt" main))
+(require (only-in "../www/main.rkt" main))
 
 (define (logo)
   (define (text->lines text)

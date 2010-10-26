@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "people.rkt" "techreports.rkt" racket/list)
+(require "people.rkt" "techreports.rkt")
 
 (provide learning)
 (define learning
