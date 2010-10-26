@@ -138,7 +138,7 @@
          (struct-out installer) all-installers
          package->name platform->name suffix->name)
 
-(require racket/file version/utils racket/runtime-path)
+(require racket/list racket/file version/utils racket/runtime-path)
 
 ;; ----------------------------------------------------------------------------
 
