@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt" "../download/download-pages.rkt")
+(require "resources.rkt" "../download/download-pages.rkt")
 
 (provide download-button download)
 

@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt" "people.rkt" "irc.rkt"
+(require "resources.rkt" "people.rkt" "irc.rkt"
          "../minis/lists.rkt"
          "../stubs/blog.rkt" "../stubs/git.rkt"
          (prefix-in pre: "../stubs/pre.rkt"))

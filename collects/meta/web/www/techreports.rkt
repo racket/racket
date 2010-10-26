@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt" "people.rkt" "../download/data.rkt"
+(require "resources.rkt" "people.rkt" "../download/data.rkt"
          "bib.rkt" (prefix-in - version/utils))
 
 ;; New style TR entries -------------------------------------------------------

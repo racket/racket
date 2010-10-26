@@ -1922,7 +1922,7 @@ BUILD_WEB() {
   _rmcd "$maindir/$webdir"
   local webflags=""
   webflags="$webflags -w -f -o $maindir/$webdir"
-  webflags="$webflags -e $maindir/$internaldir/web/main.rkt"
+  webflags="$webflags -e $maindir/$internaldir/web/all.rkt"
   # distribute only if this is a normal build
   if [[ "$prewebdir" = "$prewebdir_default" ]]; then
     separator "Making and distributing web content"

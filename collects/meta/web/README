@@ -4,7 +4,13 @@
 
 * download: content of download site (only installer pages and such)
 
-* minis: smaller sites which are implemented in one-file each.
+* */all.rkt: files that just require all the necessary modules to build
+  the ahole site
+
+* */resources.rkt: files that define the resources for a site (icon,
+  css, logo)
+
+* minis: smaller sites which are implemented in one-file each
 
 * stubs: template "sites" that are intended to be hooked into other
   systems to get the plt look.

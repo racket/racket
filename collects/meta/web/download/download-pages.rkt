@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt" "data.rkt" "installer-pages.rkt"
+(require "resources.rkt" "data.rkt" "installer-pages.rkt"
          (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide render-download-page)

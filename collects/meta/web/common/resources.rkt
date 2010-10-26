@@ -6,7 +6,7 @@
 ;; sites.  They could be included from a single place, but then when one
 ;; machine crashes the rest won't work right.  (Note: do not add
 ;; resources that are specific to only one site here, do so in the
-;; site's shared.rkt file)
+;; site's "resources.rkt" file)
 
 (require "utils.ss")
 

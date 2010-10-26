@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt")
+(require "resources.rkt")
 
 (define name i)
 

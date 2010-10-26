@@ -8,7 +8,7 @@ exec "$exe" "$0" "$@"
 #lang racket/base
 
 (require racket/cmdline racket/runtime-path racket/file scribble/html
-         "common/distribute.rkt" "config.rkt" "navbar.rkt")
+         "common/distribute.rkt" "config.rkt" "all.rkt")
 
 (define build-mode #f)
 (define output-dir (current-directory))

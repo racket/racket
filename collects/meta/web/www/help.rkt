@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt" "community.rkt")
+(require "resources.rkt" "community.rkt")
 
 (provide help)
 (define help

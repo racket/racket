@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt")
+(require "resources.rkt")
 
 (define (make-all place person)
   ;; The first person in a place is the one responsible for it

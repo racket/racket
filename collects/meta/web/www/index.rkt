@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt" "code.rkt" "download.rkt" "learning.rkt")
+(require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt")
 
 (define (doc s)
   (string-append "http://docs.racket-lang.org/" s))

@@ -1,7 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt"
-         syntax-color/module-lexer setup/xref scribble/xref)
+(require syntax-color/module-lexer setup/xref scribble/xref)
 
 (provide code)
 

@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "shared.rkt")
+(require "resources.rkt")
 
 ;; bib values are hash tables mapping field names (symbols) to strings.
 ;; Keywords can also be used for the field names, which makes them meta-fields
