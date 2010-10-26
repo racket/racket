@@ -1,6 +1,6 @@
 #lang at-exp racket/base
 
-(require scribble/html (only-in scribble/html/htmllang #%top))
+(require scribble/html (only-in scribble/html/lang #%top))
 
 ;; These are some resources that are shared across different toplevel
 ;; sites.  They could be included from a single place, but then when one

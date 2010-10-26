@@ -1,6 +1,6 @@
 #lang at-exp racket/base
 
-(require scribble/html (only-in scribble/html/htmllang #%top))
+(require scribble/html (only-in scribble/html/lang #%top))
 
 (define-syntax-rule (define* id E) (begin (define id E) (provide id)))
 
