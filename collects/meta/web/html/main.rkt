@@ -1,16 +1,16 @@
 #lang racket/base
 
-(provide (except-out (all-from-out racket/base) #%top)
-         (rename-out [top #%top])
-         ;; to be used as a text language
+(provide (except-out (all-from-out racket/base) #%top #%module-begin)
+         (rename-out [top #%top] [module-begin #%module-begin])
+         ;; to be used as a text language (output via `output-xml')
          (all-from-out scribble/text)
-         ;; provide a `text' alias
-         (rename-out [begin/text text])
+         ;; provide a `text' alias and an `include' alias
+         (rename-out [begin/text text] [include/text include])
          ;; main functionality
          (all-from-out "xml.rkt" "html.rkt" "resource.rkt"))
 
 (require "xml.rkt" "html.rkt" "resource.rkt"
-         scribble/text (for-syntax racket/base))
+         scribble/text scribble/text/syntax-utils (for-syntax racket/base))
 
 (define-syntax (top stx)
   (syntax-case stx ()
@@ -19,3 +19,8 @@
        (if (and (symbol? x*) (regexp-match? #rx":$" (symbol->string x*)))
          #''x
          #'(#%top . x)))]))
+
+(define-syntax-rule (module-begin expr ...)
+  (#%plain-module-begin
+   (port-count-lines! (current-output-port))
+   (process-begin/text begin output-xml expr ...)))

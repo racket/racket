@@ -7,6 +7,5 @@ scribble/text/textlang
 #:whole-body-readers? #t
 #:info        (scribble-base-reader-info)
 
-(require (prefix-in scribble: "../../reader.ss")
-         (only-in scribble/base/reader
-                  scribble-base-reader-info))
+(require (prefix-in scribble: scribble/reader)
+         (only-in scribble/base/reader scribble-base-reader-info))
