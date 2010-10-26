@@ -39,6 +39,8 @@
   (_fun _GtkFileChooserDialog _path -> _void))
 (define-gtk gtk_file_chooser_set_current_folder
   (_fun _GtkFileChooserDialog _path -> _void))
+(define-gtk gtk_file_chooser_set_do_overwrite_confirmation
+  (_fun _GtkFileChooserDialog _gboolean -> _void))
 (define-gtk gtk_file_chooser_set_select_multiple
   (_fun _GtkFileChooserDialog _gboolean -> _void))
 
@@ -78,6 +80,8 @@
     (gtk_file_chooser_set_current_name dlg filename))
   (when directory
     (gtk_file_chooser_set_current_folder dlg directory))
+  (when (eq? 'put type)
+    (gtk_file_chooser_set_do_overwrite_confirmation dlg #t))
   (for ([f (in-list filters)])
     (match f
       [(list name glob)
@@ -85,15 +89,7 @@
          (gtk_file_filter_set_name ff name)
          (gtk_file_filter_add_pattern ff glob)
          (gtk_file_chooser_add_filter dlg ff))]))
-  (define ans (and (eq? 'accept (show-dialog dlg
-                                             (lambda (v)
-                                               (or (not (eq? v 'accept))
-                                                   ;; FIXME: for get mode, probably should check file vs.
-                                                   ;;  directory name
-                                                   (not (eq? type 'put))
-                                                   (not (file-exists? (gtk_file_chooser_get_filename dlg)))
-                                                   ;; FIXME: need to ask "replace the file? here
-                                                   #t))))
+  (define ans (and (eq? 'accept (show-dialog dlg))
                    (if (eq? type 'multi)
                        (gtk_file_chooser_get_filenames dlg)
                        (gtk_file_chooser_get_filename dlg))))
