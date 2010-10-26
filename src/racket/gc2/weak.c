@@ -107,7 +107,7 @@ static void init_weak_arrays(GCTYPE *gc) {
   gc->weak_arrays = NULL;
 }
 
-static void zero_weak_arrays(GCTYPE *gc)
+static void zero_weak_arrays(GCTYPE *gc, int force_zero)
 {
   GC_Weak_Array *wa;
   int i;
@@ -119,12 +119,14 @@ static void zero_weak_arrays(GCTYPE *gc)
     data = wa->data;
     for (i = wa->count; i--; ) {
       void *p = data[i];
-      if (p && !is_marked(gc, p))
+      if (p && (force_zero || !is_marked(gc, p)))
         data[i] = wa->replace_val;
     }
 
     wa = wa->next;
   }
+
+  gc->weak_arrays = NULL;
 }
 
 /******************************************************************************/
@@ -190,13 +192,13 @@ static void init_weak_boxes(GCTYPE *gc) {
   gc->weak_boxes[1] = NULL;
 }
 
-static void zero_weak_boxes(GCTYPE *gc, int is_late)
+static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero)
 {
   GC_Weak_Box *wb;
 
   wb = gc->weak_boxes[is_late];
   while (wb) {
-    if (!is_marked(gc, wb->val)) {
+    if (force_zero || !is_marked(gc, wb->val)) {
       wb->val = NULL;
       if (wb->secondary_erase) {
         void **p;
@@ -218,6 +220,9 @@ static void zero_weak_boxes(GCTYPE *gc, int is_late)
     }
     wb = wb->next;
   }
+
+  /* reset, in case we have a second round */
+  gc->weak_boxes[is_late] = NULL;
 }
 
 /******************************************************************************/
@@ -321,10 +326,11 @@ static void zero_remaining_ephemerons(GCTYPE *gc)
 {
   GC_Ephemeron *eph;
 
-  /* After unordered finalization, any remaining ephemerons
+  /* After level-1 finalization, any remaining ephemerons
      should be zeroed. */
   for (eph = gc->ephemerons; eph; eph = eph->next) {
     eph->key = NULL;
     eph->val = NULL;
   }
+  gc->ephemerons = NULL;
 }

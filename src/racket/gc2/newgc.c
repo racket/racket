@@ -4086,6 +4086,7 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
+
   propagate_marks_plus_ephemerons(gc);
 
   check_finalizers(gc, 1);
@@ -4093,8 +4094,8 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
   TIME_STEP("marked");
 
-  zero_weak_boxes(gc, 0); 
-  zero_weak_arrays(gc);
+  zero_weak_boxes(gc, 0, 0); 
+  zero_weak_arrays(gc, 0);
   zero_remaining_ephemerons(gc);
 
 #ifndef NEWGC_BTC_ACCOUNT
@@ -4110,10 +4111,16 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
   check_finalizers(gc, 2);
   propagate_marks(gc);
-  zero_weak_boxes(gc, 1);
+  zero_weak_boxes(gc, 1, 0);
 
   check_finalizers(gc, 3);
   propagate_marks(gc);
+
+  /* for any new ones that appeared: */
+  zero_weak_boxes(gc, 0, 1); 
+  zero_weak_boxes(gc, 1, 1);
+  zero_weak_arrays(gc, 1);
+  zero_remaining_ephemerons(gc);
 
   TIME_STEP("finalized2");
 
