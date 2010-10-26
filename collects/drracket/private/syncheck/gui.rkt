@@ -504,7 +504,7 @@ If the namespace does not, they are colored the unbound color.
                                                 (if (for/or ([x (in-list old)])
                                                       (and (pair? x) (car x) (eq? (car x) key)))
                                                     old
-                                                    (cons to-add old)))
+                                                    (cons (cons key to-add) old)))
                                               null)]
                       [else
                        (interval-map-cons*! arrow-record
