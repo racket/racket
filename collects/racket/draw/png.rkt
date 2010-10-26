@@ -22,10 +22,15 @@
 (define-ffi-definer define-png png-lib
   #:provide provide)
 
-(define PNG_LIBPNG_VER_STRING 
-  (case (system-type)
-    [(macosx windows) #"1.4"]
-    [else #"1.2"]))
+(define-png png_access_version_number (_fun -> _uint32))
+
+;; We support version 1.2 and 1.4... and (WARNING!) we'll optimisitically
+;;  assume that other versions are also ok
+(define PNG_LIBPNG_VER_STRING (string->bytes/latin-1
+                               (let ([v (png_access_version_number)])
+                                 (format "~s.~s" 
+                                         (quotient v 10000)
+                                         (quotient (remainder v 10000) 100)))))
 
 (define _png_structp (_cpointer 'png_structp))
 (define _png_infop (_cpointer 'png_infop))
