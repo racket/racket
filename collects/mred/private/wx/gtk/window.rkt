@@ -197,8 +197,8 @@
                     [key-code key-code]
                     [shift-down (bit? modifiers GDK_SHIFT_MASK)]
                     [control-down (bit? modifiers GDK_CONTROL_MASK)]
-                    [meta-down (bit? modifiers GDK_META_MASK)]
-                    [alt-down (bit? modifiers GDK_MOD1_MASK)]
+                    [meta-down (bit? modifiers GDK_MOD1_MASK)]
+                    [alt-down (bit? modifiers GDK_META_MASK)]
                     [x 0]
                     [y 0]
                     [time-stamp (if scroll?
