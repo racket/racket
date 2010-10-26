@@ -51,8 +51,8 @@
     (class* object% (start-stop<%>)
       (inspect #f)
       (init-field world0)
-      (init-field name state register check-with on-key on-mouse)
-      (init on-release on-receive on-draw stop-when record?)
+      (init-field name state register check-with on-key on-mouse record?)
+      (init on-release on-receive on-draw stop-when)
       
       ;; -----------------------------------------------------------------------
       (field
@@ -341,9 +341,8 @@
       (start!)
       (let ([w (send world get)])
         (cond
-          [(stop w) (stop! (send world get))]
-          [(stop-the-world? w) 
-           (stop! (stop-the-world-world (send world get)))]))))))
+          [(stop w) (stop! w)]
+          [(stop-the-world? w) (stop! (stop-the-world-world w))]))))))
 
 ; (define make-new-world (new-world world%))
 
@@ -357,7 +356,7 @@
 
 (define aworld%
   (class world% (super-new)
-    (inherit-field world0 tick key release mouse rec draw rate width height)
+    (inherit-field world0 tick key release mouse rec draw rate width height record?)
     (inherit show callback-stop!)
     
     ;; Frame Custodian ->* (-> Void) (-> Void)
@@ -365,9 +364,15 @@
     ;; whose callbacks runs as a thread in the custodian
     (define/augment (create-frame frm play-back-custodian)
       (define p (new horizontal-pane% [parent frm][alignment '(center center)]))
+      (define (pb)
+        (parameterize ([current-custodian play-back-custodian])
+          (thread (lambda () (play-back)))
+          (stop)))
       (define (switch)
         (send stop-button enable #f)
-        (send image-button enable #t))
+        (if (and (string? record?) (directory-exists? record?))
+            (pb)
+            (send image-button enable #t)))
       (define (stop) 
         (send image-button enable #f)
         (send stop-button enable #f))
@@ -377,10 +382,7 @@
       (define stop-button 
         (btn break-button:label (b e) (callback-stop! 'stop-images) (switch)))
       (define image-button 
-        (btn image-button:label (b e)
-             (parameterize ([current-custodian play-back-custodian])
-               (thread (lambda () (play-back)))
-               (stop))))
+        (btn image-button:label (b e) (pb)))
       (send image-button enable #f)
       (values switch stop))
     
@@ -392,10 +394,8 @@
     ;; --- new callbacks ---
     (define-syntax-rule
       (def/cb ovr (pname name arg ...))
-      (begin 
-        ; (ovr pname)
-        (define/override (pname arg ...) 
-          (when (super pname arg ...) (add-event 'name arg ...)))))
+      (define/override (pname arg ...) 
+	(when (super pname arg ...) (add-event name arg ...))))
     
     (def/cb augment (ptock tick))
     (def/cb augment (pkey key e))
@@ -424,19 +424,20 @@
         (send bm save-file (format "i~a.png" (zero-fill imag# digt#)) 'png)
         (set! bmps (cons bm bmps)))
       ;; --- choose place 
-      (define img:dir (get-directory "image directory:" #f (current-directory)))
+      (define img:dir 
+        (or (and (string? record?) (directory-exists? record?) record?)
+            (get-directory "image directory:" #f (current-directory))))
       (when img:dir
         (parameterize ([current-directory img:dir])
-          (define last 
-            (foldr (lambda (event world)
-                     (save-image (draw world))
-                     (show (text (format "~a/~a created" imag# total) 18 'red))
-                     (world-transition world event))
-                   world0 
-                   event-history))
+          (define worldN 
+            (let L ([history event-history][world world0])
+              (save-image (draw world))
+              (if (empty? history) 
+                  world
+                  (L (rest history) (world-transition world (first history))))))
           (show (text (format "creating ~a" ANIMATED-GIF-FILE) 18 'red))
           (create-animated-gif rate (reverse bmps))
-          (show (draw last)))))))
+          (show (draw worldN)))))))
 
 ;; Number [Listof (-> bitmap)] -> Void
 ;; turn the list of thunks into animated gifs 
