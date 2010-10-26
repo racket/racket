@@ -27,6 +27,14 @@
     (void))
   (super-new))
 
+(define string-clipboard-client%
+  (class clipboard-client%
+    (init-field the-bytes)
+    (super-new)
+    (define/override (get-types) (list "TEXT"))
+    (define/override (get-data s)
+      (and (equal? s "TEXT") the-bytes))))
+
 (defclass clipboard% object%
   (init x-selection?)
 
@@ -44,12 +52,15 @@
     (send driver get-data type))
   (def/public (get-clipboard-string [exact-integer? timestamp])
     (send driver get-text-data))
-  (def/public-unimplemented set-clipboard-string)
-  
   (def/public (set-clipboard-client [clipboard-client% c]
                                     [exact-integer? timestamp])
     (send c set-client-eventspace (current-eventspace))
     (send driver set-client c (send c get-types)))
+  (def/public (set-clipboard-string [string? str]
+                                    [exact-integer? timestamp])
+    (set-clipboard-client (make-object string-clipboard-client% 
+                                       (string->bytes/utf-8 str))
+                          timestamp))
 
   (super-new))
 

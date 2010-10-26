@@ -8,6 +8,7 @@
          "utils.rkt"
          "window.rkt"
          "panel.rkt"
+         "queue.rkt"
          "../common/event.rkt"
          "../common/procs.rkt"
          (for-syntax racket/base))

@@ -47,23 +47,16 @@
           (not (eq? (application-pref-handler) nothing-application-pref-handler))
           (super-tell #:type _BOOL validateMenuItem: menuItem))]
   [-a _BOOL (application: [_id theApplication] openFile: [_NSString filename])
-      (queue-file-event (string->path filename))])
+      (queue-file-event (string->path filename))]
+  [-a _void (applicationDidChangeScreenParameters: notification)
+      ;; Need to reset blit windows, since OS may move them incorrectly
+      (void)])
 
 (tellv app finishLaunching)
 
 (define app-delegate (tell (tell MyApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)
 (tellv app activateIgnoringOtherApps: #:type _BOOL #t)
-
-#|
-(import-class NSNotificationCenter)
-(define-cocoa NSMenuDidBeginTrackingNotification _id)
-(tellv (tell NSNotificationCenter defaultCenter)
-       addObserver: app-delegate
-       selector: #:type _SEL (selector trackingMenuNow:)
-       name: NSMenuDidBeginTrackingNotification
-       object: #f)
-|#
 
 ;; ------------------------------------------------------------
 ;; Create an event to post when MzScheme has been sleeping but is

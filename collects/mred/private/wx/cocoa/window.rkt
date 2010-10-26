@@ -512,6 +512,7 @@
     (define/public (set-size x y w h)
       (let ([x (if (= x -11111) (get-x) x)]
             [y (if (= y -11111) (get-y) y)])
+        (tellv cocoa setNeedsDisplay: #:type _BOOL #t)
         (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
                                                            (make-NSSize w h)))))
     (define/public (move x y)

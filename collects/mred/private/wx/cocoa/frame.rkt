@@ -12,6 +12,7 @@
          "cursor.rkt"
          "../../syntax.rkt"
          "../common/queue.rkt"
+         "../common/freeze.rkt"
          "../../lock.rkt")
 
 (provide frame%
@@ -55,9 +56,17 @@
       #f]
   [-a _void (windowDidResize: [_id notification])
       (when wxb
-        (queue-window*-event wxb (lambda (wx)
-                                   (send wx on-size 0 0)
-                                   (send wx clean-up))))]
+        (let ([wx (->wx wxb)])
+          (when wx
+            (queue-window-event wx (lambda ()
+                                     (send wx on-size 0 0)
+                                     (send wx clean-up)))
+            ;; Live resize:
+            (constrained-reply (send wx get-eventspace)
+                               (lambda () 
+                                 (pre-event-sync #t)
+                                 (let loop () (when (yield) (loop))))
+                               (void)))))]
   [-a _void (windowDidMove: [_id notification])
       (when wxb
         (queue-window*-event wxb (lambda (wx)
@@ -248,6 +257,8 @@
                         (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
                           (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
                             (and (tell #:type _BOOL win isVisible)
+                                 (or (not root-fake-frame)
+                                     (not (ptr-equal? win (send root-fake-frame get-cocoa))))
                                  win)))))))])
               (cond
                [next (tellv next makeKeyWindow)]
