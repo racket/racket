@@ -1487,22 +1487,22 @@ BUILD_BUNDLES() {
 
 #----------------------------------------
 tgz_to_tgz() {
-  if [[ "$4" != "src" ]]; then
-    _cp "$1" "$2.tgz"
-  else
-    local savedpwd="`pwd`"
-    local srcdir="$3-$version"
-    _rmcd "$tmpdir/tgz-to-tgz-$$"
-    _tgunzip "$1"
-    _mv "$installdir" "$srcdir"
-    _tgzip "$2.tgz" "$srcdir"
-    _cd "$savedpwd"
-    _rm "$tmpdir/tgz-to-tgz-$$"
-  fi
+  local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
+  local distname="`name_of_dist_package \"$pname\" | tr ' A-Z' '-a-z'`"
+  local savedpwd="`pwd`"
+  local srcdir="$distname-$version"
+  _rmcd "$tmpdir/tgz-to-tgz-$$"
+  _tgunzip "$srctgz"
+  _mv "$installdir" "$srcdir"
+  _tgzip "$tgt.tgz" "$srcdir"
+  _cd "$savedpwd"
+  _rm "$tmpdir/tgz-to-tgz-$$"
+fi
 }
 #----------------------------------------
 tgz_to_sh() {
-  local srctgz="$1" tgtsh="$2.sh" pname="$3"; shift 3
+  local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
+  local distname="`name_of_dist_package \"$pname\" | tr ' A-Z' '-a-z'`"
   local tmppackdir="$tmpdir/pack-$$"
   local tmptgz="$tmpdir/pack-$$.tar.gz"
   local treesize installerlines archivecksum
@@ -1526,42 +1526,44 @@ tgz_to_sh() {
   _rm "$tmppackdir"
   archivecksum="`get_first cksum \"$tmptgz\"`"
   local humanname="`name_of_dist_package \"$pname\"` v$version"
-  local tgtname="$pname"
+  local tgtname="$distname"
   if [[ "$releasing" != "yes" ]]; then tgtname="$tgtname-$version"; fi
-  echo "Writing \"$tgtsh\""
+  echo "Writing \"$tgt.sh\""
   { echo "#!/bin/sh"
     echo ""
     echo "# This is a self-extracting shell script for $humanname."
     echo "# To use it, just run it, or run \"sh\" with it as an argument."
     echo ""
     echo "DISTNAME=\"$humanname\""
-    echo "PNAME=\"$pname\""
+    echo "PNAME=\"$distname\""
     echo "TARGET=\"$tgtname\""
     echo "BINSUM=\"$archivecksum\""
     echo "ORIGSIZE=\"$treesize\""
     echo "RELEASED=\"$releasing\""
-  } > "$tgtsh" \
-  || exit_error "Could not write \"$tgtsh\""
+  } > "$tgt.sh" \
+  || exit_error "Could not write \"$tgt.sh\""
   installerlines=$(( `get_first wc -l "$PLTHOME/$unixinstallerscript"` +
-                     `get_first wc -l "$tgtsh"` +
+                     `get_first wc -l "$tgt.sh"` +
                      2 ))
-  echo "BINSTARTLINE=\"$installerlines\"" >> "$tgtsh"
-  cat "$PLTHOME/$unixinstallerscript" >> "$tgtsh"
-  cat "$tmptgz" >> "$tgtsh"
-  chmod +x "$tgtsh"
+  echo "BINSTARTLINE=\"$installerlines\"" >> "$tgt.sh"
+  cat "$PLTHOME/$unixinstallerscript" >> "$tgt.sh"
+  cat "$tmptgz" >> "$tgt.sh"
+  chmod +x "$tgt.sh"
   rm "$tmptgz"
 }
 #----------------------------------------
 tgz_to_zip() {
+  local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
+  local distname="`name_of_dist_package \"$pname\" | tr ' ' '-'`"
   local savedpwd="`pwd`"
   local srcdir="$installdir"
   _rmcd "$tmpdir/tgz-to-zip-$$"
-  _tgunzip "$1"
-  if [[ "$4" = "src" ]]; then
-    srcdir="$3-$version"
+  _tgunzip "$srctgz"
+  if [[ "$ptype" = "src" ]]; then
+    srcdir="$distname-$version"
     _mv "$installdir" "$srcdir"
   fi
-  _zip "$2.zip" "$srcdir"
+  _zip "$tgt.zip" "$srcdir"
   _cd "$savedpwd"
   _rm "$tmpdir/tgz-to-zip-$$"
 }
@@ -1602,12 +1604,12 @@ make_dmg() { # inputs: dir, dmg, internet-enabled?
 #----------------------------------------
 do_tgz_to_dmg() {
   local internet_enabled="$1" tmptgz="$2" tmpdmg="$3" version="$4"
-  local packagename="$5" packagetype="$6"
-  shift 6
-  local distname="`name_of_dist_package \"$packagename\"`"
+  local pname="$5" ptype="$6" srcplatform="$7"
+  shift 7
+  local distname="`name_of_dist_package \"$pname\"`"
   distname="$distname v$version"
-  if [[ "$packagetype" != "bin" ]]; then
-    distname="$distname `name_of_dist_type \"$packagetype\"`"
+  if [[ "$ptype" != "bin" ]]; then
+    distname="$distname `name_of_dist_type \"$ptype\"`"
   fi
   local savedpwd="`pwd`"
   _rm "$tmpdmg"
@@ -1622,13 +1624,14 @@ do_tgz_to_dmg() {
   _rm "$tmpdir/tgz-to-dmg-$$"
 }
 tgz_to_some_dmg() {
-  local internet_enabled="$1" srctgz="$2" tgtdmg="$3.dmg"; shift 3
+  local internet_enabled="$1"; shift 1
+  local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
   local tmptgz="$tmpdir/tgz2dmg.tgz"
   local tmpdmg="$tmpdir/tgz2dmg.dmg"
   _scp "$srctgz" "${dmgmachine}:$tmptgz"
   run_part "$dmgmachine" "do_tgz_to_dmg" "$internet_enabled" \
-             "$tmptgz" "$tmpdmg" "$version" "$@"
-  _scp "${dmgmachine}:$tmpdmg" "$tgtdmg"
+             "$tmptgz" "$tmpdmg" "$version" "$pname" "$ptype" "$srcplatform"
+  _scp "${dmgmachine}:$tmpdmg" "$tgt.dmg"
 }
 tgz_to_dmg() {
   tgz_to_some_dmg "no" "$@"
@@ -1638,8 +1641,9 @@ tgz_to_idmg() { # same as ..._dmg, but makes it internet-enabled
 }
 #----------------------------------------
 do_tgz_to_exe() {
-  local tmptgz="$1" tmpexe="$2" nsistgz="$3" packagename="$4" packagetype="$5"
-  shift 5
+  local tmptgz="$1" tmpexe="$2" nsistgz="$3"
+  local pname="$4" ptype="$5" srcplatform="$6"
+  shift 6
   local savedpwd="`pwd`"
   _rmcd "$tmpdir/tgz-to-exe-$$"
   _tgunzip "$nsistgz"
@@ -1652,7 +1656,7 @@ do_tgz_to_exe() {
   _rm "$tmpdir/tgz-to-exe-$$"
 }
 tgz_to_exe() {
-  local srctgz="$1" tgtexe="$2.exe" pname="$3"; shift 3
+  local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
   local nsistgz="$tmpdir/racket-nsis.tgz"
   local tmptgz="$tmpdir/tgz2exe.tgz"
   local tmpexe="$tmpdir/tgz2exe.exe"
@@ -1661,28 +1665,23 @@ tgz_to_exe() {
   _cd "$tmpdir/racket-nsis-$$"
   show "Writing \"racket-defs.nsh\""
   { local def='!define'
+    local distname="`name_of_dist_package \"$pname\"`"
     echo "$def RKTVersion \"$version\""
     # this must be four numbers
     echo "$def RKTVersionLong \"$version1.$version2.$version3.$version4\""
-    echo "$def RKTHumanName \"`name_of_dist_package \"$pname\"` v$version\""
+    echo "$def RKTHumanName \"$distname v$version\""
     if [[ "$releasing" != "yes" ]]; then
-      echo "$def RKTStartName \"`name_of_dist_package \"$pname\"` v$version\""
+      echo "$def RKTStartName \"$distname v$version\""
     else
-      echo "$def RKTStartName \"`name_of_dist_package \"$pname\"`\""
+      echo "$def RKTStartName \"$distname\""
     fi
-    local dname
-    case "$pname" in
-      ( "mz"   ) dname="Racket-Textual" ;;
-      ( "plt"  ) dname="Racket"         ;;
-      ( "full" ) dname="Racket-Full"    ;;
-      ( * ) exit_error "Unknown package name for exe installer: \"$pname\"" ;;
-    esac
+    distname="`echo \"$distname\" | tr ' ' '-'`"
     if [[ "$releasing" != "yes" ]]; then
-      echo "$def RKTDirName \"$dname-$version\""
+      echo "$def RKTDirName \"$distname-$version\""
     else
-      echo "$def RKTDirName \"$dname\""
+      echo "$def RKTDirName \"$distname\""
     fi
-    echo "$def RKTRegName \"$dname-$version\""
+    echo "$def RKTRegName \"$distname-$version\""
     if [[ "$pname" = "mz" ]]; then echo "$def SimpleInstaller"; fi
   } > "racket-defs.nsh" \
     || exit_error "Could not write \"racket-defs.h\""
@@ -1696,14 +1695,15 @@ tgz_to_exe() {
   _scp "$nsistgz" "${nsismachine}:$nsistgz"
   _scp "$srctgz" "${nsismachine}:$tmptgz"
   run_part "$nsismachine" \
-    "do_tgz_to_exe" "$tmptgz" "$tmpexe" "$nsistgz" "$pname" "$@"
-  _scp "${nsismachine}:$tmpexe" "$tgtexe"
+    "do_tgz_to_exe" "$tmptgz" "$tmpexe" "$nsistgz" \
+                    "$pname" "$ptype" "$srcplatform"
+  _scp "${nsismachine}:$tmpexe" "$tgt.exe"
 }
 #----------------------------------------
 
 do_installers_page_body() { # input: selector-html table-html
   local selector="$1" table="$2"; shift 2
-  local dtype dtypename dists dist distname platforms ptype ptypename
+  local dtype dtypename dists dist platforms ptype ptypename
   local d file fsize idx expl
   local dists="plt mz full"
   local dtypes="bin src"
