@@ -84,9 +84,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (raise-syntax-error #f "at least one specification is required" stx))
      #'(begin 
 	 (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
-	 (require/typed sc.nm sc.ty lib) ... 
+	 (require/typed #:internal sc.nm sc.ty lib) ... 
 	 (require-typed-struct strc.nm (strc.body ...) lib) ...)]
     [(_ nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
+     #`(require/typed #:internal nm ty lib #,@(if (attribute parent)
+                                                  #'(#:struct-maker parent)
+                                                  #'()))]
+    [(_ #:internal nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
      (with-syntax ([cnt* (generate-temporary #'nm.nm)]
 		   [sm (if (attribute parent)
                            #'(#:struct-maker parent)
