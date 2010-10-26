@@ -58,7 +58,7 @@
                         [time-stamp (current-milliseconds)])))
   
   (define/public (set-selection i)
-    (tell (get-cocoa) selectItemAtIndex: #:type _NSInteger i))
+    (tellv (get-cocoa) selectItemAtIndex: #:type _NSInteger i))
   (define/public (get-selection)
     (tell #:type _NSInteger (get-cocoa) indexOfSelectedItem))
   (define/public (number)

@@ -42,6 +42,8 @@
 
     (super-new)
 
+    (define/override (ok?) #t)
+
     ;; Override this method to get the right size
     (define/public (get-backing-size xb yb)
       (set-box! xb 1)

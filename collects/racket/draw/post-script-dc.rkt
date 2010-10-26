@@ -83,6 +83,8 @@
     
     (when s (cairo_surface_destroy s))
 
+    (define/override (ok?) (and c #t))
+
     (define/override (get-cr) c)
 
     (def/override (get-size)

@@ -25,6 +25,9 @@
 (define _GtkCellRenderer (_cpointer 'GtkCellRenderer))
 (define _GtkTreeViewColumn _GtkWidget) ; (_cpointer 'GtkTreeViewColumn)
 
+(define GTK_SELECTION_SINGLE 1)
+(define GTK_SELECTION_MULTIPLE 3)
+
 (define-gtk gtk_scrolled_window_new (_fun _pointer _pointer -> _GtkWidget))
 (define-gtk gtk_scrolled_window_set_policy (_fun _GtkWidget _int _int -> _void))
 
@@ -38,6 +41,7 @@
 (define-gtk gtk_tree_view_column_new_with_attributes (_fun _string _GtkCellRenderer _string _int _pointer -> _GtkTreeViewColumn))
 (define-gtk gtk_tree_view_append_column (_fun _GtkWidget _GtkTreeViewColumn -> _void))
 (define-gtk gtk_tree_view_get_selection (_fun _GtkWidget -> _GtkWidget))
+(define-gtk gtk_tree_selection_set_mode (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_list_store_remove (_fun _GtkListStore _GtkTreeIter-pointer -> _gboolean))
 (define-gtk gtk_tree_model_get_iter (_fun _GtkListStore _GtkTreeIter-pointer _pointer -> _gboolean))
 (define-gtk gtk_tree_view_scroll_to_cell (_fun _GtkWidget _pointer _pointer _gboolean _gfloat _gfloat -> _void))
@@ -111,6 +115,11 @@
 
   (define selection
     (gtk_tree_view_get_selection client-gtk))
+
+  (gtk_tree_selection_set_mode selection (if (or (eq? kind 'extended)
+                                                 (eq? kind 'multiple))
+                                             GTK_SELECTION_MULTIPLE
+                                             GTK_SELECTION_SINGLE))
 
   (super-new [parent parent]
              [gtk gtk]

@@ -117,11 +117,13 @@
         0
         (set-focus)))
 
+  (define/private (get-button i)
+    (tell (get-cocoa)
+          cellAtRow: #:type _NSUInteger (if horiz? 0 i)
+          column: #:type _NSUInteger (if horiz? i 0)))
+
   (define/public (enable-button i on?)
-    (tellv (tell (get-cocoa)
-                 cellAtRow: #:type _NSUInteger (if horiz? 0 i)
-                 column: #:type _NSUInteger (if horiz? i 0))
-           setEnabled: #:type _BOOL on?))
+    (tellv (get-button i) setEnabled: #:type _BOOL on?))
 
   (define/public (set-selection i)
     (if (= i -1)

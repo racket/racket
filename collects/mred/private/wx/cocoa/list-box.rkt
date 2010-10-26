@@ -92,7 +92,8 @@
   (tellv cocoa setDocumentView: content-cocoa)
   (tellv cocoa setHasVerticalScroller: #:type _BOOL #t)
   (tellv content-cocoa setHeaderView: #f)
-  (unless (eq? kind 'single)
+  (define allow-multi? (not (eq? kind 'single)))
+  (when allow-multi?
     (tellv content-cocoa setAllowsMultipleSelection: #:type _BOOL #t))
 
   (define/override (get-cocoa-content) content-cocoa)
@@ -174,7 +175,7 @@
           (let ([index (tell (tell NSIndexSet alloc) initWithIndex: #:type _NSUInteger i)])
             (tellv content-cocoa 
                    selectRowIndexes: index
-                   byExtendingSelection: #:type _BOOL extend?))))
+                   byExtendingSelection: #:type _BOOL (and extend? allow-multi?)))))
         (tellv content-cocoa deselectRow: #:type _NSInteger i)))
   (define/public (set-selection i)
     (select i #t #f))

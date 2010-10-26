@@ -189,7 +189,7 @@
           1
           0))
 
-    (define/public (ok?) (and (get-cr) #t))
+    (define/public (ok?) #t)
 
     (define/public (dc-adjust-smoothing s) s)
 
@@ -241,7 +241,7 @@
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing reset-clip
              collapse-bitmap-b&w? call-with-cr-lock
-             can-combine-text? can-mask-bitmap?)
+             ok? can-combine-text? can-mask-bitmap?)
 
     (define-syntax-rule (with-cr default cr . body)
       ;; Faster:
@@ -363,7 +363,8 @@
         (set! origin-y oy)
         (reset-effective!)
         (reset-matrix)))
-    (def/public (get-origin) (values origin-x origin-y))
+    (def/public (get-origin) 
+      (values origin-x origin-y))
 
     (def/public (set-rotation [real? th])
       (unless (and (equal? rotation th))
@@ -527,7 +528,7 @@
          [pen-style-symbol? style])
         (do-set-pen! (send the-pen-list find-or-create-pen col width style))
         (reset-align!)]
-       (method-name 'dc% 'set-pen)))
+       (method-name 'dc<%> 'set-pen)))
 
     (define/public (get-pen) pen)
 
@@ -548,7 +549,7 @@
        [([(make-alts string? color%) col]
          [brush-style-symbol? style])
         (do-set-brush! (send the-brush-list find-or-create-brush col style))]
-       (method-name 'dc% 'set-brush)))
+       (method-name 'dc<%> 'set-brush)))
 
     (define/public (get-brush) brush)
 
@@ -568,6 +569,10 @@
     (def/public (get-text-background) text-bg)
     (def/public (get-background) bg)
 
+    (define/override (get-size)
+      (check-ok 'get-size)
+      (super get-size))
+
     (def/public (suspend-flush) (void))
     (def/public (resume-flush) (void))
 
@@ -576,7 +581,16 @@
     (def/public (get-text-mode) text-mode)
 
     (def/public (try-color [color% c] [color% dest])
-      (send dest set (color-red c) (color-green c) (color-blue c)))
+      (check-ok 'try-color)
+      (if (collapse-bitmap-b&w?)
+          (let ([v (if (= 255
+                          (color-red c)
+                          (color-green c) 
+                          (color-blue c))
+                       255
+                       0)])
+            (send dest set v v v))
+          (send dest set (color-red c) (color-green c) (color-blue c))))
 
     (define clipping-region #f)
 
@@ -621,16 +635,20 @@
         (send r set-rectangle x y w h)
         (do-set-clipping-region r)))
 
+    (define/private (check-ok who)
+      (unless (ok?)
+        (raise-mismatch-error (method-name 'dc<%> who) "drawing context is not ok: " this)))
+
     (define/public (clear)
       (with-cr
-       (void)
+       (check-ok 'erase)
        cr
        (install-color cr bg 1.0)
        (cairo_paint cr)))
 
     (define/override (erase)
       (with-cr
-       (void)
+       (check-ok 'erase)
        cr
        (cairo_set_operator cr CAIRO_OPERATOR_CLEAR)
        (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
@@ -640,7 +658,7 @@
     (def/public (copy [real? x] [real? y] [nonnegative-real? w] [nonnegative-real? h]
                       [real? x2] [real? y2])
       (with-cr
-       (void)
+       (check-ok 'copy)
        cr
        (cairo_set_source_surface cr
                                  (cairo_get_target cr)
@@ -830,11 +848,12 @@
               (cairo_set_dash cr #() 0)))))
       (flush-cr))
     
-    (define/public (draw-arc x y
-                             width height
-                             start-radians end-radians)
+    (define/private (do-draw-arc who 
+                                 x y
+                                 width height
+                                 start-radians end-radians)
       (with-cr 
-       (void)
+       (check-ok who)
        cr
        (let ([draw-one (lambda (align-x align-y brush? pen? d)
                          (let* ([orig-x x]
@@ -870,15 +889,19 @@
          (when (pen-draws?)
            (draw-one (lambda (x) (align-x x)) (lambda (y) (align-y y)) #f #t 1.0)))))
 
+    (def/public (draw-arc [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height]
+                          [real? start-radians] [real? end-radians])
+      (do-draw-arc 'draw-arc x y width height 0 2pi))
+
     (def/public (draw-ellipse [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height])
-      (draw-arc x y width height 0 2pi))
+      (do-draw-arc 'draw-ellipse x y width height 0 2pi))
 
     (def/public (draw-line [real? x1] [real? y1] [real? x2] [real? y2])
       (let ([dot (if (and (= x1 x2) (= y1 y2))
                      0.1
                      0)])
         (with-cr
-         (void)
+         (check-ok 'draw-line)
          cr
          (cairo_new_path cr)
          (cairo_move_to cr (align-x x1) (align-y y1))
@@ -887,7 +910,7 @@
     
     (def/public (draw-point [real? x] [real? y])
       (with-cr
-       (void)
+       (check-ok 'draw-point)
        cr
        (cairo_new_path cr)
        (let ([x (align-x x)]
@@ -898,37 +921,38 @@
 
     (def/public (draw-lines [(make-alts (make-list point%) list-of-pair-of-real?) pts]
                             [real? [x 0.0]] [real? [y 0.0]])
-      (do-draw-lines pts x y #f))
+      (do-draw-lines 'draw-lines pts x y #f))
 
     (def/public (draw-polygon [(make-alts (make-list point%) list-of-pair-of-real?) pts]
                               [real? [x 0.0]] [real? [y 0.0]]
                               [(symbol-in odd-even winding) [fill-style 'odd-even]])
-      (do-draw-lines pts x y fill-style))
+      (do-draw-lines 'draw-polygon pts x y fill-style))
 
-    (define/public (do-draw-lines pts x y fill-style)
-      (unless (or (null? pts)
-                  (null? (cdr pts)))
-        (with-cr
-         (void)
-         cr
-         (cairo_new_path cr)
-         (if (pair? (car pts))
-             (cairo_move_to cr (align-x (+ x (caar pts))) (align-y (+ y (cdar pts))))
-             (cairo_move_to cr (align-x (+ x (point-x (car pts)))) (align-y (+ y (point-y (car pts))))))
-         (for ([p (in-list (cdr pts))])
-           (if (pair? p)
-               (cairo_line_to cr (align-x (+ x (car p))) (align-y (+ y (cdr p))))
-               (cairo_line_to cr (align-x (+ x (point-x p))) (align-y (+ y (point-y p))))))
-         (when fill-style
-           (cairo_close_path cr)
-           (cairo_set_fill_rule cr (if (eq? fill-style 'winding)
-                                       CAIRO_FILL_RULE_WINDING
-                                       CAIRO_FILL_RULE_EVEN_ODD)))
-         (draw cr fill-style #t))))
+    (define/public (do-draw-lines who pts x y fill-style)
+      (if (or (null? pts)
+              (null? (cdr pts)))
+          (check-ok who)
+          (with-cr
+           (check-ok who)
+           cr
+           (cairo_new_path cr)
+           (if (pair? (car pts))
+               (cairo_move_to cr (align-x (+ x (caar pts))) (align-y (+ y (cdar pts))))
+               (cairo_move_to cr (align-x (+ x (point-x (car pts)))) (align-y (+ y (point-y (car pts))))))
+           (for ([p (in-list (cdr pts))])
+             (if (pair? p)
+                 (cairo_line_to cr (align-x (+ x (car p))) (align-y (+ y (cdr p))))
+                 (cairo_line_to cr (align-x (+ x (point-x p))) (align-y (+ y (point-y p))))))
+           (when fill-style
+             (cairo_close_path cr)
+             (cairo_set_fill_rule cr (if (eq? fill-style 'winding)
+                                         CAIRO_FILL_RULE_WINDING
+                                         CAIRO_FILL_RULE_EVEN_ODD)))
+           (draw cr fill-style #t))))
     
     (def/public (draw-rectangle [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height])
       (with-cr
-       (void)
+       (check-ok 'draw-rectangle)
        cr
        ;; have to do pen separate from brush for 
        ;; both alignment and height/width adjustment
@@ -946,7 +970,7 @@
     (def/public (draw-rounded-rectangle [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height]
                                         [real? [radius -0.25]])
       (with-cr
-       (void)
+       (check-ok 'draw-rounded-rectangle)
        cr
        ;; have to do pen separate from brush for 
        ;; both alignment and height/width adjustment
@@ -966,7 +990,7 @@
 
     (def/public (draw-spline [real? x1] [real? y1] [real? x2] [real? y2] [real? x3] [real? y3])
       (with-cr
-       (void)
+       (check-ok 'draw-spline)
        cr
        (cairo_new_path cr)
        (cairo_move_to cr (align-x x1) (align-y y1))
@@ -991,7 +1015,7 @@
                            [real? [dy 0]]
                            [(symbol-in odd-even winding) [fill-style 'odd-even]])
       (with-cr
-       (void)
+       (check-ok 'draw-path)
        cr
        (cairo_save cr)
        (cairo_set_fill_rule cr (if (eq? fill-style 'winding)
@@ -1013,13 +1037,12 @@
              (draw cr #t #t)))
        (cairo_restore cr)))
 
-    (inherit get-size)
     (def/public (draw-text [string? s] [real? x] [real? y]
                            [any? [combine? #f]]
                            [exact-nonnegative-integer? [offset 0]]
                            [real? [angle 0.0]])
       (with-cr
-       (void)
+       (check-ok 'draw-text)
        cr
        (do-text cr #t s x y font combine? offset angle)
        (flush-cr)))
@@ -1036,6 +1059,7 @@
                                  [(make-or-false font%) [use-font font]]
                                  [any? [combine? #f]]
                                  [exact-nonnegative-integer? [offset 0]])
+      (check-ok 'get-text-extent)
       (let ([use-font (or use-font font)])
         ;; Try to used cached size info, first:
         (let-values ([(w h d a)
@@ -1397,13 +1421,14 @@
       10.0)
 
     (def/public (start-doc [string? desc])
-      (void))
+      (check-ok 'start-doc))
     (def/public (end-doc)
+      (check-ok 'end-doc)
       (end-cr))
     (def/public (start-page)
-      (void))
+      (check-ok 'start-page))
     (def/public (end-page)
-      (with-cr (void) cr (cairo_show_page cr)))
+      (with-cr (check-ok 'end-page) cr (cairo_show_page cr)))
 
     (def/public (draw-bitmap [bitmap% src]
                              [real? dest-x]
@@ -1411,11 +1436,13 @@
                              [(symbol-in solid opaque xor) [style 'solid]]
                              [(make-or-false color%) [color black]]
                              [(make-or-false bitmap%) [mask #f]])
-      (draw-bitmap-section src 
-                           dest-x dest-y 
-                           0 0
-                           (send src get-width) (send src get-height)
-                           style color mask))
+      (draw-bitmap-section/mask-offset 'draw-bitmap
+                                       src 
+                                       dest-x dest-y 
+                                       0 0
+                                       (send src get-width) (send src get-height)
+                                       0 0
+                                       style color mask))
 
     (def/public (draw-bitmap-section [bitmap% src]
                                      [real? dest-x]
@@ -1427,11 +1454,14 @@
                                      [(symbol-in solid opaque xor) [style 'solid]]
                                      [(make-or-false color%) [color black]]
                                      [(make-or-false bitmap%) [mask #f]])
-      (draw-bitmap-section/mask-offset src dest-x dest-y src-x src-y src-w src-h src-x src-y
+      (draw-bitmap-section/mask-offset 'draw-bitmap-section
+                                       src dest-x dest-y src-x src-y src-w src-h src-x src-y
                                        style color mask))
 
-    (define/public (draw-bitmap-section/mask-offset src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y
+    (define/public (draw-bitmap-section/mask-offset who
+                                                    src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y
                                                     style color mask)
+      (check-ok who)
       (let-values ([(src src-x src-y)
                     (if (and (alpha . < . 1.0)
                              (send src is-color?))
@@ -1594,7 +1624,7 @@
              [tmp-dc (make-object -bitmap-dc% tmp-bm)])
         (send tmp-dc set-alpha alpha)
         (send tmp-dc set-background bg)
-        (send tmp-dc draw-bitmap-section/mask-offset src 0 0 src-x src-y src-w src-h msrc-x msrc-y
+        (send tmp-dc draw-bitmap-section/mask-offset 'internal src 0 0 src-x src-y src-w src-h msrc-x msrc-y
               style color mask)
         (send tmp-dc set-bitmap #f)
         tmp-bm))

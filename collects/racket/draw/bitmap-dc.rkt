@@ -23,6 +23,8 @@
     (when _bm
       (do-set-bitmap _bm #f))
 
+    (define/override (ok?) (and c #t))
+
     (define/private (do-set-bitmap v reset?)
       (when c
         (cairo_destroy c)
@@ -79,7 +81,8 @@
   (class (dc-mixin bitmap-dc-backend%)
     (inherit draw-bitmap-section
              internal-set-bitmap
-             internal-get-bitmap)
+             internal-get-bitmap
+             get-size)
     
     (super-new)
 
@@ -99,10 +102,11 @@
         (set-argb-pixels x y 1 1 s)))
 
     (def/public (get-pixel [real? x][real? y][color% c])
-      (let ([b (make-bytes 4)])
-        (get-argb-pixels x y 1 1 b)
-        (send c set (bytes-ref b 1) (bytes-ref b 2) (bytes-ref b 3))
-        #t))
+      (let-values ([(w h) (get-size)])
+        (let ([b (make-bytes 4)])
+          (get-argb-pixels x y 1 1 b)
+          (send c set (bytes-ref b 1) (bytes-ref b 2) (bytes-ref b 3))
+          (and (<= 0 x w) (<= 0 y h)))))
 
     (def/public (set-argb-pixels [exact-nonnegative-integer? x]
                                  [exact-nonnegative-integer? y]

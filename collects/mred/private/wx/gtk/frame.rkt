@@ -53,6 +53,9 @@
 
 (define-gdk gdk_window_set_cursor (_fun _GdkWindow _pointer -> _void))
 
+(define-gtk gtk_window_iconify (_fun _GtkWindow -> _void))
+(define-gtk gtk_window_deiconify (_fun _GtkWindow -> _void))
+
 (define-cstruct _GdkGeometry ([min_width _int]
                               [min_height _int]
                               [max_width _int]
@@ -429,6 +432,7 @@
         (send in-window enter-window)))
       
     (define maximized? #f)
+    (define is-iconized? #f)
     
     (define/public (is-maximized?)
       maximized?)
@@ -437,11 +441,18 @@
 
     (define/public (on-window-state changed value)
       (when (positive? (bitwise-and changed GDK_WINDOW_STATE_MAXIMIZED))
-        (set! maximized? (positive? (bitwise-and value GDK_WINDOW_STATE_MAXIMIZED)))))
+        (set! maximized? (positive? (bitwise-and value GDK_WINDOW_STATE_MAXIMIZED))))
+      (when (positive? (bitwise-and changed GDK_WINDOW_STATE_ICONIFIED))
+        (set! is-iconized? (positive? (bitwise-and value GDK_WINDOW_STATE_ICONIFIED)))))
 
-    (def/public-unimplemented iconized?)
+    (define/public (iconized?)
+      is-iconized?)
+    (define/public (iconize on?)
+      (if on?
+          (gtk_window_iconify gtk)
+          (gtk_window_deiconify gtk)))
+      
     (def/public-unimplemented get-menu-bar)
-    (def/public-unimplemented iconize)
 
     (define/public (set-title s)
       (set! saved-title s)

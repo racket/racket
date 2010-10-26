@@ -82,5 +82,5 @@
               (as-objc-allocation
                (tell (tell MyPanelView alloc)
                      initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
-                                                                (make-NSSize w h))))]
+                                                                (make-NSSize (max 1 w) (max 1 h)))))]
              [no-show? (memq 'deleted style)]))

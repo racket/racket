@@ -55,12 +55,13 @@
   ;; ----------------------------------------
   
   (define wx-label-panel%
-    (class wx-horizontal-panel% 
+    (class wx-control-horizontal-panel% 
       (init proxy parent label style font halign valign)
       (inherit area-parent)
       (define c #f)
 
       (define/override (enable on?) (if c (send c enable on?) (void)))
+      (define/override (is-enabled?) (if c (send c is-enabled?) #t))
       (define/override (is-window-enabled?) (if c (send c is-window-enabled?) #t))
 
       (super-init #f proxy parent (if (memq 'deleted style) '(deleted) null) #f)
@@ -83,7 +84,7 @@
   ;; ----------------------------------------
 
   (define wx-internal-choice% 
-    (class100 (make-window-glue% (make-simple-control% wx:choice%)) (mred proxy parent cb label x y w h choices style font)
+    (class100 (make-window-glue% (make-simple-control% wx:choice% 0 0)) (mred proxy parent cb label x y w h choices style font)
       (override 
         [handles-key-code 
          (lambda (x alpha? meta?) 
@@ -119,9 +120,7 @@
 
   (define wx-internal-list-box%
     (make-window-glue% 
-     (class100 (make-control% wx:list-box%
-			      const-default-x-margin const-default-y-margin 
-			      #t #t) (parent cb label kind x y w h choices style font label-font)
+     (class100 (make-control% wx:list-box% 0 0 #t #t) (parent cb label kind x y w h choices style font label-font)
        (inherit get-first-item
 		set-first-visible-item)
        (private
@@ -194,7 +193,7 @@
 
   (define wx-internal-radio-box%
     (make-window-glue% 
-     (class100 (make-simple-control% wx:radio-box%) (parent cb label x y w h choices major style font)
+     (class100 (make-simple-control% wx:radio-box% 0 0) (parent cb label x y w h choices major style font)
        (inherit number orig-enable set-selection command)
        (override
 	 [enable
@@ -233,10 +232,21 @@
                              major (filter-style style) font))
       (set-c c #t #t)
 
+      (define enable-vector (make-vector (length choices) #t))
+
       (define/override enable
         (case-lambda
          [(on?) (super enable on?)]
-         [(i on?) (send c enable-button i on?)]))
+         [(i on?) 
+          (when (< -1 i (vector-length enable-vector))
+            (vector-set! enable-vector i on?)
+            (send c enable-button i on?))]))
+      
+      (define/override is-enabled?
+        (case-lambda
+         [() (super is-enabled?)]
+         [(which) (and (< -1 which (vector-length enable-vector))
+                       (vector-ref enable-vector which))]))
 
       (bounce 
        c
@@ -250,9 +260,7 @@
 
   (define wx-internal-gauge%
     (make-window-glue% 
-     (class100 (make-control% wx:gauge% 
-			      const-default-x-margin const-default-y-margin 
-			      #f #f)
+     (class100 (make-control% wx:gauge% 0 0 #f #f)
 	 (parent label range style font)
        (inherit get-client-size get-width get-height set-size 
 		stretchable-in-x stretchable-in-y set-min-height set-min-width
@@ -324,9 +332,7 @@
 
   (define wx-internal-slider%
     (make-window-glue% 
-     (class100 (make-control% wx:slider% 
-			      const-default-x-margin const-default-y-margin 
-			      #f #f)
+     (class100 (make-control% wx:slider% 0 0 #f #f)
 	 (parent func label value min-val max-val style font)
        (inherit set-min-width set-min-height stretchable-in-x stretchable-in-y
 		get-client-size get-width get-height get-parent)

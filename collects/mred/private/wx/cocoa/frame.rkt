@@ -121,7 +121,7 @@
     (inherit get-cocoa get-parent
              get-eventspace
              pre-on-char pre-on-event
-             get-x get-y
+             get-x
              on-new-child)
 
     (super-new [parent parent]
@@ -168,7 +168,8 @@
       (atomically
        (let ([tb (tell (tell NSToolbar alloc) initWithIdentifier: #:type _NSString "Ok")])
          (tellv cocoa setToolbar: tb)
-         (tellv tb setVisible: #:type _BOOL #f))))
+         (tellv tb setVisible: #:type _BOOL #f)
+         (tellv tb release))))
 
     (move -11111 (if (= y -11111) 0 y))
 
@@ -380,6 +381,9 @@
 
     (define/override (flip y h) (flip-screen (+ y h)))
 
+    (define/override (get-y)
+      (- (super get-y) (if caption? 22 0)))
+
     (define/override (set-size x y w h)
       (unless (and (= x -1) (= y -1))
         (move x y))
@@ -399,10 +403,6 @@
                                                  (NSPoint-x (NSRect-origin f)))
                                              ;; keep current y position:
                                              (- (NSPoint-y (NSRect-origin f))
-                                                ;; we have to subtract add the titlebar height, for some reason:
-                                                (if caption?
-                                                    (- 22)
-                                                    0)
                                                 (- h
                                                    (NSSize-height (NSRect-size f)))))
                                (make-NSSize w h))

@@ -220,7 +220,7 @@
   (def/public-unimplemented set-width)
   (def/public-unimplemented set-title)
 
-  (def/public-unimplemented set-help-string)
+  (define/public (set-help-string m s) (void))
 
   (define/public (number) (length items))
 

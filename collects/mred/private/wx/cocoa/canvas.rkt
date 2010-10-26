@@ -331,9 +331,12 @@
           (if (or is-combo? (not (memq 'gl style)))
               (tell (tell (if is-combo? MyComboBox MyView) alloc) 
                     initWithFrame: #:type _NSRect r)
-              (tell (tell MyGLView alloc) 
-                    initWithFrame: #:type _NSRect r
-                    pixelFormat: (gl-config->pixel-format gl-config))))))
+              (let ([pf (gl-config->pixel-format gl-config)])
+                (begin0
+                 (tell (tell MyGLView alloc) 
+                       initWithFrame: #:type _NSRect r
+                       pixelFormat: pf)
+                 (tellv pf release)))))))
      (tell #:type _void cocoa addSubview: content-cocoa)
      (set-ivar! content-cocoa wxb (->wxb this))
 
@@ -462,12 +465,12 @@
        (scroll-page h-scroller h-page)
        (scroll-pos h-scroller h-pos)
        (when h-scroller
-         (tell (scroller-cocoa h-scroller) setEnabled: #:type _BOOL (and h-step (positive? h-len))))
+         (tellv (scroller-cocoa h-scroller) setEnabled: #:type _BOOL (and h-step (positive? h-len))))
        (scroll-range v-scroller v-len)
        (scroll-page v-scroller v-page)
        (scroll-pos v-scroller v-pos)
        (when v-scroller
-         (tell (scroller-cocoa v-scroller) setEnabled: #:type _BOOL (and v-step (positive? v-len)))))
+         (tellv (scroller-cocoa v-scroller) setEnabled: #:type _BOOL (and v-step (positive? v-len)))))
 
      (define/override (reset-dc-for-autoscroll)
        (fix-dc))
@@ -484,12 +487,20 @@
      (define/public (set-scroll-pos which v)
        (update which scroll-pos v))
 
+     (define/private (guard-scroll which v)
+       (if (is-auto-scroll?)
+           0
+           v))
+
      (define/public (get-scroll-page which) 
-       (scroll-page (if (eq? which 'vertical) v-scroller h-scroller)))
+       (guard-scroll which
+                     (scroll-page (if (eq? which 'vertical) v-scroller h-scroller))))
      (define/public (get-scroll-range which)
-       (scroll-range (if (eq? which 'vertical) v-scroller h-scroller)))
+       (guard-scroll which
+                     (scroll-range (if (eq? which 'vertical) v-scroller h-scroller))))
      (define/public (get-scroll-pos which)
-       (scroll-pos (if (eq? which 'vertical) v-scroller h-scroller)))
+       (guard-scroll which
+                     (scroll-pos (if (eq? which 'vertical) v-scroller h-scroller))))
      
      (define v-scroller
        (and vscroll-ok?
@@ -703,7 +714,7 @@
        (when (y . > . 0) (scroll-pos v-scroller (* y (scroll-range v-scroller))))
        (when (is-auto-scroll?) (refresh-for-autoscroll)))
 
-     (def/public-unimplemented warp-pointer)
+     (define/public (warp-pointer x y) (void))
 
      (define/override (get-virtual-h-pos)
        (scroll-pos h-scroller))

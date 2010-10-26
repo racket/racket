@@ -114,8 +114,9 @@
          #f)]
        [([(make-alts path-string? input-port?) filename]
          [kind-symbol? [kind 'unknown]]
-         [(make-or-false color%) [bg-color #f]])
-        (let-values ([(s b&w?) (do-load-bitmap filename kind bg-color)]
+         [(make-or-false color%) [bg-color #f]]
+         [any? [complain-on-failure? #f]])
+        (let-values ([(s b&w?) (do-load-bitmap filename kind bg-color complain-on-failure?)]
                      [(alpha?) (memq kind '(unknown/alpha gif/alpha jpeg/alpha
                                                           png/alpha xbm/alpha xpm/alpha 
                                                           bmp/alpha))]
@@ -218,18 +219,23 @@
 
     (def/public (load-bitmap [(make-alts path-string? input-port?) in]
                              [kind-symbol? [kind 'unknown]]
-                             [(make-or-false color%) [bg #f]])
+                             [(make-or-false color%) [bg #f]]
+                             [any? [complain-on-failure? #f]])
       (check-alternate 'load-bitmap)
       (release-bitmap-storage)
-      (set!-values (s b&w?) (do-load-bitmap in kind bg))
+      (set!-values (s b&w?) (do-load-bitmap in kind bg complain-on-failure?))
       (set! width (if s (cairo_image_surface_get_width s) 0))
       (set! height (if s (cairo_image_surface_get_height s) 0)))
 
-    (define/private (do-load-bitmap in kind bg)
+    (define/private (do-load-bitmap in kind bg complain-on-failure?)
       (if (path-string? in)
-          (call-with-input-file*
-           in
-           (lambda (in) (do-load-bitmap in kind bg)))
+          (with-handlers ([exn:fail? (lambda (exn)
+                                       (if complain-on-failure?
+                                           (raise exn)
+                                           (values #f #f)))])
+            (call-with-input-file*
+             in
+             (lambda (in) (do-load-bitmap in kind bg #f))))
           (case kind
            [(unknown unknown/mask unknown/alpha)
             (let ([starts? (lambda (s)
@@ -242,20 +248,21 @@
                                     (if (eq? kind 'unknown/mask) 
                                         'png/mask
                                         'png))
-                                bg)]
+                                bg
+                                complain-on-failure?)]
                [(starts? #"\xFF\xD8\xFF")
-                (do-load-bitmap in 'jpeg bg)]
+                (do-load-bitmap in 'jpeg bg complain-on-failure?)]
                [(starts? #"GIF8")
-                (do-load-bitmap in 'gif bg)]
+                (do-load-bitmap in 'gif bg complain-on-failure?)]
                [(starts? #"BM")
-                (do-load-bitmap in 'bmp bg)]
+                (do-load-bitmap in 'bmp bg complain-on-failure?)]
                [(starts? #"#define")
-                (do-load-bitmap in 'xbm bg)]
+                (do-load-bitmap in 'xbm bg complain-on-failure?)]
                [(starts? #"/* XPM */")
-                (do-load-bitmap in 'xpm bg)]
+                (do-load-bitmap in 'xpm bg complain-on-failure?)]
                [else
                 ;; unrecognized file type; try to parse as XBM
-                (do-load-bitmap in 'xbm bg)]))]
+                (do-load-bitmap in 'xbm bg complain-on-failure?)]))]
            [(png png/mask png/alpha)
             ;; Using the Cairo PNG support is about twice as fast, but we have
             ;; less control, and there are problems making deallocation reliable

@@ -1,8 +1,8 @@
-(module wxpanel mzscheme
+(module wxpanel racket/base
   (require mzlib/class
 	   mzlib/class100
 	   mzlib/list
-	   (prefix wx: "kernel.ss")
+	   (prefix-in wx: "kernel.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "helper.ss"
@@ -12,15 +12,16 @@
 	   "wxitem.ss"
 	   "wxcontainer.ss")
 
-  (provide (protect wx-panel%
-		    wx-vertical-panel%
-		    wx-vertical-tab-panel%
-		    wx-vertical-group-panel%
-		    wx-horizontal-panel%
-		    wx-pane%
-		    wx-vertical-pane%
-		    wx-horizontal-pane%
-		    wx-grow-box-pane%))
+  (provide (protect-out wx-panel%
+                        wx-vertical-panel%
+                        wx-vertical-tab-panel%
+                        wx-vertical-group-panel%
+                        wx-horizontal-panel%
+                        wx-control-horizontal-panel%
+                        wx-pane%
+                        wx-vertical-pane%
+                        wx-horizontal-pane%
+                        wx-grow-box-pane%))
 
   (define wx:windowless-panel%
     (class100 object% (prnt x y w h style label)
@@ -61,8 +62,8 @@
 				  0
 				  2))
 
-  (define (wx-make-basic-panel% wx:panel% stretch?)
-    (class100* (wx-make-container% (make-item% wx:panel% 0 0 stretch? stretch?)) (wx-basic-panel<%>) (parent style label)
+  (define (wx-make-basic-panel% wx:panel% stretch? [x-m 0] [y-m 0])
+    (class100* (wx-make-container% (make-item% wx:panel% x-m y-m stretch? stretch?)) (wx-basic-panel<%>) (parent style label)
 	       (inherit get-x get-y get-width get-height
 			min-width min-height set-min-width set-min-height
 			x-margin y-margin
@@ -476,8 +477,8 @@
       (sequence
 	(apply super-init args))))
 
-  (define (wx-make-panel% wx:panel%)
-    (class100 (make-container-glue% (make-window-glue% (wx-make-basic-panel% wx:panel% #t))) args
+  (define (wx-make-panel% wx:panel% [x-m 0] [y-m 0])
+    (class100 (make-container-glue% (make-window-glue% (wx-make-basic-panel% wx:panel% #t x-m y-m))) args
       (rename [super-on-visible on-visible]
 	      [super-on-active on-active])
       (inherit get-children)
@@ -724,15 +725,18 @@
   (define (wx-make-vertical-panel% wx-linear-panel%) (wx-make-horizontal/vertical-panel% wx-linear-panel% #f))
 
   (define wx-panel% (wx-make-panel% wx:panel%))
+  (define wx-control-panel% (wx-make-panel% wx:panel% const-default-x-margin const-default-y-margin))
   (define wx-tab-panel% (wx-make-panel% wx:tab-panel%))
   (define wx-group-panel% (wx-make-panel% wx:group-panel%))
   (define wx-linear-panel% (wx-make-linear-panel% wx-panel%))
+  (define wx-control-linear-panel% (wx-make-linear-panel% wx-control-panel%))
   (define wx-linear-tab-panel% (wx-make-linear-panel% wx-tab-panel%))
   (define wx-linear-group-panel% (wx-make-linear-panel% wx-group-panel%))
   (define wx-horizontal-panel% (wx-make-horizontal-panel% wx-linear-panel%))
   (define wx-vertical-panel% (wx-make-vertical-panel% wx-linear-panel%))
   (define wx-vertical-tab-panel% (wx-make-vertical-panel% wx-linear-tab-panel%))
   (define wx-vertical-group-panel% (wx-make-vertical-panel% wx-linear-group-panel%))
+  (define wx-control-horizontal-panel% (wx-make-horizontal-panel% wx-control-linear-panel%))
 
   (define wx-pane% (wx-make-pane% wx:windowless-panel% #t))
   (define wx-grow-box-pane%

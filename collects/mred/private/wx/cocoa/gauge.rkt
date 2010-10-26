@@ -32,7 +32,10 @@
   (inherit get-cocoa)
 
   (super-new [parent parent]
-             [cocoa (let ([cocoa (as-objc-allocation
+             [cocoa (let ([cocoa (values ; as-objc-allocation
+                                  ;; We're leaving guages for now. There's some problem
+                                  ;; releasing gauges through a finalizer. My guess is that
+                                  ;; it has something to do with animation in a separate thread.
                                   (tell (tell MyProgressIndicator alloc) init))])
                       (tellv cocoa setIndeterminate: #:type _BOOL #f)
                       (tellv cocoa setMaxValue: #:type _double* rng)
@@ -60,7 +63,8 @@
   (define/public (get-range)
     (inexact->exact (floor (tell #:type _double cocoa maxValue))))
   (define/public (set-range rng)
-    (tellv cocoa setMaxValue: #:type _double* rng))
+    (tellv cocoa setMaxValue: #:type _double* rng)
+    (tellv cocoa setDoubleValue: #:type _double* (min rng (tell #:type _double cocoa doubleValue))))
 
   (define/public (set-value v)
     (tellv cocoa setDoubleValue: #:type _double* v))

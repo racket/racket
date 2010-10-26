@@ -3,7 +3,8 @@
          ffi/unsafe
          ffi/unsafe/alloc
          ffi/unsafe/define
-         "../common/utils.rkt")
+         "../common/utils.rkt"
+         "../../lock.rkt")
 
 (provide cocoa-lib
          cf-lib
@@ -14,6 +15,7 @@
          define-mz
          as-objc-allocation
          as-objc-allocation-with-retain
+         clean-up-deleted
          retain release
          with-autorelease
          clean-menu-label
@@ -31,8 +33,19 @@
 (define-ffi-definer define-appserv appserv-lib)
 (define-ffi-definer define-appkit appkit-lib)
 
-(define (objc-delete v)
-  (tellv v release))
+(define delete-me null)
+
+(define (objc-delete o)
+  (atomically
+   (set! delete-me (cons o delete-me))))
+
+(define (clean-up-deleted)
+  ;; called outside the event loop to actually delete objects
+  ;; that might otherwise be in use during a callback
+  (for ([o (in-list (begin0
+                     delete-me
+                     (set! delete-me null)))])
+    (tellv o release)))
 
 (define objc-allocator (allocator objc-delete))
 
@@ -59,7 +72,7 @@
   (let ([pool (tell (tell NSAutoreleasePool alloc) init)])
     (begin0
      (thunk)
-     (release pool))))
+     (tellv pool release))))
 
 (define (clean-menu-label str)
   (regexp-replace* #rx"&(.)" str "\\1"))

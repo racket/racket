@@ -476,14 +476,20 @@
                             (gtk_adjustment_set_value adj v))))))
 
      (define/public (get-scroll-page which) 
-       (->long (dispatch which gtk_adjustment_get_page_size 0)))
+       (if (is-auto-scroll?)
+           0
+           (->long (dispatch which gtk_adjustment_get_page_size 0))))
      (define/public (get-scroll-range which)
-       (->long (dispatch which (lambda (adj)
-                                 (- (gtk_adjustment_get_upper adj)
-                                    (gtk_adjustment_get_page_size adj)))
-                         0)))
+       (if (is-auto-scroll?)
+           0
+           (->long (dispatch which (lambda (adj)
+                                     (- (gtk_adjustment_get_upper adj)
+                                        (gtk_adjustment_get_page_size adj)))
+                             0))))
      (define/public (get-scroll-pos which)
-       (->long (dispatch which gtk_adjustment_get_value 0)))
+       (if (is-auto-scroll?)
+           0
+           (->long (dispatch which gtk_adjustment_get_value 0))))
      
      (define clear-bg?
        (and (not (memq 'transparent style)) 
@@ -541,12 +547,12 @@
           (when vscroll-adj (gtk_adjustment_set_value vscroll-adj y))))
        (when (is-auto-scroll?) (refresh-for-autoscroll)))
 
-     (def/public-unimplemented warp-pointer)
+     (define/public (warp-pointer x y) (void))
 
      (define/override (get-virtual-h-pos)
-      (gtk_adjustment_get_value hscroll-adj))
-    (define/override (get-virtual-v-pos)
-      (gtk_adjustment_get_value vscroll-adj))
+       (inexact->exact (ceiling (gtk_adjustment_get_value hscroll-adj))))
+     (define/override (get-virtual-v-pos)
+       (inexact->exact (ceiling (gtk_adjustment_get_value vscroll-adj))))
 
      (define/public (set-resize-corner on?) (void))
 

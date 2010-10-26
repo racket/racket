@@ -1,8 +1,8 @@
-(module wxitem mzscheme
+(module wxitem racket/base
   (require mzlib/class
 	   mzlib/class100
 	   mzlib/etc
-	   (prefix wx: "kernel.ss")
+	   (prefix-in wx: "kernel.ss")
 	   "lock.ss"
 	   "helper.ss"
 	   "const.ss"
@@ -10,12 +10,12 @@
 	   "check.ss"
 	   "wxwindow.ss")
 
-  (provide (protect make-item%
-		    make-control%
-		    make-simple-control%
-		    wx-button%
-		    wx-check-box%
-		    wx-message%))
+  (provide (protect-out make-item%
+                        make-control%
+                        make-simple-control%
+                        wx-button%
+                        wx-check-box%
+                        wx-message%))
 
   ;; make-item%: creates items which are suitable for placing into
   ;;  containers.
@@ -61,8 +61,7 @@
 	       (super set-size x y width height)))])
 
 	(public
-	  [is-enabled?
-	   (lambda () enabled?)])
+	  [is-enabled? (lambda () enabled?)])
 
 	(private-field
 	 ;; Store minimum size of item.  
@@ -207,10 +206,8 @@
 	(apply super-init args)
 	(send (get-parent) set-item-cursor 0 0))))
 
-  (define (make-simple-control% item%)
-    (make-control% item%
-		   const-default-x-margin const-default-y-margin 
-		   #f #f))
+  (define (make-simple-control% item% [x-m const-default-x-margin] [y-m const-default-y-margin])
+    (make-control% item% x-m y-m #f #f))
 
   (define wx-button% (make-window-glue% 
 		      (class100 (make-simple-control% wx:button%) (parent cb label x y w h style font)

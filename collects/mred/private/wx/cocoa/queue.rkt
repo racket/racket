@@ -214,6 +214,7 @@
 ;; Call this function only in atomic mode:
 (define (check-one-event wait? dequeue?)
   (pre-event-sync wait?)
+  (clean-up-deleted)
   (let ([pool (tell (tell NSAutoreleasePool alloc) init)])
     (when (and events-suspended? wait?)
       (set! was-menu-bar #f)

@@ -69,8 +69,8 @@
                                     (if (memq 'hscroll style) WS_HSCROLL 0)
                                     (cond
                                      ;; Win32 sense of "multiple" and "extended" is backwards
-                                     [(memq 'extended style) LBS_MULTIPLESEL]
-                                     [(memq 'multiple style) LBS_EXTENDEDSEL]
+                                     [(eq? kind 'extended) LBS_MULTIPLESEL]
+                                     [(eq? kind 'multiple) LBS_EXTENDEDSEL]
                                      [else 0]))
                        0 0 0 0
                        (send parent get-client-hwnd)

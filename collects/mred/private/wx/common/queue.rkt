@@ -383,6 +383,10 @@
        [(and (eq? evt 'wait)
              (not handler?))
         #t]
+       ;; `yield' is supposed to return immediately if the
+       ;; event is already ready:
+       [(and (evt? evt) (sync/timeout 0 (wrap-evt evt (lambda (v) (list v)))))
+        => (lambda (v) (car v))]
        [handler?
         (sync (if (eq? evt 'wait) 
                   (wrap-evt e (lambda (_) #t))
@@ -411,18 +415,24 @@
   (eq? e main-eventspace))
 
 (define (queue-callback thunk [high? #t])
-  (queue-event (current-eventspace) thunk (cond
-                                           [(not high?) 'lo]
-                                           [(eq? high? middle-queue-key) 'med]
-                                           [else 'hi])))
+  (let ([es (current-eventspace)])
+    (when (eventspace-shutdown? es)
+      (error 'queue-callback "eventspace is shutdown: ~e" es))
+    (queue-event es thunk (cond
+                           [(not high?) 'lo]
+                           [(eq? high? middle-queue-key) 'med]
+                           [else 'hi]))))
 
 (define middle-queue-key (gensym 'middle))
 
 
-(define (add-timer-callback cb)
-  (queue-event (current-eventspace) cb 'timer-add))
-(define (remove-timer-callback cb)
-  (queue-event (current-eventspace) cb 'timer-remove))
+(define (add-timer-callback cb es)
+  ;; in atomic mode
+  (queue-event es cb 'timer-add))
+(define (remove-timer-callback cb es)
+  ;; in atomic mode
+  (unless (eventspace-shutdown? es)
+    (queue-event es cb 'timer-remove)))
 
 (define (register-frame-shown f on?)
   (queue-event (current-eventspace) f (if on?

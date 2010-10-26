@@ -30,7 +30,8 @@
           (cairo_destroy cr))
         s))
 
-    (define/override (ok?) #t)
+    (define/override (ok?) (and s #t))
+
     (define/override (is-color?) #t)
 
     (define/override (get-cairo-surface) s)
