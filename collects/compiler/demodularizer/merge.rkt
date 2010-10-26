@@ -15,10 +15,10 @@
      (define total-tls (length (prefix-toplevels new-prefix)))
      (define total-stxs (length (prefix-stxs new-prefix)))
      (define total-lifts (prefix-num-lifts new-prefix))
-     (log-debug (format "max-let-depth ~S to ~S~n" max-let-depth new-max-let-depth))
-     (log-debug (format "total toplevels ~S~n" total-tls))
-     (log-debug (format "total stxs ~S~n" total-stxs))
-     (log-debug (format "num-lifts ~S~n" total-lifts))
+     (log-debug (format "max-let-depth ~S to ~S" max-let-depth new-max-let-depth))
+     (log-debug (format "total toplevels ~S" total-tls))
+     (log-debug (format "total stxs ~S" total-stxs))
+     (log-debug (format "num-lifts ~S" total-lifts))
      (make-compilation-top 
       new-max-let-depth new-prefix 
       (make-splice (gen-new-forms new-prefix)))]
@@ -60,7 +60,7 @@
     [(struct module-variable (modidx sym pos phase))
      (match rw
        [(struct modvar-rewrite (self-modidx provide->toplevel))
-        (log-debug (format "Rewriting ~a of ~S~n" pos (mpi->path* modidx)))
+        (log-debug (format "Rewriting ~a of ~S" pos (mpi->path* modidx)))
         ((hash-ref MODULE-TOPLEVEL-OFFSETS self-modidx
                      (lambda ()
                        (error 'compute-new-modvar "toplevel offset not yet computed: ~S" self-modidx)))
@@ -82,7 +82,7 @@
          (cond
            ; Primitive module like #%paramz
            [(symbol? rw)
-            (log-debug (format "~S from ~S~n" sym rw))
+            (log-debug (format "~S from ~S" sym rw))
             (values (add1 i)
                     (list* tl new-toplevels)
                     (list* (+ i toplevel-offset) remap))]
@@ -126,22 +126,22 @@
                   (list-ref toplevel-remap n)))
      (unless (= (length toplevel-remap)
                 (length mod-toplevels))
-       (error 'merge-module "Not remapping everything: ~S ~S~n" 
+       (error 'merge-module "Not remapping everything: ~S ~S" 
               mod-toplevels toplevel-remap))    
-     (log-debug (format "[~S] Incrementing toplevels by ~a~n"
+     (log-debug (format "[~S] Incrementing toplevels by ~a"
               name
               toplevel-offset))
-     (log-debug (format "[~S] Incrementing lifts by ~a~n"
+     (log-debug (format "[~S] Incrementing lifts by ~a"
               name
               lift-offset))
-     (log-debug (format "[~S] Filtered mod-vars from ~a to ~a~n" 
+     (log-debug (format "[~S] Filtered mod-vars from ~a to ~a" 
               name
               (length mod-toplevels)
               (length new-mod-toplevels)))
      (values (max max-let-depth mod-max-let-depth)
              (merge-prefix top-prefix new-mod-prefix)
              (lambda (top-prefix)
-               (log-debug (format "[~S] Updating top-levels\n" name))
+               (log-debug (format "[~S] Updating top-levels" name))
                (define top-lift-start (prefix-lift-start top-prefix))
                (define mod-lift-start (prefix-lift-start mod-prefix))
                (define total-lifts (prefix-num-lifts top-prefix))
