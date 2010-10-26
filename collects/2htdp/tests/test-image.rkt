@@ -47,6 +47,8 @@
          racket/class
          racket/file
          racket/gui/base
+         racket/port
+         wxme
          rackunit
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?))
@@ -1969,6 +1971,66 @@
            (rectangle 100 10 'solid 'red))
           =>
           #rx"^beside/align")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  testing the wxme connection for 2htdp/image images
+;;
+
+(let ()
+  (define txt (new text%))
+  (define img1 (overlay (rectangle 100 20 'solid 'red)
+                        (rectangle 20 100 'solid 'red)))
+  (define img2 
+    (put-pinhole 50 
+                 20
+                 (overlay (rectangle 100 20 'solid 'red)
+                          (rectangle 20 100 'solid 'red))))
+
+  (send txt insert "(define img (list ")
+  (send txt insert img1)
+  (send txt insert " ")
+  (send txt insert img2)
+  (send txt insert "))")
+
+  (define sp (open-output-string))
+  (send txt save-port sp)
+  (test (port->string (wxme-port->text-port (open-input-string (get-output-string sp))))
+        =>
+        "(define img (list . .))"))
+
+(let ()
+  (define txt (new text%))
+  (define img1 (overlay (rectangle 100 20 'solid 'red)
+                        (rectangle 20 200 'solid 'red)))
+  (define img2 
+    (put-pinhole 50 
+                 20
+                 (overlay (rectangle 200 20 'solid 'red)
+                          (rectangle 20 100 'solid 'red))))
+  (define img3 (text "Hello" 32 'black))
+
+  (send txt insert "(")
+  (send txt insert img1)
+  (send txt insert " ")
+  (send txt insert img2)
+  (send txt insert " ")
+  (send txt insert img3)
+  (send txt insert ")")
+
+  (define sp (open-output-string))
+  (send txt save-port sp)
+  (define washed (read (wxme-port->port (open-input-string (get-output-string sp)))))
+  (test (list? washed) => #t)
+  (test (map pinhole-x washed) => (list #f 50 #f))
+  (test (map pinhole-y washed) => (list #f 20 #f))
+  (test (image-width (car washed)) => 100)
+  (test (image-height (car washed)) => 200)
+  (test (image-baseline (car washed)) => 200)
+  (test (equal? (image-baseline (list-ref washed 2))
+                (image-height (list-ref washed 2)))
+        =>
+        #f))
 
 
 

@@ -32,34 +32,13 @@ has been moved out).
          racket/math
          racket/contract
          "private/image-core-bitmap.ss"
+         "image-core-wxme.ss"
+         "private/image-core-snipclass.rkt"
+         "private/regmk.rkt"
          (prefix-in cis: "cache-image-snip.ss")
          (for-syntax racket/base))
 
-(define-for-syntax id-constructor-pairs '())
-(define-for-syntax (add-id-constructor-pair a b)
-  (set! id-constructor-pairs (cons (list a b) id-constructor-pairs)))
 
-(define-syntax (define-struct/reg-mk stx)
-  (syntax-case stx ()
-    [(_ id . rest)
-     (let ([build-name
-            (λ (fmt)
-              (datum->syntax #'id (string->symbol (format fmt (syntax->datum #'id)))))])
-       (add-id-constructor-pair (build-name "struct:~a")
-                                (build-name "make-~a"))
-       #'(define-struct id . rest))]))
-
-(define-syntax (define-id->constructor stx)
-  (syntax-case stx ()
-    [(_ fn)
-     #`(define (fn x)
-         (case x
-           #,@(map (λ (x) 
-                     (with-syntax ([(struct: maker) x])
-                       #`[(struct:) maker]))
-                   id-constructor-pairs)))]))
-
-(define-struct/reg-mk point (x y) #:transparent)
 
 
 ;                                                                
@@ -93,14 +72,10 @@ has been moved out).
 (define (set-image-shape! p s) (send p set-shape s))
 (define (set-image-normalized?! p n?) (send p set-normalized? n?))
 (define (image? p) 
-  (or (is-a? p image%)
+  (or (is-a? p image<%>)
       (is-a? p image-snip%)
       (is-a? p bitmap%)))
 
-
-;; a bb is  (bounding box)
-;;  (make-bb number number number)
-(define-struct/reg-mk bb (right bottom baseline) #:transparent)
 
 ;; a shape is either:
 ;;
@@ -219,14 +194,10 @@ has been moved out).
 ;                        ;;   ;                     
 ;                         ;;;;                      
 
-(define-local-member-name
-  get-shape set-shape get-bb get-pinhole 
-  get-normalized? set-normalized get-normalized-shape)
-
 (define skip-image-equality-fast-path (make-parameter #f))
 
 (define image%
-  (class* snip% (equal<%>)
+  (class* snip% (equal<%> image<%>)
     (init-field shape bb normalized? pinhole)
     (define/public (equal-to? that eq-recur)
       (or (eq? this that)
@@ -346,28 +317,11 @@ has been moved out).
 (define image-snipclass% 
   (class snip-class%
     (define/override (read f)
-      (let* ([bytes (send f get-unterminated-bytes)]
-             [str 
-              (and bytes
-                   (with-handlers ((exn:fail? (λ (x) #f)))
-                     (bytes->string/utf-8 bytes)))]
-             [lst 
-              (and str
-                   (with-handlers ((exn:fail:read? (λ (x) #f)))
-                     (parse 
-                      (racket/base:read
-                       (open-input-string
-                        str)))))])
+      (let ([lst (parse (fetch (send f get-unterminated-bytes)))])
         (cond
           [(not lst)
            (make-image (make-ellipse 100 100 0 'solid "black")
                        (make-bb 100 100 100)
-                       #f
-                       #f)]
-          [(= 2 (length lst))
-           ;; backwards compatibility for saved images that didn't have a pinhole
-           (make-image (list-ref lst 0)
-                       (list-ref lst 1)
                        #f
                        #f)]
           [else
@@ -379,7 +333,8 @@ has been moved out).
 
 (provide snip-class) 
 (define snip-class (new image-snipclass%))
-(send snip-class set-classname (format "~s" '(lib "image-core.ss" "mrlib")))
+(send snip-class set-classname (format "~s" (list '(lib "image-core.ss" "mrlib")
+                                                  '(lib "image-core-wxme.rkt" "mrlib"))))
 (send snip-class set-version 1)
 (send (get-the-snip-class-list) add snip-class)
 
@@ -405,9 +360,6 @@ has been moved out).
                       (apply constructor (map loop args))
                       (k #f)))]))]
         [else sexp]))))
-
-(define-id->constructor id->constructor)
-
 
 (define (normalized-shape? s)
   (cond

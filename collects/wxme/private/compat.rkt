@@ -38,6 +38,10 @@
     (register-lib-mapping!
      "(lib \"cache-image-snip.ss\" \"mrlib\")"
      '(lib "cache-image.ss" "wxme"))
+    
+    (register-lib-mapping!
+     "(lib \"image-core.ss\" \"mrlib\")"
+     '(lib "image-core-wxme.rkt" "wxme"))
 
     (register-lib-mapping!
      "test-case-box%"
