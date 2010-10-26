@@ -950,7 +950,12 @@
              (make-closure 
               v
               ; XXX Why call gensym here?
-              (gensym
+              (let ([s (lam-name v)])
+                 (cond
+                   [(symbol? s) s]
+                   [(vector? s) (vector-ref s 0)]
+                   [else 'closure]))
+              #;(gensym
                (let ([s (lam-name v)])
                  (cond
                    [(symbol? s) s]
@@ -1046,6 +1051,7 @@
     (for ([i (in-range 1 symtabsize)])
       (read-sym cp i))
     
+    #;(printf "Parsed table:\n")
     #;(for ([(i v) (in-dict (cport-symtab cp))])
       (printf "~a = ~a\n" i (placeholder-get v)) )
     (set-cport-pos! cp shared-size)

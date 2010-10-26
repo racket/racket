@@ -7,13 +7,19 @@
   (parameterize ([read-accept-compiled #t])
     (read (open-input-bytes bs))))
 
+(define (run-compiled-bytes bs [delayed? #t])
+  (system "touch test.rkt")
+  (system "touch compiled/test_rkt.zo")
+  (system (format "racket ~a -t test.rkt" (if delayed? "" "-d"))))
+
 (define (roundtrip ct)
   (define bs (zo-marshal ct))
-  (with-output-to-file "test_rkt.zo" (λ () (write-bytes bs)) #:exists 'replace)
+  (with-output-to-file "compiled/test_rkt.zo" (λ () (write-bytes bs)) #:exists 'replace)
   (test #:failure-prefix (format "~S" ct)
         (test bs
               (zo-parse (open-input-bytes bs)) => ct
-              (read-compiled-bytes bs))))
+              (run-compiled-bytes bs #t)
+              (run-compiled-bytes bs #f))))
 
 (define mpi (module-path-index-join #f #f))
 
