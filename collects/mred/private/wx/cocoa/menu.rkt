@@ -1,15 +1,14 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
          (only-in scheme/list drop take)
-         ffi/objc
          "../common/event.rkt"
          "../../syntax.rkt"
          "utils.rkt"
          "types.rkt"
-         "window.rkt")
-(unsafe!)
-(objc-unsafe!)
+         "window.rkt"
+         "menu-item.rkt")
 
 (provide menu%)
 
@@ -136,7 +135,8 @@
   (define/public (set-label item label)
     (adjust item
             (lambda (item-cocoa)
-              (tellv item-cocoa setTitle: #:type _NSString (clean-menu-label label)))
+              (tellv item-cocoa setTitle: #:type _NSString (clean-menu-label (regexp-replace #rx"\t.*" label "")))
+              (set-menu-item-shortcut item-cocoa label))
             (lambda (mitem)
               (send (mitem-item mitem) set-label (clean-menu-label label)))))
 
