@@ -1,4 +1,4 @@
-#lang at-exp s-exp meta/web/html
+#lang at-exp s-exp scribble/html
 
 ;; These are some resources that are shared across different toplevel
 ;; sites.  They could be included from a single place, but then when one

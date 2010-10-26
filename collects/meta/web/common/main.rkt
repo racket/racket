@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require meta/web/html
+(require scribble/html
          "layout.rkt" "resources.rkt" "extras.rkt" "links.rkt" "utils.rkt")
-(provide (all-from-out meta/web/html
+(provide (all-from-out scribble/html
                        "layout.rkt" "resources.rkt" "extras.rkt" "links.rkt"
                        "utils.rkt"))

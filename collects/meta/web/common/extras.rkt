@@ -1,4 +1,4 @@
-#lang at-exp s-exp meta/web/html
+#lang at-exp s-exp scribble/html
 
 ;; list of a header paragraphs and sub paragraphs (don't use `p' since it looks
 ;; like they should not be nested)

@@ -1,6 +1,3 @@
-* html: generic shared code for (X)HTML generation (tag output and
-  resource rendering and referring).
-
 * common: specific code for the PLT web pages.
 
 * www: actual content of main site.
