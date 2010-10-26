@@ -18,7 +18,7 @@
 ;          ;   ;                                    
 ;           ;;;                                     
 
-(provide nat> nat? proc> bool> num> ip> string> symbol>)
+(provide nat> nat? proc> bool> num> ip> string> symbol> any>)
 
 ;; Any -> Boolean
 (define (nat? x)
@@ -57,4 +57,8 @@
 ;; Symbol X String -> X
 (define (nat> tag x spec)
   (check-arg tag (nat? x) spec "natural number" x)
+  x)
+
+;; Symbol X String -> X
+(define (any> tag x)
   x)

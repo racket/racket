@@ -94,9 +94,10 @@
               [(_ stop? last-picture)
                #'(list (proc> 'stop-when (f2h stop?) 1)
                        (proc> 'stop-when (f2h last-picture) 1))])]
-  ;; (U #f Boolean)
+  ;; (U #f Any)
   ;; -- should the session be recorded and turned into PNGs and an animated GIF
-  [record? DEFAULT #'#f (expr-with-check bool> "expected a boolean")]
+  ;; -- if the value is a string and is the name of a local directory, use it! 
+  [record? DEFAULT #'#f (expr-with-check any> "")]
   ;; (U #f String)
   ;; -- name specifies one string 
   [name DEFAULT #'#f (expr-with-check string> "expected a string")]
