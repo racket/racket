@@ -12,8 +12,9 @@
          "hbitmap.rkt"
          "types.rkt")
 
-(provide item-mixin
-         item%)
+(provide
+ (protect-out item-mixin
+              item%))
 
 (define (control-proc w msg wParam lParam)
   (let ([wx (hwnd->wx w)])

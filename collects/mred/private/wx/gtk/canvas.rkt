@@ -3,8 +3,8 @@
          racket/class
          racket/draw
          ffi/unsafe/alloc
-         racket/draw/color
-         racket/draw/local
+         racket/draw/private/color
+         racket/draw/private/local
          "../common/backing-dc.rkt"
          "../common/canvas-mixin.rkt"
          "../../syntax.rkt"
@@ -22,7 +22,8 @@
          "pixbuf.rkt"
          "gcwin.rkt")
 
-(provide canvas%)
+(provide 
+ (protect-out canvas%))
 
 ;; ----------------------------------------
 

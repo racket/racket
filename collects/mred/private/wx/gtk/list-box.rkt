@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe
 	 ffi/unsafe/define
-         scheme/class
+         racket/class
          (only-in racket/list take drop)
           "../../syntax.rkt"
           "../../lock.rkt"
@@ -12,7 +12,8 @@
          "const.rkt"
          "../common/event.rkt")
 
-(provide list-box%)
+(provide 
+ (protect-out list-box%))
 
 ;; ----------------------------------------
 

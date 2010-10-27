@@ -8,8 +8,9 @@
 	 "const.rkt"
          "cursor.rkt")
 
-(provide panel-mixin
-         panel%)
+(provide
+ (protect-out panel-mixin
+              panel%))
 
 (define (panel-mixin %)
   (class %

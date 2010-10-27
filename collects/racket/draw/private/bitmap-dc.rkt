@@ -1,11 +1,12 @@
-#lang scheme/base
-(require scheme/class
-         mred/private/syntax
-         "cairo.ss"
-         "color.ss"
-         "bitmap.ss"
-	 "dc.ss"
-         "local.ss")
+#lang racket/base
+(require racket/class
+         ffi/unsafe/atomic
+         "syntax.rkt"
+         "../unsafe/cairo.rkt"
+         "color.rkt"
+         "bitmap.rkt"
+	 "dc.rkt"
+         "local.rkt")
 
 (provide bitmap-dc%
          bitmap-dc-backend%)
@@ -13,8 +14,7 @@
 (define bitmap-dc-backend%
   (class default-dc-backend%
     (init [_bm #f])
-    (inherit reset-cr
-             call-with-cr-lock)
+    (inherit reset-cr)
 
     (define c #f)
     (define bm #f)
@@ -37,7 +37,7 @@
     (define/public (internal-set-bitmap v [direct? #f])
       (if direct?
           (do-set-bitmap v #t)
-          (call-with-cr-lock
+          (call-as-atomic
            (lambda ()
              (do-set-bitmap v #t)
              (when c (reset-cr c))))))

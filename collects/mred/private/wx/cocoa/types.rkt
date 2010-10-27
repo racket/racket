@@ -1,20 +1,19 @@
-#lang scheme/base
-(require ffi/objc
-         scheme/foreign
+#lang racket/base
+(require ffi/unsafe/objc
+         ffi/unsafe
          "../../lock.rkt"
          "utils.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide _NSInteger _NSUInteger
-         _CGFloat
-         _NSPoint _NSPoint-pointer (struct-out NSPoint)
-         _NSSize _NSSize-pointer (struct-out NSSize)
-         _NSRect _NSRect-pointer (struct-out NSRect)
-         _NSRange _NSRange-pointer (struct-out NSRange)
-         NSObject 
-         NSString _NSString
-         NSNotFound)
+(provide 
+ (protect-out _NSInteger _NSUInteger
+              _CGFloat
+              _NSPoint _NSPoint-pointer (struct-out NSPoint)
+              _NSSize _NSSize-pointer (struct-out NSSize)
+              _NSRect _NSRect-pointer (struct-out NSRect)
+              _NSRange _NSRange-pointer (struct-out NSRange)
+              NSObject 
+              NSString _NSString
+              NSNotFound))
 
 (define _NSInteger _long)
 (define _NSUInteger _ulong)

@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe
+         racket/class
           "../../syntax.rkt"
           "../../lock.rkt"
          "item.rkt"
@@ -11,10 +11,10 @@
          "pixbuf.rkt"
          "message.rkt"
          "../common/event.rkt")
-(unsafe!)
 
-(provide button%
-         button-core%)
+(provide 
+ (protect-out button%
+              button-core%))
 
 ;; ----------------------------------------
 

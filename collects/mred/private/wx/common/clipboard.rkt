@@ -5,10 +5,11 @@
          "local.rkt"
          "queue.rkt")
 
-(provide clipboard<%>
-         clipboard-client%
-         get-the-clipboard
-         get-the-x-selection)
+(provide 
+ (protect-out clipboard<%>
+              clipboard-client%
+              get-the-clipboard
+              get-the-x-selection))
 
 (defclass clipboard-client% object%
   (define types null)

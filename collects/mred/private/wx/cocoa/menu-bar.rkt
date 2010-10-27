@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require racket/class
          ffi/unsafe
          ffi/unsafe/objc
@@ -10,8 +10,9 @@
          "const.rkt"
          "queue.rkt")
 
-(provide menu-bar%
-         get-menu-bar-height)
+(provide 
+ (protect-out menu-bar%
+              get-menu-bar-height))
 
 (import-class NSApplication NSMenu NSMenuItem NSProcessInfo NSScreen)
 

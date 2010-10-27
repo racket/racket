@@ -12,8 +12,9 @@
          "hbitmap.rkt"
          "types.rkt")
 
-(provide base-button%
-         button%)
+(provide 
+ (protect-out base-button%
+              button%))
 
 (define BM_SETSTYLE #x00F4)
 

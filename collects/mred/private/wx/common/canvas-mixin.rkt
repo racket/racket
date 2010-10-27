@@ -3,9 +3,10 @@
          racket/draw
          "backing-dc.rkt")
 
-(provide canvas-autoscroll-mixin
-         canvas-mixin
-         fix-bitmap-size)
+(provide 
+ (protect-out canvas-autoscroll-mixin
+              canvas-mixin
+              fix-bitmap-size))
 
 ;; Implements canvas autoscroll, applied *before* platform-specific canvas
 ;; methods:

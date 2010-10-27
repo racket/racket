@@ -1,22 +1,23 @@
-#lang racket
+#lang racket/base
 (require racket/class
          ffi/unsafe
          ffi/unsafe/alloc
          racket/draw
-         racket/draw/local
-         racket/draw/cairo
+         racket/draw/private/local
+         racket/draw/unsafe/cairo
          "../../lock.rkt"
-         "../common/bstr.rkt"
+         racket/draw/unsafe/bstr
          "utils.rkt"
          "types.rkt"
          (only-in '#%foreign ffi-callback))
 
-(provide bitmap->pixbuf
-         pixbuf->bitmap
-         
-         _GdkPixbuf
-         gtk_image_new_from_pixbuf
-         release-pixbuf)
+(provide 
+ (protect-out bitmap->pixbuf
+              pixbuf->bitmap
+              
+              _GdkPixbuf
+              gtk_image_new_from_pixbuf
+              release-pixbuf))
 
 (define _GdkPixbuf (_cpointer/null 'GdkPixbuf))
 

@@ -1,7 +1,7 @@
-#lang scheme/base
-(require ffi/objc
-         scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe/objc
+         ffi/unsafe
+         racket/class
          (only-in scheme/list take drop)
           "../../syntax.rkt"
           "../../lock.rkt"
@@ -12,10 +12,9 @@
          "window.rkt"
          "font.rkt"
          "../common/event.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide list-box%)
+(provide 
+ (protect-out list-box%))
 
 ;; ----------------------------------------
 

@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe/objc
          ffi/unsafe
-         scheme/class
-         racket/draw/dc
+         racket/class
+         racket/draw/private/dc
          "pool.rkt"
          "utils.rkt"
          "const.rkt"
@@ -12,21 +12,21 @@
          "../../lock.rkt"
          "../common/freeze.rkt")
 
-(provide app
-         cocoa-start-event-pump
-         cocoa-install-event-wakeup
-         queue-event
-         set-eventspace-hook!
-         set-front-hook!
-         set-menu-bar-hooks!
-         post-dummy-event
+(provide 
+ (protect-out app
+              cocoa-start-event-pump
+              cocoa-install-event-wakeup
+              set-eventspace-hook!
+              set-front-hook!
+              set-menu-bar-hooks!
+              post-dummy-event
 
-         try-to-sync-refresh
+              try-to-sync-refresh)
 
-         ;; from common/queue:
-         current-eventspace
-         queue-event
-         yield)
+ ;; from common/queue:
+ current-eventspace
+ queue-event
+ yield)
 
 (import-class NSApplication NSAutoreleasePool NSColor)
 (import-protocol NSApplicationDelegate)

@@ -1,23 +1,25 @@
 #lang racket/base
 (require racket/class
          racket/math
-         racket/draw/local
-         racket/draw/dc
-         racket/draw/cairo
-         racket/draw/bitmap
-         racket/draw/bitmap-dc
-         racket/draw/record-dc
-         racket/draw/ps-setup
+         racket/draw/private/local
+         racket/draw/private/dc
+         racket/draw/unsafe/cairo
+         racket/draw/private/bitmap
+         racket/draw/private/bitmap-dc
+         racket/draw/private/record-dc
+         racket/draw/private/ps-setup
          ffi/unsafe
          ffi/unsafe/objc
          "../../lock.rkt"
          "dc.rkt"
+         "bitmap.rkt"
          "cg.rkt"
          "utils.rkt"
          "types.rkt")
 
-(provide printer-dc%
-         show-print-setup)
+(provide 
+ (protect-out printer-dc%
+              show-print-setup))
 
 (import-class NSPrintOperation NSView NSGraphicsContext
               NSPrintInfo NSDictionary NSPageLayout

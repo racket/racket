@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe/objc
          ffi/unsafe
          scheme/class
@@ -15,9 +15,10 @@
          "../common/freeze.rkt"
          "../../lock.rkt")
 
-(provide frame%
-         location->window
-         get-front)
+(provide 
+ (protect-out frame%
+              location->window
+              get-front))
 
 ;; ----------------------------------------
 

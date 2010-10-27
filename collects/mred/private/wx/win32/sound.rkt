@@ -5,7 +5,8 @@
          "types.rkt"
          "const.rkt")
 
-(provide play-sound)
+(provide
+ (protect-out play-sound))
 
 (define-winmm PlaySoundW (_wfun _string/utf-16 _pointer _DWORD -> _BOOL))
 

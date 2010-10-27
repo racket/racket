@@ -1,7 +1,7 @@
 #lang racket/base
 (require ffi/unsafe)
 
-(provide scheme_register_process_global)
+(provide (protect-out scheme_register_process_global))
 
 ;; This module must be instantiated only once:
 

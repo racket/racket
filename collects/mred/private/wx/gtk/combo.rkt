@@ -1,16 +1,16 @@
-#lang scheme/base
-(require scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe
+         racket/class
           "../../syntax.rkt"
          "types.rkt"
          "utils.rkt"
          "window.rkt")
-(unsafe!)
 
 ;; Hacks for working with GtkComboBox[Entry]
 
-(provide extract-combo-button
-         connect-combo-key-and-mouse)
+(provide 
+ (protect-out extract-combo-button
+              connect-combo-key-and-mouse))
 
 ;; ----------------------------------------
 

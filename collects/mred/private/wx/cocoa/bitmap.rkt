@@ -2,9 +2,9 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/objc
-         racket/draw/cairo
-         racket/draw/bitmap
-         racket/draw/local
+         racket/draw/unsafe/cairo
+         racket/draw/private/bitmap
+         racket/draw/private/local
          "types.rkt"
          "utils.rkt"
          "../../lock.rkt"

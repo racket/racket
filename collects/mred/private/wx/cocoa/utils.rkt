@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe/objc
          ffi/unsafe
          ffi/unsafe/alloc
@@ -6,22 +6,23 @@
          "../common/utils.rkt"
          "../../lock.rkt")
 
-(provide cocoa-lib
-         cf-lib
-         define-cocoa
-         define-cf
-         define-appserv
-         define-appkit
-         define-mz
-         as-objc-allocation
-         as-objc-allocation-with-retain
-         clean-up-deleted
-         retain release
-         with-autorelease
-         clean-menu-label
-         ->wxb
-         ->wx
-         old-cocoa?)
+(provide 
+ (protect-out cocoa-lib
+              cf-lib
+              define-cocoa
+              define-cf
+              define-appserv
+              define-appkit
+              as-objc-allocation
+              as-objc-allocation-with-retain
+              clean-up-deleted
+              retain release
+              with-autorelease
+              clean-menu-label
+              ->wxb
+              ->wx
+              old-cocoa?)
+ define-mz)
 
 (define cocoa-lib (ffi-lib (format "/System/Library/Frameworks/Cocoa.framework/Cocoa")))
 (define cf-lib (ffi-lib (format "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")))

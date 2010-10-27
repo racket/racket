@@ -11,7 +11,7 @@
          "../../lock.rkt"
          "../common/queue.rkt")
 
-(provide win32-start-event-pump
+(provide (protect-out win32-start-event-pump)
 
          ;; from common/queue:
          current-eventspace

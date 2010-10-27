@@ -1,15 +1,14 @@
-#lang scheme/base
-(require ffi/objc
-         scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe/objc
+         ffi/unsafe
+         racket/class
           "../../syntax.rkt"
          "button.rkt"
          "types.rkt"
          "const.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide check-box%)
+(provide 
+ (protect-out check-box%))
 
 ;; ----------------------------------------
 

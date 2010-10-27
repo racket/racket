@@ -2,8 +2,9 @@
 (require "../../lock.rkt"
          "queue.rkt")
 
-(provide do-request-flush-delay
-         do-cancel-flush-delay)
+(provide 
+ (protect-out do-request-flush-delay
+              do-cancel-flush-delay))
 
 (define (do-request-flush-delay win disable enable)
   (atomically

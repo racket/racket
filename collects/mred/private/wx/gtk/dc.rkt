@@ -9,15 +9,16 @@
          "gl-context.rkt"
 	 "../../lock.rkt"
          "../common/backing-dc.rkt"
-         racket/draw/cairo
-         racket/draw/dc
-         racket/draw/bitmap
-         racket/draw/local
+         racket/draw/unsafe/cairo
+         racket/draw/private/dc
+         racket/draw/private/bitmap
+         racket/draw/private/local
          ffi/unsafe/alloc)
 
-(provide dc%
-         do-backing-flush
-         x11-bitmap%)
+(provide 
+ (protect-out dc%
+              do-backing-flush
+              x11-bitmap%))
 
 (define-gdk gdk_cairo_create (_fun _pointer -> _cairo_t)
   #:wrap (allocator cairo_destroy))

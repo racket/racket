@@ -4,7 +4,8 @@
          "utils.rkt"
          "types.rkt")
 
-(provide file-creator-and-type)
+(provide 
+ (protect-out file-creator-and-type))
 
 (define coreserv-lib (ffi-lib (format "/System/Library/Frameworks/CoreServices.framework/CoreServices")))
 

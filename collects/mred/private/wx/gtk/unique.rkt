@@ -1,13 +1,14 @@
 #lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
-         racket/draw/bstr
+         racket/draw/unsafe/bstr
          net/base64
 	 "../common/queue.rkt"
          "types.rkt"
          "utils.rkt")
 
-(provide do-single-instance)
+(provide 
+ (protect-out do-single-instance))
 
 (define unique-lib
   (with-handlers ([exn:fail? (lambda (exn) #f)])

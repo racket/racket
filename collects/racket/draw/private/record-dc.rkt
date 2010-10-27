@@ -1,6 +1,5 @@
 #lang racket/base
-(require mred/private/syntax
-         mred/private/lock
+(require "syntax.rkt"
          racket/class
          "dc.rkt"
          "bitmap.rkt"

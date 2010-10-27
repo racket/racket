@@ -3,6 +3,6 @@
          ffi/unsafe/define
          "once.rkt")
 
-(provide define-mz)
+(provide (protect-out define-mz))
 
 (define-ffi-definer define-mz #f)

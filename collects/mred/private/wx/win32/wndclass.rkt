@@ -7,17 +7,18 @@
 	 "const.rkt"
 	 "icons.rkt")
 
-(provide hInstance
-	 DefWindowProcW
-         background-hbrush
-	 set-hwnd-wx!
-	 set-hwnd-ctlproc!
-         hwnd->wx
-         hwnd->ctlproc
-	 any-hwnd->wx
-	 unregister-hwnd
-	 MessageBoxW
-         _WndProc)
+(provide
+ (protect-out hInstance
+              DefWindowProcW
+              background-hbrush
+              set-hwnd-wx!
+              set-hwnd-ctlproc!
+              hwnd->wx
+              hwnd->ctlproc
+              any-hwnd->wx
+              unregister-hwnd
+              MessageBoxW
+              _WndProc))
 
 ;; ----------------------------------------
 ;; We use the "user data" field of an HWND to

@@ -4,7 +4,7 @@
          "types.rkt"
          "utils.rkt")
 
-(provide (all-defined-out))
+(provide (protect-out (all-defined-out)))
 
 (define _CGContextRef (_cpointer 'CGContextRef))
 (define-appserv CGContextSynchronize (_fun _CGContextRef -> _void))

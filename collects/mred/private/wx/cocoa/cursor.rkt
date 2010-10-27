@@ -9,9 +9,10 @@
          "../common/cursor-draw.rkt"
          "../common/local.rkt")
 
-(provide cursor-driver%
-         arrow-cursor-handle
-         get-wait-cursor-handle)
+(provide 
+ (protect-out cursor-driver%
+              arrow-cursor-handle
+              get-wait-cursor-handle))
 
 (import-class NSCursor)
 

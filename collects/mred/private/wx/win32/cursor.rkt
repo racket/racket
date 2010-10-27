@@ -8,9 +8,10 @@
          "../common/cursor-draw.rkt"
           "../../syntax.rkt")
 
-(provide cursor-driver%
-         get-arrow-cursor
-         get-wait-cursor)
+(provide 
+ (protect-out cursor-driver%
+              get-arrow-cursor
+              get-wait-cursor))
 
 (define (MAKEINTRESOURCE v) v)
 

@@ -5,8 +5,8 @@
          ffi/unsafe/atomic
          setup/dirs
          "cairo.rkt"
-         "utils.rkt"
-         "libs.rkt")
+         "../private/utils.rkt"
+         "../private/libs.rkt")
 
 (define-runtime-lib pango-lib 
   [(unix) (ffi-lib "libpango-1.0" '("0"))]

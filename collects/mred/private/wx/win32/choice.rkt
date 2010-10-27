@@ -12,7 +12,8 @@
 	 "wndclass.rkt"
          "types.rkt")
 
-(provide choice%)
+(provide 
+ (protect-out choice%))
 
 (define CBN_DROPDOWN        7)
 (define CBN_CLOSEUP         8)

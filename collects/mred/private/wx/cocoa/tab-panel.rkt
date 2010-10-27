@@ -13,7 +13,8 @@
          "../common/procs.rkt"
          (for-syntax racket/base))
 
-(provide tab-panel%)
+(provide 
+ (protect-out tab-panel%))
 
 (define-runtime-path psm-tab-bar-dir
   '(so "PSMTabBarControl.framework"))

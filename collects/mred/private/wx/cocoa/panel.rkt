@@ -1,16 +1,15 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
           "../../syntax.rkt"
           "types.rkt"
           "utils.rkt"
          "window.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide panel%
-         panel-mixin)
+(provide 
+ (protect-out panel%
+              panel-mixin))
 
 (import-class NSView)
 

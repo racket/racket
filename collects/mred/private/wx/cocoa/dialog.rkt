@@ -1,12 +1,13 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
           "../../syntax.rkt"
           "../common/queue.rkt"
           "../common/dialog.rkt"
           "../../lock.rkt"
          "frame.rkt")
 
-(provide dialog%)
+(provide 
+ (protect-out dialog%))
 
 (define dialog% 
   (class (dialog-mixin frame%)

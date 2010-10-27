@@ -1,6 +1,6 @@
 #lang racket/base
 (require ffi/unsafe
-         racket/draw/utils
+         racket/draw/private/utils
          ffi/unsafe/atomic
          racket/class
          "rbtree.rkt"
@@ -8,52 +8,53 @@
          "handlers.rkt"
          "once.rkt")
 
-(provide queue-evt
-         set-check-queue!
-         set-queue-wakeup!
+(provide 
+ (protect-out queue-evt
+              set-check-queue!
+              set-queue-wakeup!
 
-         add-event-boundary-callback!
-         add-event-boundary-sometimes-callback!
-         remove-event-boundary-callback!
-         pre-event-sync
-         boundary-tasks-ready-evt
+              add-event-boundary-callback!
+              add-event-boundary-sometimes-callback!
+              remove-event-boundary-callback!
+              pre-event-sync
+              boundary-tasks-ready-evt
 
-         eventspace?
-         current-eventspace
-         queue-event
-         queue-refresh-event
-         yield
-         yield-refresh
-         (rename-out [make-new-eventspace make-eventspace])
+              eventspace?
+              current-eventspace
+              queue-event
+              queue-refresh-event
+              yield
+              yield-refresh
+              (rename-out [make-new-eventspace make-eventspace])
 
-         event-dispatch-handler
-         eventspace-shutdown?
-         main-eventspace?
-         eventspace-handler-thread
-         eventspace-wait-cursor-count
-         eventspace-extra-table
-         eventspace-adjust-external-modal!
+              event-dispatch-handler
+              eventspace-shutdown?
+              main-eventspace?
+              eventspace-handler-thread
+              eventspace-wait-cursor-count
+              eventspace-extra-table
+              eventspace-adjust-external-modal!
 
-         queue-callback
-         middle-queue-key
+              queue-callback
+              middle-queue-key
 
-         make-timer-callback
-         add-timer-callback
-         remove-timer-callback
+              make-timer-callback
+              add-timer-callback
+              remove-timer-callback
 
-         register-frame-shown
-         get-top-level-windows
-         other-modal?
+              register-frame-shown
+              get-top-level-windows
+              other-modal?
 
-         queue-quit-event
-         queue-prefs-event
-         queue-file-event
+              queue-quit-event
+              queue-prefs-event
+              queue-file-event
 
-         begin-busy-cursor
-         end-busy-cursor
-         is-busy?
+              begin-busy-cursor
+              end-busy-cursor
+              is-busy?)
 
-         scheme_register_process_global)
+ scheme_register_process_global)
 
 ;; ------------------------------------------------------------
 ;; Create a Scheme evt that is ready when a queue is nonempty

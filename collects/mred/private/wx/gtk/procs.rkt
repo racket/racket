@@ -20,52 +20,47 @@
          "../common/handlers.rkt")
 
 (provide
- special-control-key
- special-option-key
- get-color-from-user
- color-from-user-platform-mode
- get-font-from-user
- font-from-user-platform-mode
- get-panel-background
- play-sound
- find-graphical-system-path
- register-collecting-blit
- unregister-collecting-blit
- shortcut-visible-in-label?
- location->window
- send-event
- file-creator-and-type
- run-printout
- get-double-click-time
- get-control-font-face
- get-control-font-size
- get-control-font-size-in-pixels?
- cancel-quit
- fill-private-color
- flush-display
- write-resource
- get-resource
+ (protect-out
+  color-from-user-platform-mode
+  get-font-from-user
+  font-from-user-platform-mode
+  play-sound
+  find-graphical-system-path
+  register-collecting-blit
+  unregister-collecting-blit
+  shortcut-visible-in-label?
+  run-printout
+  get-double-click-time
+  get-control-font-face
+  get-control-font-size
+  get-control-font-size-in-pixels?
+  cancel-quit
+  bell
+  hide-cursor
+  get-display-depth
+  is-color-display?
+  id-to-menu-item
+  can-show-print-setup?
+  get-highlight-background-color
+  get-highlight-text-color
+  check-for-break)
+ file-selector
+ show-print-setup
  display-origin
  display-size
- bell
- hide-cursor
- get-display-depth
- is-color-display?
- file-selector
- id-to-menu-item
- show-print-setup
- can-show-print-setup?
- get-highlight-background-color
- get-highlight-text-color
+ flush-display
+ location->window
  make-screen-bitmap
  make-gl-bitmap
- check-for-break)
+ file-creator-and-type
+ special-control-key
+ special-option-key
+ get-panel-background
+ fill-private-color
+ get-color-from-user)
 
 (define-unimplemented find-graphical-system-path)
-(define-unimplemented send-event)
 (define-unimplemented cancel-quit)
-(define-unimplemented write-resource)
-(define-unimplemented get-resource)
 
 (define-unimplemented play-sound)
 

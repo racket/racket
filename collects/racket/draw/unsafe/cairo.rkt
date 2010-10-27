@@ -3,8 +3,8 @@
          ffi/unsafe/define
          ffi/unsafe/alloc
          setup/dirs
-         "libs.rkt"
-         "utils.rkt")
+         "../private/libs.rkt"
+         "../private/utils.rkt")
 
 (define-runtime-lib cairo-lib
   [(unix) (ffi-lib "libcairo" '("2"))]

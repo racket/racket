@@ -4,13 +4,13 @@
          ffi/unsafe/define
          ffi/unsafe/alloc
          "../../lock.rkt"
-         racket/draw/cairo
-         racket/draw/local
-         racket/draw/gl-context
-         racket/draw/gl-config
-         racket/draw/bitmap)
+         racket/draw/unsafe/cairo
+         racket/draw/private/local
+         racket/draw/private/gl-context
+         racket/draw/private/gl-config
+         racket/draw/private/bitmap)
 
-(provide create-gl-bitmap)
+(provide (protect-out create-gl-bitmap))
 
 (define agl-lib 
   (ffi-lib "/System/Library/Frameworks/AGL.framework/AGL"))

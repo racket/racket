@@ -22,7 +22,7 @@ Region combination with operations like @racket[region% union] are
  combinations work only if the paths have a suitable fill mode, which
  can be either @racket['winding], @racket['even-odd], or a
  @deftech{flexible fill} mode. When a region is installed as a device
- context's clipping region, any subpath with a @deftech{flexible fill}
+ context's clipping region, any subpath with a @tech{flexible fill}
  mode uses @racket['even-odd] mode if any other path uses
  @racket['even-odd] mode.
 

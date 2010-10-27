@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
@@ -6,46 +6,47 @@
          "../common/utils.rkt"
          "types.rkt")
 
-(provide define-gtk
-         define-gdk
-         define-gobj
-         define-gio
-         define-glib
-         define-gdk_pixbuf
-         define-mz
+(provide 
+ define-mz
+ (protect-out define-gtk
+              define-gdk
+              define-gobj
+              define-gio
+              define-glib
+              define-gdk_pixbuf
 
-         g_object_ref
-         g_object_ref_sink
-         g_object_unref
+              g_object_ref
+              g_object_ref_sink
+              g_object_unref
 
-         gobject-ref
-         gobject-unref
-         as-gobject-allocation
+              gobject-ref
+              gobject-unref
+              as-gobject-allocation
 
-         as-gtk-allocation
-         as-gtk-window-allocation
+              as-gtk-allocation
+              as-gtk-window-allocation
 
-         g_free
-         _gpath/free
-         _GSList
-         gfree
+              g_free
+              _gpath/free
+              _GSList
+              gfree
 
-         g_object_set_data
-         g_object_get_data
+              g_object_set_data
+              g_object_get_data
 
-         g_object_new
+              g_object_new
 
-         (rename-out [g_object_get g_object_get_window])
+              (rename-out [g_object_get g_object_get_window])
 
-         get-gtk-object-flags
-         set-gtk-object-flags!
+              get-gtk-object-flags
+              set-gtk-object-flags!
 
-         define-signal-handler
+              define-signal-handler
 
-         gdk_screen_get_default
+              gdk_screen_get_default
 
-	 ;; for declaring derived structures:
-	 _GtkObject)
+              ;; for declaring derived structures:
+              _GtkObject))
 
 (define gdk-lib 
   (case (system-type)

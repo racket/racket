@@ -8,9 +8,10 @@
          "../common/cursor-draw.rkt"
           "../../syntax.rkt")
 
-(provide cursor-driver%
-         get-arrow-cursor-handle
-         get-watch-cursor-handle)
+(provide 
+ (protect-out cursor-driver%
+              get-arrow-cursor-handle
+              get-watch-cursor-handle))
 
 (define GDK_ARROW 2) ; ugly!
 (define GDK_CROSSHAIR 34)

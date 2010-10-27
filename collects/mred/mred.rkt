@@ -130,7 +130,6 @@
 	     font-name-directory<%>
              get-highlight-background-color
              get-highlight-text-color
-             get-resource
 	     get-the-editor-data-class-list
 	     get-the-snip-class-list
 	     image-snip%
@@ -175,12 +174,10 @@
 	     write-editor-global-footer
 	     write-editor-global-header
 	     write-editor-version
-	     write-resource
 	     queue-callback
 	     yield
 	     eventspace-shutdown?
 	     get-panel-background
-	     send-event
 	     gl-context<%>
 	     gl-config%
 

@@ -1,9 +1,10 @@
-#lang racket
+#lang racket/base
 (require racket/class
-         racket/draw/local
-         racket/draw/pango)
+         racket/draw/private/local
+         racket/draw/unsafe/pango)
 
-(provide font->hfont)
+(provide 
+ (protect-out font->hfont))
 
 (define display-font-map
   (pango_win32_font_map_for_display))

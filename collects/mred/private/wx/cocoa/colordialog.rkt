@@ -2,12 +2,13 @@
 (require ffi/unsafe
          ffi/unsafe/objc
          racket/class
-         racket/draw/color
+         racket/draw/private/color
          "../../lock.rkt"
          "utils.rkt"
          "types.rkt")
 
-(provide get-color-from-user)
+(provide 
+ (protect-out get-color-from-user))
 
 (import-class NSColorPanel
               NSColor)

@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          ffi/unsafe
          (only-in racket/list drop take)
          "../../lock.rkt"
@@ -10,7 +10,8 @@
          "const.rkt"
          "menu-item.rkt")
 
-(provide menu%)
+(provide
+ (protect-out menu%))
 
 (define-user32 CreatePopupMenu (_wfun -> _HMENU))
 (define-user32 AppendMenuW (_wfun _HMENU _UINT _pointer _string/utf-16 -> (r : _BOOL)

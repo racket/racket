@@ -2,20 +2,21 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/alloc
-         racket/draw/dc
-         racket/draw/local
-         racket/draw/cairo
-         racket/draw/record-dc
-         racket/draw/bitmap-dc
-         racket/draw/ps-setup
+         racket/draw/private/dc
+         racket/draw/private/local
+         racket/draw/unsafe/cairo
+         racket/draw/private/record-dc
+         racket/draw/private/bitmap-dc
+         racket/draw/private/ps-setup
          "../../lock.rkt"
          "dc.rkt"
          "types.rkt"
          "utils.rkt"
          "const.rkt")
 
-(provide printer-dc%
-         show-print-setup)
+(provide
+ (protect-out printer-dc%
+              show-print-setup))
 
 (define _HGLOBAL _pointer)
 

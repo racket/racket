@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
           "../../syntax.rkt"
          "item.rkt"
          "types.rkt"
@@ -9,10 +9,9 @@
          "utils.rkt"
          "window.rkt"
          "../common/event.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide choice%)
+(provide 
+ (protect-out choice%))
 
 ;; ----------------------------------------
 

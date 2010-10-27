@@ -1,14 +1,14 @@
-#lang scheme/base
-(require scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe
+         racket/class
           "../../syntax.rkt"
          "button.rkt"
          "utils.rkt"
          "types.rkt"
          "../../lock.rkt")
-(unsafe!)
 
-(provide check-box%)
+(provide 
+ (protect-out check-box%))
 
 ;; ----------------------------------------
 

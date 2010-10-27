@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          ffi/unsafe
           "../../syntax.rkt"
           "../../lock.rkt"
@@ -8,8 +8,9 @@
          "types.rkt"
          "const.rkt")
 
-(provide panel%
-         panel-mixin)
+(provide 
+ (protect-out panel%
+              panel-mixin))
 
 (define-gtk gtk_fixed_new (_fun -> _GtkWidget))
 (define-gtk gtk_event_box_new (_fun -> _GtkWidget))

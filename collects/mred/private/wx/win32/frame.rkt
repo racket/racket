@@ -17,9 +17,10 @@
          "hbitmap.rkt"
          "cursor.rkt")
 
-(provide frame%
-         display-size
-         display-origin)
+(provide 
+ (protect-out frame%
+              display-size
+              display-origin))
 
 (define-user32 SetLayeredWindowAttributes (_wfun _HWND _COLORREF _BYTE _DWORD -> _BOOL))
 (define-user32 GetActiveWindow (_wfun -> _HWND))

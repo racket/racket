@@ -20,7 +20,8 @@
          "gcwin.rkt"
          "theme.rkt")
 
-(provide canvas%)
+(provide 
+ (protect-out canvas%))
 
 (define WS_EX_STATICEDGE        #x00020000)
 (define WS_EX_CLIENTEDGE        #x00000200)

@@ -1,18 +1,18 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
          "../../syntax.rkt"
          "item.rkt"
          "utils.rkt"
          "types.rkt"
          "pixbuf.rkt")
-(unsafe!)
 
-(provide message%
-
-         gtk_label_new_with_mnemonic
-         gtk_label_set_text_with_mnemonic
-         mnemonic-string)
+(provide 
+ (protect-out message%
+              
+              gtk_label_new_with_mnemonic
+              gtk_label_set_text_with_mnemonic
+              mnemonic-string))
 
 ;; ----------------------------------------
 

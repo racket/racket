@@ -6,7 +6,8 @@
          "utils.rkt"
          "const.rkt")
 
-(provide check-box%)
+(provide 
+ (protect-out check-box%))
 
 (define BM_GETCHECK #x00F0)
 (define BM_SETCHECK #x00F1)

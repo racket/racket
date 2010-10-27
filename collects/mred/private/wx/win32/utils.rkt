@@ -5,43 +5,44 @@
          "../common/utils.rkt"
          "types.rkt")
 
-(provide define-gdi32
-	 define-user32
-	 define-kernel32
-	 define-comctl32
-	 define-comdlg32
-	 define-shell32
-	 define-uxtheme
-	 define-winmm
-         define-mz
-         failed
+(provide
+ define-mz
+ (protect-out define-gdi32
+              define-user32
+              define-kernel32
+              define-comctl32
+              define-comdlg32
+              define-shell32
+              define-uxtheme
+              define-winmm
+              failed
 
-         GetLastError
-         DestroyWindow
-         NotifyWindowDestroy
-	 CreateWindowExW
-         GetWindowLongW
-         SetWindowLongW
-         SendMessageW SendMessageW/str
-         GetSysColor GetRValue GetGValue GetBValue make-COLORREF
-         CreateBitmap
-         CreateCompatibleBitmap
-         DeleteObject
-         CreateCompatibleDC
-         DeleteDC
-         MoveWindow
-         ShowWindow
-         EnableWindow
-         SetWindowTextW
-         SetCursor
-         GetDC
-         ReleaseDC
-         InvalidateRect
-         GetMenuState
-         CheckMenuItem
-         ModifyMenuW
-         RemoveMenu
-         SelectObject)
+              GetLastError
+              DestroyWindow
+              NotifyWindowDestroy
+              CreateWindowExW
+              GetWindowLongW
+              SetWindowLongW
+              SendMessageW SendMessageW/str
+              GetSysColor GetRValue GetGValue GetBValue make-COLORREF
+              CreateBitmap
+              CreateCompatibleBitmap
+              DeleteObject
+              CreateCompatibleDC
+              DeleteDC
+              MoveWindow
+              ShowWindow
+              EnableWindow
+              SetWindowTextW
+              SetCursor
+              GetDC
+              ReleaseDC
+              InvalidateRect
+              GetMenuState
+              CheckMenuItem
+              ModifyMenuW
+              RemoveMenu
+              SelectObject))
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))

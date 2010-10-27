@@ -2,9 +2,9 @@
 (require ffi/unsafe
          ffi/unsafe/objc
          racket/class
-         racket/draw/cairo
-         racket/draw/local
-         "../common/bstr.rkt"
+         racket/draw/unsafe/cairo
+         racket/draw/private/local
+         racket/draw/unsafe/bstr
          "utils.rkt"
          "types.rkt"
          "const.rkt"
@@ -13,8 +13,9 @@
          "../../lock.rkt"
          (only-in '#%foreign ffi-callback))
 
-(provide bitmap->image
-         image->bitmap)
+(provide 
+ (protect-out bitmap->image
+              image->bitmap))
 
 (import-class NSImage NSGraphicsContext)
 

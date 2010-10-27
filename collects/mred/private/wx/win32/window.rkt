@@ -2,7 +2,7 @@
 (require ffi/unsafe
 	 racket/class
 	 racket/draw
-	 racket/draw/bstr
+	 racket/draw/unsafe/bstr
          "../../syntax.rkt"
          "../common/freeze.rkt"
          "../common/queue.rkt"
@@ -19,13 +19,14 @@
          "key.rkt"
          "font.rkt")
 
-(provide window%
-	 queue-window-event
-	 queue-window-refresh-event
-         location->window
+(provide
+ (protect-out window%
+              queue-window-event
+              queue-window-refresh-event
+              location->window
 
-	 GetWindowRect
-         GetClientRect)
+              GetWindowRect
+              GetClientRect))
 
 (define (unhide-cursor) (void))
 

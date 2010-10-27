@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
           "../../syntax.rkt"
          "item.rkt"
          (except-in "utils.rkt" _GSList)
@@ -11,9 +11,9 @@
          "message.rkt"
          "../common/event.rkt"
          "../../lock.rkt")
-(unsafe!)
 
-(provide radio-box%)
+(provide 
+ (protect-out radio-box%))
 
 ;; ----------------------------------------
 

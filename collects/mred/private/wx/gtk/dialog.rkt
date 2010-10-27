@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          ffi/unsafe
           "../../syntax.rkt"
           "../common/queue.rkt"
@@ -9,7 +9,8 @@
           "utils.rkt"
           "frame.rkt")
 
-(provide dialog%)
+(provide 
+ (protect-out dialog%))
 
 (define GTK_WIN_POS_CENTER 1)
 (define GTK_WIN_POS_CENTER_ON_PARENT 4)

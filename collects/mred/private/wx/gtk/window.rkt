@@ -9,7 +9,7 @@
          "../common/queue.rkt"
          "../common/local.rkt"
          "../common/delay.rkt"
-         "../common/bstr.rkt"
+         racket/draw/unsafe/bstr
          "keycode.rkt"
          "keymap.rkt"
          "queue.rkt"
@@ -19,39 +19,40 @@
          "widget.rkt"
 	 "clipboard.rkt")
 
-(provide window%
-         gtk->wx
-         queue-window-event
-         queue-window-refresh-event
+(provide 
+ (protect-out window%
+              queue-window-event
+              queue-window-refresh-event
 
-         gtk_widget_show
-         gtk_widget_hide
-         gtk_widget_realize 
-         gtk_container_add
-         gtk_widget_add_events
-         gtk_widget_size_request
-         gtk_widget_set_size_request
-         gtk_widget_grab_focus
-         gtk_widget_set_sensitive
+              gtk_widget_realize 
+              gtk_container_add
+              gtk_widget_add_events
+              gtk_widget_size_request
+              gtk_widget_set_size_request
+              gtk_widget_grab_focus
+              gtk_widget_set_sensitive
 
-         connect-focus
-         connect-key-and-mouse
-         do-button-event
+              connect-focus
+              connect-key-and-mouse
+              do-button-event
 
-         (struct-out GtkRequisition) _GtkRequisition-pointer
-         (struct-out GtkAllocation) _GtkAllocation-pointer
+              (struct-out GtkRequisition) _GtkRequisition-pointer
+              (struct-out GtkAllocation) _GtkAllocation-pointer
 
-	 widget-window
+              widget-window
 
-         the-accelerator-group
-         gtk_window_add_accel_group
-         gtk_menu_set_accel_group
+              the-accelerator-group
+              gtk_window_add_accel_group
+              gtk_menu_set_accel_group
 
-         flush-display
-         gdk_display_get_default
+              flush-display
+              gdk_display_get_default
 
-         request-flush-delay
-         cancel-flush-delay)
+              request-flush-delay
+              cancel-flush-delay)
+ gtk->wx
+ gtk_widget_show
+ gtk_widget_hide)
 
 ;; ----------------------------------------
 

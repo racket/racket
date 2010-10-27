@@ -1,25 +1,26 @@
 #lang racket/base
 (require racket/class
-         racket/draw/dc
-         racket/draw/bitmap-dc
-         racket/draw/bitmap
-         racket/draw/local
+         racket/draw/private/dc
+         racket/draw/private/bitmap-dc
+         racket/draw/private/bitmap
+         racket/draw/private/local
          "../../lock.rkt"
          "queue.rkt")
 
-(provide backing-dc%
-         
-         ;; scoped method names:
-         get-backing-size
-         queue-backing-flush
-         on-backing-flush
-         start-backing-retained
-         end-backing-retained
-         reset-backing-retained
-         make-backing-bitmap
-         request-delay
-         cancel-delay
-         end-delay)
+(provide 
+ (protect-out backing-dc%
+              
+              ;; scoped method names:
+              get-backing-size
+              queue-backing-flush
+              on-backing-flush
+              start-backing-retained
+              end-backing-retained
+              reset-backing-retained
+              make-backing-bitmap
+              request-delay
+              cancel-delay
+              end-delay))
 
 (define-local-member-name
   get-backing-size
@@ -35,8 +36,7 @@
 
 (define backing-dc%
   (class (dc-mixin bitmap-dc-backend%)
-    (inherit call-with-cr-lock
-             internal-get-bitmap
+    (inherit internal-get-bitmap
              internal-set-bitmap
              reset-cr)
 
@@ -87,12 +87,12 @@
             (release-backing-bitmap bm)))))
 
     (define/public (start-backing-retained)
-      (call-with-cr-lock
+      (as-entry
        (lambda () 
          (set! retained-counter (add1 retained-counter)))))
 
     (define/public (end-backing-retained)
-      (call-with-cr-lock
+      (as-entry
        (lambda () 
          (if (zero? retained-counter)
              (log-error "unbalanced end-on-paint")

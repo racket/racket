@@ -1,17 +1,16 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
          "../../syntax.rkt"
          "window.rkt"
          "const.rkt"
          "types.rkt"
          "font.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide item%
-         install-control-font)
+(provide 
+ (protect-out item%
+              install-control-font))
 
 (import-class NSFont)
 (define sys-font (tell NSFont

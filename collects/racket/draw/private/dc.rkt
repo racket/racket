@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require mred/private/syntax
-         mred/private/lock
+(require "syntax.rkt"
+         ffi/unsafe/atomic
          racket/flonum
          ffi/unsafe
          ffi/unsafe/atomic
@@ -9,8 +9,8 @@
          racket/class
          "hold.ss"
          "local.ss"
-         "cairo.ss"
-         "pango.ss"
+         "../unsafe/cairo.ss"
+         "../unsafe/pango.ss"
          "color.ss"
          "pen.ss"
          "brush.ss"
@@ -21,7 +21,7 @@
          "dc-path.ss"
          "point.ss"
          "local.ss"
-         "bstr.rkt")
+         "../unsafe/bstr.rkt")
 
 (provide dc-mixin
          dc-backend<%>
@@ -67,11 +67,6 @@
 ;; This is the interface that the backend specific code must implement
 (define dc-backend<%>
   (interface ()
-    ;; call-with-cr-lock : (-> any) -> any
-    ;;
-    ;; Calls a thunk while holding the lock on the cairo context.
-    call-with-cr-lock
-
     ;; get-cr : -> cairo_t or #f
     ;;
     ;; Gets a cairo_t created in a backend specific manner.
@@ -159,16 +154,6 @@
 (define default-dc-backend%
   (class* object% (dc-backend<%>)
 
-    ;; Using the global lock here is troublesome, becase
-    ;; operations involving paths, regions, and text can
-    ;; take arbitrarily long. Parts of the editor infrastructure,
-    ;; meanwhile, assume that the global lock can be taken
-    ;; around actions that use the editor-canvas dc. If we
-    ;; have a separate per-dc lock, we can hit deadlock due to
-    ;; lock order.
-    (define/public (call-with-cr-lock thunk)
-      (as-entry thunk))
-
     (define/public (get-cr) #f)
     (define/public (release-cr cr) (void))
     (define/public (end-cr) (void))
@@ -240,8 +225,16 @@
 
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing reset-clip
-             collapse-bitmap-b&w? call-with-cr-lock
+             collapse-bitmap-b&w?
              ok? can-combine-text? can-mask-bitmap?)
+
+    ;; Using the global lock here is troublesome, becase
+    ;; operations involving paths, regions, and text can
+    ;; take arbitrarily long. Parts of the editor infrastructure,
+    ;; meanwhile, assume that the global lock can be taken
+    ;; around actions that use the editor-canvas dc. If we
+    ;; have a separate per-dc lock, we can hit deadlock due to
+    ;; lock order.
 
     (define-syntax-rule (with-cr default cr . body)
       ;; Faster:
@@ -258,7 +251,7 @@
                 default))))
       ;; Safer:
       #;
-      (call-with-cr-lock
+      (call-as-atomic
        (lambda ()
          (let ([cr (get-cr)])
            (if cr 

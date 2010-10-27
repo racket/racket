@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         mred/private/syntax)
+#lang racket/base
+(require racket/class
+         "syntax.rkt")
 
 (provide ps-setup%
          current-ps-setup

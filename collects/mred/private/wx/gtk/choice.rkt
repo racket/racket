@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe
+         racket/class
           "../../syntax.rkt"
           "../../lock.rkt"
          "item.rkt"
@@ -10,9 +10,9 @@
          "combo.rkt"
          "../common/event.rkt"
          "../common/queue.rkt")
-(unsafe!)
 
-(provide choice%)
+(provide 
+ (protect-out choice%))
 
 ;; ----------------------------------------
 

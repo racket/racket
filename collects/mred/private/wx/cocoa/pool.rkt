@@ -6,8 +6,9 @@
          "const.rkt"
          "types.rkt")
 
-(provide queue-autorelease-flush
-         autorelease-flush)
+(provide 
+ (protect-out queue-autorelease-flush
+              autorelease-flush))
 
 (import-class NSAutoreleasePool)
 

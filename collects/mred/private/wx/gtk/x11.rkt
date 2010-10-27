@@ -4,12 +4,13 @@
          ffi/unsafe/alloc
          "utils.rkt")
 
-(provide gdk_pixmap_new
-         gdk_drawable_get_display
-         gdk_drawable_get_visual
-         gdk_x11_drawable_get_xid
-         gdk_x11_display_get_xdisplay
-         gdk_x11_visual_get_xvisual)
+(provide 
+ (protect-out gdk_pixmap_new
+              gdk_drawable_get_display
+              gdk_drawable_get_visual
+              gdk_x11_drawable_get_xid
+              gdk_x11_display_get_xdisplay
+              gdk_x11_visual_get_xvisual))
 
 (define _GdkDrawable _pointer)
 (define _GdkDisplay (_cpointer 'GdkDisplay))

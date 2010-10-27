@@ -12,7 +12,8 @@
 	 "wndclass.rkt"
          "types.rkt")
 
-(provide tab-panel%)
+(provide
+ (protect-out tab-panel%))
 
 (define TCIF_TEXT            #x0001)
 (define TCM_SETUNICODEFORMAT #x2005)

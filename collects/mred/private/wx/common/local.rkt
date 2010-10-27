@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class)
+#lang racket/base
+(require racket/class)
 
-(provide (all-defined-out))
+(provide (protect-out (all-defined-out)))
 
 (define-local-member-name
   ;; clipboard-client%:

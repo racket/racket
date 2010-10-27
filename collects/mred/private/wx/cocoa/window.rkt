@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe/objc
          ffi/unsafe
-         scheme/class
+         racket/class
          "queue.rkt"
          "utils.rkt"
          "const.rkt"
@@ -17,23 +17,24 @@
          "../../syntax.rkt"
          "../common/freeze.rkt")
 
-(provide window%
+(provide 
+ (protect-out window%
 
-         FocusResponder
-         KeyMouseResponder
-         KeyMouseTextResponder
-         CursorDisplayer
+              FocusResponder
+              KeyMouseResponder
+              KeyMouseTextResponder
+              CursorDisplayer
 
-         queue-window-event
-         queue-window-refresh-event
-         queue-window*-event
-         request-flush-delay
-         cancel-flush-delay
-         make-init-point
-         flush-display
+              queue-window-event
+              queue-window-refresh-event
+              queue-window*-event
+              request-flush-delay
+              cancel-flush-delay
+              make-init-point
+              flush-display
 
-         special-control-key
-         special-option-key)
+              special-control-key
+              special-option-key))
 
 (define-local-member-name flip-client)
 

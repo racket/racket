@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;;; red-black-tree.rkt -- Jens Axel S�gaard and Carl Eastlund -- 3rd nov 2003
 
@@ -60,8 +60,8 @@
 
 ;; SETS IMPLEMENTED AS REB-BLACK TREES.
 
-(require scheme/match
-         (for-syntax scheme/base))
+(require racket/match
+         (for-syntax racket/base))
 (define-match-expander $
   (lambda (stx)
     (syntax-case stx ()

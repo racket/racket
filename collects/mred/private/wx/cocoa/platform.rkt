@@ -23,7 +23,7 @@
          "tab-panel.rkt"
          "window.rkt"
          "procs.rkt")
-(provide platform-values)
+(provide (protect-out platform-values))
 
 (define (platform-values)
   (values
@@ -60,8 +60,6 @@
    bell
    display-size
    display-origin
-   get-resource
-   write-resource
    flush-display
    fill-private-color
    cancel-quit
@@ -71,7 +69,6 @@
    get-double-click-time
    run-printout
    file-creator-and-type
-   send-event
    location->window
    shortcut-visible-in-label?
    unregister-collecting-blit

@@ -1,7 +1,7 @@
-#lang scheme/base
-(require ffi/objc
-         scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe/objc
+         ffi/unsafe
+         racket/class
           "../../syntax.rkt"
          "item.rkt"
          "utils.rkt"
@@ -10,12 +10,11 @@
          "window.rkt"
          "../common/event.rkt"
          "image.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide button%
-         core-button%
-         MyButton)
+(provide 
+ (protect-out button%
+              core-button%
+              MyButton))
 
 ;; ----------------------------------------
 

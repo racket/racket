@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
           "../../syntax.rkt"
          "item.rkt"
          "button.rkt"
@@ -11,10 +11,9 @@
          "window.rkt"
          "../common/event.rkt"
          "image.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide radio-box%)
+(provide 
+ (protect-out radio-box%))
 
 ;; ----------------------------------------
 

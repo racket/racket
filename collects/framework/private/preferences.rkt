@@ -530,18 +530,7 @@ the state transitions / contracts are:
                    (cond
                      [(string? default) string?]
                      [(number? default) number?]
-                     [else (error 'internal-error.set-default "unrecognized default: ~a\n" default)]))
-                  (preferences:add-callback 
-                   name 
-                   (λ (p new-value)
-                     (write-resource 
-                      font-section
-                      font-entry
-                      (if (and (string? new-value)
-                               (string=? font-default-string new-value))
-                          ""
-                          new-value)
-                      font-file))))))])
+                     [else (error 'internal-error.set-default "unrecognized default: ~a\n" default)])))))])
       
       (for-each (set-default build-font-entry font-default-string string?)
                 font-families)
@@ -579,14 +568,7 @@ the state transitions / contracts are:
                             
                             [message (make-object message%
                                        (let ([b (box "")])
-                                         (if (and (get-resource 
-                                                   font-section 
-                                                   (build-font-entry name)
-                                                   b)
-                                                  (not (string=? (unbox b) 
-                                                                 "")))
-                                             (unbox b)
-                                             font-default-string)) 
+                                         font-default-string)
                                        horiz)]
                             [button 
                              (make-object button%
@@ -643,11 +625,7 @@ the state transitions / contracts are:
                   [size-panel (make-object horizontal-panel% main '(border))]
                   [initial-font-size
                    (let ([b (box 0)])
-                     (if (get-resource font-section 
-                                       font-size-entry
-                                       b)
-                         (unbox b)
-                         font-default-size))]
+                     font-default-size)]
                   [size-slider
                    (make-object slider%
                      (string-constant font-size-slider-label)

@@ -1,15 +1,15 @@
-#lang scheme/base
-(require scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe
+         racket/class
          "../../syntax.rkt"
          "widget.rkt"
          "window.rkt"
          "utils.rkt"
          "const.rkt"
          "types.rkt")
-(unsafe!)
 
-(provide client-size-mixin)
+(provide 
+ (protect-out client-size-mixin))
 
 ;; ----------------------------------------
 

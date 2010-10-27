@@ -5,16 +5,17 @@
          "const.ss"
          "types.ss")
 
-(provide get-theme-logfont
-	 get-theme-font-face
-	 get-theme-font-size
-	 _LOGFONT-pointer
-         OpenThemeData
-         CloseThemeData
-         DrawThemeParentBackground
-         DrawThemeBackground
-         DrawThemeEdge
-         EnableThemeDialogTexture)
+(provide
+ (protect-out get-theme-logfont
+              get-theme-font-face
+              get-theme-font-size
+              _LOGFONT-pointer
+              OpenThemeData
+              CloseThemeData
+              DrawThemeParentBackground
+              DrawThemeBackground
+              DrawThemeEdge
+              EnableThemeDialogTexture))
 
 (define _HTHEME (_cpointer 'HTHEME))
 

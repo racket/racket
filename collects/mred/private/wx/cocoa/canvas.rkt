@@ -3,14 +3,15 @@
          ffi/unsafe
          racket/class
          racket/draw
-         racket/draw/gl-context
-         racket/draw/color
+         racket/draw/private/gl-context
+         racket/draw/private/color
          "pool.rkt"
          "utils.rkt"
          "const.rkt"
          "types.rkt"
          "window.rkt"
          "dc.rkt"
+         "bitmap.rkt"
          "cg.rkt"
          "queue.rkt"
          "item.rkt"
@@ -24,7 +25,8 @@
          "../../lock.rkt"
          "../common/freeze.rkt")
 
-(provide canvas%)
+(provide 
+ (protect-out canvas%))
 
 ;; ----------------------------------------
 

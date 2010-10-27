@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe
          racket/class
          racket/promise
@@ -17,10 +17,11 @@
          "pixbuf.rkt"
          "../common/queue.rkt")
 
-(provide frame%
-         display-origin
-         display-size
-         location->window)
+(provide 
+ (protect-out frame%
+              display-origin
+              display-size
+              location->window))
 
 ;; ----------------------------------------
 

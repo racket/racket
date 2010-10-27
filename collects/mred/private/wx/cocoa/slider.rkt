@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
           "../../syntax.rkt"
          "item.rkt"
          "types.rkt"
@@ -12,10 +12,9 @@
          "../common/queue.rkt"
          "../common/freeze.rkt"
          "../../lock.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide slider%)
+(provide 
+ (protect-out slider%))
 
 ;; ----------------------------------------
 

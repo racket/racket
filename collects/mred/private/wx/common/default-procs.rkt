@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/draw/color)
+         racket/draw/private/color)
 (provide special-control-key
          special-option-key
          file-creator-and-type

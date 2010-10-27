@@ -4,7 +4,8 @@
          "const.rkt"
          "types.rkt")
 
-(provide get-alts)
+(provide 
+ (protect-out get-alts))
 
 (define _GdkKeymap (_cpointer 'GdkKeymap))
 

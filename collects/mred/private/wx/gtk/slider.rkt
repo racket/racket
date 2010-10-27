@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe
+         racket/class
           "../../syntax.rkt"
          "item.rkt"
          "utils.rkt"
@@ -9,9 +9,9 @@
          "const.rkt"
          "../common/event.rkt"
          "../../lock.rkt")
-(unsafe!)
 
-(provide slider%)
+(provide 
+ (protect-out slider%))
 
 ;; ----------------------------------------
 

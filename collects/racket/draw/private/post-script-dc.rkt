@@ -3,9 +3,9 @@
          scheme/file
          racket/path
          racket/math
-         mred/private/syntax
+         "syntax.rkt"
          racket/gui/dynamic
-         "cairo.ss"
+         "../unsafe/cairo.ss"
 	 "dc.ss"
          "font.ss"
          "local.ss"

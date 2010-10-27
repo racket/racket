@@ -5,8 +5,8 @@
          ffi/unsafe/atomic
          setup/dirs
          "bstr.rkt"
-         "utils.rkt"
-         "libs.rkt")
+         "../private/utils.rkt"
+         "../private/libs.rkt")
 
 (define-runtime-lib jpeg-lib 
   [(unix) (ffi-lib "libjpeg" '("62" ""))]

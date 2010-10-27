@@ -4,11 +4,12 @@
          "types.rkt"
          "window.rkt")
 
-(provide scheme_add_gc_callback
-         scheme_remove_gc_callback
-         create-gc-window
-         make-gc-show-desc
-         make-gc-hide-desc)
+(provide 
+ (protect-out scheme_add_gc_callback
+              scheme_remove_gc_callback
+              create-gc-window
+              make-gc-show-desc
+              make-gc-hide-desc))
 
 (define-cstruct _GdkWindowAttr
   ([title _string]

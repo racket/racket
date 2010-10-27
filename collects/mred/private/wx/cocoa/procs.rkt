@@ -12,6 +12,7 @@
          "filedialog.rkt"
          "colordialog.rkt"
          "dc.rkt"
+         "bitmap.rkt"
          "printer-dc.rkt"
          "../common/printer.rkt"
          "menu-bar.rkt"
@@ -26,54 +27,45 @@
 
 
 (provide
- application-file-handler
- application-quit-handler
- application-about-handler
- application-pref-handler
- color-from-user-platform-mode
- get-color-from-user
- font-from-user-platform-mode
- get-font-from-user
- get-panel-background
- play-sound
- find-graphical-system-path
- register-collecting-blit
- unregister-collecting-blit
- shortcut-visible-in-label?
- send-event
- file-creator-and-type
- run-printout
- get-double-click-time
- get-control-font-face
- get-control-font-size
- get-control-font-size-in-pixels?
- cancel-quit
- fill-private-color
- flush-display
- write-resource
- get-resource
- display-origin
- display-size
- bell
- hide-cursor
- get-display-depth
- is-color-display?
- file-selector
- id-to-menu-item
- show-print-setup
- can-show-print-setup?
- get-highlight-background-color
- get-highlight-text-color
+ (protect-out
+  color-from-user-platform-mode
+  font-from-user-platform-mode
+  get-font-from-user
+  find-graphical-system-path
+  register-collecting-blit
+  unregister-collecting-blit
+  shortcut-visible-in-label?
+  run-printout
+  get-double-click-time
+  get-control-font-face
+  get-control-font-size
+  get-control-font-size-in-pixels?
+  cancel-quit
+  display-origin
+  display-size
+  bell
+  hide-cursor
+  get-display-depth
+  is-color-display?
+  id-to-menu-item
+  can-show-print-setup?
+  get-highlight-background-color
+  get-highlight-text-color
+  check-for-break)
  make-screen-bitmap
  make-gl-bitmap
- check-for-break)
+ show-print-setup
+ get-color-from-user
+ get-panel-background
+ fill-private-color
+ flush-display
+ play-sound
+ file-creator-and-type
+ file-selector)
 
 (import-class NSScreen NSCursor)
 
 (define-unimplemented find-graphical-system-path)
-(define-unimplemented send-event)
-(define-unimplemented write-resource)
-(define-unimplemented get-resource)
 
 (define (color-from-user-platform-mode) "Show Picker")
 

@@ -13,7 +13,8 @@
          "hbitmap.rkt"
          "types.rkt")
 
-(provide message%)
+(provide
+ (protect-out message%))
 
 (define STM_SETIMAGE        #x0172)
 

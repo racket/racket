@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/class)
 
-(provide make-run-printout)
+(provide (protect-out make-run-printout))
 
 (define ((make-run-printout printer-dc%)
          parent

@@ -2,10 +2,10 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/objc
-         racket/draw/cairo
-         racket/draw/bitmap
-         racket/draw/local
-         racket/draw/gl-context
+         racket/draw/unsafe/cairo
+         racket/draw/private/bitmap
+         racket/draw/private/local
+         racket/draw/private/gl-context
          "types.rkt"
          "utils.rkt"
          "bitmap.rkt"
@@ -15,9 +15,9 @@
          "../common/backing-dc.rkt"
          "cg.rkt")
 
-(provide dc%
-         quartz-bitmap%
-         do-backing-flush)
+(provide 
+ (protect-out dc%
+              do-backing-flush))
 
 (import-class NSOpenGLContext)
 

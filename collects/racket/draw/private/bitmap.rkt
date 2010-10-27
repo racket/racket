@@ -1,18 +1,18 @@
 #lang scheme/base
 (require scheme/class
          scheme/unsafe/ops
-         mred/private/syntax
-         "hold.ss"
-         "bstr.ss"
-         "cairo.ss"
-         "png.ss"
-         "jpeg.ss"
-         "xbm.ss"
-         "xpm.ss"
-         "bmp.ss"
-         "gif.rkt"
-         "local.ss"
-         "color.ss")
+         "syntax.rkt"
+         "hold.rkt"
+         "../unsafe/bstr.rkt"
+         "../unsafe/cairo.rkt"
+         "../unsafe/png.rkt"
+         "../unsafe/jpeg.rkt"
+         "../xbm.rkt"
+         "../xpm.rkt"
+         "../bmp.rkt"
+         "../gif.rkt"
+         "local.rkt"
+         "color.rkt")
 
 (provide bitmap%
          make-alternate-bitmap-kind)

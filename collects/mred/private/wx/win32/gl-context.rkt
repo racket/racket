@@ -3,12 +3,13 @@
          ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
-         racket/draw/gl-config
-         (prefix-in draw: racket/draw/gl-context)
+         racket/draw/private/gl-config
+         (prefix-in draw: racket/draw/private/gl-context)
          "types.rkt"
          "utils.rkt")
 
-(provide create-gl-context)
+(provide
+ (protect-out create-gl-context))
 
 (define opengl32-lib (ffi-lib "opengl32.dll"))
 

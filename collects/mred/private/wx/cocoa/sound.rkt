@@ -4,7 +4,8 @@
          "utils.rkt"
          "types.rkt")
 
-(provide play-sound)
+(provide 
+ (protect-out play-sound))
 
 (import-class NSSound)
 

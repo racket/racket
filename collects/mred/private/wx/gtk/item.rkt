@@ -1,14 +1,15 @@
 #lang racket/base
 (require ffi/unsafe
          racket/class
-         racket/draw/local
+         racket/draw/private/local
           "../../syntax.rkt"
          "window.rkt"
          "utils.rkt"
          "types.rkt")
 
-(provide item%
-         install-control-font)
+(provide
+ (protect-out item%
+              install-control-font))
 
 (define _PangoFontDescription _pointer)
 (define-gtk gtk_widget_modify_font (_fun _GtkWidget _PangoFontDescription -> _void))

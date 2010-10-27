@@ -8,7 +8,8 @@
          "types.rkt"
          "const.rkt")
 
-(provide menu-bar%)
+(provide
+ (protect-out menu-bar%))
 
 (define-user32 CreateMenu (_wfun -> _HMENU))
 (define-user32 SetMenu (_wfun _HWND _HMENU -> (r : _BOOL)

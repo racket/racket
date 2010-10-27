@@ -1,16 +1,15 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
           "../../syntax.rkt"
           "types.rkt"
           "utils.rkt"
           "window.rkt"
           "panel.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide group-panel%)
+(provide 
+ (protect-out group-panel%))
 
 (import-class NSBox)
 

@@ -4,8 +4,9 @@
          "utils.rkt"
          "init.rkt")
 
-(provide get-selected-text-color
-         get-selected-background-color)
+(provide 
+ (protect-out get-selected-text-color
+              get-selected-background-color))
 
 (define-cstruct _GTypeInstance
   ([class _pointer]))

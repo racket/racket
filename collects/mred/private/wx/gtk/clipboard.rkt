@@ -2,20 +2,21 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/alloc
+         racket/draw/unsafe/bstr
          "../../syntax.rkt"
          "../../lock.rkt"
          "../common/queue.rkt"
          "../common/local.rkt"
-         "../common/bstr.rkt"
           "utils.rkt"
           "types.rkt"
           "pixbuf.rkt")
 
-(provide clipboard-driver%
-         has-x-selection?
-	 _GtkSelectionData
-	 gtk_selection_data_get_length
-	 gtk_selection_data_get_data)
+(provide 
+ (protect-out clipboard-driver%
+              has-x-selection?
+              _GtkSelectionData
+              gtk_selection_data_get_length
+              gtk_selection_data_get_data))
 
 (define (has-x-selection?) #t)
 

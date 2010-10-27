@@ -1,35 +1,35 @@
-#lang scheme/base
-(require scheme/foreign)
-(unsafe!)
+#lang racket/base
+(require ffi/unsafe)
 
-(provide _GdkWindow
-         _GtkWidget _GtkWindow
-         _GdkDisplay
-         _GdkScreen
-         _gpointer
-         _GType
+(provide 
+ (protect-out _GdkWindow
+              _GtkWidget _GtkWindow
+              _GdkDisplay
+              _GdkScreen
+              _gpointer
+              _GType
 
-         _fnpointer
-         _gboolean
-         _gfloat
+              _fnpointer
+              _gboolean
+              _gfloat
 
-         _GdkEventButton _GdkEventButton-pointer
-         (struct-out GdkEventButton)
-         _GdkEventKey _GdkEventKey-pointer
-         (struct-out GdkEventKey)
-         _GdkEventScroll _GdkEventScroll-pointer
-         (struct-out GdkEventScroll)
-         _GdkEventMotion _GdkEventMotion-pointer
-         (struct-out GdkEventMotion)
-         _GdkEventCrossing _GdkEventCrossing-pointer
-         (struct-out GdkEventCrossing)
-         _GdkEventConfigure _GdkEventConfigure-pointer
-         (struct-out GdkEventConfigure)
-         _GdkEventExpose _GdkEventExpose-pointer
-         (struct-out GdkEventExpose)
-         (struct-out GdkRectangle)
-         _GdkColor _GdkColor-pointer
-         (struct-out GdkColor))
+              _GdkEventButton _GdkEventButton-pointer
+              (struct-out GdkEventButton)
+              _GdkEventKey _GdkEventKey-pointer
+              (struct-out GdkEventKey)
+              _GdkEventScroll _GdkEventScroll-pointer
+              (struct-out GdkEventScroll)
+              _GdkEventMotion _GdkEventMotion-pointer
+              (struct-out GdkEventMotion)
+              _GdkEventCrossing _GdkEventCrossing-pointer
+              (struct-out GdkEventCrossing)
+              _GdkEventConfigure _GdkEventConfigure-pointer
+              (struct-out GdkEventConfigure)
+              _GdkEventExpose _GdkEventExpose-pointer
+              (struct-out GdkEventExpose)
+              (struct-out GdkRectangle)
+              _GdkColor _GdkColor-pointer
+              (struct-out GdkColor)))
 
 (define _GType _long)
 

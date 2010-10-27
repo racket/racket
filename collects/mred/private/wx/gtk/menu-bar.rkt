@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
           "../../syntax.rkt"
           "../../lock.rkt"
           "../common/freeze.rkt"
@@ -9,12 +9,12 @@
           "window.rkt"
           "utils.rkt"
           "types.rkt")
-(unsafe!)
 
-(provide menu-bar%
-         gtk_menu_item_new_with_mnemonic
-         gtk_menu_shell_append
-         fixup-mneumonic)
+(provide
+ (protect-out menu-bar%
+              gtk_menu_item_new_with_mnemonic
+              gtk_menu_shell_append
+              fixup-mneumonic))
 
 (define-gtk gtk_menu_bar_new (_fun -> _GtkWidget))
 (define-gtk gtk_menu_shell_append (_fun _GtkWidget _GtkWidget -> _void))

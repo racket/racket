@@ -10,7 +10,8 @@
 	 "wndclass.rkt"
          "types.rkt")
 
-(provide gauge%)
+(provide
+ (protect-out gauge%))
 
 (define PBS_VERTICAL #x04)
 (define PBM_SETRANGE (+ WM_USER 1))

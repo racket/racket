@@ -2,7 +2,7 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/alloc
-         racket/draw/bstr
+         racket/draw/unsafe/bstr
          "../common/queue.rkt"
          "../../lock.rkt"
          "types.rkt"
@@ -12,8 +12,9 @@
          "wndclass.rkt"
          "hbitmap.rkt")
 
-(provide clipboard-driver%
-         has-x-selection?)
+(provide 
+ (protect-out clipboard-driver%
+              has-x-selection?))
 
 (define (has-x-selection?) #f)
 

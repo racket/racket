@@ -1,12 +1,12 @@
 #lang racket/base
 (require racket/class
-         racket/draw/local
-         racket/draw/dc
-         racket/draw/cairo
-         racket/draw/bitmap
-         racket/draw/bitmap-dc
-         racket/draw/record-dc
-         racket/draw/ps-setup
+         racket/draw/private/local
+         racket/draw/private/dc
+         racket/draw/unsafe/cairo
+         racket/draw/private/bitmap
+         racket/draw/private/bitmap-dc
+         racket/draw/private/record-dc
+         racket/draw/private/ps-setup
          ffi/unsafe
          ffi/unsafe/alloc
          "../common/queue.rkt"
@@ -14,8 +14,9 @@
          "utils.rkt"
          "types.rkt")
 
-(provide printer-dc%
-         show-print-setup)
+(provide 
+ (protect-out printer-dc%
+              show-print-setup))
 
 (define GTK_UNIT_POINTS 1)
 

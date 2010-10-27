@@ -7,17 +7,18 @@
 	 "../../lock.rkt"
          "../common/backing-dc.rkt"
          "../common/delay.rkt"
-         racket/draw/cairo
-         racket/draw/dc
-         racket/draw/bitmap
-         racket/draw/local
+         racket/draw/unsafe/cairo
+         racket/draw/private/dc
+         racket/draw/private/bitmap
+         racket/draw/private/local
          ffi/unsafe/alloc)
 
-(provide dc%
-         win32-bitmap%
-         do-backing-flush
-         request-flush-delay
-         cancel-flush-delay)
+(provide 
+ (protect-out dc%
+              win32-bitmap%
+              do-backing-flush
+              request-flush-delay
+              cancel-flush-delay))
 
 (define win32-bitmap%
   (class bitmap%

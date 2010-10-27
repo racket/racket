@@ -1,15 +1,16 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe
-         racket/draw/cairo
+         racket/draw/unsafe/cairo
          racket/draw
-         racket/draw/local
+         racket/draw/private/local
          racket/class
          "types.rkt"
          "utils.rkt"
          "const.rkt")
 
-(provide bitmap->hbitmap
-         hbitmap->bitmap)
+(provide
+ (protect-out bitmap->hbitmap
+              hbitmap->bitmap))
 
 (define (bitmap->hbitmap bm 
                          #:mask [mask-bm #f]

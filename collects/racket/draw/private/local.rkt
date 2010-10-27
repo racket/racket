@@ -33,7 +33,6 @@
   get-font-key
 
   ;; dc-backend<%>
-  call-with-cr-lock
   get-cr
   release-cr
   end-cr

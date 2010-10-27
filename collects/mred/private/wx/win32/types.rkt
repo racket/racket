@@ -1,52 +1,53 @@
 #lang racket/base
 (require ffi/unsafe)
 
-(provide _wfun
-	 
-	 _WORD 	
-	 _DWORD 	
-	 _UDWORD 	
-	 _ATOM
-	 _WPARAM
-	 _LPARAM
-	 _LRESULT
-	 _BOOL
-	 _UINT
-	 _UINT_PTR
-	 _BYTE
-	 _LONG
-	 _ULONG
-	 _SHORT
-	 _HRESULT
-         _WCHAR
-         _SIZE_T
+(provide
+ (protect-out _wfun
+              
+              _WORD 	
+              _DWORD 	
+              _UDWORD 	
+              _ATOM
+              _WPARAM
+              _LPARAM
+              _LRESULT
+              _BOOL
+              _UINT
+              _UINT_PTR
+              _BYTE
+              _LONG
+              _ULONG
+              _SHORT
+              _HRESULT
+              _WCHAR
+              _SIZE_T
 
-	 _HINSTANCE
-	 _HWND
-	 _HMENU
-	 _HICON
-	 _HCURSOR
-	 _HBRUSH
-	 _HDC
-	 _HFONT
-	 _HBITMAP
-         _HANDLE
+              _HINSTANCE
+              _HWND
+              _HMENU
+              _HICON
+              _HCURSOR
+              _HBRUSH
+              _HDC
+              _HFONT
+              _HBITMAP
+              _HANDLE
 
-	 _COLORREF
+              _COLORREF
 
-	 _fnpointer
+              _fnpointer
 
-	 _permanent-string/utf-16
-         utf-16-length
+              _permanent-string/utf-16
+              utf-16-length
 
-	 (struct-out POINT) _POINT _POINT-pointer 
-	 (struct-out RECT) _RECT _RECT-pointer
-	 (struct-out MSG) _MSG _MSG-pointer
+              (struct-out POINT) _POINT _POINT-pointer 
+              (struct-out RECT) _RECT _RECT-pointer
+              (struct-out MSG) _MSG _MSG-pointer
 
-         HIWORD
-         LOWORD
-         MAKELONG
-         MAKELPARAM)
+              HIWORD
+              LOWORD
+              MAKELONG
+              MAKELPARAM))
 
 (define-syntax-rule (_wfun . a)
   (_fun #:abi 'stdcall . a))

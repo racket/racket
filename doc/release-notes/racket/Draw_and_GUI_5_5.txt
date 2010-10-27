@@ -91,3 +91,6 @@ Changes:
    OpenG drawing to a bitmap requires a bitmap created with
    `make-gl-bitmap'.
 
+ * The `write-resource, `get-reource', and `send-event' functions have
+   been removed from `racket/gui/base'. If there is any demand for the
+   removed functionality, it will be implemented in a new library.

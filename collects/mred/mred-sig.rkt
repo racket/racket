@@ -93,7 +93,6 @@ get-panel-background
 get-ps-setup-from-user
 get-highlight-background-color
 get-highlight-text-color
-get-resource
 get-text-from-user
 get-the-editor-data-class-list
 get-the-snip-class-list
@@ -164,7 +163,6 @@ region%
 register-collecting-blit
 scroll-event%
 selectable-menu-item<%>
-send-event
 send-message-to-window
 separator-menu-item%
 sleep/yield
@@ -207,5 +205,4 @@ window<%>
 write-editor-global-footer
 write-editor-global-header
 write-editor-version
-write-resource
 yield

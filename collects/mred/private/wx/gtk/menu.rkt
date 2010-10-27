@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
          "widget.rkt"
          "window.rkt"
           "../../syntax.rkt"
@@ -10,9 +10,9 @@
          "utils.rkt"
          "menu-bar.rkt"
          "../common/event.rkt")
-(unsafe!)
 
-(provide menu%)
+(provide 
+ (protect-out menu%))
 
 (define-gtk gtk_menu_new (_fun -> _GtkWidget))
 (define-gtk gtk_check_menu_item_new_with_mnemonic (_fun _string -> _GtkWidget))

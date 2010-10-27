@@ -1,15 +1,15 @@
-#lang scheme/base
-(require scheme/foreign
-         scheme/class
+#lang racket/base
+(require ffi/unsafe
+         racket/class
           "../../syntax.rkt"
          "item.rkt"
          "utils.rkt"
          "types.rkt"
          "window.rkt"
          "const.rkt")
-(unsafe!)
 
-(provide gauge%)
+(provide 
+ (protect-out gauge%))
 
 ;; ----------------------------------------
 

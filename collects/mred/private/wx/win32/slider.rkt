@@ -11,7 +11,8 @@
 	 "wndclass.rkt"
          "types.rkt")
 
-(provide slider%)
+(provide
+ (protect-out slider%))
 
 (define TBS_VERT                #x0002)
 (define TBS_HORZ                #x0000)

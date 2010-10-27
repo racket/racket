@@ -8,17 +8,18 @@
          "utils.rkt"
          "types.rkt")
 
-(provide widget%
-         gtk->wx
+(provide 
+ (protect-out widget%
+              gtk->wx
 
-         gtk_widget_show
-         gtk_widget_hide
-         gtk_widget_destroy
+              gtk_widget_show
+              gtk_widget_hide
+              gtk_widget_destroy
 
-         gtk_vbox_new
-         gtk_hbox_new
-         gtk_box_pack_start
-         gtk_box_pack_end)
+              gtk_vbox_new
+              gtk_hbox_new
+              gtk_box_pack_start
+              gtk_box_pack_end))
 
 (define-gtk gtk_widget_show (_fun _GtkWidget -> _void))
 (define-gtk gtk_widget_hide (_fun _GtkWidget -> _void))

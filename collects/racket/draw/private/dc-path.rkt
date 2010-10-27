@@ -1,9 +1,9 @@
 #lang scheme/base
 
-(require mred/private/syntax
+(require "syntax.rkt"
          scheme/math
          scheme/class
-         "cairo.ss"
+         "../unsafe/cairo.ss"
          "fmod.ss"
          "point.ss"
          (only-in scheme/base 

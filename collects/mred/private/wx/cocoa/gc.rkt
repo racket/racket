@@ -4,9 +4,10 @@
          "utils.rkt"
          "types.rkt")
 
-(provide scheme_add_gc_callback
-         scheme_remove_gc_callback
-         make-gc-action-desc)
+(provide 
+ (protect-out scheme_add_gc_callback
+              scheme_remove_gc_callback
+              make-gc-action-desc))
 
 (define objc-lib (ffi-lib "libobjc"))
 

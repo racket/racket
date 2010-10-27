@@ -10,12 +10,9 @@
 	 "w32.rkt"
          "unique.rkt")
 
-(provide gtk-start-event-pump
-
-         try-to-sync-refresh
-
-         set-widget-hook!
-
+(provide (protect-out gtk-start-event-pump
+                      try-to-sync-refresh
+                      set-widget-hook!)
          ;; from common/queue:
          current-eventspace
          queue-event

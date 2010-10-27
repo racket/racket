@@ -7,8 +7,9 @@
          "queue.rkt"
          "../common/queue.rkt")
 
-(provide show-dialog
-         _GtkResponse)
+(provide 
+ (protect-out show-dialog
+              _GtkResponse))
 
 (define _GtkResponse
   (_enum 

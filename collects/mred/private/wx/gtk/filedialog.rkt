@@ -12,7 +12,8 @@
          "../common/handlers.rkt"
          "../common/queue.rkt")
 
-(provide file-selector)
+(provide 
+ (protect-out file-selector))
 
 (define _GtkFileChooserDialog _GtkWidget)
 (define _GtkFileChooser (_cpointer 'GtkFileChooser))

@@ -3,17 +3,18 @@
          ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
-         (prefix-in draw: racket/draw/gl-context)
-         racket/draw/gl-config
+         (prefix-in draw: racket/draw/private/gl-context)
+         racket/draw/private/gl-config
          "types.rkt"
          "utils.rkt")
 
-(provide prepare-widget-gl-context
-	 create-widget-gl-context
+(provide
+ (protect-out prepare-widget-gl-context
+              create-widget-gl-context
 
-         create-and-install-gl-context
-         get-gdk-pixmap
-         install-gl-context)
+              create-and-install-gl-context
+              get-gdk-pixmap
+              install-gl-context))
 
 (define gdkglext-lib
   (with-handlers ([exn:fail? (lambda (exn) #f)])

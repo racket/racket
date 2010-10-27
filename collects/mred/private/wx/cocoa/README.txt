@@ -12,4 +12,5 @@ Allocation rules:
  * Other autoreleased objects may end up in the root pool installed by
    "pool.rkt". The root pool is periodically destroyed and replaced;
    call `queue-autorelease-flush' if you need to encurage replacement
-   of the pool.
+   of the pool. If you need to use an object htat might be autoflushed,
+   be sure that you're in atomic mode.

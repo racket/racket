@@ -1,11 +1,12 @@
 #lang racket/base
 
-(provide application-file-handler
-         application-quit-handler
-         application-about-handler
-         application-pref-handler
-
-         nothing-application-pref-handler)
+(provide
+ (protect-out application-file-handler
+              application-quit-handler
+              application-about-handler
+              application-pref-handler
+              
+              nothing-application-pref-handler))
 
 (define saved-files null)
 (define afh (lambda (f)

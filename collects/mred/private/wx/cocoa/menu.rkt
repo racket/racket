@@ -10,7 +10,8 @@
          "window.rkt"
          "menu-item.rkt")
 
-(provide menu%)
+(provide 
+ (protect-out menu%))
 
 (import-class NSMenu NSMenuItem)
 

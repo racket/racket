@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
           "../../syntax.rkt"
           "../../lock.rkt"
          "window.rkt"
@@ -8,9 +8,9 @@
          "panel.rkt"
          "utils.rkt"
          "types.rkt")
-(unsafe!)
 
-(provide group-panel%)
+(provide
+ (protect-out group-panel%))
 
 (define-gtk gtk_frame_new (_fun _string -> _GtkWidget))
 (define-gtk gtk_fixed_new (_fun -> _GtkWidget))

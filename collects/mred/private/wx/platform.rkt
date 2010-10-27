@@ -1,6 +1,8 @@
 #lang racket/base
-(require racket/runtime-path (for-syntax racket/base))
-(provide (all-defined-out))
+(require racket/runtime-path 
+         (for-syntax racket/base))
+(provide 
+ (protect-out (all-defined-out)))
 
 (define-runtime-module-path-index platform-lib
   (let ([gtk-lib
@@ -45,8 +47,6 @@
                 bell
                 display-size
                 display-origin
-                get-resource
-                write-resource
                 flush-display
                 fill-private-color
                 cancel-quit
@@ -56,7 +56,6 @@
                 get-double-click-time
                 run-printout
                 file-creator-and-type
-                send-event
                 location->window
                 shortcut-visible-in-label?
                 unregister-collecting-blit

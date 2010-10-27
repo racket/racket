@@ -9,7 +9,8 @@
          "queue.rkt"
          "frame.rkt")
 
-(provide file-selector)
+(provide 
+ (protect-out file-selector))
 
 (import-class NSOpenPanel NSSavePanel NSURL NSArray)
 

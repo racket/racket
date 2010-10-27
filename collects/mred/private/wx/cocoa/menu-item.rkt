@@ -7,8 +7,9 @@
          "types.rkt"
          "const.rkt")
 
-(provide menu-item%
-         set-menu-item-shortcut)
+(provide 
+ (protect-out menu-item%
+              set-menu-item-shortcut))
 
 (import-class NSMenuItem)
 

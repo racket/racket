@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
           "../../syntax.rkt"
          "window.rkt"
          "client-window.rkt"
@@ -10,9 +10,9 @@
          "widget.rkt"
          "message.rkt"
          "../common/event.rkt")
-(unsafe!)
 
-(provide tab-panel%)
+(provide 
+ (protect-out tab-panel%))
 
 (define-gtk gtk_notebook_new (_fun -> _GtkWidget))
 (define-gtk gtk_fixed_new (_fun -> _GtkWidget))

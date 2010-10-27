@@ -2,14 +2,15 @@
 (require ffi/unsafe
          racket/class
          racket/string
-         racket/draw/color
+         racket/draw/private/color
          "utils.rkt"
          "types.rkt"
          "const.rkt"
          "wndclass.rkt"
 	 "../../lock.rkt")
 
-(provide get-color-from-user)
+(provide 
+ (protect-out get-color-from-user))
 
 (define-cstruct _CHOOSECOLOR
   ([lStructSize _DWORD]

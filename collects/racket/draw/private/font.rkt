@@ -3,7 +3,7 @@
          ffi/unsafe
          ffi/unsafe/atomic
          "syntax.ss"
-         "pango.ss"
+         "../unsafe/pango.ss"
          "font-syms.ss"
          "font-dir.ss"
          "local.ss")

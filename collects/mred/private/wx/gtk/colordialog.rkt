@@ -1,12 +1,13 @@
 #lang racket/base
 (require ffi/unsafe
          racket/class
-         racket/draw/color
+         racket/draw/private/color
          "types.rkt"
          "utils.rkt"
          "stddialog.rkt")
 
-(provide get-color-from-user)
+(provide 
+ (protect-out get-color-from-user))
 
 (define-gtk gtk_color_selection_dialog_new (_fun _string -> _GtkWidget))
 

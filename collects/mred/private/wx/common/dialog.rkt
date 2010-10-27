@@ -3,7 +3,7 @@
          "../../lock.rkt"
          "queue.rkt")
 
-(provide dialog-mixin)
+(provide (protect-out dialog-mixin))
 
 (define dialog-level-counter 0)
 

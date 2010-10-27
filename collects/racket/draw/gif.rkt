@@ -1,7 +1,5 @@
 #lang racket/base
-(require "lzw.rkt")
-
-;; FIXME: still need to handle transparency
+(require "private/lzw.rkt")
 
 (provide gif->rgba-rows)
 

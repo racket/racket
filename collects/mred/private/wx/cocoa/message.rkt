@@ -1,18 +1,17 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
-         ffi/objc
-         racket/draw/bitmap
+#lang racket/base
+(require racket/class
+         ffi/unsafe
+         ffi/unsafe/objc
+         racket/draw/private/bitmap
           "../../syntax.rkt"
           "window.rkt"
           "item.rkt"
           "utils.rkt"
           "types.rkt"
           "image.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide message%)
+(provide 
+ (protect-out message%))
 
 ;; ----------------------------------------
 

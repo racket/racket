@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe
          scheme/class
          "utils.rkt"
@@ -7,8 +7,9 @@
           "../../lock.rkt"
           "../../syntax.rkt")
 
-(provide menu-item%
-         id-to-menu-item)
+(provide
+ (protect-out menu-item%
+              id-to-menu-item))
 
 ;; Menu itens are identified by 16-bit numbers, so we have
 ;;  to keep a hash mapping them to menu items.

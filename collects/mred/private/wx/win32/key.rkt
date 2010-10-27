@@ -6,8 +6,9 @@
          "const.rkt"
          "../common/event.rkt")
 
-(provide make-key-event
-         generates-key-event?)
+(provide
+ (protect-out make-key-event
+              generates-key-event?))
 
 (define-user32 GetKeyState (_wfun _int -> _SHORT))
 (define-user32 MapVirtualKeyW (_wfun _UINT _UINT -> _UINT))

@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
-         mred/private/syntax
-         "font-syms.ss")
+#lang racket/base
+(require racket/class
+         "syntax.rkt"
+         "font-syms.rkt")
 
 (provide font-name-directory<%>
          the-font-name-directory)

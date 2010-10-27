@@ -1,16 +1,17 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          ffi/unsafe
          ffi/unsafe/objc
          "utils.rkt"
          "types.rkt"
          "image.rkt"
-         "../common/bstr.rkt"
+         racket/draw/unsafe/bstr
           "../../syntax.rkt"
           "../../lock.rkt")
 
-(provide clipboard-driver%
-         has-x-selection?)
+(provide 
+ (protect-out clipboard-driver%
+              has-x-selection?))
 
 (import-class NSPasteboard NSArray NSData NSImage NSGraphicsContext)
 (import-protocol NSPasteboardOwner)

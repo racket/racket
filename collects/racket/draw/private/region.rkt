@@ -3,7 +3,7 @@
          ffi/unsafe/atomic
          "syntax.ss"
          "local.ss"
-         "cairo.ss"
+         "../unsafe/cairo.ss"
          "dc-path.ss"
          "dc-intf.ss"
          "point.ss")

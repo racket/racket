@@ -1,18 +1,17 @@
-#lang scheme/base
-(require scheme/class
-         scheme/foreign
+#lang racket/base
+(require racket/class
+         ffi/unsafe
          racket/math
-         ffi/objc
+         ffi/unsafe/objc
           "../../syntax.rkt"
          "item.rkt"
          "types.rkt"
          "const.rkt"
          "utils.rkt"
          "window.rkt")
-(unsafe!)
-(objc-unsafe!)
 
-(provide gauge%)
+(provide 
+ (protect-out gauge%))
 
 ;; ----------------------------------------
 

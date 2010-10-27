@@ -8,7 +8,8 @@
          "wndclass.rkt"
 	 "../../lock.rkt")
 
-(provide file-selector)
+(provide 
+ (protect-out file-selector))
 
 (define-cstruct _OPENFILENAME
   ([lStructSize _DWORD]

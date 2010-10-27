@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require racket/class
          racket/draw
          ffi/unsafe
@@ -13,7 +13,8 @@
          "hbitmap.rkt"
          "types.rkt")
 
-(provide radio-box%)
+(provide
+ (protect-out radio-box%))
 
 (define SEP 4)
 (define BM_SETCHECK #x00F1)

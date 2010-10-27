@@ -1,8 +1,9 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
           "../../syntax.rkt")
 
-(provide menu-item%)
+(provide 
+ (protect-out menu-item%))
 
 (defclass menu-item% object%
   (define/public (id) this)

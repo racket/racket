@@ -11,7 +11,8 @@
 	 "wndclass.rkt"
          "types.rkt")
 
-(provide group-panel%)
+(provide
+ (protect-out group-panel%))
 
 
 (define group-panel% 

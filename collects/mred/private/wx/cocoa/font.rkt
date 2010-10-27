@@ -8,7 +8,8 @@
          "utils.rkt"
          "types.rkt")
 
-(provide font->NSFont)
+(provide 
+ (protect-out font->NSFont))
 
 (import-class NSFont NSFontManager)
 

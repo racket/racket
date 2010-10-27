@@ -13,7 +13,8 @@
 	 "wndclass.rkt"
          "types.rkt")
 
-(provide list-box%)
+(provide
+ (protect-out list-box%))
 
 (define WS_EX_CLIENTEDGE        #x00000200)
 

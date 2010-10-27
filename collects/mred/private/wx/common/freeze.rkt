@@ -1,9 +1,10 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe/try-atomic
          "queue.rkt")
 
-(provide call-as-nonatomic-retry-point
-         constrained-reply)
+(provide 
+ call-as-nonatomic-retry-point
+ (protect-out constrained-reply))
 
 (define (internal-error str)
   (log-error
