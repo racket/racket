@@ -30,3 +30,8 @@ gracket ufo-rename.rkt
 echo "--- ufo-rename.rkt  ---" echo ""
 gracket world0-stops.rkt 
 
+echo "--- record.rkt  ---" echo ""
+gracket record.rkt 
+echo "--- record-stop-when.rkt  ---" echo ""
+gracket record-stop-when.rkt 
+
