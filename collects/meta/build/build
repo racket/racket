@@ -1497,7 +1497,6 @@ tgz_to_tgz() {
   _tgzip "$tgt.tgz" "$srcdir"
   _cd "$savedpwd"
   _rm "$tmpdir/tgz-to-tgz-$$"
-fi
 }
 #----------------------------------------
 tgz_to_sh() {
