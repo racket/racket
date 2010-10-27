@@ -817,6 +817,22 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         new_so = vec;
       }
       break;
+    case scheme_fxvector_type:
+      if (SHARED_ALLOCATEDP(so)) {
+        new_so = so;
+      }
+      else {
+        Scheme_Vector *vec;
+        long i;
+        long size = SCHEME_FXVEC_SIZE(so);
+        vec = scheme_alloc_fxvector(size);
+
+        for (i = 0; i < size; i++) {
+          SCHEME_FXVEC_ELS(vec)[i] = SCHEME_FXVEC_ELS(so)[i];
+        }
+        new_so = (Scheme_Object *) vec;
+      }
+      break;
     case scheme_flvector_type:
       if (SHARED_ALLOCATEDP(so)) {
         new_so = so;
@@ -1070,6 +1086,7 @@ Scheme_Object *scheme_places_deserialize_worker(Scheme_Object *so)
     case scheme_byte_string_type:
     case scheme_unix_path_type:
     case scheme_flvector_type:
+    case scheme_fxvector_type:
         new_so = so;
       break;
     case scheme_symbol_type:
@@ -1172,7 +1189,7 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
       scheme_wrong_type("place-channel-send", "place-channel", 0, argc, args);
     }
     {
-      void *msg_memory;
+      void *msg_memory = NULL;
       mso = scheme_places_serialize(args[1], &msg_memory);
       scheme_place_async_send((Scheme_Place_Async_Channel *) ch->sendch, mso, msg_memory);
     }
