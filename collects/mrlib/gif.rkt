@@ -4,10 +4,9 @@
            scheme/class
            scheme/list
            net/gifwrite
-           scheme/contract)
+           racket/contract)
   
-  (provide write-gif
-           write-animated-gif)
+  (provide write-gif)
   
   (define (force-bm bm) (if (procedure? bm) (bm) bm))
   
@@ -76,6 +75,16 @@
   (define (write-gif bm filename)
     (write-gifs (list bm) #f filename #f #f #f))
   
+  (provide/contract
+   [write-animated-gif 
+    (->i ((bms (and/c (listof (or/c (is-a?/c bitmap%) (-> (is-a?/c bitmap%)))) pair?))
+          (delay (integer-in 0 4294967295))
+          (filename (or/c path? string?)))
+         (#:one-at-a-time? (one-at-a-time? any/c)
+          #:last-frame-delay (last-frame-delay (or/c (integer-in 0 4294967295) false/c))
+          #:loop? (Loop? (delay) (lambda (x) (and delay #t))))
+         any)])
+         
   (define (write-animated-gif bms delay filename 
                               #:one-at-a-time? [one-at-a-time? #f]
                               #:last-frame-delay [last-frame-delay #f]

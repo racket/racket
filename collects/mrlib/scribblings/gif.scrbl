@@ -21,8 +21,10 @@ a simple algorithm; see @scheme[quantize]. If the bitmap has a mask
 bitmap via @method[bitmap% get-loaded-mask], it is used to determine
 transparent pixels in the generated GIF image.}
 
-@defproc[(write-animated-gif [bitmaps (listof (or/c (is-a?/c bitmap%)
-                                                    (-> (is-a?/c bitmap%))))]
+@defproc[(write-animated-gif [bitmaps (and/c 
+					(listof (or/c (is-a?/c bitmap%)
+						      (-> (is-a?/c bitmap%))))
+					pair?)]
                              [delay-csec (integer-in 0 #xFFFFFFFF)]
                              [filename path-string]
                              [#:loop loop? any/c (and delay-csec #t)]
