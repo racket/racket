@@ -49,7 +49,12 @@
   [-a _BOOL (application: [_id theApplication] openFile: [_NSString filename])
       (queue-file-event (string->path filename))]
   [-a _void (applicationDidChangeScreenParameters: notification)
-      ;; Need to reset blit windows, since OS may move them incorrectly
+      ;; Screen changes sometimes make the event loop get stuck;
+      ;; hack: schedule a wake-up call in 5 seconds
+      (let ([priviledged-custodian ((get-ffi-obj 'scheme_make_custodian #f (_fun _pointer -> _scheme)) #f)])
+        (parameterize ([current-custodian priviledged-custodian])
+          (thread (lambda () (sleep 5.0)))))
+      ;; FIXME: Also need to reset blit windows, since OS may move them incorrectly
       (void)])
 
 (tellv app finishLaunching)
@@ -77,9 +82,12 @@
 ;;  `applicationDidChangeScreenParameters:' callback. Unstick
 ;;  it by posting a dummy event, since we fortunately can receive
 ;;  a callback via CGDisplayRegisterReconfigurationCallback().
+;; This seems to unstick things enough that `applicationDidChangeScreenParameters:'
+;;  is called, but sometimes the event loop gets stuck after
+;;  that, so there's an additional hack above.
 (define-appserv CGDisplayRegisterReconfigurationCallback 
   (_fun (_fun #:atomic? #t -> _void) _pointer -> _int32))
-(define (on-screen-changed) (post-dummy-event))
+(define (on-screen-changed) (printf "CG\n") (post-dummy-event))
 (void
  (CGDisplayRegisterReconfigurationCallback on-screen-changed #f))
 
