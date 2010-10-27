@@ -781,7 +781,7 @@
                      (cond
                        [(eof-object? ans)
                         (set! done? #t)
-                        #`(#%plain-app test)]
+                        #`(test)]
                        [else
                         ans]))]))))
 
