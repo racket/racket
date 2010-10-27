@@ -39,6 +39,7 @@ update string-pad-center to show examples via REPL notation:
 @include-section["contracts-intro.scrbl"]
 @include-section["contracts-simple-function.scrbl"]
 @include-section["contracts-general-function.scrbl"]
+@include-section["contracts-first-extended-example.scrbl"]
 @include-section["contracts-structure.scrbl"]
 @include-section["contracts-exists.scrbl"]
 @include-section["contracts-examples.scrbl"]
