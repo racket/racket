@@ -226,6 +226,11 @@
         ;; Any ... -> Boolean
         (begin
           (define/public (name arg ...) 
+            (define (last-draw)
+              (define draw0 draw)
+              (dynamic-wind (lambda () (set! draw last-picture))
+                            (lambda () (pdraw))
+                            (lambda () (set! draw draw0))))
             (queue-callback 
              (lambda ()
                (with-handlers ([exn? (handler #t)])
@@ -245,8 +250,7 @@
                      (begin
                        (set! nw (stop-the-world-world nw))
                        (send world set tag nw)
-                       (when last-picture
-                         (set! draw last-picture))
+                       (when last-picture (last-draw))
                        (when draw (pdraw))
                        (callback-stop! 'name)
                        (enable-images-button))
@@ -270,9 +274,7 @@
                            [else 
                             (set! draw# (- draw# 1))]))
                        (when (pstop)
-                         (when last-picture 
-                           (set! draw last-picture)
-                           (pdraw))
+                         (when last-picture (last-draw))
                          (callback-stop! 'name)
                          (enable-images-button))
                        changed-world?))))))))
