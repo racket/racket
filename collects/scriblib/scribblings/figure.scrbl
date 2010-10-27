@@ -22,7 +22,7 @@ rendering support.}
 )]{
 
 Creates a figure. The given @scheme[tag] is for use with
-@scheme[figure-ref] or @scheme[fFgure-ref]. The @scheme[caption] is an
+@scheme[figure-ref] or @scheme[Figure-ref]. The @scheme[caption] is an
 element. The @scheme[pre-flow] is decoded as a flow.
 
 For HTML output, the @scheme[figure*] and @scheme[figure*] functions
