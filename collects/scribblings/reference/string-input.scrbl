@@ -74,6 +74,8 @@ Like @scheme[read-line], but reads bytes and produces a byte string.}
                       [in input-port? (current-input-port)])
          (or/c string? eof-object?)]{
 
+@margin-note{To read an entire port as a string use @scheme[port->string].}
+
 Returns a string containing the next @scheme[amt] characters from
 @scheme[in].
 
@@ -94,6 +96,7 @@ encountering an error, the characters are dropped.}
 @defproc[(read-bytes [amt exact-nonnegative-integer?]
                      [in input-port? (current-input-port)])
          (or/c bytes? eof-object?)]{
+@margin-note{To read an entire port as bytes use @scheme[port->bytes].}
 Like @scheme[read-string], but reads bytes and produces a byte string.}
 
 @defproc[(read-string! [str (and/c string? (not/c immutable?))]
