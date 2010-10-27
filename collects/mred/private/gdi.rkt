@@ -8,7 +8,8 @@
 	   "wx.ss"
            "te.rkt"
 	   "mrtop.ss"
-	   "mrcanvas.ss")
+	   "mrcanvas.ss"
+           "syntax.rkt")
 
   (provide register-collecting-blit
 	   unregister-collecting-blit

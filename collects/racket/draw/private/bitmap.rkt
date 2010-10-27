@@ -15,7 +15,10 @@
          "color.rkt")
 
 (provide bitmap%
-         make-alternate-bitmap-kind)
+         make-bitmap
+         read-bitmap
+         make-monochrome-bitmap
+         (protect-out make-alternate-bitmap-kind))
 
 ;; FIXME: there must be some way to abstract over all many of the
 ;; ARGB/RGBA/BGRA iterations.
@@ -26,7 +29,7 @@
   get-alphas-as-mask
   set-alphas-as-mask)
 
-(define (kind-symbol? s)
+(define (bitmap-file-kind-symbol? s)
   (memq s '(unknown unknown/mask unknown/alpha
                     gif gif/mask gif/alpha 
                     jpeg jpeg/alpha
@@ -36,7 +39,7 @@
                     bmp bmp/alpha
                     pict)))
 
-(define (save-kind-symbol? s)
+(define (bitmap-save-kind-symbol? s)
   (memq s '(png jpeg gif xbm xpm bmp)))
 
 (define (quality-integer? i)
@@ -88,8 +91,8 @@
                 (alternate-bitmap-kind-width a)
                 (alternate-bitmap-kind-height a)
                 #f #t #f #f)]
-       [([exact-nonnegative-integer? w]
-         [exact-nonnegative-integer? h]
+       [([exact-positive-integer? w]
+         [exact-positive-integer? h]
          [any? [b&w? #f]]
          [any? [alpha? #f]])
         (values
@@ -113,7 +116,7 @@
            s)
          #f)]
        [([(make-alts path-string? input-port?) filename]
-         [kind-symbol? [kind 'unknown]]
+         [bitmap-file-kind-symbol? [kind 'unknown]]
          [(make-or-false color%) [bg-color #f]]
          [any? [complain-on-failure? #f]])
         (let-values ([(s b&w?) (do-load-bitmap filename kind bg-color complain-on-failure?)]
@@ -155,8 +158,8 @@
                         mask-bm)
                 (values #f 0 0 #f #f #f #f))))]
        [([bytes? bstr]
-         [exact-nonnegative-integer? w]
-         [exact-nonnegative-integer? h])
+         [exact-positive-integer? w]
+         [exact-positive-integer? h])
         (let ([bw (quotient (+ w 7) 8)])
           (unless ((bytes-length bstr) . >= . (* h bw))
             (error (init-name 'bitmap%)
@@ -218,7 +221,7 @@
     (define/public (adjust-lock delta) (set! locked (+ locked delta)))
 
     (def/public (load-bitmap [(make-alts path-string? input-port?) in]
-                             [kind-symbol? [kind 'unknown]]
+                             [bitmap-file-kind-symbol? [kind 'unknown]]
                              [(make-or-false color%) [bg #f]]
                              [any? [complain-on-failure? #f]])
       (check-alternate 'load-bitmap)
@@ -432,7 +435,7 @@
         (send bm release-bitmap-storage)))
 
     (def/public (save-file [(make-alts path-string? output-port?) out]
-                           [save-kind-symbol? [kind 'unknown]]
+                           [bitmap-save-kind-symbol? [kind 'unknown]]
                            [quality-integer? [quality 75]])
       (check-ok 'save-file)
       (if alt?
@@ -743,3 +746,19 @@
           (cairo_surface_mark_dirty s))))
 
     ))
+
+(define/top (make-bitmap [exact-positive-integer? w]
+                         [exact-positive-integer? h]
+                         [any? [alpha? #t]])
+  (make-object bitmap% w h #f alpha?))
+
+(define/top (read-bitmap [path-string? filename]
+                         [bitmap-file-kind-symbol? [kind 'unknown/alpha]])
+  (make-object bitmap% filename kind))
+
+(define/top (make-monochrome-bitmap [exact-positive-integer? w]
+                                    [exact-positive-integer? h]
+                                    [(make-or-false bytes?) [bits #f]])
+  (if bits
+      (make-object bitmap% bits w h)
+      (make-object bitmap% w h #t)))

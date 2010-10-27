@@ -117,10 +117,10 @@ has been moved out).
 ;;  - flip
 
 ;; a bitmap is:
-;;  - (make-bitmap (is-a?/c bitmap%) angle positive-real 
-;;                 hash[(list boolean[flip] number[x-scale] number[y-scale] number[angle]) -o> (cons (is-a?/c bitmap%) (is-a?/c bitmap%)])
+;;  - (make-ibitmap (is-a?/c bitmap%) angle positive-real 
+;;                  hash[(list boolean[flip] number[x-scale] number[y-scale] number[angle]) -o> (cons (is-a?/c bitmap%) (is-a?/c bitmap%)])
 ;;    NOTE: bitmap copying needs to happen in 'write' and 'read' methods
-(define-struct/reg-mk bitmap (raw-bitmap raw-mask angle x-scale y-scale cache)
+(define-struct/reg-mk ibitmap #:reflect-id bitmap (raw-bitmap raw-mask angle x-scale y-scale cache)
   #:omit-define-syntaxes #:transparent
   #:property prop:custom-write (λ (x y z) (bitmap-write x y z)))
 
@@ -404,7 +404,7 @@ has been moved out).
   (or (polygon? shape)
       (line-segment? shape)
       (curve-segment? shape)
-      (bitmap? shape)
+      (ibitmap? shape)
       (np-atomic-shape? shape)))
 
 (define (np-atomic-shape? shape)
@@ -412,7 +412,7 @@ has been moved out).
       (text? shape)
       (and (flip? shape)
            (boolean? (flip-flipped? shape))
-           (bitmap? (flip-shape shape)))))
+           (ibitmap? (flip-shape shape)))))
 
 ;; normalize-shape : shape -> normalized-shape
 ;; normalizes 'shape', calling 'f' on each atomic shape in the normalized shape.
@@ -490,8 +490,8 @@ has been moved out).
          (if bottom
              (make-overlay bottom this-one)
              this-one))]
-      [(or (bitmap? shape) (np-atomic-shape? shape))
-       (let ([shape (if (bitmap? shape) 
+      [(or (ibitmap? shape) (np-atomic-shape? shape))
+       (let ([shape (if (ibitmap? shape) 
                         (make-flip #f shape)
                         shape)])
          (let ([this-one 
@@ -532,12 +532,12 @@ has been moved out).
        [else
         (let ([bitmap (flip-shape shape)])
           (make-flip (flip-flipped? shape)
-                     (make-bitmap (bitmap-raw-bitmap bitmap)
-                                  (bitmap-raw-mask bitmap)
-                                  (bitmap-angle bitmap)
-                                  (* x-scale (bitmap-x-scale bitmap))
-                                  (* y-scale (bitmap-y-scale bitmap))
-                                  (bitmap-cache bitmap))))])]))
+                     (make-ibitmap (ibitmap-raw-bitmap bitmap)
+                                   (ibitmap-raw-mask bitmap)
+                                   (ibitmap-angle bitmap)
+                                   (* x-scale (ibitmap-x-scale bitmap))
+                                   (* y-scale (ibitmap-y-scale bitmap))
+                                   (ibitmap-cache bitmap))))])]))
 
 (define (scale-color color x-scale y-scale)
   (cond
@@ -875,34 +875,34 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 (define (get-rendered-bitmap flip-bitmap)
   (let ([key (get-bitmap-cache-key flip-bitmap)])
     (calc-rendered-bitmap flip-bitmap key)
-    (car (hash-ref (bitmap-cache (flip-shape flip-bitmap))
+    (car (hash-ref (ibitmap-cache (flip-shape flip-bitmap))
                    key))))
 
 (define (get-rendered-mask flip-bitmap)
   (let ([key (get-bitmap-cache-key flip-bitmap)])
     (calc-rendered-bitmap flip-bitmap key)
-    (cdr (hash-ref (bitmap-cache (flip-shape flip-bitmap))
+    (cdr (hash-ref (ibitmap-cache (flip-shape flip-bitmap))
                    key))))
 
 (define (get-bitmap-cache-key flip-bitmap)
   (let ([bm (flip-shape flip-bitmap)])
     (list (flip-flipped? flip-bitmap)
-          (bitmap-x-scale bm)
-          (bitmap-y-scale bm)
-          (bitmap-angle bm))))
+          (ibitmap-x-scale bm)
+          (ibitmap-y-scale bm)
+          (ibitmap-angle bm))))
 
 (define (calc-rendered-bitmap flip-bitmap key)
   (let ([bitmap (flip-shape flip-bitmap)])
     (cond
-      [(hash-ref (bitmap-cache bitmap) key #f) => (λ (x) x)]
+      [(hash-ref (ibitmap-cache bitmap) key #f) => (λ (x) x)]
       [else
        (let ([flipped? (flip-flipped? flip-bitmap)])
-         (define-values (orig-bitmap-obj orig-mask-obj) (values (bitmap-raw-bitmap bitmap)
-                                                                (bitmap-raw-mask bitmap)))
+         (define-values (orig-bitmap-obj orig-mask-obj) (values (ibitmap-raw-bitmap bitmap)
+                                                                (ibitmap-raw-mask bitmap)))
          (define-values (bitmap-obj mask-obj)
            (cond
-             [(<= (* (bitmap-x-scale bitmap) 
-                     (bitmap-y-scale bitmap))
+             [(<= (* (ibitmap-x-scale bitmap) 
+                     (ibitmap-y-scale bitmap))
                   1)
               ;; since we prefer to rotate big things, we rotate first
               (let-values ([(bitmap-obj mask-obj) (do-rotate bitmap orig-bitmap-obj orig-mask-obj flipped?)])
@@ -912,16 +912,16 @@ the mask bitmap and the original bitmap are all together in a single bytes!
               (let-values ([(bitmap-obj mask-obj) (do-scale bitmap orig-bitmap-obj orig-mask-obj)])
                 (do-rotate bitmap bitmap-obj mask-obj flipped?))]))
          (define pair (cons bitmap-obj mask-obj))
-         (hash-set! (bitmap-cache bitmap) key pair)
+         (hash-set! (ibitmap-cache bitmap) key pair)
          pair)])))
 
 (define (do-rotate bitmap bitmap-obj mask-obj flip?)
   (cond
-    [(and (not flip?) (zero? (bitmap-angle bitmap)))
+    [(and (not flip?) (zero? (ibitmap-angle bitmap)))
      ;; don't rotate anything in this case.
      (values bitmap-obj mask-obj)]
     [else
-     (let ([θ (degrees->radians (bitmap-angle bitmap))])
+     (let ([θ (degrees->radians (ibitmap-angle bitmap))])
        (let-values ([(bytes w h) (bitmap->bytes bitmap-obj mask-obj)])
          (let-values ([(rotated-bytes rotated-w rotated-h)
                        (rotate-bytes bytes w h θ)])
@@ -933,8 +933,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
              (values bm mask)))))]))
 
 (define (do-scale bitmap orig-bm orig-mask)
-  (let ([x-scale (bitmap-x-scale bitmap)]
-        [y-scale (bitmap-y-scale bitmap)])
+  (let ([x-scale (ibitmap-x-scale bitmap)]
+        [y-scale (ibitmap-y-scale bitmap)])
     (cond
       [(and (= 1 x-scale) (= 1 y-scale))
        ;; no need to scale in this case
@@ -1081,7 +1081,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
         [h (send bm get-height)])
     (make-image (make-translate (/ w 2)
                                 (/ h 2)
-                                (make-bitmap bm mask-bm 0 1 1 (make-hash)))
+                                (make-ibitmap bm mask-bm 0 1 1 (make-hash)))
                 (make-bb w h h)
                 #f)))
 
@@ -1125,8 +1125,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          curve-segment-color
          make-pen pen? pen-color pen-width pen-style pen-cap pen-join pen
          
-         make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-x-scale bitmap-y-scale 
-         bitmap-cache
+         make-ibitmap ibitmap? ibitmap-raw-bitmap ibitmap-raw-mask ibitmap-angle ibitmap-x-scale ibitmap-y-scale 
+         ibitmap-cache
 
          make-flip flip? flip-flipped? flip-shape
          

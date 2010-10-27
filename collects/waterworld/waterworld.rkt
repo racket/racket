@@ -79,16 +79,16 @@
   (define *checking-message*
     "Considering your move ...")
 
-  (define (make-bitmap s)
+  (define (make-wbitmap s)
     (make-object bitmap% 
 		 (build-path 
 		  (collection-path "waterworld") s) 'gif))
   (define *jolly-bitmap* #f)
   (define *jolly-ce-bitmap* #f)
-  (define *jolly-large-bitmap* (make-bitmap "jolly-large.gif"))
-  (define *jolly-small-bitmap* (make-bitmap "jolly-small.gif"))
-  (define *jolly-large-ce-bitmap* (make-bitmap "jolly-large-ce.gif"))
-  (define *jolly-small-ce-bitmap* (make-bitmap "jolly-small-ce.gif"))
+  (define *jolly-large-bitmap* (make-wbitmap "jolly-large.gif"))
+  (define *jolly-small-bitmap* (make-wbitmap "jolly-small.gif"))
+  (define *jolly-large-ce-bitmap* (make-wbitmap "jolly-large-ce.gif"))
+  (define *jolly-small-ce-bitmap* (make-wbitmap "jolly-small-ce.gif"))
 
   (define *jolly-small-desc* (list *jolly-small-bitmap* *jolly-small-ce-bitmap* 16 16))
   (define *jolly-large-desc* (list *jolly-large-bitmap* *jolly-large-ce-bitmap* 23 27))

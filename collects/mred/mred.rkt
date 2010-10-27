@@ -102,6 +102,9 @@
 	     begin-busy-cursor
 	     bell
 	     bitmap%
+             make-bitmap
+             read-bitmap
+             make-monochrome-bitmap
 	     brush%
 	     brush-list%
 	     editor-data%

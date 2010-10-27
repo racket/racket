@@ -21,3 +21,18 @@ argument is used as the OS-level exit code if it is an exact integer
 between @racket[1] and @racket[255] (which normally means
 ``failure''); otherwise, the exit code is @racket[0], (which normally
 means ``success'').}
+
+
+@defparam[executable-yield-handler proc ((integer-in 0 255) . -> . any)]{
+
+A parameter that determines a procedure to be called as the Racket
+process is about to exit normally. The procedure associated with this
+parameter is not call when @racket[exit] (or, more precisely, the
+defauly @tech{exit handler}) is used to exit early. The argument to
+the handler is the status code that is returned to the system on exit.
+The default executable-yield handler simply returns @|void-const|.
+
+The @racketmodname[scheme/gui/base] library sets this parameter to
+wait until all frames are closed, timers stopped, and queued events
+handled in the main eventspace. See @racketmodname[scheme/gui/base]
+for more information.}

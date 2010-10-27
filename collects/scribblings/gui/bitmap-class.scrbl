@@ -13,8 +13,8 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
  bitmaps (otherwise, @|MismatchExn|).
 
 
-@defconstructor*/make[(([width (integer-in 1 10000)]
-                        [height (integer-in 1 10000)]
+@defconstructor*/make[(([width exact-positive-integer?]
+                        [height exact-positive-integer?]
                         [monochrome? any/c #f]
                         [alpha? any/c #f])
                        ([in (or/c path-string? input-port?)]
@@ -27,8 +27,13 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
                               'unknown]
                         [bg-color (or/c (is-a?/c color%) false/c) #f])
                        ([bits bytes?]
-                        [width (integer-in 1 10000)]
-                        [height (integer-in 1 10000)]))]{
+                        [width exact-positive-integer?]
+                        [height exact-positive-integer?]))]{
+
+The @racket[make-bitmap], @racket[make-monchrome-bitmap], and
+ @racket[read-bitmap] functions are preferred over using
+ @racket[make-object] with @racket[bitmap%], because the functions are
+ less overloaded and provide more useful defaults.
 
 When @scheme[width] and @scheme[height] are provided: Creates a new
  bitmap. If @scheme[monochrome?] is true, the bitmap is monochrome; if
@@ -57,8 +62,8 @@ When a @scheme[bits] byte string is provided: Creates a monochrome
 
 @defmethod[(get-argb-pixels [x real?]
                             [y real?]
-                            [width (integer-in 1 10000)]
-                            [height (integer-in 1 10000)]
+                            [width exact-nonnegative-integer?]
+                            [height exact-nonnegative-integer?]
                             [pixels (and/c bytes? mutable?)]
                             [alpha? any/c #f])
            void?]{
@@ -87,7 +92,7 @@ Returns a copy of this bitmap's requested OpenGL configuration. See
 }
 
 @defmethod[(get-height)
-           (integer-in 1 10000)]{
+           exact-positive-integer?]{
 
 Gets the height of the bitmap in pixels.
 
@@ -130,7 +135,7 @@ Unlike an alpha channel, the mask bitmap is @italic{not} used
 }
 
 @defmethod[(get-width)
-           (integer-in 1 10000)]{
+           exact-positive-integer?]{
 
 Gets the width of the bitmap in pixels.
 

@@ -118,11 +118,13 @@ label->plain-label
 labelled-menu-item<%>
 list-box%
 list-control<%>
+make-bitmap
 make-eventspace
+make-gl-bitmap
 make-gui-empty-namespace
 make-gui-namespace
+make-monochrome-bitmap
 make-screen-bitmap
-make-gl-bitmap
 map-command-as-meta-key
 menu%
 menu-bar%
@@ -156,6 +158,7 @@ put-file
 queue-callback
 radio-box%
 readable-snip<%>
+read-bitmap
 read-editor-global-footer
 read-editor-global-header
 read-editor-version

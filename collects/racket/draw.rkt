@@ -23,7 +23,6 @@
          pen% pen-list% the-pen-list
          brush% brush-list% the-brush-list
          region%
-         bitmap%
          dc-path%
          dc<%>
          bitmap-dc%
@@ -31,4 +30,9 @@
          ps-setup% current-ps-setup
          get-face-list
          gl-config%
-         gl-context<%>)
+         gl-context<%>
+
+         bitmap%
+         make-bitmap
+         read-bitmap
+         make-monochrome-bitmap)

@@ -10,14 +10,15 @@
 
 (define-syntax (define-struct/reg-mk stx)
   (syntax-case stx ()
-    [(_ id . rest)
+    [(_ id #:reflect-id reflect-id rest ...)
      (let ([build-name
-            (λ (fmt)
-              (datum->syntax #'id (string->symbol (format fmt (syntax->datum #'id)))))])
+            (λ (fmt id)
+              (datum->syntax id (string->symbol (format fmt (syntax->datum id)))))])
        #`(begin
-           (define-struct id . rest)
-           (add-id-constructor-pair '#,(build-name "struct:~a")
-                                    #,(build-name "make-~a"))))]))
+           (define-struct id rest ... #:reflection-name 'reflect-id)
+           (add-id-constructor-pair '#,(build-name "struct:~a" #'reflect-id)
+                                    #,(build-name "make-~a" #'id))))]
+    [(_ id . rest) #'(define-struct/reg-mk id #:reflect-id id . rest)]))
 
 (define (id->constructor id)
   (let ([line (assoc id id-constructor-pairs)])

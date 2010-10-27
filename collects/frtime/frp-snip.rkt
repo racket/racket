@@ -15,7 +15,7 @@
                   any-nested-reactivity? raise-reactivity)
          
          ;; GRacket require
-         (except-in mred send-event))
+         mred)
 
 (define drs-eventspace #f)
 

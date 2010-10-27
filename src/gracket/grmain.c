@@ -45,11 +45,8 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 #define INITIAL_BIN_TYPE "ri"
 
 #define CMDLINE_STDIO_FLAG
-#define YIELD_BEFORE_EXIT
 #define INITIAL_NAMESPACE_MODULE "scheme/gui/init"
 #define GRAPHICAL_REPL
-
-static void yield_indefinitely();
 
 # include "../racket/main.c"
 
@@ -74,35 +71,6 @@ static char *get_gr_init_filename(Scheme_Env *env)
   }
 
   return s;
-}
-
-static void yield_indefinitely()
-{
-#ifdef MZ_PRECISE_GC
-  void *dummy;
-#endif
-  mz_jmp_buf * volatile save, newbuf;
-  Scheme_Thread * volatile p;
-  Scheme_Object *a[2], *yld;
-
-  p = scheme_get_current_thread();
-  save = p->error_buf;
-  p->error_buf = &newbuf;
-
-  if (!scheme_setjmp(newbuf)) {
-    a[0] = scheme_intern_symbol("mred/mred");
-    a[1] = scheme_intern_symbol("yield");
-    yld = scheme_dynamic_require(2, a);
-
-    a[0] = scheme_intern_symbol("wait");
-    scheme_apply(yld, 1, a);
-  }
-
-  p->error_buf = save;
-
-#ifdef MZ_PRECISE_GC
-  dummy = NULL; /* makes xform think that dummy is live, so we get a __gc_var_stack__ */
-#endif
 }
 
 /***********************************************************************/

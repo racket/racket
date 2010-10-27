@@ -8,4 +8,5 @@
 @include-section["global-draw-funcs.scrbl"]
 @include-section["post-script-funcs.scrbl"]
 @include-section["draw-list-funcs.scrbl"]
+@include-section["bitmap-funcs.scrbl"]
 @include-section["font-funcs.scrbl"]

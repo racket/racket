@@ -150,7 +150,7 @@ typedef struct {
   int use_repl;
   int script_mode;
 #endif
-#ifdef YIELD_BEFORE_EXIT
+#ifndef NO_YIELD_BEFORE_EXIT
   int add_yield;
 #endif
 #ifdef CMDLINE_STDIO_FLAG
@@ -433,7 +433,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
       exit_val = 0;
     } else {
       exit_val = 1;
-#ifdef YIELD_BEFORE_EXIT
+#ifndef NO_YIELD_BEFORE_EXIT
       fa->a->add_yield = 0;
 #endif
     }
@@ -441,15 +441,18 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
   }
 #endif /* DONT_RUN_REP */
 
-#ifdef YIELD_BEFORE_EXIT
+#ifndef NO_YIELD_BEFORE_EXIT
   if (fa->a->add_yield) {
     mz_jmp_buf * volatile save, newbuf;
     Scheme_Thread * volatile p;
+    Scheme_Object *yh, *yha[1];
     p = scheme_get_current_thread();
     save = p->error_buf;
     p->error_buf = &newbuf;
     if (!scheme_setjmp(newbuf)) {
-      yield_indefinitely();
+      yh = scheme_get_param(scheme_current_config(), MZCONFIG_EXE_YIELD_HANDLER);
+      yha[0] = scheme_make_integer(exit_val);
+      scheme_apply(yh, 1, yha);
     }
     p->error_buf = save;
   }
@@ -564,7 +567,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #if !defined(DONT_LOAD_INIT_FILE) || !defined(DONT_PARSE_COMMAND_LINE)
   int no_init_file = 0;
 #endif
-#ifdef YIELD_BEFORE_EXIT
+#ifndef NO_YIELD_BEFORE_EXIT
   int add_yield = 1;
 #endif
 #ifdef CMDLINE_STDIO_FLAG
@@ -800,9 +803,9 @@ static int run_from_cmd_line(int argc, char *_argv[],
     else if (!strcmp("--stdio", argv[0]))
       argv[0] = "-z";
     else if (!strcmp("--back", argv[0]))
-      argv[0] = "-G";
+      argv[0] = "-K";
 # endif
-# ifdef YIELD_BEFORE_EXIT
+# ifndef NO_YIELD_BEFORE_EXIT
     else if (!strcmp("--no-yield", argv[0]))
       argv[0] = "-V";
 # endif
@@ -988,7 +991,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	case 'v':
 	  show_vers = 1;
 	  break;
-#ifdef YIELD_BEFORE_EXIT
+#ifndef NO_YIELD_BEFORE_EXIT
 	case 'V':
 	  show_vers = 1;
 	  add_yield = 0;
@@ -1022,6 +1025,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  break;
 	case 'K':
 	  no_front = 1;
+          was_config_flag = 1;
 	  break;
 #endif
 #ifdef USE_OSKIT_CONSOLE
@@ -1212,12 +1216,14 @@ static int run_from_cmd_line(int argc, char *_argv[],
   fa->a->use_repl = use_repl;
   fa->a->script_mode = script_mode;
 #endif
-#ifdef YIELD_BEFORE_EXIT
+#ifndef NO_YIELD_BEFORE_EXIT
   fa->a->add_yield = add_yield;
 #endif
 #ifdef CMDLINE_STDIO_FLAG
   fa->a->alternate_rep = alternate_rep;
   fa->a->no_front = no_front;
+  if (no_front)
+    scheme_register_process_global("Racket-GUI-no-front", (void *)0x1);
 #endif
   fa->init_lib = init_lib;
   fa->global_env = global_env;
@@ -1256,8 +1262,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # ifdef CMDLINE_STDIO_FLAG
 	 "  -K, --back : Don't bring application to the foreground (Mac OS X)\n"
 # endif
-# ifdef YIELD_BEFORE_EXIT
-	 "  -V, --no-yield : Don't `(yield 'wait)'\n"
+# ifndef NO_YIELD_BEFORE_EXIT
+	 "  -V, --no-yield : Skip `((executable-yield-handler) <status>)' on exit\n"
 # endif
 	 " Configuration options:\n"
          "  -c, --no-compiled : Disable loading of compiled files\n"
@@ -1298,8 +1304,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
          " 3. Evaluate/load expressions/files in order, until first error\n"
          " 4. Load \"" INIT_FILENAME "\" [when -i]\n"
          " 5. Run read-eval-print loop [when -i]\n"
-# ifdef YIELD_BEFORE_EXIT
-         " 6. Run `(yield 'wait)' [unless -V]\n"
+# ifndef NO_YIELD_BEFORE_EXIT
+         " 6. Run `((executable-yield-handler) <status>)' [unless -V]\n"
 # endif
 	 );
   PRINTF(prog, BANNER);

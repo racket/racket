@@ -1,96 +1,130 @@
-Changes:
+GRacket, Racket, Drawing, and GUIs
+----------------------------------
 
- * The drawing portion of the old GUI toolbox is now available as a
-   separate layer: `racket/draw'. This layer can be used from plain
-   Racket independent of the `racket/gui' library, although
-   `racket/gui' re-exports `racket/draw'.
+Version 5.5 includes two major changes to the Racket drawing and GUI
+API:
 
-   The `racket/draw' library is built on top of the widely used Cairo
-   drawing library and Pango text-rendering library.
+ * The drawing portion of the GUI toolbox is now available as a
+   separate layer: `racket/draw'. This layer can be used independent
+   of the `racket/gui/base' library, although `racket/gui' re-exports
+   `racket/draw'.
 
- * Drawing to a bitmap may not produce the same results as drawing to
-   a canvas. Use the `make-screen-bitmap' function (from `racket/gui')
-   or the `make-bitmap' method of `canvas%' to obtain a bitmap that
-   uses the same drawing algorithms as a canvas.
+   (The `racket/draw' library is built on top of the widely used Cairo
+   drawing library and Pango text-rendering library.)
 
-   Drawing to a canvas always draws into a bitmap that is kept
-   offscreen and periodically flushed onto the screen. The new
-   `suspend-flush' and `resume-flush' methods of `canvas%' provide
-   some control over the timing of the flushes, which in many cases
-   avoids the need for (additional) double buffering of canvas
-   content.
+ * The GRacket executable is no longer strictly necessary for running
+   GUI programs; the `racket/gui/base' library can be used from
+   Racket.
 
- * A color bitmap can have an alpha channel, instead of just a mask
-   bitmap. When drawing a bitmap, alpha channels are used more
-   consistently and automatically than mask bitmaps. More
-   significantly, drawing into a bitmap with an alpha channel
-   preserves the drawn alphas; for example, drawing a line in the
-   middle of an empty bitmap produces an image with non-zero alpha
-   only at the drawn line.
+   The GRacket executable still offers some additional GUI-specific
+   functiontality however. Most notably, GRacket is a GUI application
+   under Windows (as opposed to a console application, which is
+   launched slightly differently by the OS), GRacket is a bundle under
+   Mac OS X (so the dock icon is the Racket logo, for example), and
+   GRacket manages single-instance mode for Windows and X.
 
-   Create a bitmap with an alpha channel by supplying #t as the new
-   `alpha?' argument to the `bitmap%' constructor, or by loading an
-   image with a type like 'unknown/alpha insteda of 'unknown or
-   'unknown/mask.
+The drawing and GUI libraries have also changed in further small ways.
 
-   A newly created `bitmap%' has an empty content (i.e., white with
-   zero alpha), insteda of unspecified content.
 
-   Images can be read into a `bitmap%' from from input ports, instead
-   of requiring a file path.
+Bitmaps
+-------
 
- * A `dc<%>' supports additional drawing transformations: a rotation
-   (via `set-rotation') and a general transformation matrix (via
-   `set-initial-matrix'). Scaling factors can be negative, which
-   corresponds to flipping the direction of drawing.
+Drawing to a bitmap may not produce the same results as drawing to a
+canvas. Use the `make-screen-bitmap' function (from `racket/gui') or
+the `make-bitmap' method of `canvas%' to obtain a bitmap that uses the
+same drawing algorithms as a canvas.
 
-   A transformation matrix has the form `(vector xx xy yx yy x0 y0)',
-   where a point (x1, y1) is transformed to a point (x2, y2) with x2 =
-   xx*x1 + yx*y1 + x0 and y2 = xy*x1 + yy*y1 + y0, which is the usual
-   convention.
+A color bitmap can have an alpha channel, instead of just a mask
+bitmap. When drawing a bitmap, alpha channels are used more
+consistently and automatically than mask bitmaps. More significantly,
+drawing into a bitmap with an alpha channel preserves the drawn
+alphas; for example, drawing a line in the middle of an empty bitmap
+produces an image with non-zero alpha only at the drawn line.
 
-   New methods `translate', `scale', `rotate', and `transform'
-   simplify adding a further translation, scaling, rotation, or
-   arbitrary matrix transformation on top of the current
-   transformation. The new `get-translation' and `set-translation'
-   methods help to capture and restore transformation settings.
+Only bitmaps created with the new `make-gl-bitmap' function support
+OpenGL drawing.
 
-   The old translation and scaling transformations apply after the
-   initial matrix. The new rotation transformation applies after the
-   other transformations. This layering is redundant, since all
-   transformations can be expressed in a single matrix, but it is
-   backward-compatibile. Methods like `get-translation',
-   `set-translation', `scale', etc. help hide the reundancy.
+Use the new `make-bitmap', `read-bitmap', `make-monochrome-bitmap',
+`make-screen-bitmap', and `make-gl-bitmap' functions to create
+bitmaps, instead of using `make-object' with `bitmap%'. The new
+constructors are less overloaded and provide more modern defaults
+(such as alpha channels by default).
 
-   The alpha value of a `dc<%>' (as set by `set-alpha') is used for
-   all drawing operations, including drawing a bitmap.
+Image formats can be read into a `bitmap%' from from input ports,
+instead of requiring a file path. A newly created bitmap has an empty
+content (i.e., white with zero alpha), instead of unspecified content.
 
-   The `draw-bitmap' and `draw-bitmap-section' methods now smooth
-   bitmaps while scaling, so the `draw-bitmap-section-smooth' method
-   of `bitmap-dc%' simply calls `draw-bitmap-section'.
 
- * A `region%' can be created as independent of any `dc<%>', in which
-   cases it uses the drawing context's current transformation at the
-   time that it is installed as a clipping region.
+Canvases
+--------
 
- * The old 'xor mode for pens and brushes is no longer available
-   (since it is not supported by Cairo).
+Drawing to a canvas always draws into a bitmap that is kept offscreen
+and periodically flushed onto the screen. The new `suspend-flush' and
+`resume-flush' methods of `canvas%' provide some control over the
+timing of the flushes, which in many cases avoids the need for
+(additional) double buffering of canvas content.
 
- * The `draw-caret' argument to a `snip%' or `editor<%>' `draw' or
-   `refresh' method can be a pair, which indicates that the caret is
-   owned by an enclosing display and the selection spans the snip or
-   editor. In that case, the snip or editor should refrain from
-   drawing a background for the selected region, and it should draw
-   the foreground in the color specified by
-   `get-highlight-text-color', if any.
+OpenGL drawing in a canvas requires supplying 'gl as a style when
+creating the `canvas%' instance. OpenGL and normal dc<%> drawing no
+longer mix reliably in a canvas.
 
- * OpenGL drawing in a canvas requires supplying 'gl as a style when
-   creating the `canvas%' instance. OpenGL and normal dc<%> drawing no
-   longer mix reliably in a canvas.
 
-   OpenG drawing to a bitmap requires a bitmap created with
-   `make-gl-bitmap'.
+Drawing-Context Transformations
+-------------------------------
 
- * The `write-resource, `get-reource', and `send-event' functions have
-   been removed from `racket/gui/base'. If there is any demand for the
-   removed functionality, it will be implemented in a new library.
+A `dc<%>' instance supports rotation (via `set-rotation'), negative
+scaling factors for flipping, and a general transformation matrix (via
+`set-initial-matrix'). A transformation matrix has the form `(vector
+xx xy yx yy x0 y0)', where a point (x1, y1) is transformed to a point
+(x2, y2) with x2 = xx*x1 + yx*y1 + x0 and y2 = xy*x1 + yy*y1 + y0,
+which is the usual convention.
+
+New methods `translate', `scale', `rotate', and `transform' simplify
+adding a further translation, scaling, rotation, or arbitrary matrix
+transformation on top of the current transformation. The new
+`get-translation' and `set-translation' methods help to capture and
+restore transformation settings.
+
+The old translation and scaling transformations apply after the
+initial matrix. The new rotation transformation applies after the
+other transformations. This layering is redundant, since all
+transformations can be expressed in a single matrix, but it is
+backward-compatibile. Methods like `get-translation',
+`set-translation', `scale', etc. help hide the reundancy.
+
+
+Others Drawing-Context Changes
+------------------------------
+
+The alpha value of a `dc<%>' (as set by `set-alpha') is used for all
+drawing operations, including drawing a bitmap.
+
+The `draw-bitmap' and `draw-bitmap-section' methods now smooth bitmaps
+while scaling, so the `draw-bitmap-section-smooth' method of
+`bitmap-dc%' simply calls `draw-bitmap-section'.
+
+A `region%' can be created as independent of any `dc<%>', in which
+cases it uses the drawing context's current transformation at the time
+that it is installed as a clipping region.
+
+The old 'xor mode for pens and brushes is no longer available (since
+it is not supported by Cairo).
+
+
+Editor Changes
+--------------
+
+The `draw-caret' argument to a `snip%' or `editor<%>' `draw' or
+`refresh' method can be a pair, which indicates that the caret is
+owned by an enclosing display and the selection spans the snip or
+editor. In that case, the snip or editor should refrain from drawing a
+background for the selected region, and it should draw the foreground
+in the color specified by `get-highlight-text-color', if any.
+
+
+Removed Functions
+-----------------
+
+The `write-resource, `get-reource', and `send-event' functions have
+been removed from `racket/gui/base'. If there is any demand for the
+removed functionality, it will be implemented in a new library.

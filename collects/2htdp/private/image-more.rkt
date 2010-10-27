@@ -617,11 +617,11 @@
        (rotated-rectangular-bounding-box w h (text-angle atomic-shape)))]
     [(flip? atomic-shape)
      (let* ([bitmap (flip-shape atomic-shape)]
-            [bb (bitmap-raw-bitmap bitmap)])
+            [bb (ibitmap-raw-bitmap bitmap)])
        (let-values ([(l t r b)
-                     (rotated-rectangular-bounding-box (* (send bb get-width) (bitmap-x-scale bitmap))
-                                                       (* (send bb get-height) (bitmap-y-scale bitmap))
-                                                       (bitmap-angle bitmap))])
+                     (rotated-rectangular-bounding-box (* (send bb get-width) (ibitmap-x-scale bitmap))
+                                                       (* (send bb get-height) (ibitmap-y-scale bitmap))
+                                                       (ibitmap-angle bitmap))])
          (values l t r b)))]
     [else
      (fprintf (current-error-port) "using bad bounding box for ~s\n" atomic-shape)
@@ -707,14 +707,14 @@
      (let ([bitmap (flip-shape atomic-shape)]
            [flipped? (flip-flipped? atomic-shape)])
        (make-flip flipped?
-                  (make-bitmap (bitmap-raw-bitmap bitmap)
-                               (bitmap-raw-mask bitmap)
+                  (make-bitmap (ibitmap-raw-bitmap bitmap)
+                               (ibitmap-raw-mask bitmap)
                                (bring-between (if flipped? 
-                                                  (+ (bitmap-angle bitmap) θ)
-                                                  (- (bitmap-angle bitmap) θ))
+                                                  (+ (ibitmap-angle bitmap) θ)
+                                                  (- (ibitmap-angle bitmap) θ))
                                               360)
-                               (bitmap-x-scale bitmap)
-                               (bitmap-y-scale bitmap)
+                               (ibitmap-x-scale bitmap)
+                               (ibitmap-y-scale bitmap)
                                (make-hash))))]))
 
 ;; rotate-point : point angle -> point

@@ -54,9 +54,23 @@
 
 (tellv app finishLaunching)
 
+;; In case we were started in an executable without a bundle,
+;; explicitly register with the dock so the application can receive
+;; keyboard events.
+;; This technique is not sanctioned by Apple --- I found the code in SDL.
+(define-cstruct _CPSProcessSerNum ([lo _uint32] [hi _uint32]))
+(define-appserv CPSGetCurrentProcess (_fun _CPSProcessSerNum-pointer -> _int)
+  #:fail (lambda () (lambda args 1)))
+(define-appserv CPSEnableForegroundOperation (_fun _CPSProcessSerNum-pointer _int _int _int _int -> _int)
+  #:fail (lambda () #f))
+(let ([psn (make-CPSProcessSerNum 0 0)])
+  (when (zero? (CPSGetCurrentProcess psn))
+    (void (CPSEnableForegroundOperation psn #x03 #x3C #x2C #x1103))))
+
 (define app-delegate (tell (tell MyApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)
-(tellv app activateIgnoringOtherApps: #:type _BOOL #t)
+(unless (scheme_register_process_global "Racket-GUI-no-front" #f)
+  (tellv app activateIgnoringOtherApps: #:type _BOOL #t))
 
 ;; For some reason, nextEventMatchingMask:... gets stuck if the
 ;;  display changes, and it doesn't even send the 

@@ -498,3 +498,12 @@
          (send e set-wait-cursor-mode #f))))))
 
 (define (is-busy?) (positive? (eventspace-wait-cursor-count (current-eventspace))))
+
+;; ----------------------------------------
+
+;; Before exiting, wait until frames are closed, etc.:
+(executable-yield-handler
+ (let ([old-eyh (executable-yield-handler)])
+   (lambda (v)
+     (yield main-eventspace)
+     (old-eyh v))))

@@ -1023,10 +1023,7 @@
               (send f jump-to end)))))))
   
   (def/public (load-file [(make-or-false path-string?) [name #f]]
-                         [(symbol-in unknown unknown/mask gif gif/mask
-                                     jpeg png png/mask
-                                     xbm xpm bmp pict)
-                          [kind 'unknown]]
+                         [image-type? [kind 'unknown]]
                          [bool? [rel-path? #f]]
                          [bool? [inline? #t]])
     (do-set-bitmap #f #f #f)
