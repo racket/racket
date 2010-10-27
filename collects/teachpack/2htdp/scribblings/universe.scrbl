@@ -167,7 +167,7 @@ The design of a world program demands that you come up with a data
 		 (to-draw draw-expr width-expr height-expr)
 		 (stop-when stop-expr) (stop-when stop-expr last-scene-expr)	   
 		 (check-with world?-expr)	   
-		 (record? boolean-expr)
+		 (record? r-expr)
 		 (state boolean-expr)
 		 (on-receive rec-expr)
 		 (register IP-expr)
@@ -470,12 +470,16 @@ and @scheme[big-bang] will close down all event handling.}
 
 @item{
 
-@defform[(record? boolean-expr)
+@defform[(record? r-expr)
          #:contracts
-         ([boolean-expr boolean?])]{
- tells DrRacket to record all events and to enable a replay of the entire
- interaction. The replay action also generates one png image per scene and
- an animated gif for the entire sequence.
+         ([r-expr any/c])]{
+ tells DrRacket to enable a visual replay of the interaction, 
+ unless @scheme[#false].
+ The replay action generates one png image per scene and
+ an animated gif for the entire sequence in the directory of the user's
+ choice.  If @scheme[r-expr] evaluates to the name of an existing
+ directory/folder (in the local directory/folder), the directory is used to
+ deposit the images.
 }}
 
 @item{
