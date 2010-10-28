@@ -1138,7 +1138,9 @@
     (let loop ([ts types] [cur 0] [r '()])
       (if (null? ts)
           (reverse r)
-          (let* ([algn (or alignment (ctype-alignof (car ts)))]
+          (let* ([algn (if alignment 
+                           (min alignment (ctype-alignof (car ts)))
+                           (ctype-alignof (car ts)))]
                  [pos  (+ cur (modulo (- (modulo cur algn)) algn))])
             (loop (cdr ts)
                   (+ pos (ctype-sizeof (car ts)))

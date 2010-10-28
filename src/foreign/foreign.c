@@ -1107,7 +1107,8 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
       libffi_type = malloc(sizeof(ffi_type));
       memcpy(libffi_type, elements[i], sizeof(ffi_type));
       elements[i] = libffi_type;
-      elements[i]->alignment = with_alignment;
+      if (with_alignment < elements[i]->alignment)
+        elements[i]->alignment = with_alignment;
     }
   }
   /* allocate the new libffi type object */

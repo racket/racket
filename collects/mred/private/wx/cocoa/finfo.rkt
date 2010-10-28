@@ -136,8 +136,8 @@
       (raise-type-error 'file-creator-and-type "bytes string of length 4" type))
     (let ([fs (path->fsref path)]
           [v (cast (malloc 256) _pointer _FSCatalogInfo-pointer)])
+      (get-info v fs path)
       (let ([info (FSCatalogInfo-finderInfo v)])
-        (get-info v fs path)
         (set-FileInfo-fileCreator! info (str->int creator))
         (set-FileInfo-fileType! info (str->int type)))
       (let ([r (FSSetCatalogInfo fs
