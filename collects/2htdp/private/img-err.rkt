@@ -53,9 +53,21 @@
                                        final-arg)])
                  body ...))))]
       [(define/chk (fn-name args ...) body ...)
-       (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)])
+       (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)]
+                     [(arg-ids ...)
+                      (map (λ (arg)
+                             (syntax-case arg ()
+                               [x 
+                                (identifier? #'x)
+                                #'x]
+                               [(x y)
+                                (identifier? #'x)
+                                #'x]
+                               [_
+                                (raise-syntax-error 'define/chk "unknown argument spec" stx arg)]))
+                           (syntax->list #'(args ...)))])
          #'(define (fn-name args ...)
-             (let ([args (check/normalize 'fn-name 'args args i)] ...)
+             (let ([arg-ids (check/normalize 'fn-name 'arg-ids arg-ids i)] ...)
                body ...)))])))
 
 (define (map/i f l)

@@ -57,10 +57,10 @@
                [parent bp]) min-width 100)
     (send f show #t)))
 
-(define/chk (save-image image filename)
+(define/chk (save-image image filename [width (image-width image)] [height (image-height image)])
   (let* ([bm (make-object bitmap% 
-               (inexact->exact (ceiling (+ 1 (get-right image)))) 
-               (inexact->exact (ceiling (+ 1 (get-bottom image)))))]
+               (inexact->exact (ceiling width)) 
+               (inexact->exact (ceiling height)))]
          [bdc (make-object bitmap-dc% bm)])
     (send bdc set-smoothing 'aligned)
     (send bdc clear)

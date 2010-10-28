@@ -1443,7 +1443,7 @@ are not lost if the image is later clipped to its bounding box.
 @;-----------------------------------------------------------------------------
 @section{Exporting Images to Disk}
 
-In order to use an image as an input to another program (Photoshop, e.g., or 
+In order to use an image as an input to another program (e.g., Photoshop or 
 a web browser), it is necessary to represent it in a format that these programs
 can understand. The @racket[save-image] function provides this functionality, 
 writing an image to disk using the @tt{PNG} format. Since this
@@ -1451,8 +1451,21 @@ format represents an image using a set of pixel values, an image written to disk
 generally contains less information than the image that was written, and cannot be scaled
 or manipulated as cleanly (by any image program).
 
-@defproc[(save-image [image image?] [filename path-string?]) boolean?]{
- writes an image to the path specified by @racket[filename], using the
- @tt{PNG} format.}
+@defproc[(save-image [image image?]
+                     [filename path-string?]
+                     [width 
+                      (and/c real? (not/c negative?))
+                      (image-width image)]
+                     [height 
+                      (and/c real? (not/c negative?))
+                      (image-height image)])
+         boolean?]{
+ Writes an image to the path specified by @racket[filename], using the
+ @tt{PNG} format.
+ 
+ The last two arguments are optional. If present, they determine the width
+ and height of the save image file. If absent, the width and height of the image is used.
+ 
+ }
 
 
