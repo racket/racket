@@ -87,7 +87,7 @@
 ;;  that, so there's an additional hack above.
 (define-appserv CGDisplayRegisterReconfigurationCallback 
   (_fun (_fun #:atomic? #t -> _void) _pointer -> _int32))
-(define (on-screen-changed) (printf "CG\n") (post-dummy-event))
+(define (on-screen-changed) (post-dummy-event))
 (void
  (CGDisplayRegisterReconfigurationCallback on-screen-changed #f))
 
