@@ -345,6 +345,8 @@ has been moved out).
     (let loop ([sexp sexp])
       (cond
         [(pair? sexp) (cons (loop (car sexp)) (loop (cdr sexp)))]
+        [(and (immutable? sexp) (hash? sexp))
+         (hash-copy sexp)]
         [(vector? sexp)
          (if (= (vector-length sexp) 0)
              (k #f)
@@ -1019,7 +1021,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
     (update 1)
     (update 2)
     ;; don't save the cache
-    (vector-set! v 6 #f)
+    (vector-set! v 6 (make-hash))
     (recur v port)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
