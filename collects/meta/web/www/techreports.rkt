@@ -56,11 +56,11 @@
              below.
           @~ For references to specific releases and/or chapters, use
              @TT{\cite[Version M.N]{plt-tr@num}} or
-             @TT|{@cite[(in-bib plt-tr@num "Version M.N")]}| instead.  The year
-             in the bibliographic entry should be 2010 regardless of the
+             @TT|{@cite[(in-bib plt-tr|@num "Version M.N")]}| instead.  The
+             year in the bibliographic entry should be 2010 regardless of the
              version's date.}
       @@refblock{BibTeX}|{
-        @techreport{plt-tr@num,
+        @techreport{plt-tr|@num,
           title       = {|@title},
           author      = {|@(add-between author-strings " and ")},
           number      = {|@tr-name},
@@ -69,7 +69,7 @@
           note        = {\url{|@(get-resource-path cite-page #t)}}
         }}|
       @@refblock{Scribble}|{
-        (define plt-tr@num
+        (define plt-tr|@num
           (make-bib #:title    "|@title"
                     #:author   |@(format "~s" (cons 'authors author-strings))
                     #:date     "2010"
@@ -82,7 +82,7 @@
                           (map installer-version all-installers))])
              @tr{@td{@b{@v} @br @small{(@version->date[v])}}
                  @td{@TT{\cite[Version @v]{plt-tr@num}} @br
-                     @TT|{@cite[(in-bib plt-tr@num "Version |@v")]}|}
+                     @TT|{@cite[(in-bib plt-tr|@num "Version |@v")]}|}
                  @td{@link['html v], @link['pdf v]}})}
         @p{@small{Reminder: the release dates should not be included in the
                   entry or the citation.}}}})
