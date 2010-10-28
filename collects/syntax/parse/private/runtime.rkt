@@ -323,7 +323,7 @@
 
 (define-syntax (curried-stxclass-parser stx)
   (syntax-case stx ()
-    [(cp class argu)
+    [(_ class argu)
      (with-syntax ([#s(arguments (parg ...) (kw ...) _) #'argu])
        (let ([sc (get-stxclass/check-arity #'class #'class
                                            (length (syntax->list #'(parg ...)))
