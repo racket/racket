@@ -66,79 +66,32 @@
             (hash-set! shared v pos) 
             pos)))
     
-    (define (do-pass)
-      (out-compilation-top 
-       (λ (v #:error? [error? #f])
-         (cond
-           #;[(contains-a-cycle? v)
-            #f]
-           [(hash? v) 
-            (error 'create-symbol-table "current type trace: ~a" (current-type-trace))]
-           [(closure? v)
-            #;(when (cyclic-closure? v)
-              (record-contains-a-cycle!))
-            (let ([pos (share! v)])
-              (if (encountered? v)
-                  pos
-                  (encounter! v)))]
-           [(member v (rest (continuation-mark-set->list (current-continuation-marks) 'cycle)))
-            #f]
-           [error? ; If we would error if this were not present, then we must share it
-            (encounter! v)
-            (share! v)]
-           [(encountered? v)
-            (share! v)]
-           [else
-            (encounter! v)]))
-       (λ (v)
-         (unencounter! v))
-       (open-output-nowhere)))
-    
-    ;(do-pass)
-    ;(hash-remove-all! shared)
-    ;(hash-remove-all! encountered)
-    (do-pass)
+    (out-compilation-top 
+     (λ (v #:error? [error? #f])
+       (cond
+         [(hash? v) (error 'create-symbol-table "current type trace: ~a" (current-type-trace))]
+         [(closure? v)
+          (let ([pos (share! v)])
+            (if (encountered? v)
+                pos
+                (encounter! v)))]
+         [error? ; If we would error if this were not present, then we must share it
+          (encounter! v)
+          (share! v)]
+         [(encountered? v)
+          (share! v)]
+         [else
+          (encounter! v)]))
+     (λ (v)
+       (unencounter! v))
+     (open-output-nowhere))
     
     (define symbol-table (make-vector (hash-count shared) (not-ready)))
-    
-    ; Closures go first in the symbol table
-    ; to avoid...
-    ;  Reading symtab#1 where it references symtab #2
-    ;  Symtab#2 is a closure
-    ;  Symtab#2 references symtab#1
-    ;  Thus, there is a "cycle" reading symtab#1
-    ;  and cycles are only allowed in closures.
-    ; XXX Can we get the following?
-    ;  [1 |-> (closure ... #2 ...)]
-    ;  [2 |-> (closure ... #1 ...)]
-    ; JM: We can fabricate one, definitely, but I don't think
-    ;     we could possibly parse it. And I don't think the 
-    ;     compiler would ever make one.
-    (define sorted-shared-objs
-      (sort (hash-keys shared)
-            (λ (x y) 
-              ; Move closures to the left
-              (closure? x))))
-    (define relabeling (make-vector (hash-count shared) #f))
-    (for ([obj sorted-shared-objs]
-          [actual-pos (in-naturals)])
-      (define pos (hash-ref shared obj))
-      (vector-set! relabeling (sub1 pos) (add1 actual-pos))
-      (vector-set! symbol-table actual-pos obj))
-    
-    (define (relabeled-shared-obj-pos v #:error? [error? #f])
-      (define old-pos
-        (shared-obj-pos v #:error? error?))
-      (and old-pos
-           (vector-ref relabeling (sub1 old-pos))))
-    
-    (values symbol-table relabeled-shared-obj-pos))
+    (hash-map shared (λ (k v) (vector-set! symbol-table (sub1 v) k)))
+    (values symbol-table shared-obj-pos))
   
   (define-values (symbol-table shared-obj-pos)
     (create-symbol-table))
-  
-  #;(for ([(i v) (in-dict symbol-table)])
-    (printf "~a: ~a\n" i v))
   
   ; vector output-port -> (listof number) number
   ; writes symbol-table to outp
@@ -528,18 +481,11 @@
 (define-syntax with-type-trace
   (syntax-rules ()
     [(_ v body ...)
-     (begin body ...)
-     #;(with-continuation-mark 'zo (typeof v)
-       (begin0 (begin body ...) (void)))]))
-
-(define-syntax with-cycle-check
-  (syntax-rules ()
-    [(_ v body ...)
-     (with-continuation-mark 'cycle v
+     #;(begin body ...)
+     (with-continuation-mark 'zo (typeof v)
        (begin0 (begin body ...) (void)))]))
 
 (define (out-anything v out)
-  (with-cycle-check v
   (with-type-trace v
   (out-shared 
    v out
@@ -915,7 +861,7 @@
         (define bstr (get-output-bytes s))
         (out-number (bytes-length bstr) out)
         (out-bytes bstr out)]
-       [else (error 'out-anything "~s" (current-type-trace))]))))))
+       [else (error 'out-anything "~s" (current-type-trace))])))))
 
 (define-struct module-decl (content))
 
