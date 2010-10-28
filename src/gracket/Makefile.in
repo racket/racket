@@ -48,6 +48,7 @@ ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 GRACKETLINKER = @MZLINKER@
 
 GRACKETLDLIBS = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(LDLIBS)
+GRACKETLDFLAGS = $(LDFLAGS) -L../racket
 
 LOCALFLAGS_wx_xt = @WX_MMD_FLAG@
 LOCALFLAGS_wx_mac = -I$(srcdir)/../mac/racket -MMD -DWX_CARBON
