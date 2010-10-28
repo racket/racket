@@ -178,8 +178,8 @@
          (quasisyntax/loc stx
            (let ([closure (lambda (id ...) 
                             (syntax-parameterize ([mutator-env-roots 
-                                                   (list* #'id ...
-                                                          (syntax-parameter-value #'mutator-env-roots))]
+                                                   (list #'id ...
+                                                         #'free-id ...)]
                                                   [mutator-tail-call? #t])
                                                  (->address body)))])
              (add-closure-env! closure (list (make-env-root free-id) ...))
