@@ -270,10 +270,8 @@
                  (current-module-name-resolver mnr))))))
 
         (define/private (make-stepper filename)
-          (parameterize ((current-eventspace
-                          (parameterize ((current-eventspace drscheme-eventspace)
-                                         (current-custodian drscheme-custodian))
-                            (make-eventspace))))
+          (parameterize ((current-eventspace drscheme-eventspace)
+                         (current-custodian drscheme-custodian))
             (new drscheme-macro-stepper-director% (filename filename))))
 
         (define/private (inner-eval original-eval-handler e-expr)
