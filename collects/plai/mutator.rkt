@@ -235,7 +235,7 @@
 (define-syntax (mutator-datum stx)
   (syntax-case stx ()
     [(_ . e) 
-     (quasisyntax/loc stx (mutator-app collector:alloc-flat (#%datum . e)))]))
+     (quasisyntax/loc stx (mutator-anf-app collector:alloc-flat (#%datum . e)))]))
 
 (define-syntax (mutator-top-interaction stx)
   (syntax-case stx (require provide mutator-define mutator-define-values test/value=? import-primitives)
