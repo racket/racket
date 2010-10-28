@@ -320,7 +320,7 @@ has been moved out).
       (let ([lst (parse (fetch (send f get-unterminated-bytes)))])
         (cond
           [(not lst)
-           (make-image (make-ellipse 100 100 0 'solid "black")
+           (make-image (make-translate 50 50 (make-ellipse 100 100 0 'solid "black"))
                        (make-bb 100 100 100)
                        #f
                        #f)]
