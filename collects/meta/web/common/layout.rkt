@@ -1,7 +1,6 @@
 #lang at-exp racket/base
 
-(require scribble/html (only-in scribble/html/lang #%top)
-         (for-syntax racket/base syntax/name)
+(require scribble/html (for-syntax racket/base syntax/name)
          "utils.rkt" "resources.rkt")
 
 (define-for-syntax (process-contents who layouter stx xs)
