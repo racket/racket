@@ -353,12 +353,26 @@ has been moved out).
                 ;; bitmaps are vectors with a bytes in the first field
                 (apply bytes->bitmap (vector->list sexp))]
                [else
-                (let ([constructor (id->constructor (vector-ref sexp 0))]
-                      [args (cdr (vector->list sexp))])
-                  (if (and constructor
-                           (procedure-arity-includes? constructor (length args)))
-                      (apply constructor (map loop args))
-                      (k #f)))]))]
+                (let* ([tag (vector-ref sexp 0)]
+                       [args (cdr (vector->list sexp))]
+                       [constructor (id->constructor tag)]
+                       [arg-count (length args)]
+                       [parsed-args (map loop args)])
+                  (cond
+                    [(and constructor (procedure-arity-includes? constructor arg-count))
+                     (apply constructor parsed-args)]
+                    [(and (eq? tag 'struct:bitmap)
+                          (= arg-count 7))
+                     ;; we changed the arity of the bitmap constructor from old versions,
+                     ;; so fix it up here.
+                     (make-bitmap (list-ref parsed-args 0)
+                                  (list-ref parsed-args 1)
+                                  (list-ref parsed-args 2)
+                                  (list-ref parsed-args 3)
+                                  (list-ref parsed-args 4)
+                                  (make-hash))]
+                    [else
+                     (k #f)]))]))]
         [else sexp]))))
 
 (define (normalized-shape? s)
