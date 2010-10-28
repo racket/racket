@@ -11,7 +11,6 @@
  (protect-out define-gtk
               define-gdk
               define-gobj
-              define-gio
               define-glib
               define-gdk_pixbuf
 
@@ -70,13 +69,6 @@
     [(unix)
      (ffi-lib "libglib-2.0" '("0"))]
     [else gdk-lib]))
-(define gio-lib 
-  (case (system-type)
-    [(windows)
-     (ffi-lib "libgio-2.0-0")]
-    [(unix)
-     (ffi-lib "libgio-2.0" '("0"))]
-    [else gdk-lib]))
 (define gmodule-lib 
   (case (system-type)
     [(windows)
@@ -99,7 +91,6 @@
 
 (define-ffi-definer define-gtk gtk-lib)
 (define-ffi-definer define-gobj gobj-lib)
-(define-ffi-definer define-gio gio-lib)
 (define-ffi-definer define-glib glib-lib)
 (define-ffi-definer define-gmodule gmodule-lib)
 (define-ffi-definer define-gdk gdk-lib)
