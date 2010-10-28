@@ -304,6 +304,25 @@
       =>
       #t)
 
+;; test to make sure that image=? is provided from 2htdp/image and
+;; not just built into the teaching languages.
+(test (image=? (rectangle 10 10 'solid 'red) (rectangle 10 10 'solid 'red))
+      =>
+      #t)
+
+(test (image=? (overlay (rectangle 3 1 'solid 'blue)
+                        (rectangle 1 3 'solid 'blue))
+               (overlay (rectangle 1 3 'solid 'blue)
+                        (rectangle 3 1 'solid 'blue)))
+      =>
+      #t)
+
+
+(test (with-handlers ((exn:fail? (λ (x) 'passed)))
+        (begin (image=? 1 2) 'fail))
+      =>
+      'passed)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  testing overlays
