@@ -29,5 +29,6 @@
             (record? dir)))
 (sleep 1)
 (unless (image=? (bitmap "images0/i1.png") (draw-number 0))
-  (printf "this test needs to be revised -- image=? doesn't work\n"))
+  (fprintf (current-error-port)
+           "this test needs to be revised -- image=? doesn't work\n"))
 

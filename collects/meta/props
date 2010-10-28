@@ -558,6 +558,8 @@ path/s is either such a string or a list of them.
 "collects/2htdp/tests/perform-robby.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/perform-whack.rkt" drdr:command-line #f
 "collects/2htdp/tests/profile-robby.rkt" drdr:command-line #f
+"collects/2htdp/tests/record-stop-when.rkt" drdr:command-line (gracket *)
+"collects/2htdp/tests/record.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/release.rkt" drdr:command-line (gracket "-t" *)
 "collects/2htdp/tests/stop.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/test-image.rkt" responsible (robby) drdr:command-line (gracket-text "-t" *)
