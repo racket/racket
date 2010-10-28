@@ -26,7 +26,8 @@
            #,@(map (λ (x) 
                      (with-syntax ([(struct: maker) x])
                        #`[(struct:) maker]))
-                   id-constructor-pairs)))]))
+                   id-constructor-pairs)
+           [else #f]))]))
 
 (define-id->constructor id->constructor)
 
