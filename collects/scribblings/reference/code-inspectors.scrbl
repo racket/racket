@@ -46,8 +46,9 @@ requires control over the old one).
 
 Control over a module declaration (as opposed to a mere invocation)
 enables the reconstruction of syntax objects that contain references
-to the module's unexported identifiers. Otherwise, the compiler and
-macro expander prevent any reference to an unexported identifier,
+to the module's protected and unexported identifiers. Otherwise, the
+compiler and macro expander prevent any reference to a protected or
+unexported identifier,
 unless the reference appears within an expression that was generated
 by the module's macros (or, more precisely, a macro from a module
 whose declaration inspector controls the invocation of the

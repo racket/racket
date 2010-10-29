@@ -837,8 +837,11 @@ follows.
  ]}
 
  @defsubform[(protect-out provide-spec ...)]{ Like the union of the
- @racket[provide-spec]s, except that the exports are protected; see
- @secref["modprotect"]. The @racket[provide-spec] must specify only
+ @racket[provide-spec]s, except that the exports are protected;
+ requiring modules may refer to these bindings, but may not extract
+ these bindings from macro expansions or access them via @racket[eval] without
+ access privileges.
+ For more details, see @secref["modprotect"]. The @racket[provide-spec] must specify only
  bindings that are defined within the exporting module.
 
  @examples[#:eval (syntax-eval)
