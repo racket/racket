@@ -4887,7 +4887,9 @@
                                                                (min refresh-t top)
                                                                top)
                                                       right (if (not refresh-box-unset?)
-                                                                (max bottom refresh-b)
+                                                                (if (eq? refresh-b 'display-end)
+                                                                    bottom
+                                                                    (max bottom refresh-b))
                                                                 bottom)
                                                       #t))
                                             (values (max refresh-l left)
