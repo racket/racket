@@ -50,8 +50,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          "private/image-more.ss"
          "private/img-err.ss"
          (only-in lang/prim provide-primitive provide-primitives define-primitive)
-         htdp/error
-         (only-in lang/imageeq image=?))
+         htdp/error)
 
 (provide-primitives
          overlay
@@ -138,11 +137,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          make-pen pen
          pen?
          step-count?
-         save-image
-         image=?)
+         save-image)
 
-(provide bitmap 
-         image=?)
+(provide bitmap)
 
 (define-primitive make-color build-color/make-color)
 (define-primitive color build-color/color)

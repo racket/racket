@@ -2,7 +2,7 @@
 
 @(require (for-label (only-in racket/contract and/c or/c any/c not/c)
                      2htdp/image
-                     (except-in lang/htdp-beginner posn make-posn posn? posn-x posn-y image? image=?)
+                     (except-in lang/htdp-beginner posn make-posn posn? posn-x posn-y image?)
                      lang/posn
                      racket/gui/base
                      (only-in racket/base path-string?))
@@ -1282,12 +1282,6 @@ Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the im
 Two images are @racket[equal?] if they draw exactly the same way at their current size
 (not neccessarily at all sizes) and, if there are pinholes, the pinholes are
 in the same place.
-
-@defproc[(image=? [i1 image?] [i2 image?]) boolean?]{
-  Tests the same thing as @racket[(equal? i1 i2)], but 
-  insists that its arguments are images, signalling an error
-  otherwise.
-}
 
 @section[#:tag "pinholes"]{Pinholes}
 
