@@ -66,67 +66,46 @@ Here's the idea:
 
 
 ;; Compile 
-#;(log-debug "Removing existing zo file")
-#;(define compiled-zo-path (build-compiled-path base (path-add-suffix name #".zo")))
 
-#;(when (file-exists? compiled-zo-path)
-    (delete-file compiled-zo-path))
-
-(log-debug "Compiling module")
+(log-info "Compiling module")
 (void (system* (find-executable-path "raco") "make" file-to-batch)) 
 
 
-(define merged-source-path (path-add-suffix file-to-batch #".merged.rkt"))
-(define merged-struct-path (path-add-suffix file-to-batch #".mergeds.rkt"))
-(define-values (merged-source-base merged-source-name _1) (split-path merged-source-path))
-(define merged-zo-path (build-compiled-path merged-source-base (path-add-suffix merged-source-name #".zo")))
+(define merged-zo-path (path-add-suffix file-to-batch #"_merged.zo"))
 
 ;; Transformations
-(log-debug "Removing dependencies")
+(log-info "Removing dependencies")
 (define-values (batch-nodep top-lang-info top-self-modidx)
   (nodep-file file-to-batch (excluded-modules)))
 
-(log-debug "Merging modules")
+(log-info "Merging modules")
 (define batch-merge
   (merge-compilation-top batch-nodep))
 
-(log-debug "GC-ing top-levels")
+; Not doing this for now
+;(log-info "GC-ing top-levels")
 (define batch-gcd
   batch-merge
   #;(gc-toplevels batch-merge))
 
-(log-debug "Alpha-varying top-levels")
+(log-info "Alpha-varying top-levels")
 (define batch-alpha
   (alpha-vary-ctop batch-gcd))
 
-(log-debug "Replacing self-modidx")
+(log-info "Replacing self-modidx")
 (define batch-replace-modidx
   (replace-modidx batch-alpha top-self-modidx))
 
 (define batch-modname
-  (string->symbol (regexp-replace #rx"\\.rkt$" (path->string merged-source-name) "")))
-(log-debug (format "Modularizing into ~a" batch-modname))
+  (string->symbol (regexp-replace #rx"\\.zo$" (path->string merged-zo-path) "")))
+(log-info (format "Modularizing into ~a" batch-modname))
 (define batch-mod
   (wrap-in-kernel-module batch-modname batch-modname top-lang-info top-self-modidx batch-replace-modidx))
 
-;; Output
-(define batch-final batch-mod)
-
-(log-debug "Writing merged source")
-(with-output-to-file
-    merged-source-path
-  (lambda ()
-    (write batch-final))
-  #:exists 'replace)
-
-(log-debug "Writing merged zo")
+(log-info "Writing merged zo")
 (void
  (with-output-to-file 
      merged-zo-path
    (lambda ()
-     (zo-marshal-to batch-final (current-output-port)))
+     (zo-marshal-to batch-mod (current-output-port)))
    #:exists 'replace))
-
-
-
-
