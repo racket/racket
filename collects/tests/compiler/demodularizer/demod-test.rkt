@@ -22,13 +22,11 @@
   
   (define demod-filename 
     (path->string
-     (path-add-suffix filename #".merged.rkt")))
+     (path-add-suffix filename #"_merged.zo")))
   
   ; run whole program
   (define-values (whole-output whole-error)
     (capture-output (find-executable-path "racket") demod-filename))
-  
-  (display whole-error)
   
   ; compare output 
   (test
@@ -43,9 +41,7 @@
   (and (not (regexp-match #rx"merged" filename))
        (regexp-match #rx"rkt$" filename)))
 
-(test-on-program "/Users/blake/Development/plt/collects/tests/compiler/demodularizer/tests/racket-5.rkt")
-
-#;(test
+(test
  (for ([i (in-list (directory-list tests))])
    (define ip (build-path tests i))
    (when (modular-program? ip)
