@@ -104,15 +104,16 @@
          (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 (max w 1) (max h 1))])
            (cairo_surface_flush s)
            (cond
-            [alpha? 
-             ;; Init transparent:
-             (bytes-fill! (cairo_image_surface_get_data s) 0)]
             [b&w?
              ;; Init transparent white:
              (transparent-white! s w h)]
+            [alpha? 
+             ;; Init transparent:
+             (bytes-fill! (cairo_image_surface_get_data s) 0)]
             [else
              ;; Init all white, 255 alpha:
              (bytes-fill! (cairo_image_surface_get_data s) 255)])
+           (cairo_surface_mark_dirty s)
            s)
          #f)]
        [([(make-alts path-string? input-port?) filename]
@@ -588,7 +589,8 @@
         (let-values ([(A R G B) (argb-indices)])
           (cairo_surface_flush s)
           (let ([data (cairo_image_surface_get_data s)]
-                [row-width (cairo_image_surface_get_stride s)])
+                [row-width (cairo_image_surface_get_stride s)]
+                [use-alpha? (or alpha-channel? b&w?)])
             (let ([w2 (+ x (min (- width x) w))])
               (for* ([j (in-range y (min (+ y h) height))])
                 (let ([row (* j row-width)]
@@ -599,7 +601,7 @@
                            [ri (+ row 4i)]
                            [a (bytes-ref data (+ ri A))]
                            [unmult (lambda (a v)
-                                     (if alpha-channel?
+                                     (if use-alpha?
                                          (if (zero? a)
                                              255
                                              (unsafe-fxquotient (fx* v 255) a))
