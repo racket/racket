@@ -38,7 +38,12 @@
           (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
                   add-deriv deriv))))
 
+    ;; PRE: current thread = current eventspace's handler thread
     (define/public (new-stepper [flags '()])
+      (unless (eq? (current-thread)
+                   (eventspace-handler-thread (current-eventspace)))
+        (error 'macro-stepper-director
+               "new-stepper method called from wrong thread"))
       (define stepper-frame (new-stepper-frame))
       (define stepper (send/i stepper-frame stepper-frame<%> get-widget))
       (send stepper-frame show #t)
