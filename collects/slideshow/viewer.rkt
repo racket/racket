@@ -676,23 +676,23 @@
 		  [y (click-region-top clicking)]
 		  [w (- (click-region-right clicking) (click-region-left clicking))]
 		  [h (- (click-region-bottom clicking) (click-region-top clicking))])
-	      (if (or on?
-		      (not config:use-offscreen?)
-		      (not offscreen))
-		  (let* ([b (send dc get-brush)]
-			 [p (send dc get-pen)])
-		    (send dc set-pen (send the-pen-list find-or-create-pen "white" 1 'transparent))
-		    (send dc set-brush  (send the-brush-list find-or-create-brush "black" 
-					      (if config:use-offscreen?
-						  'hilite
-						  'xor)))
-		    (send dc draw-rectangle  x y w h)
-		    (send dc set-pen p)
-		    (send dc set-brush b))
-                  (let ([x (floor x)]
-                        [y (floor y)]
-                        [w (- (floor (+ x w)) (floor x))]
-                        [h (- (floor (+ y h)) (floor y))])
+              (let ([x (floor x)]
+                    [y (floor y)]
+                    [w (- (floor (+ x w)) (floor x))]
+                    [h (- (floor (+ y h)) (floor y))])
+                (if (or on?
+                        (not config:use-offscreen?)
+                        (not offscreen))
+                    (let* ([b (send dc get-brush)]
+                           [p (send dc get-pen)])
+                      (send dc set-pen (send the-pen-list find-or-create-pen "white" 1 'transparent))
+                      (send dc set-brush  (send the-brush-list find-or-create-brush "black" 
+                                                (if config:use-offscreen?
+                                                    'hilite
+                                                    'xor)))
+                      (send dc draw-rectangle x y w h)
+                      (send dc set-pen p)
+                      (send dc set-brush b))
                     (send dc draw-bitmap-section
                           (send offscreen get-bitmap)
                           x y x y
