@@ -37,18 +37,12 @@
 (define delete-me null)
 
 (define (objc-delete o)
-  (atomically
-   (set! delete-me (cons o delete-me))))
+  (tellv o release))
 
 (define (clean-up-deleted)
-  ;; called outside the event loop to actually delete objects
-  ;; that might otherwise be in use during a callback
-  (for ([o (in-list (begin0
-                     delete-me
-                     (set! delete-me null)))])
-    (tellv o release)))
+  (free-remembered-now objc-delete))
 
-(define objc-allocator (allocator objc-delete))
+(define objc-allocator (allocator remember-to-free-later))
 
 (define-syntax-rule (as-objc-allocation expr)
   ((objc-allocator (lambda () expr))))

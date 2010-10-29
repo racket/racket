@@ -127,6 +127,7 @@
 (define (dispatch-all-ready)
   ;; in atomic mode
   (pre-event-sync #f)
+  (clean-up-destroyed)
 
   ;; Windows uses messages above #x4000 to hilite items in the task bar,
   ;; etc. In any case, these messages won't be handled by us, so they

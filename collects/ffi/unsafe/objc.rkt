@@ -775,6 +775,11 @@
                                          (super-tell #:type _void dealloc)))]
                                    [_ (error "oops")])
                                  '())]
+                            [(async ...)
+                             (if (eq? (syntax-e id) 'dealloc)
+                                 ;; so that objects can be destroyed in foreign threads:
+                                 #'(#:async-apply apply-directly)
+                                 #'())]
                             [in-cls (if in-class?
                                         #'(object-get-class cls)
                                         #'cls)]
@@ -792,12 +797,15 @@
                                                                        [super-tell do-super-tell])
                                                    body0 body ...
                                                    dealloc-body ...)))
-                                           (_fun #:atomic? atomic? #:keep save-method! _id _id arg-type ... -> rt)
+                                           (_fun #:atomic? atomic? #:keep save-method! async ...
+                                                 _id _id arg-type ... -> rt)
                                            (generate-layout rt (list arg-id ...)))))))))]
          [else (raise-syntax-error #f
                                    "bad method form"
                                    stx
                                    #'m)]))]))
+
+(define (apply-directly f) (f))
 
 (define methods (make-hasheq))
 (define (save-method! m)

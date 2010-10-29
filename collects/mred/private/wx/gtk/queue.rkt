@@ -183,6 +183,7 @@
 
 (define (dispatch-all-ready)
   (pre-event-sync #f)
+  (clean-up-destroyed)
   (when (gtk_events_pending)
     (gtk_main_iteration_do #f)
     (dispatch-all-ready)))

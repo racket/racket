@@ -24,6 +24,7 @@
 
               as-gtk-allocation
               as-gtk-window-allocation
+              clean-up-destroyed
 
               g_free
               _gpath/free
@@ -113,7 +114,10 @@
 (define gtk-destroy ((deallocator) (lambda (v)
                                      (gtk_widget_destroy v)
                                      (g_object_unref v))))
-(define gtk-allocator (allocator gtk-destroy))
+
+(define gtk-allocator (allocator remember-to-free-later))
+(define (clean-up-destroyed)
+  (free-remembered-now gtk-destroy))
 
 (define-syntax-rule (as-gtk-allocation expr)
   ((gtk-allocator (lambda () (let ([v expr])

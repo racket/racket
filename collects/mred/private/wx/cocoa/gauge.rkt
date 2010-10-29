@@ -31,10 +31,9 @@
   (inherit get-cocoa)
 
   (super-new [parent parent]
-             [cocoa (let ([cocoa (values ; as-objc-allocation
-                                  ;; We're leaving guages for now. There's some problem
-                                  ;; releasing gauges through a finalizer. My guess is that
-                                  ;; it has something to do with animation in a separate thread.
+             [cocoa (let ([cocoa (as-objc-allocation
+                                  ;; Beware that a guage may be finally deallocated in 
+                                  ;; a seperate OS-level thread
                                   (tell (tell MyProgressIndicator alloc) init))])
                       (tellv cocoa setIndeterminate: #:type _BOOL #f)
                       (tellv cocoa setMaxValue: #:type _double* rng)

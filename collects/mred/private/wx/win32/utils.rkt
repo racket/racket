@@ -18,9 +18,12 @@
               failed
 
               GetLastError
+
               DestroyWindow
               NotifyWindowDestroy
               CreateWindowExW
+              clean-up-destroyed
+
               GetWindowLongW
               SetWindowLongW
               SendMessageW SendMessageW/str
@@ -73,6 +76,9 @@
   #:wrap (deallocator))
 (define NotifyWindowDestroy ((deallocator) void))
 
+(define (clean-up-destroyed)
+  (free-remembered-now DestroyWindow))
+
 (define-user32 CreateWindowExW (_wfun _DWORD
 				      _string/utf-16
 				      _string/utf-16
@@ -80,7 +86,7 @@
 				      _int _int _int _int
 				      _HWND _HMENU _HINSTANCE _pointer
 				      -> _HWND)
-  #:wrap (allocator DestroyWindow))
+  #:wrap (allocator remember-to-free-later))
 
 (define-user32 GetWindowLongW (_wfun _HWND _int -> _pointer))
 (define-user32 SetWindowLongW (_wfun _HWND _int _pointer -> _pointer))
