@@ -31,7 +31,7 @@
             (thread
              (lambda ()
                (sleep 1200)
-               (fprintf err "\n\n~aTIMEOUT -- ABORTING!\n" Section-prefix)
+               (fprintf errp "\n\n~aTIMEOUT -- ABORTING!\n" Section-prefix)
                (exit 3)
                ;; in case the above didn't work for some reason
                (sleep 60)
