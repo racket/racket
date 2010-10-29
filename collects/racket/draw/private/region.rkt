@@ -122,7 +122,7 @@
           (cairo_set_matrix cr (make-cairo_matrix_t 1 0 0 1 scroll-dx scroll-dy)))
         (for/fold ([v init]) ([pr (in-list paths)])
           (cairo_new_path cr)
-          (send (car pr) do-path cr align-x align-y)
+          (send (car pr) do-path cr values values)
           (cairo_set_fill_rule cr
                                (case (cdr pr)
                                  [(odd-even) CAIRO_FILL_RULE_EVEN_ODD]
