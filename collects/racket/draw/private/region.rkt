@@ -108,7 +108,8 @@
                           (max r (+ l2 w2))
                           (max b (+ t2 h2)))))))))
 
-    (define/public (install-region cr scroll-dx scroll-dy [init (void)] [install (lambda (cr v) (cairo_clip cr))])
+    (define/public (install-region cr scroll-dx scroll-dy align-x align-y 
+                                   [init (void)] [install (lambda (cr v) (cairo_clip cr))])
       (let ([default-fill-rule (if (ormap (lambda (pr) (eq? (cdr pr) 'odd-even)) paths)
                                    CAIRO_FILL_RULE_EVEN_ODD
                                    CAIRO_FILL_RULE_WINDING)]
@@ -121,7 +122,7 @@
           (cairo_set_matrix cr (make-cairo_matrix_t 1 0 0 1 scroll-dx scroll-dy)))
         (for/fold ([v init]) ([pr (in-list paths)])
           (cairo_new_path cr)
-          (send (car pr) do-path cr values values)
+          (send (car pr) do-path cr align-x align-y)
           (cairo_set_fill_rule cr
                                (case (cdr pr)
                                  [(odd-even) CAIRO_FILL_RULE_EVEN_ODD]
@@ -139,7 +140,7 @@
        in-cairo-context
        (lambda (cr)
          (cairo_save cr)
-         (install-region cr 0 0)
+         (install-region cr 0 0 values values)
          (begin0
           (proc cr)
           (cairo_restore cr)))))
@@ -181,7 +182,7 @@
                           ;; no transformation needed
                           (values x y))])
           (begin0 
-           (install-region cr #t (lambda (cr v) (and v (cairo_in_fill cr x y))))
+           (install-region cr #t values values (lambda (cr v) (and v (cairo_in_fill cr x y))))
            (call-as-atomic
             (cond
              [temp-cr (cairo_destroy cr)]

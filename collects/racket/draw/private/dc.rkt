@@ -453,7 +453,8 @@
       (set! desc-layoutss (make-vector (vector-length font-maps) #f))
       (do-reset-matrix cr)
       (when clipping-region
-        (send clipping-region install-region cr scroll-dx scroll-dy)))
+        (send clipping-region install-region cr scroll-dx scroll-dy
+              (lambda (x) (align-x x)) (lambda (y) (align-y y)))))
 
     (define smoothing 'unsmoothed)
 
@@ -601,7 +602,8 @@
        (reset-clip cr)
        (when clipping-region
          (send clipping-region lock-region 1)
-         (send clipping-region install-region cr scroll-dx scroll-dy))))
+         (send clipping-region install-region cr scroll-dx scroll-dy
+               (lambda (x) (align-x x)) (lambda (y) (align-y y))))))
 
     (define/public (get-clipping-matrix)
       (let* ([cm (make-cairo_matrix_t (cairo_matrix_t-xx matrix)
