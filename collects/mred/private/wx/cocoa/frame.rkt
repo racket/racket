@@ -47,7 +47,7 @@
       (let ([wx (->wx wxb)])
         (and wx
              (not (other-modal? wx))))]
-  [-a _BOOL (canBecomeMainWindow) #t]
+  [-a _BOOL (canBecomeMainWindow)  #t]
   [-a _BOOL (windowShouldClose: [_id win])
       (queue-window*-event wxb (lambda (wx)
                                  (unless (other-modal? wx)
@@ -73,15 +73,19 @@
         (queue-window*-event wxb (lambda (wx)
                                    (send wx on-size 0 0))))]
   [-a _void (windowDidBecomeMain: [_id notification])
-      (when wxb
-        (let ([wx (->wx wxb)])
-          (when wx
-            (set! front wx)
-            (send wx install-wait-cursor)
-            (send wx install-mb)
-            (send wx notify-responder #t)
-            (queue-window-event wx (lambda ()
-                                     (send wx on-activate #t))))))]
+      ;; We check whether the window is visible because
+      ;; clicking the dock item tries to resurrect a hidden
+      ;; frame. See also `setOneShot' below.
+      (when (tell #:type _BOOL self isVisible)
+        (when wxb
+          (let ([wx (->wx wxb)])
+            (when wx
+              (set! front wx)
+              (send wx install-wait-cursor)
+              (send wx install-mb)
+              (send wx notify-responder #t)
+              (queue-window-event wx (lambda ()
+                                       (send wx on-activate #t)))))))]
   [-a _void (windowDidResignMain: [_id notification])
       (when wxb
         (let ([wx (->wx wxb)])
@@ -89,7 +93,9 @@
             (when (eq? front wx) 
               (set! front #f)
               (send wx uninstall-wait-cursor))
-            (send empty-mb install)
+            (if root-fake-frame
+                (send root-fake-frame install-mb)
+                (send empty-mb install))
             (send wx notify-responder #f)
             (queue-window-event wx (lambda ()
                                      (send wx on-activate #f))))))]
@@ -184,6 +190,10 @@
     (move -11111 (if (= y -11111) 0 y))
 
     (tellv cocoa setAcceptsMouseMovedEvents: #:type _BOOL #t)
+
+    ;; Setting the window in one-shot mode helps prevent the
+    ;;  frame from being resurrected by a click on the dock icon.
+    (tellv cocoa setOneShot: #:type _BOOL #t)
 
     (define/override (get-cocoa-content) 
       (tell cocoa contentView))

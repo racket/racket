@@ -48,6 +48,10 @@
           (super-tell #:type _BOOL validateMenuItem: menuItem))]
   [-a _BOOL (application: [_id theApplication] openFile: [_NSString filename])
       (queue-file-event (string->path filename))]
+  [-a _BOOL (applicationShouldHandleReopen: [_id app] hasVisibleWindows: [_BOOL has-visible?])
+      ;; If we have any visible windows, return #t to do the default thing.
+      ;; Otherwise return #f, because we don't want any invisible windows resurrected.
+      has-visible?]
   [-a _void (applicationDidChangeScreenParameters: notification)
       ;; Screen changes sometimes make the event loop get stuck;
       ;; hack: schedule a wake-up call in 5 seconds
