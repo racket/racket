@@ -1346,10 +1346,9 @@
                            (cairo_move_to cr 
                                           (align-x/delta (+ x w) 0) 
                                           (let ([bl (- flh ld)])
-                                            (- (align-y/delta (+ y bl) 0)
-                                               (align-y/delta bl 0))))
+                                            (align-y/delta (+ y bl) 0)))
                            ;; Here's the draw command, which uses most of the time in this mode:
-                           (pango_cairo_show_layout cr layout))
+                           (pango_cairo_show_layout_line cr (pango_layout_get_line layout 0)))
                          (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la))))))
                  (when rotate? (cairo_restore cr))))))))
 

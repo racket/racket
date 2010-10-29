@@ -72,6 +72,7 @@
 (define PangoLanguage (_cpointer 'PangoLanguage))
 (define PangoCoverage (_cpointer 'PangoCoverage))
 (define PangoLayoutIter (_cpointer 'PangoLayoutIter))
+(define PangoLayoutLine (_cpointer 'PangoLayoutLine))
 
 (define-cstruct _PangoRectangle ([x _int]
                                  [y _int]
@@ -156,6 +157,7 @@
 (define-pangocairo pango_cairo_update_layout (_fun _cairo_t PangoLayout -> _void))
 (define-pango pango_layout_set_text (_fun PangoLayout [s : _string] [_int = -1] -> _void))
 (define-pangocairo pango_cairo_show_layout (_fun _cairo_t PangoLayout -> _void))
+(define-pangocairo pango_cairo_show_layout_line (_fun _cairo_t PangoLayoutLine -> _void))
 (define-pangocairo pango_cairo_show_glyph_string (_fun _cairo_t PangoFont _PangoGlyphString-pointer -> _void))
 
 (define-pango pango_layout_iter_free (_fun PangoLayoutIter -> _void)
@@ -165,6 +167,10 @@
 (define-pango pango_layout_iter_get_baseline (_fun PangoLayoutIter -> _int))
 (define-pango pango_layout_iter_next_run (_fun PangoLayoutIter -> _bool))
 (define-pango pango_layout_iter_get_run_readonly (_fun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer)))
+
+(define-pangocairo pango_layout_get_line (_fun PangoLayout _int -> PangoLayoutLine))
+(define-pangocairo pango_layout_get_line_readonly (_fun PangoLayout _int -> PangoLayoutLine)
+  #:fail (lambda () pango_layout_get_line))
 
 (define-pango pango_layout_get_context (_fun PangoLayout -> PangoContext)) ;; not an allocator
 (define-pango pango_layout_get_extents (_fun PangoLayout  _pointer _PangoRectangle-pointer -> _void))
