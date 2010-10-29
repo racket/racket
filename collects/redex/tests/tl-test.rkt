@@ -2155,7 +2155,7 @@
     (test (capture-output (test--> R #:equiv mod2=? 7 1 0) (test-results))
           "One test passed.\n")
     (test (capture-output (test--> R #:equiv mod2=? 7 1) (test-results))
-          #rx"FAILED tl-test.(?:.+):[0-9.]+\nexpected: 1\n  actual: 8\n  actual: 7\n1 test failed \\(out of 1 total\\).\n"))
+          #rx"FAILED tl-test\\.(?:.+):[0-9.]+\nexpected: 1\n  actual: 8\n  actual: 7\n1 test failed \\(out of 1 total\\).\n"))
   
   (let-syntax ([test-bad-equiv-arg
                 (λ (stx)
@@ -2165,9 +2165,47 @@
                                (test-form (reduction-relation empty-language (--> any any))
                                           #:equiv 1 2)
                                "no error raised")
-                             #rx"expected argument of type")]))])
+                             #rx"tl-test\\.(?:.+).*broke the contract")]))])
     (test-bad-equiv-arg test-->)
     (test-bad-equiv-arg test-->>))
 
+  (let ()
+    (capture-output (test-results))
+    (define-language L)
+    
+    (define 1+
+      (reduction-relation 
+       L
+       (--> number ,(add1 (term number)))))
+    
+    (define (equal-to-7 x) (= x 7))
+    (test (capture-output (test-->>∃ #:steps 5 1+ 0 equal-to-7))
+          #rx"^FAILED .*\nno reachable term satisfying #<procedure:equal-to-7> \\(but some terms were not unexplored\\)\n$")
+    
+    (test (capture-output (test-->>∃ 1+ 0 7)) "")
+    (test (capture-output (test-->>E 1+ 0 7)) "")
+    (test (capture-output (test-->>∃ #:steps +inf.0 1+ 0 7)) "")
+    (test (capture-output (test-->>∃ 1+ 0 equal-to-7)) "")
+    
+    (define identity
+      (reduction-relation
+       L
+       (--> any any)))
+    
+    (test (capture-output (test-->>∃ identity 0 1))
+          #rx"^FAILED .*\nno reachable term equal to 1\n$")
+    
+    (test (capture-output (test-results)) "2 tests failed (out of 6 total).\n")
+    
+    (test (with-handlers ([exn:fail:contract? exn-message])
+            (test-->>∃ 1+ 0 (λ (x y) x)))
+          #rx"tl-test\\.(?:.+).*broke the contract.*goal expression")
+    (test (with-handlers ([exn:fail:contract? exn-message])
+            (test-->>∃ 1 0 1))
+          #rx"tl-test\\.(?:.+).*broke the contract.*reduction relation expression")
+    (test (with-handlers ([exn:fail:contract? exn-message])
+            (test-->>∃ #:steps 1.1 1+ 0 1))
+          #rx"tl-test\\.(?:.+).*broke the contract.*steps expression"))
+  
   (print-tests-passed 'tl-test.ss)
   

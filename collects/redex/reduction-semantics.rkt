@@ -42,6 +42,7 @@
          test-equal
          test-->>
          test-->
+         test-->>∃ (rename-out [test-->>∃ test-->>E])
          test-predicate
          test-results)
 

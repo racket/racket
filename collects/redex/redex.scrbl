@@ -1143,6 +1143,37 @@ step, using @racket[pred-expr] to determine equivalence.
        
        (test-results)]
 
+@defform/subs[(test-->>∃ option ... rel-expr start-expr spec-expr)
+              ([option (code:line #:steps steps-expr)])
+              #:contracts ([rel-expr reduction-relation?]
+                           [start-expr any/c]
+                           [spec-expr (or/c (-> any/c any/c)
+                                            (not/c procedure?))]
+                           [steps-expr (or/c natural-number/c +inf.0)])]{
+Tests to see if the term @racket[start-expr] reduces according to the reduction 
+relation @racket[rel-expr] to a term specified by @racket[goal-expr] in 
+@racket[steps-expr] or fewer steps (default 1,000). The specification 
+@racket[goal-expr] may be either a predicate on terms or a term itself.
+}
+@defidform[test-->>E]{An alias for @racket[test-->>∃].}
+
+@examples[
+#:eval redex-eval
+       (define-language L
+         (n natural))
+
+       (define succ-mod8
+         (reduction-relation
+          L
+          (--> n ,(modulo (add1 (term n)) 8))))
+
+       (test-->>∃ succ-mod8 6 2)
+       (test-->>∃ succ-mod8 6 even?)
+       (test-->>∃ succ-mod8 6 8)
+       (test-->>∃ #:steps 6 succ-mod8 6 5)
+       
+       (test-results)]
+
 @defform[(test-predicate p? e)]{
 Tests to see if the value of @racket[e] matches the predicate @racket[p?].
 }

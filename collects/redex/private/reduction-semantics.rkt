@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "matcher.ss"
          "struct.ss"
@@ -7,9 +7,11 @@
          "loc-wrapper.ss"
 	 "error.ss"
          mzlib/trace
+         racket/contract
          (lib "list.ss")
          (lib "etc.ss")
-         (for-syntax syntax/parse))
+         (for-syntax syntax/parse
+                     syntax/parse/experimental/contract))
 
 (require (for-syntax (lib "name.ss" "syntax")
                      "loc-wrapper-ct.ss"
@@ -2044,28 +2046,42 @@
          (compiled-lang-nt-map lang)))
 
 (define (apply-reduction-relation* reductions exp)
-  (let-values ([(results cycle?) (apply-reduction-relation*/cycle? reductions exp)])
+  (let-values ([(results cycle?) (traverse-reduction-graph reductions exp)])
     results))
 
-(define (apply-reduction-relation*/cycle? reductions exp)
-  (let ([answers (make-hash)]
-        [cycle? #f])
-    (let loop ([exp exp]
-               [path (make-immutable-hash '())])
-      (cond
-        [(hash-ref path exp #f)
-         (set! cycle? #t)]
-        [else
-         (let ([nexts (apply-reduction-relation reductions exp)])
-           (cond
-             [(null? nexts) (hash-set! answers exp #t)]
-             [else (for-each 
-                    (λ (next) (loop next (hash-set path exp #t)))
-                    nexts)]))]))
-    (values (sort (hash-map answers (λ (x y) x))
-                  string<=?
-                  #:key (λ (x) (format "~s" x)))
-            cycle?)))
+(struct search-success ())
+(struct search-failure (cutoff?))
+
+(define (traverse-reduction-graph reductions start #:goal [goal? #f] #:steps [steps +inf.0])
+  (let/ec return
+    (let ([answers (make-hash)]
+          [cycle? #f]
+          [cutoff? #f])
+      (let loop ([term start]
+                 [path (make-immutable-hash '())]
+                 [more-steps steps])
+        (if (and goal? (goal? term))
+            (return (search-success))
+            (cond
+              [(hash-ref path term #f)
+               (set! cycle? #t)]
+              [else
+               (let ([nexts (apply-reduction-relation reductions term)])
+                 (cond
+                   [(null? nexts) 
+                    (unless goal? 
+                      (hash-set! answers term #t))]
+                   [else (if (zero? more-steps)
+                             (set! cutoff? #t)
+                             (for-each 
+                              (λ (next) (loop next (hash-set path term #t) (sub1 more-steps)))
+                              nexts))]))])))
+      (if goal?
+          (search-failure cutoff?)
+          (values (sort (hash-map answers (λ (x y) x))
+                        string<=?
+                        #:key (λ (x) (format "~s" x)))
+                  cycle?)))))
 
 ;; map/mt : (a -> b) (listof a) (listof b) -> (listof b)
 ;; map/mt is like map, except
@@ -2133,36 +2149,37 @@
      '#,(syntax-column stx)
      '#,(syntax-position stx)))
 
-(define (check-equiv-pred form p)
-  (unless (and (procedure? p) (procedure-arity-includes? p 2))
-    (raise-type-error form "procedure (arity 2)" p)))
+(define-for-syntax test-equiv-ctc
+  #'(-> any/c any/c any/c))
+(define-for-syntax test-equiv-name
+  "#:equiv argument")
+(define-for-syntax test-equiv-default
+  #'equal?)
 
 (define-syntax (test-->> stx)
   (syntax-parse stx
     [(form red:expr
            (~or (~optional (~seq (~and #:cycles-ok (~bind [cycles-ok? #t])))
                            #:defaults ([cycles-ok? #f])
-                           #:name "#:cycles-ok keyword")
-                (~optional (~seq #:equiv equiv?:expr)
-                           #:defaults ([equiv? #'equal?])
-                           #:name "#:equiv keyword"))
+                           #:name "#:cycles-ok argument")
+                (~optional (~seq #:equiv equiv?)
+                           #:defaults ([equiv?.c test-equiv-default])
+                           #:name test-equiv-name))
            ...
            e1:expr
            e2:expr ...)
-     #`(let ([=? equiv?])
-         (check-equiv-pred 'form =?)
-         (test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #,(attribute cycles-ok?) =? #,(get-srcloc stx)))]))
+     #:declare equiv? (expr/c test-equiv-ctc #:name test-equiv-name)
+     #`(test-->>/procs red e1 (list e2 ...) traverse-reduction-graph #,(attribute cycles-ok?) equiv?.c #,(get-srcloc stx))]))
 
 (define-syntax (test--> stx)
   (syntax-parse stx
     [(form red:expr
-           (~optional (~seq #:equiv equiv?:expr)
-                      #:defaults ([equiv? #'equal?]))
+           (~optional (~seq #:equiv equiv?)
+                      #:defaults ([equiv?.c test-equiv-default]))
            e1:expr
            e2:expr ...)
-     #`(let ([=? equiv?])
-         (check-equiv-pred 'form =?)
-         (test-->>/procs red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t =? #,(get-srcloc stx)))]))
+     #:declare equiv? (expr/c test-equiv-ctc #:name test-equiv-name)
+     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t equiv?.c #,(get-srcloc stx))]))
 
 (define (apply-reduction-relation/dummy-second-value red arg)
   (values (apply-reduction-relation red arg) #f))
@@ -2193,6 +2210,38 @@
                (for-each
                 (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
                 got))))])))
+
+(define-syntax (test-->>∃ stx)
+  (syntax-parse stx
+    [(form (~optional (~seq #:steps steps) #:defaults ([steps.c #'1000]))
+           relation
+           start:expr
+           goal)
+     #:declare relation (expr/c #'reduction-relation? 
+                                #:name "reduction relation expression")
+     #:declare goal (expr/c #'(or/c (-> any/c any/c) (not/c procedure?)) 
+                            #:name "goal expression")
+     #:declare steps (expr/c #'(or/c natural-number/c +inf.0) 
+                             #:name "steps expression")
+     #`(test-->>∃/proc relation.c start goal.c steps.c #,(get-srcloc stx))]))
+
+(define (test-->>∃/proc relation start goal steps srcinfo)
+  (let ([result (traverse-reduction-graph 
+                 relation
+                 start 
+                 #:goal (if (procedure? goal) goal (λ (x) (equal? goal x)))
+                 #:steps steps)])
+    (inc-tests)
+    (when (search-failure? result)
+      (print-failed srcinfo)
+      (inc-failures)
+      (begin
+        (fprintf (current-error-port) "no reachable term ~a ~a" 
+                 (if (procedure? goal) "satisfying" "equal to")
+                 goal)
+        (when (search-failure-cutoff? result)
+          (fprintf (current-error-port) " (but some terms were not unexplored)"))
+        (newline (current-error-port))))))
 
 (define-syntax (test-predicate stx)
   (syntax-case stx ()
@@ -2287,6 +2336,7 @@
          test-equal
          test-->>
          test-->
+         test-->>∃ (rename-out [test-->>∃ test-->>E])
          test-predicate
          test-results)
 
