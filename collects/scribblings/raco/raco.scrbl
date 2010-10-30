@@ -23,6 +23,6 @@ a typical Racket installation.
 @include-section["planet.scrbl"]
 @include-section["setup.scrbl"]
 @include-section["decompile.scrbl"]
-@include-section["demod.scrbl"]
+
 @include-section["ctool.scrbl"]
 @include-section["command.scrbl"]
