@@ -7,22 +7,24 @@
 
 (define MODULE-TOPLEVEL-OFFSETS (make-hash))
 
-(define (merge-compilation-top top)
-  (match top
-    [(struct compilation-top (max-let-depth prefix form))
-     (define-values (new-max-let-depth new-prefix gen-new-forms)
-       (merge-form max-let-depth prefix form))
-     (define total-tls (length (prefix-toplevels new-prefix)))
-     (define total-stxs (length (prefix-stxs new-prefix)))
-     (define total-lifts (prefix-num-lifts new-prefix))
-     (log-debug (format "max-let-depth ~S to ~S" max-let-depth new-max-let-depth))
-     (log-debug (format "total toplevels ~S" total-tls))
-     (log-debug (format "total stxs ~S" total-stxs))
-     (log-debug (format "num-lifts ~S" total-lifts))
-     (make-compilation-top 
-      new-max-let-depth new-prefix 
-      (make-splice (gen-new-forms new-prefix)))]
-    [else (error 'merge "unrecognized: ~e" top)]))
+(define current-get-modvar-rewrite (make-parameter #f))
+(define (merge-compilation-top get-modvar-rewrite top)
+  (parameterize ([current-get-modvar-rewrite get-modvar-rewrite])
+    (match top
+      [(struct compilation-top (max-let-depth prefix form))
+       (define-values (new-max-let-depth new-prefix gen-new-forms)
+         (merge-form max-let-depth prefix form))
+       (define total-tls (length (prefix-toplevels new-prefix)))
+       (define total-stxs (length (prefix-stxs new-prefix)))
+       (define total-lifts (prefix-num-lifts new-prefix))
+       (log-debug (format "max-let-depth ~S to ~S" max-let-depth new-max-let-depth))
+       (log-debug (format "total toplevels ~S" total-tls))
+       (log-debug (format "total stxs ~S" total-stxs))
+       (log-debug (format "num-lifts ~S" total-lifts))
+       (make-compilation-top 
+        new-max-let-depth new-prefix 
+        (make-splice (gen-new-forms new-prefix)))]
+      [else (error 'merge "unrecognized: ~e" top)])))
 
 (define (merge-forms max-let-depth prefix forms)
   (if (empty? forms)
@@ -75,7 +77,7 @@
       ([tl (in-list mod-toplevels)])
       (match tl
         [(and mv (struct module-variable (modidx sym pos phase)))
-         (define rw (get-modvar-rewrite modidx))
+         (define rw ((current-get-modvar-rewrite) modidx))
          ; XXX We probably don't need to deal with #f phase
          (unless (or (not phase) (zero? phase))
            (error 'eliminate-module-variables "Non-zero phases not supported: ~S" mv))
@@ -166,4 +168,6 @@
                (map update body)))]))
 
 (provide/contract
- [merge-compilation-top (compilation-top? . -> . compilation-top?)])
+ [merge-compilation-top (-> get-modvar-rewrite/c
+                            compilation-top?
+                            compilation-top?)])

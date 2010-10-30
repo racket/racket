@@ -6,45 +6,53 @@
 
 (define excluded-modules (make-parameter null))
 
-(define (nodep-file file-to-batch excluded)  
-  (excluded-modules excluded)
-  (match (get-nodep-module-code/path file-to-batch 0)
-    [(struct @phase (_ (struct module-code (modvar-rewrite lang-info ctop))))
-     (values ctop lang-info (modvar-rewrite-modidx modvar-rewrite))]))
+(define ZOS (make-parameter #f))
+(define MODULE-IDX-MAP (make-parameter #f))
+(define PHASE*MODULE-CACHE (make-parameter #f))
+
+(define (nodep-file file-to-batch excluded)
+  (define idx-map (make-hash))
+  (parameterize ([ZOS (make-hash)]
+                 [MODULE-IDX-MAP idx-map]
+                 [PHASE*MODULE-CACHE (make-hash)])
+    (define (get-modvar-rewrite modidx)
+      (define pth (mpi->path* modidx))
+      (hash-ref idx-map pth
+                (lambda ()
+                  (error 'get-modvar-rewrite "Cannot locate modvar rewrite for ~S" pth))))
+    (excluded-modules excluded)
+    (match (get-nodep-module-code/path file-to-batch 0)
+      [(struct @phase (_ (struct module-code (modvar-rewrite lang-info ctop))))
+       (values ctop lang-info (modvar-rewrite-modidx modvar-rewrite) get-modvar-rewrite)])))
 
 (define (path->comp-top pth)
-  (call-with-input-file pth zo-parse))
+  (hash-ref! (ZOS) pth
+             (λ ()
+               (call-with-input-file pth zo-parse))))
 
 (define (excluded? pth)
   (set-member? (excluded-modules) (path->string pth)))
 
-(define MODULE-IDX-MAP (make-hash))
 (define (get-nodep-module-code/index mpi phase)
   (define pth (mpi->path! mpi))
   (cond
     [(symbol? pth)
-     (hash-set! MODULE-IDX-MAP pth pth)
+     (hash-set! (MODULE-IDX-MAP) pth pth)
      pth]
     [(excluded? pth)
-     (hash-set! MODULE-IDX-MAP pth mpi)
+     (hash-set! (MODULE-IDX-MAP) pth mpi)
      mpi]
     [else
      (get-nodep-module-code/path pth phase)]))
-(define (get-modvar-rewrite modidx)
-  (define pth (mpi->path* modidx))
-  (hash-ref MODULE-IDX-MAP pth
-            (lambda ()
-              (error 'get-modvar-rewrite "Cannot locate modvar rewrite for ~S" pth))))
 
 (define-struct @phase (phase code))
 (define-struct modvar-rewrite (modidx provide->toplevel))
 (define-struct module-code (modvar-rewrite lang-info ctop))
 (define @phase-ctop (compose module-code-ctop @phase-code))
 
-(define PHASE*MODULE-CACHE (make-hash))
 (define (get-nodep-module-code/path pth phase)
   (define MODULE-CACHE
-    (hash-ref! PHASE*MODULE-CACHE phase make-hash))
+    (hash-ref! (PHASE*MODULE-CACHE) phase make-hash))
   (if (hash-ref MODULE-CACHE pth #f)
       #f
       (hash-ref! 
@@ -67,7 +75,7 @@
               pth
               phase)))
          (when (and phase (zero? phase))
-           (hash-set! MODULE-IDX-MAP pth modvar-rewrite))
+           (hash-set! (MODULE-IDX-MAP) pth modvar-rewrite))
          (make-@phase 
           phase
           (make-module-code modvar-rewrite lang-info ctop))))))
@@ -170,9 +178,12 @@
     [else
      (error 'extract-modules "Unknown extraction: ~S" ct)]))
 
+(define get-modvar-rewrite/c 
+  (module-path-index? . -> . (or/c symbol? modvar-rewrite? module-path-index?)))
 (provide/contract
  [struct modvar-rewrite 
          ([modidx module-path-index?]
           [provide->toplevel (symbol? exact-nonnegative-integer? . -> . exact-nonnegative-integer?)])]
- [get-modvar-rewrite (module-path-index? . -> . (or/c symbol? modvar-rewrite? module-path-index?))]
- [nodep-file (path-string? set? . -> . (values compilation-top? lang-info/c module-path-index?))])
+ [get-modvar-rewrite/c contract?]
+ [nodep-file (-> path-string? set?
+                 (values compilation-top? lang-info/c module-path-index? get-modvar-rewrite/c))])
