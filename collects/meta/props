@@ -1256,6 +1256,7 @@ path/s is either such a string or a list of them.
 "collects/scribblings/framework/standard-menus.scrbl" drdr:command-line #f
 "collects/scribblings/guide/contracts-examples/6.rkt" drdr:command-line (racket "-f" *)
 "collects/scribblings/guide/read.scrbl" drdr:command-line #f
+"collects/scribblings/raco" responsible (jay mflatt)
 "collects/scriblib" responsible (mflatt)
 "collects/setup" responsible (mflatt)
 "collects/setup/main.rkt" drdr:command-line #f
