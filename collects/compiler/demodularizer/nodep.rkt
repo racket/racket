@@ -4,13 +4,13 @@
          "mpi.rkt"
          racket/set)
 
-(define excluded-modules (make-parameter null))
+(define current-excluded-modules (make-parameter (set)))
 
 (define ZOS (make-parameter #f))
 (define MODULE-IDX-MAP (make-parameter #f))
 (define PHASE*MODULE-CACHE (make-parameter #f))
 
-(define (nodep-file file-to-batch excluded)
+(define (nodep-file file-to-batch)
   (define idx-map (make-hash))
   (parameterize ([ZOS (make-hash)]
                  [MODULE-IDX-MAP idx-map]
@@ -20,7 +20,6 @@
       (hash-ref idx-map pth
                 (lambda ()
                   (error 'get-modvar-rewrite "Cannot locate modvar rewrite for ~S" pth))))
-    (excluded-modules excluded)
     (match (get-nodep-module-code/path file-to-batch 0)
       [(struct @phase (_ (struct module-code (modvar-rewrite lang-info ctop))))
        (values ctop lang-info (modvar-rewrite-modidx modvar-rewrite) get-modvar-rewrite)])))
@@ -31,7 +30,7 @@
                (call-with-input-file pth zo-parse))))
 
 (define (excluded? pth)
-  (set-member? (excluded-modules) (path->string pth)))
+  (set-member? (current-excluded-modules) (path->string pth)))
 
 (define (get-nodep-module-code/index mpi phase)
   (define pth (mpi->path! mpi))
@@ -185,5 +184,6 @@
          ([modidx module-path-index?]
           [provide->toplevel (symbol? exact-nonnegative-integer? . -> . exact-nonnegative-integer?)])]
  [get-modvar-rewrite/c contract?]
- [nodep-file (-> path-string? set?
+ [current-excluded-modules (parameter/c set?)]
+ [nodep-file (-> path-string?
                  (values compilation-top? lang-info/c module-path-index? get-modvar-rewrite/c))])

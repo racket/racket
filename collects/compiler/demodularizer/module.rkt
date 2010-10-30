@@ -7,7 +7,6 @@
       s
       (module-path-index-join `(quote ,s) #f)))
 
-
 (define (wrap-in-kernel-module name srcname lang-info self-modidx top)
   (match top
     [(struct compilation-top (max-let-depth prefix form))
