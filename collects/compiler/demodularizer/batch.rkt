@@ -75,12 +75,12 @@ Here's the idea:
 
 ;; Transformations
 (log-info "Removing dependencies")
-(define-values (batch-nodep top-lang-info top-self-modidx)
+(define-values (batch-nodep top-lang-info top-self-modidx get-modvar-rewrite)
   (nodep-file file-to-batch (excluded-modules)))
 
 (log-info "Merging modules")
 (define batch-merge
-  (merge-compilation-top batch-nodep))
+  (merge-compilation-top get-modvar-rewrite batch-nodep))
 
 ; Not doing this for now
 ;(log-info "GC-ing top-levels")
