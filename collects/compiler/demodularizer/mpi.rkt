@@ -22,7 +22,7 @@
 (define (mpi->path* mpi)
   (hash-ref MODULE-PATHS mpi 
             (lambda ()
-              (error 'mpi->path* "Cannot locate cache of path for ~S~n" mpi))))
+              (error 'mpi->path* "Cannot locate cache of path for ~S" mpi))))
 
 (provide/contract
  [current-module-path (parameter/c path-string?)]
