@@ -1863,6 +1863,8 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/ztest.rktl" drdr:command-line #f
 "collects/tests/racklog" responsible (jay)
 "collects/tests/rackunit" responsible (jay noel)
+"collects/tests/rackunit/standalone-check-test.rkt" drdr:command-line #f
+"collects/tests/rackunit/standalone-test-case-test.rkt" drdr:command-line #f
 "collects/tests/run-automated-tests.rkt" drdr:command-line (mzc "-k" *) drdr:timeout 600
 "collects/tests/scribble" responsible (eli)
 "collects/tests/slatex" responsible (jay sstrickl)
