@@ -1182,6 +1182,7 @@ path/s is either such a string or a list of them.
 "collects/rackunit/private/gui/model2rml.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/rackunit/private/gui/rml.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/rackunit/private/gui/view.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/rackunit/scribblings/file-test.rkt" drdr:command-line #f
 "collects/rackunit/tool.rkt" responsible (ryanc) drdr:command-line (gracket-text "-t" *)
 "collects/raco" responsible (mflatt)
 "collects/raco/main.rkt" drdr:command-line #f
