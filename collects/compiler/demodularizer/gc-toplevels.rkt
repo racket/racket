@@ -41,12 +41,12 @@
            (index<=? stx-pos ordered-stxs))
          (prefix-syntax-start new-prefix))
         form))
-     (log-debug (format "Total TLS: ~S~n" (length normal-tls)))
-     (log-debug (format "Used TLS: ~S~n" normal-tls))
-     (log-debug (format "Total lifts: ~S~n" (length lifts)))
-     (log-debug (format "Used lifts: ~S~n" lifts))
-     (log-debug (format "Total stxs: ~S~n" (length stxs)))
-     (log-debug (format "Used stxs: ~S~n" ordered-stxs))
+     (log-debug (format "Total TLS: ~S" (length normal-tls)))
+     (log-debug (format "Used TLS: ~S" normal-tls))
+     (log-debug (format "Total lifts: ~S" (length lifts)))
+     (log-debug (format "Used lifts: ~S" lifts))
+     (log-debug (format "Total stxs: ~S" (length stxs)))
+     (log-debug (format "Used stxs: ~S" ordered-stxs))
      (make-compilation-top
       max-let-depth
       new-prefix
