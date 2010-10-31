@@ -2058,6 +2058,12 @@
           [cycle? #f]
           [cutoff? #f])
       (let loop ([term start]
+                 ;; It would be better to record all visited terms, to avoid traversing
+                 ;; any part of the graph multiple times. Results from 
+                 ;;    collects/redex/trie-experiment
+                 ;; in commit
+                 ;;    152084d5ce6ef49df3ec25c18e40069950146041
+                 ;; suggest that a hash works better than a trie.
                  [path (make-immutable-hash '())]
                  [more-steps steps])
         (if (and goal? (goal? term))
