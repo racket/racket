@@ -168,8 +168,8 @@
 (define-pango pango_layout_iter_next_run (_fun PangoLayoutIter -> _bool))
 (define-pango pango_layout_iter_get_run_readonly (_fun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer)))
 
-(define-pangocairo pango_layout_get_line (_fun PangoLayout _int -> PangoLayoutLine))
-(define-pangocairo pango_layout_get_line_readonly (_fun PangoLayout _int -> PangoLayoutLine)
+(define-pango pango_layout_get_line (_fun PangoLayout _int -> PangoLayoutLine))
+(define-pango pango_layout_get_line_readonly (_fun PangoLayout _int -> PangoLayoutLine)
   #:fail (lambda () pango_layout_get_line))
 
 (define-pango pango_layout_get_context (_fun PangoLayout -> PangoContext)) ;; not an allocator
