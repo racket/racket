@@ -33,39 +33,40 @@
    (side-condition (memq (term ṽ_n) '(box box-nc)))]
   
   [(verify (loc-noclr n) (ṽ_0 ... ṽ_n ṽ_n+1 ...) n_l #f γ η f) 
-   ((ṽ_0 ... (nc ṽ_n) ṽ_n+1 ...) γ (log-noclear n n_l ṽ_n η))
+   ((ṽ_0 ... (nc ṽ_n) ṽ_n+1 ...) γ (log-noclr n n_l ṽ_n η))
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(imm imm-nc)))]
   [(verify (loc-noclr n) (ṽ_0 ... ṽ_n ṽ_n+1 ...) n_l #t γ η f) 
-   ((ṽ_0 ... (nc ṽ_n) ṽ_n+1 ...) γ (log-noclear n n_l ṽ_n η))
+   ((ṽ_0 ... (nc ṽ_n) ṽ_n+1 ...) γ (log-noclr n n_l ṽ_n η))
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(imm imm-nc box box-nc)))]
   [(verify (loc-box-noclr n) (ṽ_0 ... ṽ_n ṽ_n+1 ...) n_l b γ η f) 
-   ((ṽ_0 ... box-nc ṽ_n+1 ...) γ (log-noclear n n_l ṽ_n η))
+   ((ṽ_0 ... box-nc ṽ_n+1 ...) γ (log-noclr n n_l ṽ_n η))
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(box box-nc)))]
   
   [(verify (loc-clr n) (name s (ṽ_0 ... imm ṽ_n+1 ...)) n_l #f γ η f)
-   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n s n_l γ) η)
+   ((ṽ_0 ... not ṽ_n+1 ...) (log-clr n s n_l γ) η)
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))]
   [(verify (loc-clr n) (name s (ṽ_0 ... ṽ_n ṽ_n+1 ...)) n_l #t γ η f)
-   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n s n_l γ) η)
+   ((ṽ_0 ... not ṽ_n+1 ...) (log-clr n s n_l γ) η)
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(imm box)))]
   [(verify (loc-box-clr n) (name s (ṽ_0 ... box ṽ_n+1 ...)) n_l b γ η f) 
-   ((ṽ_0 ... not ṽ_n+1 ...) (log-clear n s n_l γ) η)
+   ((ṽ_0 ... not ṽ_n+1 ...) (log-clr n s n_l γ) η)
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))]
   
   ; branch
   [(verify (branch e_c e_t e_e) s n_l b γ η f)
-   ((redo-clears γ_2 (trim s_3 s)) (concat γ_2 γ_3) η_3)
+   ((redo-clrs γ_2 (trim s_3 s)) (concat γ_2 γ_3) η_3)
    (where (s_1 γ_1 η_1) (verify e_c s n_l #f γ η ∅))
    (where (s_2 γ_2 η_2) (verify e_t (trim s_1 s) 0 b () () f))
-   (where (s_3 γ_3 η_3) (verify e_e (undo-noclears η_2 (undo-clears γ_2 (trim s_2 s))) 0 b γ_1 η_1 f))]
+   (where (s_3 γ_3 η_3) (verify e_e (undo-noclrs η_2 (undo-clrs γ_2 (trim s_2 s))) 0 b γ_1 η_1 f))]
   
   ; let-one
   [(verify (let-one e_r e_b) (ṽ_1 ...) n_l b γ η f)
-   (verify e_b (imm ṽ_1* ...) ,(add1 (term n_l)) b γ_1 η_1 (shift 1 f))
+   (verify e_b (imm ṽ_1* ...) ,(+ (term n_l) (term 1)) b γ_1 η_1 
+           (shift 1 f))
    (where s_0 (uninit ṽ_1 ...))
    (where (s_1 γ_1 η_1) (verify e_r s_0 ,(add1 (term n_l)) #f γ η ∅))
    (where (uninit ṽ_1* ...) (trim s_1 s_0))]
@@ -84,7 +85,7 @@
    (where n ,(length (term (e_0 ...))))
    (where n_l* ,(+ (term n) (term n_l)))
    (where s_1 (abs-push n not s))
-   (side-condition (term (verify-lam (lam (τ_0 ...) (n_0 ...) e) s_1 ?)))]
+   (side-condition (term (lam-verified? (lam (τ_0 ...) (n_0 ...) e) s_1 ?)))]
   [(verify (application (proc-const (τ_0 ...) e) e_0 ...) s n_l b γ η f)
    (verify (application (lam (τ_0 ...) () e) e_0 ...) s n_l b γ η f)]
   [(verify (application e_0 e_1 ...) (name s (ṽ_0 ...)) n_l b γ η f)
@@ -94,21 +95,23 @@
   
   ; let-void
   [(verify (let-void n e) (name s (ṽ_0 ...)) n_l b_i γ η f)
-   (verify e (abs-push n uninit s) ,(+ (term n) (term n_l)) b_i γ η (shift n f))]
+   (verify e (abs-push n uninit s) ,(+ (term n) (term n_l)) 
+           b_i γ η (shift n f))]
   [(verify (let-void-box n e) (name s (ṽ_0 ...)) n_l b_i γ η f)
-   (verify e (abs-push n box s) ,(+ (term n) (term n_l)) b_i γ η (shift n f))]
+   (verify e (abs-push n box s) ,(+ (term n) (term n_l))
+           b_i γ η (shift n f))]
   
   ; procedures in arbitrary context
   [(verify (lam ((name τ val) ...) (n_0 ...) e) s n_l b γ η f)
    (s γ η)
-   (side-condition (term (verify-lam (lam (τ ...) (n_0 ...) e) s ?)))]
+   (side-condition (term (lam-verified? (lam (τ ...) (n_0 ...) e) s ?)))]
   [(verify (proc-const ((name τ val) ...) e) s n_l b γ η f)
    (verify (lam (τ ...) () e) s n_l b γ η f)]
   
   ; case-lam
   [(verify (case-lam (name l (lam (val ...) (n ...) e)) ...) s n_l b γ η f)
    (s γ η)
-   (side-condition (term (AND (verify-lam l s ?) ...)))]
+   (side-condition (term (AND (lam-verified? l s ?) ...)))]
   
   ; literals
   [(verify number s n_l b γ η f) (s γ η)]
@@ -147,7 +150,7 @@
    (side-condition (<= (term n) (term n_l)))
    (where s_1 (abs-push n imm (ṽ_n ...)))
    (where (n_i ...) (count-up ,(length (term (l ...)))))
-   (side-condition (term (AND (verify-lam l s_1 n_i) ...)))]
+   (side-condition (term (AND (lam-verified? l s_1 n_i) ...)))]
   
   ; indirect
   [(verify (indirect x) s n_l b γ η f) (s γ η)]
@@ -166,7 +169,8 @@
   verify*-ref : (e ...) (τ ...) s n_l γ η -> (s γ η)
   [(verify*-ref () () s n_l γ η) (s γ η)]
   [(verify*-ref (e_0 e_1 ...) (val τ_1 ...) s n_l γ η)
-   (verify*-ref (e_1 ...) (τ_1 ...) (trim s_1 s) n_l γ_1 η_1)
+   (verify*-ref (e_1 ...) (τ_1 ...)
+                (trim s_1 s) n_l γ_1 η_1)
    (where (s_1 γ_1 η_1) (verify e_0 s n_l #f γ η ∅))]
   [(verify*-ref (e_0 e_1 ...) () s n_l γ η)
    (verify* (e_0 e_1 ...) s n_l #f γ η)]
@@ -186,16 +190,16 @@
   [(verify*-ref (e ...) (τ ...) s n_l γ η) (invalid γ η)])
 
 (define-metafunction verification
-  [(verify-lam (lam (τ_0 ...) (n_0 ...) e) (name s (ṽ_0 ...)) m)
+  [(lam-verified? (lam (τ_0 ...) (n_0 ...) e) (name s (ṽ_0 ...)) m)
    (valid? s_1)
    (where n_d ,(length (term s)))
    (where n_d* ,(+ (length (term (τ_0 ...))) (length (term (n_0 ...)))))
    (side-condition (term (AND (less-than? n_0 n_d) ...)))
    (side-condition (term (AND (not-member? (stack-ref n_0 s) (uninit not)) ...)))
-   (where (ṽ ...) ((drop-noclear (stack-ref n_0 s)) ...))
+   (where (ṽ ...) ((drop-noclr (stack-ref n_0 s)) ...))
    (where f (extract-self m (n_0 ...) (τ_0 ...) (ṽ ...)))
    (where (s_1 γ_1 η_1) (verify e (ṽ ... (arg τ_0) ...) n_d* #f () () f))]
-  [(verify-lam any s m) #f])
+  [(lam-verified? any s m) #f])
 
 (define-metafunction verification
   [(extract-self ? (n_0 ...) (τ_0 ...) (ṽ_0 ...)) ∅]
@@ -207,10 +211,10 @@
   [(extract-self n (n_0 ...) (τ_0 ...) (ṽ_0 ...)) ∅])
 
 (define-metafunction verification
-  drop-noclear : ṽ -> ṽ
-  [(drop-noclear imm-nc) imm]
-  [(drop-noclear box-nc) box]
-  [(drop-noclear ṽ) ṽ])
+  drop-noclr : ṽ -> ṽ
+  [(drop-noclr imm-nc) imm]
+  [(drop-noclr box-nc) box]
+  [(drop-noclr ṽ) ṽ])
 
 (define-metafunction verification
   [(verify-self-app (application e_0 e_1 ...) (name s (ṽ_0 ...)) n_l γ η (n_f n_s (ṽ_j ...)))
@@ -271,56 +275,56 @@
   [(nc box-nc) box-nc])
 
 (define-metafunction verification
-  log-noclear : n n ṽ η -> η
-  [(log-noclear n_p n_l ṽ_p (n_0 ...))
+  log-noclr : n n ṽ η -> η
+  [(log-noclr n_p n_l ṽ_p (n_0 ...))
    (,(- (term n_p) (term n_l)) n_0 ...)
    (side-condition (>= (term n_p) (term n_l)))
    (side-condition (memq (term ṽ_p) '(imm box)))]
-  [(log-noclear n_p n_l ṽ_p η) η])
+  [(log-noclr n_p n_l ṽ_p η) η])
 
 (define-metafunction verification
-  undo-noclears : η s -> s
-  [(undo-noclears η invalid) invalid]
-  [(undo-noclears () s) s]
-  [(undo-noclears (n_0 n_1 ...) (ṽ_0 ... imm-nc ṽ_i ...))
-   (undo-noclears (n_1 ...) (ṽ_0 ... imm ṽ_i ...))
+  undo-noclrs : η s -> s
+  [(undo-noclrs η invalid) invalid]
+  [(undo-noclrs () s) s]
+  [(undo-noclrs (n_0 n_1 ...) (ṽ_0 ... imm-nc ṽ_i ...))
+   (undo-noclrs (n_1 ...) (ṽ_0 ... imm ṽ_i ...))
    (side-condition (= (length (term (ṽ_0 ...))) (term n_0)))]
-  [(undo-noclears (n_0 n_1 ...) (ṽ_0 ... box-nc ṽ_i ...))
-   (undo-noclears (n_1 ...) (ṽ_0 ... box ṽ_i ...))
+  [(undo-noclrs (n_0 n_1 ...) (ṽ_0 ... box-nc ṽ_i ...))
+   (undo-noclrs (n_1 ...) (ṽ_0 ... box ṽ_i ...))
    (side-condition (= (length (term (ṽ_0 ...))) (term n_0)))]
-  [(undo-noclears (n_0 n_1 ...) s)
-   (undo-noclears (n_1 ...) s)])
+  [(undo-noclrs (n_0 n_1 ...) s)
+   (undo-noclrs (n_1 ...) s)])
 
 (define-metafunction verification
-  log-clear : n s n γ -> γ
-  [(log-clear n_p (name s (ṽ_0 ... ṽ_p ṽ_p+1 ...)) n_l ((n_i ṽ_i) ...))
+  log-clr : n s n γ -> γ
+  [(log-clr n_p (name s (ṽ_0 ... ṽ_p ṽ_p+1 ...)) n_l ((n_i ṽ_i) ...))
    ((,(- (- (term n_h) (term n_p)) (term 1)) ṽ_p) (n_i ṽ_i) ...)
    (where n_h ,(length (term s)))
    (side-condition (>= (term n_p) (term n_l)))
    (side-condition (= (length (term (ṽ_0 ...))) (term n_p)))]
-  [(log-clear n_p s n_l γ) γ])
+  [(log-clr n_p s n_l γ) γ])
 
 (define-metafunction verification
-  undo-clears : γ s -> s
-  [(undo-clears γ invalid) invalid]
-  [(undo-clears () s) s]
-  [(undo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s)
-   (undo-clears ((n_1 ṽ_1) ...) (set ṽ_0 ,(- (- (term n_h) (term n_0)) (term 1)) s))
+  undo-clrs : γ s -> s
+  [(undo-clrs γ invalid) invalid]
+  [(undo-clrs () s) s]
+  [(undo-clrs ((n_0 ṽ_0) (n_1 ṽ_1) ...) s)
+   (undo-clrs ((n_1 ṽ_1) ...) (set ṽ_0 ,(- (- (term n_h) (term n_0)) (term 1)) s))
    (where n_h ,(length (term s)))
    (side-condition (< (term n_0) (term n_h)))]
-  [(undo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s)
-   (undo-clears ((n_1 ṽ_1) ...) s)])
+  [(undo-clrs ((n_0 ṽ_0) (n_1 ṽ_1) ...) s)
+   (undo-clrs ((n_1 ṽ_1) ...) s)])
 
 (define-metafunction verification
-  redo-clears : γ s -> s
-  [(redo-clears γ invalid) invalid]
-  [(redo-clears () s) s]
-  [(redo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
-   (redo-clears ((n_1 ṽ_1) ...) (set not ,(- (- (term n_h) (term n_0)) (term 1)) s))
+  redo-clrs : γ s -> s
+  [(redo-clrs γ invalid) invalid]
+  [(redo-clrs () s) s]
+  [(redo-clrs ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
+   (redo-clrs ((n_1 ṽ_1) ...) (set not ,(- (- (term n_h) (term n_0)) (term 1)) s))
    (where n_h ,(length (term s)))
    (side-condition (< (term n_0) (term n_h)))]
-  [(redo-clears ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
-   (redo-clears ((n_1 ṽ_1) ...) s)])
+  [(redo-clrs ((n_0 ṽ_0) (n_1 ṽ_1) ...) s) 
+   (redo-clrs ((n_1 ṽ_1) ...) s)])
 
 (define-metafunction verification
   trim : s s -> s
