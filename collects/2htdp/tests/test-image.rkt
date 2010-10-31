@@ -50,6 +50,7 @@
          racket/port
          wxme
          rackunit
+         (only-in lang/imageeq image=?)
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?))
 
