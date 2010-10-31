@@ -712,9 +712,10 @@
        in-menu-click?)
 
      (define/public (scroll x y)
-       (when (x . > . 0) (scroll-pos h-scroller (* x (scroll-range h-scroller))))
-       (when (y . > . 0) (scroll-pos v-scroller (* y (scroll-range v-scroller))))
-       (when (is-auto-scroll?) (refresh-for-autoscroll)))
+       (when (is-auto-scroll?) 
+         (when (x . >= . 0) (scroll-pos h-scroller (floor (* x (scroll-range h-scroller)))))
+         (when (y . >= . 0) (scroll-pos v-scroller (floor (* y (scroll-range v-scroller)))))
+         (refresh-for-autoscroll)))
 
      (define/public (warp-pointer x y) (void))
 

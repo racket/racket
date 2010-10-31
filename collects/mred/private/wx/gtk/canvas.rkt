@@ -542,11 +542,22 @@
      (define/public (on-scroll e) (void))
 
      (define/public (scroll x y)
-       (as-scroll-change
-        (lambda ()
-          (when hscroll-adj (gtk_adjustment_set_value hscroll-adj x))
-          (when vscroll-adj (gtk_adjustment_set_value vscroll-adj y))))
-       (when (is-auto-scroll?) (refresh-for-autoscroll)))
+       (when (is-auto-scroll?) 
+         (as-scroll-change
+          (lambda ()
+            (when (and hscroll-adj (>= x 0))
+              (gtk_adjustment_set_value 
+               hscroll-adj 
+               (floor
+                (* x (- (gtk_adjustment_get_upper hscroll-adj)
+                        (gtk_adjustment_get_page_size hscroll-adj))))))
+            (when (and vscroll-adj  (>= y 0))
+              (gtk_adjustment_set_value 
+               vscroll-adj
+               (floor
+                (* y (- (gtk_adjustment_get_upper vscroll-adj)
+                        (gtk_adjustment_get_page_size vscroll-adj))))))))
+         (refresh-for-autoscroll)))
 
      (define/public (warp-pointer x y) (void))
 

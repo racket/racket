@@ -116,7 +116,12 @@
     cell-font)
 
   (define/public (get-selection)
-    (tell #:type _NSInteger content-cocoa selectedRow))
+    (if allow-multi?
+        (let ([l (get-selections)])
+          (if (null? l)
+              -1
+              (car l)))
+        (tell #:type _NSInteger content-cocoa selectedRow)))
   (define/public (get-selections)
     (atomically
      (with-autorelease

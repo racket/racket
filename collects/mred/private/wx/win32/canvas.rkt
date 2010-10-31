@@ -445,11 +445,12 @@
            (ptr-equal? combo-hwnd a-hwnd)))
 
      (define/public (scroll x y)
-       (when (x . > . 0)
-         (set-scroll-pos 'horizontal (->long (* x (get-scroll-range 'horizontal)))))
-       (when (y . > . 0)
-         (set-scroll-pos 'vertical (->long (* y (get-scroll-range 'vertical)))))
-       (when (is-auto-scroll?) (refresh-for-autoscroll)))
+       (when (is-auto-scroll?) 
+         (when (x . > . 0)
+           (set-scroll-pos 'horizontal (->long (* x (get-scroll-range 'horizontal)))))
+         (when (y . > . 0)
+           (set-scroll-pos 'vertical (->long (* y (get-scroll-range 'vertical)))))
+         (refresh-for-autoscroll)))
 
      (define/public (warp-pointer x y) (void))
 

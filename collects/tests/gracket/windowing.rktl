@@ -56,6 +56,7 @@
 
 (define (client->screen-tests f)
   (printf "Client<->Screen ~a\n" f)
+  (send (or (send f get-parent) f) reflow-container)
   (let-values ([(x y) (send f client->screen 0 0)])
     (stvals '(0 0) f screen->client x y))
   (let-values ([(x y) (send f screen->client 0 0)])
@@ -885,8 +886,8 @@
 	     (lambda (xpos ypos)
 	       (let-values ([(x y) (send c get-view-start)])
 		 (let ([coerce (lambda (x) (inexact->exact (floor x)))])
-		   (test (coerce (* xpos (- 500 cw))) `(canvas-view-x ,xpos ,ypos ,x ,cw) x)
-		   (test (coerce (* ypos (- 606 ch))) `(canvas-view-y ,xpos ,ypos ,y ,ch) y))))])
+		   (test (coerce (* xpos (- 500 cw))) `(canvas-view-x ,xpos ,ypos ,x ,cw ,w) x)
+		   (test (coerce (* ypos (- 606 ch))) `(canvas-view-y ,xpos ,ypos ,y ,ch , h) y))))])
 	(test 500 'canvas-virt-w-size w)
 	(test 606 'canvas-virt-h-size h)
 	
