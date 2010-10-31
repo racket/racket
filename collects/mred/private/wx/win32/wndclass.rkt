@@ -1,7 +1,9 @@
 #lang racket/base
 (require ffi/unsafe
+         ffi/unsafe/alloc
 	 racket/class
          "../../lock.rkt"
+         "../common/utils.rkt"
 	 "utils.rkt"
 	 "types.rkt"
 	 "const.rkt"
@@ -12,11 +14,12 @@
               DefWindowProcW
               background-hbrush
               set-hwnd-wx!
-              set-hwnd-ctlproc!
               hwnd->wx
               hwnd->ctlproc
               any-hwnd->wx
-              unregister-hwnd
+              CreateWindowExW
+              CreateWindowExW/control
+              clean-up-destroyed
               MessageBoxW
               _WndProc))
 
@@ -32,50 +35,69 @@
 ;;                | (cons <ctlproc> <wx-weak-box>)
 ;;  <wx-weak-box> = (make-weak-box <object%>)
 
-(define all-cells (make-hash))
+(define all-hwnds (make-hash))
+
+;; call in atomic mode:
+(define (register-hwnd! hwnd)
+  (hash-set! all-hwnds (cast hwnd _pointer _long) #t))
+
+;; call in atomic mode:
+(define (alloc-hwnd-cell hwnd)
+  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+    (or c
+        (let ([c (malloc-immobile-cell #f)])
+          (SetWindowLongW hwnd GWLP_USERDATA c)
+          c))))
 
 (define (set-hwnd-wx! hwnd wx)
-  (let ([c (malloc-immobile-cell (make-weak-box wx))])
-    (SetWindowLongW hwnd GWLP_USERDATA c)
-    (atomically (hash-set! all-cells (cast c _pointer _long) #t))))
+  (let* ([c (atomically (alloc-hwnd-cell hwnd))]
+         [v (ptr-ref c _racket)])
+    (ptr-set! c _racket (cons wx (and v (cdr v))))))
 
 (define (set-hwnd-ctlproc! hwnd ctlproc)
-  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
-    (ptr-set! p _racket (cons (ptr-ref p _racket) ctlproc))))
+  (let* ([c (atomically (alloc-hwnd-cell hwnd))]
+         [v (ptr-ref c _racket)])
+    (ptr-set! c _racket (cons (and v (car v)) ctlproc))))
 
 (define (hwnd->wx hwnd)
-  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
-    (and p (let ([wb (ptr-ref p _racket)])
+  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+    (and c (let ([wb (ptr-ref c _racket)])
              (and wb
                   (weak-box-value (if (pair? wb) 
                                       (car wb) 
                                       wb)))))))
 
 (define (hwnd->ctlproc hwnd)
-  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
-    (and p (let ([wb (ptr-ref p _racket)])
+  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+    (and c (let ([wb (ptr-ref c _racket)])
              (and wb
                   (pair? wb)
                   (cdr wb))))))
 
 (define (any-hwnd->wx hwnd)
-  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
-    (and p 
-         (atomically (hash-ref all-cells (cast p _pointer _long) #f))
-         (let ([wx (let ([wb (ptr-ref p _racket)])
-                     (and wb 
-                          (weak-box-value (if (pair? wb)
-                                              (car wb)
-                                              wb))))])
-           (and wx
-                (send wx is-hwnd? hwnd)
-                wx)))))
+  (and
+   (atomically (hash-ref all-hwnds (cast hwnd _pointer _long) #f))
+   (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+     (and c 
+          (let ([wx (let ([wb (ptr-ref c _racket)])
+                      (and wb 
+                           (weak-box-value (if (pair? wb)
+                                               (car wb)
+                                               wb))))])
+            (and wx
+                 (send wx is-hwnd? hwnd)
+                 wx))))))
 
-(define (unregister-hwnd hwnd)
-  (let ([p (GetWindowLongW hwnd GWLP_USERDATA)])
-    (when p
-      (free-immobile-cell p)
-      (SetWindowLongW hwnd GWLP_USERDATA #f))))
+;; call in atomic mode:
+(define (unregister-hwnd? hwnd)
+  (let ([addr (cast hwnd _pointer _long)])
+    (and (hash-ref all-hwnds addr #f)
+         (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+           (when c
+             (free-immobile-cell c)
+             (hash-ref all-hwnds addr #f)
+             (SetWindowLongW hwnd GWLP_USERDATA #f)
+             #t)))))
 
 ;; ----------------------------------------
 
@@ -94,6 +116,74 @@
 
 (define _WndProc (_wfun #:atomic? #t #:keep (box null)
 			_HWND _UINT _WPARAM _LPARAM -> _LRESULT))
+
+(define (wind-proc w msg wparam lparam)
+  (if (= msg WM_DESTROY)
+      (begin
+        (unregister-hwnd? w)
+        (DefWindowProcW w msg wparam lparam))
+      (let ([wx (hwnd->wx w)])
+        (if wx
+            (send wx wndproc w msg wparam lparam DefWindowProcW)
+            (DefWindowProcW w msg wparam lparam)))))
+
+(define wind-proc-ptr (function-ptr wind-proc _WndProc))
+
+(define (control-proc w msg wParam lParam)
+  (if (= msg WM_DESTROY)
+      (let ([default-ctlproc (hwnd->ctlproc w)])
+        (unregister-hwnd? w)
+        (default-ctlproc w))
+      (let ([wx (hwnd->wx w)])
+        (if wx
+            (send wx ctlproc w msg wParam lParam
+                  (lambda (w msg wParam lParam)
+                    ((hwnd->ctlproc w) w msg wParam lParam)))
+            (let ([default-ctlproc (hwnd->ctlproc w)])
+              (default-ctlproc w msg wParam lParam))))))
+
+(define control_proc (function-ptr control-proc _WndProc))
+
+(define (subclass-control hwnd)
+  (let ([old-control-proc (function-ptr (GetWindowLongW hwnd GWLP_WNDPROC) _WndProc)])
+    (set-hwnd-ctlproc! hwnd old-control-proc)
+    (SetWindowLongW hwnd GWLP_WNDPROC control_proc)))
+
+;; ----------------------------------------
+
+(define-user32 DestroyWindow (_wfun _HWND -> (r : _BOOL)
+                                    -> (unless r (failed 'DestroyWindow))))
+
+(define (maybe-destroy-window hwnd)
+  (atomically
+   (when (unregister-hwnd? hwnd)
+     (DestroyWindow hwnd))))
+
+(define (clean-up-destroyed)
+  (free-remembered-now maybe-destroy-window))
+
+(define-user32 _CreateWindowExW (_wfun _DWORD
+                                       _string/utf-16
+                                       _string/utf-16
+                                       _UDWORD
+                                       _int _int _int _int
+                                       _HWND _HMENU _HINSTANCE _pointer
+                                       -> _HWND)
+  #:c-id CreateWindowExW)
+
+(define (make-CreateWindowEx register!)
+  ((allocator remember-to-free-later)
+   (lambda (dwExStyle lpClassName lpWindowName dwStyle x y nWidth nHeight hWndParent hMenu hInstance lpParam)
+     (let ([hwnd (_CreateWindowExW dwExStyle lpClassName lpWindowName dwStyle x y nWidth nHeight hWndParent hMenu hInstance lpParam)])
+       (register-hwnd! hwnd)
+       hwnd))))
+
+(define CreateWindowExW (make-CreateWindowEx register-hwnd!))
+(define CreateWindowExW/control (make-CreateWindowEx (lambda (hwnd)
+                                                       (register-hwnd! hwnd)
+                                                       (subclass-control hwnd))))
+
+;; ----------------------------------------
 
 (define-cstruct _WNDCLASS ([style _UINT]
 			   [lpfnWndProc _fpointer]
@@ -119,14 +209,6 @@
   #:c-id DefWindowProcW)
 
 #;(define-user32 PostQuitMessage (_wfun _int -> _void))
-
-(define (wind-proc w msg wparam lparam)
-  (let ([wx (hwnd->wx w)])
-    (if wx
-        (send wx wndproc w msg wparam lparam DefWindowProcW)
-        (DefWindowProcW w msg wparam lparam))))
-
-(define wind-proc-ptr (function-ptr wind-proc _WndProc))
 
 (define hInstance (GetModuleHandleW #f))
 

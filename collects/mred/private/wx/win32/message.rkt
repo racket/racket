@@ -65,7 +65,6 @@
 (define message%
   (class item%
     (inherit auto-size set-size set-control-font get-hwnd
-             subclass-control
              remember-label-bitmap)
 
     (init parent label
@@ -81,25 +80,23 @@
     (super-new [callback void]
                [parent parent]
                [hwnd 
-                (CreateWindowExW 0
-                                 (get-class)
-                                 (if (string? label)
-                                     label
-                                     "<image>")
-                                 (bitwise-ior SS_LEFT WS_CHILD WS_CLIPSIBLINGS
-                                              (if bitmap?
-                                                  SS_BITMAP
-                                                  (if (symbol? label)
-                                                      SS_ICON
-                                                      0)))
-                                 0 0 0 0
-                                 (send parent get-client-hwnd)
-                                 #f
-                                 hInstance
-                                 #f)]
+                (CreateWindowExW/control 0
+                                         (get-class)
+                                         (if (string? label)
+                                             label
+                                             "<image>")
+                                         (bitwise-ior SS_LEFT WS_CHILD WS_CLIPSIBLINGS
+                                                      (if bitmap?
+                                                          SS_BITMAP
+                                                          (if (symbol? label)
+                                                              SS_ICON
+                                                              0)))
+                                         0 0 0 0
+                                         (send parent get-client-hwnd)
+                                         #f
+                                         hInstance
+                                         #f)]
                [style style])
-
-    (subclass-control (get-hwnd))
 
     (when bitmap?
       (let ([hbitmap (bitmap->hbitmap label)])

@@ -45,19 +45,18 @@
     (define callback void)
 
     (inherit auto-size set-control-font
-             is-shown-to-root?
-             subclass-control)
+             is-shown-to-root?)
 
     (define hwnd
-      (CreateWindowExW 0
-                       "PLTSysTabControl32"
-                       ""
-                       (bitwise-ior WS_CHILD WS_CLIPSIBLINGS)
-                       0 0 0 0
-                       (send parent get-client-hwnd)
-                       #f
-                       hInstance
-                       #f))
+      (CreateWindowExW/control 0
+                               "PLTSysTabControl32"
+                               ""
+                               (bitwise-ior WS_CHILD WS_CLIPSIBLINGS)
+                               0 0 0 0
+                               (send parent get-client-hwnd)
+                               #f
+                               hInstance
+                               #f))
 
     (define client-hwnd
       (CreateWindowExW 0
@@ -75,8 +74,6 @@
                [parent parent]
                [hwnd hwnd]
                [style style])
-
-    (subclass-control hwnd)
 
     (define/override (get-client-hwnd)
       client-hwnd)

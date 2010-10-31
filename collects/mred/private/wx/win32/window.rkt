@@ -143,11 +143,6 @@
     (if (try-mouse w msg wParam lParam)
         0
         (cond
-         [(= msg WM_DESTROY)
-          ;; release immobile cell 
-          (unregister-hwnd w)
-          ;; so it won't be finalized:
-          (NotifyWindowDestroy w)]
          [(= msg WM_SETFOCUS)
           (queue-window-event this (lambda () (on-set-focus)))
           0]

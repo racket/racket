@@ -54,7 +54,6 @@
           font label-font)
 
     (inherit set-size set-control-font
-             subclass-control
              get-client-size)
 
     (define single?
@@ -62,22 +61,22 @@
            (not (memq 'mutiple style))))
 
     (define hwnd
-      (CreateWindowExW WS_EX_CLIENTEDGE
-                       "PLTLISTBOX"
-                       label
-                       (bitwise-ior WS_CHILD WS_CLIPSIBLINGS LBS_NOTIFY
-                                    WS_VSCROLL
-                                    (if (memq 'hscroll style) WS_HSCROLL 0)
-                                    (cond
-                                     ;; Win32 sense of "multiple" and "extended" is backwards
-                                     [(eq? kind 'extended) LBS_MULTIPLESEL]
-                                     [(eq? kind 'multiple) LBS_EXTENDEDSEL]
-                                     [else 0]))
-                       0 0 0 0
-                       (send parent get-client-hwnd)
-                       #f
-                       hInstance
-                       #f))
+      (CreateWindowExW/control WS_EX_CLIENTEDGE
+                               "PLTLISTBOX"
+                               label
+                               (bitwise-ior WS_CHILD WS_CLIPSIBLINGS LBS_NOTIFY
+                                            WS_VSCROLL
+                                            (if (memq 'hscroll style) WS_HSCROLL 0)
+                                            (cond
+                                             ;; Win32 sense of "multiple" and "extended" is backwards
+                                             [(eq? kind 'extended) LBS_MULTIPLESEL]
+                                             [(eq? kind 'multiple) LBS_EXTENDEDSEL]
+                                             [else 0]))
+                               0 0 0 0
+                               (send parent get-client-hwnd)
+                               #f
+                               hInstance
+                               #f))
 
     (for ([s (in-list choices)])
       (SendMessageW/str hwnd LB_ADDSTRING 0 s))
@@ -89,8 +88,6 @@
 
     (set-control-font font)
     (set-size -11111 -11111 40 60)
-
-    (subclass-control hwnd)
 
     (define callback cb)
 

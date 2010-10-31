@@ -25,23 +25,22 @@
           x y w h
           choices style font)
     (inherit auto-size set-control-font
-             set-size
-             subclass-control)
+             set-size)
 
     (define callback cb)
     
     (define hwnd
-      (CreateWindowExW 0
-                       "PLTCOMBOBOX"
-                       label
-                       (bitwise-ior WS_CHILD CBS_DROPDOWNLIST 
-                                    WS_HSCROLL WS_VSCROLL
-                                    WS_BORDER WS_CLIPSIBLINGS)
-                       0 0 0 0
-                       (send parent get-client-hwnd)
-                       #f
-                       hInstance
-                       #f))
+      (CreateWindowExW/control 0
+                               "PLTCOMBOBOX"
+                               label
+                               (bitwise-ior WS_CHILD CBS_DROPDOWNLIST 
+                                            WS_HSCROLL WS_VSCROLL
+                                            WS_BORDER WS_CLIPSIBLINGS)
+                               0 0 0 0
+                               (send parent get-client-hwnd)
+                               #f
+                               hInstance
+                               #f))
 
     (define num-choices (length choices))
 
@@ -65,8 +64,6 @@
                (lambda (w h)
                  (set-size -11111 -11111 w (* h 8))))
 
-
-    (subclass-control hwnd)
 
     (define choice-dropped? #f)
 

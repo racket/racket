@@ -40,8 +40,7 @@
         style
         font)
   (inherit set-control-font
-           auto-size
-           subclass-control)
+           auto-size)
 
   (define callback cb)
   (define vertical? (memq 'vertical style))
@@ -79,15 +78,15 @@
 
   (define value-hwnd
     (and panel-hwnd
-         (CreateWindowExW 0
-                          "STATIC"
-                          (format "~s" val)
-                          (bitwise-ior SS_CENTER WS_CHILD WS_CLIPSIBLINGS WS_VISIBLE)
-                          0 0 0 0
-                          panel-hwnd
-                          #f
-                          hInstance
-                          #f)))
+         (CreateWindowExW/control 0
+                                  "STATIC"
+                                  (format "~s" val)
+                                  (bitwise-ior SS_CENTER WS_CHILD WS_CLIPSIBLINGS WS_VISIBLE)
+                                  0 0 0 0
+                                  panel-hwnd
+                                  #f
+                                  hInstance
+                                  #f)))
 
   (define hwnd (or panel-hwnd slider-hwnd))
 
@@ -128,8 +127,6 @@
 
   (SendMessageW slider-hwnd TBM_SETRANGE 1 (MAKELPARAM lo hi))
   (set-value val)
-
-  (subclass-control slider-hwnd)
 
   (define/override (set-size x y w h)
     (super set-size x y w h)

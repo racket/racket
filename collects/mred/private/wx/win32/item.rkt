@@ -16,17 +16,6 @@
  (protect-out item-mixin
               item%))
 
-(define (control-proc w msg wParam lParam)
-  (let ([wx (hwnd->wx w)])
-    (if wx
-        (send wx ctlproc w msg wParam lParam
-              (lambda (w msg wParam lParam)
-                ((hwnd->ctlproc w) w msg wParam lParam)))
-        (let ([default-ctlproc (hwnd->ctlproc w)])
-          (default-ctlproc w msg wParam lParam)))))
-
-(define control_proc (function-ptr control-proc _WndProc))
-
 (define (item-mixin %)
   (class %
     (inherit on-set-focus
@@ -39,11 +28,6 @@
       (callback this e))
 
     (super-new)
-    
-    (define/public (subclass-control hwnd)
-      (let ([old-control-proc (function-ptr (GetWindowLongW hwnd GWLP_WNDPROC) _WndProc)])
-        (set-hwnd-ctlproc! hwnd old-control-proc)
-        (SetWindowLongW hwnd GWLP_WNDPROC control_proc)))
     
     (define/public (ctlproc w msg wParam lParam default)
       (if (try-mouse w msg wParam lParam)

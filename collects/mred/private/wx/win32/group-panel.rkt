@@ -22,19 +22,18 @@
           style
           label)
 
-    (inherit auto-size set-control-font
-             subclass-control)
+    (inherit auto-size set-control-font)
 
     (define hwnd
-      (CreateWindowExW 0
-                       "PLTBUTTON"
-                       (or label "")
-                       (bitwise-ior BS_GROUPBOX WS_CHILD WS_CLIPSIBLINGS)
-                       0 0 0 0
-                       (send parent get-client-hwnd)
-                       #f
-                       hInstance
-                       #f))
+      (CreateWindowExW/control 0
+                               "PLTBUTTON"
+                               (or label "")
+                               (bitwise-ior BS_GROUPBOX WS_CHILD WS_CLIPSIBLINGS)
+                               0 0 0 0
+                               (send parent get-client-hwnd)
+                               #f
+                               hInstance
+                               #f))
 
     (define client-hwnd
       (CreateWindowExW 0
@@ -63,7 +62,6 @@
                (lambda (w h)
                  (set! label-h h)
                  (set-size -11111 -11111 (+ w 10) (+ h 10))))
-    (subclass-control hwnd)
 
     (define/public (set-label lbl)
       (SetWindowTextW hwnd lbl))

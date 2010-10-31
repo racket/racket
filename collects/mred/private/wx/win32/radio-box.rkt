@@ -30,7 +30,6 @@
 
     (inherit auto-size set-control-font
              is-enabled-to-root?
-             subclass-control
              set-focus)
 
     (define callback cb)
@@ -59,20 +58,20 @@
                    [bitmap? (and (label . is-a? . bitmap%)
                                  (send label ok?))]
                    [radio-hwnd 
-                    (CreateWindowExW 0
-                                     "PLTBUTTON"
-                                     (if (string? label)
-                                         label
-                                         "<image>")
-                                     (bitwise-ior BS_RADIOBUTTON WS_CHILD WS_CLIPSIBLINGS
-                                                  (if bitmap?
-                                                      BS_BITMAP
-                                                      0))
-                                     0 0 0 0
-                                     hwnd
-                                     #f
-                                     hInstance
-                                     #f)])
+                    (CreateWindowExW/control 0
+                                             "PLTBUTTON"
+                                             (if (string? label)
+                                                 label
+                                                 "<image>")
+                                             (bitwise-ior BS_RADIOBUTTON WS_CHILD WS_CLIPSIBLINGS
+                                                          (if bitmap?
+                                                              BS_BITMAP
+                                                              0))
+                                             0 0 0 0
+                                             hwnd
+                                             #f
+                                             hInstance
+                                             #f)])
               (when bitmap?
                 (let ([hbitmap (bitmap->hbitmap label)])
                   (set! label-bitmaps (cons hbitmap label-bitmaps))
@@ -96,9 +95,6 @@
                [hwnd hwnd]
                [extra-hwnds radio-hwnds]
                [style style])
-    
-    (for ([radio-hwnd (in-list radio-hwnds)])
-      (subclass-control radio-hwnd))
 
     (define/override (is-hwnd? a-hwnd)
       (or (ptr-equal? hwnd a-hwnd)

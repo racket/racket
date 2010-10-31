@@ -21,7 +21,6 @@
 (define base-button% 
   (class item%
     (inherit set-control-font auto-size get-hwnd
-             subclass-control
              remember-label-bitmap)
 
     (init parent cb label x y w h style font)
@@ -38,20 +37,20 @@
     (super-new [callback cb]
                [parent parent]
                [hwnd 
-                (CreateWindowExW 0
-                                 (get-class)
-                                 (if (string? label)
-                                     label
-                                     "<image>")
-                                 (bitwise-ior (get-flags) WS_CHILD WS_CLIPSIBLINGS
-                                              (if bitmap?
-                                                  BS_BITMAP
-                                                  0))
-                                 0 0 0 0
-                                 (send parent get-client-hwnd)
-                                 #f
-                                 hInstance
-                                 #f)]
+                (CreateWindowExW/control 0
+                                         (get-class)
+                                         (if (string? label)
+                                             label
+                                             "<image>")
+                                         (bitwise-ior (get-flags) WS_CHILD WS_CLIPSIBLINGS
+                                                      (if bitmap?
+                                                          BS_BITMAP
+                                                          0))
+                                         0 0 0 0
+                                         (send parent get-client-hwnd)
+                                         #f
+                                         hInstance
+                                         #f)]
                [style style])
 
     (when bitmap?
@@ -72,8 +71,6 @@
        [else
         (auto-size font label 60 20 12 0 #:scale-w 1.1 #:scale-h 1.1)]))
     (auto-size-button font label)
-
-    (subclass-control (get-hwnd))
 
     (define/override (is-command? cmd)
       (= cmd BN_CLICKED))

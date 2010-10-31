@@ -82,7 +82,6 @@
               get-client-size
               get-eventspace
               set-control-font
-              subclass-control
               is-auto-scroll? get-virtual-width get-virtual-height
               reset-auto-scroll
               refresh-for-autoscroll
@@ -122,18 +121,18 @@
                         #f))
      (define combo-hwnd
        (and panel-hwnd
-            (CreateWindowExW 0
-                             "PLTCOMBOBOX"
-                             ""
-                             (bitwise-ior WS_CHILD WS_VISIBLE
-                                          CBS_DROPDOWNLIST 
-                                          WS_HSCROLL WS_VSCROLL
-                                          WS_BORDER WS_CLIPSIBLINGS)
-                             0 0 w h
-                             panel-hwnd
-                             #f
-                             hInstance
-                             #f)))
+            (CreateWindowExW/control 0
+                                     "PLTCOMBOBOX"
+                                     ""
+                                     (bitwise-ior WS_CHILD WS_VISIBLE
+                                                  CBS_DROPDOWNLIST 
+                                                  WS_HSCROLL WS_VSCROLL
+                                                  WS_BORDER WS_CLIPSIBLINGS)
+                                     0 0 w h
+                                     panel-hwnd
+                                     #f
+                                     hInstance
+                                     #f)))
 
      (define hwnd (or panel-hwnd canvas-hwnd))
 
@@ -145,8 +144,7 @@
                 [style style])
 
      (when combo-hwnd
-       (set-control-font #f combo-hwnd)
-       (subclass-control combo-hwnd))
+       (set-control-font #f combo-hwnd))
 
      (define control-border-theme
        (and (memq 'control-border style)
