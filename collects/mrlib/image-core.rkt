@@ -413,12 +413,11 @@ has been moved out).
            (boolean? (flip-flipped? shape))
            (bitmap? (flip-shape shape)))))
 
-;; normalize-shape : shape (atomic-shape -> atomic-shape) -> normalized-shape
+;; normalize-shape : shape -> normalized-shape
 ;; normalizes 'shape', calling 'f' on each atomic shape in the normalized shape.
-(define/contract (normalize-shape shape [f values])
-  (->* (any/c) ;; should be shape?
-       ((-> any/c any/c))
-       normalized-shape?)
+(define/contract (normalize-shape shape)
+  (-> any/c ;; should be shape?
+      normalized-shape?)
   (let loop ([shape shape]
              [dx 0]
              [dy 0]
@@ -465,16 +464,16 @@ has been moved out).
                              (polygon-mode shape)
                              (scale-color (polygon-color shape) x-scale y-scale))])
          (if bottom
-             (make-overlay bottom (f this-one))
-             (f this-one)))]
+             (make-overlay bottom this-one)
+             this-one))]
       [(line-segment? shape)
        (let ([this-one 
               (make-line-segment (scale-point (line-segment-start shape))
                                  (scale-point (line-segment-end shape))
                                  (scale-color (line-segment-color shape) x-scale y-scale))])
          (if bottom
-             (make-overlay bottom (f this-one))
-             (f this-one)))]
+             (make-overlay bottom this-one)
+             this-one))]
       [(curve-segment? shape)
        ;; the pull is multiplied by the distance 
        ;; between the two points when it is drawn,
@@ -488,8 +487,8 @@ has been moved out).
                                   (curve-segment-e-pull shape)
                                   (scale-color (curve-segment-color shape) x-scale y-scale))])
          (if bottom
-             (make-overlay bottom (f this-one))
-             (f this-one)))]
+             (make-overlay bottom this-one)
+             this-one))]
       [(or (bitmap? shape) (np-atomic-shape? shape))
        (let ([shape (if (bitmap? shape) 
                         (make-flip #f shape)
@@ -497,8 +496,8 @@ has been moved out).
          (let ([this-one 
                 (make-translate dx dy (scale-np-atomic x-scale y-scale shape))])
            (if bottom
-               (make-overlay bottom (f this-one))
-               (f this-one))))]
+               (make-overlay bottom this-one)
+               this-one)))]
       [else 
        (error 'normalize-shape "unknown shape ~s\n" shape)])))
 

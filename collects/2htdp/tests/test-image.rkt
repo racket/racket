@@ -675,14 +675,12 @@
 ;;  testing normalization
 ;;
 
-(test (normalize-shape (image-shape (ellipse 50 100 'solid 'red))
-                       values)
+(test (normalize-shape (image-shape (ellipse 50 100 'solid 'red)))
       =>
       (make-translate 25 50 (make-ellipse 50 100 0 'solid "red")))
 
 (test (normalize-shape (make-overlay (image-shape (ellipse 50 100 'solid 'red))
-                                     (image-shape (ellipse 50 100 'solid 'blue)))
-                       values)
+                                     (image-shape (ellipse 50 100 'solid 'blue))))
       =>
       (make-overlay (image-shape (ellipse 50 100 'solid 'red))
                     (image-shape (ellipse 50 100 'solid 'blue))))
@@ -690,8 +688,7 @@
 (test (normalize-shape (make-overlay
                         (make-overlay (image-shape (ellipse 50 100 'solid 'red))
                                       (image-shape (ellipse 50 100 'solid 'blue)))
-                        (image-shape (ellipse 50 100 'solid 'green)))
-                       values)
+                        (image-shape (ellipse 50 100 'solid 'green))))
       =>
       (make-overlay 
        (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 'solid "red"))
@@ -701,21 +698,18 @@
 (test (normalize-shape (make-overlay
                         (image-shape (ellipse 50 100 'solid 'green))
                         (make-overlay (image-shape (ellipse 50 100 'solid 'red))
-                                      (image-shape (ellipse 50 100 'solid 'blue))))
-                       values)
+                                      (image-shape (ellipse 50 100 'solid 'blue)))))
       =>
       (make-overlay 
        (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 'solid "green"))
                      (make-translate 25 50 (make-ellipse 50 100 0 'solid "red")))
        (make-translate 25 50 (make-ellipse 50 100 0 'solid "blue"))))
 
-(test (normalize-shape (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))
-                       values)
+(test (normalize-shape (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
       =>
       (make-translate 125 150 (make-ellipse 50 100 0 'solid "blue")))
 
-(test (normalize-shape (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
-                       values)
+(test (normalize-shape (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))))
       =>
       (make-translate 135 170 (make-ellipse 50 100 0 'solid "blue")))
 
@@ -765,12 +759,10 @@
       #t)
 
 (test (round-numbers
-       (normalize-shape (image-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))
-                        values))
+       (normalize-shape (image-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))))
       =>
       (round-numbers
-       (normalize-shape (image-shape (rotate 180 (rectangle 50 100 'solid 'purple)))
-                        values)))
+       (normalize-shape (image-shape (rotate 180 (rectangle 50 100 'solid 'purple))))))
 
 (test (round-numbers (normalize-shape (image-shape (rotate 90 (ellipse 10 10 'solid 'red)))))
       =>
@@ -2116,7 +2108,7 @@
 
 (define (check-image-properties img-sexp img)
   (let* ([raw-size (image-struct-count (image-shape img))]
-         [normalized (normalize-shape (image-shape img) values)]
+         [normalized (normalize-shape (image-shape img))]
          [norm-size (image-struct-count normalized)]) 
     (unless (normalized-shape? normalized)
       (error 'test-image.ss "found a non-normalized shape after normalization:\n~s" 
