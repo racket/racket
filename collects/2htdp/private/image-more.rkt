@@ -57,7 +57,11 @@
                [parent bp]) min-width 100)
     (send f show #t)))
 
-(define/chk (save-image image filename [width (image-width image)] [height (image-height image)])
+;; the obfuscation in the width and height defaults is so that error checking happens in the right order
+(define/chk (save-image image
+                        filename 
+                        [width (if (image? image) (image-width image) 0)] 
+                        [height (if (image? image) (image-height image) 0)])
   (let* ([bm (make-object bitmap% 
                (inexact->exact (ceiling width)) 
                (inexact->exact (ceiling height)))]
