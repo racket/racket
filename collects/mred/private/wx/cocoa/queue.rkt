@@ -61,8 +61,6 @@
       ;; FIXME: Also need to reset blit windows, since OS may move them incorrectly
       (void)])
 
-(tellv app finishLaunching)
-
 ;; In case we were started in an executable without a bundle,
 ;; explicitly register with the dock so the application can receive
 ;; keyboard events.
@@ -94,6 +92,8 @@
 (define (on-screen-changed) (post-dummy-event))
 (void
  (CGDisplayRegisterReconfigurationCallback on-screen-changed #f))
+
+(tellv app finishLaunching)
 
 ;; ------------------------------------------------------------
 ;; Create an event to post when MzScheme has been sleeping but is
@@ -188,6 +188,38 @@
                                       socket_callback sock-context)]
        [source (CFSocketCreateRunLoopSource (CFAllocatorGetDefault) cfs 0)])
   (CFRunLoopAddSource rl source kCFRunLoopDefaultMode))
+
+;; ------------------------------------------------------------
+;; Another hack:
+;; Install a run-loop observer that noticed when the core run loop
+;; is exited multiple times during a single wait for a Cocoa event.
+;; When that happens, it's a sign that something has gone wrong,
+;; and we should interrupt the event wait and try again. This happens
+;; when the user hides the application and then clicks on the dock
+;; icon. (But why does that happen?)
+
+(define _Boolean _BOOL)
+(define-cf kCFRunLoopCommonModes _pointer)
+(define-cf CFRunLoopObserverCreate (_fun _pointer ; CFAllocatorRef
+                                         _int ; CFOptionFlags
+                                         _Boolean ; repeats?
+                                         _CFIndex ; order
+                                         (_fun #:atomic? #t _pointer _int _pointer -> _void)
+                                         _pointer ; CFRunLoopObserverContext
+                                         -> _pointer))
+(define-cf CFRunLoopAddObserver (_fun _pointer _pointer _pointer -> _void))
+(define-cf CFRunLoopGetMain (_fun -> _pointer))
+(define kCFRunLoopExit (arithmetic-shift 1 7))
+(define-mz scheme_signal_received (_fun -> _void))
+(define already-exited? #f)
+(define sleeping? #f)
+(define (exiting-run-loop x y z)
+  (when sleeping?
+    (if already-exited?
+        (scheme_signal_received)
+        (set! already-exited? #t))))
+(let ([o (CFRunLoopObserverCreate #f kCFRunLoopExit #t 0 exiting-run-loop #f)])
+  (CFRunLoopAddObserver (CFRunLoopGetMain) o kCFRunLoopCommonModes))
 
 ;; ------------------------------------------------------------
 ;; Cocoa event pump
@@ -330,9 +362,12 @@
 
 ;; Called through an atomic callback:
 (define (sleep-until-event secs fds)
+  (set! sleeping? #t)
+  (set! already-exited? #f)
   (scheme_start_sleeper_thread scheme_sleep secs fds write_sock)
   (check-one-event #t #f) ; blocks until an event is ready
-  (scheme_end_sleeper_thread))
+  (scheme_end_sleeper_thread)
+  (set! sleeping? #f))
 
 (define (cocoa-install-event-wakeup)
   (post-dummy-event) ; why do we need this? 'nextEventMatchingMask:' seems to hang if we don't use it
