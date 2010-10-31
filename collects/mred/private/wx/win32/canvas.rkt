@@ -330,15 +330,21 @@
       (GetScrollPos canvas-hwnd SB_VERT))
 
      (define/public (get-scroll-pos which)
-       (GetScrollPos canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ)))
+       (if (is-auto-scroll?)
+           0
+           (GetScrollPos canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))))
      (define/public (get-scroll-range which)
-       (let ([i (GetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
-         (+ (- (SCROLLINFO-nMax i)
-               (SCROLLINFO-nPage i))
-            1)))
+       (if (is-auto-scroll?)
+           0
+           (let ([i (GetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
+             (+ (- (SCROLLINFO-nMax i)
+                   (SCROLLINFO-nPage i))
+                1))))
      (define/public (get-scroll-page which)
-       (let ([i (GetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
-         (SCROLLINFO-nPage i)))
+       (if (is-auto-scroll?)
+           0
+           (let ([i (GetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
+             (SCROLLINFO-nPage i))))
 
      (define/public (set-scroll-pos which v)
        (void (SetScrollPos canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ) v #t)))
@@ -445,7 +451,7 @@
          (set-scroll-pos 'vertical (->long (* y (get-scroll-range 'vertical)))))
        (when (is-auto-scroll?) (refresh-for-autoscroll)))
 
-     (def/public-unimplemented warp-pointer)
+     (define/public (warp-pointer x y) (void))
 
      (define/public (set-resize-corner on?)
        (void))

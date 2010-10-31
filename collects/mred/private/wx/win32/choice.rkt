@@ -94,7 +94,7 @@
 
     
     (define/public (set-selection i)
-      (SendMessageW hwnd CB_SETCURSEL i 0))
+      (void (SendMessageW hwnd CB_SETCURSEL i 0)))
 
     (define/public (get-selection)
       (SendMessageW hwnd CB_GETCURSEL 0 0))

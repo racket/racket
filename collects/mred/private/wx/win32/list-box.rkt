@@ -56,9 +56,7 @@
     (inherit set-size set-control-font
              get-client-size)
 
-    (define single?
-      (and (not (memq 'extended style))
-           (not (memq 'mutiple style))))
+    (define single? (eq? 'single kind))
 
     (define hwnd
       (CreateWindowExW/control WS_EX_CLIENTEDGE
@@ -115,10 +113,11 @@
     (define/public (set-string i str)
       (atomically
        (SendMessageW/str hwnd LB_INSERTSTRING i str)
-       (SendMessageW hwnd LB_DELETESTRING (add1 i) 0)))
+       (SendMessageW hwnd LB_DELETESTRING (add1 i) 0)
+       (void)))
 
     (define/public (set-first-visible-item i)
-      (SendMessageW hwnd LB_SETTOPINDEX i 0))
+      (void (SendMessageW hwnd LB_SETTOPINDEX i 0)))
 
     (define/public (get-first-item)
       (SendMessageW hwnd LB_GETTOPINDEX 0 0))
@@ -134,7 +133,7 @@
       (atomically
        (set! data null)
        (set! num 0)
-       (SendMessageW hwnd LB_RESETCONTENT 0 0)))
+       (void (SendMessageW hwnd LB_RESETCONTENT 0 0))))
 
     (define/public (set choices)
       (atomically
@@ -157,7 +156,7 @@
       (atomically
        (set! data (append (take data i) (drop data (add1 i))))
        (set! num (sub1 num))
-       (SendMessageW hwnd LB_DELETESTRING i 0)))
+       (void (SendMessageW hwnd LB_DELETESTRING i 0))))
 
     (define/public (get-selections)
       (atomically
@@ -186,14 +185,15 @@
       (not (zero? (SendMessageW hwnd LB_GETSEL i 0))))
 
     (define/public (select i [on? #t] [extend? #t])
-      (if single?
-          (SendMessageW hwnd LB_SETCURSEL (if on? i -1) 0)
-          (begin
-            (when extend?
-              (SendMessageW hwnd LB_SELITEMRANGE 0 (MAKELPARAM 0 num)))
-            (SendMessageW hwnd LB_SETSEL (if on? 1 0) i))))
+      (void
+       (if single?
+           (SendMessageW hwnd LB_SETCURSEL (if on? i -1) 0)
+           (begin
+             (when extend?
+               (SendMessageW hwnd LB_SELITEMRANGE 0 (MAKELPARAM 0 num)))
+             (SendMessageW hwnd LB_SETSEL (if on? 1 0) i)))))
 
     (define/public (set-selection i)
-      (select i #t #f))
+      (void (select i #t #f)))
 
     (def/public-unimplemented get-label-font)))
