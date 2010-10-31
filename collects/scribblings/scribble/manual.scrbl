@@ -30,6 +30,60 @@ includes a @racket[latex-defaults] @tech{style property}.
 @; ------------------------------------------------------------------------
 @section[#:tag "scribble:manual:code"]{Typesetting Code}
 
+@defform/subs[(codeblock option ... str-expr ...+)
+              ([option (code:line #:indent indent-expr)
+                       (code:line #:expand expand-expr)
+                       (code:line #:context context-expr)
+                       (code:line #:keep-lang-line? keep-expr)])
+              #:contracts ([indent-expr exact-nonnegative-integer?]
+                           [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
+                           [context-expr syntax-object?]
+                           [keep-expr any/c])]{
+
+Parses the code formed by the strings produced by the
+@racket[str-expr]s as a Racket module and produces a @tech{block} that
+typesets the code. The code is indented by the amount specified by
+@racket[indent-expr], which defaults to @racket[2].
+
+When @racket[expand-expr] produces @racket[#f] (which is the default),
+identifiers in the typeset code are colored and linked based on
+for-label bindings in the lexical environment of the syntax object
+provided by @racket[context-expr]. The default @racket[context-expr]
+has the same lexical context as the first @racket[str-expr].
+
+When @racket[expand-expr] produces a procedure, it is used to
+macro-expand the parsed program, and syntax coloring is based on the
+parsed program.
+
+When @racket[keep-lang-line?-expr] produces a true value (the
+default), the @hash-lang[] line in the input is preserved in the
+typeset output, otherwise the first line is dropped.
+
+For example,
+
+@codeblock[#:keep-lang-line? #f]|<|{
+  #lang scribble/manual
+  @codeblock|{
+    #lang scribble/manual
+    @codeblock{
+      #lang scribble/manual
+      @title{Hello}
+    }
+  }|
+}|>|
+
+produces the typeset result
+
+  @codeblock|{
+    #lang scribble/manual
+    @codeblock{
+      #lang scribble/manual
+      @title{Hello}
+    }
+  }|               
+
+}
+
 @defform[(racketblock datum ...)]{
 
 Typesets the @racket[datum] sequence as a table of Racket code inset
