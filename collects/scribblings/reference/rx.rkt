@@ -1,431 +1,313 @@
-(module rx scheme/base
-  (require scribble/core
-           scribble/manual
-           scribble/bnf)
+#lang at-exp racket/base
+(require scribble/core scribble/manual scribble/bnf
+         racket/list racket/string)
 
-  (define grammar "
-Regexp   ::= Pieces                   Match Pieces                                                 #co
-          |  Regexp|Regexp            Match either Regexp, try left first                          #co
-Pieces   ::= Piece                    Match Piece                                                  #co
-          |  PiecePieces              Match Piece followed by Pieces                               #co
-Piece    ::= Repeat                   Match Repeat, longest possible                               #co
-          |  Repeat?                  Match Repeat, shortest possible                              #co
-          |  Atom                     Match Atom exactly once                                      #co
-Repeat   ::= Atom*                    Match Atom 0 or more times                                   #co
-          |  Atom+                    Match Atom 1 or more times                                   #co
-          |  Atom?                    Match Atom 0 or 1 times                                      #co
-Repeat   ::= ...                      ...                                                          #px
-          |  Atom{N}                  Match Atom exactly N times                                   #px
-          |  Atom{N,}                 Match Atom N or more times                                   #px
-          |  Atom{,M}                 Match Atom between 0 and M times                             #px
-          |  Atom{N,M}                Match Atom between N and M times                             #px
-Atom     ::= (Regexp)                 Match sub-expression Regexp and report                       #co
-          |  [Range]                  Match any character in Range                                 #co
-          |  [^Range]                 Match any character not in Range                             #co
-          |  .                        Match any (except newline in multi mode)                     #co
-          |  ^                        Match start (or after newline in multi mode)                 #co
-          |  $                        Match end (or before newline in multi mode)                  #co
-          |  Literal                  Match a single literal character                             #co
-          |  (?Mode:Regexp)           Match Regexp using Mode                                      #co
-          |  (?>Regexp)               Match Regexp, only first possible                            #co
-          |  Look                     Match empty if Look matches                                  #co
-          |  (?PredPieces|Pieces)     Match 1st Pieces if Pred, else 2nd Pieces                    #co
-          |  (?PredPieces)            Match Pieces if Pred, empty if not Pred                      #co
-Atom     ::= ...                      ...                                                          #px
-          |  %N                       Match latest reported match for N##th _(_                    #px
-          |  Class                    Match any character in Class                                 #px
-          |  %b                       Match %w* boundary                                           #px
-          |  %B                       Match where %b does not                                      #px
-          |  %p{Property}             Match (UTF-8 encoded) in Property                            #px
-          |  %P{Property}             Match (UTF-8 encoded) not in Property                        #px
-Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _._, _^_, _\\_, or _|_             #rx
-Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _]_, _{_, _}_, _._, _^_, _\\_, or _|_ #px
-          |  \\Aliteral                Match Aliteral                                              #ot
-Aliteral :== Any character                                                                         #rx
-Aliteral :== Any character except _a_-_z_, _A_-_Z_, _0_-_9_                                        #px
-Range    ::= ]                        Range contains _]_ only                                      #co
-          |  -                        Range contains _-_ only                                      #co
-          |  Mrange                   Range contains everything in Mrange                          #co
-          |  Mrange-                  Range contains _-_ and everything in Mrange                  #co
-Mrange   ::= ]Lrange                  Mrange contains _]_ and everything in Lrange                 #co
-          |  -Lrange                  Mrange contains _-_ and everything in Lrange                 #co
-          |  Srange                   Mrange contains everything in Srange                         #co
-Srange   ::= Sliteral                 Srange contains a literal character                          #co
-          |  Sliteral-Rliteral        Srange contains Unicode range inclusive                      #co
-          |  SrangeLrange             Srange contains everything in both                           #co
-Lrange   ::= ^                        Lrange contains _^_                                          #co
-          |  Rliteral-Rliteral        Lrange contains Unicode range inclusive                      #co
-          |  ^Lrange                  Lrange contains _^_ and more                                 #co
-          |  Srange                   Lrange contains everything in Srange                         #co
-Look     ::= (?=Regexp)               Match if Regexp matches                                      #mode
-          |  (?!Regexp)               Match if Regexp doesn't match                                #mode
-          |  (?<=Regexp)              Match if Regexp matches preceding                           #mode
-          |  (?<!Regexp)              Match if Regexp doesn't match preceding                     #mode
-Pred     ::= (N)                      True if Nth _(_ has a match                                  #mode
-          |  Look                     True if Look matches                                         #mode
-Srange   ::= ...                      ...                                                          #px
-          |  Class                    Srange contains all characters in Class                      #px
-          |  Posix                    Srange contains all characters in Posix                      #px
-          |  \\Eliteral               Srange contains Eliteral                                     #px
-Sliteral :== Any character except _]_, _-_, or _^_                                                 #rx
-Sliteral :== Any character except _]_, _\\_, _-_, or _^_                                           #px
-Rliteral :== Any character except _]_ or _-_                                                       #rx
-Rliteral :== Any character except _]_, _\\_, or _-_                                                #px
-Eliteral :== Any character except _a_-_z_, _A_-_Z_                                                 #px
-Mode     ::=                          Like the enclosing mode                                      #mode
-          |  Modei                    Like Mode, but case-insensitive                              #mode
-          |  Mode-i                   Like Mode, but sensitive                                     #mode
-          |  Modes                    Like Mode, but not in multi mode                             #mode
-          |  Mode-s                   Like Mode, but in multi mode                                 #mode
-          |  Modem                    Like Mode, but in multi mode                                 #mode
-          |  Mode-m                   Like Mode, but not in multi mode                             #mode
-Class    ::= %d                       Contains _0_-_9_                                             #cat
-          |  %D                       Contains ASCII other than those in %d                        #cat
-          |  %w                       Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___                      #cat
-          |  %W                       Contains ASCII other than those in %w                        #cat
-          |  %s                       Contains space, tab, newline, formfeed, return               #cat
-          |  %S                       Contains ASCII other than those in %s                        #cat
-Posix    ::= [:alpha:]                Contains _a_-_z_, _A_-_Z_                                    #cat
-          |  [:alnum:]                Contains _a_-_z_, _A_-_Z_, _0_-_9_                           #cat
-          |  [:ascii:]                Contains all ASCII characters                                #cat
-          |  [:blank:]                Contains space and tab                                       #cat
-          |  [:cntrl:]                Contains all characters with scalar value < 32               #cat
-          |  [:digit:]                Contains _0_-_9_                                             #cat
-          |  [:graph:]                Contains all ASCII characters that use ink                   #cat
-          |  [:lower:]                Contains space, tab, and ASCII ink users                     #cat
-          |  [:print:]                Contains _A_-_Z_                                             #cat
-          |  [:space:]                Contains space, tab, newline, formfeed, return               #cat
-          |  [:upper:]                Contains _A_-_Z_                                             #cat
-          |  [:word:]                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___                      #cat
-          |  [:xdigit:]               Contains _0_-_9_, _a_-_f_, _A_-_F_                           #cat
-Property ::= Category                 Includes all characters in Category                          #cat
-          |  ^Category                Includes all characters not in Category                      #cat
-Category ::= Ll | Lu | Lt | Lm        Unicode general category                                     #cat
-          |  L&                       Union of Ll, Lu, Lt, and Lm                                  #cat
-          |  Lo                       Unicode general category                                     #cat
-          |  L                        Union of L& and Lo                                           #cat
-          |  Nd | Nl | No             Unicode general category                                     #cat
-          |  NN                       Union of Nd, Nl, and No                                      #cat
-          |  Ps | Pe | Pi | Pf        Unicode general category                                     #cat
-          |  Pc | Pd | Po             Unicode general category                                     #cat
-          |  P                        Union of Ps, Pe, Pi, Pf, Pc, Pd, and Po                      #cat
-          |  Mn | Mc | Me             Unicode general category                                     #cat
-          |  MM                       Union of Mn, Mc, and Me                                      #cat
-          |  Sc | Sk | Sm | So        Unicode general category                                     #cat
-          |  S                        Union of Sc, Sk, Sm, and So                                  #cat
-          |  Zl | Zp | Zs             Unicode general category                                     #cat
-          |  Z                        Union of Zl, Zp, and Zs                                      #cat
-          |  .                        Union of all general categories                              #cat
-")
+(define grammar @string-append{
+  Regexp   ::= Pces               Match Pces                                      #co
+            |  Regexp|Regexp      Match either Regexp, try left first             #co
+  Pces     ::= Pce                Match Pce                                       #co
+            |  PcePces            Match Pce followed by Pces                      #co
+  Pce      ::= Repeat             Match Repeat, longest possible                  #co
+            |  Repeat?            Match Repeat, shortest possible                 #co
+            |  Atom               Match Atom exactly once                         #co
+  Repeat   ::= Atom*              Match Atom 0 or more times                      #co
+            |  Atom+              Match Atom 1 or more times                      #co
+            |  Atom?              Match Atom 0 or 1 times                         #co
+  Repeat   ::= ...                ...                                             #px
+            |  Atom{N}            Match Atom exactly N times                      #px
+            |  Atom{N,}           Match Atom N or more times                      #px
+            |  Atom{,M}           Match Atom between 0 and M times                #px
+            |  Atom{N,M}          Match Atom between N and M times                #px
+  Atom     ::= (Regexp)           Match sub-expression Regexp and report          #co
+            |  [Rng]              Match any character in Rng                      #co
+            |  [^Rng]             Match any character not in Rng                  #co
+            |  .                  Match any (except newline in multi mode)        #co
+            |  ^                  Match start (or after newline in multi mode)    #co
+            |  $                  Match end (or before newline in multi mode)     #co
+            |  Literal            Match a single literal character                #co
+            |  (?Mode:Regexp)     Match Regexp using Mode                         #co
+            |  (?>Regexp)         Match Regexp, only first possible               #co
+            |  Look               Match empty if Look matches                     #co
+            |  (?TstPces|Pces)    Match 1st Pces if Tst, else 2nd Pces            #co
+            |  (?TstPces)         Match Pces if Tst, empty if not Tst             #co
+  Atom     ::= ...                ...                                             #px
+            |  \N                 Match latest reported match for N##th _(_       #px
+            |  Class              Match any character in Class                    #px
+            |  \b                 Match \w* boundary                              #px
+            |  \B                 Match where \b does not                         #px
+            |  \p{Property}       Match (UTF-8 encoded) in Property               #px
+            |  \P{Property}       Match (UTF-8 encoded) not in Property           #px
+  Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _._, _^_, _\_, or _|_                #rx
+  Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _]_, _{_, _}_, _._, _^_, _\_, or _|_ #px
+            |  \Aliteral                Match Aliteral                            #ot
+  Aliteral :== Any character                                                      #rx
+  Aliteral :== Any character except _a_-_z_, _A_-_Z_, _0_-_9_                     #px
+  Rng      ::= ]                  Rng contains _]_ only                           #co
+            |  -                  Rng contains _-_ only                           #co
+            |  Mrng               Rng contains everything in Mrng                 #co
+            |  Mrng-              Rng contains _-_ and everything in Mrng         #co
+  Mrng     ::= ]Lrng              Mrng contains _]_ and everything in Lrng        #co
+            |  -Lrng              Mrng contains _-_ and everything in Lrng        #co
+            |  Lirng              Mrng contains everything in Lirng               #co
+  Lirng    ::= Riliteral          Lirng contains a literal character              #co
+            |  Riliteral-Rliteral Lirng contains Unicode range inclusive          #co
+            |  LirngLrng          Lirng contains everything in both               #co
+  Lrng     ::= ^                  Lrng contains _^_                               #co
+            |  Rliteral-Rliteral  Lrng contains Unicode range inclusive           #co
+            |  ^Lrng              Lrng contains _^_ and more                      #co
+            |  Lirng              Lrng contains everything in Lirng               #co
+  Look     ::= (?=Regexp)         Match if Regexp matches                         #mode
+            |  (?!Regexp)         Match if Regexp doesn't match                   #mode
+            |  (?<=Regexp)        Match if Regexp matches preceding               #mode
+            |  (?<!Regexp)        Match if Regexp doesn't match preceding         #mode
+  Tst      ::= (N)                True if Nth _(_ has a match                     #mode
+            |  Look               True if Look matches                            #mode
+  Lirng    ::= ...                ...                                             #px
+            |  Class              Lirng contains all characters in Class          #px
+            |  Posix              Lirng contains all characters in Posix          #px
+            |  \Eliteral          Lirng contains Eliteral                         #px
+  Riliteral :== Any character except _]_, _-_, or _^_                             #rx
+  Riliteral :== Any character except _]_, _\_, _-_, or _^_                        #px
+  Rliteral  :== Any character except _]_ or _-_                                   #rx
+  Rliteral  :== Any character except _]_, _\_, or _-_                             #px
+  Eliteral  :== Any character except _a_-_z_, _A_-_Z_                             #px
+  Mode     ::=                    Like the enclosing mode                         #mode
+            |  Modei              Like Mode, but case-insensitive                 #mode
+            |  Mode-i             Like Mode, but sensitive                        #mode
+            |  Modes              Like Mode, but not in multi mode                #mode
+            |  Mode-s             Like Mode, but in multi mode                    #mode
+            |  Modem              Like Mode, but in multi mode                    #mode
+            |  Mode-m             Like Mode, but not in multi mode                #mode
+  Class    ::= \d                 Contains _0_-_9_                                #cat
+            |  \D                 Contains ASCII other than those in \d           #cat
+            |  \w                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat
+            |  \W                 Contains ASCII other than those in \w           #cat
+            |  \s                 Contains space, tab, newline, formfeed, return  #cat
+            |  \S                 Contains ASCII other than those in \s           #cat
+  Posix    ::= [:alpha:]          Contains _a_-_z_, _A_-_Z_                       #cat
+            |  [:alnum:]          Contains _a_-_z_, _A_-_Z_, _0_-_9_              #cat
+            |  [:ascii:]          Contains all ASCII characters                   #cat
+            |  [:blank:]          Contains space and tab                          #cat
+            |  [:cntrl:]          Contains all characters with scalar value < 32  #cat
+            |  [:digit:]          Contains _0_-_9_                                #cat
+            |  [:graph:]          Contains all ASCII characters that use ink      #cat
+            |  [:lower:]          Contains space, tab, and ASCII ink users        #cat
+            |  [:print:]          Contains _A_-_Z_                                #cat
+            |  [:space:]          Contains space, tab, newline, formfeed, return  #cat
+            |  [:upper:]          Contains _A_-_Z_                                #cat
+            |  [:word:]           Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat
+            |  [:xdigit:]         Contains _0_-_9_, _a_-_f_, _A_-_F_              #cat
+  Property ::= Category           Includes all characters in Category             #cat
+            |  ^Category          Includes all characters not in Category         #cat
+  Category ::= Ll | Lu | Lt | Lm  Unicode general category                        #cat
+            |  L&                 Union of Ll, Lu, Lt, and Lm                     #cat
+            |  Lo                 Unicode general category                        #cat
+            |  L                  Union of L& and Lo                              #cat
+            |  Nd | Nl | No       Unicode general category                        #cat
+            |  NN                 Union of Nd, Nl, and No                         #cat
+            |  Ps | Pe | Pi | Pf  Unicode general category                        #cat
+            |  Pc | Pd | Po       Unicode general category                        #cat
+            |  P                  Union of Ps, Pe, Pi, Pf, Pc, Pd, and Po         #cat
+            |  Mn | Mc | Me       Unicode general category                        #cat
+            |  MM                 Union of Mn, Mc, and Me                         #cat
+            |  Sc | Sk | Sm | So  Unicode general category                        #cat
+            |  S                  Union of Sc, Sk, Sm, and So                     #cat
+            |  Zl | Zp | Zs       Unicode general category                        #cat
+            |  Z                  Union of Zl, Zp, and Zs                         #cat
+            |  .                  Union of all general categories                 #cat
+  })
 
-  (define (subs s)
-    (cond
-     [(equal? s "piece") "pce"]
-     [(equal? s "pieces") "pces"]
-     [(equal? s "range") "rng"]
-     [(equal? s "mrange") "mrng"]
-     [(equal? s "lrange") "lrng"]
-     [(equal? s "srange") "lirng"]
-     [(equal? s "sliteral") "riliteral"]
-     [(equal? s "pred") "tst"]
-     [else s]))
+(define-syntax regexp-case
+  (syntax-rules (else)
+    [(regexp-case str) (void)]
+    [(regexp-case str [else b ...]) (let () b ...)]
+    [(regexp-case str [(re v ...) b ...] . more)
+     (let* ([m str] [m (and (string? m) (regexp-match re m))])
+       (if m (apply (lambda (v ...) b ...) (cdr m))
+             (regexp-case str . more)))]))
 
-  (define (fixup-ids s)
-    (let loop ([m (regexp-match-positions
-                   #px"(Regexp)|(Pieces?)|(Atom)|(Repeat)|(Literal)|(Aliteral)|(Eliteral)|(Range)|(Srange)|(Lrange)|(Mrange)|(Sliteral)|(Rliteral)|(Mode)|(Class)|(Posix)|(Property)|(Category)|(Pred)|(Look)|(\\bN\\b)|(\\bM\\b)"
-                   s)])
-      (cond
-       [m
-        (append (fixup-ids (substring s 0 (caar m)))
-                (list (nonterm (subs (string-downcase (substring s (caar m) (cdar m))))))
-                (fixup-ids (substring s (cdar m))))]
-       [(regexp-match-positions #rx" [|] " s)
-        => (lambda (m)
-             (append (fixup-ids (substring s 0 (caar m)))
-                     (list spacer (tt "|") spacer)
-                     (fixup-ids (substring s (cdar m)))))]
-       [(regexp-match-positions #rx"MM|NN" s)
-        => (lambda (m)
-             (append (fixup-ids (substring s 0 (caar m)))
-                     (list (substring s (caar m) (add1 (caar m))))
-                     (fixup-ids (substring s (cdar m)))))]
-       [(regexp-match-positions #rx"##" s)
-        => (lambda (m)
-             (append (fixup-ids (substring s 0 (caar m)))
-                     (fixup-ids (substring s (cdar m)))))]
-       [(string=? s "...") (list (make-element #f (list s)))]
-       [(string=? s "") null]
-       [else (list (regexp-replace* #rx"%" s "\\\\"))])))
+(define re:nonterm
+  (let* ([xs (regexp-match* #px"(\n|^) *\\w+ +:[:=]= " grammar)]
+         [xs (map (lambda (m) (car (regexp-match #px"\\w+" m))) xs)]
+         [xs (string-join (remove-duplicates xs) "|")])
+    (pregexp (string-append "^(.*?)("xs"|\\b[MN]\\b)(.*)$"))))
 
-  (define (lit-ize l)
-    (map (lambda (i)
-           (if (string? i)
-               (litchar i)
-               i))
-         l))
+(define (fixup-ids s)
+  (regexp-case s
+    [(re:nonterm X N Y)
+     `(,@(fixup-ids X) ,(nonterm (string-downcase N)) ,@(fixup-ids Y))]
+    [(#rx"^(.*?) [|] (.*)$" X Y)
+     `(,@(fixup-ids X) ,spacer ,(tt "|") ,spacer ,@(fixup-ids Y))]
+    [(#rx"^(.*?)(MM|NN)(.*)$" X CH Y)
+     `(,@(fixup-ids X) ,(substring CH 0 1) ,@(fixup-ids Y))]
+    [(#rx"^(.*?)##(.*)$" X Y)
+     `(,@(fixup-ids X) ,@(fixup-ids Y))]
+    [(#rx"^\\.\\.\\.$") (list (element #f (list s)))]
+    [(#rx"^$") null]
+    [else (list s)]))
 
-  (define (as-meaning l)
-    (map (lambda (s)
-           (let loop ([s s])
-             (cond
-              [(and (string? s)
-                    (regexp-match #rx"^(.*?)_([^_]+|_)_(.*)$" s))
-               => (lambda (m)
-                    (make-element #f (list (loop (cadr m))
-                                           (litchar (caddr m))
-                                           (loop (cadddr m)))))]
-              [else s])))
-         l))
+(define (lit-ize l)
+  (map (lambda (i) (if (string? i) (litchar i) i)) l))
 
-  (define (as-smaller l)
-    (list (make-element "smaller" l)))
+(define (as-meaning l)
+  (map (lambda (s)
+         (let loop ([s s])
+           (regexp-case s
+             [(#rx"^(.*?)_([^_]+|_)_(.*)$" X L Y)
+              (element #f (list (loop X) (litchar L) (loop Y)))]
+             [else s])))
+       l))
 
-  (define spacer (hspace 1))
-  (define ::= (make-element #f (list (hspace 1) (tt "::=") spacer)))
-  (define -or- (tt "|"))
-  
-  (define (table-content mode)
-    (define re:output (regexp (format " *#~a$" mode)))
-    (define re:start-prod "^([^ ]*)( +)::= ((?:[^ ]| [|] )*)( +)([^ ].*)$")
-    (define re:or-prod "^( +) [|]  ((?:[^ ]| [|] )*)( +)([^ ].*)$")
-    (define re:eng-prod "^([^ ]*)( +):== (.*)$")
-    
-    (define lines 
-      (filter
-       values
-       (map (lambda (s)
-              (cond
-               [(regexp-match-positions re:output s)
-                => (lambda (m)
-                     (substring s 0 (caar m)))]
-               [(regexp-match-positions #rx" *#[a-z]+$" s)
-                #f]
-	       [(equal? s "") #f]
-	       [else
-		(error 'lines "no match!?: ~s" s)]))
-            (regexp-split "\r*\n" grammar))))
+(define (as-smaller l)
+  (list (element "smaller" l)))
 
-    (define table-lines
-      (map
-       (lambda (line)
-         (cond
-          [(regexp-match re:start-prod line)
-           => (lambda (m)
-                (let ([prod (list-ref m 1)]
-                      [val (list-ref m 3)]
-                      [meaning (list-ref m 5)])
-                  (list (make-element #f (fixup-ids prod))
-                        ::=
-                        (make-element #f (lit-ize (fixup-ids val)))
-                        spacer
-                        (make-element #f (as-smaller (as-meaning (fixup-ids meaning)))))))]
-          [(regexp-match re:eng-prod line)
-           => (lambda (m)
-                (let ([prod (list-ref m 1)]
-                      [meaning (list-ref m 3)])
-                  (list (make-element #f (fixup-ids prod))
-                        ::=
-                        (make-element #f (as-meaning (fixup-ids meaning)))
-                        'cont
-                        'cont)))]
-          [(regexp-match re:or-prod line)
-           => (lambda (m)
-                (let ([val (list-ref m 2)]
-                      [meaning (list-ref m 4)])
-                  (list 'nbsp
-                        -or-
-                        (make-element #f (lit-ize (fixup-ids val)))
-                        spacer
-                        (make-element #f (as-smaller (as-meaning (fixup-ids meaning)))))))]))
-       lines))
+(define spacer (hspace 1))
+(define ::=    (element #f (list spacer (tt "::=") spacer)))
+(define -or-   (tt "|"))
 
-    (make-table
-     (make-style #f (list (make-table-columns (map (lambda (s)
-                                                     (make-style #f (list s)))
-                                                   '(left left center left left left)))))
-     (map (lambda (line)
-            (cons (make-paragraph plain (list (hspace 1)))
-                  (map (lambda (i)
-                         (if (eq? i 'cont)
-                             i
-                             (make-paragraph plain (list i))))
-                       line)))
-          table-lines)))
+(define grammar-lines
+  (for/list ([line (in-list (regexp-split "\r*\n" grammar))]
+             #:when (positive? (string-length line)))
+    (regexp-case line
+      [(#px"^(.*?) +#(\\w+)$" line kind) (cons (string->symbol kind) line)]
+      [else (error 'grammar-lines "bad line: ~s" line)])))
 
-  (define common-table
-    (table-content "(co|mode)"))
-  (define rx-table
-    (table-content "(?:rx|ot)"))
-  (define px-table
-    (table-content "(?:px|ot|cat)"))
+(define (table-content modes)
+  (define (cell x)
+    (if (eq? x 'cont)
+      x
+      (paragraph plain (list (if (element? x) x (element #f x))))))
+  (define (row . xs) (map cell xs))
+  (define (render-line line)
+    (regexp-case line
+      [(#rx"^([^ ]*) +::= ((?:[^ ]+| [|] )*) +([^ ].*)$" prod val meaning)
+       (row (fixup-ids prod) ::= (lit-ize (fixup-ids val))
+            spacer (as-smaller (as-meaning (fixup-ids meaning))))]
+      [(#rx"^([^ ]*) +:== (.*)$" prod meaning)
+       (row (fixup-ids prod) ::= (as-meaning (fixup-ids meaning))
+            'cont 'cont)]
+      [(#rx"^ + [|]  ((?:[^ ]| [|] )*) +([^ ].*)$" val meaning)
+       (row 'nbsp -or- (lit-ize (fixup-ids val))
+            spacer (as-smaller (as-meaning (fixup-ids meaning))))]))
+  (table (style #f (list (table-columns
+                          (map (lambda (s) (style #f (list s)))
+                               '(left left center left left left)))))
+    (for/list ([line (in-list grammar-lines)] #:when (memq (car line) modes))
+      (cons (paragraph plain (list spacer)) (render-line (cdr line))))))
 
-  (provide common-table
-           rx-table
-           px-table)
+(provide common-table rx-table px-table)
+(define common-table (table-content '(co mode)))
+(define rx-table     (table-content '(rx ot)))
+(define px-table     (table-content '(px ot cat)))
 
-  ;; ----------------------------------------------------------------------
+;; ----------------------------------------------------------------------
 
-  (define types "
-Regexp_1|Regexp_2 : <min(n1, n2),max(m1, m2)> iff Regexp_1 : <n1,m1> AND Regexp_2 : <n2,m2>
+(define types @string-append{
+  Regexp_1|Regexp_2 : <min(n1, n2),max(m1, m2)> @;
+    iff Regexp_1 : <n1,m1> AND Regexp_2 : <n2,m2>
 
-PiecePieces : <n1+n2,m1+m2> iff Piece : <n1,m1> AND Pieces : <n2,m2>
+  PcePces : <n1+n2,m1+m2> iff Pce : <n1,m1> AND Pces : <n2,m2>
 
-Repeat? : <0,m> iff Repeat : <n,m>
-Atom* : <0,+inf.0> iff Atom : <n,m> AND n > 0
+  Repeat? : <0,m> iff Repeat : <n,m>
+  Atom* : <0,+inf.0> iff Atom : <n,m> AND n > 0
 
-Atom+ : <1,+inf.0> iff Atom : <n,m> AND n > 0
-Atom? : <0,m> iff Atom : <n,m>
+  Atom+ : <1,+inf.0> iff Atom : <n,m> AND n > 0
+  Atom? : <0,m> iff Atom : <n,m>
 
-Atom{N} : <n*N,m*N> iff Atom : <n,m> AND n > 0
+  Atom{N} : <n*N,m*N> iff Atom : <n,m> AND n > 0
 
-Atom{N,} : <n*N,+inf.0> iff Atom : <n,m> AND n > 0
+  Atom{N,} : <n*N,+inf.0> iff Atom : <n,m> AND n > 0
 
-Atom{,M} : <0,m*M> iff Atom : <n,m> AND n > 0
+  Atom{,M} : <0,m*M> iff Atom : <n,m> AND n > 0
 
-Atom{N,M} : <n*N,m*M> iff Atom : <n,m> AND n > 0
+  Atom{N,M} : <n*N,m*M> iff Atom : <n,m> AND n > 0
 
-(Regexp) : <n,m> AND \\alpha_N=n iff Regexp : <n,m>
+  (Regexp) : <n,m> AND \alpha_N=n iff Regexp : <n,m>
 
-(?Mode:Regexp) : <n,m> iff Regexp : <n,m>
+  (?Mode:Regexp) : <n,m> iff Regexp : <n,m>
 
-(?=Regexp) : <0,0> iff Regexp : <n,m>
-(?!Regexp) : <0,0> iff Regexp : <n,m>
+  (?=Regexp) : <0,0> iff Regexp : <n,m>
+  (?!Regexp) : <0,0> iff Regexp : <n,m>
 
-(?<=Regexp) : <0,0> iff Regexp : <n,m> AND m < +inf.0
-(?<!Regexp) : <0,0> iff Regexp : <n,m> AND m < +inf.0
+  (?<=Regexp) : <0,0> iff Regexp : <n,m> AND m < +inf.0
+  (?<!Regexp) : <0,0> iff Regexp : <n,m> AND m < +inf.0
 
-(?>Regexp) : <n,m> iff Regexp : <n,m>
+  (?>Regexp) : <n,m> iff Regexp : <n,m>
 
-(?PredPieces_1|Pieces_2) : <min(n1, n2),max(m1, m2)> iff Pred : <n0,m0> AND Pieces_1 : <n1,m1> AND Pieces_2 : <n2,m2>
+  (?TstPces_1|Pces_2) : <min(n1, n2),max(m1, m2)> @;
+    iff Tst : <n0,m0> AND Pces_1 : <n1,m1> AND Pces_2 : <n2,m2>
 
-(?PredPieces) : <0,m1> iff Pred : <n0,m0> AND Pieces : <n1,m1>
+  (?TstPces) : <0,m1> iff Tst : <n0,m0> AND Pces : <n1,m1>
 
-(N) : <\\alpha_N,+inf.0>
-[Range] : <1,1>
-[^Range] : <1,1>
+  (N) : <\alpha_N,+inf.0>
+  [Rng] : <1,1>
+  [^Rng] : <1,1>
 
-. : <1,1>
-^ : <0,0>
-$ : <0,0>
+  . : <1,1>
+  ^ : <0,0>
+  $ : <0,0>
 
-Literal : <1,1>
-%N : <\\alpha_N,+inf.0>
-Class : <1,1>
+  Literal : <1,1>
+  \N : <\alpha_N,+inf.0>
+  Class : <1,1>
 
-%b : <0,0>
-%B : <0,0>
+  \b : <0,0>
+  \B : <0,0>
 
-%p{Property} : <1,6>
-%P{Property} : <1,6>")
+  \p{Property} : <1,6>
+  \P{Property} : <1,6>})
 
-  (define (subscripts i)
-   (cond
-    [(and (string? i)
-          (regexp-match #rx"^(.*)_(.)(.*)$" i))
-     => (lambda (m)
-          (append
-           (subscripts (cadr m))
-           (list (make-element 'subscript (list (caddr m))))
-           (subscripts (cadddr m))))]
-    [(and (string? i)
-          (regexp-match #rx"^(.*)([nm])([012]?)(.*)$" i))
-     => (lambda (m)
-          (append
-           (subscripts (cadr m))
-           (list (make-element 'italic (list (caddr m)))
-                 (make-element 'subscript (list (cadddr m))))
-           (subscripts (cadddr (cdr m)))))]
+(define (subscripts i)
+  (regexp-case i
+    [(#rx"^(.*)_(.)(.*)$" X S Y)
+     `(,@(subscripts X) ,(element 'subscript (list S)) ,@(subscripts Y))]
+    [(#rx"^(.*)([nm])([012]?)(.*)$" X V N Y)
+     `(,@(subscripts X)
+       ,(element 'italic (list V)) ,(element 'subscript (list N))
+       ,@(subscripts Y))]
     [else (list i)]))
 
-  (define (meta i)
-    (cond
-     [(and (string? i)
-           (regexp-match #rx"^(.*)(min|max)(.*)$" i))
-      => (lambda (m)
-           (append (meta (cadr m))
-                   (list (make-element #f (list (caddr m))))
-                   (meta (cadddr m))))]
-     [(and (string? i)
-           (regexp-match #rx"^(.*)([+]inf[.]0)(.*)$" i))
-      => (lambda (m)
-           (append (meta (cadr m))
-                   (list 'infin)
-                   (meta (cadddr m))))]
-     [(and (string? i)
-           (regexp-match #rx"^(.*)([\\]alpha)(.*)$" i))
-      => (lambda (m)
-           (append (meta (cadr m))
-                   (list 'alpha)
-                   (meta (cadddr m))))]
-     [else (list i)]))
+(define (meta i)
+  (regexp-case i
+    [(#rx"^(.*)(min|max)(.*)$" X M Y)
+     `(,@(meta X) ,(element #f (list M)) ,@(meta Y))]
+    [(#rx"^(.*)[+]inf[.]0(.*)$" X Y) `(,@(meta X) infin ,@(meta Y))]
+    [(#rx"^(.*)[\\]alpha(.*)$"  X Y) `(,@(meta X) alpha ,@(meta Y))]
+    [else (list i)]))
 
-  (define (fixup-one-type t) 
-   (apply
-    append
-    (map subscripts
-         (apply
-          append
-          (map meta (fixup-ids (regexp-replace* #rx"<([^(,]*|[^,]*[(].*[)][^,]*),([^>]*)>" t "[\\1, \\2]")))))))
+(define (fixup-one-type t)
+  (let ([t (regexp-replace* #rx"<([^(,]*|[^,]*[(].*[)][^,]*),([^>]*)>"
+                            t "[\\1, \\2]")])
+    (append-map subscripts (append-map meta (fixup-ids t)))))
 
-  (define (fixup-type t) 
-   (cond
-    [(regexp-match-positions #rx" AND " t)
-     => (lambda (m)
-          (append (fixup-type (substring t 0 (caar m)))
-                  (list (hspace 3))
-                  (fixup-type (substring t (cdar m)))))]
-    [(regexp-match-positions #rx" : " t)
-     => (lambda (m)
-          (append (lit-ize (apply append (map subscripts (fixup-ids (substring t 0 (caar m))))))
-                  (list spacer (tt ":") spacer)
-                  (fixup-one-type (substring t (cdar m)))))]
+(define (fixup-type t)
+  (regexp-case t
+    [(#rx"^(.*?) AND (.*)$" X Y)
+     `(,@(fixup-type X) ,(hspace 3) ,@(fixup-type Y))]
+    [(#rx"^(.*?) : (.*)$" X Y)
+     `(,@(lit-ize (append-map subscripts (fixup-ids X)))
+       ,spacer ,(tt ":") ,spacer ,@(fixup-one-type Y))]
     [else (fixup-one-type t)]))
 
-  (define (insert i l)
-    (cond
-     [(null? l) null]
-     [(null? (cdr l)) l]
-     [else (list* (car l) i (insert i (cdr l)))]))
-
-  (define type-table
-    (let* ([lines (regexp-split "\r*\n" types)]
-           [lines (let loop ([lines lines])
-                   (if (null? lines)
-                       null
-                       (let ([line (car lines)])
-                         (if (equal? line "")
-                             (cons null (loop (cdr lines)))
-                             (let ([r (loop (cdr lines))])
-                               (if (null? r)
-                                   (list (list line))
-                                   (cons (cons line (car r)) (cdr r))))))))])
-      (make-table
-       (make-style #f (list (make-table-columns (list (make-style #f '(center))))))
-       (insert
-       (list (make-paragraph plain (list spacer)))
-       (map (lambda (line)
-             (list
-                (make-table
-                 plain
-                 (list
-                  (insert
-                  (make-paragraph plain (list (hspace 3)))
-                  (map (lambda (line)
-                           (call-with-values (lambda ()
-                                               (apply values (regexp-split " iff " line)))
-                             (case-lambda
-                              [(bottom top)
-                               (make-table
-                                (make-style #f
-                                 (list
-                                  (make-table-cells (list (list (make-style "inferencetop" '(center)))
-                                                          (list (make-style "inferencebottom" '(center)))))))
-                                (list
-                                 (list (make-paragraph plain (append (list spacer) (fixup-type top) (list spacer))))
-                                 (list (make-paragraph plain (append (list spacer) (fixup-type bottom) (list spacer))))))]
-                              [(single)
-                               (make-paragraph plain (fixup-type line))])))
-                       line))))))
-            lines)))))
-
-  (provide type-table))
+(provide type-table)
+(define type-table
+  (let ()
+    (define rule-style
+      (list (table-cells (list (list (style "inferencetop" '(center)))
+                               (list (style "inferencebottom" '(center)))))))
+    (define do-clauses
+      (case-lambda
+        [(bottom top)
+         (table (style #f rule-style)
+                (list (list (paragraph plain `(,spacer ,@top ,spacer)))
+                      (list (paragraph plain `(,spacer ,@bottom ,spacer)))))]
+        [(single) (paragraph plain single)]))
+    (define (do-line line)
+      (apply do-clauses (map fixup-type (regexp-split #rx" iff " line))))
+    (define (do-row para)
+      (add-between (map do-line (regexp-split #rx" *\r*\n" para))
+                   (paragraph plain (list (hspace 3)))))
+    (define (do-para para) (list (table plain (list (do-row para)))))
+    (table (style #f (list (table-columns (list (style #f '(center))))))
+      (add-between (map do-para (regexp-split #px"\r*\n(?: *\r*\n)+" types))
+                   (list (paragraph plain (list spacer)))))))
