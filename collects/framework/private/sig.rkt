@@ -163,6 +163,7 @@
   (define-signature text-class^
     (basic<%>
      first-line<%>
+     line-numbers<%>
      foreground-color<%>
      hide-caret/selection<%>
      nbsp->space<%>
@@ -199,6 +200,7 @@
      
      basic-mixin
      first-line-mixin
+     line-numbers-mixin
      foreground-color-mixin
      hide-caret/selection-mixin
      nbsp->space-mixin

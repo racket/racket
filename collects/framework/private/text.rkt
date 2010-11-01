@@ -11,12 +11,13 @@ WARNING: printf is rebound in the body of the unit to always
          scheme/class
          scheme/match
          scheme/path
-         "sig.ss"
-         "../gui-utils.ss"
-         "../preferences.ss"
+         "sig.rkt"
+         "../gui-utils.rkt"
+         "../preferences.rkt"
          mred/mred-sig
          mrlib/interactive-value-port
          setup/dirs
+         racket/list
          (prefix-in srfi1: srfi/1))
 (require setup/xref
          scribble/xref
@@ -3696,3 +3697,249 @@ designates the character that triggers autocompletion
 (define backup-autosave% (editor:backup-autosave-mixin clever-file-format%))
 (define searching% (searching-mixin backup-autosave%))
 (define info% (info-mixin (editor:info-mixin searching%)))
+
+;; ============================================================
+;; line number text%
+
+(define line-numbers<%>
+  (interface () show-line-numbers!))
+
+(define line-numbers-mixin
+  (mixin ((class->interface text%)) (line-numbers<%>)
+    (super-new)
+    (inherit get-visible-line-range
+             get-visible-position-range
+             find-position
+             line-start-position
+             line-end-position)
+    (define show-line-numbers? #t)
+    (define/public (show-line-numbers! what)
+      (set! show-line-numbers? what))
+    (define old-origin-x 0)
+    (define old-origin-y 0)
+    (define cached-snips (list))
+    (define need-to-recalculate-snips #f)
+    (define (get-style-font)
+      (let* ([style-list (send this get-style-list)]
+             [std (or (send style-list find-named-style "Standard")
+                      #t
+                      #;
+                      (send style-list basic-style))])
+        (send std get-font)))
+
+    ;; get the y position of a snip
+    (define (get-snip-y snip)
+      (define x (box 0))
+      (define y (box 0))
+      (send this get-snip-location snip x y)
+      (unbox y))
+
+    ;; returns an ordered list of snip y positions
+    ;; TODO: cache this list and update it incrementally
+    (define (snip-heights snip dc)
+      (define-struct snip-size (start end))
+      (define (get-size snip)
+        (define x (box 0))
+        (define y (box 0))
+        (send this get-snip-location snip x y)
+        (define width (box 0))
+        (define height (box 0))
+        (send snip get-extent dc (unbox x) (unbox y) width height)
+        (make-snip-size (unbox y) (+ (unbox y) (unbox height))))
+      ;; size2 can be merged into size1
+      (define (can-merge? size1 size2)
+        (and (between (snip-size-start size1)
+                      (snip-size-start size2)
+                      (snip-size-end size1))
+             #;
+             (between (snip-size-start size1)
+                      (snip-size-end size2)
+                      (snip-size-end size1))))
+      (define (merge-sizes sizes)
+        (match sizes
+          [(list size1 size2 rest ...)
+           #;
+           (printf "Merge ~a,~a into ~a,~a?\n"
+                   (snip-size-start size2) (snip-size-end size2)
+                   (snip-size-start size1) (snip-size-end size1))
+           (if (can-merge? size1 size2)
+             (merge-sizes (cons size1 rest))
+             (cons size1 (merge-sizes (cons size2 rest))))]
+          [else sizes]))
+
+      (let loop ([all '()]
+                 [snip snip])
+        (if snip
+          (loop (cons (get-size snip) all) (send snip next))
+          (map (lambda (size)
+                 (snip-size-start size))
+               (merge-sizes (remove-duplicates
+                              (sort (reverse all)
+                                    (lambda (a b)
+                                      (< (snip-size-start a)
+                                         (snip-size-start b)))))))))
+      #;
+      (let loop ([all '()]
+                 [snip snip])
+        (if snip
+          (loop (cons snip all) (send snip next))
+          (remove-duplicates (sort (reverse (map get-snip-y all)) <)))))
+
+    (define (show-all-snips dc)
+      (define snip (send this find-first-snip))
+      (newline)
+      (define (next snip)
+        (when snip
+          (define x (box 0))
+          (define y (box 0))
+          (send this get-snip-location snip x y)
+          #;
+          (printf "Snip ~a at ~a,~a\n" snip (unbox x) (unbox y))
+          (next (send snip next))))
+      (next snip))
+
+    ;; a <= b <= c
+    (define (between low what high)
+      (and (>= what low)
+           (<= what high)))
+
+    ;; finds the first item in the sequence for which `ok?' returns true
+    (define (find-first sequence ok?)
+      (define-values (more? get) (sequence-generate sequence))
+      (let loop ()
+        (if (more?)
+          (if (ok? (get))
+            #t
+            (loop))
+          #f)))
+
+    ;; true if the `y' location is within the positions specified by the
+    ;; lines `start' and `end'
+    (define (ok-height y start end)
+      (define position (find-position 0 y))
+      ;; this is why we need some `break' ability in for loops
+      (find-first (in-range start end)
+        (lambda (line)
+          (define low (line-start-position line))
+          (define high (line-end-position line))
+          (between low position high))))
+
+    (define/augment (on-insert start length)
+      (set! need-to-recalculate-snips #t))
+
+    (define (get-snip-heights dc)
+      (when need-to-recalculate-snips
+        (set! need-to-recalculate-snips #f)
+        (set! cached-snips (snip-heights (send this find-first-snip) dc)))
+      cached-snips)
+
+    (define (draw-line-numbers dc left top right bottom dx dy)
+      (define start-line (box 0))
+      (define end-line (box 0))
+      (get-visible-line-range start-line end-line #f)
+      (define start-position (box 0))
+      (define end-position (box 0))
+      #;
+      (get-visible-position-range start-line end-line)
+      (define (draw-text . args)
+        (send/apply dc draw-text args))
+      (define old-pen (send dc get-pen))
+      #;
+      (send dc set-font (send this get-font))
+      (send dc set-font (get-style-font))
+      (define-values (font-width font-height baseline space)
+                     (send dc get-text-extent "a"))
+      #;
+      (printf "Style list ~a\n" (send this get-style-list))
+      #;
+      (printf "My height ~a text height ~a\n" font-height (text-height (send this get-dc) "a"))
+      (send dc set-text-foreground (make-object color% "black"))
+      #;
+      (send dc set-pen "red" 2 'solid)
+      #;
+      (send dc set-pen (send (send this get-dc) get-pen))
+      #;
+      (printf "First snip at ~a\n" (send this find-first-snip))
+      #;
+      (show-all-snips dc)
+      #;
+      (printf "Snip positions ~a\n" (snip-heights (send this find-first-snip) dc))
+
+      #;
+      (printf "Repaint from ~a to ~a dx ~a dy ~a visible ~a ~a\n" top bottom dx dy (unbox start-line) (unbox end-line))
+      #;
+      (printf "Snips ~a\n" (snip-heights (send this find-first-snip) dc))
+
+      (define heights (get-snip-heights dc))
+      (for ([y heights]
+            [line (in-naturals 1)])
+        #;
+        (printf "ok height? ~a ~a is ~a\n" y line (ok-height y (unbox start-line) (unbox end-line)))
+        (when (and (ok-height y (unbox start-line) (add1 (unbox end-line)))
+                   (between top y bottom))
+          #;
+          (printf "~a at ~a\n" line (+ dy y))
+          (draw-text (number->string line) 0 (+ dy y))))
+
+      #;
+      (for ([i (in-range top bottom font-height)]
+            [y (snip-heights (send this find-first-snip) dc)]
+            [line (in-naturals 1)])
+        (define point (round (inexact->exact (/ i font-height))))
+        #;
+        (printf "Draw ~a at ~a\n" (add1 point) point)
+        (printf "y ~a top ~a bottom ~a dy ~a\n" y top bottom dy)
+        (when (and (>= y top)
+                   (<= y bottom))
+          (draw-text (number->string (+ (unbox start-line) line))
+                     0 (+ dy y)))
+        #;
+        (draw-text (number->string (+ (unbox start-line) (add1 point)))
+                   0 place
+                   #;
+                   (+ dy (* point font-height))))
+
+      #;
+      (for ([i (in-range 0 (- (unbox end-line) (unbox start-line)))])
+        (draw-text (number->string (add1 i)) 0 (* i font-height)))
+      #;
+      (send dc set-pen old-pen)
+      #;
+      (define-values (line-x x1 x2 x3)
+                     (send dc get-text-extent "10000"))
+      (define line-x (text-width dc "10000"))
+      (send dc draw-line line-x (+ dy top) line-x (+ dy bottom))
+      )
+
+    (define (text-width dc stuff)
+      (define-values (font-width font-height baseline space)
+                     (send dc get-text-extent stuff))
+      font-width)
+
+    (define (text-height dc stuff)
+      (define-values (font-width height baseline space)
+                     (send dc get-text-extent stuff))
+      height)
+
+    (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+      (when show-line-numbers?
+        (if before?
+          (let ()
+            ;; save old origin and push it to the right a little bit
+            ;; TODO: maybe allow the line numbers to be drawn on the right hand side?
+            (define-values (x y) (send dc get-origin))
+            (set! old-origin-x x)
+            (set! old-origin-y y)
+            #|
+            (define start (box 0))
+            (define end (box 0))
+            (get-visible-line-range start end)
+            |#
+            (define-values (font-width font-height baseline space)
+                           (send dc get-text-extent "10000"))
+            (send dc set-origin (+ x (text-width dc "100000")) y))
+          (begin
+            (send dc set-origin old-origin-x old-origin-y)
+            (draw-line-numbers dc left top right bottom dx dy))))
+      (super on-paint before? dc left top right bottom dx dy draw-caret))
+    ))
