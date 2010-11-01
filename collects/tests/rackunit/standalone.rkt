@@ -15,6 +15,8 @@
   (parameterize ([current-output-port out-bs]
                  [current-error-port err-bs])
     (dynamic-require path #f))
+  (close-output-port out-bs)
+  (close-output-port err-bs)
   (values (collect-trim (get-output-bytes out-bs))
           (collect-trim (get-output-bytes err-bs))))
 
