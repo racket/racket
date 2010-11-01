@@ -328,7 +328,10 @@
                                  scroll-width
                                  0)))
 
-     (define/override (direct-update?) #f)
+     ;; Direct update is ok for a canvas, and it
+     ;; allows pushing updates to the screen even
+     ;; if the eventspace thread is busy indefinitely
+     (define/override (direct-update?) #t)
 
      (define/public (get-dc) dc)
 
@@ -377,15 +380,18 @@
      (define/public (end-refresh-sequence)
        (send dc resume-flush))
 
+     ;; The `flush' method should be improved to flush local
+     ;; to the enclosing frame, instead of flushing globally.
+     (define/public (flush)
+       (flush-display))
+
      (define/override (refresh)
        (queue-paint))
 
      (define/public (queue-backing-flush)
        ;; called atomically
        (unless for-gl?
-         (gtk_widget_queue_draw client-gtk)
-         ;; peridodically flush to the screen:
-         (schedule-periodic-backing-flush)))
+         (gtk_widget_queue_draw client-gtk)))
      
      (define/override (reset-child-dcs)
        (when (dc . is-a? . dc%)

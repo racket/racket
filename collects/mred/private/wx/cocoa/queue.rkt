@@ -348,6 +348,7 @@
  (lambda () (check-one-event #f #f)))
 
 (define (try-to-sync-refresh)
+  ;; atomically => outside of the event loop
   (atomically
    (pre-event-sync #t)))
 

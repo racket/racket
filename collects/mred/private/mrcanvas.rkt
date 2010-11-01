@@ -66,6 +66,7 @@
                          (send wx begin-refresh-sequence))]
         [resume-flush (lambda ()
                         (send wx end-refresh-sequence))]
+        [flush (lambda () (send wx flush))]
 
 	[set-canvas-background
 	 (entry-point

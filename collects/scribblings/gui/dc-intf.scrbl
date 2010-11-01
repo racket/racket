@@ -446,6 +446,15 @@ For printer or PostScript output, an exception is raised if
 
 }
 
+
+@defmethod[(flush) void?]{
+
+Calls the @xmethod[canvas<%> flush] method for
+@racket[canvas<%>] output, and has no effect for other kinds of
+drawing contexts.}
+
+
+
 @defmethod[(get-alpha)
            (real-in 0 1)]{
 
@@ -732,6 +741,14 @@ See also @method[font% screen-glyph-exists?] .
 Returns @scheme[#t] if the drawing context is usable.
 
 }
+
+
+@defmethod[(resume-flush) void?]{
+
+Calls the @xmethod[canvas<%> resume-flush] method for
+@racket[canvas<%>] output, and has no effect for other kinds of
+drawing contexts.}
+
 
 @defmethod[(rotate [angle real?]) void?]{
 
@@ -1058,6 +1075,14 @@ For printer or PostScript output, an exception is raised if
  @scheme[as-eps] initialization argument for @scheme[post-script-dc%].
 
 }
+
+
+@defmethod[(suspend-flush) void?]{
+
+Calls the @xmethod[canvas<%> suspend-flush] method for
+@racket[canvas<%>] output, and has no effect for other kinds of
+drawing contexts.}
+
 
 @defmethod[(transform [m (vector/c real? real? real? real? real? real?)])
            void?]{

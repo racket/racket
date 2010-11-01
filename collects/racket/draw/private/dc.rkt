@@ -569,6 +569,7 @@
 
     (def/public (suspend-flush) (void))
     (def/public (resume-flush) (void))
+    (def/public (flush) (void))
 
     (def/public (set-text-mode [(symbol-in solid transparent) mode])
       (set! text-mode mode))

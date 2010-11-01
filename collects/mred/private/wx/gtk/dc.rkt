@@ -125,6 +125,9 @@
       (end-delay)
       (send canvas queue-backing-flush))
 
+    (define/override (flush)
+      (send canvas flush))
+
     (define/override (request-delay)
       (request-flush-delay (send canvas get-flush-window)))
     (define/override (cancel-delay req)

@@ -48,6 +48,11 @@ For an @scheme[editor-canvas%] object, handling of Tab, arrow, Enter,
 }
 
 
+@defmethod[(flush) void?]{
+
+Like @racket[flush-display], but constrained if possible to the canvas.}
+
+
 @defmethod[(get-canvas-background)
            (or/c (is-a?/c color%) false/c)]{
 Returns the color currently used to ``erase'' the canvas content before
@@ -184,6 +189,12 @@ Does nothing.
 }}
 
 
+@defmethod[(resume-flush) void?]{
+
+See @method[canvas<%> suspend-flush].}
+
+
+
 @defmethod[(set-canvas-background [color (is-a?/c color%)])
            void?]{
 
@@ -208,6 +219,24 @@ Under Mac OS X, enables or disables space for a resize tab at the
  @scheme['resize-corner] style.
 
 }
+
+
+@defmethod[(suspend-flush) void?]{
+
+Drawing to a canvas's drawing context actually renders into an
+offscreen buffer. The buffer is automatically flushed to the screen by
+a background thread, explicitly via the @method[canvas<%> flush] method, 
+or explicitly via @racket[flush-display] --- unless flushing has been disabled for the canvas.
+The @method[canvas<%> suspend-flush] method suspends flushing for a
+canvas until a matching @method[canvas<%> resume-flush] calls; calls to
+@method[canvas<%> suspend-flush] and @method[canvas<%> resume-flush] can
+be nested, in which case flushing is suspended until the outermost
+@method[canvas<%> suspend-flush] is balanced by a @method[canvas<%>
+resume-flush].
+
+On some platforms, beware that suspending flushing for a canvas can
+discourage refreshes for other windows in the same frame.}
+
 
 @defmethod[(warp-pointer [x (integer-in 0 10000)]
                          [y (integer-in 0 10000)])

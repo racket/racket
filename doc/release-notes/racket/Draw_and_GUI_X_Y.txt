@@ -59,10 +59,10 @@ Canvases
 --------
 
 Drawing to a canvas always draws into a bitmap that is kept offscreen
-and periodically flushed onto the screen. The new `suspend-flush' and
-`resume-flush' methods of `canvas%' provide some control over the
-timing of the flushes, which in many cases avoids the need for
-(additional) double buffering of canvas content.
+and periodically flushed onto the screen. The new `suspend-flush',
+`resume-flush', and `flush' methods of `canvas%' provide some control
+over the timing of the flushes, which in many cases avoids the need
+for (additional) double buffering of canvas content.
 
 OpenGL drawing in a canvas requires supplying 'gl as a style when
 creating the `canvas%' instance. OpenGL and normal dc<%> drawing no

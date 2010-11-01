@@ -6,11 +6,13 @@
 @defproc[(flush-display)
          void?]{
 
-Under X and Mac OS X, flushes pending display messages such that the
- user's display reflects the actual state of the windows. Under
- Windows, the procedure has no effect.
+Flushes canvas offscreen drawing and other updates onto the
+ screen.
 
-}
+Normally, drawing is automatically flushed to the screen. Use
+@racket[flush-display] sparingly to force updates to the screen when
+other actions depend on updating the display.}
+
 
 @defproc[(get-display-depth)
          exact-nonnegative-integer?]{
