@@ -33,8 +33,8 @@
   Atom     ::= ...                ...                                             #px
             |  \N                 Match latest reported match for N##th _(_       #px
             |  Class              Match any character in Class                    #px
-            |  \b                 Match \w* boundary                              #px
-            |  \B                 Match where \b does not                         #px
+            |  \b                 Match _\w*_ boundary                            #px
+            |  \B                 Match where _\b_ does not                       #px
             |  \p{Property}       Match (UTF-8 encoded) in Property               #px
             |  \P{Property}       Match (UTF-8 encoded) not in Property           #px
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _._, _^_, _\_, or _|_                #rx
@@ -79,11 +79,11 @@
             |  Modem              Like Mode, but in multi mode                    #mode
             |  Mode-m             Like Mode, but not in multi mode                #mode
   Class    ::= \d                 Contains _0_-_9_                                #cat
-            |  \D                 Contains ASCII other than those in \d           #cat
+            |  \D                 Contains ASCII other than those in _\d_         #cat
             |  \w                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat
-            |  \W                 Contains ASCII other than those in \w           #cat
+            |  \W                 Contains ASCII other than those in _\w_         #cat
             |  \s                 Contains space, tab, newline, formfeed, return  #cat
-            |  \S                 Contains ASCII other than those in \s           #cat
+            |  \S                 Contains ASCII other than those in _\s_         #cat
   Posix    ::= [:alpha:]          Contains _a_-_z_, _A_-_Z_                       #cat
             |  [:alnum:]          Contains _a_-_z_, _A_-_Z_, _0_-_9_              #cat
             |  [:ascii:]          Contains all ASCII characters                   #cat
@@ -99,22 +99,45 @@
             |  [:xdigit:]         Contains _0_-_9_, _a_-_f_, _A_-_F_              #cat
   Property ::= Category           Includes all characters in Category             #cat
             |  ^Category          Includes all characters not in Category         #cat
-  Category ::= Ll | Lu | Lt | Lm  Unicode general category                        #cat
-            |  L&                 Union of Ll, Lu, Lt, and Lm                     #cat
-            |  Lo                 Unicode general category                        #cat
-            |  L                  Union of L& and Lo                              #cat
-            |  Nd | Nl | No       Unicode general category                        #cat
-            |  NN                 Union of Nd, Nl, and No                         #cat
-            |  Ps | Pe | Pi | Pf  Unicode general category                        #cat
-            |  Pc | Pd | Po       Unicode general category                        #cat
-            |  P                  Union of Ps, Pe, Pi, Pf, Pc, Pd, and Po         #cat
-            |  Mn | Mc | Me       Unicode general category                        #cat
-            |  MM                 Union of Mn, Mc, and Me                         #cat
-            |  Sc | Sk | Sm | So  Unicode general category                        #cat
-            |  S                  Union of Sc, Sk, Sm, and So                     #cat
-            |  Zl | Zp | Zs       Unicode general category                        #cat
-            |  Z                  Union of Zl, Zp, and Zs                         #cat
-            |  .                  Union of all general categories                 #cat
+  Category ::= Ll                 Letter, lowercase                               #ucat
+            |  Lu                 Letter, uppercase                               #ucat
+            |  Lt                 Letter, titlecase                               #ucat
+            |  Lm                 Letter, modifier                                #ucat
+            |  L&                 Union of _Ll_, _Lu_, _Lt_, and _Lm_             #ucat
+            |  Lo                 Letter, other                                   #ucat
+            |  L                  Union of _L&_ and _Lo_                          #ucat
+            |  Nd                 Number, decimal digit                           #ucat
+            |  Nl                 Number, letter                                  #ucat
+            |  No                 Number, other                                   #ucat
+            |  NN                 Union of _Nd_, _Nl_, and _No_                   #ucat
+            |  Ps                 Punctuation, open                               #ucat
+            |  Pe                 Punctuation, close                              #ucat
+            |  Pi                 Punctuation, initial quote                      #ucat
+            |  Pf                 Punctuation, final quote                        #ucat
+            |  Pc                 Punctuation, connector                          #ucat
+            |  Pd                 Punctuation, dash                               #ucat
+            |  Po                 Punctuation, other                              #ucat
+            |  P                  Union of _Ps_, _Pe_, _Pi_, _Pf_, _Pc_, _Pd_, and _Po_ #ucat
+            |  Mn                 Mark, non-spacing                               #ucat
+            |  Mc                 Mark, spacing combining                         #ucat
+            |  Me                 Mark, enclosing                                 #ucat
+            |  MM                 Union of _Mn_, _Mc_, and _Me_                   #ucat
+            |  Sc                 Symbol, currency                                #ucat
+            |  Sk                 Symbol, modifier                                #ucat
+            |  Sm                 Symbol, math                                    #ucat
+            |  So                 Symbol, other                                   #ucat
+            |  S                  Union of _Sc_, _Sk_, _Sm_, and _So_             #ucat
+            |  Zl                 Seaprator, line                                 #ucat
+            |  Zp                 Seaparator, paragraph                           #ucat
+            |  Zs                 Separator, space                                #ucat
+            |  Z                  Union of _Zl_, _Zp_, and _Zs_                   #ucat
+            |  Cc                 Other, control                                  #ucat
+            |  Cf                 Other, format                                   #ucat
+            |  Cs                 Other, surrogate                                #ucat
+            |  Cn                 Other, not assigned                             #ucat
+            |  Co                 Other, private use                              #ucat
+            |  C                  Union of _Cc_, _Cf_, _Cs_, _Cn_, and _Co_       #ucat
+            |  .                  Union of all Unicode categories                 #ucat
   })
 
 (define-syntax regexp-case
@@ -195,10 +218,11 @@
     (for/list ([line (in-list grammar-lines)] #:when (memq (car line) modes))
       (cons (paragraph plain (list spacer)) (render-line (cdr line))))))
 
-(provide common-table rx-table px-table)
-(define common-table (table-content '(co mode)))
-(define rx-table     (table-content '(rx ot)))
-(define px-table     (table-content '(px ot cat)))
+(provide common-table rx-table px-table category-table)
+(define common-table   (table-content '(co mode)))
+(define rx-table       (table-content '(rx ot)))
+(define px-table       (table-content '(px ot cat)))
+(define category-table (table-content '(ucat)))
 
 ;; ----------------------------------------------------------------------
 

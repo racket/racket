@@ -64,6 +64,10 @@ The following completes the grammar for @racket[pregexp], which uses
 
 @px-table
 
+The Unicode categories follow.
+
+@category-table
+
 @;------------------------------------------------------------------------
 @section{Additional Syntactic Constraints}
 
