@@ -21,6 +21,7 @@
               _HRESULT
               _WCHAR
               _SIZE_T
+              _INT_PTR
 
               _HINSTANCE
               _HWND
@@ -66,6 +67,7 @@
 (define _HRESULT _int32)
 (define _WCHAR _int16)
 (define _SIZE_T _long)
+(define _INT_PTR _intptr)
 
 (define _HINSTANCE (_cpointer/null 'HINSTANCE))
 (define _HWND (_cpointer/null 'HWND))

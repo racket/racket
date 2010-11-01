@@ -19,6 +19,7 @@
               any-hwnd->wx
               CreateWindowExW
               CreateWindowExW/control
+              CreateDialogIndirectParamW dialog-proc
               clean-up-destroyed
               MessageBoxW
               _WndProc))
@@ -29,73 +30,63 @@
 ;;  The weak pointer must be wrapped in an immuable cell.
 ;;  In addition, if we need to save a control's old
 ;;  ctlproc, we put it in the same immutable cell.
-;; So:
-;;  <user-data>   = (make-immutable-cell <remembered>)
-;;  <remembered>  = <wx-weak-box>
-;;                | (cons <ctlproc> <wx-weak-box>)
-;;  <wx-weak-box> = (make-weak-box <object%>)
 
 (define all-hwnds (make-hash))
 
 ;; call in atomic mode:
 (define (register-hwnd! hwnd)
-  (hash-set! all-hwnds (cast hwnd _pointer _long) hwnd))
-
-;; call in atomic mode:
-(define (alloc-hwnd-cell hwnd)
-  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
-    (or c
-        (let ([c (malloc-immobile-cell #f)])
-          (SetWindowLongW hwnd GWLP_USERDATA c)
-          c))))
-
+  (hash-set! all-hwnds (cast hwnd _pointer _long) #t)
+  (let ([c (malloc-immobile-cell (vector #f #f #f))])
+    (void (SetWindowLongW hwnd GWLP_USERDATA c))))
+  
 (define (set-hwnd-wx! hwnd wx)
-  (let* ([c (atomically (alloc-hwnd-cell hwnd))]
+  (let* ([c (GetWindowLongW hwnd GWLP_USERDATA)]
          [v (ptr-ref c _racket)])
-    (ptr-set! c _racket (cons (make-weak-box wx)
-                              (and v (cdr v))))))
+    (vector-set! v 0 (make-weak-box wx))))
 
-(define (set-hwnd-ctlproc! hwnd ctlproc)
-  (let* ([c (atomically (alloc-hwnd-cell hwnd))]
+(define (set-hwnd-ctlproc! hwnd save-ptr ctlproc)
+  (let* ([c (GetWindowLongW hwnd GWLP_USERDATA)]
          [v (ptr-ref c _racket)])
-    (ptr-set! c _racket (cons (and v (car v))
-                              ctlproc))))
+    (vector-set! v 1 ctlproc)
+    (vector-set! v 2 save-ptr)))
 
 (define (hwnd->wx hwnd)
   (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
-    (and c (let ([wb (ptr-ref c _racket)])
-             (and wb
-                  (car wb)
-                  (weak-box-value (car wb)))))))
-
-(define (hwnd->ctlproc hwnd)
-  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
-    (and c (let ([wb (ptr-ref c _racket)])
-             (and wb (cdr wb))))))
+    (and c (let ([v (ptr-ref c _racket)])
+             (and v
+                  (let ([wb (vector-ref v 0)])
+                    (and wb
+                         (weak-box-value wb))))))))
 
 (define (any-hwnd->wx hwnd)
   (and
    (atomically (hash-ref all-hwnds (cast hwnd _pointer _long) #f))
-   (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
-     (and c 
-          (let ([wx (let ([wb (ptr-ref c _racket)])
-                      (and wb 
-                           (car wb)
-                           (weak-box-value (car wb))))])
-            (and wx
-                 (send wx is-hwnd? hwnd)
-                 wx))))))
+   (let ([wx (hwnd->wx hwnd)])
+     (and wx
+          (send wx is-hwnd? hwnd)
+          wx))))
+
+(define (hwnd->ctlproc hwnd)
+  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+    (and c (let ([v (ptr-ref c _racket)])
+             (and v (vector-ref v 1))))))
+
+(define (hwnd->ctlproc-fptr hwnd)
+  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+    (and c (let ([v (ptr-ref c _racket)])
+             (and v (vector-ref v 2))))))
 
 ;; call in atomic mode:
-(define (unregister-hwnd? hwnd [same? (lambda (v) (eq? v hwnd))])
-  (let ([addr (cast hwnd _pointer _long)])
-    (and (same? (hash-ref all-hwnds addr #f))
-         (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
-           (when c
-             (free-immobile-cell c)
-             (SetWindowLongW hwnd GWLP_USERDATA #f))
-           (hash-remove! all-hwnds addr)
-           #t))))
+(define (can-unregister-hwnd? hwnd)
+  (hash-ref all-hwnds (cast hwnd _pointer _long) #f))
+
+;; call in atomic mode:
+(define (unregister-hwnd! hwnd)
+  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+    (when c
+      (free-immobile-cell c)
+      (SetWindowLongW hwnd GWLP_USERDATA #f))
+    (hash-remove! all-hwnds (cast hwnd _pointer _long))))
 
 ;; ----------------------------------------
 
@@ -118,7 +109,7 @@
 (define (wind-proc w msg wparam lparam)
   (if (= msg WM_DESTROY)
       (begin
-        (unregister-hwnd? w (lambda (x) x))
+        (unregister-hwnd! w)
         (DefWindowProcW w msg wparam lparam))
       (let ([wx (hwnd->wx w)])
         (if wx
@@ -128,24 +119,42 @@
 (define wind-proc-ptr (function-ptr wind-proc _WndProc))
 
 (define (control-proc w msg wParam lParam)
-  (if (= msg WM_DESTROY)
-      (let ([default-ctlproc (hwnd->ctlproc w)])
-        (unregister-hwnd? w (lambda (x) x))
-        (default-ctlproc w))
-      (let ([wx (hwnd->wx w)])
-        (if wx
-            (send wx ctlproc w msg wParam lParam
-                  (lambda (w msg wParam lParam)
-                    ((hwnd->ctlproc w) w msg wParam lParam)))
-            (let ([default-ctlproc (hwnd->ctlproc w)])
+  (let ([default-ctlproc (hwnd->ctlproc w)])
+    (if (= msg WM_DESTROY)
+        (begin
+          (SetWindowLongW w GWLP_WNDPROC (hwnd->ctlproc-fptr w))
+          (unregister-hwnd! w)
+          (default-ctlproc w msg wParam lParam))
+        (let ([wx (hwnd->wx w)])
+          (if wx
+              (send wx ctlproc w msg wParam lParam
+                    (lambda (w msg wParam lParam)
+                      (default-ctlproc w msg wParam lParam)))
               (default-ctlproc w msg wParam lParam))))))
 
 (define control_proc (function-ptr control-proc _WndProc))
 
 (define (subclass-control hwnd)
-  (let ([old-control-proc (function-ptr (GetWindowLongW hwnd GWLP_WNDPROC) _WndProc)])
-    (set-hwnd-ctlproc! hwnd old-control-proc)
+  (let* ([fptr (GetWindowLongW hwnd GWLP_WNDPROC)]
+         [old-control-proc (function-ptr fptr _WndProc)])
+    (set-hwnd-ctlproc! hwnd fptr old-control-proc)
     (SetWindowLongW hwnd GWLP_WNDPROC control_proc)))
+
+
+(define _DialogProc (_wfun _HWND _UINT _WPARAM _LPARAM -> _INT_PTR))
+
+(define (dlgproc w msg wParam lParam)
+  (if (= msg WM_DESTROY)
+      (begin
+        (unregister-hwnd! w)
+        0)
+      (let ([wx (hwnd->wx w)])
+        (if wx
+            (send wx wndproc w msg wParam lParam
+                  (lambda (w msg wParam lParam) 0))
+            0))))
+
+(define dialog-proc (function-ptr dlgproc _DialogProc))
 
 ;; ----------------------------------------
 
@@ -154,7 +163,7 @@
 
 (define (maybe-destroy-window hwnd)
   (atomically
-   (when (unregister-hwnd? hwnd)
+   (when (can-unregister-hwnd? hwnd)
      (DestroyWindow hwnd))))
 
 (define (clean-up-destroyed)
@@ -171,8 +180,12 @@
 
 (define (make-CreateWindowEx register!)
   ((allocator remember-to-free-later)
-   (lambda (dwExStyle lpClassName lpWindowName dwStyle x y nWidth nHeight hWndParent hMenu hInstance lpParam)
-     (let ([hwnd (_CreateWindowExW dwExStyle lpClassName lpWindowName dwStyle x y nWidth nHeight hWndParent hMenu hInstance lpParam)])
+   (lambda (dwExStyle lpClassName lpWindowName dwStyle 
+                      x y nWidth nHeight 
+                      hWndParent hMenu hInstance lpParam)
+     (let ([hwnd (_CreateWindowExW dwExStyle lpClassName lpWindowName dwStyle 
+                                   x y nWidth nHeight 
+                                   hWndParent hMenu hInstance lpParam)])
        (register! hwnd)
        hwnd))))
 
@@ -180,6 +193,23 @@
 (define CreateWindowExW/control (make-CreateWindowEx (lambda (hwnd)
                                                        (register-hwnd! hwnd)
                                                        (subclass-control hwnd))))
+
+
+(define-user32 _CreateDialogIndirectParamW (_wfun _HINSTANCE
+                                                  _pointer ; _DLGTEMPLATE-pointer
+                                                  _HWND
+                                                  _fpointer
+                                                  _LPARAM
+                                                  -> _HWND)
+  #:c-id CreateDialogIndirectParamW)
+
+(define CreateDialogIndirectParamW
+  ((allocator remember-to-free-later)
+   (lambda (hInstance lpTemplate hWndParent lpDialogFunc lParamInit)
+     (let ([hwnd (_CreateDialogIndirectParamW
+                  hInstance lpTemplate hWndParent lpDialogFunc lParamInit)])
+       (register-hwnd! hwnd)
+       hwnd))))
 
 ;; ----------------------------------------
 

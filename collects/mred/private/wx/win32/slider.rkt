@@ -59,22 +59,22 @@
                          #f)))
 
   (define slider-hwnd
-    (CreateWindowExW 0
-                     "PLTmsctls_trackbar32"
-                     label
-                     (bitwise-ior WS_CHILD WS_CLIPSIBLINGS
-                                  (if vertical?
-                                      TBS_VERT
-                                      TBS_HORZ)
-                                  (if panel-hwnd
-                                      WS_VISIBLE
-                                      0))
-                     0 0 0 0
-                     (or panel-hwnd 
-                         (send parent get-client-hwnd))
-                     #f
-                     hInstance
-                     #f))
+    (CreateWindowExW/control 0
+                             "PLTmsctls_trackbar32"
+                             label
+                             (bitwise-ior WS_CHILD WS_CLIPSIBLINGS
+                                          (if vertical?
+                                              TBS_VERT
+                                              TBS_HORZ)
+                                          (if panel-hwnd
+                                              WS_VISIBLE
+                                              0))
+                             0 0 0 0
+                             (or panel-hwnd 
+                                 (send parent get-client-hwnd))
+                             #f
+                             hInstance
+                             #f))
 
   (define value-hwnd
     (and panel-hwnd

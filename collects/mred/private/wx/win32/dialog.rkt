@@ -28,26 +28,7 @@
    [class _short] ; 0
    [title _short])) ; 0
 
-(define _INT_PTR _long)
-(define _DialogProc (_wfun _HWND _UINT _WPARAM _LPARAM -> _INT_PTR))
-
-
 (define DS_MODALFRAME #x80)
-
-(define-user32 CreateDialogIndirectParamW (_wfun _HINSTANCE
-                                                 _DLGTEMPLATE-pointer
-                                                 _HWND
-                                                 _fpointer
-                                                 -> _HWND))
-
-(define (dlgproc w msg wParam lParam)
-  (let ([wx (hwnd->wx w)])
-    (if wx
-        (send wx wndproc w msg wParam lParam
-              (lambda (w msg wParam lParam) 0))
-        0)))
-
-(define dialog-proc (function-ptr dlgproc _DialogProc))
 
 (define dialog% 
   (class (dialog-mixin frame%)
@@ -62,7 +43,8 @@
                                           0 0 w h
                                           0 0 0)
                                          (and parent (send parent get-hwnd))
-                                         dialog-proc)])
+                                         dialog-proc
+                                         0)])
         (SetWindowTextW hwnd label)
         (MoveWindow hwnd 0 0 w h #t)
         hwnd))
