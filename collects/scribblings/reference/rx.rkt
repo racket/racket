@@ -85,18 +85,18 @@
             |  \s                 Contains space, tab, newline, formfeed, return  #cat
             |  \S                 Contains ASCII other than those in _\s_         #cat
   Posix    ::= [:alpha:]          Contains _a_-_z_, _A_-_Z_                       #cat
-            |  [:alnum:]          Contains _a_-_z_, _A_-_Z_, _0_-_9_              #cat
-            |  [:ascii:]          Contains all ASCII characters                   #cat
-            |  [:blank:]          Contains space and tab                          #cat
-            |  [:cntrl:]          Contains all characters with scalar value < 32  #cat
-            |  [:digit:]          Contains _0_-_9_                                #cat
-            |  [:graph:]          Contains all ASCII characters that use ink      #cat
-            |  [:lower:]          Contains space, tab, and ASCII ink users        #cat
-            |  [:print:]          Contains _A_-_Z_                                #cat
-            |  [:space:]          Contains space, tab, newline, formfeed, return  #cat
             |  [:upper:]          Contains _A_-_Z_                                #cat
-            |  [:word:]           Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat
+            |  [:lower:]          Contains _a_-_z_                                #cat
+            |  [:digit:]          Contains _0_-_9_                                #cat
             |  [:xdigit:]         Contains _0_-_9_, _a_-_f_, _A_-_F_              #cat
+            |  [:alnum:]          Contains _a_-_z_, _A_-_Z_, _0_-_9_              #cat
+            |  [:word:]           Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat
+            |  [:blank:]          Contains space and tab                          #cat
+            |  [:space:]          Contains space, tab, newline, formfeed, return  #cat
+            |  [:graph:]          Contains all ASCII characters that use ink      #cat
+            |  [:print:]          Contains space, tab, and ASCII ink users (_[:graph:]_ and _[:blank:]_) #cat
+            |  [:cntrl:]          Contains all characters with scalar value < 32  #cat
+            |  [:ascii:]          Contains all ASCII characters                   #cat
   Property ::= Category           Includes all characters in Category             #cat
             |  ^Category          Includes all characters not in Category         #cat
   Category ::= Ll                 Letter, lowercase                               #ucat
