@@ -112,14 +112,14 @@
 
 (define (add-event-boundary-callback! v proc)
   (atomically
-   (alert-tasks-ready)
-   (hash-set! boundary-ht v proc)))
+   (hash-set! boundary-ht v proc)
+   (alert-tasks-ready)))
 (define (add-event-boundary-sometimes-callback! v proc) 
   (atomically
-   (alert-tasks-ready)
    (when (zero? (hash-count sometimes-boundary-ht))
      (set! last-time (current-inexact-milliseconds)))
-   (hash-set! sometimes-boundary-ht v proc)))
+   (hash-set! sometimes-boundary-ht v proc)
+   (alert-tasks-ready)))
 
 (define (remove-event-boundary-callback! v) 
   (atomically

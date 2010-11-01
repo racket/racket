@@ -264,8 +264,11 @@
      (define/public (schedule-periodic-backing-flush)
        (void))
      (define/public (do-canvas-backing-flush hdc)
-       (when hdc
-         (do-backing-flush this dc hdc)))
+       (if hdc
+           (do-backing-flush this dc hdc)
+           (let ([hdc (GetDC canvas-hwnd)])
+             (do-backing-flush this dc hdc)
+             (ReleaseDC canvas-hwnd hdc))))
 
      (define/public (make-compatible-bitmap w h)
        (send dc make-backing-bitmap w h))

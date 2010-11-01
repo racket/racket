@@ -146,6 +146,14 @@
 (define (win32-start-event-pump)
   (thread (lambda ()
             (let loop ()
-              (sync queue-evt other-peek-evt)
+              (unless (let ([any-tasks? (sync/timeout 0 boundary-tasks-ready-evt)])
+                        (sync/timeout (and any-tasks? (* sometimes-delay-msec 0.001))
+                                      queue-evt 
+                                      other-peek-evt
+                                      (if any-tasks?
+                                          (wrap-evt (system-idle-evt)
+                                                    (lambda (v) #f))
+                                          boundary-tasks-ready-evt)))
+                (pre-event-sync #t))
               (as-entry dispatch-all-ready)
               (loop)))))
