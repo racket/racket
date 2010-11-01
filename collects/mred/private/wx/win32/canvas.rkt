@@ -251,11 +251,6 @@
        (send dc suspend-flush))
      (define/public (end-refresh-sequence)
        (send dc resume-flush))
-     
-     ;; The `flush' method should be improved to flush local
-     ;; to the enclosing frame, instead of flushing globally.
-     (define/public (flush)
-       (flush-display))
 
      ;; Improve this method to flush locally
      ;; instead of globally:
