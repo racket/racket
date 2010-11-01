@@ -184,12 +184,12 @@
     (define/public (selected? i)
       (not (zero? (SendMessageW hwnd LB_GETSEL i 0))))
 
-    (define/public (select i [on? #t] [extend? #t])
+    (define/public (select i [on? #t] [one? #t])
       (void
        (if single?
            (SendMessageW hwnd LB_SETCURSEL (if on? i -1) 0)
            (begin
-             (when extend?
+             (unless one?
                (SendMessageW hwnd LB_SELITEMRANGE 0 (MAKELPARAM 0 num)))
              (SendMessageW hwnd LB_SETSEL (if on? 1 0) i)))))
 

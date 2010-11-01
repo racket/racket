@@ -318,7 +318,8 @@
        (when hscroll?
          (SetScrollInfo canvas-hwnd SB_HORZ (make-info h-len h-page h-pos h-scroll-visible?) #t))
        (when vscroll?
-         (SetScrollInfo canvas-hwnd SB_VERT (make-info v-len v-page v-pos v-scroll-visible?) #t)))
+         (SetScrollInfo canvas-hwnd SB_VERT (make-info v-len v-page v-pos v-scroll-visible?) #t))
+       (void))
 
     (define/override (reset-dc-for-autoscroll)
       (reset-dc)
@@ -336,10 +337,12 @@
      (define/public (get-scroll-range which)
        (if (is-auto-scroll?)
            0
-           (let ([i (GetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
-             (+ (- (SCROLLINFO-nMax i)
-                   (SCROLLINFO-nPage i))
-                1))))
+           (get-real-scroll-range which)))
+     (define/public (get-real-scroll-range which)
+       (let ([i (GetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
+         (+ (- (SCROLLINFO-nMax i)
+               (SCROLLINFO-nPage i))
+            1)))
      (define/public (get-scroll-page which)
        (if (is-auto-scroll?)
            0
@@ -357,7 +360,8 @@
                                                    SIF_DISABLENOSCROLL
                                                    0)))
          (set-SCROLLINFO-nMax! i (+ v (SCROLLINFO-nPage i) -1))
-         (SetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ) i #t)))
+         (SetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ) i #t)
+         (void)))
      (define/public (set-scroll-page which v)
        (let ([i (GetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
          (set-SCROLLINFO-fMask! i (bitwise-ior SIF_RANGE SIF_PAGE
@@ -369,7 +373,8 @@
          (set-SCROLLINFO-nMax! i (+ (- (SCROLLINFO-nMax i) (SCROLLINFO-nPage i))
                                     v))
          (set-SCROLLINFO-nPage! i v)
-         (SetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ) i #t)))
+         (SetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ) i #t)
+         (void)))
 
      (define/public (on-scroll e) (void))
      (define/private (on-scroll-change dir part)
@@ -446,10 +451,12 @@
 
      (define/public (scroll x y)
        (when (is-auto-scroll?) 
-         (when (x . > . 0)
-           (set-scroll-pos 'horizontal (->long (* x (get-scroll-range 'horizontal)))))
-         (when (y . > . 0)
-           (set-scroll-pos 'vertical (->long (* y (get-scroll-range 'vertical)))))
+         (when (x . >= . 0)
+           (set-scroll-pos 'horizontal 
+                           (->long (* x (get-real-scroll-range 'horizontal)))))
+         (when (y . >= . 0)
+           (set-scroll-pos 'vertical 
+                           (->long (* y (get-real-scroll-range 'vertical)))))
          (refresh-for-autoscroll)))
 
      (define/public (warp-pointer x y) (void))
