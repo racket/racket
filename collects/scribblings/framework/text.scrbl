@@ -1164,4 +1164,22 @@
 @defclass[text:searching% (text:searching-mixin text:backup-autosave%) ()]{}
 @defclass[text:info% (text:info-mixin (editor:info-mixin text:searching%)) ()]{}
 
+@defmixin[text:line-numbers-mixin (text%) (text:line-numbers<%>)]{
+
+  @defmethod*[#:mode override (((on-paint) void))]{
+
+    Draws the line numbers.
+  }
+
+  @defmethod*[(((show-line-numbers! (show boolean?)) void))]{
+
+    Enables or disables line number drawing.
+  }
+  
+  @defmethod*[(((show-line-numbers?) boolean?))]{
+
+    Returns whether or not line drawing is enabled.
+  }
+}
+
 @(include-previously-extracted "main-extracts.ss" #rx"^text:")
