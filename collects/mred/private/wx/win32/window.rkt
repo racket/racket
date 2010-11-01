@@ -24,6 +24,7 @@
               queue-window-event
               queue-window-refresh-event
               location->window
+              flush-display
 
               GetWindowRect
               GetClientRect))
@@ -701,3 +702,7 @@
            (or (let ([wx (any-hwnd->wx hwnd)])
                  (and wx (send wx get-top-frame)))
                (loop (GetParent hwnd)))))))
+
+(define (flush-display)
+  (atomically
+   (pre-event-sync #t)))

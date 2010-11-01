@@ -36,6 +36,7 @@
               GetDC
               ReleaseDC
               InvalidateRect
+              ValidateRect
               GetMenuState
               CheckMenuItem
               ModifyMenuW
@@ -121,6 +122,8 @@
 
 (define-user32 InvalidateRect (_wfun _HWND (_or-null _RECT-pointer) _BOOL -> (r : _BOOL)
                                      -> (unless r (failed 'InvalidateRect))))
+(define-user32 ValidateRect (_wfun _HWND (_or-null _RECT-pointer) -> (r : _BOOL)
+                                   -> (unless r (failed 'ValidateRect))))
 
 (define-user32 GetMenuState (_wfun _HMENU _UINT _UINT -> _UINT))
 (define-user32 CheckMenuItem (_wfun _HMENU _UINT _UINT -> _DWORD))

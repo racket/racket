@@ -252,6 +252,11 @@
      (define/public (end-refresh-sequence)
        (send dc resume-flush))
 
+     ;; Improve this method to flush locally
+     ;; instead of globally:
+     (define/public (flush)
+       (flush-display))
+
      (define/public (on-paint) (void))
      (define/override (refresh) (queue-paint))
 
@@ -268,7 +273,8 @@
            (do-backing-flush this dc hdc)
            (let ([hdc (GetDC canvas-hwnd)])
              (do-backing-flush this dc hdc)
-             (ReleaseDC canvas-hwnd hdc))))
+             (ReleaseDC canvas-hwnd hdc)
+             (ValidateRect canvas-hwnd #f))))
 
      (define/public (make-compatible-bitmap w h)
        (send dc make-backing-bitmap w h))

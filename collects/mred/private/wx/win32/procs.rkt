@@ -35,7 +35,6 @@
   get-control-font-size
   get-control-font-size-in-pixels?
   cancel-quit
-  flush-display
   bell
   hide-cursor
   get-display-depth
@@ -44,6 +43,7 @@
   get-highlight-background-color
   get-highlight-text-color
   check-for-break)
+ flush-display
  fill-private-color
  play-sound
  location->window
@@ -84,7 +84,6 @@
 (define (get-control-font-face) (get-theme-font-face))
 (define (get-control-font-size) (get-theme-font-size))
 (define (get-control-font-size-in-pixels?) #t)
-(define (flush-display) (void))
 
 (define-user32 MessageBeep (_wfun _UINT -> _BOOL))
 (define (bell)
