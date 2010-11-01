@@ -4738,13 +4738,13 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       l = read_compact_number(port);
       RANGE_CHECK(l, < port->symtab_size);
       v = port->symtab[l];
-      if (v == -1) {
+      if (v == (Scheme_Object *)-1) {
         // there is a cycle
         scheme_ill_formed_code(port);
       };
       if (!v) {
         long save_pos = port->pos;
-        port->symtab[l] = -1; /* avoid cycles if marshaled form is broken: */
+        port->symtab[l] = (Scheme_Object *)-1; /* avoid cycles if marshaled form is broken: */
         port->pos = port->shared_offsets[l - 1];
         v = read_compact(port, 0);
         port->pos = save_pos;
