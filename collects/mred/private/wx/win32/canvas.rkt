@@ -168,7 +168,7 @@
                        (FillRect hdc r hbrush))
                      (unless transparent?
                        (DeleteObject hbrush)))
-                   (unless (do-backing-flush this dc hdc)
+                   (unless (do-canvas-backing-flush hdc)
                      (queue-paint)))))
            (EndPaint hdc ps))
          0]
@@ -257,7 +257,15 @@
 
      (define/public (queue-backing-flush)
        (unless for-gl?
-         (InvalidateRect canvas-hwnd #f #f)))
+         (InvalidateRect canvas-hwnd #f #f)
+         (schedule-periodic-backing-flush)))
+
+     ;; overridden to extend for scheduled periodic flushes:
+     (define/public (schedule-periodic-backing-flush)
+       (void))
+     (define/public (do-canvas-backing-flush hdc)
+       (when hdc
+         (do-backing-flush this dc hdc)))
 
      (define/public (make-compatible-bitmap w h)
        (send dc make-backing-bitmap w h))

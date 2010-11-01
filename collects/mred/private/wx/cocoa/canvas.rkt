@@ -279,11 +279,19 @@
        (queue-window-refresh-event this  thunk))
 
      (define/public (paint-or-queue-paint)
-       (or (do-backing-flush this dc (tell NSGraphicsContext currentContext)
-                             (if is-combo? 2 0) (if is-combo? 2 0))
+       (or (do-canvas-backing-flush #f)
            (begin
              (queue-paint)
              #f)))
+
+     (define/public (do-canvas-backing-flush ctx)
+       (do-backing-flush this dc (tell NSGraphicsContext currentContext)
+                         (if is-combo? 2 0) (if is-combo? 2 0)))
+
+     ;; not used, because Cocoa canvas refreshes do not go through
+     ;;  the eventspace queue:
+     (define/public (schedule-periodic-backing-flush)
+       (void))
 
      (define/public (begin-refresh-sequence)
        (send dc suspend-flush))

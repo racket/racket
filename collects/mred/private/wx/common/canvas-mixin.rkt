@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/draw
+         "../common/queue.rkt"
          "backing-dc.rkt")
 
 (provide 
@@ -162,7 +163,28 @@
     (define/override (paint-children)
       (when (or paint-queued
                 (not (send (get-dc) can-backing-flush?)))
-        (do-on-paint #f #f)))))
+        (do-on-paint #f #f)))
+
+
+    (define flush-box #f)
+    
+    ;; Periodic flush is needed for Windows and Gtk, where
+    ;; updates otherwise happen only via the eventspace's queue
+    (define/override (schedule-periodic-backing-flush)
+      (unless flush-box
+        (set! flush-box (box #t))
+        (add-event-boundary-sometimes-callback! 
+         flush-box
+         (lambda (b)
+           (when (unbox b)
+             (do-canvas-backing-flush #f))))))
+
+     (define/override (do-canvas-backing-flush ctx)
+       ;; cancel scheduled flush, if any:
+       (when flush-box 
+         (set-box! flush-box #f) 
+         (set! flush-box #f))
+       (super do-canvas-backing-flush ctx))))
 
 ;; useful for fixing the size of a collecting blit:
 (define (fix-bitmap-size on w h on-x on-y)

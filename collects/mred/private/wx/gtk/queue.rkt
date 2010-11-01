@@ -194,10 +194,12 @@
   (thread (lambda ()
             (let loop ()
               (unless (let ([any-tasks? (sync/timeout 0 boundary-tasks-ready-evt)])
-                        (sync queue-evt (if any-tasks?
-                                            (wrap-evt (system-idle-evt)
-                                                      (lambda (v) #f))
-                                            boundary-tasks-ready-evt)))
+                        (sync/timeout (and any-tasks? (* sometimes-delay-msec 0.001))
+                                      queue-evt 
+                                      (if any-tasks?
+                                          (wrap-evt (system-idle-evt)
+                                                    (lambda (v) #f))
+                                          boundary-tasks-ready-evt)))
                 (pre-event-sync #t))
               (atomically (dispatch-all-ready))
               (loop)))))

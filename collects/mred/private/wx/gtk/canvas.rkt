@@ -352,14 +352,21 @@
        (queue-window-refresh-event this thunk))
 
      (define/public (paint-or-queue-paint)
+       ;; in atomic mode
        (if for-gl?
 	   (queue-paint)
-	   (or (do-backing-flush this dc (if is-combo?
-					     (get-subwindow client-gtk)
-					     (widget-window client-gtk)))
+	   (or (do-canvas-backing-flush #f)
 	       (begin
 		 (queue-paint)
 		 #f))))
+
+     ;; overridden to extend for scheduled periodic flushes:
+     (define/public (schedule-periodic-backing-flush)
+       (void))
+     (define/public (do-canvas-backing-flush ctx)
+       (do-backing-flush this dc (if is-combo?
+                                     (get-subwindow client-gtk)
+                                     (widget-window client-gtk))))
 
      (define/public (on-paint) (void))
 
@@ -374,9 +381,11 @@
        (queue-paint))
 
      (define/public (queue-backing-flush)
-       ;; called atomically (not expecting exceptions)
+       ;; called atomically
        (unless for-gl?
-         (gtk_widget_queue_draw client-gtk)))
+         (gtk_widget_queue_draw client-gtk)
+         ;; peridodically flush to the screen:
+         (schedule-periodic-backing-flush)))
      
      (define/override (reset-child-dcs)
        (when (dc . is-a? . dc%)

@@ -18,6 +18,7 @@
               remove-event-boundary-callback!
               pre-event-sync
               boundary-tasks-ready-evt
+              sometimes-delay-msec
 
               eventspace?
               current-eventspace
@@ -127,11 +128,12 @@
    (alert-tasks-ready)))
 
 (define last-time -inf.0)
+(define sometimes-delay-msec 50)
 
 ;; Call this function only in atomic mode:
 (define (pre-event-sync force?)
   (let ([now (current-inexact-milliseconds)])
-    (when (or (now . > . (+ last-time 200)) 
+    (when (or (now . > . (+ last-time sometimes-delay-msec)) 
               force?)
       (set! last-time now)
       (hash-for-each sometimes-boundary-ht 
