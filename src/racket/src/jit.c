@@ -4457,6 +4457,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 }
 
 static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, int just_checking_result)
+/* If unsafely, a result f 2 means that arguments should be checked safely. */
 {
   if (!SCHEME_PRIMP(obj))
     return 0;
@@ -4480,16 +4481,16 @@ static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, in
   if (unsafely) {
     /* These are inline-unboxable when their args are
        safely inline-unboxable: */
-    if (IS_NAMED_PRIM(obj, "fl+")) return 1;
-    if (IS_NAMED_PRIM(obj, "fl-")) return 1;
-    if (IS_NAMED_PRIM(obj, "fl*")) return 1;
-    if (IS_NAMED_PRIM(obj, "fl/")) return 1;
-    if (IS_NAMED_PRIM(obj, "flabs")) return 1;
-    if (IS_NAMED_PRIM(obj, "flsqrt")) return 1;
-    if (IS_NAMED_PRIM(obj, "flmin")) return 1;
-    if (IS_NAMED_PRIM(obj, "flmax")) return 1;
-    if (IS_NAMED_PRIM(obj, "flimag-part")) return 1;
-    if (IS_NAMED_PRIM(obj, "flreal-part")) return 1;
+    if (IS_NAMED_PRIM(obj, "fl+")) return 2;
+    if (IS_NAMED_PRIM(obj, "fl-")) return 2;
+    if (IS_NAMED_PRIM(obj, "fl*")) return 2;
+    if (IS_NAMED_PRIM(obj, "fl/")) return 2;
+    if (IS_NAMED_PRIM(obj, "flabs")) return 2;
+    if (IS_NAMED_PRIM(obj, "flsqrt")) return 2;
+    if (IS_NAMED_PRIM(obj, "flmin")) return 2;
+    if (IS_NAMED_PRIM(obj, "flmax")) return 2;
+    if (IS_NAMED_PRIM(obj, "flimag-part")) return 2;
+    if (IS_NAMED_PRIM(obj, "flreal-part")) return 2;
 
     if (just_checking_result) {
       if (IS_NAMED_PRIM(obj, "flfloor")) return 1;
@@ -4562,15 +4563,23 @@ static int can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
   case scheme_application2_type:
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)obj;
-      if (!is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, unsafely, 0))
+      int ok_op;
+      ok_op = is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, unsafely, 0);
+      if (!ok_op)
         return 0;
+      else if (ok_op == 2)
+        unsafely = 0;
       return can_unbox_inline(app->rand, fuel - 1, regs, unsafely);
     }
   case scheme_application3_type:
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)obj;
-      if (!is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, unsafely, 0))
+      int ok_op;
+      ok_op = is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, unsafely, 0);
+      if (!ok_op)
         return 0;
+      else if (ok_op == 2)
+        unsafely = 0;
       if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
           && (IS_NAMED_PRIM(app->rator, "unsafe-f64vector-ref")
               || IS_NAMED_PRIM(app->rator, "unsafe-flvector-ref"))) {
