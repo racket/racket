@@ -580,73 +580,64 @@ symbols, and that return a symbol.
          [_ (id ...) contract-expr]]
 )]{
 
-The @racket[->i] contract combinator is similar in shape to @racket[->*], with
-two extensions: names have been added to each argument and
-result, which allows the contracts to depend on the values
-of the arguments and results, and pre- and post-condition
-expressions have been added in order to express contracts
-that are not naturally tied to a particular argument or
-result.
+The @racket[->i] contract combinator differs from the @racket[->*]
+combinator in that the support pre- and post-condition clauses and 
+in that each argument and result is named. These names can then
+be used in the subcontracts and in the pre-/post-condition clauses. 
+In short, contracts now express dependencies among arguments and results. 
 
-The first subforms of a @racket[->i] contract covers the
-mandatory and the second (optional) subform covers the optional
-arguments. Following that is an
-optional rest-args contract, and an optional
-pre-condition. The pre-condition is specified with
-the @racket[#:pre] keyword, and must be followed
-with the argument variables that it depends on.
+The first subforms of a @racket[->i] contract covers the mandatory and the
+second subform covers the optional arguments. Following that is an optional
+rest-args contract, and an optional pre-condition. The pre-condition is
+introduced with the @racket[#:pre] keyword followed by the list of names on
+which it depends. 
 
-The @racket[dep-range] non-terminal covers
-the possible result contracts. If it is
-@racket[any], then any result (or results) are
-allowed. Otherwise, the result contract can be a name and a
-result contract, or a multiple values return and, in either
-of the last two cases, it may be optionally followed by a
-post-condition (the post-condition expression is not allowed
-if the range is @racket[any]). Like the pre-condition, the
-post-condition must specify the variables that it depends on.
+The @racket[dep-range] non-terminal specifies the possible result
+contracts. If it is @racket[any], then any value is allowed. Otherwise, the
+result contract pairs a name and a contract or a multiple values return
+with names and contracts. In the last two cases, the range contract may be
+optionally followed by a post-condition; the post-condition expression is
+not allowed if the range contract is @racket[any]. Like the pre-condition,
+the post-condition must specify the variables on which it depends.
 
-Each of the @racket[id]s on an argument (including the rest
-argument) is visible in the pre- and post-conditions sub-expressions of
-@racket[->i], as well as visible in any of the argument or 
-result contracts that have explicitly listed it as a dependent argument.
-For example, this contract:
+Consider this sample contract: 
 @racketblock[(->i ([x number?]
                    [y (x) (>=/c x)])
-                  [result (x y) (>=/c (+ x y))])]
-accepts two arugment functions from numbers to numbers, so long
-as the second argument is greater than the first and the result is
-greater than the sum of the two arguments. In order for @racket[x]
-to be used in the contract for @racket[y], it must declare that, by
-writing the @racket[(x)] following @racket[y]. Since @racket[x]'s
-contract does not depend on anything else, it does not have
-the parenthesized list at all. 
+                  [result (x y) (and/c number? (>=/c (+ x y)))])]
+It specifies a function of two arguments, both numbers. The contract on the
+second argument (@scheme[y]) demands that it is greater than the first
+argument. The result contract promises a number that is greater than the
+sum of the two arguments. While the dependency specification for @scheme[y] 
+signals that the argument contract depends on the value of the first
+argument, the dependency list for @scheme[result] indicates that the
+contract depends on both argument values. @margin-note*{In general, an
+empty list is (nearly) equivalent to not adding
+a list at all except that the former is more expensive than the latter.} 
+Since the contract for @racket[x] does not depend on anything else, it does
+not come with any dependency list, not even @scheme[()]. 
 
-In general, an empty parenthesized list is (nearly) semantically
-equivalent to not adding a list at all, except that the former
-is more expensive than the latter. 
-
-The contract expressions are not evaluated in the order that they are
-listed, for three reasons. First, the if there is no dependency for a given
-contract expression (on either a result or an input), then the contract
-expression is evaluated at the time that the @racket[->i] expression is
-evaluated rather than the time when the function is called (or returns, in the case
-of the result contract expressions).
-Those, non-dependent contract expressions are evaluated in the order listed
-in the program text.
+The contract expressions are not evaluated in
+order. First, if there is no dependency for a given contract expression,
+the contract expression is evaluated at the time that the @racket[->i]
+expression is evaluated rather than the time when the function is called or
+returns.  These dependency-free contract expressions are evaluated in the
+order in which they are listed.
+@;
 Second, the dependent contract subexpressions are evaluated when the
-contracted function is called (or returns), in an order
-that satisfies the dependencies. That is, if one of the arguments depends
-on another one, the dependent one is evaluated first (so that the argument,
-with its contract checked, is available for the other).
-When there is no dependency between two arguments (or results)
-then the one that appears earlier in the source text is evaluated first.
-Finally, if all of the identifier positions of the range contract are
-@racket[_]s (underscores), then the range contract
-expressions are evaluated when the function is called (and
-the underscore is not bound in the range), after the argument
-contracts are evaluated and checked. (Otherwise the
-range expressions are evaluated when the function returns.)
+contracted function is called or returns in some order that satisfies the
+dependencies. That is, if a contract for an argument depends on the value
+of some other contract, the former is evaluated first (so that the
+argument, with its contract checked, is available for the other).  When
+there is no dependency between two arguments (or the result and an
+argument) then the contract that appears earlier in the source text is
+evaluated first.  
+#;
+Finally, if all of the identifier positions of the range
+contract are @racket[_]s (underscores), then the range contract expressions
+are evaluated when the function is called and the underscore is not bound
+in the range, after the argument contracts are evaluated and
+checked. Otherwise the range expressions are evaluated when the function
+returns.
 
 If there are optional arguments that are not supplied, then 
 the corresponding variables will be bound to a special value
