@@ -99,15 +99,17 @@
   (define errors null)
   (define (append-error cc desc exn out err type)
     (set! errors (cons (list cc desc exn out err type) errors)))
+  (define (handle-error cc desc exn out err type)
+      (if (verbose)
+          ((error-display-handler)
+           (format "~a\n" (exn->string exn))
+           exn)
+          (fprintf (current-error-port) "~a\n" (exn->string exn)))
+      (append-error cc desc exn out err type))
   (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
                      (lambda (x)
-                       (if (verbose)
-                           ((error-display-handler)
-                            (format "~a\n" (exn->string x))
-                            x)
-                           (fprintf (current-error-port) "~a\n" (exn->string x)))
-                       (append-error cc desc x "" "" "error")
+                       (handle-error cc desc x "" "" "error")
                        (fail-k))])
       (go)))
   (define-syntax begin-record-error
@@ -680,7 +682,7 @@
               (let ([dir (cc-path cc)]
                     [info (cc-info cc)])
                   (clean-cc dir info))) cct)
-            (parallel-compile (parallel-workers) setup-fprintf append-error cct))
+            (parallel-compile (parallel-workers) setup-fprintf handle-error cct))
           (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
             (compile-cc cc gcs)))]
       [else
