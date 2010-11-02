@@ -3902,6 +3902,7 @@ designates the character that triggers autocompletion
             (define-values (x y) (send dc get-origin))
             (set! old-origin-x x)
             (set! old-origin-y y)
+            (setup-dc dc)
             (define-values (font-width font-height baseline space)
                            (send dc get-text-extent "10000"))
             ;; add an extra 0 so it looks nice

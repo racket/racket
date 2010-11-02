@@ -316,6 +316,18 @@
      (make-check-box 'drracket:open-in-tabs 
                      (string-constant open-files-in-tabs)
                      editor-panel)
+     (make-check-box 'drracket:show-line-numbers?
+                     (string-constant show-line-numbers)
+                     editor-panel
+                     (lambda (value)
+                       (define (drracket:frame? frame)
+                         (and (is-a? frame top-level-window<%>)
+                              (is-a? frame drracket:unit:frame%)))
+                       ;; is it a hack to use `get-top-level-windows' ?
+                       (define frames (filter drracket:frame? (get-top-level-windows)))
+                       (when (not (null? frames))
+                         (send (car frames) show-line-numbers! value))))
+
      (make-check-box 'drracket:show-interactions-on-execute 
                      (string-constant show-interactions-on-execute)
                      editor-panel)
