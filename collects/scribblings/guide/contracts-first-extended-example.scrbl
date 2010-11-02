@@ -35,7 +35,7 @@ racket
 (define (argmax f lov) ...)
 
 (provide/contract 
-  [argmax (-> (-> any/c real?) (and/c pair? list?) anyc/)])
+  [argmax (-> (-> any/c real?) (and/c pair? list?) any/c)])
 ]
  This contract captures two essential conditions of the informal
  description of @scheme[argmax]: 
@@ -62,7 +62,8 @@ racket
 (provide/contract
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) () 
-         (_ (lambda (r)
+         (r (f lov)
+	    (lambda (r)
 	      (define f@r (f r))
 	      (for/and ((v lov)) (>= f@r (f v))))))])
 ]
@@ -83,8 +84,9 @@ racket
 (provide/contract
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) () 
-         (_ (lambda (r)
-	      (define f@r (f r))
+         (r (f lov)
+            (lambda (r)
+              (define f@r (f r))
               (and
 		(memq r lov)
 		(for/and ((v lov)) (>= f@r (f v)))))))])
@@ -110,12 +112,13 @@ racket
 
 (provide/contract
   [argmax
-    (->i ([f (-> any/c real?)] [a (and/c cons? list?)]) ()
-         (_ (lambda (r)
-	      (define f@r (f r))
-	      (and (for/and ((v lov)) (>= f@r (f v)))		   
-		   (eq? (first (memf (lambda (v) (= (f v) f@r)) lov)) 
-		        r)))))])
+    (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
+         (r (f lov)
+            (lambda (r)
+              (define f@r (f r))
+              (and (for/and ((v lov)) (>= f@r (f v)))		   
+                   (eq? (first (memf (lambda (v) (= (f v) f@r)) lov)) 
+                        r)))))])
 ]
  That is, the @scheme[memf] function determines the first element of
  @racket[lov] whose value under @racket[f] is equal to @racket[r]'s value
@@ -146,11 +149,12 @@ racket
 
 (provide/contract
   [argmax
-    (->i ([f (-> any/c real?)] [a (and/c cons? list?)]) ()
-         (_ (lambda (r)
-	      (define f@r (f r))
-	      (and (is-first-max? r f@r f lov)
-		   (dominates-all f@r f lov)))))])
+    (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
+         (r (f lov)
+            (lambda (r)
+              (define f@r (f r))
+              (and (is-first-max? r f@r f lov)
+                   (dominates-all f@r f lov)))))])
 
 @code:comment{where}
 
@@ -170,7 +174,6 @@ This step leaves us with the problem of the newly introduced inefficiency.
  @racket[lov], we change the contract so that it computes these values and
  reuses them as needed:
 
-
 @(define dominates2
   @multiarg-element['tt]{@list{
    @racket[f@r] is greater or equal to all @racket[f@v] in @racket[flov]}})
@@ -187,24 +190,25 @@ racket
 
 (provide/contract
   [argmax
-    (->i ([f (-> any/c real?)] [a (and/c cons? list?)]) ()
-         (_ (lambda (r)
-	      (define f@r (f r))
-	      (define flov (map f lov))
-	      (and (is-first-max? r f@r lov flov)
-		   (dominates-all f@r flov)))))])
+    (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
+         (r (f lov)
+            (lambda (r)
+              (define f@r (f r))
+              (define flov (map f lov))
+              (and (is-first-max? r f@r (map list lov flov))
+                   (dominates-all f@r flov)))))])
 
 @code:comment{where}
 
 @code:comment{@#,dominates2}
-(define (dominates-all f@r lov)
+(define (dominates-all f@r flov)
   (for/and ((f@v flov)) (>= f@r f@v)))
 
 @code:comment{@#,first?2}
 (define (is-first-max? r f@r lov+flov)
-  (define fst (first flov))
-  (if (= (first fst) f@r)
-      (eq? (second fst) r)
+  (define fst (first lov+flov))
+  (if (= (second fst) f@r)
+      (eq? (first fst) r)
       (is-first-max? f@r r (rest lov+flov))))
 ]
  Now the predicate on the result once again computes all values of @racket[f]
@@ -240,14 +244,15 @@ racket
 (provide/contract
   [argmax
     (->i ([f (-> any/c real?)] [lov (and/c pair? list?)]) ()
-         (_ (lambda (r)
-	      (cond
-		[(empty? (rest a)) (eq? (first a) r)]
-		[else
-		  (define f@r (f r))
-		  (define flov (map f lov))
-		  (and (is-first-max? r f@r lov flov)
-		       (dominates-all f@r flov))]))))])
+         (r (f lov)
+            (lambda (r)
+              (cond
+                [(empty? (rest lov)) (eq? (first lov) r)]
+                [else
+                 (define f@r (f r))
+                 (define flov (map f lov))
+                 (and (is-first-max? r f@r (map list lov flov))
+                      (dominates-all f@r flov))]))))])
 
 @code:comment{where}
 
