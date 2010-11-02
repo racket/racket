@@ -482,6 +482,10 @@
     (define/private (align-y y)
       (align-y/delta y y-align-delta))
 
+    ;; No alignment in any smoothing mode for text:
+    (define/private (text-align-x/delta x delta) x)
+    (define/private (text-align-y/delta y delta) y)
+
     (define current-smoothing #f)
 
     (define (set-font-antialias context smoothing)
@@ -1184,7 +1188,7 @@
                         (when draw?
                           (let ([bl (/ (pango_layout_get_baseline layout) (exact->inexact PANGO_SCALE))])
                             (pango_layout_get_extents layout #f logical)
-                            (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta (+ y bl) 0))
+                            (cairo_move_to cr (text-align-x/delta (+ x w) 0) (text-align-y/delta (+ y bl) 0))
                             ;; Draw the text:
                             (pango_cairo_show_layout_line cr (pango_layout_get_line_readonly layout 0))))
                         (cond
@@ -1304,8 +1308,8 @@
                                  ;; Move into position (based on the recorded Pango-units baseline)
                                  ;; and draw the glyphs
                                  (cairo_move_to cr 
-                                                (align-x/delta x 0) 
-                                                (align-y/delta (+ y (/ (vector-ref first-v 4) (->fl PANGO_SCALE))) 0))
+                                                (text-align-x/delta x 0) 
+                                                (text-align-y/delta (+ y (/ (vector-ref first-v 4) (->fl PANGO_SCALE))) 0))
                                  (pango_cairo_show_glyph_string cr first-font glyph-string)
                                  (free glyph-infos)
                                  (free log-clusters)
@@ -1349,9 +1353,9 @@
                                                    (values lw lh ld la flh)))))))])
                          (when draw?
                            (cairo_move_to cr 
-                                          (align-x/delta (+ x w) 0) 
+                                          (text-align-x/delta (+ x w) 0) 
                                           (let ([bl (- flh ld)])
-                                            (align-y/delta (+ y bl) 0)))
+                                            (text-align-y/delta (+ y bl) 0)))
                            ;; Here's the draw command, which uses most of the time in this mode:
                            (pango_cairo_show_layout_line cr (pango_layout_get_line_readonly layout 0)))
                          (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la))))))
