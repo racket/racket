@@ -47,6 +47,7 @@
     # specification of visible repositories (managed by gitolite)
     our $projects_list = "plt-repos";
     our $projects_list_description_width = 80;
+    our $default_projects_order = "age";
     # hide repositories that are not listed in the above
     our $strict_export = 1;
     @||
