@@ -270,7 +270,7 @@
 
     (define black (send the-color-database find-color "black"))
     (define pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-    (define brush (send the-brush-list find-or-create-brush "black" 'transparent))
+    (define brush (send the-brush-list find-or-create-brush "white" 'solid))
     (define font (send the-font-list find-or-create-font 12 'default))
     (define text-fg (send the-color-database find-color "black"))
     (define text-bg (send the-color-database find-color "white"))
@@ -1179,17 +1179,19 @@
                                    ;; find a face that works for the long character:
                                    (install-alternate-face (string-ref s 0) layout font desc attrs context))
                                  (substring s (max 1 ok-count))))])
-                      (when draw?
-                        (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta y 0))
-                        ;; Draw the text:
-                        (pango_cairo_show_layout cr layout))
-                      (cond
-                       [(and draw? (not next-s))
-                        (g_object_unref layout)
-                        (when rotate? (cairo_restore cr))]
-                       [else
-                        (let ([logical (make-PangoRectangle 0 0 0 0)])
-                          (pango_layout_get_extents layout #f logical)
+                      (let ([logical (make-PangoRectangle 0 0 0 0)])
+                        (pango_layout_get_extents layout #f logical)
+                        (when draw?
+                          (let ([bl (/ (pango_layout_get_baseline layout) (exact->inexact PANGO_SCALE))])
+                            (pango_layout_get_extents layout #f logical)
+                            (cairo_move_to cr (align-x/delta (+ x w) 0) (align-y/delta (+ y bl) 0))
+                            ;; Draw the text:
+                            (pango_cairo_show_layout_line cr (pango_layout_get_line_readonly layout 0))))
+                        (cond
+                         [(and draw? (not next-s))
+                          (g_object_unref layout)
+                          (when rotate? (cairo_restore cr))]
+                         [else
                           (let ([nw (if blank?
                                         0.0
                                         (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))]
@@ -1198,7 +1200,7 @@
                                           (pango_layout_get_baseline layout))
                                        (exact->inexact PANGO_SCALE))]
                                 [na 0.0])
-                            (loop next-s (+ w nw) (max h nh) (max d nd) (max a na))))])))]))
+                            (loop next-s (+ w nw) (max h nh) (max d nd) (max a na)))]))))]))
               ;; This is character-by-character mode. It uses a cached per-character+font layout
               ;;  object.
               (let ([cache (if (or combine?
