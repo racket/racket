@@ -111,7 +111,10 @@
                    (loop (cons wrkr idle)
                          (remove node-worker inflight) 
                          (add1 count)
-                         error-count))))]))
+                         error-count))))]
+            [else 
+              (eprintf "parallel-do-event-loop match node-worker failed.\n")
+              (eprintf "trying to match:\n~a\n" node-worker)]))
                            
                           inflight))])])
         (loop workers null 0 0)))
