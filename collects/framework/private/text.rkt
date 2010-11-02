@@ -3702,7 +3702,10 @@ designates the character that triggers autocompletion
 ;; line number text%
 
 (define line-numbers<%>
-  (interface () show-line-numbers! showing-line-numbers?))
+  (interface ()
+             show-line-numbers!
+             showing-line-numbers?
+             set-line-numbers-color))
 
 (define line-numbers-mixin
   (mixin ((class->interface text%)) (line-numbers<%>)
@@ -3713,10 +3716,8 @@ designates the character that triggers autocompletion
              line-start-position
              line-end-position)
 
-    (define line-numbers-color "black")
+    (init-field [line-numbers-color "black"])
     (init-field [show-line-numbers? #t])
-    (define old-origin-x 0)
-    (define old-origin-y 0)
     (define cached-snips (list))
     (define need-to-recalculate-snips #f)
 
@@ -3726,6 +3727,9 @@ designates the character that triggers autocompletion
 
     (define/public (showing-line-numbers?)
       show-line-numbers?)
+
+    (define/public (set-line-numbers-color color)
+      (set! line-numbers-color color))
 
     (define (get-style-font)
       (let* ([style-list (send this get-style-list)]
@@ -3874,8 +3878,8 @@ designates the character that triggers autocompletion
       (get-visible-line-range start-line end-line #f)
       (for ([y heights]
             [line (in-naturals 1)])
-        (when (and (ok-height y (unbox start-line) (add1 (unbox end-line)))
-                   (between top y bottom))
+        (when (and (between top y bottom)
+                   (ok-height y (unbox start-line) (add1 (unbox end-line))))
           (draw-text (number->string line) 0 (+ dy y))))
 
       ;; draw the line between the line numbers and the actual text
@@ -3893,23 +3897,50 @@ designates the character that triggers autocompletion
                      (send dc get-text-extent stuff))
       height)
 
+    (define old-origin-x 0)
+    (define old-origin-y 0)
+    (define old-clipping #f)
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (when show-line-numbers?
         (if before?
           (let ()
             ;; save old origin and push it to the right a little bit
             ;; TODO: maybe allow the line numbers to be drawn on the right hand side?
+            (define number-space   "10000")
+            ;; add an extra 0 so it looks nice
+            (define number-space+1 "100000")
             (define-values (x y) (send dc get-origin))
             (set! old-origin-x x)
             (set! old-origin-y y)
+            (set! old-clipping (send dc get-clipping-region))
             (setup-dc dc)
             (define-values (font-width font-height baseline space)
-                           (send dc get-text-extent "10000"))
-            ;; add an extra 0 so it looks nice
-            (send dc set-origin (+ x (text-width dc "100000")) y))
+                           (send dc get-text-extent number-space))
+            (define clipped (make-object region% dc))
+            (define all (make-object region% dc))
+            (define copy (make-object region% dc))
+            (send all set-rectangle
+                  (+ dx left) (+ dy top)
+                  (- right left) (- bottom top))
+            (if old-clipping
+              (send copy union old-clipping)
+              (send copy union all))
+            (send clipped set-rectangle
+                  0 (+ dy top)
+                  (text-width dc number-space+1)
+                  (- bottom top))
+            #;
+            (define (print-region name region)
+              (define-values (a b c d) (send region get-bounding-box))
+              (printf "~a: ~a, ~a, ~a, ~a\n" name a b c d))
+            (send copy subtract clipped)
+            (send dc set-clipping-region copy)
+            (send dc set-origin (+ x (text-width dc number-space+1)) y)
+            )
           (begin
             ;; rest the origin and draw the line numbers
             (send dc set-origin old-origin-x old-origin-y)
+            (send dc set-clipping-region old-clipping)
             (draw-line-numbers dc left top right bottom dx dy))))
       (super on-paint before? dc left top right bottom dx dy draw-caret))
     ))
