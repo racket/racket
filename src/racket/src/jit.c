@@ -11116,12 +11116,25 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       else
         finish_branch_with_true(jitter, for_branch);
       return 1;
-    } else if (jitter->unbox && SCHEME_FLOATP(obj)) {
-      double d = SCHEME_FLOAT_VAL(obj);
+    } else if (jitter->unbox) {
+      double d;
       int fpr0;
+
+      if (SCHEME_FLOATP(obj))
+        d = SCHEME_FLOAT_VAL(obj);
+      else {
+        scheme_log(NULL,
+                   SCHEME_LOG_WARNING,
+                   0,
+                   "warning: JIT detects flonum operation applied to non-flonum constant: %V",
+                   obj);
+        d = 0.0;
+      }
+
       fpr0 = JIT_FPR(jitter->unbox_depth);
       mz_movi_d_fppush(fpr0, d, target);
       jitter->unbox_depth++;
+
       return 1;
     } else if (!result_ignored) {
       int retptr;
