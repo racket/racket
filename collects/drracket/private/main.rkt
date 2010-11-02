@@ -670,6 +670,7 @@
       (send (send frame get-interactions-canvas) focus))
     (send frame show #t)))
 
+;; FIXME: get this from racket/list ?
 (define (remove-duplicates files)
   (let loop ([files files])
     (cond

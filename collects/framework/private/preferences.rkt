@@ -454,8 +454,10 @@ the state transitions / contracts are:
                                'framework:autosaving-on? 
                                (string-constant auto-save-files)
                                values values)
-                   (make-check editor-panel  'framework:backup-files? (string-constant backup-files) values values)
+                   (make-check editor-panel 'framework:backup-files? (string-constant backup-files) values values)
                    (make-check editor-panel 'framework:show-status-line (string-constant show-status-line) values values)
+                   ;; does this not belong here?
+                   ;; (make-check editor-panel 'drracket:show-line-numbers (string-constant show-line-numbers)
                    (make-check editor-panel 'framework:col-offsets (string-constant count-columns-from-one) values values)
                    (make-check editor-panel 
                                'framework:display-line-numbers
