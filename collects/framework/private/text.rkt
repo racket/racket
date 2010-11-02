@@ -3714,7 +3714,7 @@ designates the character that triggers autocompletion
              line-end-position)
 
     (define line-numbers-color "black")
-    (define show-line-numbers? #t)
+    (init-field [show-line-numbers? #t])
     (define old-origin-x 0)
     (define old-origin-y 0)
     (define cached-snips (list))
@@ -3845,7 +3845,8 @@ designates the character that triggers autocompletion
     ;; this isn't quite incremental but its better than recalculating
     ;; on every redraw
     (define/augment (on-insert start length)
-      (set! need-to-recalculate-snips #t))
+      (set! need-to-recalculate-snips #t)
+      (inner (void) on-insert start length))
 
     (define (get-snip-heights dc)
       (when need-to-recalculate-snips

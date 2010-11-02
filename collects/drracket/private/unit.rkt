@@ -448,6 +448,7 @@ module browser threading seems wrong.
           definitions-text%)))
 
     ;; links two editor's together so they scroll in tandem
+    #;
     (define (linked-scroller %)
       (class %
         (super-new)
@@ -532,14 +533,18 @@ module browser threading seems wrong.
         ))
 
     ;; an editor that does not respond to key presses
+    #;
     (define (uneditable %)
       (class %
              (super-new)
              (define/override (on-char . stuff) (void))))
 
+    (define (show-line-numbers?)
+      (preferences:get 'drracket:show-line-numbers?))
+
     (define (make-definitions-text%)
       (let ([definitions-super%
-              (linked-scroller
+              (text:line-numbers-mixin
                (text:first-line-mixin
                 (drracket:module-language:module-language-put-file-mixin
                  (scheme:text-mixin
@@ -902,7 +907,7 @@ module browser threading seems wrong.
           
           (define error-arrows #f)
           
-          (super-new)
+          (super-new [show-line-numbers? (show-line-numbers?)])
           
           ;; insert the default-text
           (queue-callback (lambda () (insert-auto-text)))
@@ -1448,11 +1453,11 @@ module browser threading seems wrong.
                         (λ (l) (remq execute-warning-panel l)))
                  (send execute-warning-canvas set-message #f))])))
 
-        (define (show-line-numbers?)
-          (preferences:get 'drracket:show-line-numbers?))
-
         (define/public (show-line-numbers! show)
-          (re-initialize-definitions-canvas show))
+          (for ([tab tabs])
+            (define text (send tab get-defs))
+            (send text show-line-numbers! show))
+          (send definitions-canvas refresh))
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -2772,7 +2777,11 @@ module browser threading seems wrong.
           (initialize-definitions-canvas)
           definitions-canvas)
 
-        (define (create-definitions-canvas line-numbers?)
+        (define (create-definitions-canvas)
+          (new (drracket:get/extend:get-definitions-canvas)
+                 [parent resizable-panel]
+                 [editor definitions-text])
+          #;
           (define (with-line-numbers)
             (define line-numbers-text (new (linked-scroller (uneditable scheme:text%))
                                            [line-numbers? #t]))
@@ -2788,15 +2797,18 @@ module browser threading seems wrong.
             (new (drracket:get/extend:get-definitions-canvas)
                  [parent shared-pane]
                  [editor definitions-text]))
+          #;
           (define (without-line-numbers)
             (send definitions-text link-to! #f)
             (new (drracket:get/extend:get-definitions-canvas)
                  [parent resizable-panel]
                  [editor definitions-text]))
+          #;
           (if line-numbers?
             (with-line-numbers)
             (without-line-numbers)))
 
+        #;
         (define/private (re-initialize-definitions-canvas show)
           (begin-container-sequence)
           (set! definitions-canvas (create-definitions-canvas show))
@@ -2807,8 +2819,7 @@ module browser threading seems wrong.
 
         (define/private (initialize-definitions-canvas)
           (unless definitions-canvas
-            (set! definitions-canvas (create-definitions-canvas
-                                       (show-line-numbers?)))))
+            (set! definitions-canvas (create-definitions-canvas))))
         
         (define/override (get-delegated-text) definitions-text)
         (define/override (get-open-here-editor) definitions-text)
