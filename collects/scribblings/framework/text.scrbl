@@ -1164,6 +1164,24 @@
 @defclass[text:searching% (text:searching-mixin text:backup-autosave%) ()]{}
 @defclass[text:info% (text:info-mixin (editor:info-mixin text:searching%)) ()]{}
 
+@definterface[text:line-numbers<%> ()]{
+
+  @defmethod*[(((show-line-numbers! (show boolean?)) void))]{
+
+    Enables or disables line number drawing.
+  }
+  
+  @defmethod*[(((show-line-numbers?) boolean?))]{
+
+    Returns whether or not line drawing is enabled.
+  }
+  
+  @defmethod*[(((set-line-numbers-color (color string?)) void?))]{
+
+    Sets the color of the line numbers.
+  }
+}
+
 @defmixin[text:line-numbers-mixin (text%) (text:line-numbers<%>)]{
 
   @defmethod*[#:mode override (((on-paint) void))]{
@@ -1179,6 +1197,11 @@
   @defmethod*[(((show-line-numbers?) boolean?))]{
 
     Returns whether or not line drawing is enabled.
+  }
+  
+  @defmethod*[(((set-line-numbers-color (color string?)) void?))]{
+
+    Sets the color of the line numbers.
   }
 }
 
