@@ -3707,6 +3707,7 @@ designates the character that triggers autocompletion
              showing-line-numbers?
              set-line-numbers-color))
 
+;; draws line numbers on the left hand side of a text% object
 (define line-numbers-mixin
   (mixin ((class->interface text%)) (line-numbers<%>)
     (super-new)
@@ -3719,6 +3720,12 @@ designates the character that triggers autocompletion
 
     (init-field [line-numbers-color "black"])
     (init-field [show-line-numbers? #t])
+
+    ;; maybe make this a configurable field?
+    (define number-space   "10000")
+    ;; add an extra 0 so it looks nice
+    (define number-space+1 (string-append number-space "0"))
+
     (define cached-snips (list))
     (define need-to-recalculate-snips #f)
 
@@ -3740,179 +3747,37 @@ designates the character that triggers autocompletion
                       (send style-list basic-style))])
         (send std get-font)))
 
-    ;; get the y position of a snip
-    #;
-    (define (get-snip-y snip)
-      (define x (box 0))
-      (define y (box 0))
-      (send this get-snip-location snip x y)
-      (unbox y))
-
-    ;; returns an ordered list of snip y positions
-    ;; the point is to get a list of snips positions that define
-    ;; where lines start. for snips that take up more than one
-    ;; line, like images, subsequent snips might be merged in with
-    ;; the line that the image sits on. if you have
-    ;; 2: II
-    ;;    IIx
-    ;; Where the I's represent a contiguous image and the 'x' is just a letter
-    ;; then the 'x' snip shouldn't produce a line, it will be on line 2 along
-    ;; with the I image.
-    ;; To compute this we just test if the 'x' snip's y position is within the
-    ;; bounds of the I image [I.y, I.y + I.height]. It might look like we should
-    ;; test if the entire bounds of the 'x' snip is within the bounds of the image,
-    ;; that is test the height of 'x' too, but the bottom of 'x' might be below
-    ;; the bottom of I. In that case they are still considered to be on the same
-    ;; line, so we only consider the top of 'x' (its y location).
-    #;
-    (define (snip-heights snip dc)
-      (define-struct snip-size (start end))
-      (define (get-size snip)
-        (define x (box 0))
-        (define y (box 0))
-        (send this get-snip-location snip x y)
-        (define width (box 0))
-        (define height (box 0))
-        (send snip get-extent dc (unbox x) (unbox y) width height)
-        (make-snip-size (unbox y) (+ (unbox y) (unbox height))))
-      ;; size2 can be merged into size1
-      (define (can-merge? size1 size2)
-        ;; just consider the top of the second snip
-        (and (between (snip-size-start size1)
-                      (snip-size-start size2)
-                      (snip-size-end size1))
-             ;; and ignore its bottom
-             #;
-             (between (snip-size-start size1)
-                      (snip-size-end size2)
-                      (snip-size-end size1))))
-      ;; merge snips heights together for when snips span multiple lines
-      (define (merge-sizes sizes)
-        (match sizes
-          [(list size1 size2 rest ...)
-           (if (can-merge? size1 size2)
-             (merge-sizes (cons size1 rest))
-             (cons size1 (merge-sizes (cons size2 rest))))]
-          [else sizes]))
-
-      ;; get a list of all snips, sort them, merge them
-      (let loop ([all '()]
-                 [snip snip])
-        (if snip
-          (loop (cons (get-size snip) all) (send snip next))
-          (map (lambda (size)
-                 (snip-size-start size))
-               (merge-sizes (remove-duplicates
-                              (sort (reverse all)
-                                    (lambda (a b)
-                                      (< (snip-size-start a)
-                                         (snip-size-start b))))))))))
-
-    ;; not used, just for testing
-    (define (show-all-snips dc)
-      (define snip (send this find-first-snip))
-      (newline)
-      (define (next snip)
-        (when snip
-          (define x (box 0))
-          (define y (box 0))
-          (send this get-snip-location snip x y)
-          #;
-          (printf "Snip ~a at ~a,~a\n" snip (unbox x) (unbox y))
-          (next (send snip next))))
-      (next snip))
-
     ;; a <= b <= c
     (define (between low what high)
       (and (>= what low)
            (<= what high)))
-
-    ;; finds the first item in the sequence for which `ok?' returns true
-    #;
-    (define (find-first sequence ok?)
-      (define-values (more? get) (sequence-generate sequence))
-      (let loop ()
-        (if (more?)
-          (if (ok? (get))
-            #t
-            (loop))
-          #f)))
-
-    ;; true if the `y' location is within the positions specified by the
-    ;; lines `start' and `end'
-    #;
-    (define (ok-height y start end)
-      (define position (find-position 0 y))
-      ;; this is why we need some `break' ability in for loops
-      (find-first (in-range start end)
-        (lambda (line)
-          (define low (line-start-position line))
-          (define high (line-end-position line))
-          (between low position high))))
-
-    ;; lazily reload the snip heights
-    ;; this isn't quite incremental but its better than recalculating
-    ;; on every redraw
-    #;
-    (define/augment (on-insert start length)
-      (set! need-to-recalculate-snips #t)
-      (inner (void) on-insert start length))
-
-    #;
-    (define (get-snip-heights dc)
-      (when need-to-recalculate-snips
-        (set! need-to-recalculate-snips #f)
-        (set! cached-snips (snip-heights (send this find-first-snip) dc)))
-      cached-snips)
 
     ;; set the dc stuff to values we want
     (define (setup-dc dc)
       (send dc set-font (get-style-font))
       (send dc set-text-foreground (make-object color% line-numbers-color)))
 
-    (define (draw-line-numbers dc left top right bottom dx dy)
+    (define (draw-numbers dc top bottom dy start-line end-line)
       (define (draw-text . args)
         (send/apply dc draw-text args))
-      (define old-pen (send dc get-pen))
-      (setup-dc dc)
-      (define start-line (box 0))
-      (define end-line (box 0))
-      (get-visible-line-range start-line end-line #f)
-      (for ([line (in-range (unbox start-line) (add1 (unbox end-line)))])
+      (for ([line (in-range start-line end-line)])
         (define y (line-location line))
         (when (between top y bottom)
-          (draw-text (number->string (add1 line)) 0 (+ dy y))))
+          (draw-text (number->string (add1 line)) 0 (+ dy y)))))
 
-      ;; draw the line between the line numbers and the actual text
-      (define line-x (text-width dc "10000"))
-      (send dc draw-line line-x (+ dy top) line-x (+ dy bottom)))
+    ;; draw the line between the line numbers and the actual text
+    (define (draw-separator dc top bottom dy x)
+      (send dc draw-line x (+ dy top) x (+ dy bottom)))
 
-    #;
     (define (draw-line-numbers dc left top right bottom dx dy)
-      (define (draw-text . args)
-        (send/apply dc draw-text args))
-      (define old-pen (send dc get-pen))
       (setup-dc dc)
-      #;
-      (define-values (font-width font-height baseline space)
-                     (send dc get-text-extent "a"))
-
-      (define heights (get-snip-heights dc))
       (define start-line (box 0))
       (define end-line (box 0))
       (get-visible-line-range start-line end-line #f)
-      (for ([y heights]
-            [line (in-naturals 1)])
-        (when (and (between top y bottom)
-                   (ok-height y (unbox start-line) (add1 (unbox end-line))))
-          (when (between (unbox start-line) (add1 line) (unbox end-line))
-            (printf "y ~a line location ~a\n" y (line-location (sub1 line))))
-          (draw-text (number->string line) 0 (+ dy y))))
 
-      ;; draw the line between the line numbers and the actual text
-      (define line-x (text-width dc "10000"))
-      (send dc draw-line line-x (+ dy top) line-x (+ dy bottom))
-      )
+      ;; draw it!
+      (draw-numbers dc top bottom dy (unbox start-line) (add1 (unbox end-line)))
+      (draw-separator dc top bottom dy (text-width dc "10000")))
 
     (define (text-width dc stuff)
       (define-values (font-width font-height baseline space)
@@ -3936,9 +3801,6 @@ designates the character that triggers autocompletion
             ;;
             ;; save old origin and push it to the right a little bit
             ;; TODO: maybe allow the line numbers to be drawn on the right hand side?
-            (define number-space   "10000")
-            ;; add an extra 0 so it looks nice
-            (define number-space+1 "100000")
             (define-values (x y) (send dc get-origin))
             (set! old-origin-x x)
             (set! old-origin-y y)
