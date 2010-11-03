@@ -44,3 +44,5 @@ Add documentation sections:
 Add syntax exception variant with more information.
 
 Fix syntaxes pinpointed for repetition constraint violations.
+
+Make a #:with-like version of #:defaults (currently #:attr-like).
