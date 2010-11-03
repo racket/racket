@@ -3715,6 +3715,7 @@ designates the character that triggers autocompletion
              get-visible-position-range
              find-position
              line-location
+             line-paragraph
              line-start-position
              line-end-position)
 
@@ -3763,7 +3764,7 @@ designates the character that triggers autocompletion
       (for ([line (in-range start-line end-line)])
         (define y (line-location line))
         (when (between top y bottom)
-          (draw-text (number->string (add1 line)) 0 (+ dy y)))))
+          (draw-text (number->string (add1 (line-paragraph line))) 0 (+ dy y)))))
 
     ;; draw the line between the line numbers and the actual text
     (define (draw-separator dc top bottom dy x)
