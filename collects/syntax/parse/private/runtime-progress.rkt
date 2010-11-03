@@ -12,9 +12,7 @@
          ps-add-unpstruct
          ps-add-opaque
 
-         #|
          ps->stx+index
-         |#
          ps-context-syntax
          ps-difference
 
@@ -86,7 +84,8 @@ Interpretation: Inner PS structures are applied first.
     (match ps
       [(cons (? syntax? stx) _) stx]
       [(cons 'car parent)
-       (let ([d (syntax-e (interp parent))])
+       (let* ([d (interp parent)]
+              [d (if (syntax? d) (syntax-e d) d)])
          (cond [(pair? d) (car d)]
                [(vector? d) (vector->list d)]
                [(box? d) (unbox d)]
