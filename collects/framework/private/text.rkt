@@ -3713,6 +3713,7 @@ designates the character that triggers autocompletion
     (inherit get-visible-line-range
              get-visible-position-range
              find-position
+             line-location
              line-start-position
              line-end-position)
 
@@ -3740,6 +3741,7 @@ designates the character that triggers autocompletion
         (send std get-font)))
 
     ;; get the y position of a snip
+    #;
     (define (get-snip-y snip)
       (define x (box 0))
       (define y (box 0))
@@ -3762,6 +3764,7 @@ designates the character that triggers autocompletion
     ;; that is test the height of 'x' too, but the bottom of 'x' might be below
     ;; the bottom of I. In that case they are still considered to be on the same
     ;; line, so we only consider the top of 'x' (its y location).
+    #;
     (define (snip-heights snip dc)
       (define-struct snip-size (start end))
       (define (get-size snip)
@@ -3825,6 +3828,7 @@ designates the character that triggers autocompletion
            (<= what high)))
 
     ;; finds the first item in the sequence for which `ok?' returns true
+    #;
     (define (find-first sequence ok?)
       (define-values (more? get) (sequence-generate sequence))
       (let loop ()
@@ -3836,6 +3840,7 @@ designates the character that triggers autocompletion
 
     ;; true if the `y' location is within the positions specified by the
     ;; lines `start' and `end'
+    #;
     (define (ok-height y start end)
       (define position (find-position 0 y))
       ;; this is why we need some `break' ability in for loops
@@ -3848,10 +3853,12 @@ designates the character that triggers autocompletion
     ;; lazily reload the snip heights
     ;; this isn't quite incremental but its better than recalculating
     ;; on every redraw
+    #;
     (define/augment (on-insert start length)
       (set! need-to-recalculate-snips #t)
       (inner (void) on-insert start length))
 
+    #;
     (define (get-snip-heights dc)
       (when need-to-recalculate-snips
         (set! need-to-recalculate-snips #f)
@@ -3863,6 +3870,24 @@ designates the character that triggers autocompletion
       (send dc set-font (get-style-font))
       (send dc set-text-foreground (make-object color% line-numbers-color)))
 
+    (define (draw-line-numbers dc left top right bottom dx dy)
+      (define (draw-text . args)
+        (send/apply dc draw-text args))
+      (define old-pen (send dc get-pen))
+      (setup-dc dc)
+      (define start-line (box 0))
+      (define end-line (box 0))
+      (get-visible-line-range start-line end-line #f)
+      (for ([line (in-range (unbox start-line) (add1 (unbox end-line)))])
+        (define y (line-location line))
+        (when (between top y bottom)
+          (draw-text (number->string (add1 line)) 0 (+ dy y))))
+
+      ;; draw the line between the line numbers and the actual text
+      (define line-x (text-width dc "10000"))
+      (send dc draw-line line-x (+ dy top) line-x (+ dy bottom)))
+
+    #;
     (define (draw-line-numbers dc left top right bottom dx dy)
       (define (draw-text . args)
         (send/apply dc draw-text args))
@@ -3880,6 +3905,8 @@ designates the character that triggers autocompletion
             [line (in-naturals 1)])
         (when (and (between top y bottom)
                    (ok-height y (unbox start-line) (add1 (unbox end-line))))
+          (when (between (unbox start-line) (add1 line) (unbox end-line))
+            (printf "y ~a line location ~a\n" y (line-location (sub1 line))))
           (draw-text (number->string line) 0 (+ dy y))))
 
       ;; draw the line between the line numbers and the actual text
@@ -3904,6 +3931,9 @@ designates the character that triggers autocompletion
       (when show-line-numbers?
         (if before?
           (let ()
+            ;; FIXME: Moving the origin and setting the clipping rectangle
+            ;; will probably go away when 'margin's are added to editors
+            ;;
             ;; save old origin and push it to the right a little bit
             ;; TODO: maybe allow the line numbers to be drawn on the right hand side?
             (define number-space   "10000")
