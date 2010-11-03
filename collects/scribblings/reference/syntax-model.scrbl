@@ -575,7 +575,7 @@ certificates}.
 
 The expander's handling of @racket[letrec-values+syntaxes] is similar
 to its handling of @racket[define-syntaxes]. A
-@racket[letrec-values+syntaxes] mist be expanded in an arbitrary phase
+@racket[letrec-values+syntaxes] might be expanded in an arbitrary phase
 level @math{n} (not just 0), in which case the expression for the
 @tech{transformer binding} is expanded at @tech{phase level} @math{n+1}.
 
