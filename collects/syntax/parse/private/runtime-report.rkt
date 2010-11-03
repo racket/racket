@@ -57,12 +57,11 @@ complicated.
 
 ;; report/expectstack : ExpectStack syntax nat -> Report
 (define (report/expectstack es stx index)
-  (let ([top-frame (and (pair? es) (car es))])
-    (cond [(not top-frame)
+  (let ([frame-expect (and (pair? es) (car es))])
+    (cond [(not frame-expect)
            (report "bad syntax" #f)]
           [else
-           (let ([frame-expect (and top-frame (car top-frame))]
-                 [frame-stx
+           (let ([frame-stx
                   (let-values ([(x cx) (stx-list-drop/cx stx stx index)])
                     (datum->syntax cx x cx))])
              (cond [(equal? frame-expect (expect:atom '()))

@@ -40,8 +40,8 @@
                               (cdr result))))
                      ((error)
                       (let ([es
-                             (list* (cons (expect:thing (get-description param ...) #f) stx)
-                                    (cons (expect:message (cadr result)) (caddr result))
+                             (list* (expect:message (cadr result))
+                                    (expect:thing (get-description param ...) #f)
                                     es)])
                         (fh (failure pr es))))))))))
          (define-syntax name

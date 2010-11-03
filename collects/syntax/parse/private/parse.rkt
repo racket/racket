@@ -103,7 +103,7 @@ Conventions:
             (syntax-parameterize ((this-context-syntax
                                    (syntax-rules ()
                                      [(tbs) (ps-context-syntax pr)])))
-              (let ([es (cons (cons (expect:thing description 'transparent?) x) es)]
+              (let ([es (cons (expect:thing description 'transparent?) es)]
                     [pr (if 'transparent? pr (ps-add-opaque pr))])
                 (with ([fail-handler fh0]
                        [cut-prompt cp0])
@@ -288,14 +288,14 @@ Conventions:
         #`(let ([d (if (syntax? x) (syntax-e x) x)])
             (if (equal? d (quote datum))
                 k
-                (fail (failure pr (cons (cons (expect:atom 'datum) x) es)))))]
+                (fail (failure pr (cons(expect:atom 'datum) es)))))]
        [#s(pat:literal attrs literal input-phase lit-phase)
         #`(if (and (identifier? x)
                    (free-identifier=?/phases
                     x input-phase
                     (quote-syntax literal) lit-phase))
               k
-              (fail (failure pr (cons (cons (expect:literal (quote-syntax literal)) x) es))))]
+              (fail (failure pr (cons(expect:literal (quote-syntax literal)) es))))]
        [#s(pat:action attrs action subpattern)
         #'(parse:A x cx action pr es (parse:S x cx subpattern pr es k))]
        [#s(pat:head attrs head tail)
@@ -370,7 +370,7 @@ Conventions:
                   (parse:S datum scx subpattern pr es k))
                 (fail (failure pr es))))]
        [#s(pat:describe attrs description transparent? pattern)
-        #`(let ([es (cons (cons (expect:thing description transparent?) x) es)]
+        #`(let ([es (cons (expect:thing description transparent?) es)]
                 [pr (if 'transparent? pr (ps-add-opaque pr))])
             (parse:S x cx pattern pr es k))]
        [#s(pat:delimit attrs pattern)
@@ -396,7 +396,7 @@ Conventions:
           ;; NOTE: predicate must not assume x (ie, this-syntax) is stx
           #'(if (app-argu predicate x argu)
                 (let-attributes (name-attr ...) k)
-                (let ([es (cons (cons (expect:thing 'description #t) x) es)])
+                (let ([es (cons (expect:thing 'description #t) es)])
                   (fail (failure pr es)))))])]))
 
 ;; (disjunct ???-pattern success (pre:expr ...) (id:id ...)) : expr[Ans]
@@ -437,9 +437,7 @@ Conventions:
                 (let ([pr* (if (syntax? c)
                                (ps-add-stx pr c)
                                pr)]
-                      [es* (cons (cons (expect:message message)
-                                       (if (syntax? c) c x))
-                                 es)])
+                      [es* (cons (expect:message message) es)])
                   (fail (failure pr* es*)))
                 k))]
        [#s(action:parse _ pattern expr)
@@ -492,7 +490,7 @@ Conventions:
     [(parse:H x cx rest-x rest-cx rest-pr head pr es k)
      (syntax-case #'head ()
        [#s(hpat:describe _ description transparent? pattern)
-        #`(let ([es (cons (cons (expect:thing description transparent?) x) es)])
+        #`(let ([es (cons (expect:thing description transparent?) es)])
             (parse:H x cx rest-x rest-cx rest-pr pattern pr es k))]
        [#s(hpat:var _attrs name parser argu (nested-a ...) attr-count commit?)
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
@@ -669,7 +667,7 @@ Conventions:
                                   head es loop-k)
                         ...)
                    (cond [(< rel-rep (rep:min-number rel-repc))
-                          (let ([es (cons (cons (expectation-of-reps/too-few rel-rep rel-repc) dx) es)])
+                          (let ([es (cons (expectation-of-reps/too-few rel-rep rel-repc) es)])
                             (fail (failure loop-pr es)))]
                          ...
                          [else
@@ -714,7 +712,7 @@ Conventions:
          [_  #`(parse:H x cx x* cx* pr* head pr es
                         (if (< rep (rep:max-number repc))
                             (let ([rep (add1 rep)]) k*)
-                            (let ([es (cons (cons (expectation-of-reps/too-many rep repc) x*) es)])
+                            (let ([es (cons (expectation-of-reps/too-many rep repc) es)])
                               (fail (failure pr* es)))))]))]))
 
 ;; (rep:initial-value RepConstraint) : expr

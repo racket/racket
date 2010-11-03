@@ -29,10 +29,7 @@
 ;; FIXME: add phase to expect:literal
 
 #|
-An ExpectStack is (listof (cons Expect syntax))
-
-FIXME: (cons Expect syntax) -> struct instead?
-FIXME: replace syntax with progress (better cdr handling)
+An ExpectStack is (listof Expect)
 
 An Expect is one of
   - (make-expect:thing string boolean)
@@ -85,21 +82,21 @@ The *-marked variants can only occur at the top of the stack.
     (let loop ([es es])
       (match es
         ['() '()]
-        [(cons (cons (expect:thing description '#f) stx) rest-es)
+        [(cons (expect:thing description '#f) rest-es)
          ;; Tricky! If multiple opaque frames, multiple "returns",
          ;; but innermost one called first, so jumps past the rest.
          (return (cons (car es) (loop rest-es)))]
-        [(cons expect+stx rest-es)
-         (cons expect+stx (loop rest-es))]))))
+        [(cons expect rest-es)
+         (cons expect (loop rest-es))]))))
 
 ;; filter-expectstack : ExpectStack -> ExpectStack
 ;; Eliminates missing (ie, #f) messages and descriptions
 (define (filter-expectstack es)
   (filter (lambda (expect)
             (match expect
-              [(cons (expect:thing '#f _) _)
+              [(expect:thing '#f _)
                #f]
-              [(cons (expect:message '#f) _)
+              [(expect:message '#f)
                #f]
               [_ #t]))
           es))
@@ -139,13 +136,10 @@ So we go with option 2.
   (define (simplify/check-leafs ress)
     (let ([ress (simplify ress)])
       (cond [(andmap singleton? ress)
-             ;; Assume the syntax parts are the same
-             (let* ([frames (map car ress)]
-                    [frame-stx (cdr (car frames))])
-               (list (list (cons (if (singleton? frames)
-                                     (car (car frames))
-                                     (expect:disj (map car frames)))
-                                 frame-stx))))]
+             (let* ([frames (map car ress)])
+               (list (list (if (singleton? frames)
+                               (car frames)
+                               (expect:disj frames)))))]
             [else ress])))
   ;; singleton? : list -> boolean
   (define (singleton? res)

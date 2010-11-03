@@ -96,15 +96,16 @@ Interpretation: Inner PS structures are applied first.
          (stx-cdr stx))]
       [(cons 'post parent)
        (interp parent)]))
-  (match ps
-    [(cons (? syntax? stx) _)
-     (values stx 0)]
-    [(cons 'car parent)
-     (values (interp ps) 0)]
-    [(cons (? exact-positive-integer? n) parent)
-     (values (interp parent) n)]
-    [(cons 'post parent)
-     (ps->stx+index parent)]))
+  (let ([ps (ps-truncate-opaque ps)])
+    (match ps
+      [(cons (? syntax? stx) _)
+       (values stx 0)]
+      [(cons 'car parent)
+       (values (interp ps) 0)]
+      [(cons (? exact-positive-integer? n) parent)
+       (values (interp parent) n)]
+      [(cons 'post parent)
+       (ps->stx+index parent)])))
 
 ;; ps-difference : PS PS -> nat
 ;; Returns N s.t. B = (ps-add-cdr^N A)
