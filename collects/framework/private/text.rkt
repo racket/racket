@@ -3724,7 +3724,7 @@ designates the character that triggers autocompletion
     (init-field [show-line-numbers? #t])
 
     (define (number-space)
-      (number->string (max (* 10 (last-line)) 10)))
+      (number->string (max (* 10 (last-line)) 100)))
     ;; add an extra 0 so it looks nice
     (define (number-space+1) (string-append (number-space) "0"))
 
