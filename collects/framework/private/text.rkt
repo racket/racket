@@ -3713,6 +3713,7 @@ designates the character that triggers autocompletion
     (super-new)
     (inherit get-visible-line-range
              get-visible-position-range
+             last-line
              find-position
              line-location
              line-paragraph
@@ -3722,10 +3723,10 @@ designates the character that triggers autocompletion
     (init-field [line-numbers-color "black"])
     (init-field [show-line-numbers? #t])
 
-    ;; maybe make this a configurable field?
-    (define number-space   "10000")
+    (define (number-space)
+      (number->string (max (* 10 (last-line)) 10)))
     ;; add an extra 0 so it looks nice
-    (define number-space+1 (string-append number-space "0"))
+    (define (number-space+1) (string-append (number-space) "0"))
 
     (define cached-snips (list))
     (define need-to-recalculate-snips #f)
@@ -3778,7 +3779,7 @@ designates the character that triggers autocompletion
 
       ;; draw it!
       (draw-numbers dc top bottom dy (unbox start-line) (add1 (unbox end-line)))
-      (draw-separator dc top bottom dy (text-width dc "10000")))
+      (draw-separator dc top bottom dy (text-width dc (number-space))))
 
     (define (text-width dc stuff)
       (define-values (font-width font-height baseline space)
@@ -3808,7 +3809,7 @@ designates the character that triggers autocompletion
             (set! old-clipping (send dc get-clipping-region))
             (setup-dc dc)
             (define-values (font-width font-height baseline space)
-                           (send dc get-text-extent number-space))
+                           (send dc get-text-extent (number-space)))
             (define clipped (make-object region% dc))
             (define all (make-object region% dc))
             (define copy (make-object region% dc))
@@ -3820,7 +3821,7 @@ designates the character that triggers autocompletion
               (send copy union all))
             (send clipped set-rectangle
                   0 (+ dy top)
-                  (text-width dc number-space+1)
+                  (text-width dc (number-space+1))
                   (- bottom top))
             #;
             (define (print-region name region)
@@ -3828,7 +3829,7 @@ designates the character that triggers autocompletion
               (printf "~a: ~a, ~a, ~a, ~a\n" name a b c d))
             (send copy subtract clipped)
             (send dc set-clipping-region copy)
-            (send dc set-origin (+ x (text-width dc number-space+1)) y)
+            (send dc set-origin (+ x (text-width dc (number-space+1))) y)
             )
           (begin
             ;; rest the origin and draw the line numbers
