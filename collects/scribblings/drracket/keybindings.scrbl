@@ -175,8 +175,14 @@ as the @tech{definitions window} plus a few more:
 
 @itemize[
 @keybinding['("C-\\" "M-\\")]{traces backwards from the insertion
-point, looking for a backslash followed by a @index["LaTeX"]{LaTeX} macro name; if one is
-found, it replaces the backslash and the macro's name with the keybinding.
+point, looking for a backslash followed by a @index["LaTeX"]{LaTeX} 
+macro name or a prefix of such a name. If a macro name is found,
+it replaces the backslash and the name with the corresponding key in
+the table below; if a (proper) prefix @math{p} is found, it replaces @math{p} 
+with the longest common prefix of all macro names that have @math{p} as a 
+prefix (unless there is only one such name, in which case it behaves as if 
+@math{p} were a complete macro name).
+
 These are the currently supported macro names and the keys they map into:
 @(make-table
   '()

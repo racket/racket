@@ -7,6 +7,7 @@
          mzlib/match
          "../preferences.ss"
          mrlib/tex-table
+         (only-in srfi/13 string-prefix? string-prefix-length)
          "sig.ss")
 
   (import mred^
@@ -984,17 +985,32 @@
            
            [TeX-compress
             (let* ([biggest (apply max (map (λ (x) (string-length (car x))) tex-shortcut-table))])
+              (define (meet s t)
+                (substring s 0 (string-prefix-length s t 0)))
               (λ (text event)
                 (let ([pos (send text get-start-position)])
                   (when (= pos (send text get-end-position))
                     (let ([slash (send text find-string "\\" 'backward pos (max 0 (- pos biggest 1)))])
                       (when slash
-                        (let ([to-replace (assoc (send text get-text slash pos) tex-shortcut-table)])
-                          (when to-replace
-                            (send text begin-edit-sequence)
-                            (send text delete (- slash 1) pos)
-                            (send text insert (cadr to-replace))
-                            (send text end-edit-sequence)))))))))]
+                        (define entered (send text get-text slash pos))
+                        (define completions
+                          (filter (λ (shortcut) (string-prefix? entered (first shortcut)))
+                                  tex-shortcut-table))
+                        (unless (empty? completions)
+                          (define-values (replacement partial?)
+                            (let ([complete-match 
+                                   (findf (λ (shortcut) (equal? entered (first shortcut)))
+                                          completions)])
+                              (if complete-match
+                                  (values (second complete-match) #f)
+                                  (if (= 1 (length completions))
+                                      (values (second (first completions)) #f)
+                                      (let ([tex-names (map first completions)])
+                                        (values (foldl meet (first tex-names) (rest tex-names)) #t))))))
+                          (send text begin-edit-sequence)
+                          (send text delete (if partial? slash (- slash 1)) pos)
+                          (send text insert replacement)
+                          (send text end-edit-sequence))))))))]
            
            [greek-letters "αβγδεζηθι κλμνξοπρςστυφχψω"]
            [Greek-letters "ΑΒΓΔΕΖΗΘΙ ΚΛΜΝΞΟΠΡ ΣΤΥΦΧΨΩ"]) ;; don't have a capital ς, just comes out as \u03A2 (or junk) 

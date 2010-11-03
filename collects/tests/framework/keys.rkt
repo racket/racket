@@ -105,7 +105,25 @@
                     (make-buff-spec "abc" 2 2)
                     (list '((#\f control)) '((right)))
                     (list '((#\f control)) '((right)))
-                    (list '((#\f control)) '((right))))))
+                    (list '((#\f control)) '((right))))
+     
+     ;; TeX-compress tests
+     (make-key-spec/allplatforms 
+      (make-buff-spec "\\ome" 4 4)
+      (make-buff-spec "ω" 1 1)
+      '(((#\\ control))))
+     (make-key-spec/allplatforms 
+      (make-buff-spec "\\sub" 4 4)
+      (make-buff-spec "\\subset" 7 7)
+      '(((#\\ control))))
+     (make-key-spec/allplatforms 
+      (make-buff-spec "\\subset" 7 7)
+      (make-buff-spec "⊂" 1 1)
+      '(((#\\ control))))
+     (make-key-spec/allplatforms 
+      (make-buff-spec "\\sub" 4 4)
+      (make-buff-spec "⊆" 1 1)
+      '(((#\\ control) (#\e) (#\\ control))))))
   
   (define (build-open-bracket-spec str pos char)
     (make-key-spec (make-buff-spec str pos pos)
