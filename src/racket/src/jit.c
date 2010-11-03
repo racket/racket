@@ -251,6 +251,7 @@ typedef struct {
 
 #define mz_RECORD_STATUS(s) (jitter->status_at_ptr = _jit.x.pc, jitter->reg_status = (s))
 #define mz_CURRENT_STATUS() ((jitter->status_at_ptr == _jit.x.pc) ? jitter->reg_status : 0)
+#define mz_CLEAR_STATUS() (jitter->reg_status = 0)
 
 #define mz_RS_R0_HAS_RUNSTACK0 0x1
 
@@ -9702,6 +9703,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
     CHECK_LIMIT();
     mz_flostack_restore(jitter, flostack, flostack_pos, !for_branch, 1);
     FOR_LOG(--jitter->log_depth);
+    mz_CLEAR_STATUS();
     return v;
   }
 
@@ -9790,6 +9792,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
     }
 
     jitter->pushed_marks = save_pushed_marks;
+    mz_CLEAR_STATUS();
 
     END_JIT_DATA(21);
   }
