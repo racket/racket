@@ -1412,7 +1412,9 @@
          build-color/make-color
          build-color/color
          build-pen/make-pen
-         build-pen/pen)
+         build-pen/pen
+         
+         render-image)
 
 (provide/contract
  [np-atomic-bb (-> np-atomic-shape? (values real? real? real? real?))]

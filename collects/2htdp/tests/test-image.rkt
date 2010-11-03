@@ -36,7 +36,9 @@
                   crop?
                   normalized-shape?
                   image-snip->image
-                  to-img)
+                  to-img
+                  render-normalized
+                  render-image)
          (only-in "../private/image-more.ss" 
                   bring-between
                   swizzle)
@@ -2096,6 +2098,19 @@
 
 (define-namespace-anchor anchor)
 
+;; scale-down : image -> image
+;; scale image so that it is at most 10000 pixels in area
+(define (scale-down img)
+  (let* ([w (image-width img)]
+         [h (image-height img)]
+         [s (* w h)]
+         [max-s (sqr 100)])
+    (if (< s max-s)
+        img
+        (scale/xy (/ (sqrt max-s) w) 
+                  (/ (sqrt max-s) h)
+                  img))))
+
 (define (image-struct-count obj)
   (let ([counts (make-hash)])
     (let loop ([obj obj])
@@ -2117,7 +2132,6 @@
       (error 'test-image.ss "found differing sizes for ~s:\n  ~s\n  ~s" 
              img-sexp raw-size norm-size))))
 
-
 (time
  (redex-check
   2htdp/image
@@ -2126,6 +2140,34 @@
    (term image)
    (to-img (eval (term image) (namespace-anchor->namespace anchor))))
   #:attempts 1000))
+
+
+(let ()
+  (define w 200)
+  (define h 200)
+  (define bm1 (make-object bitmap% w h))
+  (define bm2 (make-object bitmap% w h))
+  (define bytes1 (make-bytes (* w h 4) 0))
+  (define bytes2 (make-bytes (* w h 4) 0))
+  (define bdc1 (make-object bitmap-dc% bm1))
+  (define bdc2 (make-object bitmap-dc% bm2))
+  
+  (define (render-and-compare img)
+    (send bdc1 clear)
+    (send bdc2 clear)
+    (parameterize ([render-normalized #f])
+      (render-image img bdc1 0 0))
+    (parameterize ([render-normalized #t])
+      (render-image img bdc2 0 0))
+    (send bdc1 get-argb-pixels 0 0 w h bytes1)
+    (send bdc2 get-argb-pixels 0 0 w h bytes2)
+    (equal? bytes1 bytes2))
+  (time
+   (redex-check
+    2htdp/image
+    image
+    (render-and-compare (scale-down (eval (term image) (namespace-anchor->namespace anchor))))
+    #:attempts 100)))
 
 (define (test-save/load img fn)
   (let ([t1 (new text%)]
@@ -2137,18 +2179,6 @@
           [s2 (send t2 find-first-snip)])
       (equal? s1 s2))))
 
-;; scale-down : image -> image
-;; scale image so that it is at most 10000 pixels in area
-(define (scale-down img)
-  (let* ([w (image-width img)]
-         [h (image-height img)]
-         [s (* w h)]
-         [max-s (sqr 100)])
-    (if (< s max-s)
-        img
-        (scale/xy (/ (sqrt max-s) w) 
-                  (/ (sqrt max-s) h)
-                  img))))
 
 #;
 (time

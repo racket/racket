@@ -195,6 +195,7 @@ has been moved out).
 ;                         ;;;;                      
 
 (define skip-image-equality-fast-path (make-parameter #f))
+(define render-normalized (make-parameter #f))
 
 (define image%
   (class* snip% (equal<%> image<%>)
@@ -581,7 +582,9 @@ has been moved out).
       [(is-a? image image-snip%)
        (send dc draw-bitmap (send image get-bitmap) dx dy)]
       [else
-       (render-normalized-shape (send image get-normalized-shape) dc dx dy)
+       (if (render-normalized)
+           (render-normalized-shape (send image get-normalized-shape) dc dx dy)
+           (render-arbitrary-shape (send image get-shape) dc dx dy))
        (let ([ph (send image get-pinhole)])
          (when ph
            (let* ([px (point-x ph)]
@@ -630,24 +633,103 @@ has been moved out).
 (define (render-cn-or-simple-shape shape dc dx dy)
   (cond
     [(crop? shape)
-     (let ([points (crop-points shape)])
-       (cond
-         [(equal? points (last-cropped-points))
-          (render-normalized-shape (crop-shape shape) dc dx dy)]
-         [else
-          (let ([old-region (send dc get-clipping-region)]
-                [new-region (new region% [dc dc])]
-                [path (polygon-points->path points)])
-            (send new-region set-path path dx dy)
-            (when old-region (send new-region intersect old-region))
-            (send dc set-clipping-region new-region)
-            (parameterize ([last-cropped-points points])
-              (render-normalized-shape (crop-shape shape) dc dx dy))
-            (send dc set-clipping-region old-region))]))]
+     (render-cropped-shape (crop-points shape) (crop-shape shape) (λ (s) (render-normalized-shape s dc dx dy)) dc dx dy)]
     [else
      (render-simple-shape shape dc dx dy)]))
 
+(define (render-cropped-shape points inner-shape continue dc dx dy)
+  (cond
+    [(equal? points (last-cropped-points))
+     (continue inner-shape)]
+    [else
+     (let ([old-region (send dc get-clipping-region)]
+           [new-region (new region% [dc dc])]
+           [path (polygon-points->path points)])
+       (send new-region set-path path dx dy)
+       (when old-region (send new-region intersect old-region))
+       (send dc set-clipping-region new-region)
+       (parameterize ([last-cropped-points points])
+         (continue inner-shape))
+       (send dc set-clipping-region old-region))]))
+
 (define (render-simple-shape simple-shape dc dx dy)
+  (cond
+    [(translate? simple-shape)
+     (let ([dx (+ dx (translate-dx simple-shape))]
+           [dy (+ dy (translate-dy simple-shape))]
+           [np-atomic-shape (translate-shape simple-shape)])
+       (render-np-atomic-shape np-atomic-shape
+                               dc
+                               dx dy))]
+    [else
+     (render-poly/line-segment/curve-segment simple-shape dc dx dy)]))
+
+(define (render-arbitrary-shape shape dc dx dy)
+  (let loop ([shape shape]
+             [dx dx]
+             [dy dy]
+             [x-scale 1]
+             [y-scale 1])
+    (define (scale-point p)
+      (make-point (* x-scale (point-x p))
+                  (* y-scale (point-y p))))
+    (cond
+      [(translate? shape)
+       (loop (translate-shape shape)
+             (+ dx (* x-scale (translate-dx shape)))
+             (+ dy (* y-scale (translate-dy shape)))
+             x-scale
+             y-scale)]
+      [(scale? shape)
+       (loop (scale-shape shape)
+             dx
+             dy
+             (* x-scale (scale-x shape))
+             (* y-scale (scale-y shape)))]
+      [(overlay? shape)
+       (loop (overlay-bottom shape) dx dy x-scale y-scale)
+       (loop (overlay-top shape) dx dy x-scale y-scale)]
+      [(crop? shape)
+       (render-cropped-shape
+        (map scale-point (crop-points shape))
+        (crop-shape shape)
+        (λ (s) (loop s dx dy x-scale y-scale)) dc dx dy)]
+      [(polygon? shape)
+       (let* ([this-one 
+               (make-polygon (map scale-point (polygon-points shape))
+                             (polygon-mode shape)
+                             (scale-color (polygon-color shape) x-scale y-scale))])
+         (render-poly/line-segment/curve-segment this-one dc dx dy))]
+      [(line-segment? shape)
+       (let ([this-one 
+              (make-line-segment (scale-point (line-segment-start shape))
+                                 (scale-point (line-segment-end shape))
+                                 (scale-color (line-segment-color shape) x-scale y-scale))])
+         (render-poly/line-segment/curve-segment this-one dc dx dy))]
+      [(curve-segment? shape)
+       ;; the pull is multiplied by the distance 
+       ;; between the two points when it is drawn,
+       ;; so we don't need to scale it here
+       (let ([this-one 
+              (make-curve-segment (scale-point (curve-segment-start shape))
+                                  (curve-segment-s-angle shape)
+                                  (curve-segment-s-pull shape)
+                                  (scale-point (curve-segment-end shape))
+                                  (curve-segment-e-angle shape)
+                                  (curve-segment-e-pull shape)
+                                  (scale-color (curve-segment-color shape) x-scale y-scale))])
+         (render-poly/line-segment/curve-segment this-one dc dx dy))]
+      [(or (bitmap? shape) (np-atomic-shape? shape))
+       (let* ([shape (if (bitmap? shape) 
+                         (make-flip #f shape)
+                         shape)]
+              [this-one (scale-np-atomic x-scale y-scale shape)])
+         (render-np-atomic-shape this-one dc dx dy))]
+      [else 
+       (error 'normalize-shape "unknown shape ~s\n" shape)])))
+
+(define/contract (render-poly/line-segment/curve-segment simple-shape dc dx dy)
+  (-> (or/c polygon? line-segment? curve-segment?) any/c any/c any/c void?)
   (cond
     [(polygon? simple-shape)
      (let ([mode (polygon-mode simple-shape)]
@@ -695,54 +777,52 @@ has been moved out).
        (send dc set-pen (mode-color->pen 'outline (curve-segment-color simple-shape)))
        (send dc set-brush "black" 'transparent)
        (send dc set-smoothing 'smoothed)
-       (send dc draw-path path dx dy))]
-    [else
-     (let ([dx (+ dx (translate-dx simple-shape))]
-           [dy (+ dy (translate-dy simple-shape))]
-           [np-atomic-shape (translate-shape simple-shape)])
-       (cond
-         [(ellipse? np-atomic-shape)
-          (let* ([path (new dc-path%)]
-                 [ew (ellipse-width np-atomic-shape)]
-                 [eh (ellipse-height np-atomic-shape)]
-                 [θ (degrees->radians (ellipse-angle np-atomic-shape))]
-                 [color (ellipse-color np-atomic-shape)]
-                 [mode (ellipse-mode np-atomic-shape)])
-            (let-values ([(rotated-width rotated-height) (ellipse-rotated-size ew eh θ)])
-              (send path ellipse 0 0 ew eh)
-              (send path translate (- (/ ew 2)) (- (/ eh 2)))
-              (send path rotate θ)
-              (send dc set-pen (mode-color->pen mode color))
-              (send dc set-brush (mode-color->brush mode color))
-              (send dc set-smoothing (mode-color->smoothing mode color))
-              (send dc draw-path path dx dy)))]
-         [(flip? np-atomic-shape) 
-          (let ([bm (get-rendered-bitmap np-atomic-shape)]) 
-            (send dc draw-bitmap 
-                  bm
-                  (- dx (/ (send bm get-width) 2))
-                  (- dy (/ (send bm get-height) 2))
-                  'solid
-                  (send the-color-database find-color "black")
-                  (get-rendered-mask np-atomic-shape)))]
-         [(text? np-atomic-shape)
-          (let ([θ (degrees->radians (text-angle np-atomic-shape))]
-                [font (send dc get-font)])
-            (send dc set-font (text->font np-atomic-shape))
-            (let ([color (get-color-arg (text-color np-atomic-shape))])
-              (send dc set-text-foreground 
-                    (cond
-                      [(string? color)
-                       (or (send the-color-database find-color color)
-                           (send the-color-database find-color "black"))]
-                      [else color])))
-            (let-values ([(w h _1 _2) (send dc get-text-extent (text-string np-atomic-shape))])
-              (let ([p (- (make-rectangular dx dy)
-                          (* (make-polar 1 (- θ)) (make-rectangular (/ w 2) (/ h 2))))])
-                (send dc draw-text (text-string np-atomic-shape) 
-                      (real-part p)
-                      (imag-part p) 
-                      #f 0 θ))))]))]))
+       (send dc draw-path path dx dy))]))
+
+(define (render-np-atomic-shape np-atomic-shape dc dx dy)
+  (cond
+    [(ellipse? np-atomic-shape)
+     (let* ([path (new dc-path%)]
+            [ew (ellipse-width np-atomic-shape)]
+            [eh (ellipse-height np-atomic-shape)]
+            [θ (degrees->radians (ellipse-angle np-atomic-shape))]
+            [color (ellipse-color np-atomic-shape)]
+            [mode (ellipse-mode np-atomic-shape)])
+       (let-values ([(rotated-width rotated-height) (ellipse-rotated-size ew eh θ)])
+         (send path ellipse 0 0 ew eh)
+         (send path translate (- (/ ew 2)) (- (/ eh 2)))
+         (send path rotate θ)
+         (send dc set-pen (mode-color->pen mode color))
+         (send dc set-brush (mode-color->brush mode color))
+         (send dc set-smoothing (mode-color->smoothing mode color))
+         (send dc draw-path path dx dy)))]
+    [(flip? np-atomic-shape) 
+     (let ([bm (get-rendered-bitmap np-atomic-shape)]) 
+       (send dc draw-bitmap 
+             bm
+             (- dx (/ (send bm get-width) 2))
+             (- dy (/ (send bm get-height) 2))
+             'solid
+             (send the-color-database find-color "black")
+             (get-rendered-mask np-atomic-shape)))]
+    [(text? np-atomic-shape)
+     (let ([θ (degrees->radians (text-angle np-atomic-shape))]
+           [font (send dc get-font)])
+       (send dc set-font (text->font np-atomic-shape))
+       (let ([color (get-color-arg (text-color np-atomic-shape))])
+         (send dc set-text-foreground 
+               (cond
+                 [(string? color)
+                  (or (send the-color-database find-color color)
+                      (send the-color-database find-color "black"))]
+                 [else color])))
+       (let-values ([(w h _1 _2) (send dc get-text-extent (text-string np-atomic-shape))])
+         (let ([p (- (make-rectangular dx dy)
+                     (* (make-polar 1 (- θ)) (make-rectangular (/ w 2) (/ h 2))))])
+           (send dc draw-text (text-string np-atomic-shape) 
+                 (real-part p)
+                 (imag-part p) 
+                 #f 0 θ))))]))
 
 (define (polygon-points->path points)
   (let ([path (new dc-path%)])
@@ -1064,6 +1144,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          save-image-as-bitmap
          
          skip-image-equality-fast-path
+         render-normalized
          
          scale-np-atomic
          
