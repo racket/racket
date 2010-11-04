@@ -3722,6 +3722,9 @@ designates the character that triggers autocompletion
 
     (init-field [line-numbers-color "black"])
     (init-field [show-line-numbers? #t])
+    ;; whether the numbers are aligned on the left or right
+    ;; only two values should be 'left or 'right
+    (init-field [alignment 'right])
 
     (define (number-space)
       (number->string (max (* 10 (last-line)) 100)))
@@ -3762,10 +3765,21 @@ designates the character that triggers autocompletion
     (define (draw-numbers dc top bottom dy start-line end-line)
       (define (draw-text . args)
         (send/apply dc draw-text args))
+
+      (define right-space (text-width dc (number-space)))
+      (define single-space (text-width dc "0"))
+
       (for ([line (in-range start-line end-line)])
         (define y (line-location line))
         (when (between top y bottom)
-          (draw-text (number->string (add1 (line-paragraph line))) 0 (+ dy y)))))
+          (define view (number->string (add1 (line-paragraph line))))
+          (define final-x
+            (case alignment
+              [(left) 0]
+              [(right) (- right-space (text-width dc view) single-space)]
+              [else 0]))
+          (define final-y (+ dy y))
+          (draw-text view final-x final-y))))
 
     ;; draw the line between the line numbers and the actual text
     (define (draw-separator dc top bottom dy x)
