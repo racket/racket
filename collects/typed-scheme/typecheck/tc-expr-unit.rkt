@@ -21,6 +21,17 @@
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ check-subforms^)
 (export tc-expr^)
 
+;; Is the number a fixnum on all the platforms Racket supports?
+;; This check is done at compile time to typecheck literals.
+;; Since a zo file compiled on a 64-bit system can be used on 32-bit
+;; systems, we can't use the host fixnum? predicate, or large 64-bit
+;; fixnums will typecheck as fixnums but not be actual fixnums on the
+;; target system. In combination with fixnum typed optimizations, bad
+;; things could happen.
+(define (portable-fixnum? n)
+  (and (exact-integer? n)
+       (< n (expt 2 31))))
+
 ;; return the type of a literal value
 ;; scheme-value -> type
 (define (tc-literal v-stx [expected #f])
@@ -34,9 +45,9 @@
     [i:boolean (-val (syntax-e #'i))]
     [i:identifier (-val (syntax-e #'i))]
     [0 -Zero]
-    [(~var i (3d (conjoin number? fixnum? positive?))) -PositiveFixnum]
-    [(~var i (3d (conjoin number? fixnum? negative?))) -NegativeFixnum]
-    [(~var i (3d (conjoin number? fixnum?))) -Fixnum]
+    [(~var i (3d (conjoin number? portable-fixnum? positive?))) -PositiveFixnum]
+    [(~var i (3d (conjoin number? portable-fixnum? negative?))) -NegativeFixnum]
+    [(~var i (3d (conjoin number? portable-fixnum?))) -Fixnum]
     [(~var i (3d exact-positive-integer?)) -ExactPositiveInteger]
     [(~var i (3d exact-nonnegative-integer?)) -ExactNonnegativeInteger]
     [(~var i (3d exact-integer?)) -Integer]

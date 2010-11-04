@@ -174,6 +174,9 @@
 (define -ExactPositiveInteger
   (make-Base 'Exact-Positive-Integer #'exact-positive-integer?))
 
+;; We can safely use the fixnum? prediate here, unlike in tc-expr-unit.
+;; The fixnum? here will be part of the generated contracts, which run
+;; on the target system, so we're safe.
 (define -PositiveFixnum
   (make-Base 'Positive-Fixnum #'(and/c number? fixnum? positive?)))
 (define -NegativeFixnum
