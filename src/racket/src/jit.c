@@ -4796,8 +4796,12 @@ static int can_fast_double(int arith, int cmp, int two_args)
 #define jit_movr_d_rel(rd, rs)        jit_movr_d(rd, rs)
 #define jit_movr_d_fppush(rd, rs)        jit_movr_d(rd, rs)
 #define R0_FP_ADJUST(x) /* empty */
+#define JIT_FPR_0(r) JIT_FPR(r)
+#define JIT_FPR_1(r) JIT_FPR(r)
 #else
 #define R0_FP_ADJUST(x) x
+#define JIT_FPR_0(r) JIT_FPR0
+#define JIT_FPR_1(r) JIT_FPR1
 #endif
 
 #ifdef CAN_INLINE_ALLOC
@@ -4831,7 +4835,7 @@ static int generate_unboxing(mz_jit_state *jitter, int target)
 {
   int fpr0;
 
-  fpr0 = JIT_FPR(jitter->unbox_depth);
+  fpr0 = JIT_FPR_0(jitter->unbox_depth);
   jit_ldxi_d_fppush(fpr0, target, &((Scheme_Double *)0x0)->double_val);  
   jitter->unbox_depth++;
 
@@ -4904,8 +4908,8 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
        right with stacks, that means pushing the second argument first. */
     int fpr1, fpr0;
 
-    fpr0 = JIT_FPR(jitter->unbox_depth);
-    fpr1 = JIT_FPR(1+jitter->unbox_depth);
+    fpr0 = JIT_FPR_0(jitter->unbox_depth);
+    fpr1 = JIT_FPR_1(1+jitter->unbox_depth);
 
     if (two_args) {
       if (!unboxed)
@@ -5093,13 +5097,13 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
         mz_rs_sync(); /* needed if arguments were unboxed */
         generate_alloc_double(jitter, 0);
         CHECK_LIMIT();
- #if defined(MZ_USE_JIT_I386)
+#if defined(MZ_USE_JIT_I386)
         if (need_post_pop)
           FSTPr(0);
 #endif
       } else if (unboxed_result) {
         jitter->unbox_depth++;
- #if defined(MZ_USE_JIT_I386)
+#if defined(MZ_USE_JIT_I386)
         if (need_post_pop) {
           FXCHr(1);
           FSTPr(0);
@@ -5368,7 +5372,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 #ifdef USE_FLONUM_UNBOXING
           int aoffset;
           int fpr0;
-          fpr0 = JIT_FPR(jitter->unbox_depth);
+          fpr0 = JIT_FPR_0(jitter->unbox_depth);
           aoffset = JIT_FRAME_FLONUM_OFFSET - (jitter->flostack_offset * sizeof(double));
           jit_ldxi_d_fppush(fpr0, JIT_FP, aoffset);
           mz_flostack_restore(jitter, flostack, flopos, 1, 1);
@@ -6051,7 +6055,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
             } else if (arith == 12) {
               /* exact->inexact */
               int fpr0;
-              fpr0 = JIT_FPR(jitter->unbox_depth);
+              fpr0 = JIT_FPR_0(jitter->unbox_depth);
               jit_rshi_l(JIT_R0, JIT_R0, 1);
               jit_extr_l_d_fppush(fpr0, JIT_R0);
               CHECK_LIMIT();
@@ -7812,7 +7816,7 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
     } else {
       int fpr0;
-      fpr0 = JIT_FPR(jitter->unbox_depth);
+      fpr0 = JIT_FPR_0(jitter->unbox_depth);
       jit_ldxr_d_fppush(fpr0, JIT_R0, JIT_V1);
       if (unbox_flonum)
         jitter->unbox_depth++;
@@ -8399,7 +8403,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       }
 
       if (jitter->unbox)
-        fpr0 = JIT_FPR(jitter->unbox_depth);
+        fpr0 = JIT_FPR_0(jitter->unbox_depth);
       else
         fpr0 = JIT_FPR0;
 
@@ -9360,7 +9364,7 @@ static int generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int local
   offset = JIT_FRAME_FLONUM_OFFSET - (offset * sizeof(double));
   if (jitter->unbox) {
     int fpr0;
-    fpr0 = JIT_FPR(jitter->unbox_depth);
+    fpr0 = JIT_FPR_0(jitter->unbox_depth);
     jit_ldxi_d_fppush(fpr0, JIT_FP, offset);
     jitter->unbox_depth++;
   } else {
@@ -11143,7 +11147,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         d = 0.0;
       }
 
-      fpr0 = JIT_FPR(jitter->unbox_depth);
+      fpr0 = JIT_FPR_0(jitter->unbox_depth);
       mz_movi_d_fppush(fpr0, d, target);
       jitter->unbox_depth++;
 
