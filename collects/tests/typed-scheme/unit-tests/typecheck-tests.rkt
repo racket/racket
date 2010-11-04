@@ -146,6 +146,12 @@
          N]
         (tc-e/t (if (let ([y 12]) y) 3 4) -PositiveFixnum)
         (tc-e/t 3 -PositiveFixnum)
+        (tc-e/t 100 -PositiveFixnum)
+        (tc-e/t -100 -NegativeFixnum)
+        (tc-e/t 2147483647 -PositiveFixnum)
+        (tc-e/t -2147483647 -NegativeFixnum)
+        (tc-e/t 2147483648 -Pos)
+        (tc-e/t -2147483648 -Integer)
         (tc-e/t "foo" -String)
         (tc-e (+ 3 4) -Pos)
         [tc-e/t (lambda: () 3) (t:-> -PositiveFixnum : -true-lfilter)]

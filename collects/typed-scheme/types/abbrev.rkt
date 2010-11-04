@@ -174,13 +174,12 @@
 (define -ExactPositiveInteger
   (make-Base 'Exact-Positive-Integer #'exact-positive-integer?))
 
-;; We can safely use the fixnum? prediate here, unlike in tc-expr-unit.
-;; The fixnum? here will be part of the generated contracts, which run
-;; on the target system, so we're safe.
+;; We're generating a reference to fixnum? rather than calling it, so
+;; we're safe from fixnum size issues on different platforms.
 (define -PositiveFixnum
-  (make-Base 'Positive-Fixnum #'(and/c number? fixnum? positive?)))
+  (make-Base 'Positive-Fixnum #'(and/c fixnum? positive?)))
 (define -NegativeFixnum
-  (make-Base 'Negative-Fixnum #'(and/c number? fixnum? negative?)))
+  (make-Base 'Negative-Fixnum #'(and/c fixnum? negative?)))
 
 (define -Zero (-val 0))
 (define -Real (*Un -InexactReal -ExactRational))
