@@ -19,6 +19,29 @@
   (sort (hash-map ht cons)
         (λ (x y) (string<=? (format "~a" (car x)) (format "~a" (car y))))))
 
+;; output : (-> (-> void) string)
+(define (output thunk)
+  (let ([p (open-output-string)])
+    (parameterize ([current-output-port p])
+      (unless (void? (thunk))
+        (error 'output "expected void result")))
+    (begin0
+      (get-output-string p)
+      (close-output-port p))))
+
+(define-syntax (test-contract-violation stx)
+  (syntax-case stx ()
+    [(form expr)
+     (syntax/loc stx (form "" expr))]
+    [(_ name expr)
+     (with-syntax ([expected 
+                    (syntax/loc stx
+                      (regexp (format "rg-test.*broke the contract .* ~a" name)))])
+       #'(test (raised-exn-msg 
+                exn:fail? 
+                (begin (output (λ () expr)) 'no-violation))
+               expected))]))
+
 (let ()
   (define-language lc
     (e x (e e) (λ (x) e))
@@ -197,7 +220,8 @@
   (test (with-handlers ([exn:fail:syntax? exn-message])
           (parameterize ([current-namespace ns])
             (expand #'(generate-term M n))))
-        #rx"generate-term: expected a identifier defined by define-language( in: M)?$"))
+        #rx"generate-term: expected a identifier defined by define-language( in: M)?$")
+  (test-contract-violation (generate-term L n 1.5)))
 
 ;; variable-except pattern
 (let ()
@@ -534,16 +558,6 @@
   (test (generate-term/decisions L a 0 1 (decisions #:seq '()))
         (term ())))
 
-;; output : (-> (-> void) string)
-(define (output thunk)
-  (let ([p (open-output-string)])
-    (parameterize ([current-output-port p])
-      (unless (void? (thunk))
-        (error 'output "expected void result")))
-    (begin0
-      (get-output-string p)
-      (close-output-port p))))
-
 ;; redex-check
 (let ()
   (define-language lang
@@ -706,10 +720,19 @@
                      #:source (reduction-relation lang (--> 0 1))
                      #:print? #f)
         (counterexample 1))
-  (test (raised-exn-msg 
-         exn:fail:contract:blame?
-         (redex-check lang natural #t #:prepare (λ () 0)))
-        #rx"rg-test broke the contract")
+  
+  (test-contract-violation
+   "#:attempts argument"
+   (redex-check lang natural #t #:attempts 3.5))
+  (test-contract-violation
+   "#:retries argument"
+   (redex-check lang natural #t #:retries 3.5))
+  (test-contract-violation
+   "#:attempt-size argument"
+   (redex-check lang natural #t #:attempt-size -))
+  (test-contract-violation
+   "#:prepare argument"
+   (redex-check lang natural #t #:prepare (λ (_) (values))))
   
   (test (raised-exn-msg 
          exn:fail:redex?
@@ -908,7 +931,22 @@
     (test (raised-exn-msg
            exn:fail:redex:generation-failure?
            (check-reduction-relation U (λ (_) #t)))
-          #rx"^check-reduction-relation: unable")))
+          #rx"^check-reduction-relation: unable"))
+
+  (let ([R (reduction-relation L (--> any any))])
+    (test-contract-violation
+     "#:attempts argument"
+     (check-reduction-relation R values #:attempts -1))
+    (test-contract-violation
+     "#:retries argument"
+     (check-reduction-relation R values #:retries -1))
+    (test-contract-violation
+     "#:attempt-size argument"
+     (check-reduction-relation R values #:attempt-size (λ (_) (values 1 2))))
+    (test-contract-violation
+     "#:prepare argument"
+     (check-reduction-relation R values #:prepare (λ (_) (values 1 2))))
+    (test-contract-violation (check-reduction-relation R #t))))
 
 ; check-metafunction
 (let ()
@@ -1018,13 +1056,23 @@
             #:prepare (λ (_) (error 'fixer))
             #:print? #f)))
         #rx"fixing \\(0\\)")
-  (test (raised-exn-msg
-         exn:fail?
-         (let ()
-           (define-metafunction empty
-             [(f 0) 0])
-           (check-metafunction f void #:prepare car #:print? #f)))
-        #rx"rg-test broke the contract")
+  
+  (let ()
+    (define-metafunction empty
+      [(f 0) 0])
+    (test-contract-violation
+     "#:attempts argument"
+     (check-metafunction f void #:attempts 3.5))
+    (test-contract-violation
+     "#:retries argument"
+     (check-metafunction f void #:retries 3.5))
+    (test-contract-violation
+     "#:attempt-size argument"
+     (check-metafunction f void #:attempt-size 3.5))
+    (test-contract-violation
+     "#:prepare argument"
+     (check-metafunction f void #:prepare car #:print? #f))
+    (test-contract-violation (check-metafunction f (λ () #t))))
   
   ; Extension reinterprets the LHSs of the base metafunction
   ; relative to the new language.
@@ -1055,10 +1103,6 @@
   (test (output (λ () (check-metafunction m (λ (_) #t)))) #rx"no counterexamples")
   (test (output (λ () (check-metafunction m (curry eq? 1))))
         #px"check-metafunction:.*counterexample found after 1 attempt with clause at .*:\\d+:\\d+")
-  (test (raised-exn-msg
-          exn:fail:contract?
-          (check-metafunction m (λ (_) #t) #:attempts 'NaN))
-        #rx"check-metafunction: expected")
   (test (raised-exn-msg
          exn:fail:redex:generation-failure?
          (check-metafunction n (λ (_) #t) #:retries 42))
