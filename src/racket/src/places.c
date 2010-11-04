@@ -727,6 +727,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
     case scheme_true_type:
     case scheme_false_type:
     case scheme_null_type:
+    case scheme_void_type:
     /* place_bi_channels are allocated in the master and can be passed along as is */
     case scheme_place_bi_channel_type:
       new_so = so;
@@ -1075,6 +1076,7 @@ Scheme_Object *scheme_places_deserialize_worker(Scheme_Object *so)
     case scheme_true_type:
     case scheme_false_type:
     case scheme_null_type:
+    case scheme_void_type:
     /* place_bi_channels are allocated in the master and can be passed along as is */
     case scheme_place_bi_channel_type:
     case scheme_char_type:
