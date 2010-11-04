@@ -1438,23 +1438,55 @@
       [else
        (syntax-case rest ()
          [(id colon more ...)
-          (begin
-            (unless (eq? ': (syntax-e #'colon))
-              (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'colon))
-            (let loop ([more (syntax->list #'(more ...))]
-                       [dom-pats '()])
-              (cond
-                [(null? more)
-                 (raise-syntax-error syn-error-name "expected an ->" stx)]
-                [(eq? (syntax-e (car more)) '->)
-                 (when (null? (cdr more))
-                   (raise-syntax-error syn-error-name "expected a range contract to follow the arrow" stx (car more)))
-                 (let ([doms (reverse dom-pats)]
-                       [codomain (cadr more)]
-                       [clauses (check-clauses stx syn-error-name (cddr more) relation?)])
-                   (values #'id doms codomain clauses))]
-                [else
-                 (loop (cdr more) (cons (car more) dom-pats))])))]
+          (identifier? #'id)
+          (cond
+            [relation?
+             (unless (memq (syntax-e #'colon) '(⊂ ⊆))
+               (raise-syntax-error syn-error-name
+                                   "expected ⊂ or ⊆ to follow the relation's name"
+                                   stx #'colon))
+             (let ([more (syntax->list #'(more ...))])
+               (when (null? more)
+                 (raise-syntax-error syn-error-name 
+                                     (format "expected a sequence of patterns separated by x or × to follow ~a" 
+                                             (syntax-e #'colon))
+                                     stx))
+               (let loop ([more (cdr more)]
+                          [arg-pats (list (car more))])
+                 (cond
+                   [(null? more) 
+                    (raise-syntax-error syn-error-name 
+                                        "expected clause definitions to follow domain contract"
+                                        stx)]
+                   [(memq (syntax-e (car more)) '(x ×))
+                    (when (null? (cdr more))
+                      (raise-syntax-error syn-error-name 
+                                          (format "expected a pattern to follow ~a" (syntax-e (car more)))
+                                          stx))
+                    (loop (cddr more)
+                          (cons (cadr more) arg-pats))]
+                   [else
+                    (values #'id
+                            (reverse arg-pats)
+                            #'any
+                            (check-clauses stx syn-error-name more relation?))])))]
+            [else
+             (unless (eq? ': (syntax-e #'colon))
+               (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'colon))
+             (let loop ([more (syntax->list #'(more ...))]
+                        [dom-pats '()])
+               (cond
+                 [(null? more)
+                  (raise-syntax-error syn-error-name "expected an ->" stx)]
+                 [(eq? (syntax-e (car more)) '->)
+                  (when (null? (cdr more))
+                    (raise-syntax-error syn-error-name "expected a range contract to follow the arrow" stx (car more)))
+                  (let ([doms (reverse dom-pats)]
+                        [codomain (cadr more)]
+                        [clauses (check-clauses stx syn-error-name (cddr more) relation?)])
+                    (values #'id doms codomain clauses))]
+                 [else
+                  (loop (cdr more) (cons (car more) dom-pats))]))])]
          [_
           (raise-syntax-error
            syn-error-name
@@ -1492,7 +1524,7 @@
           (λ (x)
             (syntax-case x ()
               [(stuff ...) (void)]
-              [x (raise-syntax-error syn-error-name "expected a metafunction clause" stx #'x)]))
+              [x (raise-syntax-error syn-error-name "expected a clause" stx #'x)]))
           (syntax->list #'(x ...)))
          (raise-syntax-error syn-error-name "error checking failed.2" stx))]))
   

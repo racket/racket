@@ -899,6 +899,36 @@
     (test (term (<: 1 2 2)) #f)
     (test (term (<: 1 1 1)) #t))
   
+  (let ()
+    (define-relation empty-language
+      d ⊆ any × any
+      [(d (any) (any)) (d any any)]
+      [(d () ())])
+    
+    (test (term (d ((())) ((())))) #t)
+    (test (term (d ((())) ())) #f))
+  
+  (let ()
+    (define-relation empty-language
+      d ⊂ any x any
+      [(d (any) (any)) (d any any)]
+      [(d () ())])
+    
+    (test (term (d ((())) ((())))) #t)
+    (test (term (d ((())) ())) #f))
+  
+  (let ()
+    (define-relation empty-language
+      d ⊂ (any)
+      [(d (1))])
+    
+    (test (term (d (1))) #t)
+    (test (term (d (2))) #f)
+    (test (with-handlers ((exn:fail? (λ (x) 'passed)))
+            (term (d 1))
+            'failed)
+          'passed))
+  
  
 ;                    ;;                         ;                                        ;;                    ;                 
 ;                     ;                 ;                                                 ;            ;                         

@@ -682,15 +682,13 @@ all non-GUI portions of Redex) and also exported by
                [extras rule-name
                        (fresh fresh-clause ...)
                        (side-condition racket-expression)
-                       (where tl-pat @#,tttterm)
+                       (where pat @#,tttterm)
                        (side-condition/hidden racket-expression)
-                       (where/hidden tl-pat @#,tttterm)]
+                       (where/hidden pat @#,tttterm)]
                [rule-name identifier
                           string 
                           (computed-name racket-expression)]
-               [fresh-clause var ((var1 ...) (var2 ...))]
-               [tl-pat identifier (tl-pat-ele ...)]
-               [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+               [fresh-clause var ((var1 ...) (var2 ...))])]{
 
 Defines a reduction relation casewise, one case for each of the
 clauses beginning with @racket[-->] (or with @racket[arrow], if
@@ -930,17 +928,15 @@ all non-GUI portions of Redex) and also exported by
 
 @defform/subs[#:literals (: -> where side-condition side-condition/hidden where/hidden)
              (define-metafunction language
-               contract
+               metafunction-contract
                [(name @#,ttpattern ...) @#,tttterm extras ...] 
                ...)
-             ([contract (code:line) 
-                        (code:line id : @#,ttpattern ... -> @#,ttpattern)]
+             ([metafunction-contract (code:line) 
+                                     (code:line id : @#,ttpattern ... -> @#,ttpattern)]
               [extras (side-condition racket-expression)
                       (side-condition/hidden racket-expression)
-                      (where tl-pat @#,tttterm)
-                      (where/hidden tl-pat @#,tttterm)]
-              [tl-pat identifier (tl-pat-ele ...)]
-              [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+                      (where pat @#,tttterm)
+                      (where/hidden pat @#,tttterm)])]{
 
 The @racket[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -1013,7 +1009,7 @@ match.
 }
 
 @defform[(define-metafunction/extension f language 
-           contract
+           metafunction-contract
            [(g @#,ttpattern ...) @#,tttterm extras ...] 
            ...)]{
 
@@ -1047,8 +1043,9 @@ and @racket[#f] otherwise.
 @defform/subs[#:literals ()
               (define-relation language
                [(name @#,ttpattern ...) @#,tttterm ...] ...)
-               ([tl-pat identifier (tl-pat-ele ...)]
-                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+               ([relation-contract (code:line)
+                                   (code:line id ⊂ pat x ... x pat)
+                                   (code:line id ⊆ pat × ... × pat)])]{
 
 The @racket[define-relation] form builds a relation on
 sexpressions according to the pattern and right-hand-side
@@ -1066,6 +1063,11 @@ case, looking for a true result and if none of the clauses match, then
 the result is @racket[#f]. If there are multiple expressions on
 the right-hand side of a relation, then all of them must be satisfied
 in order for that clause of the relation to be satisfied.
+
+The contract specification for a relation restricts the patterns that can
+be used as input to a relation. For each argument to the relation, there
+should be a single pattern, using @racket[x] or @racket[×] to separate
+the argument contracts.
 
 Note that relations are assumed to always return the same results for
 the same inputs, and their results are cached, unless
