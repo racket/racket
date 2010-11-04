@@ -31,9 +31,13 @@
 
     (define/public (add-internal-error part exn stx events)
       (send/i sbview sb:syntax-browser<%> add-text
-              (if part
-                  (format "Macro stepper error (~a)" part)
-                  "Macro stepper error"))
+              (string-append
+               (if (exn:break? exn)
+                   "Macro stepper was interrupted"
+                   "Macro stepper error")
+               (if part
+                   (format " (~a)" part)
+                   "")))
       (when (exn? exn)
         (send/i sbview sb:syntax-browser<%> add-text " ")
         (send/i sbview sb:syntax-browser<%> add-clickback "[details]"
@@ -44,7 +48,9 @@
       (when stx (send/i sbview sb:syntax-browser<%> add-syntax stx)))
 
     (define/private (show-internal-error-details exn events)
-      (case (message-box/custom "Macro stepper internal error"
+      (case (message-box/custom (if (exn:break? exn)
+                                    "Macro stepper was interrupted"
+                                    "Macro stepper internal error")
                                 (format "Internal error:\n~a" (exn-message exn))
                                 "Show error"
                                 "Dump debugging file"

@@ -7,6 +7,7 @@
          "controller.rkt"
          "properties.rkt"
          "prefs.rkt"
+         "util.rkt"
          (except-in "snip.rkt"
                     snip-class))
 
@@ -47,26 +48,21 @@
     (define open? #f)
 
     (define/public (refresh-contents)
-      (send* -outer
-        (begin-edit-sequence)
-        (lock #f)
-        (erase))
-      (do-style (if open? open-style closed-style))
-      (outer:insert (if open? (hide-icon) (show-icon))
-                    style:hyper
-                    (if open?
-                        (lambda _
-                          (set! open? #f)
-                          (refresh-contents))
-                        (lambda _
-                          (set! open? #t)
-                          (refresh-contents))))
-      (for-each (lambda (s) (outer:insert s))
-                (if open? (open-contents) (closed-contents)))
-      (send* -outer
-        (change-style top-aligned 0 (send -outer last-position))
-        (lock #t)
-        (end-edit-sequence)))
+      (with-unlock -outer
+        (send -outer erase)
+        (do-style (if open? open-style closed-style))
+        (outer:insert (if open? (hide-icon) (show-icon))
+                      style:hyper
+                      (if open?
+                          (lambda _
+                            (set! open? #f)
+                            (refresh-contents))
+                          (lambda _
+                            (set! open? #t)
+                            (refresh-contents))))
+        (for-each (lambda (s) (outer:insert s))
+                  (if open? (open-contents) (closed-contents)))
+        (send -outer change-style top-aligned 0 (send -outer last-position))))
 
     (define/private (do-style style)
       (show-border (memq 'border style))

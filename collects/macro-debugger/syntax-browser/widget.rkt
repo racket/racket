@@ -112,21 +112,25 @@
                                #:hi-colors [hi-colors null]
                                #:hi-stxss [hi-stxss null]
                                #:substitutions [substitutions null])
-      (let ([display (internal-add-syntax stx)]
-            [definite-table (make-hasheq)])
+      (with-unlock -text
+        (define display
+          (print-syntax-to-editor stx -text controller config
+                                  (calculate-columns)
+                                  (send -text last-position)))
+        (define definite-table (make-hasheq))
+        (send -text insert "\n")
         (let ([range (send/i display display<%> get-range)]
               [offset (send/i display display<%> get-start-position)])
           (for ([subst substitutions])
             (for ([r (send/i range range<%> get-ranges (car subst))])
-              (with-unlock -text
-                (send -text insert (cdr subst)
-                      (+ offset (car r))
-                      (+ offset (cdr r))
-                      #f)
-                (send -text change-style
-                      (code-style -text (send/i config config<%> get-syntax-font-size))
-                      (+ offset (car r))
-                      (+ offset (cdr r)))))))
+              (send -text insert (cdr subst)
+                    (+ offset (car r))
+                    (+ offset (cdr r))
+                    #f)
+              (send -text change-style
+                    (code-style -text (send/i config config<%> get-syntax-font-size))
+                    (+ offset (car r))
+                    (+ offset (cdr r))))))
         (for ([hi-stxs hi-stxss] [hi-color hi-colors])
           (send/i display display<%> highlight-syntaxes hi-stxs hi-color))
         (for ([definite definites])
@@ -151,6 +155,7 @@
           (send/i display display<%> underline-syntaxes
                  (append (apply append (map get-shifted binders))
                          binders))
+          (send display refresh)
           ;; Make arrows (& billboards, when enabled)
           (for ([id (send/i range range<%> get-identifier-list)])
             (define definite? (hash-ref definite-table id #f))
@@ -202,19 +207,6 @@
       (send/i controller displays-manager<%> remove-all-syntax-displays))
 
     (define/public (get-text) -text)
-
-    ;; internal-add-syntax : syntax -> display
-    (define/private (internal-add-syntax stx)
-      (with-unlock -text
-        (let ([display
-               (print-syntax-to-editor stx -text controller config
-                                       (calculate-columns)
-                                       (send -text last-position))])
-          (send* -text
-            (insert "\n")
-            ;;(scroll-to-position current-position)
-            )
-          display)))
 
     (define/private (calculate-columns)
       (define style (code-style -text (send/i config config<%> get-syntax-font-size)))

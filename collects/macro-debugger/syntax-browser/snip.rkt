@@ -7,6 +7,7 @@
          "display.rkt"
          "controller.rkt"
          "keymap.rkt"
+         "util.rkt"
          "prefs.rkt")
 
 (provide syntax-snip%
@@ -34,12 +35,10 @@
     ;;(set-margin 2 2 2 2)
     (set-inset 0 0 0 0)
 
-    (send text begin-edit-sequence)
-    (send text change-style (make-object style-delta% 'change-alignment 'top))
     (define display
-      (print-syntax-to-editor stx text controller config columns))
-    (send text lock #t)
-    (send text end-edit-sequence)
+      (with-unlock text
+        (send text change-style (make-object style-delta% 'change-alignment 'top))
+        (print-syntax-to-editor stx text controller config columns)))
     (send text hide-caret #t)
 
     (setup-keymap text)

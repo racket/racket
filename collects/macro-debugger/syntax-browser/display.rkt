@@ -2,7 +2,7 @@
 (require racket/class
          racket/gui/base
          racket/list
-         racket/block
+         racket/pretty
          framework
          unstable/class-iop
          "pretty-printer.rkt"
@@ -12,46 +12,52 @@
 (provide print-syntax-to-editor
          code-style)
 
-(define TIME-PRINTING? #f)
+(define-syntax-rule (uninterruptible e ...)
+  ;; (coarsely) prevent breaks within editor operations
+  (parameterize-break #f (begin e ...))
+  #|
+  (parameterize-break #f
+    (let ([ta (now)])
+      (begin0 (begin e ...)
+        (let ([tb (now)])
+          (eprintf "****\n")
+          (pretty-write '(begin e ...) (current-error-port))
+          (eprintf "  -- ~s ms\n\n" (- tb ta))))))
+  |#)
 
-(define-syntax-rule (now)
-  (if TIME-PRINTING?
-      (current-inexact-milliseconds)
-      0))
+(define (now) (current-inexact-milliseconds))
 
 ;; FIXME: assumes text never moves
 
 ;; print-syntax-to-editor : syntax text controller<%> config number number
 ;;                       -> display<%>
+;; Note: must call display<%>::refresh to finish styling.
 (define (print-syntax-to-editor stx text controller config columns
                                 [insertion-point (send text last-position)])
-  (block
-   (define output-port (open-output-string/count-lines))
-   (define range
-     (pretty-print-syntax stx output-port 
-                          (send/i controller controller<%> get-primary-partition)
-                          (length (send/i config config<%> get-colors))
-                          (send/i config config<%> get-suffix-option)
-                          (send config get-pretty-styles)
-                          columns))
-   (define output-string (get-output-string output-port))
-   (define output-length (sub1 (string-length output-string))) ;; skip final newline
-   (fixup-parentheses output-string range)
-   (send text begin-edit-sequence #f)
-   (send text insert output-length output-string insertion-point)
-   (define display
-     (new display%
-          (text text)
-          (controller controller)
-          (config config)
-          (range range)
-          (start-position insertion-point)
-          (end-position (+ insertion-point output-length))))
-   (send display initialize)
-   (send text end-edit-sequence)
-   display))
+  (define output-port (open-output-string/count-lines))
+  (define range
+    (pretty-print-syntax stx output-port 
+                         (send/i controller controller<%> get-primary-partition)
+                         (length (send/i config config<%> get-colors))
+                         (send/i config config<%> get-suffix-option)
+                         (send config get-pretty-styles)
+                         columns))
+  (define output-string (get-output-string output-port))
+  (define output-length (sub1 (string-length output-string))) ;; skip final newline
+  (fixup-parentheses output-string range)
+  (with-unlock text
+    (uninterruptible
+     (send text insert output-length output-string insertion-point))
+    (new display%
+         (text text)
+         (controller controller)
+         (config config)
+         (range range)
+         (start-position insertion-point)
+         (end-position (+ insertion-point output-length)))))
 
 ;; display%
+;; Note: must call refresh method to finish styling.
 (define display%
   (class* object% (display<%>)
     (init-field/i [controller controller<%>]
@@ -66,12 +72,15 @@
 
     (define extra-styles (make-hasheq))
 
+    (define auto-refresh? #f) ;; FIXME: delete or make init arg
+
     ;; initialize : -> void
-    (define/public (initialize)
-      (send text change-style base-style start-position end-position #f)
-      (apply-primary-partition-styles)
-      (add-clickbacks)
-      (refresh))
+    (define/private (initialize)
+      (uninterruptible
+       (send text change-style base-style start-position end-position #f))
+      (uninterruptible (apply-primary-partition-styles))
+      (uninterruptible (add-clickbacks))
+      (when auto-refresh? (refresh)))
 
     ;; add-clickbacks : -> void
     (define/private (add-clickbacks)
@@ -103,18 +112,15 @@
     ;; refresh : -> void
     ;; Clears all highlighting and reapplies all non-foreground styles.
     (define/public (refresh)
-      (with-unlock text
-        (send* text 
-          (begin-edit-sequence #f)
-          (change-style (unhighlight-d) start-position end-position))
-        (apply-extra-styles)
-        (let ([selected-syntax
-               (send/i controller selection-manager<%>
-                      get-selected-syntax)])
-          (apply-secondary-relation-styles selected-syntax)
-          (apply-selection-styles selected-syntax))
-        (send* text
-          (end-edit-sequence))))
+      (uninterruptible
+       (with-unlock text
+         (send text change-style (unhighlight-d) start-position end-position)
+         (apply-extra-styles)
+         (let ([selected-syntax
+                (send/i controller selection-manager<%>
+                        get-selected-syntax)])
+           (apply-secondary-relation-styles selected-syntax)
+           (apply-selection-styles selected-syntax)))))
 
     ;; get-range : -> range<%>
     (define/public (get-range) range)
@@ -130,13 +136,13 @@
       (let ([style-delta (highlight-style-delta hi-color #f)])
         (for ([stx stxs])
           (add-extra-styles stx (list style-delta))))
-      (refresh))
+      (when auto-refresh? (refresh)))
 
     ;; underline-syntaxes : (listof syntax) -> void
     (define/public (underline-syntaxes stxs)
       (for ([stx stxs])
         (add-extra-styles stx (list underline-style-delta)))
-      (refresh))
+      (when auto-refresh? (refresh)))
 
     ;; add-extra-styles : syntax (listof style) -> void
     (define/public (add-extra-styles stx styles)
@@ -236,7 +242,8 @@
 
     ;; Initialize
     (super-new)
-    (send/i controller controller<%> add-syntax-display this)))
+    (send/i controller controller<%> add-syntax-display this)
+    (initialize)))
 
 ;; fixup-parentheses : string range -> void
 (define (fixup-parentheses string range)

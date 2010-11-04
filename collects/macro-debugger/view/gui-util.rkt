@@ -3,13 +3,13 @@
          racket/gui/base)
 (provide status-area%)
 
-(define SHOW-DELAY 1000)
-(define FADE-DELAY 400)
-(define NAP-TIME 0.1)
+(define FADE-DELAY 1000)
+(define NAP-TIME 0.01)
 
 (define status-area%
   (class* object% (#| status-area<%> |#)
-    (init parent)
+    (init parent
+          stop-callback)
 
     (define lock (make-semaphore 1))
 
@@ -18,7 +18,7 @@
                     (lambda () . body)
                     (lambda () (semaphore-post lock))))
 
-    (define timer (new timer% (notify-callback (lambda () (update)))))
+    (define timer (new timer% (notify-callback (lambda () (fade-out)))))
 
     (define pane
       (new horizontal-pane%
@@ -29,69 +29,78 @@
            (parent pane)
            (label "")
            (auto-resize #t)
+           (stretchable-width #t)
+           (style '(deleted))))
+    (define stop-button
+      (new button%
+           (parent pane)
+           (label "Stop")
+           (enabled #f)
+           (callback stop-callback)
            (style '(deleted))))
 
+    (define visible? #t)
+
+    (define/public (set-visible new-visible?)
+      (with-lock
+       (set! visible? new-visible?)
+       (show (memq state '(shown fade)))))
+
     #|
-    Four states:
-      - 'none    = no message displayed, none pending
-      - 'pending = no message displayed, message pending
+    Three states:
+      - 'none    = no message displayed
       - 'shown   = message displayed
       - 'fade    = message displayed, waiting to erase
+
+    Timer is only started during 'fade state.
     |#
     (define state 'none)
-    (define pending #f)
 
-    (define/public (set-status msg [immediate? #f])
+    (define/private (show ?)
+      (send pane change-children
+            (lambda _
+              (if (and ? visible?)
+                  (list message stop-button)
+                  null))))
+
+    (define/public (set-status msg)
       (with-lock
-       (when immediate? (send timer stop))
        (cond [msg
               (case state
                 ((none)
-                 (cond [#f ;; immediate?
-                        (set! state 'shown)
-                        (send pane change-children (lambda _ (list message)))
-                        (send message set-label msg)
-                        (set! pending #f)
-                        (sleep/yield NAP-TIME)]
-                       [else
-                        (set! state 'pending)
-                        (set! pending msg)
-                        (unless immediate? (send timer start SHOW-DELAY #t))]))
-                ((pending)
-                 (set! pending msg))
+                 (send message set-label msg)
+                 (send message enable #t)
+                 (show #t)
+                 (sleep/yield NAP-TIME)
+                 (set! state 'shown))
                 ((shown)
                  (send message set-label msg))
                 ((fade)
                  (send timer stop) ;; but (update) may already be waiting
-                 (set! state 'shown)
-                 (send message set-label msg)))]
+                 (send message set-label msg)
+                 (send message enable #t)
+                 (set! state 'shown)))]
              [(not msg)
               (case state
-                ((none) (void))
-                ((pending)
-                 (send timer stop) ;; but (update) may already be waiting
-                 (set! state 'none)
-                 (set! pending #f))
                 ((shown)
-                 (set! state 'fade)
-                 (unless immediate? (send timer start FADE-DELAY #t))))])
-       (when immediate? (update*) (sleep/yield NAP-TIME))))
+                 (send timer start FADE-DELAY #t)
+                 (send message enable #f)
+                 (set! state 'fade)))])))
 
-    (define/private (update)
-      (with-lock (update*)))
+    (define/private (fade-out)
+      (with-lock (fade-out*)))
 
-    (define/private (update*)
+    (define/private (fade-out*)
       (case state
-        ((pending)
-         (set! state 'shown)
-         (send pane change-children (lambda _ (list message)))
-         (send message set-label pending)
-         (set! pending #f))
         ((fade)
-         (set! state 'none)
-         (send pane change-children (lambda _ null)))
-        ((none shown)
+         (show #f)
+         (send message set-label "")
+         (set! state 'none))
+        (else
          ;; timer not stopped in time; do nothing
          (void))))
+
+    (define/public (enable-stop ?)
+      (send stop-button enable ?))
 
     (super-new)))

@@ -4,6 +4,7 @@
          framework
          unstable/class-iop
          "interfaces.rkt"
+         "util.rkt"
          "../util/mpi.rkt"
          "../util/stxobj.rkt")
 (provide properties-view%
@@ -58,17 +59,12 @@
 
     ;; refresh : -> void
     (define/public (refresh)
-      (send* text
-        (lock #f)
-        (begin-edit-sequence #f)
-        (erase))
-      (if (syntax? selected-syntax)
-          (refresh/mode mode)
-          (refresh/mode #f))
-      (send* text
-        (end-edit-sequence)
-        (lock #t)
-        (scroll-to-position 0)))
+      (with-unlock text
+        (send text erase)
+        (if (syntax? selected-syntax)
+            (refresh/mode mode)
+            (refresh/mode #f)))
+      (send text scroll-to-position 0))
 
     ;; refresh/mode : symbol -> void
     (define/public (refresh/mode mode)

@@ -32,7 +32,7 @@
       (send/i stepper widget<%> get-step-displayer))
 
     ;; Data
-    
+
     (init-field [events #f])
 
     (init-field [raw-deriv #f])
@@ -52,19 +52,14 @@
     (define steps #f)
 
     ;; --
-    
+
     (define steps-position #f)
 
     (define/private (status msg)
       (send stepper change-status msg))
-    (define-syntax with-status
-      (syntax-rules ()
-        [(ws msg #:immediate . body)
-         (begin (send stepper change-status msg #t)
-                (begin0 (let () . body)))]
-        [(ws msg . body)
-         (begin (send stepper change-status msg)
-                (begin0 (let () . body)))]))
+    (define-syntax-rule (with-status msg . body)
+      (begin (send stepper change-status msg)
+             (begin0 (let () . body))))
 
     (super-new)
 
@@ -125,7 +120,7 @@
         (with-handlers ([(lambda (e) #t)
                          (lambda (e)
                            (set! raw-deriv-oops e))])
-          (with-status "Parsing expansion derivation" #:immediate
+          (with-status "Parsing expansion derivation"
             (set! raw-deriv
                   (parse-derivation
                    (events->token-generator events)))))))
@@ -135,7 +130,7 @@
       (unless (or deriv deriv-hidden?)
         (recache-raw-deriv!)
         (when raw-deriv
-          (with-status "Processing expansion derivation" #:immediate
+          (with-status "Processing expansion derivation"
             (let ([process (send/i stepper widget<%> get-preprocess-deriv)])
               (let ([d (process raw-deriv)])
                 (when (not d)
@@ -153,7 +148,7 @@
       (unless (or raw-steps raw-steps-oops)
         (recache-synth!)
         (when deriv
-          (with-status "Computing reduction steps" #:immediate
+          (with-status "Computing reduction steps"
             (let ([show-macro? (or (send/i stepper widget<%> get-show-macro?)
                                    (lambda (id) #t))])
               (with-handlers ([(lambda (e) #t)
