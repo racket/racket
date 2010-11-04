@@ -3762,6 +3762,72 @@ designates the character that triggers autocompletion
       (send dc set-font (get-style-font))
       (send dc set-text-foreground (make-object color% line-numbers-color)))
 
+    (define (lighter-color color)
+      (define (integer number)
+        (inexact->exact (round number)))
+      ;; hue 0-360
+      ;; saturation 0-1
+      ;; lightness 0-1
+      ;; returns rgb as float values with ranges 0-1
+      (define (hsl->rgb hue saturation lightness)
+        (define (helper x a b)
+          (define x* (cond
+                       [(< x 0) (+ x 1)]
+                       [(> x 1) (- x 1)]
+                       [else x]))
+          (cond
+            [(< (* x 6) 1) (+ b (* 6 (- a b) x))]
+            [(< (* x 6) 3) a]
+            [(< (* x 6) 4) (+ b (* (- a b) (- 4 (* 6 x))))]
+            [else b]))
+
+        (define h (/ hue 360))
+        (define a (if (< lightness 0.5)
+                    (+ lightness (* lightness saturation))
+                    (- (+ lightness saturation) (* lightness saturation))))
+        (define b (- (* lightness 2) a))
+        (define red (helper (+ h (/ 1.0 3)) a b))
+        (define green (helper h a b))
+        (define blue (helper (- h (/ 1.0 3)) a b))
+        (values red green blue))
+        
+      ;; red 0-255
+      ;; green 0-255
+      ;; blue 0-255
+      (define (rgb->hsl red green blue)
+        (define-values (a b c d)
+                       (if (> red green)
+                         (if (> red blue)
+                           (if (> green blue)
+                             (values red (- green blue) blue 0)
+                             (values red (- green blue) green 0))
+                           (values blue (- red green) green 4))
+                         (if (> red blue)
+                           (values green (- blue red) blue 2)
+                           (if (> green blue)
+                             (values green (- blue red) red 2)
+                             (values blue (- red green) red 4)))))
+        (define hue (if (= a c) 0
+                      (let ([x (* 60 (+ d (/ b (- a c))))])
+                        (if (< x 0) (+ x 360) x))))
+        (define saturation (cond
+                             [(= a c) 0]
+                             [(< (+ a c) 1) (/ (- a c) (+ a c))]
+                             [else (/ (- a c) (- 2 a c))]))
+        (define lightness (/ (+ a c) 2))
+        (values hue saturation lightness))
+      ;; it would be better to convert RGB to HSL and change the
+      ;; L (lightness) parameter
+      (define-values (hue saturation lightness)
+                     (rgb->hsl (send color red)
+                               (send color green)
+                               (send color blue)))
+      (define-values (red green blue)
+                     (hsl->rgb hue saturation (+ 0.5 lightness)))
+      (make-object color% (min 255 (integer (* 255 red)))
+                          (min 255 (integer (* 255 green)))
+                          (min 255 (integer (* 255 blue)))))
+
     (define (draw-numbers dc top bottom dy start-line end-line)
       (define (draw-text . args)
         (send/apply dc draw-text args))
@@ -3769,8 +3835,10 @@ designates the character that triggers autocompletion
       (define right-space (text-width dc (number-space)))
       (define single-space (text-width dc "0"))
 
+      (define last-paragraph #f)
       (for ([line (in-range start-line end-line)])
         (define y (line-location line))
+
         (when (between top y bottom)
           (define view (number->string (add1 (line-paragraph line))))
           (define final-x
@@ -3779,7 +3847,14 @@ designates the character that triggers autocompletion
               [(right) (- right-space (text-width dc view) single-space)]
               [else 0]))
           (define final-y (+ dy y))
-          (draw-text view final-x final-y))))
+          (if (and last-paragraph (= last-paragraph (line-paragraph line)))
+            (begin
+              (send dc set-text-foreground (lighter-color (send dc get-text-foreground)))
+              (draw-text view final-x final-y)
+              (send dc set-text-foreground (make-object color% line-numbers-color)))
+            (draw-text view final-x final-y)))
+
+        (set! last-paragraph (line-paragraph line))))
 
     ;; draw the line between the line numbers and the actual text
     (define (draw-separator dc top bottom dy x)
