@@ -3714,7 +3714,6 @@ designates the character that triggers autocompletion
     (inherit get-visible-line-range
              get-visible-position-range
              last-line
-             find-position
              line-location
              line-paragraph
              line-start-position
@@ -3816,8 +3815,6 @@ designates the character that triggers autocompletion
                              [else (/ (- a c) (- 2 a c))]))
         (define lightness (/ (+ a c) 2))
         (values hue saturation lightness))
-      ;; it would be better to convert RGB to HSL and change the
-      ;; L (lightness) parameter
       (define-values (hue saturation lightness)
                      (rgb->hsl (send color red)
                                (send color green)
@@ -3859,6 +3856,11 @@ designates the character that triggers autocompletion
     ;; draw the line between the line numbers and the actual text
     (define (draw-separator dc top bottom dy x)
       (send dc draw-line x (+ dy top) x (+ dy bottom)))
+
+    (define line-numbers-space 0)
+    (define/override (find-position x y . args)
+      ;; adjust x position to account for line numbers
+      (super find-position (- x line-numbers-space) y . args))
 
     (define (draw-line-numbers dc left top right bottom dx dy)
       (setup-dc dc)
@@ -3919,6 +3921,7 @@ designates the character that triggers autocompletion
             (send copy subtract clipped)
             (send dc set-clipping-region copy)
             (send dc set-origin (+ x (text-width dc (number-space+1))) y)
+            (set! line-numbers-space (text-width dc (number-space+1)))
             )
           (begin
             ;; rest the origin and draw the line numbers
