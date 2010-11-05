@@ -40,6 +40,7 @@
 
 (define-gtk gtk_combo_box_entry_new_text (_fun -> _GtkWidget))
 (define-gtk gtk_combo_box_append_text (_fun _GtkWidget _string -> _void))
+(define-gtk gtk_combo_box_remove_text (_fun _GtkWidget _int -> _void))
 
 (define-gtk gtk_widget_queue_draw (_fun _GtkWidget -> _void))
 
@@ -190,7 +191,8 @@
               set-auto-size 
               adjust-client-delta infer-client-delta
               is-auto-scroll? get-virtual-width get-virtual-height
-              refresh-for-autoscroll)
+              refresh-for-autoscroll
+              get-eventspace)
 
      (define is-combo? (memq 'combo style))
      (define has-border? (or (memq 'border style)
@@ -340,6 +342,12 @@
 
      (define/override (get-client-gtk) client-gtk)
      (define/override (handles-events? gtk) (not (ptr-equal? gtk combo-button-gtk)))
+
+     (define/override (internal-pre-on-event gtk e)
+       (when (and (ptr-equal? gtk combo-button-gtk)
+                  (send e button-down?))
+         (on-popup))
+       #f)
 
      (define/override (get-client-delta)
        (values margin margin))
@@ -535,8 +543,20 @@
      (when is-combo?
        (connect-changed client-gtk))
 
+     (define combo-count 0)
+     (define/public (clear-combo-items)
+       (atomically
+        (for ([n (in-range combo-count)])
+          (gtk_combo_box_remove_text gtk 0))
+        (set! combo-count 0)))
      (define/public (append-combo-item str)
-       (gtk_combo_box_append_text gtk str))
+       (atomically
+        (set! combo-count (add1 combo-count))
+        (gtk_combo_box_append_text gtk str)))
+
+     (when is-combo? (append-combo-item "..."))
+
+     (define/public (on-popup) (void))
 
      (define/public (combo-maybe-clicked)
        (let ([i (gtk_combo_box_get_active gtk)])

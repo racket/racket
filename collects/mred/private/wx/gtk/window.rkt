@@ -346,7 +346,8 @@
                                           (send wx dispatch-on-event m #f)))
                  #t)
                (constrained-reply (send wx get-eventspace)
-                                  (lambda () (send wx dispatch-on-event m #t))
+                                  (lambda () (or (send wx dispatch-on-event m #t)
+                                                 (send wx internal-pre-on-event gtk m)))
                                   #t))))))))
 
 ;; ----------------------------------------
@@ -589,6 +590,8 @@
        [(call-pre-on-event this e) #t]
        [just-pre? #f]
        [else (when enabled? (on-event e)) #t]))
+
+    (define/public (internal-pre-on-event gtk e) #f)
 
     (define/public (call-pre-on-event w e)
       (or (send parent call-pre-on-event w e)

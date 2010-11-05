@@ -101,20 +101,30 @@
 			       parent callback init-value
 			       style #f 
 			       font))
+      (private
+        [prep-popup
+         (lambda ()
+           (send menu on-demand)
+           (let ([items (send menu get-items)]
+                 [wx (mred->wx this)])
+             (send wx clear-combo-items)
+             (for-each 
+              (lambda (item)
+                (unless (item . is-a? . separator-menu-item%)
+                  (send wx append-combo-item
+                        (send item get-plain-label)
+                        (lambda ()
+                          (send item command 
+                                (make-object wx:control-event% 'menu-popdown))))))
+              items)))])
       (public
-	[on-popup (lambda (e)
-		    (let-values ([(w h) (get-size)]
-				 [(cw) (send (mred->wx this) get-canvas-width)])
-		      (send menu set-min-width cw)
-		      (popup-menu menu (- w cw) h)))]
+	[on-popup (lambda (e) (void))]
 	[get-menu (lambda () menu)]
 	[append (lambda (item)
 		  (check-label-string '(method combo-field% append) item)
-                  (unless (send (mred->wx this) append-combo-item item
-                                (lambda () (handle-selected item)))
-                    (make-object menu-item% item menu 
-                                 (lambda (i e)
-                                   (handle-selected item)))))])
+                  (make-object menu-item% item menu 
+                               (lambda (i e)
+                                 (handle-selected item))))])
       (private
         [handle-selected (lambda (item)
                            (focus)
@@ -128,5 +138,10 @@
        [menu (new popup-menu% [font font])])
       (sequence
 	(super-init label parent callback init-value (list* combo-flag 'single style))
+        (send (mred->wx this) 
+              set-on-popup
+              (lambda ()
+                (on-popup (make-object wx:control-event% 'menu-popdown))
+                (prep-popup)))
 	(for-each (lambda (item) (append item))
 		  choices)))))

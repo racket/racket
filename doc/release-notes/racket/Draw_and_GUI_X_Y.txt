@@ -93,8 +93,8 @@ backward-compatibile. Methods like `get-translation',
 `set-translation', `scale', etc. help hide the reundancy.
 
 
-Others Drawing-Context Changes
-------------------------------
+Other Drawing-Context Changes
+-----------------------------
 
 The alpha value of a `dc<%>' (as set by `set-alpha') is used for all
 drawing operations, including drawing a bitmap.
@@ -120,6 +120,15 @@ owned by an enclosing display and the selection spans the snip or
 editor. In that case, the snip or editor should refrain from drawing a
 background for the selected region, and it should draw the foreground
 in the color specified by `get-highlight-text-color', if any.
+
+
+Other GUI Changes
+-----------------
+
+The `on-popup' method of `combo-field%' can be used to adjust the
+content of the combo-box popup menu, but the default implementation no
+longer triggers the popup menu; instead, the popup behavior is built
+into the control.
 
 
 Removed Functions

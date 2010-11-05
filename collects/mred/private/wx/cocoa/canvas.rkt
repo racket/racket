@@ -601,6 +601,8 @@
              (scroller-page scroller)
              1)]))
 
+     (define/public (clear-combo-items)
+       (tellv content-cocoa removeAllItems))
      (define/public (append-combo-item str)
        (tellv content-cocoa addItemWithObjectValue: #:type _NSString str)
        #t)
@@ -698,10 +700,15 @@
          (get-client-size xb yb)
          ((send e get-x) . > . (- (unbox xb) 22))))
 
+     (define/public (on-popup) (void))
+
      (define/public (starting-combo)
        (set! in-menu-click? #t)
-       (tellv content-cocoa setStringValue: #:type _NSString current-text))
-     
+       (tellv content-cocoa setStringValue: #:type _NSString current-text)
+       (constrained-reply (get-eventspace)
+                          (lambda () (on-popup))
+                          (void)))
+       
      (define/public (ending-combo)
        (set! in-menu-click? #f)
        (let ([pos (tell #:type _NSInteger content-cocoa indexOfSelectedItem)])

@@ -167,7 +167,9 @@
 	       (make-object wx-message% #f proxy p label -1 -1 null font))]
        [c (make-object (class wx-text-editor-canvas% 
                          (define/override (on-combo-select i)
-                           ((list-ref callbacks (- (length callbacks) i 1))))
+                           (let ([len (length callbacks)])
+                             (when (< -1 i len)
+                               ((list-ref callbacks (- len i 1))))))
                          (super-new))
                        #f proxy this p
 		       (append
@@ -182,6 +184,8 @@
 			    '(hide-vscroll hide-hscroll))))]
        [callbacks null])
       (public
+        [set-on-popup (lambda (proc) (send c set-on-popup proc))]
+        [clear-combo-items (lambda () (set! callbacks null) (send c clear-combo-items))]
         [append-combo-item (lambda (s cb)
                              (and (send c append-combo-item s)
                                   (set! callbacks (cons cb callbacks))

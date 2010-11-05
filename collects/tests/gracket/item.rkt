@@ -1565,6 +1565,79 @@
   (instructions p "choice-list-steps.txt")
   (send f show #t))
 
+(define (combo-frame empty?)
+  (define f (make-frame frame% "Combo Test"))
+  (define p f)
+  (define actual-content '("Apple" "Banana"))
+  (define (callback c e) (void))
+  (define c (make-object (class combo-field% 
+                           (define/override (on-popup e)
+                             (printf "Popup!\n"))
+                           (super-new))
+                         "Tester" actual-content p callback))
+  (define counter 0)
+  (define append-with-user-data? #f)
+  (define ab (make-object button%
+			  "Append" p
+			  (lambda (b e)
+			    (set! counter (add1 counter))
+			    (let ([naya (format "~aExtra ~a" 
+						(if (= counter 10)
+						    (string-append
+						     "This is a Really Long Named Item That Would Have Used the Short Name, Yes "
+						     "This is a Really Long Named Item That Would Have Used the Short Name ")
+						    "")
+						counter)]
+				  [naya-data (box 0)])
+			      (set! actual-content (append actual-content (list naya)))
+			      (send c append naya)))))
+  (define asb (make-object button%
+                           "Append Separator" p
+                           (lambda (b e)
+                             (set! counter (add1 counter))
+                             (new separator-menu-item% [parent (send c get-menu)]))))
+  (define cdp (make-object horizontal-panel% p))
+  (define (clear)
+    (for ([i (send (send c get-menu) get-items)])
+      (send i delete)))
+  (define rb (make-object button% "Clear" cdp
+                          (lambda (b e) (clear))))
+  (define (gone l n)
+    (if (zero? n)
+        (cdr l)
+        (cons (car l) (gone (cdr l) (sub1 n)))))
+  (define (delete p)
+    (send (list-ref (send (send c get-menu) get-items) p) delete)
+    (when (<= 0 p (sub1 (length actual-content)))
+      (set! actual-content (gone actual-content p))))
+  (define db (make-object button%
+                          "Delete First" cdp
+                          (lambda (b e)
+                            (unless (null? actual-content)
+                              (delete 0)))))
+  (define dbe (make-object button%
+                           "Delete Last" cdp
+                           (lambda (b e)
+                             (unless (null? actual-content)
+                               (delete (sub1 (length actual-content)))))))
+  (define setb (make-object button%
+                            "Reset" cdp
+                            (lambda (b e)
+                              (clear)
+                              (let ([m (send c get-menu)])
+                                (for ([i '("Alpha" "Beta" "Gamma")])
+                                  (new menu-item% [parent m] [label i]
+                                       [callback (lambda (itm e)
+                                                   (send c set-value
+                                                         (format "~a from Reset" i)))]))))))
+  (define tb (make-object button%
+			  "Check" p
+			  (lambda (b e)
+                            (void))))
+  (send c stretchable-width #t)
+  (instructions p "combo-steps.txt")
+  (send f show #t))
+
 (define (slider-frame style)
   (define f (make-frame frame% "Slider Test"))
   (define p (make-object vertical-panel% f))
@@ -2163,6 +2236,7 @@
 (send cp stretchable-width #f)
 (make-object button% "Make Choice Frame" cp (lambda (b e) (choice-or-list-frame #f null #f)))
 (make-object button% "Make Empty Choice Frame" cp (lambda (b e) (choice-or-list-frame #f null #t)))
+(make-object button% "Make Combo Frame" cp (lambda (b e) (combo-frame #f)))
 (define lp (make-object horizontal-pane% ap))
 (send lp stretchable-width #f)
 (make-object button% "Make List Frame" lp (lambda (b e) (choice-or-list-frame #t '(single) #f)))

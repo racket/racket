@@ -23,14 +23,16 @@
 	[do-on-scroll (lambda (e) (super on-scroll e))]
 	[do-on-paint (lambda () (super on-paint))])
       (private-field
-       [tabable? default-tabable?])
+       [tabable? default-tabable?]
+       [on-popup-callback void])
       (public
         [get-tab-focus (lambda () tabable?)]
         [set-tab-focus (lambda (v) (set! tabable? v))]
         [on-tab-in (lambda () 
 		     (let ([mred (wx->mred this)])
 		       (when mred
-			 (send mred on-tab-in))))])
+			 (send mred on-tab-in))))]
+        [set-on-popup (lambda (proc) (set! on-popup-callback proc))])
       (override
         [gets-focus? (lambda () tabable?)]
         [handles-key-code
@@ -68,7 +70,9 @@
 		     (let ([mred (get-mred)])
 		       (if mred
 			   (as-exit (lambda () (clear-and-on-paint mred)))
-			   (as-exit (lambda () (clear-margins) (super on-paint)))))))])
+			   (as-exit (lambda () (clear-margins) (super on-paint)))))))]
+        ;; for 'combo canvases:
+        [on-popup (lambda () (on-popup-callback))])
       (sequence (apply super-init mred proxy args))))
 
   (define wx-canvas% 

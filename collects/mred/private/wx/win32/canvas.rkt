@@ -453,6 +453,10 @@
      (define/public (set-combo-text s) (void))
      (define/public (append-combo-item s)
        (SendMessageW/str combo-hwnd CB_ADDSTRING 0 s))
+     (define/public (clear-combo-items)
+       (void))
+
+     (define/public (on-popup) (void))
 
      (define/override (is-command? cmd)
        (= cmd CBN_SELENDOK))
