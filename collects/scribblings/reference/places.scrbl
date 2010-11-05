@@ -22,13 +22,12 @@ hardware threads.
 
 @note-lib[racket/place]
 
-@margin-note{Currently, parallel support for @racket[place] is is only enabled if you pass
-@DFlag{enable-places} to @exec{configure} when you build Racket (and
-that build currently only works with @exec{racket}, not with
-@exec{gracket}). When parallel-places support is not enabled,
-@racket[place] usage is a syntax error.
-Places is only supported on Linux x86/x86_64, and Mac OS X
-x86/x86_64 platforms.}
+Note: currently, parallel support for @racket[place] is disabled by
+default, and using it will raise an exception.  Support can only be
+enabled if you build Racket yourself, and pass @DFlag{enable-places} to
+@exec{configure}.  This works only for @exec{racket} (not
+@exec{gracket}), and it is supported only on Linux x86/x86_64, and Mac
+OS X x86/x86_64 platforms.
 
 @defproc[(place [module-path module-path?] [start-proc symbol?]) place?]{
   Starts running @racket[start-proc] in parallel. @racket[start-proc] must
