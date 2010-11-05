@@ -157,15 +157,16 @@
                          binders))
           (send display refresh)
           ;; Make arrows (& billboards, when enabled)
-          (for ([id (send/i range range<%> get-identifier-list)])
-            (define definite? (hash-ref definite-table id #f))
-            (when #f ;; DISABLED
-              (add-binding-billboard start range id definite?))
-            (for ([binder (get-binders id)])
-              (for ([binder-r (send/i range range<%> get-ranges binder)])
-                (for ([id-r (send/i range range<%> get-ranges id)])
-                  (add-binding-arrow start binder-r id-r definite?))))))
-        (void)))
+          (when (send config get-draw-arrows?)
+            (for ([id (send/i range range<%> get-identifier-list)])
+              (define definite? (hash-ref definite-table id #f))
+              (when #f ;; DISABLED
+                (add-binding-billboard start range id definite?))
+              (for ([binder (get-binders id)])
+                (for ([binder-r (send/i range range<%> get-ranges binder)])
+                  (for ([id-r (send/i range range<%> get-ranges id)])
+                    (add-binding-arrow start binder-r id-r definite?))))))
+          (void))))
 
     (define/private (add-binding-arrow start binder-r id-r definite?)
       (if definite?

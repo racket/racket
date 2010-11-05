@@ -58,7 +58,8 @@
       (send/i config config<%> set-width w)
       (send/i config config<%> set-height h)
       (unless (and (= w0 w) (= h0 h))
-        (send/i widget widget<%> update/preserve-view))
+        (when (send/i config config<%> get-refresh-on-resize?)
+          (send/i widget widget<%> update/preserve-view)))
       (set!-values (w0 h0) (values w h)))
 
     (define warning-panel
@@ -192,15 +193,23 @@
       (menu-option/notify-box extras-menu
                               "Highlight redex/contractum"
                               (get-field highlight-foci? config))
+      #|
       (menu-option/notify-box extras-menu
                               "Highlight frontier"
                               (get-field highlight-frontier? config))
+      |#
       (menu-option/notify-box extras-menu
                               "Include renaming steps"
                               (get-field show-rename-steps? config))
       (menu-option/notify-box extras-menu
                               "One term at a time"
                               (get-field one-by-one? config))
+      (menu-option/notify-box extras-menu
+                              "Refresh on resize"
+                              (get-field refresh-on-resize? config))
+      (menu-option/notify-box extras-menu
+                              "Draw binding arrows"
+                              (get-field draw-arrows? config))
       (menu-option/notify-box extras-menu
                               "Extra navigation"
                               (get-field extra-navigation? config)))

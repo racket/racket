@@ -15,11 +15,13 @@
 (preferences:set-default 'SyntaxBrowser:Height 600 number?)
 (preferences:set-default 'SyntaxBrowser:PropertiesPanelPercentage 1/3 number?)
 (preferences:set-default 'SyntaxBrowser:PropertiesPanelShown #t boolean?)
+(preferences:set-default 'SyntaxBrowser:DrawArrows? #t boolean?)
 
 (define pref:width (pref:get/set 'SyntaxBrowser:Width))
 (define pref:height (pref:get/set 'SyntaxBrowser:Height))
 (define pref:props-percentage (pref:get/set 'SyntaxBrowser:PropertiesPanelPercentage))
 (define pref:props-shown? (pref:get/set 'SyntaxBrowser:PropertiesPanelShown))
+(define pref:draw-arrows? (pref:get/set 'SyntaxBrowser:DrawArrows?))
 
 (define pref:invert-colors? (pref:get/set 'framework:white-on-black?))
 
@@ -68,7 +70,8 @@
       (width pref:width)
       (height pref:height)
       (props-percentage pref:props-percentage)
-      (props-shown? pref:props-shown?))
+      (props-shown? pref:props-shown?)
+      (draw-arrows? pref:draw-arrows?))
 
     (super-new)))
 

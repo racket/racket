@@ -4,7 +4,9 @@
 (provide (all-defined-out))
 
 (define-interface config<%> (sb:config<%>)
-  ((sb:methods:notify macro-hiding-mode
+  ((sb:methods:notify draw-arrows?
+                      refresh-on-resize?
+                      macro-hiding-mode
                       show-hiding-panel?
                       identifier=?
                       highlight-foci?
