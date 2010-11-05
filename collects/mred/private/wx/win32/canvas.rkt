@@ -454,16 +454,21 @@
      (define/public (append-combo-item s)
        (SendMessageW/str combo-hwnd CB_ADDSTRING 0 s))
      (define/public (clear-combo-items)
-       (void))
+       (SendMessageW combo-hwnd CB_RESETCONTENT 0 0))
 
      (define/public (on-popup) (void))
 
      (define/override (is-command? cmd)
-       (= cmd CBN_SELENDOK))
+       (or (= cmd CBN_SELENDOK)
+           (= cmd CBN_DROPDOWN)))
 
      (define/public (do-command cmd control-hwnd)
-       (let ([i (SendMessageW combo-hwnd CB_GETCURSEL 0 0)])
-         (queue-window-event this (lambda () (on-combo-select i)))))
+       (cond
+        [(= cmd CBN_SELENDOK)
+         (let ([i (SendMessageW combo-hwnd CB_GETCURSEL 0 0)])
+           (queue-window-event this (lambda () (on-combo-select i))))]
+        [(= cmd CBN_DROPDOWN)
+         (constrained-reply (get-eventspace) (lambda () (on-popup)) (void))]))
 
      (define/override (is-hwnd? a-hwnd)
        (or (ptr-equal? panel-hwnd a-hwnd)

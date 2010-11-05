@@ -616,6 +616,11 @@
 (define CB_INSERTSTRING #x014A)
 (define CB_SETCURSEL #x014E)
 (define CB_GETCURSEL #x0147)
-(define CBN_SELENDOK 9)
 (define CB_ADDSTRING #x0143)
 (define CB_RESETCONTENT #x014B)
+
+(define CBN_SELENDOK 9)
+(define CBN_DROPDOWN        7)
+(define CBN_CLOSEUP         8)
+(define CBN_SELENDCANCEL    10)
+
