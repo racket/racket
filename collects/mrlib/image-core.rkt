@@ -719,8 +719,8 @@ has been moved out).
                                   (curve-segment-e-pull shape)
                                   (scale-color (curve-segment-color shape) x-scale y-scale))])
          (render-poly/line-segment/curve-segment this-one dc dx dy))]
-      [(or (bitmap? shape) (np-atomic-shape? shape))
-       (let* ([shape (if (bitmap? shape) 
+      [(or (ibitmap? shape) (np-atomic-shape? shape))
+       (let* ([shape (if (ibitmap? shape) 
                          (make-flip #f shape)
                          shape)]
               [this-one (scale-np-atomic x-scale y-scale shape)])
