@@ -149,7 +149,10 @@ Returns @racket[(and (real? v) (inexact? v))].}
 @defproc[(fixnum? [v any/c]) boolean?]{
 
 Return @racket[#t] if @racket[v] is a @techlink{fixnum}, @racket[#f]
-otherwise.}
+otherwise.
+
+Note: the result of this function is platform-dependent, so using it in
+syntax transformers can lead to platform-dependent bytecode files.}
 
 
 @defproc[(flonum? [v any/c]) boolean?]{
