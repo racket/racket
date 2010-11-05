@@ -15,7 +15,7 @@
 
  @item{@rl-link['("racket" "HISTORY.txt")]{Racket core}
        @itemize[#:style "compact"]{
-         @item{@mzport["Draw_GUI_X-Y.txt" "v5.0.x" "vX.Y"]}
+         @item{@mzport["Draw_GUI_5_1.txt" "v5.0.x" "v5.1"]}
          @item{@mzport["Racket_5.txt" "v4.x" "v5.x"]}
          @item{@mzport["MzScheme_4.txt" "v3xx" "v4.x"]}
          @item{@mzport["MzScheme_300.txt" "v2xx" "v3xx"]}
