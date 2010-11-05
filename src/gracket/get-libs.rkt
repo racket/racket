@@ -18,8 +18,8 @@
    (src-dir dest-dir)
    (values src-dir dest-dir)))
 
-(define url-host "github.com")
-(define url-path "/mflatt/gracket-libs/raw/master/")
+(define url-host "download.racket-lang.org")
+(define url-path "/libs/1/")
 (define url-base (string-append "http://" url-host url-path))
 
 (define needed-files+sizes
