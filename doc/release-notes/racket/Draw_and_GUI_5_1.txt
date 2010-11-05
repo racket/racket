@@ -1,7 +1,7 @@
 GRacket, Racket, Drawing, and GUIs
 ----------------------------------
 
-Version X.Y includes two major changes to the Racket drawing and GUI
+Version 5.1 includes two major changes to the Racket drawing and GUI
 API:
 
  * The drawing portion of the GUI toolbox is now available as a
