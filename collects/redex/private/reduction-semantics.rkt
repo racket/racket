@@ -1462,7 +1462,7 @@
                     (when (null? (cdr more))
                       (raise-syntax-error syn-error-name 
                                           (format "expected a pattern to follow ~a" (syntax-e (car more)))
-                                          stx))
+                                          stx (car more)))
                     (loop (cddr more)
                           (cons (cadr more) arg-pats))]
                    [else
@@ -1490,7 +1490,8 @@
          [_
           (raise-syntax-error
            syn-error-name
-           "expected the name of the meta-function, followed by its contract (or no name and no contract)"
+           (format "expected the name of the ~a, followed by its contract (or no name and no contract)"
+                   (if relation? "relation" "meta-function"))
            stx
            rest)])]))
            

@@ -1042,6 +1042,7 @@ and @racket[#f] otherwise.
 
 @defform/subs[#:literals ()
               (define-relation language
+               relation-contract
                [(name @#,ttpattern ...) @#,tttterm ...] ...)
                ([relation-contract (code:line)
                                    (code:line id ⊂ pat x ... x pat)

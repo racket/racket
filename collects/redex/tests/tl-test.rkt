@@ -929,7 +929,10 @@
             'failed)
           'passed))
   
- 
+  (test-syn-err 
+   (define-relation grammar R)
+   #rx"expected the name of the relation")
+  
 ;                    ;;                         ;                                        ;;                    ;                 
 ;                     ;                 ;                                                 ;            ;                         
 ;   ;; ;;   ;;;    ;; ; ;;  ;;   ;;;;  ;;;;;  ;;;     ;;;  ;; ;;          ;; ;;   ;;;     ;     ;;;   ;;;;;  ;;;     ;;;  ;; ;;  
