@@ -3860,7 +3860,9 @@ designates the character that triggers autocompletion
     (define line-numbers-space 0)
     (define/override (find-position x y . args)
       ;; adjust x position to account for line numbers
-      (super find-position (- x line-numbers-space) y . args))
+      (if show-line-numbers?
+        (super find-position (- x line-numbers-space) y . args)
+        (super find-position x y . args)))
 
     (define (draw-line-numbers dc left top right bottom dx dy)
       (setup-dc dc)
