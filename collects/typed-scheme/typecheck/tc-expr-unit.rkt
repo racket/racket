@@ -21,9 +21,10 @@
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ check-subforms^)
 (export tc-expr^)
 
-;; Is the number a fixnum on all the platforms Racket supports?
-;; This relies on Racket being compiled only on 32+ bit systems.
-;; This check is done at compile time to typecheck literals.
+;; Is the number a fixnum on *all* the platforms Racket supports?  This
+;; works because Racket compiles only on 32+ bit systems.  This check is
+;; done at compile time to typecheck literals -- so use it instead of
+;; `fixnum?' to avoid creating platform-dependent .zo files.
 (define (portable-fixnum? n)
   (and (exact-integer? n)
        (< n (expt 2 31))
