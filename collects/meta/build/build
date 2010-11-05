@@ -75,7 +75,8 @@ defbuild() {
 # "D" first entry is for default field values (missing default makes the field
 # required).  Warning: an `eval "foo=\"bar\""' is used to assign values.
 msets "/machines/D" "workdir=/var/tmp" "moveto=" "copytobak=" \
-      "configure_args=" "LDFLAGS=" "ext_lib_paths=" "renice="
+      "configure_args=" "LDFLAGS=" "ext_lib_paths=" "renice=" \
+      "more_setup_args="
 # defbuild "ccs-solaris" "sparc-solaris" "moveto=/proj/racket" \
 #          "ext_lib_paths=/arch/unix/packages/openssl-0.9.7e"
 defbuild "pitcairn"    "i386-win32" \
@@ -1103,7 +1104,7 @@ DO_BUILD() { # inputs -- releasing
   ## --------------------------------------------------------------------------
   releasing="$1"; shift
   machineget platform workdir moveto copytobak \
-             configure_args ext_lib_paths renice
+             configure_args ext_lib_paths renice more_setup_args
 
   if [[ "$renice" != "" ]]; then dont_exit _run renice "$renice" "$$"; fi
 
@@ -1129,6 +1130,11 @@ DO_BUILD() { # inputs -- releasing
   if [[ "$machine" != "$workmachine" ]]; then
     # don't waste time on the docs except on the main machine
     export SETUP_ARGS="$SETUP_ARGS -D"
+  fi
+
+  # additional setup args
+  if [[ "x$more_setup_args" != "x" ]]; then
+    export SETUP_ARGS="$SETUP_ARGS $more_setup_args"
   fi
 
   ## --------------------------------------------------------------------------
