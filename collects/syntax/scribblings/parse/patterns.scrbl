@@ -87,7 +87,7 @@ means specifically @tech{@Spattern}.
                  H-pattern]
                 [A-pattern
                  ~!
-                 (~bind [attr-id expr] ...)
+                 (~bind [attr-arity-decl expr] ...)
                  (~fail maybe-fail-condition maybe-message-expr)
                  (~parse S-pattern stx-expr)
                  (@#,ref[~and a] A-pattern ...+)]
@@ -914,7 +914,10 @@ within a @scheme[~not] pattern unless there is an intervening
 @scheme[~delimit-cut] or @scheme[~commit] pattern.
 }
 
-@specsubform[(@#,defhere[~bind] [attr-id expr] ...)]{
+@specsubform/subs[(@#,defhere[~bind] [attr-arity-decl expr] ...)
+                  ([attr-arity-decl
+                    attr-name-id
+                    (attr-name-id depth)])]{
 
 Evaluates the @scheme[expr]s and binds them to the given
 @scheme[attr-id]s as attributes.

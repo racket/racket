@@ -171,7 +171,7 @@ follows:
                (code:line #:declare pattern-id syntax-class-id)
                (code:line #:declare pattern-id (syntax-class-id arg ...))
                (code:line #:with syntax-pattern expr)
-               (code:line #:attr attr-id expr)
+               (code:line #:attr attr-arity-decl expr)
                (code:line #:fail-when condition-expr message-expr)
                (code:line #:fail-unless condition-expr message-expr)
                (code:line #:when condition-expr)
@@ -202,11 +202,11 @@ match a pattern in several ways, backtracking may cause the same
 clause to be tried multiple times before the next clause is reached.
 }
 
-@specsubform[(code:line #:attr attr-id expr)]{
+@specsubform[(code:line #:attr attr-arity-decl expr)]{
 
 Evaluates the @scheme[expr] in the context of all previous attribute
-bindings and binds it to the attribute named by @scheme[attr-id]. The
-value of @scheme[expr] need not be syntax.
+bindings and binds it to the given attribute. The value of
+@scheme[expr] need not be syntax.
 }
 
 @specsubform[(code:line #:fail-when condition-expr message-expr)
