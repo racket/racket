@@ -353,8 +353,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
 
 mr-base := (package: "gracket") (bin: "gracket-text")
            (package: "mred") (bin: "mred-text")
-           (collects: "afm/")
-mr-manuals := (doc+src: "gui/")
+mr-manuals := (doc+src: "gui/") (doc+src: "draw/")
 
 dr-base := (package: "drracket") (package: "drscheme") (package: "framework")
 dr-manuals := (doc+src: "tools/")
@@ -543,7 +542,7 @@ platform-dependent :+= (and (collects: "sgl/")
                             (srcfile: "sgl/gl-info"))
 
 ;; -------------------- syntax-color
-dr-extras :+= (package: "syntax-color")
+mz-extras :+= (package: "syntax-color")
 
 ;; -------------------- plt-help
 dr-extras :+= (collects: "help") (bin: "Racket Documentation")
