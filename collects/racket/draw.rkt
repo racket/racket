@@ -29,6 +29,7 @@
          post-script-dc%
          ps-setup% current-ps-setup
          get-face-list
+         get-family-builtin-face
          gl-config%
          gl-context<%>
 

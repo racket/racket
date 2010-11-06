@@ -137,3 +137,7 @@ Removed Functions
 The `write-resource, `get-reource', and `send-event' functions have
 been removed from `racket/gui/base'. If there is any demand for the
 removed functionality, it will be implemented in a new library.
+
+The `current-ps-afm-file-paths' and `current-ps-cmap-file-paths'
+functions have been removed, because they no longer apply. PostScript
+font information is obtained through Pango.

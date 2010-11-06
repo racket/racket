@@ -6,9 +6,17 @@
            scribble/decode
            (for-label scheme/gui/base
                       scheme/base)
-           (for-syntax scheme/base))
+           (for-syntax scheme/base)
+           (only-in scribblings/draw/blurbs
+                    res-sym
+                    Resource
+                    ResourceFirst
+                    boxisfill
+                    boxisfillnull
+                    MismatchExn))
 
-  (provide (except-out (all-defined-out) p define-inline))
+  (provide (except-out (all-defined-out) p define-inline)
+           (all-from-out scribblings/draw/blurbs))
 
   (define-syntax-rule (define-inline (name) body)
     (define-syntax (name stx)
@@ -193,8 +201,6 @@ information@|details|, even if the editor currently has delayed refreshing (see
               @scheme[min-width], @scheme[min-height], @scheme[stretchable-width], and 
               @scheme[stretchable-height] arguments, see @scheme[area<%>].})
 
-  (define MismatchExn @elem{an @scheme[exn:fail:contract] exception is raised})
-  
   (define AFM @elem{Adobe Font Metrics})
   
   (define (MonitorMethod what by-what method whatsit)
@@ -244,18 +250,6 @@ information@|details|, even if the editor currently has delayed refreshing (see
                         (hspace 1)
                         (bytes->string/latin-1 name))))
   
-  (define (res-sym s)
-    (string->symbol (string-append "GRacket:" s)))
-
-  (define (Resource s)
-    @elem{@to-element[`(quote ,(res-sym s))]
-          preference})
-  (define (ResourceFirst s) ; fixme -- add index
-    (let ([r (Resource s)])
-      (index* (list (format "~a preference" (res-sym s)))
-              (list r) 
-              r)))
-
   (define (edsnipsize a b c)
     @elem{An @scheme[editor-snip%] normally stretches to wrap around the size
           of the editor it contains. This method @|a| of the snip
@@ -268,11 +262,6 @@ information@|details|, even if the editor currently has delayed refreshing (see
     (edsnipsize @elem{sets the minimum @|a|}
                 "smaller"
                 @elem{the editor is @|b|-aligned in the snip}))
-
-  (define (boxisfill which what)
-    @elem{The @|which| box is filled with @|what|.})
-  (define (boxisfillnull which what)
-    @elem{The @|which| box is filled with @|what|, unless @|which| is @scheme[#f].})
 
   (define (slant . s)
     (make-element "slant" (decode-content s)))

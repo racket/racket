@@ -3,13 +3,10 @@
 
 @defclass/title[printer-dc% object% (dc<%>)]{
 
-A @scheme[printer-dc%] object is a Windows or Mac OS X printer
- device context. The class cannot be instantiated under X (an
- @scheme[exn:misc:unsupported] exception is raised). 
-
-Under Mac OS X, a newly created @scheme[printer-dc%] object obtains
- orientation (portrait versus landscape) and scaling information from
- the current @scheme[ps-setup%] object, as determined by the
+A @scheme[printer-dc%] object is a printer device context. A newly
+ created @scheme[printer-dc%] object obtains orientation (portrait
+ versus landscape) and scaling information from the current
+ @scheme[ps-setup%] object, as determined by the
  @scheme[current-ps-setup] parameter. This information can be
  configured by the user through a dialog shown by
  @scheme[get-page-setup-from-user].

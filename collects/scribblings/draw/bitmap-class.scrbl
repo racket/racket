@@ -210,8 +210,7 @@ For PNG loading, if @scheme[bg-color] is not @scheme[#f], then it is
 @index["gamma correction"]{In} all PNG-loading modes, gamma correction
  is applied when the file provides a gamma value, otherwise gamma
  correction is not applied. The current display's gamma factor is
- determined by the @ResourceFirst{gamma} (see @|mrprefsdiscuss|) if it
- is set, or else by the @indexed-envvar{SCREEN_GAMMA} environment
+ determined by the @indexed-envvar{SCREEN_GAMMA} environment
  variable if it is defined. If the preference and environment variable
  are both undefined, a platform-specific default is used.
 

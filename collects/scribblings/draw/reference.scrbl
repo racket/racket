@@ -1,8 +1,7 @@
 #lang scribble/doc
-@(require "common.ss"
-          "diagrams.ss")
+@(require "common.ss")
 
-@title[#:style '(toc quiet)]{Drawing Classes}
+@title[#:style '(toc reveal)]{Reference}
 
 @local-table-of-contents[]
 
@@ -23,6 +22,6 @@
 @include-section["pen-list-class.scrbl"]
 @include-section["point-class.scrbl"]
 @include-section["post-script-dc-class.scrbl"]
-@include-section["printer-dc-class.scrbl"]
 @include-section["ps-setup-class.scrbl"]
 @include-section["region-class.scrbl"]
+@include-section["draw-funcs.scrbl"]

@@ -22,7 +22,7 @@
 
     (define-values (s width height landscape?)
       (let ([su (if interactive
-                    ((gui-dynamic-require 'get-ps-setup-from-user))
+                    ((gui-dynamic-require 'get-ps-setup-from-user) #f parent)
                     (current-ps-setup))])
         (cond
          [su 
@@ -33,7 +33,7 @@
                  [get-file (lambda (fn)
                              ((gui-dynamic-require 'put-file)
                               "Save PostScript As"
-                              #f
+                              parent
                               (and fn (path-only fn))
                               (and fn (file-name-from-path fn))
                               "ps"))]

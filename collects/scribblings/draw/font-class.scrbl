@@ -25,17 +25,9 @@ A @defterm{font} is an object which determines the appearance of text,
  @item{@indexed-scheme['modern] (fixed width)}
  @item{@indexed-scheme['symbol] (Greek letters and more)}
  @item{@indexed-scheme['system] (used to draw control labels)}
- ]
+ ]}
 
- The @scheme['symbol] designation is special under Mac OS X and X with
- fontconfig/Xft; characters in the ASCII range 0-255 are converted to
- Unicode characters that match Adobe symbols. For example, @litchar{a} is
- converted to @litchar["\u03B1"].}
-
- @item{face --- A string face name, such as @scheme["Courier"] (under
-                Windows and Mac OS X), @scheme["-*-courier"] (under
-                X), or @scheme[" Luxi Sans"] (under X with
-                fontconfig/Xft; note the leading space). The format
+ @item{face --- A string face name, such as @scheme["Courier"]. The format
                 and meaning of a face name is platform- and
                 device-specific. If a font's face name is @scheme[#f],
                 then the font's appearance depends only on the
@@ -49,8 +41,8 @@ A @defterm{font} is an object which determines the appearance of text,
 @item{style --- The slant style of the font, one of:
  @itemize[
  @item{@indexed-scheme['normal]}
- @item{@indexed-scheme['slant] (Windows, Mac OS X: same as @scheme['italic]; X: tries @scheme['italic] if @scheme['slant] font does not exist)}
- @item{@indexed-scheme['italic] (X: tries @scheme['slant] if @scheme['italic] font does not exist)}
+ @item{@indexed-scheme['slant] (a.k.a ``oblique'')}
+ @item{@indexed-scheme['italic]}
  ]}
 
 @item{weight --- The weight of the font, one of:
@@ -65,17 +57,10 @@ A @defterm{font} is an object which determines the appearance of text,
 @item{smoothing --- Amount of anti-alias smoothing, one of:
  @itemize[
  @item{@indexed-scheme['default] (platform-specific, sometimes user-configurable)}
- @item{@indexed-scheme['partly-smoothed] (Windows: TrueType when available; 
-                                      Mac OS X: 4-bit, pixel-aligned smoothing;
-                                      X: fontconfig/Xft when available)}
- @item{@indexed-scheme['smoothed] (Windows: ClearType when available, XP and up;
-                               Mac OS X: Quartz smoothing;
-                               X: fontconfig/Xft when available)}
+ @item{@indexed-scheme['partly-smoothed] (gray anti-aliasing)}
+ @item{@indexed-scheme['smoothed] (sub-pixel anti-aliasing)}
  @item{@indexed-scheme['unsmoothed]}
- ]
- Special case: @scheme['default] corresponds to
- @scheme['partly-smoothed] when used with the @scheme['modern] family
- and a font size between 9 and 13 (inclusive).}
+ ]}
 
 @item{size-in-pixels? --- @scheme[#t] if the size of the font
  is in logical drawing units (i.e., pixels for an unscaled screen or
@@ -113,11 +98,7 @@ See also
 
 When no arguments are provided, creates an instance of the default
  font. If no face name is provided, the font is created without a face
- name. Otherwise, see @scheme[font-name-directory<%>] for information
- about the way @scheme[face] is interpreted for drawing text on
- various platforms and devices; when a platform- or device-specific
- interpretation of @scheme[face] is not available, the @scheme[family]
- is used to draw text.
+ name.
 
 See @scheme[font%] for information about @scheme[family],
  @scheme[style], and @scheme[weight].  @scheme[font-name-directory<%>].

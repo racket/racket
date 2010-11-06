@@ -4,6 +4,7 @@
                  namespace-anchor->empty-namespace
                  make-base-empty-namespace)
            scheme/class
+           racket/draw
            mzlib/etc
 	   (prefix wx: "private/kernel.ss")
 	   (prefix wx: "private/wxme/style.ss")
@@ -101,26 +102,15 @@
 	     add-pasteboard-keymap-functions
 	     begin-busy-cursor
 	     bell
-	     bitmap%
-             make-bitmap
-             read-bitmap
-             make-monochrome-bitmap
-	     brush%
-	     brush-list%
 	     editor-data%
 	     editor-data-class%
 	     editor-data-class-list<%>
 	     check-for-break
 	     clipboard<%>
 	     clipboard-client%
-	     color%
-	     color-database<%>
 	     control-event%
 	     current-eventspace
-	     current-ps-setup
 	     cursor%
-	     dc<%>
-	     dc-path%
 	     get-display-depth
 	     end-busy-cursor
 	     event%
@@ -128,10 +118,7 @@
 	     eventspace?
 	     find-graphical-system-path
 	     flush-display
-	     font%
-	     font-list%
-	     font-name-directory<%>
-             get-highlight-background-color
+	     get-highlight-background-color
              get-highlight-text-color
 	     get-the-editor-data-class-list
 	     get-the-snip-class-list
@@ -152,14 +139,9 @@
 	     editor-wordbreak-map%
 	     mouse-event%
 	     mult-color<%>
-	     pen%
-	     pen-list%
-	     point%
-	     ps-setup%
 	     read-editor-global-footer
 	     read-editor-global-header
 	     read-editor-version
-	     region%
 	     scroll-event%
 	     snip%
 	     snip-admin%
@@ -181,14 +163,7 @@
 	     yield
 	     eventspace-shutdown?
 	     get-panel-background
-	     gl-context<%>
-	     gl-config%
 
-             the-color-database
-             the-font-name-directory
-             the-font-list
-             the-pen-list
-             the-brush-list
              the-style-list
              the-editor-wordbreak-map
              make-screen-bitmap
@@ -197,9 +172,7 @@
   (define the-clipboard (wx:get-the-clipboard))
   (define the-x-selection-clipboard (wx:get-the-x-selection))
 
-  ;; Obsolete
-  (define current-ps-afm-file-paths (make-parameter null))
-  (define current-ps-cmap-file-paths (make-parameter null))
+  (provide (all-from racket/draw))
 
   (provide button%
 	   canvas%
@@ -277,13 +250,10 @@
 	   get-top-level-edit-target-window
 	   register-collecting-blit
 	   unregister-collecting-blit
-	   bitmap-dc%
-	   post-script-dc%
 	   printer-dc%
 	   current-text-keymap-initializer
 	   sleep/yield
 	   get-window-text-extent
-	   get-family-builtin-face
 	   send-message-to-window
 	   the-clipboard
 	   the-x-selection-clipboard
@@ -309,8 +279,6 @@
 	   make-gui-namespace
 	   make-gui-empty-namespace
 	   file-creator-and-type
-	   current-ps-afm-file-paths
-	   current-ps-cmap-file-paths
 	   hide-cursor-until-moved
            system-position-ok-before-cancel?
            label-string?

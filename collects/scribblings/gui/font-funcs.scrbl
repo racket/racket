@@ -3,28 +3,6 @@
 
 @title{Fonts}
 
-
-@defproc[(get-face-list [family (one-of/c 'mono 'all) 'all])
-         (listof string?)]{
-
-Returns a list of font face names available on the current system. If
- @scheme['mono] is provided as the argument, then only faces that are
- known to correspond to monospace fonts are included in the list.
-
-}
-
-@defproc[(get-family-builtin-face [family (one-of/c 'default 'decorative 'roman 'script 
-                                                    'swiss 'modern 'symbol 'system)])
-         string?]{
-
-Returns the built-in default face mapping for a particular font
- family. The built-in default can be overridden via preferences, as
- described in @secref["fontresources"].
-
-See  @scheme[font%] for information about @scheme[family].
-
-}
-
 @defthing[menu-control-font (is-a?/c font%)]{
 
 This font is the default for @scheme[popup-menu%] objects.

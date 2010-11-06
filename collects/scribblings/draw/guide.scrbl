@@ -1,28 +1,17 @@
 #lang scribble/doc
 @(require scribble/eval
-          "common.ss"
-          "diagrams.ss")
+          "common.ss")
 
-@title[#:tag "drawing-overview"]{Drawing}
+@title[#:tag "overview"]{Overview}
 
-Drawing in Racket requires a @deftech{device context}
+Drawing with @racketmodname[racket/draw] uses a @deftech{device context}
 (@deftech{DC}), which is an instance of the @scheme[dc<%>]
-interface. For example, the @method[canvas<%> get-dc] method of a
+interface. For example, the @racket[post-script-dc%] class implements
+a @racket[dc<%>] for drawing to a PostScript file, while @racket[bitmap-dc%] 
+draws to a bitmap. When using the @racketmodname[racket/gui] library for GUIs,
+the @method[canvas<%> get-dc] method of a
 canvas returns a @scheme[dc<%>] instance for drawing into the canvas
-window.  Other kinds of DCs draw to different kinds of devices:
-
-@itemize[
-
- @item{@scheme[bitmap-dc%] --- a @deftech{bitmap DC} draws to an
- offscreen bitmap.}
-
- @item{@scheme[post-script-dc%] --- a @deftech{PostScript DC}
- records drawing commands to a PostScript file.}
-
- @item{@scheme[printer-dc%] --- a @deftech{printer DC} draws to a
- platform-specific printer device (Windows, Mac OS X).}
-
-]
+window.
 
 Tools that are used for drawing include the following: @scheme[pen%]
  objects for drawing lines and shape outlines, @scheme[brush%]
@@ -30,20 +19,11 @@ Tools that are used for drawing include the following: @scheme[pen%]
  bitmaps, and @scheme[dc-path%] objects for describing paths to draw
  and fill.
 
-The following example creates a frame with a drawing canvas, and then
- draws a round, blue face with square, yellow eyes and a smiling, red
- mouth:
+The following example uses the GUI library as well as the drawing
+ library. It creates a frame with a drawing canvas, and then draws a
+ round, blue face with square, yellow eyes and a smiling, red mouth:
 
 @schemeblock[
-(code:comment @#,t{Make a 300 x 300 frame})
-(define frame (new frame% [label "Drawing Example"]
-                          [width 300]
-                          [height 300]))
-(code:comment @#,t{Make the drawing area})
-(define canvas (new canvas% [parent frame]))
-(code:comment @#,t{Get the canvas's drawing context})
-(define dc (send canvas #,(:: canvas<%> get-dc)))
-
 (code:comment @#,t{Make some pens and brushes})
 (define no-pen (make-object pen% "BLACK" 1 'transparent))
 (define no-brush (make-object brush% "BLACK" 'transparent))
@@ -66,47 +46,18 @@ The following example creates a frame with a drawing canvas, and then
   (let ([-pi (atan 0 -1)]) 
     (send dc #,(:: dc<%> draw-arc) 75 75 150 150 (* 5/4 -pi) (* 7/4 -pi))))
 
-(code:comment @#,t{Show the frame})
-(send frame #,(:: top-level-window<%> show) #t) 
-(code:comment @#,t{Wait a second to let the window get ready})
-(sleep/yield 1) 
-(code:comment @#,t{Draw the face})
-(draw-face dc)
-]
-
-The @scheme[sleep/yield] call is necessary under X because
- drawing to the canvas has no effect when the canvas is not
- shown. Although the @scheme[(send frame #,(:: top-level-window<%> show) #t)]
- expression queues a show request for the frame, the actual display of
- the frame and its canvas requires handling several events. The
- @scheme[sleep/yield] procedure pauses for a specified number
- of seconds, handling events while it pauses.
-
-One second is plenty of time for the frame to show itself, but a
- better solution is to create a canvas with a paint callback function
- (or overriding @method[canvas<%> on-paint]). Using a paint
- callback function is better for all platforms; when the canvas in the
- above example is resized or temporarily covered by another window,
- the face disappears. To ensure that the face is redrawn whenever the
- canvas itself is repainted, we provide a paint callback when creating
- the canvas:
-
-@schemeblock[
 (code:comment @#,t{Make a 300 x 300 frame})
 (define frame (new frame% [label "Drawing Example"]
                           [width 300]
                           [height 300]))
-
-(code:comment @#,t{Make the drawing area with a paint callback})
-(define canvas
-  (new canvas% [parent frame]
-               [paint-callback
-                (lambda (canvas dc) (draw-face dc))]))
-
-(code:comment @#,t{... pens, brushes, and @scheme[draw-face] are the same as above ...})
+(code:comment @#,t{Make the drawing area, and set its paint callback})
+(code:comment @#,t{to use the @racket[draw-face] function:})
+(define canvas (new canvas% 
+                    [parent frame]
+                    [paint-callback (lambda (c dc) (draw-face dc))]))
 
 (code:comment @#,t{Show the frame})
-(send frame #,(:: top-level-window<%> show) #t)
+(send frame #,(:: top-level-window<%> show) #t) 
 ]
 
 Suppose that @scheme[draw-face] creates a particularly complex face that
@@ -163,7 +114,7 @@ More complex shapes are typically best implemented with
 @(begin
 #readerscribble/comment-reader
 [schemeblock
-(require mzlib/math) ; for @scheme[pi]
+(require racket/math) ; for @scheme[pi]
 
 ;; Construct paths for a 630 x 630 logo
 

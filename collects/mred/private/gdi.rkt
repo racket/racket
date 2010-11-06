@@ -13,17 +13,13 @@
 
   (provide register-collecting-blit
 	   unregister-collecting-blit
-	   bitmap-dc%
-	   post-script-dc%
 	   printer-dc%
 	   get-window-text-extent
-	   get-family-builtin-face
 	   normal-control-font
 	   small-control-font
 	   tiny-control-font
 	   view-control-font
-	   menu-control-font
-           get-face-list)
+	   menu-control-font)
 
   (define register-collecting-blit
     (case-lambda
@@ -49,14 +45,6 @@
     (lambda (canvas)
       (check-instance 'unregister-collecting-blit canvas% 'canvas% #f canvas)
       (wx:unregister-collecting-blit (mred->wx canvas))))
-
-  (define bitmap-dc%
-    (class100 wx:bitmap-dc% ([bitmap #f])
-      (inherit set-bitmap)
-      (sequence
-	(super-init)
-	(when bitmap
-	  (set-bitmap bitmap)))))
 
   (define-syntax check-page-active
     (syntax-rules ()
@@ -167,20 +155,6 @@
 
       (super-new)))
 
-  (define post-script-dc%
-    (class (doc+page-check-mixin wx:post-script-dc% 'post-script-dc%) 
-      (init [interactive #t][parent #f][use-paper-bbox #f][as-eps #t])
-
-      (check-top-level-parent/false '(constructor post-script-dc) parent)
-      
-      (define is-eps? (and as-eps #t))
-      (define/override (multiple-pages-ok?) (not is-eps?))
-
-      (as-entry
-       (lambda ()
-         (let ([p (and parent (mred->wx parent))])
-           (as-exit (lambda () (super-make-object interactive p use-paper-bbox as-eps))))))))
-
   (define printer-dc%
     (class100 (doc+page-check-mixin wx:printer-dc% 'printer-dc%) ([parent #f])
       (sequence
@@ -199,37 +173,6 @@
       (check-instance 'get-window-text-extent wx:font% 'font% #f font)
       (let-values ([(w h d a) (get-window-text-extent* string font combine?)])
         (values (inexact->exact (ceiling w)) (inexact->exact (ceiling h))))]))
-  
-  (define ugly?
-    (lambda (a)
-      (and (positive? (string-length a))
-           (not (or (char-alphabetic? (string-ref a 0))
-                    (char-numeric? (string-ref a 0))
-                    (char=? #\- (string-ref a 0)))))))
-
-  (define compare-face-names
-    (lambda (a b)
-      (let ([a-sp? (char=? #\space (string-ref a 0))]
-            [b-sp? (char=? #\space (string-ref b 0))]
-            [a-ugly? (ugly? a)]
-            [b-ugly? (ugly? b)])
-        (cond [(eq? a-sp? b-sp?)
-               (cond
-                [(eq? a-ugly? b-ugly?)
-                 (string-locale-ci<? a b)]
-                [else b-ugly?])]
-              [else a-sp?]))))
-
-  (define get-face-list
-    (case-lambda
-     [() (get-face-list 'all)]
-     [(a) (sort (wx:get-face-list a) compare-face-names)]))
-
-  (define (get-family-builtin-face family)
-    (unless (memq family '(default decorative roman script swiss modern system symbol))
-      (raise-type-error 'get-family-builtin-face "family symbol" family))
-    (let ([id (send wx:the-font-name-directory find-family-default-font-id family)])
-      (send wx:the-font-name-directory get-screen-name id 'normal 'normal)))
 
   (define small-delta (case (system-type)
 			[(windows) 0]

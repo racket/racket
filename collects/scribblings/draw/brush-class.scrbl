@@ -52,34 +52,9 @@ A brush's style is one of the following:
 
        ]}
 
- @item{@indexed-scheme['hilite] --- In unsmoothed mode, existing
-       destination pixels are ``highlighted'' in a platform-specific
-       way when the brush color is black. Under Windows and X for a
-       color drawing context, the inverted RGB components of
-       destination pixel are combined with the RGB components of the
-       system-wide highlight color using a bitwise ``or'', and the
-       combination is used.  (Under X, the color is specified by the
-       @ResourceFirst{hiliteColor} preference; see @|mrprefsdiscuss|.)
-       Under Mac OS X for a color drawing context, the inverted RGB
-       components of the system-wide highlight color are subtracted
-       from the RGB components of each destination pixel, and the
-       difference (or 0 for a negative result) is used. For any
-       monochrome drawing context, @scheme['hilite] is the same as
-       @scheme['xor]. For PostScript output, @scheme['hilite] uses a
-       stipple that is an array of small dots (essentially a
-       halftone), otherwise @scheme['hilite] is treated like
-       @scheme['solid] in a smoothing mode.}
+ @item{@indexed-scheme['hilite] --- Draws with black and a 30% alpha.}
 
- @item{@indexed-scheme['panel] --- In unsmoothed mode, draws with the
-       same color and pattern as a top-level panel background, if the
-       brush's color is the same as the color returned by
-       @scheme[get-panel-background] and if the brush has no
-       stipple. To create a @scheme[canvas%] object that is drawn like
-       a control, use the @scheme['transparent] canvas style instead,
-       because certain kinds of nested panels have different
-       background colors (e.g., a @scheme[tab-panel%] under Mac OS
-       X). In a smoothing mode, @scheme['panel] is treated as
-       @scheme['solid].}
+ @item{@indexed-scheme['panel] --- the same as @scheme['solid].}
 
  @item{The following modes correspond to built-in stipples drawn in
        @scheme['solid] mode:

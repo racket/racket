@@ -39,7 +39,7 @@
 						 (let ([s (send (send edit get-style-list) find-named-style "Standard")])
 						   (send s set-delta (font->delta f))))))]
 	       [p (make-object horizontal-pane% f)]
-	       [face (make-object list-box% #f (get-face-list) p refresh-sample)]
+	       [face (make-object list-box% #f (wx:get-face-list) p refresh-sample)]
 	       [p2 (make-object vertical-pane% p)]
 	       [p3 (instantiate horizontal-pane% (p2) [stretchable-width #f])]
 	       [style (let ([pnl (instantiate group-box-panel% ("Style" p3) [stretchable-height #f] [stretchable-width #f])])
@@ -98,7 +98,7 @@
 		(lambda (font)
 		  (let* ([facen (if font
 				    (send font get-face)
-				    (get-family-builtin-face 'default))]
+				    (wx:get-family-builtin-face 'default))]
 			 [f (and facen (send face find-string facen))])
 		    (and f (>= f 0) (send face set-selection f)))
 		  (when font

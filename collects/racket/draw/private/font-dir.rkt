@@ -4,7 +4,8 @@
          "font-syms.rkt")
 
 (provide font-name-directory<%>
-         the-font-name-directory)
+         the-font-name-directory
+         get-family-builtin-face)
 
 (define font-name-directory%
   (class object%
@@ -103,3 +104,10 @@
   (class->interface font-name-directory%))
 
 (define the-font-name-directory (new font-name-directory%))
+
+(define (get-family-builtin-face family)
+  (unless (memq family '(default decorative roman script swiss modern system symbol))
+    (raise-type-error 'get-family-builtin-face "family symbol" family))
+  (let ([id (send the-font-name-directory find-family-default-font-id family)])
+    (send the-font-name-directory get-screen-name id 'normal 'normal)))
+

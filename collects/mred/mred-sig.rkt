@@ -1,4 +1,3 @@
-
 #lang scheme/signature
 
 add-color<%>
@@ -38,8 +37,6 @@ control<%>
 current-eventspace
 current-eventspace-has-menu-root?
 current-eventspace-has-standard-menus?
-current-ps-afm-file-paths
-current-ps-cmap-file-paths
 current-ps-setup
 current-text-keymap-initializer
 cursor%
