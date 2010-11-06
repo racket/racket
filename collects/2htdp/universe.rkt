@@ -5,7 +5,6 @@
 #| TODO: 
    -- check that on-release is only defined if on-key is defined 
 
-   -- yield instead of sync
    -- run callbacks in user eventspace
    -- make timer fire just once; restart after on-tick callback finishes
    -- take out counting; replace by 0.25 delay
@@ -338,5 +337,8 @@
   (define esp (make-eventspace))
   (define thd (eventspace-handler-thread esp))
   (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
+    (define obj:ch (make-channel))
     (parameterize ([current-eventspace esp])
-      (send (o) last))))
+      (queue-callback (lambda () (channel-put obj:ch (o)))))
+    (send (channel-get obj:ch) last)))
+    
