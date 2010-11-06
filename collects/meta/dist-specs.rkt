@@ -537,9 +537,6 @@ mr-extras :+= (- (+ (package: "mrlib/")
 
 ;; -------------------- sgl
 mr-extras :+= (package: "sgl/")
-;; gl-info.rkt doesn't exist, but gl-info.zo holds platform-dependent data
-platform-dependent :+= (and (collects: "sgl/")
-                            (srcfile: "sgl/gl-info"))
 
 ;; -------------------- syntax-color
 mz-extras :+= (package: "syntax-color")

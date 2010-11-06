@@ -703,6 +703,7 @@ FRAMEWORK_REL_INSTALL
 FRAMEWORK_PREFIX
 INSTALL_ORIG_TREE
 EXE_SUFFIX
+SO_SUFFIX
 MZRT_CGC_FLAGS
 LIBATOM
 LIBSFX
@@ -712,6 +713,7 @@ ICP
 MRLIBINSTALL
 LIBFINISH
 MAKE_GRACKET
+MAKE_PLOT
 MAKE_WBUILD
 MAKE_COPYTREE
 MAKE_FINISH
@@ -1322,6 +1324,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-gracket        compile GRacket as well as Racket (enabled by default)
+  --enable-plot           compile plot libraries (enabled by default)
   --enable-docs           build docs on install (enabled by default)
   --enable-shared         create shared libraries
   --enable-dynlib         same as --enable-shared
@@ -1806,6 +1809,13 @@ else
   enable_gracket=yes
 fi
 
+# Check whether --enable-plot was given.
+if test "${enable_plot+set}" = set; then
+  enableval=$enable_plot;
+else
+  enable_plot=yes
+fi
+
 # Check whether --enable-docs was given.
 if test "${enable_docs+set}" = set; then
   enableval=$enable_docs;
@@ -2195,6 +2205,7 @@ show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
+show_explicitly_disabled "${enable_plot}" Plot
 
 if test "$LIBTOOLPROG" != "" ; then
   echo "=== Libtool program: $LIBTOOLPROG"
@@ -2266,6 +2277,7 @@ ar_libtool_no_undefined=""
 LIBRACKET_DEP=""
 
 EXE_SUFFIX=
+SO_SUFFIX=.so
 
 MMM=3m
 MMM_INSTALLED=
@@ -5297,9 +5309,7 @@ case $OS in
 
     STRIP_DEBUG="/usr/bin/strip -S"
 
-    # zlib comes with the OS
-    ZLIB_A=""
-    ZLIB_INC=""
+    SO_SUFFIX=.dylib
 
     GC_THREADS_FLAG="-DGC_DARWIN_THREADS"
 
@@ -9188,6 +9198,8 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9255,6 +9267,14 @@ else
 fi
 makefiles="$makefiles foreign/Makefile"
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
+
+if test "${enable_plot}" = "yes" ; then
+  makefiles="$makefiles
+             plot/Makefile"
+  MAKE_PLOT=plot
+else
+  MAKE_PLOT=no
+fi
 
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles
@@ -9968,6 +9988,7 @@ FRAMEWORK_REL_INSTALL!$FRAMEWORK_REL_INSTALL$ac_delim
 FRAMEWORK_PREFIX!$FRAMEWORK_PREFIX$ac_delim
 INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
 EXE_SUFFIX!$EXE_SUFFIX$ac_delim
+SO_SUFFIX!$SO_SUFFIX$ac_delim
 MZRT_CGC_FLAGS!$MZRT_CGC_FLAGS$ac_delim
 LIBATOM!$LIBATOM$ac_delim
 LIBSFX!$LIBSFX$ac_delim
@@ -9975,7 +9996,6 @@ WXLIBS!$WXLIBS$ac_delim
 WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
-LIBFINISH!$LIBFINISH$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -10017,7 +10037,9 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+LIBFINISH!$LIBFINISH$ac_delim
 MAKE_GRACKET!$MAKE_GRACKET$ac_delim
+MAKE_PLOT!$MAKE_PLOT$ac_delim
 MAKE_WBUILD!$MAKE_WBUILD$ac_delim
 MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 MAKE_FINISH!$MAKE_FINISH$ac_delim
@@ -10052,7 +10074,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 33; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 35; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

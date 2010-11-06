@@ -24,6 +24,7 @@ AC_CONFIG_SRCDIR(racket/src/bignum.c)
 AC_CONFIG_HEADERS([racket/mzconfig.h])
 
 AC_ARG_ENABLE(gracket, [  --enable-gracket        compile GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
+AC_ARG_ENABLE(plot,    [  --enable-plot           compile plot libraries (enabled by default)], , enable_plot=yes )
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
@@ -267,6 +268,7 @@ show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
+show_explicitly_disabled "${enable_plot}" Plot
 
 if test "$LIBTOOLPROG" != "" ; then
   echo "=== Libtool program: $LIBTOOLPROG"
@@ -338,6 +340,7 @@ ar_libtool_no_undefined=""
 LIBRACKET_DEP=""
 
 EXE_SUFFIX=
+SO_SUFFIX=.so
 
 MMM=3m
 MMM_INSTALLED=
@@ -629,9 +632,7 @@ case $OS in
 
     STRIP_DEBUG="/usr/bin/strip -S"
 
-    # zlib comes with the OS
-    ZLIB_A=""
-    ZLIB_INC=""
+    SO_SUFFIX=.dylib
 
     GC_THREADS_FLAG="-DGC_DARWIN_THREADS"
 
@@ -1163,6 +1164,7 @@ AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(INSTALL_ORIG_TREE)
 AC_SUBST(EXE_SUFFIX)
+AC_SUBST(SO_SUFFIX)
 AC_SUBST(MZRT_CGC_FLAGS)
 AC_SUBST(LIBATOM)
 
@@ -1174,6 +1176,7 @@ AC_SUBST(MRLIBINSTALL)
 AC_SUBST(LIBFINISH)
 
 AC_SUBST(MAKE_GRACKET)
+AC_SUBST(MAKE_PLOT)
 AC_SUBST(MAKE_WBUILD)
 AC_SUBST(MAKE_COPYTREE)
 AC_SUBST(MAKE_FINISH)
@@ -1248,6 +1251,14 @@ else
 fi
 makefiles="$makefiles foreign/Makefile"
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
+
+if test "${enable_plot}" = "yes" ; then
+  makefiles="$makefiles
+             plot/Makefile"
+  MAKE_PLOT=plot
+else
+  MAKE_PLOT=no
+fi
 
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles

@@ -1,10 +1,10 @@
 
 (module link-unit mzscheme
   (require mzlib/unit
-	   mzlib/include
 	   mzlib/process
 	   mzlib/sendevent
 	   "private/dirs.ss"
+           "private/stdio.rkt"
 	   "private/cmdargs.ss"
            "filename-version.ss")
 
@@ -349,7 +349,7 @@
 					    in))
 			 libs
 			 output-strings)])
-		  (unless quiet? 
+		  (unless #f ; quiet? 
 		    (printf "link-extension: ~a\n" command))
 		  (stdio-link (lambda (quiet?)
 				(apply my-process* command))
@@ -420,19 +420,14 @@
 			  (delete-file expfile))))))
 		(error 'link-extension "can't find an installed linker")))))
       
-      (define (macos-link quiet? input-files output-file)
-	(macos-make 'link-extension "linking-project" "so" quiet? 
-		    input-files output-file null))
-      
       (define link-extension
 	(case (system-type)
-	  [(unix windows macosx) unix/windows-link]
-	  [(macos) macos-link]))
+	  [(unix windows macosx) unix/windows-link]))
 
       ;; ---- some helpers:
       
       (define-values (my-process* stdio-link)
-	(let-values ([(p* do-stdio) (include (build-path "private" "stdio.rkt"))])
+	(let-values ([(p* do-stdio) (get-stdio)])
 	  (values
 	   p*
 	   (lambda (start-process quiet?)
@@ -444,6 +439,4 @@
 	    (let ([f (build-path d (format "tmp~a.~a" n suffix))])
 	      (if (file-exists? f)
 		  (loop (add1 n))
-		  f)))))
-
-      (include (build-path "private" "macinc.rktl"))))
+		  f)))))))

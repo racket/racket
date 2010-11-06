@@ -1,0 +1,58 @@
+
+srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+libpltdir = @libpltdir@
+collectsdir = @collectsdir@
+builddir = @builddir@
+
+ICP=@ICP@
+
+PLPLOT_SRCS = $(srcdir)/plplot/dc_drv.c \
+              $(srcdir)/plplot/plcont.c \
+              $(srcdir)/plplot/plfill.c \
+              $(srcdir)/plplot/plmap.c \
+              $(srcdir)/plplot/plshade.c \
+              $(srcdir)/plplot/plwind.c \
+              $(srcdir)/plplot/pdfutils.c \
+              $(srcdir)/plplot/plcore.c \
+              $(srcdir)/plplot/plgridd.c \
+              $(srcdir)/plplot/plmeta.c \
+              $(srcdir)/plplot/plstripc.c \
+              $(srcdir)/plplot/plargs.c \
+              $(srcdir)/plplot/plctrl.c \
+              $(srcdir)/plplot/plhist.c \
+              $(srcdir)/plplot/plot3d.c \
+              $(srcdir)/plplot/plsym.c \
+              $(srcdir)/plplot/plbox.c \
+              $(srcdir)/plplot/plcvt.c \
+              $(srcdir)/plplot/plimage.c \
+              $(srcdir)/plplot/plpage.c \
+              $(srcdir)/plplot/pltick.c \
+              $(srcdir)/plplot/plbuf.c \
+              $(srcdir)/plplot/pldtik.c \
+              $(srcdir)/plplot/plline.c \
+              $(srcdir)/plplot/plsdef.c \
+              $(srcdir)/plplot/plvpor.c
+
+FIT_SRCS = $(srcdir)/fit/fit.c $(srcdir)/fit/matrix.c
+
+XCOLLECTS = -X ../racket/gc2/xform-collects 
+
+CC = @CC@
+
+# In 3m mode, we can reply on an xform-collects setup
+3m:
+	env CC="$(CC)" LD="@MZLINKER@" ../racket/racket3m $(XCOLLECTS) $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
+	env CC="$(CC)" LD="@MZLINKER@" ../racket/racket3m $(XCOLLECTS) $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
+
+# In just-cgc mode, it's slow to load build.rkt:
+cgc:
+	env CC="$(CC)" LD="@MZLINKER@" ../racket/racketcgc -c $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
+	env CC="$(CC)" LD="@MZLINKER@" ../racket/racketcgc -c $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
+
+install:
+	cd ..; $(ICP) plot/libplplot@SO_SUFFIX@ "$(DESTDIR)$(libpltdir)/libplplot@SO_SUFFIX@"
+	cd ..; $(ICP) plot/libfit@SO_SUFFIX@ "$(DESTDIR)$(libpltdir)/libfit@SO_SUFFIX@"
