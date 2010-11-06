@@ -48,7 +48,7 @@ AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dum
 AC_ARG_ENABLE(float,   [  --enable-float          include support for single-precision floats])
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   compile to use single-precision by default])
 
-AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (sometimes needed for GL)])
+AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
 AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness cannot be determined])
 
@@ -686,7 +686,6 @@ case $OS in
       DYN_CFLAGS=""
       enable_xrender=no
       enable_cairo=no
-      enable_gl=no
       enable_pthread=no
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
@@ -1030,43 +1029,6 @@ fi
 
 if test "${enable_jit}" = "no" ; then
    PREFLAGS="${PREFLAGS} -DMZ_DONT_USE_JIT"
-fi
-
-################ X OpenGL ##################
-
-if test "${enable_gl}" = "" ; then
-  enable_gl=yes
-fi
-
-if test "${enable_gl}" = "yes" ; then  
-  # Check for header
-  AC_CHECK_HEADER(GL/glx.h, GLX_HEADER=yes, GLX_HEADER=no)
-  if test "${GLX_HEADER}" = "no" ; then  
-    echo "could not find GL/glx.h header; disabling GL support"
-    enable_gl=no
-  fi
-fi
-
-if test "${enable_gl}" = "yes" ; then 
-  AC_CHECK_LIB(GL, glXChooseVisual, GLX_LINK=yes, GLX_LINK=no, $X_LIBS -lX11 -lXext)
-  if test "${GL_LINK}" = "no" ; then
-    AC_CHECK_LIB(GL, glXChooseVisual, GLX_LINK=pthread, GLX_LINK=no, $X_LIBS -lX11 -lXext -pthread)
-  fi
-  if test "${GLX_LINK}" = "no" ; then
-    echo "could not link to the GLX library; disabling GL support"
-    enable_gl=no
-  fi
-  if test "${GLX_LINK}" = "pthread" ; then
-    if test "${enable_pthread}" = "no" ; then
-      echo "could not link to GLX without pthreads; use --enable-pthread to enable GL"
-      enable_gl=no
-    fi
-  fi 
-fi
-
-if test "${enable_gl}" = "yes" ; then
-  X_EXTRA_LIBS="$X_EXTRA_LIBS -lGL"
-  MROPTIONS="$MROPTIONS -DUSE_GL"
 fi
 
 ############## docs ################
