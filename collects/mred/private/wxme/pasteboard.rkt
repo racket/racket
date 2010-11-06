@@ -34,8 +34,9 @@
 (define black-brush (send the-brush-list find-or-create-brush "black" 'xor))
 (define white-brush (send the-brush-list find-or-create-brush "white" 'solid))
 (define invisi-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
-(define rb-brush (send the-brush-list find-or-create-brush "black" 'transparent))
-(define rb-pen (send the-pen-list find-or-create-pen "black" 1 'xor-dot))
+(define invisi-brush (send the-brush-list find-or-create-brush "black" 'transparent))
+(define rb-pen (send the-pen-list find-or-create-pen (get-highlight-background-color) 1 'xor-dot))
+(define rb-brush (send the-brush-list find-or-create-brush (get-highlight-background-color) 'solid))
 
 (define arrow (make-object cursor% 'arrow))
 
@@ -122,6 +123,11 @@
   (define dragging? #f)
   (define rubberband? #f)
 
+  (define rb-x 0.0)
+  (define rb-y 0.0)
+  (define rb-w 0.0)
+  (define rb-h 0.0)
+
   (define need-resize? #f)
 
   (define resizing #f) ; a snip
@@ -167,7 +173,7 @@
 
   ;; ----------------------------------------
 
-  (define/private (rubber-band x y w h)
+  (define/private (rubber-band-update x y w h)
     (when (and s-admin
                (not (zero? w))
                (not (zero? h)))
@@ -192,22 +198,11 @@
                   [b (min b (+ vy vh))])
               (unless (or (x . >= . r)
                           (y . >= . b))
-                (let-boxes ([dc #f]
-                            [dx 0.0]
-                            [dy 0.0])
-                    (set-box! dc (send s-admin get-dc dx dy))
-                  (let ([old-pen (send dc get-pen)]
-                        [old-brush (send dc get-brush)])
-                    (send dc set-pen rb-pen)
-                    (send dc set-brush rb-brush)
-  
-                    (send dc draw-rectangle
-                          (- x dx) (- y dy)
-                          (- r x)
-                          (- b y))
-
-                    (send dc set-pen old-pen)
-                    (send dc set-brush old-brush))))))))))
+                (set! rb-x x)
+                (set! rb-y y)
+                (set! rb-w (- r x))
+                (set! rb-h (- b y))
+                (update rb-x rb-y rb-w rb-h))))))))
 
   (def/override (adjust-cursor [mouse-event% event])
     (if (not s-admin)
@@ -317,7 +312,7 @@
 
               (when rubberband?
                 (set! rubberband? #f)
-                (rubber-band start-x start-y (- last-x start-x) (- last-y start-y))
+                (rubber-band-update start-x start-y (- last-x start-x) (- last-y start-y))
                 (add-selected start-x start-y (- last-x start-x) (- last-y start-y))
                 (update-all)))
 
@@ -377,10 +372,12 @@
                   (when (send event dragging?)
                     (cond
                      [rubberband?
+                      (begin-edit-sequence)
                       ;; erase old
-                      (rubber-band start-x start-y (- last-x start-x) (- last-y start-y))
+                      (rubber-band-update start-x start-y (- last-x start-x) (- last-y start-y))
                       ;; draw new:
-                      (rubber-band start-x start-y (- x start-x) (- y start-y))]
+                      (rubber-band-update start-x start-y (- x start-x) (- y start-y))
+                      (end-edit-sequence)]
                      [resizing
                       (do-event-resize x y)]
                      [else
@@ -916,6 +913,8 @@
                       (on-resize snip w h)
                       (set! write-locked (sub1 write-locked))
 
+                      (update-location loc)
+
                       (let ([rv? 
                              (and (send snip resize w h)
                                   (begin
@@ -934,6 +933,8 @@
                           (set-modified #t))
 
                         (after-resize snip w h rv?)
+
+                        (update-location loc)
 
                         (set! write-locked (add1 write-locked))
                         (end-edit-sequence)
@@ -1275,6 +1276,17 @@
                         show-caret
                         'no-caret))
 
+          (when rubberband?
+            (let ([a (send dc get-alpha)])
+              (send dc set-alpha (* a 0.5))
+              (send dc set-brush rb-brush)
+              (send dc set-pen invisi-pen)
+              (send dc draw-rectangle (+ rb-x dx) (+ rb-y dy) rb-w rb-h)
+              (send dc set-pen rb-pen)
+              (send dc set-alpha a)
+              (send dc set-brush invisi-brush)
+              (send dc draw-rectangle (+ rb-x dx) (+ rb-y dy) rb-w rb-h)))
+
           (set! flow-locked? #f)
           (set! write-locked (sub1 write-locked))))))
 
@@ -1440,14 +1452,14 @@
                 (set! update-top (min y update-top))
                 (set! update-left (min x update-left))
                 (set! update-bottom (max b update-bottom))
-                (when (symbol? b)
-                  (if (eq? b 'display-end)
+                (when (symbol? h)
+                  (if (eq? h 'display-end)
                       (set! update-bottom-end 'display-end)
                       (unless (eq? update-bottom-end 'display-end)
                         (set! update-bottom-end 'end))))
                 (set! update-right (max r update-right))
-                (when (symbol? r)
-                  (if (eq? r 'display-end)
+                (when (symbol? w)
+                  (if (eq? w 'display-end)
                       (set! update-right-end 'display-end)
                       (unless (eq? update-right-end 'display-end)
                         (set! update-right-end 'end))))))
