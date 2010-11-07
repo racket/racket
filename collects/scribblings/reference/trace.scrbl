@@ -92,3 +92,15 @@ ordinary arguments, its keywords, the values of the keywords, and a
 number indicating the depth of the call.
 
 }
+
+@defparam[current-trace-results trace-print-results 
+	  (-> symbol?
+              list? 
+              number?
+              any)]{
+
+The value of this parameter is invoked to print out the results of a
+traced call. It receives the name of the function, the function's
+results, and a number indicating the depth of the call.
+
+}
