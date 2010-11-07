@@ -81,10 +81,11 @@ trace information during the call, as described above in the docs for
 
 @defparam[current-trace-print-args trace-print-args 
 	  (-> symbol?
-              (listof keyword?)
               list? 
+              (listof keyword?)
               list?
-              number?)]{
+              number?
+              void?)]{
 
 The value of this parameter is invoked to print out the arguments of a
 traced call. It receives the name of the function, the function's
@@ -93,7 +94,7 @@ number indicating the depth of the call.
 
 }
 
-@defparam[current-trace-results trace-print-results 
+@defparam[current-trace-print-results trace-print-results 
 	  (-> symbol?
               list? 
               number?
@@ -103,4 +104,21 @@ The value of this parameter is invoked to print out the results of a
 traced call. It receives the name of the function, the function's
 results, and a number indicating the depth of the call.
 
+}
+                   
+@defparam[current-prefix-out prefix string?]{
+  This string is used by the default value of @racket[current-trace-print-args]
+  indicating that the current line is showing the a call to a
+  traced function.
+  
+  It defaults to @racket[">"].
+}
+
+                   
+@defparam[current-prefix-out prefix string?]{
+  This string is used by the default value of @racket[current-trace-print-results]
+  indicating that the current line is showing the result
+  of a traced call.
+  
+  It defaults to @racket["<"].
 }
