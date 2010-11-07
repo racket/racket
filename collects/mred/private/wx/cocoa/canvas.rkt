@@ -561,7 +561,7 @@
                                      0.0)))]
         [(scroller)
          (if scroller
-             (->long (round (* (tell #:type _double (scroller-cocoa scroller) floatValue)
+             (->long (round (* (tell #:type _float (scroller-cocoa scroller) floatValue)
                                (scroller-range scroller))))
              0)]))
 
