@@ -13,7 +13,7 @@
 
 (define bitmap-dc-backend%
   (class default-dc-backend%
-    (init [_bm #f])
+    (init [(_bm bitmap) #f])
     (inherit reset-cr)
 
     (define c #f)
