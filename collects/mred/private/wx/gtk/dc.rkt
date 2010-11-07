@@ -38,6 +38,12 @@
                                  w
                                  h))
 
+    ;; initialize bitmap to white:
+    (let ([cr (cairo_create s)])
+      (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
+      (cairo_paint cr)
+      (cairo_destroy cr))
+
     ;; `get-gdk-pixmap' and `install-gl-context' are
     ;; localized in "gl-context.rkt"
     (define/public (get-gdk-pixmap) pixmap)
