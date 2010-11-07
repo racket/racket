@@ -43,15 +43,21 @@ XCOLLECTS = -X ../racket/gc2/xform-collects
 
 CC = @CC@
 
+# This seems like a good idea, but it doesn't work with
+#  libtool as the compiler. So, we trust the configuration
+#  taht is built into dynext, instead.
+# WITH-ENV = env CC="$(CC)" LD="@MZLINKER@"
+WITH_ENV =
+
 # In 3m mode, we can reply on an xform-collects setup
 3m:
-	env CC="$(CC)" LD="@MZLINKER@" ../racket/racket3m $(XCOLLECTS) $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
-	env CC="$(CC)" LD="@MZLINKER@" ../racket/racket3m $(XCOLLECTS) $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
+	$(WITH_ENV) ../racket/racket3m $(XCOLLECTS) $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
+	$(WITH_ENV) ../racket/racket3m $(XCOLLECTS) $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
 
 # In just-cgc mode, it's slow to load build.rkt:
 cgc:
-	env CC="$(CC)" LD="@MZLINKER@" ../racket/racketcgc -c $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
-	env CC="$(CC)" LD="@MZLINKER@" ../racket/racketcgc -c $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
+	$(WITH_ENV) ../racket/racketcgc -c $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
+	$(WITH_ENV) ../racket/racketcgc -c $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
 
 install:
 	cd ..; $(ICP) plot/libplplot@SO_SUFFIX@ "$(DESTDIR)$(libpltdir)/libplplot@SO_SUFFIX@"

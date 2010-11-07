@@ -54,7 +54,6 @@ racket\src\README if you don't know about the two variants.)
 
 The 3m build requires some parts of the CGC build:
        racket\src\worksp\racket
-       racket\src\worksp\wxutils
        racket\src\worksp\jpeg
        racket\src\worksp\png
        racket\src\worksp\zlib
@@ -79,24 +78,12 @@ To build GRacketCGC, build the GRacket solution:
 
    [Again, switch to the "Release" configuration if necessary.]
 
-The build processes for RacketCGC automatically builds
+The build processes for RacketCGC and GRacketCGC automatically 
+builds
    libmzgc    - makes racket\lib\libmzgcxxxxxxx.dll and
                 racket\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
    libracket  - makes racket\lib\libracketxxxxxxx.dll and
                 racket\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
-
-The build process for GRacketCGC automatically builds
-   libmzgc    - as above
-   libracket  - as above
-   libgracket - makes racket\lib\libgracketxxxxxxx.dll and
-                racket\src\worksp\libgracket\Release\libgracketxxxxxxx.lib
-   wxutils    - makes racket\src\worksp\wxutils\Release\wxutils.lib
-   wxwin      - makes racket\src\worksp\wxwin\Release\wxwin.lib
-   wxs        - makes racket\src\worksp\wxs\Release\wxs.lib
-   wxme       - makes racket\src\worksp\wxme\Release\wxme.lib
-   jpeg       - makes racket\src\worksp\jpeg\Release\jpeg.lib
-   png        - makes racket\src\worksp\jpeg\Release\png.lib
-   zlib       - makes racket\src\worksp\jpeg\Release\zlib.lib
 
 In addition, building RacketCGC executes
    racket\src\racket\dynsrc\mkmzdyn.bat
@@ -106,11 +93,14 @@ copies DLLs from the "extradlls" directory to to racket\lib\.
 Finally, you must install pre-build DLLs that GRacket needs to run.
 The DLLs are available from
 
- http://github.com/mflatt/gracket-libs/tree/master/win32/i386/?raw=true
+ http://download.racket-lang.org/libs/
 
 and they must be installed into
 
  racket\lib
+
+The "get-libs.rkt" script in "racket\src\gracket" can download the
+libraries, and the script is used by "build.bat".
 
 
 Building Racket3m and GRacket3m
@@ -127,10 +117,9 @@ After RacketCGC and GRacketCGC are built, you can can build 3m binaries:
       ..\..\..\racketcgc.exe -c make.rkt
 
 The resulting Racket.exe and GRacket.exe will appear in the top-level
-"racket" directory, along with DLLs libracket3mxxxxxxx.dll and
-libgracket3mxxxxxxx.dll in racket\lib.  (There is no corresponding
-libmzgc3mxxxxxxx.dll.  Instead, it is merged with
-libracket3mxxxxxxx.dll.)
+"racket" directory, along with DLLs libracket3mxxxxxxx.dll in
+racket\lib.  (There is no corresponding libmzgc3mxxxxxxx.dll.
+Instead, it is merged with libracket3mxxxxxxx.dll.)
 
 Building Collections and Other Executables
 ------------------------------------------
@@ -239,9 +228,8 @@ The result is mxmain.dll (no 3m suffix) in
 Finding DLLs
 ------------
 
-Since the DLLs libracket3mxxxxxxx.dll (or libmzgcxxxxxxx.dll and
-libracketxxxxxxx.dll) and libgracket3mxxxxxxx.dll (or
-libgracketxxxxxxx.dll) are installed into racket\lib\ instead of just
+Since the DLL libracket3mxxxxxxx.dll (or libmzgcxxxxxxx.dll and
+libracketxxxxxxx.dll) is installed into racket\lib\ instead of just
 racket\, the normal search path for DLLs would not find them when
 running "Racket.exe" or "GRacket.exe".  To find the DLLs, the
 executables are "delayload" linked with the DLLs, and the executables

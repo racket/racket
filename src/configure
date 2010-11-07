@@ -677,7 +677,6 @@ AR
 STATIC_AR
 ARFLAGS
 STRIP_DEBUG
-WBUILD
 CC_FOR_BUILD
 REZ
 MZLINKER
@@ -714,7 +713,6 @@ MRLIBINSTALL
 LIBFINISH
 MAKE_GRACKET
 MAKE_PLOT
-MAKE_WBUILD
 MAKE_COPYTREE
 MAKE_FINISH
 WXPRECOMP
@@ -1347,13 +1345,12 @@ Optional Features:
   --enable-bigendian      assume "big" if endianness cannot be determined
   --enable-oskit          compile OSKit-based Racket kernel
   --enable-smalloskit     compile small OSKit-based Racket kernel
-  --enable-wbuild         compile and use wbuild for .w sources
   --enable-perl           use perl to regenerate certain sources
   --enable-gprof          compile for profiling with gprof (gcc only)
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
   --enable-noopt          drop -O C flags
   --enable-sdk=<path>     use Mac OS X 10.4 SDK directory
-  --enable-xonx           compile X11 (not Quartz) GRacket for Mac OS X
+  --enable-xonx           compile Unix style (e.g., use Gtk) for Mac OS X
   --enable-libfw          install Mac OS X frameworks to /Library/Frameworks
   --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks
   --enable-macprefix      allow --prefix with a Mac OS X install
@@ -1945,11 +1942,6 @@ if test "${enable_smalloskit+set}" = set; then
 fi
 
 
-# Check whether --enable-wbuild was given.
-if test "${enable_wbuild+set}" = set; then
-  enableval=$enable_wbuild;
-fi
-
 # Check whether --enable-perl was given.
 if test "${enable_perl+set}" = set; then
   enableval=$enable_perl;
@@ -2201,7 +2193,7 @@ show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 
-show_explicitly_enabled "${enable_xonx}" "X-on-X"
+show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
@@ -2233,7 +2225,6 @@ show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
 show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 
-show_explicitly_enabled "${enable_wbuild}" "wbuild"
 show_explicitly_enabled "${enable_perl}" "Perl"
 
 show_explicitly_enabled "${enable_gprof}" "gprof"
@@ -5282,14 +5273,8 @@ case $OS in
       if test "${CC}" = "gcc" ; then
         CC=gcc-4.0
       fi
-      if test "${CXX}" = "g++" ; then
-        CXX=g++-4.0
-      fi
       if test "${CPP}" = "gcc -E" ; then
         CPP="gcc-4.0 -E"
-      fi
-      if test "${CXXCPP}" = "g++ -E" ; then
-        CXXCPP="g++-4.0 -E"
       fi
       if test "${LD}" = "gcc" ; then
         LD=gcc-4.0
@@ -5362,8 +5347,6 @@ case $OS in
       NOT_OSX=".other"
       MZINSTALLTARGET=osx-install
       DYN_CFLAGS=""
-      enable_xrender=no
-      enable_cairo=no
       enable_pthread=no
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
@@ -9198,8 +9181,6 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
-
-
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9962,7 +9943,6 @@ AR!$AR$ac_delim
 STATIC_AR!$STATIC_AR$ac_delim
 ARFLAGS!$ARFLAGS$ac_delim
 STRIP_DEBUG!$STRIP_DEBUG$ac_delim
-WBUILD!$WBUILD$ac_delim
 CC_FOR_BUILD!$CC_FOR_BUILD$ac_delim
 REZ!$REZ$ac_delim
 MZLINKER!$MZLINKER$ac_delim
@@ -9996,6 +9976,7 @@ WXLIBS!$WXLIBS$ac_delim
 WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
+LIBFINISH!$LIBFINISH$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -10037,10 +10018,8 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
-LIBFINISH!$LIBFINISH$ac_delim
 MAKE_GRACKET!$MAKE_GRACKET$ac_delim
 MAKE_PLOT!$MAKE_PLOT$ac_delim
-MAKE_WBUILD!$MAKE_WBUILD$ac_delim
 MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 MAKE_FINISH!$MAKE_FINISH$ac_delim
 WXPRECOMP!$WXPRECOMP$ac_delim
@@ -10074,7 +10053,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 35; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 33; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

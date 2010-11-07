@@ -56,7 +56,6 @@ AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness c
 AC_ARG_ENABLE(oskit,   [  --enable-oskit          compile OSKit-based Racket kernel])
 AC_ARG_ENABLE(smalloskit, [  --enable-smalloskit     compile small OSKit-based Racket kernel])
 
-AC_ARG_ENABLE(wbuild,  [  --enable-wbuild         compile and use wbuild for .w sources])
 AC_ARG_ENABLE(perl,    [  --enable-perl           use perl to regenerate certain sources])
 
 AC_ARG_ENABLE(gprof,   [  --enable-gprof          compile for profiling with gprof (gcc only)])
@@ -66,7 +65,7 @@ AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags])
 
 AC_ARG_ENABLE(enable_sdk,   [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
 
-AC_ARG_ENABLE(xonx,    [  --enable-xonx           compile X11 (not Quartz) GRacket for Mac OS X])
+AC_ARG_ENABLE(xonx,    [  --enable-xonx           compile Unix style (e.g., use Gtk) for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
 AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
 AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS X install])
@@ -264,7 +263,7 @@ show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 
-show_explicitly_enabled "${enable_xonx}" "X-on-X"
+show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
@@ -296,7 +295,6 @@ show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
 show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 
-show_explicitly_enabled "${enable_wbuild}" "wbuild"
 show_explicitly_enabled "${enable_perl}" "Perl"
 
 show_explicitly_enabled "${enable_gprof}" "gprof"
@@ -605,14 +603,8 @@ case $OS in
       if test "${CC}" = "gcc" ; then
         CC=gcc-4.0
       fi
-      if test "${CXX}" = "g++" ; then
-        CXX=g++-4.0
-      fi
       if test "${CPP}" = "gcc -E" ; then
         CPP="gcc-4.0 -E"
-      fi
-      if test "${CXXCPP}" = "g++ -E" ; then
-        CXXCPP="g++-4.0 -E"
       fi
       if test "${LD}" = "gcc" ; then
         LD=gcc-4.0
@@ -685,8 +677,6 @@ case $OS in
       NOT_OSX=".other"
       MZINSTALLTARGET=osx-install
       DYN_CFLAGS=""
-      enable_xrender=no
-      enable_cairo=no
       enable_pthread=no
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
@@ -1132,7 +1122,6 @@ AC_SUBST(AR)
 AC_SUBST(STATIC_AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(STRIP_DEBUG)
-AC_SUBST(WBUILD)
 AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(REZ)
 AC_SUBST(MZLINKER)
@@ -1177,7 +1166,6 @@ AC_SUBST(LIBFINISH)
 
 AC_SUBST(MAKE_GRACKET)
 AC_SUBST(MAKE_PLOT)
-AC_SUBST(MAKE_WBUILD)
 AC_SUBST(MAKE_COPYTREE)
 AC_SUBST(MAKE_FINISH)
 

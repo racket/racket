@@ -20,7 +20,6 @@ PLTBUILDDIR = $(builddir)/../..
 ###########################
 CC = @CC@
 LINKER = $(CC)
-PERL = @PERL@
 RANLIB = @RANLIB@
 AR = @AR@
 ARFLAGS = @ARFLAGS@

@@ -28,7 +28,8 @@ To compile with Microsoft Visual C, read the instructions in
 To compile with Cygwin tools, follow the Unix instructions below, and be
 sure to configure with `--enable-shared'.  The result is a Unix-style
 build, not a Windows-style build (e.g., Racket's `system-type' procedure
-returns 'unix, not 'windows, and GRacket uses X11).
+returns 'unix, not 'windows, and `racket/gui' uses Gtk instead of
+Win32).
 
 ========================================================================
  Compiling for Mac OS X
@@ -50,7 +51,7 @@ the Unix instructions below, but note the following:
    `--disable-shared' is not supported.  (Unless you use
    `--enable-xonx'...)
 
- * To build an X11-based GRacket, run `configure' with the
+ * To build an X11- and Gtk-based GRacket, run `configure' with the
    `--enable-xonx' flag.  Frameworks are not used for such builds, so
    --enable-shared is allowed.  The `--enable-xonx' flag also affects
    the Racket build, so that `system-type' reports 'unix. Pre-built

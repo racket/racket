@@ -60,23 +60,6 @@ Racket software includes or extends the following copyrighted material:
 }
 
 @copyright{
-  wxWindows
-  Copyright (c) 1994
-  Artificial Intelligence Applications Institute,
-  The University of Edinburgh
-  All rights reserved.
-}
-
-@copyright{
-  wxWindows Xt
-  Copyright (c) 1994
-  Artificial Intelligence Applications Institute,
-  The University of Edinburgh
-  Copyright (c) 1995 GNU (Markus Holzem)
-  All rights reserved.
-}
-
-@copyright{
   Conservative garbage collector
   Copyright (c) 1988, 1989 Hans-J. Boehm, Alan J. Demers
   Copyright (c) 1991-1996 Xerox Corporation
@@ -88,30 +71,6 @@ Racket software includes or extends the following copyrighted material:
 @copyright{
   Collector C++ extension by Jesse Hull and John Ellis
   Copyright (c) 1994 Xerox Corporation
-  All rights reserved.
-}
-
-@copyright{
-  The A List
-  Copyright (c) 1997-2000 Kyle Hammond.
-  All rights reserved.
-}
-
-@copyright{
-  Independent JPEG Group library
-  Copyright (c) 1991-1998 Thomas G. Lane.
-  All rights reserved.
-}
-
-@copyright{
-  libpng
-  Copyright (c) 2000-2002 Glenn Randers-Pehrson
-  All rights reserved.
-}
-
-@copyright{
-  zlib
-  Copyright (c) 1995-2002 Jean-loup Gailly and Mark Adler
   All rights reserved.
 }
 
@@ -130,11 +89,6 @@ Racket software includes or extends the following copyrighted material:
 @copyright{
   libunwind
   Copyright (c) 2003-2005 Hewlett-Packard Development Company, L.P.
-}
-
-@copyright{
-  GNU Classpath
-  GNU Public License with special exception
 }
 
 @copyright{
