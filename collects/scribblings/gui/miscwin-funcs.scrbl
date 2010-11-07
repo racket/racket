@@ -56,8 +56,8 @@ The get operation always returns @racket[#"????"] and @racket[#"????"] for
  Windows.
 }
 
-@defproc[(find-graphical-system-path [what (one-of/c 'init-file 'setup-file 'x-display)])
-         (or/c path? false/c)]{
+@defproc[(find-graphical-system-path [what (one-of/c 'init-file 'x-display)])
+         (or/c path? #f)]{
 
 Finds a platform-specific (and possibly user- or machine-specific)
  standard filename or directory. See also @racket[find-system-path].
@@ -75,7 +75,7 @@ The result depends on @racket[what], and a @racket[#f] result is only
   @itemize[
 
   @item{@|AllUnix|: @indexed-file{.gracketrc}}
-  @item{Windows: @indexed-file{racketrc.rktl}}
+  @item{Windows: @indexed-file{gracketrc.rktl}}
 
   ]}
 

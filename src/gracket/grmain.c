@@ -31,8 +31,8 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 #endif
 
 #define UNIX_INIT_FILENAME "~/.gracketrc"
-#define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rktd"
-#define MACOS9_INIT_FILENAME "PREFERENCES:gracketrc.rktd"
+#define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rktl"
+#define MACOS9_INIT_FILENAME "PREFERENCES:gracketrc.rktl"
 #define GET_INIT_FILENAME get_gr_init_filename
 #if WIN32
 # define NEED_CONSOLE_PRINTF

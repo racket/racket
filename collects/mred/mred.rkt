@@ -116,7 +116,6 @@
 	     event%
 	     event-dispatch-handler
 	     eventspace?
-	     find-graphical-system-path
 	     flush-display
 	     get-highlight-background-color
              get-highlight-text-color
@@ -171,6 +170,18 @@
    
   (define the-clipboard (wx:get-the-clipboard))
   (define the-x-selection-clipboard (wx:get-the-x-selection))
+
+  (define (find-graphical-system-path what)
+    (unless (memq what '(init-file x-display))
+      (raise-type-error 'find-graphical-system-path "'init-file or 'x-display" what))
+    (or (wx:find-graphical-system-path what)
+        (case what
+          [(init-file)
+           (build-path (find-system-path 'init-dir)
+                       (case (system-type)
+                         [(windows) "gracketrc.rktl"]
+                         [else ".gracketrc"]))]
+          [else #f])))
 
   (provide (all-from racket/draw))
 
@@ -282,4 +293,5 @@
 	   hide-cursor-until-moved
            system-position-ok-before-cancel?
            label-string?
-           key-code-symbol?))
+           key-code-symbol?
+           find-graphical-system-path))

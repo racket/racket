@@ -127,8 +127,8 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 
 #ifndef UNIX_INIT_FILENAME
 # define UNIX_INIT_FILENAME "~/.racketrc"
-# define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\racketrc.rktd"
-# define MACOS9_INIT_FILENAME "PREFERENCES:racketrc.rktd"
+# define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\racketrc.rktl"
+# define MACOS9_INIT_FILENAME "PREFERENCES:racketrc.rktl"
 # define GET_INIT_FILENAME get_init_filename
 # define PRINTF printf
 # define PROGRAM "Racket"

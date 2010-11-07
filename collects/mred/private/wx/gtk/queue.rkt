@@ -12,7 +12,8 @@
 
 (provide (protect-out gtk-start-event-pump
                       try-to-sync-refresh
-                      set-widget-hook!)
+                      set-widget-hook!
+                      x11-display)
          ;; from common/queue:
          current-eventspace
          queue-event
@@ -24,55 +25,57 @@
 
 (define-gtk gtk_init_check (_fun (_ptr io _int) (_ptr io _gcpointer) -> _gboolean))
 
-(let* ([argc-ptr (scheme_register_process_global "PLT_X11_ARGUMENT_COUNT" #f)]
-       [argc (or (and argc-ptr (cast argc-ptr _pointer _long)) 0)]
-       [argv (and (positive? argc)
-                  (scheme_register_process_global "PLT_X11_ARGUMENTS" #f))]
-       [display (getenv "DISPLAY")])
-  ;; Convert X11 arguments, if any, to Gtk form:
-  (let-values ([(args single-instance?)
-                (if (zero? argc)
-                    (values null #f)
-                    (let loop ([i 1][si? #f])
-                      (if (= i argc) 
-                          (values null si?)
-                          (let ([s (ptr-ref argv _bytes i)])
-                            (cond
-                             [(bytes=? s #"-display")
-                              (let-values ([(args si?) (loop (+ i 2) si?)]
-                                           [(d) (ptr-ref argv _bytes (add1 i))])
-                                (set! display (bytes->string/utf-8 d #\?))
-                                (values (list* #"--display" d args)
-                                        si?))]
-                             [(bytes=? s #"-synchronous")
-                              (let-values ([(args si?) (loop (+ i 1) si?)])
-                                (values (cons #"--sync" args)
-                                        si?))]
-                             [(bytes=? s #"-singleInstance")
-                              (loop (add1 i) #t)]
-                             [(or (bytes=? s #"-iconic")
-                                  (bytes=? s #"-rv")
-                                  (bytes=? s #"+rv")
-                                  (bytes=? s #"-reverse"))
-                              ;; ignored with 0 arguments
-                              (loop (add1 i) #t)]
-                             [else
-                              ;; all other ignored flags have a single argument
-                              (loop (+ i 2) #t)])))))])
-    (let-values ([(new-argc new-argv)
-                  (if (null? args)
-                      (values 0 #f)
-                      (values (add1 (length args))
-                              (cast (cons (ptr-ref argv _bytes 0)
-                                          args)
-                                    (_list i _bytes)
-                                    _pointer)))])
-      (unless (gtk_init_check new-argc new-argv)
-        (error (format
-                "Gtk initialization failed for display ~s"
-                (or display ":0"))))
-      (when single-instance?
-        (do-single-instance)))))
+(define x11-display
+  (let* ([argc-ptr (scheme_register_process_global "PLT_X11_ARGUMENT_COUNT" #f)]
+         [argc (or (and argc-ptr (cast argc-ptr _pointer _long)) 0)]
+         [argv (and (positive? argc)
+                    (scheme_register_process_global "PLT_X11_ARGUMENTS" #f))]
+         [display (getenv "DISPLAY")])
+    ;; Convert X11 arguments, if any, to Gtk form:
+    (let-values ([(args single-instance?)
+                  (if (zero? argc)
+                      (values null #f)
+                      (let loop ([i 1][si? #f])
+                        (if (= i argc) 
+                            (values null si?)
+                            (let ([s (ptr-ref argv _bytes i)])
+                              (cond
+                               [(bytes=? s #"-display")
+                                (let-values ([(args si?) (loop (+ i 2) si?)]
+                                             [(d) (ptr-ref argv _bytes (add1 i))])
+                                  (set! display (bytes->string/utf-8 d #\?))
+                                  (values (list* #"--display" d args)
+                                          si?))]
+                               [(bytes=? s #"-synchronous")
+                                (let-values ([(args si?) (loop (+ i 1) si?)])
+                                  (values (cons #"--sync" args)
+                                          si?))]
+                               [(bytes=? s #"-singleInstance")
+                                (loop (add1 i) #t)]
+                               [(or (bytes=? s #"-iconic")
+                                    (bytes=? s #"-rv")
+                                    (bytes=? s #"+rv")
+                                    (bytes=? s #"-reverse"))
+                                ;; ignored with 0 arguments
+                                (loop (add1 i) #t)]
+                               [else
+                                ;; all other ignored flags have a single argument
+                                (loop (+ i 2) #t)])))))])
+      (let-values ([(new-argc new-argv)
+                    (if (null? args)
+                        (values 0 #f)
+                        (values (add1 (length args))
+                                (cast (cons (ptr-ref argv _bytes 0)
+                                            args)
+                                      (_list i _bytes)
+                                      _pointer)))])
+        (unless (gtk_init_check new-argc new-argv)
+          (error (format
+                  "Gtk initialization failed for display ~s"
+                  (or display ":0"))))
+        (when single-instance?
+          (do-single-instance))
+        display))))
 
 ;; ------------------------------------------------------------
 ;; Gtk event pump

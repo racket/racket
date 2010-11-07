@@ -60,8 +60,10 @@
  get-color-from-user)
 
 
-(define-unimplemented find-graphical-system-path)
-(define-unimplemented cancel-quit)
+(define (find-graphical-system-path what)
+  #f)
+
+(define (cancel-quit) (void))
 
 (define (color-from-user-platform-mode) 'dialog)
 

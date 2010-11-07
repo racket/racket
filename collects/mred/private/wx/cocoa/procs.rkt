@@ -65,7 +65,8 @@
 
 (import-class NSScreen NSCursor)
 
-(define-unimplemented find-graphical-system-path)
+(define (find-graphical-system-path what)
+  #f)
 
 (define (color-from-user-platform-mode) "Show Picker")
 

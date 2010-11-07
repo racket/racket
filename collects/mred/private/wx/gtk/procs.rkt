@@ -13,6 +13,7 @@
          "window.rkt"
          "frame.rkt"
          "dc.rkt"
+         "queue.rkt"
          "printer-dc.rkt"
          "gl-context.rkt"
          "../common/printer.rkt"
@@ -59,8 +60,12 @@
  fill-private-color
  get-color-from-user)
 
-(define-unimplemented find-graphical-system-path)
-(define-unimplemented cancel-quit)
+(define (find-graphical-system-path what)
+  (case what
+    [(x-display) (string->path x11-display)]
+    [else #f]))
+
+(define (cancel-quit) (void))
 
 (define-unimplemented play-sound)
 
