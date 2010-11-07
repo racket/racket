@@ -176,7 +176,6 @@ install-both-common:
 	$(MAKE) install-common-first
 	cd racket; $(MAKE) install-both
 	$(MAKE) install-@MAKE_GRACKET@-both
-	$(MAKE) install-@MAKE_PLOT@-both
 	$(MAKE) install-common-middle
 
 install-both:
