@@ -655,7 +655,7 @@ an identifier can be either imported or defined for a given
 
 @defform[(local-require require-spec ...)]{
 
-Like @scheme[require], but for use in a local-definition context to
+Like @scheme[require], but for use in a @tech{internal-definition context} to
 import just into the local context. Only bindings from @tech{phase
 level} 0 are imported.}
 
@@ -1928,6 +1928,8 @@ defined as follows:
                                          @#,elem{if} (#,cvt head . _datum) = expr
 ]
 
+In an @tech{internal-definition context} (see @secref["intdef-body"]), 
+a @racket[define] form introduces a local binding.
 At the top level, the top-level binding @racket[id] is created after
 evaluating @racket[expr], if it does not exist already, and the
 top-level mapping of @racket[id] (in the @techlink{namespace} linked
@@ -1958,6 +1960,8 @@ Evaluates the @racket[expr], and @tech{bind}s the results to the
 @racket[id]s; if @racket[expr] produces a different number of results,
 the @exnraise[exn:fail:contract].
 
+In an @tech{internal-definition context} (see @secref["intdef-body"]), 
+a @racket[define-values] form introduces local bindings.
 At the top level, the top-level binding for each @racket[id] is
 created after evaluating @racket[expr], if it does not exist already,
 and the top-level mapping of each @racket[id] (in the
@@ -1987,6 +1991,9 @@ The second form is a shorthand the same as for @racket[define]; it
 expands to a definition of the first form where the @racket[expr] is a
 @racket[lambda] form.}
 
+In an @tech{internal-definition context} (see @secref["intdef-body"]), 
+a @racket[define-syntax] form introduces a local binding.
+
 @defexamples[#:eval (syntax-eval)
 (define-syntax foo
   (syntax-rules ()
@@ -2014,6 +2021,9 @@ When @racket[expr] produces zero values for a top-level
 @racket[define-syntaxes] (i.e., not in a module or internal-definition
 position), then the @racket[id]s are effectively declared without
 binding; see @secref["macro-introduced-bindings"].
+
+In an @tech{internal-definition context} (see @secref["intdef-body"]), 
+a @racket[define-syntaxes] form introduces local bindings.
 
 @defexamples[#:eval (syntax-eval)
 (define-syntaxes (foo1 foo2 foo3)

@@ -604,7 +604,8 @@ then expansion stops without adding the identifier.
 @subsection[#:tag "intdef-body"]{Internal Definitions}
 
 An @tech{internal-definition context} corresponds to a partial expansion step
-(see @secref["partial-expansion"]). A form that supports internal
+(see @secref["partial-expansion"]). Forms that allow internal definitions document
+such positions using the @racket[_body] meta-variable. A form that supports internal
 definitions starts by expanding its first form in an
 internal-definition context, but only partially. That is, it
 recursively expands only until the form becomes one of the following:
