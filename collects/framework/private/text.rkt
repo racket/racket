@@ -3825,7 +3825,7 @@ designates the character that triggers autocompletion
                           (min 255 (integer (* 255 green)))
                           (min 255 (integer (* 255 blue)))))
 
-    (define (draw-numbers dc top bottom dy start-line end-line)
+    (define (draw-numbers dc top bottom dx dy start-line end-line)
       (define (draw-text . args)
         (send/apply dc draw-text args))
 
@@ -3839,10 +3839,11 @@ designates the character that triggers autocompletion
         (when (between top y bottom)
           (define view (number->string (add1 (line-paragraph line))))
           (define final-x
-            (case alignment
-              [(left) 0]
-              [(right) (- right-space (text-width dc view) single-space)]
-              [else 0]))
+            (+ dx 
+               (case alignment
+                 [(left) 0]
+                 [(right) (- right-space (text-width dc view) single-space)]
+                 [else 0])))
           (define final-y (+ dy y))
           (if (and last-paragraph (= last-paragraph (line-paragraph line)))
             (begin
@@ -3854,8 +3855,8 @@ designates the character that triggers autocompletion
         (set! last-paragraph (line-paragraph line))))
 
     ;; draw the line between the line numbers and the actual text
-    (define (draw-separator dc top bottom dy x)
-      (send dc draw-line x (+ dy top) x (+ dy bottom)))
+    (define (draw-separator dc top bottom dx dy x)
+      (send dc draw-line (+ dx x) (+ dy top) (+ dx x) (+ dy bottom)))
 
     (define line-numbers-space 0)
     (define/override (find-position x y . args)
@@ -3871,8 +3872,8 @@ designates the character that triggers autocompletion
       (get-visible-line-range start-line end-line #f)
 
       ;; draw it!
-      (draw-numbers dc top bottom dy (unbox start-line) (add1 (unbox end-line)))
-      (draw-separator dc top bottom dy (text-width dc (number-space))))
+      (draw-numbers dc top bottom dx dy (unbox start-line) (add1 (unbox end-line)))
+      (draw-separator dc top bottom dx dy (text-width dc (number-space))))
 
     (define (text-width dc stuff)
       (define-values (font-width font-height baseline space)
