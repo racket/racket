@@ -58,16 +58,17 @@
      ,(lambda (_ cpu)
         (format "Macintosh Darwin (~a)"
                 (if (equal? cpu "ppc") "PPC" "Intel")))]
-    ["i386-linux(-gcc2)?"            "Linux (i386)"]
-    ["i386-linux-fc([0-9]+)"         "Linux - Fedora Core \\1 (i386)"]
-    ["(i386|x86_64)-linux-f([0-9]+)" "Linux - Fedora \\2 (\\1)"]
-    ["i386-linux-debian"             "Linux - Debian Stable (i386)"]
-    ["i386-linux-debian-(testing|unstable)"  "Linux - Debian \\1 (i386)"]
-    ["i386-linux-ubuntu[0-9]*"       "Linux - Ubuntu (i386)"]
-    ["i386-linux-ubuntu-([a-z]*)"    "Linux - Ubuntu \\1 (i386)"]
-    ["i386-freebsd"                  "FreeBSD (i386)"]
-    ["sparc-solaris"                 "Sparc Solaris (SunOS)"]
-    ["i386-kernel"                   "x86 Standalone Kernel"]
+    ["i386-linux(-gcc2)?"                  "Linux i386"]
+    ["i386-linux-fc([0-9]+)"               "Linux i386 (Fedora Core \\1)"]
+    ["(i386|x86_64)-linux-f([0-9]+)"       "Linux \\1 (Fedora \\2)"]
+    ["(i386|x86_64)-linux-debian"          "Linux \\1 (Debian Stable)"]
+    ["(i386|x86_64)-linux-debian-(testing|unstable)" "Linux \\1 (Debian \\2)"]
+    ["(i386|x86_64)-linux-ubuntu[0-9]+"    "Linux \\1 (Ubuntu \\2)"]
+    ["(i386|x86_64)-linux-ubuntu-([a-z]+)" "Linux \\1 (Ubuntu \\2)"]
+    ["(i386|x86_64)-linux-ubuntu.*"        "Linux \\1 (Ubuntu)"]
+    ["(i386|x86_64)-freebsd"               "FreeBSD \\1"]
+    ["sparc-solaris"                       "Sparc Solaris (SunOS)"]
+    ["i386-kernel"                         "x86 Standalone Kernel"]
     ))
 
 (define -file-type-names-

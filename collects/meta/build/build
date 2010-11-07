@@ -189,20 +189,21 @@ last_part_capital() {
 # simple name associations
 name_of_platform() {
   case "$1" in
-    ( "i386-linux"        ) echo "Linux/GCC3" ;;
-    ( "i386-linux-gcc2"   ) echo "Linux/GCC2" ;;
-    ( "i386-linux-fc2"    ) echo "Linux/Fedora Core 2" ;;
-    ( "i386-linux-fc5"    ) echo "Linux/Fedora Core 5" ;;
-    ( "i386-linux-fc6"    ) echo "Linux/Fedora Core 6" ;;
-    ( "i386-linux-f7"     ) echo "Linux/Fedora 7/i386" ;;
-    ( "x86_64-linux-f7"   ) echo "Linux/Fedora 7/x86_64" ;;
-    ( "i386-linux-f9"     ) echo "Linux/Fedora 9/i386" ;;
-    ( "i386-linux-f12"    ) echo "Linux/Fedora 12/i386" ;;
-    ( "i386-linux-debian"          ) echo "Linux/Debian-stable" ;;
-    ( "i386-linux-debian-testing"  ) echo "Linux/Debian-testing" ;;
-    ( "i386-linux-debian-unstable" ) echo "Linux/Debian-unstable" ;;
-    ( "i386-linux-ubuntu"          ) echo "Linux/Ubuntu" ;;
-    ( "i386-linux-ubuntu-"* ) echo "Linux/Ubuntu `last_part_capital \"$1\"`" ;;
+    ( "i386-linux"        ) echo "Linux/i386/GCC3" ;;
+    ( "i386-linux-gcc2"   ) echo "Linux/i386/GCC2" ;;
+    ( "i386-linux-fc2"    ) echo "Linux/i386/Fedora Core 2" ;;
+    ( "i386-linux-fc5"    ) echo "Linux/i386/Fedora Core 5" ;;
+    ( "i386-linux-fc6"    ) echo "Linux/i386/Fedora Core 6" ;;
+    ( "i386-linux-f7"     ) echo "Linux/i386/Fedora 7" ;;
+    ( "x86_64-linux-f7"   ) echo "Linux/x86_64/Fedora 7" ;;
+    ( "i386-linux-f9"     ) echo "Linux/i386/Fedora 9" ;;
+    ( "i386-linux-f12"    ) echo "Linux/i386/Fedora 12" ;;
+    ( "i386-linux-debian"          ) echo "Linux/i386/Debian-stable" ;;
+    ( "i386-linux-debian-testing"  ) echo "Linux/i386/Debian-testing" ;;
+    ( "i386-linux-debian-unstable" ) echo "Linux/i386/Debian-unstable" ;;
+    ( "i386-linux-ubuntu"          ) echo "Linux/i386/Ubuntu" ;;
+    ( "i386-linux-ubuntu-"* ) echo "Linux/i386/Ubuntu" \
+                                   "`last_part_capital \"$1\"`" ;;
     ( "i386-freebsd"      ) echo "FreeBSD" ;;
     ( "sparc-solaris"     ) echo "Solaris" ;;
     ( "i386-osx-mac"      ) echo "Mac OS X (Intel)" ;;
@@ -220,24 +221,22 @@ name_of_platform() {
 extra_description_of_platform() {
   local e=""
   case "$1" in
+    ( *"-osx-mac" ) e="An OS X Build." ;;
+    ( *"-darwin"  ) e="This is an X11 on Darwin build using";
+                    e="$e<tt>--enable-xonx</tt>, not a standard OS X build." ;;
     ( "i386-linux" ) e="Binaries for GCC3 (eg, RedHat 9 and Fedora Core)." ;;
     ( "i386-linux-gcc2" ) e="Binaries for old GCC2 setups (eg, RedHat 7.x)." ;;
-    ( "i386-linux-fc2"  ) e="A Linux build on Fedora Core 2." ;;
-    ( "i386-linux-fc5"  ) e="A Linux build on Fedora Core 5." ;;
-    ( "i386-linux-fc6"  ) e="A Linux build on Fedora Core 6." ;;
-    ( "i386-linux-f7"   ) e="A Linux build on Fedora 7 (i386)." ;;
-    ( "x86_64-linux-f7" ) e="A Linux build on Fedora 7 (x86_64)." ;;
-    ( "i386-linux-f9"   ) e="A Linux build on Fedora 9 (i386)." ;;
-    ( "i386-linux-f12"  ) e="A Linux build on Fedora 12 (i386)." ;;
-    ( "i386-linux-debian"          ) e="A Linux build on Debian Stable." ;;
-    ( "i386-linux-debian-testing"  ) e="A Linux build on Debian Testing." ;;
-    ( "i386-linux-debian-unstable" ) e="A Linux build on Debian Unstable." ;;
-    ( "i386-linux-ubuntu" )   e="A Linux build on Ubuntu." ;;
-    ( "i386-linux-ubuntu-"* )
-        e="A Linux build on Ubuntu (`last_part_capital \"$1\"`)." ;;
-    ( *"-osx-mac" ) e="An OS X Build." ;;
-    ( *"-darwin" )  e="This is an X11 on Darwin build using";
-                    e="$e<tt>--enable-xonx</tt>, not a standard OS X build." ;;
+    ( "i386-linux-"*   ) e="A Linux i386 build" ;;
+    ( "x86_64-linux-"* ) e="A Linux x86_64 build" ;;
+  esac
+  case "$1" in
+    ( *"-linux-fc"[0-9]*        ) e="$e on Fedora Core ${1##*-fc}." ;;
+    ( *"-linux-f"[0-9]*         ) e="$e on Fedora ${1##*-f}." ;;
+    ( *"-linux-debian"          ) e="$e on Debian Stable." ;;
+    ( *"-linux-debian-testing"  ) e="$e on Debian Testing." ;;
+    ( *"-linux-debian-unstable" ) e="$e on Debian Unstable." ;;
+    ( *"-linux-ubuntu"   ) e="$e on Ubuntu." ;;
+    ( *"-linux-ubuntu-"* ) e="$e on Ubuntu (`last_part_capital \"$1\"`)." ;;
   esac
   if [[ "$e" != "" ]]; then echo "<br><small>${e}</small>"; fi
 }
