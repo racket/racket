@@ -3726,7 +3726,7 @@ designates the character that triggers autocompletion
     (init-field [alignment 'right])
 
     (define (number-space)
-      (number->string (max (* 10 (last-line)) 100)))
+      (number->string (max (* 10 (add1 (last-line))) 100)))
     ;; add an extra 0 so it looks nice
     (define (number-space+1) (string-append (number-space) "0"))
 
