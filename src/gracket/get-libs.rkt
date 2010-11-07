@@ -85,7 +85,9 @@
                     ["libgmodule-2.0-0.dll" 31692]
                     ["libpangocairo-1.0-0.dll" 94625]
                     ["libpangowin32-1.0-0.dll" 102210]
-                    ["libpangoft2-1.0-0.dll" 679322])])
+                    ["libpangoft2-1.0-0.dll" 679322]
+                    ["libplplot.dll" 245760]
+                    ["libfit.dll" 73728])])
        (if (getenv "PLT_WIN_GTK")
            (append
             basic
