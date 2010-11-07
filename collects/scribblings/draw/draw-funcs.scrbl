@@ -60,11 +60,15 @@ overloaded.}
                                       'png 'png/mask 'png/alpha
                                       'xbm 'xbm/alpha 'xpm 'xpm/alpha
                                       'bmp 'bmp/alpha)
-                            'unknown/alpha])
+                            'unknown/alpha]
+                      [bg-color (or/c (is-a?/c color%) false/c) #f]
+                      [complain-on-failure? any/c #t])
          (is-a?/c bitmap%)]{
 
-Returns @racket[(make-object bitmap% in kind)], but this procedure is
-preferred because it defaults @racket[kind] in a more useful way.}
+Returns @racket[(make-object bitmap% in kind bg-color
+complain-on-failure?)], but this procedure is preferred because it
+defaults @racket[kind] and @racket[complain-on-failure?] in a more
+useful way.}
 
 
 @defthing[the-brush-list (is-a?/c brush-list%)]{

@@ -25,7 +25,8 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
                                         'xbm 'xbm/alpha 'xpm 'xpm/alpha
                                         'bmp 'bmp/alpha)
                               'unknown]
-                        [bg-color (or/c (is-a?/c color%) false/c) #f])
+                        [bg-color (or/c (is-a?/c color%) false/c) #f]
+                        [complain-on-failure? any/c #f])
                        ([bits bytes?]
                         [width exact-positive-integer?]
                         [height exact-positive-integer?]))]{
@@ -47,7 +48,6 @@ The initial content of the bitmap is ``empty'': all white, and with
 When @scheme[in] is provided: Creates a bitmap from a file format,
  where @scheme[kind] specifies the format. See @method[bitmap%
  load-file] for details.
-
 
 When a @scheme[bits] byte string is provided: Creates a monochrome
  bitmap from an array of bit values, where each byte in @scheme[bits]
@@ -156,7 +156,8 @@ Returns @scheme[#f] if the bitmap is monochrome, @scheme[#t] otherwise.
                                       'xbm 'xbm/alpha 'xpm 'xpm/alpha
                                       'bmp 'bmp/alpha)
                             'unknown]
-                      [bg-color (or/c (is-a?/c color%) false/c) #f])
+                      [bg-color (or/c (is-a?/c color%) false/c) #f]
+                      [complain-on-failure? any/c #f])
            boolean?]{
 
 Loads a bitmap from a file format that read from @racket[in], unless
@@ -165,7 +166,9 @@ Loads a bitmap from a file format that read from @racket[in], unless
  If the bitmap is in use by a
  @scheme[bitmap-dc%] object or a control, the image data is not
  loaded. The bitmap changes its size and depth to match that of 
- the loaded image.
+ the loaded image. If an error is encountered when reading the file format,
+ an exception is raised only if @racket[complain-on-failure?] is true (which is
+ @emph{not} the default).
 
 The @scheme[kind] argument specifies the file's format:
 

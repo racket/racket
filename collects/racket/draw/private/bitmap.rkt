@@ -755,8 +755,10 @@
   (make-object bitmap% w h #f alpha?))
 
 (define/top (read-bitmap [path-string? filename]
-                         [bitmap-file-kind-symbol? [kind 'unknown/alpha]])
-  (make-object bitmap% filename kind))
+                         [bitmap-file-kind-symbol? [kind 'unknown/alpha]]
+                         [(make-or-false color%) [bg-color #f]]
+                         [any? [complain-on-failure? #t]])
+  (make-object bitmap% filename kind bg-color complain-on-failure?))
 
 (define/top (make-monochrome-bitmap [exact-positive-integer? w]
                                     [exact-positive-integer? h]
