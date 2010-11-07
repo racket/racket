@@ -1346,6 +1346,9 @@ DO_WIN32_BUILD() {
   build_w32step VSNET "mzstart"
   build_w32step VSNET "mrstart"
 
+  separator "win32: Retreive external libraries"
+  build_w32step RKT src/gracket/get-libs.rkt src/gracket lib
+
   separator "win32: Building libraries"
   _cd "$PLTHOME"
   build_w32step RKT "compiler" -N raco -l- raco setup -Dl compiler
