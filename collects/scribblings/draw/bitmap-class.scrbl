@@ -269,6 +269,19 @@ A monochrome bitmap saved as @scheme['png] without a mask bitmap
 
 }
 
+@defmethod[(set-argb-pixels [x real?]
+                            [y real?]
+                            [width exact-nonnegative-integer?]
+                            [height exact-nonnegative-integer?]
+                            [pixels bytes?]
+                            [alpha? any/c #f])
+           void?]{
+
+The same as @xmethod[bitmap-dc% set-argb-pixels], but the
+bitmap does not have to be selected into the DC.
+
+}
+
 @defmethod[(set-gl-config [config (is-a?/c gl-config%)])
            void?]{
 

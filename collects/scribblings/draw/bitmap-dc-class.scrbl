@@ -47,8 +47,8 @@ The same as @method[dc<%> draw-bitmap-section]. In older version, this
 
 @defmethod[(get-argb-pixels [x real?]
                             [y real?]
-                            [width (integer-in 1 10000)]
-                            [height (integer-in 1 10000)]
+                            [width exact-nonnegative-integer?]
+                            [height exact-nonnegative-integer?]
                             [pixels (and/c bytes? (not/c immutable?))]
                             [alpha? any/c #f])
            void?]{
@@ -102,8 +102,8 @@ result is @scheme[#f].
 
 @defmethod[(set-argb-pixels [x real?]
                             [y real?]
-                            [width (integer-in 1 10000)]
-                            [height (integer-in 1 10000)]
+                            [width exact-nonnegative-integer?]
+                            [height exact-nonnegative-integer?]
                             [pixels bytes?]
                             [alpha? any/c #f])
            void?]{

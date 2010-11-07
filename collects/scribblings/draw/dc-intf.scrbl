@@ -26,7 +26,7 @@ available for caching text-extent information.}
            void?]{
 
 Clears the drawing region (fills it with the current background color,
-as determined by @method[dc<%> get-background]).
+as determined by @method[dc<%> get-background]). See also @method[dc<%> erase].
 
 }
 
@@ -443,6 +443,15 @@ Ends a single page, relevant only when drawing to a printer or
 For printer or PostScript output, an exception is raised if
 @scheme[end-page] is called when a page is not currently started by
 @method[dc<%> start-page].
+
+}
+
+
+@defmethod[(erase)
+           void?]{
+
+Erases the drawing region by filling it with white and, for a drawing
+context that keeps an alpha channels, sets all alphas to zero.
 
 }
 
