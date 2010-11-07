@@ -757,14 +757,28 @@
                      [current-traced-metafunctions 'all]
                      [print-as-expression #f])
         (term (f 1)))
-      (test (get-output-string sp) ">(f 1)\n<0\n"))
+      (test (get-output-string sp) "c>(f 1)\n <0\n"))
     
     (let ([sp (open-output-string)])
       (parameterize ([current-output-port sp]
                      [current-traced-metafunctions '(f)]
                      [print-as-expression #f])
         (term (f 1)))
-      (test (get-output-string sp) ">(f 1)\n<0\n")))
+      (test (get-output-string sp) "c>(f 1)\n <0\n"))
+    
+    
+    (define-metafunction empty-language
+      [(g (any)) ((g any) (g any))]
+      [(g 1) 1])
+    
+    (let ([sp (open-output-string)])
+      (parameterize ([current-output-port sp]
+                     [current-traced-metafunctions '(g)]
+                     [print-as-expression #f])
+        (term (g (1))))
+      (test (get-output-string sp) " >(g (1))\n > (g 1)\n < 1\nc> (g 1)\n < 1\n <(1 1)\n"))
+    
+    )
   
   (let ()
     (define-language var-lang [(x y z w) variable])

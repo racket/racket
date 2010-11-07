@@ -1083,6 +1083,12 @@ Controls which metafunctions are currently being traced. If it is
 @racket['all], all of them are. Otherwise, the elements of the list
 name the metafunctions to trace. 
 
+The tracing looks just like the tracing done by the @racketmodname[racket/trace]
+library, except that the first column printed by each traced call indicate
+if this call to the metafunction is cached. Specifically, a @tt{c} is printed
+in the first column if the result is just returned from the cache and a
+space is printed if the metafunction call is actually performed.
+
 Defaults to @racket['()].
 
 }

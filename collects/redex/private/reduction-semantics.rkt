@@ -6,7 +6,7 @@
          "fresh.ss"
          "loc-wrapper.ss"
 	 "error.ss"
-         mzlib/trace
+         racket/trace
          racket/contract
          (lib "list.ss")
          (lib "etc.ss")
@@ -1660,12 +1660,20 @@
                        (log-coverage (cdr cache-ref))
                        (car cache-ref)])))]
                [ot (current-trace-print-args)]
+               [otr (current-trace-print-results)]
                [traced-metafunc (lambda (exp)
                                   (if (or (eq? (current-traced-metafunctions) 'all)
                                           (memq name (current-traced-metafunctions)))
                                       (parameterize ([current-trace-print-args
                                                       (λ (name args kws kw-args level)
-                                                        (ot name (car args) kws kw-args level))])
+                                                        (if (eq? not-in-cache (hash-ref cache exp not-in-cache))
+                                                            (display " ")
+                                                            (display "c"))
+                                                        (ot name (car args) kws kw-args level))]
+                                                     [current-trace-print-results
+                                                      (λ (name results level)
+                                                        (display " ")
+                                                        (otr name results level))])
                                         (trace-call name metafunc exp))
                                       (metafunc exp)))])
         traced-metafunc))
