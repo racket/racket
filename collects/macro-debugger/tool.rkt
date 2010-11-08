@@ -47,21 +47,21 @@
     (define stepper #f)
     (inherit new-stepper)
 
-    (define/public (lazy-new-stepper)
+    (define/private (lazy-new-stepper)
       (unless stepper
         (set! stepper (new-stepper))))
 
     (define/override (add-trace events)
-      (lazy-new-stepper)
       (parameterize ((current-eventspace eventspace))
         (queue-callback
          (lambda ()
+           (lazy-new-stepper)
            (super add-trace events)))))
     (define/override (add-deriv deriv)
-      (lazy-new-stepper)
       (parameterize ((current-eventspace eventspace))
         (queue-callback
          (lambda ()
+           (lazy-new-stepper)
            (super add-deriv deriv)))))
 
     (define/override (new-stepper-frame)
