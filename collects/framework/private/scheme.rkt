@@ -1220,7 +1220,7 @@
     
     (define/override (put-file text sup directory default-name)
       (parameterize ([finder:default-extension "rkt"]
-                     [finder:default-filters '(["Racket Sources" "*.rkt;*.ss;*.scm"]
+                     [finder:default-filters '(["Racket Sources" "*.rkt;*.scrbl;*.ss;*.scm"]
                                                ["Any" "*.*"])])
         ;; don't call the surrogate's super, since it sets the default extension
         (sup directory default-name)))
