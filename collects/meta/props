@@ -1830,6 +1830,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/stream.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/stress" responsible (jay)
 "collects/tests/racket/stress/contract-lifting.rkt" responsible (robby stevie)
+"collects/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket "-t" * "--" "-c") drdr:random #t
 "collects/tests/racket/string-mzlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/string.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/struct.rktl" drdr:command-line (racket "-f" *)
@@ -1915,7 +1916,6 @@ path/s is either such a string or a list of them.
 "collects/tests/stepper/universe-test.rkt" drdr:command-line (mzc *)
 "collects/tests/stepper/world-test.rktl" drdr:command-line #f
 "collects/tests/stepper/write-display.rktl" drdr:command-line #f
-"collects/tests/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket "-t" * "--" "-c") drdr:random #t
 "collects/tests/stress.rkt" responsible (jay)
 "collects/tests/stxparse" responsible (ryanc)
 "collects/tests/stxparse/stxclass.rkt" drdr:command-line (gracket-text "-t" *)
