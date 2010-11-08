@@ -164,7 +164,11 @@ v4 todo:
                          (for/list ([r (in-list rngs)])
                            (list r (gensym 'rng)))
                          null)])
-        (with-syntax ([(rng-checker ...)
+        (with-syntax ([(rng-checker-name ...)
+                       (if rngs
+                           (list (gensym 'rng-checker))
+                           null)]
+                      [(rng-checker ...)
                        (if rngs
                            (with-syntax ([rng-len (length rngs)]
                                          [rng-pluralize (if (and (pair? rngs) (null? (cdr rngs))) "" "s")])
@@ -258,7 +262,7 @@ v4 todo:
                                         (λ (s) #`(values #,@s this-param ... (dom-ctc dom-x) ...)))])
                                (if no-rng-checking?
                                    (inner-stx-gen #'())
-                                   (check-tail-contract (length rngs) #'(rng-ctc ...) #'(rng-checker ...) inner-stx-gen)))]
+                                   (check-tail-contract (length rngs) #'(rng-ctc ...) #'(rng-checker-name ...) inner-stx-gen)))]
                             [kwd-return
                              (let* ([inner-stx-gen
                                      (if need-apply-values?
@@ -276,7 +280,7 @@ v4 todo:
                                                #,(inner-stx-gen s #'(kwd-results)))))])
                                (if no-rng-checking?
                                    (outer-stx-gen #'())
-                                   (check-tail-contract (length rngs) #'(rng-ctc ...) #'(rng-checker ...) outer-stx-gen)))])
+                                   (check-tail-contract (length rngs) #'(rng-ctc ...) #'(rng-checker-name ...) outer-stx-gen)))])
                 (with-syntax ([basic-lambda-name (gensym 'basic-lambda)]
                               [basic-lambda #'(λ basic-params pre ... basic-return)]
                               [kwd-lambda-name (gensym 'kwd-lambda)]
@@ -322,25 +326,28 @@ v4 todo:
                                    [else (cons #'list (build-list (add1 (- max-arity min-arity)) (λ (n) (+ min-arity n))))])])
                     (cond
                       [(and (null? req-keywords) (null? opt-keywords))
-                       #`(let ([basic-lambda-name basic-lambda])
-                           (if (matches-arity-exactly? val contract-arity null null)
-                               basic-lambda-name
-                               (let-values ([(vr va) (procedure-keywords val)]
-                                            [(basic-checker-name) basic-checker])
-                                 (if (or (not va) (pair? vr) (pair? va))
-                                     (make-keyword-procedure kwd-checker basic-checker-name)
-                                     basic-checker-name))))]
+                       #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
+                           (let ([basic-lambda-name basic-lambda])
+                             (if (matches-arity-exactly? val contract-arity null null)
+                                 basic-lambda-name
+                                 (let-values ([(vr va) (procedure-keywords val)]
+                                              [(basic-checker-name) basic-checker])
+                                   (if (or (not va) (pair? vr) (pair? va))
+                                       (make-keyword-procedure kwd-checker basic-checker-name)
+                                       basic-checker-name)))))]
                       [(pair? req-keywords)
-                       #`(let ([kwd-lambda-name kwd-lambda])
-                           (if (matches-arity-exactly? val contract-arity (list 'req-kwd ...) (list 'opt-kwd ...))
-                               kwd-lambda-name
-                               (make-keyword-procedure kwd-checker basic-checker)))]
+                       #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
+                           (let ([kwd-lambda-name kwd-lambda])
+                             (if (matches-arity-exactly? val contract-arity (list 'req-kwd ...) (list 'opt-kwd ...))
+                                 kwd-lambda-name
+                                 (make-keyword-procedure kwd-checker basic-checker))))]
                       [else
-                       #`(let ([basic-lambda-name basic-lambda]
-                               [kwd-lambda-name kwd-lambda])
-                           (if (matches-arity-exactly? val contract-arity null (list 'opt-kwd ...))
-                               kwd-lambda-name
-                               (make-keyword-procedure kwd-checker basic-checker)))])))))))))))
+                       #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
+                           (let ([basic-lambda-name basic-lambda]
+                                 [kwd-lambda-name kwd-lambda])
+                             (if (matches-arity-exactly? val contract-arity null (list 'opt-kwd ...))
+                                 kwd-lambda-name
+                                 (make-keyword-procedure kwd-checker basic-checker))))])))))))))))
 
 ;; pre : (or/c #f (-> any)) -- checks the pre-condition, if there is one.
 ;; post : (or/c #f (-> any)) -- checks the post-condition, if there is one.
