@@ -42,7 +42,7 @@
           ["libpixman-1.0.dylib" 459304]
           ["libgthread-2.0.0.dylib" 24592]
           ["libpng14.14.dylib" 182992]
-          ["PSMTabBarControl.tgz" 91318])]
+          ["PSMTabBarControl.tgz" 89039])]
        [(x86_64-macosx)
         '(["libcairo.2.dylib" 944552]
           ["libintl.8.dylib" 61016]
@@ -56,7 +56,7 @@
           ["libpixman-1.0.dylib" 499440]
           ["libgthread-2.0.0.dylib" 21728]
           ["libpng14.14.dylib" 192224]
-          ["PSMTabBarControl.tgz" 107171])]
+          ["PSMTabBarControl.tgz" 105765])]
        [(ppc-macosx) 
         '(["libcairo.2.dylib" 2716096]
           ["libintl.8.dylib" 133156]
@@ -70,7 +70,7 @@
           ["libpixman-1.0.dylib" 1366816]
           ["libgthread-2.0.0.dylib" 25416]
           ["libpng14.14.dylib" 505920]
-          ["PSMTabBarControl.tgz" 96036])])]
+          ["PSMTabBarControl.tgz" 95862])])]
     [(windows)
      (let ([basic '(["libjpeg-7.dll" 233192]
                     ["libcairo-2.dll" 921369]
@@ -159,6 +159,12 @@
               (lambda (out)
                 (copy-port i out)))
             (rename-file-or-directory tmp dest #t)
+            (let ([sz (file-size dest)])
+              (unless (= size sz)
+                (raise-user-error 
+                 'get-libs
+                 "size of ~a is ~a; doesn't match expected size ~a"
+                 dest sz size)))
             (printf "done\n"))))))
 
 (define (same-content? f1 f2)
