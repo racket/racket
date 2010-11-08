@@ -167,7 +167,8 @@ of impersonators with respect to wrapping impersonators to be detected within
 
 @defproc[(impersonate-struct [v any/c]
                              [orig-proc (or/c struct-accessor-procedure?
-                                              struct-mutator-procedure?)]
+                                              struct-mutator-procedure?
+                                              struct-type-property-accessor-procedure?)]
                              [redirect-proc procedure?] ... ...
                              [prop impersonator-property?]
                              [prop-val any] ... ...)
@@ -195,6 +196,11 @@ The protocol for a @scheme[redirect-proc] depends on the corresponding
       supplied to the mutator; it must return a replacement for
       @scheme[_field-v] to be propagated to @scheme[orig-proc] and
       @scheme[v].}
+
+ @item{A property accessor: @racket[redirect-proc] uses the same
+       protocol as for a structure-field accessor. The accessor's
+       property must have been created with @racket['can-impersonate]
+       as the second argument to @racket[make-struct-type-property].}
 
 ]
 
@@ -378,15 +384,17 @@ Like @racket[impersonate-struct], but with the following refinements:
       @scheme[v]; it must return a chaperone of @scheme[_field-v]. The
       corresponding field may be immutable.}
 
- @item{A property accessor can be supplied as @racket[orig-proc].  The
-       corresponding @racket[redirect-proc] uses the same protocol as
-       for a structure-field selector.}
-
  @item{With structure-field mutator as @racket[orig-proc],
       @scheme[redirect-proc] must accept two arguments, @scheme[v] and
       the value @scheme[_field-v] supplied to the mutator; it must
       return a chaperone of @scheme[_field-v] to be propagated to
       @scheme[orig-proc] and @scheme[v].}
+
+ @item{A property accessor can be supplied as @racket[orig-proc], and
+       the property need not have been created with
+       @racket['can-impersonate].  The corresponding
+       @racket[redirect-proc] uses the same protocol as for a
+       structure-field accessor.}
 
  @item{With @scheme[struct-info] as @racket[orig-proc], the
        corresponding @scheme[redirect-proc] must accept two values,

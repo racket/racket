@@ -1024,7 +1024,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   Scheme_Struct_Property *p;
   Scheme_Object *a[1], *v, *supers = scheme_null;
   char *name;
-  int len;
+  int len, can_impersonate = 0;
   const char *who;
 
   if (type == scheme_struct_property_type)
@@ -1035,9 +1035,13 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_type(who, "symbol", 0, argc, argv);
   if (argc > 1) {
-    if (SCHEME_TRUEP(argv[1])
+    if (SCHEME_SYMBOLP(argv[1])
+        && !SCHEME_SYM_WEIRDP(argv[1])
+        && !strcmp("can-impersonate", SCHEME_SYM_VAL(argv[1])))
+      can_impersonate = 1;
+    else if (SCHEME_TRUEP(argv[1])
         && !scheme_check_proc_arity(NULL, 2, 1, argc, argv))
-      scheme_wrong_type(who, "procedure (arity 2) or #f", 1, argc, argv);
+      scheme_wrong_type(who, "procedure (arity 2), #f, or 'can-impersonate", 1, argc, argv);
 
     if (argc > 2) {
       supers = argv[2];
@@ -1224,7 +1228,7 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
     return orig_v;
   } else {
     /* Normal guard handling: */
-    if (p->guard) {
+    if (p->guard && !SCHEME_SYMBOLP(p->guard)) {
       if(!scheme_defining_primitives) {
         Scheme_Object *a[2], *info[mzNUM_ST_INFO], *l;
 
@@ -5166,7 +5170,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     } else if (SCHEME_TRUEP(struct_getter_p(1, a))) {
       kind = "accessor";
       offset = 0;
-    } else if (!is_impersonator && SCHEME_TRUEP(struct_prop_getter_p(1, a))) {
+    } else if (SCHEME_TRUEP(struct_prop_getter_p(1, a))) {
       kind = "struct-type property accessor";
       offset = -1;
     } else if (!is_impersonator && SAME_OBJ(proc, struct_info_proc)) {
@@ -5194,7 +5198,16 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       prop = SCHEME_PRIM_CLOSURE_ELS(proc)[0];
       pi = NULL;
 
-      if (!scheme_chaperone_struct_type_property_ref(prop, argv[0]))
+      if (is_impersonator 
+          && (!((Scheme_Struct_Property *)prop)->guard
+              || !SCHEME_SYMBOLP(((Scheme_Struct_Property *)prop)->guard)))
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "%s: %s cannot be impersonated: %V",
+                         name,
+                         kind,
+                         a[0]);
+
+      if (!scheme_struct_type_property_ref(prop, argv[0]))
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "%s: %s %V does not apply to given object: %V",
                          name,

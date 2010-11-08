@@ -411,15 +411,14 @@
   [chaperone?/impersonator impersonator?])
  (let ()
    (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
-   (define-values (prop:green green? green-ref) (make-struct-type-property 'green))
+   (define-values (prop:green green? green-ref) (make-struct-type-property 'green 'can-impersonate))
    (define-struct a ([x #:mutable] y))
    (define-struct (b a) ([z #:mutable]))
    (define-struct p (u) #:property prop:green 'green)
    (define-struct (q p) (v w))
    (test #t chaperone?/impersonator (chaperone-struct (make-a 1 2) a-x (lambda (a v) v)))
    (test #t chaperone?/impersonator (chaperone-struct (make-b 1 2 3) a-x (lambda (a v) v)))
-   (when is-chaperone
-     (test #t chaperone?/impersonator (chaperone-struct (make-p 1) green-ref (lambda (a v) v))))
+   (test #t chaperone?/impersonator (chaperone-struct (make-p 1) green-ref (lambda (a v) v)))
    (test #t chaperone?/impersonator (chaperone-struct (make-a 1 2) a-x (lambda (a v) v) prop:blue 'blue))
    (when is-chaperone
      (test #t chaperone?/impersonator (chaperone-struct 
