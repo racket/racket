@@ -891,7 +891,7 @@
 
     (def/public (draw-arc [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height]
                           [real? start-radians] [real? end-radians])
-      (do-draw-arc 'draw-arc x y width height 0 2pi))
+      (do-draw-arc 'draw-arc x y width height start-radians end-radians))
 
     (def/public (draw-ellipse [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height])
       (do-draw-arc 'draw-ellipse x y width height 0 2pi))
