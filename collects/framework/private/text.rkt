@@ -3758,6 +3758,7 @@ designates the character that triggers autocompletion
 
     ;; set the dc stuff to values we want
     (define (setup-dc dc)
+      (send dc set-pen "black" 1 'solid)
       (send dc set-font (get-style-font))
       (send dc set-text-foreground (make-object color% line-numbers-color)))
 
