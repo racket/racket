@@ -14,8 +14,7 @@
    [("--install") "install mode" (mode 'install)]
    #:once-each
    [("--ready") n "touch `ready<n>' on download success" (touch-ready n)]
-   #:args
-   (src-dir dest-dir)
+   #:args (src-dir dest-dir)
    (values src-dir dest-dir)))
 
 (define url-host "download.racket-lang.org")
@@ -72,7 +71,13 @@
           ["libpng14.14.dylib" 505920]
           ["PSMTabBarControl.tgz" 95862])])]
     [(windows)
-     (let ([basic '(["libjpeg-7.dll" 233192]
+     (let ([basic '(;; basic libraries
+                    ["UnicoWS.dll" 245408]
+                    ["iconv.dll" 892928]
+                    ["libeay32.dll" 1089536]
+                    ["ssleay32.dll" 237568]
+                    ;; gracket libraries
+                    ["libjpeg-7.dll" 233192]
                     ["libcairo-2.dll" 921369]
                     ["libpango-1.0-0.dll" 336626]
                     ["libexpat-1.dll" 143096]
@@ -129,83 +134,73 @@
 	(path->string name))))
 
 (define (download-if-needed dest-dir file size)
-  (let ([dest (build-path dest-dir file)]
-        [tmp (build-path dest-dir (format "~a.download" file))])
-    (if (and (file-exists? dest)
-             (= (file-size dest) size))
-        (printf " ~a is ready\n" file)
-        (let* ([sub (unixize (system-library-subpath #f))]
-               [src (format "~a~a/~a" url-path sub file)])
-          (unless explained?
-            (set! explained? #t)
-            (printf ">> Downloading files from\n>>  ~a~a\n" url-base sub)
-            (printf ">> If you don't want automatic download, download each file\n")
-            (printf ">> yourself from there to\n")
-            (printf ">>  ~a\n" (path->complete-path dest-dir)))
-          (printf " ~a downloading..." file)
-          (flush-output)
-          (let-values ([(i o) (tcp-connect url-host 80)])
-            (fprintf o "GET ~a HTTP/1.0\r\n" (string-append src))
-            (fprintf o "Host: ~a\r\n" url-host)
-            (fprintf o "\r\n")
-            (flush-output o)
-            (tcp-abandon-port o)
-            (purify-port i)
-            (call-with-output-file tmp
-              #:exists 'truncate/replace
-              (lambda (out)
-                (copy-port i out)))
-            (rename-file-or-directory tmp dest #t)
-            (let ([sz (file-size dest)])
-              (unless (= size sz)
-                (raise-user-error
-                 'get-libs
-                 "size of ~a is ~a; doesn't match expected size ~a"
-                 dest sz size)))
-            (printf "done\n"))))))
+  (define dest (build-path dest-dir file))
+  (if (and (file-exists? dest) (= (file-size dest) size))
+    (printf " ~a is ready\n" file)
+    (let* ([sub (unixize (system-library-subpath #f))]
+           [src (format "~a~a/~a" url-path sub file)])
+      (unless explained?
+        (set! explained? #t)
+        (printf ">> Downloading files from\n>>  ~a~a\n" url-base sub)
+        (printf ">> If you don't want automatic download, download each file\n")
+        (printf ">> yourself from there to\n")
+        (printf ">>  ~a\n" (path->complete-path dest-dir)))
+      (printf " ~a downloading..." file)
+      (flush-output)
+      (define-values [i o] (tcp-connect url-host 80))
+      (fprintf o "GET ~a HTTP/1.0\r\n" (string-append src))
+      (fprintf o "Host: ~a\r\n" url-host)
+      (fprintf o "\r\n")
+      (flush-output o)
+      (tcp-abandon-port o)
+      (purify-port i)
+      (define tmp (build-path dest-dir (format "~a.download" file)))
+      (call-with-output-file tmp #:exists 'truncate/replace
+        (lambda (out) (copy-port i out)))
+      (rename-file-or-directory tmp dest #t)
+      (let ([sz (file-size dest)])
+        (unless (= size sz)
+          (raise-user-error
+           'get-libs "size of ~a is ~a; doesn't match expected size ~a"
+           dest sz size)))
+      (printf "done\n"))))
 
 (define (same-content? f1 f2)
   ;; approximate:
-  (and (file-exists? f1)
-       (file-exists? f2)
-       (= (file-size f1) (file-size f2))))
+  (and (file-exists? f1) (file-exists? f2) (= (file-size f1) (file-size f2))))
 
 (define (install-file src dest)
   (if (regexp-match? #rx"[.]tgz" (path->string src))
-      ;; Unpack tar file:
-      (unpack-tgz src dest)
-      ;; Plain copy:
-      (unless (same-content? src dest)
-        (printf "Updating ~a\n" dest)
-        (when (file-exists? dest)
-          (delete-file dest))
-        (copy-file src dest))))
+    ;; Unpack tar file:
+    (unpack-tgz src dest)
+    ;; Plain copy:
+    (unless (same-content? src dest)
+      (printf "Updating ~a\n" dest)
+      (when (file-exists? dest) (delete-file dest))
+      (copy-file src dest))))
 
-(define (unpack-tgz src dest)
-  (let ([src (path->string (path->complete-path src))])
-   (parameterize ([current-directory
-                   (let-values ([(base name dir?) (split-path dest)]) base)])
-     (define-values [p pout pin perr]
-       (subprocess
-        (current-output-port) (current-input-port) (current-error-port)
-        (find-executable-path "tar") "zxf" src))
-     (subprocess-wait p))))
+(define (unpack-tgz src* dest)
+  (define src (path->string (path->complete-path src*)))
+  (parameterize ([current-directory
+                  (let-values ([(base name dir?) (split-path dest)]) base)])
+    (define-values [p pout pin perr]
+      (subprocess
+       (current-output-port) (current-input-port) (current-error-port)
+       (find-executable-path "tar") "zxf" src))
+    (subprocess-wait p)))
 
 (case (mode)
   [(download)
    (let ([libs dest-dir])
      (unless (directory-exists? libs)
        (make-directory libs))
-     (for-each (lambda (file+size)
-                 (download-if-needed libs (car file+size) (cadr file+size)))
-               needed-files+sizes)
+     (for ([file+size (in-list needed-files+sizes)])
+       (download-if-needed libs (car file+size) (cadr file+size)))
      (when (touch-ready)
-       (let ([ok (build-path libs (format "ready~a" (touch-ready)))])
-         (unless (file-exists? ok)
-           (with-output-to-file ok void)))))]
+       (define ok (build-path libs (format "ready~a" (touch-ready))))
+       (unless (file-exists? ok) (with-output-to-file ok void))))]
   [(install)
-   (for-each (lambda (file+size)
-               (let ([file (car file+size)])
-                 (install-file (build-path src-dir "libs" file)
-                               (build-path dest-dir file))))
-             needed-files+sizes)])
+   (for ([file+size (in-list needed-files+sizes)])
+     (define file (car file+size))
+     (install-file (build-path src-dir "libs" file)
+                   (build-path dest-dir file)))])

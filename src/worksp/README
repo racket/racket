@@ -1,4 +1,4 @@
-This directory contains 
+This directory contains
 
  - solution files and project files for building Racket and GRacket
     with Microsoft Visual Studio 8.0 and up (which work with the
@@ -87,8 +87,7 @@ builds
 
 In addition, building RacketCGC executes
    racket\src\racket\dynsrc\mkmzdyn.bat
-which copies .exp, .obj, and .lib files into racket\lib\, and also
-copies DLLs from the "extradlls" directory to to racket\lib\.
+which copies .exp, .obj, and .lib files into racket\lib\.
 
 Finally, you must install pre-build DLLs that GRacket needs to run.
 The DLLs are available from

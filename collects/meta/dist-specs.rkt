@@ -373,8 +373,7 @@ mz-tests := (tests: "racket/" "info.rkt" "utils/" "match/" "eli-tester.rkt" "str
 mz-src := (+ (- (src: "README" "Makefile.in" "configure" "lt/" "racket/" "utils/"
                       (cond win => "worksp/{README|mzconfig.h}"
                                    "worksp/{racket|libracket|libmzgc|gc2}/"
-                                   "worksp/{mzstart|starters}/"
-                                   "worksp/extradlls/"))
+                                   "worksp/{mzstart|starters}/"))
                 (cond (not mr) => (src: "worksp/starters/mrstart.ico")))
              foreign-src)
 
