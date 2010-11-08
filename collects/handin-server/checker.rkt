@@ -93,7 +93,8 @@
 ;; * snip->text is used earlier in the process, where comment-box text is still
 ;;   available
 
-(require framework) ; for drracket snips, used below
+(require framework ; for drracket snips, used below
+         mrlib/matrix-snip) ; avoid errors from files with matrix snips
 
 ;; input-port->text-input-port : input-port (any -> any) -> input-port
 ;;  the `filter' function is applied to special values; the filter result is
