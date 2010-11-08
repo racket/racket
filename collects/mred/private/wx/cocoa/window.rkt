@@ -248,7 +248,7 @@
                                             #\nul
                                             (let ([c (string-ref str 0)])
                                               (or (and control?
-                                                       (char<=? #\u00 c #\u1a)
+                                                       (char<=? #\u00 c #\u1F)
                                                        (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
                                                          (and (string? alt-str)
                                                               (= 1 (string-length alt-str))
