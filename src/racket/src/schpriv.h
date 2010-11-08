@@ -384,9 +384,9 @@ THREAD_LOCAL_DECL(extern Scheme_Object *scheme_system_idle_channel);
 extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 
 extern Scheme_Object *scheme_equal_property;
-extern Scheme_Object *scheme_proxy_of_property;
+extern Scheme_Object *scheme_impersonator_of_property;
 
-extern Scheme_Object *scheme_app_mark_proxy_property;
+extern Scheme_Object *scheme_app_mark_impersonator_property;
 
 extern Scheme_Object *scheme_reduced_procedure_struct;
 
@@ -763,7 +763,7 @@ Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
 
 typedef struct Scheme_Chaperone {
-  Scheme_Inclhash_Object iso; /* 0x1 => proxy, rather than a checking chaperone */
+  Scheme_Inclhash_Object iso; /* 0x1 => impersonator, rather than a checking chaperone */
   Scheme_Object *val;  /* root object */
   Scheme_Object *prev; /* immediately chaperoned object */
   Scheme_Hash_Tree *props;
@@ -771,7 +771,7 @@ typedef struct Scheme_Chaperone {
 } Scheme_Chaperone;
 
 #define SCHEME_CHAPERONE_FLAGS(c) MZ_OPT_HASH_KEY(&(c)->iso)
-#define SCHEME_CHAPERONE_IS_PROXY 0x1
+#define SCHEME_CHAPERONE_IS_IMPERSONATOR 0x1
 
 #define SCHEME_CHAPERONE_VAL(obj) (((Scheme_Chaperone *)obj)->val)
 

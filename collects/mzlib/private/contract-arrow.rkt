@@ -50,7 +50,7 @@
                              (apply values res-checker kwd-vals args))
                            (λ args
                              (apply values res-checker args)))
-                          proxy-prop:contracted ctc)
+                          impersonator-prop:contracted ctc)
                          (raise-blame-error blame val "expected a procedure"))))))
              (define ctc
                (if (and (chaperone-contract? rngs-x) ...)
@@ -60,7 +60,7 @@
                     #:first-order procedure?)
                    (make-contract
                     #:name name
-                    #:projection (proj proxy-procedure)
+                    #:projection (proj impersonate-procedure)
                     #:first-order procedure?)))
              ctc)))]))
 

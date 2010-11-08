@@ -23,22 +23,22 @@
              new:procedure->method
              new:procedure-rename
              new:chaperone-procedure
-             new:proxy-procedure)
+             new:impersonate-procedure)
   
   ;; ----------------------------------------
 
-  (define-values (prop:keyword-proxy keyword-proxy? keyword-proxy-ref) 
-    (make-struct-type-property 'keyword-proxy))
-  (define (keyword-procedure-proxy-of v)
+  (define-values (prop:keyword-impersonator keyword-impersonator? keyword-impersonator-ref) 
+    (make-struct-type-property 'keyword-impersonator))
+  (define (keyword-procedure-impersonator-of v)
     (cond
-     [(keyword-proxy? v) ((keyword-proxy-ref v) v)]
+     [(keyword-impersonator? v) ((keyword-impersonator-ref v) v)]
      [else #f]))
 
   (define-values (struct:keyword-procedure mk-kw-proc keyword-procedure?
                                            keyword-procedure-ref keyword-procedure-set!)
     (make-struct-type 'keyword-procedure #f 4 0 #f
                       (list (cons prop:checked-procedure #t)
-                            (cons prop:proxy-of keyword-procedure-proxy-of))
+                            (cons prop:impersonator-of keyword-procedure-impersonator-of))
                       (current-inspector)
                       #f
                       '(0 1 2 3)))
@@ -131,13 +131,13 @@
   ;;  is used for each evaluation of a keyword lambda.)
   ;; The `procedure' property is a per-type method that has exactly
   ;;  the right arity, and that sends all arguments to `missing-kw'.
-  (define (make-required name fail-proc method? proxy?)
+  (define (make-required name fail-proc method? impersonator?)
     (let-values ([(s: mk ? -ref -set!)
                   (make-struct-type (or name 'unknown)
-                                    (if proxy?
+                                    (if impersonator?
                                         (if method?
-                                            struct:keyword-method-proxy
-                                            struct:keyword-procedure-proxy)
+                                            struct:keyword-method-impersonator
+                                            struct:keyword-procedure-impersonator)
                                         (if method?
                                             struct:keyword-method
                                             struct:keyword-procedure))
@@ -156,26 +156,26 @@
 
   
   ;; Proxies
-  (define-values (struct:keyword-procedure-proxy make-kpp keyword-procedure-proxy? kpp-ref kpp-set!)
+  (define-values (struct:keyword-procedure-impersonator make-kpp keyword-procedure-impersonator? kpp-ref kpp-set!)
     (make-struct-type 'procedure
                       struct:keyword-procedure
                       1 0 #f
-                      (list (cons prop:keyword-proxy (lambda (v) (kpp-ref v 0))))))
-  (define-values (struct:keyword-method-proxy make-kmp keyword-method-proxy? kmp-ref kmp-set!)
+                      (list (cons prop:keyword-impersonator (lambda (v) (kpp-ref v 0))))))
+  (define-values (struct:keyword-method-impersonator make-kmp keyword-method-impersonator? kmp-ref kmp-set!)
     (make-struct-type 'procedure
                       struct:keyword-method
                       1 0 #f
-                      (list (cons prop:keyword-proxy (lambda (v) (kmp-ref v 0))))))
-  (define-values (struct:okpp make-optional-keyword-procedure-proxy okpp? okpp-ref okpp-set!)
+                      (list (cons prop:keyword-impersonator (lambda (v) (kmp-ref v 0))))))
+  (define-values (struct:okpp make-optional-keyword-procedure-impersonator okpp? okpp-ref okpp-set!)
     (make-struct-type 'procedure
                       struct:okp
                       1 0 #f
-                      (list (cons prop:keyword-proxy (lambda (v) (okpp-ref v 0))))))
-  (define-values (struct:okmp make-optional-keyword-method-proxy okmp? okmp-ref okmp-set!)
+                      (list (cons prop:keyword-impersonator (lambda (v) (okpp-ref v 0))))))
+  (define-values (struct:okmp make-optional-keyword-method-impersonator okmp? okmp-ref okmp-set!)
     (make-struct-type 'procedure
                       struct:okp
                       1 0 #f
-                      (list (cons prop:keyword-proxy (lambda (v) (okmp-ref v 0))))))
+                      (list (cons prop:keyword-impersonator (lambda (v) (okmp-ref v 0))))))
 
   ;; ----------------------------------------
 
@@ -1179,20 +1179,20 @@
              (do-chaperone-procedure #f chaperone-procedure 'chaperone-procedure proc wrap-proc props))])
       chaperone-procedure))
 
-  (define new:proxy-procedure
-    (let ([proxy-procedure 
+  (define new:impersonate-procedure
+    (let ([impersonate-procedure 
            (lambda (proc wrap-proc . props)
-             (do-chaperone-procedure #t proxy-procedure 'proxy-procedure proc wrap-proc props))])
-      proxy-procedure))
+             (do-chaperone-procedure #t impersonate-procedure 'impersonate-procedure proc wrap-proc props))])
+      impersonate-procedure))
 
-  (define (do-chaperone-procedure is-proxy? chaperone-procedure name proc wrap-proc props)
+  (define (do-chaperone-procedure is-impersonator? chaperone-procedure name proc wrap-proc props)
     (if (or (not (keyword-procedure? proc))
             (not (procedure? wrap-proc))
             ;; if any bad prop, let `chaperone-procedure' complain
             (let loop ([props props])
               (cond
                [(null? props) #f]
-               [(proxy-property? (car props))
+               [(impersonator-property? (car props))
                 (let ([props (cdr props)])
                   (or (null? props)
                       (loop (cdr props))))]
@@ -1225,7 +1225,7 @@
              name
              (format
               "~a procedure requires more keywords than original procedure: "
-              (if is-proxy? "proxying" "chaperoning"))
+              (if is-impersonator? "impersonating" "chaperoning"))
              proc))
           (unless (or (not b-allow)
                       (and a-allow
@@ -1234,7 +1234,7 @@
              name
              (format
               "~a procedure does not accept all keywords of original procedure: "
-              (if is-proxy? "proxying" "chaperoning"))
+              (if is-impersonator? "impersonating" "chaperoning"))
              proc))
           (let* ([kw-chaperone
                   (let ([p (keyword-procedure-proc wrap-proc)])
@@ -1266,7 +1266,7 @@
                                    wrap-proc))
                                 (for-each
                                  (lambda (kw new-arg arg)
-                                   (unless is-proxy?
+                                   (unless is-impersonator?
                                      (unless (chaperone-of? new-arg arg)
                                        (raise-mismatch-error
                                         '|keyword procedure chaperone|
@@ -1283,10 +1283,10 @@
                  [new-proc
                   (cond
                    [(okp? proc)
-                    (if is-proxy?
+                    (if is-impersonator?
                         ((if (okm? proc)
-                             make-optional-keyword-method-proxy
-                             make-optional-keyword-procedure-proxy)
+                             make-optional-keyword-method-impersonator
+                             make-optional-keyword-procedure-impersonator)
                          (keyword-procedure-checker proc)
                          (chaperone-procedure (keyword-procedure-proc proc)
                                               kw-chaperone)
@@ -1305,7 +1305,7 @@
                            (chaperone-procedure proc
                                                 (okp-ref wrap-proc 0)))))]
                    [else
-                    (if is-proxy?
+                    (if is-impersonator?
                         ;; Constructor must be from `make-required':
                         (let* ([name+fail (keyword-procedure-name+fail proc)]
                                [mk (make-required (car name+fail) (cdr name+fail) (keyword-method? proc) #t)])

@@ -85,7 +85,7 @@
                     (elem-pos-proj val))
                   (λ (vec i val)
                     (elem-neg-proj val))
-                  proxy-prop:contracted ctc))))))))
+                  impersonator-prop:contracted ctc))))))))
 
 (define-struct (chaperone-vectorof base-vectorof) ()
   #:property prop:chaperone-contract
@@ -94,12 +94,12 @@
    #:first-order vectorof-first-order
    #:projection (vectorof-ho-projection chaperone-vector)))
 
-(define-struct (proxy-vectorof base-vectorof) ()
+(define-struct (impersonator-vectorof base-vectorof) ()
   #:property prop:contract
   (build-contract-property
    #:name vectorof-name
    #:first-order vectorof-first-order
-   #:projection (vectorof-ho-projection proxy-vector)))
+   #:projection (vectorof-ho-projection impersonate-vector)))
 
 (define-syntax (wrap-vectorof stx)
   (syntax-case stx ()
@@ -149,7 +149,7 @@
       [(chaperone-contract? ctc)
        (make-chaperone-vectorof ctc immutable)]
       [else
-       (make-proxy-vectorof ctc immutable)])))
+       (make-impersonator-vectorof ctc immutable)])))
 
 (define/subexpression-pos-prop (vector-immutableof c)
   (vectorof c #:immutable #t))
@@ -239,7 +239,7 @@
                     ((vector-ref elem-pos-projs i) val))
                   (λ (vec i val)
                     ((vector-ref elem-neg-projs i) val))
-                  proxy-prop:contracted ctc))))))))
+                  impersonator-prop:contracted ctc))))))))
 
 (define-struct (chaperone-vector/c base-vector/c) ()
   #:property prop:chaperone-contract
@@ -248,12 +248,12 @@
    #:first-order vector/c-first-order
    #:projection (vector/c-ho-projection chaperone-vector)))
 
-(define-struct (proxy-vector/c base-vector/c) ()
+(define-struct (impersonator-vector/c base-vector/c) ()
   #:property prop:contract
   (build-contract-property
    #:name vector/c-name
    #:first-order vector/c-first-order
-   #:projection (vector/c-ho-projection proxy-vector)))
+   #:projection (vector/c-ho-projection impersonate-vector)))
 
 (define-syntax (wrap-vector/c stx)
   (syntax-case stx ()
@@ -303,7 +303,7 @@
       [(andmap chaperone-contract? ctcs)
        (make-chaperone-vector/c ctcs immutable)]
       [else
-       (make-proxy-vector/c ctcs immutable)])))
+       (make-impersonator-vector/c ctcs immutable)])))
 
 (define/subexpression-pos-prop (vector-immutable/c . args)
   (apply vector/c args #:immutable #t))

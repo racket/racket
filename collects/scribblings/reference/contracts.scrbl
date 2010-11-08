@@ -246,7 +246,7 @@ is a chaperone contract, then the result will be a chaperone contract.
 
 When a higher-order @racket[vectorof] contract is applied to a vector, the result
 is not @racket[eq?] to the input.  The result will be a copy for immutable vectors
-and a @tech{chaperone} or @tech{proxy} of the input for mutable vectors.}
+and a @tech{chaperone} or @tech{impersonator} of the input for mutable vectors.}
 
 
 @defproc[(vector-immutableof [c contract?]) contract?]{
@@ -272,7 +272,7 @@ are chaperone contracts, then the result will be a chaperone contract.
 
 When a higher-order @racket[vector/c] contract is applied to a vector, the result
 is not @racket[eq?] to the input.  The result will be a copy for immutable vectors
-and a @tech{chaperone} or @tech{proxy} of the input for mutable vectors.}
+and a @tech{chaperone} or @tech{impersonator} of the input for mutable vectors.}
 
 
 @defproc[(vector-immutable/c [c contract?] ...) contract?]{
@@ -298,7 +298,7 @@ a chaperone contract, then the result will be a chaperone contract.
 
 When a higher-order @racket[box/c] contract is applied to a box, the result
 is not @racket[eq?] to the input.  The result will be a copy for immutable boxes
-and either a @tech{chaperone} or @tech{proxy} of the input for mutable boxes.}
+and either a @tech{chaperone} or @tech{impersonator} of the input for mutable boxes.}
 
 
 @defproc[(box-immutable/c [c contract?]) contract?]{
@@ -377,7 +377,7 @@ If the @racket[key] argument is a chaperone contract, then the resulting contrac
 can only be applied to @racket[equal?]-based hash tables.  When a higher-order
 @racket[hash/c] contract is applied to a hash table, the result is not @racket[eq?]
 to the input.  The result will be a copy for immutable hash tables, and either a
-@tech{chaperone} or @tech{proxy} of the input for mutable hash tables.
+@tech{chaperone} or @tech{impersonator} of the input for mutable hash tables.
 }
 
 

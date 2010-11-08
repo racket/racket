@@ -97,8 +97,8 @@ v4 todo:
                             #'(p-app-x ...)
                             (list #'res-checker)
                             (λ (s) #`(apply values #,@s args)))))
-                      proxy-prop:contracted ctc
-                      proxy-prop:application-mark (cons contract-key (list p-app-x ...)))))))
+                      impersonator-prop:contracted ctc
+                      impersonator-prop:application-mark (cons contract-key (list p-app-x ...)))))))
              (define ctc
                (if (and (chaperone-contract? rngs-x) ...)
                    (make-chaperone-contract
@@ -107,7 +107,7 @@ v4 todo:
                     #:first-order procedure?)
                    (make-contract
                     #:name name
-                    #:projection (projection proxy-procedure)
+                    #:projection (projection impersonate-procedure)
                     #:first-order procedure?)))
              ctc)))]))
 
@@ -440,10 +440,10 @@ v4 todo:
    #:first-order ->-first-order
    #:stronger ->-stronger?))
 
-(define-struct (proxy-> base->) ()
+(define-struct (impersonator-> base->) ()
   #:property prop:contract
   (build-contract-property
-   #:projection (->-proj proxy-procedure)
+   #:projection (->-proj impersonate-procedure)
    #:name ->-name
    #:first-order ->-first-order
    #:stronger ->-stronger?))
@@ -470,9 +470,9 @@ v4 todo:
           (make-chaperone-> pre post doms/c opt-doms/c rest/c
                             kwds/c mandatory-kwds opt-kwds/c optional-kwds
                             rngs/c rng-any? func)
-          (make-proxy-> pre post doms/c opt-doms/c rest/c
-                        kwds/c mandatory-kwds opt-kwds/c optional-kwds
-                        rngs/c rng-any? func)))))
+          (make-impersonator-> pre post doms/c opt-doms/c rest/c
+                               kwds/c mandatory-kwds opt-kwds/c optional-kwds
+                               rngs/c rng-any? func)))))
 
 (define (single-arrow-name-maker doms/c optional-doms/c doms-rest kwds/c kwds optional-kwds/c optional-kwds rng-any? rngs pre post)
   (cond
@@ -605,8 +605,8 @@ v4 todo:
                                     (syntax->list #'(kwd-names ...)))
                                null
                                (if (syntax->datum #'use-any?) #f (syntax->list #'(rng-names ...))))
-                            proxy-prop:contracted ctc
-                            proxy-prop:application-mark (cons contract-key (list rng-names ...)))))])
+                            impersonator-prop:contracted ctc
+                            impersonator-prop:application-mark (cons contract-key (list rng-names ...)))))])
         (syntax-property
          (syntax
           (build--> '->
@@ -930,8 +930,8 @@ v4 todo:
                             (map list (syntax->list #'(optional-dom-kwd ...))
                                  (syntax->list #'(optional-dom-kwd-proj ...)))
                             (if rng-ctc (syntax->list #'(rng-proj ...)) #f))
-                         proxy-prop:contracted ctc
-                         proxy-prop:application-mark (cons contract-key (list rng-proj ...))))))))))))]))
+                         impersonator-prop:contracted ctc
+                         impersonator-prop:application-mark (cons contract-key (list rng-proj ...))))))))))))]))
 
 (define-syntax (->* stx) #`(syntax-parameterize ((making-a-method #f)) #,(->*/proc/main stx)))
 
@@ -1313,7 +1313,7 @@ v4 todo:
                       [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) (blame-swap blame))
                                   (loop (cdr args)
                                         (cdr non-kwd-ctcs)))])))))))
-           proxy-prop:contracted ->d-stct))))))
+           impersonator-prop:contracted ->d-stct))))))
 
 (define (build-values-string desc dep-pre-args)
   (cond
@@ -1377,14 +1377,14 @@ v4 todo:
                              (append mandatory-kwds optional-kwds)
                              (append mandatory-kwd-dom-ctcs optional-kwd-dom-ctcs))
                         (λ (x y) (keyword<? (car x) (car y))))])
-    (make-proxy-->d mtd?
-                    mandatory-dom-ctcs optional-dom-ctcs
-                    (map cdr kwd/ctc-pairs)
-                    rest-ctc pre-cond range post-cond
-                    (map car kwd/ctc-pairs)
-                    mandatory-kwds
-                    optional-kwds
-                    name-wrapper)))
+    (make-impersonator-->d mtd?
+                           mandatory-dom-ctcs optional-dom-ctcs
+                           (map cdr kwd/ctc-pairs)
+                           rest-ctc pre-cond range post-cond
+                           (map car kwd/ctc-pairs)
+                           mandatory-kwds
+                           optional-kwds
+                           name-wrapper)))
 
 (define (->d-name ctc) 
   (let* ([counting-id 'x]
@@ -1471,10 +1471,10 @@ v4 todo:
 ;; appropriately.  b) might be okay, but we should think about
 ;; it first.  At the very least, the projection function would
 ;; need to add checks in the appropriate places.
-(define-struct (proxy-->d base-->d) ()
+(define-struct (impersonator-->d base-->d) ()
   #:property prop:contract
   (build-contract-property
-   #:projection (->d-proj proxy-procedure)
+   #:projection (->d-proj impersonate-procedure)
    #:name ->d-name
    #:first-order ->d-first-order
    #:stronger ->d-stronger?))

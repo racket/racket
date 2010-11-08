@@ -44,7 +44,7 @@
          contract-first-order-passes?
          
          prop:contracted
-         proxy-prop:contracted
+         impersonator-prop:contracted
          has-contract?
          value-contract
          
@@ -59,14 +59,14 @@
 
 (define (has-contract? v)
   (or (has-prop:contracted? v)
-      (has-proxy-prop:contracted? v)))
+      (has-impersonator-prop:contracted? v)))
 
 (define (value-contract v)
   (cond
     [(has-prop:contracted? v)
      (get-prop:contracted v)]
-    [(has-proxy-prop:contracted? v)
-     (get-proxy-prop:contracted v)]
+    [(has-impersonator-prop:contracted? v)
+     (get-impersonator-prop:contracted v)]
     [else #f]))
 
 (define-values (prop:contracted has-prop:contracted? get-prop:contracted)
@@ -80,8 +80,8 @@
                        (lambda (s) v))))])
     (values prop pred (λ (v) ((get v) v)))))
 
-(define-values (proxy-prop:contracted has-proxy-prop:contracted? get-proxy-prop:contracted)
-  (make-proxy-property 'proxy-prop:contracted))
+(define-values (impersonator-prop:contracted has-impersonator-prop:contracted? get-impersonator-prop:contracted)
+  (make-impersonator-property 'impersonator-prop:contracted))
 
 (define-syntax (any stx)
   (raise-syntax-error 'any "use of 'any' outside the range of an arrow contract" stx))
@@ -339,7 +339,7 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?))
-(define-struct (proxy-and/c base-and/c) ()
+(define-struct (impersonator-and/c base-and/c) ()
   #:property prop:contract
   (build-contract-property
    #:projection and-proj
@@ -358,7 +358,7 @@
           (λ (x) (for/and ([pred (in-list preds)]) (pred x)))))]
       [(andmap chaperone-contract? contracts)
        (make-chaperone-and/c contracts)]
-      [else (make-proxy-and/c contracts)])))
+      [else (make-impersonator-and/c contracts)])))
 
 (define (get-any-projection c) any-projection)
 (define (any-projection b) any-function)

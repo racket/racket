@@ -194,8 +194,8 @@ Unsafe variants of @scheme[car], @scheme[cdr], @scheme[mcar],
 @deftogether[(
 @defproc[(unsafe-unbox [b box?]) fixnum?]
 @defproc[(unsafe-set-box! [b box?] [k fixnum?]) void?]
-@defproc[(unsafe-unbox* [v (and/c box? (not/c chaperone?))]) any/c]
-@defproc[(unsafe-set-box*! [v (and/c box? (not/c chaperone?))] [val any/c]) void?]
+@defproc[(unsafe-unbox* [v (and/c box? (not/c impersonator?))]) any/c]
+@defproc[(unsafe-set-box*! [v (and/c box? (not/c impersonator?))] [val any/c]) void?]
 )]{
 
 Unsafe versions of @scheme[unbox] and @scheme[set-box!].}
@@ -205,9 +205,9 @@ Unsafe versions of @scheme[unbox] and @scheme[set-box!].}
 @defproc[(unsafe-vector-length [v vector?]) fixnum?]
 @defproc[(unsafe-vector-ref [v vector?] [k fixnum?]) any/c]
 @defproc[(unsafe-vector-set! [v vector?] [k fixnum?] [val any/c]) void?]
-@defproc[(unsafe-vector*-length [v (and/c vector? (not/c chaperone?))]) fixnum?]
-@defproc[(unsafe-vector*-ref [v (and/c vector? (not/c chaperone?))] [k fixnum?]) any/c]
-@defproc[(unsafe-vector*-set! [v (and/c vector? (not/c chaperone?))] [k fixnum?] [val any/c]) void?]
+@defproc[(unsafe-vector*-length [v (and/c vector? (not/c impersonator?))]) fixnum?]
+@defproc[(unsafe-vector*-ref [v (and/c vector? (not/c impersonator?))] [k fixnum?]) any/c]
+@defproc[(unsafe-vector*-set! [v (and/c vector? (not/c impersonator?))] [k fixnum?] [val any/c]) void?]
 )]{
 
 Unsafe versions of @scheme[vector-length], @scheme[vector-ref], and
@@ -284,8 +284,8 @@ Unsafe versions of @scheme[u16vector-ref] and
 @deftogether[(
 @defproc[(unsafe-struct-ref [v any/c] [k fixnum?]) any/c]
 @defproc[(unsafe-struct-set! [v any/c] [k fixnum?] [val any/c]) void?]
-@defproc[(unsafe-struct*-ref [v (not/c chaperone?)] [k fixnum?]) any/c]
-@defproc[(unsafe-struct*-set! [v (not/c chaperone?)] [k fixnum?] [val any/c]) void?]
+@defproc[(unsafe-struct*-ref [v (not/c impersonator?)] [k fixnum?]) any/c]
+@defproc[(unsafe-struct*-set! [v (not/c impersonator?)] [k fixnum?] [val any/c]) void?]
 )]{
 
 Unsafe field access and update for an instance of a structure

@@ -5,41 +5,41 @@
 
 ;; ----------------------------------------
 
-(define (chaperone-of?/proxy a b)
-  (test #t proxy-of? a b)
+(define (chaperone-of?/impersonator a b)
+  (test #t impersonator-of? a b)
   (chaperone-of? a b))
 
-(define (chaperone?/proxy a)
-  (test #t proxy? a)
+(define (chaperone?/impersonator a)
+  (test #t impersonator? a)
   (chaperone? a))
 
-(define-syntax-rule (as-chaperone-or-proxy ([orig proxy] ...) body ...)
+(define-syntax-rule (as-chaperone-or-impersonator ([orig impersonator] ...) body ...)
   (for-each (lambda (orig ...)
               body ...)
-            (list orig proxy) ...))
+            (list orig impersonator) ...))
 
 ;; ----------------------------------------
 
-(test #t chaperone-of?/proxy 10 10)
-(test #t chaperone-of?/proxy '(10) '(10))
-(test #t chaperone-of?/proxy '#(1 2 3) '#(1 2 3))
-(test #t chaperone-of?/proxy '#&(1 2 3) '#&(1 2 3))
+(test #t chaperone-of?/impersonator 10 10)
+(test #t chaperone-of?/impersonator '(10) '(10))
+(test #t chaperone-of?/impersonator '#(1 2 3) '#(1 2 3))
+(test #t chaperone-of?/impersonator '#&(1 2 3) '#&(1 2 3))
 
-(test #f chaperone-of?/proxy (make-string 1 #\x) (make-string 1 #\x))
-(test #t chaperone-of?/proxy 
+(test #f chaperone-of?/impersonator (make-string 1 #\x) (make-string 1 #\x))
+(test #t chaperone-of?/impersonator 
       (string->immutable-string (make-string 1 #\x))
       (string->immutable-string (make-string 1 #\x)))
 
-(define (either-chaperone-of?/proxy a b)
-  (or (chaperone-of?/proxy a b)
-      (chaperone-of?/proxy b a)))
-(test #f either-chaperone-of?/proxy 
+(define (either-chaperone-of?/impersonator a b)
+  (or (chaperone-of?/impersonator a b)
+      (chaperone-of?/impersonator b a)))
+(test #f either-chaperone-of?/impersonator 
       (string->immutable-string "x")
       (make-string 1 #\x))
-(test #f either-chaperone-of?/proxy 
+(test #f either-chaperone-of?/impersonator 
       '#(1 2 3)
       (vector 1 2 3))
-(test #f either-chaperone-of?/proxy 
+(test #f either-chaperone-of?/impersonator 
       '#&17
       (box 17))
 
@@ -50,19 +50,19 @@
   (define-struct q (u [w #:mutable]) #:transparent)
   (define-struct (q2 q) (v) #:transparent)
   (test #f chaperone-of? (make-o 1 2) (make-o 1 2))
-  (test #f proxy-of? (make-o 1 2) (make-o 1 2))
-  (test #t chaperone-of?/proxy (make-p 1 2) (make-p 1 2))
-  (test #f chaperone-of?/proxy (make-p 1 (box 2)) (make-p 1 (box 2)))
-  (test #t chaperone-of?/proxy (make-p2 1 2 3) (make-p2 1 2 3))
-  (test #f chaperone-of?/proxy (make-q 1 2) (make-q 1 2))
-  (test #f chaperone-of?/proxy (make-q2 1 2 3) (make-q2 1 2 3)))
+  (test #f impersonator-of? (make-o 1 2) (make-o 1 2))
+  (test #t chaperone-of?/impersonator (make-p 1 2) (make-p 1 2))
+  (test #f chaperone-of?/impersonator (make-p 1 (box 2)) (make-p 1 (box 2)))
+  (test #t chaperone-of?/impersonator (make-p2 1 2 3) (make-p2 1 2 3))
+  (test #f chaperone-of?/impersonator (make-q 1 2) (make-q 1 2))
+  (test #f chaperone-of?/impersonator (make-q2 1 2 3) (make-q2 1 2 3)))
 
 (let* ([p (lambda (x) x)]
-       [p1 (proxy-procedure p (lambda (y) y))]
+       [p1 (impersonate-procedure p (lambda (y) y))]
        [p2 (chaperone-procedure p1 (lambda (y) y))])
-  (test #t proxy-of? p2 p)
-  (test #t proxy-of? p2 p1)
-  (test #t proxy? p1)
+  (test #t impersonator-of? p2 p)
+  (test #t impersonator-of? p2 p1)
+  (test #t impersonator? p1)
   (test #f chaperone? p1)
   (test #t chaperone? p2)
   (test #f chaperone-of? p2 p)
@@ -70,18 +70,18 @@
 
 ;; ----------------------------------------
 
-(test #t chaperone?/proxy (chaperone-box (box 10) (lambda (b v) v) (lambda (b v) v)))
-(test #f chaperone?/proxy (proxy-box (box 10) (lambda (b v) v) (lambda (b v) v)))
+(test #t chaperone?/impersonator (chaperone-box (box 10) (lambda (b v) v) (lambda (b v) v)))
+(test #f chaperone?/impersonator (impersonate-box (box 10) (lambda (b v) v) (lambda (b v) v)))
 (test #t box? (chaperone-box (box 10) (lambda (b v) v) (lambda (b v) v)))
-(test #t box? (proxy-box (box 10) (lambda (b v) v) (lambda (b v) v)))
+(test #t box? (impersonate-box (box 10) (lambda (b v) v) (lambda (b v) v)))
 (test #t (lambda (x) (box? x)) (chaperone-box (box 10) (lambda (b v) v) (lambda (b v) v)))
-(test #t (lambda (x) (box? x)) (proxy-box (box 10) (lambda (b v) v) (lambda (b v) v)))
-(test #t chaperone?/proxy (chaperone-box (box-immutable 10) (lambda (b v) v) (lambda (b v) v)))
-(err/rt-test (proxy-box (box-immutable 10) (lambda (b v) v) (lambda (b v) v)))
+(test #t (lambda (x) (box? x)) (impersonate-box (box 10) (lambda (b v) v) (lambda (b v) v)))
+(test #t chaperone?/impersonator (chaperone-box (box-immutable 10) (lambda (b v) v) (lambda (b v) v)))
+(err/rt-test (impersonate-box (box-immutable 10) (lambda (b v) v) (lambda (b v) v)))
 
-(as-chaperone-or-proxy
- ([chaperone-box proxy-box]
-  [chaperone-of? proxy-of?])
+(as-chaperone-or-impersonator
+ ([chaperone-box impersonate-box]
+  [chaperone-of? impersonator-of?])
  (let* ([b (box 0)]
         [b2 (chaperone-box b
                            (lambda (b v) 
@@ -114,11 +114,11 @@
       (test #f unbox b2)
       (err/rt-test (set-box! b2 0)))))
 
-;; no proxy-of checks in a proxy:
+;; no impersonator-of checks in a impersonator:
 (let ([b (box 0)])
-  (let ([b2 (proxy-box b 
-                           (lambda (b v) #f)
-                           (lambda (b v) #f))])
+  (let ([b2 (impersonate-box b 
+                             (lambda (b v) #f)
+                             (lambda (b v) #f))])
     (test #f unbox b2)
     (test (void) set-box! b2 0)
     (test #f unbox b)
@@ -126,19 +126,19 @@
 
 ;; ----------------------------------------
 
-(test #t chaperone?/proxy (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
+(test #t chaperone?/impersonator (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
 (test #t vector? (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
-(test #t vector? (proxy-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
+(test #t vector? (impersonate-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
 (test #t (lambda (x) (vector? x)) (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
-(test #t (lambda (x) (vector? x)) (proxy-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
-(test #t chaperone?/proxy (chaperone-vector (vector-immutable 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
-(err/rt-test (proxy-vector (vector-immutable 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
+(test #t (lambda (x) (vector? x)) (impersonate-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
+(test #t chaperone?/impersonator (chaperone-vector (vector-immutable 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
+(err/rt-test (impersonate-vector (vector-immutable 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
 
 (test #(1 2 3) make-reader-graph (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
 
-(as-chaperone-or-proxy
- ([chaperone-vector proxy-vector]
-  [chaperone-of? proxy-of?])
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-of? impersonator-of?])
  (let* ([b (vector 1 2 3)]
         [b2 (chaperone-vector b
                               (lambda (b i v) 
@@ -167,8 +167,8 @@
 ;; test chaperone-of checks in a chaperone:
 (let ([b (vector 0)])
   (let ([b2 (chaperone-vector b 
-                           (lambda (b i v) #f)
-                           (lambda (b i v) #f))])
+                              (lambda (b i v) #f)
+                              (lambda (b i v) #f))])
     (test 'ok 'bad-vector-ref
           (with-handlers ([exn:fail:contract? (lambda (exn) 'ok)])
             (vector-ref b2 0)))
@@ -176,11 +176,11 @@
     (test #f vector-ref b2 0)
     (err/rt-test (vector-set! b2 0 0))))
 
-;; no proxy-of checks in a proxy:
+;; no impersonator-of checks in a impersonator:
 (let ([b (vector 0)])
-  (let ([b2 (proxy-vector b 
-                           (lambda (b i v) #f)
-                           (lambda (b i v) #f))])
+  (let ([b2 (impersonate-vector b 
+                                (lambda (b i v) #f)
+                                (lambda (b i v) #f))])
     (test #f vector-ref b2 0)
     (test (void) vector-set! b2 0 #f)
     (test #f vector-ref b 0)
@@ -188,26 +188,26 @@
 
 ;; ----------------------------------------
 
-(test #t chaperone?/proxy (chaperone-procedure (lambda (x) x) (lambda (y) y)))
-(test #t proxy? (proxy-procedure (lambda (x) x) (lambda (y) y)))
+(test #t chaperone?/impersonator (chaperone-procedure (lambda (x) x) (lambda (y) y)))
+(test #t impersonator? (impersonate-procedure (lambda (x) x) (lambda (y) y)))
 (test #t procedure? (chaperone-procedure (lambda (x) x) (lambda (y) y)))
-(test #t procedure? (proxy-procedure (lambda (x) x) (lambda (y) y)))
+(test #t procedure? (impersonate-procedure (lambda (x) x) (lambda (y) y)))
 (test #t (lambda (x) (procedure? x)) (chaperone-procedure (lambda (x) x) (lambda (y) y)))
-(test #t (lambda (x) (procedure? x)) (proxy-procedure (lambda (x) x) (lambda (y) y)))
+(test #t (lambda (x) (procedure? x)) (impersonate-procedure (lambda (x) x) (lambda (y) y)))
 (err/rt-test (chaperone-procedure (lambda (x) x) (lambda (y z) y)))
-(err/rt-test (proxy-procedure (lambda (x) x) (lambda (y z) y)))
+(err/rt-test (impersonate-procedure (lambda (x) x) (lambda (y z) y)))
 (err/rt-test (chaperone-procedure (case-lambda [() 0] [(x) x]) (lambda (y) y)))
-(err/rt-test (proxy-procedure (case-lambda [() 0] [(x) x]) (lambda (y) y)))
+(err/rt-test (impersonate-procedure (case-lambda [() 0] [(x) x]) (lambda (y) y)))
 
-(test 88 (proxy-procedure (lambda (x) x) (lambda (y) 88)) 10)
+(test 88 (impersonate-procedure (lambda (x) x) (lambda (y) 88)) 10)
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) 88)) 10))
 
-(test 89 (proxy-procedure (lambda (x) x) (lambda (y) (values (lambda (z) 89) y))) 10)
+(test 89 (impersonate-procedure (lambda (x) x) (lambda (y) (values (lambda (z) 89) y))) 10)
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values (lambda (z) 89) y))) 10))
 
 ;; Single argument, no post filter:
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let* ([f (lambda (x) (list x x))]
         [in #f]
         [f2 (chaperone-procedure 
@@ -221,8 +221,8 @@
    (test 111 values in)))
 
 ;; Multiple arguments, no post filter:
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let* ([f (lambda (x y) (list x y))]
         [in #f]
         [f2 (chaperone-procedure 
@@ -236,8 +236,8 @@
    (test (vector 1110 1111) values in)))
 
 ;; Single argument, post filter on single value:
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let* ([f (lambda (x) (list x x))]
         [in #f]
         [out #f]
@@ -257,8 +257,8 @@
    (test '(11 11) values out)))
 
 ;; Multiple arguments, post filter on multiple values:
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let* ([f (lambda (x y z) (values y (list x z)))]
         [in #f]
         [out #f]
@@ -278,8 +278,8 @@
    (test (vector 'b '(a c)) values out)))
 
 ;; Optional keyword arguments:
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b))]
         [in #f]
         [f2 (chaperone-procedure
@@ -305,8 +305,8 @@
    (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2)))))
 
 ;; Optional keyword arguments with result chaperone:
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b))]
         [in #f]
         [out #f]
@@ -338,8 +338,8 @@
    (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2)))))
 
 ;; Required keyword arguments:
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
         [in #f]
         [f2 (chaperone-procedure
@@ -365,8 +365,8 @@
    (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))))
 
 ;; Required keyword arguments:
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
         [in #f]
         [out #f]
@@ -396,36 +396,36 @@
    (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))))
 
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values y y))) 1))
-(err/rt-test ((proxy-procedure (lambda (x) x) (lambda (y) (values y y))) 1))
+(err/rt-test ((impersonate-procedure (lambda (x) x) (lambda (y) (values y y))) 1))
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values y y y))) 1))
-(err/rt-test ((proxy-procedure (lambda (x) x) (lambda (y) (values y y y))) 1))
+(err/rt-test ((impersonate-procedure (lambda (x) x) (lambda (y) (values y y y))) 1))
 
 ;; ----------------------------------------
 
 (define is-chaperone #t)
 (define is-not-chaperone #f)
 
-(as-chaperone-or-proxy
- ([chaperone-struct proxy-struct]
+(as-chaperone-or-impersonator
+ ([chaperone-struct impersonate-struct]
   [is-chaperone is-not-chaperone]
-  [chaperone?/proxy proxy?])
+  [chaperone?/impersonator impersonator?])
  (let ()
-   (define-values (prop:blue blue? blue-ref) (make-proxy-property 'blue))
+   (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
    (define-values (prop:green green? green-ref) (make-struct-type-property 'green))
    (define-struct a ([x #:mutable] y))
    (define-struct (b a) ([z #:mutable]))
    (define-struct p (u) #:property prop:green 'green)
    (define-struct (q p) (v w))
-   (test #t chaperone?/proxy (chaperone-struct (make-a 1 2) a-x (lambda (a v) v)))
-   (test #t chaperone?/proxy (chaperone-struct (make-b 1 2 3) a-x (lambda (a v) v)))
+   (test #t chaperone?/impersonator (chaperone-struct (make-a 1 2) a-x (lambda (a v) v)))
+   (test #t chaperone?/impersonator (chaperone-struct (make-b 1 2 3) a-x (lambda (a v) v)))
    (when is-chaperone
-     (test #t chaperone?/proxy (chaperone-struct (make-p 1) green-ref (lambda (a v) v))))
-   (test #t chaperone?/proxy (chaperone-struct (make-a 1 2) a-x (lambda (a v) v) prop:blue 'blue))
+     (test #t chaperone?/impersonator (chaperone-struct (make-p 1) green-ref (lambda (a v) v))))
+   (test #t chaperone?/impersonator (chaperone-struct (make-a 1 2) a-x (lambda (a v) v) prop:blue 'blue))
    (when is-chaperone
-    (test #t chaperone?/proxy (chaperone-struct 
-                               (chaperone-struct (make-a 1 2) a-x (lambda (a v) v) prop:blue 'blue)
-                               a-x (lambda (a v) v)
-                               prop:blue 'blue)))
+     (test #t chaperone?/impersonator (chaperone-struct 
+                                       (chaperone-struct (make-a 1 2) a-x (lambda (a v) v) prop:blue 'blue)
+                                       a-x (lambda (a v) v)
+                                       prop:blue 'blue)))
    (err/rt-test (chaperone-struct (make-a 1 2) b-z (lambda (a v) v)))
    (err/rt-test (chaperone-struct (make-p 1) a-x (lambda (a v) v)))
    (err/rt-test (chaperone-struct (make-q 1 2 3) a-x (lambda (a v) v)))
@@ -438,43 +438,43 @@
                  (chaperone-struct (make-a 1 2) a-x (lambda (a v) v) prop:blue 'blue)
                  blue-ref (lambda (a v) v)))
    (when is-chaperone
-    (let* ([a1 (make-a 1 2)]
-           [get #f]
-           [set #f]
-           [a2 (chaperone-struct a1 a-y (lambda (an-a v) (set! get v) v)
-                                 set-a-x! (lambda (an-a v) (set! set v) v))]
-           [p1 (make-p 100)]
-           [p-get #f]
-           [p2 (chaperone-struct p1 green-ref (lambda (p v) (set! p-get v) v))]
-           [a3 (chaperone-struct a1 a-x (lambda (a y) y) prop:blue 8)])
-      (test 2 a-y a1)
-      (test #f values get)
-      (test #f values set)
-      (test 2 a-y a2)
-      (test 2 values get)
-      (test #f values set)
-      (test (void) set-a-x! a1 0)
-      (test 0 a-x a1)
-      (test 0 a-x a2)
-      (test 2 values get)
-      (test #f values set)
-      (test (void) set-a-x! a2 10)
-      (test 2 values get)
-      (test 10 values set)
-      (test 10 a-x a1)
-      (test 10 a-x a2)
-      (test 2 a-y a1)
-      (test 2 a-y a2)
-      (test #t green? p1)
-      (test #t green? p2)
-      (test 'green green-ref p1)
-      (test #f values p-get)
-      (test 'green green-ref p2)
-      (test 'green values p-get)
-      (test #f blue? a1)
-      (test #f blue? a2)
-      (test #t blue? a3)
-      (test 8 blue-ref a3)))
+     (let* ([a1 (make-a 1 2)]
+            [get #f]
+            [set #f]
+            [a2 (chaperone-struct a1 a-y (lambda (an-a v) (set! get v) v)
+                                  set-a-x! (lambda (an-a v) (set! set v) v))]
+            [p1 (make-p 100)]
+            [p-get #f]
+            [p2 (chaperone-struct p1 green-ref (lambda (p v) (set! p-get v) v))]
+            [a3 (chaperone-struct a1 a-x (lambda (a y) y) prop:blue 8)])
+       (test 2 a-y a1)
+       (test #f values get)
+       (test #f values set)
+       (test 2 a-y a2)
+       (test 2 values get)
+       (test #f values set)
+       (test (void) set-a-x! a1 0)
+       (test 0 a-x a1)
+       (test 0 a-x a2)
+       (test 2 values get)
+       (test #f values set)
+       (test (void) set-a-x! a2 10)
+       (test 2 values get)
+       (test 10 values set)
+       (test 10 a-x a1)
+       (test 10 a-x a2)
+       (test 2 a-y a1)
+       (test 2 a-y a2)
+       (test #t green? p1)
+       (test #t green? p2)
+       (test 'green green-ref p1)
+       (test #f values p-get)
+       (test 'green green-ref p2)
+       (test 'green values p-get)
+       (test #f blue? a1)
+       (test #f blue? a2)
+       (test #t blue? a3)
+       (test 8 blue-ref a3)))
    (let* ([a1 (make-b 1 2 3)]
           [get #f]
           [set #f]
@@ -550,10 +550,10 @@
 
 ;; ----------------------------------------
 
-(as-chaperone-or-proxy
- ([chaperone-struct proxy-struct])
- (as-chaperone-or-proxy
-  ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-struct impersonate-struct])
+ (as-chaperone-or-impersonator
+  ([chaperone-procedure impersonate-procedure])
   (let ()
     (define (test-sub linear? rev?)
       (define-struct a (x [y #:mutable]) #:property prop:procedure 0)  
@@ -607,7 +607,7 @@
 ;; ----------------------------------------
 
 (let ()
-  (define-values (prop:blue blue? blue-ref) (make-proxy-property 'blue))
+  (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
   (let* ([v1 (vector 1 2 3)]
          [v2 (chaperone-vector v1 (lambda (vec i v) v) (lambda (vec i v) v)
                                prop:blue 89)]
@@ -641,7 +641,7 @@
                             (lambda (h k) (values k (lambda (h k v) v)))
                             (lambda (h k v) (values k v))
                             (lambda (h k) k) (lambda (h k) k))])
-     (test #t chaperone?/proxy h)
+     (test #t chaperone?/impersonator h)
      (test #t hash? h)
      (test #t (lambda (x) (hash? x)) h)))
  (list
@@ -651,11 +651,11 @@
 
 (for-each
  (lambda (make-hash)
-   (let ([h (proxy-hash (make-hash)
-                        (lambda (h k) (values k (lambda (h k v) v)))
-                        (lambda (h k v) (values k v))
-                        (lambda (h k) k) (lambda (h k) k))])
-     (test #t proxy? h)
+   (let ([h (impersonate-hash (make-hash)
+                              (lambda (h k) (values k (lambda (h k v) v)))
+                              (lambda (h k v) (values k v))
+                              (lambda (h k) k) (lambda (h k) k))])
+     (test #t impersonator? h)
      (test #t hash? h)
      (test #t (lambda (x) (hash? x)) h)))
  (list
@@ -665,14 +665,14 @@
 (for-each 
  (lambda (make-hash)
    (err/rt-test
-    (proxy-hash (make-hash) 
-                (lambda (h k) (values k (lambda (h k v) v)))
-                (lambda (h k v) (values k v))
-                (lambda (h k) k) (lambda (h k) k))))
+    (impersonator-hash (make-hash) 
+                       (lambda (h k) (values k (lambda (h k v) v)))
+                       (lambda (h k v) (values k v))
+                       (lambda (h k) k) (lambda (h k) k))))
  (list (lambda () #hash()) (lambda () #hasheq()) (lambda () #hasheqv())))
 
-(as-chaperone-or-proxy
- ([chaperone-hash proxy-hash])
+(as-chaperone-or-impersonator
+ ([chaperone-hash impersonate-hash])
  (for-each
   (lambda (make-hash)
     (let* ([h1 (make-hash)]
@@ -796,9 +796,9 @@
 
 ;; ----------------------------------------
 
-(as-chaperone-or-proxy
- ([chaperone-hash proxy-hash]
-  [chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-hash impersonate-hash]
+  [chaperone-procedure impersonate-procedure])
  (letrec ([wrap
            (lambda (v)
              (cond
@@ -830,11 +830,11 @@
 
 ;; ----------------------------------------
 
-;; Check broken key proxy:
+;; Check broken key impersonator:
 
 (let ([check
        (lambda (orig)
-         (let ([h (proxy-hash
+         (let ([h (impersonate-hash
                    orig
                    (λ (h k) 
                       (values 'bad1
@@ -930,8 +930,8 @@
 
 ;; ----------------------------------------
 
-(as-chaperone-or-proxy
- ([chaperone-procedure proxy-procedure])
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure])
  (let ()
    (define (check-param current-directory)
      (parameterize ([current-directory (current-directory)])
@@ -982,20 +982,20 @@
       (chaperone-procedure add1 void) 
       (chaperone-procedure add1 void))
 (test #t equal?
-      (proxy-procedure add1 void) 
+      (impersonate-procedure add1 void) 
       (chaperone-procedure add1 void))
 (test #t equal?
       (chaperone-procedure add1 void) 
-      (proxy-procedure add1 void))
+      (impersonate-procedure add1 void))
 
 ;; ----------------------------------------
 
 ;; evt chaperones
 
 (test #t evt? (chaperone-evt always-evt void))
-(test #t chaperone-of?/proxy (chaperone-evt always-evt void) always-evt)
+(test #t chaperone-of?/impersonator (chaperone-evt always-evt void) always-evt)
 (test #f chaperone-of? (chaperone-evt always-evt void) (chaperone-evt always-evt void))
-(test #t chaperone-of?/proxy (chaperone-evt (chaperone-evt always-evt void) void) always-evt)
+(test #t chaperone-of?/impersonator (chaperone-evt (chaperone-evt always-evt void) void) always-evt)
 (test always-evt sync (chaperone-evt always-evt (lambda (e) (values e values))))
 (test #f sync/timeout 0 (chaperone-evt never-evt (lambda (e) (values e (lambda (v) (error "bad"))))))
 
@@ -1050,7 +1050,7 @@
 ;; ----------------------------------------
 
 (let ()
-  (define (a-proxy-of v) (a-x v))
+  (define (a-impersonator-of v) (a-x v))
   (define a-equal+hash (list
                         (lambda (v1 v2 equal?)
                           (equal? (a-y v1) (a-y v2)))
@@ -1059,29 +1059,29 @@
                         (lambda (v2 hash)
                           (hash (a-y v2)))))
   (define-struct a (x y)
-    #:property prop:proxy-of a-proxy-of
+    #:property prop:impersonator-of a-impersonator-of
     #:property prop:equal+hash a-equal+hash)
   (define-struct (a-more a) (z))
-  (define-struct (a-new-proxy a) ()
-    #:property prop:proxy-of a-proxy-of)
+  (define-struct (a-new-impersonator a) ()
+    #:property prop:impersonator-of a-impersonator-of)
   (define-struct (a-new-equal a) ()
     #:property prop:equal+hash a-equal+hash)
 
   (let ([a1 (make-a #f 2)])
     (test #t equal? (make-a #f 2) a1)
     (test #t equal? (make-a-more #f 2 7) a1)
-    (test #t equal? (make-a-new-proxy #f 2) a1)
+    (test #t equal? (make-a-new-impersonator #f 2) a1)
     (test #f equal? (make-a-new-equal #f 2) a1)
     (test #f equal? (make-a #f 3) a1)
-    (test #f proxy-of? (make-a #f 2) a1)
-    (test #t proxy-of? (make-a a1 3) a1)
-    (test #t proxy-of? (make-a-more a1 3 8) a1)
+    (test #f impersonator-of? (make-a #f 2) a1)
+    (test #t impersonator-of? (make-a a1 3) a1)
+    (test #t impersonator-of? (make-a-more a1 3 8) a1)
     (test #f chaperone-of? (make-a a1 3) a1)
     (test #t equal? (make-a a1 3) a1)
     (test #t equal? (make-a-more a1 3 9) a1)
     (err/rt-test (equal? (make-a 0 1) (make-a 0 1)))
-    (err/rt-test (proxy-of? (make-a-new-proxy a1 1) a1))
-    (err/rt-test (proxy-of? (make-a-new-equal a1 1) a1))
+    (err/rt-test (impersonator-of? (make-a-new-impersonator a1 1) a1))
+    (err/rt-test (impersonator-of? (make-a-new-equal a1 1) a1))
     (err/rt-test (equal? (make-a-new-equal a1 1) a1))
     (void)))
 
@@ -1100,9 +1100,9 @@
   (define g1 (chaperone-procedure f1 wrapper))
   (define g2 (chaperone-procedure f2 wrapper))
   (define g3 (chaperone-procedure f2 wrapper))
-  (define h1 (proxy-procedure f1 wrapper))
-  (define h2 (proxy-procedure f2 wrapper))
-  (define h3 (proxy-procedure f2 wrapper))
+  (define h1 (impersonate-procedure f1 wrapper))
+  (define h2 (impersonate-procedure f2 wrapper))
+  (define h3 (impersonate-procedure f2 wrapper))
 
   (test #t chaperone-of? g1 f1)
   (test #t chaperone-of? g2 f2)
@@ -1114,10 +1114,10 @@
   (test #t equal? g3 f2)
   (test #t equal? g3 g2)
 
-  (test #t proxy-of? h1 f1)
-  (test #t proxy-of? h2 f2)
-  (test #t proxy-of? h3 f2)
-  (test #f proxy-of? h3 h2)
+  (test #t impersonator-of? h1 f1)
+  (test #t impersonator-of? h2 f2)
+  (test #t impersonator-of? h3 f2)
+  (test #f impersonator-of? h3 h2)
 
   (test #t equal? h1 f1)
   (test #t equal? h2 f2)
@@ -1132,20 +1132,20 @@
   (test #f equal? h1 f3)
   (test #f equal? h2 f1)
   (test #f equal? h3 f1))
-  
+
 ;; ----------------------------------------
 
 ;; A regression test mixing `procedure-rename',
-;; chaperones, and proxy properties:
+;; chaperones, and impersonator properties:
 (let ()
   (define (f #:key k) k)
   (define null-checker
     (make-keyword-procedure
      (λ (kwds kwd-vals . args) (apply values kwd-vals args))
      (λ args (apply values args))))
-  (define-values (proxy-prop:p p? p-ref) (make-proxy-property 'p))
+  (define-values (impersonator-prop:p p? p-ref) (make-impersonator-property 'p))
   (define new-f
-    (chaperone-procedure f null-checker proxy-prop:p #t))
+    (chaperone-procedure f null-checker impersonator-prop:p #t))
   
   (test #t procedure? (procedure-rename new-f 'g)))
 
@@ -1166,14 +1166,14 @@
                                  saved))
                (values (lambda (r) r)
                        a))
-             proxy-prop:application-mark
+             impersonator-prop:application-mark
              (cons 'z 12)))
   (define h (chaperone-procedure
              g
              (lambda (a)
                (values (lambda (r) r)
                        a))
-             proxy-prop:application-mark
+             impersonator-prop:application-mark
              (cons 'z 9)))
   (define i (chaperone-procedure
              f
@@ -1181,12 +1181,12 @@
                (set! saved (cons (continuation-mark-set-first #f 'z)
                                  saved))
                a)
-             proxy-prop:application-mark
+             impersonator-prop:application-mark
              (cons 'z 11)))
   (define j (chaperone-procedure
              i
              (lambda (a) a)
-             proxy-prop:application-mark
+             impersonator-prop:application-mark
              (cons 'z 12)))
   (test (list 12 '(12)) g 10)
   (test '(#f) values saved)

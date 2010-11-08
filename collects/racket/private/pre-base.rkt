@@ -126,11 +126,11 @@
              (rename new:procedure->method procedure->method)
              (rename new:procedure-rename procedure-rename)
              (rename new:chaperone-procedure chaperone-procedure)
-             (rename new:proxy-procedure proxy-procedure)
+             (rename new:impersonate-procedure impersonate-procedure)
              (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
                               procedure-arity procedure-reduce-arity raise-arity-error
                               procedure->method procedure-rename
-                              chaperone-procedure proxy-procedure)
+                              chaperone-procedure impersonate-procedure)
              (all-from "reqprov.rkt")
              (all-from "for.rkt")
              (all-from "kernstruct.rkt")

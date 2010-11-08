@@ -81,7 +81,7 @@
                 (box-wrapper val
                              (λ (b v) (pos-elem-proj v))
                              (λ (b v) (neg-elem-proj v))
-                             proxy-prop:contracted ctc))))))))
+                             impersonator-prop:contracted ctc))))))))
 
 (define-struct (chaperone-box/c base-box/c) ()
   #:property prop:chaperone-contract
@@ -90,12 +90,12 @@
    #:first-order box/c-first-order
    #:projection (ho-projection chaperone-box)))
 
-(define-struct (proxy-box/c base-box/c) ()
+(define-struct (impersonator-box/c base-box/c) ()
   #:property prop:contract
   (build-contract-property
    #:name box/c-name
    #:first-order box/c-first-order
-   #:projection (ho-projection proxy-box)))
+   #:projection (ho-projection impersonate-box)))
 
 (define-syntax (wrap-box/c stx)
   (syntax-case stx ()
@@ -144,5 +144,5 @@
       [(chaperone-contract? ctc)
        (make-chaperone-box/c ctc immutable)]
       [else
-       (make-proxy-box/c ctc immutable)])))
+       (make-impersonator-box/c ctc immutable)])))
 

@@ -1,3 +1,7 @@
+5.0.99.2
+proxy => impersonator
+
+5.0.99.1
 Internal: weak boxes are cleared before non-will-like
  finalizers; use late-weak boxes to get the old behavior
 

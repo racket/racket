@@ -119,11 +119,11 @@
              [(null? (cdr ho-contracts))
               (if (chaperone-contract? (car ho-contracts))
                   (make-chaperone-single-or/c pred flat-contracts (car ho-contracts))
-                  (make-proxy-single-or/c pred flat-contracts (car ho-contracts)))]
+                  (make-impersonator-single-or/c pred flat-contracts (car ho-contracts)))]
              [else
               (if (andmap chaperone-contract? ho-contracts)
                   (make-chaperone-multi-or/c flat-contracts ho-contracts)
-                  (make-proxy-multi-or/c flat-contracts ho-contracts))]))))]))
+                  (make-impersonator-multi-or/c flat-contracts ho-contracts))]))))]))
 
 (define (single-or/c-projection ctc)
   (let ([c-proc (contract-projection (single-or/c-ho-ctc ctc))]
@@ -167,7 +167,7 @@
    #:first-order single-or/c-first-order
    #:stronger single-or/c-stronger?))
 
-(define-struct (proxy-single-or/c single-or/c) ()
+(define-struct (impersonator-single-or/c single-or/c) ()
   #:property prop:contract
   (build-contract-property
    #:projection single-or/c-projection
@@ -253,7 +253,7 @@
    #:first-order multi-or/c-first-order
    #:stronger multi-or/c-stronger?))
 
-(define-struct (proxy-multi-or/c multi-or/c) ()
+(define-struct (impersonator-multi-or/c multi-or/c) ()
   #:property prop:contract
   (build-contract-property
    #:projection multi-or/c-proj

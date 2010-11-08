@@ -174,7 +174,7 @@ static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[]);
-static Scheme_Object *proxy_procedure(int argc, Scheme_Object *argv[]);
+static Scheme_Object *impersonate_procedure(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_result_arity (int argc, Scheme_Object *argv[]);
@@ -530,9 +530,9 @@ scheme_init_fun (Scheme_Env *env)
 						      "chaperone-procedure",
 						      2, -1),
 			     env);
-  scheme_add_global_constant("proxy-procedure",
-			     scheme_make_prim_w_arity(proxy_procedure,
-						      "proxy-procedure",
+  scheme_add_global_constant("impersonate-procedure",
+			     scheme_make_prim_w_arity(impersonate_procedure,
+						      "impersonate-procedure",
 						      2, -1),
 			     env);
 
@@ -4084,7 +4084,7 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *do_chaperone_procedure(const char *name, const char *whating,
-                                             int is_proxy, int argc, Scheme_Object *argv[])
+                                             int is_impersonator, int argc, Scheme_Object *argv[])
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0], *orig, *naya;
@@ -4118,8 +4118,8 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
   px->props = props;
   px->redirects = argv[1];
 
-  if (is_proxy)
-    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_PROXY;
+  if (is_impersonator)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
 
   return (Scheme_Object *)px;
 }
@@ -4129,9 +4129,9 @@ static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
   return do_chaperone_procedure("chaperone-procedure", "chaperoning", 0, argc, argv);
 }
 
-static Scheme_Object *proxy_procedure(int argc, Scheme_Object *argv[])
+static Scheme_Object *impersonate_procedure(int argc, Scheme_Object *argv[])
 {
-  return do_chaperone_procedure("proxy-procedure", "proxying", 1, argc, argv);
+  return do_chaperone_procedure("impersonate-procedure", "impersonating", 1, argc, argv);
 }
 
 static Scheme_Object *apply_chaperone_k(void)
@@ -4206,10 +4206,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   }
   px = (Scheme_Chaperone *)o;
 
-  if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY))
+  if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
     what = "chaperone";
   else
-    what = "proxy";
+    what = "impersonator";
 
   /* Ensure that the original procedure accepts `argc' arguments: */
   a[0] = px->prev;
@@ -4224,7 +4224,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   }
 
   if (px->props) {
-    app_mark = scheme_hash_tree_get(px->props, scheme_app_mark_proxy_property);
+    app_mark = scheme_hash_tree_get(px->props, scheme_app_mark_impersonator_property);
     /* app_mark should be (cons mark val) */
     if (app_mark && !SCHEME_PAIRP(app_mark))
       app_mark = NULL;
@@ -4267,7 +4267,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       memmove(argv2, argv2 + 1, sizeof(Scheme_Object*)*argc);
     } else
       post = NULL;
-    if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY)) {
+    if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
       for (i = 0; i < argc; i++) {
         if (!scheme_chaperone_of(argv2[i], argv[i])) {
           if (argc == 1)
@@ -4390,7 +4390,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     }
 
     if (c == argc) {
-      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_PROXY)) {
+      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
         for (i = 0; i < argc; i++) {
           if (!scheme_chaperone_of(argv2[i], argv[i])) {
             if (argc == 1)

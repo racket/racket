@@ -47,9 +47,9 @@ static Scheme_Object *eqv_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *equalish_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_p (int argc, Scheme_Object *argv[]);
-static Scheme_Object *proxy_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *impersonator_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_of (int argc, Scheme_Object *argv[]);
-static Scheme_Object *proxy_of (int argc, Scheme_Object *argv[]);
+static Scheme_Object *impersonator_of (int argc, Scheme_Object *argv[]);
 
 typedef struct Equal_Info {
   long depth; /* always odd, so it looks like a fixnum */
@@ -57,13 +57,13 @@ typedef struct Equal_Info {
   Scheme_Hash_Table *ht;
   Scheme_Object *recur;
   Scheme_Object *next, *next_next;
-  int for_chaperone; /* 2 => for proxy */
+  int for_chaperone; /* 2 => for impersonator */
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
 static int vector_equal (Scheme_Object *vec1, Scheme_Object *vec2, Equal_Info *eql);
 static int struct_equal (Scheme_Object *s1, Scheme_Object *s2, Equal_Info *eql);
-static Scheme_Object *apply_proxy_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj);
+static Scheme_Object *apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj);
 
 void scheme_init_true_false(void)
 {
@@ -109,15 +109,15 @@ void scheme_init_bool (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("chaperone?", p, env);
 
-  p = scheme_make_immed_prim(proxy_p, "proxy?", 1, 1);
+  p = scheme_make_immed_prim(impersonator_p, "impersonator?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
-  scheme_add_global_constant("proxy?", p, env);
+  scheme_add_global_constant("impersonator?", p, env);
 
   scheme_add_global_constant("chaperone-of?",
                              scheme_make_prim_w_arity(chaperone_of, "chaperone-of?", 2, 2),
                              env);
-  scheme_add_global_constant("proxy-of?",
-                             scheme_make_prim_w_arity(proxy_of, "proxy-of?", 2, 2),
+  scheme_add_global_constant("impersonator-of?",
+                             scheme_make_prim_w_arity(impersonator_of, "impersonator-of?", 2, 2),
                              env);
 }
 
@@ -382,7 +382,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     return 1;
   else if (eql->for_chaperone 
            && SCHEME_CHAPERONEP(obj1)
-           && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_PROXY)
+           && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
                || (eql->for_chaperone > 1))) {
     obj1 = ((Scheme_Chaperone *)obj1)->prev;
     goto top;
@@ -475,19 +475,19 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     if (eql->for_chaperone == 1)
       procs1 = NULL;
     else
-      procs1 = scheme_struct_type_property_ref(scheme_proxy_of_property, (Scheme_Object *)st1);
+      procs1 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st1);
     if (procs1)
-      procs1 = apply_proxy_of(eql->for_chaperone, procs1, obj1);
+      procs1 = apply_impersonator_of(eql->for_chaperone, procs1, obj1);
     if (eql->for_chaperone)
       procs2 = NULL;
     else {
-      procs2 = scheme_struct_type_property_ref(scheme_proxy_of_property, (Scheme_Object *)st2);
+      procs2 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st2);
       if (procs2)
-        procs2 = apply_proxy_of(eql->for_chaperone, procs2, obj2);
+        procs2 = apply_impersonator_of(eql->for_chaperone, procs2, obj2);
     }
 
     if (procs1 || procs2) {
-      /* proxy-of property trumps other forms of checking */
+      /* impersonator-of property trumps other forms of checking */
       if (procs1) obj1 = procs1;
       if (procs2) obj2 = procs2;
       goto top;
@@ -663,12 +663,12 @@ Scheme_Object * scheme_make_false (void)
 static Scheme_Object *chaperone_p(int argc, Scheme_Object *argv[])
 {
   return ((SCHEME_CHAPERONEP(argv[0]) 
-           && !(SCHEME_CHAPERONE_FLAGS(((Scheme_Chaperone *)argv[0])) & SCHEME_CHAPERONE_IS_PROXY))
+           && !(SCHEME_CHAPERONE_FLAGS(((Scheme_Chaperone *)argv[0])) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
           ? scheme_true 
           : scheme_false);
 }
 
-static Scheme_Object *proxy_p(int argc, Scheme_Object *argv[])
+static Scheme_Object *impersonator_p(int argc, Scheme_Object *argv[])
 {
   return (SCHEME_CHAPERONEP(argv[0]) ? scheme_true : scheme_false);
 }
@@ -678,9 +678,9 @@ static Scheme_Object *chaperone_of(int argc, Scheme_Object *argv[])
   return (scheme_chaperone_of(argv[0], argv[1]) ? scheme_true : scheme_false);
 }
 
-static Scheme_Object *proxy_of(int argc, Scheme_Object *argv[])
+static Scheme_Object *impersonator_of(int argc, Scheme_Object *argv[])
 {
-  return (scheme_proxy_of(argv[0], argv[1]) ? scheme_true : scheme_false);
+  return (scheme_impersonator_of(argv[0], argv[1]) ? scheme_true : scheme_false);
 }
 
 int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2)
@@ -698,7 +698,7 @@ int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2)
   return is_equal(obj1, obj2, &eql);
 }
 
-int scheme_proxy_of(Scheme_Object *obj1, Scheme_Object *obj2)
+int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2)
 {
   Equal_Info eql;
 
@@ -713,7 +713,7 @@ int scheme_proxy_of(Scheme_Object *obj1, Scheme_Object *obj2)
   return is_equal(obj1, obj2, &eql);
 }
 
-static Scheme_Object *apply_proxy_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj)
+static Scheme_Object *apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj)
 {
   Scheme_Object *a[1], *v, *oprocs;
 
@@ -723,10 +723,10 @@ static Scheme_Object *apply_proxy_of(int for_chaperone, Scheme_Object *procs, Sc
   if (SCHEME_FALSEP(v))
     return NULL;
   
-  oprocs = scheme_struct_type_property_ref(scheme_proxy_of_property, v);  
+  oprocs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);  
   if (!oprocs || !SAME_OBJ(SCHEME_CAR(oprocs), SCHEME_CAR(procs)))
-    scheme_arg_mismatch((for_chaperone ? "proxy-of?" : "equal?"),
-                        "proxy-of property procedure returned a value with a different prop:proxy-of source: ",
+    scheme_arg_mismatch((for_chaperone ? "impersonator-of?" : "equal?"),
+                        "impersonator-of property procedure returned a value with a different prop:impersonator-of source: ",
                         v);
 
   procs = scheme_struct_type_property_ref(scheme_equal_property, obj);
@@ -734,8 +734,8 @@ static Scheme_Object *apply_proxy_of(int for_chaperone, Scheme_Object *procs, Sc
   if (procs || oprocs)
     if (!procs || !oprocs || !SAME_OBJ(SCHEME_VEC_ELS(oprocs)[0], 
                                        SCHEME_VEC_ELS(procs)[0]))
-      scheme_arg_mismatch((for_chaperone ? "proxy-of?" : "equal?"),
-                          "proxy-of property procedure returned a value with a different prop:equal+hash source: ",
+      scheme_arg_mismatch((for_chaperone ? "impersonator-of?" : "equal?"),
+                          "impersonator-of property procedure returned a value with a different prop:equal+hash source: ",
                           v);
 
   return v;

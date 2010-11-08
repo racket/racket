@@ -6602,9 +6602,9 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
       ref4 = jit_bgti_p(jit_forward(), JIT_R1, hi_ty);
     }
     if (can_chaperone < 0) {
-      /* Make sure it's not a proxy */
+      /* Make sure it's not a impersonator */
       jit_ldxi_s(JIT_R1, JIT_R0, (long)&SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)0x0));
-      ref5 = jit_bmsi_i(jit_forward(), JIT_R1, SCHEME_CHAPERONE_IS_PROXY);
+      ref5 = jit_bmsi_i(jit_forward(), JIT_R1, SCHEME_CHAPERONE_IS_IMPERSONATOR);
     } else
       ref5 = NULL;
     if (int_ok) {
@@ -6785,7 +6785,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "chaperone?")) {
     generate_inlined_type_test(jitter, app, scheme_proc_chaperone_type, scheme_chaperone_type, -1, for_branch, branch_short, need_sync);
     return 1;
-  } else if (IS_NAMED_PRIM(rator, "proxy?")) {
+  } else if (IS_NAMED_PRIM(rator, "impersonator?")) {
     generate_inlined_type_test(jitter, app, scheme_proc_chaperone_type, scheme_chaperone_type, 0, for_branch, branch_short, need_sync);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "vector?")) {

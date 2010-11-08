@@ -71,7 +71,7 @@
       [(chaperone-contract? rng-ctc)
        (make-chaperone-hash/c dom-ctc rng-ctc immutable)]
       [else
-       (make-proxy-hash/c dom-ctc rng-ctc immutable)])))
+       (make-impersonator-hash/c dom-ctc rng-ctc immutable)])))
 
 (define (check-hash/c ctc) 
   (let ([dom-ctc (base-hash/c-dom ctc)]
@@ -180,7 +180,7 @@
                    (neg-dom-proj k))
                  (λ (h k)
                    (pos-dom-proj k))
-                 proxy-prop:contracted ctc))))))))
+                 impersonator-prop:contracted ctc))))))))
 
 (define-struct (chaperone-hash/c base-hash/c) ()
   #:omit-define-syntaxes
@@ -190,10 +190,10 @@
    #:first-order hash/c-first-order
    #:projection (ho-projection chaperone-hash)))
 
-(define-struct (proxy-hash/c base-hash/c) ()
+(define-struct (impersonator-hash/c base-hash/c) ()
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
-   #:projection (ho-projection proxy-hash)))
+   #:projection (ho-projection impersonate-hash)))
