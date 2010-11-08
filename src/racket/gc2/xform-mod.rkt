@@ -2,13 +2,6 @@
   (require (lib "xform.rkt" "compiler" "private")
 	   mzlib/cmdline)
 
-  ;; bogus requires that set up files for "plot" compilation:
-  (require (only racket/path)
-           (only racket/file)
-           (only dynext/file)
-           (only dynext/link)
-           (only dynext/compile))
-
   (define precompiling-header? (getenv "XFORM_PRECOMP"))
   (define precompiled-header (getenv "XFORM_USE_PRECOMP"))
 

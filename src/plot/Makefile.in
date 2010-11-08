@@ -10,6 +10,15 @@ builddir = @builddir@
 
 ICP=@ICP@
 
+CC = @CC@
+
+# Setting the compiler and linker when using dynext
+#   seems like a good idea, but it doesn't work with
+#  libtool as the compiler. So, we trust the configuration
+#  that is built into dynext, instead.
+# WITH-ENV = env CC="$(CC)" LD="@MZLINKER@"
+WITH_ENV =
+
 PLPLOT_SRCS = $(srcdir)/plplot/dc_drv.c \
               $(srcdir)/plplot/plcont.c \
               $(srcdir)/plplot/plfill.c \
@@ -41,22 +50,17 @@ FIT_SRCS = $(srcdir)/fit/fit.c $(srcdir)/fit/matrix.c
 
 XCOLLECTS = -X ../racket/gc2/xform-collects 
 
-CC = @CC@
+plot-lib: libplplot@SO_SUFFIX@ libfit@SO_SUFFIX@
 
-# This seems like a good idea, but it doesn't work with
-#  libtool as the compiler. So, we trust the configuration
-#  taht is built into dynext, instead.
-# WITH-ENV = env CC="$(CC)" LD="@MZLINKER@"
-WITH_ENV =
-
-# In 3m mode, we can reply on an xform-collects setup
 3m:
-	$(WITH_ENV) ../racket/racket3m $(XCOLLECTS) $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
-	$(WITH_ENV) ../racket/racket3m $(XCOLLECTS) $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
-
-# In just-cgc mode, it's slow to load build.rkt:
+	$(MAKE) plot-lib
 cgc:
+	$(MAKE) plot-lib
+
+libplplot@SO_SUFFIX@:
 	$(WITH_ENV) ../racket/racketcgc -c $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
+
+libfit@SO_SUFFIX@:
 	$(WITH_ENV) ../racket/racketcgc -c $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
 
 install:
