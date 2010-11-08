@@ -625,11 +625,8 @@ mz-extras :+= (- (package: "swindle")
                  (cond (not dr) => (srcfile: "tool.rkt" "swindle*.png")))
 
 ;; -------------------- plot
-plt-extras :+=
-  (- (package: "plot")
-     ;; src should be included, otherwise it will be impossible to recompile it
-     ;; (cond (not src) => "src/")
-     )
+plt-extras :+= (package: "plot" #:src? #t)
+               (lib: "lib{plplot|fit}*")
 
 ;; -------------------- mzcom
 plt-extras :+= (- (package: "mzcom" #:src? #t)
