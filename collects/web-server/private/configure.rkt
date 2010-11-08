@@ -81,8 +81,7 @@
 (define (build-footer base)
   (let ([scale (lambda (n) (number->string (round (/ n 4))))])
     `(p "Powered by "
-        (a ([href "http://www.racket-lang.org/"])
-           "Racket"))))
+        (a ([href "http://racket-lang.org/"]) "Racket"))))
 
 (define footer (build-footer "/"))
 
