@@ -57,7 +57,7 @@
           ["libgthread-2.0.0.dylib" 21728]
           ["libpng14.14.dylib" 192224]
           ["PSMTabBarControl.tgz" 105765])]
-       [(ppc-macosx) 
+       [(ppc-macosx)
         '(["libcairo.2.dylib" 2716096]
           ["libintl.8.dylib" 133156]
           ["libgio-2.0.0.dylib" 936176]
@@ -79,7 +79,7 @@
                     ["libpng14-14.dll" 219305]
                     ["zlib1.dll" 55808]
                     ["freetype6.dll" 535264]
-                    ["libfontconfig-1.dll" 279059]                    
+                    ["libfontconfig-1.dll" 279059]
                     ["libglib-2.0-0.dll" 1110713]
                     ["libgobject-2.0-0.dll" 316586]
                     ["libgmodule-2.0-0.dll" 31692]
@@ -135,10 +135,7 @@
              (= (file-size dest) size))
         (printf " ~a is ready\n" file)
         (let* ([sub (unixize (system-library-subpath #f))]
-	       [src (format "~a~a/~a"
-			    url-path
-			    sub
-			    file)])
+               [src (format "~a~a/~a" url-path sub file)])
           (unless explained?
             (set! explained? #t)
             (printf ">> Downloading files from\n>>  ~a~a\n" url-base sub)
@@ -161,7 +158,7 @@
             (rename-file-or-directory tmp dest #t)
             (let ([sz (file-size dest)])
               (unless (= size sz)
-                (raise-user-error 
+                (raise-user-error
                  'get-libs
                  "size of ~a is ~a; doesn't match expected size ~a"
                  dest sz size)))
@@ -185,15 +182,14 @@
         (copy-file src dest))))
 
 (define (unpack-tgz src dest)
-  (let ([src (path->complete-path src)])
-    (parameterize ([current-directory (let-values ([(base name dir?) (split-path dest)])
-                                        base)])
-      (subprocess (current-output-port)
-                  (current-input-port)
-                  (current-error-port)
-                  "/usr/bin/tar"
-                  "zxf"
-                  (path->string src)))))
+  (define src (path->string (path->complete-path src)))
+  (parameterize ([current-directory
+                  (let-values ([(base name dir?) (split-path dest)]) base)])
+    (define-values [p pout pin perr]
+      (subprocess
+       (current-output-port) (current-input-port) (current-error-port)
+       (find-executable-path "tar") "zxf" src))
+    (subprocess-wait p)))
 
 (case (mode)
   [(download)
