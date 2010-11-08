@@ -182,14 +182,14 @@
         (copy-file src dest))))
 
 (define (unpack-tgz src dest)
-  (define src (path->string (path->complete-path src)))
-  (parameterize ([current-directory
-                  (let-values ([(base name dir?) (split-path dest)]) base)])
-    (define-values [p pout pin perr]
-      (subprocess
-       (current-output-port) (current-input-port) (current-error-port)
-       (find-executable-path "tar") "zxf" src))
-    (subprocess-wait p)))
+  (let ([src (path->string (path->complete-path src))])
+   (parameterize ([current-directory
+                   (let-values ([(base name dir?) (split-path dest)]) base)])
+     (define-values [p pout pin perr]
+       (subprocess
+        (current-output-port) (current-input-port) (current-error-port)
+        (find-executable-path "tar") "zxf" src))
+     (subprocess-wait p))))
 
 (case (mode)
   [(download)
