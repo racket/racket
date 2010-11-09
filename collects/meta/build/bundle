@@ -1,11 +1,11 @@
 #!/bin/env racket
 ;; -*- scheme -*-
 
-#lang scheme/base
+#lang racket/base
 
-(require scheme/cmdline scheme/runtime-path scheme/match scheme/promise
-         scheme/file (only-in scheme/system system)
-         (except-in scheme/mpair mappend)
+(require racket/cmdline racket/runtime-path racket/match racket/promise
+         racket/file (only-in racket/system system)
+         (except-in racket/mpair mappend)
          meta/checker (prefix-in dist: meta/dist-specs) meta/specs)
 
 (define (/-ify x)
@@ -34,7 +34,6 @@
 (define *verify?*  #t)
 (define *btgz?*    #t)
 (define *pack?*    #t)
-(define *root?*    #t)
 (define *release?* #f)
 (define *verbose?* 'yes) ; #t, #f, or else -- show stderr stuff but not stdout
 
@@ -58,7 +57,7 @@
 ;;; Tree utilities
 
 ;; path -> tree
-;; Same as get-tree, but lists the contents of a tgz file via pax.
+;; Same as get-tree, but lists the contents of a tgz file via tar.
 (define (get-tgz-tree tgz)
   (define base (regexp-replace #rx"/$" (path->string (cd)) ""))
   (define tgz-name
@@ -119,6 +118,7 @@
 (define *platform-tree-lists* #f)
 (define /pax #f)
 (define /tar #f)
+(define /fakeroot #f)
 (define /dev/null-out #f)
 (define /dev/null-in  #f)
 
@@ -134,13 +134,10 @@
    ["-b" "Skip binary tgzs, re-use binary trees" (set! *btgz?*    #f)]
    ["+p" "Pack distributions (default)"          (set! *pack?*    #t)]
    ["-p" "Skip packing"                          (set! *pack?*    #f)]
-   ["+r" "chown the contents to root (default)"  (set! *root?*    #t)]
-   ["-r" "Do not chown the contents to root"     (set! *root?*    #f)]
    ["++release" "Build for a release"            (set! *release?* #t)]
    ["-o" dest "Destination directory" (set! target/ (/-ify dest))]
    ["--text" "Stands for -d +v -b -p -r (useful for debugging)"
-    (set!-values (*verify?* *verbose?* *btgz?* *pack?* *root?*)
-                 (values #f #t #f #f #f))])
+    (set!-values (*verify?* *verbose?* *btgz?* *pack?*) (values #f #t #f #f))])
   (current-verbose-port (and *verbose?* current-error-port)))
 
 ;; specs can have `lambda' expressions to evaluate, do it in this context
@@ -169,10 +166,12 @@
 
 (define (initialize)
   (when *release?* (*environment* (cons 'release (*environment*))))
-  (set! /pax (or (find-executable-path "pax" #f)
-                 (error "error: couldn't find a `pax' executable")))
-  (set! /tar (or (find-executable-path "gtar" #f)
-                 (error "error: couldn't find a `gtar' executable")))
+  (define (find-exe name)
+    (or (find-executable-path name #f)
+        (error (format "error: couldn't find a `~a' executable" name))))
+  (set! /pax (find-exe "pax"))
+  (set! /tar (find-exe "gtar"))
+  (set! /fakeroot (find-exe "fakeroot"))
   (set! /dev/null-out (open-output-file "/dev/null" #:exists 'append))
   (set! /dev/null-in  (open-input-file  "/dev/null"))
   (unless (directory-exists? target/) (make-directory target/))
@@ -284,6 +283,7 @@
         (let-values ([(p pout pin perr)
                       (subprocess
                        (current-output-port) /dev/null-in (current-error-port)
+                       /fakeroot "--"
                        ;; see below for flag explanations
                        /pax "-w" "-x" "ustar" "-z" "-f" bin-tgz
                        ;; only pack the racket dir (only exception is Libraries
@@ -309,6 +309,7 @@
                         ;; debugging.
                         (subprocess
                          output #f output
+                         /fakeroot "--"
                          /pax
                          "-w"         ; write
                          "-x" "ustar" ; create a POSIX ustar format
@@ -482,12 +483,9 @@
                                            (distribute (filter-bintree t))))
                                        bin-trees))
                                 '())))])
-            ;; make it possible to write these files
-            (chown 'me *readme-file* *info-domain-file*)
             (with-output-to-file *readme-file* #:exists 'truncate make-readme)
             (with-output-to-file *info-domain-file* #:exists 'truncate
               (make-info-domain trees))
-            (chown 'root *readme-file* *info-domain-file*)
             (pack (concat target/ name) trees
                   (if bin?
                     (format "\\(~a\\|~a~a/\\)" racket-base/ binaries/ type)
@@ -507,39 +505,12 @@
   (with-output-to-file *info-domain-file* #:exists 'truncate
     (lambda () (write *info-domain-cache*) (newline))))
 
-;; mimic the chown syntax
-(define (chown #:rec [rec #f] who path . paths)
-  (when (and *root?* *pack?*)
-    (let ([user:group
-           (case who [(root) "root:root"] [(me) (force whoami)]
-                     [else (error 'chown "unknown user spec: ~e" who)])]
-          [paths (map (lambda (x) (if (path? x) (path->string x) x))
-                      (cons path paths))])
-      (when (ormap (lambda (x) (regexp-match? #rx"[^/a-zA-Z0-9_ .+-]" x)) paths)
-        (error 'chown "got a path that needs shell-quoting: ~a" paths))
-      (system (format "sudo chown ~a ~a ~a" (if rec "-R" "") user:group
-                      (apply string-append
-                             (map (lambda (p) (format " \"~a\"" p)) paths)))))))
-
-(define whoami
-  (delay (parameterize ([current-output-port (open-output-string)])
-           (system "echo \"`id -nu`:`id -ng`\"")
-           (regexp-replace
-            #rx"[ \r\n]*$" (get-output-string (current-output-port)) ""))))
-
-(define (chown-dirs-to who)
-  (when (and *root?* *pack?*)
-    (dprintf "Changing owner to ~a..." who)
-    (for ([dir (list racket/ binaries/)])
-      (parameterize ([cd dir]) (chown #:rec #t who ".")))
-    (dprintf " done.\n")))
-
 (process-command-line)
 (read-specs)
 (initialize)
 (for-each create-binaries *platforms* *platform-tree-lists*)
 (dynamic-wind
-  (lambda () (read-orig-files) (chown-dirs-to 'root))
+  (lambda () (read-orig-files))
   ;; Start the verification and distribution
   (lambda () (expand-spec 'distributions) (void))
-  (lambda () (chown-dirs-to 'me) (write-orig-files)))
+  (lambda () (write-orig-files)))

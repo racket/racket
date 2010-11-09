@@ -1522,14 +1522,11 @@ tgz_to_sh() {
   savedpwd="`pwd`"
   _rmcd "$tmppackdir"
   _tgunzip "$srctgz"
-  _run sudo chown -R root:root "$tmppackdir"
-  _run sudo chmod -R g+w "$tmppackdir"
+  _run chmod -R g+w "$tmppackdir"
   _cd "$installdir"
-  _run pax -w -z -f "$tmptgz" *
+  _run fakeroot -- pax -w -z -f "$tmptgz" *
   treesize="`get_first du -hs .`"
   _cd "$savedpwd"
-  # change back so we can remove it
-  _run sudo chown -R "`id -nu`:`id -ng`" "$tmppackdir"
   _rm "$tmppackdir"
   archivecksum="`get_first cksum \"$tmptgz\"`"
   local humanname="`name_of_dist_package \"$pname\"` v$version"
