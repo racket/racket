@@ -1032,6 +1032,8 @@ path/s is either such a string or a list of them.
 "collects/mred/private/path-dialog.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mred/private/repl.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mred/private/snipfile.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/mred/private/wx/cocoa" drdr:command-line #f
+"collects/mred/private/wx/win32" drdr:command-line #f
 "collects/mred/private/wx.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mred/private/wxcanvas.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mred/private/wxcontainer.rkt" drdr:command-line (gracket-text "-t" *)
