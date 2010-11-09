@@ -650,6 +650,7 @@ thread_val {
 
   gcMARK2(pr->meta_prompt, gc);
   gcMARK2(pr->meta_continuation, gc);
+  gcMARK2(pr->acting_barrier_prompt, gc);
   
   gcMARK2(pr->cont_mark_stack_segments, gc);
   gcMARK2(pr->cont_mark_stack_owner, gc);

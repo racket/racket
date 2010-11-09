@@ -1965,3 +1965,55 @@
             (k (lambda () (abort-current-continuation
                            (default-continuation-prompt-tag)
                            (lambda () 45))))))))
+
+;; ----------------------------------------
+;; Check continuations captured in continuations applied in
+;;  a thread:
+
+(test (void)
+      'simple-thread-transfer
+      (let ([k (call-with-continuation-prompt
+                (lambda ()
+                  (call/cc values)))])
+        (sync (thread (lambda () (k 6))))
+        (void)))
+
+(test (void)
+      'capture-in-transferred-thread
+      (let ([k (call-with-continuation-prompt
+                (lambda ()
+                  (let/ec esc
+                    (call/cc esc)
+                    (call/cc values))))])
+        (sync (thread (lambda () (k 6))))
+        (void)))
+
+(let ()
+  (define sema (make-semaphore 1))
+  (define l null)
+  (define (push v) (semaphore-wait sema) (set! l (cons v l)) (semaphore-post sema))
+  (define (count n)
+    (let loop ([l l])
+      (cond
+       [(null? l) 0]
+       [(equal? (car l) n) (add1 (loop (cdr l)))]
+       [else (loop (cdr l))])))
+  (define (f)
+    (push 1)
+    (call/cc thread)
+    (push 2)
+    (call/cc thread)
+    (push 3))
+  
+  (call-with-continuation-prompt f)
+  (sync (system-idle-evt))
+  (test 1 count 1)
+  (test 2 count 2)
+  (test 4 count 3))
+
+
+
+      
+
+
+

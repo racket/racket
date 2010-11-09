@@ -1667,6 +1667,7 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(pr->meta_prompt, gc);
   gcMARK2(pr->meta_continuation, gc);
+  gcMARK2(pr->acting_barrier_prompt, gc);
   
   gcMARK2(pr->cont_mark_stack_segments, gc);
   gcMARK2(pr->cont_mark_stack_owner, gc);
@@ -1781,6 +1782,7 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(pr->meta_prompt, gc);
   gcFIXUP2(pr->meta_continuation, gc);
+  gcFIXUP2(pr->acting_barrier_prompt, gc);
   
   gcFIXUP2(pr->cont_mark_stack_segments, gc);
   gcFIXUP2(pr->cont_mark_stack_owner, gc);

@@ -991,6 +991,7 @@ typedef struct Scheme_Thread {
   struct Scheme_Prompt *meta_prompt; /* a pseudo-prompt */
   
   struct Scheme_Meta_Continuation *meta_continuation;
+  struct Scheme_Prompt *acting_barrier_prompt;
 
   long engine_weight;
 

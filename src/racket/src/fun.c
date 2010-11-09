@@ -6276,23 +6276,25 @@ internal_call_cc (int argc, Scheme_Object *argv[])
          Must be inside overflow, or the ids wouldn't match. */
       stack_start = prompt->stack_boundary;
     } else {
-      Scheme_Prompt *meta_prompt;
+      Scheme_Prompt *meta_prompt, *stack_barrier_prompt;
 
-      if (!barrier_prompt->is_barrier)
-        barrier_prompt = NULL;
-      else if (barrier_prompt->boundary_overflow_id != overflow_id)
-        barrier_prompt = NULL;
+      stack_barrier_prompt = barrier_prompt;
+
+      if (!stack_barrier_prompt->is_barrier)
+        stack_barrier_prompt = NULL;
+      else if (stack_barrier_prompt->boundary_overflow_id != overflow_id)
+        stack_barrier_prompt = NULL;
       meta_prompt = p->meta_prompt;
       if (meta_prompt)
         if (meta_prompt->boundary_overflow_id != overflow_id)
           meta_prompt = NULL;
 
-      if (barrier_prompt && meta_prompt) {
-        barrier_prompt = NULL;
+      if (stack_barrier_prompt && meta_prompt) {
+        stack_barrier_prompt = NULL;
       }
 
-      if (barrier_prompt)
-        stack_start = barrier_prompt->stack_boundary;
+      if (stack_barrier_prompt)
+        stack_start = stack_barrier_prompt->stack_boundary;
       else if (meta_prompt)
         stack_start = meta_prompt->stack_boundary;
       else
@@ -6357,6 +6359,23 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 
     /* We may have just re-activated breaking: */
     scheme_check_break_now();
+
+    if (!scheme_get_barrier_prompt(NULL, NULL)) {
+      /* The continuation was applied in a thread where the barrier prompt
+         was supposed to be the pseduo-prompt for a thread, but we've lost
+         that prompt. The barrier prompt from capturing the continuation
+         has the right info, but we need to claim that it's not a barrier
+         from the perspective of changing continuations. */
+      Scheme_Prompt *acting_barrier_prompt;
+      if (!barrier_prompt->is_barrier)
+        acting_barrier_prompt = barrier_prompt;
+      else {
+        acting_barrier_prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
+        memcpy(acting_barrier_prompt, barrier_prompt, sizeof(Scheme_Prompt));
+        acting_barrier_prompt->is_barrier = 0;
+      }
+      p->acting_barrier_prompt = acting_barrier_prompt;
+    }
     
     return result;
   } else if (composable || cont->escape_cont) {
@@ -6437,7 +6456,23 @@ call_with_continuation_barrier (int argc, Scheme_Object *argv[])
 Scheme_Prompt *scheme_get_barrier_prompt(Scheme_Meta_Continuation **_meta_cont,
                                          MZ_MARK_POS_TYPE *_pos)
 {
-  return (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, barrier_prompt_key, NULL, _meta_cont, _pos);
+  Scheme_Prompt *p;
+  
+  p = (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, barrier_prompt_key, NULL, _meta_cont, _pos);
+  if (!p) {
+    p = scheme_current_thread->acting_barrier_prompt;
+    if (_meta_cont) {
+      /* acting barrier prompt is deepest: */
+      Scheme_Meta_Continuation *mc = scheme_current_thread->meta_continuation;
+      while (mc && mc->next) {
+        mc = mc->next;
+      }
+      *_meta_cont = mc;
+      *_pos = -1;
+    }
+  }
+
+  return p;
 }
 
 Scheme_Prompt *scheme_get_prompt(Scheme_Object *prompt_tag,
