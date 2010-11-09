@@ -19,7 +19,7 @@
          text:region-data-mixin
          text:clickregion-mixin)
 
-(define err (current-error-port))
+(define arrow-cursor (make-object cursor% 'arrow))
 
 (define arrow-brush
   (send the-brush-list find-or-create-brush "white" 'solid))
@@ -161,17 +161,17 @@
 
     (define tacked-table (make-hasheq))
 
-    (define/override (on-event ev)
+    (define/override (on-local-event ev)
       (case (send ev get-event-type)
         ((right-down)
          (if (pair? (get-position-drawings hover-position))
              (send (get-canvas) popup-menu
-                   (make-tack/untack-menu)
+                   (make-tack/untack-menu (get-position-drawings hover-position))
                    (send ev get-x)
                    (send ev get-y))
-             (super on-event ev)))
+             (super on-local-event ev)))
         (else
-         (super on-event ev))))
+         (super on-local-event ev))))
 
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
@@ -179,26 +179,32 @@
         (for ([draw (in-hash-keys tacked-table)])
           (draw this dc left top right bottom dx dy))))
 
-    (define/private (make-tack/untack-menu)
+    (define/private (make-tack/untack-menu drawings)
       (define menu (new popup-menu%))
       (define keymap (get-keymap))
-      (new menu-item% (label "Tack")
-           (parent menu)
-           (callback (lambda _ (tack))))
-      (new menu-item% (label "Untack")
-           (parent menu)
-           (callback (lambda _ (untack))))
+      (define tack-item
+        (new menu-item% (label "Tack")
+             (parent menu)
+             (callback (lambda _ (tack drawings)))))
+      (define untack-item
+        (new menu-item% (label "Untack")
+             (parent menu)
+             (callback (lambda _ (untack drawings)))))
+      (send tack-item enable
+            (for/or ([d (in-list drawings)]) (not (unbox (drawing-tacked? d)))))
+      (send untack-item enable
+            (for/or ([d (in-list drawings)]) (unbox (drawing-tacked? d))))
       (when (is-a? keymap keymap/popup<%>)
         (new separator-menu-item% (parent menu))
         (send keymap add-context-menu-items menu))
       menu)
 
-    (define/private (tack)
-      (for ([d (get-position-drawings hover-position)])
+    (define/private (tack drawings)
+      (for ([d (in-list drawings)])
         (hash-set! tacked-table (drawing-draw d) #t)
         (set-box! (drawing-tacked? d) #t)))
-    (define/private (untack)
-      (for ([d (get-position-drawings hover-position)])
+    (define/private (untack drawings)
+      (for ([d (in-list drawings)])
         (hash-remove! tacked-table (drawing-draw d))
         (set-box! (drawing-tacked? d) #f)))))
 
@@ -261,13 +267,16 @@
                                    endx
                                    (+ endy (/ fh 2))
                                    dx dy)
-                       (send dc set-text-mode 'transparent)
                        (when question?
-                         (send dc set-font (?-font dc))
-                         (send dc set-text-foreground color)
-                         (send dc draw-text "?" 
-                               (+ endx dx fw)
-                               (- (+ endy dy) fh)))))))])
+                         (let* ([?x (+ endx dx fw)]
+                                [?y (- (+ endy dy) fh)])
+                           (send* dc
+                             (set-brush billboard-brush)
+                             (set-font (?-font dc))
+                             (set-text-foreground color)
+                             (draw-rounded-rectangle (- ?x _d) (- ?y _d)
+                                                     (+ fw _d _d) (+ fh _d _d))
+                             (draw-text "?" ?x ?y))))))))])
           (add-hover-drawing from1 from2 draw tack-box)
           (add-hover-drawing to1 to2 draw tack-box))))
 
@@ -324,34 +333,56 @@ Like clickbacks, but:
     (major problem w/ macro stepper and large expansions!)
   - callback takes position of click, not (start, end)
   - different rules for removal
-  - TODO: change cursor on mouse-over
-  - TODO: invoke callback on mouse-up
   - TODO: extend to double-click
 |#
 
 (define text:clickregion-mixin
   (mixin (text:region-data<%>) ()
-    (inherit get-region-mapping
+    (inherit get-admin
+             get-region-mapping
              dc-location-to-editor-location
              find-position)
 
     (super-new)
     (define clickbacks (get-region-mapping clickregion-key))
+    (define tracking #f)
 
     (define/public (set-clickregion start end callback)
       (if callback
           (interval-map-set! clickbacks start end callback)
           (interval-map-remove! clickbacks start end)))
 
+    (define/private (get-event-position ev)
+      (define gx (send ev get-x))
+      (define gy (send ev get-y))
+      (define-values (x y) (dc-location-to-editor-location gx gy))
+      (find-position x y))
+
     (define/override (on-default-event ev)
-      (when (send ev button-down?)
-        (define gx (send ev get-x))
-        (define gy (send ev get-y))
-        (define-values (x y) (dc-location-to-editor-location gx gy))
-        (define pos (find-position x y))
-        (define cb (interval-map-ref clickbacks pos #f))
-        (when cb (cb pos)))
-      (super on-default-event ev))))
+      (define admin (get-admin))
+      (when admin
+        (define pos (get-event-position ev))
+        (case (send ev get-event-type)
+          ((left-down)
+           (set! tracking (interval-map-ref clickbacks pos #f))
+           (send admin update-cursor))
+          ((left-up)
+           (when tracking
+             (let ([cb (interval-map-ref clickbacks pos #f)]
+                   [tracking* tracking])
+               (set! tracking #f)
+               (when (eq? tracking* cb)
+                 (cb pos)))
+             (send admin update-cursor)))))
+      (super on-default-event ev))
+
+    (define/override (adjust-cursor ev)
+      (define pos (get-event-position ev))
+      (define cb (interval-map-ref clickbacks pos #f))
+      (if cb
+          arrow-cursor
+          (super adjust-cursor ev)))))
+
 
 #|
 (define text:hover-identifier<%>
