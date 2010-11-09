@@ -584,9 +584,10 @@ all non-GUI portions of Redex) and also exported by
 @racketmodname[redex] (which includes all of Redex).
 
 @defform/subs[(define-language lang-name 
-                (non-terminal-spec @#,ttpattern ...)
-                ...)
-              ([non-terminal-spec symbol (symbol ...)])]{
+                non-terminal-def ...)
+              ([non-terminal-def (non-terminal-name ...+ ::= @#,ttpattern ...+)
+                                 (non-terminal-name @#,ttpattern ...+)
+                                 ((non-terminal-name ...+) @#,ttpattern ...+)])]{
 
 This form defines the grammar of a language. It allows the
 definition of recursive @|pattern|s, much like a BNF, but for
@@ -595,10 +596,9 @@ power, however, because repeated @racket[name] @|pattern|s and
 side-conditions can restrict matches in a context-sensitive
 way.
 
-The non-terminal-spec can either by a symbol, indicating a
-single name for this non-terminal, or a sequence of symbols,
-indicating that all of the symbols refer to these
-productions.
+A @racket[non-terminal-def] comprises one or more non-terminal names
+(considered aliases) followed by one or more productions. A non-terminal's
+names and productions may be separated by the keyword @racket[::=].
 
 As a simple example of a grammar, this is the lambda
 calculus:
@@ -618,9 +618,11 @@ with non-terminals @racket[e] for the expression language, @racket[x] for
 variables, @racket[c] for the evaluation contexts and @racket[v] for values.
 }
 
-@defform[(define-extended-language language language
-           (non-terminal @#,ttpattern ...)
-           ...)]{
+@defform/subs[(define-extended-language extended-lang base-lang 
+                non-terminal-def ...)
+              ([non-terminal-def (non-terminal-name ...+ ::= @#,ttpattern ...+)
+                                 (non-terminal-name @#,ttpattern ...+)
+                                 ((non-terminal-name ...+) @#,ttpattern ...+)])]{
 
 This form extends a language with some new, replaced, or
 extended non-terminals. For example, this language:

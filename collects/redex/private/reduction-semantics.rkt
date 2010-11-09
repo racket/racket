@@ -1697,53 +1697,66 @@
             stx
             #'id)))]))
 
-;; pull-out-names : symbol syntax -> list-of-syntax[identifier identifier-or-false]
-(define-for-syntax (pull-out-names form stx ids)
-  (let loop ([names (syntax->list ids)]
-             [acc '()])
-    (cond
-      [(null? names) acc]
-      [else
-       (let* ([name (car names)]
-              [lst (syntax->list name)])
-         (cond
-           [(identifier? name) (loop (cdr names) (cons #`(#,(syntax-e name) #f) acc))]
-           [(and (list? lst)
-                 (andmap identifier? lst))
-            (loop (cdr names) (append 
-                               (list #`(#,(car lst) #f))
-                               (map (λ (x) #`(#,(syntax-e x) #,(car lst)))
-                                    (cdr lst))
-                               acc))]
-           [(list? lst)
-            (for-each (λ (x) (unless (identifier? x)
-                               (raise-syntax-error form "expected an identifier" stx x)))
-                      lst)]
-           [else
-            (raise-syntax-error form 
-                                "expected an identifier or a sequence of identifiers"
-                                stx
-                                name)]))])))
+(define-syntax (::= stx)
+  (raise-syntax-error #f "cannot be used outside a language definition" stx))
 
-;; check-rhss-not-empty : syntax (listof syntax) -> void
-(define-for-syntax (check-rhss-not-empty def-lang-stx nt-def-stxs)
-  (for-each 
-   (λ (nt-def-stx)
-     (when (null? (cdr (syntax-e nt-def-stx)))
-       (raise-syntax-error 'define-language "non-terminal with no productions" def-lang-stx nt-def-stx)))
-   nt-def-stxs))
+(define-for-syntax (parse-non-terminals nt-defs stx)
+  (define (parse-non-terminal def)
+    (define (delim? stx)
+      (and (identifier? stx) (free-identifier=? stx #'::=)))
+    (define-values (left delim right)
+      (syntax-case def ()
+        [(_ _ ...)
+         (let split ([xs def])
+           (syntax-case xs (::=)
+             [() (values '() #f '())]
+             [(x . prods)
+              (delim? #'x)
+              (values '() #'x (syntax->list #'prods))]
+             [(x . xs)
+              (let-values ([(l d r) (split #'xs)])
+                (values (cons #'x l) d r))]))]
+        [_ (raise-syntax-error #f "expected non-terminal definition" stx def)]))
+    (define (check-each xs bad? msg)
+      (define x (findf bad? xs))
+      (when x (raise-syntax-error #f msg stx x)))
+    (define-values (names prods)
+      (if delim
+          (begin
+            (when (null? left)
+              (raise-syntax-error #f "expected preceding non-terminal names" stx delim))
+            (values left right))
+          (values (syntax-case (car left) ()
+                    [(x ...) (syntax->list #'(x ...))]
+                    [x (list #'x)])
+                  (cdr left))))
+    
+    (check-each names (λ (x) (not (identifier? x)))
+                "expected non-terminal name")
+    (check-each names (λ (x) (memq (syntax-e x) (cons 'name underscore-allowed)))
+                "cannot use pattern language keyword as a non-terminal name")
+    (check-each names (λ (x) (regexp-match? #rx"_" (symbol->string (syntax-e x))))
+                "cannot use _ in a non-terminal name")
+    
+    (when (null? prods)
+      (raise-syntax-error #f "expected at least one production to follow" 
+                          stx (or delim (car left))))
+    (check-each prods delim? "expected production")
+    (cons names prods))
+  (map parse-non-terminal (syntax->list nt-defs)))
 
 (define-syntax (define-language stx)
   (syntax-case stx ()
-    [(_ name (names rhs ...) ...)
-     (identifier? (syntax name))
+    [(_ lang-name . nt-defs)
      (begin
-       (check-rhss-not-empty stx (cddr (syntax->list stx)))
-       (with-syntax ([((nt-names orig) ...) (pull-out-names 'define-language stx #'(names ...))])
-         (with-syntax ([(subst-names ...) (generate-temporaries (syntax->list #'(nt-names ...)))])
+       (unless (identifier? #'lang-name)
+         (raise-syntax-error #f "expected an identifier" stx #'lang-name))
+       (let ([non-terms (parse-non-terminals #'nt-defs stx)])
+         (with-syntax ([((names prods ...) ...) non-terms]
+                       [(all-names ...) (apply append (map car non-terms))])
            (syntax/loc stx
              (begin
-               (define-syntax name
+               (define-syntax lang-name
                  (make-set!-transformer
                   (make-language-id
                    (case-lambda
@@ -1754,62 +1767,17 @@
                         [x 
                          (identifier? #'x)
                          #'define-language-name])])
-                   '(nt-names ...))))
-               (define define-language-name (language name (names rhs ...) ...)))))))]))
+                   '(all-names ...))))
+               (define define-language-name (language lang-name (all-names ...) (names prods ...) ...)))))))]))
 
 (define-struct binds (source binds))
 
 (define-syntax (language stx)
   (syntax-case stx ()
-    [(_ lang-id (name rhs ...) ...)
+    [(_ lang-id (all-names ...) (name rhs ...) ...)
      (prune-syntax
       (let ()
-        
-        ;; verify `name' part has the right shape
-        (for-each
-         (λ (name)
-           (cond
-             [(identifier? name) (void)]
-             [else
-              (let ([lst (syntax->list name)])
-                (cond 
-                  [(list? lst) 
-                   (when (null? lst)
-                     (raise-syntax-error 'language 
-                                         "expected a sequence of identifiers with at least one identifier"
-                                         stx
-                                         name))
-                   (for-each (λ (x) (unless (identifier? x)
-                                      (raise-syntax-error 'language 
-                                                          "expected an identifier"
-                                                          stx
-                                                          x)))
-                             lst)]
-                  [else
-                   (raise-syntax-error 'language 
-                                       "expected a sequence of identifiers"
-                                       stx
-                                       lst)]))]))
-         (syntax->list #'(name ...)))
-        (let ([all-names (apply append (map (λ (x) (if (identifier? x) (list x) (syntax->list x))) 
-                                            (syntax->list #'(name ...))))])
-          ;; verify the names are valid names
-          (for-each 
-           (λ (name) 
-             (let ([x (syntax->datum name)])
-               (when (memq x '(any number string variable natural integer real variable-except variable-prefix hole name in-hole hide-hole side-condition cross ...))
-                 (raise-syntax-error 'language 
-                                     (format "cannot use pattern language keyword ~a as non-terminal"
-                                             x)
-                                     stx
-                                     name))
-               (when (regexp-match #rx"_" (symbol->string x))
-                 (raise-syntax-error 'language
-                                     "non-terminals cannot have _ in their names"
-                                     stx
-                                     name))))
-           all-names)
-          
+        (let ([all-names (syntax->list #'(all-names ...))])
           (with-syntax ([((r-rhs ...) ...) 
                          (map (lambda (rhss) 
                                 (map (lambda (rhs)
@@ -1869,37 +1837,22 @@
                   (compile-language (list (list '(uniform-names ...) rhs/lw ...) ...)
                                     (list (make-nt 'first-names (list (make-rhs `r-rhs) ...)) ...
                                           (make-nt 'new-name (list (make-rhs 'orig-name))) ...)
-                                    '((uniform-names ...) ...)))))))))]
-    [(_ (name rhs ...) ...)
-     (for-each
-      (lambda (name)
-        (unless (identifier? name)
-          (raise-syntax-error 'language "expected name" stx name)))
-      (syntax->list (syntax (name ...))))]
-    [(_ x ...)
-     (for-each
-      (lambda (x)
-        (syntax-case x ()
-          [(name rhs ...)
-           (void)]
-          [_
-           (raise-syntax-error 'language "malformed non-terminal" stx x)]))
-      (syntax->list (syntax (x ...))))]))
+                                    '((uniform-names ...) ...)))))))))]))
 
 (define-syntax (define-extended-language stx)
   (syntax-case stx ()
-    [(_ name orig-lang (names rhs ...) ...)
+    [(_ name orig-lang . nt-defs)
      (begin
        (unless (identifier? (syntax name))
          (raise-syntax-error 'define-extended-language "expected an identifier" stx #'name))
        (unless (identifier? (syntax orig-lang))
          (raise-syntax-error 'define-extended-language "expected an identifier" stx #'orig-lang))
-       (check-rhss-not-empty stx (cdddr (syntax->list stx)))
-       (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)])
-         (with-syntax ([((new-nt-names orig) ...) (append (pull-out-names 'define-extended-language stx #'(names ...)) 
-                                                          (map (λ (x) #`(#,x #f)) old-names))])
+       (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)]
+             [non-terms (parse-non-terminals #'nt-defs stx)])
+         (with-syntax ([((names prods ...) ...) non-terms]
+                       [(all-names ...) (apply append old-names (map car non-terms))])
            #'(begin
-               (define define-language-name (extend-language orig-lang (names rhs ...) ...))
+               (define define-language-name (extend-language orig-lang (all-names ...) (names prods ...) ...))
                (define-syntax name
                  (make-set!-transformer
                   (make-language-id
@@ -1910,28 +1863,15 @@
                        [x 
                         (identifier? #'x)
                         #'define-language-name]))
-                   '(new-nt-names ...))))))))]))
+                   '(all-names ...))))))))]))
 
 (define-syntax (extend-language stx)
   (syntax-case stx ()
-    [(_ lang (name rhs ...) ...)
-     (and (identifier? #'lang)
-          (andmap (λ (names) 
-                    (syntax-case names ()
-                      [(name1 name2 ...)
-                       (and (identifier? #'name1)
-                            (andmap identifier? (syntax->list #'(name2 ...))))
-                       #t]
-                      [name
-                       (identifier? #'name) 
-                       #t]
-                      [_ #f]))
-                  (syntax->list (syntax/loc stx (name ...)))))
+    [(_ lang (all-names ...) (name rhs ...) ...)
      (with-syntax ([((r-rhs ...) ...) (map (lambda (rhss) (map (λ (x) (rewrite-side-conditions/check-errs
                                                                        (append (language-id-nts #'lang 'define-extended-language)
-                                                                               (map (λ (x) (syntax-case x ()
-                                                                                             [(x y) (syntax-e #'x)]))
-                                                                                    (pull-out-names 'define-extended-language stx #'(name ...))))
+                                                                               (map syntax-e
+                                                                                    (syntax->list #'(all-names ...))))
                                                                        'define-extended-language
                                                                        #f
                                                                        x))
@@ -1939,9 +1879,6 @@
                                            (syntax->list (syntax ((rhs ...) ...))))]
                    [((rhs/lw ...) ...) (map (lambda (rhss) (map to-lw/proc (syntax->list rhss)))
                                             (syntax->list (syntax ((rhs ...) ...))))]
-                   [(first-names ...)
-                    (map (λ (x) (if (identifier? x) x (car (syntax->list x))))
-                         (syntax->list (syntax (name ...))))]
                    [((uniform-names ...) ...)
                     (map (λ (x) (if (identifier? x) (list x) x))
                          (syntax->list (syntax (name ...))))]
@@ -1959,33 +1896,7 @@
        (syntax/loc stx
          (do-extend-language lang 
                              (list (make-nt '(uniform-names ...) (list (make-rhs `r-rhs) ...)) ...)
-                             (list (list '(uniform-names ...) rhs/lw ...) ...))))]
-    [(_ lang (name rhs ...) ...)
-     (begin
-       (unless (identifier? #'lang)
-         (error 'define-extended-language "expected the name of a language" stx #'lang))
-       (for-each
-        (lambda (name)
-          (unless (syntax-case name ()
-                    [(name1 name2 ...)
-                     (and (identifier? #'name1)
-                          (andmap identifier? #'(name2 ...)))
-                     #t]
-                    [name
-                     (identifier? #'name)
-                     #t]
-                    [else #f])
-            (raise-syntax-error 'define-extended-language "expected a name or a non-empty sequence of names" stx name)))
-        (syntax->list (syntax (name ...)))))]
-    [(_ lang x ...)
-     (for-each
-      (lambda (x)
-        (syntax-case x ()
-          [(name rhs ...)
-           (void)]
-          [_
-           (raise-syntax-error 'define-extended-language "malformed non-terminal" stx x)]))
-      (syntax->list (syntax (x ...))))]))
+                             (list (list '(uniform-names ...) rhs/lw ...) ...))))]))
 
 (define extend-nt-ellipses '(....))
 
@@ -2336,7 +2247,7 @@
                [else #f]))))
 
 (provide (rename-out [-reduction-relation reduction-relation])
-         --> fresh with ;; keywords for reduction-relation
+         --> fresh with ::= ;; macro keywords
          reduction-relation->rule-names
          extend-reduction-relation
          reduction-relation?

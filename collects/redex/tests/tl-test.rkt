@@ -321,6 +321,31 @@
     (test (and (redex-match E v (term ((bar 1) 1))) #t) #t)
     (test (redex-match E v (term ((bar 1) 2))) #f))
   
+  (let ()
+    (define-language L
+      (M N ::= (M N) (λ (x) M) x)
+      (x ::= variable-not-otherwise-mentioned))
+    (test (and (redex-match L M '(λ (x) (x x))) #t) #t)
+    (test (and (redex-match L N '(λ (x) (x x))) #t) #t)
+    (define-extended-language L+ L
+      (M ::= .... n)
+      (n m ::= number))
+    (test (and (redex-match L+ M '(λ (x) 7)) #t) #t)
+    (test (and (redex-match L+ m 7) #t) #t)
+    (let ([::= void])
+      (define-language L
+        (::= () (number ::=)))
+      (test (and (redex-match L ::= '(1 ())) #t) #t)))
+  
+  (test-syn-err (define-language (L)) #rx"expected an identifier")
+  (test-syn-err (define-language L (x ::=)) #rx"expected at least one production")
+  (test-syn-err (define-language L (x)) #rx"expected at least one production")
+  (test-syn-err (define-language L ((x))) #rx"expected at least one production")
+  (test-syn-err (define-language L (::= a b)) #rx"expected preceding non-terminal names")
+  (test-syn-err (define-language L (x (y) ::= z)) #rx"expected non-terminal name")
+  (test-syn-err (define-language L (x ::= y ::= z)) #rx"expected production")
+  (test-syn-err (define-language L q) #rx"expected non-terminal definition")
+  (test-syn-err (define-language L ()) #rx"expected non-terminal definition")
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        
@@ -1394,12 +1419,12 @@
   
   (test-syn-err (define-language bad-lang1 (e name)) #rx"name")
   (test-syn-err (define-language bad-lang2 (name x)) #rx"name")
-  (test-syn-err (define-language bad-lang3 (x_y x)) #rx"cannot have _")
-  (test-syn-err (define-language bad-lang4 (a 1 2) (b)) #rx"no productions")
+  (test-syn-err (define-language bad-lang3 (x_y x)) #rx"cannot use _")
+  (test-syn-err (define-language bad-lang4 (a 1 2) (b)) #rx"at least one production")
   (test-syn-err (let ()
                   (define-language good-lang (a 1 2))
                   (define-extended-language bad-lang5 good-lang (a) (b 2)))
-                #rx"no productions")
+                #rx"at least one production")
   
   (test-syn-err (redex-match grammar m_1) #rx"before underscore")
   (test-syn-err (redex-match grammar (variable-except a 2 c)) #rx"expected an identifier")
