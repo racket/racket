@@ -25,7 +25,7 @@ exec "$PLTHOME/bin/gracket" "$0"
  (lambda ()
    (let* ([bytes (make-bytes 1000)]
           [len/eof (sync (read-bytes-avail!-evt bytes in))])
-     (die "got some data printed to stdout/stderr:\n~a\n"
+     (die "text printed to stdout/stderr:\n~a\n"
           (if (eof-object? len/eof) len/eof (subbytes bytes 0 len/eof))))))
 
 (uncaught-exception-handler my-handler)
@@ -48,11 +48,14 @@ exec "$PLTHOME/bin/gracket" "$0"
                       ((drracket:last-version ,(version))
                        (drracket:last-language english)))))))
 
-;; start drracket
-(queue-callback (lambda () (dynamic-require 'drracket #f)))
+;; start drracket, get interface for testing its windows
+(define <%> #f)
+(queue-callback (lambda ()
+                  (dynamic-require 'drracket #f)
+                  (set! <%> (dynamic-require 'drracket/tool-lib
+                                             'drracket:unit:frame<%>))))
 
-;; FIXME: hack a predicate for the splash window
-(define (is-splash? win) (eq? 'object:splash-tlw% (object-name win)))
+(define (is-drracket-frame? win) (and <%> (is-a? win <%>)))
 
 ;; wait for the drracket window to appear
 (define (window-title w) (send w get-label))
@@ -60,8 +63,10 @@ exec "$PLTHOME/bin/gracket" "$0"
   (sleep 1/100)
   (let ([wins (get-top-level-windows)])
     (cond
+      ;; wait to have windows
       [(null? wins) (loop)]
-      [(ormap is-splash? wins) (loop)] ; splash present => keep waiting
+      ;; that are all drracket frames
+      [(not (andmap is-drracket-frame? wins)) (loop)]
       [(pair? (cdr wins))
        (die "too many windows popped up: ~s" (map window-title wins))]
       [(regexp-match #rx"^Untitled( - DrRacket)?$" (window-title (car wins)))
