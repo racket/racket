@@ -5,6 +5,7 @@
 
 (require scheme/promise
 	 mzlib/struct
+         (only-in racket/list first rest)
 	 (for-syntax scheme/base)
 	 (for-syntax stepper/private/shared))
 
@@ -34,7 +35,7 @@
    prop:lazy-wrap lazy-wrap? lazy-wrap-ref
    make-lazy-wrap-signature
    check-lazy-wraps!
-   make-pair-signature checked-car checked-cdr))
+   make-pair-signature checked-car checked-cdr checked-first checked-rest))
 
 (define-unit signatures@
   (import signature-messages^)
@@ -596,8 +597,10 @@
 	   (checked-access (ephemeron-value eph))))
      (else (raw-access p)))))
 
-(define checked-raw-car (checked-pair-access checked-pair-car car))
-(define checked-raw-cdr (checked-pair-access checked-pair-cdr cdr))
+(define checked-raw-car   (checked-pair-access checked-pair-car car))
+(define checked-raw-cdr   (checked-pair-access checked-pair-cdr cdr))
+(define checked-raw-first (checked-pair-access checked-pair-car first))
+(define checked-raw-rest  (checked-pair-access checked-pair-cdr rest))
 
 (define (checked-raw-set! checked-set!)
   (lambda (p new)
@@ -665,5 +668,15 @@
   (cdr p)
   (check-lazy-wraps! checked-pair-descriptor p)
   (checked-raw-cdr p))
-			     
+
+(define (checked-first p)
+  (first p)
+  (check-lazy-wraps! checked-pair-descriptor p)
+  (checked-raw-first p))
+
+(define (checked-rest p)
+  (rest p)
+  (check-lazy-wraps! checked-pair-descriptor p)
+  (checked-raw-rest p))
+
 )

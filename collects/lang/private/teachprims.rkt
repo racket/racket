@@ -184,13 +184,13 @@ namespace.
   (lambda (p) (checked-car p)))
 
 (define-teach beginner first
-  (lambda (p) (checked-car p)))
+  (lambda (p) (checked-first p)))
 
 (define-teach beginner cdr
   (lambda (p) (checked-cdr p)))
 
 (define-teach beginner rest
-  (lambda (p) (checked-cdr p)))
+  (lambda (p) (checked-rest p)))
 
 (define-teach beginner list*
   (lambda x
