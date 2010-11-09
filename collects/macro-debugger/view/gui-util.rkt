@@ -14,7 +14,7 @@
     (define lock (make-semaphore 1))
 
     (define-syntax-rule (with-lock . body)
-      (dynamic-wind (lambda () (semaphore-wait lock))
+      (dynamic-wind (lambda () (yield lock))
                     (lambda () . body)
                     (lambda () (semaphore-post lock))))
 
@@ -71,7 +71,6 @@
                  (send message set-label msg)
                  (send message enable #t)
                  (show #t)
-                 (sleep/yield NAP-TIME)
                  (set! state 'shown))
                 ((shown)
                  (send message set-label msg))
