@@ -157,7 +157,14 @@
                         (pkey e:str))))))))
       
       (define/private (deal-with-mouse %)
-        (if (not on-mouse) %
+        (if (not on-mouse) 
+            ;; No mouse handler => discard mouse events (so snip are not selected
+            ;;  in the pasteboard, for example
+            (class %
+              (super-new)
+              (define/override (on-event e)
+                (void)))
+            ;; Mouse handler => handle mouse events
             (class %
               (super-new)
               (define/override (on-event e)
