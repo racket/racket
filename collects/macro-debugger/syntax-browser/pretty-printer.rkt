@@ -87,7 +87,9 @@
    (map cdr basic-styles)))
 (define basic-styles
   '((define-values          . define)
-    (define-syntaxes        . define-syntax))
+    (define-syntaxes        . define-syntax)
+    (define-for-syntax      . define)
+    (define-values-for-syntax . define))
   #|
   ;; Messes up formatting too much :(
   (let* ([pref (pref:tabify)]
