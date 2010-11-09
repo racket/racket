@@ -269,8 +269,10 @@
                    (let ([alt-code (string-ref alt-str 0)])
                      (unless (equal? alt-code (send k get-key-code))
                        (send k set-other-altgr-key-code alt-code)))))
-               (when (and option? 
-                          special-option-key?
+               (when (and (or (and option? 
+                                   special-option-key?)
+                              (and control?
+                                   (equal? (send k get-key-code) #\u00)))
                           (send k get-other-altgr-key-code))
                  ;; swap altenate with main
                  (let ([other (send k get-other-altgr-key-code)])
