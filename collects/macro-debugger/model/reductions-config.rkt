@@ -2,6 +2,7 @@
 (require (for-syntax racket/base)
          racket/contract
          racket/match
+         "../util/eomap.rkt"
          "deriv-util.rkt"
          "stx-util.rkt"
          "context.rkt"
@@ -33,8 +34,8 @@
  [big-context (parameter/c big-context/c)]
  [marking-table (parameter/c (or/c hash? false/c))]
  [current-binders (parameter/c (listof identifier?))]
- [current-definites (parameter/c (listof identifier?))]
- [current-binders (parameter/c (listof identifier?))]
+ [current-definites (parameter/c eomap?)] ;; eomap[identifier => phase-level]
+ [current-binders (parameter/c hash?)] ;; hash[identifier => phase-level]
  [current-frontier (parameter/c (listof syntax?))]
  [sequence-number (parameter/c (or/c false/c exact-nonnegative-integer?))]
  [phase (parameter/c exact-nonnegative-integer?)]
@@ -80,11 +81,11 @@
 ;; marking-table
 (define marking-table (make-parameter #f))
 
-;; current-binders : parameterof (listof identifier)
-(define current-binders (make-parameter null))
+;; current-binders : parameter of hash[identifier => phase-level]
+(define current-binders (make-parameter #f))
 
-;; current-definites : parameter of (list-of identifier)
-(define current-definites (make-parameter null))
+;; current-definites : parameter of eomap[identifier => phase-level]
+(define current-definites (make-parameter #f))
 
 ;; current-frontier : parameter of (list-of syntax)
 (define current-frontier (make-parameter null))
@@ -149,11 +150,12 @@
 
 (define (learn-definites ids)
   (current-definites
-   (append ids (current-definites))))
+   (eomap-set* (current-definites) ids (phase))))
 
 (define (learn-binders ids)
   (current-binders
-   (append ids (current-binders))))
+   (for/fold ([binders (current-binders)]) ([id (in-list ids)])
+     (hash-set binders id (phase)))))
 
 (define (get-frontier) (or (current-frontier) null))
 

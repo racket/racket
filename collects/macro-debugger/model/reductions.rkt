@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/match
+         "../util/eomap.rkt"
          "stx-util.rkt"
          "deriv-util.rkt"
          "deriv.rkt"
@@ -15,10 +16,13 @@
   (let-values ([(steps binders definites estx exn) (reductions+ d)])
     steps))
 
-;; reductions+ : WDeriv -> (list-of step) (list-of identifier) ?stx ?exn
+;; Binders = hasheq[identifier => phase-level]
+;; Definites = eomap[identifier => phase-level]
+
+;; reductions+ : WDeriv -> (list-of step) Binders Definites ?stx ?exn
 (define (reductions+ d)
-  (parameterize ((current-definites null)
-                 (current-binders null)
+  (parameterize ((current-definites (empty-eomap))
+                 (current-binders #hasheq())
                  (current-frontier null)
                  (hides-flags (list (box #f)))
                  (sequence-number 0))

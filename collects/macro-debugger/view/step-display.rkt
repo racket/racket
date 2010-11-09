@@ -84,8 +84,8 @@
              (show-poststep step shift-table)]))
 
     (define/public (add-syntax stx
-                               #:binders [binders null]
-                               #:definites [definites null]
+                               #:binders [binders #f]
+                               #:definites [definites #f]
                                #:shift-table [shift-table #f])
       (send/i sbview sb:syntax-browser<%> add-syntax stx
               #:binders binders
@@ -215,8 +215,8 @@
       (when (exn:fail:syntax? (misstep-exn step))
         (for ([e (exn:fail:syntax-exprs (misstep-exn step))])
           (send/i sbview sb:syntax-browser<%> add-syntax e
-                  #:binders (or (state-binders state) null)
-                  #:definites (or (state-uses state) null)
+                  #:binders (state-binders state)
+                  #:definites (state-uses state)
                   #:shift-table shift-table)))
       (show-lctx step shift-table))
 
@@ -230,8 +230,8 @@
               [(syntax? content)
                (send*/i sbview sb:syntax-browser<%>
                  (add-syntax content
-                             #:binders (or (state-binders state) null)
-                             #:definites (or (state-uses state) null)
+                             #:binders (state-binders state)
+                             #:definites (state-uses state)
                              #:shift-table shift-table)
                  (add-text "\n"))]))
       (show-lctx step shift-table))
@@ -242,7 +242,7 @@
       (define highlight-foci? (send/i config config<%> get-highlight-foci?))
       (define highlight-frontier? (send/i config config<%> get-highlight-frontier?))
       (send/i sbview sb:syntax-browser<%> add-syntax stx
-              #:definites (or definites null)
+              #:definites definites
               #:binders binders
               #:shift-table shift-table
               #:hi-colors (list hi-color

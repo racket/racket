@@ -14,6 +14,7 @@
          "properties.rkt"
          "text.rkt"
          "util.rkt"
+         "../util/eomap.rkt"
          "../util/mpi.rkt")
 (provide widget%)
 
@@ -106,9 +107,9 @@
             (send -text change-style clickback-style a b)))))
 
     (define/public (add-syntax stx
-                               #:binders [binders null]
+                               #:binders [binders #f]
                                #:shift-table [shift-table #f]
-                               #:definites [definites null]
+                               #:definites [definites #f]
                                #:hi-colors [hi-colors null]
                                #:hi-stxss [hi-stxss null]
                                #:substitutions [substitutions null])
@@ -138,53 +139,59 @@
           (send/i display display<%> highlight-syntaxes hi-stxs hi-color))
         ;; Underline binders (and shifted binders)
         (send/i display display<%> underline-syntaxes
-                (append (apply append (map get-shifted binders))
-                        binders))
+                (let ([binder-list (hash-map binders (lambda (k v) k))])
+                  (append (apply append (map get-shifted binder-list))
+                          binder-list)))
         (send display refresh)
 
         ;; Make arrows (& billboards, when enabled)
         (when (send config get-draw-arrows?)
-          (define definite-table (make-hasheq))
-          (for ([definite (in-list definites)])
-            (hash-set! definite-table definite #t)
-            (when shift-table
-              (for ([shifted-definite (in-list (hash-ref shift-table definite null))])
-                (hash-set! definite-table shifted-definite #t))))
+          (define (definite-phase id)
+            (and definites
+                 (or (eomap-ref definites id #f)
+                     (for/or ([shifted (in-list (hash-ref shift-table id null))])
+                       (eomap-ref definites shifted #f)))))
 
-          (define binder-table (make-free-id-table))
-          (for ([binder (in-list binders)])
-            (free-id-table-set! binder-table binder binder))
+          (define phase-binder-table (make-hash))
+          (define (get-binder-table phase)
+            (hash-ref! phase-binder-table phase (lambda () (make-free-id-table #:phase phase))))
+          (for ([(binder phase) (in-hash binders)])
+            (free-id-table-set! (get-binder-table phase) binder binder))
 
-          (define (get-binders id)
-            (let ([binder (free-id-table-ref binder-table id #f)])
-              (cond [(not binder) null]
-                    [shift-table (cons binder (get-shifted binder))]
-                    [else (list binder)])))
+          (define (get-binders id phase)
+            (define (for-one-table table id)
+              (let ([binder (free-id-table-ref table id #f)])
+                (cond [(not binder) null]
+                      [shift-table (cons binder (get-shifted binder))]
+                      [else (list binder)])))
+            (cond [phase (for-one-table (get-binder-table phase) id)]
+                  [else
+                   (apply append
+                          (for/list ([table (in-hash-values phase-binder-table)])
+                            (for-one-table table id)))]))
 
           (for ([id (in-list (send/i range range<%> get-identifier-list))])
-            (define definite? (hash-ref definite-table id #f))
+            (define phase (definite-phase id))
             (when #f ;; DISABLED
-              (add-binding-billboard offset range id definite?))
-            (for ([binder (in-list (get-binders id))])
+              (add-binding-billboard offset range id phase))
+            (for ([binder (in-list (get-binders id phase))])
               (for ([binder-r (in-list (send/i range range<%> get-ranges binder))])
                 (for ([id-r (in-list (send/i range range<%> get-ranges id))])
-                  (add-binding-arrow offset binder-r id-r definite?))))))
+                  (add-binding-arrow offset binder-r id-r phase))))))
         (void)))
 
-    (define/private (add-binding-arrow start binder-r id-r definite?)
-      (if definite?
-          (send -text add-arrow
-                (+ start (car binder-r))
-                (+ start (cdr binder-r))
-                (+ start (car id-r))
-                (+ start (cdr id-r))
-                "blue")
-          (send -text add-question-arrow
-                (+ start (car binder-r))
-                (+ start (cdr binder-r))
-                (+ start (car id-r))
-                (+ start (cdr id-r))
-                "purple")))
+    (define/private (add-binding-arrow start binder-r id-r phase)
+      ;; phase = #f means not definite binding (ie, "?" arrow)
+      (send -text add-arrow
+            (+ start (car binder-r))
+            (+ start (cdr binder-r))
+            (+ start (car id-r))
+            (+ start (cdr id-r))
+            (if phase "blue" "purple")
+            (cond [(equal? phase 0) #f]
+                  [phase (format "phase ~s" phase)]
+                  [else "?"])
+            (if phase 'end 'start)))
 
     (define/private (add-binding-billboard start range id definite?)
       (match (identifier-binding id)

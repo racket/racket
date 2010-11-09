@@ -85,7 +85,6 @@
 (define text:arrows<%>
   (interface (text:hover-drawings<%>)
     add-arrow
-    add-question-arrow
     add-billboard))
 
 ;; Mixins
@@ -234,12 +233,6 @@
              add-hover-drawing
              find-wordbreak)
 
-    (define/public (add-arrow from1 from2 to1 to2 color)
-      (internal-add-arrow from1 from2 to1 to2 color #f))
-
-    (define/public (add-question-arrow from1 from2 to1 to2 color)
-      (internal-add-arrow from1 from2 to1 to2 color #t))
-
     (define/public (add-billboard pos1 pos2 str color-name)
       (define color (send the-color-database find-color color-name))
       (let ([draw 
@@ -266,7 +259,7 @@
                          (draw-text str (+ x dx mini) (+ y dy mini adj-y))))))))])
         (add-hover-drawing pos1 pos2 draw)))
 
-    (define/private (internal-add-arrow from1 from2 to1 to2 color-name question?)
+    (define/public (add-arrow from1 from2 to1 to2 color-name label where)
       (define color (send the-color-database find-color color-name))
       (define tack-box (box #f))
       (unless (and (= from1 to1) (= from2 to2))
@@ -274,7 +267,8 @@
                (lambda (text dc left top right bottom dx dy)
                  (let-values ([(startx starty) (range->mean-loc from1 from2)]
                               [(endx endy) (range->mean-loc to1 to2)]
-                              [(fw fh _d _v) (send dc get-text-extent "x")])
+                              [(fw fh _d _v) (send dc get-text-extent "x")]
+                              [(lw lh ld _V) (send dc get-text-extent (or label "x"))])
                    (with-saved-pen&brush dc
                      (with-saved-text-config dc
                        (send dc set-pen color 1 'solid)
@@ -287,16 +281,16 @@
                                    endx
                                    (+ endy (/ fh 2))
                                    dx dy)
-                       (when question?
-                         (let* ([?x (+ endx dx fw)]
-                                [?y (- (+ endy dy) fh)])
+                       (when label
+                         (let* ([lx (+ endx dx fw)]
+                                [ly (- (+ endy dy) fh)])
                            (send* dc
                              (set-brush billboard-brush)
-                             (set-font (?-font dc))
+                             (set-font (billboard-font dc))
                              (set-text-foreground color)
-                             (draw-rounded-rectangle (- ?x _d) (- ?y _d)
-                                                     (+ fw _d _d) (+ fh _d _d))
-                             (draw-text "?" ?x ?y))))))))])
+                             (draw-rounded-rectangle (- lx ld) (- ly ld)
+                                                     (+ lw ld ld) (+ lh ld ld))
+                             (draw-text label lx ly))))))))])
           (add-hover-drawing from1 from2 draw tack-box)
           (add-hover-drawing to1 to2 draw tack-box))))
 
