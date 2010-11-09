@@ -213,7 +213,7 @@
     (define saved-enforcements (vector 0 0 -1 -1))
 
     (define/public (enforce-size min-x min-y max-x max-y inc-x inc-y)
-      (define (to-max v) (if (= v -1) #x3FFFFFFF v))
+      (define (to-max v) (if (= v -1) #x3FFFFF v))
       (set! saved-enforcements (vector min-x min-y max-x max-y))
       (gtk_window_set_geometry_hints gtk gtk 
                                      (make-GdkGeometry min-x min-y
