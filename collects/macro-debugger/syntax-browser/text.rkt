@@ -67,6 +67,12 @@
             (send dc set-text-background old-background)
             (send dc set-text-mode old-mode))))
 
+;; Interfaces
+
+(define text:region-data<%>
+  (interface (text:basic<%>)
+    get-region-mapping))
+
 (define text:hover<%>
   (interface (text:basic<%>)
     update-hover-position))
@@ -74,8 +80,7 @@
 (define text:hover-drawings<%>
   (interface (text:basic<%>)
     add-hover-drawing
-    get-position-drawings
-    delete-all-drawings))
+    get-position-drawings))
 
 (define text:arrows<%>
   (interface (text:hover-drawings<%>)
@@ -83,9 +88,27 @@
     add-question-arrow
     add-billboard))
 
-(define text:region-data<%>
-  (interface (text:basic<%>)
-    get-region-mapping))
+;; Mixins
+
+(define text:region-data-mixin
+  (mixin (text:basic<%>) (text:region-data<%>)
+
+    (define table (make-hasheq))
+
+    (define/public (get-region-mapping key)
+      (hash-ref! table key (lambda () (make-interval-map))))
+
+    (define/augment (after-delete start len)
+      (for ([im (in-hash-values table)])
+        (interval-map-contract! im start (+ start len)))
+      (inner (void) after-delete))
+
+    (define/augment (after-insert start len)
+      (for ([im (in-hash-values table)])
+        (interval-map-expand! im start (+ start len)))
+      (inner (void) after-insert))
+
+    (super-new)))
 
 (define text:hover-mixin
   (mixin (text:basic<%>) (text:hover<%>)
@@ -108,13 +131,15 @@
     (super-new)))
 
 (define text:hover-drawings-mixin
-  (mixin (text:hover<%>) (text:hover-drawings<%>)
+  (mixin (text:hover<%> text:region-data<%>) (text:hover-drawings<%>)
     (inherit dc-location-to-editor-location
              find-position
-             invalidate-bitmap-cache)
+             invalidate-bitmap-cache
+             get-region-mapping)
+    (super-new)
 
     ;; interval-map of Drawings
-    (define drawings-list (make-interval-map))
+    (define drawings-list (get-region-mapping 'hover-drawings))
 
     (field [hover-position #f])
 
@@ -132,9 +157,6 @@
                              drawing
                              null)))
 
-    (define/public (delete-all-drawings)
-      (interval-map-remove! drawings-list -inf.0 +inf.0))
-
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
       (unless before?
@@ -147,9 +169,7 @@
     (define/private (same-drawings? old-pos pos)
       ;; relies on order drawings added & list-of-eq?-struct equality
       (equal? (get-position-drawings old-pos)
-              (get-position-drawings pos)))
-
-    (super-new)))
+              (get-position-drawings pos)))))
 
 (define text:tacking-mixin
   (mixin (text:basic<%> text:hover-drawings<%>) ()
@@ -303,28 +323,6 @@
 
     (super-new)))
 
-(define text:region-data-mixin
-  (mixin (text:basic<%>) (text:region-data<%>)
-
-    (define table (make-hasheq))
-
-    (define/public (get-region-mapping key)
-      (hash-ref! table key (lambda () (make-interval-map))))
-
-    (define/augment (after-delete start len)
-      (for ([im (in-hash-values table)])
-        (interval-map-contract! im start (+ start len)))
-      (inner (void) after-delete))
-
-    (define/augment (after-insert start len)
-      (for ([im (in-hash-values table)])
-        (interval-map-expand! im start (+ start len)))
-      (inner (void) after-insert))
-
-    (super-new)))
-
-(define clickregion-key (gensym 'text:clickregion))
-
 #|
 text:clickregion-mixin
 
@@ -335,7 +333,6 @@ Like clickbacks, but:
   - different rules for removal
   - TODO: extend to double-click
 |#
-
 (define text:clickregion-mixin
   (mixin (text:region-data<%>) ()
     (inherit get-admin
@@ -344,7 +341,7 @@ Like clickbacks, but:
              find-position)
 
     (super-new)
-    (define clickbacks (get-region-mapping clickregion-key))
+    (define clickbacks (get-region-mapping 'clickregion))
     (define tracking #f)
 
     (define/public (set-clickregion start end callback)

@@ -203,8 +203,7 @@
 
     (define/public (erase-all)
       (with-unlock -text
-        (send -text erase)
-        (send -text delete-all-drawings))
+        (send -text erase))
       (send/i controller displays-manager<%> remove-all-syntax-displays))
 
     (define/public (get-text) -text)
@@ -245,11 +244,11 @@
 (define browser-text%
   (let ([browser-text-default-style-name "widget.rkt::browser-text% basic"])
     (class (text:clickregion-mixin
-            (text:region-data-mixin
-             (text:arrows-mixin
-              (text:tacking-mixin
-               (text:hover-drawings-mixin
-                (text:hover-mixin
+            (text:arrows-mixin
+             (text:tacking-mixin
+              (text:hover-drawings-mixin
+               (text:hover-mixin
+                (text:region-data-mixin
                  (text:hide-caret/selection-mixin
                   (text:foreground-color-mixin
                    (editor:standard-style-list-mixin text:basic%)))))))))
