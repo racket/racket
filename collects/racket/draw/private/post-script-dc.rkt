@@ -1,11 +1,14 @@
-#lang scheme/base
-(require scheme/class
-         scheme/file
+#lang racket/base
+(require racket/class
+         racket/file
          racket/path
          racket/math
          "syntax.rkt"
          racket/gui/dynamic
+         ffi/unsafe
+         ffi/unsafe/alloc
          "../unsafe/cairo.ss"
+         "../unsafe/bstr.ss"
 	 "dc.ss"
          "font.ss"
          "local.ss"
@@ -20,7 +23,7 @@
           [use-paper-bbox #f]
           [as-eps #t])
 
-    (define-values (s width height landscape?)
+    (define-values (s port-box width height landscape?)
       (let ([su (if interactive
                     ((gui-dynamic-require 'get-ps-setup-from-user) #f parent)
                     (current-ps-setup))])
@@ -45,16 +48,21 @@
                          #f)])
             (if (and to-file?
                      (not fn))
-                (values #f #f #f #f)
+                (values #f #f #f #f #f)
                 (let* ([paper (assoc (send pss get-paper-name) paper-sizes)]
                        [w (cadr paper)]
                        [h (caddr paper)]
-                       [landscape? (eq? (send pss get-orientation) 'landscape)])
+                       [landscape? (eq? (send pss get-orientation) 'landscape)]
+                       [file (open-output-file
+                              (or fn (make-temporary-file "draw~a.ps"))
+                              #:exists 'truncate/replace)]
+                       [port-box (make-immobile file)])
                   (values
-                   (cairo_ps_surface_create (or fn
-                                                (make-temporary-file "draw~a.ps"))
-                                            w
-                                            h)
+                   (cairo_ps_surface_create_for_stream write_port_bytes
+                                                       port-box
+                                                       w
+                                                       h)
+                   port-box ; needs to be accessible as long as `s'
                    w
                    h
                    landscape?))))]
@@ -98,7 +106,9 @@
       (cairo_surface_finish s)
       (cairo_destroy c)
       (set! c #f)
-      (set! s #f))
+      (set! s #f)
+      (close-output-port (ptr-ref port-box _racket))
+      (set! port-box #f))
 
     (define/override (init-cr-matrix c)
       (cairo_translate c trans-x trans-y)
@@ -129,3 +139,12 @@
     (super-new)))
 
 (define post-script-dc% (dc-mixin dc-backend%))
+
+(define (write-port-bytes port-box bytes len)
+  (write-bytes (scheme_make_sized_byte_string bytes len 0) 
+               (ptr-ref port-box _racket))
+  CAIRO_STATUS_SUCCESS)
+
+(define write_port_bytes (function-ptr write-port-bytes _cairo_write_func_t))
+
+(define make-immobile ((allocator free-immobile-cell) malloc-immobile-cell))

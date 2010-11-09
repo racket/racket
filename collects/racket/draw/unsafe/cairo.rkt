@@ -195,6 +195,13 @@
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_ps_surface_create (_fun _path _double* _double* -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy))
+(define-cairo cairo_ps_surface_create_for_stream 
+  ;; The _fpointer argument is _cairo_write_func_t
+  ;; but it's saved as a callback, so care is needed with
+  ;; allocation.
+  (_fun  _fpointer _pointer _double* _double* -> _cairo_surface_t)
+  #:wrap (allocator cairo_surface_destroy))
+(define/provide _cairo_write_func_t (_fun _pointer _pointer _uint -> _int))
 (define-cairo cairo_ps_surface_set_eps (_fun _cairo_surface_t _bool -> _void)
   #:fail (lambda ()
 	   ;; cairo_ps_surface_set_eps is in version 1.6 and later;
