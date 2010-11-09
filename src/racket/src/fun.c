@@ -6181,7 +6181,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       && (sub_cont->prompt_tag == prompt_tag)
       && (sub_cont->barrier_prompt == effective_barrier_prompt)
       && (((Scheme_Escaping_Cont *)sub_cont->escape_cont)->myerr == p->error_buf)) {
-    /* Whether sub_cont turns out to be the same continuaiton, we can use
+    /* Whether sub_cont turns out to be the same continuation, we can use
        its escape continuation, because jumping to the escape continuation
        triggers the same C-level clean-up actions, same `dynamic-wind's, and
        crosses the same continuation barriers. */
@@ -6230,9 +6230,9 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       cont = MALLOC_ONE_TAGGED(Scheme_Cont);
       cont->so.type = scheme_cont_type;
       cont->buf.cont = sub_cont;
-      sub_cont = sub_cont->buf.cont;
-
       cont->escape_cont = sub_cont->escape_cont;
+
+      sub_cont = sub_cont->buf.cont;
 
       /* This mark stack won't be restored, but it may be
 	 used by `continuation-marks'. */
