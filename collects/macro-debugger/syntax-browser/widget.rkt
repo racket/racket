@@ -244,13 +244,15 @@
 
 (define browser-text%
   (let ([browser-text-default-style-name "widget.rkt::browser-text% basic"])
-    (class (text:arrows-mixin
-            (text:tacking-mixin
-             (text:hover-drawings-mixin
-              (text:hover-mixin
-               (text:hide-caret/selection-mixin
-                (text:foreground-color-mixin
-                 (editor:standard-style-list-mixin text:basic%)))))))
+    (class (text:clickregion-mixin
+            (text:region-data-mixin
+             (text:arrows-mixin
+              (text:tacking-mixin
+               (text:hover-drawings-mixin
+                (text:hover-mixin
+                 (text:hide-caret/selection-mixin
+                  (text:foreground-color-mixin
+                   (editor:standard-style-list-mixin text:basic%)))))))))
       (inherit set-autowrap-bitmap get-style-list)
       (define/override (default-style-name) browser-text-default-style-name)
       (super-new (auto-wrap #t))

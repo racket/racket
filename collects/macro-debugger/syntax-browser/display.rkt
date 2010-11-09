@@ -3,6 +3,7 @@
          racket/gui/base
          racket/list
          racket/pretty
+         data/interval-map
          framework
          unstable/class-iop
          "pretty-printer.rkt"
@@ -84,30 +85,16 @@
 
     ;; add-clickbacks : -> void
     (define/private (add-clickbacks)
-      (define (the-clickback editor start end)
+      (define mapping (send text get-region-mapping 'syntax))
+      (define (the-callback position)
         (send/i controller selection-manager<%> set-selected-syntax
-               (clickback->stx
-                (- start start-position) (- end start-position))))
+                (interval-map-ref mapping position #f)))
       (for ([range (send/i range range<%> all-ranges)])
         (let ([stx (range-obj range)]
               [start (range-start range)]
               [end (range-end range)])
-          (send text set-clickback (+ start-position start) (+ start-position end)
-                the-clickback))))
-
-    ;; clickback->stx : num num -> syntax
-    ;; FIXME: use vectors for treerange-subs and do binary search to narrow?
-    (define/private (clickback->stx start end)
-      (let ([treeranges (send/i range range<%> get-treeranges)])
-        (let loop* ([treeranges treeranges])
-          (for/or ([tr treeranges])
-            (cond [(and (= (treerange-start tr) start)
-                        (= (treerange-end tr) end))
-                   (treerange-obj tr)]
-                  [(and (<= (treerange-start tr) start)
-                        (<= end (treerange-end tr)))
-                   (loop* (treerange-subs tr))]
-                  [else #f])))))
+          (interval-map-set! mapping (+ start-position start) (+ start-position end) stx)))
+      (send text set-clickregion start-position end-position the-callback))
 
     ;; refresh : -> void
     ;; Clears all highlighting and reapplies all non-foreground styles.

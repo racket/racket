@@ -74,7 +74,7 @@
 (define (interval-map-set! im start end value)
   (check-interval start end 'interval-map-set!)
   (interval-map-remove! im start end)
-  (interval-map-update*! im start end values value))
+  (interval-map-update*! im start end (lambda (old) value) #f))
 
 (define (interval-map-remove! im start end)
   (let ([s (interval-map-s im)])

@@ -2,6 +2,7 @@
 (require racket/list
          racket/class
          racket/gui/base
+         data/interval-map
          drracket/arrow
          framework/framework
          data/interval-map
@@ -14,7 +15,11 @@
          text:hover-mixin
          text:hover-drawings-mixin
          text:tacking-mixin
-         text:arrows-mixin)
+         text:arrows-mixin
+         text:region-data-mixin
+         text:clickregion-mixin)
+
+(define err (current-error-port))
 
 (define arrow-brush
   (send the-brush-list find-or-create-brush "white" 'solid))
@@ -77,6 +82,10 @@
     add-arrow
     add-question-arrow
     add-billboard))
+
+(define text:region-data<%>
+  (interface (text:basic<%>)
+    get-region-mapping))
 
 (define text:hover-mixin
   (mixin (text:basic<%>) (text:hover<%>)
@@ -285,16 +294,64 @@
 
     (super-new)))
 
-(define text:hover-drawings%
-  (text:hover-drawings-mixin
-   (text:hover-mixin
-    text:standard-style-list%)))
+(define text:region-data-mixin
+  (mixin (text:basic<%>) (text:region-data<%>)
 
-(define text:arrows%
-  (text:arrows-mixin
-   (text:tacking-mixin
-    text:hover-drawings%)))
+    (define table (make-hasheq))
 
+    (define/public (get-region-mapping key)
+      (hash-ref! table key (lambda () (make-interval-map))))
+
+    (define/augment (after-delete start len)
+      (for ([im (in-hash-values table)])
+        (interval-map-contract! im start (+ start len)))
+      (inner (void) after-delete))
+
+    (define/augment (after-insert start len)
+      (for ([im (in-hash-values table)])
+        (interval-map-expand! im start (+ start len)))
+      (inner (void) after-insert))
+
+    (super-new)))
+
+(define clickregion-key (gensym 'text:clickregion))
+
+#|
+text:clickregion-mixin
+
+Like clickbacks, but:
+  - use interval-map to avoid linear search
+    (major problem w/ macro stepper and large expansions!)
+  - callback takes position of click, not (start, end)
+  - different rules for removal
+  - TODO: change cursor on mouse-over
+  - TODO: invoke callback on mouse-up
+  - TODO: extend to double-click
+|#
+
+(define text:clickregion-mixin
+  (mixin (text:region-data<%>) ()
+    (inherit get-region-mapping
+             dc-location-to-editor-location
+             find-position)
+
+    (super-new)
+    (define clickbacks (get-region-mapping clickregion-key))
+
+    (define/public (set-clickregion start end callback)
+      (if callback
+          (interval-map-set! clickbacks start end callback)
+          (interval-map-remove! clickbacks start end)))
+
+    (define/override (on-default-event ev)
+      (when (send ev button-down?)
+        (define gx (send ev get-x))
+        (define gy (send ev get-y))
+        (define-values (x y) (dc-location-to-editor-location gx gy))
+        (define pos (find-position x y))
+        (define cb (interval-map-ref clickbacks pos #f))
+        (when cb (cb pos)))
+      (super on-default-event ev))))
 
 #|
 (define text:hover-identifier<%>
