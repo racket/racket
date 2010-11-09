@@ -112,61 +112,64 @@
                                #:hi-colors [hi-colors null]
                                #:hi-stxss [hi-stxss null]
                                #:substitutions [substitutions null])
+      (define (get-shifted id) (hash-ref shift-table id null))
+
       (with-unlock -text
         (define display
           (print-syntax-to-editor stx -text controller config
                                   (calculate-columns)
                                   (send -text last-position)))
-        (define definite-table (make-hasheq))
         (send -text insert "\n")
-        (let ([range (send/i display display<%> get-range)]
-              [offset (send/i display display<%> get-start-position)])
-          (for ([subst substitutions])
-            (for ([r (send/i range range<%> get-ranges (car subst))])
-              (send -text insert (cdr subst)
-                    (+ offset (car r))
-                    (+ offset (cdr r))
-                    #f)
-              (send -text change-style
-                    (code-style -text (send/i config config<%> get-syntax-font-size))
-                    (+ offset (car r))
-                    (+ offset (cdr r))))))
-        (for ([hi-stxs hi-stxss] [hi-color hi-colors])
+        (define range (send/i display display<%> get-range))
+        (define offset (send/i display display<%> get-start-position))
+        (for ([subst (in-list substitutions)])
+          (for ([r (in-list (send/i range range<%> get-ranges (car subst)))])
+            (send -text insert (cdr subst)
+                  (+ offset (car r))
+                  (+ offset (cdr r))
+                  #f)
+            (send -text change-style
+                  (code-style -text (send/i config config<%> get-syntax-font-size))
+                  (+ offset (car r))
+                  (+ offset (cdr r))
+                  #f)))
+        ;; Apply highlighting
+        (for ([hi-stxs (in-list hi-stxss)] [hi-color (in-list hi-colors)])
           (send/i display display<%> highlight-syntaxes hi-stxs hi-color))
-        (for ([definite definites])
-          (hash-set! definite-table definite #t)
-          (when shift-table
-            (for ([shifted-definite (hash-ref shift-table definite null)])
-              (hash-set! definite-table shifted-definite #t))))
-        (let ([binder-table (make-free-id-table)])
-          (define range (send/i display display<%> get-range))
-          (define start (send/i display display<%> get-start-position))
+        ;; Underline binders (and shifted binders)
+        (send/i display display<%> underline-syntaxes
+                (append (apply append (map get-shifted binders))
+                        binders))
+        (send display refresh)
+
+        ;; Make arrows (& billboards, when enabled)
+        (when (send config get-draw-arrows?)
+          (define definite-table (make-hasheq))
+          (for ([definite (in-list definites)])
+            (hash-set! definite-table definite #t)
+            (when shift-table
+              (for ([shifted-definite (in-list (hash-ref shift-table definite null))])
+                (hash-set! definite-table shifted-definite #t))))
+
+          (define binder-table (make-free-id-table))
+          (for ([binder (in-list binders)])
+            (free-id-table-set! binder-table binder binder))
+
           (define (get-binders id)
             (let ([binder (free-id-table-ref binder-table id #f)])
               (cond [(not binder) null]
                     [shift-table (cons binder (get-shifted binder))]
                     [else (list binder)])))
-          (define (get-shifted id)
-            (hash-ref shift-table id null))
-          ;; Populate table
-          (for ([binder binders])
-            (free-id-table-set! binder-table binder binder))
-          ;; Underline binders (and shifted binders)
-          (send/i display display<%> underline-syntaxes
-                 (append (apply append (map get-shifted binders))
-                         binders))
-          (send display refresh)
-          ;; Make arrows (& billboards, when enabled)
-          (when (send config get-draw-arrows?)
-            (for ([id (send/i range range<%> get-identifier-list)])
-              (define definite? (hash-ref definite-table id #f))
-              (when #f ;; DISABLED
-                (add-binding-billboard start range id definite?))
-              (for ([binder (get-binders id)])
-                (for ([binder-r (send/i range range<%> get-ranges binder)])
-                  (for ([id-r (send/i range range<%> get-ranges id)])
-                    (add-binding-arrow start binder-r id-r definite?))))))
-          (void))))
+
+          (for ([id (in-list (send/i range range<%> get-identifier-list))])
+            (define definite? (hash-ref definite-table id #f))
+            (when #f ;; DISABLED
+              (add-binding-billboard offset range id definite?))
+            (for ([binder (in-list (get-binders id))])
+              (for ([binder-r (in-list (send/i range range<%> get-ranges binder))])
+                (for ([id-r (in-list (send/i range range<%> get-ranges id))])
+                  (add-binding-arrow offset binder-r id-r definite?))))))
+        (void)))
 
     (define/private (add-binding-arrow start binder-r id-r definite?)
       (if definite?
@@ -186,13 +189,12 @@
     (define/private (add-binding-billboard start range id definite?)
       (match (identifier-binding id)
         [(list-rest src-mod src-name nom-mod nom-name _)
-         (for-each (lambda (id-r)
-                     (send -text add-billboard
-                           (+ start (car id-r))
-                           (+ start (cdr id-r))
-                           (string-append "from " (mpi->string src-mod))
-                           (if definite? "blue" "purple")))
-                   (send/i range range<%> get-ranges id))]
+         (for ([id-r (in-list (send/i range range<%> get-ranges id))])
+           (send -text add-billboard
+                 (+ start (car id-r))
+                 (+ start (cdr id-r))
+                 (string-append "from " (mpi->string src-mod))
+                 (if definite? "blue" "purple")))]
         [_ (void)]))
 
     (define/public (add-separator)
