@@ -69,7 +69,7 @@ wx_mac_EXTRAFLAGS =
 EXTRAFLAGS = $(@WXVARIANT@_EXTRAFLAGS)
 
 grmain.@LTO@: xsrc/grmain.c
-	$(CC) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(POSTFLAGS) -o grmain.@LTO@ xsrc/grmain.c
+	$(CC) $(CFLAGS) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(POSTFLAGS) -o grmain.@LTO@ xsrc/grmain.c
 
 XSRCS = xsrc/grmain.c
 

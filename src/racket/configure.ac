@@ -16,7 +16,7 @@
 #  GC2OPTIONS - GC2-only flags
 #
 # Note: we use CPPFLAGS for configure-time testing only because
-# it needs to include C++ flags that we don't want for Racket.
+# it used to include C++ flags that we didn't want for Racket.
 # hence PREFLAGS, which is initialized to the original CPPFLAGS.
 
 AC_INIT([Racket])
@@ -651,19 +651,16 @@ case $OS in
       fi
     fi
 
-    # Force 32-bit build, for now
+    # Force 32-bit build unless mac64 is enabled:
     if test "${enable_mac64}" != "yes" ; then
       if test `${UNAME} -m` = "i386" ; then
         if test "${ORIG_CC}" = "" ; then
-           CC="${CC} -m32"
-           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
-        fi
-        if test "${ORIG_CPP}" = "" ; then
-           CPP="${CPP} -m32"
-           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPP="'"'"${CPP}"'"'
-        fi
-        if test "${ORIG_CC_FOR_BUILD}" = "" ; then
-           CC_FOR_BUILD="${CC_FOR_BUILD} -m32"
+           PREFLAGS="${PREFLAGS} -m32"
+           CPPFLAGS="${CPPFLAGS} -m32"
+           LDFLAGS="${LDFLAGS} -m32"
+           # To make the libffi build work, we have to fold -m32 into CC
+           # instead of CFLAGS:
+           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
         fi
       fi
     fi

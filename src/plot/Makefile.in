@@ -12,12 +12,7 @@ ICP=@ICP@
 
 CC = @CC@
 
-# Setting the compiler and linker when using dynext
-#   seems like a good idea, but it doesn't work with
-#  libtool as the compiler. So, we trust the configuration
-#  that is built into dynext, instead.
-# WITH-ENV = env CC="$(CC)" LD="@MZLINKER@" ...
-WITH_ENV = env CFLAGS="@CFLAGS@ @COMPFLAGS@ @PREFLAGS@" LDFLAGS="@LDFLAGS@"
+WITH_ENV = env CC="@PLAIN_CC@" CFLAGS="@CFLAGS@ @COMPFLAGS@ @PREFLAGS@" LDFLAGS="@LDFLAGS@"
 
 PLPLOT_SRCS = $(srcdir)/plplot/dc_drv.c \
               $(srcdir)/plplot/plcont.c \
