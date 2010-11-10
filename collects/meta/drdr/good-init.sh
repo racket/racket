@@ -19,7 +19,7 @@ kill_all() {
 run_loop () { # <basename> <kill?>
   while true; do
     echo "$1: compiling"
-    "$PLTROOT/bin/raco" make -k "$1.rkt"
+    "$PLTROOT/bin/raco" make "$1.rkt"
     echo "$1: running"
     "$MZ" -t "$1.rkt" 2>&1 >> "$LOGS/$1.log" &
     echo "$!" > "$LOGS/$1.pid"

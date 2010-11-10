@@ -152,6 +152,9 @@
     (path->string (build-path trunk-dir "bin" "racket")))
   (define raco-path
     (path->string (build-path trunk-dir "bin" "raco")))
+  ; XXX Remove
+  (define mzc-path
+    (path->string (build-path trunk-dir "bin" "mzc")))
   (define gracket-text-path
     (path->string (build-path trunk-dir "bin" "gracket-text")))
   (define gracket-path
@@ -188,7 +191,9 @@
                                               [(list-rest (or 'mzscheme 'racket) rst)
                                                (lambda () (list* racket-path rst))]
                                               [(list-rest 'mzc rst)
-                                               (lambda () (list* raco-path "make" rst))]
+                                               (lambda () (list* mzc-path rst))]
+                                              [(list-rest 'raco rst)
+                                               (lambda () (list* raco-path rst))]
                                               [(list-rest (or 'mred 'mred-text
                                                               'gracket 'gracket-text)
                                                           rst)

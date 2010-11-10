@@ -30,10 +30,11 @@
     (list* command args))
   (define-values
     (the-process stdout stdin stderr)
-    (apply subprocess
-           #f #f #f
-           new-command 
-           new-args))
+    (parameterize ([subprocess-group-enabled #t])
+      (apply subprocess
+             #f #f #f
+             new-command 
+             new-args)))
   
   (notify! "Running: ~a ~S" command args)  
   
@@ -76,6 +77,8 @@
                                     (λ (_)
                                       (define end-time 
                                         (current-inexact-milliseconds))
+                                      (subprocess-kill the-process #f)
+                                      (sleep)
                                       (subprocess-kill the-process #t)
                                       (loop open-ports end-time status log)))
                         (handle-evt the-process

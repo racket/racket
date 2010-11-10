@@ -12,7 +12,7 @@
     (path-timing-png-prefix filename))
   (system*/exit-code
    (path->string
-    (build-path (plt-directory) "plt" "bin" "mred-text"))
+    (build-path (plt-directory) "plt" "bin" "gracket-text"))
    "-t"
    (path->string (build-path (drdr-directory) "graphs" "build-graph.rkt"))
    "--"
