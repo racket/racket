@@ -273,9 +273,11 @@
 
 (define (alts-panel l1 l2)
   (define l (append l1 l2))
+  (define button-ids+labels '())
   (define (mk-button txt tip id onclick)
+    (set! button-ids+labels (cons (cons id txt) button-ids+labels))
     (a href: "#" id: id onclick: (list onclick "; return false;") title: tip
-       txt))
+       nbsp)) ; empty, filled by JS code, so JS-less browsers won't see it
   (div class: 'slideshow
     (div class: 'buttonpanel
       @mk-button["<" "Previous example"  'rewindbutton  "rewind_show()"]
@@ -356,6 +358,12 @@
         help_showing = show;
       }
       change_show_to(Math.floor(Math.random() * @(length l1)));
+      @; display button texts now, instead of making it part of the html,
+      @; so it's not shown on JS-less browsers
+      @(add-newlines
+        (for/list ([id+label (in-list button-ids+labels)])
+          (let ([id (car id+label)] [label (cdr id+label)])
+            @list{document.getElementById("@id").textContent = "@label"@";"})))
      }))
 
 ;; TODO
