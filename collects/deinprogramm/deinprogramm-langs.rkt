@@ -170,7 +170,7 @@
                   [scheme-test-module-name
                    ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
                   [scheme-signature-module-name
-                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature.ss") #f #f)])
+                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-german.rkt") #f #f)])
               (run-in-user-thread
                (lambda ()
 		 (when (getenv "PLTDRHTDPNOCOMPILED") (use-compiled-file-paths '()))
