@@ -11,24 +11,26 @@
 
   (define-syntax define-syntax-rule
     (lambda (stx)
-      (syntax-case stx ()
-        [(dr (name . pattern) template)
-         (identifier? #'name)
-         (syntax/loc stx
-           (define-syntax name
-             (lambda (user)
-               (syntax-case** dr #t user () free-identifier=?
-                              [(_ . pattern) (syntax/loc user template)]
-                              [else (raise-syntax-error #f (format "`~a' did not match pattern `~a'" (cdr (syntax->datum user)) 'pattern) user)]
-                              ))))]
-        [(dr (name . pattern) template)
-         (raise-syntax-error 'define-syntax-rule "expected an identifier" stx #'name)]
-        [(dr (name . pattern))
-         (raise-syntax-error 'define-syntax-rule "no template provided" stx)]
-        [(dr (name . pattern) template . etc)
-         (raise-syntax-error 'define-syntax-rule "too many templates" stx #'etc)]
-        [(dr head . template)
-         (raise-syntax-error 'define-syntax-rule "invalid pattern" stx #'head)])))
+      (let-values ([(err) (lambda (what . xs)
+                            (apply raise-syntax-error
+                                   'define-syntax-rule what stx xs))])
+        (syntax-case stx ()
+          [(dr (name . pattern) template)
+           (identifier? #'name)
+           (syntax/loc stx
+             (define-syntax name
+               (lambda (user-stx)
+                 (syntax-case** dr #t user-stx () free-identifier=?
+                   [(_ . pattern) (syntax/loc user-stx template)]
+                   [_ (let*-values ([(sexpr) (syntax->datum user-stx)]
+                                    [(msg) (format
+                                            "~.s did not match pattern ~.s"
+                                            sexpr (cons (car sexpr) 'pattern))])
+                           (raise-syntax-error #f msg user-stx))]))))]
+          [(_ (name . ptrn) tmpl)         (err "expected an identifier" #'name)]
+          [(_ (name . ptrn))              (err "missing template")]
+          [(_ (name . ptrn) tmpl etc . _) (err "too many forms" #'etc)]
+          [(_ head . _)                   (err "invalid pattern" #'head)]))))
 
   ;; -------------------------------------------------------------------------
 
