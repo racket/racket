@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/system
+#lang racket
+(require racket/system
          "dirstruct.rkt"
          "status.rkt"
          (except-in "diff.rkt"

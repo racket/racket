@@ -1,5 +1,5 @@
-#lang scheme
-(require (prefix-in scheme: scheme)
+#lang racket
+(require (prefix-in racket: racket)
          "formats.rkt"
          "status.rkt")
 
@@ -22,7 +22,7 @@
 
 (define (replay-exit-code s)
   (when (exit? s)
-    (scheme:exit (exit-code s))))
+    (racket:exit (exit-code s))))
 
 (provide/contract
  [replay-exit-code (status? . -> . void)]

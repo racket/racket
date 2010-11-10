@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/system
+#lang racket
+(require racket/system
          "config.rkt"
          "path-utils.rkt"
          "dirstruct.rkt")

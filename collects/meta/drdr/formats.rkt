@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (define (formats v u)
   (if (equal? v -inf.0)
       "ε"

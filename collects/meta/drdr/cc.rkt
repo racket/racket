@@ -1,9 +1,9 @@
-#lang scheme
+#lang racket
 (require "path-utils.rkt"
          "run-collect.rkt"
          "replay.rkt"
-         scheme/runtime-path
-         scheme/system)
+         racket/runtime-path
+         racket/system)
 
 (match-define 
  (list* command real-args)

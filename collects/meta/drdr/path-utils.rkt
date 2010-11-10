@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/file)
+#lang racket
+(require racket/file)
 
 (define current-temporary-directory
   (make-parameter #f))

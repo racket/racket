@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (define-struct svn-rev () #:prefab)
 (define-struct (svn-rev-nolog svn-rev) () #:prefab)

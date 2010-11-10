@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket
 
-(require scheme/system
+(require racket/system
          "dirstruct.rkt"
          "analyze.rkt"
          "monitor-scm.rkt"
@@ -35,7 +35,7 @@
      (lambda ()
        (system*/exit-code
         (path->string
-         (build-path (plt-directory) "plt" "bin" "mzscheme"))
+         (build-path (plt-directory) "plt" "bin" "racket"))
         "-t" 
         (path->string (build-path (drdr-directory) "time.rkt"))
         "--"
@@ -47,7 +47,7 @@
      (lambda ()
        (system*/exit-code
         (path->string
-         (build-path (plt-directory) "plt" "bin" "mzscheme"))
+         (build-path (plt-directory) "plt" "bin" "racket"))
         "-t" 
         (path->string (build-path (drdr-directory) "make-archive.rkt"))
         "--"

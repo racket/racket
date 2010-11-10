@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket
 (require (planet jaymccarthy/job-queue)
-         scheme/system
+         racket/system
          (prefix-in graph-one: "graph.rkt")
          "config.rkt"
          "notify.rkt"
@@ -39,7 +39,7 @@
        (apply 
         system*/exit-code
         (path->string
-         (build-path (plt-directory) "plt" "bin" "mzscheme"))
+         (build-path (plt-directory) "plt" "bin" "racket"))
         "-t" 
         (path->string (build-path (drdr-directory) "time-file.rkt"))
         "--"

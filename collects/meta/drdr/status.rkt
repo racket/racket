@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (define-struct event () #:prefab)
 (define-struct (stdout event) (bytes) #:prefab)
 (define-struct (stderr event) (bytes) #:prefab)

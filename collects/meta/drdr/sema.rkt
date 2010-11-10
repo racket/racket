@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (define (semaphore-wait* sema how-many)
   (unless (zero? how-many)

@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (provide (all-defined-out))
 (define total-width 800)
 (define before-and-after-image-width 18)

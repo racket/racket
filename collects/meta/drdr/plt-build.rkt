@@ -1,6 +1,6 @@
-#lang scheme
-(require scheme/file
-         scheme/runtime-path
+#lang racket
+(require racket/file
+         racket/runtime-path
          (planet jaymccarthy/job-queue)
          "metadata.rkt"
          "run-collect.rkt"
@@ -150,16 +150,12 @@
     (rebase-path trunk-dir log-dir))
   (define racket-path
     (path->string (build-path trunk-dir "bin" "racket")))
-  ; XXX fix
-  (define mzc-path
-    (path->string (build-path trunk-dir "bin" "mzc")))
+  (define raco-path
+    (path->string (build-path trunk-dir "bin" "raco")))
   (define gracket-text-path
     (path->string (build-path trunk-dir "bin" "gracket-text")))
   (define gracket-path
     (path->string (build-path trunk-dir "bin" "gracket")))
-  ; XXX fix
-  (define planet-path
-    (path->string (build-path trunk-dir "bin" "planet")))
   (define collects-pth
     (build-path trunk-dir "collects"))
   (define test-workers (make-job-queue (number-of-cpus)))
@@ -192,7 +188,7 @@
                                               [(list-rest (or 'mzscheme 'racket) rst)
                                                (lambda () (list* racket-path rst))]
                                               [(list-rest 'mzc rst)
-                                               (lambda () (list* mzc-path rst))]
+                                               (lambda () (list* raco-path "make" rst))]
                                               [(list-rest (or 'mred 'mred-text
                                                               'gracket 'gracket-text)
                                                           rst)
@@ -235,8 +231,8 @@
         #:timeout (current-make-install-timeout-seconds)
         #:env (current-env)
         (build-path log-dir "planet" auth pkg maj min)
-        planet-path 
-        (list "install" auth pkg maj min))]))
+        raco-path 
+        (list "planet" "install" auth pkg maj min))]))
   (run/collect/wait/log 
    #:timeout (current-subprocess-timeout-seconds)
    #:env (current-env)

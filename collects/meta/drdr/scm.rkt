@@ -1,9 +1,9 @@
-#lang scheme
+#lang racket
 (require "svn.rkt"
          "path-utils.rkt"
          "dirstruct.rkt"
          net/url
-         scheme/system)
+         racket/system)
 (provide
  (all-from-out "svn.rkt"))
 

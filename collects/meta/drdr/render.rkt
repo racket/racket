@@ -1,6 +1,6 @@
-#lang at-exp scheme
-(require scheme/date
-         scheme/runtime-path
+#lang at-exp racket
+(require racket/date
+         racket/runtime-path
          xml
          "config.rkt"
          "diff.rkt"

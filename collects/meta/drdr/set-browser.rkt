@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (printf "Setting the default browser to something safe...\n")
 

@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require "status.rkt")
 
 (define (timing? bs)

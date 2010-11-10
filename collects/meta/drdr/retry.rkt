@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require "notify.rkt")
 
 (define-syntax-rule (retry-until-success msg expr ...)

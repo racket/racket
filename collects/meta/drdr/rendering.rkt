@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require "list-count.rkt")
 
 (define-struct rendering (start end duration timeout? unclean-exit? stderr? responsible changed?) #:prefab)

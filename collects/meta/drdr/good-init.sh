@@ -2,7 +2,7 @@
 export PLTSTDERR="info"
 PLTROOT="/opt/plt/plt"
 LOGS="/opt/plt/logs"
-MZ="$PLTROOT/bin/racket"
+R="$PLTROOT/bin/racket"
 DRDR="/opt/svn/drdr"
 
 cd "$DRDR"

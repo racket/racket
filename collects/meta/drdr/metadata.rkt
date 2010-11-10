@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require "path-utils.rkt"
          "dirstruct.rkt"
          "scm.rkt")
