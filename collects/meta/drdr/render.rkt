@@ -473,7 +473,7 @@
                and "tests" every push to the Racket code base.}
             
             @h1{What kind of server?}
-            @p{A 64-bit Linux 2.6.28-15 server running Ubuntu 9.04 with @,(number->string (number-of-cpus)) cores.}
+            @p{A 64-bit Linux 2.6.32-25 server running Ubuntu 10.04.1 LTS with @,(number->string (number-of-cpus)) cores.}
             
             @h1{How is the build run?}
             @p{Every push is built from a clean checkout with the standard separate build directory command sequence, except that @code{make}
@@ -483,7 +483,7 @@
             @p{Only one build runs at a time and when none is running the git repository is polled every @,(number->string (current-monitoring-interval-seconds)) seconds.}
             
             @h1{How is the push "tested"?}
-            @p{Each file's @code{@,PROP:command-line} property is consulted. If it is the empty string, the file is ignored. If it is a string, then a single @code{~s} is replaced with the file's path, @code{racket} and @code{mzc} with their path (for the current push), and @code{gracket} and @code{gracket-text} with @code{gracket-text}'s path (for the current push); then the resulting command-line is executed. 
+            @p{Each file's @code{@,PROP:command-line} property is consulted. If it is the empty string, the file is ignored. If it is a string, then a single @code{~s} is replaced with the file's path, @code{racket}, @code{mzc}, @code{raco} with their path (for the current push), and @code{gracket} and @code{gracket-text} with @code{gracket-text}'s path (for the current push); then the resulting command-line is executed. 
                (Currently no other executables are allowed, so you can't @code{rm -fr /}.)
                If there is no property value, the default @code{racket -qt ~s} is used if the file's suffix is @code{.rkt}, @code{.ss}, @code{.scm}, or @code{.scrbl} and @code{racket -f ~s} is used if the file's suffix is @code{.rktl}.}
                     
