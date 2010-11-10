@@ -1251,7 +1251,7 @@ void *GC_malloc_array_tagged(size_t s)            { return allocate(s, PAGE_TARR
 void *GC_malloc_atomic(size_t s)                  { return allocate(s, PAGE_ATOMIC); }
 void *GC_malloc_atomic_uncollectable(size_t s)    { return ofm_malloc_zero(s); }
 void *GC_malloc_allow_interior(size_t s)          { return allocate_medium(s, PAGE_ARRAY); }
-void *GC_malloc_atomic_allow_interior(size_t s)   { return allocate_big(s, PAGE_ATOMIC); }
+void *GC_malloc_atomic_allow_interior(size_t s)   { return allocate_medium(s, PAGE_ATOMIC); }
 void *GC_malloc_tagged_allow_interior(size_t s)   { return allocate_medium(s, PAGE_TAGGED); }
 void *GC_malloc_one_small_dirty_tagged(size_t s)  { return fast_malloc_one_small_tagged(s, 1); }
 void *GC_malloc_one_small_tagged(size_t s)        { return fast_malloc_one_small_tagged(s, 0); }

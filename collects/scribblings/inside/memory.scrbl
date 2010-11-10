@@ -56,12 +56,15 @@ The basic collector allocation functions are:
  object for future garbage collection (as described
  in @secref["im:3m"]).}
 
- @item{@cppi{scheme_malloc_allow_interior} --- Allocates a large
- array of pointers such that references are allowed into the middle of
- the block under 3m, and such pointers prevent the block from being
- collected. This procedure is the same as @cppi{scheme_malloc} with
- the conservative collector, but in the that case, having @italic{only}
- a pointer into the interior will not prevent the array from being
+ @item{@cppi{scheme_malloc_allow_interior} --- Allocates an array of
+ pointers such that the array is never moved by the garbage collector
+ and references are allowed into the middle of the block under 3m (and
+ pointers to the middle prevent the block from being collected). Use
+ this procedure sparingly, because small, non-moving objects are
+ handled less efficiently than movable objects by the 3m collector.
+ This procedure is the same as @cppi{scheme_malloc} with the
+ conservative collector, but in the that case, having @italic{only} a
+ pointer into the interior will not prevent the array from being
  collected.}
 
  @item{@cppi{scheme_malloc_atomic_allow_interior} --- Like
@@ -651,13 +654,13 @@ Like @cpp{scheme_malloc}, but in 3m, the type tag determines how the
 @function[(void* scheme_malloc_allow_interior
            [size_t n])]{
 
-Like @cpp{scheme_malloc}, but in 3m, pointers are allowed to
+Like @cpp{scheme_malloc}, but in 3m, the object never moves, and pointers are allowed to
  reference the middle of the object; see @secref["im:memoryalloc"].}
 
 @function[(void* scheme_malloc_atomic_allow_interior
            [size_t n])]{
 
-Like @cpp{scheme_malloc_atomic}, but in 3m, pointers are allowed to
+Like @cpp{scheme_malloc_atomic}, but in 3m, the object never moves, and pointers are allowed to
  reference the middle of the object; see @secref["im:memoryalloc"].}
 
 @function[(char* scheme_strdup
