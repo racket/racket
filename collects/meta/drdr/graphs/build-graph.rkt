@@ -614,7 +614,7 @@
            (span ((id "rev_and_duration")) ""))
       (tt (span ((id "timings")) ""))
       
-      ,@(for/list ((graphs (in-list graphss))
+      ,@(for/list ((graphs (in-list (reverse graphss)))
                    (i (in-naturals)))
           `(map ((name ,(format "revmap~a" i)))
                 ,@(graphs->areas graphs i)))
