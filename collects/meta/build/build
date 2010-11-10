@@ -1356,7 +1356,8 @@ DO_WIN32_BUILD() {
   build_w32step VSNET "mrstart"
 
   _cd "$PLTHOME"
-  build_w32step RKT "get-libs" src/gracket/get-libs.rkt src/gracket lib
+  build_w32step RKT "get-libs (gui)" src/get-libs.rkt core src/gracket lib
+  build_w32step RKT "get-libs (gui)" src/get-libs.rkt gui src/gracket lib
 
   separator "win32: Building libraries"
   _cd "$PLTHOME"

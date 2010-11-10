@@ -167,8 +167,9 @@
 (define (initialize)
   (when *release?* (*environment* (cons 'release (*environment*))))
   (define (find-exe name)
-    (or (find-executable-path name #f)
-        (error (format "error: couldn't find a `~a' executable" name))))
+    (path->string
+     (or (find-executable-path name #f)
+         (error (format "error: couldn't find a `~a' executable" name)))))
   (set! /pax (find-exe "pax"))
   (set! /tar (find-exe "gtar"))
   (set! /fakeroot (find-exe "fakeroot"))

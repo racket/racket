@@ -365,12 +365,14 @@ dr-extras  :=
 plt-extras :=
 
 ;; Tests definitions
-mz-tests := (tests: "racket/" "info.rkt" "utils/" "match/" "eli-tester.rkt" "stress.rkt")
+mz-tests := (tests: "info.rkt" "racket/" "utils/" "match/"
+                    "eli-tester.rkt" "stress.rkt")
 
 ;; ============================================================================
 ;; Source definitions
 
-mz-src := (+ (- (src: "README" "Makefile.in" "configure" "lt/" "racket/" "utils/"
+mz-src := (+ (- (src: "README" "configure" "Makefile.in" "lt/" "racket/"
+                      "get-libs.rkt" "utils/"
                       (cond win => "worksp/{README|mzconfig.h}"
                                    "worksp/{racket|libracket|libmzgc|gc2}/"
                                    "worksp/{mzstart|starters}/"))
