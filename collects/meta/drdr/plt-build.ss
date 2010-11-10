@@ -304,7 +304,7 @@
                        (safely-delete-directory (format "/tmp/.tX~a-lock" i))
                        (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
                        (with-running-program
-                           (Xvfb-path) (list (format ":~a" i) "-ac" "-br" "-bs" "+extension" "RANDR")
+                           (Xvfb-path) (list (format ":~a" i) "-ac")
                          (lambda ()
                            (with-running-program
                                (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
