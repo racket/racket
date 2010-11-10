@@ -103,7 +103,7 @@
 (define wake-evt
   (tell NSEvent 
         otherEventWithType: #:type _int NSApplicationDefined
-        location: #:type _NSPoint-pointer (make-NSPoint 0.0 0.0)
+        location: #:type _NSPoint (make-NSPoint 0.0 0.0)
         modifierFlags: #:type _NSUInteger 0 
         timestamp: #:type _double 0.0
         windowNumber: #:type _NSUInteger 0

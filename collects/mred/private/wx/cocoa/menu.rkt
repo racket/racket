@@ -5,15 +5,17 @@
          (only-in scheme/list drop take)
          "../common/event.rkt"
          "../../syntax.rkt"
+         "../../lock.rkt"
          "utils.rkt"
          "types.rkt"
+         "const.rkt"
          "window.rkt"
          "menu-item.rkt")
 
 (provide 
  (protect-out menu%))
 
-(import-class NSMenu NSMenuItem)
+(import-class NSMenu NSMenuItem NSEvent)
 
 (define-struct mitem (item checkable?))
 
@@ -56,15 +58,36 @@
 
   (define popup-box #f)
 
-  (define/public (do-popup v x y queue-cb)
+  (define/public (do-popup v win x y queue-cb)
     (unless (null? items)
       (create-menu "menu")
       (let ([b (box #f)])
         (set! popup-box b)
-        (tellv cocoa-menu 
-               popUpMenuPositioningItem: (tell cocoa-menu itemAtIndex: #:type _NSUInteger 0)
-               atLocation: #:type _NSPoint (make-NSPoint x y)
-               inView: v)
+        (if #t ;; use the 10.5 code, for now
+            ;; For 10.5 and earlier:
+            (let ([p (tell #:type _NSPoint v
+                           convertPoint: #:type _NSPoint (make-NSPoint x y)
+                           toView: #f)])
+              (atomically
+               (with-autorelease
+                (tellv NSMenu popUpContextMenu: cocoa-menu 
+                       withEvent: (tell NSEvent 
+                                        mouseEventWithType: #:type _int NSLeftMouseDown
+                                        location: #:type _NSPoint p
+                                        modifierFlags: #:type _NSUInteger 0 
+                                        timestamp: #:type _double 0.0
+                                        windowNumber: #:type _NSUInteger 
+                                        (tell #:type _NSInteger win windowNumber)
+                                        context: #:type _pointer #f
+                                        eventNumber: #:type _NSInteger 0
+                                        clickCount: #:type _NSInteger 1
+                                        pressure: #:type _float 1.0)
+                       forView: v))))
+            ;; 10.6 and later:
+            (tellv cocoa-menu 
+                   popUpMenuPositioningItem: (tell cocoa-menu itemAtIndex: #:type _NSUInteger 0)
+                   atLocation: #:type _NSPoint (make-NSPoint x y)
+                   inView: v))
         (set! popup-box #f)
         (let* ([i (unbox b)]
                [e (new popup-event% [event-type 'menu-popdown])])

@@ -650,7 +650,7 @@
     (define/public (get-handle) (get-cocoa))
 
     (define/public (popup-menu m x y)
-      (send m do-popup (get-cocoa-content) x (flip-client y)
+      (send m do-popup (get-cocoa-content) (get-cocoa-window) x (flip-client y)
             (lambda (thunk)
               (queue-window-event this thunk))))
 
