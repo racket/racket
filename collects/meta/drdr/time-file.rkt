@@ -1,9 +1,9 @@
 #lang scheme
-(require "config.ss"
-         "dirstruct.ss"
-         "cache.ss"
-         "path-utils.ss"
-         "status.ss")
+(require "config.rkt"
+         "dirstruct.rkt"
+         "cache.rkt"
+         "path-utils.rkt"
+         "status.rkt")
 
 (define revision #f)
 

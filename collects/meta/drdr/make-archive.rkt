@@ -1,9 +1,9 @@
 #lang scheme
 (require scheme/system
-         "config.ss"
-         "archive.ss"
-         "path-utils.ss"
-         "dirstruct.ss")
+         "config.rkt"
+         "archive.rkt"
+         "path-utils.rkt"
+         "dirstruct.rkt")
 
 (define (archive-directory pth)
   (define tmp (path-add-suffix pth #".bak"))

@@ -1,12 +1,12 @@
 #lang scheme
 (require (planet jaymccarthy/job-queue)
          scheme/system
-         (prefix-in graph-one: "graph.ss")
-         "config.ss"
-         "notify.ss"
-         "dirstruct.ss"
-         "sema.ss"
-         "cache.ss")
+         (prefix-in graph-one: "graph.rkt")
+         "config.rkt"
+         "notify.rkt"
+         "dirstruct.rkt"
+         "sema.rkt"
+         "cache.rkt")
 
 (define test-workers (make-job-queue (number-of-cpus)))
 
@@ -41,7 +41,7 @@
         (path->string
          (build-path (plt-directory) "plt" "bin" "mzscheme"))
         "-t" 
-        (path->string (build-path (drdr-directory) "time-file.ss"))
+        (path->string (build-path (drdr-directory) "time-file.rkt"))
         "--"
         (append
          (if history?

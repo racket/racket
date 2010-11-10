@@ -1,7 +1,7 @@
 #lang scheme
-(require "path-utils.ss"
-         "run-collect.ss"
-         "replay.ss"
+(require "path-utils.rkt"
+         "run-collect.rkt"
+         "replay.rkt"
          scheme/runtime-path
          scheme/system)
 

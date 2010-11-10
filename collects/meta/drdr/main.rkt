@@ -1,16 +1,16 @@
 #lang scheme
 
 (require scheme/system
-         "dirstruct.ss"
-         "analyze.ss"
-         "monitor-scm.ss"
-         "notify.ss"
-         "retry.ss"
-         "config.ss"
-         "plt-build.ss"
-         "scm.ss"
-         "cache.ss"
-         "path-utils.ss")
+         "dirstruct.rkt"
+         "analyze.rkt"
+         "monitor-scm.rkt"
+         "notify.rkt"
+         "retry.rkt"
+         "config.rkt"
+         "plt-build.rkt"
+         "scm.rkt"
+         "cache.rkt"
+         "path-utils.rkt")
 
 (init-revisions!)
 (define cur-rev (newest-revision))
@@ -37,7 +37,7 @@
         (path->string
          (build-path (plt-directory) "plt" "bin" "mzscheme"))
         "-t" 
-        (path->string (build-path (drdr-directory) "time.ss"))
+        (path->string (build-path (drdr-directory) "time.rkt"))
         "--"
         "-r" (number->string cur-rev))))
     
@@ -49,7 +49,7 @@
         (path->string
          (build-path (plt-directory) "plt" "bin" "mzscheme"))
         "-t" 
-        (path->string (build-path (drdr-directory) "make-archive.ss"))
+        (path->string (build-path (drdr-directory) "make-archive.rkt"))
         "--"
         "--many" (number->string 100))))))
 

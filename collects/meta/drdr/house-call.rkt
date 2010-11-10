@@ -1,19 +1,19 @@
 #lang racket
 (require racket/runtime-path
          racket/date
-         "list-count.ss"
-         "scm.ss"
-         "formats.ss"
-         "cache.ss"
-         "metadata.ss"
-         "analyze.ss"
-         "rendering.ss"
-         "plt-build.ss"
-         "status.ss"
-         "replay.ss"
-         "notify.ss"
-         "path-utils.ss"
-         "dirstruct.ss")
+         "list-count.rkt"
+         "scm.rkt"
+         "formats.rkt"
+         "cache.rkt"
+         "metadata.rkt"
+         "analyze.rkt"
+         "rendering.rkt"
+         "plt-build.rkt"
+         "status.rkt"
+         "replay.rkt"
+         "notify.rkt"
+         "path-utils.rkt"
+         "dirstruct.rkt")
 
 (build? #f)
 

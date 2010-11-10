@@ -1,6 +1,6 @@
 #lang scheme
-(require "scm.ss"
-         "retry.ss")
+(require "scm.rkt"
+         "retry.rkt")
 
 (define current-monitoring-interval-seconds
   (make-parameter 60))

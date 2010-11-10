@@ -1,6 +1,6 @@
 #lang scheme
 (require (planet jaymccarthy/dbm)
-         "wrap-dict.ss")
+         "wrap-dict.rkt")
 
 (define (read-string s)
   (with-input-from-string s read))

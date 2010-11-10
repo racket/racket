@@ -1,9 +1,9 @@
 #lang scheme
-(require "status.ss"
-         "notify.ss"
-         "rewriting.ss"
-         "dirstruct.ss"
-         "cache.ss")
+(require "status.rkt"
+         "notify.rkt"
+         "rewriting.rkt"
+         "dirstruct.rkt"
+         "cache.rkt")
 
 (define (command+args+env->command+args 
          #:env env

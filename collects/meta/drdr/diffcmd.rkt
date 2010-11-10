@@ -1,12 +1,12 @@
 #lang scheme
 (require scheme/system
-         "dirstruct.ss"
-         "status.ss"
-         (except-in "diff.ss"
+         "dirstruct.rkt"
+         "status.rkt"
+         (except-in "diff.rkt"
                     log-different?)
-         "path-utils.ss"
-         "cache.ss"
-         "config.ss")
+         "path-utils.rkt"
+         "cache.rkt"
+         "config.rkt")
 
 (define event-print
   (match-lambda

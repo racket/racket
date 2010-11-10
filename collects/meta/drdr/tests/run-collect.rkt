@@ -1,6 +1,6 @@
 #lang racket
-(require "../run-collect.ss" 
-         "../status.ss"
+(require "../run-collect.rkt" 
+         "../status.rkt"
          racket/runtime-path
          tests/eli-tester)
 

@@ -1,5 +1,5 @@
 #lang scheme
-(require "status.ss")
+(require "status.rkt")
 
 (define (timing? bs)
   (regexp-match #px#"cpu time: \\d+ real time: \\d+ gc time: \\d+" bs))

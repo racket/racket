@@ -1,8 +1,8 @@
 #lang scheme
 (require scheme/system
-         "config.ss"
-         "path-utils.ss"
-         "dirstruct.ss")
+         "config.rkt"
+         "path-utils.rkt"
+         "dirstruct.rkt")
 
 (define rebaser
   (rebase-path (plt-data-directory) "/data"))
@@ -14,7 +14,7 @@
    (path->string
     (build-path (plt-directory) "plt" "bin" "mred-text"))
    "-t"
-   (path->string (build-path (drdr-directory) "graphs" "build-graph.ss"))
+   (path->string (build-path (drdr-directory) "graphs" "build-graph.rkt"))
    "--"
    "-l" (string-append "http://drdr.racket-lang.org/~a/" (path->string* filename)) ; XXX
    "--image-loc" "/graph-images/"

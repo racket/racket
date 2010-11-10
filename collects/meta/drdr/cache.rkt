@@ -1,5 +1,5 @@
 #lang scheme
-(require "path-utils.ss")
+(require "path-utils.rkt")
 
 ; (symbols 'always 'cache 'no-cache)
 (define cache/file-mode (make-parameter 'cache))
@@ -30,8 +30,8 @@
      (current-seconds)))
   (void))
 
-(require "archive.ss"
-         "dirstruct.ss")
+(require "archive.rkt"
+         "dirstruct.rkt")
 
 (define (consult-archive pth)
   (define rev (path->revision pth))

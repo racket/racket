@@ -1,5 +1,5 @@
 #lang scheme
-(require "path-utils.ss")
+(require "path-utils.rkt")
 
 (define (value->bytes v)
   (with-output-to-bytes (lambda () (write v))))

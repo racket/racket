@@ -1,5 +1,5 @@
 #lang scheme
-(require "status.ss")
+(require "status.rkt")
 
 (define (rewrite-status #:rewrite rewrite-string s)
   (match s

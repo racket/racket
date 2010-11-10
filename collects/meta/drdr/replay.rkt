@@ -1,7 +1,7 @@
 #lang scheme
 (require (prefix-in scheme: scheme)
-         "formats.ss"
-         "status.ss")
+         "formats.rkt"
+         "status.rkt")
 
 (define replay-event
   (match-lambda

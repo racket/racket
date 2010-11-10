@@ -1,7 +1,7 @@
 #lang scheme/gui
 
 (require 2htdp/image
-         "constants.ss")
+         "constants.rkt")
 
 ;; make dot.png
 (let* ([bm (make-object bitmap% 1 1)]
@@ -26,7 +26,7 @@
          [bdc (make-object bitmap-dc% bm)])
 
     (unless (= w before-and-after-image-width)
-      (error 'mk-img.ss "expected ~a image's width to be ~a, got ~a" 
+      (error 'mk-img.rkt "expected ~a image's width to be ~a, got ~a" 
              filename
              before-and-after-image-width
              w))

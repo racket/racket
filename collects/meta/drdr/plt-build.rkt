@@ -2,15 +2,15 @@
 (require scheme/file
          scheme/runtime-path
          (planet jaymccarthy/job-queue)
-         "metadata.ss"
-         "run-collect.ss"
-         "cache.ss"
-         "dirstruct.ss"
-         "replay.ss"
-         "notify.ss"
-         "path-utils.ss"
-         "sema.ss"
-         "scm.ss")
+         "metadata.rkt"
+         "run-collect.rkt"
+         "cache.rkt"
+         "dirstruct.rkt"
+         "replay.rkt"
+         "notify.rkt"
+         "path-utils.rkt"
+         "sema.rkt"
+         "scm.rkt")
 
 (define current-env (make-parameter (make-immutable-hash empty)))
 (define-syntax-rule (with-env ([env-expr val-expr] ...) expr ...)
@@ -240,9 +240,9 @@
   (run/collect/wait/log 
    #:timeout (current-subprocess-timeout-seconds)
    #:env (current-env)
-   (build-path log-dir "src" "build" "set-browser.ss")
+   (build-path log-dir "src" "build" "set-browser.rkt")
    racket-path 
-   (list "-t" (path->string* (build-path (drdr-directory) "set-browser.ss"))))
+   (list "-t" (path->string* (build-path (drdr-directory) "set-browser.rkt"))))
   ; And go
   (notify! "Starting testing")
   (test-directory collects-pth top-sema)

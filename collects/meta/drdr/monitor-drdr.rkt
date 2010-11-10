@@ -2,7 +2,7 @@
 (require xml
          net/url
          tests/web-server/util
-         "scm.ss")
+         "scm.rkt")
 
 (define drdr-url 
   (string->url "http://drdr.racket-lang.org"))

@@ -1,11 +1,11 @@
 #lang scheme
-(require "svn.ss"
-         "path-utils.ss"
-         "dirstruct.ss"
+(require "svn.rkt"
+         "path-utils.rkt"
+         "dirstruct.rkt"
          net/url
          scheme/system)
 (provide
- (all-from-out "svn.ss"))
+ (all-from-out "svn.rkt"))
 
 (define git-path (make-parameter "/opt/local/bin/git"))
 (provide/contract

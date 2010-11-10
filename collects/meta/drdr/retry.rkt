@@ -1,5 +1,5 @@
 #lang scheme
-(require "notify.ss")
+(require "notify.rkt")
 
 (define-syntax-rule (retry-until-success msg expr ...)
   (retry-until-success* msg (lambda () expr ...)))

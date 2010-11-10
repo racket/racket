@@ -1,5 +1,5 @@
 #lang scheme
-(require "path-utils.ss")
+(require "path-utils.rkt")
 
 (define number-of-cpus
   (make-parameter 1))

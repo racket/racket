@@ -1,20 +1,20 @@
 #lang scheme
 (require scheme/file
-         "diff.ss"
-         "scm.ss"
-         "list-count.ss"
-         "notify.ss"
-         "cache.ss"
-         "dirstruct.ss"
-         "status.ss"
-         "metadata.ss"
-         "path-utils.ss"
-         "rendering.ss")
-(provide (all-from-out "rendering.ss"))
+         "diff.rkt"
+         "scm.rkt"
+         "list-count.rkt"
+         "notify.rkt"
+         "cache.rkt"
+         "dirstruct.rkt"
+         "status.rkt"
+         "metadata.rkt"
+         "path-utils.rkt"
+         "rendering.rkt")
+(provide (all-from-out "rendering.rkt"))
 
 ; Email
 (require net/sendmail
-         "formats.ss")
+         "formats.rkt")
 
 (define list@
   (match-lambda

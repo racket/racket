@@ -1,5 +1,5 @@
 #lang scheme
-(require "list-count.ss")
+(require "list-count.rkt")
 
 (define-struct rendering (start end duration timeout? unclean-exit? stderr? responsible changed?) #:prefab)
 

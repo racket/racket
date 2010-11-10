@@ -1,9 +1,9 @@
 #lang scheme
 
-(require "cache.ss"
-         "dirstruct.ss"
-         "scm.ss"
-         "monitor-scm.ss")
+(require "cache.rkt"
+         "dirstruct.rkt"
+         "scm.rkt"
+         "monitor-scm.rkt")
 
 (plt-directory "/opt/plt")
 (drdr-directory "/opt/svn/drdr")

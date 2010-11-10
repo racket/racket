@@ -1,7 +1,7 @@
 #lang scheme
-(require "path-utils.ss"
-         "dirstruct.ss"
-         "scm.ss")
+(require "path-utils.rkt"
+         "dirstruct.rkt"
+         "scm.rkt")
 
 (define PROP:command-line "drdr:command-line")
 (define PROP:timeout "drdr:timeout")
@@ -60,7 +60,7 @@
   (define props:get-prop
     (hash-ref! props-cache rev
                (lambda ()
-                 (define tmp-file (make-temporary-file "props~a.ss" #f (current-temporary-directory)))
+                 (define tmp-file (make-temporary-file "props~a.rkt" #f (current-temporary-directory)))
                  (and
                   ; Checkout the props file
                   (scm-export-file

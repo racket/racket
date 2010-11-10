@@ -2,7 +2,7 @@
 export PLTSTDERR="info"
 PLTROOT="/opt/plt/plt"
 LOGS="/opt/plt/logs"
-MZ="$PLTROOT/bin/mzscheme"
+MZ="$PLTROOT/bin/racket"
 DRDR="/opt/svn/drdr"
 
 cd "$DRDR"
@@ -19,9 +19,9 @@ kill_all() {
 run_loop () { # <basename> <kill?>
   while true; do
     echo "$1: compiling"
-    "$PLTROOT/bin/mzc" -k "$1.ss"
+    "$PLTROOT/bin/raco" make -k "$1.rkt"
     echo "$1: running"
-    "$MZ" -t "$1.ss" 2>&1 >> "$LOGS/$1.log" &
+    "$MZ" -t "$1.rkt" 2>&1 >> "$LOGS/$1.log" &
     echo "$!" > "$LOGS/$1.pid"
     wait "$!"
     echo "$1: died"

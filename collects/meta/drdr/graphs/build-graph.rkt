@@ -1,7 +1,7 @@
 #lang scheme/gui
 (require xml)
 
-(require "constants.ss")
+(require "constants.rkt")
 
 ;; example data:
 ;; http://drdr.racket-lang.org/data/collects/tests/mzscheme/benchmarks/common/earley_ss.timing
@@ -62,7 +62,7 @@
     url-path
     "specify the path to the image files for html generation (not just to the dir; to the file itself)"
     (unless (regexp-match #rx"/$" url-path)
-      (error 'build-graph.ss "expected the image-loc to end with a /, got ~a" url-path))
+      (error 'build-graph.rkt "expected the image-loc to end with a /, got ~a" url-path))
     (set! image-loc url-path)]
    #:args (input-file image-filename-prefix image-url-prefix html-file) 
    (values input-file image-filename-prefix image-url-prefix html-file)))
@@ -113,7 +113,7 @@
                           ",")
              (list "]")))))
 
-;; this build ex2.ss out of ex.ss
+;; this build ex2.rkt out of ex.rkt
 ;; adjust : raw-line -> raw-line
 (define adjust
   (let ([seen-time #f])

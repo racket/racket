@@ -1,6 +1,6 @@
 #lang scheme
-(require "path-utils.ss"
-         "archive.ss"
+(require "path-utils.rkt"
+         "archive.rkt"
          tests/eli-tester)
 
 (define archive
@@ -17,7 +17,7 @@
  (archive-extract-file archive (build-path (current-directory) "test")) =error> #rx"not in the archive"
  (archive-extract-file archive (build-path (current-directory) "static")) =error> #rx"not a file"
  
- (archive-extract-file "archive-test.ss" (build-path (current-directory) "archive-test.ss")) =error> #rx"not a valid archive"
+ (archive-extract-file "archive-test.rkt" (build-path (current-directory) "archive-test.rkt")) =error> #rx"not a valid archive"
  
  (directory-list->directory-list* (archive-directory-list archive (current-directory)))
  => (directory-list* (current-directory))
@@ -27,6 +27,6 @@
  
  (archive-directory-exists? archive (build-path (current-directory) "unknown")) => #f
  
- (archive-directory-exists? archive (build-path (current-directory) "archive-test.ss")) => #f
+ (archive-directory-exists? archive (build-path (current-directory) "archive-test.rkt")) => #f
  )
 

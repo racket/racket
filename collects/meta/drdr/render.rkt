@@ -2,20 +2,20 @@
 (require scheme/date
          scheme/runtime-path
          xml
-         "config.ss"
-         "diff.ss"
-         "list-count.ss"
-         "cache.ss"
-         (except-in "dirstruct.ss"
+         "config.rkt"
+         "diff.rkt"
+         "list-count.rkt"
+         "cache.rkt"
+         (except-in "dirstruct.rkt"
                     revision-trunk-dir)
-         "status.ss"
-         "monitor-scm.ss"
-         (only-in "metadata.ss"
+         "status.rkt"
+         "monitor-scm.rkt"
+         (only-in "metadata.rkt"
                   PROP:command-line
                   PROP:timeout)
-         "formats.ss"
-         "path-utils.ss"
-         "analyze.ss")
+         "formats.rkt"
+         "path-utils.rkt"
+         "analyze.rkt")
 
 (define (base-path pth)
   (define rev (current-rev))
@@ -575,7 +575,7 @@
 (require web-server/servlet-env
          web-server/http
          web-server/dispatch
-         "scm.ss")
+         "scm.rkt")
 (define how-many-revs 45)
 (define (show-revisions req)
   (define builds-pth (plt-build-directory))
