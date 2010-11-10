@@ -19,7 +19,7 @@
              (lambda (user)
                (syntax-case** dr #t user () free-identifier=?
                               [(_ . pattern) (syntax/loc user template)]
-                              [else (raise-syntax-error 'name (format "~a did not match pattern ~a" (syntax->datum user) '(name . pattern)))]
+                              [else (raise-syntax-error #f (format "`~a' did not match pattern `~a'" (cdr (syntax->datum user)) 'pattern) user)]
                               ))))]
         [(dr (name . pattern) template)
          (raise-syntax-error 'define-syntax-rule "expected an identifier" stx #'name)]
