@@ -12,18 +12,20 @@
   (define-syntax define-syntax-rule
     (lambda (stx)
       (syntax-case stx ()
-        [(dr (foo . pattern) template)
-         (identifier? #'foo)
+        [(dr (name . pattern) template)
+         (identifier? #'name)
          (syntax/loc stx
-           (define-syntax foo
-             (lambda (x)
-               (syntax-case** dr #t x () free-identifier=?
-                              [(_ . pattern) (syntax/loc x template)]))))]
-        [(dr (foo . pattern) template)
-         (raise-syntax-error 'define-syntax-rule "expected an identifier" stx #'foo)]
-        [(dr (foo . pattern))
+           (define-syntax name
+             (lambda (user)
+               (syntax-case** dr #t user () free-identifier=?
+                              [(_ . pattern) (syntax/loc user template)]
+                              [else (raise-syntax-error 'name (format "~a did not match pattern ~a" (syntax->datum user) '(name . pattern)))]
+                              ))))]
+        [(dr (name . pattern) template)
+         (raise-syntax-error 'define-syntax-rule "expected an identifier" stx #'name)]
+        [(dr (name . pattern))
          (raise-syntax-error 'define-syntax-rule "no template provided" stx)]
-        [(dr (foo . pattern) template . etc)
+        [(dr (name . pattern) template . etc)
          (raise-syntax-error 'define-syntax-rule "too many templates" stx #'etc)]
         [(dr head . template)
          (raise-syntax-error 'define-syntax-rule "invalid pattern" stx #'head)])))
