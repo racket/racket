@@ -173,7 +173,7 @@ Eine Prozedur, die eine Liste konsumiert, hat die folgende
 Schablone:
   
 @schemeblock[
-(: proc ((list elem) -> ...))
+(: proc ((list-of elem) -> ...))
 
 (define proc
   (lambda (lis)
@@ -196,7 +196,7 @@ Ergebnis für den Rest der Liste liefert.
 Beispiel:
 
 @schemeblock[
-(: list-sum ((list number) -> number))
+(: list-sum ((list-of number) -> number))
 
 (define list-sum
   (lambda (lis)
@@ -245,13 +245,13 @@ Eine Prozedur mit Akkumulator, die Listen konsumiert, hat die
 folgende Schablone:
 
 @schemeblock[
-(: proc ((list elem) -> ...))
+(: proc ((list-of elem) -> ...))
 
 (define proc
   (lambda (lis)
     (proc-helper lis z)))
 
-(: proc ((list elem) sig -> ...))
+(: proc ((list-of elem) sig -> ...))
 
 (define proc-helper
   (lambda (lis acc)
@@ -273,13 +273,13 @@ Zwischenergebnis.
 Beispiel:
 
 @schemeblock[
-(: invert ((list %a) -> (list %a)))
+(: invert ((list-of %a) -> (list-of %a)))
 
 (define invert
   (lambda (lis)
     (invert-helper lis empty)))
 
-(: invert ((list %a) (list %a) -> (list %a)))
+(: invert ((list-of %a) (list-of %a) -> (list-of %a)))
 
 (define invert-helper
   (lambda (lis acc)
