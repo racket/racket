@@ -47,16 +47,33 @@
 (define _plflt _double*)
 (define _plint _int)
 
-(define (_list-of type . len?)
-  (let ([len (and (pair? len?) (car len?))])
-    (make-ctype _pointer
-      (lambda (l) (list->cblock l type))
-      (if len
-        (lambda (b) (cblock->list b type len))
-        (lambda (b) (error "this list type does not specify a size"))))))
+;; While an array generated from a list is passed to an
+;; plot library function, we might perform a GC through
+;; the back-end drawing operation. So, arrays must be
+;; allocated as non-moving objects
+(define-fun-syntax _list/still
+  (lambda (stx)
+    (syntax-case stx (i)
+      [(_ i ty) #'(_list/still i ty 'atomic-interior)]
+      [(_ i ty mode)
+       #'(type: _pointer
+                pre:  (x => (list->cblock/mode x ty mode)))])))
 
-(define (_matrix-of type)
-  (_list-of (_list-of type)))
+(define-fun-syntax _matrix-of
+  (lambda (stx)
+    (syntax-case stx (i)
+      [(_ ty)
+       #'(_list/still i (_list/still i ty) 'interior)])))
+
+(define (list->cblock/mode l type mode)
+  (if (null? l)
+      #f ; null => NULL
+      (let ([cblock (malloc (length l) type mode)])
+        (let loop ([l l] [i 0])
+          (unless (null? l)
+            (ptr-set! cblock type i (car l))
+            (loop (cdr l) (add1 i))))
+        cblock)))
 
 (define-syntax define*
   (syntax-rules ()
@@ -97,7 +114,7 @@
 
 (define* pl-plot-line
   (get-ffi-obj "c_plline" libplplot
-    (_fun _plint (x : (_list i _plflt)) (y : (_list i _plflt)) -> _void)))
+    (_fun _plint (x : (_list/still i _plflt)) (y : (_list/still i _plflt)) -> _void)))
 
 (define* pl-plot-segment
   (get-ffi-obj "c_pljoin" libplplot
@@ -129,26 +146,26 @@
 
 (define* pl-x-error-bars
   (get-ffi-obj "c_plerrx" libplplot
-    (_fun _plint (_list i _plflt)
-          (_list i _plflt)
-          (_list i _plflt) -> _void)))
+    (_fun _plint (_list/still i _plflt)
+          (_list/still i _plflt)
+          (_list/still i _plflt) -> _void)))
 
 (define* pl-y-error-bars
   (get-ffi-obj "c_plerry" libplplot
-    (_fun _plint (_list i _plflt)
-          (_list i _plflt)
-          (_list i _plflt) -> _void)))
+    (_fun _plint (_list/still i _plflt)
+          (_list/still i _plflt)
+          (_list/still i _plflt) -> _void)))
 
 (define* pl-plot-points
   (get-ffi-obj "c_plpoin" libplplot
-    (_fun _plint (x : (_list i _plflt)) (y : (_list i _plflt)) _plint
+    (_fun _plint (x : (_list/still i _plflt)) (y : (_list/still i _plflt)) _plint
           -> _void)))
 
 (define* pl-fill
   (get-ffi-obj "c_plfill" libplplot
    (_fun  (n         : _plint = (length x-values))
-          (x-values  : (_list i _plflt))
-          (y-values  : (_list i _plflt))
+          (x-values  : (_list/still i _plflt))
+          (y-values  : (_list/still i _plflt))
           -> _void)))
 
 (define* pl-world-3d
@@ -168,8 +185,8 @@
 (define* pl-plot3d
   (get-ffi-obj "c_plot3d" libplplot
    (_fun
-    (x-values  : (_list i _plflt))
-    (y-values  : (_list i _plflt))
+    (x-values  : (_list/still i _plflt))
+    (y-values  : (_list/still i _plflt))
     (z-values  : (_matrix-of _plflt))
     (nx        : _int = (length x-values))
     (ny        : _int = (length y-values))
@@ -180,8 +197,8 @@
 (define* pl-mesh3d
   (get-ffi-obj "c_plot3d" libplplot
    (_fun
-    (x-values  : (_list i _plflt))
-    (y-values  : (_list i _plflt))
+    (x-values  : (_list/still i _plflt))
+    (y-values  : (_list/still i _plflt))
     (z-values  : (_matrix-of _plflt))
     (nx        : _int = (length x-values))
     (ny        : _int = (length y-values))
@@ -193,8 +210,8 @@
 ;   (get-ffi-obj "c_plpoin" libplplot
 ;    (_fun
 ;     (nx        : _int = (length x-values))
-;     (x-values  : (_list i _plflt))
-;     (y-values  : (_list i _plflt))
+;     (x-values  : (_list/still i _plflt))
+;     (y-values  : (_list/still i _plflt))
 ;     (code      : _int))))
 
 (define* pl-box3
@@ -209,9 +226,9 @@
   (get-ffi-obj "c_plline3" libplplot
    (_fun
     (n-points : _int = (length x-values))
-    (x-values  : (_list i _plflt))
-    (y-values  : (_list i _plflt))
-    (z-values  : (_list i _plflt))
+    (x-values  : (_list/still i _plflt))
+    (y-values  : (_list/still i _plflt))
+    (z-values  : (_list/still i _plflt))
     -> _void)))
 
 
@@ -219,10 +236,10 @@
   (get-ffi-obj "c_plpoly3" libplplot
    (_fun
     (n-points : _int = (length x-values))
-    (x-values  : (_list i _plflt))
-    (y-values  : (_list i _plflt))
-    (z-values  : (_list i _plflt))
-    (draw-mask : (_list i _int))
+    (x-values  : (_list/still i _plflt))
+    (y-values  : (_list/still i _plflt))
+    (z-values  : (_list/still i _plflt))
+    (draw-mask : (_list/still i _int))
     (direction : _int)
     -> _void)))
 
@@ -246,7 +263,7 @@
     (t2         : _int = (PLcGrid-nx grid))
     (t3         : _plint = 1)
     (t4         : _int = (PLcGrid-ny grid))
-    (levels     : (_list i _plflt))
+    (levels     : (_list/still i _plflt))
     (nlevels    : _int = (length levels))
     (pltr       : _fpointer = (get-ffi-obj "pltr1" libplplot _fpointer))
     (grid       : _PLcGrid-pointer)
@@ -270,7 +287,7 @@
     (x_max      : _plflt = 0)
     (y_min      : _plflt = 0)
     (y_max      : _plflt = 0)
-    (levels     : (_list i _plflt))
+    (levels     : (_list/still i _plflt))
     (nlevels    : _int = (length levels))
     (fill_width : _int = 1)
     (cont_col   : _int = 1)
@@ -299,23 +316,23 @@
     (_fun
      (itype     : _plint)
      (npts      : _int = (length intencity))
-     (intencity : (_list i _plflt))
-     (coord1    : (_list i _plflt))
-     (coord2    : (_list i _plflt))
-     (coord3    : (_list i _plflt))
+     (intencity : (_list/still i _plflt))
+     (coord1    : (_list/still i _plflt))
+     (coord2    : (_list/still i _plflt))
+     (coord3    : (_list/still i _plflt))
      (rev       : _pointer = #f)
      -> _void)))
 
 (define pl-mesh3dc-int 
   (get-ffi-obj "c_plmeshc" libplplot
     (_fun
-     (x-values  : (_list i _plflt))
-     (y-values  : (_list i _plflt))
+     (x-values  : (_list/still i _plflt))
+     (y-values  : (_list/still i _plflt))
      (z-values  : (_matrix-of _plflt))
      (x-len     : _int = (length x-values))
      (y-len     : _int = (length y-values))
      (opts      : _int)
-     (levels    : (_list i _plflt))
+     (levels    : (_list/still i _plflt))
      (n-levels  : _int = (length levels))
      -> _void)))
 

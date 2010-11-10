@@ -67,9 +67,9 @@
        (y-label "Y axis")
        (title "")
        (device 'dc)
-       (fgcolor '( 0 0 0))
+       (fgcolor '(0 0 0))
        (bgcolor '(255 255 255))
-       (lncolor '(255 0 0 )))
+       (lncolor '(255 0 0)))
 
       (define x-size 400)
       (define y-size 300)
@@ -120,13 +120,15 @@
         (cond
          [(eq? device 'dc)
           (init-colors)
-          (pl-setup-page  width height)
+          (pl-setup-page width height)
           (pl-set-device "dc")
           (let ([dev (pl-init-plot)])
             (init-dev! dev (let ([dc (make-object bitmap-dc% bitmap)])
                              (send dc set-origin 0 height)
                              (send dc set-scale 1 -1)
                              (send dc set-smoothing 'aligned)
+                             (send dc set-background (apply make-object color% bgcolor))
+                             (send dc clear)
                              (new (class object%
                                     (define/public (draw-line x1 y1 x2 y2)
                                       (send dc draw-line x1 y1 x2 y2))
@@ -137,7 +139,11 @@
                                     (define/public (set-width n)
                                       (send dc set-pen (send (send dc get-pen) get-color) n 'solid))
                                     (define/public (set-index-color i)
-                                      (let ([color (make-object color% (symbol->string (car (list-ref colors i))))])
+                                      (let ([color (case i
+                                                     [(0) (apply make-object color% bgcolor)]
+                                                     [(1) (apply make-object color% fgcolor)]
+                                                     [(15) (apply make-object color% lncolor)]
+                                                     [else (make-object color% (symbol->string (car (list-ref colors i))))])])
                                         (send dc set-pen color (send (send dc get-pen) get-width) 'solid)
                                         (send dc set-brush color 'solid)))
                                     (define/public (set-rgb-color r g b)
@@ -148,7 +154,9 @@
                                     (define/public (end-page) (void))
                                     (define/public (end-doc)
                                       (send dc set-bitmap #f))
-                                    (super-new))))))]
+                                    (super-new))))))
+          (set-line-color 'black)
+          (set-line-width 0)]
          [else
           (error "Incorrect device specified")]))
 
@@ -157,6 +165,8 @@
         (cond
           [(eq? device 'dc)
            (pl-finish-plot)
+           (when out-file
+             (send bitmap save-file out-file 'png))
            (set-bitmap bitmap)]
           [else
            (error "Incorrect device specified")]))

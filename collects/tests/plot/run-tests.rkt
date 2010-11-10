@@ -3,7 +3,8 @@
 exec gracket "$0" "$@"
 |#
 #lang scheme
-(require plot file/md5 scheme/runtime-path)
+(require plot file/md5 scheme/runtime-path
+         racket/draw)
 
 (define-runtime-path here "./")
 
@@ -18,14 +19,30 @@ exec gracket "$0" "$@"
             [expected-file-name
              (build-path here (string-append file-name ".png"))])
        (plot args ... #:out-file result-file-name)
-       ;; WILL COMPARE by MD5 hash.
        (printf "testing \"~a\" ... " description)
-       (if (equal? (md5 (read-file result-file-name))
-                   (md5 (read-file expected-file-name)))
-         (begin (display "passed\n") (delete-file result-file-name))
-         (printf "failed! expected results in ~a, plot produced results in ~a\n"
-                 expected-file-name
-                 result-file-name)))]))
+       (let* ([bm1 (read-bitmap result-file-name)]
+              [bm2 (read-bitmap expected-file-name)]
+              [w (send bm1 get-width)]
+              [h (send bm1 get-height)]
+              [s1 (make-bytes (* 4 w h))]
+              [s2 (make-bytes (* 4 w h))])
+         (send bm1 get-argb-pixels 0 0 w h s1)
+         (send bm2 get-argb-pixels 0 0 w h s2)
+         (if (and (= (send bm2 get-width) w)
+                  (= (send bm2 get-width) h)
+                  ;; The generated and target images can be a little different,
+                  ;; but not much --- less than 1/255 difference average difference
+                  ;; over all RGB components (which is really pretty close)
+                  ((/ (for/fold ([diff 0]) ([i (in-range (* w h 4))])
+                        (+ diff (abs (- (bytes-ref s1 i) (bytes-ref s2 i)))))
+                      (* w h 4))
+                   . <= .
+                   1.0))
+             (begin (display "passed\n") (delete-file result-file-name))
+             (begin
+               (printf "failed! expected results in ~a, plot produced results in ~a\n"
+                       expected-file-name
+                       result-file-name)))))]))
 
 (run-test "Line"
           (plot (line (lambda (x) x) #:color 'red))
