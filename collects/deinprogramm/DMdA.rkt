@@ -157,10 +157,10 @@
   (even? (integer -> boolean)
 	 "feststellen, ob eine Zahl gerade ist")
 
-  (lcm (natural natural ... -> natural)
+  (lcm (integer integer ... -> integer)
        "kleinstes gemeinsames Vielfaches berechnen")
   
-  (gcd (natural natural ... -> natural)
+  (gcd (integer integer ... -> integer)
        "größten gemeinsamen Teiler berechnen")
   
   (rational? (%a -> boolean)
