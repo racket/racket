@@ -32,6 +32,12 @@
 
 #include "../dllexport.h"
 
+#ifdef __GNUC__
+# define UNUSED		__attribute__((unused))
+#else
+# define UNUSED
+#endif
+
 MZ_DLLEXPORT
 double * do_fit(void * function,
 		int n_values,

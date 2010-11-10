@@ -1445,7 +1445,9 @@ plOpenFile(PLStream *pls)
 	if (pls->FileName == NULL) {
 	    do {
 		fprintf(stdout, "Enter graphics output file name: ");
-		fgets(line, sizeof(line), stdin);
+		if (!fgets(line, sizeof(line), stdin)) {
+			return;
+		}
 		len = strlen(line);
 		if (len)
 		    len--;
@@ -1671,8 +1673,10 @@ plGetInt(char *s)
     char line[256];
 
     while (i++ < 10) {
-	fprintf(stdout, s);
-	fgets(line, sizeof(line), stdin);
+	fprintf(stdout, "%s", s);
+	if (! (fgets(line, sizeof(line), stdin))) {
+		return 0;
+	}
 #ifdef MSDOS
 	m = atoi(line);
 	return (m);
@@ -1701,8 +1705,10 @@ plGetFlt(char *s)
     char line[256];
 
     while (i++ < 10) {
-	fprintf(stdout, s);
-	fgets(line, sizeof(line), stdin);
+	fprintf(stdout, "%s", s);
+	if (! (fgets(line, sizeof(line), stdin))) {
+		return (0.);
+	}
 #ifdef MSDOS
 	m = atof(line);
 	return (m);

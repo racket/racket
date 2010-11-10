@@ -57,8 +57,14 @@ if (plsc->debug) \
  * The label is typically the calling function name.
 \*--------------------------------------------------------------------------*/
 
+#ifdef __GNUC__
+# define UNUSED		__attribute__((unused))
+#else
+# define UNUSED
+#endif
+
 #ifdef NEED_PLDEBUG
-static void
+UNUSED static void
 pldebug( const char *label, ... )
 {
 #ifdef DEBUG

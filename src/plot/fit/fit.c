@@ -66,6 +66,8 @@
 #include "matrix.h"
 #include "fit.h"
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* #define STANDARD stderr */
 
@@ -100,24 +102,24 @@ typedef enum marq_res marq_res_t;
 
 
 /* HBB 971023: new, allow for dynamic adjustment of these: */
-static int max_data;
-static int max_params;
+static UNUSED int max_data;
+static UNUSED int max_params;
 
 static double epsilon = 1e-5;	/* convergence limit */
 static int maxiter = 0;		/* HBB 970304: maxiter patch */
 
-static char *FIXED = "# FIXED";
-static char *GNUFITLOG = "FIT_LOG";
-static char *FITLIMIT = "FIT_LIMIT";
-static char *FITSTARTLAMBDA = "FIT_START_LAMBDA";
-static char *FITLAMBDAFACTOR = "FIT_LAMBDA_FACTOR";
-static char *FITMAXITER = "FIT_MAXITER";	/* HBB 970304: maxiter patch */
-static char *FITSCRIPT = "FIT_SCRIPT";
-static char *DEFAULT_CMD = "replot";	/* if no fitscript spec. */
+static UNUSED char *FIXED = "# FIXED";
+static UNUSED char *GNUFITLOG = "FIT_LOG";
+static UNUSED char *FITLIMIT = "FIT_LIMIT";
+static UNUSED char *FITSTARTLAMBDA = "FIT_START_LAMBDA";
+static UNUSED char *FITLAMBDAFACTOR = "FIT_LAMBDA_FACTOR";
+static UNUSED char *FITMAXITER = "FIT_MAXITER";	/* HBB 970304: maxiter patch */
+static UNUSED char *FITSCRIPT = "FIT_SCRIPT";
+static UNUSED char *DEFAULT_CMD = "replot";	/* if no fitscript spec. */
 
 
 static int num_data, num_params;
-static int columns;
+static UNUSED int columns;
 static double  *fit_x;
 static double    *fit_y;
 static double  *fit_z ;
@@ -166,7 +168,7 @@ double * get_asym_error_percent()
 *****************************************************************/
 
 /*static void printmatrix __PROTO((double **C, int m, int n)); */
-static void print_matrix_and_vectors (double **C, double *d, double *r, int m, int n);
+static UNUSED void print_matrix_and_vectors (double **C, double *d, double *r, int m, int n);
 static marq_res_t marquardt (double a[], double **alpha, double *chisq, 
 			     double *lambda); 
 static TBOOLEAN analyze (double a[], double **alpha, double beta[], 
@@ -182,7 +184,7 @@ static TBOOLEAN regress (double a[]);
 /*****************************************************************
     New utility routine: print a matrix (for debugging the alg.)
 *****************************************************************/
-static void printmatrix(C, m, n)
+static UNUSED void printmatrix(C, m, n)
 double **C;
 int m, n;
 {
@@ -199,7 +201,7 @@ int m, n;
 /**************************************************************************
     Yet another debugging aid: print matrix, with diff. and residue vector
 **************************************************************************/
-static void print_matrix_and_vectors(C, d, r, m, n)
+static UNUSED void print_matrix_and_vectors(C, d, r, m, n)
 double **C;
 double *d, *r;
 int m, n;

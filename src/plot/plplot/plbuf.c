@@ -343,8 +343,8 @@ rdbuf_line(PLStream *pls)
 
     dbug_enter("rdbuf_line");
 
-    fread(xpl, sizeof(short), npts, pls->plbufFile);
-    fread(ypl, sizeof(short), npts, pls->plbufFile);
+    if (npts != fread(xpl, sizeof(short), npts, pls->plbufFile)) return;
+    if (npts != fread(ypl, sizeof(short), npts, pls->plbufFile)) return;
 
     plP_line(xpl, ypl);
 }
@@ -363,9 +363,9 @@ rdbuf_polyline(PLStream *pls)
 
     dbug_enter("rdbuf_polyline");
 
-    fread(&npts, sizeof(PLINT), 1, pls->plbufFile);
-    fread(xpl, sizeof(short), npts, pls->plbufFile);
-    fread(ypl, sizeof(short), npts, pls->plbufFile);
+    if (1 != fread(&npts, sizeof(PLINT), 1, pls->plbufFile)) return;
+    if (npts != fread(xpl, sizeof(short), npts, pls->plbufFile)) return;
+    if (npts != fread(ypl, sizeof(short), npts, pls->plbufFile)) return;
 
     plP_polyline(xpl, ypl, npts);
 }
@@ -409,14 +409,14 @@ rdbuf_state(PLStream *pls)
 
     dbug_enter("rdbuf_state");
 
-    fread(&op, sizeof(U_CHAR), 1, pls->plbufFile);
+    if (1 != fread(&op, sizeof(U_CHAR), 1, pls->plbufFile)) return;
 
     switch (op) {
 
     case PLSTATE_WIDTH:{
 	U_CHAR width;
 
-	fread(&width, sizeof(U_CHAR), 1, pls->plbufFile);
+	if (1 != fread(&width, sizeof(U_CHAR), 1, pls->plbufFile)) return;
 	pls->width = width;
 	plP_state(PLSTATE_WIDTH);
 
@@ -426,11 +426,11 @@ rdbuf_state(PLStream *pls)
     case PLSTATE_COLOR0:{
 	U_CHAR icol0, r, g, b;
 
-	fread(&icol0, sizeof(U_CHAR), 1, pls->plbufFile);
+	if (1 != fread(&icol0, sizeof(U_CHAR), 1, pls->plbufFile)) return;
 	if (icol0 == PL_RGB_COLOR) {
-	    fread(&r, sizeof(U_CHAR), 1, pls->plbufFile);
-	    fread(&g, sizeof(U_CHAR), 1, pls->plbufFile);
-	    fread(&b, sizeof(U_CHAR), 1, pls->plbufFile);
+	    if (1 != fread(&r, sizeof(U_CHAR), 1, pls->plbufFile)) return;
+	    if (1 != fread(&g, sizeof(U_CHAR), 1, pls->plbufFile)) return;
+	    if (1 != fread(&b, sizeof(U_CHAR), 1, pls->plbufFile)) return;
 	}
 	else {
 	    if ((int) icol0 > 15) {
@@ -453,7 +453,7 @@ rdbuf_state(PLStream *pls)
     case PLSTATE_COLOR1: {
 	U_CHAR icol1;
 
-	fread(&icol1, sizeof(U_CHAR), 1, pls->plbufFile);
+	if (1 != fread(&icol1, sizeof(U_CHAR), 1, pls->plbufFile)) return;
 
 	pls->icol1 = icol1;
 	pls->curcolor.r = pls->cmap1[icol1].r;
@@ -467,7 +467,7 @@ rdbuf_state(PLStream *pls)
     case PLSTATE_FILL: {
 	signed char patt;
 
-	fread(&patt, sizeof(signed char), 1, pls->plbufFile);
+	if (1 != fread(&patt, sizeof(signed char), 1, pls->plbufFile)) return;
 
 	pls->patt = patt;
 	plP_state(PLSTATE_FILL);
@@ -503,7 +503,7 @@ rdbuf_esc(PLStream *pls)
 
     dbug_enter("rdbuf_esc");
 
-    fread(&op, sizeof(U_CHAR), 1, pls->plbufFile);
+    if (1 != fread(&op, sizeof(U_CHAR), 1, pls->plbufFile)) return;
 
     switch (op) {
     case PLESC_FILL:
@@ -532,9 +532,9 @@ rdbuf_fill(PLStream *pls)
 
     dbug_enter("rdbuf_fill");
 
-    fread(&npts, sizeof(PLINT), 1, pls->plbufFile);
-    fread(xpl, sizeof(short), npts, pls->plbufFile);
-    fread(ypl, sizeof(short), npts, pls->plbufFile);
+    if (1 != fread(&npts, sizeof(PLINT), 1, pls->plbufFile)) return;
+    if (npts != fread(xpl, sizeof(short), npts, pls->plbufFile)) return;
+    if (npts != fread(ypl, sizeof(short), npts, pls->plbufFile)) return;
     
     plP_fill(xpl, ypl, npts);
 }
@@ -555,31 +555,37 @@ rdbuf_image(PLStream *pls)
 
     dbug_enter("rdbuf_image");
 
-    fread(&nptsX, sizeof(PLINT), 1, pls->plbufFile);
-    fread(&nptsY, sizeof(PLINT), 1, pls->plbufFile);
+    if (1 != fread(&nptsX, sizeof(PLINT), 1, pls->plbufFile)) return;
+    if (1 != fread(&nptsY, sizeof(PLINT), 1, pls->plbufFile)) return;
     npts = nptsX*nptsY;
 
-    fread(&xmin, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&ymin, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&dx, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&dy, sizeof(PLFLT), 1, pls->plbufFile);
+    if (1 != fread(&xmin, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&ymin, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&dx, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&dy, sizeof(PLFLT), 1, pls->plbufFile)) return;
 
-    fread(&dev_zmin, sizeof(short), 1, pls->plbufFile);
-    fread(&dev_zmax, sizeof(short), 1, pls->plbufFile);
+    if (1 != fread(&dev_zmin, sizeof(short), 1, pls->plbufFile)) return;
+    if (1 != fread(&dev_zmax, sizeof(short), 1, pls->plbufFile)) return;
 
     dev_ix=(short *)malloc(npts*sizeof(short));
+	if (!dev_ix) return;
     dev_iy=(short *)malloc(npts*sizeof(short));
+	if (!dev_iy) goto end_y;
     dev_z=(unsigned short *)malloc((nptsX-1)*(nptsY-1)*sizeof(unsigned short));
+	if (!dev_z) goto end_z;
 
-    fread(dev_ix, sizeof(short), npts, pls->plbufFile);
-    fread(dev_iy, sizeof(short), npts, pls->plbufFile);
-    fread(dev_z, sizeof(unsigned short), (nptsX-1)*(nptsY-1), pls->plbufFile);
+    if (npts != fread(dev_ix, sizeof(short), npts, pls->plbufFile)) goto end;
+    if (npts != fread(dev_iy, sizeof(short), npts, pls->plbufFile)) goto end;
+    if ((nptsX-1)*(nptsY-1) != fread(dev_z, sizeof(unsigned short), (nptsX-1)*(nptsY-1), pls->plbufFile)) goto end;
 
     plP_image(dev_ix, dev_iy, dev_z, nptsX, nptsY, xmin, ymin, dx, dy, dev_zmin, dev_zmax);
 
-    free(dev_ix);
-    free(dev_iy);
+end:
     free(dev_z);
+end_z:
+    free(dev_iy);
+end_y:
+    free(dev_ix);
 }
 
 /*--------------------------------------------------------------------------*\
@@ -593,15 +599,15 @@ rdbuf_swin(PLStream *pls)
 {
     PLWindow plwin;
 
-    fread(&plwin.dxmi, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&plwin.dxma, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&plwin.dymi, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&plwin.dyma, sizeof(PLFLT), 1, pls->plbufFile);
+    if (1 != fread(&plwin.dxmi, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&plwin.dxma, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&plwin.dymi, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&plwin.dyma, sizeof(PLFLT), 1, pls->plbufFile)) return;
 
-    fread(&plwin.wxmi, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&plwin.wxma, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&plwin.wymi, sizeof(PLFLT), 1, pls->plbufFile);
-    fread(&plwin.wyma, sizeof(PLFLT), 1, pls->plbufFile);
+	if (1 != fread(&plwin.wxmi, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&plwin.wxma, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&plwin.wymi, sizeof(PLFLT), 1, pls->plbufFile)) return;
+    if (1 != fread(&plwin.wyma, sizeof(PLFLT), 1, pls->plbufFile)) return;
 
     plP_swin(&plwin);
 }

@@ -11,7 +11,7 @@
 #include <qhull/qhull_a.h>
 #endif
 
-#if !defined(HAVE_ISNAN)
+#if !defined(HAVE_ISNAN) && !defined(isnan)
 #define isnan(x) ((x) != (x))
 #endif
 

@@ -1,7 +1,3 @@
-#ifndef lint
-static char *RCSid = "$Id: matrix.c,v 1.4 2005/03/15 23:21:26 eli Exp $";
-#endif
-
 /*  NOTICE: Change of Copyright Status
  *
  *  The author of this module, Carsten Grammes, has expressed in
@@ -41,6 +37,7 @@ static char *RCSid = "$Id: matrix.c,v 1.4 2005/03/15 23:21:26 eli Exp $";
 #include "fit.h"
 #include "matrix.h"
 #include <math.h>
+#include <stdlib.h>
 
 // create a simple gc malloc...
 typedef struct Node {

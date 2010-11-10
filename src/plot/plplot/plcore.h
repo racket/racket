@@ -18,8 +18,6 @@ typedef lt_ptr (*PLDispatchInit)( PLDispatchTable *pdt );
 #else
 typedef void (*PLDispatchInit)( PLDispatchTable *pdt );
 #endif
-    
-
 
 /* Static function prototypes */
 
@@ -250,6 +248,6 @@ static PLLoadableDevice *loadable_device_list;
 static PLLoadableDriver *loadable_driver_list;
 #endif
 
-static int nloadabledrivers = 0;
+static UNUSED int nloadabledrivers = 0;
 
 #endif	/* __PLCORE_H__ */

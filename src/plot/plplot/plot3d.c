@@ -186,7 +186,7 @@ shade_triangle(PLFLT x0, PLFLT y0, PLFLT z0,
   int i;
   /* arrays for interface to core functions */
   short u[6], v[6];
-  PLFLT x[6], y[6], z[6], c;
+  PLFLT x[6], y[6], z[6];
   int n;
   PLFLT xmin, xmax, ymin, ymax, zmin, zmax, zscale;
   PLFLT *V[3];
@@ -768,7 +768,7 @@ c_plot3dc(PLFLT *x, PLFLT *y, PLFLT **z,
       ny = _ny;	  
     }
 
-   if (opt & BASE_CONT || opt & TOP_CONT || opt && MAG_COLOR ) { 
+   if ((opt & BASE_CONT) || (opt & TOP_CONT) || (opt && MAG_COLOR) ) { 
      /*  
       * Don't use the data z value to scale the color, use the z axis
       * values set by plw3d()

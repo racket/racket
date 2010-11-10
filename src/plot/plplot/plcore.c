@@ -1859,7 +1859,9 @@ plSelectDev()
 	    fprintf(stdout, "\nEnter device number or keyword (stream %d): ",
 		   (int) ipls);
 
-	fgets(response, sizeof(response), stdin);
+	if (! (fgets(response, sizeof(response), stdin))) {
+		return;
+	}
 
     /* First check to see if device keyword was entered. */
     /* Final "\n" in response messes things up, so ignore it.  */
