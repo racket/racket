@@ -97,43 +97,48 @@
 
 (define (with-running-program command args thunk)
   (if command
-      (local [(define-values (new-command new-args)
-                (command+args+env->command+args
-                 #:env (current-env)
-                 command args))
-              (define-values
-                (the-process stdout stdin stderr)
-                (apply subprocess
-                       #f #;(current-error-port) 
-                       #f
-                       #f #;(current-error-port)
-                       new-command new-args))
-              ; Die if this program does
-              (define parent
-                (current-thread))
-              (define waiter
-                (thread
-                 (lambda ()
-                   (subprocess-wait the-process)
-                   (printf "Killing parent because wrapper is dead...\n")
-                   (kill-thread parent))))]
+      (let ()
+        (define-values (new-command new-args)
+          (command+args+env->command+args
+           #:env (current-env)
+           command args))
+        (define-values
+          (the-process stdout stdin stderr)
+          (parameterize ([subprocess-group-enabled #t])
+            (apply subprocess
+                   #f #;(current-error-port) 
+                   #f
+                   #f #;(current-error-port)
+                   new-command new-args)))
+        ; Die if this program does
+        (define parent
+          (current-thread))
+        (define waiter
+          (thread
+           (lambda ()
+             (subprocess-wait the-process)
+             (printf "Killing parent because wrapper is dead...\n")
+             (kill-thread parent))))
         
         ; Run without stdin
         (close-output-port stdin)
         
-        (begin0
-          ; Run the thunk
-          (thunk)
-          
-          ; Close the output ports
-          (close-input-port stdout)
-          (close-input-port stderr)
-          
-          ; Kill the guard
-          (kill-thread waiter)
-          
-          ; Kill the process
-          (subprocess-kill the-process #t)))
+        (dynamic-wind
+         void
+         ; Run the thunk
+         thunk
+         (λ ()
+           ; Close the output ports
+           (close-input-port stdout)
+           (close-input-port stderr)
+           
+           ; Kill the guard
+           (kill-thread waiter)
+           
+           ; Kill the process
+           (subprocess-kill the-process #f)
+           (sleep)
+           (subprocess-kill the-process #t))))
       (thunk)))
 
 (define-runtime-path package-list "pkgs")
@@ -162,69 +167,83 @@
   (define collects-pth
     (build-path trunk-dir "collects"))
   (define test-workers (make-job-queue (number-of-cpus)))
-  (define top-sema (make-semaphore 0))
   (define (test-directory dir-pth upper-sema)
     (define dir-log (build-path (trunk->log dir-pth) ".index.test"))
     (if (read-cache* dir-log)
         (semaphore-post upper-sema)
-        (begin        
+        (let ()        
           (notify! "Testing in ~S" dir-pth)
-          (local [(define files (directory-list* dir-pth))
-                  (define how-many (length files))
-                  (define dir-sema (make-semaphore 0))]     
-            (for-each (lambda (sub-pth)
-                        (define pth (build-path dir-pth sub-pth))
-                        (define directory? (directory-exists? pth))
-                        (if directory?
-                            (test-directory pth dir-sema)
-                            (local [(define log-pth (trunk->log pth))]
-                              (if (file-exists? log-pth)
-                                  (semaphore-post dir-sema)
-                                  (local [(define pth-timeout 
-                                            (or (path-timeout pth)
-                                                (current-subprocess-timeout-seconds)))
-                                          (define pth-cmd/general (path-command-line pth))
-                                          (define pth-cmd
-                                            (match pth-cmd/general
-                                              [#f
-                                               #f]
-                                              [(list-rest (or 'mzscheme 'racket) rst)
-                                               (lambda () (list* racket-path rst))]
-                                              [(list-rest 'mzc rst)
-                                               (lambda () (list* mzc-path rst))]
-                                              [(list-rest 'raco rst)
-                                               (lambda () (list* raco-path rst))]
-                                              [(list-rest (or 'mred 'mred-text
-                                                              'gracket 'gracket-text)
-                                                          rst)
-                                               (if (on-unix?)
-                                                   (lambda () 
-                                                     (list* gracket-text-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))
-                                                   #f)]
-                                              [_
-                                               #f]))]
-                                    (if pth-cmd
-                                        (submit-job!
-                                         test-workers
-                                         (lambda ()
-                                           (define l (pth-cmd))
-                                           (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))])
-                                             (with-temporary-home-directory
-                                                 (with-temporary-directory
-                                                     (run/collect/wait/log log-pth 
-                                                                           #:timeout pth-timeout
-                                                                           #:env (current-env)
-                                                                           (first l)
-                                                                           (rest l)))))
-                                           (semaphore-post dir-sema)))
-                                        (semaphore-post dir-sema)))))))
-                      files)
-            (thread
-             (lambda ()
-               (semaphore-wait* dir-sema how-many)
-               (notify! "Done with dir: ~a" dir-pth)
-               (write-cache! dir-log (current-seconds))
-               (semaphore-post upper-sema)))))))
+          (define files/unsorted (directory-list* dir-pth))
+          (define dir-sema (make-semaphore 0))
+          (define files
+            (sort files/unsorted <
+                  #:key (λ (p)
+                          (if (bytes=? #"tests" (path->bytes p))
+                              0
+                              1))
+                  #:cache-keys? #t))
+          (for ([sub-pth (in-list files)])
+            (define pth (build-path dir-pth sub-pth))
+            (define directory? (directory-exists? pth))
+            (if directory?
+                (test-directory pth dir-sema)
+                (let ()
+                  (define log-pth (trunk->log pth))
+                  (if (file-exists? log-pth)
+                      (semaphore-post dir-sema)
+                      (let ()
+                        (define pth-timeout 
+                          (or (path-timeout pth)
+                              (current-subprocess-timeout-seconds)))
+                        (define pth-cmd/general (path-command-line pth))
+                        (define pth-cmd
+                          (match pth-cmd/general
+                            [#f
+                             #f]
+                            [(list-rest (or 'mzscheme 'racket) rst)
+                             (lambda () (list* racket-path rst))]
+                            [(list-rest 'mzc rst)
+                             (lambda () (list* mzc-path rst))]
+                            [(list-rest 'raco rst)
+                             (lambda () (list* raco-path rst))]
+                            [(list-rest (or 'mred 'mred-text
+                                            'gracket 'gracket-text)
+                                        rst)
+                             (if (on-unix?)
+                                 (lambda () 
+                                   (list* gracket-text-path 
+                                          "-display" 
+                                          (format ":~a" (+ XSERVER-OFFSET (current-worker)))
+                                          rst))
+                                 #f)]
+                            [_
+                             #f]))
+                        (if pth-cmd
+                            (submit-job!
+                             test-workers
+                             (lambda ()
+                               (dynamic-wind
+                                void
+                                (λ ()
+                                  (define l (pth-cmd))
+                                  (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))])
+                                    (with-temporary-home-directory
+                                        (with-temporary-directory
+                                            (run/collect/wait/log log-pth 
+                                                                  #:timeout pth-timeout
+                                                                  #:env (current-env)
+                                                                  (first l)
+                                                                  (rest l))))))
+                                (λ ()
+                                  (semaphore-post dir-sema)))))
+                            (semaphore-post dir-sema)))))))
+          (thread
+           (lambda ()
+             (define how-many (length files))
+             (semaphore-wait* dir-sema how-many)
+             (notify! "Done with dir: ~a" dir-pth)
+             (write-cache! dir-log (current-seconds))
+             (semaphore-post upper-sema))))))
   ; Some setup
   (for ([pp (in-list (planet-packages))])
     (match pp
@@ -245,6 +264,7 @@
    racket-path 
    (list "-t" (path->string* (build-path (drdr-directory) "set-browser.rkt"))))
   ; And go
+  (define top-sema (make-semaphore 0))
   (notify! "Starting testing")
   (test-directory collects-pth top-sema)
   (notify! "All testing scheduled... waiting for completion")
@@ -305,7 +325,7 @@
                        (safely-delete-directory (format "/tmp/.tX~a-lock" i))
                        (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
                        (with-running-program
-                           (Xvfb-path) (list (format ":~a" i) "-ac")
+                           (Xvfb-path) (list (format ":~a" i) "-ac" "-rfbauth" "/home/jay/.vnc/passwd")
                          (lambda ()
                            (with-running-program
                                (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
