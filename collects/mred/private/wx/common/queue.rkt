@@ -128,7 +128,7 @@
    (alert-tasks-ready)))
 
 (define last-time -inf.0)
-(define sometimes-delay-msec 50)
+(define sometimes-delay-msec 100)
 
 ;; Call this function only in atomic mode:
 (define (pre-event-sync force?)
