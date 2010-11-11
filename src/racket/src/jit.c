@@ -3801,6 +3801,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
           if (i != num_rands - 1)
             mz_pushr_p(JIT_R0);
           if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
+            /* assert: SCHEME_GET_LOCAL_FLAGS(rand) == SCHEME_LOCAL_FLONUM */
             /* have to check for an existing box */
             if (i != num_rands - 1)
               mz_rs_ldxi(JIT_R0, i+1);
@@ -3815,7 +3816,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
           (void)jit_calli(box_flonum_from_stack_code);
           if (i != num_rands - 1)
             mz_rs_stxi(i+1, JIT_R0);
-          if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
+          if (iref) {
             __START_TINY_JUMPS__(1);
             mz_patch_branch(iref);
             __END_TINY_JUMPS__(1);
@@ -4278,6 +4279,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
         && is_tail
         && (SCHEME_CLOSURE_DATA_FLAGS(jitter->self_data) & CLOS_HAS_TYPED_ARGS)
         && (CLOSURE_ARGUMENT_IS_FLONUM(jitter->self_data, i+args_already_in_place))) {
+      
       int directly;
       jitter->unbox++;
       if (can_unbox_inline(arg, 5, JIT_FPR_NUM-1, 0))
@@ -4293,7 +4295,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       generate_flonum_local_unboxing(jitter, 0);
       CHECK_LIMIT();
       if (SAME_TYPE(SCHEME_TYPE(arg), scheme_local_type)) {
-        /* Also local Scheme_Object view, in case a box has been allocated */
+        /* Keep local Scheme_Object view, in case a box has been allocated */
         int apos;
         apos = mz_remap(SCHEME_LOCAL_POS(arg));
         mz_rs_ldxi(JIT_R0, apos);
@@ -9821,6 +9823,11 @@ static int generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inline
       return generate(obj, jitter, 0, 0, 1, JIT_R0, NULL);
     else
       return generate_non_tail(obj, jitter, 0, 1, 0);
+  } else if (unbox_anyway && SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)) {
+    /* local unboxing can be handled in generate(), and 
+       we want to handle it there to avoid unnecessary (and potentially
+       harmful) clearing of the runstack location */
+    return generate(obj, jitter, 0, 0, 1, JIT_R0, NULL);
   }
 
   if (!jitter->unbox || jitter->unbox_depth)
@@ -10180,7 +10187,13 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         }
       }
       if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_CLEAR_ON_READ) {
-        mz_rs_stxi(pos, JIT_RUNSTACK);
+        if (!flonum && !jitter->unbox)
+          mz_rs_stxi(pos, JIT_RUNSTACK);
+        else {
+          /* Don't clear the box. It's not important for space safety, because
+             it's just a flonum. More importantly, argument setup for a self-call
+             with an unboxed argument wants to keep the box. */
+        }
       }
       CHECK_LIMIT();
       if (flonum && !result_ignored) {

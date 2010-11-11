@@ -3038,12 +3038,8 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
             || IS_NAMED_PRIM(rator, "flacos")
             || IS_NAMED_PRIM(rator, "flatan")
             || IS_NAMED_PRIM(rator, "fllog")
-            || IS_NAMED_PRIM(rator, "flexp"))
-          return 1;
-      }
-    } else if (SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
-      if (!rotate_mode) {
-        if (IS_NAMED_PRIM(rator, "fl+")
+            || IS_NAMED_PRIM(rator, "flexp")
+            || IS_NAMED_PRIM(rator, "fl+")
             || IS_NAMED_PRIM(rator, "fl-")
             || IS_NAMED_PRIM(rator, "fl*")
             || IS_NAMED_PRIM(rator, "fl/")
@@ -3055,7 +3051,6 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
             || IS_NAMED_PRIM(rator, "flmax"))
           return 1;
       }
-    } else if (SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
       if ((rotate_mode || (argpos == 2))
           && IS_NAMED_PRIM(rator, "unsafe-flvector-set!")) 
         return 1;
