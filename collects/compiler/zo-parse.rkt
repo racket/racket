@@ -949,13 +949,7 @@
            (let ([v (read-compact cp)])
              (make-closure 
               v
-              ; XXX Why call gensym here?
-              (let ([s (lam-name v)])
-                 (cond
-                   [(symbol? s) s]
-                   [(vector? s) (vector-ref s 0)]
-                   [else 'closure]))
-              #;(gensym
+              (gensym
                (let ([s (lam-name v)])
                  (cond
                    [(symbol? s) s]
