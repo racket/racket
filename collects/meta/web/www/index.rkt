@@ -2,20 +2,20 @@
 
 (require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt")
 
-(define (doc s)
-  (string-append "http://docs.racket-lang.org/" s))
+(define (doc path . text)
+  (apply a href: (list "http://docs.racket-lang.org/" path) text))
 
-(define-struct example (code desc))
-(define-struct (cmdline-example example) ())
-(define-struct (scribble-example example) ())
-(define-struct (graphical-example example) ())
+(struct example (code desc))
+(struct cmdline-example example ())
+(struct scribble-example example ())
+(struct graphical-example example ())
 
 (define desc div)
 (define (elemcode . strs) (apply tt strs))
 
-(define (examples)
+(define examples
   @; --- Each example here should at most 7 lines long ---
-  (alts-panel
+  (list
    @; Candidates for initial example: ------------------------
    (list
     (example ; -----------------------------------------------
@@ -235,35 +235,34 @@
                               @(delay more.css)}
     @div[class: 'whatpane]{
       @span{@span[class: 'whatb]{Racket} is a programming language.}}
-    (div class: 'aboutpane
+    @div[class: 'downloadbutton]{@download-button}
+    @div[class: 'aboutpane]{
       @div[class: 'panetitle]{Start Quickly}
-      @div[class: 'downloadbutton]{@download-button}
-      @examples
-      @p{@a[href: (doc "quick/")]{Draw more pictures} or
-         @a[href: (doc "more/")]{build a web server from scratch}.
-         Racket includes both @a[href: (doc "")]{batteries}
-         and a @a[href: (doc "drracket/")]{programming environment},
-         so @a[href: (doc "getting-started/index.html")]{get started}!})
+      @div{@(apply slideshow-panel examples)}
+      @p{@doc["quick/"]{Draw more pictures} or
+         @doc["more/"]{build a web server from scratch}.  Racket includes both
+         @doc[""]{batteries} and a @doc["drracket/"]{programming environment},
+         so @doc["getting-started/"]{get started}!}}
     @((lambda xs
         (table class: 'threepanes
           (tr (map (lambda (x) (td (div class: 'panetitle (car x)) (cdr x)))
                    xs))))
       (list "Grow your Program"
         @p{Racket's
-           @a[href: (doc "guide/intro.html#(part._.Interacting_with_.Racket)")]{interactive mode}
+           @doc["guide/intro.html#(part._.Interacting_with_.Racket)"]{
+             interactive mode}
            encourages experimentation, and quick scripts easily compose into
            larger systems.  Small scripts and large systems both benefit from
-           @a[href: (doc "guide/performance.html")]{native-code JIT compilation}.
+           @doc["guide/performance.html"]{native-code JIT compilation}.
            When a system gets too big to keep in your head, you can add
-           @a[href: (doc "ts-guide/index.html")]{static types}.})
+           @doc["ts-guide/index.html"]{static types}.})
       (list "Grow your Language"
-        @p{@a[href: (doc "guide/languages.html")]{Extend Racket} whenever you
-           need to.  Mold it to better suit your tasks without sacrificing
-           @a[href: (doc "guide/dialects.html")]{interoperability} with
-           existing libraries and without having to modify the
-           @a[href: (doc "guide/intro.html")]{tool chain}.  When less is more,
-           you can remove parts of a language or start over and build a new
-           one.})
+        @p{@doc["guide/languages.html"]{Extend Racket} whenever you need to.
+           Mold it to better suit your tasks without sacrificing
+           @doc["guide/dialects.html"]{interoperability} with existing
+           libraries and without having to modify the
+           @doc["guide/intro.html"]{tool chain}.  When less is more, you can
+           remove parts of a language or start over and build a new one.})
       (list "Grow your Skills"
         @p{Whether you're just @-htdp{starting out}, want to know more about
            programming language @-plai{applications} or @-redex{models},
@@ -271,21 +270,21 @@
            @learning{research}, Racket can help you become a better programmer
            and system builder.}))))
 
-(define (alts-panel l1 l2)
+(define (slideshow-panel l1 l2)
   (define l (append l1 l2))
   (define button-ids+labels '())
-  (define (mk-button txt tip id onclick)
+  (define (button txt tip id onclick)
     (set! button-ids+labels (cons (cons id txt) button-ids+labels))
     (a href: "#" id: id onclick: (list onclick "; return false;") title: tip
        nbsp)) ; empty, filled by JS code, so JS-less browsers won't see it
   (div class: 'slideshow
     (div class: 'buttonpanel
-      @mk-button["<" "Previous example"  'rewindbutton  "rewind_show()"]
-      @mk-button[">" "Next example"      'advancebutton "advance_show()"]
-      @mk-button["?" "Explain this code" 'helpbutton "set_help(!help_showing)"]
+      @button["<" "Previous example"  'rewindbutton  "rewind_show()"]
+      @button[">" "Next example"      'advancebutton "advance_show()"]
+      @button["?" "Explain this code" 'helpbutton "set_help(!help_showing)"]
       (div class: 'hiddenhelp id: "helppanel" style: "display: none;"
         (div class: 'helpcontent
-          @mk-button["close" "Close help" 'closebutton "set_help(false)"]
+          @button["close" "Close help" 'closebutton "set_help(false)"]
           (div class: 'helpdesc
             (for/list ([elem (in-list l)] [pos (in-naturals)])
               @div[id: @list{helpframe@pos} style: "display: none;"]{
@@ -364,7 +363,7 @@
         (for/list ([id+label (in-list button-ids+labels)])
           (let ([id (car id+label)] [label (cdr id+label)])
             @list{document.getElementById("@id").textContent = "@label"@";"})))
-     }))
+    }))
 
 ;; TODO
 ;; (define screenshots
@@ -432,6 +431,9 @@
     .slideshow {
       position: relative;
     }
+    .slideshowframe {
+      height: 12ex;
+    }
     .buttonpanel {
       display: block;
       position: absolute;
@@ -478,11 +480,6 @@
     .downloadbutton {
       position: relative;
       float: right;
-      left: 1em;
-      top: -1em;
-      height: 0em;
-      width: 1em;
-      margin: 0em -1em 0em 0em;
     }
     @;
     .codecomment {
