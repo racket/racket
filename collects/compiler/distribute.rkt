@@ -148,10 +148,7 @@
 			     (if (file-exists? f)
 				 (format template filename-version-part)
 				 (format template "xxxxxxx"))))])
-	 (map copy-dll
-	      (list
-	       "iconv.dll"
-	       "UnicoWS.dll"))
+	 (map copy-dll '("iconv.dll"))
 	 (when (or (memq 'racketcgc types)
 		   (memq 'gracketcgc types))
 	   (map copy-dll

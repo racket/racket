@@ -3369,14 +3369,8 @@ mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, long *olen)
 
   if (to_up)
     CharUpperBuffW((wchar_t *)result, len);
-  else {
-    int i;
-    /* CharLowerBuff doesn't work with unicows.dll -- strange.
-       So we use CharLower, instead. */
-    for (i = 0; i < len; i++) {
-      CharLowerW(((wchar_t *)result) + i);
-    }
-  }
+  else
+    CharLowerBuffW((wchar_t *)result, len);
 
   *olen = len;
   return (mzchar *)result;

@@ -69,7 +69,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				AdditionalDependencies="WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\GRacketCGC.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -155,7 +155,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				AdditionalDependencies="WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\GRacketCGC.exe"
 				SuppressStartupBanner="true"
 				IgnoreDefaultLibraryNames="libcd.lib"
@@ -202,10 +202,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gracket\grmain.c"
-				>
-			</File>
-			<File
-				RelativePath="..\racket\uniplt.c"
 				>
 			</File>
 		</Filter>

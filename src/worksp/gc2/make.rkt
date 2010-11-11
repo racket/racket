@@ -244,7 +244,7 @@
 	     (> (file-or-directory-modify-seconds f)
 		ms))
 	   objs)
-      (unless (system- (format "cl.exe ~a /MT /Zi /Fe~a unicows.lib ~a ~a /link ~a~a~a"
+      (unless (system- (format "cl.exe ~a /MT /Zi /Fe~a ~a ~a /link ~a~a~a"
 			       (if exe? "" "/LD /DLL")
 			       dll
 			       (let loop ([objs (append objs sys-libs)])
@@ -271,13 +271,7 @@
 				     ""))))
 	(error 'winmake "~a link failed" (if exe? "EXE" "DLL"))))))
 
-(c-compile "../racket/uniplt.c"
-	   "xsrc/uniplt.obj"
-	   null
-	   " -Dwx_msw")
-
 (let ([objs (list*
-	     "../libracket/Release/uniplt.obj"
 	     "xsrc/gc2.obj"
 	     "xsrc/mzsj86.obj"
 	     "xsrc/foreign.obj"
@@ -305,7 +299,6 @@
 (let ([objs (list
 	     "racket.res"
 	     "xsrc/main.obj"
-	     "xsrc/uniplt.obj"
 	     "../../../lib/msvc/libracket3mxxxxxxx.lib")])
   (link-dll objs 
 	    '("libracket3mxxxxxxx.dll")
@@ -337,7 +330,6 @@
 (let ([objs (list
 	     "gracket.res"
 	     "xsrc/grmain.obj"
-	     "xsrc/uniplt.obj"
 	     "../../../lib/msvc/libracket3mxxxxxxx.lib")])
   (link-dll objs 
 	    '("libracket3mxxxxxxx.dll")

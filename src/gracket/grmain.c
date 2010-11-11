@@ -710,14 +710,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
       } else if (l < name_len) {
 	a = wchar_to_char(my_name, l);
 	argv[0] = a;
-	{
-	  /* CharLowerBuff doesn't work with unicows.dll -- strange. 
-	     So we use CharLower, instead. */
-	  int i;
-	  for (i = 0; i < l; i++) {
-	    CharLowerW(my_name XFORM_OK_PLUS i);
-	  }
-	}
+	CharLowerBuffW(my_name, l);
 	normalized_path = wchar_to_char(my_name, l);
 	free(my_name);
 	break;

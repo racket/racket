@@ -17,7 +17,6 @@
   `(;; Core Libraries
     [core
      [win32/i386
-      ["UnicoWS.dll" 245408]
       ["iconv.dll" 892928]
       ["libeay32.dll" 1089536]
       ["ssleay32.dll" 237568]]]

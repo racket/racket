@@ -65,7 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib User32.lib"
+				AdditionalDependencies="User32.lib"
 				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
@@ -151,7 +151,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib User32.lib"
+				AdditionalDependencies="User32.lib"
 				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
