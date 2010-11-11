@@ -313,6 +313,18 @@ package: :=
           (notes: ,p/) (man: ,p) (tests: ,p/)
           ,@(if (getkey '#:src?) `((src: ,p/ ,(concat "worksp/" p/))) '()))))
 
+;; Utility for pulling out the names of libraries
+get-libs: :=
+  (lambda (p)
+    (let* ([xs (parameterize ([current-command-line-arguments
+                               '#("--no-op" "" "" "")])
+                 (dynamic-require (build-path racket/ "src" "get-libs.rkt")
+                                  'all-files+sizes))]
+           [xs (or (assq p xs) (error 'get-libs "unknown package, ~s" p))]
+           [xs (append-map cdr (cdr xs))]
+           [xs (remove-duplicates (map car xs))])
+      `(lib: ,@xs)))
+
 ;; ============================================================================
 ;; Base distribution specs
 
@@ -396,16 +408,15 @@ foreign-src := (src: "foreign/{Makefile.in|README}"
 ;; queries have no point elsewhere.)
 
 mz-bins := (lib: "buildinfo" "**/mzdyn{|w}{|3[mM]|cgc|CGC}.{o|obj|exp|def}")
+           (get-libs: core)
            (cond mac => (lib: "Racket*/")
-                 win => (dll: "lib{mzgc|racket}" "UnicoWS" "iconv")
+                 win => (dll: "lib{mzgc|racket}")
                         (lib: "gcc/{fixup|init}.o" "bcc/mzdynb.{obj|def}")
                  unix => (lib: "starter"))
-           extra-dynlibs
 
-mr-bins := (cond mac => (lib: "GRacket*/")
+mr-bins := (get-libs: gui)
+           (cond mac => (lib: "GRacket*/")
                  win => (dll: "libgracket"))
-
-extra-dynlibs := (cond win => (dll: "{ssl|lib}eay32"))
 
 ;; ============================================================================
 ;; This filter is used on the full compiled trees to get the binary

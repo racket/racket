@@ -12,6 +12,7 @@
 (define url-path "/libs/1/")
 (define url-base (string-append "http://" url-host url-path))
 
+(provide all-files+sizes)
 (define all-files+sizes
   `(;; Core Libraries
     [core
@@ -95,7 +96,8 @@
   (command-line
    #:once-any
    [("--download") "download mode (the default)" (set! mode 'download)]
-   [("--install") "install mode" (set! mode 'install)]
+   [("--install") "install mode"                 (set! mode 'install)]
+   [("--no-op") "do nothing (for internal use)"  (set! mode #f)]
    #:once-each
    [("--touch") file "touch `<file>' on download success" (set! touch file)]
    #:args [package src-dir dest-dir]
@@ -107,7 +109,7 @@
       (string-append (unixize base) "/" (path->string name))
       (path->string name))))
 
-(define needed-files+sizes
+(define (needed-files+sizes)
   (let* ([files+sizes
           (cdr (or (assq package all-files+sizes)
                    (error 'get-libs "bad package: ~s, expecting one of ~s"
@@ -195,16 +197,17 @@
     (subprocess-wait p)))
 
 (case mode
+  [(#f) (void)]
   [(download)
    (unless (directory-exists? dest-dir) (make-directory dest-dir))
-   (for ([file+size (in-list needed-files+sizes)])
+   (for ([file+size (in-list (needed-files+sizes))])
      (download-if-needed dest-dir (car file+size) (cadr file+size)))
    (when touch
      (define ok (build-path dest-dir touch))
      (when (file-exists? ok) (delete-file ok))
      (unless (file-exists? ok) (with-output-to-file ok void)))]
   [(install)
-   (for ([file+size (in-list needed-files+sizes)])
+   (for ([file+size (in-list (needed-files+sizes))])
      (define file (car file+size))
      (install-file (build-path src-dir "libs" file)
                    (build-path dest-dir file)))])

@@ -4,6 +4,7 @@
 #lang racket/base
 
 (require racket/cmdline racket/runtime-path racket/match racket/promise
+         racket/list ; for use in specs too
          racket/file (only-in racket/system system)
          (except-in racket/mpair mappend)
          meta/checker (prefix-in dist: meta/dist-specs) meta/specs)
