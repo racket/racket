@@ -109,10 +109,10 @@ ulimit -c 100000000
 umask 002 # stuff that is created should be r/w by the group
 
 # get this script's name and path
-cd "`dirname \"$0\"`"
-buildscript="`pwd`/`basename \"$0\"`"
+cd "$(dirname "$0")"
+buildscript="$(pwd)/$(basename "$0")"
 # get the current hostname (short version)
-hostname="`hostname`"
+hostname="$(hostname)"
 hostname="${hostname%%.*}"
 
 # web directory for pre-prelease stuff on $workmachine (relative to $maindir)
@@ -182,8 +182,8 @@ last_part() {
   echo "$*" | sed 's/.*[ -]//'
 }
 last_part_capital() {
-  local word="`last_part \"$@\"`"
-  echo "`echo \"${word:0:1}\" | tr \"[:lower:]\" \"[:upper:]\"`${word:1}"
+  local word="$(last_part "$@")"
+  echo "$(echo "${word:0:1}" | tr "[:lower:]" "[:upper:]")${word:1}"
 }
 
 # simple name associations
@@ -203,7 +203,7 @@ name_of_platform() {
     ( "i386-linux-debian-unstable" ) echo "Linux/i386/Debian-unstable" ;;
     ( "i386-linux-ubuntu"          ) echo "Linux/i386/Ubuntu" ;;
     ( "i386-linux-ubuntu-"* ) echo "Linux/i386/Ubuntu" \
-                                   "`last_part_capital \"$1\"`" ;;
+                                   "$(last_part_capital "$1")" ;;
     ( "i386-freebsd"      ) echo "FreeBSD" ;;
     ( "sparc-solaris"     ) echo "Solaris" ;;
     ( "i386-osx-mac"      ) echo "Mac OS X (Intel)" ;;
@@ -236,7 +236,7 @@ extra_description_of_platform() {
     ( *"-linux-debian-testing"  ) e="$e on Debian Testing." ;;
     ( *"-linux-debian-unstable" ) e="$e on Debian Unstable." ;;
     ( *"-linux-ubuntu"   ) e="$e on Ubuntu." ;;
-    ( *"-linux-ubuntu-"* ) e="$e on Ubuntu (`last_part_capital \"$1\"`)." ;;
+    ( *"-linux-ubuntu-"* ) e="$e on Ubuntu ($(last_part_capital "$1"))." ;;
   esac
   if [[ "$e" != "" ]]; then echo "<br><small>${e}</small>"; fi
 }
@@ -438,7 +438,7 @@ machine="$workmachine"
 machineget platform workdir
 
 # portable `echo -n'
-if [[ "`echo -n`" = "-n" ]]; then
+if [[ "$(echo -n)" = "-n" ]]; then
   echo_n() { echo ${1+"$@"}"\c"; }
 else
   echo_n() { echo -n ${1+"$@"}; }
@@ -521,20 +521,20 @@ _run() {
 }
 
 # there is a common sh hack for getting the Nth word from a command:
-#   "... `set \`blah\`; echo $1` ..."
+#   "... $(set $(blah); echo $1) ..."
 # the problem with this is if blah produces no output -- which will end up
 # dumping out the complete environment -- so use this instead
 __get_first_arg() { printf '%s' "$1"; }
-__get_first_output() { __get_first_arg `cat`; }
+__get_first_output() { __get_first_arg $(cat); }
 # inputs: command to run
 get_first() { "$@" | __get_first_output; }
 
 _cd() {
-  local OLDWD="`pwd`"
+  local OLDWD="$(pwd)"
   cd "$1" || exit_error "Could not cd into \"$1\""
-  local NEWWD="`pwd`"
+  local NEWWD="$(pwd)"
   if [[ "$NEWWD" != "$OLDWD" ]]; then
-    show "Now in \"`pwd`\""
+    show "Now in \"$(pwd)\""
   fi
 }
 
@@ -601,44 +601,44 @@ _ln() {
 
 _zip() {
   local zip_file="$1"; shift
-  show "Zipping \"$*\" to \"$zip_file\" in \"`pwd`\""
+  show "Zipping \"$*\" to \"$zip_file\" in \"$(pwd)\""
   zip -qr9 "$zip_file" "$@" \
-  || exit_error "Could not zip \"$*\" to \"$zip_file\" in \"`pwd`\""
+  || exit_error "Could not zip \"$*\" to \"$zip_file\" in \"$(pwd)\""
 }
 
 # try to use gtar if we can find it
-TAR="`lookfor gtar`"
-if [[ "$TAR" = "" ]]; then TAR="`lookfor tar`"; fi
+TAR="$(lookfor gtar)"
+if [[ "$TAR" = "" ]]; then TAR="$(lookfor tar)"; fi
 
 _tar() {
   local tar_file="$1"; shift
-  show "Tarring \"$*\" to \"$tar_file\" in \"`pwd`\""
+  show "Tarring \"$*\" to \"$tar_file\" in \"$(pwd)\""
   "$TAR" cf "$tar_file" "$@" \
-  || exit_error "Could not tar \"$*\" to \"$tar_file\" in \"`pwd`\""
+  || exit_error "Could not tar \"$*\" to \"$tar_file\" in \"$(pwd)\""
 }
 
 _tgzip() {
   local tgz_file="$1"; shift
-  show "Packing \"$*\" to \"$tgz_file\" in \"`pwd`\""
+  show "Packing \"$*\" to \"$tgz_file\" in \"$(pwd)\""
   "$TAR" czf "$tgz_file" "$@" \
-  || exit_error "Could not pack \"$*\" to \"$tgz_file\" in \"`pwd`\""
+  || exit_error "Could not pack \"$*\" to \"$tgz_file\" in \"$(pwd)\""
 }
 
 _tar_add() {
   local tar_file="$1"; shift
-  show "Adding \"$*\" to \"$tar_file\" in \"`pwd`\""
+  show "Adding \"$*\" to \"$tar_file\" in \"$(pwd)\""
   "$TAR" uf "$tar_file" "$@" \
-  || exit_error "Could not add \"$*\" to \"$tar_file\" in \"`pwd`\""
+  || exit_error "Could not add \"$*\" to \"$tar_file\" in \"$(pwd)\""
 }
 
 _tgunzip() {
-  show "Unpacking \"$1\" in \"`pwd`\""
-  "$TAR" xzf "$1" || exit_error "Could not unpack \"$1\" in \"`pwd`\""
+  show "Unpacking \"$1\" in \"$(pwd)\""
+  "$TAR" xzf "$1" || exit_error "Could not unpack \"$1\" in \"$(pwd)\""
 }
 
 _tgunzipm() {
-  show "Unpacking \"$1\" in \"`pwd`\""
-  "$TAR" xzmf "$1" || exit_error "Could not unpack \"$1\" in \"`pwd`\""
+  show "Unpacking \"$1\" in \"$(pwd)\""
+  "$TAR" xzmf "$1" || exit_error "Could not unpack \"$1\" in \"$(pwd)\""
 }
 
 _strip() {
@@ -685,7 +685,7 @@ separator() {
   local idx2=$(( ( 78 - $sep_len ) / 2 ))
   local line1=${line:0:$(( ( $idx1 < 3 ) ? 3 : $idx1 ))}
   local line2=${line:0:$(( ( $idx2 < 3 ) ? 3 : $idx2 ))}
-  local dashes="`echo \"$line1 $sep $line2\" | sed 's/./-/g'`"
+  local dashes="$(echo "$line1 $sep $line2" | sed 's/./-/g')"
   echo ""
   echo ""
   echo "$dashes"
@@ -707,13 +707,13 @@ cur_secs() {
   date '+%s'
 }
 start_timer() {
-  timer_start=`cur_secs`
+  timer_start="$(cur_secs)"
 }
 show_time() {
-  local time=$(( `cur_secs` - $timer_start ))
+  local time=$(( $(cur_secs) - $timer_start ))
   local secs=$(( $time % 60 ))
   local mins=$(( $time / 60 ))
-  show "$1 time: `printf '%d:%02d' $mins $secs`"
+  show "$1 time: $(printf '%d:%02d' $mins $secs)"
 }
 
 choose_for_testing() { # input: test_mode, options ...
@@ -788,9 +788,9 @@ _start_xvnc() {
   local xvnclog="$tmpdir/racket-xvnc-log"
   show "Starting Xvnc (logfile at \"$xvnclog\")"
   # Create Xauth cookie
-  cookie="`mcookie`"
-  xauth -f "$XAUTHORITY" add "`uname -n`$DISPLAY" . "$cookie"
-  xauth -f "$XAUTHORITY" add "`uname -n`/unix$DISPLAY" . "$cookie"
+  cookie="$(mcookie)"
+  xauth -f "$XAUTHORITY" add "$(uname -n)$DISPLAY" . "$cookie"
+  xauth -f "$XAUTHORITY" add "$(uname -n)/unix$DISPLAY" . "$cookie"
   # Create Xvnc session, with a WM
   Xvnc "$DISPLAY" \
     -rfbport 6565 \
@@ -829,11 +829,11 @@ version_init() { # input: plthome
   local vfile="$1/src/racket/src/schvers.h"
   [[ -e "$vfile" ]] || exit_error "Could not find version file at \"$vfile\""
   # parse version info
-  version="`parse_c_define \"$vfile\" MZSCHEME_VERSION | sed -e 's/\"//g'`"
-  version1="`parse_c_define \"$vfile\" MZSCHEME_VERSION_X`"
-  version2="`parse_c_define \"$vfile\" MZSCHEME_VERSION_Y`"
-  version3="`parse_c_define \"$vfile\" MZSCHEME_VERSION_Z`"
-  version4="`parse_c_define \"$vfile\" MZSCHEME_VERSION_W`"
+  version="$(parse_c_define "$vfile" MZSCHEME_VERSION | sed -e 's/\"//g')"
+  version1="$(parse_c_define "$vfile" MZSCHEME_VERSION_X)"
+  version2="$(parse_c_define "$vfile" MZSCHEME_VERSION_Y)"
+  version3="$(parse_c_define "$vfile" MZSCHEME_VERSION_Z)"
+  version4="$(parse_c_define "$vfile" MZSCHEME_VERSION_W)"
   # consistency check
   local VER="$version1.$version2"
   if [[ "$version4" != "0" ]]; then VER="$VER.$version3.$version4"
@@ -864,14 +864,14 @@ html_begin() { # inputs: title [output-name]
   local htmltitle="$1"; shift
   htmloutput="$index"
   if [[ "$1" != "" ]]; then htmloutput="$1"; shift; fi
-  show "Creating \"`pwd`/$htmloutput\" for \"$htmltitle\""
+  show "Creating \"$(pwd)/$htmloutput\" for \"$htmltitle\""
   # the *.title. file marks this for later patching through the web templates,
   # so it should be created even if it won't get used later.
   _rm "$htmloutput" "$htmloutput.title."
   echo "$htmltitle" > "$htmloutput.title."
 }
 html_end() {
-  show "Finished \"`pwd`/$htmloutput\""
+  show "Finished \"$(pwd)/$htmloutput\""
 }
 html_table_begin() { # inputs: [rules-attr]
   local rules="rows"
@@ -893,7 +893,7 @@ html_file_row() { # inputs: filename, explanation ...
   { echo_n "<tr><td><nobr>&bull;&nbsp;"
     echo_n "<a href=\"$fname\"><tt>$fname</tt></a></nobr>"
     if [[ -f "$fname" ]]; then
-      local size="`get_first du -h \"$fname\"`"
+      local size="$(get_first du -h "$fname")"
       if [[ "$size" = *[MG] ]]; then echo_n "&nbsp;<small>($size)</small>"; fi
     fi
     echo "</td>"
@@ -970,14 +970,14 @@ MAIN_BUILD() {
   trap cleanup_lockfile 0 3 9 15
 
   ## --------------------------------------------------------------------------
-  separator "Begin (`date`)"
+  separator "Begin ($(date))"
 
-  timestamp="`date '+%Y%m%d%H%M'`"
-  htmltimestamp="`date '+updated at %A, %B %d %Y, %H:%M %Z'`"
+  timestamp="$(date '+%Y%m%d%H%M')"
+  htmltimestamp="$(date '+updated at %A, %B %d %Y, %H:%M %Z')"
   if [[ "$1" = "ask" ]]; then
     ask_mode="yes"; shift
     if [[ "$1" =~ "[yYnN ][yYnN ]*" ]]; then
-      ask_answers="`echo \"$1\" | tr -d ' '`"; shift
+      ask_answers="$(echo "$1" | tr -d ' ')"; shift
     fi
   fi
 
@@ -1011,7 +1011,7 @@ MAIN_BUILD() {
   # send build notification message
   if [[ "$buildnotifyemail" != "" && "$CRON" != "yes" ]]; then
     show "Sending notifications"
-    echo "Build starting at `date`" \
+    echo "Build starting at $(date)" \
     | mail -s "A build is starting..." "$buildnotifyemail"
   fi
 
@@ -1057,7 +1057,7 @@ MAIN_BUILD() {
 
   _rm "$lockfile"
 
-  separator "Done (`date`)"
+  separator "Done ($(date))"
 
 }
 
@@ -1147,7 +1147,7 @@ DO_BUILD() { # inputs -- releasing
 
   ## --------------------------------------------------------------------------
   if [[ "$platform" = "i386-win32" ]]; then
-    export PLTPLANETDIR="`cygpath -w \"$PLTPLANETDIR\"`"
+    export PLTPLANETDIR="$(cygpath -w "$PLTPLANETDIR")"
     DO_WIN32_BUILD
   else
     _mcd "$PLTHOME/src/build"
@@ -1204,8 +1204,8 @@ DO_BUILD() { # inputs -- releasing
   _rmcd "$testdir"
 
   local _exe _jit exe flags
-  for _exe in `choose_for_testing $test_mode 3m cgc`; do
-    for _jit in `choose_for_testing $test_mode yes no`; do
+  for _exe in $(choose_for_testing $test_mode 3m cgc); do
+    for _jit in $(choose_for_testing $test_mode yes no); do
       if [[ "${_exe}" = "cgc" ]]; then exe="cgc"; else exe=""; fi
       if [[ "$platform" = "i386-win32" ]]; then
         exe="$PLTHOME/Racket$exe.exe"
@@ -1250,7 +1250,7 @@ DO_BUILD() { # inputs -- releasing
       # move the installation, trying to delete the previous one if possible
       # do it this way in case there is already a leftover "$installdir-old"
       _md "$installdir-old"
-      _mv "$installdir" "$installdir-old/old-`date '+%Y%m%d%H%M'`-$$"
+      _mv "$installdir" "$installdir-old/old-$(date '+%Y%m%d%H%M')-$$"
       _mv "$installdir-new" "$installdir"
       _rm "$PLTHOME"
       show "Removing \"$targetdir/$installdir-old\""
@@ -1322,11 +1322,11 @@ DO_WIN32_BUILD() {
   STUDIO="c:\\Program Files\\Microsoft Visual Studio 8"
   SCOMMON="$STUDIO\\Common7"
   VC="$STUDIO\\VC"
-  VSNET="`winpath2unix \"$SCOMMON\\IDE\\devenv.com\"`"
-  NMAKE="`winpath2unix \"$VC\\bin\\nmake.exe\"`"
-  local uSCOMMON="`winpath2unix \"$SCOMMON\"`"
-  local uVC="`winpath2unix \"$VC\"`"
-  local uPLTHOME="`winpath2unix \"$PLTHOME\"`"
+  VSNET="$(winpath2unix "$SCOMMON\\IDE\\devenv.com")"
+  NMAKE="$(winpath2unix "$VC\\bin\\nmake.exe")"
+  local uSCOMMON="$(winpath2unix "$SCOMMON")"
+  local uVC="$(winpath2unix "$VC")"
+  local uPLTHOME="$(winpath2unix "$PLTHOME")"
   PATH="$uVC/bin:$uSCOMMON/IDE:$uSCOMMON/Tools:$uSCOMMON/Tools/Bin"
   PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
   PATH="$PATH:/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem"
@@ -1340,9 +1340,9 @@ DO_WIN32_BUILD() {
   # separator "win32: Convert .sln files"
   # local SAVED_IFS="$IFS"; IFS=$'\n'
   # local sln
-  # for sln in `find "$PLTHOME/src/worksp" -type f -name "*.sln"`; do
-  #   _cd "`dirname \"$sln\"`"
-  #   _run "$VSNET" /upgrade "`basename \"$sln\"`"
+  # for sln in $(find "$PLTHOME/src/worksp" -type f -name "*.sln"); do
+  #   _cd "$(dirname "$sln")"
+  #   _run "$VSNET" /upgrade "$(basename "$sln")"
   # done
   # IFS="$SAVED_IFS"
 
@@ -1442,7 +1442,7 @@ COPY_AND_BUILD_BINARY_DIRS() {
   local m
   for m in "${machines[@]}"; do
     machine="$m" machineget mplatform=platform
-    mplatformname="`name_of_platform \"$mplatform\"`"
+    mplatformname="$(name_of_platform "$mplatform")"
     html_file_row "$mplatform" "Binaries for $mplatformname"
     {
       _rmcd "$mplatform"
@@ -1451,7 +1451,7 @@ COPY_AND_BUILD_BINARY_DIRS() {
       local prfx=""
       if [[ "$m" != "$workmachine" ]]; then prfx="${m}:"; fi
       _scp "${prfx}$fulltgz" "$ftgz"
-      local extratext="`extra_description_of_platform \"$mplatform\"`"
+      local extratext="$(extra_description_of_platform "$mplatform")"
       html_begin "$mplatformname binaries ($mplatform)"
       html_show "These are the $mplatformname binary files." $extratext
       html_table_begin
@@ -1505,8 +1505,8 @@ BUILD_BUNDLES() {
 #----------------------------------------
 tgz_to_tgz() {
   local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
-  local distname="`name_of_dist_package \"$pname\" | tr ' A-Z' '-a-z'`"
-  local savedpwd="`pwd`"
+  local distname="$(name_of_dist_package "$pname" | tr ' A-Z' '-a-z')"
+  local savedpwd="$(pwd)"
   local srcdir="$distname-$version"
   _rmcd "$tmpdir/tgz-to-tgz-$$"
   _tgunzip "$srctgz"
@@ -1518,7 +1518,7 @@ tgz_to_tgz() {
 #----------------------------------------
 tgz_to_sh() {
   local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
-  local distname="`name_of_dist_package \"$pname\" | tr ' A-Z' '-a-z'`"
+  local distname="$(name_of_dist_package "$pname" | tr ' A-Z' '-a-z')"
   local tmppackdir="$tmpdir/pack-$$"
   local tmptgz="$tmpdir/pack-$$.tar.gz"
   local treesize installerlines archivecksum
@@ -1528,17 +1528,17 @@ tgz_to_sh() {
     _run "$PLTHOME/$unixpathcheckscript"
     unixpathcheckscript="DONE"
   fi
-  savedpwd="`pwd`"
+  savedpwd="$(pwd)"
   _rmcd "$tmppackdir"
   _tgunzip "$srctgz"
   _run chmod -R g+w "$tmppackdir"
   _cd "$installdir"
   _run fakeroot -- pax -w -z -f "$tmptgz" *
-  treesize="`get_first du -hs .`"
+  treesize="$(get_first du -hs .)"
   _cd "$savedpwd"
   _rm "$tmppackdir"
-  archivecksum="`get_first cksum \"$tmptgz\"`"
-  local humanname="`name_of_dist_package \"$pname\"` v$version"
+  archivecksum="$(get_first cksum "$tmptgz")"
+  local humanname="$(name_of_dist_package "$pname") v$version"
   local tgtname="$distname"
   if [[ "$releasing" != "yes" ]]; then tgtname="$tgtname-$version"; fi
   echo "Writing \"$tgt.sh\""
@@ -1555,8 +1555,8 @@ tgz_to_sh() {
     echo "RELEASED=\"$releasing\""
   } > "$tgt.sh" \
   || exit_error "Could not write \"$tgt.sh\""
-  installerlines=$(( `get_first wc -l "$PLTHOME/$unixinstallerscript"` +
-                     `get_first wc -l "$tgt.sh"` +
+  installerlines=$(( $(get_first wc -l "$PLTHOME/$unixinstallerscript") +
+                     $(get_first wc -l "$tgt.sh") +
                      2 ))
   echo "BINSTARTLINE=\"$installerlines\"" >> "$tgt.sh"
   cat "$PLTHOME/$unixinstallerscript" >> "$tgt.sh"
@@ -1567,8 +1567,8 @@ tgz_to_sh() {
 #----------------------------------------
 tgz_to_zip() {
   local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
-  local distname="`name_of_dist_package \"$pname\" | tr ' ' '-'`"
-  local savedpwd="`pwd`"
+  local distname="$(name_of_dist_package "$pname" | tr ' ' '-')"
+  local savedpwd="$(pwd)"
   local srcdir="$installdir"
   _rmcd "$tmpdir/tgz-to-zip-$$"
   _tgunzip "$srctgz"
@@ -1584,10 +1584,10 @@ tgz_to_zip() {
 make_dmg() { # inputs: dir, dmg, internet-enabled?
   local srcdir="$1" tgtdmg="$2" internet_enabled="$3"; shift 3
   local tmpdmg="${tgtdmg%.dmg}-tmp.dmg"
-  local src="`basename \"$srcdir\"`"
-  local myself="`id -nu`:`id -ng`"
+  local src="$(basename "$srcdir")"
+  local myself="$(id -nu):$(id -ng)"
   show "Making \"$tgtdmg\" from \"$srcdir\""
-  _cd "`dirname \"$srcdir\"`"
+  _cd "$(dirname "$srcdir")"
   _run sudo rm -f "$tgtdmg" "$tmpdmg"
   # It should be possible to create dmgs normally, but they'd be created with
   # the same user id of whoever runs this script...
@@ -1619,12 +1619,12 @@ do_tgz_to_dmg() {
   local internet_enabled="$1" tmptgz="$2" tmpdmg="$3" version="$4"
   local pname="$5" ptype="$6" srcplatform="$7"
   shift 7
-  local distname="`name_of_dist_package \"$pname\"`"
+  local distname="$(name_of_dist_package "$pname")"
   distname="$distname v$version"
   if [[ "$ptype" != "bin" ]]; then
-    distname="$distname `name_of_dist_type \"$ptype\"`"
+    distname="$distname $(name_of_dist_type "$ptype")"
   fi
-  local savedpwd="`pwd`"
+  local savedpwd="$(pwd)"
   _rm "$tmpdmg"
   _rmcd "$tmpdir/tgz-to-dmg-$$"
   _mcd "$distname"
@@ -1657,7 +1657,7 @@ do_tgz_to_exe() {
   local tmptgz="$1" tmpexe="$2" nsistgz="$3"
   local pname="$4" ptype="$5" srcplatform="$6"
   shift 6
-  local savedpwd="`pwd`"
+  local savedpwd="$(pwd)"
   _rmcd "$tmpdir/tgz-to-exe-$$"
   _tgunzip "$nsistgz"
   _tgunzip "$tmptgz"
@@ -1678,7 +1678,7 @@ tgz_to_exe() {
   _cd "$tmpdir/racket-nsis-$$"
   show "Writing \"racket-defs.nsh\""
   { local def='!define'
-    local distname="`name_of_dist_package \"$pname\"`"
+    local distname="$(name_of_dist_package "$pname")"
     echo "$def RKTVersion \"$version\""
     # this must be four numbers
     echo "$def RKTVersionLong \"$version1.$version2.$version3.$version4\""
@@ -1688,7 +1688,7 @@ tgz_to_exe() {
     else
       echo "$def RKTStartName \"$distname\""
     fi
-    distname="`echo \"$distname\" | tr ' ' '-'`"
+    distname="$(echo "$distname" | tr ' ' '-')"
     if [[ "$releasing" != "yes" ]]; then
       echo "$def RKTDirName \"$distname-$version\""
     else
@@ -1728,20 +1728,20 @@ do_installers_page_body() { # input: selector-html table-html
     echo "    var c;"
     echo "    if (false) c = 'bogus';"
     for file in *-"$version"-*; do
-      local base="`echo \"$file\" | sed -e 's/\.[a-z].*$//'`"
-      expl="`echo \"$base\" | cut -d - -f 3-`"
-      expl="`installer_of_dist_type_platform \"$expl\"`"
-      expl="`explanation_of_installer_type \"$expl\"`"
-      fsize="`get_first du -h \"$file\"`"
+      local base="$(echo "$file" | sed -e 's/\.[a-z].*$//')"
+      expl="$(echo "$base" | cut -d - -f 3-)"
+      expl="$(installer_of_dist_type_platform "$expl")"
+      expl="$(explanation_of_installer_type "$expl")"
+      fsize="$(get_first du -h "$file")"
       echo "    else if (d == '$base')" \
                   "{ t = '$file'; c = '$file ($fsize)\n$expl'; }"
     done
     if [[ ! -e "../$cleantgz" ]]; then
-      show "Warning: no \"../$cleantgz\" file for full-...-src at `pwd`" 1>&2
+      show "Warning: no \"../$cleantgz\" file for full-...-src at $(pwd)" 1>&2
     else
       # another case that matches full-...-src and uses the clean tgz
       file="../$cleantgz"
-      fsize="`get_first du -h \"$file\"`"
+      fsize="$(get_first du -h "$file")"
       expl="This is a gzipped-tarball of the full Racket sources,"
       expl="$expl for all platforms."
       echo "    else if (/^full-.*-src-*/.test(d))" \
@@ -1764,16 +1764,16 @@ do_installers_page_body() { # input: selector-html table-html
     echo "<form name=\"dnld\">"
     echo "Distribution: <select name=\"dist\" onChange=\"dnld_update()\">"
     for d in $dists; do
-      echo "  <option value=\"$d\">`name_of_dist_package \"$d\"`</option>"
+      echo "  <option value=\"$d\">$(name_of_dist_package "$d")</option>"
     done
     echo "</select>&nbsp;&nbsp;"
     echo "Platform+Type: <select name=\"ty_pl\" onChange=\"dnld_update()\">"
     for dtype in $dtypes; do
-      for d in `platforms_of_dist_type "$dtype"`; do
+      for d in $(platforms_of_dist_type "$dtype"); do
         if ls *-"$version"-* | grep -q -- "-$d[.]"; then
-          local option="<option value=\"$dtype-$d\">`name_of_platform $d`"
+          local option="<option value=\"$dtype-$d\">$(name_of_platform "$d")"
           if [[ "$dtype" != "bin" ]]; then
-            option="$option (`name_of_dist_type \"$dtype\"`)"
+            option="$option ($(name_of_dist_type "$dtype"))"
           fi
           option="$option</option>"
           echo "  $option"
@@ -1797,16 +1797,16 @@ do_installers_page_body() { # input: selector-html table-html
   local SRCcell="<td><a href=\"../$cleantgz\"><tt>$cleantgz</tt><a></td>"
   idx=0
   for dtype in $dtypes; do
-    dtypename="`name_of_dist_type \"$dtype\"`" || exit_error "Bad dist type"
+    dtypename="$(name_of_dist_type "$dtype")" || exit_error "Bad dist type"
     echo "<tr bgcolor=\"#ffff80\"><td align=\"center\">" >> "$table"
     echo "<b>$dtypename distributions</b></td>" >> "$table"
     for d in $dists; do
-      echo "<td><b>`name_of_dist_package \"$d\"`</b></td>" >> "$table"
+      echo "<td><b>$(name_of_dist_package "$d")</b></td>" >> "$table"
     done
     echo "</tr>" >> "$table"
-    for ptype in `platforms_of_dist_type "$dtype"`; do
+    for ptype in $(platforms_of_dist_type "$dtype"); do
       if [[ "$dtype" != "bin" || -d "$maindir/$bindir/$ptype" ]]; then
-        ptypename="`name_of_platform \"$ptype\"`" \
+        ptypename="$(name_of_platform "$ptype")" \
         || exit_error "Bad dist package"
         echo "<tr><td align=\"center\" bgcolor=\"#ffffa0\">" >> "$table"
         echo "<b>$ptypename</b></td>" >> "$table"
@@ -1817,11 +1817,11 @@ do_installers_page_body() { # input: selector-html table-html
             ( * ) echo "$NAcell" >> "$table"; continue ;;
           esac; fi
           distributions2[idx++]="$d-$dtype-$ptype"
-          file="`ls \"$d-$version-$dtype-$ptype.\"*`"
+          file="$(ls "$d-$version-$dtype-$ptype."*)"
           if [[ "$file" = "" ]]; then
             echo "<td>(missing)</td>" >> "$table"
           else
-            local fsize="`get_first du -h \"$file\"`"
+            local fsize="$(get_first du -h "$file")"
             echo "<td><a href=\"$file\"><tt>$file</tt></a>" >> "$table"
             echo "<small>($fsize)</small></td>" >> "$table"
           fi
@@ -1843,15 +1843,15 @@ BUILD_INSTALLERS() {
   local tgz idx
   idx=0
   for tgz in *.tgz; do
-    local dname="`basename \"$tgz\" .tgz`"
+    local dname="$(basename "$tgz" .tgz)"
     distributions1[idx++]="$dname"
-    local dpackage="` echo \"$dname\" | cut -d - -f 1`"
-    local dtype="`    echo \"$dname\" | cut -d - -f 2`"
-    local dplatform="`echo \"$dname\" | cut -d - -f 3-`"
-    html_file_row "$tgz" "`name_of_dist_type \"$dtype\"` distribution of" \
-      "`name_of_dist_package \"$dpackage\"` for" \
-      "`name_of_platform \"$dplatform\"`"
-    convert="tgz_to_`installer_of_dist_type_platform \"$dtype-$dplatform\"`"
+    local dpackage="$( echo "$dname" | cut -d - -f 1)"
+    local dtype="$(    echo "$dname" | cut -d - -f 2)"
+    local dplatform="$(echo "$dname" | cut -d - -f 3-)"
+    html_file_row "$tgz" "$(name_of_dist_type "$dtype") distribution of" \
+      "$(name_of_dist_package "$dpackage") for" \
+      "$(name_of_platform "$dplatform")"
+    convert="tgz_to_$(installer_of_dist_type_platform "$dtype-$dplatform")"
     separator "Making \"$dpackage-$dtype\" installer for \"$dplatform\""
     show "Using \"$convert\" to convert \"$dname\""
     "$convert" "$maindir/$preinstdir/$tgz" \
@@ -1880,8 +1880,8 @@ BUILD_INSTALLERS() {
 
   local f sorted1 sorted2
   show "Checking generated pre-distribution and distributions on index page"
-  sorted1="`for f in \"${distributions1[@]}\"; do echo \"$f\"; done | sort`"
-  sorted2="`for f in \"${distributions2[@]}\"; do echo \"$f\"; done | sort`"
+  sorted1="$(for f in "${distributions1[@]}"; do echo "$f"; done | sort)"
+  sorted2="$(for f in "${distributions2[@]}"; do echo "$f"; done | sort)"
   if [[ "$sorted1" = "$sorted2" ]]; then
     show "File lists identical, good."
   else
@@ -1902,15 +1902,15 @@ move_from_maindir() { # input: file-name
     if [[ -e "$1" ]]; then _rmd "TEMP_WEB"; _mv "$1" "TEMP_WEB"; fi
     _mv "$maindir/$1" .
     _rm "TEMP_WEB"
-  elif [[ ! -e "$1" ]]; then exit_error "\"$1\" is not in $maindir or `pwd`"
+  elif [[ ! -e "$1" ]]; then exit_error "\"$1\" is not in $maindir or $(pwd)"
   else show "Skipping \"$1\""
   fi
 }
 copy_from() { # input: directory file-name
   _rmcd "TEMP_WEB"
-  show "Copying: \"$1/$2\" to \"`pwd`\""
+  show "Copying: \"$1/$2\" to \"$(pwd)\""
   ( cd "$1" ; tar cf - "$2" ) | tar xf - \
-  || exit_error "Could not copy \"$1/$2\" to \"`pwd`\""
+  || exit_error "Could not copy \"$1/$2\" to \"$(pwd)\""
   _cd ".."
   if [[ -e "$2" ]]; then _mv "$2" "TEMP_WEB/TEMP_WEB"; fi
   _mv "TEMP_WEB/$2" .
@@ -2014,7 +2014,7 @@ BUILD_PRE_WEB() {
     if ! [[ "$F" -nt "$F2" ]]; then continue; fi
     # skip files that will be patched below
     if [[ -e "$F2.title." ]]; then continue; fi
-    _md "$maindir/$prewebdir/`dirname \"$F\"`"
+    _md "$maindir/$prewebdir/$(dirname "$F")"
     _cp "$F" "$maindir/$prewebdir/$F"
   done
 
