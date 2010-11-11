@@ -80,7 +80,16 @@ time.}
 @defproc[(current-inexact-milliseconds) real?]{
 
 Returns the current time in milliseconds since midnight UTC, January
-1, 1970.}
+1, 1970. The fractional part counts nanoseconds.
+
+Example
+@racketblock[
+(current-inexact-milliseconds)
+1289513737015.418
+]
+
+In this example @racket[1289513737015] is in milliseconds and @racket[418]
+is in nanoseconds.}
 
 
 @defproc[(current-process-milliseconds [thread (or/c thread? #f)]) 
