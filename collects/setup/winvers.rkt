@@ -47,4 +47,5 @@
          (delete-directory/files
           (build-path (find-system-path 'temp-dir) "setvers"))
          (printf "done!\n")]
-        [else (error 'winvers "unknown command line: ~e" argv)]))
+        [else (error 'winvers "unknown command line: ~e" argv)])
+  (void))
