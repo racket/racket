@@ -1354,6 +1354,42 @@
          (or (regexp-match #rx"^_." (symbol->string (syntax-e id)))
              (raise-syntax-error #f "cstruct name must begin with a `_'"
                                  stx id))))
+  ;; there is something wrong with the syntax, this function will find what it is
+  (define (syntax-error stx)
+    (define (check-rest rest)
+      (syntax-case rest ()
+        [() (void)]
+        [else (raise-syntax-error #f "extra arguments given" rest)]))
+    (define (check-alignment alignment)
+      (syntax-case alignment ()
+        [(#:alignment alignment-expr rest ...)
+         (check-rest #'(rest ...))]
+        [else (raise-syntax-error #f "the last argument can only be #:alignment" alignment)]))
+    (define (check-slots slots)
+      (define (check-slot slot)
+        (syntax-case slot ()
+          [(name field) (void)]
+          [else (raise-syntax-error #f "a field must be a pair of a name and a ctype such as [x _int]" slot)]))
+      ;; check that some slots are given
+      (syntax-case slots ()
+        [([name-id expr-id] ... . rest)
+         (when (and (identifiers? #'(name-id ...))
+                    (identifiers? #'(expr-id ...)))
+           (raise-syntax-error #f "fields must be a parenthesized list of name and a ctype such as ([x _int] [y _int])" slots))])
+      (syntax-case slots ()
+        [((slot ...) rest ...)
+         (begin
+           (for ([slot-stx (in-list (syntax->list #'(slot ...)))])
+             (check-slot slot-stx))
+           (check-alignment #'(rest ...)))]
+        [else (raise-syntax-error #f "fields must be a parenthesized list such as ([x _int] [y _int])" slots)]))
+    (define (check-name stx)
+      (syntax-case stx ()
+        [(_ _TYPE rest ...)
+         (check-slots #'(rest ...))]
+        [else (raise-syntax-error #f "a name must be provided to cstruct" stx)]))
+    (check-name stx))
+
   (syntax-case stx ()
     [(_ _TYPE ([slot slot-type] ...))
      (and (_-identifier? #'_TYPE stx)
@@ -1370,7 +1406,8 @@
     [(_ (_TYPE _SUPER) ([slot slot-type] ...) #:alignment alignment-expr)
      (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
      (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
-       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'alignment-expr))]))
+       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'alignment-expr))]
+    [else (syntax-error stx)]))
 
 ;; helper for the above: keep runtime information on structs
 (define cstruct-info
