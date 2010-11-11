@@ -28,29 +28,24 @@ syntax browser uses colors and a properties panel to show the term's
 syntax properties, such as lexical binding information and source
 location.
 
+
 @section{Macro stepper}
 
 @defmodule[macro-debugger/stepper]
 
 @defproc[(expand/step [stx any/c])
-         (is-a/c macro-stepper<%>)]{
+         void?]{
 
-  Expands the syntax (or S-expression) and opens a macro stepper frame
-  for stepping through the expansion. 
+Expands the syntax (or S-expression) and opens a macro stepper frame
+for stepping through the expansion. 
 }
 
-@definterface[macro-stepper<%> ()]{
+@defproc[(expand-module/step [mod module-path?])
+         void?]{
 
-@defmethod[(at-start?) boolean?]
-@defmethod[(at-end?) boolean?]
-@defmethod[(navigate-to-start) void?]
-@defmethod[(navigate-to-end) void?]
-@defmethod[(navigate-previous) void?]
-@defmethod[(navigate-next) void?]
-@defmethod[(at-top?) boolean?]
-@defmethod[(at-bottom?) boolean?]
-@defmethod[(navigate-up) void?]
-@defmethod[(navigate-down) void?]
+Expands the source file named by @racket[mod], which must contains a
+single module declaration, and opens a macro stepper frame for
+stepping through the expansion.
 }
 
 @section{Macro expansion tools}
@@ -139,7 +134,6 @@ transformer returns. Unmarking is suppressed if @scheme[unmark?] is
 ]
 
 (Run the fragment above in the macro stepper.)
-
 }
 
 @defproc[(emit-local-step [before syntax?] [after syntax?]
@@ -151,8 +145,8 @@ Emits an event that simulates a local expansion step from
 
 The @scheme[id] argument acts as the step's ``macro'' for the purposes
 of macro hiding.
-
 }
+
 
 @section{Macro stepper text interface}
 
@@ -188,6 +182,7 @@ of macro hiding.
   @scheme['all] to print out all remaining steps.
 }
 
+
 @section{Syntax browser}
 
 @defmodule[macro-debugger/syntax-browser]
@@ -208,14 +203,6 @@ of macro hiding.
   objects.
 }
 
-@;{
-@defproc[(syntax-snip [stx syntax?])
-         (is-a/c snip%)]{
-
-  Like @scheme[browse-syntax], but creates a snip that can be
-  displayed in an editor.
-}
-}
 
 @section{Using the macro stepper}
 

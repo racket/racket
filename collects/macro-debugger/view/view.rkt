@@ -9,8 +9,7 @@
          "prefs.rkt"
          "../model/trace.rkt")
 (provide macro-stepper-director%
-         macro-stepper-frame%
-         go)
+         macro-stepper-frame%)
 
 (define macro-stepper-director%
   (class* object% (director<%>)
@@ -61,11 +60,3 @@
   (macro-stepper-frame-mixin
    (frame:standard-menus-mixin
     (frame:basic-mixin frame%))))
-
-;; Main entry points
-
-(define (go stx)
-  (define director (new macro-stepper-director%))
-  (define stepper (send/i director director<%> new-stepper))
-  (send/i director director<%> add-deriv (trace stx))
-  (void))
