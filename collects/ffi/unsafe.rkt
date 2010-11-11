@@ -472,9 +472,8 @@
 ;; Also, see below for custom function types.
 
 (provide ->) ; to signal better errors when trying to use this with contracts
-(define-syntax ->
-  (syntax-id-rules ()
-    [_ (raise-syntax-error '-> "should be used only in a _fun context")]))
+(define-syntax (-> stx)
+  (raise-syntax-error '-> "should be used only in a _fun context" stx))
 
 (provide _fun)
 (define-for-syntax _fun-keywords
