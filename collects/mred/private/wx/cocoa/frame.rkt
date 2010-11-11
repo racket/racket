@@ -244,12 +244,12 @@
                           (not (send p get-sheet)))))
               (let ([p (get-parent)])
                 (send p set-sheet this)
-                (tell (tell NSApplication sharedApplication)
-                      beginSheet: cocoa
-                      modalForWindow: (send p get-cocoa)
-                      modalDelegate: #f
-                      didEndSelector: #:type _SEL #f
-                      contextInfo: #f))
+                (tellv (tell NSApplication sharedApplication)
+                       beginSheet: cocoa
+                       modalForWindow: (send p get-cocoa)
+                       modalDelegate: #f
+                       didEndSelector: #:type _SEL #f
+                       contextInfo: #f))
               (tellv cocoa makeKeyAndOrderFront: #f))
           (begin
             (when is-a-dialog?

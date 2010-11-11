@@ -3,6 +3,7 @@
          ffi/unsafe
          ffi/unsafe/objc
          "../../syntax.rkt"
+         "../../lock.rkt"
          "window.rkt"
          "const.rkt"
          "types.rkt"
@@ -10,11 +11,17 @@
 
 (provide 
  (protect-out item%
-              install-control-font))
+              install-control-font
+              sys-font-size))
 
 (import-class NSFont)
-(define sys-font (tell NSFont
-                       systemFontOfSize: #:type _CGFloat 13))
+
+(define sys-font-size 13)
+(define sys-font 
+  (atomically
+   (let ([f (tell NSFont systemFontOfSize: #:type _CGFloat sys-font-size)])
+     (tellv f retain)
+     f)))
 
 (define (install-control-font cocoa font)
   (if font

@@ -23,6 +23,9 @@
 (define MIN-BUTTON-WIDTH 72)
 (define BUTTON-EXTRA-WIDTH 12)
 
+(define NSSmallControlSize 1)
+(define NSMiniControlSize 2)
+
 (define-objc-class MyButton NSButton
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
@@ -61,6 +64,14 @@
       (tellv cocoa sizeToFit)
       (when (and (eq? event-type 'button)
                  (string? label))
+        (when font
+          (let ([n (send font get-point-size)])
+            (when (n . < . sys-font-size)
+              (tellv (tell cocoa cell) 
+                     setControlSize: #:type _int 
+                     (if (n . < . (- sys-font-size 2))
+                         NSMiniControlSize
+                         NSSmallControlSize)))))
         (let ([frame (tell #:type _NSRect cocoa frame)])
           (tellv cocoa setFrame: #:type _NSRect 
                  (make-NSRect (NSRect-origin frame)
