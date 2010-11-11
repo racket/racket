@@ -463,6 +463,7 @@ show() {
 
 # a yes/no question mode for some vars, possibly set a constant answer
 ask_mode="no"
+ask_answers=""
 fixed_reply=""
 is_yes() {
   local var="$1"; shift
@@ -477,6 +478,9 @@ is_yes() {
       while true; do
         echo_n ">>> QUESTION >>> $var [y/n/Y/N] ? " 1>&2
         if [[ "$fixed_reply" != "" ]]; then reply="$fixed_reply"
+        elif [[ "$ask_answers" =~ "^(.)(.*)$" ]]; then
+          reply="${BASH_REMATCH[1]}"
+          ask_answers="${BASH_REMATCH[2]}"
         else read -sn 1 reply; fi
         echo "$reply" 1>&2
         case "$reply" in
@@ -970,7 +974,12 @@ MAIN_BUILD() {
 
   timestamp="`date '+%Y%m%d%H%M'`"
   htmltimestamp="`date '+updated at %A, %B %d %Y, %H:%M %Z'`"
-  if [[ "$1" = "ask" ]]; then ask_mode="yes"; shift; fi
+  if [[ "$1" = "ask" ]]; then
+    ask_mode="yes"; shift
+    if [[ "$1" =~ "[yYnN ][yYnN ]*" ]]; then
+      ask_answers="`echo \"$1\" | tr -d ' '`"; shift
+    fi
+  fi
 
   ## --------------------------------------------------------------------------
   if is_yes make_repo; then
