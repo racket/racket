@@ -130,7 +130,11 @@
                  (raise-syntax-error
                   #f
                   (format "attribute is bound to non-syntax value: ~e" value)
-                  (quote-syntax #,(attribute-mapping-name self)))))))))
+                  (quote-syntax #,(or (let loop ([p (syntax-property stx 'disappeared-use)])
+                                        (cond [(identifier? p) p]
+                                              [(pair? p) (or (loop (car p)) (loop (cdr p)))]
+                                              [else #f]))
+                                      (attribute-mapping-name self))))))))))
 
 ;; check-syntax : nat any -> boolean
 ;; Returns #t if value is a (listof^depth syntax)
