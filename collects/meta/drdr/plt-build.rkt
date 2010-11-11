@@ -160,8 +160,6 @@
   ; XXX Remove
   (define mzc-path
     (path->string (build-path trunk-dir "bin" "mzc")))
-  (define gracket-text-path
-    (path->string (build-path trunk-dir "bin" "gracket-text")))
   (define gracket-path
     (path->string (build-path trunk-dir "bin" "gracket")))
   (define collects-pth
@@ -211,7 +209,7 @@
                                         rst)
                              (if (on-unix?)
                                  (lambda () 
-                                   (list* gracket-text-path 
+                                   (list* gracket-path 
                                           "-display" 
                                           (format ":~a" (+ XSERVER-OFFSET (current-worker)))
                                           rst))
