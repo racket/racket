@@ -424,14 +424,41 @@ Constructs a contract on a promise. The contract does not force the
 promise, but when the promise is forced, the contract checks that the
 result value meets the contract produced by @racket[expr].}
 
+
+@defproc[(new-∀/c [name symbol?]) contract?]{
+  Constructs a new universal contract. 
+  
+  Universal contracts accept all values when in negative positions (e.g., function
+  inputs) and wrap them in an opaque struct, hiding the precise value. 
+  In positive positions (e.g. function returns), 
+  a universal contract accepts only values that were previously accepted in negative positions (by checking
+  for the wrappers).
+  
+  The name is used to identify the contract in error messages.
+  
+  For example, this contract:
+  @racketblock[(let ([a (new-∃/c 'a)])
+                 (-> a a))]
+  describes the identity function (or a non-terminating function)
+  That is, the first use of the @racket[a] appears in a
+  negative position and thus inputs to that function are wrapped with an opaque struct.
+  Then, when the function returns, it is checked to see if the result is wrapped, since
+  the second @racket[a] appears in a positive position.
+
+  This is a dual to @racket[new-∃/c].
+  
+}
+
 @defproc[(new-∃/c [name symbol?]) contract?]{
   Constructs a new existential contract. 
   
   Existential contracts accept all values when in positive positions (e.g., function
-  returns) and wraps the value in an opaque struct, hiding the precise value. 
+  returns) and wrap them in an opaque struct, hiding the precise value. 
   In negative positions (e.g. function inputs), 
-  it accepts only values that were previously accepted in negative positions (by checking
+  they accepts only values that were previously accepted in positive positions (by checking
   for the wrappers).
+  
+  The name is used to identify the contract in error messages.
   
   For example, this contract:
   @racketblock[(let ([a (new-∃/c 'a)])
@@ -443,7 +470,9 @@ result value meets the contract produced by @racket[expr].}
   Then, when the function returns, it is checked to see if the result is wrapped, since
   the second @racket[a] appears in a negative position.
   
+  This is a dual to @racket[new-∀/c].
 }
+
 
 @; ------------------------------------------------------------------------
 
