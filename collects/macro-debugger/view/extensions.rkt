@@ -19,6 +19,7 @@
     (inherit-field config
                    controller)
     (inherit add-function
+             map-function
              call-function)
 
     (define show-macro #f)
@@ -28,6 +29,9 @@
 
     (define/public (get-hiding-panel)
       (send/i macro-stepper widget<%> get-macro-hiding-prefs))
+
+    (map-function ":s" "hiding:show-macro")
+    (map-function ":h" "hiding:hide-macro")
 
     (add-function "hiding:show-macro"
                   (lambda (i e)
