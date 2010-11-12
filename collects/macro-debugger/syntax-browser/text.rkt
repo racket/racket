@@ -115,14 +115,16 @@
              find-position)
 
     (define/override (on-default-event ev)
-      (define gx (send ev get-x))
-      (define gy (send ev get-y))
-      (define-values (x y) (dc-location-to-editor-location gx gy))
-      (define pos (find-position x y))
       (super on-default-event ev)
       (case (send ev get-event-type)
         ((enter motion leave)
-         (update-hover-position pos))))
+         (define-values (x y)
+           (let ([gx (send ev get-x)]
+                 [gy (send ev get-y)])
+             (dc-location-to-editor-location gx gy)))
+         (define on-it? (box #f))
+         (define pos (find-position x y #f on-it?))
+         (update-hover-position (and (unbox on-it?) pos)))))
 
     (define/public (update-hover-position pos)
       (void))
@@ -344,10 +346,13 @@ Like clickbacks, but:
           (interval-map-remove! clickbacks start end)))
 
     (define/private (get-event-position ev)
-      (define gx (send ev get-x))
-      (define gy (send ev get-y))
-      (define-values (x y) (dc-location-to-editor-location gx gy))
-      (find-position x y))
+      (define-values (x y)
+        (let ([gx (send ev get-x)]
+              [gy (send ev get-y)])
+          (dc-location-to-editor-location gx gy)))
+      (define on-it? (box #f))
+      (define pos (find-position x y #f on-it?))
+      (and (unbox on-it?) pos))
 
     (define/override (on-default-event ev)
       (define admin (get-admin))
@@ -355,11 +360,11 @@ Like clickbacks, but:
         (define pos (get-event-position ev))
         (case (send ev get-event-type)
           ((left-down)
-           (set! tracking (interval-map-ref clickbacks pos #f))
+           (set! tracking (and pos (interval-map-ref clickbacks pos #f)))
            (send admin update-cursor))
           ((left-up)
            (when tracking
-             (let ([cb (interval-map-ref clickbacks pos #f)]
+             (let ([cb (and pos (interval-map-ref clickbacks pos #f))]
                    [tracking* tracking])
                (set! tracking #f)
                (when (eq? tracking* cb)
@@ -369,7 +374,7 @@ Like clickbacks, but:
 
     (define/override (adjust-cursor ev)
       (define pos (get-event-position ev))
-      (define cb (interval-map-ref clickbacks pos #f))
+      (define cb (and pos (interval-map-ref clickbacks pos #f)))
       (if cb
           arrow-cursor
           (super adjust-cursor ev)))))
