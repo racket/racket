@@ -31,6 +31,9 @@
 (define fluxbox-path
   (make-parameter "/usr/bin/fluxbox"))
 
+(define vncviewer-path
+  (make-parameter "/usr/bin/vncviewer"))
+
 (define (plt-repository)
   (build-path (plt-directory) "repo"))
 
@@ -100,6 +103,7 @@
  [drdr-directory (parameter/c path-string?)]
  [make-path (parameter/c (or/c false/c string?))]
  [Xvfb-path (parameter/c (or/c false/c string?))]
+ [vncviewer-path (parameter/c (or/c false/c string?))] 
  [fluxbox-path (parameter/c (or/c false/c string?))]
  [build? (parameter/c boolean?)]
  [on-unix? (-> boolean?)]

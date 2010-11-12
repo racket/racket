@@ -277,6 +277,7 @@
                     (recur-many (sub1 i) r f)))))
 
 (define XSERVER-OFFSET 20)
+(define PARENT-X-SERVER 19)
 
 (define (integrate-revision rev)
   (define test-dir
@@ -314,22 +315,35 @@
                          (get-scm-commit-msg rev (plt-repository))))
          (when (build?)
            (build-revision rev))
-         (recur-many (number-of-cpus)
-                     (lambda (j inner)
-                       (define i (+ j XSERVER-OFFSET))
-                       (notify! "Starting X server #~a" i)
-                       (safely-delete-directory (format "/tmp/.X~a-lock" i))
-                       (safely-delete-directory (build-path tmp-dir (format ".X~a-lock" i)))
-                       (safely-delete-directory (format "/tmp/.tX~a-lock" i))
-                       (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
-                       (with-running-program
-                           (Xvfb-path) (list (format ":~a" i) "-ac" "-rfbauth" "/home/jay/.vnc/passwd")
-                         (lambda ()
-                           (with-running-program
-                               (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
-                             inner))))
+         
+         (define (start-x-server i parent inner)
+           (notify! "Starting X server #~a" i)
+           (safely-delete-directory (format "/tmp/.X~a-lock" i))
+           (safely-delete-directory (build-path tmp-dir (format ".X~a-lock" i)))
+           (safely-delete-directory (format "/tmp/.tX~a-lock" i))
+           (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
+           (with-running-program
+               (Xvfb-path) (list (format ":~a" i) "-ac" "-rfbauth" "/home/jay/.vnc/passwd")
+             (lambda ()
+               (with-running-program
+                   (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
+                 (if parent
                      (lambda ()
-                       (test-revision rev)))))
+                       (with-running-program
+                           (vncviewer-path) (list "-display" (format ":~a" parent) (format ":~a" i)
+                                                  "-passwd" "/home/jay/.vnc/passwd")
+                         inner))
+                     inner)))))
+         
+         (start-x-server 
+          PARENT-X-SERVER #f
+          (λ ()
+            (recur-many (number-of-cpus)
+                        (lambda (j inner)
+                          (define i (+ j XSERVER-OFFSET))
+                          (start-x-server i PARENT-X-SERVER inner))
+                        (lambda ()
+                          (test-revision rev)))))))
      ; Remove the test directory
      (safely-delete-directory test-dir))))
 
