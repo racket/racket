@@ -141,6 +141,16 @@
             0)
            (λ (x) (+ x 1))))
         '(<> () (1 3) 8))
+  (test "abort tag eval"
+        '(<>
+          () []
+          (% (print 1) 2 3))
+        '(<> () [1] 2))
+  (test "abort handler eval"
+        '(<>
+          () []
+          (% 1 2 (print 3)))
+        '(<> () [3] 2))
   (test "call/cc 2 levels dw"
         '(<>
           ()
