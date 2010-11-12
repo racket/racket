@@ -325,7 +325,7 @@ or override impersonator-property values of @scheme[hash].}
 
 A @tech{structure type property} (see @secref["structprops"]) that
 supplies a procedure for extracting an impersonated value from a structure
-that represents an impersonator. The property is used for @racket[impersonator-of]
+that represents an impersonator. The property is used for @racket[impersonator-of?]
 as well as @racket[equal?].
 
 The property value must be a procedure of one argument, which is a
