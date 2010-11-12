@@ -29,9 +29,11 @@
                 [finish-clause code:blank
                                (code:line #:args arg-formals body ...+)
                                (code:line #:handlers handlers-exprs)]
-                [arg-formals id
-                             (id ...)
-                             (id ...+ . id)]
+                [arg-formals rest-id
+                             (arg ...)
+                             (arg ...+ . rest-id)]
+                [arg id
+                     [id default-expr]]
                 [handlers-exprs (code:line finish-expr arg-strings-expr)
                                 (code:line finish-expr arg-strings-expr help-expr)
                                 (code:line finish-expr arg-strings-expr help-expr

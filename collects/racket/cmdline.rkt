@@ -58,7 +58,7 @@
                   [(argv-expr lst)
                    (extract-arg '#:argv lst #'(current-command-line-arguments))])
       (let-values ([(table args)
-                    (let loop ([lst lst][accum null])
+                    (let loop ([lst lst] [accum null])
                       (if (null? lst)
                           (loop (syntax->list #'(#:args () (void))) accum)
                           (let ([a (syntax-e (car lst))]
@@ -140,6 +140,9 @@
                                           [(arg . rest)
                                            (identifier? #'arg)
                                            (cons #'arg (loop #'rest))]
+                                          [([arg def] . rest)
+                                           (identifier? #'arg)
+                                           (cons #'[arg def] (loop #'rest))]
                                           [arg
                                            (identifier? #'arg)
                                            (list #'arg)]
@@ -151,7 +154,9 @@
                                    (serror "#:args must not be followed by another keyword" (car lst)))
                                  (with-syntax ([formals (car pieces)]
                                                [formal-names (map (lambda (x)
-                                                                    (symbol->string (syntax-e x)))
+                                                                    (let ([d (syntax->datum x)])
+                                                                      (symbol->string
+                                                                       (if (pair? d) (car d) d))))
                                                                   formal-names)]
                                                [body (cdr pieces)])
                                    (values (reverse accum)
