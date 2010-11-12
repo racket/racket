@@ -949,6 +949,16 @@ returns @scheme[#f].
   (filter-not even? '(1 2 3 4 5 6))
 ]}
 
+
+@defproc[(shuffle [lst list?]) list?]{
+
+Returns a list with all elements from @racket[lst], randomly shuffled.
+
+@mz-examples[#:eval list-eval
+  (shuffle '(1 2 3 4 5 6))
+]}
+
+
 @defproc[(argmin [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
 
 This returns the first element in the list @scheme[lst] that minimizes
