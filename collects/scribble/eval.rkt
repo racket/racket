@@ -92,40 +92,45 @@
                                (make-flow (list p))))))
              (format-output (cadar val-list+outputs) output-color)
              (format-output (caddar val-list+outputs) error-color)
-             (if (string? (caar val-list+outputs))
-                 ;; Error result case:
-                 (map
-                  (lambda (s)
-                    (car (format-output s error-color)))
-                  (filter
-                   (lambda (s) (not (equal? s "")))
-                   (let sloop ([s (caar val-list+outputs)])
-                     (apply
-                      append
-                      (map (lambda (s)
-                             (if ((string-length s) . > . maxlen)
-                                 ;; break the error message into multiple lines:
-                                 (let loop ([pos (sub1 maxlen)])
-                                   (cond
-                                    [(zero? pos) (cons (substring s 0 maxlen)
-                                                       (sloop (substring s maxlen)))]
-                                    [(char-whitespace? (string-ref s pos))
-                                     (cons (substring s 0 pos)
-                                           (sloop (substring s (add1 pos))))]
-                                    [else (loop (sub1 pos))]))
-                                 (list s)))
-                           (regexp-split #rx"\n" s))))))
-                 ;; Normal result case:
-                 (let ([val-list (caar val-list+outputs)])
-                   (if (equal? val-list (list (void)))
-                       null
-                       (map (lambda (v)
-                              (list (make-flow (list (make-paragraph 
-                                                      (list
-                                                       (hspace 2)
-                                                       (elem #:style result-color
-                                                             (to-element/no-color v #:expr? (print-as-expression)))))))))
-                            val-list))))
+             (cond
+              [(string? (caar val-list+outputs))
+               ;; Error result case:
+               (map
+                (lambda (s)
+                  (car (format-output s error-color)))
+                (filter
+                 (lambda (s) (not (equal? s "")))
+                 (let sloop ([s (caar val-list+outputs)])
+                   (apply
+                    append
+                    (map (lambda (s)
+                           (if ((string-length s) . > . maxlen)
+                               ;; break the error message into multiple lines:
+                               (let loop ([pos (sub1 maxlen)])
+                                 (cond
+                                  [(zero? pos) (cons (substring s 0 maxlen)
+                                                     (sloop (substring s maxlen)))]
+                                  [(char-whitespace? (string-ref s pos))
+                                   (cons (substring s 0 pos)
+                                         (sloop (substring s (add1 pos))))]
+                                  [else (loop (sub1 pos))]))
+                               (list s)))
+                         (regexp-split #rx"\n" s))))))]
+              [(box? (caar val-list+outputs))
+               ;; Output formatted as string:
+               (format-output (unbox (caar val-list+outputs)) result-color)]
+              [else
+               ;; Normal result case:
+               (let ([val-list (caar val-list+outputs)])
+                 (if (equal? val-list (list (void)))
+                     null
+                     (map (lambda (v)
+                            (list (make-flow (list (make-paragraph 
+                                                    (list
+                                                     (hspace 2)
+                                                     (elem #:style result-color
+                                                           (to-element/no-color v #:expr? (print-as-expression)))))))))
+                          val-list)))])
              (loop (cdr expr-paras)
                    (cdr val-list+outputs)
                     #f)))))))
@@ -159,7 +164,21 @@
                                            (get-output ev)
                                            (get-error-output ev)))])
                     (list (let ([v (do-plain-eval ev s #t)])
-                            (make-reader-graph (copy-value v (make-hasheq))))
+                            (if (call-in-sandbox-context
+                                 ev
+                                 (let ([cp (current-print)])
+                                   (lambda ()
+                                     (and (eq? (current-print) cp)
+                                          (print-as-expression)))))
+                                (make-reader-graph (copy-value v (make-hasheq)))
+                                (box
+                                 (call-in-sandbox-context
+                                  ev
+                                  (lambda ()
+                                    (let ([s (open-output-string)])
+                                      (parameterize ([current-output-port s])
+                                        (map (current-print) v))
+                                      (get-output-string s)))))))
                           (get-output ev)
                           (get-error-output ev)))])
            (when expect

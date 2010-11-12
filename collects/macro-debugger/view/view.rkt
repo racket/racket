@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/pretty
-         racket/gui
+         racket/gui/base
          framework
          unstable/class-iop
          "interfaces.rkt"
@@ -9,8 +9,7 @@
          "prefs.rkt"
          "../model/trace.rkt")
 (provide macro-stepper-director%
-         macro-stepper-frame%
-         go)
+         macro-stepper-frame%)
 
 (define macro-stepper-director%
   (class* object% (director<%>)
@@ -24,24 +23,26 @@
       (hash-remove! stepper-frames s))
 
     (define/public (add-obsoleted-warning)
-      (hash-for-each stepper-frames
-                     (lambda (stepper-frame flags)
-                       (unless (memq 'no-obsolete flags)
-                         (send/i stepper-frame stepper-frame<%> add-obsoleted-warning)))))
+      (for ([(stepper-frame flags) (in-hash stepper-frames)])
+        (unless (memq 'no-obsolete flags)
+          (send/i stepper-frame stepper-frame<%> add-obsoleted-warning))))
     (define/public (add-trace events)
-      (hash-for-each stepper-frames
-                     (lambda (stepper-frame flags)
-                       (unless (memq 'no-new-traces flags)
-                         (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
-                                add-trace events)))))
+      (for ([(stepper-frame flags) (in-hash stepper-frames)])
+        (unless (memq 'no-new-traces flags)
+          (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
+                  add-trace events))))
     (define/public (add-deriv deriv)
-      (hash-for-each stepper-frames
-                     (lambda (stepper-frame flags)
-                       (unless (memq 'no-new-traces flags)
-                         (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
-                                add-deriv deriv)))))
+      (for ([(stepper-frame flags) (in-hash stepper-frames)])
+        (unless (memq 'no-new-traces flags)
+          (send/i (send/i stepper-frame stepper-frame<%> get-widget) widget<%>
+                  add-deriv deriv))))
 
+    ;; PRE: current thread = current eventspace's handler thread
     (define/public (new-stepper [flags '()])
+      (unless (eq? (current-thread)
+                   (eventspace-handler-thread (current-eventspace)))
+        (error 'macro-stepper-director
+               "new-stepper method called from wrong thread"))
       (define stepper-frame (new-stepper-frame))
       (define stepper (send/i stepper-frame stepper-frame<%> get-widget))
       (send stepper-frame show #t)
@@ -59,11 +60,3 @@
   (macro-stepper-frame-mixin
    (frame:standard-menus-mixin
     (frame:basic-mixin frame%))))
-
-;; Main entry points
-
-(define (go stx)
-  (define director (new macro-stepper-director%))
-  (define stepper (send/i director director<%> new-stepper))
-  (send/i director director<%> add-deriv (trace stx))
-  (void))

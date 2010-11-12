@@ -14,6 +14,7 @@
    #:info (make-info options)
    #:language-info (make-language-info options)
 
+   (provide options)
    (define options opts)))
 
 (define (wrap-reader read-proc options)

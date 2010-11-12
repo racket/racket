@@ -16,47 +16,52 @@
          after
          around)
 
+(define USE-ERROR-HANDLER? #f)
+
 (define current-test-name
   (make-parameter
    #f
    (lambda (v)
      (if (string? v)
          v
-         (raise-mismatch-error
-          'current-test-name
-          "string?"
-          v)))))
+         (raise-type-error 'current-test-name "string" v)))))
 
 ;; test-case-around : ( -> a) -> a
 ;;
 ;; Run a test-case immediately, printing information on failure
-(define test-case-around
-  (lambda (thunk)
-    (with-handlers
-        ([exn:test:check?
-          (lambda (e)
-            (display-delimiter)
-            (display-test-name (current-test-name))
-            (display-failure)(newline)
-            (display-check-info-stack (exn:test:check-stack e))
-            (display-delimiter))]
-         [exn?
-          (lambda (e)
-            (display-delimiter)
-            (display-test-name (current-test-name))
-            (display-error)(newline)
-            (display-exn e)
-            (display-delimiter))])
-      (thunk))))
-    
+(define (default-test-case-around thunk)
+  (with-handlers ([exn? default-test-case-handler])
+    (thunk)))
+
+;; default-test-case-handler : exn -> any
+(define (default-test-case-handler e)
+  (let ([out (open-output-string)])
+    ;;(display "test case failed\n" out)
+    (parameterize ((current-output-port out))
+      (display-delimiter)
+      (display-test-name (current-test-name))
+      (cond [(exn:test:check? e)
+             (display-failure)(newline)
+             (display-check-info-stack (exn:test:check-stack e))]
+            [(exn? e)
+             (display-error)(newline)
+             (display-exn e)])
+      (display-delimiter))
+    (cond [USE-ERROR-HANDLER?
+           ((error-display-handler) (get-output-string out)
+            ;; So that DrRacket won't recognize exn:fail:syntax, etc
+            (make-exn (exn-message e) (exn-continuation-marks e)))]
+          [else
+           (display (get-output-string out) (current-error-port))])))
+
 (define current-test-case-around
   (make-parameter
-   test-case-around
+   default-test-case-around
    (lambda (v)
      (if (procedure? v)
          v
-         (raise-type-error 'current-test-case-around "procedure" v)))))      
-  
+         (raise-type-error 'current-test-case-around "procedure" v)))))
+
 (define-syntax (test-begin stx)
   (syntax-case stx ()
     [(_ expr ...)
@@ -66,6 +71,7 @@
           (parameterize
               ([current-check-handler raise]
                [current-check-around  check-around])
+            (void)
             expr ...))))]
     [_
      (raise-syntax-error
@@ -73,7 +79,6 @@
       "Correct form is (test-begin expr ...)"
       stx)]))
 
-  
 (define-syntax test-case
   (syntax-rules ()
     [(test-case name expr ...)
@@ -81,7 +86,6 @@
          ([current-test-name name])
        (test-begin expr ...))]))
 
-  
 (define-syntax before
   (syntax-rules ()
     ((_ before-e expr1 expr2 ...)
@@ -132,4 +136,3 @@
       "Incorrect use of around macro.  Correct format is (around before-expr expr1 expr2 ... after-expr)"
       'around
       '(error ...)))))
-

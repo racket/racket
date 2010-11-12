@@ -24,7 +24,7 @@
 ;; add a name to the mapping
 ;; identifier Type -> void
 (define (register-type-name id [type #t])
-  ;(printf "registering type ~a~n~a~n" (syntax-e id) id)
+  ;(printf "registering type ~a\n~a\n" (syntax-e id) id)
   (mapping-put! id type))
 
 ;; add a bunch of names to the mapping

@@ -262,8 +262,11 @@ except that it can be faster.
 ]}
 
 
-@defproc[(vector-copy [vec vector?] [start exact-nonnegative-integer?
-0] [end exact-nonnegative-integer? (vector-length v)]) vector?]{
+@defproc[(vector-copy [vec vector?] 
+                      [start exact-nonnegative-integer? 0]
+                      [end exact-nonnegative-integer? (vector-length v)]) 
+         vector?]{
+
 Creates a fresh vector of size @racket[(- end start)], with all of the
 elements of @racket[vec] from @racket[start] (inclusive) to
 @racket[end] (exclusive).

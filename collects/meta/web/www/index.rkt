@@ -1,24 +1,47 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "code.rkt" "download.rkt" "learning.rkt" racket/string)
+(require "resources.rkt" "code.rkt" "download.rkt" "learning.rkt")
 
-(define (doc s)
-  (string-append "http://docs.racket-lang.org/" s))
+(define (doc path . text)
+  (apply a href: (list "http://docs.racket-lang.org/" path) text))
 
-(define-struct example (code desc))
-(define-struct (cmdline-example example) ())
-(define-struct (scribble-example example) ())
-(define-struct (graphical-example example) ())
+(struct example (code desc))
+
+(define ((example-with-help . help) code desc) (example code (list desc help)))
+(define generic-example
+  @example-with-help{
+    @p{To run the example, install Racket, start DrRacket, paste the example
+       program into the top area in DrRacket, and click the Run button.
+       Alternatively, save the program to a file and run @tt{racket} on the
+       file.}})
+(define cmdline-example
+  @example-with-help{
+    @p{This example is a command-line script.  To run the example, install
+       Racket, paste the example program into a file, and run @tt{racket} on
+       the file with command-line arguments after the filename.  Alternatively,
+       for a Unix installation, you can add @tt{#!/usr/bin/env racket} at the
+       top and make the file executable, and then you can run the file
+       directly.}})
+(define scribble-example
+  @example-with-help{
+    @p{To run the example, install Racket, start DrRacket, and paste the
+       example program into the top area in DrRacket.  When a program in a
+       Scribble language is opened in DrRacket, a @b{Scribble HTML} button
+       appears for rendering the document to HTML.  Click it.}})
+(define graphical-example
+  @example-with-help{
+    @p{To run the example, install Racket, start DrRacket, paste the example
+       program into the top area in DrRacket, and click the Run button.}})
 
 (define desc div)
 (define (elemcode . strs) (apply tt strs))
 
-(define (examples)
-  @; --- Each example here should at most 7 lines long ---
-  (alts-panel
-   @; Candidates for initial example: ------------------------
+(define examples
+  @; --- Each example here should at most 7 lines long ---------------
+  (list
+   @; Candidates for initial example: --------------------------------
    (list
-    (example ; -----------------------------------------------
+    (generic-example ; -----------------------------------------------
      @code{#lang racket
            ;; Finds Racket sources in all subdirs
            (for ([path (in-directory)])
@@ -29,7 +52,7 @@
        and generates paths in the tree.  The @elemcode{for} form binds
        @elemcode{p} to each path in the sequence, and @elemcode{regexp-match?}
        applies a pattern to the path.})
-    (example ; -----------------------------------------------
+    (generic-example ; -----------------------------------------------
      @code{#lang web-server/insta
            ;; A "hello world" web server
            (define (start request)
@@ -39,7 +62,7 @@
        @elemcode{web-server/insta} language.  Each time a connection is made to
        the server, the @elemcode{start} function is called to get the HTML to
        send back to the client.})
-    (example ; -----------------------------------------------
+    (generic-example ; -----------------------------------------------
      @code{#lang racket  ; An echo server
            (define listener (tcp-listen 12345))
            (let echo-server ()
@@ -50,7 +73,7 @@
      @desc{Racket makes it easy to use TCP sockets and spawn threads to handle
        them.  This program starts a server at TCP port 12345 that echos
        anything a client sends back to the client.})
-    (example ; -----------------------------------------------
+    (generic-example ; -----------------------------------------------
      @code{#lang racket
            ;; Report each unique line from stdin
            (let ([saw (make-hash)])
@@ -60,9 +83,9 @@
                (hash-set! saw line #t)))}
      @desc{Uses a hash table to record previously seen lines.  You can run this
        program in DrRacket, but it makes more sense from the command line.}))
-   @; Additional examples: -----------------------------------
+   @; Additional examples: -------------------------------------------
    (list
-    (graphical-example ; -------------------------------------
+    (graphical-example ; ---------------------------------------------
      @code{#lang racket  ; A picture
            (require 2htdp/image)
            (let sierpinski ([n 6])
@@ -75,7 +98,7 @@
        easily as it can display a number result.  In this case, a
        @elemcode{sierpinski} function is defined and called (at the same time)
        to generate a Sierpinski triangle of depth 6.})
-    (graphical-example ; -------------------------------------
+    (graphical-example ; ---------------------------------------------
      @code{#lang racket/gui ; A GUI guessing game
            (define f (new frame% [label "Guess"]))
            (define n (random 5))  (send f show #t)
@@ -88,7 +111,7 @@
        @elemcode{button%} obviously implements a button. The @elemcode{check}
        function defined here produces an function that is used for the button's
        callback action.})
-    (example ; -----------------------------------------------
+    (generic-example ; -----------------------------------------------
      @code{#lang racket ; Simple web scraper
            (require net/url net/uri-codec)
            (define (let-me-google-that-for-you str)
@@ -98,7 +121,7 @@
                (regexp-match* rx (get-pure-port (string->url u)))))}
      @desc{Add a call to @elemcode{let-me-google-that-for-you} to get a list of
        search results.})
-    (cmdline-example ; ---------------------------------------
+    (cmdline-example ; -----------------------------------------------
      @code{#lang racket
            ;; A dice-rolling command-line utility
            (command-line
@@ -110,7 +133,7 @@
        @elemcode{command-line} form makes sure that the right number of
        arguments are provided and automatically implements the @tt{--help}
        switch.})
-    (example ; -----------------------------------------------
+    (generic-example ; -----------------------------------------------
      @code{#lang racket
            ;; Print the Greek alphabet
            (for ([i (in-range 25)])
@@ -121,7 +144,7 @@
        @elemcode{#\u3B1} instead of the more direct form @elemcode{#\α} is that
        we don't trust your browser to render it correctly.  DrRacket is
        perfectly happy with @elemcode{#\α}.})
-    (graphical-example ; -------------------------------------
+    (graphical-example ; ---------------------------------------------
      @code{#lang htdp/bsl ; Any key inflates the balloon
            (require 2htdp/image) (require 2htdp/universe)
            (define (balloon b) (circle b "solid" "red"))
@@ -134,7 +157,7 @@
        @elemcode{2htdp/image} library for creating pictures in the teaching
        languages, and the @elemcode{2htdp/universe} library for interactive
        animations.})
-    (example ; -----------------------------------------------
+    (generic-example ; -----------------------------------------------
      @code{#lang lazy
            ;; An infinite list:
            (define fibs
@@ -145,7 +168,7 @@
      @desc{And now for something completely different.  The @elemcode{lazy}
        language is more like Haskell than Lisp, so feel free to build an
        infinite list and look at only part of it.})
-    (example ; -----------------------------------------------
+    (generic-example ; -----------------------------------------------
      @code{#lang typed/racket
            ;; Using higher-order occurrence typing
            (define-type SrN (U String Number))
@@ -156,7 +179,7 @@
      @desc{Racket's type system is designed to let you add types after you've
        worked for a while in untyped mode — even if your untyped program
        wouldn't fit nicely in a conventional type system.})
-    (scribble-example ; --------------------------------------
+    (scribble-example ; ----------------------------------------------
      @code|{#lang scribble/base
             @; Generate a PDF or HTML document
             @title{Bottles --- @italic{Abridged}}
@@ -165,9 +188,9 @@
                 @item{@(format "~a" n) bottles.}))}|
      @desc{This program uses the @elemcode{scribble/base} language for
        generating documents using a prose-friendly syntax.})
-    (graphical-example
-     @code{#lang racket ; draw a graph of cos and deriv^3(cos)
-           (require plot)
+    (graphical-example ; ---------------------------------------------
+     @code{#lang racket   ; draw a graph of cos
+           (require plot) ; and deriv^3(cos)
            (define ((deriv f) x)
              (/ (- (f x) (f (- x 0.001))) 0.001))
            (define (thrice f) (lambda (x) (f (f (f x)))))
@@ -176,7 +199,7 @@
      @desc{This program uses the @elemcode{plot} library to draw plots of
        functions.  Note that the plots are actual value, which DrRacket shows
        in graphical form.})
-    (example
+    (generic-example ; -----------------------------------------------
      @code{#lang racket ; Sending email from racket
            (require net/sendmail)
            (sleep (* (- (* 60 4) 15) 60)) ; 4h - 15m
@@ -185,7 +208,7 @@
             (list (getenv "EMAIL")) null null
             '("Time to go out and move your car."))}
      @desc{Racket comes with plenty of libraries.})
-    (example
+    (generic-example ; -----------------------------------------------
      @code{#lang scheme/base ; Simple use of the FFI
            (require ffi/unsafe)
            (define mci-send-string
@@ -196,18 +219,21 @@
      @desc{Using the FFI means that you're not limited to using Racket
        libraries: pulling out a foreign function is easy, and can even be done
        dynamically on the REPL.})
-    #; ; Is this effective without any highlights?
-    (example
-     @code{#lang planet jaymccarthy/datalog
+    ;; Is this effective without any highlights?
+    (generic-example ; -----------------------------------------------
+     @code{#lang datalog
            ancestor(A, B) :- parent(A, B).
            ancestor(A, B) :-
              parent(A, C), D = C, ancestor(D, B).
            parent(john, douglas).
            parent(bob, john).
            ancestor(A, B)?}
-     @desc{Blah})
+     @desc{Racket is useful for building other languages.  This example uses
+      the pre-packaged Racket implementation of Datalog, a logic programming
+      language.  If you use this from DrRacket, you'll see that it provides
+      proper highlighting, Check Syntax, and a Datalog-specific REPL.})
     #; ; Not easy to present something like this.
-    (example
+    (generic-example ; -----------------------------------------------
      @code{#lang racket
            (provide (except-out (all-from-out racket)
                                 #%top #%app)
@@ -223,41 +249,43 @@
                 (x A)}})
     )))
 
+(define blurb "Racket is a programming language")
+
 (provide index)
 (define index
   (page #:link-title "About" #:window-title "Racket"
-        #:extra-headers (delay more.css)
+        #:extra-headers @list{@meta[name: 'description content: blurb]
+                              @(delay more.css)}
     @div[class: 'whatpane]{
       @span{@span[class: 'whatb]{Racket} is a programming language.}}
-    (div class: 'aboutpane
+    @div[class: 'downloadbutton]{@download-button}
+    @div[class: 'aboutpane]{
       @div[class: 'panetitle]{Start Quickly}
-      @div[class: 'downloadbutton]{@download-button}
-      @examples
-      @p{@a[href: (doc "quick/")]{Draw more pictures} or
-         @a[href: (doc "more/")]{build a web server from scratch}.
-         Racket includes both @a[href: (doc "")]{batteries}
-         and a @a[href: (doc "drracket/")]{programming environment},
-         so @a[href: (doc "getting-started/index.html")]{get started}!})
+      @div{@(apply slideshow-panel examples)}
+      @p{@doc["quick/"]{Draw more pictures} or
+         @doc["more/"]{build a web server from scratch}.  Racket includes both
+         @doc[""]{batteries} and a @doc["drracket/"]{programming environment},
+         so @doc["getting-started/"]{get started}!}}
     @((lambda xs
         (table class: 'threepanes
           (tr (map (lambda (x) (td (div class: 'panetitle (car x)) (cdr x)))
                    xs))))
       (list "Grow your Program"
         @p{Racket's
-           @a[href: (doc "guide/intro.html#(part._.Interacting_with_.Racket)")]{interactive mode}
+           @doc["guide/intro.html#(part._.Interacting_with_.Racket)"]{
+             interactive mode}
            encourages experimentation, and quick scripts easily compose into
            larger systems.  Small scripts and large systems both benefit from
-           @a[href: (doc "guide/performance.html")]{native-code JIT compilation}.
+           @doc["guide/performance.html"]{native-code JIT compilation}.
            When a system gets too big to keep in your head, you can add
-           @a[href: (doc "ts-guide/index.html")]{static types}.})
+           @doc["ts-guide/index.html"]{static types}.})
       (list "Grow your Language"
-        @p{@a[href: (doc "guide/languages.html")]{Extend Racket} whenever you
-           need to.  Mold it to better suit your tasks without sacrificing
-           @a[href: (doc "guide/dialects.html")]{interoperability} with
-           existing libraries and without having to modify the
-           @a[href: (doc "guide/intro.html")]{tool chain}.  When less is more,
-           you can remove parts of a language or start over and build a new
-           one.})
+        @p{@doc["guide/languages.html"]{Extend Racket} whenever you need to.
+           Mold it to better suit your tasks without sacrificing
+           @doc["guide/dialects.html"]{interoperability} with existing
+           libraries and without having to modify the
+           @doc["guide/intro.html"]{tool chain}.  When less is more, you can
+           remove parts of a language or start over and build a new one.})
       (list "Grow your Skills"
         @p{Whether you're just @-htdp{starting out}, want to know more about
            programming language @-plai{applications} or @-redex{models},
@@ -265,71 +293,56 @@
            @learning{research}, Racket can help you become a better programmer
            and system builder.}))))
 
-(define (alts-panel l1 l2)
+(define (slideshow-panel l1 l2)
   (define l (append l1 l2))
-  (define (mk-button txt tip id onclick)
+  (define button-ids+labels '())
+  ;; this separator is shown in non-CSS browsers (eg, textual ones)
+  (define invisible-separator @div[style: "display: none;"]{@br{}@hr{}})
+  (define (button txt tip id onclick)
+    (set! button-ids+labels (cons (cons id txt) button-ids+labels))
     (a href: "#" id: id onclick: (list onclick "; return false;") title: tip
-       txt))
+       nbsp)) ; empty, filled by JS code, so JS-less browsers won't see it
   (div class: 'slideshow
     (div class: 'buttonpanel
-      @mk-button["<" "Previous example"  'rewindbutton  "rewind_show()"]
-      @mk-button[">" "Next example"      'advancebutton "advance_show()"]
-      @mk-button["?" "Explain this code" 'helpbutton "set_help(!help_showing)"]
+      @button["<" "Previous example"  'rewindbutton  "rewind_show()"]
+      @button[">" "Next example"      'advancebutton "advance_show()"]
+      @button["?" "Explain this code" 'helpbutton "set_help(!help_showing)"]
       (div class: 'hiddenhelp id: "helppanel" style: "display: none;"
         (div class: 'helpcontent
-          @mk-button["close" "Close help" 'closebutton "set_help(false)"]
-          (div class: 'helpdesc
-            (for/list ([elem (in-list l)] [pos (in-naturals)])
-              @div[id: @list{helpframe@pos} style: "display: none;"]{
-                @(example-desc elem)}))
+          @button["close" "Close help" 'closebutton "set_help(false)"]
+          (div id: 'helpdesc "") ; placeholder for the descriptions (see below)
           @div[class: 'helptext]{
             Form and function names in the code are hyperlinked to
-            documentation, so click on them for more information.}
-          @div[class: 'helptext id: "howtoany"]{
-            To run the example, install Racket, start DrRacket, paste the
-            example program into the top area in DrRacket, and click the Run
-            button.  Alternatively, save the program to a file and run
-            @tt{racket} on the file.}
-          @div[class: 'helptext style: "display: none;" id: "howtodr"]{
-            To run the example, install Racket, start DrRacket, paste the
-            example program into the top area in DrRacket, and click the Run
-            button.}
-          @div[class: 'helptext style: "display: none;" id: "howtoscrib"]{
-            To run the example, install Racket, start DrRacket, and paste the
-            example program into the top area in DrRacket.  When a program in
-            a Scribble language is opened in DrRacket, a @b{Scribble HTML}
-            button appears for rendering the document to HTML.  Click it.}
-          @div[class: 'helptext id: "howtocmd" style: "display: none;"]{
-            This example is a command-line script.  To run the example, install
-            Racket, paste the example program into a file, and run @tt{racket}
-            on the file with command-line arguments after the filename.
-            Alternatively, for a Unix installation, you can add
-            @tt{#!/usr/bin/env racket} at the top and make the file executable,
-            and then you can run the file directly.})))
+            documentation, so click on them for more information.})))
     (for/list ([elem (in-list l)] [pos (in-naturals)])
-      @div[class: 'slideshowframe id: @list{frame@pos}
-           style: @list{display: @(if (zero? pos) "block" "none")@";"}]{
-        @(example-code elem)})
+      @list{
+        @invisible-separator
+        @div[class: 'slideshowframe id: @list{frame@pos}
+             style: @list{display: @(if (zero? pos) "block" "none")@";"}]{
+          @(example-code elem)}@;
+        @; have the descriptions appear in a logical place and then ...
+        @div[id: @list{helpframe@pos} style: "display: none;"]{
+          @(example-desc elem)}})
+    @invisible-separator
     @script/inline[type: "text/javascript"]{
+      @; ... move them to a convenient-for-display place
+      var helpdesc = document.getElementById("helpdesc");
+      for (var i=0@";" i<@(length l)@";" i++) {
+        var help_item = document.getElementById("helpframe"+i);
+        help_item.parentNode.removeChild(help_item);
+        helpdesc.appendChild(help_item);
+      }
       var showing = 0, help_showing = false;
-      var kind = [@(string-join (for/list ([i (in-list l)])
-                                  (cond [(cmdline-example? i) "\"cmd\""]
-                                        [(scribble-example? i) "\"scrib\""]
-                                        [(graphical-example? i) "\"dr\""]
-                                        [else "\"any\""]))
-                                ",")];
-      var frame_s=new Array(), helpframe_s=new Array(), howto_s=new Array();
+      var frame_s=new Array(), helpframe_s=new Array();
       for (var i=0@";" i<@(length l)@";" i++) {
         frame_s[i] = document.getElementById("frame" + i).style;
         helpframe_s[i] = document.getElementById("helpframe" + i).style;
-        howto_s[i] = document.getElementById("howto" + kind[i]).style;
       }
       var advbutton_s = document.getElementById("advancebutton").style;
       var rewbutton_s = document.getElementById("rewindbutton").style;
       function set_display(disp) {
         frame_s[showing].display = disp;
         helpframe_s[showing].display = disp;
-        howto_s[showing].display = disp;
       }
       function change_show_to(new_showing) {
         set_display("none");
@@ -350,7 +363,13 @@
         help_showing = show;
       }
       change_show_to(Math.floor(Math.random() * @(length l1)));
-     }))
+      @; display button texts now, instead of making it part of the html,
+      @; so it's not shown on JS-less browsers
+      @(add-newlines
+        (for/list ([id+label (in-list button-ids+labels)])
+          (let ([id (car id+label)] [label (cdr id+label)])
+            @list{document.getElementById("@id").textContent = "@label"@";"})))
+    }))
 
 ;; TODO
 ;; (define screenshots
@@ -418,6 +437,9 @@
     .slideshow {
       position: relative;
     }
+    .slideshowframe {
+      height: 12ex;
+    }
     .buttonpanel {
       display: block;
       position: absolute;
@@ -455,7 +477,7 @@
       font-size: small;
       margin-bottom: 1em;
     }
-    .helptext, .helpdesc {
+    .helptext, #helpdesc {
       margin-top: 0.5em;
     }
     .helptext {
@@ -464,11 +486,6 @@
     .downloadbutton {
       position: relative;
       float: right;
-      left: 1em;
-      top: -1em;
-      height: 0em;
-      width: 1em;
-      margin: 0em -1em 0em 0em;
     }
     @;
     .codecomment {

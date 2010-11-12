@@ -151,7 +151,7 @@
 ;; spec -> spec-list, the input is always a cond spec
 (define (expand-cond-spec spec)
   (define (eval-cond c)
-    (define (bad-cond) (error 'expand-cond-spec "got a bad condition: ~e" c))
+    (define (bad-cond) (error 'expand-cond-spec "got a bad condition: ~.s" c))
     (cond [(eq? c 'else) #t]
           [(pair? c)
            (case (car c)
@@ -180,12 +180,12 @@
         [(eq? 'tag (car spec))
          (if (pair? (cdr spec))
            (tag (cadr spec) (expand-specs (cddr spec)))
-           (error 'expand-spec "bad `tag' form: ~e" spec))]
+           (error 'expand-spec "bad `tag' form: ~.s" spec))]
         [(eq? 'lambda (car spec))
          (if (pair? (cdr spec))
            (list (eval `(lambda ,(cadr spec)
                           (splice (list ,@(cddr spec))))))
-           (error 'expand-spec "bad `lambda' form: ~e" spec))]
+           (error 'expand-spec "bad `lambda' form: ~.s" spec))]
         [(procedure? (car spec))
          (let ([newspec (apply (car spec) (expand-specs (cdr spec)))])
            (cond [(spliced? newspec) (expand-specs (cdr newspec))]
@@ -212,7 +212,7 @@
   (let ([r (expand-spec spec)])
     (if (= 1 (length r))
       (car r)
-      (error 'expand-spec-1 "expected a single result for ~s, but got ~e"
+      (error 'expand-spec-1 "expected a single result for ~.s, but got ~e"
              spec r))))
 
 ;; Expand tags
@@ -234,5 +234,5 @@
       (let ([r (expand-specs conds)])
         (if (= 1 (length r))
           (car r)
-          (error 'expand-conds "expected a single result for ~s, but got ~e"
+          (error 'expand-conds "expected a single result for ~.s, but got ~e"
                  conds r))))))

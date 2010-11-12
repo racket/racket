@@ -75,7 +75,6 @@ The @racketmodname[racket] library combines
 @include-section["os.scrbl"]
 @include-section["memory.scrbl"]
 @include-section["unsafe.scrbl"]
-@include-section["debugging.scrbl"]
 @include-section["running.scrbl"]
 
 @;------------------------------------------------------------------------

@@ -72,7 +72,7 @@
                         "teachpack" "htdp" teachpack)))]))]
                [teachpack-should-be
                 (apply string-append 
-                       (map (lambda (tp) (format "Teachpack: ~a.~n" (get-full-path tp)))
+                       (map (lambda (tp) (format "Teachpack: ~a.\n" (get-full-path tp)))
                             (cons
                              sample-solutions-teachpack-filename
                              teachpacks)))]
@@ -126,7 +126,7 @@
                 (has-error? drs-frame))
            =>
            (lambda (err-msg)
-             (printf "ERROR: ~a: found error, but should be no errors (section ~a):~n  ~a\n  teachpacks: ~a\n"
+             (printf "ERROR: ~a: found error, but should be no errors (section ~a):\n  ~a\n  teachpacks: ~a\n"
                      filename
                      section
                      err-msg
@@ -142,7 +142,7 @@
                  (unless (eof-object? sexp)
                    (cond
                      [(and (not last) (equal? sexp separator-sexp))
-                      (printf "ERROR: ~a: found = as first sexp~n" filename)]
+                      (printf "ERROR: ~a: found = as first sexp\n" filename)]
                      [(and last (equal? separator-sexp sexp))
                       (let ([after (with-handlers ([(lambda (exn) #t)
                                                     (lambda (exn) exn)])

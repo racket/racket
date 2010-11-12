@@ -2,13 +2,14 @@
 
 (require syntax/parse
          (for-template scheme/base)
-         "../utils/utils.rkt" "../utils/tc-utils.rkt"
+         "../utils/utils.rkt"
          (types type-table)
          (optimizer utils))
 
 (provide dead-code-opt-expr)
 
 (define-syntax-class dead-code-opt-expr
+  #:commit
   ;; if one of the brances of an if is unreachable, we can eliminate it
   ;; we have to keep the test, in case it has side effects
   (pattern (if tst:expr thn:expr els:expr)

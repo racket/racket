@@ -1,5 +1,6 @@
 #lang racket/base
-  (require racket/unit
+  (require (prefix-in : mred/mred) ;; ensure that this module is always loaded since it is shared below for pretty big
+           racket/unit
            mrlib/hierlist
            racket/class
            racket/contract
@@ -14,7 +15,7 @@
            (only-in mzlib/struct make-->vector))
   
   (define original-output (current-output-port))
-  (define (printfo . args) (apply fprintf original-output args))
+  (define (oprintf . args) (apply fprintf original-output args))
   
   (define-values (sc-use-language-in-source sc-choose-a-language mouse-event-uses-shortcut-prefix?)
     (let* ([shortcut-prefix (get-default-shortcut-prefix)]
@@ -86,7 +87,7 @@
         (for-each
          (λ (i<%>)
            (unless (is-a? language i<%>)
-             (error 'drracket:language:add-language "expected language ~e to implement ~e, forgot to use drracket:language:get-default-mixin ?" language i<%>)))
+             (error 'drracket:language:add-language "expected language ~e to implement ~e, forgot to use `drracket:language:get-default-mixin'?" language i<%>)))
          (drracket:language:get-language-extensions))
         
         (ensure-no-duplicate-numbers language languages)
@@ -558,7 +559,7 @@
                            (= (length positions) (length numbers))
                            ((length numbers) . >= . 1))
                 (error 'drracket:language
-                       "languages position and numbers must be lists of strings and numbers, respectively, must have the same length,  and must each contain at least one element, got: ~e ~e"
+                       "languages position and numbers must be lists of strings and numbers, respectively, must have the same length, and must each contain at least one element, got: ~e ~e"
                        positions numbers))
               
               (when (null? (cdr positions))
@@ -1501,6 +1502,14 @@
   
     (define (pretty-big-mixin %)
       (class %
+        ;; since check syntax no longer shares the gui libraries, 
+        ;; we always share it explicitly here
+        (define/override (on-execute setting run-in-user-thread)
+          (let ([mred-name ((current-module-name-resolver) 'mred/mred #f #f)])
+            (run-in-user-thread
+             (λ ()
+               (namespace-attach-module drracket:init:system-namespace mred-name))))
+          (super on-execute setting run-in-user-thread))
         (define/override (default-settings) 
           (let ([s (super default-settings)])
             (make-simple-settings+assume (drracket:language:simple-settings-case-sensitive s)
@@ -1536,6 +1545,11 @@
                     (define/override (get-one-line-summary) one-line-summary)
                     (inherit get-module get-transformer-module get-init-code
                              use-namespace-require/copy-from-setting?)
+                    (define/override (front-end/interaction port settings)
+                      (let ([t (super front-end/interaction port settings)])
+                        (λ ()
+                          (parameterize ([read-accept-lang #f])
+                            (t)))))
                     (define/augment (capability-value key)
                       (cond
                         [(eq? key 'drscheme:autocomplete-words) 
@@ -1826,7 +1840,7 @@
              [min-height (floor (/ (send plt-logo-shiny get-height) 2))])
         (new canvas-message%
              (parent racketeer-panel) 
-             (label sc-use-language-in-source)
+             (label (string-constant use-language-in-source))
              (color (send the-color-database find-color "blue"))
              (callback (λ () (change-current-lang-to (λ (x) (is-a? x drracket:module-language:module-language<%>)))))
              (font (get-font #:underlined #t))))

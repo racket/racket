@@ -1,6 +1,7 @@
-#lang at-exp s-exp meta/web/html
+#lang at-exp racket/base
 
-(require (for-syntax racket/base syntax/name) "utils.rkt" "resources.rkt")
+(require scribble/html (for-syntax racket/base syntax/name)
+         "utils.rkt" "resources.rkt")
 
 (define-for-syntax (process-contents who layouter stx xs)
   (let loop ([xs xs] [kws '()] [id? #f])
@@ -16,7 +17,7 @@
                                           (syntax-local-name))])
                             (if name (list '#:id `',name) '())))]
                        ;; delay body, allow definitions
-                       [body #`(lambda () (text #,@xs))])
+                       [body #`(lambda () (begin/text #,@xs))])
            #'(layouter id ... x ... body))])))
 
 (define (get-path who id file sfx dir)
@@ -179,8 +180,8 @@
   (lambda (title* more-headers)
     (head "\n" (title title*)
           "\n" headers
-          "\n" more-headers
-          (and more-headers (list "\n" more-headers)))))
+          (and more-headers (list "\n" more-headers))
+          "\n")))
 
 (define (make-resources icon logo style)
   (let* ([favicon     (html-favicon-maker icon)]

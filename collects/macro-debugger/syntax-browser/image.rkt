@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract
          racket/class
-         racket/gui
+         racket/gui/base
          framework
          "prefs.rkt"
          "controller.rkt"

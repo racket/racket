@@ -13,6 +13,7 @@
 	 arbitrary-pair
 	 arbitrary-list
 	 arbitrary-vector
+	 arbitrary-tuple arbitrary-record
 	 arbitrary-string
 	 arbitrary-ascii-string arbitrary-printable-ascii-string
 	 arbitrary-symbol
@@ -26,6 +27,7 @@
 	 collect
 	 )
 (require srfi/9
+	 racket/promise
 	 "random.ss")
 
 (provide exn:assertion-violation?

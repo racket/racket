@@ -159,7 +159,9 @@
            get-scroll-range set-scroll-range
            is-shown-to-root?
            show-scrollbars
-	   set-focus)
+	   set-focus
+           begin-refresh-sequence
+           end-refresh-sequence)
 
   (define blink-timer #f)
   (define noloop? #f)
@@ -357,18 +359,10 @@
 
   (define/override (on-set-focus)
     (super on-set-focus)
-    (if (eq? 'windows (system-type))
-        (queue-window-callback
-         this
-         (lambda () (on-focus #t)))
-        (on-focus #t)))
+    (on-focus #t))
   (define/override (on-kill-focus)
     (super on-kill-focus)
-    (if (eq? 'windows (system-type))
-        (queue-window-callback
-         this
-         (lambda () (on-focus #f)))
-        (on-focus #f)))
+    (on-focus #f))
 
   (define/public (is-focus-on?) focuson?)
 
@@ -391,29 +385,35 @@
       (set! last-x x)
       (set! last-y y)
 
+      #;
       (when (and (eq? 'windows (system-type))
 		 (not focuson?)
 		 (send event button-down?))
 	(set-focus)
 	(on-focus #t))
-      
-      (when (and media
-                 (not (send media get-printing)))
-        (using-admin
-         (when media
-           (set-custom-cursor
-            (send media adjust-cursor event)))
-         (when media
-           (send media on-event event))))
-      
-      (when (send event dragging?)
-        (let-boxes ([cw 0]
-                    [ch 0])
-            (get-client-size cw ch)
-          (when (or (x . < . 0)
-                    (y . < . 0)
-                    (x . > . cw)
-                    (y . > . ch))
+
+      (let ([out-of-client?
+             (let-boxes ([cw 0]
+                         [ch 0])
+                 (get-client-size cw ch)
+               (or (x . < . 0)
+                   (y . < . 0)
+                   (x . > . cw)
+                   (y . > . ch)))])
+
+        (when (and media
+                   (not (send media get-printing)))
+          (using-admin
+           (when media
+             (set-custom-cursor
+              (and (or (not out-of-client?)
+                       (send event dragging?))
+                   (send media adjust-cursor event))))
+           (when media
+             (send media on-event event))))
+        
+        (when (send event dragging?)
+          (when out-of-client?
             ;; Dragging outside the canvas: auto-generate more events because the buffer
             ;; is probably scrolling. But make sure we're shown.
             (when (is-shown-to-root?)
@@ -445,13 +445,14 @@
            (let-boxes ([x 0]
                        [y 0])
                (get-scroll x y)
-             (let ([y (max (+ y
+             (let ([old-y y]
+                   [y (max (+ y
                               (* wheel-amt
                                  (if (eq? code 'wheel-up)
                                      -1
                                      1)))
                            0)])
-               (do-scroll x y #t))))]
+               (do-scroll x y #t x old-y))))]
         [else
          (when (and media (not (send media get-printing)))
            (using-admin
@@ -495,7 +496,7 @@
         (when (not (send media get-printing))
           (let-boxes ([x 0][y 0][w 0][h 0])
               (get-view x y w h)
-            (redraw x y w h)))
+            (redraw x y w h #f)))
         (let ([bg (get-canvas-background)])
           (when bg
             (let ([adc (get-dc)])
@@ -543,27 +544,30 @@
       (let-boxes ([x 0]
                   [y 0])
           (get-scroll x y)
-        (when fx
-          (set-box! fx (- (* x hpixels-per-scroll) xmargin)))
-        (when fy
-          (if (and media
-                   (or (positive? y)
-                       scroll-bottom-based?))
-              (let ([v (- (if (send media locked-for-read?)
-                              0.0
-                              (send media scroll-line-location (+ y scroll-offset)))
-                          ymargin)])
-                (set-box! fy v)
-                (when (and scroll-bottom-based?
-                           (or (positive? scroll-height)
-                               scroll-to-last?))
-                  (let-boxes ([w 0] [h 0])
-                      (get-client-size w h)
-                    (let ([h (max (- h (* 2 ymargin))
-                                  0)])
-                      (set-box! fy (- (unbox fy) h))))))
-              (set-box! fy (- ymargin))))))
+        (convert-scroll-to-location x y fx fy)))
     (get-dc))
+
+  (define/private (convert-scroll-to-location x y fx fy)
+    (when fx
+      (set-box! fx (- (* x hpixels-per-scroll) xmargin)))
+    (when fy
+      (if (and media
+               (or (positive? y)
+                   scroll-bottom-based?))
+          (let ([v (- (if (send media locked-for-read?)
+                          0.0
+                          (send media scroll-line-location (+ y scroll-offset)))
+                      ymargin)])
+            (set-box! fy v)
+            (when (and scroll-bottom-based?
+                       (or (positive? scroll-height)
+                           scroll-to-last?))
+              (let-boxes ([w 0] [h 0])
+                  (get-client-size w h)
+                (let ([h (max (- h (* 2 ymargin))
+                              0)])
+                  (set-box! fy (- (unbox fy) h))))))
+          (set-box! fy (- ymargin)))))
 
   (define/public (get-view fx fy fw fh [unused-full? #f])
     (let ([w (box 0)]
@@ -579,10 +583,21 @@
       (when fw
         (set-box! fw (max 0 (- (unbox w) (* 2 xmargin)))))))
 
-  (define/public (redraw localx localy fw fh)
+  (define/public (redraw localx localy fw fh clear?)
     (when (and media
                (not (send media get-printing)))
       (begin-refresh-sequence)
+      (when clear?
+        (let ([bg (get-canvas-background)])
+          (when bg
+            (let ([adc (get-dc)])
+              (let ([b (send adc get-brush)]
+                    [p (send adc get-pen)])
+                (send adc set-brush bg 'solid)
+                (send adc set-pen bg 1 'transparent)
+                (send adc draw-rectangle localx localy fw fh)
+                (send adc set-brush b)
+                (send adc set-pen p))))))
       (let ([x (box 0)]
             [y (box 0)]
             [w (box 0)]
@@ -699,7 +714,7 @@
                               (send hscroll set-value sx))
                             (when vscroll
                               (send vscroll set-value sy))
-                            (do-scroll sx sy refresh?)
+                            (do-scroll sx sy refresh? cx cy)
                             #t)
                           #f)))))))))
 
@@ -793,8 +808,10 @@
                                  (values 0 0 0 0 1 1)
                                  (when (not media)
                                    (let ([dc (get-dc)])
-                                     (send dc set-background (get-canvas-background))
-                                     (send dc clear)))))])
+                                     (let ([bg (get-canvas-background)])
+                                       (when bg
+                                         (send dc set-background bg)
+                                         (send dc clear)))))))])
 
                 (if (not (and (= scroll-width hnum-scrolls)
                               (= scroll-height vnum-scrolls)
@@ -868,7 +885,7 @@
 
                     retval)))))))
 
-  (define/private (do-scroll x y refresh?)
+  (define/private (do-scroll x y refresh? old-x old-y)
     (let ([savenoloop? noloop?])
       (set! noloop? #t)
       
@@ -883,8 +900,45 @@
           (set-scroll-pos 'vertical (->long (min y scroll-height)))))
       
       (set! noloop? savenoloop?)
-      
-      (when refresh? (repaint))))
+
+      (when refresh?
+        (if (and #f ;; special scrolling disabled: not faster with Cocoa, broken for Windows
+                 (not need-refresh?)
+                 (not lazy-refresh?)
+                 (get-canvas-background)
+                 (= x old-x)) ; could handle horizontal scrolling in the future
+            (let-boxes ([fx 0]
+                        [old-fy 0]
+                        [new-fy 0])
+                (begin
+                  (convert-scroll-to-location x y fx new-fy)
+                  (convert-scroll-to-location old-x old-y #f old-fy))
+              (let-boxes ([vx 0][vy 0][vw 0][vh 0])
+                  (get-view vx vy vw vh) ; editor coords
+                (cond
+                 [(and (new-fy . < . old-fy)
+                       (old-fy . < . (+ new-fy vh)))
+                  (let ([dc (get-dc)])
+                    (send dc copy
+                          xmargin ymargin
+                          vw (- (+ new-fy vh) old-fy)
+                          xmargin (+ ymargin (- old-fy new-fy)))
+                    (redraw xmargin ymargin 
+                            vw (- old-fy new-fy)
+                            #t))]
+                 [(and (old-fy . < . new-fy)
+                       (new-fy . < . (+ old-fy vh)))
+                  (let ([dc (get-dc)])
+                    (send dc copy
+                          xmargin (+ ymargin (- new-fy old-fy))
+                          vw (- (+ old-fy vh) new-fy)
+                          xmargin ymargin)
+                    (let ([d (- (+ old-fy vh) new-fy)])
+                      (redraw xmargin (+ ymargin d)
+                              vw (- vh d)
+                              #t)))]
+                 [else (repaint)])))
+            (repaint)))))
 
   (define/override (set-scrollbars x y x2 y2 x3 y3 x4 y4 ?) (void))
 
@@ -1118,7 +1172,7 @@
          [is-shown?
           (if (not (send canvas get-canvas-background))
               (send canvas repaint)
-              (send canvas redraw localx localy w h))]))))
+              (send canvas redraw localx localy w h #f))]))))
 
   (define/override (resized update?)
     (all-in-chain (lambda (a) (send a do-resized update?))))

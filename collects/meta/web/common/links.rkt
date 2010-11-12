@@ -1,4 +1,6 @@
-#lang at-exp s-exp meta/web/html
+#lang at-exp racket/base
+
+(require scribble/html)
 
 (define-syntax-rule (define* id E) (begin (define id E) (provide id)))
 

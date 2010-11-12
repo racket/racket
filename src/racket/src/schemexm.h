@@ -41,6 +41,8 @@
 #define scheme_kill_thread (scheme_extension_table->scheme_kill_thread)
 #define scheme_break_thread (scheme_extension_table->scheme_break_thread)
 #define scheme_break_main_thread (scheme_extension_table->scheme_break_main_thread)
+#define scheme_break_main_thread_at (scheme_extension_table->scheme_break_main_thread_at)
+#define scheme_get_main_thread_break_handle (scheme_extension_table->scheme_get_main_thread_break_handle)
 #define scheme_set_break_main_target (scheme_extension_table->scheme_set_break_main_target)
 #define scheme_thread_block (scheme_extension_table->scheme_thread_block)
 #define scheme_thread_block_enable_break (scheme_extension_table->scheme_thread_block_enable_break)
@@ -224,6 +226,8 @@
 #define scheme_strdup_eternal (scheme_extension_table->scheme_strdup_eternal)
 #define scheme_malloc_fail_ok (scheme_extension_table->scheme_malloc_fail_ok)
 #ifndef MZ_PRECISE_GC
+#define scheme_late_weak_reference (scheme_extension_table->scheme_late_weak_reference)
+#define scheme_late_weak_reference_indirect (scheme_extension_table->scheme_late_weak_reference_indirect)
 #define scheme_weak_reference (scheme_extension_table->scheme_weak_reference)
 #define scheme_weak_reference_indirect (scheme_extension_table->scheme_weak_reference_indirect)
 #define scheme_unweak_reference (scheme_extension_table->scheme_unweak_reference)
@@ -250,6 +254,8 @@
 #endif
 #define scheme_malloc_immobile_box (scheme_extension_table->scheme_malloc_immobile_box)
 #define scheme_free_immobile_box (scheme_extension_table->scheme_free_immobile_box)
+#define scheme_add_gc_callback (scheme_extension_table->scheme_add_gc_callback)
+#define scheme_remove_gc_callback (scheme_extension_table->scheme_remove_gc_callback)
 #define scheme_make_bucket_table (scheme_extension_table->scheme_make_bucket_table)
 #define scheme_add_to_table (scheme_extension_table->scheme_add_to_table)
 #define scheme_change_in_table (scheme_extension_table->scheme_change_in_table)
@@ -599,6 +605,7 @@
 #define scheme_eqv (scheme_extension_table->scheme_eqv)
 #define scheme_equal (scheme_extension_table->scheme_equal)
 #define scheme_chaperone_of (scheme_extension_table->scheme_chaperone_of)
+#define scheme_impersonator_of (scheme_extension_table->scheme_impersonator_of)
 #ifdef MZ_PRECISE_GC
 #define scheme_hash_key (scheme_extension_table->scheme_hash_key)
 #endif
@@ -629,9 +636,11 @@
 #define scheme_unbox (scheme_extension_table->scheme_unbox)
 #define scheme_set_box (scheme_extension_table->scheme_set_box)
 #define scheme_make_weak_box (scheme_extension_table->scheme_make_weak_box)
+#define scheme_make_late_weak_box (scheme_extension_table->scheme_make_late_weak_box)
 #define scheme_make_ephemeron (scheme_extension_table->scheme_make_ephemeron)
 #define scheme_ephemeron_value (scheme_extension_table->scheme_ephemeron_value)
 #define scheme_ephemeron_key (scheme_extension_table->scheme_ephemeron_key)
+#define scheme_make_stubborn_will_executor (scheme_extension_table->scheme_make_stubborn_will_executor)
 #define scheme_load (scheme_extension_table->scheme_load)
 #define scheme_load_extension (scheme_extension_table->scheme_load_extension)
 #define scheme_register_extension_global (scheme_extension_table->scheme_register_extension_global)
@@ -652,6 +661,7 @@
 #define scheme_get_signal_handle (scheme_extension_table->scheme_get_signal_handle)
 #define scheme_char_strlen (scheme_extension_table->scheme_char_strlen)
 #define scheme_stx_extract_marks (scheme_extension_table->scheme_stx_extract_marks)
+#define scheme_get_place_table (scheme_extension_table->scheme_get_place_table)
 #define scheme_register_process_global (scheme_extension_table->scheme_register_process_global)
 #ifdef MZ_PRECISE_GC
 #pragma GC_VARIABLE_STACK_THOUGH_TABLE

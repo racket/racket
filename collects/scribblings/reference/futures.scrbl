@@ -54,8 +54,8 @@ in parallel. See also @guidesecref["effective-futures"].
  evaluation of the @racket[thunk] inside the given future, returning
  the values produced by @racket[thunk]. After @racket[touch] forces
  the evaluation of a @racket[thunk], the resulting values are retained
- by the future descriptor in place of @racket[thunk], and additional
- @racket[touch]es of the future descriptor return those values.
+ by the future in place of @racket[thunk], and additional
+ @racket[touch]es of the future return those values.
 
  Between a call to @racket[future] and @racket[touch] for a given
  future, the given @racket[thunk] may run speculatively in parallel to
@@ -66,15 +66,24 @@ in parallel. See also @guidesecref["effective-futures"].
 (let ([f (future (lambda () (+ 1 2)))])
   (list (+ 3 4) (touch f)))
 ]}
+  
+  
+@defproc[(current-future) (or/c #f future?)]{
+  Returns the descriptor of the future whose thunk execution is the
+  current continuation. If a future thunk itself uses @racket[touch],
+  future-thunk executions can be nested, in which case the descriptor of the
+  most immediately executing future is returned. If the current
+  continuation is not a future-thunk execution, the result is @racket[#f].
+}
 
 
 @defproc[(future? [v any/c]) boolean?]{
-  Returns @racket[#t] if @racket[v] is a future-descriptor value,
+  Returns @racket[#t] if @racket[v] is a future value,
   @racket[#f] otherwise.
 }
 
 @defproc[(processor-count) exact-positive-integer?]{
-  Returns the number of parallel computations units (e.g., processors
+  Returns the number of parallel computation units (e.g., processors
   or cores) that are available on the current machine.
 }
 

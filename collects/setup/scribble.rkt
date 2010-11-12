@@ -19,6 +19,7 @@
          scribble/html-properties
          scribble/manual ; really shouldn't be here... see dynamic-require-doc
          scribble/private/run-pdflatex
+         unstable/file
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render))
 
@@ -145,7 +146,7 @@
                               (if subpart
                                   (format "~a: " subpart)
                                   "")])
-                            (printf "~a: ~a~a~n" program-name task (apply format formatstr rest))))
+                            (printf "~a: ~a~a\n" program-name task (apply format formatstr rest))))
                           (define (with-record-error cc go fail-k)
                             (with-handlers ([exn:fail?
                                              (lambda (exn)
@@ -637,7 +638,9 @@
                                      (get-compiled-file-sha1 renderer-path)
                                      (get-file-sha1 css-path))])
                      (with-output-to-file stamp-file #:exists 'truncate/replace (lambda () (write data)))
-                     (file-or-directory-modify-seconds stamp-file (max aux-time src-time))))
+                     (let ([m (max aux-time src-time)])
+                       (unless (equal? m +inf.0)
+                         (file-or-directory-modify-seconds stamp-file m)))))
                  info))))
          (lambda () #f))
         #f))))
@@ -682,7 +685,7 @@
     (unless latex-dest
       (let ([dir (doc-dest-dir doc)])
         (if (not (directory-exists? dir))
-          (make-directory dir)
+          (make-directory*/ignore-exists-exn dir)
           (for ([f (directory-list dir)]
                 #:when
                 (and (file-exists? f)
@@ -781,7 +784,7 @@
 (define (write- latex-dest vers doc name data)
   (let* ([filename (sxref-path latex-dest doc name)])
     (when (verbose) (printf " [Caching to disk ~a]\n" filename))
-    (make-directory* (doc-dest-dir doc))
+    (make-directory*/ignore-exists-exn (doc-dest-dir doc))
     (with-compile-output filename 
       (lambda (out tmp-filename)
         (write-bytes (s-exp->fasl (append (list (list vers (doc-flags doc))) data)) out)))))

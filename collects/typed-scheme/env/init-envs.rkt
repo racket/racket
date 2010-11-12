@@ -10,7 +10,7 @@
 		       (types union)
 		       mzlib/pconvert mzlib/shared scheme/base)
 	 (types union convenience)         
-	 mzlib/pconvert scheme/match mzlib/shared)
+	 mzlib/pconvert racket/match mzlib/shared)
 
 (define (initialize-type-name-env initial-type-names)
   (for-each (lambda (nm/ty) (register-resolved-type-alias (car nm/ty) (cadr nm/ty))) initial-type-names))

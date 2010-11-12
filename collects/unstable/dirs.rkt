@@ -3,8 +3,7 @@
 ;; Unstable library by: Carl Eastlund <cce@ccs.neu.edu>
 ;; intended for use in racket/contract, so don't try to add contracts!
 
-(require racket/dict
-         setup/path-relativize
+(require setup/path-relativize
          setup/dirs
          (only-in planet/config [CACHE-DIR find-planet-dir]))
 
@@ -31,19 +30,21 @@
     (error 'path->directory-relative-string
       "expected a path or a string (first argument); got: ~e" path))
 
-  (unless (dict? dirs)
+  (unless (and (list? dirs) (andmap pair? dirs))
     (error 'path->directory-relative-string
-      "expected a dictionary (#:dirs keyword argument); got: ~e" dirs))
+      "expected an association list (#:dirs keyword argument); got: ~e" dirs))
 
   (let/ec return
 
     (when (complete-path? path)
-      (for ([(find-dir dir-name) (in-dict dirs)])
+      (for ([dir-entry (in-list dirs)])
+        (define find-dir (car dir-entry))
+        (define dir-name (cdr dir-entry))
 
         (unless (and (procedure? find-dir)
                      (procedure-arity-includes? find-dir 0))
           (error 'path->directory-relative-string
-            "expected keys in dictionary to be thunks (~a); got: ~e"
+            "expected keys in association list to be thunks (~a); got: ~e"
             "#:dirs keyword argument"
             find-dir))
 

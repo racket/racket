@@ -27,12 +27,14 @@
     
     (define (traverse-program/multiple language-settings
                                        init
-                                       kill-termination)
+                                       kill-termination
+                                       #:gui-modules? [gui-modules? #t])
       (let-values ([(eventspace custodian) 
                     (build-user-eventspace/custodian
                      language-settings
                      init
-                     kill-termination)])
+                     kill-termination
+                     #:gui-modules? gui-modules?)])
         (let ([language (drracket:language-configuration:language-settings-language
                          language-settings)]
               [settings (drracket:language-configuration:language-settings-settings
@@ -75,8 +77,9 @@
     (define (expand-program/multiple language-settings
                                      eval-compile-time-part? 
                                      init
-                                     kill-termination)
-      (let ([res (traverse-program/multiple language-settings init kill-termination)])
+                                     kill-termination
+                                     #:gui-modules? [gui-modules? #t])
+      (let ([res (traverse-program/multiple language-settings init kill-termination #:gui-modules? gui-modules?)])
         (λ (input iter complete-program?)
           (let ([expanding-iter
                  (λ (rd cont)
@@ -94,18 +97,20 @@
                             eval-compile-time-part? 
                             init
                             kill-termination
-                            iter)
+                            iter
+                            #:gui-modules? [gui-modules? #t])
       ((expand-program/multiple 
         language-settings
         eval-compile-time-part? 
         init
-        kill-termination)
+        kill-termination
+        #:gui-modules? gui-modules?)
        input
        iter
        #t))
     
     
-    (define (build-user-eventspace/custodian language-settings init kill-termination)
+    (define (build-user-eventspace/custodian language-settings init kill-termination #:gui-modules? [gui-modules? #t])
       (let* ([user-custodian (make-custodian)]
              [eventspace (parameterize ([current-custodian user-custodian])
                            (make-eventspace))]
@@ -134,7 +139,7 @@
         (run-in-eventspace
          (λ ()
            (current-custodian user-custodian)
-           (set-basic-parameters drs-snip-classes)
+           (set-basic-parameters drs-snip-classes #:gui-modules? gui-modules?)
            (drracket:rep:current-language-settings language-settings)))
         (send language on-execute settings run-in-eventspace)
         (run-in-eventspace
@@ -160,7 +165,7 @@
     ;; set-basic-parameters : (listof (is-a/c? snipclass%)) -> void
     ;; sets the parameters that are shared between the repl's initialization
     ;; and expand-program
-    (define (set-basic-parameters snip-classes)
+    (define (set-basic-parameters snip-classes #:gui-modules? [gui-modules? #t])
       (for-each (λ (snip-class) (send (get-the-snip-class-list) add snip-class))
                 snip-classes)
       
@@ -175,29 +180,36 @@
       
       (current-namespace (make-empty-namespace))
       (for-each (λ (x) (namespace-attach-module drracket:init:system-namespace x))
-                to-be-copied-module-names))
+                to-be-copied-module-names)
+      (when gui-modules?
+        (for-each (λ (x) (namespace-attach-module drracket:init:system-namespace x))
+                  to-be-copied-gui-module-names)))
+    
+    (define to-be-copied-gui-module-specs
+      (list '(lib "mred/mred.rkt")
+            '(lib "mrlib/cache-image-snip.rkt")
+            '(lib "mrlib/image-core.rkt")
+            '(lib "mrlib/matrix-snip.rkt")))
     
     ;; these module specs are copied over to each new user's namespace 
     (define to-be-copied-module-specs
-      (list 'mzscheme
-            '(lib "mzlib/foreign.rkt")
-            '(lib "mred/mred.rkt")
-            '(lib "mrlib/cache-image-snip.rkt")
-            '(lib "mrlib/image-core.rkt")
-	    '(lib "mrlib/matrix-snip.rkt")
+      (list 'racket/base 
+            ''#%foreign
             '(lib "mzlib/pconvert-prop.rkt")
             '(lib "planet/terse-info.rkt")))
     
     ;; ensure that they are all here.
     (for-each (λ (x) (dynamic-require x #f)) to-be-copied-module-specs)
+    (for-each (λ (x) (dynamic-require x #f)) to-be-copied-gui-module-specs)
     ;; get the names of those modules.
-    (define to-be-copied-module-names
+    (define-values (to-be-copied-module-names to-be-copied-gui-module-names)
       (let ([get-name
              (λ (spec)
                (if (symbol? spec)
                    spec
                    ((current-module-name-resolver) spec #f #f)))])
-        (map get-name to-be-copied-module-specs)))
+        (values (map get-name to-be-copied-module-specs)
+                (map get-name to-be-copied-gui-module-specs))))
     
     ;; build-input-port : string[file-exists?] -> (values input any)
     ;; constructs an input port for the load handler. Also

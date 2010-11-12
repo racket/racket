@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/list
-         racket/pretty
+(require racket/pretty
          "model/trace.rkt"
          "model/reductions.rkt"
          "model/reductions-config.rkt"

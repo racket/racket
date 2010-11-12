@@ -711,14 +711,14 @@
 	    (with-handlers (((lambda (x) (not (fatal-exn? x)))
 			     (lambda (x)
 			       (fprintf (thread-output-port)
-					": error: ~a~n"
+					": error: ~a\n"
 					(exn-message x)))))
 	      (if (eq? dest 'values)
 		  (k v)
 		  (send dest add (k v)))
 	      (flush-display)
-	      (fprintf (thread-output-port) ": success~n"))))
-      (fprintf (thread-output-port) "~a: failure: ~a~n" name v)))
+	      (fprintf (thread-output-port) ": success\n"))))
+      (fprintf (thread-output-port) "~a: failure: ~a\n" name v)))
 
 (define (try-args arg-types dest name k)
   (apply-args (get-args arg-types) dest name k))
@@ -734,7 +734,7 @@
   (flush-output (thread-output-port))
   (with-handlers ([exn:fail:contract?
 		   (lambda (x)
-		     (fprintf (thread-output-port) ": exn: ~a~n"
+		     (fprintf (thread-output-port) ": exn: ~a\n"
 			      (exn-message x))
 		     ;; Check that exn is from the right place:
 		     (let ([class (if (list? name) 
@@ -748,30 +748,30 @@
 			 ; init is never inherited, so class name really should be present
 			 (unless (regexp-match (symbol->string class) (exn-message x))
 			   (fprintf (thread-output-port) 
-				    "  NO OCCURRENCE of class name ~a in the error message~n"
+				    "  NO OCCURRENCE of class name ~a in the error message\n"
 				    class)))
 		       (unless (regexp-match (symbol->string method) (exn-message x))
 			 (fprintf (thread-output-port) 
-				  "  NO OCCURRENCE of method ~a in the error message~n"
+				  "  NO OCCURRENCE of method ~a in the error message\n"
 				  method))))]
 		  [exn:fail:contract:arity?
 		   (lambda (x)
 		     (fprintf (thread-output-port)
-			      ": UNEXPECTED ARITY MISMATCH: ~a~n"
+			      ": UNEXPECTED ARITY MISMATCH: ~a\n"
 			      (exn-message x)))]
 		  [(lambda (x) (not (fatal-exn? x)))
 		   (lambda (x)
 		     (fprintf (thread-output-port)
-			      ": WRONG EXN TYPE: ~a~n"
+			      ": WRONG EXN TYPE: ~a\n"
 			      (exn-message x)))])
     (k v)
     (flush-display)
-    (fprintf (thread-output-port) ": NO EXN RAISED~n")))
+    (fprintf (thread-output-port) ": NO EXN RAISED\n")))
 
 (define (try-bad-args arg-types dest name k)
   (let ([args (get-bad-args arg-types)])
     (cond
-     [(not (list? args)) (fprintf (thread-output-port) "~a: failure in bad-testing: ~a~n" name args)]
+     [(not (list? args)) (fprintf (thread-output-port) "~a: failure in bad-testing: ~a\n" name args)]
      [else
       (let loop ([pres null][posts args])
 	(unless (null? posts)
@@ -799,16 +799,16 @@
 		    (loop (cdr l)))))))
 
 (define (create-all-random)
-  (fprintf (thread-output-port) "creating all randomly...~n")
+  (fprintf (thread-output-port) "creating all randomly...\n")
   (hash-table-for-each classinfo (lambda (k v)
 				   (create-some k try-args))))
 (define (create-all-exhaust)
-  (fprintf (thread-output-port) "creating all exhaustively...~n")
+  (fprintf (thread-output-port) "creating all exhaustively...\n")
   (hash-table-for-each classinfo (lambda (k v)
 				   (create-some k try-all-args))))
 
 (define (create-all-bad)
-  (fprintf (thread-output-port) "creating all with bad arguments...~n")
+  (fprintf (thread-output-port) "creating all with bad arguments...\n")
   (hash-table-for-each classinfo (lambda (k v)
 				   (create-some k try-bad-args))))
 
@@ -819,7 +819,7 @@
 	 [name (cadr v)]
 	 [methods (cdddr v)])
     (if (void? use)
-	(fprintf (thread-output-port) "~s: no examples~n" name)
+	(fprintf (thread-output-port) "~s: no examples\n" name)
 	(let loop ([l methods])
 	  (unless (null? l)
 	    (unless (symbol? (car l))
@@ -850,7 +850,7 @@
 	    (loop (cdr l)))))))
 
 (define (call-random except)
-  (fprintf (thread-output-port) "calling all except ~a randomly...~n" except)
+  (fprintf (thread-output-port) "calling all except ~a randomly...\n" except)
   (hash-table-for-each classinfo (lambda (k v)
 				   (unless (member k except)
 				     (try-methods k try-args)))))
@@ -859,7 +859,7 @@
   (call-random null))
 
 (define (call-all-bad)
-  (fprintf (thread-output-port) "calling all with bad arguments...~n")
+  (fprintf (thread-output-port) "calling all with bad arguments...\n")
   (hash-table-for-each classinfo (lambda (k v) (try-methods k try-bad-args))))
 
 (define (call-all-non-editor)
@@ -871,7 +871,7 @@
   (create-all-random)
   (create-all-random))
 
-(printf " Creating Example Instances~n")  
+(printf " Creating Example Instances\n")  
 
 (define f (make-object frame% "Example Frame 1"))
 (send frame%-example-list add f)
@@ -1000,9 +1000,9 @@
 (send clipboard<%>-example-list add the-clipboard)
 (send clipboard-client%-example-list add (make-object clipboard-client%))
 
-(printf " Done Creating Example Instances~n")  
+(printf " Done Creating Example Instances\n")  
 
-(printf " Checking all methods~n")
+(printf " Checking all methods\n")
 (define in-top-level null)
 (hash-table-for-each classinfo 
 		     (lambda (key v)
@@ -1015,7 +1015,7 @@
 				(if (void? (with-handlers ([void void])
 					     (namespace-variable-value name)))
 				    ;; Not there
-				    (printf "No such procedure/value: ~a~n" name)
+				    (printf "No such procedure/value: ~a\n" name)
 				    
 				    (let ([v (namespace-variable-value name)])
 				      (when (procedure? v)
@@ -1028,7 +1028,7 @@
 							   (andmap integer? a)
 							   (andmap integer? b)
 							   (equal? (sort a <) (sort b <)))))
-					  (printf "Arity mismatch for ~a, real: ~a documented: ~a~n" 
+					  (printf "Arity mismatch for ~a, real: ~a documented: ~a\n" 
 						  name (procedure-arity v) (cadr method))))))
 				
 				(set! in-top-level (cons name in-top-level)))
@@ -1046,12 +1046,12 @@
 						     (if (interface? key) "interface" "class")
 						     s))])
 				   (unless (string=? sp ss)
-				     (printf "bad printed form: ~a != ~a~n" sp ss))))
+				     (printf "bad printed form: ~a != ~a\n" sp ss))))
 			       
 			       ; Check documented methods are right
 			       (let ([ex (send (car v) choose-example)])
 				 (unless (is-a? ex key)
-				   (printf "Bad example: ~a for ~a~n" ex key))
+				   (printf "Bad example: ~a for ~a\n" ex key))
 				 (for-each
 				  (lambda (name method)
 				    (if (or (and (interface? key)
@@ -1063,21 +1063,21 @@
 					'(when (is-a? ex key)
 					  (let ([m (make-generic ex name)])
 					    (unless (equal? (arity m) (cadr method))
-					      (printf "Warning: arity mismatch for ~a in ~a, real: ~a documented: ~a~n" 
+					      (printf "Warning: arity mismatch for ~a in ~a, real: ~a documented: ~a\n" 
 						      name key
 						      (arity m) (cadr method)))))
 					
 					;; Not there
-					(printf "No such method: ~a in ~a~n" name key)))
+					(printf "No such method: ~a in ~a\n" name key)))
 				  names methods))
 			       
 			       ; Check everything is documented
 			       (for-each
 				(lambda (n)
 				  (unless (memq n names)
-				    (printf "Undocumented method: ~a in ~a~n" n key)))
+				    (printf "Undocumented method: ~a in ~a\n" n key)))
 				(interface->method-names (if (interface? key) key (class->interface key)))))))))
-(printf " Method-checking done~n")
+(printf " Method-checking done\n")
 
 (let* ([get-all (lambda (n)
 		  (parameterize ([current-namespace n])
@@ -1092,7 +1092,7 @@
   (for-each
    (lambda (i)
      (unless (memq i expect-n)
-       (printf "Undocumented global: ~a~n" i)))
+       (printf "Undocumented global: ~a\n" i)))
    actual-n))
 
 (unless (and (>= (vector-length argv) 1)

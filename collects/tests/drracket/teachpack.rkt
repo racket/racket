@@ -45,13 +45,13 @@
     (let ([got (fetch-output drs-frame)]
           [full-expectation 
            (string-append
-            (apply string-append (map (lambda (x) (format "Teachpack: ~a.~n" x)) tp-names))
+            (apply string-append (map (lambda (x) (format "Teachpack: ~a.\n" x)) tp-names))
             expected
             "\nThis psorgram should be tested.")])
       (unless (equal? got 
                       full-expectation)
         (printf 
-         "FAILED:       tp: ~s~n             exp: ~s~n        expected: ~s~n             got: ~s~n"
+         "FAILED:       tp: ~s\n             exp: ~s\n        expected: ~s\n             got: ~s\n"
          tp-exps
          dr-exp
          full-expectation
@@ -80,12 +80,12 @@
         [dialog
          (let ([got (send dialog get-message)])
            (unless (string=? got expected-error)
-             (printf "FAILED:       tp: ~s~n        expected: ~s~n             got: ~s~n"
+             (printf "FAILED:       tp: ~s\n        expected: ~s\n             got: ~s\n"
                      tp-exp expected-error got))
            (fw:test:button-push "Ok")
            (wait-for-new-frame dialog))]
         [else
-         (printf "FAILED: no error message appeared~n              tp: ~s~n        expected: ~s~n"
+         (printf "FAILED: no error message appeared\n              tp: ~s\n        expected: ~s\n"
                  tp-exp expected-error)]))))
 
 (define (test-bad/execute-teachpack tp-exp expected)
@@ -122,15 +122,14 @@
         [dialog
          (let ([got (send dialog get-message)]
                [expected-error
-                (string-append (format "Invalid Teachpack: ~a~n" tp-name)
-                               expected)])
+                (format "Invalid Teachpack: ~a\n~a" tp-name expected)])
            (unless (string=? got expected-error)
-             (printf "FAILED:       tp: ~s~n        expected: ~s~n             got: ~s~n"
+             (printf "FAILED:       tp: ~s\n        expected: ~s\n             got: ~s\n"
                      tp-exp expected-error got))
            (fw:test:button-push "Ok")
            (wait-for-new-frame dialog))]
         [else
-         (printf "FAILED: no error message appeared~n              tp: ~s~n        expected: ~s~n"
+         (printf "FAILED: no error message appeared\n              tp: ~s\n        expected: ~s\n"
                  tp-exp error)]))))
 
 (define (generic-tests)
@@ -192,15 +191,15 @@
           (lambda (dir)
             (lambda (teachpack)
               (when (or (equal? #"ss" (filename-extension teachpack))
-                        (equal? #"scm" (filename-extension teachpack)))
+                        (equal? #"scm" (filename-extension teachpack))
+                        (equal? #"rkt" (filename-extension teachpack)))
                 (unless (equal? "graphing.ss" (path->string teachpack))
-                  (printf "  testing ~a~n" teachpack)
+                  (printf "  testing ~a\n" teachpack)
                   (fw:test:menu-select "Language" "Clear All Teachpacks")
                   (fw:test:menu-select "Language" "Add Teachpack...")
                   (wait-for-new-frame drs-frame)
                   (let* ([tp-dialog (get-top-level-focus-window)]
-                         [choice (find-leftmost-choice tp-dialog)])
-                    (fw:test:set-list-box! choice (path->string teachpack))
+                         [choice (find/select-relevant-choice tp-dialog (path->string teachpack))])
                     (fw:test:button-push "OK")
                     (wait-for-new-frame tp-dialog))
                   (do-execute drs-frame)
@@ -209,8 +208,8 @@
                         [expected (format "Teachpack: ~a.\n1"
                                           (path->string teachpack))])
                     (unless (equal? got expected)
-                      (printf "FAILED built in teachpack test: ~a~n" (path->string teachpack))
-                      (printf "       got: ~s~n  expected: ~s~n" got expected)))))))]
+                      (printf "FAILED built in teachpack test: ~a\n" (path->string teachpack))
+                      (printf "       got: ~s\n  expected: ~s\n" got expected)))))))]
          [test-teachpacks
           (lambda (paths)
             (for-each (lambda (dir)
@@ -222,6 +221,26 @@
     (do-execute drs-frame)
     (test-teachpacks (list (build-path teachpack-dir "2htdp")
                            (build-path teachpack-dir "htdp")))))
+
+(define (find/select-relevant-choice tp-dialog tp-string)
+  (define lb
+    (let loop ([p tp-dialog])
+      (cond
+        [(and (is-a? p list-box%)
+              (list-control-has-string? p tp-string))
+         p]
+        [(is-a? p area-container<%>)
+         (ormap loop (send p get-children))]
+        [else #f])))
+  (cond
+    [lb (fw:test:set-list-box! lb tp-string)]
+    [else
+     (error 'find/select-relevant-choice "did not find ~s in any list-box%" tp-string)]))
+
+(define (list-control-has-string? control str)
+  (for/or ([i (in-range 0 (send control get-number))])
+    (equal? (send control get-string i) 
+            str)))
 
 (define (find-leftmost-choice frame)
   (let loop ([p frame])

@@ -19,10 +19,12 @@
 
 (provide/contract
  [render-reduction-relation
-  (->d ([rel reduction-relation?])
+  (->i ([rel reduction-relation?])
        ([file (or/c false/c path-string?)]
-        #:style [style reduction-rule-style/c])
-       [result (if (path-string? file)
+        #:style
+        [style reduction-rule-style/c])
+       [result (file)
+               (if (path-string? file)
                    void?
                    pict?)])]
  [reduction-relation->pict (->* (reduction-relation?)
@@ -34,10 +36,12 @@
                       (#:nts (or/c false/c (listof (or/c string? symbol?))))
                       pict?)]
  [render-language
-  (->d ([lang compiled-lang?])
+  (->i ([lang compiled-lang?])
        ([file (or/c false/c path-string?)]
-        #:nts [nts (or/c false/c (listof (or/c string? symbol?)))])
-       [result (if (path-string? file)
+        #:nts
+        [nts (or/c false/c (listof (or/c string? symbol?)))])
+       [result (file)
+               (if (path-string? file)
                    void?
                    pict?)])])
 
@@ -55,6 +59,8 @@
 (provide/contract
  [label-style (parameter/c text-style/c)]
  [literal-style (parameter/c text-style/c)]
+ [grammar-style (parameter/c text-style/c)]
+ [paren-style (parameter/c text-style/c)]
  [metafunction-style (parameter/c text-style/c)]
  [default-style (parameter/c text-style/c)]
  [non-terminal-style (parameter/c text-style/c)]
@@ -78,7 +84,8 @@
                         'left-right/beside-side-conditions
                         'up-down
                         'up-down/vertical-side-conditions
-                        'up-down/compact-side-conditions))])
+                        'up-down/compact-side-conditions))]
+ [delimit-ellipsis-arguments? (parameter/c any/c)])
 
 (provide/contract
  [label-font-size (parameter/c (and/c (between/c 1 255) integer?))]

@@ -1347,7 +1347,7 @@
 
  /* MZ_USE_JIT_I386 enables the JIT for x86 */
 
- /* MZ_USE_JIT_X86_65 enables the JIT for x86_64 */
+ /* MZ_USE_JIT_X86_64 enables the JIT for x86_64 */
 
  /* MZ_USE_JIT_PPC enables the JIT for PowerPC */
 

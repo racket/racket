@@ -170,9 +170,10 @@
                   [scheme-test-module-name
                    ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
                   [scheme-signature-module-name
-                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature.ss") #f #f)])
+                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-german.rkt") #f #f)])
               (run-in-user-thread
                (lambda ()
+		 (when (getenv "PLTDRHTDPNOCOMPILED") (use-compiled-file-paths '()))
                  (read-accept-quasiquote (get-accept-quasiquote?))
                  (ensure-drscheme-secrets-declared drs-namespace)
                  (namespace-attach-module drs-namespace ''drscheme-secrets)
@@ -191,7 +192,7 @@
 
 		 ;; hack: the test-engine code knows about the test~object name; we do, too
 		 (namespace-set-variable-value! 'test~object (build-test-engine))
-		 ;; record test-case failures with the test engine
+		 ;; record signature violations with the test engine
 		 (signature-violation-proc
 		  (lambda (obj signature message blame)
 		    (cond
@@ -762,13 +763,28 @@
                                      (drscheme:rep:current-rep)
 				     '#%deinprogramm))
 
-	  ;; DeinProgramm addition: needed for test boxes; see the code
-	  ;; in collects/drscheme/private/language.ss
-	  (define/override (front-end/interaction port settings)
-	    (let ((reader (get-reader)))
-	      (lambda ()
-		(reader (object-name port) port))))
-	    
+          (define/override (front-end/interaction port settings)
+            (let ([reader (get-reader)] ;; DeinProgramm addition:
+					;; needed for test boxes; see
+					;; the code in
+					;; collects/drscheme/private/language.ss
+		  [start? #t]
+                  [done? #f])
+              (λ ()
+                (cond
+		  [start?
+		   (set! start? #f)
+		   #'(#%plain-app reset-tests)]
+                  [done? eof]
+                  [else
+                   (let ([ans (reader (object-name port) port)])
+                     (cond
+                       [(eof-object? ans)
+                        (set! done? #t)
+                        #`(test)]
+                       [else
+                        ans]))]))))
+
           (define/augment (capability-value key)
             (case key
               [(drscheme:teachpack-menu-items) deinprogramm-teachpack-callbacks]
@@ -996,9 +1012,10 @@
                         (parameterize ([current-custodian nc])
                           (thread (lambda () 
                                     (with-handlers ((exn? (lambda (x) (set! exn x))))
-                                      (parameterize ([read-accept-reader #t]
-						     [current-namespace (make-base-namespace)])
-                                        (compile-file filename))))))])
+                                      (parameterize ([current-namespace (make-base-namespace)])
+                                        (with-module-reading-parameterization
+                                         (lambda ()
+                                           (compile-file filename))))))))])
                    (thread
                     (lambda ()
                       (thread-wait t)
@@ -1246,10 +1263,12 @@
       ;;  test coverage
       ;;
       
+      ;; WARNING: much code copied from "collects/lang/htdp-langs.rkt"
+      
       (define test-coverage-enabled (make-parameter #t))
       (define current-test-coverage-info (make-thread-cell #f))
       
-      (define (initialize-test-coverage-point key expr)
+      (define (initialize-test-coverage-point expr)
         (unless (thread-cell-ref current-test-coverage-info)
           (let ([ht (make-hasheq)])
             (thread-cell-set! current-test-coverage-info ht)
@@ -1272,15 +1291,19 @@
                        (send rep set-test-coverage-info ht on-sd off-sd #f)))))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
-            (hash-set! ht key (mcons #f expr)))))
+            (hash-set! ht expr #;(box #f) (mcons #f #f)))))
       
-      (define (test-covered key)
-        (let ([ht (thread-cell-ref current-test-coverage-info)])
-          (and ht
-               (let ([v (hash-ref ht key)])
-                 (and v
-                      (with-syntax ([v v])
-                        #'(set-mcar! v #t)))))))
+      (define (test-covered expr)
+        (let* ([ht (or (thread-cell-ref current-test-coverage-info)
+                       (error 'deinprogramm-langs
+                              "internal-error: no test-coverage table"))]
+               [v (hash-ref ht expr
+                    (lambda ()
+                      (error 'deinprogramm-langs
+                             "internal-error: expression not found: ~.s"
+                             expr)))])
+          #; (lambda () (set-box! v #t))
+          (with-syntax ([v v]) #'(#%plain-app set-mcar! v #t))))
       
       (define-values/invoke-unit et:stacktrace@
         (import et:stacktrace-imports^) (export (prefix et: et:stacktrace^)))

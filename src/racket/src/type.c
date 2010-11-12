@@ -167,6 +167,7 @@ scheme_init_type ()
   set_name(scheme_macro_type, "<macro>");
   set_name(scheme_vector_type, "<vector>");
   set_name(scheme_flvector_type, "<flvector>");
+  set_name(scheme_fxvector_type, "<fxvector>");
   set_name(scheme_bignum_type, "<bignum-integer>");
   set_name(scheme_escaping_cont_type, "<escape-continuation>");
   set_name(scheme_sema_type, "<semaphore>");
@@ -552,6 +553,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_raw_pair_type, cons_cell);
   GC_REG_TRAV(scheme_vector_type, vector_obj);
   GC_REG_TRAV(scheme_flvector_type, flvector_obj);
+  GC_REG_TRAV(scheme_fxvector_type, fxvector_obj);
   GC_REG_TRAV(scheme_cpointer_type, cpointer_obj);
   GC_REG_TRAV(scheme_offset_cpointer_type, offset_cpointer_obj);
 

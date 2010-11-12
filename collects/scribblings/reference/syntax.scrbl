@@ -655,7 +655,7 @@ an identifier can be either imported or defined for a given
 
 @defform[(local-require require-spec ...)]{
 
-Like @scheme[require], but for use in a local-definition context to
+Like @scheme[require], but for use in a @tech{internal-definition context} to
 import just into the local context. Only bindings from @tech{phase
 level} 0 are imported.}
 
@@ -837,8 +837,11 @@ follows.
  ]}
 
  @defsubform[(protect-out provide-spec ...)]{ Like the union of the
- @racket[provide-spec]s, except that the exports are protected; see
- @secref["modprotect"]. The @racket[provide-spec] must specify only
+ @racket[provide-spec]s, except that the exports are protected;
+ requiring modules may refer to these bindings, but may not extract
+ these bindings from macro expansions or access them via @racket[eval] without
+ access privileges.
+ For more details, see @secref["modprotect"]. The @racket[provide-spec] must specify only
  bindings that are defined within the exporting module.
 
  @examples[#:eval (syntax-eval)
@@ -1738,8 +1741,8 @@ position with respect to the @racket[if] form.
 
 @defform/subs[#:literals (else =>)
               (cond cond-clause ...)
-              ([cond-clause [test-expr then-expr ...+]
-                            [else then-expr ...+]
+              ([cond-clause [test-expr then-body ...+]
+                            [else then-body ...+]
                             [test-expr => proc-expr]
                             [test-expr]])]{
 
@@ -1750,10 +1753,10 @@ A @racket[cond-clause] that starts with @racket[else] must be the last
 
 If no @racket[cond-clause]s are present, the result is @|void-const|.
 
-If only a @racket[[else then-expr ...+]] is present, then the
-@racket[then-expr]s are evaluated. The results from all but the last
-@racket[then-expr] are ignored. The results of the last
-@racket[then-expr], which is in tail position with respect to the
+If only a @racket[[else then-body ...+]] is present, then the
+@racket[then-body]s are evaluated. The results from all but the last
+@racket[then-body] are ignored. The results of the last
+@racket[then-body], which is in tail position with respect to the
 @racket[cond] form, are the results for the whole @racket[cond]
 form.
 
@@ -1763,10 +1766,10 @@ the remaining @racket[cond-clause]s, in tail position with respect to
 the original @racket[cond] form. Otherwise, evaluation depends on the
 form of the @racket[cond-clause]:
 
-@specsubform[[test-expr then-expr ...+]]{The @racket[then-expr]s are
+@specsubform[[test-expr then-body ...+]]{The @racket[then-body]s are
 evaluated in order, and the results from all but the last
-@racket[then-expr] are ignored. The results of the last
-@racket[then-expr], which is in tail position with respect to the
+@racket[then-body] are ignored. The results of the last
+@racket[then-body], which is in tail position with respect to the
 @racket[cond] form, provides the result for the whole @racket[cond]
 form.}
 
@@ -1860,8 +1863,8 @@ position with respect to the original @racket[or] form.
 
 @defform/subs[#:literals (else)
               (case val-expr case-clause ...)
-              ([case-clause [(datum ...) then-expr ...+]
-                            [else then-expr ...+]])]{
+              ([case-clause [(datum ...) then-body ...+]
+                            [else then-body ...+]])]{
 
 Evaluates @racket[val-expr] and uses the result to select a
 @racket[case-clause]. The selected clause is the first one with a
@@ -1872,7 +1875,7 @@ result of @racket[val-expr]. If no such @racket[datum] is present, the
 @racket[case] form is @|void-const|.
 
 For the selected @racket[case-clause], the results of the last
-@racket[then-expr], which is in tail position with respect to the
+@racket[then-body], which is in tail position with respect to the
 @racket[case] form, are the results for the whole @racket[case] form.
 
 A @racket[case-clause] that starts with @racket[else] must be the last
@@ -1925,6 +1928,8 @@ defined as follows:
                                          @#,elem{if} (#,cvt head . _datum) = expr
 ]
 
+In an @tech{internal-definition context} (see @secref["intdef-body"]), 
+a @racket[define] form introduces a local binding.
 At the top level, the top-level binding @racket[id] is created after
 evaluating @racket[expr], if it does not exist already, and the
 top-level mapping of @racket[id] (in the @techlink{namespace} linked
@@ -1955,6 +1960,8 @@ Evaluates the @racket[expr], and @tech{bind}s the results to the
 @racket[id]s; if @racket[expr] produces a different number of results,
 the @exnraise[exn:fail:contract].
 
+In an @tech{internal-definition context} (see @secref["intdef-body"]), 
+a @racket[define-values] form introduces local bindings.
 At the top level, the top-level binding for each @racket[id] is
 created after evaluating @racket[expr], if it does not exist already,
 and the top-level mapping of each @racket[id] (in the
@@ -1984,6 +1991,9 @@ The second form is a shorthand the same as for @racket[define]; it
 expands to a definition of the first form where the @racket[expr] is a
 @racket[lambda] form.}
 
+In an @tech{internal-definition context} (see @secref["intdef-body"]), 
+a @racket[define-syntax] form introduces a local binding.
+
 @defexamples[#:eval (syntax-eval)
 (define-syntax foo
   (syntax-rules ()
@@ -2011,6 +2021,9 @@ When @racket[expr] produces zero values for a top-level
 @racket[define-syntaxes] (i.e., not in a module or internal-definition
 position), then the @racket[id]s are effectively declared without
 binding; see @secref["macro-introduced-bindings"].
+
+In an @tech{internal-definition context} (see @secref["intdef-body"]), 
+a @racket[define-syntaxes] form introduces local bindings.
 
 @defexamples[#:eval (syntax-eval)
 (define-syntaxes (foo1 foo2 foo3)
@@ -2202,12 +2215,12 @@ classifications:
 
 @guideintro["when+unless"]{@racket[when] and @racket[unless]}
 
-@defform[(when test-expr expr ...)]{
+@defform[(when test-expr body ...+)]{
 
 Evaluates @racket[test-expr]. If the result is @racket[#f], then
 the result of the @racket[when] expression is
-@|void-const|. Otherwise, the @racket[expr]s are evaluated, and the
-last @racket[expr] is in tail position with respect to the
+@|void-const|. Otherwise, the @racket[body]s are evaluated, and the
+last @racket[body] is in tail position with respect to the
 @racket[when] form.
 
 @mz-examples[
@@ -2218,9 +2231,9 @@ last @racket[expr] is in tail position with respect to the
   (display " there"))
 ]}
 
-@defform[(unless test-expr expr ...)]{
+@defform[(unless test-expr body ...+)]{
 
-Equivalent to @racket[(when (not test-expr) expr ...)].
+Equivalent to @racket[(when (not test-expr) body ...+)].
 
 @mz-examples[
 (unless (positive? 5)

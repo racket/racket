@@ -575,7 +575,7 @@ certificates}.
 
 The expander's handling of @racket[letrec-values+syntaxes] is similar
 to its handling of @racket[define-syntaxes]. A
-@racket[letrec-values+syntaxes] mist be expanded in an arbitrary phase
+@racket[letrec-values+syntaxes] might be expanded in an arbitrary phase
 level @math{n} (not just 0), in which case the expression for the
 @tech{transformer binding} is expanded at @tech{phase level} @math{n+1}.
 
@@ -604,7 +604,8 @@ then expansion stops without adding the identifier.
 @subsection[#:tag "intdef-body"]{Internal Definitions}
 
 An @tech{internal-definition context} corresponds to a partial expansion step
-(see @secref["partial-expansion"]). A form that supports internal
+(see @secref["partial-expansion"]). Forms that allow internal definitions document
+such positions using the @racket[_body] meta-variable. A form that supports internal
 definitions starts by expanding its first form in an
 internal-definition context, but only partially. That is, it
 recursively expands only until the form becomes one of the following:

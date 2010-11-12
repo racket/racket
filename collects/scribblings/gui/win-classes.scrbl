@@ -57,6 +57,7 @@ Alphabetical:
 @include-section["pane-class.scrbl"]
 @include-section["panel-class.scrbl"]
 @include-section["popup-menu-class.scrbl"]
+@include-section["printer-dc-class.scrbl"]
 @include-section["radio-box-class.scrbl"]
 @include-section["selectable-menu-item-intf.scrbl"]
 @include-section["separator-menu-item-class.scrbl"]

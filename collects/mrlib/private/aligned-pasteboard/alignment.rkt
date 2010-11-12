@@ -157,7 +157,7 @@ neck and it is the most readable solution.
            ($ dim x width stretchable-width?)
            ($ dim y height stretchable-height?))
         others ...)
-       (printf "(make-rect (make-dim ~s ~s ~s) (make-dim ~s ~s ~s))~n"
+       (printf "(make-rect (make-dim ~s ~s ~s) (make-dim ~s ~s ~s))\n"
                x width stretchable-width?
                y height stretchable-height?)
        (rect-print others)]))

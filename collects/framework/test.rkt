@@ -363,7 +363,7 @@
                           (loop (- n 1))))])))]
        [(number? state)
         (unless (send rb is-enabled? state)
-          (error 'test:set-radio-box! "item ~a is not enabled~n" state))
+          (error 'test:set-radio-box! "item ~a is not enabled\n" state))
         (send rb set-selection state)]
        [else (error 'test:set-radio-box!
                     "expected a string or a number as second arg, got: ~e (other arg: ~e)"

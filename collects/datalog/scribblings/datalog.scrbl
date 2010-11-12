@@ -43,7 +43,7 @@ included in a string. The remaining characters may be specified using escape cha
 
 A literal, is a predicate symbol followed by an optional parenthesized list of comma separated terms. A predicate symbol is either an identifier
 or a string. A term is either a variable or a constant. As with predicate symbols, a constant is either an identifier or a string. As a special case,
-two terms separated by @litchar["="] is a literal for the equality predicate.
+two terms separated by @litchar["="] (@litchar["!="]) is a literal for the equality (inequality) predicate.
 The following are literals:
 @verbatim[#:indent 4 #<<END
 parent(john, douglas)
@@ -96,7 +96,8 @@ The following BNF describes the syntax of Datalog.
        (BNF-seq (nonterm "predicate-sym") (litchar "(") (litchar ")"))
        (BNF-seq (nonterm "predicate-sym") (litchar "(") (nonterm "terms") (litchar ")"))
        (nonterm "predicate-sym")
-       (BNF-seq (nonterm "term") (litchar "=") (nonterm "term")))
+       (BNF-seq (nonterm "term") (litchar "=") (nonterm "term"))
+       (BNF-seq (nonterm "term") (litchar "!=") (nonterm "term")))
  (list (nonterm "predicate-sym")
        (nonterm "IDENTIFIER")
        (nonterm "STRING"))

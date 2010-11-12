@@ -122,7 +122,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#!}]{may start a reader extension; see @secref["parse-reader"]}
   @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["parse-quote"]}
   @dispatch[@litchar{#,}]{starts an syntax [splicing] unquote; see @secref["parse-quote"]}
-  @dispatch[@litchar{#~}]{starts compiled code; see @racket[current-compile]}
+  @dispatch[@litchar{#~}]{starts compiled code; see @secref["print-compiled"]}
 
   @dispatch[@cilitchar{#i}]{starts a number; see @secref["parse-number"]}
   @dispatch[@cilitchar{#e}]{starts a number; see @secref["parse-number"]}
@@ -289,10 +289,12 @@ with any other mark, double-precision IEEE floating point is used.
 
 @section[#:tag "parse-boolean"]{Reading Booleans}
 
-A @as-index{@litchar{#t}} or @as-index{@litchar{#T}} is the complete
-input syntax for the boolean constant true, and
-@as-index{@litchar{#f}} or @as-index{@litchar{#F}} is the complete
-input syntax for the boolean constant false.
+A @as-index{@litchar{#true}}, @as-index{@litchar{#t}},
+@as-index{@litchar{#T}} followed by a delimiter is the input syntax
+for the boolean constant ``true,'' and @as-index{@litchar{#false}},
+@as-index{@litchar{#f}}, or @as-index{@litchar{#F}} followed by a
+delimiter is the complete input syntax for the boolean constant
+``false.''
 
 
 @section[#:tag "parse-pair"]{Reading Pairs and Lists}
@@ -830,6 +832,10 @@ certain grammars, such as that of R@superscript{6}RS
 
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
+
+If the @racket[read-accept-reader] or @racket[read-accept-lang]
+@tech{parameter} is set to @racket[#f], then if the reader encounters
+@litchar{#lang} or equivalent @litchar{#!}, the @exnraise[exn:fail:read].
 
 @subsection{S-Expression Reader Language}
 

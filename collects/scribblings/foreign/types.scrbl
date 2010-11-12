@@ -104,7 +104,13 @@ respectively; the ones with no prefix are signed.}
             [_uword ctype?]
             [_long ctype?]
             [_slong ctype?]
-            [_ulong ctype?])]{
+            [_ulong ctype?]
+            [_llong ctype?]
+            [_sllong ctype?]
+            [_ullong ctype?]
+            [_intptr ctype?]
+            [_sintptr ctype?]
+            [_uintptr ctype?])]{
 
 Aliases for basic integer types. The @scheme[_byte] aliases correspond
 to @scheme[_int8]. The @scheme[_short] and @scheme[_word] aliases
@@ -343,7 +349,7 @@ the later case, the result is the @scheme[ctype]).}
 
 @defproc[(_cprocedure [input-types (list ctype?)]
                       [output-type ctype?]
-                      [#:abi abi (or/c symbol/c #f) #f]
+                      [#:abi abi (or/c #f 'default 'stdcall 'sysv) #f]
                       [#:atomic? atomic? any/c #f]
                       [#:async-apply async-apply (or/c #f ((-> any) . -> . any)) #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
@@ -393,20 +399,29 @@ the process may crash or misbehave.
 If an @scheme[async-apply] procedure is provided, then a Racket
 procedure with the generated procedure type can be applied in a
 foreign thread (i.e., an OS-level thread other than the one used to
-run Racket). In that case, @scheme[async-apply] is applied to a thunk
-that encapsulates the specific callback invocation, and the foreign
-thread blocks until the thunk is called and completes; the thunk must
-be called exactly once, and the callback invocation must return
-normally. The @scheme[async-apply] procedure itself is called in an
-unspecified Racket thread and in atomic mode (see @scheme[atomic?]
-above); its job is to arrange for the thunk to be called in a suitable
-context without blocking in any synchronization. (If the callback is
-known to complete quickly, require no synchronization, and work
-independent of the Racket thread in which it runs, then
-@scheme[async-apply] can apply the thunk directly.) Foreign-thread
-detection to trigger @scheme[async-apply] works only when Racket is
-compiled with OS-level thread support, which is the default for many
-platforms.
+run Racket). The call in the foreign thread is transferred to the
+OS-level thread that runs Racket, but the Racket-level thread (in the
+sense of @racket[thread]) is unspecified; the job of
+@scheme[async-apply] is to arrange for the callback procedure to be
+run in a suitable Racket thread. The @scheme[async-apply] function is
+applied to a thunk that encapsulates the specific callback invocation,
+and the foreign OS-level thread blocks until the thunk is called and
+completes; the thunk must be called exactly once, and the callback
+invocation must return normally. The @scheme[async-apply] procedure
+itself is called in atomic mode (see @scheme[atomic?] above). If the
+callback is known to complete quickly, requires no synchronization,
+and works independent of the Racket thread in which it runs, then
+@scheme[async-apply] can apply the thunk directly. Otherwise,
+@racket[async-apply] must arrange for the thunk to be applied in a
+suitable Racket thread sometime after @racket[async-apply] itself
+returns; if the thunk raises an exception or synchronizes within an
+unsuitable Racket-level thread, it can deadlock or otherwise damage
+the Racket process. Foreign-thread detection to trigger
+@scheme[async-apply] works only when Racket is compiled with OS-level
+thread support, which is the default for many platforms. If a callback
+with an @scheme[async-apply] is called from foreign code in the same
+OS-level thread that runs Racket, then the @scheme[async-apply] wrapper is
+not used.
 
 If @scheme[save-errno] is @scheme['posix], then the value of
 @as-index{@tt{errno}} is saved (specific to the current thread)
@@ -735,7 +750,10 @@ is present for consistency with the above macros).}
 
 @section{C Struct Types}
 
-@defproc[(make-cstruct-type [types (listof ctype?)]) ctype?]{
+@defproc[(make-cstruct-type [types (listof ctype?)]
+                            [abi (or/c #f 'default 'stdcall 'sysv) #f]
+                            [alignment (or/c #f 1 2 4 8 16) #f]) 
+         ctype?]{
 
 The primitive type constructor for creating new C struct types.  These
 types are actually new primitive types; they have no conversion
@@ -743,10 +761,17 @@ functions associated.  The corresponding Racket objects that are used
 for structs are pointers, but when these types are used, the value
 that the pointer @italic{refers to} is used, rather than the pointer
 itself.  This value is basically made of a number of bytes that is
-known according to the given list of @scheme[types] list.}
+known according to the given list of @scheme[types] list.
+
+If @racket[alignment] is @racket[#f], then the natural alignment of
+each type in @racket[types] is used for its alignment within the
+struct type. Otherwise, @racket[alignment] is used for all struct type
+members.}
 
 
-@defproc[(_list-struct [type ctype?] ...+) ctype?]{
+@defproc[(_list-struct [#:alignment alignment (or/c #f 1 2 4 8 16) #f] 
+                       [type ctype?] ...+)
+         ctype?]{
 
 A type constructor that builds a struct type using
 @scheme[make-cstruct-type] function and wraps it in a type that
@@ -757,9 +782,11 @@ the allocated space, so it is inefficient. Use @scheme[define-cstruct]
 below for a more efficient approach.}
 
 
-@defform/subs[(define-cstruct id/sup ([field-id type-expr] ...))
+@defform/subs[(define-cstruct id/sup ([field-id type-expr] ...) alignment)
               [(id/sup _id
-                       (_id super-id))]]{
+                       (_id super-id))
+               (alignment code:blank
+                          (code:line #:alignment alignment-expr))]]{
 
 Defines a new C struct type, but unlike @scheme[_list-struct], the
 resulting type deals with C structs in binary form, rather than

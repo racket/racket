@@ -168,6 +168,7 @@
                                (fp " ~a" i))
                              (fp ")")]
     [(Box: e) (fp "(Boxof ~a)" e)]
+    [(Future: e) (fp "(Futureof ~a)" e)]
     [(Channel: e) (fp "(Channelof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
@@ -186,7 +187,7 @@
     
     #;[(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]
     [(Poly-names: names body) 
-     #;(fprintf (current-error-port) "POLY SEQ: ~a~n" (Type-seq body))
+     #;(fprintf (current-error-port) "POLY SEQ: ~a\n" (Type-seq body))
      (fp "(All ~a ~a)" names body)]
     #;[(PolyDots-unsafe: n b) (fp "(unsafe-polydots ~a ~a ~a)" (Type-seq c) n b)]
     [(PolyDots-names: (list names ... dotted) body)

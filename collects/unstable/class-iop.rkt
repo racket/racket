@@ -113,7 +113,7 @@
     [(_ for-whom obj:expr iface:expr)
      (begin
        (when warn-on-dynamic-object-check-generation?
-         (printf "dynamic object check: ~s,~s~n"
+         (printf "dynamic object check: ~s,~s\n"
                  (syntax-source #'obj)
                  (syntax-line #'obj)))
        #'(dynamic:check-object<:interface 'for-whom obj iface))]))

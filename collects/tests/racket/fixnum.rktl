@@ -151,4 +151,74 @@
 ;; check a small range
 (same-results/range/table)
 
+;; ----------------------------------------
+
+;; in-fxvector tests.
+(let ((flv (fxvector 1 2 3)))
+  (let ((flv-seq (in-fxvector flv)))
+    (for ((x (in-fxvector flv))
+          (xseq flv-seq)
+          (i (in-naturals)))
+      (test (+ i 1) 'in-fxvector-fast x)
+      (test (+ i 1) 'in-fxvector-sequence xseq))))
+
+;; for/fxvector test
+(let ((flv (fxvector 1 2 3))
+      (flv1 (for/fxvector ((i (in-range 3))) (+ i 1)))
+      (flv2 (for/fxvector #:length 3 ((i (in-range 3))) (+ i 1))))
+  (test flv 'for/fxvector flv1)
+  (test flv 'for/fxvector-fast flv2))
+
+;; for*/fxvector test
+(let ((flv (fxvector 0 0 0 0 1 2 0 2 4))
+      (flv1 (for*/fxvector ((i (in-range 3)) (j (in-range 3))) (* 1 i j)))
+      (flv2 (for*/fxvector #:length 9 ((i (in-range 3)) (j (in-range 3))) (* 1 i j))))
+  (test flv 'for*/fxvector flv1)
+  (test flv 'for*/fxvector-fast flv2))
+
+;; Test for both length too long and length too short
+(let ((v (make-fxvector 3)))
+  (fxvector-set! v 0 0)
+  (fxvector-set! v 1 1)
+  (let ((w (for/fxvector #:length 3 ((i (in-range 2))) i)))
+    (test v 'for/fxvector-short-iter w)))
+
+(let ((v (make-fxvector 10)))
+  (for* ((i (in-range 3))
+         (j (in-range 3)))
+    (fxvector-set! v (+ j (* i 3)) (+ 1 i j)))
+  (let ((w (for*/fxvector #:length 10 ((i (in-range 3)) (j (in-range 3))) (+ 1 i j))))
+    (test v 'for*/fxvector-short-iter w)))
+
+(test 2 'for/fxvector-long-iter
+      (fxvector-length (for/fxvector #:length 2 ((i (in-range 10))) i)))
+(test 5 'for*/fxvector-long-iter 
+      (fxvector-length (for*/fxvector #:length 5 ((i (in-range 3)) (j (in-range 3))) (+ i j))))
+
+;; Test for many body expressions
+(let* ((flv (fxvector 1 2 3))
+       (flv2 (for/fxvector ((i (in-range 3))) 
+               (fxvector-set! flv i (+ (fxvector-ref flv i) 1))
+               (fxvector-ref flv i)))
+       (flv3 (for/fxvector #:length 3 ((i (in-range 3)))
+               (fxvector-set! flv i (+ (fxvector-ref flv i) 1))
+               (fxvector-ref flv i))))
+  (test (fxvector 2 3 4) 'for/fxvector-many-body flv2)
+  (test (fxvector 3 4 5) 'for/fxvector-length-many-body flv3))
+
+;; fxvector-copy test
+(let ((v (fxvector 0 1 2 3)))
+  (let ((vc (fxvector-copy v)))
+    (test (fxvector-length v) 'fxvector-copy (fxvector-length vc))
+    (for ((vx (in-fxvector v))
+          (vcx (in-fxvector vc)))
+      (test vx 'fxvector-copy vcx))
+    (fxvector-set! vc 2 -10)
+    (test 2 'fxvector-copy (fxvector-ref v 2))
+    (test -10 'fxvector-copy (fxvector-ref vc 2))
+    (test '(2 3) 'fxvector-copy (for/list ([i (in-fxvector (fxvector-copy v 2))]) i))
+    (test '(2) 'fxvector-copy (for/list ([i (in-fxvector (fxvector-copy v 2 3))]) i))))
+
+;; ----------------------------------------
+
 (report-errs)

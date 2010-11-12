@@ -427,15 +427,14 @@
       (let ([cfg (new gl-config%)])
 	(send cfg set-multisample-size 4)
 	(send cfg set-stencil-size 1)
-	(super-new (style '(no-autoclear)) (gl-config cfg)))
+	(super-new (style '(gl no-autoclear)) (gl-config cfg)))
       
       (unless (send (get-dc) get-gl-context)
 	(message-box "Error"
 		     (format (string-append
 			      "~a requires OpenGL, but there was an error initializing"
-			      " the OpenGL context. Probably OpenGL is not supported by" 
-			      " the current display, or it was disabled when PLT Scheme was"
-			      " configured and compiled.")
+			      " the OpenGL context. Maybe OpenGL is not supported by" 
+			      " the current display.")
 			     who)
 		     #f
 		     '(ok stop))

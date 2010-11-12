@@ -32,11 +32,13 @@ READ_ONLY Scheme_Object *scheme_source_property;
 READ_ONLY Scheme_Object *scheme_input_port_property;
 READ_ONLY Scheme_Object *scheme_output_port_property;
 READ_ONLY Scheme_Object *scheme_equal_property;
+READ_ONLY Scheme_Object *scheme_impersonator_of_property;
 READ_ONLY Scheme_Object *scheme_make_struct_type_proc;
 READ_ONLY Scheme_Object *scheme_current_inspector_proc;
 READ_ONLY Scheme_Object *scheme_recur_symbol;
 READ_ONLY Scheme_Object *scheme_display_symbol;
 READ_ONLY Scheme_Object *scheme_write_special_symbol;
+READ_ONLY Scheme_Object *scheme_app_mark_impersonator_property;
 
 READ_ONLY static Scheme_Object *location_struct;
 READ_ONLY static Scheme_Object *write_property;
@@ -87,6 +89,7 @@ static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_impersonator_of_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_print_attribute_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -164,8 +167,11 @@ static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv);
 static Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type);
 
 static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv);
+static Scheme_Object *impersonate_struct(int argc, Scheme_Object **argv);
 static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv);
 static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *make_chaperone_property_from_c(Scheme_Object *name);
 
 #define PRE_REDIRECTS 2
 
@@ -342,6 +348,16 @@ scheme_init_struct (Scheme_Env *env)
     scheme_equal_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("equal+hash"),
                                                                      guard);
     scheme_add_global_constant("prop:equal+hash", scheme_equal_property, env);
+  }
+
+  {
+    guard = scheme_make_prim_w_arity(check_impersonator_of_property_value_ok,
+				     "guard-for-prop:impersonator-of",
+				     2, 2);
+    REGISTER_SO(scheme_impersonator_of_property);
+    scheme_impersonator_of_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("impersonator-of"),
+                                                                        guard);
+    scheme_add_global_constant("prop:impersonator-of", scheme_impersonator_of_property, env);
   }
 
   {
@@ -592,9 +608,9 @@ scheme_init_struct (Scheme_Env *env)
 						      "struct-type-property-accessor-procedure?",
 						      1, 1),
 			     env);
-  scheme_add_global_constant("chaperone-property-accessor-procedure?",
+  scheme_add_global_constant("impersonator-property-accessor-procedure?",
 			     scheme_make_prim_w_arity(chaperone_prop_getter_p,
-						      "chaperone-property-accessor-procedure?",
+						      "impersonator-property-accessor-procedure?",
 						      1, 1),
 			     env);
   
@@ -687,22 +703,35 @@ scheme_init_struct (Scheme_Env *env)
                                                       "chaperone-struct",
                                                       1, -1),
                              env);
+  scheme_add_global_constant("impersonate-struct",
+                             scheme_make_prim_w_arity(impersonate_struct,
+                                                      "impersonate-struct",
+                                                      1, -1),
+                             env);
   scheme_add_global_constant("chaperone-struct-type",
                              scheme_make_prim_w_arity(chaperone_struct_type,
                                                       "chaperone-struct-type",
                                                       1, -1),
                              env);
-  scheme_add_global_constant("make-chaperone-property", 
+  scheme_add_global_constant("make-impersonator-property", 
 			    scheme_make_prim_w_arity2(make_chaperone_property,
-						      "make-chaperone-property",
+						      "make-impersonator-property",
 						      1, 1,
 						      3, 3),
 			    env);
-  scheme_add_global_constant("chaperone-property?",
+  scheme_add_global_constant("impersonator-property?",
 			     scheme_make_folding_prim(chaperone_property_p,
-						     "chaperone-property?",
+						     "impersonator-property?",
 						     1, 1, 1),
 			    env);
+
+  {
+    REGISTER_SO(scheme_app_mark_impersonator_property);
+    scheme_app_mark_impersonator_property = make_chaperone_property_from_c(scheme_intern_symbol("application-mark"));
+    scheme_add_global_constant("impersonator-prop:application-mark",
+                               scheme_app_mark_impersonator_property,
+                               env);
+  }
 }
 
 /*========================================================================*/
@@ -952,12 +981,13 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
           a[1] = orig;
           v = _scheme_apply(red, 2, a);
     
-          if (!scheme_chaperone_of(v, orig))
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                             "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                             who,
-                             v ,
-                             orig);
+          if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+            if (!scheme_chaperone_of(v, orig))
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                               "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                               who,
+                               v ,
+                               orig);
           
           return v;
         }
@@ -994,20 +1024,24 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   Scheme_Struct_Property *p;
   Scheme_Object *a[1], *v, *supers = scheme_null;
   char *name;
-  int len;
+  int len, can_impersonate = 0;
   const char *who;
 
   if (type == scheme_struct_property_type)
     who = "make-struct-type-property";
   else
-    who = "make-chaperone-property";
+    who = "make-impersonator-property";
 
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_type(who, "symbol", 0, argc, argv);
   if (argc > 1) {
-    if (SCHEME_TRUEP(argv[1])
+    if (SCHEME_SYMBOLP(argv[1])
+        && !SCHEME_SYM_WEIRDP(argv[1])
+        && !strcmp("can-impersonate", SCHEME_SYM_VAL(argv[1])))
+      can_impersonate = 1;
+    else if (SCHEME_TRUEP(argv[1])
         && !scheme_check_proc_arity(NULL, 2, 1, argc, argv))
-      scheme_wrong_type(who, "procedure (arity 2) or #f", 1, argc, argv);
+      scheme_wrong_type(who, "procedure (arity 2), #f, or 'can-impersonate", 1, argc, argv);
 
     if (argc > 2) {
       supers = argv[2];
@@ -1081,6 +1115,14 @@ static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[])
   return scheme_values(3, a);
 }
 
+static Scheme_Object *make_chaperone_property_from_c(Scheme_Object *name)
+{
+  Scheme_Object *a[3];
+
+  a[0] = name;
+  return make_struct_type_property_from_c(1, a, &a[1], &a[2], scheme_chaperone_property_type);
+}
+
 Scheme_Object *scheme_make_struct_type_property_w_guard(Scheme_Object *name, Scheme_Object *guard)
 {
   Scheme_Object *a[2];
@@ -1100,7 +1142,7 @@ Scheme_Object *scheme_make_struct_type_property(Scheme_Object *name)
 Scheme_Object *scheme_chaperone_struct_type_property_ref(Scheme_Object *prop, Scheme_Object *s)
 {
   if (SCHEME_CHAPERONEP(s))
-    return do_chaperone_prop_accessor("struct-property-ref", prop, s);
+    return do_chaperone_prop_accessor("impersonator-property-ref", prop, s);
   else
     return do_prop_accessor(prop, s);
 }
@@ -1186,7 +1228,7 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
     return orig_v;
   } else {
     /* Normal guard handling: */
-    if (p->guard) {
+    if (p->guard && !SCHEME_SYMBOLP(p->guard)) {
       if(!scheme_defining_primitives) {
         Scheme_Object *a[2], *info[mzNUM_ST_INFO], *l;
 
@@ -1475,6 +1517,25 @@ static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *arg
                         " and two recursive hash-code procedures (arity 2), given: ",
                         argv[0]);
   }
+
+  return v;
+}
+
+static Scheme_Object *check_impersonator_of_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  /* This is the guard for prop:impersonator-of */
+  Scheme_Object *v;
+
+  v = argv[0];
+
+  if (!scheme_check_proc_arity(NULL, 1, 0, argc, argv)) {
+    scheme_arg_mismatch("guard-for-prop:impersonator-of",
+			"not a procedure of arity 1: ",
+			v); 
+  }
+
+  /* Add a tag to track origin of the impersonator-of property: */
+  v = scheme_make_pair(scheme_make_symbol("tag"), v);
 
   return v;
 }
@@ -1803,12 +1864,13 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
         red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i];
         o = _scheme_apply(red, 2, a);
         
-        if (!scheme_chaperone_of(o, orig))
-          scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                           "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                           who,
-                           o, 
-                           orig);
+        if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+          if (!scheme_chaperone_of(o, orig))
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                             who,
+                             o, 
+                             orig);
         
         return o;
       }
@@ -1847,12 +1909,13 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
           a[1] = v;
           v = _scheme_apply(red, 2, a);
 
-          if (!scheme_chaperone_of(v, a[1]))
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                             "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                             who,
-                             v, 
-                             a[1]);
+          if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+            if (!scheme_chaperone_of(v, a[1]))
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                               "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                               who,
+                               v, 
+                               a[1]);
         } 
       }
     }
@@ -2318,11 +2381,18 @@ static Scheme_Object *proc_struct_type_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *apply_chaperones(const char *who, Scheme_Object *procs, int argc, Scheme_Object **a)
 {
   Scheme_Object *v, **vals, *v1[1];
-  int cnt, i;
+  int cnt, i, is_impersonator;
   Scheme_Thread *p;
 
   while (SCHEME_PAIRP(procs)) {
-    v = _scheme_apply_multi(SCHEME_CAR(procs), argc, a);
+    v = SCHEME_CAR(procs);
+    if (SCHEME_BOXP(v)) {
+      is_impersonator = 1;
+      v = SCHEME_BOX_VAL(v);
+    } else
+      is_impersonator = 0;
+
+    v = _scheme_apply_multi(v, argc, a);
 
     if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
       p = scheme_current_thread;
@@ -2346,13 +2416,15 @@ static Scheme_Object *apply_chaperones(const char *who, Scheme_Object *procs, in
                        cnt, argc);
     }
 
-    for (i = 0; i < argc; i++) {
-      if (!scheme_chaperone_of(vals[i], a[i]))
-        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                         "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                         who,
-                         vals[i],
-                         a[i]);
+    if (!is_impersonator) {
+      for (i = 0; i < argc; i++) {
+        if (!scheme_chaperone_of(vals[i], a[i]))
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                           "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                           who,
+                           vals[i],
+                           a[i]);
+      }
     }
 
     a = vals;
@@ -2364,14 +2436,18 @@ static Scheme_Object *apply_chaperones(const char *who, Scheme_Object *procs, in
 
 static Scheme_Object *struct_info_chaperone(Scheme_Object *o, Scheme_Object *si, Scheme_Object *b)
 {
-  Scheme_Object *procs = scheme_null, *a[2];
+  Scheme_Object *procs = scheme_null, *proc, *a[2];
   Scheme_Chaperone *px;
 
   while (SCHEME_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
     if (SCHEME_VECTORP(px->redirects)) {
-      if (SCHEME_VEC_ELS(px->redirects)[1])
-        procs = scheme_make_pair(SCHEME_VEC_ELS(px->redirects)[1], procs);
+      if (SCHEME_VEC_ELS(px->redirects)[1]) {
+        proc = SCHEME_VEC_ELS(px->redirects)[1];
+        if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
+          proc = scheme_box(proc);
+        procs = scheme_make_pair(proc, procs);
+      }
     }
     o = px->prev;
   }
@@ -2507,13 +2583,16 @@ static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object 
 
 static Scheme_Object *struct_type_info_chaperone(Scheme_Object *o, Scheme_Object **a)
 {
-  Scheme_Object *procs = scheme_null;
+  Scheme_Object *procs = scheme_null, *proc;
   Scheme_Chaperone *px;
 
   while (SCHEME_NP_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
     if (SCHEME_PAIRP(px->redirects)) {
-      procs = scheme_make_pair(SCHEME_CAR(px->redirects), procs);
+      proc = SCHEME_CAR(px->redirects);
+      if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
+        proc = scheme_box(proc);
+      procs = scheme_make_pair(proc, procs);
     }
     o = px->prev;
   }
@@ -2553,13 +2632,16 @@ static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *type_constr_chaperone(Scheme_Object *o, Scheme_Object *v)
 {
-  Scheme_Object *procs = scheme_null, *a[1];
+  Scheme_Object *procs = scheme_null, *proc, *a[1];
   Scheme_Chaperone *px;
 
   while (SCHEME_NP_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
     if (SCHEME_PAIRP(px->redirects)) {
-      procs = scheme_make_pair(SCHEME_CADR(px->redirects), procs);
+      proc = SCHEME_CADR(px->redirects);
+      if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
+        proc = scheme_box(proc);
+      procs = scheme_make_pair(proc, procs);
     }
     o = px->prev;
   }
@@ -3042,23 +3124,34 @@ Scheme_Object *handle_evt_p(int argc, Scheme_Object *argv[])
     return NULL;
 }
 
-static Scheme_Object *chaperone_result_guard_proc(void *data, int argc, Scheme_Object *argv[])
+static Scheme_Object *do_chaperone_result_guard_proc(int is_impersonator, void *data, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *proc = (Scheme_Object *)data, *o, *a[1];
 
   a[0] = argv[0];
   o = _scheme_apply(proc, 1, a);
   
-  if (!scheme_chaperone_of(o, a[0]))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "evt result chaperone: chaperone produced a value: %V that is not a chaperone of the original result: %V",
-                     o,
-                     a[0]);
+  if (!is_impersonator)
+    if (!scheme_chaperone_of(o, a[0]))
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "evt result chaperone: chaperone produced a value: %V that is not a chaperone of the original result: %V",
+                       o,
+                       a[0]);
   
   return o;
 }
 
-static Scheme_Object *chaperone_guard_proc(void *data, int argc, Scheme_Object *argv[])
+static Scheme_Object *chaperone_result_guard_proc(void *data, int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_result_guard_proc(0, data, argc, argv);
+}
+
+static Scheme_Object *impersonator_result_guard_proc(void *data, int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_result_guard_proc(1, data, argc, argv);
+}
+
+static Scheme_Object *do_chaperone_guard_proc(int is_impersonator, void *data, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *evt = SCHEME_CAR((Scheme_Object *)data);
   Scheme_Object *proc = SCHEME_CDR((Scheme_Object *)data);
@@ -3085,22 +3178,28 @@ static Scheme_Object *chaperone_guard_proc(void *data, int argc, Scheme_Object *
 
   if (cnt != 2)
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                     "evt chaperone: %V: returned %d values, expected 2",
+                     "evt %s: %V: returned %d values, expected 2",
+                     (is_impersonator ? "impersonator" : "chaperone"),
                      proc,
                      cnt);
 
-  if (!scheme_chaperone_of(vals[0], evt))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "evt chaperone: chaperone produced a value: %V that is not a chaperone of the original event: %V",
-                     vals[0],
-                     evt);
+  if (!is_impersonator)
+    if (!scheme_chaperone_of(vals[0], evt))
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "evt chaperone: chaperone produced a value: %V that is not a chaperone of the original event: %V",
+                       vals[0],
+                       evt);
   if (!scheme_check_proc_arity(NULL, 1, 1, 1, vals))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "evt chaperone: expected a value of type <procedure (arity 2)> as second chaprone result, received: %V",
+                     "evt %s: expected a value of type <procedure (arity 2)> as second %s result, received: %V",
+                     (is_impersonator ? "impersonator" : "chaperone"),
+                     (is_impersonator ? "impersonator" : "chaperone"),
                      vals[1]);
 
   a[0] = vals[0];
-  o = scheme_make_closed_prim_w_arity(chaperone_result_guard_proc, 
+  o = scheme_make_closed_prim_w_arity((is_impersonator
+                                       ? impersonator_result_guard_proc
+                                       : chaperone_result_guard_proc),
                                       (void *)vals[1], 
                                       "evt-result-chaperone", 
                                       1, 1);
@@ -3109,7 +3208,17 @@ static Scheme_Object *chaperone_guard_proc(void *data, int argc, Scheme_Object *
   return scheme_wrap_evt(1, a);
 }
 
-static Scheme_Object *chaperone_evt(int argc, Scheme_Object *argv[])
+static Scheme_Object *chaperone_guard_proc(void *data, int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_guard_proc(0, data, argc, argv);
+}
+
+static Scheme_Object *impersonator_guard_proc(void *data, int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_guard_proc(1, data, argc, argv);
+}
+
+static Scheme_Object *do_chaperone_evt(const char *name, int is_impersonator, int argc, Scheme_Object *argv[])
 {
   Scheme_Chaperone *px;
   Scheme_Object *o, *val, *a[1];
@@ -3120,30 +3229,42 @@ static Scheme_Object *chaperone_evt(int argc, Scheme_Object *argv[])
     val = SCHEME_CHAPERONE_VAL(val);
 
   if (!scheme_is_evt(val))
-    scheme_wrong_type("chaperone-evt", "evt", 0, argc, argv);
-  scheme_check_proc_arity("chaperone-evt", 1, 1, argc, argv);
+    scheme_wrong_type(name, "evt", 0, argc, argv);
+  scheme_check_proc_arity(name, 1, 1, argc, argv);
 
-  props = scheme_parse_chaperone_props("chaperone-evt", 2, argc, argv);
+  props = scheme_parse_chaperone_props(name, 2, argc, argv);
 
   o = scheme_make_pair(argv[0], argv[1]);
-  o = scheme_make_closed_prim_w_arity(chaperone_guard_proc, 
+  o = scheme_make_closed_prim_w_arity((is_impersonator
+                                       ? impersonator_guard_proc
+                                       : chaperone_guard_proc),
                                       (void *)o, 
-                                      "evt-chaperone", 
+                                      (is_impersonator
+                                       ? "chaperone-evt"
+                                       : "impersonate-evt"),
                                       1, 1);
   a[0] = o;
   o = nack_evt(1, a);
   
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   if (SCHEME_PROCP(val))
-    px->so.type = scheme_proc_chaperone_type;
+    px->iso.so.type = scheme_proc_chaperone_type;
   else
-    px->so.type = scheme_chaperone_type;
+    px->iso.so.type = scheme_chaperone_type;
   px->val = val;
   px->prev = argv[0];
   px->props = props;
   px->redirects = o;
+  
+  if (is_impersonator)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
 
   return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_evt(int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_evt("chaperone-evt", 0, argc, argv);
 }
 
 static int chaperone_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
@@ -4750,15 +4871,24 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
 Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands, Scheme_Object **rands, int *is_method)
 {
   Scheme_Struct_Type *stype;
-  Scheme_Object *a, *proc;
+  Scheme_Object *plain_obj, *a, *proc;
   int meth_wrap = 0;
 
-  stype = ((Scheme_Structure *)obj)->stype;
+  if (SCHEME_CHAPERONEP(obj))
+    plain_obj = SCHEME_CHAPERONE_VAL(obj);
+  else
+    plain_obj = obj;
+
+  stype = ((Scheme_Structure *)plain_obj)->stype;
   a = stype->proc_attr;
 
   if (SCHEME_INTP(a)) {
     *is_method = 0;
-    proc = ((Scheme_Structure *)obj)->slots[SCHEME_INT_VAL(a)];
+    if (!SAME_OBJ(plain_obj, obj)) {
+      proc = chaperone_struct_ref("struct-ref", obj, SCHEME_INT_VAL(a));
+    } else {
+      proc = ((Scheme_Structure *)obj)->slots[SCHEME_INT_VAL(a)];
+    }
   } else {
     *is_method = 1;
     proc = a;
@@ -4772,7 +4902,7 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
        * account for that.
        */
       if (scheme_reduced_procedure_struct
-	  && scheme_is_struct_instance(scheme_reduced_procedure_struct, obj))
+	  && scheme_is_struct_instance(scheme_reduced_procedure_struct, plain_obj))
 	meth_wrap = SCHEME_TRUEP(((Scheme_Structure *)obj)->slots[3]);
 
       scheme_wrong_count_m((char *)obj,
@@ -4995,7 +5125,7 @@ static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object
 
 /**********************************************************************/
 
-static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
+static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
 /* (chaperone-struct v mutator/selector replacement ...) */
 {
   Scheme_Chaperone *px;
@@ -5027,7 +5157,7 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
     proc = argv[i];
 
     if ((i > 1) && SAME_TYPE(SCHEME_TYPE(proc), scheme_chaperone_property_type)) {
-      props = scheme_parse_chaperone_props("chaperone-box", i, argc, argv);
+      props = scheme_parse_chaperone_props(name, i, argc, argv);
       break;
     }
     
@@ -5043,12 +5173,14 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
     } else if (SCHEME_TRUEP(struct_prop_getter_p(1, a))) {
       kind = "struct-type property accessor";
       offset = -1;
-    } else if (SAME_OBJ(proc, struct_info_proc)) {
+    } else if (!is_impersonator && SAME_OBJ(proc, struct_info_proc)) {
       kind = "struct-info";
       offset = -2;
     } else {
-      scheme_wrong_type("chaperone-struct", 
-                        "structure accessor, structure mutator, struct-type property accessor, or `struct-info'",
+      scheme_wrong_type(name, 
+                        (is_impersonator
+                         ? "structure accessor or structure mutator"
+                         : "structure accessor, structure mutator, struct-type property accessor, or `struct-info'"),
                         i, argc, argv);
       return NULL;
     }
@@ -5056,7 +5188,8 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
     if (offset == -2) {
       if (si_chaperone)
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                         "chaperone-struct: struct-info procedure supplied a second time: %V",
+                         "%s: struct-info procedure supplied a second time: %V",
+                         name,
                          a[0]);
       pi = NULL;
       prop = NULL;
@@ -5065,9 +5198,19 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
       prop = SCHEME_PRIM_CLOSURE_ELS(proc)[0];
       pi = NULL;
 
-      if (!scheme_chaperone_struct_type_property_ref(prop, argv[0]))
+      if (is_impersonator 
+          && (!((Scheme_Struct_Property *)prop)->guard
+              || !SCHEME_SYMBOLP(((Scheme_Struct_Property *)prop)->guard)))
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                         "chaperone-struct: %s %V does not apply to given object: %V",
+                         "%s: %s cannot be impersonated: %V",
+                         name,
+                         kind,
+                         a[0]);
+
+      if (!scheme_struct_type_property_ref(prop, argv[0]))
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "%s: %s %V does not apply to given object: %V",
+                         name,
                          kind,
                          a[0],
                          argv[0]);
@@ -5076,7 +5219,8 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
       
       if (scheme_hash_tree_get(red_props, prop))
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                         "chaperone-struct: given %s is for the same property as a previous %s argument: %V",
+                         "%s: given %s is for the same property as a previous %s argument: %V",
+                         name,
                          kind, kind,
                          a[0]);
       arity = 2;
@@ -5086,29 +5230,47 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
     
       if (!SCHEME_STRUCTP(val) || !scheme_is_struct_instance((Scheme_Object *)pi->struct_type, val))
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                         "chaperone-struct: %s %V does not apply to given object: %V",
+                         "%s: %s %V does not apply to given object: %V",
+                         name,
                          kind,
                          a[0],
                          argv[0]);
       if (SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + pi->field])
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                         "chaperone-struct: given %s is for the same field as a previous %s argument: %V",
+                         "%s: given %s is for the same field as a previous %s argument: %V",
+                         name,
                          kind, kind,
                          a[0]);
+      if (is_impersonator) {
+        /* Must not be an immutable field. */
+        if (stype->immutables) {
+          if (stype->immutables[pi->field - (pi->struct_type->name_pos 
+                                             ? pi->struct_type->parent_types[pi->struct_type->name_pos - 1]->num_slots 
+                                             : 0)])
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: cannot replace %s for an immutable field: %V",
+                             name,
+                             kind,
+                             a[0]);
+        }
+      }
+
       arity = 2;
     }
 
     i++;
     if (i >= argc)
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "chaperone-struct: missing replacement for %s: %V",
+                       "%s: missing replacement for %s: %V",
+                       name,
                        kind,
                        proc);
 
     proc = argv[i];
     if (!scheme_check_proc_arity(NULL, arity, i, argc, argv))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "chaperone-struct: expected #<procedure (arity %d)> as %s replacement, given: %V",
+                       "%s: expected #<procedure (arity %d)> as %s replacement, given: %V",
+                       name,
                        arity,
                        kind,
                        proc);
@@ -5132,18 +5294,31 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
 
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   if (SCHEME_PROCP(val))
-    px->so.type = scheme_proc_chaperone_type;
+    px->iso.so.type = scheme_proc_chaperone_type;
   else
-    px->so.type = scheme_chaperone_type;
+    px->iso.so.type = scheme_chaperone_type;
   px->val = val;
   px->prev = argv[0];
   px->props = props;
   px->redirects = redirects;
 
+  if (is_impersonator)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+
   return (Scheme_Object *)px;
 }
 
-static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv)
+static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_struct("chaperone-struct", 0, argc, argv);
+}
+
+static Scheme_Object *impersonate_struct(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_struct("impersonate-struct", 1, argc, argv);
+}
+
+static Scheme_Object *do_chaperone_struct_type(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
@@ -5155,33 +5330,42 @@ static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv)
     val = SCHEME_CHAPERONE_VAL(val);
 
   if (!SCHEME_STRUCT_TYPEP(val))
-    scheme_wrong_type("chaperone-struct-type", "struct-type", 0, argc, argv);
-  scheme_check_proc_arity("chaperone-struct-type", 8, 1, argc, argv);
-  scheme_check_proc_arity("chaperone-struct-type", 1, 2, argc, argv);
+    scheme_wrong_type(name, "struct-type", 0, argc, argv);
+  scheme_check_proc_arity(name, 8, 1, argc, argv);
+  scheme_check_proc_arity(name, 1, 2, argc, argv);
   if (!SCHEME_PROCP(argv[3]))
-    scheme_wrong_type("chaperone-struct-type", "procedure", 3, argc, argv);
+    scheme_wrong_type(name, "procedure", 3, argc, argv);
 
   arity = ((Scheme_Struct_Type *)val)->num_islots + 1;
   if (!scheme_check_proc_arity(NULL, arity, 3, argc, argv))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "chaperone-struct-type: guard procedure does not accept %d arguments "
+                     "%s: guard procedure does not accept %d arguments "
                      "(one more than the number of constructor arguments): %V",
+                     name,
                      arity, argv[0]);
 
-  props = scheme_parse_chaperone_props("chaperone-vector", 4, argc, argv);
+  props = scheme_parse_chaperone_props(name, 4, argc, argv);
 
   redirects = scheme_make_pair(argv[1], 
                                scheme_make_pair(argv[2],
                                                 argv[3]));
   
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
-  px->so.type = scheme_chaperone_type;
+  px->iso.so.type = scheme_chaperone_type;
   px->props = props;
   px->val = val;
   px->prev = argv[0];
   px->redirects = redirects;
 
+  if (is_impersonator)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+
   return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_struct_type("chaperone-struct-type", 0, argc, argv);
 }
 
 Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv)
@@ -5197,7 +5381,7 @@ Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, in
   while (start_at < argc) {
     v = argv[start_at];
     if (!SAME_TYPE(SCHEME_TYPE(v), scheme_chaperone_property_type))
-      scheme_wrong_type(who, "chaperone-property", start_at, argc, argv);
+      scheme_wrong_type(who, "impersonator-property", start_at, argc, argv);
 
     if (start_at + 1 >= argc)
       scheme_arg_mismatch(who,

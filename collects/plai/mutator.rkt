@@ -6,16 +6,19 @@
          plai/private/gc-core
          scheme/gui/dynamic
          (only-in plai/test-harness
-                  generic-test test halt-on-errors print-only-errors)
+                  exn:plai? equal~?
+                  plai-error generic-test test halt-on-errors print-only-errors)
          (for-syntax scheme)
          (for-syntax plai/private/gc-transformer)
          scheme/stxparam
          (for-syntax scheme/stxparam-exptime))
 
-(provide else require provide
+(provide else require provide #%top
          test/location=? 
          test/value=?
          (rename-out
+          [plai-error error]
+          
           [mutator-and and]
           [mutator-or or]
           [mutator-cond cond]
@@ -175,8 +178,8 @@
          (quasisyntax/loc stx
            (let ([closure (lambda (id ...) 
                             (syntax-parameterize ([mutator-env-roots 
-                                                   (list* #'id ...
-                                                          (syntax-parameter-value #'mutator-env-roots))]
+                                                   (list #'id ...
+                                                         #'free-id ...)]
                                                   [mutator-tail-call? #t])
                                                  (->address body)))])
              (add-closure-env! closure (list (make-env-root free-id) ...))
@@ -226,9 +229,9 @@
 (define-syntax mutator-quote
   (syntax-rules ()
     [(_ (a . d))
-     (mutator-anf-app collector:cons (mutator-quote a) (mutator-quote d))]
+     (mutator-app collector:cons (mutator-quote a) (mutator-quote d))]
     [(_ s) 
-     (mutator-anf-app collector:alloc-flat 's)]))
+     (mutator-app collector:alloc-flat 's)]))
 (define-syntax (mutator-datum stx)
   (syntax-case stx ()
     [(_ . e) 
@@ -265,10 +268,10 @@
           [(result-addr)
            (cond
              [(procedure? result-addr)
-              (printf "Imported procedure~n")
+              (printf "Imported procedure\n")
               result-addr]
              [(location? result-addr)
-              (printf "Value at location ~a:~n" result-addr)
+              (printf "Value at location ~a:\n" result-addr)
               (gc->scheme result-addr)])])))]))
 
 ; Module Begin
@@ -304,7 +307,7 @@
              (when (gui-available?) 
                (if (<= (#%datum . heap-size) 500)
                    (set-ui! (dynamic-require `plai/private/gc-gui 'heap-viz%))
-                   (printf "Large heap; the heap visualizer will not be displayed.~n")))
+                   (printf "Large heap; the heap visualizer will not be displayed.\n")))
              (init-allocator))))]
     [_ (raise-syntax-error 'mutator 
                            "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <module-path> <literal-number>)"
@@ -326,10 +329,12 @@
               (raise-syntax-error 'allocator-setup "expected a literal number" #'heap-size)))]
          [_
           (raise-syntax-error 'mutator allocator-setup-error-msg (syntax/loc #'setup (allocator-setup . setup)))])
-       #`(#%module-begin
+       (quasisyntax/loc stx
+         (#%module-begin
           #,(allocator-setup-internal #'setup)
-          (mutator-top-interaction . module-expr)
-          ...))]
+          #,@(for/list ([me (in-list (syntax->list #'(module-expr ...)))])
+               (quasisyntax/loc me
+                 (mutator-top-interaction . #,me))))))]
     [(_ first-expr module-expr ...)
      (raise-syntax-error 'mutator allocator-setup-error-msg #'first-expr)]
     [(_)
@@ -498,9 +503,18 @@
   (syntax-case stx ()
     [(_ e1 e2)
      (quasisyntax/loc stx
-       (mutator-let ([e1-addr e1]
-                     [e2-addr e2])
-                    (test e1 e2)))]))
+       (generic-test 
+        (λ () e1) 
+        (λ (result-value)
+          (define expected-val e2)
+          (values
+           (cond
+             [(exn:plai? result-value) result-value]
+             [(equal~? result-value expected-val) true]
+             [else false])
+           expected-val))
+        (quote (heap-loc #,(syntax->datum #'e1)))
+        (format "at line ~a" #,(syntax-line stx))))]))
 
 (define-for-syntax (flat-heap-value? v)
   (or (number? v) (boolean? v)))
@@ -519,5 +533,17 @@
   (syntax-case stx (mutator-quote)
     [(_ mutator-expr scheme-datum)
      (quasisyntax/loc stx
-       (mutator-let ([v1 mutator-expr])
-                    (test (gc->scheme v1) (expand-scheme scheme-datum))))]))
+       (generic-test 
+        (λ () 
+          (mutator-let ([v1 mutator-expr])
+                       (gc->scheme v1))) 
+        (λ (result-value)
+          (define expected-val (expand-scheme scheme-datum))
+          (values
+           (cond
+             [(exn:plai? result-value) result-value]
+             [(equal~? result-value expected-val) true]
+             [else false])
+           expected-val))
+        (quote #,(syntax->datum #'mutator-expr))
+        (format "at line ~a" #,(syntax-line stx))))]))

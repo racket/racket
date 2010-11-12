@@ -27,7 +27,9 @@
            #f
            "not at top level"
            stx))
-      (datum->syntax stx (cdr (syntax-e stx)) stx stx)))
+      (if (symbol? (syntax-e stx))
+          (raise-syntax-error #f "bad syntax" stx)
+          (datum->syntax stx (cdr (syntax-e stx)) stx stx))))
 
   (define-values (new-apply-proc)
     (make-keyword-procedure
@@ -124,10 +126,11 @@
              (rename new:procedure->method procedure->method)
              (rename new:procedure-rename procedure-rename)
              (rename new:chaperone-procedure chaperone-procedure)
+             (rename new:impersonate-procedure impersonate-procedure)
              (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
                               procedure-arity procedure-reduce-arity raise-arity-error
                               procedure->method procedure-rename
-                              chaperone-procedure)
+                              chaperone-procedure impersonate-procedure)
              (all-from "reqprov.rkt")
              (all-from "for.rkt")
              (all-from "kernstruct.rkt")

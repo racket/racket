@@ -1,14 +1,14 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/class mred scheme/pretty
+(require racket/class racket/gui/base racket/pretty
          (prefix-in pc: mzlib/pconvert)
-         (only-in "main.ss" timeout-control)
-         "private/run-status.ss"
-         "private/config.ss"
-         "private/logger.ss"
-         "sandbox.ss")
+         (only-in "main.rkt" timeout-control)
+         "private/run-status.rkt"
+         "private/config.rkt"
+         "private/logger.rkt"
+         "sandbox.rkt")
 
-(provide (all-from-out "sandbox.ss")
+(provide (all-from-out "sandbox.rkt")
 
          get-conf
          log-line
@@ -81,7 +81,7 @@
   (with-handlers ([void (lambda (exn)
                           (error (if (exn? exn)
                                    (exn-message exn)
-                                   (format "exception: ~e" exn))))])
+                                   (format "exception: ~.s" exn))))])
     (thunk)))
 
 ;; ----------------------------------------
@@ -119,7 +119,7 @@
                   (with-handlers ([void
                                    (lambda (x)
                                      (error
-                                      (format "instructor-supplied test ~a failed with an error: ~e"
+                                      (format "instructor-supplied test ~a failed with an error: ~.s"
                                               (format-history test)
                                               (exn-message x))))])
                     (let ([val (e `(,f ,@(map value-converter args)))])

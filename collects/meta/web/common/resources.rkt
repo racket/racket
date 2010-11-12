@@ -1,10 +1,12 @@
-#lang at-exp s-exp meta/web/html
+#lang at-exp racket/base
+
+(require scribble/html)
 
 ;; These are some resources that are shared across different toplevel
 ;; sites.  They could be included from a single place, but then when one
 ;; machine crashes the rest won't work right.  (Note: do not add
 ;; resources that are specific to only one site here, do so in the
-;; site's shared.rkt file)
+;; site's "resources.rkt" file)
 
 (require "utils.ss")
 
@@ -24,20 +26,20 @@
                                 href: url title: "default"))))
 
 (define page-sizes
-  @text{
+  @list{
     margin-left: auto;
     margin-right: auto;
     width: 45em;
   })
 (define font-family
-  @text{
+  @list{
     font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
   })
 
 (define navbar-style
   ;; All of these are made to apply only inside `racketnav', so the styles can
   ;; be used in places with their own CSS (eg, blog.racket-lang.org)
-  @text{
+  @list{
     .racketnav {
       background-color: #000;
       color: #fff;
@@ -86,7 +88,7 @@
   })
 
 (define racket-style
-  @text{
+  @list{
     @; ---- generic styles ----
     html {
       overflow-y: scroll;

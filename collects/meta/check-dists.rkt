@@ -26,7 +26,7 @@
 
   (set-bin-files-delayed-lists!
    ;; FIXME: hard-wired list of binary-specific files
-   '(("racket/collects/sgl/compiled/gl-info_ss.zo")))
+   '())
 
   (expand-spec 'distributions)
 

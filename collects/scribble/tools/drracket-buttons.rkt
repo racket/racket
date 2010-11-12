@@ -24,30 +24,32 @@
    (λ (drs-frame)
      (let* ([t (send drs-frame get-definitions-text)]
             [fn (send t get-filename)])
-       (if (and fn (not (send t is-modified?)))
-           (let-values ([(p) (open-output-string)]
-                        [(base name dir?) (split-path fn)])
-             (parameterize ([current-namespace (make-base-namespace)]
-                            [current-output-port p]
-                            [current-error-port p]
-                            [current-directory base]
-                            [current-command-line-arguments
-                             (list->vector 
-                              (append
-                               extra-cmdline
-                               (list "--quiet")
-                               (list mode (if (path? fn) (path->string fn) fn))))])
-               (namespace-attach-module (namespace-anchor->empty-namespace anchor) 'setup/xref)
-               (dynamic-require 'scribble/run #f)
-               (cond
-                 [(equal? suffix #".html")
-                  (send-url/file (path-replace-suffix fn suffix))]
-                 [else
-                  (system (format "open ~s" (path->string (path-replace-suffix fn suffix))))]))
-             (let ([s (get-output-string p)])
-               (unless (equal? s "")
-                 (message-box "Scribble" s drs-frame))))
-           (message-box "Not Named" "Cannot render unsaved file"))))))
+       (if fn
+           (begin
+             (send t save-file fn)
+             (let-values ([(p) (open-output-string)]
+                          [(base name dir?) (split-path fn)])
+               (parameterize ([current-namespace (make-base-namespace)]
+                              [current-output-port p]
+                              [current-error-port p]
+                              [current-directory base]
+                              [current-command-line-arguments
+                               (list->vector 
+                                (append
+                                 extra-cmdline
+                                 (list "--quiet")
+                                 (list mode (if (path? fn) (path->string fn) fn))))])
+                 (namespace-attach-module (namespace-anchor->empty-namespace anchor) 'setup/xref)
+                 (dynamic-require 'scribble/run #f)
+                 (cond
+                   [(equal? suffix #".html")
+                    (send-url/file (path-replace-suffix fn suffix))]
+                   [else
+                    (system (format "open ~s" (path->string (path-replace-suffix fn suffix))))]))
+               (let ([s (get-output-string p)])
+                 (unless (equal? s "")
+                   (message-box "Scribble" s drs-frame)))))
+           (message-box "Scribble" "Cannot render buffer without filename"))))))
 
 (define drracket-buttons
   (let ([html-button

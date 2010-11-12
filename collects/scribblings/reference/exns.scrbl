@@ -291,7 +291,7 @@ fails.}
 @defform[(with-handlers ([pred-expr handler-expr] ...)
            body ...+)]{
 
-Evaluates each @racket[pred-expr] and and @racket[handler-expr] in the
+Evaluates each @racket[pred-expr] and @racket[handler-expr] in the
 order that they are specified, and then evaluates the @racket[body]s
 with a new exception handler during the its dynamic extent.
 

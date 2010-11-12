@@ -6,11 +6,13 @@
 	 -> mixed one-of predicate combined property list-of)
 
 (require deinprogramm/signature/signature
+	 deinprogramm/signature/signature-english
 	 scheme/promise
 	 (for-syntax scheme/base)
 	 (for-syntax syntax/stx)
 	 (for-syntax stepper/private/shared)
-	 (only-in lang/private/teachprims beginner-equal?))
+	 (only-in lang/private/teachprims teach-equal?)
+	 (for-syntax "firstorder.rkt"))
 
 (define-for-syntax (phase-lift stx)
   (with-syntax ((?stx stx))
@@ -48,7 +50,7 @@
 			   (syntax->list #'((?temp ?exp) ...)))))
        #'(let ((?temp ?exp) ...)
 	   ?check ...
-	   (make-case-signature '?name (list ?temp ...) beginner-equal? ?stx)))))
+	   (make-case-signature '?name (list ?temp ...) teach-equal? ?stx)))))
     ((predicate ?exp)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name))
@@ -83,14 +85,13 @@
     (?id
      (identifier? #'?id)
      (with-syntax ((?stx (phase-lift stx))
-		   (?name name))
+		   (?name (or name (syntax->datum #'?id))))
        (let ((name (symbol->string (syntax->datum #'?id))))
 	 (if (char=? #\% (string-ref name 0))
-	     #'(make-type-variable-signature '?id ?stx)
+	     #'(make-type-variable-signature '?name ?stx)
 	     (with-syntax
 		 ((?raise
-		   (syntax/loc #'?stx
-			       (error 'signatures "expected a signature, found ~e" ?id))))
+                   #'(error 'signatures "expected a signature, found ~e" ?id)))
 	       (with-syntax
 		   ((?sig
 		     #'(make-delayed-signature '?name
@@ -121,6 +122,10 @@
 				 ?access
 				 ?signature-expr
 				 ?stx)))
+    ((signature ?stuff ...)
+     (raise-syntax-error #f
+			 "`signature' makes no sense as an operator"
+			 stx))
     ((?signature-abstr ?signature ...)
      (identifier? #'?signature-abstr)
      (with-syntax ((?stx (phase-lift stx))
@@ -129,13 +134,15 @@
 						(parse-signature #f sig))
 					      (syntax->list #'(?signature ...)))))
        (with-syntax
-	   ((?call (syntax/loc stx (?signature-abstr ?signature-expr ...))))
+	   ((?call (syntax/loc stx (?signature-abstr ?signature-expr ...)))
+	    (?signature-abstr-ho (first-order->higher-order #'?signature-abstr)))
 	 #'(make-call-signature '?name
 			       (delay ?call)
-			       (delay ?signature-abstr) (delay (list ?signature-expr ...))
+			       (delay ?signature-abstr-ho)
+			       (delay (list ?signature-expr ...))
 			       ?stx))))
     (else
-     (raise-syntax-error 'signature
+     (raise-syntax-error #f
 			 "invalid signature" stx))))
 
 ; regrettable

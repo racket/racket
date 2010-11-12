@@ -42,6 +42,7 @@
            "set-result.ss"
            (only racket/base define-struct)
 	   racket/struct-info
+	   deinprogramm/signature/signature-english
 	   (all-except deinprogramm/signature/signature signature-violation)
 	   (all-except lang/private/signature-syntax property)
 	   (rename lang/private/signature-syntax signature:property property)
@@ -51,7 +52,7 @@
 	   scheme/class
            "../posn.rkt"
 	   (only lang/private/teachprims
-                 beginner-equal? beginner-equal~?
+                 beginner-equal? beginner-equal~? teach-equal?
                  advanced-cons advanced-list*))
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
@@ -63,6 +64,7 @@
 		      scheme/list
 		      (rename racket/base racket:define-struct define-struct)
 		      (only racket/base syntax->datum datum->syntax)
+                      (rename racket/base kw-app #%app)
 		      racket/struct-info
                       stepper/private/shared)
 
@@ -408,7 +410,8 @@
 	      (syntax->list (quote-syntax 
 			     (#%datum
 			      #%top
-			      empty true false)))))
+			      empty true false
+			      )))))
 
     (define (identifier/non-kw? stx)
       (and (identifier? stx)
@@ -771,18 +774,19 @@
 	   (let-values ([(struct: constructor-name predicate-name getter-names setter-names)
 			 (make-struct-names name fields stx)]
 			[(field-count) (length fields)]
-			[(signature-name) (gensym (syntax->datum name))]
+			[(signature-name) (car (generate-temporaries (list name)))]
 			[(parametric-signature-name) 
 			 (datum->syntax name
 					(string->symbol
 					 (string-append (symbol->string (syntax->datum name))
 							"-of")))])
-	     (let* ([to-define-names (list* struct: constructor-name predicate-name
+	     (let* ([to-define-names (list* constructor-name predicate-name
 					    (if setters?
 						(append getter-names setter-names)
 						getter-names))]
-		    [proc-names (cdr to-define-names)])
-	       (with-syntax ([compile-info (build-struct-expand-info name fields #f (not setters?) #t null null)]
+		    [proc-names to-define-names])
+	       (with-syntax ([compile-info (kw-app build-struct-expand-info name fields #f (not setters?) #t null null
+                                                   #:omit-struct-type? #t)]
                              [(field_/no-loc ...) (map (λ (x) (datum->syntax x (syntax->datum x) #f)) (syntax->list #'(field_ ...)))])
 		 (let-values ([(defn0 bind-names)
 			       (wrap-func-definitions 
@@ -820,17 +824,23 @@
 									      #,@(map-with-index (lambda (i _)
 												   #`(recur (raw-generic-access r #,i)))
 												 fields))))
+                                                                (cons prop:custom-print-quotable
+                                                                      'never)
 								(cons prop:custom-write
-								      (let ((n (string->symbol (string-append "struct:"
-													      (symbol->string 'name_)))))
-									(lambda (r port write?)
-									  (let ((v (vector n
-											   #,@(map-with-index (lambda (i _)
-														#`(raw-generic-access r #,i))
-													      fields))))
-									    (if write?
-										(write v port)
-										(display v port))))))
+                                                                      ;; Need a transparent-like printer, but hide auto field.
+                                                                      ;; This simplest way to do that is to create an instance
+                                                                      ;; of a transparet structure with the same name and field values.
+                                                                      (let-values ([(struct:plain make-plain plain? plain-ref plain-set)
+                                                                                    (make-struct-type 'name_ #f #,field-count 0 #f null #f)])
+                                                                        (lambda (r port mode)
+									  (let ((v (make-plain
+                                                                                    #,@(map-with-index (lambda (i _)
+                                                                                                         #`(raw-generic-access r #,i))
+                                                                                                       fields))))
+                                                                            (cond
+                                                                             [(eq? mode #t) (write v port)]
+                                                                             [(eq? mode #f) (display v port)]
+                                                                             [else (print v port mode)])))))
 								(cons prop:equal+hash
 								      (list
 								       (lambda (r1 r2 equal?)
@@ -858,13 +868,11 @@
 
 					   #,@(map-with-index (lambda (i name field-name)
 								#`(define #,name
-                                                                    (let ([raw (make-struct-field-accessor
+								    (let ([raw (make-struct-field-accessor
                                                                                 raw-generic-access
                                                                                 #,i
                                                                                 '#,field-name)])
                                                                       (lambda (r)
-                                                                        (raw r) ; error checking
-                                                                        (check-struct-wraps! r)
                                                                         (raw r)))))
 							      getter-names
                                                               fields)
@@ -889,10 +897,22 @@
 						      (combined (at name_ (predicate raw-predicate))
 								(at field_ (signature:property getter-name field_/no-loc)) ...)))
 						 #`(define (#,parametric-signature-name field_ ...)
-						     (make-struct-wrap-signature 'name_
-										type-descriptor
-										(list field_/no-loc ...)
-										#'name_)))
+						     (let* ((sigs (list field_/no-loc ...))
+							    (sig
+							     (make-lazy-wrap-signature 'name_ #t
+										       type-descriptor
+										       raw-predicate
+										       sigs
+										       #'name_)))
+ 						       (let ((arbs (map signature-arbitrary sigs)))
+							 (when (andmap values arbs)
+							   (set-signature-arbitrary! 
+							    sig
+							    (apply arbitrary-record
+								    #,constructor-name 
+								    (list #,@getter-names)
+								    arbs))))
+						       sig)))
 
 					   (values #,signature-name #,parametric-signature-name proc-name ...)))
 				     'stepper-define-struct-hint
@@ -907,9 +927,18 @@
 							 #:super struct:struct-info
 							 ;; support `signature'
 							 #:property 
-							 prop:procedure
-							 (lambda (_ stx)
-							   #'#,signature-name))
+                                                         prop:procedure
+                                                         (lambda (_ stx)
+                                                           (syntax-case stx ()
+                                                             [(self . args)
+                                                              (raise-syntax-error
+                                                               #f
+                                                               (string-append
+                                                                "cannot use a signature name after an"
+                                                                " open parenthesis for a function call")
+                                                               stx
+                                                               #'self)]
+                                                             [_ #'#,signature-name])))
 						       ;; support `shared'
 						       (make-info (lambda () compile-info))))
 						 'stepper-skip-completely
@@ -1103,7 +1132,7 @@
 					 "expected a ~a after an open parenthesis, but found ~a"
 					 (if lex-ok?
 					     "name"
-					     "defined name or a primitive operation name")
+					     "defined function name or a primitive operation name")
 					 what))])
 		      (unless (and (identifier? fun) (or lex-ok? undef-check? (not lex?)))
 			(bad-app (if lex?
@@ -1141,7 +1170,7 @@
 			"expected a ~a after an open parenthesis, but nothing's there"
 			(if lex-ok?
 			    "name"
-			    "defined name or a primitive operation name")))]
+			    "defined function name or a primitive operation name")))]
 		   [_else (bad-use-error '#%app stx)])))])
 	(values (mk-app #f) (mk-app #t))))
 
@@ -1527,6 +1556,11 @@
     (define beginner-dots/proc
       (make-set!-transformer
        (lambda (stx)
+         
+         ;; this ensures that coverage happens; it lifts a constant
+         ;; expression to the top level, but one that has the source location of the dots expression
+         (syntax-local-lift-expression (datum->syntax #'here 1 stx))
+         
          (syntax-case stx (set!)
            [(set! form expr) (dots-error stx (syntax form))]
            [(form . rest) (dots-error stx (syntax form))]
@@ -2233,7 +2267,7 @@
 	     '|function call|
 	       stx
 	       #f
-	       "expected a defined name or a primitive operation name after an ~
+	       "expected a defined function name or a primitive operation name after an ~
                 open parenthesis, but nothing's there")]
 	   [_else (bad-use-error '#%app stx)]))))
 
@@ -2861,7 +2895,8 @@
 (provide Integer Number Rational Real Natural 
 	 Boolean True False
 	 String Char Symbol Empty-list
-	 Unspecific)
+	 Any Unspecific
+	 cons-of)
 
 (define Integer (signature/arbitrary arbitrary-integer (predicate integer?)))
 (define Number (signature/arbitrary arbitrary-real (predicate number?)))
@@ -2884,7 +2919,12 @@
 (define Symbol (signature/arbitrary arbitrary-symbol (predicate symbol?)))
 (define Empty-list (signature (one-of empty)))
 
-(define Unspecific (signature (predicate (lambda (_) #t))))
+(define Any (signature Any %Any))
+
+(define Unspecific (signature Unspecific %Unspecific))
+
+(define (cons-of car-sig cdr-sig)
+  (make-pair-signature #t car-sig cdr-sig))
 
 ; QuickCheck
 
@@ -2965,7 +3005,7 @@
 	      #t))))))
 
 (define (expect v1 v2)
-  (quickcheck:property () (beginner-equal? v1 v2)))
+  (quickcheck:property () (teach-equal? v1 v2)))
 
 (define (ensure-real who n val)
   (unless (real? val)
@@ -2990,7 +3030,7 @@
 (define (expect-member-of val . candidates)
   (quickcheck:property () 
 		       (ormap (lambda (cand)
-				(beginner-equal? val cand))
+				(teach-equal? val cand))
 			      candidates)))
 
 (define Property (signature (predicate (lambda (x)

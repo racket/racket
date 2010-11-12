@@ -18,10 +18,10 @@
 	     (set-failed!)
 	     (printf " EXPECTED ~s" ex)
 	     (exit))
-	   (printf "~n")))]))
+	   (printf "\n")))]))
 
   (define (report-test-results)
     (printf (if failed?
-		"~nTESTS FAILED~n"
-		"~nAll tests passed.~n"))))
+		"\nTESTS FAILED\n"
+		"\nAll tests passed.\n"))))
 

@@ -288,7 +288,7 @@ A @deftech{structure type property} allows per-type information to be
  property value with a new value.
 
 @defproc[(make-struct-type-property [name symbol?]
-                                    [guard (or/c procedure? #f) #f]
+                                    [guard (or/c procedure? #f 'can-impersonate) #f]
                                     [supers (listof (cons/c struct-type-property?
                                                             (any/c . -> . any/c)))
                                             null])
@@ -333,6 +333,12 @@ because the value supplied to @racket[make-struct-type] is
 inappropriate for the property), the @racket[guard] can raise an
 exception. Such an exception prevents @racket[make-struct-type] from
 returning a structure type descriptor.
+
+If @racket[guard] is @racket['can-impersonate], then the property's
+accessor can be redirected through
+@racket[impersonate-struct]. Otherwise, redirection of the property
+value through an @tech{impersonator} is disallowed, since redirection
+is tantamount to mutation.
 
 The optional @racket[supers] argument is a list of properties that are
 automatically associated with some structure type when the newly

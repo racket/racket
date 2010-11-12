@@ -52,6 +52,3 @@
     (test-case "permanently" (check-true (redirection-status? permanently)))
     (test-case "temporarily" (check-true (redirection-status? temporarily)))
     (test-case "see-other" (check-true (redirection-status? see-other))))))
-
-;(require (planet schematics/rackunit:3/text-ui))
-;(run-tests helpers-tests)

@@ -138,7 +138,7 @@ add this test:
                                  (- (send interactions-text last-paragraph) 1)))])
         (unless (equal? got-value expected-transcript)
           (fprintf (current-error-port)
-                   "FAILED: expected: ~s~n             got: ~s~n         program: ~s~n           input: ~s~n"
+                   "FAILED: expected: ~s\n             got: ~s\n         program: ~s\n           input: ~s\n"
                    expected-transcript got-value program input)))))
   
   (clear-definitions drs-frame)
@@ -159,7 +159,7 @@ add this test:
   (do-input-test "(read-line)" "\n" "\n\"\"")
   (do-input-test "(read-char)" "\n" "\n#\\newline")
   
-  (do-input-test "(list (read) (printf \"1~n\") (read) (printf \"3~n\"))"
+  (do-input-test "(list (read) (printf \"1\\n\") (read) (printf \"3\\n\"))"
                  "0 2\n"
                  "0 2\n1\n3\n(0 #<void> 2 #<void>)")
   
@@ -185,13 +185,13 @@ add this test:
 
 (fire-up-drscheme-and-run-tests
  (λ ()
-    (set! drs-frame (wait-for-drscheme-frame))
-    (set! interactions-text  (send drs-frame get-interactions-text))
-    (set-language-level! (list #rx"Pretty Big"))
-    (clear-definitions drs-frame)
-    (do-execute drs-frame)
-    
-    (output-err-port-checking) ;; must come first
-    ;;(long-io/execute-test)
-    (reading-test)))
+   (set! drs-frame (wait-for-drscheme-frame))
+   (set! interactions-text  (send drs-frame get-interactions-text))
+   (set-language-level! (list #rx"Pretty Big"))
+   (clear-definitions drs-frame)
+   (do-execute drs-frame)
+   
+   (output-err-port-checking) ;; must come first
+   ;;(long-io/execute-test)
+   (reading-test)))
 

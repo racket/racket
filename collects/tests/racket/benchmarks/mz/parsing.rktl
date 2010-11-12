@@ -20,7 +20,7 @@
 
 (let loop ([n 10])
   (unless (zero? n)
-    (printf "lexing~n")
+    (printf "lexing\n")
     (time
      (let ([p (mk-p)])
        (port-count-lines! p)
@@ -29,7 +29,7 @@
 	  (let-values ([(a b c d e) (scheme-lexer p)])
 	    (unless (eq? 'eof b)
 	      (loop)))))))
-    (printf "reading~n")
+    (printf "reading\n")
     (time
      (let ([p (mk-p)])
        (port-count-lines! p)
@@ -38,6 +38,6 @@
 	  (let ([v (read p)])
 	    (unless (eof-object? v)
 	      (loop)))))))
-    (printf "done~n")
+    (printf "done\n")
     (loop (sub1 n))))
 

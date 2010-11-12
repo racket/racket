@@ -246,13 +246,20 @@
   (set! uncover
         (lambda (a-word)
           ;; abstraction breaking hack.
-          (parameterize ([current-inspector (dynamic-require ''drscheme-secrets 'drscheme-inspector)])
+          (parameterize ([current-inspector
+                          (with-handlers ([exn:fail? 
+                                           (λ (x)
+                                             (error 
+                                              'hangman
+                                              "only works from within DrRacket when using the teaching languages via the languages menu (original exn msg: ~s)"
+                                              (exn-message x)))])
+                            (dynamic-require ''drscheme-secrets 'drscheme-inspector))])
             (unless (struct? a-word)
               (error 'hangman "expected a struct, got: ~e" a-word))
             (let ([word-vec (struct->vector a-word)])
-              (unless (= (vector-length word-vec) 4)
+              (unless (= (vector-length word-vec) 5)
                 (error 'hangman "expected words to be structures with three fields, found ~a fields"
-                       (- (vector-length word-vec) 1)))
+                       (- (vector-length word-vec) 2)))
               (format "~a~a~a" 
                       (vector-ref word-vec 1)
                       (vector-ref word-vec 2)

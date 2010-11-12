@@ -29,9 +29,9 @@
        (syntax/loc stx
          (let* ([super-var super-in] ...
                 [sub-var sub-out] ...)
-           (->d ([super (class-provides/c super-var ...)])
+           (->i ([super (class-provides/c super-var ...)])
                 ()
-                [_ (class-provides/c super sub-var ...)]))))]))
+                [res (super) (class-provides/c super sub-var ...)]))))]))
 
 (define-syntax (send+ stx)
   (syntax-case stx ()
@@ -65,10 +65,10 @@
  [class-provides/c
   (->* [] [] #:rest (listof class-or-interface/c) flat-contract?)]
  [ensure-interface
-  (->d ([the-interface interface?]
-        [the-mixin (mixin-provides/c [] [the-interface])]
+  (->i ([the-interface interface?]
+        [the-mixin (the-interface) (mixin-provides/c [] [the-interface])]
         [the-class class?])
        ()
-       [_ (class-provides/c the-class the-interface)])])
+       [res (the-class the-interface) (class-provides/c the-class the-interface)])])
 
 (provide mixin-provides/c send+ send-each)

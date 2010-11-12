@@ -18,5 +18,5 @@
        'sorry_all_wrong]))
 
   (define (go/proc s)
-    (printf "Have fun playing, ~a~n" s)
+    (printf "Have fun playing, ~a\n" s)
     (master compare)))

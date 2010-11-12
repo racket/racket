@@ -1,4 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
+
+(require "resources.rkt")
 
 (provide irc-quick)
 

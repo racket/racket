@@ -3,11 +3,6 @@
 
 (define the-clipboard (get-the-clipboard))
 (define the-x-selection-clipboard (get-the-x-selection))
-(define the-brush-list (get-the-brush-list))
-(define the-pen-list (get-the-pen-list))
-(define the-font-list (get-the-font-list))
-(define the-color-database (get-the-color-database))
-(define the-font-name-directory (get-the-font-name-directory))
 
 (define (family-symbol? s)
   (memq s '(default decorative roman script
@@ -47,8 +42,6 @@
          the-clipboard
          the-x-selection-clipboard
          get-double-click-threshold
-         begin-refresh-sequence
-         end-refresh-sequence
          begin-busy-cursor
          end-busy-cursor
          hide-cursor
@@ -57,7 +50,9 @@
          family-symbol?
          style-symbol?
          weight-symbol?
-         smoothing-symbol?)
+         smoothing-symbol?
+         get-highlight-background-color
+         get-highlight-text-color)
 
 (define (get-double-click-threshold)
   (get-double-click-time))

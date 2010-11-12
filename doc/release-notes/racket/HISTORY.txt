@@ -1,9 +1,32 @@
+5.0.99.2
+proxy => impersonator
+
+5.0.99.1
+Internal: weak boxes are cleared before non-will-like
+ finalizers; use late-weak boxes to get the old behavior
+
+Version 5.0.2, October 2010
+Changed body of `when', `unless', `cond' clauses, `case'
+ clauses, and `match' clauses to be internal-definition contexts
+Swapped unsafe-vector*-ref with unsafe-vector-ref, etc.
 Added ->i to the contract library, improved ->*, adding #:pre and
  #:post, as well as making the optional arguments clause optional.
-
-Version 5.0.1.2
+Added #true and #false, and changed #t/#T and #f/#F to
+ require a delimiter afterward
+Added print-boolean-long-form
+Added read-accept-lang, which is set to #t when 
+ reading a module
+Added flonum?
+Changed continuation-marks to accept a #f argument
+ to produce an empty set of marks
+Added fxvectors
+Added unsafe-{s,u}16-{ref,set!}
+Added prop:proxy-of
+Added proxies to go with chaperones, and renamed chaperone property
+ as proxy property; beware that the word "proxy" will change in
+ a future version, perhaps to "impersonator"
 Added collection-file-path and collection splicing at the file
-level
+ level
 
 Version 5.0.1, July 2010
 Continuation barriers now block only downward continuation jumps

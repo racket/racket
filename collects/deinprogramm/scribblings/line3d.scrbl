@@ -21,7 +21,7 @@ Dieses teachpack definiert Prozeduren für lineare Algebra und 3D-Rendering:
 
 @declare-exporting[teachpack/deinprogramm/line3d]
 
-@defthing[render-scene (natural natural (list line3d) matrix4x4 -> image)]{
+@defthing[render-scene (natural natural (list-of line3d) matrix4x4 -> image)]{
  Der Aufruf @scheme[(render-scene width height scene camera-matrix)]erzeugt die Szene
  in ein Bild mit Breite @scheme[width] und Höhe @scheme[height]. Position,
  Orientierung und Projektion werden durch die @scheme[camera-matrix] festgelegt.
@@ -230,11 +230,11 @@ und @scheme[b] zurück (einen Vektor der senkrecht auf @scheme[a] und @scheme[b]
 @defthing[line3d-color (line3d -> color)]{
  extrahiert die Farbe einer 3D-Linie.}
 
-@defthing[create-box (number number number color -> (list line3d))]{
+@defthing[create-box (number number number color -> (list-of line3d))]{
  @scheme[(create-box width height depth color)] erstellt eine Box am Punkt (0,0,0) in den angebenen Ausmaßen.
 }
 
-@defthing[transform-primitive-list ((list line3d) matrix4x4 -> (list line3d))]{
+@defthing[transform-primitive-list ((list-of line3d) matrix4x4 -> (list-of line3d))]{
  @scheme[(transform-primitive-list scene transformationr)] wendet @scheme[transformation] auf alle Punkte der Linien in @scheme[scene] an und gibt 
         diese zurück.
 }

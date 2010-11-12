@@ -56,4 +56,4 @@
     print?))
 
 (when print-name?
-  (printf "Traces are in ~a~n" traces-file))
+  (printf "Traces are in ~a\n" traces-file))

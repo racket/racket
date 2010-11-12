@@ -467,8 +467,8 @@
      [(equal? (car a) (car b))
       (loop (cdr a) (cdr b))]
      [else
-      (printf "a: ~s~n" a)
-      (printf "b: ~s~n" b)
+      (printf "a: ~s\n" a)
+      (printf "b: ~s\n" b)
       #f])))
 
 (test #t

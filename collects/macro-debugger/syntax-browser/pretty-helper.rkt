@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/class
-         racket/pretty
+(require racket/pretty
          unstable/class-iop
          syntax/stx
          unstable/struct

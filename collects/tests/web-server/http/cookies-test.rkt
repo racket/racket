@@ -158,6 +158,3 @@ __utmz=165257760.1272597702.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)\r\
                   
     
     )))
-
-(require rackunit/text-ui)
-(run-tests cookies-tests)

@@ -5,8 +5,8 @@
 
 A @scheme[combo-field%] object is a @scheme[text-field%]
  object that also resembles a @scheme[choice%] object, because it
- has a small popup button to the right of the text field. By default,
- clicking the button pops up a menu, and selecting a menu item copies
+ has a small popup button to the right of the text field. Clicking 
+ the button pops up a menu, and selecting a menu item typically copies
  the item into the text field.
 
 
@@ -40,9 +40,8 @@ The @scheme[choices] list specifies the initial list of items for the
  combo's popup menu. The
 @method[combo-field% append] method adds a new item to the menu with a callback to install the
  appended item into the combo's text field. The
-@method[combo-field% get-menu] method returns the combo's menu to allow arbitrary other operations.
- This menu might not be used at all if
-@method[combo-field% on-popup] is overridden.
+@method[combo-field% get-menu] method returns a menu that can be changed to
+ adjust the content and actions of the combo's menu.
 
 The @scheme[callback] procedure is called when the user changes the text
  in the combo or presses the Enter key (and Enter is not handled by
@@ -75,11 +74,10 @@ Adds a new item to the combo's popup menu. The given label is used for
 
 @defmethod[(get-menu)
            (is-a?/c popup-menu%)]{
-Returns the @scheme[popup-menu%] that is used by the default
-@method[combo-field% on-popup] method. This menu is initialized with the @scheme[labels] argument when
- the @scheme[combo-field%] is created, and the
-@method[combo-field% append] method adds a new item to the menu.
-
+Returns a @scheme[popup-menu%] that is effectively copied into the
+ combo's popup menu when the combo is clicked. Only the labels can
+ callbacks of the menu's items are used; the enable state, submenus,
+ or separators are ignored.
 }
 
 
@@ -88,14 +86,13 @@ Returns the @scheme[popup-menu%] that is used by the default
 
 @methspec{
 
-Called when the user clicks the combo's popup button.
+Called when the user clicks the combo's popup button. Override this method
+to adjust the content of the combo menu on demand.
 
 }
 @methimpl{
 
-Gets a menu from
-@method[combo-field% get-menu], sets its minimum width to match the combo control's width, and
- then pops up the menu.
+Does nothing.
 
 }}
 

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/file)
+(require racket/file)
 
 ;; This module should be invoked when we're in the server directory
 (provide server-dir)
@@ -10,7 +10,7 @@
       dir
       (error 'config "handin server directory does not exist: ~e" dir))))
 
-(define config-file (path->complete-path "config.ss" server-dir))
+(define config-file (path->complete-path "config.rktd" server-dir))
 
 (define poll-freq 2000.0) ; poll at most once every two seconds
 
@@ -74,7 +74,7 @@
     [(hook-file)               (values #f                    path/false   )]
     [(session-timeout)         (values 300                   id           )]
     [(session-memory-limit)    (values 40000000              id           )]
-    [(default-file-name)       (values "handin.scm"          id           )]
+    [(default-file-name)       (values "handin.rkt"          id           )]
     [(max-upload)              (values 500000                id           )]
     [(max-upload-keep)         (values 9                     id           )]
     [(user-regexp)             (values #rx"^[a-z][a-z0-9]+$" rx           )]

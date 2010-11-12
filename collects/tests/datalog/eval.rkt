@@ -14,15 +14,11 @@
     (define test-rkt (build-path examples-dir (format "~a.rkt" t)))
     (define test-txt (build-path examples-dir (format "~a.txt" t)))
     (test-equal? t
-                 (filter (lambda (l)
-                           (not (string=? l "")))
-                         (with-input-from-string
-                             (with-output-to-string
-                                 (lambda () (dynamic-require test-rkt #f)))
-                           port->lines))
-                 (filter (lambda (l)
-                           (not (string=? l "")))
-                         (file->lines test-txt))))
+                 (with-input-from-string
+                     (with-output-to-string
+                         (lambda () (dynamic-require test-rkt #f)))
+                   port->lines)
+                 (file->lines test-txt)))
   
   (define (test-files d)
     (for ([f (in-list (directory-list d))]

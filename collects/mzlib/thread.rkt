@@ -115,7 +115,7 @@
 
   ;; coroutine : ((bool ->) -> X) -> X-coroutine-object
   (define (coroutine f)
-    ;;(printf "2. new coroutine~n")
+    ;;(printf "2. new coroutine\n")
     (let* ([can-stop-lock (make-semaphore 1)]
            [done-ch (make-channel)]
            [ex-ch (make-channel)]
@@ -123,7 +123,7 @@
            [stop-enabled? #t]
            [enable-stop
             (lambda (enable?)
-              ;;(printf "3. enabling ~a~n" enable?)
+              ;;(printf "3. enabling ~a\n" enable?)
               (cond
                [(and enable? (not stop-enabled?))
                 (semaphore-post can-stop-lock)
@@ -131,11 +131,11 @@
                [(and (not enable?) stop-enabled?)
                 (semaphore-wait can-stop-lock)
                 (set! stop-enabled? #f)])
-              ;;(printf "3. finished enabling~n")
+              ;;(printf "3. finished enabling\n")
               )]
            [tid (thread (lambda ()
                           (semaphore-wait proceed-sema)
-                          ;;(printf "3. creating coroutine thread~n")
+                          ;;(printf "3. creating coroutine thread\n")
                           (with-handlers ([(lambda (exn) #t)
                                            (lambda (exn)
                                              (enable-stop #t)
@@ -152,7 +152,7 @@
     (if (coroutine-object-worker w)
       (let ([can-stop-lock (coroutine-object-can-stop-lock w)]
             [worker (coroutine-object-worker w)])
-        #;(printf "2. starting coroutine~n")
+        #;(printf "2. starting coroutine\n")
         (thread-resume worker)
         (dynamic-wind
           void
@@ -162,20 +162,20 @@
                                             timeout
                                             (alarm-evt (+ timeout (current-inexact-milliseconds))))
                                         (lambda (x)
-                                          #;(printf "2. alarm-evt~n")
+                                          #;(printf "2. alarm-evt\n")
                                           (semaphore-wait can-stop-lock)
                                           (thread-suspend worker)
                                           (semaphore-post can-stop-lock)
                                           #f))
                               (wrap-evt (coroutine-object-done-ch w)
                                         (lambda (res)
-                                          #;(printf "2. coroutine-done-evt~n")
+                                          #;(printf "2. coroutine-done-evt\n")
                                           (set-coroutine-object-result! w res)
                                           (coroutine-kill w)
                                           #t))
                               (wrap-evt (coroutine-object-ex-ch w)
                                         (lambda (exn)
-                                          #;(printf "2. ex-evt~n")
+                                          #;(printf "2. ex-evt\n")
                                           (coroutine-kill w)
                                           (raise exn))))))
           ;; In case we escape through a break:

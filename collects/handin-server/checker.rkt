@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base) "utils.ss"
-         scheme/file scheme/class mred)
+(require (for-syntax racket/base) "utils.rkt"
+         racket/file racket/class racket/gui/base)
 
-(provide (except-out (all-from-out scheme/base) #%module-begin)
-         (all-from-out "utils.ss"))
+(provide (except-out (all-from-out racket/base) #%module-begin)
+         (all-from-out "utils.rkt"))
 
 (provide (rename-out [module-begin~ #%module-begin]))
 (define-syntax (module-begin~ stx)
@@ -43,7 +43,7 @@
   ;; the student is always assumed to exist
   (cdr (get-preference (if (string? user) (string->symbol user) user)
                        (lambda () #f) 'timestamp
-                       (build-path server-dir "users.ss"))))
+                       (build-path server-dir "users.rktd"))))
 
 (provide user-substs)
 (define (user-substs user str)
@@ -93,7 +93,8 @@
 ;; * snip->text is used earlier in the process, where comment-box text is still
 ;;   available
 
-(require framework) ; for drscheme snips, used below
+(require framework ; for drracket snips, used below
+         mrlib/matrix-snip) ; avoid errors from files with matrix snips
 
 ;; input-port->text-input-port : input-port (any -> any) -> input-port
 ;;  the `filter' function is applied to special values; the filter result is
@@ -127,7 +128,8 @@
   (let ([name (and (is-a? x snip%)
                    (send (send x get-snipclass) get-classname))])
     (cond [(equal? name "wximage") "{{IMAGE}}"]
-          [(equal? name "(lib \"comment-snip.ss\" \"framework\")")
+          [(regexp-match? #rx"(lib \"comment-snip.(?:rkt|ss)\" \"framework\")"
+                          name)
            ;; comments will have ";" prefix on every line, and "\n" suffix
            (format ";{{COMMENT:\n~a;}}\n"
                    (send x get-text 0 (send x get-count)))]
@@ -175,7 +177,7 @@
 
 (define (submission->bytes submission maxwidth textualize? untabify?
                            markup-prefix bad-re)
-  (define magic #rx#"^(?:#reader[(]lib\"read.ss\"\"wxme\"[)])?WXME")
+  (define magic #rx#"^(?:#reader[(]lib\"read.(?:rkt|ss)\"\"wxme\"[)])?WXME")
   (unless (regexp-match? magic submission)
     (error* "bad submission format, expecting a single DrRacket submission"))
   (let-values ([(defs inters) (unpack-submission submission)])
@@ -379,7 +381,7 @@
                   #''("Maximum points for this assignment: <+100>"))]
             [value-printer* (get ':value-printer #'#f)]
             [coverage?*     (get ':coverage?     #'#f)]
-            [output*        (get ':output        #'"hw.scm")]
+            [output*        (get ':output        #'"hw.rkt")]
             [multi-file*    (get ':multi-file    #'#f)]
             [names-checker* (get ':names-checker #'#f)]
             [user-error-message*
@@ -659,7 +661,7 @@
   ;; expected to be used only with identifiers
   (begin (with-handlers ([exn:fail:contract:variable?
                           (lambda (_)
-                            (error* "missing binding: ~e" (->disp 'id)))]
+                            (error* "missing binding: ~.s" (->disp 'id)))]
                          [exn:fail:syntax? void])
            (parameterize ([current-namespace (get-namespace (submission-eval))])
              (namespace-variable-value `id)))
@@ -671,10 +673,10 @@
   ;; expected to be used only with identifiers
   (begin (with-handlers ([exn:fail:contract:variable?
                           (lambda (_)
-                            (error* "missing binding: ~e" (->disp 'id)))]
+                            (error* "missing binding: ~.s" (->disp 'id)))]
                          [exn:fail:syntax?
                           (lambda (_)
-                            (error* "bound to a syntax, expecting a value: ~e"
+                            (error* "bound to a syntax, expecting a value: ~.s"
                                     (->disp 'id)))])
            (parameterize ([current-namespace (get-namespace (submission-eval))])
              (namespace-variable-value `id)))
@@ -687,10 +689,10 @@
   (begin (with-handlers ([exn:fail:syntax? void]
                          [exn:fail:contract:variable?
                           (lambda (_)
-                            (error* "missing binding: ~e" (->disp 'id)))])
+                            (error* "missing binding: ~.s" (->disp 'id)))])
            (parameterize ([current-namespace (get-namespace (submission-eval))])
              (namespace-variable-value `id))
-           (error* "bound to a value, expecting a syntax: ~e" (->disp 'id)))
+           (error* "bound to a value, expecting a syntax: ~.s" (->disp 'id)))
          ...))
 
 (provide !procedure* !procedure)
@@ -698,14 +700,14 @@
   (syntax-rules ()
     [(_ expr)
      (unless (procedure? ((submission-eval) `expr))
-       (error* "~e is expected to be bound to a procedure" (->disp 'expr)))]
+       (error* "~.s is expected to be bound to a procedure" (->disp 'expr)))]
     [(_ expr arity)
      (let ([ar  arity]
            [val ((submission-eval) `expr)])
        (unless (procedure? val)
-         (error* "~e is expected to be bound to a procedure" (->disp 'expr)))
+         (error* "~.s is expected to be bound to a procedure" (->disp 'expr)))
        (unless (procedure-arity-includes? val ar)
-         (error* "~e is expected to be bound to a procedure of ~s arguments"
+         (error* "~.s is expected to be bound to a procedure of ~s arguments"
                  (->disp 'expr) ar)))]))
 (define-syntax !procedure
   (syntax-rules ()
@@ -715,7 +717,7 @@
 (provide !integer* !integer)
 (define-syntax-rule (!integer* expr)
   (unless (integer? ((submission-eval) `expr))
-    (error* "~e is expected to be bound to an integer" (->disp 'expr))))
+    (error* "~.s is expected to be bound to an integer" (->disp 'expr))))
 (define-syntax-rule (!integer id)
   (begin (!defined id) (!integer* id)))
 
@@ -727,12 +729,12 @@
   (syntax-rules ()
     [(_ expr)
      (unless ((submission-eval) `expr)
-       (error* "your code failed a test: ~e is false" (->disp 'expr)))]
+       (error* "your code failed a test: ~.s is false" (->disp 'expr)))]
     [(_ expr result) (!test expr result equal?)]
     [(_ expr result equal?)
      (let ([val ((submission-eval) `expr)])
        (unless (equal? result val)
-         (error* "your code failed a test: ~e evaluated to ~e, expecting ~e"
+         (error* "your code failed a test: ~.s evaluated to ~e, expecting ~e"
                  (->disp 'expr) (->disp val) (->disp result))))]))
 
 (provide !test/exn)

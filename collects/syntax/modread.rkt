@@ -18,6 +18,7 @@
                    [read-accept-infix-dot #t]
                    [read-accept-quasiquote #t]
                    [read-accept-reader #t]
+                   [read-accept-lang #t]
                    [current-readtable #f])
       (thunk)))
 

@@ -24,7 +24,7 @@
                                        (list? (car (fail-type-src fail-type))))
                                   (car (fail-type-src fail-type))
                                   (fail-type-src fail-type))))])
-        #;(printf "fail-type->message ~a~n" fail-type)
+        #;(printf "fail-type->message ~a\n" fail-type)
         (cond
           [(terminal-fail? fail-type)
            (collapse-message
@@ -43,7 +43,7 @@
                                      (input->output-name (terminal-fail-found fail-type)) a name class-type a name)]))
              name #f message-to-date))]
           [(sequence-fail? fail-type)
-           #;(printf "sequence-fail case: kind is ~a~n" (sequence-fail-kind fail-type))
+           #;(printf "sequence-fail case: kind is ~a\n" (sequence-fail-kind fail-type))
            (let* ([curr-id (sequence-fail-id fail-type)]
                   [id-name 
                    (if curr-id (string-append name " " (sequence-fail-id fail-type)) name)]
@@ -54,7 +54,7 @@
                [(end)
                 (collapse-message
                  (add-to-message
-                  (msg (format "Expected ~a to contain ~a ~a to complete the ~a. ~nFound ~a before ~a ended."
+                  (msg (format "Expected ~a to contain ~a ~a to complete the ~a. \nFound ~a before ~a ended."
                                input-type a2 expected id-name (format-seen show-sequence) input-type))
                   name curr-id message-to-date))]
                [(wrong)
@@ -95,7 +95,7 @@
                   name curr-id message-to-date))]
                [(sub-seq choice)
                 (fail-type->message (sequence-fail-found fail-type)
-                                    (add-to-message (msg (format "An error occured in ~a.~n" id-name))
+                                    (add-to-message (msg (format "An error occured in ~a.\n" id-name))
                                                     name (sequence-fail-id fail-type) message-to-date))]
                [(options)
                 (let ([sorted-opts (sort (options-fail-opts (sequence-fail-found fail-type))
@@ -106,12 +106,12 @@
                                                           name (sequence-fail-id fail-type) message-to-date))
                       (fail-type->message (sequence-fail-found fail-type) #;(car sorted-opts)
                                           (add-to-message
-                                           (msg (format "There is an error in this ~a after ~a, the program resembles a(n) ~a here.~n"
+                                           (msg (format "There is an error in this ~a after ~a, the program resembles a(n) ~a here.\n"
                                                         id-name (car (reverse show-sequence)) 
                                                         (fail-type-name (car sorted-opts))))
                                            name (sequence-fail-id fail-type) message-to-date))))]))]
           [(options-fail? fail-type)
-           #;(printf "selecting for options on ~a~n" name)
+           #;(printf "selecting for options on ~a\n" name)
            (let* ([winners (select-errors (options-fail-opts fail-type))]
                      [top-names (map fail-type-name winners)]
                      [non-dup-tops (remove-dups top-names name)]
@@ -122,7 +122,7 @@
                         (> (length winners) max-choice-depth))
                    (collapse-message 
                     (add-to-message
-                     (msg (format "An error occurred in this ~a. Program resembles these: ~a.~n"
+                     (msg (format "An error occurred in this ~a. Program resembles these: ~a.\n"
                                   name (nice-list non-dup-tops)))
                      name #f message-to-date))]
                   [(and (> (length winners) 1)
@@ -138,7 +138,7 @@
                                      [else msg])])
                           (collapse-message
                            (add-to-message 
-                            (msg (format "An error occured in the ~a. Possible errors were: ~n ~a"
+                            (msg (format "An error occured in the ~a. Possible errors were: \n ~a"
                                          name 
                                          (alternate-error-list (map err-msg messages))))
                             name #f message-to-date)))]))]
@@ -147,13 +147,13 @@
                     (car winners)
                     (add-to-message
                      (msg
-                      (format "There is an error in this ~a~a.~n"
+                      (format "There is an error in this ~a~a.\n"
                               name 
                               (if (equal? top-name name) "" 
                                   (format ", program resembles ~a ~a" (a/an top-name) top-name))))
                      name  #f message-to-date))]))]
            [(choice-fail? fail-type)
-            #;(printf "selecting for ~a~n message-to-date ~a~n" name message-to-date)
+            #;(printf "selecting for ~a\n message-to-date ~a\n" name message-to-date)
             (let* ([winners (select-errors (choice-fail-messages fail-type))]               
                    [top-names (map fail-type-name winners)]
                    [top-name (car top-names)]
@@ -190,7 +190,7 @@
                      [else
                       (collapse-message 
                        (add-to-message
-                        (msg (format "An error occured in this ~a; expected ~a instead. Possible errors were:~n~a"
+                        (msg (format "An error occured in this ~a; expected ~a instead. Possible errors were:\n~a"
                                      name (nice-list no-dup-names) 
                                      (alternate-error-list (map err-msg messages))))
                         name #f message-to-date))]))]
@@ -198,7 +198,7 @@
                       (> (length winners) 1))
                  (collapse-message 
                   (add-to-message
-                   (msg (format "An error occured in this ~a. Possible options include ~a.~n"
+                   (msg (format "An error occured in this ~a. Possible options include ~a.\n"
                                 name (nice-list 
                                       (first-n max-choice-depth no-dup-names))))
                    name #f message-to-date))]
@@ -206,7 +206,7 @@
                  (fail-type->message
                   (car winners)
                   (add-to-message
-                   (msg (format "An error occured in this ~a~a.~a~n"
+                   (msg (format "An error occured in this ~a~a.~a\n"
                                 name 
                                 (if (equal? name top-name) "" (format ", it is possible you intended ~a ~a here"
                                                                       (a/an top-name) top-name))
@@ -233,17 +233,17 @@
               (narrow-opts chance-may-use chance-used-winners)]
              
              [winners (narrow-opts chance chance-may-winners)])
-        #;(printf "all options: ~a~n" opts-list)
-        #;(printf "~a ~a ~a ~a ~a~n"
+        #;(printf "all options: ~a\n" opts-list)
+        #;(printf "~a ~a ~a ~a ~a\n"
                   (map fail-type-name opts-list)
                   (map fail-type-chance opts-list)
                   (map fail-type-used opts-list)
                   (map fail-type-may-use opts-list)
                   (map composite opts-list))
-        #;(printf "composite round: ~a ~a ~n"
+        #;(printf "composite round: ~a ~a \n"
                   (map fail-type-name composite-winners)
                   (map composite composite-winners))
-        #;(printf "final sorting: ~a~n" (map fail-type-name winners))
+        #;(printf "final sorting: ~a\n" (map fail-type-name winners))
         winners))
     
     (define (first-n n lst)
@@ -300,7 +300,7 @@
          (let ([msg (if (equal? #\newline (string-ref (car l) (sub1 (string-length (car l)))))
                         (substring (car l) 0 (sub1 (string-length (car l))))
                         (car l))])
-           (string-append (format "~a~a~n" #\tab msg)
+           (string-append (format "~a~a\n" #\tab msg)
                           (alternate-error-list (cdr l))))]))
     
     (define (downcase string)

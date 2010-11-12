@@ -213,11 +213,11 @@
         (cond
           [(or (eof-object? ans) (eq? ans 'x)) (void)]
           [(not (number? ans))
-           (printf "The input must be a number. Given: ~s~n" ans) (repl)]
+           (printf "The input must be a number. Given: ~s\n" ans) (repl)]
           [(number? ans) 
            (let ([res (f ans)])
              (if (number? res)
-                 (printf "~sF corresponds to ~sC~n" ans res) 
+                 (printf "~sF corresponds to ~sC\n" ans res) 
                  (error 'convert OUT-ERROR res))
              (repl))]
           [else (error 'convert "can't happen")])))))
@@ -236,10 +236,10 @@
               (cond
                 [(eof-object? in) (void)]
                 [(number? in) (begin (check-and-print (f in)) (read-until-eof))]
-                [else (error 'convert "The input must be a number. Given: ~e~n" in)])))
+                [else (error 'convert "The input must be a number. Given: ~e\n" in)])))
           (define (check-and-print out)
             (cond
-              [(number? out) (printf "~s~n" out)]
+              [(number? out) (printf "~s\n" out)]
               [else (error 'convert OUT-ERROR out)])))
     read-until-eof))
 

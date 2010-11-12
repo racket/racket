@@ -21,7 +21,8 @@
  send/suspend/dispatch
  send/suspend/hidden
  send/suspend/url
- send/suspend/url/dispatch)
+ send/suspend/url/dispatch
+ redirect/get)
 
 (provide/contract
  [make-stateless-servlet
@@ -37,7 +38,8 @@
    [send/suspend/hidden ((url? list? . -> . response/c) . -> . request?)]
    [send/suspend/url ((url? . -> . response/c) . -> . request?)]
    [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c)
-                               . -> . any/c)])
+                               . -> . any/c)]
+   [redirect/get (-> request?)])
 
 ;; initial-servlet : (request -> response) -> (request -> response/c)
 (define (initialize-servlet start)
@@ -113,10 +115,7 @@
      [(struct binding:form (id kont))
       ((stuffer-out stuffer)
        (read (open-input-bytes kont)))]
-     [_ #f])))
-
-(provide/contract
- [redirect/get (-> request?)])  
+     [_ #f]))) 
 
 (define (redirect/get)
   (send/suspend/url (lambda (k-url) (redirect-to (url->string k-url) temporarily))))

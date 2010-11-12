@@ -3,16 +3,14 @@
 (require "../utils/utils.rkt")
 
 (require (rep type-rep object-rep filter-rep rep-utils)
-	 #;"printer.rkt" "utils.rkt" "resolve.rkt"
+         "resolve.rkt"
          (utils tc-utils)
-         scheme/list
-         scheme/match         
-         scheme/promise
-         scheme/flonum (except-in scheme/contract ->* ->)
-         unstable/syntax
-         (prefix-in c: scheme/contract)
-         (for-syntax scheme/base syntax/parse)
-	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp scheme/flonum))
+         racket/list
+         racket/match         
+         (except-in racket/contract ->* ->)
+         (prefix-in c: racket/contract)
+         (for-syntax racket/base syntax/parse)
+	 (for-template racket/base racket/contract racket/promise racket/tcp racket/flonum))
 
 (provide (all-defined-out)
          (rename-out [make-Listof -lst]
@@ -29,6 +27,7 @@
 (define -box make-Box)
 (define -channel make-Channel)
 (define -vec make-Vector)
+(define -future make-Future)
 (define (-seq . args) (make-Sequence args))
 
 (define-syntax *Un
@@ -154,17 +153,20 @@
 ;; Numeric hierarchy
 (define -Number (make-Base 'Number #'number?))
 
-(define -InexactComplex (make-Base 'InexactComplex
-                                   #'(and/c number?
-                                            (lambda (x)
-                                              (and (inexact-real? (imag-part x))
-                                                   (inexact-real? (real-part x)))))))
+(define -FloatComplex (make-Base 'Float-Complex
+                                 #'(and/c number?
+                                          (lambda (x)
+                                            (and (flonum? (imag-part x))
+                                                 (flonum? (real-part x)))))))
 
-(define -Flonum (make-Base 'Flonum #'inexact-real?))
+;; default 64-bit floats
+(define -Flonum (make-Base 'Flonum #'flonum?))
 (define -NonnegativeFlonum (make-Base 'Nonnegative-Flonum
-                                      #'(and/c inexact-real?
+                                      #'(and/c flonum?
                                                (or/c positive? zero?)
                                                (lambda (x) (not (eq? x -0.0))))))
+;; could be 32- or 64-bit floats
+(define -InexactReal (make-Base 'Inexact-Real #'inexact-real?))
 
 (define -ExactRational 
   (make-Base 'Exact-Rational #'(and/c number? rational? exact?)))
@@ -172,13 +174,15 @@
 (define -ExactPositiveInteger
   (make-Base 'Exact-Positive-Integer #'exact-positive-integer?))
 
+;; We're generating a reference to fixnum? rather than calling it, so
+;; we're safe from fixnum size issues on different platforms.
 (define -PositiveFixnum
-  (make-Base 'Positive-Fixnum #'(and/c number? fixnum? positive?)))
+  (make-Base 'Positive-Fixnum #'(and/c fixnum? positive?)))
 (define -NegativeFixnum
-  (make-Base 'Negative-Fixnum #'(and/c number? fixnum? negative?)))
+  (make-Base 'Negative-Fixnum #'(and/c fixnum? negative?)))
 
 (define -Zero (-val 0))
-(define -Real (*Un -Flonum -ExactRational))
+(define -Real (*Un -InexactReal -ExactRational))
 (define -Fixnum (*Un -PositiveFixnum -NegativeFixnum -Zero))
 (define -NonnegativeFixnum (*Un -PositiveFixnum -Zero))
 (define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))

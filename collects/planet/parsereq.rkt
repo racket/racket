@@ -76,7 +76,7 @@
                                   tail
                                   (string-append tail ".ss")))])
          (make-request fullspec final-path '())))]
-    [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~e" (cdr spec)) stx)]))
+    [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~.s" (cdr spec)) stx)]))
 
 ;; short-pkg-string->spec : string (string -> string -> 'a) -> (list pkg-spec string)
 ;; extracts the named package from the given short-style string, returning 

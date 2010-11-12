@@ -140,7 +140,7 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
 
 @item{@schemeblock0[(:: "/*" (:* (complement "*/")) "*/")]
 
- Matches any string that starts with @scheme["/*"] and and ends with
+ Matches any string that starts with @scheme["/*"] and ends with
  @scheme["*/"], including @scheme["/* */ */ */"].
  @scheme[(complement "*/")] matches any string except @scheme["*/"].
  This includes @scheme["*"] and @scheme["/"] separately.  Thus

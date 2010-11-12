@@ -65,7 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="unicows.lib delayimp.lib user32.lib"
+				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
@@ -153,7 +153,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="unicows.lib delayimp.lib user32.lib"
+				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -201,10 +201,6 @@
 			</File>
 			<File
 				RelativePath=".\racket.rc"
-				>
-			</File>
-			<File
-				RelativePath="uniplt.c"
 				>
 			</File>
 		</Filter>

@@ -190,7 +190,7 @@ a URL that refreshes the password file, servlet cache, etc.}
  Formats a request by:
  @racketblock[
   (format 
-   "~s~n"
+   "~s\n"
    (list 'from (request-client-ip req)
          'to (request-host-ip req)
          'for (url->string (request-uri req)) 'at
@@ -202,7 +202,7 @@ a URL that refreshes the password file, servlet cache, etc.}
  Formats a request by:
  @racketblock[
   (format 
-   "~s~n"
+   "~s\n"
    `((client-ip ,(request-client-ip req))
      (host-ip ,(request-host-ip req))
      (referer 

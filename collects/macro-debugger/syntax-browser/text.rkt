@@ -1,11 +1,11 @@
 #lang racket/base
 (require racket/list
          racket/class
-         racket/gui
+         racket/gui/base
+         data/interval-map
          drracket/arrow
          framework/framework
-         unstable/interval-map
-         unstable/gui/notify
+         data/interval-map
          "interfaces.rkt")
 
 (provide text:hover<%>
@@ -15,7 +15,11 @@
          text:hover-mixin
          text:hover-drawings-mixin
          text:tacking-mixin
-         text:arrows-mixin)
+         text:arrows-mixin
+         text:region-data-mixin
+         text:clickregion-mixin)
+
+(define arrow-cursor (make-object cursor% 'arrow))
 
 (define arrow-brush
   (send the-brush-list find-or-create-brush "white" 'solid))
@@ -63,6 +67,12 @@
             (send dc set-text-background old-background)
             (send dc set-text-mode old-mode))))
 
+;; Interfaces
+
+(define text:region-data<%>
+  (interface (text:basic<%>)
+    get-region-mapping))
+
 (define text:hover<%>
   (interface (text:basic<%>)
     update-hover-position))
@@ -70,14 +80,34 @@
 (define text:hover-drawings<%>
   (interface (text:basic<%>)
     add-hover-drawing
-    get-position-drawings
-    delete-all-drawings))
+    get-position-drawings))
 
 (define text:arrows<%>
   (interface (text:hover-drawings<%>)
     add-arrow
-    add-question-arrow
     add-billboard))
+
+;; Mixins
+
+(define text:region-data-mixin
+  (mixin (text:basic<%>) (text:region-data<%>)
+
+    (define table (make-hasheq))
+
+    (define/public (get-region-mapping key)
+      (hash-ref! table key (lambda () (make-interval-map))))
+
+    (define/augment (after-delete start len)
+      (for ([im (in-hash-values table)])
+        (interval-map-contract! im start (+ start len)))
+      (inner (void) after-delete))
+
+    (define/augment (after-insert start len)
+      (for ([im (in-hash-values table)])
+        (interval-map-expand! im start (+ start len)))
+      (inner (void) after-insert))
+
+    (super-new)))
 
 (define text:hover-mixin
   (mixin (text:basic<%>) (text:hover<%>)
@@ -100,13 +130,15 @@
     (super-new)))
 
 (define text:hover-drawings-mixin
-  (mixin (text:hover<%>) (text:hover-drawings<%>)
+  (mixin (text:hover<%> text:region-data<%>) (text:hover-drawings<%>)
     (inherit dc-location-to-editor-location
              find-position
-             invalidate-bitmap-cache)
+             invalidate-bitmap-cache
+             get-region-mapping)
+    (super-new)
 
     ;; interval-map of Drawings
-    (define drawings-list (make-numeric-interval-map))
+    (define drawings-list (get-region-mapping 'hover-drawings))
 
     (field [hover-position #f])
 
@@ -124,9 +156,6 @@
                              drawing
                              null)))
 
-    (define/public (delete-all-drawings)
-      (interval-map-remove! drawings-list -inf.0 +inf.0))
-
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
       (unless before?
@@ -139,9 +168,7 @@
     (define/private (same-drawings? old-pos pos)
       ;; relies on order drawings added & list-of-eq?-struct equality
       (equal? (get-position-drawings old-pos)
-              (get-position-drawings pos)))
-
-    (super-new)))
+              (get-position-drawings pos)))))
 
 (define text:tacking-mixin
   (mixin (text:basic<%> text:hover-drawings<%>) ()
@@ -153,17 +180,17 @@
 
     (define tacked-table (make-hasheq))
 
-    (define/override (on-event ev)
+    (define/override (on-local-event ev)
       (case (send ev get-event-type)
         ((right-down)
          (if (pair? (get-position-drawings hover-position))
              (send (get-canvas) popup-menu
-                   (make-tack/untack-menu)
+                   (make-tack/untack-menu (get-position-drawings hover-position))
                    (send ev get-x)
                    (send ev get-y))
-             (super on-event ev)))
+             (super on-local-event ev)))
         (else
-         (super on-event ev))))
+         (super on-local-event ev))))
 
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
@@ -171,26 +198,32 @@
         (for ([draw (in-hash-keys tacked-table)])
           (draw this dc left top right bottom dx dy))))
 
-    (define/private (make-tack/untack-menu)
+    (define/private (make-tack/untack-menu drawings)
       (define menu (new popup-menu%))
       (define keymap (get-keymap))
-      (new menu-item% (label "Tack")
-           (parent menu)
-           (callback (lambda _ (tack))))
-      (new menu-item% (label "Untack")
-           (parent menu)
-           (callback (lambda _ (untack))))
+      (define tack-item
+        (new menu-item% (label "Tack")
+             (parent menu)
+             (callback (lambda _ (tack drawings)))))
+      (define untack-item
+        (new menu-item% (label "Untack")
+             (parent menu)
+             (callback (lambda _ (untack drawings)))))
+      (send tack-item enable
+            (for/or ([d (in-list drawings)]) (not (unbox (drawing-tacked? d)))))
+      (send untack-item enable
+            (for/or ([d (in-list drawings)]) (unbox (drawing-tacked? d))))
       (when (is-a? keymap keymap/popup<%>)
         (new separator-menu-item% (parent menu))
         (send keymap add-context-menu-items menu))
       menu)
 
-    (define/private (tack)
-      (for ([d (get-position-drawings hover-position)])
+    (define/private (tack drawings)
+      (for ([d (in-list drawings)])
         (hash-set! tacked-table (drawing-draw d) #t)
         (set-box! (drawing-tacked? d) #t)))
-    (define/private (untack)
-      (for ([d (get-position-drawings hover-position)])
+    (define/private (untack drawings)
+      (for ([d (in-list drawings)])
         (hash-remove! tacked-table (drawing-draw d))
         (set-box! (drawing-tacked? d) #f)))))
 
@@ -199,12 +232,6 @@
     (inherit position-location
              add-hover-drawing
              find-wordbreak)
-
-    (define/public (add-arrow from1 from2 to1 to2 color)
-      (internal-add-arrow from1 from2 to1 to2 color #f))
-
-    (define/public (add-question-arrow from1 from2 to1 to2 color)
-      (internal-add-arrow from1 from2 to1 to2 color #t))
 
     (define/public (add-billboard pos1 pos2 str color-name)
       (define color (send the-color-database find-color color-name))
@@ -232,7 +259,7 @@
                          (draw-text str (+ x dx mini) (+ y dy mini adj-y))))))))])
         (add-hover-drawing pos1 pos2 draw)))
 
-    (define/private (internal-add-arrow from1 from2 to1 to2 color-name question?)
+    (define/public (add-arrow from1 from2 to1 to2 color-name label where)
       (define color (send the-color-database find-color color-name))
       (define tack-box (box #f))
       (unless (and (= from1 to1) (= from2 to2))
@@ -240,7 +267,8 @@
                (lambda (text dc left top right bottom dx dy)
                  (let-values ([(startx starty) (range->mean-loc from1 from2)]
                               [(endx endy) (range->mean-loc to1 to2)]
-                              [(fw fh _d _v) (send dc get-text-extent "x")])
+                              [(fw fh _d _v) (send dc get-text-extent "x")]
+                              [(lw lh ld _V) (send dc get-text-extent (or label "x"))])
                    (with-saved-pen&brush dc
                      (with-saved-text-config dc
                        (send dc set-pen color 1 'solid)
@@ -253,13 +281,16 @@
                                    endx
                                    (+ endy (/ fh 2))
                                    dx dy)
-                       (send dc set-text-mode 'transparent)
-                       (when question?
-                         (send dc set-font (?-font dc))
-                         (send dc set-text-foreground color)
-                         (send dc draw-text "?" 
-                               (+ endx dx fw)
-                               (- (+ endy dy) fh)))))))])
+                       (when label
+                         (let* ([lx (+ endx dx fw)]
+                                [ly (- (+ endy dy) fh)])
+                           (send* dc
+                             (set-brush billboard-brush)
+                             (set-font (billboard-font dc))
+                             (set-text-foreground color)
+                             (draw-rounded-rectangle (- lx ld) (- ly ld)
+                                                     (+ lw ld ld) (+ lh ld ld))
+                             (draw-text label lx ly))))))))])
           (add-hover-drawing from1 from2 draw tack-box)
           (add-hover-drawing to1 to2 draw tack-box))))
 
@@ -286,15 +317,62 @@
 
     (super-new)))
 
-(define text:hover-drawings%
-  (text:hover-drawings-mixin
-   (text:hover-mixin
-    text:standard-style-list%)))
+#|
+text:clickregion-mixin
 
-(define text:arrows%
-  (text:arrows-mixin
-   (text:tacking-mixin
-    text:hover-drawings%)))
+Like clickbacks, but:
+  - use interval-map to avoid linear search
+    (major problem w/ macro stepper and large expansions!)
+  - callback takes position of click, not (start, end)
+  - different rules for removal
+  - TODO: extend to double-click
+|#
+(define text:clickregion-mixin
+  (mixin (text:region-data<%>) ()
+    (inherit get-admin
+             get-region-mapping
+             dc-location-to-editor-location
+             find-position)
+
+    (super-new)
+    (define clickbacks (get-region-mapping 'clickregion))
+    (define tracking #f)
+
+    (define/public (set-clickregion start end callback)
+      (if callback
+          (interval-map-set! clickbacks start end callback)
+          (interval-map-remove! clickbacks start end)))
+
+    (define/private (get-event-position ev)
+      (define gx (send ev get-x))
+      (define gy (send ev get-y))
+      (define-values (x y) (dc-location-to-editor-location gx gy))
+      (find-position x y))
+
+    (define/override (on-default-event ev)
+      (define admin (get-admin))
+      (when admin
+        (define pos (get-event-position ev))
+        (case (send ev get-event-type)
+          ((left-down)
+           (set! tracking (interval-map-ref clickbacks pos #f))
+           (send admin update-cursor))
+          ((left-up)
+           (when tracking
+             (let ([cb (interval-map-ref clickbacks pos #f)]
+                   [tracking* tracking])
+               (set! tracking #f)
+               (when (eq? tracking* cb)
+                 (cb pos)))
+             (send admin update-cursor)))))
+      (super on-default-event ev))
+
+    (define/override (adjust-cursor ev)
+      (define pos (get-event-position ev))
+      (define cb (interval-map-ref clickbacks pos #f))
+      (if cb
+          arrow-cursor
+          (super adjust-cursor ev)))))
 
 
 #|

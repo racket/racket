@@ -1,8 +1,10 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          racket/list
-         racket/block
+         racket/pretty
+         racket/promise
+         data/interval-map
          framework
          unstable/class-iop
          "pretty-printer.rkt"
@@ -12,46 +14,52 @@
 (provide print-syntax-to-editor
          code-style)
 
-(define TIME-PRINTING? #f)
+(define-syntax-rule (uninterruptible e ...)
+  ;; (coarsely) prevent breaks within editor operations
+  (parameterize-break #f (begin e ...))
+  #|
+  (parameterize-break #f
+    (let ([ta (now)])
+      (begin0 (begin e ...)
+        (let ([tb (now)])
+          (eprintf "****\n")
+          (pretty-write '(begin e ...) (current-error-port))
+          (eprintf "  -- ~s ms\n\n" (- tb ta))))))
+  |#)
 
-(define-syntax-rule (now)
-  (if TIME-PRINTING?
-      (current-inexact-milliseconds)
-      0))
+(define (now) (current-inexact-milliseconds))
 
 ;; FIXME: assumes text never moves
 
 ;; print-syntax-to-editor : syntax text controller<%> config number number
 ;;                       -> display<%>
+;; Note: must call display<%>::refresh to finish styling.
 (define (print-syntax-to-editor stx text controller config columns
                                 [insertion-point (send text last-position)])
-  (block
-   (define output-port (open-output-string/count-lines))
-   (define range
-     (pretty-print-syntax stx output-port 
-                          (send/i controller controller<%> get-primary-partition)
-                          (length (send/i config config<%> get-colors))
-                          (send/i config config<%> get-suffix-option)
-                          (send config get-pretty-styles)
-                          columns))
-   (define output-string (get-output-string output-port))
-   (define output-length (sub1 (string-length output-string))) ;; skip final newline
-   (fixup-parentheses output-string range)
-   (send text begin-edit-sequence #f)
-   (send text insert output-length output-string insertion-point)
-   (define display
-     (new display%
-          (text text)
-          (controller controller)
-          (config config)
-          (range range)
-          (start-position insertion-point)
-          (end-position (+ insertion-point output-length))))
-   (send display initialize)
-   (send text end-edit-sequence)
-   display))
+  (define output-port (open-output-string/count-lines))
+  (define range
+    (pretty-print-syntax stx output-port 
+                         (send/i controller controller<%> get-primary-partition)
+                         (length (send/i config config<%> get-colors))
+                         (send/i config config<%> get-suffix-option)
+                         (send config get-pretty-styles)
+                         columns))
+  (define output-string (get-output-string output-port))
+  (define output-length (sub1 (string-length output-string))) ;; skip final newline
+  (fixup-parentheses output-string range)
+  (with-unlock text
+    (uninterruptible
+     (send text insert output-length output-string insertion-point))
+    (new display%
+         (text text)
+         (controller controller)
+         (config config)
+         (range range)
+         (start-position insertion-point)
+         (end-position (+ insertion-point output-length)))))
 
 ;; display%
+;; Note: must call refresh method to finish styling.
 (define display%
   (class* object% (display<%>)
     (init-field/i [controller controller<%>]
@@ -64,57 +72,69 @@
     (define base-style
       (code-style text (send/i config config<%> get-syntax-font-size)))
 
+    ;; on-next-refresh : (listof (cons stx style-delta))
+    ;; Styles to be applied on next refresh only. (eg, underline)
+    (define on-next-refresh null)
+
+    ;; extra-styles : hash[stx => (listof style-delta)]
+    ;; Styles to be re-applied on every refresh.
     (define extra-styles (make-hasheq))
 
+    ;; to-undo-styles : (listof (cons nat nat))
+    ;; Ranges to unbold or unhighlight when selection changes.
+    ;; FIXME: ought to be managed by text:region-data (to auto-update ranges)
+    ;;   until then, positions are relative
+    (define to-undo-styles null)
+
     ;; initialize : -> void
-    (define/public (initialize)
-      (send text change-style base-style start-position end-position #f)
-      (apply-primary-partition-styles)
-      (add-clickbacks)
-      (refresh))
+    (define/private (initialize)
+      (uninterruptible
+       (send text change-style base-style start-position end-position #f))
+      (uninterruptible (apply-primary-partition-styles))
+      (uninterruptible (add-clickbacks)))
 
     ;; add-clickbacks : -> void
     (define/private (add-clickbacks)
-      (define (the-clickback editor start end)
+      (define mapping (send text get-region-mapping 'syntax))
+      (define lazy-interval-map-init
+        (delay
+          (uninterruptible
+           (for ([range (send/i range range<%> all-ranges)])
+             (let ([stx (range-obj range)]
+                   [start (range-start range)]
+                   [end (range-end range)])
+               (interval-map-set! mapping (+ start-position start) (+ start-position end) stx))))))
+      (define (the-callback position)
+        (force lazy-interval-map-init)
         (send/i controller selection-manager<%> set-selected-syntax
-               (clickback->stx
-                (- start start-position) (- end start-position))))
-      (for ([range (send/i range range<%> all-ranges)])
-        (let ([stx (range-obj range)]
-              [start (range-start range)]
-              [end (range-end range)])
-          (send text set-clickback (+ start-position start) (+ start-position end)
-                the-clickback))))
-
-    ;; clickback->stx : num num -> syntax
-    ;; FIXME: use vectors for treerange-subs and do binary search to narrow?
-    (define/private (clickback->stx start end)
-      (let ([treeranges (send/i range range<%> get-treeranges)])
-        (let loop* ([treeranges treeranges])
-          (for/or ([tr treeranges])
-            (cond [(and (= (treerange-start tr) start)
-                        (= (treerange-end tr) end))
-                   (treerange-obj tr)]
-                  [(and (<= (treerange-start tr) start)
-                        (<= end (treerange-end tr)))
-                   (loop* (treerange-subs tr))]
-                  [else #f])))))
+                (interval-map-ref mapping position #f)))
+      (send text set-clickregion start-position end-position the-callback))
 
     ;; refresh : -> void
     ;; Clears all highlighting and reapplies all non-foreground styles.
     (define/public (refresh)
       (with-unlock text
-        (send* text 
-          (begin-edit-sequence #f)
-          (change-style (unhighlight-d) start-position end-position))
-        (apply-extra-styles)
+        (uninterruptible
+         (let ([undo-select/highlight-d (get-undo-select/highlight-d)])
+           (for ([r (in-list to-undo-styles)])
+             (send text change-style undo-select/highlight-d
+                   (relative->text-position (car r))
+                   (relative->text-position (cdr r)))))
+         (set! to-undo-styles null))
+        (uninterruptible
+         (for ([stx+delta (in-list on-next-refresh)])
+           (for ([r (in-list (send/i range range<%> get-ranges (car stx+delta)))])
+             (restyle-range r (cdr stx+delta) #f)))
+         (set! on-next-refresh null))
+        (uninterruptible
+         (apply-extra-styles))
         (let ([selected-syntax
                (send/i controller selection-manager<%>
-                      get-selected-syntax)])
-          (apply-secondary-relation-styles selected-syntax)
-          (apply-selection-styles selected-syntax))
-        (send* text
-          (end-edit-sequence))))
+                       get-selected-syntax)])
+          (uninterruptible
+           (apply-secondary-relation-styles selected-syntax))
+          (uninterruptible
+           (apply-selection-styles selected-syntax)))))
 
     ;; get-range : -> range<%>
     (define/public (get-range) range)
@@ -127,22 +147,16 @@
 
     ;; highlight-syntaxes : (list-of syntax) string -> void
     (define/public (highlight-syntaxes stxs hi-color)
-      (let ([style-delta (highlight-style-delta hi-color #f)])
-        (for ([stx stxs])
-          (add-extra-styles stx (list style-delta))))
-      (refresh))
+      (let ([delta (highlight-style-delta hi-color)])
+        (for ([stx (in-list stxs)])
+          (hash-set! extra-styles stx
+                     (cons delta (hash-ref extra-styles stx null))))))
 
     ;; underline-syntaxes : (listof syntax) -> void
     (define/public (underline-syntaxes stxs)
-      (for ([stx stxs])
-        (add-extra-styles stx (list underline-style-delta)))
-      (refresh))
-
-    ;; add-extra-styles : syntax (listof style) -> void
-    (define/public (add-extra-styles stx styles)
-      (hash-set! extra-styles stx
-                 (append (hash-ref extra-styles stx null)
-                         styles)))
+      (for ([stx (in-list stxs)])
+        (set! on-next-refresh
+              (cons (cons stx underline-d) on-next-refresh))))
 
     ;; Primary styles
     ;; (Done once on initialization, never repeated)
@@ -194,10 +208,16 @@
     ;; apply-extra-styles : -> void
     ;; Applies externally-added styles (such as highlighting)
     (define/private (apply-extra-styles)
-      (for ([(stx style-deltas) extra-styles])
-        (for ([r (send/i range range<%> get-ranges stx)])
-          (for ([style-delta style-deltas])
-            (restyle-range r style-delta)))))
+      (for ([(stx deltas) (in-hash extra-styles)])
+        (for ([r (in-list (send/i range range<%> get-ranges stx))])
+          (for ([delta (in-list deltas)])
+            (restyle-range r delta #t)))))
+
+    ;; apply-selection-styles : syntax -> void
+    ;; Styles subterms eq to the selected syntax
+    (define/private (apply-selection-styles selected-syntax)
+      (for ([r (in-list (send/i range range<%> get-ranges selected-syntax))])
+        (restyle-range r select-d #t)))
 
     ;; apply-secondary-relation-styles : selected-syntax -> void
     ;; If the selected syntax is an identifier, then styles all identifiers
@@ -207,25 +227,17 @@
         (let* ([name+relation
                 (send/i controller secondary-relation<%>
                         get-identifier=?)]
-               [relation (and name+relation (cdr name+relation))])
+               [relation (and name+relation (cdr name+relation))]
+               [secondary-highlight-d (get-secondary-highlight-d)])
           (when relation
-            (for ([id (send/i range range<%> get-identifier-list)])
+            (for ([id (in-list (send/i range range<%> get-identifier-list))])
               (when (relation selected-syntax id)
-                (draw-secondary-connection id)))))))
+                (for ([r (in-list (send/i range range<%> get-ranges id))])
+                  (restyle-range r secondary-highlight-d #t))))))))
 
-    ;; apply-selection-styles : syntax -> void
-    ;; Styles subterms eq to the selected syntax
-    (define/private (apply-selection-styles selected-syntax)
-      (for ([r (send/i range range<%> get-ranges selected-syntax)])
-        (restyle-range r (select-highlight-d))))
-
-    ;; draw-secondary-connection : syntax -> void
-    (define/private (draw-secondary-connection stx2)
-      (for ([r (send/i range range<%> get-ranges stx2)])
-        (restyle-range r (select-sub-highlight-d))))
-
-    ;; restyle-range : (cons num num) style-delta% -> void
-    (define/private (restyle-range r style)
+    ;; restyle-range : (cons num num) style-delta% boolean -> void
+    (define/private (restyle-range r style need-undo?)
+      (when need-undo? (set! to-undo-styles (cons r to-undo-styles)))
       (send text change-style style
             (relative->text-position (car r))
             (relative->text-position (cdr r))))
@@ -236,7 +248,8 @@
 
     ;; Initialize
     (super-new)
-    (send/i controller controller<%> add-syntax-display this)))
+    (send/i controller controller<%> add-syntax-display this)
+    (initialize)))
 
 ;; fixup-parentheses : string range -> void
 (define (fixup-parentheses string range)
@@ -358,34 +371,38 @@
 
 ;; Styles
 
-(define (highlight-style-delta raw-color em?
-                               #:translate-color? [translate-color? #t])
-  (let* ([sd (new style-delta%)])
-    (unless em?
-      (send sd set-delta-background
-            (if translate-color? (translate-color raw-color) raw-color)))
-    (when em? (send sd set-weight-on 'bold))
-    (unless em?
-      ;; (send sd set-underlined-off #t)
-      (send sd set-weight-off 'bold))
+(define select-d
+  (make-object style-delta% 'change-weight 'bold))
+
+(define underline-d
+  (make-object style-delta% 'change-underline #t))
+
+(define (highlight-style-delta raw-color #:translate-color? [translate-color? #t])
+  (let ([sd (new style-delta%)]
+        [color (if translate-color? (translate-color raw-color) raw-color)])
+    (send sd set-delta-background color)
     sd))
 
-(define underline-style-delta
-  (let ([sd (new style-delta%)])
-    (send sd set-underlined-on #t)
-    sd))
-
-(define (mk-2-constant-style bow-color em? [wob-color (translate-color bow-color)])
-  (let ([wob-version (highlight-style-delta wob-color em? #:translate-color? #f)]
-        [bow-version (highlight-style-delta bow-color em? #:translate-color? #f)])
+(define (mk-2-constant-style bow-color [wob-color (translate-color bow-color)])
+  (let ([wob-version (highlight-style-delta wob-color #:translate-color? #f)]
+        [bow-version (highlight-style-delta bow-color #:translate-color? #f)])
     (λ ()
       (if (pref:invert-colors?)
           wob-version
           bow-version))))
 
-(define select-highlight-d
-  (mk-2-constant-style "yellow" #t "darkgoldenrod"))
-(define select-sub-highlight-d
-  (mk-2-constant-style "yellow" #f "darkgoldenrod"))
+(define get-secondary-highlight-d
+  (mk-2-constant-style "yellow" "darkgoldenrod"))
 
-(define unhighlight-d (mk-2-constant-style "white" #f #|"black"|#))
+#|
+(define undo-select-d
+  (make-object style-delta% 'change-weight 'normal))
+(define get-undo-highlight-d
+  (mk-2-constant-style "white" "black"))
+|#
+
+(define (get-undo-select/highlight-d)
+  (let ([sd (make-object style-delta% 'change-weight 'normal)]
+        [bg (if (pref:invert-colors?) "black" "white")])
+    (send sd set-delta-background bg)
+    sd))

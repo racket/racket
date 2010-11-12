@@ -1,13 +1,16 @@
 #lang s-exp "type-env-lang.rkt"
 
 [Complex -Number]
-[Inexact-Complex -InexactComplex]
+[Float-Complex -FloatComplex] ; for consistency with float vs inexact-real
+[Inexact-Complex -FloatComplex] ; for backward compatiblity
 [Number -Number]
 [Integer -Integer]
 [Real -Real]
 [Exact-Rational -ExactRational]
-[Float -Flonum]
-[Nonnegative-Float -NonnegativeFlonum]
+[Float -Flonum] ;; these 2 are the default, 64-bit floats, can be optimized
+[Nonnegative-Float -NonnegativeFlonum] ;; associated test is: flonum? 
+[Inexact-Real -InexactReal] ;; any inexact real. could be 32- or 64-bit float
+                            ;; associated test is: inexact-real?
 [Exact-Positive-Integer -ExactPositiveInteger]
 [Exact-Nonnegative-Integer -ExactNonnegativeInteger]
 [Positive-Fixnum -PositiveFixnum]
@@ -62,6 +65,7 @@
 [True (-val #t)]
 [Null (-val null)]
 [Nothing (Un)]
+[Futureof (-poly (a) (-future a))]
 [Pairof (-poly (a b) (-pair a b))]
 [MPairof (-poly (a b) (-mpair a b))]
 [MListof (-poly (a) (-mlst a))]

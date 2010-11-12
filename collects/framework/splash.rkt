@@ -14,7 +14,7 @@
          shutdown-splash
          close-splash
          add-splash-icon
-         set-splash-progress-bar?
+         set-splash-progress-bar?!
          set-splash-char-observer
          set-splash-event-callback
          get-splash-event-callback
@@ -72,8 +72,8 @@
      (splash-paint-callback dc)]
     [else 
      (splash-paint-callback dc 
-                            (send gauge get-value) 
-                            (send gauge get-range)
+                            (send (get-gauge) get-value) 
+                            (send (get-gauge) get-range)
                             (get-splash-width)
                             (get-splash-height))])
   (for-each (λ (icon)
@@ -86,9 +86,9 @@
                     (send (icon-bm icon) get-loaded-mask)))
             icons))
 
-(define (set-splash-progress-bar? b?) 
+(define (set-splash-progress-bar?! b?) 
   (send gauge-panel change-children
-        (λ (l) (if b? (list gauge) '()))))
+        (λ (l) (if b? (list (get-gauge)) '()))))
 
 (define (splash-paint-callback dc)
   (if splash-bitmap
@@ -107,10 +107,11 @@
   (set! icons (cons (make-icon bm x y) icons))
   (refresh-splash))
 
-(define (start-splash splash-draw-spec _splash-title width-default)
+(define (start-splash splash-draw-spec _splash-title width-default #:allow-funny? [allow-funny? #f])
+  (unless allow-funny? (set! funny? #f))
   (set! splash-title _splash-title)
   (set! splash-max-width (max 1 (splash-get-preference (get-splash-width-preference-name) width-default)))
-  (send gauge set-range splash-max-width)
+  (send (get-gauge) set-range splash-max-width)
   (send splash-tlw set-label splash-title)
   (let/ec k
     (define (no-splash)
@@ -123,12 +124,12 @@
       [(or (path? splash-draw-spec)
            (string? splash-draw-spec))
        (unless (file-exists? splash-draw-spec)
-         (fprintf (current-error-port) "WARNING: bitmap path ~s not found~n" splash-draw-spec)
+         (fprintf (current-error-port) "WARNING: bitmap path ~s not found\n" splash-draw-spec)
          (no-splash))
        
        (set! splash-bitmap (make-object bitmap% splash-draw-spec))
        (unless (send splash-bitmap ok?)
-         (fprintf (current-error-port) "WARNING: bad bitmap ~s~n" splash-draw-spec)
+         (fprintf (current-error-port) "WARNING: bad bitmap ~s\n" splash-draw-spec)
          (no-splash))
        
        (send splash-canvas min-width (send splash-bitmap get-width))
@@ -156,6 +157,7 @@
     (refresh-splash)
     (send splash-tlw center 'both)
     (thread (λ () (send splash-tlw show #t)))
+    (sync (system-idle-evt)) ; try to wait for dialog to be shown
     (flush-display) (yield) (sleep)
     (flush-display) (yield) (sleep)))
 
@@ -188,8 +190,8 @@
 (define (splash-load-handler old-load f expected)
   (set! splash-current-width (+ splash-current-width 1))
   (when (<= splash-current-width splash-max-width)
-    (send gauge set-value splash-current-width)
-    (when (or (not (member gauge (send gauge-panel get-children)))
+    (send (get-gauge) set-value splash-current-width)
+    (when (or (not (member (get-gauge) (send gauge-panel get-children)))
               ;; when the gauge is not visible, we'll redraw the canvas
               (refresh-splash-on-gauge-change? splash-current-width splash-max-width))
       (refresh-splash)))
@@ -303,10 +305,15 @@
 (define panel (make-object vertical-pane% splash-tlw))
 (define splash-canvas (new splash-canvas% [parent panel] [style '(no-autoclear)]))
 (define gauge-panel (make-object horizontal-pane% panel))
-(define gauge
-  (if funny?
-      (make-object funny-gauge% gauge-panel)
-      (make-object gauge% #f splash-max-width gauge-panel '(horizontal))))
+(define get-gauge
+  (let ([gauge #f])
+    (λ ()
+      (unless gauge
+        (set! gauge
+              (if funny?
+                  (make-object funny-gauge% gauge-panel)
+                  (make-object gauge% #f splash-max-width gauge-panel '(horizontal)))))
+      gauge)))
 (send panel stretchable-width #f)
 (send panel stretchable-height #f)
 (send gauge-panel set-alignment 'center 'top)

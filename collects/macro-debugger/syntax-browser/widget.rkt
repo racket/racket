@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          racket/list
          racket/match
          framework
@@ -14,6 +14,7 @@
          "properties.rkt"
          "text.rkt"
          "util.rkt"
+         "../util/eomap.rkt"
          "../util/mpi.rkt")
 (provide widget%)
 
@@ -106,87 +107,101 @@
             (send -text change-style clickback-style a b)))))
 
     (define/public (add-syntax stx
-                               #:binders [binders null]
+                               #:binders [binders #f]
                                #:shift-table [shift-table #f]
-                               #:definites [definites null]
+                               #:definites [definites #f]
                                #:hi-colors [hi-colors null]
                                #:hi-stxss [hi-stxss null]
                                #:substitutions [substitutions null])
-      (let ([display (internal-add-syntax stx)]
-            [definite-table (make-hasheq)])
-        (let ([range (send/i display display<%> get-range)]
-              [offset (send/i display display<%> get-start-position)])
-          (for ([subst substitutions])
-            (for ([r (send/i range range<%> get-ranges (car subst))])
-              (with-unlock -text
-                (send -text insert (cdr subst)
-                      (+ offset (car r))
-                      (+ offset (cdr r))
-                      #f)
-                (send -text change-style
-                      (code-style -text (send/i config config<%> get-syntax-font-size))
-                      (+ offset (car r))
-                      (+ offset (cdr r)))))))
-        (for ([hi-stxs hi-stxss] [hi-color hi-colors])
+      (define (get-shifted id) (hash-ref shift-table id null))
+
+      (with-unlock -text
+        (define display
+          (print-syntax-to-editor stx -text controller config
+                                  (calculate-columns)
+                                  (send -text last-position)))
+        (send -text insert "\n")
+        (define range (send/i display display<%> get-range))
+        (define offset (send/i display display<%> get-start-position))
+        (for ([subst (in-list substitutions)])
+          (for ([r (in-list (send/i range range<%> get-ranges (car subst)))])
+            (send -text insert (cdr subst)
+                  (+ offset (car r))
+                  (+ offset (cdr r))
+                  #f)
+            (send -text change-style
+                  (code-style -text (send/i config config<%> get-syntax-font-size))
+                  (+ offset (car r))
+                  (+ offset (cdr r))
+                  #f)))
+        ;; Apply highlighting
+        (for ([hi-stxs (in-list hi-stxss)] [hi-color (in-list hi-colors)])
           (send/i display display<%> highlight-syntaxes hi-stxs hi-color))
-        (for ([definite definites])
-          (hash-set! definite-table definite #t)
-          (when shift-table
-            (for ([shifted-definite (hash-ref shift-table definite null)])
-              (hash-set! definite-table shifted-definite #t))))
-        (let ([binder-table (make-free-id-table)])
-          (define range (send/i display display<%> get-range))
-          (define start (send/i display display<%> get-start-position))
-          (define (get-binders id)
-            (let ([binder (free-id-table-ref binder-table id #f)])
-              (cond [(not binder) null]
-                    [shift-table (cons binder (get-shifted binder))]
-                    [else (list binder)])))
-          (define (get-shifted id)
-            (hash-ref shift-table id null))
-          ;; Populate table
-          (for ([binder binders])
-            (free-id-table-set! binder-table binder binder))
-          ;; Underline binders (and shifted binders)
-          (send/i display display<%> underline-syntaxes
-                 (append (apply append (map get-shifted binders))
-                         binders))
-          ;; Make arrows (& billboards, when enabled)
-          (for ([id (send/i range range<%> get-identifier-list)])
-            (define definite? (hash-ref definite-table id #f))
+        ;; Underline binders (and shifted binders)
+        (send/i display display<%> underline-syntaxes
+                (let ([binder-list (hash-map binders (lambda (k v) k))])
+                  (append (apply append (map get-shifted binder-list))
+                          binder-list)))
+        (send display refresh)
+
+        ;; Make arrows (& billboards, when enabled)
+        (when (send config get-draw-arrows?)
+          (define (definite-phase id)
+            (and definites
+                 (or (eomap-ref definites id #f)
+                     (for/or ([shifted (in-list (hash-ref shift-table id null))])
+                       (eomap-ref definites shifted #f)))))
+
+          (define phase-binder-table (make-hash))
+          (define (get-binder-table phase)
+            (hash-ref! phase-binder-table phase (lambda () (make-free-id-table #:phase phase))))
+          (for ([(binder phase) (in-hash binders)])
+            (free-id-table-set! (get-binder-table phase) binder binder))
+
+          (define (get-binders id phase)
+            (define (for-one-table table id)
+              (let ([binder (free-id-table-ref table id #f)])
+                (cond [(not binder) null]
+                      [shift-table (cons binder (get-shifted binder))]
+                      [else (list binder)])))
+            (cond [phase (for-one-table (get-binder-table phase) id)]
+                  [else
+                   (apply append
+                          (for/list ([table (in-hash-values phase-binder-table)])
+                            (for-one-table table id)))]))
+
+          (for ([id (in-list (send/i range range<%> get-identifier-list))])
+            (define phase (definite-phase id))
             (when #f ;; DISABLED
-              (add-binding-billboard start range id definite?))
-            (for ([binder (get-binders id)])
-              (for ([binder-r (send/i range range<%> get-ranges binder)])
-                (for ([id-r (send/i range range<%> get-ranges id)])
-                  (add-binding-arrow start binder-r id-r definite?))))))
+              (add-binding-billboard offset range id phase))
+            (for ([binder (in-list (get-binders id phase))])
+              (for ([binder-r (in-list (send/i range range<%> get-ranges binder))])
+                (for ([id-r (in-list (send/i range range<%> get-ranges id))])
+                  (add-binding-arrow offset binder-r id-r phase))))))
         (void)))
 
-    (define/private (add-binding-arrow start binder-r id-r definite?)
-      (if definite?
-          (send -text add-arrow
-                (+ start (car binder-r))
-                (+ start (cdr binder-r))
-                (+ start (car id-r))
-                (+ start (cdr id-r))
-                "blue")
-          (send -text add-question-arrow
-                (+ start (car binder-r))
-                (+ start (cdr binder-r))
-                (+ start (car id-r))
-                (+ start (cdr id-r))
-                "purple")))
+    (define/private (add-binding-arrow start binder-r id-r phase)
+      ;; phase = #f means not definite binding (ie, "?" arrow)
+      (send -text add-arrow
+            (+ start (car binder-r))
+            (+ start (cdr binder-r))
+            (+ start (car id-r))
+            (+ start (cdr id-r))
+            (if phase "blue" "purple")
+            (cond [(equal? phase 0) #f]
+                  [phase (format "phase ~s" phase)]
+                  [else "?"])
+            (if phase 'end 'start)))
 
     (define/private (add-binding-billboard start range id definite?)
       (match (identifier-binding id)
         [(list-rest src-mod src-name nom-mod nom-name _)
-         (for-each (lambda (id-r)
-                     (send -text add-billboard
-                           (+ start (car id-r))
-                           (+ start (cdr id-r))
-                           (string-append "from " (mpi->string src-mod))
-                           (if definite? "blue" "purple")))
-                   (send/i range range<%> get-ranges id))]
+         (for ([id-r (in-list (send/i range range<%> get-ranges id))])
+           (send -text add-billboard
+                 (+ start (car id-r))
+                 (+ start (cdr id-r))
+                 (string-append "from " (mpi->string src-mod))
+                 (if definite? "blue" "purple")))]
         [_ (void)]))
 
     (define/public (add-separator)
@@ -197,24 +212,10 @@
 
     (define/public (erase-all)
       (with-unlock -text
-        (send -text erase)
-        (send -text delete-all-drawings))
+        (send -text erase))
       (send/i controller displays-manager<%> remove-all-syntax-displays))
 
     (define/public (get-text) -text)
-
-    ;; internal-add-syntax : syntax -> display
-    (define/private (internal-add-syntax stx)
-      (with-unlock -text
-        (let ([display
-               (print-syntax-to-editor stx -text controller config
-                                       (calculate-columns)
-                                       (send -text last-position))])
-          (send* -text
-            (insert "\n")
-            ;;(scroll-to-position current-position)
-            )
-          display)))
 
     (define/private (calculate-columns)
       (define style (code-style -text (send/i config config<%> get-syntax-font-size)))
@@ -251,13 +252,15 @@
 
 (define browser-text%
   (let ([browser-text-default-style-name "widget.rkt::browser-text% basic"])
-    (class (text:arrows-mixin
-            (text:tacking-mixin
-             (text:hover-drawings-mixin
-              (text:hover-mixin
-               (text:hide-caret/selection-mixin
-                (text:foreground-color-mixin
-                 (editor:standard-style-list-mixin text:basic%)))))))
+    (class (text:clickregion-mixin
+            (text:arrows-mixin
+             (text:tacking-mixin
+              (text:hover-drawings-mixin
+               (text:hover-mixin
+                (text:region-data-mixin
+                 (text:hide-caret/selection-mixin
+                  (text:foreground-color-mixin
+                   (editor:standard-style-list-mixin text:basic%)))))))))
       (inherit set-autowrap-bitmap get-style-list)
       (define/override (default-style-name) browser-text-default-style-name)
       (super-new (auto-wrap #t))

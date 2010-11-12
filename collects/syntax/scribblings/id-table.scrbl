@@ -20,9 +20,13 @@ functions (@scheme[dict-ref], @scheme[dict-map], etc) can be used on
 free-identifier tables.
 
 @deftogether[[
-@defproc[(make-bound-id-table [init-dict dict? null]) 
+@defproc[(make-bound-id-table 
+           [init-dict dict? null]
+           [#:phase phase (or/c exact-integer? #f) (syntax-local-phase-level)])
          mutable-bound-id-table?]
-@defproc[(make-immutable-bound-id-table [init-dict dict? null])
+@defproc[(make-immutable-bound-id-table
+           [init-dict dict? null]
+           [#:phase phase (or/c exact-integer? #f) (syntax-local-phase-level)])
          immutable-bound-id-table?]]]{
 
 Produces a dictionary mapping syntax identifiers to arbitrary
@@ -30,6 +34,11 @@ values. The mapping uses @scheme[bound-identifier=?] to compare keys,
 but also uses a hash table based on symbol equality to make the
 mapping efficient in the common case. The two procedures produce
 mutable and immutable dictionaries, respectively.
+
+The identifiers are compared at phase level @scheme[phase]. The
+default value is generally appropriate for identifier tables used by
+macros, but code that analyzes fully-expanded programs may need to
+create identifier tables at multiple different phases.
 
 The optional @scheme[init-dict] argument provides the initial
 mappings. It must be a dictionary, and its keys must all be
@@ -146,9 +155,13 @@ functions (@scheme[dict-ref], @scheme[dict-map], etc) can be used on
 free-identifier tables.
 
 @deftogether[[
-@defproc[(make-free-id-table [init-dict dict? null])
+@defproc[(make-free-id-table
+           [init-dict dict? null]
+           [#:phase phase (or/c exact-integer? #f) (syntax-local-phase-level)])
          mutable-free-id-table?]
-@defproc[(make-immutable-free-id-table [init-dict dict? null])
+@defproc[(make-immutable-free-id-table 
+           [init-dict dict? null]
+           [#:phase phase (or/c exact-integer? #f) (syntax-local-phase-level)])
          immutable-free-id-table?]
 @defproc[(free-id-table? [v any/c]) boolean?]
 @defproc[(mutable-free-id-table? [v any/c]) boolean?]

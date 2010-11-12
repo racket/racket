@@ -36,7 +36,9 @@
                   crop?
                   normalized-shape?
                   image-snip->image
-                  to-img)
+                  to-img
+                  render-normalized
+                  render-image)
          (only-in "../private/image-more.ss" 
                   bring-between
                   swizzle)
@@ -47,7 +49,10 @@
          racket/class
          racket/file
          racket/gui/base
+         racket/port
+         wxme
          rackunit
+         (only-in lang/imageeq image=?)
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?))
 
@@ -301,6 +306,25 @@
                .1)
       =>
       #t)
+
+;; test to make sure that image=? is provided from 2htdp/image and
+;; not just built into the teaching languages.
+(test (image=? (rectangle 10 10 'solid 'red) (rectangle 10 10 'solid 'red))
+      =>
+      #t)
+
+(test (image=? (overlay (rectangle 3 1 'solid 'blue)
+                        (rectangle 1 3 'solid 'blue))
+               (overlay (rectangle 1 3 'solid 'blue)
+                        (rectangle 3 1 'solid 'blue)))
+      =>
+      #t)
+
+
+(test (with-handlers ((exn:fail? (λ (x) 'passed)))
+        (begin (image=? 1 2) 'fail))
+      =>
+      'passed)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -644,21 +668,21 @@
 
 (test (empty-scene 185 100)
       =>
-      (overlay (rectangle 185 100 'outline 'black)
-               (rectangle 185 100 'solid 'white)))
+      (crop 0 0 185 100
+            (overlay (rectangle 185 100 'outline (pen "black" 2 'solid 'round 'round))
+                     (rectangle 185 100 'solid 'white))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  testing normalization
 ;;
 
-(test (normalize-shape (image-shape (ellipse 50 100 'solid 'red))
-                       values)
+(test (normalize-shape (image-shape (ellipse 50 100 'solid 'red)))
       =>
       (make-translate 25 50 (make-ellipse 50 100 0 'solid "red")))
 
 (test (normalize-shape (make-overlay (image-shape (ellipse 50 100 'solid 'red))
-                                     (image-shape (ellipse 50 100 'solid 'blue)))
-                       values)
+                                     (image-shape (ellipse 50 100 'solid 'blue))))
       =>
       (make-overlay (image-shape (ellipse 50 100 'solid 'red))
                     (image-shape (ellipse 50 100 'solid 'blue))))
@@ -666,8 +690,7 @@
 (test (normalize-shape (make-overlay
                         (make-overlay (image-shape (ellipse 50 100 'solid 'red))
                                       (image-shape (ellipse 50 100 'solid 'blue)))
-                        (image-shape (ellipse 50 100 'solid 'green)))
-                       values)
+                        (image-shape (ellipse 50 100 'solid 'green))))
       =>
       (make-overlay 
        (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 'solid "red"))
@@ -677,21 +700,18 @@
 (test (normalize-shape (make-overlay
                         (image-shape (ellipse 50 100 'solid 'green))
                         (make-overlay (image-shape (ellipse 50 100 'solid 'red))
-                                      (image-shape (ellipse 50 100 'solid 'blue))))
-                       values)
+                                      (image-shape (ellipse 50 100 'solid 'blue)))))
       =>
       (make-overlay 
        (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 'solid "green"))
                      (make-translate 25 50 (make-ellipse 50 100 0 'solid "red")))
        (make-translate 25 50 (make-ellipse 50 100 0 'solid "blue"))))
 
-(test (normalize-shape (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))
-                       values)
+(test (normalize-shape (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
       =>
       (make-translate 125 150 (make-ellipse 50 100 0 'solid "blue")))
 
-(test (normalize-shape (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
-                       values)
+(test (normalize-shape (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))))
       =>
       (make-translate 135 170 (make-ellipse 50 100 0 'solid "blue")))
 
@@ -741,12 +761,10 @@
       #t)
 
 (test (round-numbers
-       (normalize-shape (image-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))
-                        values))
+       (normalize-shape (image-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))))
       =>
       (round-numbers
-       (normalize-shape (image-shape (rotate 180 (rectangle 50 100 'solid 'purple)))
-                        values)))
+       (normalize-shape (image-shape (rotate 180 (rectangle 50 100 'solid 'purple))))))
 
 (test (round-numbers (normalize-shape (image-shape (rotate 90 (ellipse 10 10 'solid 'red)))))
       =>
@@ -771,7 +789,7 @@
       #t)
 
 (test (equal~? (rectangle 100 10 'solid 'red)
-               (rotate 90 (rectangle 10.001 100.0001 'solid 'red))
+               (rotate 90 (rectangle 10.0001 100.0001 'solid 'red))
                0.1)
       =>
       #t)
@@ -878,6 +896,12 @@
       =>
       (text "ab" 18 "blue"))
 
+;; make sure this doesn't crash (there was a bug that would be triggered by drawing these guys)
+(test (equal? (scale 0.1 (text "Howdy!" 12 'black))
+              (scale 0.1 (text "Howdy!" 12 'red)))
+      =>
+      #f)
+      
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; triangle
@@ -1264,10 +1288,23 @@
       =>
       (image-snip->image (make-object image-snip% green-blue-10x20-bitmap)))
 
+(test (rotate 90 (rotate 90 (make-object image-snip% green-blue-20x10-bitmap)))
+      =>
+      (rotate 180 (make-object image-snip% green-blue-20x10-bitmap)))
+
+(test (rotate 90 (flip-vertical (rotate 90 (make-object image-snip% green-blue-20x10-bitmap))))
+      =>
+      (rotate 0 (make-object image-snip% green-blue-20x10-bitmap)))
+
 ;; there was a bug in the bounding box computation for scaled bitmaps that this test exposes
 (test (image-width (frame (rotate 90 (scale 1/2 (bitmap icons/plt-logo-red-diffuse.png)))))
       =>
       128)
+
+;; Rotation by 0 should produce an equivalent object
+(test (rotate 0 (make-object image-snip% green-blue-20x10-bitmap))
+      =>
+      (to-img (make-object image-snip% green-blue-20x10-bitmap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1354,6 +1391,7 @@
 
 ;; this test case checks to make sure the number of crops doesn't 
 ;; grow when normalizing shapes.
+
 (let* ([an-image 
         (crop
          0 0 50 50
@@ -1369,7 +1407,7 @@
              (ellipse 20 50 'solid 'red)
              (ellipse 30 40 'solid 'black))))))]
        [an-image+crop
-        (crop 40 40 10 10 an-image)])
+        (crop 5 5 10 10 an-image)])
   
   (define (count-crops s)
     (define crops 0)
@@ -1383,6 +1421,16 @@
   (test (+ (count-crops (normalize-shape (image-shape an-image))) 1)
         =>
         (count-crops (normalize-shape (image-shape an-image+crop)))))
+
+(check-exn #rx"crop" (λ () (crop 100 100 10 10 (rectangle 20 20 "solid" "black"))))
+(check-exn #rx"crop" (λ () (crop 9 100 10 10 (rectangle 20 20 "solid" "black"))))
+(check-exn #rx"crop" (λ () (crop 100 9 10 10 (rectangle 20 20 "solid" "black"))))
+(check-exn #rx"crop" (λ () (crop -9 9 10 10 (rectangle 20 20 "solid" "black"))))
+(check-exn #rx"crop" (λ () (crop 9 -9 10 10 (rectangle 20 20 "solid" "black"))))
+
+(test (crop 20 20 100 100 (rectangle 40 40 "solid" "black"))
+      =>
+      (rectangle 20 20 "solid" "black"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1529,10 +1577,245 @@
        160 160 0 1/2
        (make-pen "black" 12 "solid" "round" "round")))
 
+(test (image->color-list
+       (above (beside (rectangle 1 1 'solid (color 1 1 1))
+                      (rectangle 1 1 'solid (color 2 2 2))
+                      (rectangle 1 1 'solid (color 3 3 3)))
+              (beside (rectangle 1 1 'solid (color 4 4 4))
+                      (rectangle 1 1 'solid (color 5 5 5))
+                      (rectangle 1 1 'solid (color 6 6 6)))))
+      =>
+      (list (color 1 1 1) (color 2 2 2) (color 3 3 3) 
+            (color 4 4 4) (color 5 5 5) (color 6 6 6)))
+
+(test (color-list->bitmap
+       (list (color 1 1 1) (color 2 2 2) (color 3 3 3) 
+             (color 4 4 4) (color 5 5 5) (color 6 6 6))
+       3 2)
+      =>
+      (above (beside (rectangle 1 1 'solid (color 1 1 1))
+                     (rectangle 1 1 'solid (color 2 2 2))
+                     (rectangle 1 1 'solid (color 3 3 3)))
+             (beside (rectangle 1 1 'solid (color 4 4 4))
+                     (rectangle 1 1 'solid (color 5 5 5))
+                     (rectangle 1 1 'solid (color 6 6 6)))))
+
+(let ([has-color? 
+       (λ (img) 
+         (ormap (λ (x) (or (not (equal? (color-red x)
+                                        (color-green x)))
+                           (not (equal? (color-red x)
+                                        (color-blue x)))))
+                (image->color-list img)))])
+  (test (has-color? (place-image (rectangle 1 10 "solid" "red") 2 10
+                                 (empty-scene 5 20)))
+        =>
+        #t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  test that the extra mode check is there
+;;  test pinholes.
+;;
+
+(test (pinhole-x (rectangle 10 10 'solid 'blue)) => #f)
+(test (pinhole-y (rectangle 10 10 'solid 'blue)) => #f)
+(test (pinhole-x (put-pinhole 2 3 (rectangle 10 10 'solid 'blue))) => 2)
+(test (pinhole-y (put-pinhole 2 3 (rectangle 10 10 'solid 'blue))) => 3)
+(test (pinhole-x (center-pinhole (rectangle 10 24 'solid 'blue))) => 5)
+(test (pinhole-y (center-pinhole (rectangle 10 24 'solid 'blue))) => 12)
+(test (pinhole-x (clear-pinhole (center-pinhole (rectangle 10 24 'solid 'blue)))) => #f)
+(test (pinhole-y (clear-pinhole (center-pinhole (rectangle 10 24 'solid 'blue)))) => #f)
+(test (pinhole-x (clear-pinhole (rectangle 10 24 'solid 'blue))) => #f)
+(test (pinhole-y (clear-pinhole (rectangle 10 24 'solid 'blue))) => #f)
+
+(test (pinhole-x (scale 11 (center-pinhole (rectangle 10 24 'solid 'blue))))
+      =>
+      55)
+(test (pinhole-y (scale 11 (center-pinhole (rectangle 10 24 'solid 'blue))))
+      =>
+      132)
+(test (round-numbers (pinhole-x (rotate 90 (center-pinhole (rectangle 40 20 'solid 'red)))))
+      =>
+      10.0)
+(test (round-numbers (pinhole-y (rotate 90 (center-pinhole (rectangle 40 20 'solid 'red)))))
+      =>
+      20.0)
+(test (pinhole-x (flip-vertical (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
+      =>
+      1)
+(test (pinhole-y (flip-vertical (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
+      =>
+      18)
+(test (pinhole-x (flip-horizontal (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
+      =>
+      9.0)
+(test (pinhole-y (flip-horizontal (put-pinhole 1 2 (rectangle 10 20 'solid 'red))))
+      =>
+      2.0)
+(test (equal? (center-pinhole (rectangle 10 12 'solid 'blue))
+              (rectangle 10 12 'solid 'blue))
+      =>
+      #f)
+(test (equal? (center-pinhole (rectangle 10 12 'solid 'blue))
+              (put-pinhole 5 6 (rectangle 10 12 'solid 'blue)))
+      =>
+      #t)
+(test (pinhole-x (add-line (center-pinhole (rectangle 100 120 'solid 'red)) 10 10 20 20 'blue))
+      =>
+      50)
+(test (pinhole-y (add-line (center-pinhole (rectangle 100 120 'solid 'red)) 10 10 20 20 'blue))
+      =>
+      60)
+(test (pinhole-x (add-curve (center-pinhole (rectangle 100 120 'solid 'red)) 
+                            10 10 30 1/2
+                            20 20 60 1/2
+                            'white))
+      =>
+      50)
+(test (pinhole-y (add-curve (center-pinhole (rectangle 100 120 'solid 'red)) 
+                            10 10 30 1/2
+                            20 20 60 1/2
+                            'white))
+      =>
+      60)
+
+(test (pinhole-x (scene+line (center-pinhole (rectangle 100 120 'solid 'red)) 10 10 20 20 'blue))
+      =>
+      50)
+(test (pinhole-y (scene+line (center-pinhole (rectangle 100 120 'solid 'red)) 10 10 20 20 'blue))
+      =>
+      60)
+(test (pinhole-x (scene+curve (center-pinhole (rectangle 100 120 'solid 'red)) 
+                              10 10 30 1/2
+                              20 20 60 1/2
+                              'white))
+      =>
+      50)
+(test (pinhole-y (scene+curve (center-pinhole (rectangle 100 120 'solid 'red)) 
+                              10 10 30 1/2
+                              20 20 60 1/2
+                              'white))
+      =>
+      60)
+
+(test (pinhole-x (crop 2 2 8 10
+                       (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      3)
+(test (pinhole-y (crop 2 2 8 10
+                       (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      4)
+
+(test (pinhole-x (frame (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      5)
+(test (pinhole-y (frame (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      6)
+
+(test (pinhole-x (overlay (put-pinhole 1 2 (rectangle 10 100 'solid 'red))
+                          (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))))
+      =>
+      46)
+(test (pinhole-y (overlay (put-pinhole 1 2 (rectangle 10 100 'solid 'red))
+                          (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))))
+      =>
+      2)
+(test (pinhole-x (overlay (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))
+                          (put-pinhole 1 2 (rectangle 10 100 'solid 'red))))
+      =>
+      75)
+(test (pinhole-y (overlay (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))
+                          (put-pinhole 1 2 (rectangle 10 100 'solid 'red))))
+      =>
+      54)
+(test (pinhole-x (overlay (rectangle 100 10 'solid 'blue)
+                          (put-pinhole 1 2 (rectangle 10 100 'solid 'red))))
+      =>
+      #f)
+(test (pinhole-y (overlay (rectangle 100 10 'solid 'blue)
+                          (put-pinhole 1 2 (rectangle 10 100 'solid 'red))))
+      =>
+      #f)
+(test (pinhole-x (beside (center-pinhole (rectangle 10 100 'solid 'red))
+                         (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      5)
+(test (pinhole-y (beside (center-pinhole (rectangle 10 100 'solid 'red))
+                         (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      50)
+(test (pinhole-x (above (center-pinhole (rectangle 10 100 'solid 'red))
+                        (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      50)
+(test (pinhole-y (above (center-pinhole (rectangle 10 100 'solid 'red))
+                        (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      50)
+
+(test (pinhole-x (place-image (center-pinhole (rectangle 10 100 'solid 'red))
+                              0 0
+                              (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      50)
+(test (pinhole-y (place-image (center-pinhole (rectangle 10 100 'solid 'red))
+                              0 0
+                              (center-pinhole (rectangle 100 10 'solid 'blue))))
+      =>
+      5)
+
+(test (clear-pinhole
+       (overlay/align "pinhole" 'pinhole
+                      (center-pinhole (rectangle 40 100 'solid 'red))
+                      (put-pinhole 0 0 (rectangle 100 40 'solid 'blue))))
+      =>
+      (overlay/xy (rectangle 40 100 'solid 'red)
+                  20 50
+                  (rectangle 100 40 'solid 'blue)))
+
+(test (clear-pinhole
+       (underlay/align "pinhole" 'pinhole
+                       (center-pinhole (rectangle 40 100 'solid 'red))
+                       (put-pinhole 100 40 (rectangle 100 40 'solid 'blue))))
+      =>
+      (underlay/xy (rectangle 40 100 'solid 'red)
+                   -80 10
+                   (rectangle 100 40 'solid 'blue)))
+
+(test (clear-pinhole
+       (beside/align "pinhole"
+                     (center-pinhole (rectangle 100 40 'solid 'purple))
+                     (center-pinhole (rectangle 40 100 'solid 'purple))))
+      =>
+      (beside (rectangle 100 40 'solid 'purple)
+              (rectangle 40 100 'solid 'purple)))
+
+
+(test (clear-pinhole
+       (above/align "pinhole"
+                    (center-pinhole (rectangle 100 40 'solid 'purple))
+                    (center-pinhole (rectangle 40 100 'solid 'purple))))
+      =>
+      (above (rectangle 100 40 'solid 'purple)
+             (rectangle 40 100 'solid 'purple)))
+
+(test (clear-pinhole
+       (place-image/align
+        (center-pinhole (rectangle 100 10 'solid 'red))
+        0 0 "pinhole" "pinhole"
+        (center-pinhole (rectangle 10 100 'solid 'blue))))
+      =>
+      (place-image/align
+       (rectangle 100 10 'solid 'red)
+       0 0 "center" "center"
+       (rectangle 10 100 'solid 'blue)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  test errors.
+;;  mostly test that the extra mode check is there
 ;;
 
 (test/exn (rectangle 10 10 "solid" (make-pen "black" 12 "solid" "round" "round"))
@@ -1588,6 +1871,182 @@
           =>
           #rx"^polygon: expected <image-color>")
 
+(test/exn (save-image "tri.png" (triangle 50 "solid" "purple"))
+          =>
+          #rx"^save-image:")
+
+(test/exn (pen 1 2 3 4 5)
+          =>
+          #rx"^pen:")
+
+(test/exn (make-pen 1 2 3 4 5)
+          =>
+          #rx"^make-pen:")
+
+(test/exn (make-color #f #f #f)
+          =>
+          #rx"^make-color:")
+(test/exn (color #f #f #f)
+          =>
+          #rx"^color:")
+(test/exn (color-list->bitmap
+           (list (color 1 1 1) (color 2 2 2) (color 3 3 3) 
+                 (color 4 4 4) (color 5 5 5) (color 6 6 6))
+           3 3)
+          =>
+          #rx"^color-list->bitmap")
+
+(test/exn (overlay/align
+           "pinhole" "center"
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^overlay/align")
+(test/exn (overlay/align
+           "center" "pinhole" 
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^overlay/align")
+(test/exn (overlay/align
+           "pinhole" "center"
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^overlay/align")
+(test/exn (overlay/align
+           "center" "pinhole" 
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^overlay/align")
+
+(test/exn (underlay/align
+           "pinhole" "center"
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^underlay/align")
+(test/exn (underlay/align
+           "center" "pinhole" 
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^underlay/align")
+(test/exn (underlay/align
+           "pinhole" "center"
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^underlay/align")
+(test/exn (underlay/align
+           "center" "pinhole" 
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^underlay/align")
+
+(test/exn (place-image/align
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           0 0 "pinhole" "center"
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^place-image/align")
+(test/exn (place-image/align
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           0 0 "center" "pinhole" 
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^place-image/align")
+(test/exn (place-image/align
+           (rectangle 100 10 'solid 'red)
+           0 0 "pinhole" "center"
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^place-image/align")
+(test/exn (place-image/align
+           (rectangle 100 10 'solid 'red)
+           0 0 "center" "pinhole" 
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^place-image/align")
+
+
+
+(test/exn (above/align
+           "pinhole" 
+           (rectangle 100 10 'solid 'red)
+           (center-pinhole (rectangle 10 100 'solid 'blue)))
+          =>
+          #rx"^above/align")
+(test/exn (beside/align
+           "pinhole" 
+           (center-pinhole (rectangle 10 100 'solid 'blue))
+           (rectangle 100 10 'solid 'red))
+          =>
+          #rx"^beside/align")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  testing the wxme connection for 2htdp/image images
+;;
+
+(let ()
+  (define txt (new text%))
+  (define img1 (overlay (rectangle 100 20 'solid 'red)
+                        (rectangle 20 100 'solid 'red)))
+  (define img2 
+    (put-pinhole 50 
+                 20
+                 (overlay (rectangle 100 20 'solid 'red)
+                          (rectangle 20 100 'solid 'red))))
+
+  (send txt insert "(define img (list ")
+  (send txt insert img1)
+  (send txt insert " ")
+  (send txt insert img2)
+  (send txt insert "))")
+
+  (define sp (open-output-string))
+  (send txt save-port sp)
+  (test (port->string (wxme-port->text-port (open-input-string (get-output-string sp))))
+        =>
+        "(define img (list . .))"))
+
+(let ()
+  (define txt (new text%))
+  (define img1 (overlay (rectangle 100 20 'solid 'red)
+                        (rectangle 20 200 'solid 'red)))
+  (define img2 
+    (put-pinhole 50 
+                 20
+                 (overlay (rectangle 200 20 'solid 'red)
+                          (rectangle 20 100 'solid 'red))))
+  (define img3 (text "Hello" 32 'black))
+
+  (send txt insert "(")
+  (send txt insert img1)
+  (send txt insert " ")
+  (send txt insert img2)
+  (send txt insert " ")
+  (send txt insert img3)
+  (send txt insert ")")
+
+  (define sp (open-output-string))
+  (send txt save-port sp)
+  (define washed (read (wxme-port->port (open-input-string (get-output-string sp)))))
+  (test (list? washed) => #t)
+  (test (map pinhole-x washed) => (list #f 50 #f))
+  (test (map pinhole-y washed) => (list #f 20 #f))
+  (test (image-width (car washed)) => 100)
+  (test (image-height (car washed)) => 200)
+  (test (image-baseline (car washed)) => 200)
+  (test (equal? (image-baseline (list-ref washed 2))
+                (image-height (list-ref washed 2)))
+        =>
+        #f))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1609,7 +2068,12 @@
          (overlay/xy image coord coord image)
          (underlay image image)
          (underlay/xy image coord coord image)
-         (crop coord coord size size image)
+         (let ([i image])
+           (crop (max 0 (min (image-width i) coord))
+                 (max 0 (min (image-height i) coord))
+                 size
+                 size
+                 i))
          (scale/xy factor factor image)
          (scale factor image)
          (rotate angle image)
@@ -1634,6 +2098,19 @@
 
 (define-namespace-anchor anchor)
 
+;; scale-down : image -> image
+;; scale image so that it is at most 10000 pixels in area
+(define (scale-down img)
+  (let* ([w (image-width img)]
+         [h (image-height img)]
+         [s (* w h)]
+         [max-s (sqr 100)])
+    (if (< s max-s)
+        img
+        (scale/xy (/ (sqrt max-s) w) 
+                  (/ (sqrt max-s) h)
+                  img))))
+
 (define (image-struct-count obj)
   (let ([counts (make-hash)])
     (let loop ([obj obj])
@@ -1646,7 +2123,7 @@
 
 (define (check-image-properties img-sexp img)
   (let* ([raw-size (image-struct-count (image-shape img))]
-         [normalized (normalize-shape (image-shape img) values)]
+         [normalized (normalize-shape (image-shape img))]
          [norm-size (image-struct-count normalized)]) 
     (unless (normalized-shape? normalized)
       (error 'test-image.ss "found a non-normalized shape after normalization:\n~s" 
@@ -1654,6 +2131,43 @@
     (unless (equal? norm-size raw-size)
       (error 'test-image.ss "found differing sizes for ~s:\n  ~s\n  ~s" 
              img-sexp raw-size norm-size))))
+
+(time
+ (redex-check
+  2htdp/image
+  image
+  (check-image-properties 
+   (term image)
+   (to-img (eval (term image) (namespace-anchor->namespace anchor))))
+  #:attempts 1000))
+
+
+(let ()
+  (define w 200)
+  (define h 200)
+  (define bm1 (make-object bitmap% w h))
+  (define bm2 (make-object bitmap% w h))
+  (define bytes1 (make-bytes (* w h 4) 0))
+  (define bytes2 (make-bytes (* w h 4) 0))
+  (define bdc1 (make-object bitmap-dc% bm1))
+  (define bdc2 (make-object bitmap-dc% bm2))
+  
+  (define (render-and-compare img)
+    (send bdc1 clear)
+    (send bdc2 clear)
+    (parameterize ([render-normalized #f])
+      (render-image img bdc1 0 0))
+    (parameterize ([render-normalized #t])
+      (render-image img bdc2 0 0))
+    (send bdc1 get-argb-pixels 0 0 w h bytes1)
+    (send bdc2 get-argb-pixels 0 0 w h bytes2)
+    (equal? bytes1 bytes2))
+  (time
+   (redex-check
+    2htdp/image
+    image
+    (render-and-compare (scale-down (eval (term image) (namespace-anchor->namespace anchor))))
+    #:attempts 100)))
 
 (define (test-save/load img fn)
   (let ([t1 (new text%)]
@@ -1665,26 +2179,54 @@
           [s2 (send t2 find-first-snip)])
       (equal? s1 s2))))
 
-(time
- (redex-check
-  2htdp/image
-  image
-  (check-image-properties 
-   (term image)
-   (to-img (eval (term image) (namespace-anchor->namespace anchor))))
-  #:attempts 1000))
 
-;; this one is commented out because it catches 
-;; a bug where cropping a shape outside of its
-;; bounding box leads to strange, bad behavior.
 #;
 (time
  (let ([fn (make-temporary-file "test-image~a")])
    (redex-check
     2htdp/image
     image
-    (let ([img (to-img (eval (term image) (namespace-anchor->namespace anchor)))])  
-      (unless (test-save/load img fn)  
-        (error 'test-image.rkt "saving and loading this image fails:\n  ~s" (term image))))
+    (let-values ([(ans real cpu gc)
+                  (time-apply
+                   (λ ()
+                     (let ([img (to-img (eval (term image) (namespace-anchor->namespace anchor)))])
+                       (test-save/load (scale-down img) fn)))
+                   '())])
+      (unless (car ans)
+        (error 'test-image.rkt
+               "saving and loading this image fails:\n  ~s"
+               (term image)))
+      (unless (< cpu 4000)
+        (error 'test-image.rkt
+               "saving and loading this image takes too longer than 4 seconds:\n  ~s"
+               (term image))))
     #:attempts 1000)))
 
+;;This expression was found by the above. Its problematic because it has a negative width.
+#;
+(begin
+  (define i
+   (let* ([b (rectangle 17 17 "solid" "black")]
+          [i (overlay/xy b -37 40 b)])
+     (rotate 30 (crop 54 30 20 10 i))))
+  (image-width i) (image-height i) i)
+
+
+#|
+
+This was found by the first redex check above:
+
+(let ((i (flip-horizontal 
+          (let ((i (line (+ (* 10 1) -2) (+ (* 10 3) 4) "green")))
+            (crop (max 0 (min (image-width i) (+ (* 10 4) 13)))
+                  (max 0 (min (image-height i) (+ (* 10 2) 0)))
+                  (+ (* 10 3) 2)
+                  (+ (* 10 7) 0)
+                  i)))))
+  (crop (max 0 (min (image-width i) (+ (* 10 0) 2))) 
+        (max 0 (min (image-height i) (+ (* 10 2) 12))) 
+        (+ (* 10 1) 7) (+ (* 10 1) 2)
+        i))
+raises an exception crop: expected <number that is between 0 than the width (-1)> as first argument, given: 0
+
+|#

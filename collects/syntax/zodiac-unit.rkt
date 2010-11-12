@@ -499,7 +499,7 @@
           
           [_else
            (error 'syntax->zodiac
-                  "unrecognized expression form: ~e"
+                  "unrecognized expression form: ~.s"
                   (syntax->datum stx))]))))
 
 

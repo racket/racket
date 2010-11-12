@@ -47,7 +47,6 @@
            
            color-series
            scale-color
-	   scale
 	   scale/improve-new-text
            
            cellophane
@@ -56,7 +55,7 @@
            clip
 
 	   hyperlinkize)
-
+  
   (define (pict-path? p)
     (or (pict? p) 
         (and (pair? p)
@@ -64,6 +63,8 @@
              (andmap pict? p))))
   
   (provide/contract 
+   [scale (case-> (-> pict? number? number? pict?)
+                  (-> pict? number? pict?))]
    [pin-line (->* (pict?
                    pict-path? (-> pict? pict-path? (values number? number?))
                    pict-path? (-> pict? pict-path? (values number? number?)))

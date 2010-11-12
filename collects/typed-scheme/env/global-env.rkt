@@ -39,7 +39,7 @@
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type/undefined id type)
-  ;(printf "register-type/undef ~a~n" (syntax-e id))
+  ;(printf "register-type/undef ~a\n" (syntax-e id))
   (if (free-id-table-ref the-mapping id (lambda _ #f))
       (void (tc-error/expr #:stx id "Duplicate type annotation for ~a" (syntax-e id)))
       (free-id-table-set! the-mapping id (box type))))

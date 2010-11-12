@@ -223,14 +223,14 @@
       (null empty
 	"the empty list")
 
-      (first ( (cons Y (listof X)) -> Y )
+      ((beginner-first first) ( (cons Y (listof X)) -> Y )
 	"to select the first item of a non-empty list")
-      (car ( (cons Y (listof X)) -> Y )
+      ((beginner-car car) ( (cons Y (listof X)) -> Y )
 	"to select the first item of a non-empty list")       
-      (rest ((cons Y (listof X)) -> (listof X))
+      ((beginner-rest rest) ((cons Y (listof X)) -> (listof X))
 	"to select the rest of a non-empty list")
-      (cdr ((cons Y (listof X)) -> (listof X))
-	"to select the rest of a non-empty list")       
+      ((beginner-cdr cdr) ((cons Y (listof X)) -> (listof X))
+	"to select the rest of a non-empty list")
     
       (second ( (cons Z (cons Y (listof X))) -> Y )
 	"to select the second item of a non-empty list")

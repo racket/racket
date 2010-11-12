@@ -39,7 +39,7 @@
 (define choose-ascii-letter
   (lift->generator (lambda (i)
 		     (string-ref
-		      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"))
+		      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" i))
 		   (choose-integer 0 51)))
 
 (define choose-printable-ascii-char
@@ -163,10 +163,10 @@
 (define generator-bind >>=)
 (define generator-sequence sequence)
 
-; (list (generator a)) -> (generator a)
+; (list (promise (generator a))) -> (generator a)
 (define (choose-mixed gens)
   (>>= (choose-one-of gens)
-       values))
+       force))
 
 ; (list (pair int (generator a))) -> (generator a)
 (define (choose-with-frequencies lis)
@@ -272,17 +272,17 @@
 						(denominator fr) gen))))))
 
 
-(define (arbitrary-mixed pred+arbitrary-list)
+(define (arbitrary-mixed pred+arbitrary-promise-list)
   (make-arbitrary (choose-mixed (map (lambda (p)
-				       (arbitrary-generator (cdr p)))
-				     pred+arbitrary-list))
+				       (delay (arbitrary-generator (force (cdr p)))))
+				     pred+arbitrary-promise-list))
 		  (lambda (val gen)
-		    (let loop ((lis pred+arbitrary-list) (n 0))
+		    (let loop ((lis pred+arbitrary-promise-list) (n 0))
 		      (cond
 		       ((null? lis)
 			(assertion-violation 'arbitrary-mixed
 					     "value matches none of the predicates"
-					     val pred+arbitrary-list))
+					     val pred+arbitrary-promise-list))
 		       (((caar lis) val)
 			(variant n gen))
 		       (else
@@ -320,6 +320,20 @@
 		  (lambda (lis gen)
 		    (let recur ((arbitrary-els arbitrary-els)
 				(lis lis))
+		      (if (null? arbitrary-els)
+			  gen
+			  ((arbitrary-transformer (car arbitrary-els))
+			   (car lis)
+			   (recur (cdr arbitrary-els)
+				  (cdr lis))))))))
+
+(define (arbitrary-record construct accessors . arbitrary-els)
+  (make-arbitrary (apply lift->generator
+			 construct
+			 (map arbitrary-generator arbitrary-els))
+		  (lambda (rec gen)
+		    (let recur ((arbitrary-els arbitrary-els)
+				(lis (map (lambda (accessor) (accessor rec)) accessors)))
 		      (if (null? arbitrary-els)
 			  gen
 			  ((arbitrary-transformer (car arbitrary-els))

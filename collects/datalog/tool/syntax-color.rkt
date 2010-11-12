@@ -30,7 +30,7 @@
    [identifier-re
     (syn-val lexeme 'identifier #f start-pos end-pos)]
    [(:or #\) #\() (syn-val lexeme 'parenthesis #f start-pos end-pos)]
-   [(:or #\= #\? #\~ #\. #\, ":-") (syn-val lexeme 'parenthesis #f start-pos end-pos)]
+   [(:or "!=" #\= #\? #\~ #\. #\, ":-") (syn-val lexeme 'parenthesis #f start-pos end-pos)]
    [(eof) (syn-val lexeme 'eof #f start-pos end-pos)]
    [#\" ((colorize-string start-pos) input-port)]
    [any-char (syn-val lexeme 'error #f start-pos end-pos)]))

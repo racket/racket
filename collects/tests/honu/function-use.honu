@@ -1,0 +1,15 @@
+#lang honu
+
+// require "function.honu";
+
+function foo (a b c){
+  display("5");
+  newline();
+}
+
+foo(1, 2, 3);
+
+function (a b c){
+  display(a+b+c);
+  newline();
+}(1, 2, 3);

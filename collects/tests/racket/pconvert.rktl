@@ -51,11 +51,11 @@
                                        [whole/fractional-exact-numbers whole/fractional-numbers?])
                           (test (selector test-case) print-convert before))
                   (printf
-                   ">> (constructor-style-printing ~a) (quasi-read-style-printing ~a) (show-sharing ~a) (abbreviate-cons-as-list ~a) (whole/fractional-exact-numbers ~a)~n"
+                   ">> (constructor-style-printing ~a) (quasi-read-style-printing ~a) (show-sharing ~a) (abbreviate-cons-as-list ~a) (whole/fractional-exact-numbers ~a)\n"
                    constructor-style? quasi-read? 
                    sharing? cons-as-list?
                    whole/fractional-numbers?)))])
-        ;(printf "testing: ~s~n" before)
+        ;(printf "testing: ~s\n" before)
         ;(printf ".") (flush-output (current-output-port))
         (cond
           [(pctest? test-case)

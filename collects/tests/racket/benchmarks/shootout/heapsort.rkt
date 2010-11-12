@@ -61,7 +61,7 @@
         ((= i last))
       (vector-set! ary i (gen_random 1.0)))
     (heapsort n ary)
-    (printf "~a~n"
+    (printf "~a\n"
             (real->decimal-string (vector-ref ary n) 10))))
 
 (main (current-command-line-arguments))

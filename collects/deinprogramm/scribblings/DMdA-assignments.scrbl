@@ -51,12 +51,29 @@ werden die Signaturen für die Feldinhalte, anders als bei
 Konstruktion überprüft und nicht erst beim Aufruf eines Selektors.
 }
 
+@section{@scheme[begin]}
+
+@defform[(begin expr expr ...)]{
+Bei der Auswertung eines @scheme[begin]-Ausdrucks werden nacheinander
+die Operanden ausgewertet. Der Wert des letzten Ausdrucks wird der
+Wert des @scheme[begin]-Ausdrucks.
+}
+
 @section{@scheme[set!]}
 
 @defform[(set! id expr)]{
 Ein @scheme[set!]-Ausdruck ist eine Zuweisung, und ändert den Inhalt
 der Zelle, die an @scheme[id] gebunden ist, auf den Wert von @scheme[expr].
 }
+
+@section[#:tag "assignments-signatures"]{Signaturen}
+
+@defidform[unspecific]{
+Signatur für unspezifische Werte, die unwichtig sind - typischerweise für die 
+Rückgabewerte von Operationen, die nur Seiteneffekte haben wie @scheme[set!]
+oder @scheme[write-string].
+}
+
 
 @section[#:tag "assignments-prim-op"]{Primitive Operationen}
 

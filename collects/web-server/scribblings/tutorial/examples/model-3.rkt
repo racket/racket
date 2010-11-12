@@ -3,17 +3,17 @@
 
 ;; A blog is a (make-blog db)
 ;; where db is an sqlite database handle
-(define-struct blog (db))
+(struct blog (db))
 
 ;; A post is a (make-post blog id)
 ;; where blog is a blog and id is an integer?
-(define-struct post (blog id))
+(struct post (blog id))
 
 ;; initialize-blog! : path? -> blog?
 ;; Sets up a blog database (if it doesn't exist)
 (define (initialize-blog! home)
   (define db (sqlite:open home))
-  (define the-blog (make-blog db))
+  (define the-blog (blog db))
   (with-handlers ([exn? void])
     (sqlite:exec/ignore db
                         (string-append
@@ -35,7 +35,7 @@
 ;; Queries for the post ids
 (define (blog-posts a-blog)
   (local [(define (row->post a-row)
-            (make-post 
+            (post 
              a-blog
              (vector-ref a-row 0)))
           (define rows (sqlite:select

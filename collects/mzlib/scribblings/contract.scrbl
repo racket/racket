@@ -47,7 +47,6 @@ from @schememodname[scheme/contract]:
  any/c
  between/c
  box-immutable/c
- box/c
  build-compound-type-name
  coerce-contract
  cons/c
@@ -86,11 +85,9 @@ from @schememodname[scheme/contract]:
  symbols
  syntax/c
  vector-immutable/c
- vector-immutableof
- vector/c
- vectorof]
+ vector-immutableof]
 
-It also provides the old version of @scheme[define/contract]:
+It also provides the old version of the following forms:
 
 @defform[(define/contract id contract-expr init-value-expr)]{
 
@@ -109,3 +106,21 @@ provided by @scheme[provide/contract], because
 where the reference to the defined variable occurs. Instead, it uses
 the source location of the reference to the variable as the name of
 that definition.}
+
+@defproc[(box/c [c flat-contract?]) flat-contract?]{
+
+Returns a flat contract that recognizes boxes. The content of the box
+must match @racket[c].}
+
+@defproc[(vectorof [c flat-contract?]) flat-contract?]{
+
+Accepts a flat contract and returns a flat contract
+that checks for vectors whose elements match the original contract.}
+
+@defproc[(vector/c [c flat-contract?] ...) flat-contract?]{
+
+Accepts any number of flat contracts and returns a
+flat contract that recognizes vectors. The number of elements in the
+vector must match the number of arguments supplied to
+@racket[vector/c], and each element of the vector must match the
+corresponding flat contract.}

@@ -97,7 +97,7 @@
 (define (opt-lam-test exp expected)
    (let ([got (eval exp)])
      (unless (equal? got expected)
-       (printf  "FAILED test: ~a~n   expected: ~s~n        got: ~s~n"
+       (printf  "FAILED test: ~a\n   expected: ~s\n        got: ~s\n"
                 exp expected got))))
 
 (define (opt-lam-test/bad exp expected)
@@ -105,7 +105,7 @@
                                (lambda (exn) (exn-message exn))])
                 (cons 'got-result (eval exp)))])
      (unless (regexp-match expected got)
-       (printf  "FAILED test: ~a~n   expected: ~s~n        got: ~s~n"
+       (printf  "FAILED test: ~a\n   expected: ~s\n        got: ~s\n"
                 exp expected got))))
 
 (test 1 (opt-lambda (start) start) 1)

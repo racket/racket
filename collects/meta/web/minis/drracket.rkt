@@ -1,4 +1,4 @@
-#lang at-exp s-exp "../common.rkt"
+#lang meta/web
 
 (define-context "drracket")
 
@@ -9,7 +9,7 @@
 (define index
   (page #:title "DrRacket" #:extra-headers (delay headers) (center-div logo)))
 
-(require racket/list (only-in "../www/main.rkt" main))
+(require (only-in "../www/all.rkt" main))
 
 (define (logo)
   (define (text->lines text)

@@ -46,7 +46,7 @@
           (url->string (request-uri req))))
 (define (apache-default-format req)
   (define request-time (srfi-date:current-date))
-  (format "~a - - [~a] \"~a\" ~a ~a~n"
+  (format "~a - - [~a] \"~a\" ~a ~a\n"
           (request-client-ip req)
           (srfi-date:date->string request-time "~d/~b/~Y:~T ~z")
           (request-line-raw req)
@@ -54,14 +54,14 @@
           512))
 
 (define (paren-format req)
-  (format "~s~n"
+  (format "~s\n"
           (list 'from (request-client-ip req)
                 'to (request-host-ip req)
                 'for (url->string (request-uri req)) 'at
                 (date->string (seconds->date (current-seconds)) #t))))
 
 (define (extended-format req)
-  (format "~s~n"
+  (format "~s\n"
           `((client-ip ,(request-client-ip req))
             (host-ip ,(request-host-ip req))
             (referer ,(let ([R (headers-assq* #"Referer" (request-headers/raw req))])

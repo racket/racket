@@ -242,7 +242,7 @@ GC2_EXTERN void GC_free(void *);
    Lets the collector optionally reverse an allocation immediately.
    [Generally a no-op.] */
 
-GC2_EXTERN void *GC_malloc_weak_box(void *p, void **secondary, int soffset);
+  GC2_EXTERN void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late);
 /* 
    Allocate a weak box. See README for details. */
 
@@ -279,10 +279,6 @@ typedef void (*GC_finalization_proc)(void *p, void *data);
 GC2_EXTERN void GC_set_finalizer(void *p, int tagged, int level, 
 				 GC_finalization_proc f, void *data, 
 				 GC_finalization_proc *oldf, void **olddata);
-/*
-   See README for details. */
-
-GC2_EXTERN void GC_finalization_weak_ptr(void **p, int offset);
 /*
    See README for details. */
 
@@ -405,10 +401,6 @@ GC2_EXTERN void GC_write_barrier(void *p);
    Explicit write barrier to ensure that a write-barrier signal is not
    triggered by a memory write.
 */
-GC2_EXTERN void GC_switch_in_master_gc();
-/*
-   Makes the current thread the master GC thread.
-*/
 GC2_EXTERN void GC_switch_out_master_gc();
 /*
    Makes the current GC the master GC.
@@ -465,6 +457,27 @@ GC2_EXTERN void GC_allow_master_gc_check();
    Signals the GC after spawning a place that the places is sufficiently set up to participate
    in master gc collections
 */
+
+GC2_EXTERN void GC_create_message_allocator();
+/*
+   Saves off the gc->gen0 to gc->saved_allocator.
+   Captures all memory allocations until GC_finish_message_allocator i
+   is called so they can be sent to another place.
+*/
+
+GC2_EXTERN void *GC_finish_message_allocator();
+/*
+   Stops memory allocation capture.
+   Restores gc->saved_allocator to gc->gen0.
+   Returns a void* that represents the message memory captured.
+*/
+
+GC2_EXTERN void GC_adopt_message_allocator(void *msg_memory);
+/*
+   Adopts the message memory captures by the sending place into
+   the current receiving place's gc
+*/
+
 
 # ifdef __cplusplus
 };

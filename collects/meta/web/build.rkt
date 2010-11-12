@@ -7,10 +7,8 @@ exec "$exe" "$0" "$@"
 
 #lang racket/base
 
-(require racket/cmdline racket/runtime-path
-         racket/string racket/file
-         "html/resource.rkt" "common/distribute.rkt"
-         "config.rkt" "navbar.rkt")
+(require racket/cmdline racket/runtime-path racket/file scribble/html
+         "common/distribute.rkt" "config.rkt" "all.rkt")
 
 (define build-mode #f)
 (define output-dir (current-directory))
@@ -34,7 +32,7 @@ exec "$exe" "$0" "$@"
   (unless (directory-exists? dir)
     (printf "Creating \"~a\"\n" dir) (make-directory dir))
   (set! output-dir dir)]
- [("-f")
+ [("-f" "--force")
   "avoid warning about directory cleanup"
   (set! warn? #f)]
  [("-d" "--dist")

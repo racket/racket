@@ -446,8 +446,10 @@ please adhere to these guidelines:
  (online-coloring-active "Color syntax interactively")
  (open-files-in-tabs "Open files in separate tabs (not separate windows)")
  (show-interactions-on-execute "Automatically open interactions window when running a program")
-  (switch-to-module-language-automatically "Automatically switch to the module language when opening a module")
-  (interactions-beside-definitions "Put the interactions window beside the definitions window") ;; in preferences, below the checkbox one line above this one
+ (switch-to-module-language-automatically "Automatically switch to the module language when opening a module")
+ (interactions-beside-definitions "Put the interactions window beside the definitions window") ;; in preferences, below the checkbox one line above this one
+ (show-line-numbers "Show line numbers")
+ (hide-line-numbers "Hide line numbers")
  (limit-interactions-size "Limit interactions size")
  (background-color "Background Color")
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
@@ -982,6 +984,8 @@ please adhere to these guidelines:
   ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
   (compiling-teachpack "Compiling ~a teachpack ...")
   (teachpack-pre-installed "Preinstalled Teachpacks")
+  (teachpack-pre-installed/htdp "Preinstalled HtDP Teachpacks")
+  (teachpack-pre-installed/2htdp "Preinstalled HtDP/2e Teachpacks")
   (teachpack-user-installed "User-installed Teachpacks")
   (add-teachpack-to-list... "Add Teachpack to List...")
   (teachpack-already-installed "A teachpack with the name '~a' has already been installed. Overwrite it?")
@@ -1269,18 +1273,20 @@ please adhere to these guidelines:
  (stepper-language-level-message "The stepper does not work for language \"~a\".")
  (stepper-button-label "Step")
 
- (stepper-previous-application "|< Application")
  (stepper-previous "< Step")
  (stepper-next "Step >")
- (stepper-next-application "Application >|")
- (stepper-jump "Jump...") ;; this one is changed.  action?
+ (stepper-jump "Jump...")
+ (stepper-jump-to-beginning "to beginning")
+ (stepper-jump-to-end "to end")
+ (stepper-jump-to-selected "to beginning of selected")
+ (stepper-jump-to-previous-application "to previous application step")
+ (stepper-jump-to-next-application "to next application step")
  (stepper-out-of-steps "Reached the end of evaluation before finding the kind of step you were looking for.")
  (stepper-no-such-step/title "Step Not Found")
  (stepper-no-such-step "Couldn't find a step matching that criterion.")
  (stepper-no-such-step/earlier "Couldn't find an earlier step matching that criterion.")
- (stepper-jump-to-beginning "to beginning") ;; name changed from stepper-home to stepper-jump-to-beginning
- (stepper-jump-to-end "to end") ;; content changed
- (stepper-jump-to-selected "to beginning of selected") ;; new
+  
+
   
  (debug-tool-button-name "Debug")
 
@@ -1435,6 +1441,8 @@ please adhere to these guidelines:
    "check-error encountered the following error instead of the expected ~a~n   :: ~a")
   (test-engine-expected-error-error
    "check-error expected the following error, but instead received the value ~F.~n ~a")
+  (test-engine-expected-an-error-error
+   "check-error expected an error, but instead received the value ~F.")
   ;; members are appended to the message
   (test-engine-not-mem-error "Actual value ~F differs from all given members in ")
   (test-engine-not-range-error "Actual value ~F is not between ~F and ~F, inclusive.")

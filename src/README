@@ -1,5 +1,5 @@
 This is the source code distribution for Racket.  For license
-information, please see the file racket/notes/COPYING.LIB.
+information, please see the file racket/doc/release-notes/COPYING.LIB.
 
 Compiled binaries, documentation, and up-to-date information are
 available at http://racket-lang.org/; pre-compiled nightly builds are
@@ -28,7 +28,8 @@ To compile with Microsoft Visual C, read the instructions in
 To compile with Cygwin tools, follow the Unix instructions below, and be
 sure to configure with `--enable-shared'.  The result is a Unix-style
 build, not a Windows-style build (e.g., Racket's `system-type' procedure
-returns 'unix, not 'windows, and GRacket uses X11).
+returns 'unix, not 'windows, and `racket/gui' uses Gtk instead of
+Win32).
 
 ========================================================================
  Compiling for Mac OS X
@@ -41,21 +42,21 @@ the Unix instructions below, but note the following:
    installed into "racket/lib".  This framework is used by the `racket'
    executable that goes into "racket/bin".
 
- * The GRacket build creates a framework, "GRacket.framework", which is
-   installed into "racket/lib".  This framework is used by the
-   executable bundle GRacket.app that goes into the "racket" directory.
-   The installation creates a script, "racket/bin/gracket", that runs
-   the bundle.
+ * The GRacket build creates a GUI-executable variant of the Racket
+   executable. The GRacket build process also downloads (from github)
+   pre-built libraries for Cairo, Pango, etc.
 
  * The `--enable-shared' flag for `configure' must not be used, because
    builds create and use frameworks by default.  Furthermore,
    `--disable-shared' is not supported.  (Unless you use
    `--enable-xonx'...)
 
- * To build an X11-based GRacket, run `configure' with the
+ * To build an X11- and Gtk-based GRacket, run `configure' with the
    `--enable-xonx' flag.  Frameworks are not used for such builds, so
    --enable-shared is allowed.  The `--enable-xonx' flag also affects
-   the Racket build, so that `system-type' reports 'unix.
+   the Racket build, so that `system-type' reports 'unix. Pre-built
+   libraries are not downloaded in this more; you must have Cairo,
+   Pango, and GTk installed.
 
  * To use `--prefix' without `--enable-xonx', you must also supply
    `--enable-macprefix'.  BEWARE!  The directory structure for a
@@ -67,10 +68,9 @@ the Unix instructions below, but note the following:
    directory structure on top of an existing Unix-style directory
    structure.)
 
- * Under Mac OS X 10.6 and later, `configure' by default selects 32-bit
-   mode for building Racket and GRacket.  To build Racket in 64-bit mode
-   (GRacket is not support in that mode), use the following arguments to
-   `configure': `--enable-mac64', `--enable-sgc', and `--disable-gracket'.
+ * Under Mac OS X 10.6 and later, `configure' by default selects
+   32-bit mode for building Racket.  To build Racket in 64-bit mode,
+   use `--enable-mac64'.
 
 ========================================================================
  Compiling for supported Unix variants (including Linux) or Cygwin
@@ -102,15 +102,10 @@ Detailed instructions:
     remove it (unless you are using an "in-place" build from a
     repository as described below).
 
-    Also, make sure that you have libraries and header files for Xft and
-    Cairo (v1.23 and up) if you would like support for font smoothing
-    (Xft) and graphics smoothing (Cairo).  These libraries are not
-    distributed with Racket.  The configure process checks automatically
-    whether these libraries are available.
-
-    OpenGL support for GRacket sometimes requires special configuration
-    (though generally not under Linux).  See the note at the end of this
-    section if OpenGL fails to work.
+    Also, make sure that you have libraries and header files for
+    Cairo, Pango, and GTk.  These libraries are not distributed with
+    Racket.  The configure process checks automatically whether these
+    libraries are available.
 
     Finally, the content of the "foreign" subdirectory may require GNU
     `make'.  If the build fails with another variant of `make', please
@@ -250,26 +245,6 @@ recorded in a "buildinfo" file in the installation.
 For a build without `--prefix' (or with `--enable-origtree') and without
 `--enable-shared', you can safely move the install tree, because all
 file references within the installation are relative.
-
-OpenGL, Unix, and pthreads
---------------------------
-
-On some Unix systems, programs that use the OpenGL library must also
-link to pthreads.  To use GRacket's OpenGL support on these systems,
-GRacket must be configured with the `--enable-pthread' option.
-Unfortunately, Racket's normal stack handling and use of signals (for
-its own thread scheduling) do not interact well with pthreads.  Thus,
-when pthreads are enabled, Racket and GRacket cannot use interupt
-timers, and the stack is limited to 1MB.  These restrictions can degrade
-performance and thread-responsiveness.
-
-If `configure' detects that OpenGL requires -lpthread for linking, and
-if `--enable-pthread' is not specified, `configure' prints a warning and
-disables GL support.  On some systems, including at least FreeBSD with
-the MESA GL implementation (but not the NVIDIA implementation, which
-does not need pthreads), `configure' cannot detect the need for
-pthreads.  On these platforms, GL support will be included in GRacket,
-but it will not work properly unless `--enable-pthread' is specified.
 
 ========================================================================
  CGC versus 3m

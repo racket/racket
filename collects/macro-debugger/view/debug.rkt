@@ -4,7 +4,6 @@
          unstable/class-iop
          "interfaces.rkt"
          "debug-format.rkt"
-         "prefs.rkt"
          "view.rkt")
 (provide debug-file)
 

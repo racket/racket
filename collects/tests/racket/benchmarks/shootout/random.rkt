@@ -35,5 +35,5 @@
           (gen_random 100.0)
           (loop (- iter 1)))
         #t))
-  (printf "~a~%"
+  (printf "~a\n"
           (real->decimal-string (gen_random 100.0) 9)))

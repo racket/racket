@@ -57,13 +57,13 @@
                                     [history null])
                            (cond
                              [(winner? board who)
-                              (printf "----------- ~a wins!-------------~n~a~n" who (board->string 1 board))
+                              (printf "----------- ~a wins!-------------\n~a\n" who (board->string 1 board))
                               (go)]
                              [(winner? board (other who))
-                              (printf "----------- ~a wins!-------------~n~a~n" (other who) (board->string 1 board))
+                              (printf "----------- ~a wins!-------------\n~a\n" (other who) (board->string 1 board))
                               (go)]
                              [else
-                              (printf "~n~a moved; ~a's turn~n~a~n" who-moved who (board->string 1 board))
+                              (printf "\n~a moved; ~a's turn\n~a\n" who-moved who (board->string 1 board))
                               (let ([start (current-inexact-milliseconds)]
                                     [m ((make-search (if (= BOARD-SIZE 3)
                                                          make-3x3-rate-board
@@ -73,7 +73,7 @@
                                                          make-4x4-canned-moves)) 
                                         timeout steps depth
                                         who board history)])
-                                (printf "[~a secs]~n" (/ (- (current-inexact-milliseconds) start)
+                                (printf "[~a secs]\n" (/ (- (current-inexact-milliseconds) start)
                                                          1000.0))
                                 (loop (apply-play board m) (other who) who (cons board history)))])))))
                    CONFIG EXPLORE MODEL HEURISTICS)])

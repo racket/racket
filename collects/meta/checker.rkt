@@ -69,22 +69,26 @@
 (provide get-tree)
 ;; path -> tree
 ;; Returns the tree with path (a string with no "/"s) at its root.
-(define (get-tree path)
+(define (get-tree path fake-path)
   (define base (regexp-replace #rx"/$" (path->string (cd)) ""))
-  (let loop ([name path] [path ""])
+  (let loop ([name path] [fake-name fake-path] [path ""] [fake-path ""])
     (cond [(or (file-exists? name) (link-exists? name))
-           (let ([path (concat path name)])
-             (prop-set! path 'base base)
-             (prop-set! path 'name name)
-             path)]
+           (let ([path (concat path name)]
+                 [fake-path (concat fake-path fake-name)])
+             (prop-set! fake-path 'base base)
+             (prop-set! fake-path 'name name)
+             (prop-set! fake-path 'real path)
+             fake-path)]
           [(directory-exists? name)
-           (let ([path (concat path name "/")])
-             (prop-set! path 'base base)
-             (prop-set! path 'name name)
+           (let ([path (concat path name "/")]
+                 [fake-path (concat fake-path fake-name "/")])
+             (prop-set! fake-path 'base base)
+             (prop-set! fake-path 'name name)
+             (prop-set! fake-path 'real path)
              (parameterize ([cd name])
-               (cons path (map (lambda (name) (loop name path))
-                               (dir-list)))))]
-          [else (error 'get-tree "strange entry: ~a/~a"
+               (cons fake-path (map (lambda (name) (loop name name path fake-path))
+                                    (dir-list)))))]
+          [else (error 'get-tree/base "strange entry: ~a/~a"
                        (path->string (cd)) name)])))
 
 (provide tree-path)
@@ -419,7 +423,7 @@
        ;; first.
        => (lambda (p)
             (make-cached (apply p (map primitive-spec->filter (cdr spec)))))]
-      [else (error 'primitive-spec->filter "bad spec: ~e" spec)])))
+      [else (error 'primitive-spec->filter "bad spec: ~.s" spec)])))
 
 ;; Toplevel entry point for converting a spec into a tree predicate function.
 (define (spec->filter spec)
@@ -427,7 +431,7 @@
     (if (= 1 (length specs))
       (primitive-spec->filter (car specs))
       (error 'spec->filter
-             "spec `~e' did not expand to a single expression: ~e"
+             "spec `~.s' did not expand to a single expression: ~.s"
              spec specs))))
 
 ;;; ===========================================================================
@@ -469,7 +473,7 @@
     (if (pair? tree)
       (for-each loop (cdr tree))
       (parameterize ([cd (prop-get tree 'base)])
-        (prop-set! tree 'contents (read-depfile tree)))))
+        (prop-set! tree 'contents (read-depfile (prop-get tree 'real))))))
   (dprintf " done.\n")
   (set! add-dependency-contents! void))
 
@@ -562,7 +566,7 @@
   (dprintf "Scanning main tree...")
   (set! *racket-tree*
         (let loop ([tree  (parameterize ([cd racket-base/])
-                            (get-tree racket/-name))]
+                            (get-tree racket/-name "racket"))]
                    [trees (apply append *platform-tree-lists*)])
           (if (null? trees)
               (tree-filter '(not junk) tree)

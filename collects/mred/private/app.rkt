@@ -1,6 +1,6 @@
-(module app mzscheme
-  (require mzlib/class
-	   (prefix wx: "kernel.ss")
+(module app racket/base
+  (require racket/class
+	   (prefix-in wx: "kernel.ss")
 	   "lock.ss"
 	   "helper.ss"
 	   "wx.ss"
@@ -42,14 +42,15 @@
 			 (dynamic-wind
 			     void
 			     (lambda ()
-			       (send af on-exit)
+                               (as-exit (lambda ()
+                                          (send af on-exit)))
 			       (unless (null? (wx:get-top-level-windows))
 				 (wx:cancel-quit)))
 			     (lambda () 
 			       (set! running-quit? #f)))))))))))])
     (wx:application-quit-handler (make-app-handler f f)))
 
-  (define (set-handler! who proc param arity result-filter)
+  (define (set-handler! who proc param arity result-filter post-set)
     (when proc
       (unless (and (procedure? proc)
 		   (procedure-arity-includes? proc arity))
@@ -58,13 +59,14 @@
 			  proc)))
     (let ([e (wx:current-eventspace)])
       (when (wx:main-eventspace? e)
-	(param (make-app-handler
+        (param (make-app-handler
 		(lambda args
 		  (parameterize ([wx:current-eventspace e])
 		    (wx:queue-callback
 		     (lambda () (result-filter (apply proc args)))
 		     wx:middle-queue-key)))
-		proc)))))
+		proc))
+        (post-set))))
 
   (define application-preferences-handler
     (case-lambda
@@ -74,7 +76,8 @@
       (set-handler! 'application-preferences-handler proc
 		    wx:application-pref-handler
 		    0
-		    values)]))
+		    values
+                    void)]))
 
   (define application-about-handler
     (case-lambda
@@ -85,7 +88,8 @@
       (set-handler! 'application-about-handler proc
 		    wx:application-about-handler
 		    0
-		    values)]))
+		    values
+                    void)]))
 
   (define application-quit-handler
     (case-lambda
@@ -96,18 +100,33 @@
       (set-handler! 'application-quit-handler proc
 		    wx:application-quit-handler
 		    0
-		    (lambda (v) (unless v (wx:cancel-quit)) v))]))
+		    (lambda (v) (unless v (wx:cancel-quit)) v)
+                    void)]))
+
+  (define saved-files null)
 
   (define default-application-file-handler
     (entry-point
      (lambda (f)
        (let ([af (weak-box-value active-main-frame)])
-	 (when af
-	   (queue-window-callback
-	    af
-	    (entry-point
-	     (lambda () (when (send af accept-drag?)
-			      (send af on-drop-file f))))))))))
+	 (if af
+             (queue-window-callback
+              af
+              (entry-point
+               (lambda () (if (send af accept-drag?)
+                              (send af on-drop-file f)
+                              (set! saved-files (cons f saved-files))))))
+             (set! saved-files (cons f saved-files)))))))
+
+  (define (requeue-saved-files)
+    (as-entry
+     (lambda ()
+       (for-each (lambda (f)
+                   (wx:queue-callback (lambda ()
+                                        ((wx:application-file-handler) f))
+                                      wx:middle-queue-key))
+                 (reverse saved-files))
+       (set! saved-files null))))
 
   (define (install-defh)
     (wx:application-file-handler (make-app-handler
@@ -128,7 +147,8 @@
 	  (set-handler! 'application-file-handler proc
 			wx:application-file-handler
 			1
-			values))]))
+			values
+                        requeue-saved-files))]))
 
 
   (define (current-eventspace-has-standard-menus?)

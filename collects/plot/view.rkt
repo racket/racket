@@ -66,14 +66,14 @@
        (x-label "X axis")
        (y-label "Y axis")
        (title "")
-       (device 'png)
-       (fgcolor '( 0 0 0))
+       (device 'dc)
+       (fgcolor '(0 0 0))
        (bgcolor '(255 255 255))
-       (lncolor '(255 0 0 )))
+       (lncolor '(255 0 0)))
 
-      (define bitmap #f)
       (define x-size 400)
       (define y-size 300)
+      (define bitmap (make-bitmap width height))
 
       (inherit 
         set-bitmap
@@ -118,44 +118,58 @@
       ; does housekeeping/setup for plplot
       (define (start-plot)
         (cond
-         [(eq? device 'png)
-          (set! bitmap (if out-file
-                         (build-path out-file)
-                           (make-temporary-file)))
+         [(eq? device 'dc)
           (init-colors)
-          (pl-setup-page  width height)
-          (pl-set-device "png")
-          (pl-set-output-file (path->string bitmap))
-          (pl-init-plot)]
-                                        ;          [(eq? device 'mem)
-                                        ;           (init-colors)
-                                        ;           (set! bitmap (make-u8vector (* x-size y-size 4) 255))
-                                        ;           (pl-setup-memory x-size y-size bitmap)
-                                        ;           (pl-set-device "mem")
-                                        ;           (pl-init-plot)]
+          (pl-setup-page width height)
+          (pl-set-device "dc")
+          (let ([dev (pl-init-plot)])
+            (init-dev! dev (let ([dc (make-object bitmap-dc% bitmap)])
+                             (send dc set-origin 0 height)
+                             (send dc set-scale 1 -1)
+                             (send dc set-smoothing 'aligned)
+                             (send dc set-background (apply make-object color% bgcolor))
+                             (send dc clear)
+                             (new (class object%
+                                    (define/public (draw-line x1 y1 x2 y2)
+                                      (send dc draw-line x1 y1 x2 y2))
+                                    (define/public (draw-lines points)
+                                      (send dc draw-lines points))
+                                    (define/public (draw-polygon points)
+                                      (send dc draw-polygon points))
+                                    (define/public (set-width n)
+                                      (send dc set-pen (send (send dc get-pen) get-color) n 'solid))
+                                    (define/public (set-index-color i)
+                                      (let ([color (case i
+                                                     [(0) (apply make-object color% bgcolor)]
+                                                     [(1) (apply make-object color% fgcolor)]
+                                                     [(15) (apply make-object color% lncolor)]
+                                                     [else (make-object color% (symbol->string (car (list-ref colors i))))])])
+                                        (send dc set-pen color (send (send dc get-pen) get-width) 'solid)
+                                        (send dc set-brush color 'solid)))
+                                    (define/public (set-rgb-color r g b)
+                                      (let ([color (make-object color% r g b)])
+                                        (send dc set-pen color (send (send dc get-pen) get-width) 'solid)
+                                        (send dc set-brush color 'solid)))
+                                    (define/public (start-page) (void))
+                                    (define/public (end-page) (void))
+                                    (define/public (end-doc)
+                                      (send dc set-bitmap #f))
+                                    (super-new))))))
+          (set-line-color 'black)
+          (set-line-width 0)]
          [else
           (error "Incorrect device specified")]))
 
       ; finish the plot.. loads the file
       (define (finish-plot)
         (cond
-          [(eq? device 'png)
+          [(eq? device 'dc)
            (pl-finish-plot)
-           (load-file bitmap)
-           (or out-file (delete-file bitmap))]
-;          [(eq? device 'mem)
-;           (pl-finish-plot)
-;           (set-bitmap (bits->bitmap-dc% bitmap))]
+           (when out-file
+             (send bitmap save-file out-file 'png))
+           (set-bitmap bitmap)]
           [else
            (error "Incorrect device specified")]))
-      
-      ;(define (bits->bitmap-dc% bitmap)
-      ;  (let ((bmdc (instantiate bitmap-dc% () (bitmap (make-object bitmap% x-size y-size #f))))
-      ;        (result-string (u8vec->scheme-string bitmap)))
-      ;    (send bmdc set-argb-pixels 0 0  x-size y-size result-string)
-      ;    (begin0
-      ;      (send bmdc get-bitmap)
-      ;      (send bmdc set-bitmap #f))))
 
       (super-instantiate ())))
 

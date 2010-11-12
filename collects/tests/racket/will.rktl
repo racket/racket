@@ -146,7 +146,25 @@
   (custodian-shutdown-all c1)
   (sync (system-idle-evt))
   (test #t values done))
+     
+;; ----------------------------------------
 
+(let ([something (gensym)])
+  (define e-chain
+    (let loop ([n 100] [e #f])
+      (if (zero? n)
+          e
+          (loop (sub1 n)
+                (make-ephemeron something e)))))
+  (collect-garbage)
+  (test 100 'epehemeron-chain
+        (let loop ([e e-chain])
+          (if e
+              (add1 (loop (ephemeron-value e)))
+              0)))
+  ;; ensure that `something' is retained:
+  (test #t symbol? (list-ref (list something) (random 1))))
+     
 ;; ----------------------------------------
 
 (report-errs)

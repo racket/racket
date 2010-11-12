@@ -63,7 +63,8 @@
   (define/public (set-last-used v) (set! last-used v))
 
   (define/public (ready-offscreen width height)
-    (if (or (width . > . RIDICULOUS-SIZE)
+    (if (or #t ; disable on all  platforms
+            (width . > . RIDICULOUS-SIZE)
             (height . > . RIDICULOUS-SIZE)
             (eq? (system-type) 'macosx))
         #f
@@ -505,7 +506,7 @@
       snip))
 
   (def/public (insert-image [(make-or-false path-string?) [filename #f]]
-                            [symbol? [type 'unknown]]
+                            [image-type? [type 'unknown/alpha]]
                             [any? [relative? #f]]
                             [any? [inline-img? #t]])
     (let ([filename (or filename
@@ -517,7 +518,7 @@
           (insert snip)))))
 
   (def/public (on-new-image-snip [path-string? filename]
-                                 [symbol? type]
+                                 [image-type? type]
                                  [any? relative?]
                                  [any? inline-img?])
     (make-object image-snip% filename type relative? inline-img?))
@@ -743,9 +744,7 @@
                      [any? [parent #f]] ; checked in ../editor.ss
                      [bool? [force-page-bbox? #t]]
                      [bool? [as-eps? #f]])
-    (let ([ps? (case (system-type)
-                 [(macosx windows) (eq? output-mode 'postscript)]
-                 [else #t])]
+    (let ([ps? (eq? output-mode 'postscript)]
           [parent (or parent
                       (extract-parent))])
       (cond
@@ -1265,14 +1264,14 @@
         #f))
 
   (def/public (refresh [real? left] [real? top] [nonnegative-real? width] [nonnegative-real? height]
-                       [(symbol-in no-caret show-inactive-caret show-caret) show-caret]
+                       [caret-status? show-caret]
                        [(make-or-false color%) bg-color])
     (void))
 
   (def/public (on-paint [any? pre?] [dc<%> dc]
                         [real? l] [real? t] [real? r] [real? b]
                         [real? dx] [real? dy]
-                        [(symbol-in no-caret show-inactive-caret show-caret) show-caret])
+                        [caret-status? show-caret])
     (void))
 
   (def/public (can-save-file? [path-string? filename]

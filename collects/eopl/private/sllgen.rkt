@@ -677,7 +677,7 @@
 	  (letrec
 	      ((loop
 		(lambda (rhs)
-		  ;; (eopl:printf "~s~%" rhs)
+		  ;; (eopl:printf "~s\n" rhs)
 		  (if (null? rhs) 0
 		      (let ((rhs-item (car rhs))
 			    (rest (cdr rhs)))
@@ -685,26 +685,26 @@
 			 ((and
 			   (symbol? rhs-item)
 			   (sllgen:non-terminal? rhs-item))
-					;                    (eopl:printf "found nonterminal~%")
+					;                    (eopl:printf "found nonterminal\n")
 			  (+ 1 (loop rest)))
 			 ((symbol? rhs-item)
-					;                    (eopl:printf "found terminal~%")
+					;                    (eopl:printf "found terminal\n")
 			  (+ 1 (loop rest)))
 			 ((sllgen:arbno? rhs-item)
-					;                    (eopl:printf "found arbno~%")
+					;                    (eopl:printf "found arbno\n")
 			  (+
 			   (loop (sllgen:arbno->rhs rhs-item))
 			   (loop rest)))
 			 ((sllgen:separated-list? rhs-item)
-					;                     (eopl:printf "found seplist~%")
+					;                     (eopl:printf "found seplist\n")
 			  (+
 			   (loop (sllgen:separated-list->rhs rhs-item))
 			   (loop rest)))
 			 ((string? rhs-item)
-					;                     (eopl:printf "found string~%")
+					;                     (eopl:printf "found string\n")
 			  (loop rest))
 			 (else
-					;                      (eopl:printf "found error~%")
+					;                      (eopl:printf "found error\n")
 			  (report-error rhs-item "unrecognized item"))))))))
 	    (loop rhs)))))
 
@@ -884,7 +884,7 @@
 			(init-loop (cdr productions))))))
 	       (rhs-loop
 		(lambda (lhs rhs)
-		  ;; (eopl:printf "rhs-loop lhs=~s rhs=~s~%" lhs rhs)
+		  ;; (eopl:printf "rhs-loop lhs=~s rhs=~s\n" lhs rhs)
 		  (cond
 		   ((null? rhs) #t)
 		   ((get-nonterminal (car rhs)) =>
@@ -905,7 +905,7 @@
 				 (set! closure-rules
 				       (cons (list lhs nonterminal)
 					     closure-rules))
-				 ;; (eopl:printf "~s~%" (list lhs nonterminal))
+				 ;; (eopl:printf "~s\n" (list lhs nonterminal))
 				 )))
 			 first-of-rest))
 		      ;; now keep looking
@@ -1073,7 +1073,7 @@
 			;; 1999, since class could be a string.
 			((member class (car (car others)))
 			 (error 'parser-generation
-				"grammar not LL(1): shift conflict detected for class ~s in nonterminal ~s:~%~s~%~s~%"
+				"grammar not LL(1): shift conflict detected for class ~s in nonterminal ~s:\n~s\n~s\n"
 				class non-terminal this-production (car others)))
 			(else (inner (cdr others))))))
 		   (car this-production))
@@ -1495,7 +1495,7 @@
 					;            )
 					;       (case opcode
 					;         ((skip) (sllgen:error 'sllgen:cook-token
-					;                   "~%Internal error: skip should have been handled earlier ~s"
+					;                   "\nInternal error: skip should have been handled earlier ~s"
 					;                   actions))
 					;         ((make-symbol identifier) 
 					;          (sllgen:make-token 'identifier
@@ -1511,7 +1511,7 @@
 					;            loc))
 					;         (else
 					;           (sllgen:error 'scanning
-					;             "~%Unknown opcode selected from action list ~s"
+					;             "\nUnknown opcode selected from action list ~s"
 					;             actions))))))
 
 
@@ -1522,16 +1522,16 @@
 	    (newstates '())
 	    (char '())
 	    (eos-found? #f))              ; do we need to return this too?
-					;(eopl:printf "initializing sllgen:scanner-inner-loop~%")
+					;(eopl:printf "initializing sllgen:scanner-inner-loop\n")
 	(let loop ((local-states local-states)) ; local-states
 					;         '(begin
-					;            (eopl:printf "sllgen:scanner-inner-loop char = ~s actions=~s local-states =~%"
+					;            (eopl:printf "sllgen:scanner-inner-loop char = ~s actions=~s local-states =\n"
 					;              char actions)
 					;            (for-each
 					;              (lambda (local-state)
 					;                (sllgen:pretty-print (map sllgen:unparse-regexp local-state)))
 					;              local-states)
-					;            (eopl:printf "newstates = ~%")
+					;            (eopl:printf "newstates = \n")
 					;            (for-each
 					;              (lambda (local-state)
 					;                (sllgen:pretty-print (map sllgen:unparse-regexp local-state)))
@@ -1540,7 +1540,7 @@
 	      ;; no more states to consider
 	      (begin
 					;             '(eopl:printf
-					;               "sllgen:scanner-inner-loop returning with actions = ~s char = ~s newstates = ~%"
+					;               "sllgen:scanner-inner-loop returning with actions = ~s char = ~s newstates = \n"
 					;               actions char)
 					;             '(for-each
 					;               (lambda (local-state)
@@ -1548,7 +1548,7 @@
 					;               newstates)
 		(k actions newstates char stream))
 	      (let ((state        (car local-states)))
-					;           (eopl:printf "first state:~%")
+					;           (eopl:printf "first state:\n")
 					;           (sllgen:pretty-print state)
 		(cond
 		 ((sllgen:action? (car state))    ; state should never be null
@@ -1564,11 +1564,11 @@
 		     (if (and (null? char) (not eos-found?))
 			 (sllgen:char-stream-get! stream
 						  (lambda (ch1)
-						    '(eopl:printf "read character ~s~%" ch1)
+						    '(eopl:printf "read character ~s\n" ch1)
 						    (set! char ch1))
 						  (lambda ()
 						    (set! eos-found? #t))))
-		     '(eopl:printf "applying tester ~s to ~s~%" tester char)
+		     '(eopl:printf "applying tester ~s to ~s\n" tester char)
 		     (if (and (not (null? char))
 			      (sllgen:apply-tester tester char))
 			 ;; passed the test -- shift is possible
@@ -1602,7 +1602,7 @@
 		  =>
 		  (sllgen:xapply
 		   (lambda (sequents)
-		     ;; (printf "processing concat: sequents = ~s~%" sequents)
+		     ;; (printf "processing concat: sequents = ~s\n" sequents)
 		     (loop
 		      (cons 
                        (append sequents (cdr state))
@@ -1630,7 +1630,7 @@
 						 ;; ok, the current buffer is a candidate token
 						 (begin
 						   (set! success-buffer buffer)
-						   ;; (printf "success-buffer =~s~%" success-buffer)
+						   ;; (printf "success-buffer =~s\n" success-buffer)
 						   (set! actions new-actions))
 						 ;; otherwise leave success-buffer and actions alone
 						 )
@@ -1663,7 +1663,7 @@
 			    ;; this really is reference equality.
 			    #t
 			    (begin
-			      ;; (eopl:printf "pushing back ~s~%" (car buff))
+			      ;; (eopl:printf "pushing back ~s\n" (car buff))
 			      (sllgen:char-stream-push-back! (car buffer) stream)
 			      (set! buffer (cdr buffer))
 			      (push-back-loop))))
@@ -1724,9 +1724,9 @@
 
   (define sllgen:make-stream
     (lambda (tag char stream)
-					;(eopl:printf "sllgen:make-stream: building stream at ~s with ~s~%" tag char)
+					;(eopl:printf "sllgen:make-stream: building stream at ~s with ~s\n" tag char)
       (lambda (fcn eos-fcn)
-					;(eopl:printf "sllgen:make-stream: emitting ~s~%" char)
+					;(eopl:printf "sllgen:make-stream: emitting ~s\n" char)
 	(fcn char stream))))
 
   (define sllgen:list->stream
@@ -1778,7 +1778,7 @@
 			    (lambda ()                    
 			      ;; when the stream runs out, try this
 			      (let ((sentinel (sentinel-fcn)))
-					;            (eopl:printf "~s~%" sentinel)
+					;            (eopl:printf "~s\n" sentinel)
 				(fn sentinel (sllgen:constant-stream sentinel))))))))
 
 					; no longer used
@@ -1952,13 +1952,13 @@
       (if (null? token)
 	  (sllgen:stream-get! stream
 			      (lambda (next-token next-stream)
-					;        '(eopl:printf "find-production: filling token buffer with ~s~%" token)
+					;        '(eopl:printf "find-production: filling token buffer with ~s\n" token)
 				(set! token next-token)
 				(set! stream next-stream))
 			      (lambda ()
 				(error 'sllgen:find-production
 				       "internal error: shouldn't run off end of stream"))))
-					;    '(eopl:printf "sllgen:find-production: nonterminal = ~s token = ~s~%"
+					;    '(eopl:printf "sllgen:find-production: nonterminal = ~s token = ~s\n"
 					;       non-terminal token)
       (let loop
 	  ((alternatives (cdr (assq non-terminal parser))))
@@ -1971,7 +1971,7 @@
 		 (sllgen:token->class token)
 		 (sllgen:token->data token)))
 	 ((member (sllgen:token->class token) (car (car alternatives)))
-					;         '(eopl:printf "sllgen:find-production: using ~s~%~%"
+					;         '(eopl:printf "sllgen:find-production: using ~s\n\n"
 					;            (cdr (car alternatives)))
 	  (sllgen:apply-actions non-terminal (cdr (car alternatives))
 				parser buf token stream k))
@@ -2001,7 +2001,7 @@
 	      (report-error
 	       (lambda (target)
 		 (error 'parsing
-			"at line ~s: looking for ~s, found ~s ~s in production~%~s"
+			"at line ~s: looking for ~s, found ~s ~s in production\n~s"
 			(sllgen:token->location token)
 			target
 			(sllgen:token->class token)
@@ -2009,7 +2009,7 @@
 			action-list))))
 	  (let ((action      (car actions))
 		(next-action (cdr actions)))
-					;         (eopl:printf "actions = ~s~%token = ~s buf = ~s~%~%" actions token buf)
+					;         (eopl:printf "actions = ~s\ntoken = ~s buf = ~s~%~%" actions token buf)
 	    (case (car action)
 	      ((term)
 	       (fill-token!)
@@ -2077,7 +2077,7 @@
 	(let loop ((trees trees)
 		   (ptr ans)
 		   (ctr n))
-					;     (eopl:printf "ctr = ~s trees = ~s~%" ctr trees)
+					;     (eopl:printf "ctr = ~s trees = ~s\n" ctr trees)
 	  (cond
 	   ((null? trees) (mlist->list ans))
 	   ((zero? ctr) (loop trees ans n))

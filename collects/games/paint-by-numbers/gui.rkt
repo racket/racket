@@ -426,7 +426,7 @@ paint by numbers.
             [(eq? prev WRONG-BRUSH) UNKNOWN-BRUSH]
             [else
              (error 'internal-error
-                    "unkown brush in board ~s~n" prev)]))]
+                    "unkown brush in board ~s\n" prev)]))]
       
       [define/private check-modifier
         (lambda (evt)
@@ -741,7 +741,7 @@ paint by numbers.
                         (loop (- i 1) 0 ans)
                         (loop (- i 1) 0 (cons block-count ans)))]
                    [(on) (loop (- i 1) (+ block-count 1) ans)]
-                   [else (error 'calculate-col "unknown response from get-rect: ~a~n" this)]))])))]
+                   [else (error 'calculate-col "unknown response from get-rect: ~a\n" this)]))])))]
       
       [define/private calculate-col
         (lambda (col)
@@ -762,7 +762,7 @@ paint by numbers.
           (let loop ([l col/row-numbers]
                      [n col/row])
             (cond
-              [(null? l) (error 'update-col/row "col/row too big: ~a~n" col/row)]
+              [(null? l) (error 'update-col/row "col/row too big: ~a\n" col/row)]
               [(zero? n)
                (cons (calculate-col/row col/row)
                      (cdr l))]

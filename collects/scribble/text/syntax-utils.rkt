@@ -2,8 +2,8 @@
 
 (require "output.ss" (for-syntax scheme/base syntax/kerncase))
 
-(provide module-begin/text begin/text include/text
-         begin/collect)
+(provide module-begin/text begin/text include/text begin/collect
+         process-begin/text)
 
 (begin-for-syntax
   (define definition-ids ; ids that don't require forcing

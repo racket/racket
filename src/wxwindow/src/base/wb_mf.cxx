@@ -1,2 +1,0 @@
-
-/* no longer supported */

@@ -175,7 +175,14 @@
 
 ;; Error reporting
 
-(define current-syntax-context (make-parameter #f))
+(define current-syntax-context
+  (make-parameter #f
+                  (lambda (new-value)
+                    (unless (or (syntax? new-value) (eq? new-value #f))
+                      (raise-type-error 'current-syntax-context
+                                        "syntax or #f"
+                                        new-value))
+                    new-value)))
 
 (define (wrong-syntax stx #:extra [extras null] format-string . args)
   (unless (or (eq? stx #f) (syntax? stx))

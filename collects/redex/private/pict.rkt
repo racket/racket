@@ -1,6 +1,7 @@
 #lang scheme/base
 (require (lib "mrpict.ss" "texpict")
          (lib "utils.ss" "texpict")
+         racket/contract
          scheme/gui/base
          scheme/class
          scheme/match
@@ -32,16 +33,17 @@
          basic-text
          
          default-style
+         grammar-style
+         paren-style
          label-style
          literal-style
          metafunction-style
+         delimit-ellipsis-arguments?
          
          label-font-size
          default-font-size
          metafunction-font-size
          reduction-relation-rule-separation
-         
-         linebreaks
          
          just-before
          just-after         
@@ -54,6 +56,8 @@
          compact-vertical-min-width
          extend-language-show-union
          set-arrow-pict!)
+(provide/contract
+ [linebreaks (parameter/c (or/c #f (listof boolean?)))])
 
 
 ;                                                                             
@@ -97,7 +101,9 @@
                             (hash-set! ht (rule-pict-label rp) rp))
                           (reduction-relation-lws rr))
                 (map (lambda (label)
-                       (hash-ref ht label
+                       (hash-ref ht (if (string? label)
+                                        (string->symbol label)
+                                        label)
                                  (lambda ()
                                    (error what
                                           "no rule found for label: ~e"
@@ -124,6 +130,15 @@
                     (tp (rule-pict-lhs rp))
                     (tp (rule-pict-rhs rp))
                     (rule-pict-label rp)
+                    (and (rule-pict-computed-label rp)
+                         (let ([rewritten (apply-rewrites (rule-pict-computed-label rp))])
+                           (and (not (and (rule-pict-label rp)
+                                          (let has-unq? ([x rewritten])
+                                            (and (lw? x)
+                                                 (or (lw-unq? x)
+                                                     (and (list? (lw-e x))
+                                                          (ormap has-unq? (lw-e x))))))))
+                                (tp rewritten))))
                     (map (lambda (v) 
                            (if (pair? v)
                                (cons (tp (car v)) (tp (cdr v)))
@@ -332,17 +347,22 @@
                        max-w))
 
 (define (rp->pict-label rp)
-  (if (rule-pict-label rp)
-      (let ([m (regexp-match #rx"^([^_]*)(?:_([^_]*)|)$" 
-                             (format "~a" (rule-pict-label rp)))])
-        (hbl-append
-         ((current-text) " [" (label-style) (label-font-size))
-         ((current-text) (cadr m) (label-style) (label-font-size))
-         (if (caddr m)
-             ((current-text) (caddr m) `(subscript . ,(label-style)) (label-font-size))
-             (blank))
-         ((current-text) "]" (label-style) (label-font-size))))
-      (blank)))
+  (define (bracket label)
+    (hbl-append
+     ((current-text) " [" (label-style) (label-font-size))
+     label
+     ((current-text) "]" (label-style) (label-font-size))))
+  (cond [(rule-pict-computed-label rp) => bracket]
+        [(rule-pict-label rp)
+         (let ([m (regexp-match #rx"^([^_]*)(?:_([^_]*)|)$" 
+                                (format "~a" (rule-pict-label rp)))])
+           (bracket
+            (hbl-append
+             ((current-text) (cadr m) (label-style) (label-font-size))
+             (if (caddr m)
+                 ((current-text) (caddr m) `(subscript . ,(label-style)) (label-font-size))
+                 (blank)))))]
+        [else (blank)]))
 
 (define (add-between i l)
   (cond
@@ -569,11 +589,11 @@
                extensions))]
         [else info]))))
 
-(define (make-::=) (basic-text " ::= " (default-style)))
+(define (make-::=) (basic-text " ::= " (grammar-style)))
 (define (make-bar) 
-  (basic-text " | " (default-style))
+  (basic-text " | " (grammar-style))
   #;
-  (let ([p (basic-text " | " (default-style))])
+  (let ([p (basic-text " | " (grammar-style))])
     (dc 
      (λ (dc dx dy)
        (cond
@@ -774,6 +794,11 @@
          [eqns (select-cases all-eqns)]
          [lhss (select-cases all-lhss)]
          [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 2))) eqns)]
+         [_ (unless (or (not current-linebreaks)
+                        (= (length current-linebreaks) (length eqns)))
+              (error 'metafunction->pict "expected the current-linebreaks parameter to be a list whose length matches the number of cases in the metafunction (~a), but got ~s"
+                     (length eqns)
+                     current-linebreaks))]
          [linebreak-list (or current-linebreaks
                              (map (lambda (x) #f) eqns))]
          [=-pict (make-=)]
@@ -781,15 +806,18 @@
          [max-line-w/pre-sc (apply
                              max
                              (map (lambda (lhs rhs linebreak?)
-                                    (max
-                                     (if (or linebreak?
-                                             (memq style '(up-down
-                                                           up-down/vertical-side-conditions
-                                                           up-down/compact-side-conditions)))
-                                         (max (pict-width lhs)
-                                              (+ (pict-width rhs) (pict-width =-pict)))
-                                         (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
-                                            (* 2 sep)))))
+                                    (cond
+                                      [(and linebreak? (member #f linebreak-list))
+                                       0]
+                                      [(or linebreak?
+                                           (memq style '(up-down
+                                                         up-down/vertical-side-conditions
+                                                         up-down/compact-side-conditions)))
+                                       (max (pict-width lhs)
+                                            (+ (pict-width rhs) (pict-width =-pict)))]
+                                      [else
+                                       (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
+                                          (* 2 sep))]))
                                   lhss rhss linebreak-list))]
          [scs (map (lambda (eqn)
                      (let ([scs (reverse (list-ref eqn 1))])
@@ -822,11 +850,16 @@
               (apply append
                      (map (lambda (lhs sc rhs linebreak?)
                             (append
-                             (if linebreak?
-                                 (list lhs (blank) (blank))
-                                 (if (and sc (eq? style 'left-right/beside-side-conditions))
-                                     (list lhs =-pict (htl-append 10 rhs sc))
-                                     (list lhs =-pict rhs)))
+                             (cond
+                               [(and linebreak? (member #f linebreak-list))
+                                (list (inset lhs 0 0 (- 5 (pict-width lhs)) 0)
+                                      (blank)
+                                      (blank))]
+                               [linebreak? (list lhs (blank) (blank))]
+                               [(and sc (eq? style 'left-right/beside-side-conditions))
+                                (list lhs =-pict (htl-append 10 rhs sc))]
+                               [else
+                                (list lhs =-pict rhs)])
                              (if linebreak?
                                  (let ([p rhs])
                                    (list (htl-append sep

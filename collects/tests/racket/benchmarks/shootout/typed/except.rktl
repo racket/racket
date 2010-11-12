@@ -39,6 +39,6 @@
     (do ((i 0 (+ i 1)))
         ((= i n))
       (some_fun i)))
-  (printf "Exceptions: HI=~a / LO=~a~n" HI LO))
+  (printf "Exceptions: HI=~a / LO=~a\n" HI LO))
 
 (main (current-command-line-arguments))

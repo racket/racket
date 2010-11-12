@@ -191,6 +191,11 @@
     (send dc set-bitmap #f)
     bm))
 
+(define (show-error . args)
+  (with-handlers ([exn? (lambda (exn)
+                          (printf "~a\n" (exn-message exn)))])
+    (apply error args)))
+
 (define DRAW-WIDTH 550)
 (define DRAW-HEIGHT 375)
 
@@ -221,7 +226,9 @@
        [save-filename #f]
        [save-file-format #f]
        [clip 'none]
-       [current-alpha 1.0])
+       [current-alpha 1.0]
+       [current-rotation 0.0]
+       [current-skew? #f])
   (send hp0 stretchable-height #f)
   (send hp stretchable-height #f)
   (send hp2.5 stretchable-height #f)
@@ -255,7 +262,7 @@
 	    (override*
 	     [on-paint
 	      (case-lambda
-	       [() (on-paint #f)]
+	       [() (time (on-paint #f))]
 	       [(ps?)
 		(let* ([can-dc (get-dc)]
 		       [pen0s (make-object pen% "BLACK" 0 'solid)]
@@ -657,11 +664,11 @@
 				  (case mask-ex-mode
 				    [(plt plt-mask plt^plt mred^plt)
 				     (let* ([plt (get-plt)]
-					    [tmp-bm (make-object bitmap% 
-								 (send mred-icon get-width)
-								 (send mred-icon get-height)
-								 #f)]
-					    [tmp-dc (make-object bitmap-dc% tmp-bm)])
+					    [ww (send mred-icon get-width)]
+                                            [hh (send mred-icon get-height)]
+					    [tmp-bm (make-object bitmap% ww hh #f)]
+					    [tmp-dc (make-object bitmap-dc% tmp-bm)]
+                                            [mask-bm tmp-bm])
 				       (send tmp-dc draw-bitmap plt
 					     (/ (- (send mred-icon get-width)
 						   (send plt get-width))
@@ -669,16 +676,33 @@
 					     (/ (- (send mred-icon get-height)
 						   (send plt get-height))
 						2))
+                                       (when (memq mask-ex-mode '(plt^plt mred^plt))
+                                         ;; Convert to grayscale
+                                         (let ([s (make-bytes (* 4 ww hh))])
+                                           (send tmp-bm get-argb-pixels 0 0 ww hh s)
+                                           (for* ([i (in-range 0 ww)]
+                                                  [j (in-range 0 hh)])
+                                             (let* ([p (* 4 (+ (* j ww) i))]
+                                                    [v (quotient (+ (bytes-ref s (+ p 1))
+                                                                    (bytes-ref s (+ p 2))
+                                                                    (bytes-ref s (+ p 3)))
+                                                                 3)])
+                                               (bytes-set! s (+ p 1) v)
+                                               (bytes-set! s (+ p 2) v)
+                                               (bytes-set! s (+ p 3) v)))
+                                           (set! mask-bm (make-object bitmap% ww hh #f))
+                                           (send tmp-dc set-bitmap mask-bm)
+                                           (send tmp-dc set-argb-pixels 0 0 ww hh s)))
 				       (if (eq? mask-ex-mode 'mred^plt)
 					   (send dc draw-bitmap mred-icon x y
 						 'solid
 						 (send the-color-database find-color "BLACK")
-						 tmp-bm)
+						 mask-bm)
 					   (send dc draw-bitmap tmp-bm x y 'solid 
 						 (send the-color-database find-color "BLACK")
 						 (cond
 						  [(eq? mask-ex-mode 'plt-mask) mred-icon]
-						  [(eq? mask-ex-mode 'plt^plt) tmp-bm]
+						  [(eq? mask-ex-mode 'plt^plt) mask-bm]
 						  [else #f]))))]
                                     [(mred^mred)
                                      (send dc draw-bitmap mred-icon x y
@@ -716,7 +740,7 @@
 						       0 0 w h
 						       mode color)
 						 (set! x (+ x w 10))))
-					     (printf "bad bitmap~n")))])
+					     (printf "bad bitmap\n")))])
 				  ;; BB icon
 				  (do-one bb 'solid black)
 				  (let ([start x])
@@ -724,7 +748,7 @@
 				    (do-one return 'solid black)
 				    (do-one return 'solid red)
 				    (do-one return 'opaque red)
-				    ;; Next three, on a bluew background
+				    ;; Next three, on a blue background
 				    (let ([end x]
 					  [b (send dc get-brush)])
 				      (send dc set-brush (make-object brush% "BLUE" 'solid))
@@ -937,12 +961,16 @@
 				      mem-dc)
 				    (get-dc)))])
 		    (when dc
-                      (send dc clear)
-
-		      (send dc start-doc "Draw Test")
+                      (send dc start-doc "Draw Test")
 		      (send dc start-page)
 
-                      (send dc set-alpha current-alpha)
+                      (send dc clear)
+
+		      (send dc set-alpha current-alpha)
+                      (send dc set-rotation (- current-rotation))
+                      (send dc set-initial-matrix (if current-skew?
+                                                      (vector 1 0 0.2 1 3 0)
+                                                      (vector 1 0 0 1 0 0)))
 
 		      (if clip-pre-scale?
 			  (begin
@@ -988,7 +1016,7 @@
 				       (send dc set-clipping-region r))]
 			      [(rect+poly) (let ([r (mk-poly 'winding)])
 					     (send r union (mk-rect))
-						(send dc set-clipping-region r))]
+                                             (send dc set-clipping-region r))]
 			      [(rect+circle) (let ([r (mk-circle)])
 					       (send r union (mk-rect))
 					       (send dc set-clipping-region r))]
@@ -1054,9 +1082,9 @@
 
 		      (unless clock-clip?
 			(let ([r (send dc get-clipping-region)])
-			  (if (eq? clip 'none)
+                          (if (eq? clip 'none)
 			      (when r
-				(error 'draw-test "shouldn't have been a clipping region"))
+				(show-error 'draw-test "shouldn't have been a clipping region"))
 			      (let*-values ([(x y w h) (send r get-bounding-box)]
 					    [(l) (list x y w h)]
 					    [(=~) (lambda (x y)
@@ -1080,7 +1108,7 @@
 							    (- (/ (caddr l) xscale) offset)
 							    (- (/ (cadddr l) yscale) offset))
 						      l)))
-				  (error 'draw-test "clipping region changed badly: ~a" l))))))
+				  (show-error 'draw-test "clipping region changed badly: ~a" l))))))
 
 		      (let-values ([(w h) (send dc get-size)])
 			(unless (cond
@@ -1088,7 +1116,10 @@
 				 [use-bad? #t]
 				 [use-bitmap? (and (= w (* xscale DRAW-WIDTH)) (= h (* yscale DRAW-HEIGHT)))]
 				 [else (and (= w (* 2 DRAW-WIDTH)) (= h (* 2 DRAW-HEIGHT)))])
-			  (error 'x "wrong size reported by get-size: ~a ~a" w h)))
+			  (show-error 'x "wrong size reported by get-size: ~a ~a (not ~a)" w h
+                                      (if use-bitmap?
+                                          (list (* xscale DRAW-WIDTH) (* yscale DRAW-HEIGHT))
+                                          (list (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT))))))
 
 		      (send dc set-clipping-region #f)
 
@@ -1212,13 +1243,27 @@
 			     (send canvas refresh))))])
       (set! do-clock clock)
       (make-object button% "Clip Clock" hp3 (lambda (b e) (clock #t)))
+      (make-object button% "Print Setup" hp4 (lambda (b e) (let ([c (get-page-setup-from-user)])
+                                                             (when c
+                                                               (send (current-ps-setup) copy-from c)))))
       (make-object slider% "Alpha" 0 10 hp4
                    (lambda (s e)
                      (let ([a (/ (send s get-value) 10.0)])
                        (unless (= a current-alpha)
                          (set! current-alpha a)
                          (send canvas refresh))))
-                   10 '(horizontal plain))))
+                   10 '(horizontal plain))
+      (make-object slider% "Rotation" 0 100 hp4
+                   (lambda (s e)
+                     (let ([a (* pi 1/4 (/ (send s get-value) 100.0))])
+                       (unless (= a current-rotation)
+                         (set! current-rotation a)
+                         (send canvas refresh))))
+                   0 '(horizontal plain))
+      (make-object check-box% "Skew" hp4
+                   (lambda (c e)
+                     (set! current-skew? (send c get-value))
+                     (send canvas refresh)))))
 
   (send f show #t))
 

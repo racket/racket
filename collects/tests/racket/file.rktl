@@ -388,7 +388,7 @@
 (close-input-port p)
 
 (define-values (in-p out-p) (open-input-output-file tempfilename #:exists 'update))
-(fprintf out-p "hi~n")
+(fprintf out-p "hi\n")
 (flush-output out-p)
 (test eof read-char in-p)
 (test 3 file-position out-p)
@@ -1111,7 +1111,7 @@
   (test "hello---~---there" format "~.a---~~---~a" "hello" 'there)
   (test "\"hello\"---~---there" format "~.s---~~---~s" "hello" 'there)
   (test "\"hello\"---~---'there" format "~.v---~~---~v" "hello" 'there)
-  (test (string #\a #\newline #\b #\newline #\c) format "a~nb~%c")
+  (test (string #\a #\newline #\b #\newline #\c) format "a\nb~%c")
   (let ([try-newline-stuff
 	 (lambda (newlines)
 	   (test "12" format (apply string `(#\1 #\~ #\space ,@newlines #\space #\2)))
@@ -1241,7 +1241,7 @@
 		      (let loop ([n 0])
 			(with-handlers ([exn:fail:filesystem?
 					 (lambda (exn) 
-					   (printf "expected open failure: ~a~n"
+					   (printf "expected open failure: ~a\n"
 						   (exn-message exn))
 					   n)])
 			  ;; leave the port open:
@@ -1251,7 +1251,7 @@
 			      (loop (add1 n)))))])
 		 ;; should close all the ports
 		 (custodian-shutdown-all c)
-		 (printf "got ~a ports~n" n)
+		 (printf "got ~a ports\n" n)
 		 n))))])
     (let ([n (try)])
       (test n try))))
@@ -1290,7 +1290,7 @@
 	     (test #t tcp-port? r2)
 	     (test #t tcp-port? w1)
 	     (test #t tcp-port? w2)
-	     (fprintf w1 "Hello~n")
+	     (fprintf w1 "Hello\n")
 	     (flush-output w1)
 	     (test "Hello" read-line r2)
 	     (tcp-abandon-port r1)

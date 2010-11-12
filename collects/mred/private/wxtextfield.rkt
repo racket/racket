@@ -20,15 +20,16 @@
   (provide (protect wx-text-field%))
 
   (define text-field-text% 
-    (class100 text% (cb ret-cb control set-cb-mgrs!)
+    (class100 text% (cb ret-cb control set-cb-mgrs! record-text)
       (rename [super-on-char on-char])
-      (inherit get-text last-position set-max-undo-history)
+      (inherit get-text last-position set-max-undo-history get-flattened-text)
       (private-field
        [return-cb ret-cb])
       (private-field
        [block-callback 1]
        [callback
 	(lambda (type)
+          (as-exit (lambda () (record-text (get-flattened-text))))
 	  (when (zero? block-callback)
 	    (let ([e (make-object wx:control-event% type)])
 	      (as-exit (lambda ()
@@ -88,7 +89,9 @@
 		       this
 		       (lambda (wc cr)
 			 (set! without-callback wc)
-			 (set! callback-ready cr)))])
+			 (set! callback-ready cr))
+                       (lambda (t)
+                         (send c set-combo-text t)))])
       (sequence
 	(as-exit
 	 (lambda ()
@@ -136,7 +139,7 @@
 			   (cdr r))
 		     r))))])
       (sequence
-	(super-init #f proxy parent (if (memq 'deleted style) '(deleted) null))
+	(super-init #f proxy parent (if (memq 'deleted style) '(deleted) null) #f)
 	(unless (memq 'deleted style)
 	  (send (area-parent) add-child this)))
       (private-field
@@ -148,7 +151,7 @@
        [dy 0]
        [p (if horiz?
 	      this
-	      (let ([p (make-object wx-vertical-pane% #f proxy this null)])
+	      (let ([p (make-object wx-vertical-pane% #f proxy this null #f)])
                 (send p skip-subwindow-events? #t)
 		(send (send p area-parent) add-child p)
 		p))])
@@ -157,12 +160,18 @@
 	(unless horiz? (send p alignment 'left 'top))
 	(unless multi? (stretchable-in-y #f))
 	;; For Windows:
-	(wx:set-combo-box-font font)
+	; (wx:set-combo-box-font font)
         (spacing 3))
       (private-field
        [l (and label
 	       (make-object wx-message% #f proxy p label -1 -1 null font))]
-       [c (make-object wx-text-editor-canvas% #f proxy this p
+       [c (make-object (class wx-text-editor-canvas% 
+                         (define/override (on-combo-select i)
+                           (let ([len (length callbacks)])
+                             (when (< -1 i len)
+                               ((list-ref callbacks (- len i 1))))))
+                         (super-new))
+                       #f proxy this p
 		       (append
 			'(control-border)
 			(if (memq 'combo style)
@@ -172,7 +181,15 @@
 			    (if (memq 'hscroll style)
 				null
 				'(hide-hscroll))
-			    '(hide-vscroll hide-hscroll))))])
+			    '(hide-vscroll hide-hscroll))))]
+       [callbacks null])
+      (public
+        [set-on-popup (lambda (proc) (send c set-on-popup proc))]
+        [clear-combo-items (lambda () (set! callbacks null) (send c clear-combo-items))]
+        [append-combo-item (lambda (s cb)
+                             (and (send c append-combo-item s)
+                                  (set! callbacks (cons cb callbacks))
+                                  #t))])
       (sequence
         (send c skip-subwindow-events? #t)
 	(when l
@@ -220,7 +237,7 @@
 	      (set! dy (- dy (unbox ybox))))
 	    
 	    ;; Subtract ascent of label
-	    (send l get-text-extent "hi" wbox hbox ybox abox)
+	    (send l get-text-extent "hi" wbox hbox ybox abox font)
 	    (set! dy (- dy (- (unbox hbox) (unbox ybox))))
 	    
 	    ;; Subtract space above label
@@ -228,7 +245,7 @@
 
 	    ;; Exact
 	    (set! dy (inexact->exact dy))))
-	
+
 	(when value
 	  (set-value value)
 	  (unless (string=? value "")

@@ -19,6 +19,7 @@
          compiler/embed
          wxme/wxme
          setup/dirs
+         test-engine/racket-tests
          
          ;; this module is shared between the drscheme's namespace (so loaded here) 
          ;; and the user's namespace in the teaching languages
@@ -33,7 +34,8 @@
          
          (only-in test-engine/scheme-gui make-formatter)
          (only-in test-engine/scheme-tests 
-		  scheme-test-data error-handler test-format test-execute build-test-engine)
+		  scheme-test-data error-handler test-format test-execute display-results
+		  build-test-engine)
          (lib "test-engine/test-display.scm")
 	 deinprogramm/signature/signature
          )
@@ -137,9 +139,10 @@
                   [scheme-test-module-name
                    ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
                   [scheme-signature-module-name
-                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature.ss") #f #f)])
+                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-english.rkt") #f #f)])
               (run-in-user-thread
                (lambda ()
+                 (when (getenv "PLTDRHTDPNOCOMPILED") (use-compiled-file-paths '()))
                  (read-accept-quasiquote (get-accept-quasiquote?))
                  (namespace-attach-module drs-namespace ''drscheme-secrets)
                  (namespace-attach-module drs-namespace set-result-module-name)                 
@@ -155,7 +158,7 @@
                  (namespace-require scheme-signature-module-name)
 		 ;; hack: the test-engine code knows about the test~object name; we do, too
 		 (namespace-set-variable-value! 'test~object (build-test-engine))
-		 ;; record test-case failures with the test engine
+		 ;; record signature violations with the test engine
 		 (signature-violation-proc
 		  (lambda (obj signature message blame)
 		    (cond
@@ -276,12 +279,6 @@
                                          (string-constant write-printing-style)))
                                output-panel
                                void)]
-               [fraction-style
-                (make-object radio-box% (string-constant fraction-style)
-                  (list (string-constant use-mixed-fractions)
-                        (string-constant use-repeating-decimals))
-                  output-panel
-                  void)]
                [show-sharing #f]
                [insert-newlines (make-object check-box%
                                   (string-constant use-pretty-printer-label)
@@ -291,6 +288,12 @@
                              (parent output-panel)
                              (label (string-constant tracing-enable-tracing))
                              (callback void))]
+               [fraction-style
+                (make-object radio-box% (string-constant fraction-style)
+                  (list (string-constant use-mixed-fractions)
+                        (string-constant use-repeating-decimals))
+                  output-panel
+                  void)]
                
                [tps '()])
           
@@ -426,6 +429,11 @@
               (go "." welcome)
               (newline port)))
           
+          (define/override (first-opened settings)
+            (for ([tp (in-list (htdp-lang-settings-teachpacks settings))])
+              (with-handlers ((exn:fail? void)) ;; swallow errors here; drracket is not ready to display errors at this point
+                (for-each namespace-require/constant tp))))
+          
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
           (define/override (create-executable setting parent program-filename)
@@ -542,6 +550,27 @@
                                      (get-module)
                                      (htdp-lang-settings-teachpacks settings)
                                      (drscheme:rep:current-rep)))
+          
+          (define/override (front-end/interaction port settings)
+            (let ([t (super front-end/interaction port settings)]
+		  [start? #t]
+                  [done? #f])
+              (λ ()
+                (cond
+		  [start?
+		   (set! start? #f)
+		   #'(#%plain-app reset-tests)]
+                  [done? eof]
+                  [else
+                   (let ([ans (parameterize ([read-accept-lang #f])
+                                (t))])
+                     (cond
+                       [(eof-object? ans)
+                        (set! done? #t)
+                        #`(test)]
+                       [else
+                        ans]))]))))
+
 
           (define keywords #f)
           (define/augment (capability-value key)
@@ -633,7 +662,7 @@
           
           (inherit default-settings)
           (define/override (metadata->settings metadata)
-            (let* ([table (metadata->table metadata)] ;; extract the table
+            (let* ([table (massage-metadata (metadata->table metadata))] ;; extract the table
                    [ssv (assoc 'htdp-settings table)])
               (if ssv
                   (let ([settings-list (vector->list (cadr ssv))])
@@ -643,11 +672,18 @@
                         (default-settings)))
                   (default-settings))))
           
+          (define/private (massage-metadata md)
+            (if (and (list? md)
+                     (andmap (λ (x) (and (pair? x) (symbol? (car x)))) md))
+                md
+                '()))
+          
           (define/private (metadata->table metadata)
-            (let ([p (open-input-string metadata)])
-              (regexp-match #rx"\n#reader" p) ;; skip to reader
-              (read p) ;; skip module
-              (read p)))
+            (with-handlers ((exn:fail:read? (λ (x) #f)))
+              (let ([p (open-input-string metadata)])
+                (regexp-match #rx"\n#reader" p) ;; skip to reader
+                (read p) ;; skip module
+                (read p))))
           
           (define/override (get-metadata-lines) 3)
           
@@ -675,45 +711,51 @@
                                 data-class-names)))))))))
       
       (define (get-teachpack-from-user parent)
-        (define tp-dirs (list (collection-path "teachpack" "htdp")
-                              (collection-path "teachpack" "2htdp")))
-        (define columns 2)
-        (define tps (apply
-                     append
-                     (map (λ (tp-dir)
-                            (filter
-                             (λ (x) (file-exists? (build-path tp-dir x)))
-                             (directory-list tp-dir)))
-                          tp-dirs)))
+        (define tp-dirs (list "htdp" "2htdp"))
+        (define labels (list (string-constant teachpack-pre-installed/htdp)
+                             (string-constant teachpack-pre-installed/2htdp)))
+        (define tpss (map (λ (tp-dir)
+                            (let ([base (collection-path "teachpack" tp-dir)])
+                              (filter
+                               (λ (x) (file-exists? (build-path base x)))
+                               (directory-list base))))
+                          tp-dirs))
         (define sort-order (λ (x y) (string<=? (path->string x) (path->string y))))
-        (define pre-installed-tps (sort tps sort-order))
+        (define pre-installed-tpss (map (λ (tps) (sort tps sort-order)) tpss))
         (define dlg (new dialog% [parent parent] [label (string-constant drscheme)]))
         (define hp (new horizontal-panel% [parent dlg]))
         (define answer #f)
         (define compiling? #f)
         
-        (define pre-installed-gb (new group-box-panel%
-                                      [label (string-constant teachpack-pre-installed)]
-                                      [parent hp]))
+        (define pre-installed-gbs (map (λ (tps label)
+                                         (new group-box-panel%
+                                              [label label]
+                                              [parent hp]))
+                                       tpss labels))
         (define user-installed-gb (new group-box-panel%
                                        [label (string-constant teachpack-user-installed)]
                                        [parent hp]))
         
-        (define pre-installed-lb
-          (new list-box%
-               [label #f]
-               [choices (map path->string pre-installed-tps)]
-               [stretchable-height #t]
-               [min-height 300]
-               [min-width 200]
-               [callback
-                (λ (x evt)
-                  (case (send evt get-event-type)
-                    [(list-box-dclick) (selected pre-installed-lb)]
-                    [else
-                     (clear-selection user-installed-lb)
-                     (update-button)]))]
-               [parent pre-installed-gb]))
+        (define pre-installed-lbs
+          (map (λ (pre-installed-gb pre-installed-tps)
+                 (new list-box%
+                      [label #f]
+                      [choices (map path->string pre-installed-tps)]
+                      [stretchable-height #t]
+                      [min-height 300]
+                      [min-width 200]
+                      [callback
+                       (λ (this evt)
+                         (case (send evt get-event-type)
+                           [(list-box-dclick) (selected this)]
+                           [else
+                            (for-each (λ (x) (unless (eq? x this) (clear-selection x)))
+                                      (cons user-installed-lb
+                                            pre-installed-lbs))
+                            (update-button)]))]
+                      [parent pre-installed-gb]))
+               pre-installed-gbs
+               pre-installed-tpss))
         
         (define user-installed-lb
           (new list-box%
@@ -726,7 +768,8 @@
                   (case (send evt get-event-type)
                     [(list-box-dclick) (selected user-installed-lb)]
                     [else
-                     (clear-selection pre-installed-lb)
+                     (for ([pre-installed-lb (in-list pre-installed-lbs)])
+                       (clear-selection pre-installed-lb))
                      (update-button)]))]
                [parent user-installed-gb]))
         
@@ -786,9 +829,10 @@
                         (parameterize ([current-custodian nc])
                           (thread (λ () 
                                     (with-handlers ((exn? (λ (x) (set! exn x))))
-                                      (parameterize ([read-accept-reader #t]
-                                                     [current-namespace (make-base-namespace)])
-                                        (compile-file filename))))))])
+                                      (parameterize ([current-namespace (make-base-namespace)])
+                                        (with-module-reading-parameterization
+                                         (lambda ()
+                                           (compile-file filename))))))))])
                    (thread
                     (λ ()
                       (thread-wait t)
@@ -807,7 +851,8 @@
         
         (define (post-compilation-gui-cleanup short-name)
           (update-user-installed-lb)
-          (clear-selection pre-installed-lb)
+          (for ([pre-installed-lb (in-list pre-installed-lbs)])
+            (clear-selection pre-installed-lb))
           (send user-installed-lb set-string-selection (path->string short-name)))
         
         (define (starting-compilation)
@@ -835,7 +880,9 @@
           (send ok-button enable 
                 (and (not compiling?)
                      (or (pair? (send user-installed-lb get-selections))
-                         (pair? (send pre-installed-lb get-selections))))))
+                         (ormap (λ (pre-installed-lb)
+                                  (pair? (send pre-installed-lb get-selections)))
+                                pre-installed-lbs)))))
         
         (define button-panel (new horizontal-panel% 
                                   [parent dlg]
@@ -853,17 +900,15 @@
         
         (define (figure-out-answer)
           (cond
-            [(send pre-installed-lb get-selection)
+            [(ormap (λ (pre-installed-lb tp-dir) 
+                      (and (send pre-installed-lb get-selection)
+                           (list tp-dir (send pre-installed-lb get-string (send pre-installed-lb get-selection)))))
+                    pre-installed-lbs
+                    tp-dirs)
              =>
-             (λ (i)
-               (define f (send pre-installed-lb get-string i))
-               (cond
-                 [(file-exists? (build-path (collection-path "teachpack" "htdp") f))
-                  `(lib ,f "teachpack" "htdp")]
-                 [(file-exists? (build-path (collection-path "teachpack" "2htdp") f))
-                  `(lib ,f "teachpack" "2htdp")]
-                 [else (error 'figuer-out-answer "argh: ~a ~a" 
-                              (collection-path "teachpack" "htdp") f)]))]
+             (λ (pr)
+               (define-values (tp-dir f) (apply values pr))
+               `(lib ,f "teachpack" ,tp-dir))]
             [(send user-installed-lb get-selection)
              =>
              (λ (i) `(lib ,(send user-installed-lb get-string i)
@@ -1063,7 +1108,7 @@
       (define test-coverage-enabled (make-parameter #t))
       (define current-test-coverage-info (make-thread-cell #f))
       
-      (define (initialize-test-coverage-point key expr)
+      (define (initialize-test-coverage-point expr)
         (unless (thread-cell-ref current-test-coverage-info)
           (let ([ht (make-hasheq)])
             (thread-cell-set! current-test-coverage-info ht)
@@ -1131,16 +1176,19 @@
                        (send rep set-test-coverage-info ht on-sd off-sd #f)))))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
-            (hash-set! ht key (mcons #f expr)))))
+            (hash-set! ht expr #;(box #f) (mcons #f #f)))))
       
-      (define (test-covered key)
-        (let* ([ht (thread-cell-ref current-test-coverage-info)]
-               [v (and ht (hash-ref ht key #f))])
-          (with-syntax ([v v])
-            #'(set-mcar! v #t))
-          #;
-          (and v
-               (λ () (set-mcar! v #t)))))
+      (define (test-covered expr)
+        (let* ([ht (or (thread-cell-ref current-test-coverage-info)
+                       (error 'htdp-langs
+                              "internal-error: no test-coverage table"))]
+               [v (hash-ref ht expr
+                    (lambda ()
+                      (error 'htdp-langs
+                             "internal-error: expression not found: ~.s"
+                             expr)))])
+          #; (lambda () (set-box! v #t))
+          (with-syntax ([v v]) #'(#%plain-app set-mcar! v #t))))
       
       (define-values/invoke-unit et:stacktrace@
         (import et:stacktrace-imports^) (export (prefix et: et:stacktrace^)))

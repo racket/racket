@@ -33,6 +33,8 @@ evaluate later forms.}
                [namespace namespace? (current-namespace)])
          any]{
 
+@guidealso["namespaces"]
+
 Calls the current @tech{evaluation handler} to evaluate
 @racket[top-level-form]. The @tech{evaluation handler} is called in
 tail position with respect to the @racket[eval] call, and
@@ -90,8 +92,8 @@ contain a module declaration), or @racket[#f] for any other load.
 The default load handler reads forms from the file in
 @racket[read-syntax] mode with line-counting enabled for the file
 port, unless the path has a @racket[".zo"] suffix. It also
-@racket[parameterize]s each read to set both
-@racket[read-accept-compiled] and @racket[read-accept-reader] to
+@racket[parameterize]s each read to set @racket[read-accept-compiled],
+@racket[read-accept-reader], and @racket[read-accept-lang] to
 @racket[#t]. In addition, if @racket[load-on-demand-enabled] is
 @racket[#t], then @racket[read-on-demand-source] is effectively set to
 the @tech{cleanse}d, absolute form of @racket[path] during the
@@ -124,6 +126,7 @@ If the second argument to the load handler is a symbol, then:
        (read-accept-infix-dot #t)
        (read-accept-quasiquote #t)
        (read-accept-reader #t)
+       (read-accept-lang #t)
        ]}
 
  @item{If the read result is not a @racketidfont{module} form, or if a
@@ -154,6 +157,8 @@ resolved using the value of @racket[current-directory].}
 
 
 @defproc[(load [file path-string?]) any]{
+
+@guidealso["namespaces"]
 
 Calls the current @tech{load handler} in tail position. The call is
 @racket[parameterized] to set @racket[current-load-relative-directory]
@@ -335,7 +340,8 @@ The default read interaction handler accepts @racket[_src] and
 @racket[_in] and returns
 
 @racketblock[
-(parameterize ([read-accept-reader #t])
+(parameterize ([read-accept-reader #t]
+               [read-accept-lang #f])
   (read-syntax _src _in))
 ]}
 
@@ -369,41 +375,8 @@ form may be saved for later use; the default compilation handler is
 optimized for the special case of immediate evaluation.
 
 When a compiled form is written to an output port, the written form
-starts with @litchar{#~}.  These forms are essentially assembly code
-for Racket, and reading such an form produces a compiled form (as
-long as the @racket[read-accept-compiled] parameter is set to
-@racket[#t]).
-
-When a compiled form contains syntax object constants, the
-@litchar{#~}-marshaled form drops source-location information and
-properties (@secref["stxprops"]) for the @tech{syntax objects}.
-
-Compiled code parsed from @litchar{#~} may contain references to
-unexported or protected bindings from a module. At read time, such
-references are associated with the current code inspector (see
-@racket[current-code-inspector]), and the code will only execute if
-that inspector controls the relevant module invocation (see
-@secref["modprotect"]).
-
-A compiled-form object may contain @tech{uninterned} symbols (see
-@secref["symbols"]) that were created by @racket[gensym] or
-@racket[string->uninterned-symbol]. When the compiled object is read
-via @litchar{#~}, each uninterned symbol in the original form is
-mapped to a new uninterned symbol, where multiple instances of a
-single symbol are consistently mapped to the same new symbol. The
-original and new symbols have the same printed
-representation. @tech{Unreadable symbols}, which are typically
-generated indirectly during expansion and compilation, are saved and
-restored consistently through @litchar{#~}.
-
-Due to the restrictions on @tech{uninterned} symbols in @litchar{#~},
-do not use @racket[gensym] or @racket[string->uninterned-symbol] to
-construct an identifier for a top-level or module binding. Instead,
-generate distinct identifiers either with
-@racket[generate-temporaries] or by applying the result of
-@racket[make-syntax-introducer] to an existing identifier; those
-functions will lead to top-level and module bindings with
-@tech{unreadable symbol}ic names.}
+starts with @litchar{#~}. See @secref["print-compiled"] for more
+information.}
 
 
 @defproc[(compile [top-level-form any/c]) compiled-expression?]{

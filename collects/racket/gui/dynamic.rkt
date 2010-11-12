@@ -1,16 +1,30 @@
 #lang scheme/base
+(require ffi/unsafe)
 
 (provide gui-available?
          gui-dynamic-require)
 
+(define scheme_register_process_global
+  (get-ffi-obj 'scheme_register_process_global #f (_fun _string _pointer -> _pointer)))
+
 (define (gui-available?)
-  (and (zero? (variable-reference->phase (#%variable-reference)))
-       (with-handlers ([exn:fail? (lambda (exn) #f)])
-         (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
-              'done))))
+  (and 
+   ;; Never available in non-0 phases:
+   (zero? (variable-reference->phase (#%variable-reference)))
+   ;; Must be instantiated:
+   (scheme_register_process_global "GRacket-support-initialized" #f)
+   (with-handlers ([exn:fail? (lambda (exn) #f)])
+     ;; Fails if `mred/private/dynamic' is not declared
+     ;;  (without loading it if not):
+     (module->language-info 'mred/private/dynamic #f)
+     ;; Double check that it seems to have started ok:
+     (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
+          'done))))
 
 (define-namespace-anchor anchor)
 
 (define (gui-dynamic-require sym)
   (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
-    (dynamic-require 'mred sym)))
+    (if (gui-available?)
+        (dynamic-require 'mred sym)
+        (error "racket/gui/base is not available"))))

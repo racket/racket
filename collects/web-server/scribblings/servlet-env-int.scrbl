@@ -25,7 +25,6 @@ These functions optimize the construction of dispatchers and launching of server
           [#:stateless? stateless? boolean? #f]
           [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]
           [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
-          [#:namespace namespace (listof module-path?) empty]
           [#:current-directory servlet-current-directory path-string? (current-directory)])
          dispatcher/c]{
  @racket[serve/servlet] starts a server and uses a particular dispatching sequence. For some applications, this
@@ -41,11 +40,12 @@ These functions optimize the construction of dispatchers and launching of server
  The servlet is loaded with @racket[manager] as its continuation manager. (The default manager limits the amount of memory to 64 MB and
  deals with memory pressure as discussed in the @racket[make-threshold-LRU-manager] documentation.)
  
- The modules specified by @racket[servlet-namespace] are shared with other servlets.
+ The servlet is run in the @racket[(current-namespace)].
 }
                       
 @defproc[(serve/launch/wait
           [make-dispatcher (semaphore? . -> . dispatcher/c)]
+          [#:connection-close? connection-close? boolean? #f]
           [#:launch-path launch-path (or/c false/c string?) #f]
           [#:banner? banner? boolean? #f]
           [#:listen-ip listen-ip (or/c false/c string?) "127.0.0.1"]
@@ -67,9 +67,11 @@ These functions optimize the construction of dispatchers and launching of server
  connections to all of the listening machine's addresses. Otherwise, the server accepts connections only at the interface(s) associated with the given string.
  For example, providing @racket["127.0.0.1"] (the default) as @racket[listen-ip] creates a server that accepts only connections to @racket["127.0.0.1"] (the loopback interface) from the local machine.
  
- 
  If @racket[ssl-key] and @racket[ssl-cert] are not false, then the server runs in HTTPS mode with @racket[ssl-cert]
  and @racket[ssl-key] as paths to the certificate and private key.    
+ 
+ If @racket[connection-close?] is @racket[#t], then every connection is closed after one
+ request. Otherwise, the client decides based on what HTTP version it uses.
 }
               
 }

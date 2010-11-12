@@ -847,7 +847,7 @@
   (let ([t1 (semaphore-peek-evt (make-semaphore 1))]
 	[t2 (semaphore-peek-evt (make-semaphore 1))])
     (let-values ([(r w) (make-pipe)])
-      (fprintf w "Hi!~n")
+      (fprintf w "Hi!\n")
       ;; Between 20% and 80% is fair, and surely < 20% or > 80% is unlikely
       (try t1 t2 t1 20 80)
       (try t1 t2 t2 20 80)

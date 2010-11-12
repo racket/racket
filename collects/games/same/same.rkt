@@ -318,7 +318,7 @@
                    (loop (- i 1))]))
               (set! biggest-so-far (max biggest-so-far (calc-score answer)))
               (set! tests (+ tests 1))
-              (printf "tests: ~a sofar: ~a largest connected region: ~a score ~a~n"
+              (printf "tests: ~a sofar: ~a largest connected region: ~a score ~a\n"
                       tests
                       biggest-so-far
                       answer

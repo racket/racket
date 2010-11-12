@@ -1,10 +1,9 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          racket/pretty
          unstable/gui/notify
-         "interfaces.rkt"
-         "partition.rkt")
+         "interfaces.rkt")
 (provide syntax-keymap%)
 
 (define keymap/popup%

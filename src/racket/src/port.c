@@ -676,6 +676,15 @@ Scheme_Object * scheme_make_eof (void)
   return scheme_eof;
 }
 
+void scheme_set_stdio_makers(Scheme_Stdio_Maker_Proc in,
+			     Scheme_Stdio_Maker_Proc out,
+			     Scheme_Stdio_Maker_Proc err)
+{
+  scheme_make_stdin = in;
+  scheme_make_stdout = out;
+  scheme_make_stderr = err;
+}
+
 /*========================================================================*/
 /*                                fd arrays                               */
 /*========================================================================*/

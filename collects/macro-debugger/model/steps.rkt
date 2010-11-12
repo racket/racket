@@ -1,6 +1,4 @@
 #lang racket/base
-(require "deriv.rkt"
-         "deriv-util.rkt")
 (provide (struct-out protostep)
          (struct-out step)
          (struct-out misstep)
@@ -92,6 +90,7 @@
     (splice-module-lifts . "Splice lifted module declarations")
 
     (remark           . "Macro made a remark")
+    (track-origin     . "Macro called syntax-track-origin")
 
     (error            . "Error")))
 
@@ -111,7 +110,8 @@
           rename-case-lambda
           rename-let-values
           rename-letrec-values
-          rename-lsv)))
+          rename-lsv
+          track-origin)))
 
 (define (rewrite-step? x)
   (and (step? x) (not (rename-step? x))))

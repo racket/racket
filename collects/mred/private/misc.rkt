@@ -10,7 +10,8 @@
 	   play-sound
 	   timer%)
 
-  ;; Currently only used for PS print and preview
+  ;; Formerly used for PS print and preview:
+  #;
   (wx:set-executer
    (let ([orig-err (current-error-port)])
      (lambda (prog . args)
@@ -30,7 +31,7 @@
 					 (let loop ()
 					   (let ([l (read-line p)])
 					     (unless (eof-object? l)
-					       (fprintf orig-err "~a~n" l)
+					       (fprintf orig-err "~a\n" l)
 					       (loop)))))
 				       (lambda () (close-input-port p))))))])
 	     (echo in)

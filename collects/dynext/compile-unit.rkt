@@ -1,10 +1,10 @@
 
 (module compile-unit mzscheme
   (require mzlib/unit
-	   mzlib/include
 	   mzlib/process
 	   mzlib/sendevent
 	   "private/dirs.ss"
+           "private/stdio.rkt"
 	   "private/cmdargs.ss")
 
   (require "compile-sig.ss")
@@ -266,7 +266,7 @@
 	     [else (bad-name name)])]))
       
       (define-values (my-process* stdio-compile)
-	(let-values ([(p* do-stdio) (include (build-path "private" "stdio.rkt"))])
+	(let-values ([(p* do-stdio) (get-stdio)])
 	  (values
 	   p*
 	   (lambda (start-process quiet?)
@@ -290,7 +290,7 @@
 						 ((current-make-compile-input-strings) in)
 						 ((current-make-compile-output-strings) out))])
 				   (unless quiet? 
-				     (printf "compile-extension: ~a~n" command))
+				     (printf "compile-extension: ~a\n" command))
 				   (apply my-process* command)))
 			       quiet?)
 		(error 'compile-extension "can't find an installed C compiler")))))

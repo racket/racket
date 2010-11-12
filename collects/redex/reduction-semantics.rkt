@@ -12,6 +12,7 @@
 (provide reduction-relation 
          --> fresh with ;; keywords for reduction-relation
          hole in-hole ;; keywords for term
+         ::= ;; keywords for language definition
          extend-reduction-relation
          reduction-relation?
          
@@ -42,6 +43,7 @@
          test-equal
          test-->>
          test-->
+         test-->>∃ (rename-out [test-->>∃ test-->>E])
          test-predicate
          test-results)
 

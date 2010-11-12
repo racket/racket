@@ -94,10 +94,10 @@
     (k (log (get-number 'ln v))))
   
   (define (printsln k v)
-    (k (printf "~a~n" (get-string 'printsln v))))
+    (k (printf "~a\n" (get-string 'printsln v))))
   
   (define (printnln k v)
-    (k (printf "~a~n" (get-number 'printnln v))))
+    (k (printf "~a\n" (get-number 'printnln v))))
   
   (define (prints k v)
     (k (printf "~a" (get-string 'prints v))))

@@ -16,7 +16,7 @@
                     ((eq? a 'string-ref) 'string-set!)
                     ((eq? a 'vector-ref) 'vector-set!)
                     ((eq? a 'slatex::of) 'slatex::the-setter-for-of)
-                    (else (error "setf ~s ~s is ill-formed~%" l r)))
+                    (else (error "setf ~s ~s is ill-formed\n" l r)))
                   ,@(cdr l)
                   ,r)))))))))
 

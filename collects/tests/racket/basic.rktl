@@ -1836,6 +1836,19 @@
             ((car x) (lambda () x))
             (pair? (x)))))
 
+;; Check shared escape continuation of nested call/cc:
+(let ([ch (make-channel)])
+ (thread
+  (lambda ()
+    (channel-put 
+     ch
+     (call/cc
+      (lambda (escape)
+        (call/cc
+         (lambda (escape1)
+           (escape1 3))))))))
+ (sync ch))
+
 (arity-test call/cc 1 2)
 (arity-test call/ec 1 1)
 (err/rt-test (call/cc 4))

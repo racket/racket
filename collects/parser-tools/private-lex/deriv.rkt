@@ -281,13 +281,13 @@
                (else (loop old-states new-states all-states (cdr cs))))))))))
   
   (define (print-dfa x)
-    (printf "number of states: ~a~n" (dfa-num-states x))
-    (printf "start state: ~a~n" (dfa-start-state x))
-    (printf "final states: ~a~n" (map car (dfa-final-states/actions x)))
+    (printf "number of states: ~a\n" (dfa-num-states x))
+    (printf "start state: ~a\n" (dfa-start-state x))
+    (printf "final states: ~a\n" (map car (dfa-final-states/actions x)))
     (for-each (lambda (trans)
-                (printf "state: ~a~n" (car trans))
+                (printf "state: ~a\n" (car trans))
                 (for-each (lambda (rule)
-                            (printf "  -~a-> ~a~n"
+                            (printf "  -~a-> ~a\n"
                                     (is:integer-set-contents (car rule))
                                     (cdr rule)))
                           (cdr trans)))

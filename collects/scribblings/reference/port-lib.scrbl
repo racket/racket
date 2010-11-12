@@ -9,19 +9,37 @@
 @; ----------------------------------------------------------------------
 
 @section{Port String and List Conversions}
+@(define port-eval (make-base-eval))
+@(interaction-eval #:eval port-eval (require racket/port))
 
 @defproc[(port->list [r (input-port? . -> . any/c) read] [in input-port? (current-input-port)])
          (listof any/c)]{
 Returns a list whose elements are produced by calling @scheme[r]
-on @scheme[in] until it produces @scheme[eof].}
+on @scheme[in] until it produces @scheme[eof].
+
+@examples[#:eval port-eval
+(define (read-number input-port)
+  (define char (read-char input-port))
+  (if (eof-object? char)
+   char
+   (string->number (string char))))
+(port->list read-number (open-input-string "12345"))
+]}
 
 @defproc[(port->string [in input-port? (current-input-port)]) string?]{
 
-Reads all characters from @scheme[in] and returns them as a string.}
+Reads all characters from @scheme[in] and returns them as a string.
+@examples[#:eval port-eval
+(port->string (open-input-string "hello world"))
+]}
 
 @defproc[(port->bytes [in input-port? (current-input-port)]) bytes?]{
 
-Reads all bytes from @scheme[in] and returns them as a @tech{byte string}.}
+Reads all bytes from @scheme[in] and returns them as a @tech{byte string}.
+
+@examples[#:eval port-eval
+(port->bytes (open-input-string "hello world"))
+]}
 
 @defproc[(port->lines [in input-port? (current-input-port)]
                       [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
@@ -30,14 +48,22 @@ Reads all bytes from @scheme[in] and returns them as a @tech{byte string}.}
 Read all characters from @scheme[in], breaking them into lines. The
 @scheme[line-mode] argument is the same as the second argument to
 @scheme[read-line], but the default is @scheme['any] instead of
-@scheme['linefeed].}
+@scheme['linefeed].
+
+@examples[#:eval port-eval
+(port->lines (open-input-string "line 1\nline 2\n  line 3\nline 4"))
+]}
 
 @defproc[(port->bytes-lines [in input-port? (current-input-port)]
                             [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
          (listof bytes?)]{
 
 Like @scheme[port->lines], but reading bytes and collecting them into
-lines like @scheme[read-bytes-line].}
+lines like @scheme[read-bytes-line].
+
+@examples[#:eval port-eval
+(port->bytes-lines (open-input-string "line 1\nline 2\n  line 3\nline 4"))
+]}
 
 @defproc[(display-lines [lst list?]
                         [out output-port? (current-output-port)]
@@ -177,7 +203,7 @@ automatically. The resulting port is thread-safe, but not kill-safe
 (i.e., if a thread is terminated or suspended while using the port,
 the port may become damaged).
 
-The @scheme[read-in], @scheme[close], @scheme[get-lcoation],
+The @scheme[read-in], @scheme[close], @scheme[get-location],
 @scheme[count-lines!], @scheme[init-position], and
 @scheme[buffer-mode] procedures are the same as for
 @scheme[make-input-port].
@@ -191,14 +217,14 @@ not used when a peek request has an associated progress event.
 
 The @scheme[buffering?] argument determines whether @scheme[read-in]
 can be called to read more characters than are immediately demanded by
-the user of the new port. If @scheme[buffer] mode is not @scheme[#f],
+the user of the new port. If @scheme[buffer-mode] is not @scheme[#f],
 then @scheme[buffering?] determines the initial buffer mode, and
 @scheme[buffering?] is enabled after a buffering change only if the
 new mode is @scheme['block].
 
 If @scheme[on-consumed] is not @scheme[#f], it is called when data is
 read from the port, as opposed to merely peeked. The argument to
-@scheme[on-consume] is the result value of the port's reading
+@scheme[on-consumed] is the result value of the port's reading
 procedure, so it can be an integer or any result from
 @scheme[read-in].}
 
@@ -689,3 +715,4 @@ is written completely to one @scheme[out] before moving to the next
 non-blocking ports (e.g., to a file) should be placed first in the
 argument list.}
 
+@close-eval[port-eval]

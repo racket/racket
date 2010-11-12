@@ -2,7 +2,7 @@
 (require racket/class
          unstable/class-iop
          racket/list
-         "gvector.rkt"
+         data/gvector
          "../base.rkt"
          "interfaces.rkt"
          "cache-box.rkt")

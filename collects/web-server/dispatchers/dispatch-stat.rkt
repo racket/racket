@@ -12,7 +12,7 @@
   (round (exact->inexact (/ b 1024 1024))))
 
 (define (print-memory-usage)
-  (printf "Usage: ~aMB (of ~aMB)~n"
+  (printf "Usage: ~aMB (of ~aMB)\n"
           (bytes->mb (current-memory-use (current-server-custodian)))
           (bytes->mb (current-memory-use))))
 

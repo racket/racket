@@ -11,7 +11,7 @@
          (types resolve)
          (only-in (env type-env-structs lexical-env) 
                   env? update-type/lexical env-map env-props replace-props)
-         scheme/contract scheme/match
+         scheme/contract racket/match
          mzlib/trace unstable/debug unstable/struct
          (typecheck tc-metafunctions)
          (for-syntax scheme/base))
@@ -72,7 +72,8 @@
 
 ;; sets the flag box to #f if anything becomes (U)
 (d/c (env+ env fs flag)
-  (env? (listof Filter/c) (box/c #t). -> . env?)
+  (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
+   #:pre (bx) (unbox bx) . ->i . [_ env?])
   (define-values (props atoms) (combine-props fs (env-props env) flag))
   (for/fold ([Γ (replace-props env (append atoms props))]) ([f atoms])
     (match f
@@ -85,4 +86,5 @@
                             x Γ)]
       [_ Γ])))
 
-(p/c [env+ (env? (listof Filter/c) (box/c #t). -> . env?)])
+(p/c [env+ (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
+	    #:pre (bx) (unbox bx) . ->i . [_ env?])])

@@ -16,7 +16,7 @@ differences from v3:
          "private/define-struct.rkt")
 
 (provide (all-from-out "contract/base.rkt")
- (except-out (all-from-out racket/contract/exists) ∃?)
+ (except-out (all-from-out racket/contract/exists) ∀∃?)
  (all-from-out racket/contract/regions))
 
 ;; ======================================================================

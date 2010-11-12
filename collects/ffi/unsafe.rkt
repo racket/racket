@@ -16,7 +16,8 @@
          _float _double _double*
          _bool _pointer _gcpointer _scheme (rename-out [_scheme _racket]) _fpointer function-ptr
          memcpy memmove memset
-         malloc-immobile-cell free-immobile-cell)
+         malloc-immobile-cell free-immobile-cell
+         make-late-weak-box make-late-weak-hasheq)
 
 (define-syntax define*
   (syntax-rules ()
@@ -45,42 +46,40 @@
 (define* _uword _uint16)
 (define* _sword _int16)
 
+;; utility for the next few definitions
+(define (sizeof->3ints c-type)
+  (case (compiler-sizeof c-type)
+    [(2) (values _int16 _uint16 _int16)]
+    [(4) (values _int32 _uint32 _int32)]
+    [(8) (values _int64 _uint64 _int64)]
+    [else (error 'foreign "internal error: bad compiler size for `~s'"
+                 c-type)]))
+
 ;; _short etc is a convenient name for whatever is the compiler's `short'
 ;; (_short is signed)
 (provide _short _ushort _sshort)
-(define-values (_short _ushort _sshort)
-  (case (compiler-sizeof 'short)
-    [(2) (values _int16 _uint16 _int16)]
-    [(4) (values _int32 _uint32 _int32)]
-    [else (error 'foreign "internal error: bad compiler size for `short'")]))
+(define-values (_short _ushort _sshort) (sizeof->3ints 'short))
 
 ;; _int etc is a convenient name for whatever is the compiler's `int'
 ;; (_int is signed)
 (provide _int _uint _sint)
-(define-values (_int _uint _sint)
-  (case (compiler-sizeof 'int)
-    [(2) (values _int16 _uint16 _int16)]
-    [(4) (values _int32 _uint32 _int32)]
-    [(8) (values _int64 _uint64 _int64)]
-    [else (error 'foreign "internal error: bad compiler size for `int'")]))
+(define-values (_int _uint _sint) (sizeof->3ints 'int))
 
 ;; _long etc is a convenient name for whatever is the compiler's `long'
 ;; (_long is signed)
 (provide _long _ulong _slong)
-(define-values (_long _ulong _slong)
-  (case (compiler-sizeof 'long)
-    [(4) (values _int32 _uint32 _int32)]
-    [(8) (values _int64 _uint64 _int64)]
-    [else (error 'foreign "internal error: bad compiler size for `long'")]))
+(define-values (_long _ulong _slong) (sizeof->3ints 'long))
 
 ;; _llong etc is a convenient name for whatever is the compiler's `long long'
 ;; (_llong is signed)
 (provide _llong _ullong _sllong)
-(define-values (_llong _ullong _sllong)
-  (case (compiler-sizeof '(long long))
-    [(4) (values _int32 _uint32 _int32)]
-    [(8) (values _int64 _uint64 _int64)]
-    [else (error 'foreign "internal error: bad compiler size for `llong'")]))
+(define-values (_llong _ullong _sllong) (sizeof->3ints '(long long)))
+
+;; _intptr etc is a convenient name for whatever is the integer
+;; equivalent of the compiler's pointer (see `intptr_t') (_intptr is
+;; signed)
+(provide _intptr _uintptr _sintptr)
+(define-values (_intptr _uintptr _sintptr) (sizeof->3ints '(void *)))
 
 ;; ----------------------------------------------------------------------------
 ;; Getting and setting library objects
@@ -473,9 +472,8 @@
 ;; Also, see below for custom function types.
 
 (provide ->) ; to signal better errors when trying to use this with contracts
-(define-syntax ->
-  (syntax-id-rules ()
-    [_ (raise-syntax-error '-> "should be used only in a _fun context")]))
+(define-syntax (-> stx)
+  (raise-syntax-error '-> "should be used only in a _fun context" stx))
 
 (provide _fun)
 (define-for-syntax _fun-keywords
@@ -502,7 +500,7 @@
        (lambda (k)
          (cond [(assq k ks) => cdr]
                [(assq k _fun-keywords) => cadr]
-               [else (error '_fun "internal error: unknown keyword: ~e" k)]))
+               [else (error '_fun "internal error: unknown keyword: ~.s" k)]))
        (lambda (k-stx v [sub k-stx])
          (let ([k (if (syntax? k-stx) (syntax-e k-stx) k-stx)])
            (cond [(assq k ks)
@@ -560,7 +558,8 @@
     ;; parse keywords
     (let loop ()
       (let ([k (and (pair? xs) (pair? (cdr xs)) (car xs))])
-        (when (keyword? (syntax-e k))
+        (when (and (syntax? k)
+                   (keyword? (syntax-e k)))
           (kwd-set! k (cadr xs))
           (set! xs (cddr xs))
           (loop))))
@@ -1131,21 +1130,26 @@
 ;; ----------------------------------------------------------------------------
 ;; Struct wrappers
 
-(define (compute-offsets types)
-  (let loop ([ts types] [cur 0] [r '()])
-    (if (null? ts)
-      (reverse r)
-      (let* ([algn (ctype-alignof (car ts))]
-             [pos  (+ cur (modulo (- (modulo cur algn)) algn))])
-        (loop (cdr ts)
-              (+ pos (ctype-sizeof (car ts)))
-              (cons pos r))))))
+(define (compute-offsets types alignment)
+  (let ([alignment (if (memq alignment '(#f 1 2 4 8 16))
+                       alignment
+                       #f)])
+    (let loop ([ts types] [cur 0] [r '()])
+      (if (null? ts)
+          (reverse r)
+          (let* ([algn (if alignment 
+                           (min alignment (ctype-alignof (car ts)))
+                           (ctype-alignof (car ts)))]
+                 [pos  (+ cur (modulo (- (modulo cur algn)) algn))])
+            (loop (cdr ts)
+                  (+ pos (ctype-sizeof (car ts)))
+                  (cons pos r)))))))
 
 ;; Simple structs: call this with a list of types, and get a type that marshals
 ;; C structs to/from Scheme lists.
-(define* (_list-struct . types)
-  (let ([stype   (make-cstruct-type types)]
-        [offsets (compute-offsets types)]
+(define* (_list-struct #:alignment [alignment #f] . types)
+  (let ([stype   (make-cstruct-type types #f alignment)]
+        [offsets (compute-offsets types alignment)]
         [len     (length types)])
     (make-ctype stype
       (lambda (vals)
@@ -1178,7 +1182,7 @@
 ;; type.
 (provide define-cstruct)
 (define-syntax (define-cstruct stx)
-  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx)
+  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx alignment-stx)
     (define name
       (cadr (regexp-match #rx"^_(.+)$" (symbol->string (syntax-e _TYPE-stx)))))
     (define slot-names (map (lambda (x) (symbol->string (syntax-e x)))
@@ -1220,7 +1224,8 @@
          [(TYPE-SLOT ...)      (ids (lambda (s) `(,name"-",s)))]
          [(set-TYPE-SLOT! ...) (ids (lambda (s) `("set-",name"-",s"!")))]
          [(offset ...) (generate-temporaries
-                               (ids (lambda (s) `(,s"-offset"))))])
+                               (ids (lambda (s) `(,s"-offset"))))]
+         [alignment            alignment-stx])
       (with-syntax ([get-super-info
                      ;; the 1st-type might be a pointer to this type
                      (if (or (safe-id=? 1st-type #'_TYPE-pointer/null)
@@ -1250,12 +1255,13 @@
                 (define _TYPE-pointer/null _TYPE/null)
                 (let*-values ([(stype ...)  (values slot-type ...)]
                               [(types)      (list stype ...)]
-                              [(offsets)    (compute-offsets types)]
+                              [(alignment-v) alignment]
+                              [(offsets)    (compute-offsets types alignment-v)]
                               [(offset ...) (apply values offsets)])
                   (define all-tags (cons TYPE-tag super-tags))
                   (define _TYPE*
                     ;; c->scheme adjusts all tags
-                    (let* ([cst (make-cstruct-type types)]
+                    (let* ([cst (make-cstruct-type types #f alignment-v)]
                            [t (_cpointer TYPE-tag cst)]
                            [c->s (ctype-c->scheme t)])
                       (make-ctype cst (ctype-scheme->c t)
@@ -1348,15 +1354,60 @@
          (or (regexp-match #rx"^_." (symbol->string (syntax-e id)))
              (raise-syntax-error #f "cstruct name must begin with a `_'"
                                  stx id))))
+  ;; there is something wrong with the syntax, this function will find what it is
+  (define (syntax-error stx)
+    (define (check-rest rest)
+      (syntax-case rest ()
+        [() (void)]
+        [else (raise-syntax-error #f "extra arguments given" rest)]))
+    (define (check-alignment alignment)
+      (syntax-case alignment ()
+        [(#:alignment alignment-expr rest ...)
+         (check-rest #'(rest ...))]
+        [else (raise-syntax-error #f "the last argument can only be #:alignment" alignment)]))
+    (define (check-slots slots)
+      (define (check-slot slot)
+        (syntax-case slot ()
+          [(name field) (void)]
+          [else (raise-syntax-error #f "a field must be a pair of a name and a ctype such as [x _int]" slot)]))
+      ;; check that some slots are given
+      (syntax-case slots ()
+        [([name-id expr-id] ... . rest)
+         (when (and (identifiers? #'(name-id ...))
+                    (identifiers? #'(expr-id ...)))
+           (raise-syntax-error #f "fields must be a parenthesized list of name and a ctype such as ([x _int] [y _int])" slots))])
+      (syntax-case slots ()
+        [((slot ...) rest ...)
+         (begin
+           (for ([slot-stx (in-list (syntax->list #'(slot ...)))])
+             (check-slot slot-stx))
+           (check-alignment #'(rest ...)))]
+        [else (raise-syntax-error #f "fields must be a parenthesized list such as ([x _int] [y _int])" slots)]))
+    (define (check-name stx)
+      (syntax-case stx ()
+        [(_ _TYPE rest ...)
+         (check-slots #'(rest ...))]
+        [else (raise-syntax-error #f "a name must be provided to cstruct" stx)]))
+    (check-name stx))
+
   (syntax-case stx ()
     [(_ _TYPE ([slot slot-type] ...))
      (and (_-identifier? #'_TYPE stx)
           (identifiers? #'(slot ...)))
-     (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...))]
+     (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...) #'#f)]
+    [(_ _TYPE ([slot slot-type] ...) #:alignment alignment-expr)
+     (and (_-identifier? #'_TYPE stx)
+          (identifiers? #'(slot ...)))
+     (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...) #'alignment-expr)]
     [(_ (_TYPE _SUPER) ([slot slot-type] ...))
      (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
      (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
-       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...)))]))
+       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'#f))]
+    [(_ (_TYPE _SUPER) ([slot slot-type] ...) #:alignment alignment-expr)
+     (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
+     (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
+       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'alignment-expr))]
+    [else (syntax-error stx)]))
 
 ;; helper for the above: keep runtime information on structs
 (define cstruct-info
@@ -1461,10 +1512,13 @@
                regexp-replace regexp-replace*)
              (caar rs) str (cadar rs)) (cdr rs)))))
 
-;; A facility for running finalizers using executors.  #%foreign has a C-based
-;; version that uses finalizers, but that leads to calling Scheme from the GC
-;; which is not a good idea.
-(define killer-executor (make-will-executor))
+;; A facility for running finalizers using executors. The "stubborn" kind
+;; of will executor is provided by '#%foreign, and it doesn't get GC'ed if
+;; any finalizers are attached to it (while the normal kind can get GCed
+;; even if a thread that is otherwise inaccessible is blocked on the executor).
+;; Also it registers level-2 finalizers (which are run after non-late weak
+;; boxes are cleared).
+(define killer-executor (make-stubborn-will-executor))
 (define killer-thread #f)
 
 (define* (register-finalizer obj finalizer)
@@ -1475,4 +1529,3 @@
               (thread (lambda ()
                         (let loop () (will-execute killer-executor) (loop))))))))
   (will-register killer-executor obj finalizer))
-

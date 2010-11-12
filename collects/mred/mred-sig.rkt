@@ -1,4 +1,3 @@
-
 #lang scheme/signature
 
 add-color<%>
@@ -38,8 +37,6 @@ control<%>
 current-eventspace
 current-eventspace-has-menu-root?
 current-eventspace-has-standard-menus?
-current-ps-afm-file-paths
-current-ps-cmap-file-paths
 current-ps-setup
 current-text-keymap-initializer
 cursor%
@@ -91,7 +88,8 @@ get-font-from-user
 get-page-setup-from-user
 get-panel-background
 get-ps-setup-from-user
-get-resource
+get-highlight-background-color
+get-highlight-text-color
 get-text-from-user
 get-the-editor-data-class-list
 get-the-snip-class-list
@@ -117,9 +115,13 @@ label->plain-label
 labelled-menu-item<%>
 list-box%
 list-control<%>
+make-bitmap
 make-eventspace
+make-gl-bitmap
 make-gui-empty-namespace
 make-gui-namespace
+make-monochrome-bitmap
+make-screen-bitmap
 map-command-as-meta-key
 menu%
 menu-bar%
@@ -153,6 +155,7 @@ put-file
 queue-callback
 radio-box%
 readable-snip<%>
+read-bitmap
 read-editor-global-footer
 read-editor-global-header
 read-editor-version
@@ -160,7 +163,6 @@ region%
 register-collecting-blit
 scroll-event%
 selectable-menu-item<%>
-send-event
 send-message-to-window
 separator-menu-item%
 sleep/yield
@@ -203,5 +205,4 @@ window<%>
 write-editor-global-footer
 write-editor-global-header
 write-editor-version
-write-resource
 yield

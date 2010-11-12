@@ -28,6 +28,7 @@
   ;; Set pretty-print options:
   (pretty-print-show-inexactness #t)
   (pretty-print-exact-as-decimal #t)
+  (show-sharing (memq 'show-sharing options))
 
   ;; Set print handlers to use print-convert and pretty-write:
   (current-print

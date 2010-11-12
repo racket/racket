@@ -455,8 +455,3 @@
            (h1 ,(number->string (+ fst snd)))))
   
   (serve/dispatch start))
-
-#;(test-serve/dispatch)
-
-(require rackunit/text-ui)
-(run-tests all-dispatch-tests)

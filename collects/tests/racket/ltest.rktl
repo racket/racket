@@ -1,4 +1,4 @@
-(printf "nested loop~n")
+(printf "nested loop\n")
 (time
  (let loop ([n 10000])
   (unless (zero? n)
@@ -7,13 +7,13 @@
 	    (loop (sub1 n))
 	    (loop2 (sub1 m)))))))
 
-(printf "single loop~n")
+(printf "single loop\n")
 (time
  (let loop ([n 100000])
    (unless (zero? n)
 	   (loop (sub1 n)))))
 
-(printf "Y loop~n")
+(printf "Y loop\n")
 (time
  ((lambda (f n) (f f n))
   (lambda (loop n)
@@ -22,27 +22,27 @@
   100000))
 
 
-(printf "let closure recur~n")
+(printf "let closure recur\n")
 (time
  (let ([f (lambda (x) (sub1 x))])
    (let loop ([n 100000])
      (unless (zero? n)
 	     (loop (f n))))))
 
-(printf "direct closure recur~n")
+(printf "direct closure recur\n")
 (time
  (let loop ([n 100000])
    (unless (zero? n)
 	   (loop ((lambda (x) (sub1 x)) n)))))
 
-(printf "direct closure recur if~n")
+(printf "direct closure recur if\n")
 (time
  (let loop ([n 100000])
    (if (zero? n)
        (void)
        (loop ((lambda (x) (sub1 x)) n)))))
 
-(printf "let closure top-level~n")
+(printf "let closure top-level\n")
 (define loop
  (let ([f (lambda (x) (sub1 x))])
    (lambda (n)
@@ -50,7 +50,7 @@
 	     (loop (f n))))))
 (time (loop 100000))
 
-(printf "direct closure top-level~n")
+(printf "direct closure top-level\n")
 (define loop
   (lambda (n)
     (unless (zero? n)

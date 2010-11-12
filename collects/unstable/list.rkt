@@ -11,18 +11,12 @@
            (equal? (car ls) (car rs))
            (list-prefix? (cdr ls) (cdr rs)))))
 
-;; Eli: Is this some `match' obsession syndrom?  The simple definition:
-;;   (define (list-prefix? ls rs)
-;;     (or (null? ls) (and (pair? rs) (equal? (car ls) (car rs))
-;;                         (list-prefix? (cdr ls) (cdr rs)))))
-;;   is shorter, and faster.  As for making this a library function: how
-;;   about a version that removes the equal prefix from two lists and
-;;   returns the tails -- this way you can tell if they're equal, or one
-;;   is a prefix of the other, or if there was any equal prefix at all.
-;;   (Which can be useful for things like making a path relative to
-;;   another path.)  A nice generalization is to make it get two or more
-;;   lists, and return a matching number of values.
-;; ryanc: changed to use Eli's version
+;; Eli: How about a version that removes the equal prefix from two lists
+;; and returns the tails -- this way you can tell if they're equal, or
+;; one is a prefix of the other, or if there was any equal prefix at
+;; all.  (Which can be useful for things like making a path relative to
+;; another path.)  A nice generalization is to make it get two or more
+;; lists, and return a matching number of values.
 
 (define (internal-split-common-prefix as bs same? keep-prefix?)
   (let loop ([as as] [bs bs])
@@ -110,6 +104,16 @@
                  (same? key-item prev))
                (car items)
                (loop (cdr items) (cons key-item sofar)))))))
+
+;; Eli: Just to have a record of this: my complaint about having this
+;; code separately from `remove-duplicates' still stands.  Specifically,
+;; that function decides when to use a hash table to make things faster,
+;; and this code would benefit from the same.  It would be much better
+;; to extend that function so it can be used for both tasks rather than
+;; a new piece of code that does it (only do it in a worse way, re
+;; performance).  Doing this can also benefit `remove-duplicates' -- for
+;; example, make it accept a container so that users can choose how
+;; when/if to use a hash table.
 
 ;; sam added from carl
 

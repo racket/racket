@@ -95,7 +95,7 @@
                     (label "Check3")))
 
 ; get the streams from the check boxes
-(printf "callbacks->args-evts:~n")
+(printf "callbacks->args-evts:\n")
 (send my-cb1 get-focus-events)
 (send my-cb2 get-focus-events)
 (send my-cb3 get-focus-events)
@@ -143,7 +143,7 @@
                        (map-e car es)))
                     (label "Check4")))
 
-(printf "mixin-merge-e:~n")
+(printf "mixin-merge-e:\n")
 
 (send my-cb4 get-focus-events) ; focus-events
 (send my-cb4 get-key-events) ; key-events

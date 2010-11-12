@@ -164,9 +164,10 @@ The special key symbols attempt to capture useful keys that have no
 If a suitable special key symbol or ASCII representation is not
  available, @scheme[#\nul] (the NUL character) is reported.
 
-Under X, a @scheme['wheel-up] or @scheme['wheel-down] event may be sent
- to a window other than the one with the keyboard focus, because X
- generates wheel events based on the location of the mouse pointer.
+A @scheme['wheel-up] or @scheme['wheel-down] event may be sent to a
+ window other than the one with the keyboard focus, because some
+ platforms generate wheel events based on the location of the mouse
+ pointer instead of the keyboard focus.
 
 Under Windows, when the Control key is pressed without Alt, the key
  code for ASCII characters is downcased, roughly cancelling the effect

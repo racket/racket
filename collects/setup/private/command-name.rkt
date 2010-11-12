@@ -14,7 +14,8 @@
           (let-values ([(base name dir?) (split-path p)])
             (if (current-command-name)
                 (values (format "~a ~a" name (current-command-name))
-                        (program+command-name))
+                        (program+command-name)
+                        #t)
                 ;; Hack for bootstrapping, if the program name is "raco",
                 ;; then claim to be the "setup" command:
                 ;; if the program name is "racket", assume that there's a "racket -l setup"

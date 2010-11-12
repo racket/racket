@@ -137,59 +137,6 @@ einer @scheme[#t], ergibt auch der or-Ausdruck @scheme[#t]; wenn alle Operanden 
 ergeben, ergibt auch der @scheme[or]-Ausdruck @scheme[#f].
 }
 
-@section{@scheme[let], @scheme[letrec] und @scheme[let*]}
-
-@defform[(let ((id expr) ...) expr)]{
-
-Bei einem @scheme[let]-Ausdruck werden zunächst die @scheme[expr]s aus
-den @scheme[(id expr)]-Paaren ausgewertet. Ihre Werte werden dann im
-Rumpf-@scheme[expr] für die Namen @scheme[id] eingesetzt. Dabei können
-sich die Ausdrücke nicht auf die Namen beziehen.
-
-@schemeblock[
-(define a 3)
-(let ((a 16)
-      (b a))
-  (+ b a))
-=> 19]
-
-Das Vorkommen von @scheme[a] in der Bindung von @scheme[b] bezieht
-sich also auf das @scheme[a] aus der Definition, nicht das @scheme[a]
-aus dem @scheme[let]-Ausdruck.
-}
-
-@defform[(letrec ((id expr) ...) expr)]{
-Ein @scheme[letrec]-Ausdruck ist
-ähnlich zum entsprechenden @scheme[let]-Ausdruck, mit dem Unterschied, daß sich
-die @scheme[expr]s aus den Bindungen auf die gebundenen Namen beziehen
-dürfen.}
-
-@defform[(let* ((id expr) ...) expr)]{
-Ein @scheme[let*]-Ausdruck ist ähnlich zum entsprechenden
-@scheme[let]-Ausdruck, mit dem Unterschied, daß sich die @scheme[expr]s
-aus den Bindungen auf die Namen beziehen dürfen, die jeweils vor dem
-@scheme[expr] gebunden wurden. Beispiel:
-
-@schemeblock[
-(define a 3)
-(let* ((a 16)
-       (b a))
-  (+ b a))
-=> 32]
-
-Das Vorkommen von @scheme[a] in der Bindung von @scheme[b] bezieht
-sich also auf das @scheme[a] aus dem @scheme[let*]-Ausdruck, nicht das
-@scheme[a] aus der globalen Definition.
-}
-
-@section{@scheme[begin]}
-
-@defform[(begin expr expr ...)]{
-Bei der Auswertung eines @scheme[begin]-Ausdrucks werden nacheinander
-die Operanden ausgewertet. Der Wert des letzten Ausdrucks wird der
-Wert des @scheme[begin]-Ausdrucks.
-}
-
 @section{Signaturen}
 
 Signaturen können statt der Verträge aus dem Buch geschrieben werden:
@@ -201,10 +148,12 @@ und meldet etwaige Verletzungen.
 Diese Form liefert die Signatur mit der Notation @scheme[sig].
 }
 
-@subsection{Signaturerklärung}
+@subsection{Signaturdeklaration}
 @defform[(: id sig)]{
 Diese Form erklärt @scheme[sig] zur gültigen Signatur für @scheme[id].
 }
+
+@subsection{Eingebaute Signaturen}
 
 @defidform[number]{
 Signatur für beliebige Zahlen.
@@ -246,6 +195,9 @@ Signatur für Zeichenketten.
 Signatur für die leere Liste.
 }
 
+@defidform[any]{
+Signatur, die auf alle Werte gültig ist.}
+
 @defform/none[signature]{
 Signatur für Signaturen.}
 
@@ -281,12 +233,6 @@ Prozedur ist.  Er erklärt außerdem, daß die Signaturen vor dem @scheme[->]
 für die Argumente der Prozedur gelten und die Signatur nach dem @scheme[->]
 für den Rückgabewert.
 }}
-}
-
-@subsection{@scheme[list]} 
-@defform[(list sig)]{
-Diese Signatur ist dann für einen Wert gültig, wenn dieser eine Liste ist,
-für dessen Elemente @scheme[sig] gültig ist.
 }
 
 @subsection[#:tag "signature-variable"]{Signatur-Variablen} 
@@ -345,9 +291,8 @@ Dieser Testfall überprüft experimentell, ob die @tech{Eigenschaft}
 @emph{Wichtig:} @scheme[check-property] funktioniert nur für
 Eigenschaften, bei denen aus den Signaturen sinnvoll Werte generiert
 werden können.  Dies ist für die meisten eingebauten Signaturen der
-Fall, aber nicht für Signaturvariablen und Signaturen, die mit @scheme[predicate],
-@scheme[property] oder @scheme[define-record-procedures] definiert
-wurden.  In diesen Fällen erzeugt @scheme[check-property] eine Fehlermeldung.
+Fall, aber nicht für Signaturvariablen und Signaturen, die mit @scheme[predicate]
+erzeugt wurden.  In diesen Fällen erzeugt @scheme[check-property] eine Fehlermeldung.
 }
 
 @section{Parametrische Record-Typ-Definitionen}

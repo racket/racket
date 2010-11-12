@@ -1,8 +1,8 @@
-#lang at-exp s-exp "../common.rkt"
+#lang meta/web
 
 ;; This stub is to generate fancy directory listings with the Racket style
 
-(require (prefix-in dnld: (only-in "../download/shared.rkt" the-resources)))
+(require (prefix-in dnld: (only-in "../download/resources.rkt" the-resources)))
 
 (define-context "stubs/dirlist" #:resources dnld:the-resources)
 

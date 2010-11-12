@@ -1,0 +1,38 @@
+#lang honu/core
+
+require (forSyntax "with.honu");
+require (forSyntax "function.honu");
+require (forSyntax "patterns.honu");
+require "keywords.honu";
+
+provide print;
+provide then;
+
+macro print ()
+{ _ (value:expression); } { syntax(display(value_result); newline();); }
+{ _ value:expression_comma ... ; } { syntax({display(value_result);} ... newline()); }
+
+provide check_expect;
+provide expect;
+keywords expect;
+macro check_expect (expect) { _ check:expression expect expected:expression ; }
+{ 
+  withSyntax [check_raw syntax_to_string(syntax(check);)]{
+   syntax({checked = check_result;
+           out = expected_result;
+           if (checked != out){
+             // print "Expected ", out, " but got ", checked, " (", check_raw, ")";
+             print "Expected ", out, " but got ", checked, " (", check_raw, ")";
+           }});
+   };
+}
+
+provide condition;
+macro condition (){ _ clause:condition_clause rest ... ;}
+{ syntax(if (clause_condition_result) {
+           clause_out_result
+         } else {
+           condition rest ... ;
+         }
+         ); }
+{ _ ; } { syntax(1;); }

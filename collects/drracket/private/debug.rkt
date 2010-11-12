@@ -925,7 +925,7 @@ profile todo:
   
   (define current-test-coverage-info (make-thread-cell #f))
   
-  (define (initialize-test-coverage-point key expr)
+  (define (initialize-test-coverage-point expr)
     (unless (hash? (thread-cell-ref current-test-coverage-info))
       (let ([rep (drracket:rep:current-rep)])
         (when rep
@@ -938,14 +938,14 @@ profile todo:
       (when (hash? ht)
         ;; if rep isn't around, we don't do test coverage...
         ;; this can happen when check syntax expands, for example
-        (hash-set! ht key (mcons #f expr)))))
+        (hash-set! ht expr #;(box #f) (mcons #f #f)))))
   
-  (define (test-covered key)
+  (define (test-covered expr)
     (let ([ht (thread-cell-ref current-test-coverage-info)])
       (and (hash? ht) ;; as in the `when' test in `initialize-test-coverage-point'
-           (let ([v (hash-ref ht key #f)])
-             (and v
-                  (λ () (set-mcar! v #t)))))))
+           (let ([v (hash-ref ht expr #f)])
+             ;; (and v (λ () (set-box! v #t)))
+             (and v (with-syntax ([v v]) #'(#%plain-app set-mcar! v #t)))))))
   
   (define test-coverage-interactions-text<%>
     (interface ()
@@ -1075,7 +1075,6 @@ profile todo:
                [locked-ht (make-hasheq)]
                [already-frozen-ht (make-hasheq)]
                [actions-ht (make-hash)]
-               [on/syntaxes (hash-map ht (λ (_ pr) pr))]
                
                ;; can-annotate : (listof (list boolean srcloc))
                ;; boolean is #t => code was run
@@ -1083,17 +1082,17 @@ profile todo:
                ;; remove those that cannot be annotated
                [can-annotate
                 (filter values
-                        (map (λ (pr)
-                               (let ([stx (mcdr pr)])
-                                 (and (syntax? stx)
-                                      (let ([src (syntax-source stx)]
-                                            [pos (syntax-position stx)]
-                                            [span (syntax-span stx)])
-                                        (and pos
-                                             span
-                                             (send (get-defs) port-name-matches? src)
-                                             (list (mcar pr) (make-srcloc (get-defs) #f #f pos span)))))))
-                             on/syntaxes))]
+                        (hash-map ht
+                          (λ (stx covered?)
+                            (and (syntax? stx)
+                                 (let ([src (syntax-source stx)]
+                                       [pos (syntax-position stx)]
+                                       [span (syntax-span stx)])
+                                   (and pos
+                                        span
+                                        (send (get-defs) port-name-matches? src)
+                                        (list (mcar covered?)
+                                              (make-srcloc (get-defs) #f #f pos span))))))))]
                
                ;; filtered : (listof (list boolean srcloc))
                ;; remove redundant expressions

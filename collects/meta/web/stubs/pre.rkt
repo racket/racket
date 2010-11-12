@@ -1,4 +1,4 @@
-#lang at-exp s-exp "../common.rkt"
+#lang meta/web
 
 (require "git.rkt")
 
@@ -25,7 +25,7 @@
 (provide index)
 (define index
   @page[#:file "" #:window-title "Prebuilt materials"]{
-    @p{This directory contains Racket material that is built daily from the
+    @p{This directory contains Racket materials that are built daily from the
        development repository.  See below for instructions.}
     @hr
     @content-hole
@@ -55,10 +55,10 @@
     @~
       It is also easy to setup a script that will automate the process of
       retrieving the @tt{tgz} file, unpacking and installing it.  This is
-      explained in more details in @a[href: "script.html"]{scripts}.  In
-      addition to being convenient for updating your tree, it can be used by an
-      automatic job scheduler (for example, a cron job on Unix) to make tree
-      that is always updated.}
+      explained in more details in @pre-scripts{scripts}.  In addition to being
+      convenient for updating your tree, it can be used by an automatic job
+      scheduler (for example, a cron job on Unix) to make tree that is always
+      updated.}
     @hr
     @version-hole})
 

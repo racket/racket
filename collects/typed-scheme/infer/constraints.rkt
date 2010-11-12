@@ -6,7 +6,7 @@
 	 (utils tc-utils)
 	 unstable/sequence unstable/hash
          "signatures.rkt" "constraint-structs.rkt"
-         scheme/match)
+         racket/match)
 
 (import restrict^ dmap^)
 (export constraints^)

@@ -91,9 +91,9 @@
                     (hash-table-put! ht x #t)))
                 (map cdr (apply append (vector->list table))))
                (length (hash-table-map ht void)))))
-        (printf "~a states, ~a grammar symbols, ~a hash-table entries, ~a reduces~n"
+        (printf "~a states, ~a grammar symbols, ~a hash-table entries, ~a reduces\n"
                 num-states num-gram-syms num-ht-entries num-reduces)
-        (printf "~a -- ~aKB, previously ~aKB~n"
+        (printf "~a -- ~aKB, previously ~aKB\n"
                 (/ (+ 2 num-states
                       (* 4 num-states) (* 2 1.5 num-ht-entries)
                       (* 5 num-reduces)) 256.0)

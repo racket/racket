@@ -101,36 +101,47 @@
 			       parent callback init-value
 			       style #f 
 			       font))
+      (private
+        [prep-popup
+         (lambda ()
+           (send menu on-demand)
+           (let ([items (send menu get-items)]
+                 [wx (mred->wx this)])
+             (send wx clear-combo-items)
+             (for-each 
+              (lambda (item)
+                (unless (item . is-a? . separator-menu-item%)
+                  (send wx append-combo-item
+                        (send item get-plain-label)
+                        (lambda ()
+                          (send item command 
+                                (make-object wx:control-event% 'menu-popdown))))))
+              items)))])
       (public
-	[on-popup (lambda (e)
-		    (let-values ([(w h) (get-size)]
-				 [(cw) (send (mred->wx this) get-canvas-width)])
-		      (send menu set-min-width cw)
-		      (popup-menu menu (- w cw) h)))]
+	[on-popup (lambda (e) (void))]
 	[get-menu (lambda () menu)]
 	[append (lambda (item)
 		  (check-label-string '(method combo-field% append) item)
-		  (make-object menu-item% item menu 
-			       (lambda (i e)
-				 (focus)
-				 (set-value item)
-				 (let ([e (get-editor)])
-				   (send e set-position 0 (send e last-position)))
-				 (send (as-entry (lambda () (mred->wx this)))
-				       command
-				       (make-object wx:control-event% 'text-field)))))])
-      (override
-	[on-subwindow-event (lambda (w e)
-			      (and (send e button-down?)
-				   (let-values ([(cw) (send (mred->wx this) get-canvas-width)])
-				     (and ((send e get-x) . >= . (- cw side-combo-width))
-					  (begin
-					    (on-popup e)
-					    #t)))))])
+                  (make-object menu-item% item menu 
+                               (lambda (i e)
+                                 (handle-selected item))))])
+      (private
+        [handle-selected (lambda (item)
+                           (focus)
+                           (set-value item)
+                           (let ([e (get-editor)])
+                             (send e set-position 0 (send e last-position)))
+                           (send (as-entry (lambda () (mred->wx this)))
+                                 command
+                                 (make-object wx:control-event% 'text-field)))])
       (private-field
        [menu (new popup-menu% [font font])])
       (sequence
-	(for-each (lambda (item) 
-		    (append item))
-		  choices)
-	(super-init label parent callback init-value (list* combo-flag 'single style))))))
+	(super-init label parent callback init-value (list* combo-flag 'single style))
+        (send (mred->wx this) 
+              set-on-popup
+              (lambda ()
+                (on-popup (make-object wx:control-event% 'menu-popdown))
+                (prep-popup)))
+	(for-each (lambda (item) (append item))
+		  choices)))))

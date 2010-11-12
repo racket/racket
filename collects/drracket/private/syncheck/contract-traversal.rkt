@@ -9,7 +9,6 @@
 (define (annotate-contracts stx low-binders binding-inits)
   (define boundary-start-map (make-hash))
   (define internal-start-map (make-hash))
-  (define arrow-map (make-hash))
   (define domain-map (make-hash))
   (define range-map (make-hash))
   
@@ -23,10 +22,9 @@
     (add-to-map stx 'racket/contract:internal-contract internal-start-map)
     (add-to-map stx 'racket/contract:negative-position domain-map)
     (add-to-map stx 'racket/contract:positive-position range-map)
-    (add-to-map stx 'racket/contract:function-contract arrow-map)
     (syntax-case stx ()
       [(a . b) (loop #'a) (loop #'b)]
-      [else (void)]))
+      [_ (void)]))
   
   ;; fill in the coloring-plans table for boundary contracts
   (for ([(start-k start-val) (in-hash boundary-start-map)])
@@ -34,7 +32,7 @@
       (do-contract-traversal start-stx #t
                              my-coloring-plans client-coloring-plans
                              low-binders binding-inits
-                             arrow-map domain-map range-map
+                             domain-map range-map
                              #t)))
   
   ;; fill in the coloring-plans table for internal contracts
@@ -43,7 +41,7 @@
       (do-contract-traversal start-stx #f
                              my-coloring-plans client-coloring-plans
                              low-binders binding-inits
-                             arrow-map domain-map range-map
+                             domain-map range-map
                              #f)))
   
   ;; enact the coloring plans
@@ -63,7 +61,7 @@
 
 (define (do-contract-traversal start-stx boundary-contract?
                                my-coloring-plans client-coloring-plans
-                               low-binders binding-inits arrow-map domain-map range-map polarity)
+                               low-binders binding-inits domain-map range-map polarity)
   (let ploop ([stx start-stx]
               [polarity polarity])
     
@@ -89,11 +87,11 @@
                 (for ((stx (in-list (hash-ref domain-map id '()))))
                   (do-contract-traversal stx boundary-contract?
                                          my-coloring-plans client-coloring-plans
-                                         low-binders binding-inits arrow-map domain-map range-map (not polarity)))
+                                         low-binders binding-inits domain-map range-map (not polarity)))
                 (for ((stx (in-list (hash-ref range-map id '()))))
                   (do-contract-traversal stx boundary-contract?
                                          my-coloring-plans client-coloring-plans
-                                         low-binders binding-inits arrow-map domain-map range-map polarity)))]))]
+                                         low-binders binding-inits domain-map range-map polarity)))]))]
         
         [else
          ;; we didn't find a contract, but we might find one in a subexpression
@@ -128,6 +126,14 @@
                           (for ((rhs (in-list (module-identifier-mapping-get binding-inits binder))))
                             (ploop rhs polarity))))
                       (call-give-up))))]
+           [const
+            (let ([val (syntax-e #'const)])
+              (or (boolean? val)
+                  (number? val)
+                  (string? val)
+                  (char? val)
+                  (regexp? val)))
+            (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
            [(#%plain-lambda (id) expr ...)
             (identifier? #'id)
             (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
@@ -151,10 +157,10 @@
             ;; on one side will not pollute the other side.
             (do-contract-traversal #'b boundary-contract?
                                    my-coloring-plans client-coloring-plans
-                                   low-binders binding-inits arrow-map domain-map range-map polarity)
+                                   low-binders binding-inits domain-map range-map polarity)
             (do-contract-traversal #'c boundary-contract?
                                    my-coloring-plans client-coloring-plans
-                                   low-binders binding-inits arrow-map domain-map range-map polarity)]
+                                   low-binders binding-inits domain-map range-map polarity)]
            ;; [(begin expr ...) (void)]
            [(begin0 fst rst ...)
             (ploop #'fst polarity)]
@@ -165,7 +171,7 @@
            [(set! a b)
             (call-give-up)]
            [(quote stuff)
-            (call-give-up)]
+            (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
            [(quote-syntax stuff)
             (call-give-up)]
            [(with-continuation-mark a b c)
@@ -175,7 +181,12 @@
            [(#%top . id)
             (call-give-up)]
            [(#%variable-reference ignored ...)
-            (call-give-up)])]))))
+            (call-give-up)]
+           [_ 
+            (begin
+              #;(error 'contract-traversal.rkt "unknown thing: ~s\n" stx)
+              (call-give-up))
+              ])]))))
 
 ;; add-to-map : syntax any hash[any -> (listof stx)]
 ;; looks at stx's property prop and updates map,

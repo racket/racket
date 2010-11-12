@@ -8,7 +8,7 @@
 (define (format-stack-trace trace)
   `(pre
     ,@(for/list ([item (in-list trace)])
-        (format "~a at:~n  ~a~n"
+        (format "~a at:\n  ~a\n"
                 (if (car item)
                     (car item)
                     "<unknown procedure>")

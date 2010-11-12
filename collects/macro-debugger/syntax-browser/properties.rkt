@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/gui
+         racket/gui/base
          framework
          unstable/class-iop
          "interfaces.rkt"
@@ -59,17 +59,12 @@
 
     ;; refresh : -> void
     (define/public (refresh)
-      (send* text
-        (lock #f)
-        (begin-edit-sequence #f)
-        (erase))
-      (if (syntax? selected-syntax)
-          (refresh/mode mode)
-          (refresh/mode #f))
-      (send* text
-        (end-edit-sequence)
-        (lock #t)
-        (scroll-to-position 0)))
+      (with-unlock text
+        (send text erase)
+        (if (syntax? selected-syntax)
+            (refresh/mode mode)
+            (refresh/mode #f)))
+      (send text scroll-to-position 0))
 
     ;; refresh/mode : symbol -> void
     (define/public (refresh/mode mode)
@@ -255,19 +250,19 @@
 
     ;; display-kv : any any -> void
     (define/private (display-kv key value)
-      (display (format "~a~n" key) key-sd)
-      (display (format "~s~n~n" value) #f))
+      (display (format "~a\n" key) key-sd)
+      (display (format "~s\n\n" value) #f))
 
     ;; display-subkv : any any -> void
     (define/public (display-subkv k v)
       (display (format "~a: " k) sub-key-sd)
-      (display (format "~a~n" v) #f))
+      (display (format "~a\n" v) #f))
 
     (define/public (display-subkv/value k v)
       (display-subkv k v)
       #;
       (begin
-        (display (format "~a:~n" k) sub-key-sd)
+        (display (format "~a:\n" k) sub-key-sd)
         (let* ([value-text (new text:standard-style-list% (auto-wrap #t))]
                [value-snip (new editor-snip% (editor value-text))]
                [value-port (make-text-port value-text)])

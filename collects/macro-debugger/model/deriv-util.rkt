@@ -1,7 +1,5 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         (for-syntax racket/private/struct-info)
-         racket/list
          racket/match
          unstable/struct
          "deriv.rkt")

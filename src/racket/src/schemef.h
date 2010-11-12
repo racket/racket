@@ -99,6 +99,8 @@ MZ_EXTERN Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
 MZ_EXTERN void scheme_kill_thread(Scheme_Thread *p);
 MZ_EXTERN void scheme_break_thread(Scheme_Thread *p);
 MZ_EXTERN void scheme_break_main_thread();
+MZ_EXTERN void scheme_break_main_thread_at(void *);
+MZ_EXTERN void *scheme_get_main_thread_break_handle();
 MZ_EXTERN void scheme_set_break_main_target(Scheme_Thread *p);
 
 MZ_EXTERN void scheme_thread_block(float sleep_time);
@@ -400,6 +402,8 @@ MZ_EXTERN char *scheme_strdup_eternal(const char *str);
 MZ_EXTERN void *scheme_malloc_fail_ok(void *(*f)(size_t), size_t);
 
 #ifndef MZ_PRECISE_GC
+MZ_EXTERN void scheme_late_weak_reference(void **p);
+MZ_EXTERN void scheme_late_weak_reference_indirect(void **p, void *v);
 MZ_EXTERN void scheme_weak_reference(void **p);
 MZ_EXTERN void scheme_weak_reference_indirect(void **p, void *v);
 MZ_EXTERN void scheme_unweak_reference(void **p);
@@ -434,6 +438,9 @@ MZ_EXTERN void *GC_fixup_self(void *p);
 
 MZ_EXTERN void **scheme_malloc_immobile_box(void *p);
 MZ_EXTERN void scheme_free_immobile_box(void **b);
+
+MZ_EXTERN Scheme_Object *scheme_add_gc_callback(Scheme_Object *pre, Scheme_Object *post);
+MZ_EXTERN void scheme_remove_gc_callback(Scheme_Object *key);
 
 /*========================================================================*/
 /*                             hash tables                                */
@@ -1043,6 +1050,7 @@ XFORM_NONGCING MZ_EXTERN int scheme_eq(Scheme_Object *obj1, Scheme_Object *obj2)
 XFORM_NONGCING MZ_EXTERN int scheme_eqv(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_equal(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2);
+MZ_EXTERN int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2);
 
 #ifdef MZ_PRECISE_GC
 XFORM_NONGCING MZ_EXTERN long scheme_hash_key(Scheme_Object *o);
@@ -1087,10 +1095,13 @@ MZ_EXTERN Scheme_Object *scheme_unbox(Scheme_Object *obj);
 MZ_EXTERN void scheme_set_box(Scheme_Object *b, Scheme_Object *v);
 
 MZ_EXTERN Scheme_Object *scheme_make_weak_box(Scheme_Object *v);
+MZ_EXTERN Scheme_Object *scheme_make_late_weak_box(Scheme_Object *v);
 
 MZ_EXTERN Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object *val);
 MZ_EXTERN Scheme_Object *scheme_ephemeron_value(Scheme_Object *o);
 MZ_EXTERN Scheme_Object *scheme_ephemeron_key(Scheme_Object *o);
+
+MZ_EXTERN Scheme_Object *scheme_make_stubborn_will_executor();
 
 MZ_EXTERN Scheme_Object *scheme_load(const char *file);
 MZ_EXTERN Scheme_Object *scheme_load_extension(const char *filename, Scheme_Env *env);
@@ -1124,4 +1135,5 @@ MZ_EXTERN int scheme_char_strlen(const mzchar *s);
 
 MZ_EXTERN Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx);
 
+MZ_EXTERN Scheme_Object *scheme_get_place_table(void);
 MZ_EXTERN void *scheme_register_process_global(const char *key, void *val);

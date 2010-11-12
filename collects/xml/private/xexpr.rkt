@@ -50,7 +50,7 @@
                           (raise-blame-error
                            blame
                            val
-                           "Not an Xexpr. ~a~n~nContext:~n~a"
+                           "Not an Xexpr. ~a\n\nContext:\n~a"
                            (exn-message exn)
                            (pretty-format val)))])
          (validate-xexpr val)
@@ -121,7 +121,7 @@
                  (true))
             (false
              (make-exn:invalid-xexpr
-              (format "Expected a pair, given ~a" attr)
+              (format "Expected an attribute pair, given ~s" attr)
               (current-continuation-marks)
               attr))))))
 
@@ -134,15 +134,15 @@
                   (permissive-xexprs))
               (true)
               (false (make-exn:invalid-xexpr
-                      (format "Expected a string, given ~a" (cadr attr))
+                      (format "Expected an attribute value string, given ~v" (cadr attr))
                       (current-continuation-marks)
                       (cadr attr))))
           (false (make-exn:invalid-xexpr
-                  (format "Expected an attribute value string for attribute ~a" attr)
+                  (format "Expected an attribute value string for attribute ~s, given nothing" attr)
                   (current-continuation-marks)
                   attr)))
       (false (make-exn:invalid-xexpr
-              (format "Expected a symbol, given ~a" (car attr))
+              (format "Expected an attribute symbol, given ~s" (car attr))
               (current-continuation-marks)
               (cadr attr)))))
 

@@ -125,7 +125,7 @@
   (write-docs))
 
 (define (write-docs)
-  (printf "writing to ~a~n" docs-menus.ss-filename)
+  (printf "writing to ~a\n" docs-menus.ss-filename)
   (call-with-output-file docs-menus.ss-filename
     (λ (port)
       (define (pop-out sexp)
@@ -203,7 +203,7 @@
     #:exists 'truncate))
 
 (define (write-standard-menus.rkt)
-  (printf "writing to ~a~n" standard-menus.rkt-filename)  
+  (printf "writing to ~a\n" standard-menus.rkt-filename)  
 
   (call-with-output-file standard-menus.rkt-filename
     (λ (port)

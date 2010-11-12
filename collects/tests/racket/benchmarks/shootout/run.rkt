@@ -138,9 +138,9 @@
                       (vector-ref (current-command-line-arguments) 1))]
          [bench   (vector-ref (current-command-line-arguments) 0)]
          [prog    (cond
-                    ((string=? version "racket")                  (format "~a.rkt" bench))
-                    ((string=? version "typed-scheme")            (format "typed/~a-non-optimizing.rkt" bench))
-                    ((string=? version "typed-scheme-optimizing") (format "typed/~a-optimizing.rkt" bench))
+                    ((string=? version "racket")                      (format "~a.rkt" bench))
+                    ((string=? version "typed-racket-non-optimizing") (format "typed/~a-non-optimizing.rkt" bench))
+                    ((string=? version "typed-racket")                (format "typed/~a-optimizing.rkt" bench))
                     (else (error 'run "unknown version ~a" version)))])
     (let ([m (assoc bench input-map)])
       (unless m

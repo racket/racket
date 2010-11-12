@@ -1,12 +1,15 @@
 #lang racket/base
 (require racket/promise
+         syntax/modcode
+         syntax/modresolve
          parser-tools/lex
-         "deriv.rkt"
          "deriv-parser.rkt"
          "deriv-tokens.rkt")
 
 (provide trace
          trace*
+         trace-module
+         trace*-module
          trace/result
          trace-verbose?
          events->token-generator
@@ -26,6 +29,11 @@
   (let-values ([(result events derivp) (trace* stx expander)])
     (force derivp)))
 
+;; trace-module : module-path -> Deriv
+(define (trace-module module-path)
+  (let-values ([(result events derivp) (trace*-module module-path)])
+    (force derivp)))
+
 ;; trace/result : stx -> stx/exn Deriv
 (define (trace/result stx [expander expand/compile-time-evals])
   (let-values ([(result events derivp) (trace* stx expander)])
@@ -40,6 +48,13 @@
             (delay (parse-derivation
                     (events->token-generator events))))))
 
+;; trace*-module : module-path -> stx/exn (listof event) (promiseof Deriv)
+(define (trace*-module module-path)
+  (get-module-code (resolve-module-path module-path #f)
+                   #:choose (lambda _ 'src)
+                   #:compile (lambda (stx)
+                               (trace* stx expand))))
+
 ;; events->token-generator : (list-of event) -> (-> token)
 (define (events->token-generator events)
   (let ([pos 1])
@@ -50,7 +65,7 @@
              [val (cdr sig+val)]
              [t (tokenize sig val pos)])
         (when (trace-verbose?)
-          (printf "~s: ~s~n" pos
+          (printf "~s: ~s\n" pos
                   (token-name (position-token-token t))))
         (set! pos (add1 pos))
         t))))

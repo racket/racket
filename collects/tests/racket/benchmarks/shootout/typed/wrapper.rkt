@@ -13,7 +13,7 @@
 			       (caar (regexp-match-positions
 				      (if opt? opt-re non-opt-re)
 				      name)))]
-	 [option (if opt? (list #'#:optimize) '())]
+	 [option (if opt? '() (list #'#:no-optimize))]
 	 [fname (format "~a.rktl" base-name)])
     #`(ts:#%module-begin #,@option 
                          (define OPTIMIZED? #,opt?)

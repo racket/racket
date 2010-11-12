@@ -4312,6 +4312,7 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
     config = scheme_extend_config(config, MZCONFIG_CAN_READ_INFIX_DOT, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_CAN_READ_QUASI, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_READTABLE, scheme_false);
   }

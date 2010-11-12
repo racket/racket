@@ -1,5 +1,6 @@
 (load-relative "loadtest.rktl")
 (Section 'place-channel)
+(require racket/flonum)
 
 (define (splat txt fn)
   (call-with-output-file fn #:exists 'replace
@@ -8,9 +9,12 @@
 
 (splat
 #<<END
-(module pct1 scheme
+(module pct1 racket/base
   (provide place-main)
-
+  (require racket/flonum
+           racket/place
+           racket/list
+           (for-syntax racket/base))
 
   (define-syntax (pcrs stx)
     (syntax-case stx ()
@@ -30,9 +34,23 @@
       (cons (car x) 'b)
       (list (car x) 'b (cadr x))
       (vector (vector-ref x 0) 'b (vector-ref x 1))
-      #s((abuilding 1 building 2) 6 'utah 'no))
+      #s((abuilding 1 building 2) 6 'utah 'no)
+      `(,x))
+
     (define pc1 (place-channel-recv ch))
-    (pcrss pc1 (string-append x "-ok")))
+    (pcrss pc1 (string-append x "-ok"))
+
+    (define pc3 (first (place-channel-recv ch)))
+    (pcrss pc3 (string-append x "-ok3"))
+
+    (pcrss ch (begin (flvector-set! x 2 5.0) "Ready1"))
+    (pcrss ch (begin (flvector-set! x 2 6.0) "Ready2"))
+    (pcrss ch (begin (bytes-set! x 2 67) "Ready3"))
+    (pcrss ch (begin (bytes-set! x 2 67) "Ready4"))
+
+    (define pc5 (place-channel-recv ch))
+    (place-channel-send pc5 "Ready5")
+  )
 )
 END
 "pct1.ss")
@@ -45,6 +63,11 @@ END
 (define-struct (house building) (occupied ) #:prefab)
 (define h1 (make-house 5 'factory 'yes))
 
+(define flv1 (shared-flvector 0.0 1.0 2.0 3.0))
+(define flv2 (make-shared-flvector 4 3.0))
+
+(define b1 (shared-bytes 66 66 66 66))
+(define b2 (make-shared-bytes 4 65))
 
 (let ([pl (place "pct1.ss" 'place-main)])
   (pc-send-recv-test pl
@@ -53,10 +76,32 @@ END
     ((cons 'a 'a) (cons 'a 'b))
     ((list 'a 'a) (list 'a 'b 'a))
     (#(a a) #(a b a))
-    (h1 #s((abuilding 1 building 2) 6 'utah 'no)))
+    (h1 #s((abuilding 1 building 2) 6 'utah 'no))
+    ('(printf "Hello") '((printf "Hello"))))
+
   (define-values (pc1 pc2) (place-channel))
   (place-channel-send pl pc2)
   (test "Testing-ok" place-channel-send/recv pc1 "Testing")
+
+  (define-values (pc3 pc4) (place-channel))
+  (place-channel-send pl (list pc4))
+  (test "Testing-ok3" place-channel-send/recv pc3 "Testing")
+
+  (test "Ready1" place-channel-send/recv pl flv1)
+  (test 5.0 flvector-ref flv1 2)
+
+  (test "Ready2" place-channel-send/recv pl flv2)
+  (test 6.0 flvector-ref flv2 2)
+
+  (test "Ready3" place-channel-send/recv pl b1)
+  (test 67 bytes-ref b1 2)
+
+  (test "Ready4" place-channel-send/recv pl b2)
+  (test 67 bytes-ref b2 2)
+
+  (define-values (pc5 pc6) (place-channel))
+  (place-channel-send pl pc5)
+  (test "Ready5" sync (handle-evt pc6 (lambda (p) (place-channel-recv p))))
+
   (place-wait pl)
 )
-

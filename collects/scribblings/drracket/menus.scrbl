@@ -294,7 +294,9 @@ limit on the amount of memory that a program running in
 DrRacket is allowed to consume.}
 
 @item{@defmenuitem{Clear Error Highlight} Removes the red
-background that signals the source location of an error.}
+background that signals the source location of an error.
+Also removes the highlighting for uncovered (untested)
+portions of the program.}
 
  @item{@defmenuitem{Create Executable...} Creates a separate launcher
    for running your program. See @secref["create-exe"] for more

@@ -1,62 +1,92 @@
 #lang racket
-(require racket/runtime-path)
+(require racket/runtime-path racket/sandbox)
 
-;; since Typed Scheme's optimizer does source to source transformations,
-;; we compare the expansion of automatically optimized and hand optimized
-;; modules
-(define (read-and-expand file)
-  ;; drop the type tables added by typed scheme, since they can be in a
-  ;; different order each time, and that would make tests fail when they
-  ;; shouldn't
-  (filter
-   ;; drop the "module", its name and its language, so that we can write
-   ;; the 2 versions of each test in different languages (typed and
-   ;; untyped) if need be
-   (match-lambda [(list 'define-values-for-syntax '() _ ...) #f] [_ #t])
-   (cadddr
-    (syntax->datum
-     (parameterize ([current-namespace (make-base-namespace)]
-                    [read-accept-reader #t])
-       (with-handlers
-           ([exn:fail? (lambda (exn)
-                         (printf "~a\n" (exn-message exn))
-                         #'(#f #f #f (#f)))]) ; for cadddr
-         (expand (with-input-from-file file read-syntax))))))))
+(define show-names? (make-parameter #f))
+
+(define prog-rx
+  (pregexp (string-append "^\\s*"
+                          "(#lang typed/(?:scheme|racket)(?:/base)?)"
+                          "\\s+"
+                          "#:optimize"
+                          "\\s+")))
+
+(define (evaluator file #:optimize [optimize? #f])
+  (call-with-trusted-sandbox-configuration
+   (lambda ()
+     (parameterize ([current-load-relative-directory tests-dir]
+                    [sandbox-memory-limit #f] ; TR needs memory
+                    [sandbox-output 'string]
+                    [sandbox-namespace-specs
+                     (list (car (sandbox-namespace-specs))
+                           'typed/racket
+                           'typed/scheme)])
+       ;; drop the expected log
+       (let* ([prog (with-input-from-file file
+                      (lambda ()
+                        (read-line) ; drop #;
+                        (read)      ; drop expected log
+                        (port->string)))] ; get the actual program
+              [m    (or (regexp-match-positions prog-rx prog)
+                        (error 'evaluator "bad program contents in ~e" file))]
+              [prog (string-append (substring prog (caadr m) (cdadr m))
+                                   (if (not optimize?) "\n#:no-optimize\n" "\n")
+                                   (substring prog (cdar m)))]
+              [evaluator (make-module-evaluator prog)]
+              [out       (get-output evaluator)])
+         (kill-evaluator evaluator)
+         out)))))
+
+(define (generate-opt-log name)
+  (parameterize ([current-load-relative-directory tests-dir]
+                 [current-command-line-arguments  '#("--log-optimizations")])
+    (let ((log-string
+           (with-output-to-string
+             (lambda ()
+               (dynamic-require (build-path (current-load-relative-directory)
+                                            name)
+                                #f)))))
+      ;; have the log as an sexp, since that's what the expected log is
+      (with-input-from-string (string-append "(" log-string ")")
+        read))))
 
 (define (test gen)
   (let-values (((base name _) (split-path gen)))
-    (or (regexp-match ".*~" name) ; we ignore backup files
-        ;; machine optimized and hand optimized versions must expand to the
-        ;; same code
-        (and (or (equal? (parameterize ([current-load-relative-directory
-                                         (build-path here "generic")])
-                           (read-and-expand gen))
-                         (let ((hand-opt-dir (build-path here "hand-optimized")))
-                           (parameterize ([current-load-relative-directory hand-opt-dir])
-                             (read-and-expand (build-path hand-opt-dir name)))))
-                 (begin (printf "~a failed: expanded code mismatch\n\n" name)
+    (when (show-names?) (displayln name))
+    (or (not (regexp-match ".*rkt$" name)) ; we ignore all but racket files
+        ;; we log optimizations and compare to an expected log to make sure
+        ;; that all the optimizations we expected did indeed happen
+        (and (or (let ((log      (generate-opt-log name))
+                       ;; expected optimizer log, to see what was optimized
+                       (expected
+                        (with-input-from-file gen
+                          (lambda ()
+                            (read-line) ; skip the #;
+                            (read)))))  ; get the log itself
+                   (equal? log expected))
+                 (begin (printf "~a failed: optimization log mismatch\n\n" name)
                         #f))
              ;; optimized and non-optimized versions must evaluate to the
              ;; same thing
-             (or (equal? (with-output-to-string
-                           (lambda ()
-                             (dynamic-require gen #f)))
-                         (with-output-to-string
-                           (lambda ()
-                             (let ((non-opt-dir (build-path here "non-optimized")))
-                               (dynamic-require (build-path non-opt-dir name) #f)))))
+             (or (equal? (evaluator gen) (evaluator gen #:optimize #t))
                  (begin (printf "~a failed: result mismatch\n\n" name)
                         #f))))))
 
-(define-runtime-path here ".")
+(define to-run
+  (command-line
+   #:once-each
+   ["--show-names" "show the names of tests as they are run" (show-names? #t)]
+   ;; we optionally take a test name. if none is given, run everything (#f)
+   #:args maybe-test-to-run
+   (and (not (null? maybe-test-to-run))
+        (car maybe-test-to-run))))
+
+(define-runtime-path tests-dir "./tests")
 
 (let ((n-failures
-       (if (> (vector-length (current-command-line-arguments)) 0)
-           (if (test (format "generic/~a.rkt"
-                             (vector-ref (current-command-line-arguments) 0)))
-               0 1)
+       (if to-run
+           (if (test to-run) 0 1)
            (for/fold ((n-failures 0))
-             ((gen (in-directory (build-path here "generic"))))
+             ((gen (in-directory tests-dir)))
              (+ n-failures (if (test gen) 0 1))))))
   (unless (= n-failures 0)
     (error (format "~a tests failed." n-failures))))

@@ -92,7 +92,7 @@
 					  0 ; indent 
 					  init-memory
 					  me board)])
-				  (log-printf 1 0 "> ~a/~a Result: ~a~n" 
+				  (log-printf 1 0 "> ~a/~a Result: ~a\n" 
 					      steps (min max-depth one-step-depth)
 					      (play->string v))
 				  v))
@@ -471,7 +471,7 @@
 	(set! explore-count 0)
 	(set! enter-count 0)
 	(set! move-count 0)
-	(log-printf 1 indent "~a> ~a Exploring for ~a~n" (make-string indent #\space) steps me)
+	(log-printf 1 indent "~a> ~a Exploring for ~a\n" (make-string indent #\space) steps me)
 	(let-values ([(vs xform)
 		      (minmax 0
 			      (if (or (steps . <= . 1) first-move?)
@@ -480,7 +480,7 @@
 			      config
 			      me
 			      board #f #f)])
-	  (log-printf 2 indent "~a>> Done ~a ~a ~a ~a+~a [~a secs]~n" 
+	  (log-printf 2 indent "~a>> Done ~a ~a ~a ~a+~a [~a secs]\n" 
 		      (make-string indent #\space) 
 		      hit-count depth-count explore-count enter-count move-count
 		      (float->string (/ (- (current-inexact-milliseconds) now) 1000)))
@@ -559,7 +559,7 @@
                               (with-output-to-file MEMORY-FILE
                                 (lambda ()
                                   (let ([m (cdar plays)])
-                                    (printf "(~a ~a ~a)~n#|~n~a|#~n" 
+                                    (printf "(~a ~a ~a)\n#|\n~a|#\n" 
                                             (if (found-win? plays) 'win 'lose)
                                             (car board-key+xform)
                                             (list
@@ -620,10 +620,10 @@
 
       (define (show-recur sz from-i from-j to-i to-j sv)
 	(if (not (plan? (cdar sv)))
-	    (printf "   Recur ~a (~a,~a)->(~a,~a) ; ??? = ~a/~a~n"
+	    (printf "   Recur ~a (~a,~a)->(~a,~a) ; ??? = ~a/~a\n"
 		    sz from-i from-j to-i to-j 
 		    (caar sv) (get-depth (car sv)))
-	    (printf "   Recur ~a (~a,~a)->(~a,~a) ; (~a,~a)->(~a,~a) = ~a/~a~n"
+	    (printf "   Recur ~a (~a,~a)->(~a,~a) ; (~a,~a)->(~a,~a) = ~a/~a\n"
 		    sz from-i from-j to-i to-j 
 		    (plan-from-i (cdar sv)) (plan-from-j (cdar sv)) 
 		    (plan-to-i (cdar sv)) (plan-to-j (cdar sv))

@@ -1,11 +1,12 @@
-(module plplot mzscheme
+#lang racket/base
+(require mzlib/etc 
+         racket/list 
+         ffi/unsafe
+         racket/runtime-path
+         racket/class
+         (for-syntax racket/base))
 
-(require mzlib/etc mzlib/list mzlib/foreign mzlib/runtime-path)
-(unsafe!)
-
-(define-runtime-path plplot-path
-  (build-path "compiled" "native" (system-library-subpath #f)
-              (path-replace-suffix "libplplot" (system-type 'so-suffix))))
+(define-runtime-path plplot-path '(so "libplplot"))
 (define-runtime-path font-dir "fonts")
 
 (define libplplot (ffi-lib plplot-path))
@@ -29,19 +30,50 @@
 		  (ptr-set! p _byte len 0)
 		  malloced-bytes)))
 
+(define-cstruct _dc_Dev
+  ([user_data _pointer]
+   [drawLine _fpointer]
+   [drawLines _fpointer]
+   [fillPoly _fpointer]
+   [setWidth _fpointer]
+   [setColor _fpointer]
+   [setColorRGB _fpointer]
+   [startPage _fpointer]
+   [endPage _fpointer]
+   [endDoc _fpointer]))
+
+(define _PLINT _int)
+
 (define _plflt _double*)
 (define _plint _int)
 
-(define (_list-of type . len?)
-  (let ([len (and (pair? len?) (car len?))])
-    (make-ctype _pointer
-      (lambda (l) (list->cblock l type))
-      (if len
-        (lambda (b) (cblock->list b type len))
-        (lambda (b) (error "this list type does not specify a size"))))))
+;; While an array generated from a list is passed to an
+;; plot library function, we might perform a GC through
+;; the back-end drawing operation. So, arrays must be
+;; allocated as non-moving objects
+(define-fun-syntax _list/still
+  (lambda (stx)
+    (syntax-case stx (i)
+      [(_ i ty) #'(_list/still i ty 'atomic-interior)]
+      [(_ i ty mode)
+       #'(type: _pointer
+                pre:  (x => (list->cblock/mode x ty mode)))])))
 
-(define (_matrix-of type)
-  (_list-of (_list-of type)))
+(define-fun-syntax _matrix-of
+  (lambda (stx)
+    (syntax-case stx (i)
+      [(_ ty)
+       #'(_list/still i (_list/still i ty) 'interior)])))
+
+(define (list->cblock/mode l type mode)
+  (if (null? l)
+      #f ; null => NULL
+      (let ([cblock (malloc (length l) type mode)])
+        (let loop ([l l] [i 0])
+          (unless (null? l)
+            (ptr-set! cblock type i (car l))
+            (loop (cdr l) (add1 i))))
+        cblock)))
 
 (define-syntax define*
   (syntax-rules ()
@@ -67,7 +99,7 @@
   (get-ffi-obj "c_plsfnam" libplplot (_fun _string -> _void)))
 
 (define* pl-init-plot
-  (get-ffi-obj "c_plinit" libplplot (_fun -> _void)))
+  (get-ffi-obj "c_plinit" libplplot (_fun -> _dc_Dev-pointer)))
 
 (define* pl-finish-plot
   (get-ffi-obj "c_plend" libplplot (_fun -> _void)))
@@ -82,7 +114,7 @@
 
 (define* pl-plot-line
   (get-ffi-obj "c_plline" libplplot
-    (_fun _plint (x : (_list i _plflt)) (y : (_list i _plflt)) -> _void)))
+    (_fun _plint (x : (_list/still i _plflt)) (y : (_list/still i _plflt)) -> _void)))
 
 (define* pl-plot-segment
   (get-ffi-obj "c_pljoin" libplplot
@@ -114,26 +146,26 @@
 
 (define* pl-x-error-bars
   (get-ffi-obj "c_plerrx" libplplot
-    (_fun _plint (_list i _plflt)
-          (_list i _plflt)
-          (_list i _plflt) -> _void)))
+    (_fun _plint (_list/still i _plflt)
+          (_list/still i _plflt)
+          (_list/still i _plflt) -> _void)))
 
 (define* pl-y-error-bars
   (get-ffi-obj "c_plerry" libplplot
-    (_fun _plint (_list i _plflt)
-          (_list i _plflt)
-          (_list i _plflt) -> _void)))
+    (_fun _plint (_list/still i _plflt)
+          (_list/still i _plflt)
+          (_list/still i _plflt) -> _void)))
 
 (define* pl-plot-points
   (get-ffi-obj "c_plpoin" libplplot
-    (_fun _plint (x : (_list i _plflt)) (y : (_list i _plflt)) _plint
+    (_fun _plint (x : (_list/still i _plflt)) (y : (_list/still i _plflt)) _plint
           -> _void)))
 
 (define* pl-fill
   (get-ffi-obj "c_plfill" libplplot
    (_fun  (n         : _plint = (length x-values))
-          (x-values  : (_list i _plflt))
-          (y-values  : (_list i _plflt))
+          (x-values  : (_list/still i _plflt))
+          (y-values  : (_list/still i _plflt))
           -> _void)))
 
 (define* pl-world-3d
@@ -153,8 +185,8 @@
 (define* pl-plot3d
   (get-ffi-obj "c_plot3d" libplplot
    (_fun
-    (x-values  : (_list i _plflt))
-    (y-values  : (_list i _plflt))
+    (x-values  : (_list/still i _plflt))
+    (y-values  : (_list/still i _plflt))
     (z-values  : (_matrix-of _plflt))
     (nx        : _int = (length x-values))
     (ny        : _int = (length y-values))
@@ -165,8 +197,8 @@
 (define* pl-mesh3d
   (get-ffi-obj "c_plot3d" libplplot
    (_fun
-    (x-values  : (_list i _plflt))
-    (y-values  : (_list i _plflt))
+    (x-values  : (_list/still i _plflt))
+    (y-values  : (_list/still i _plflt))
     (z-values  : (_matrix-of _plflt))
     (nx        : _int = (length x-values))
     (ny        : _int = (length y-values))
@@ -178,8 +210,8 @@
 ;   (get-ffi-obj "c_plpoin" libplplot
 ;    (_fun
 ;     (nx        : _int = (length x-values))
-;     (x-values  : (_list i _plflt))
-;     (y-values  : (_list i _plflt))
+;     (x-values  : (_list/still i _plflt))
+;     (y-values  : (_list/still i _plflt))
 ;     (code      : _int))))
 
 (define* pl-box3
@@ -194,9 +226,9 @@
   (get-ffi-obj "c_plline3" libplplot
    (_fun
     (n-points : _int = (length x-values))
-    (x-values  : (_list i _plflt))
-    (y-values  : (_list i _plflt))
-    (z-values  : (_list i _plflt))
+    (x-values  : (_list/still i _plflt))
+    (y-values  : (_list/still i _plflt))
+    (z-values  : (_list/still i _plflt))
     -> _void)))
 
 
@@ -204,10 +236,10 @@
   (get-ffi-obj "c_plpoly3" libplplot
    (_fun
     (n-points : _int = (length x-values))
-    (x-values  : (_list i _plflt))
-    (y-values  : (_list i _plflt))
-    (z-values  : (_list i _plflt))
-    (draw-mask : (_list i _int))
+    (x-values  : (_list/still i _plflt))
+    (y-values  : (_list/still i _plflt))
+    (z-values  : (_list/still i _plflt))
+    (draw-mask : (_list/still i _int))
     (direction : _int)
     -> _void)))
 
@@ -231,7 +263,7 @@
     (t2         : _int = (PLcGrid-nx grid))
     (t3         : _plint = 1)
     (t4         : _int = (PLcGrid-ny grid))
-    (levels     : (_list i _plflt))
+    (levels     : (_list/still i _plflt))
     (nlevels    : _int = (length levels))
     (pltr       : _fpointer = (get-ffi-obj "pltr1" libplplot _fpointer))
     (grid       : _PLcGrid-pointer)
@@ -255,7 +287,7 @@
     (x_max      : _plflt = 0)
     (y_min      : _plflt = 0)
     (y_max      : _plflt = 0)
-    (levels     : (_list i _plflt))
+    (levels     : (_list/still i _plflt))
     (nlevels    : _int = (length levels))
     (fill_width : _int = 1)
     (cont_col   : _int = 1)
@@ -284,23 +316,23 @@
     (_fun
      (itype     : _plint)
      (npts      : _int = (length intencity))
-     (intencity : (_list i _plflt))
-     (coord1    : (_list i _plflt))
-     (coord2    : (_list i _plflt))
-     (coord3    : (_list i _plflt))
+     (intencity : (_list/still i _plflt))
+     (coord1    : (_list/still i _plflt))
+     (coord2    : (_list/still i _plflt))
+     (coord3    : (_list/still i _plflt))
      (rev       : _pointer = #f)
      -> _void)))
 
 (define pl-mesh3dc-int 
   (get-ffi-obj "c_plmeshc" libplplot
     (_fun
-     (x-values  : (_list i _plflt))
-     (y-values  : (_list i _plflt))
+     (x-values  : (_list/still i _plflt))
+     (y-values  : (_list/still i _plflt))
      (z-values  : (_matrix-of _plflt))
      (x-len     : _int = (length x-values))
      (y-len     : _int = (length y-values))
      (opts      : _int)
-     (levels    : (_list i _plflt))
+     (levels    : (_list/still i _plflt))
      (n-levels  : _int = (length levels))
      -> _void)))
 
@@ -314,6 +346,63 @@
     (plscmap1l 0 '(0.0 1.0) '(240 0) '(.6 .6) '(.8 .8))
     (pl-mesh3dc-int x-vals y-vals z-vals opts levels)))
 
+(define (dc-draw-line dest x1 y1 x2 y2)
+  (send (ptr-ref dest _racket) draw-line x1 y1 x2 y2))
+(define (dc-draw-multi dest xs ys n go)
+  (let ([xs (cast xs _pointer (_vector o _short n))]
+        [ys (cast ys _pointer (_vector o _short n))])
+    (go (ptr-ref dest _racket)
+          (for/list ([x (in-vector xs)]
+                     [y (in-vector ys)])
+            (cons x y)))))
+(define (dc-draw-lines dest xs ys n)
+  (dc-draw-multi dest xs ys n
+                 (lambda (dc l) (send dc draw-lines l))))
+(define (dc-fill-poly dest xs ys n)
+  (dc-draw-multi dest xs ys n
+                 (lambda (dc l) (send dc draw-polygon l))))
+(define (dc-set-width dest w)
+  (send (ptr-ref dest _racket) set-width w))
+(define (dc-set-color dest index)
+  (send (ptr-ref dest _racket) set-index-color index))
+(define (dc-set-color/rgb dest r g b)
+  (send (ptr-ref dest _racket) set-rgb-color r g b))
+(define (dc-start-page dest)
+  (send (ptr-ref dest _racket) start-page))
+(define (dc-end-page dest)
+  (send (ptr-ref dest _racket) end-page))
+(define (dc-end-doc dest)
+  (send (ptr-ref dest _racket) end-doc)
+  (free-immobile-cell dest))
 
+(define draw_line (function-ptr dc-draw-line
+                                (_fun _pointer _short _short _short _short -> _void)))
+(define draw_lines (function-ptr dc-draw-lines
+                                 (_fun _pointer _pointer _pointer _PLINT -> _void)))
+(define fill_poly (function-ptr dc-fill-poly
+                                (_fun _pointer _pointer _pointer _PLINT -> _void)))
+(define set_width (function-ptr dc-set-width
+                                (_fun _pointer _int -> _void)))
+(define set_color (function-ptr dc-set-color
+                                (_fun _pointer _int -> _void)))
+(define set_color_rgb (function-ptr dc-set-color/rgb
+                                    (_fun _pointer _int _int _int -> _void)))
+(define start_page (function-ptr dc-start-page
+                                 (_fun _pointer -> _void)))
+(define end_page (function-ptr dc-end-page
+                               (_fun _pointer -> _void)))
+(define end_doc (function-ptr dc-end-doc
+                              (_fun _pointer -> _void)))
 
-)
+(provide init-dev!)
+(define (init-dev! dev obj)
+  (set-dc_Dev-user_data! dev (malloc-immobile-cell obj))
+  (set-dc_Dev-drawLine! dev draw_line)
+  (set-dc_Dev-drawLines! dev draw_lines)
+  (set-dc_Dev-fillPoly! dev fill_poly)
+  (set-dc_Dev-setWidth! dev set_width)
+  (set-dc_Dev-setColor! dev set_color)
+  (set-dc_Dev-setColorRGB! dev set_color_rgb)
+  (set-dc_Dev-startPage! dev start_page)
+  (set-dc_Dev-endPage! dev end_page)
+  (set-dc_Dev-endDoc! dev end_doc))

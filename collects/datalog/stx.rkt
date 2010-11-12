@@ -38,6 +38,7 @@
     [(_ thy-expr stmt ...)
      (syntax/loc stx
        (parameterize ([current-theory thy-expr])
+         (void)
          (->substitutions
           (datalog-stmt-var-selector stmt)
           (eval-statement (datalog-stmt stmt)))
@@ -48,6 +49,7 @@
     [(_ thy-expr stmt ...)
      (syntax/loc stx
        (parameterize ([current-theory thy-expr])
+         (void)
          (eval-top-level-statement (datalog-stmt stmt))
          ...))]))
 

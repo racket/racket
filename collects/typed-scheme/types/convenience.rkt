@@ -4,10 +4,10 @@
          (utils tc-utils)
          "abbrev.rkt" (only-in scheme/contract current-blame-format)
 	 (types comparison printer union subtype utils substitute)
-         scheme/list scheme/match scheme/promise
+         scheme/list racket/match scheme/promise
          (for-syntax syntax/parse scheme/base)
          unstable/debug syntax/id-table scheme/dict
-         scheme/trace
+         racket/trace
          (for-template scheme/base))
 
 (provide (all-defined-out)

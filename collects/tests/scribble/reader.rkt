@@ -91,7 +91,13 @@ fo@o  -@->  fo@o
 ---
 @[foo]  -@->  (foo)
 ---
-@|{blah}|  -@->  {"blah"}
+@{@foo bar}  -@->  (foo " bar")
+---
+@|{blah}|  -@->  ("blah")
+---
+@|{blah|@foo bleh}|  -@-> ("blah" foo " bleh")
+---
+@|{|@meh blah|@foo bleh}|  -@-> (meh " blah" foo " bleh")
 ---
 ;; -------------------- newlines and spaces in text
 ---
@@ -871,7 +877,7 @@ END-OF-TESTS
                  [(column=)   syntax-column]
                  [(position=) syntax-position]
                  [(span=)     syntax-span]
-                 [else (error 'syntax-test "unknown test form: ~e" (car y))])
+                 [else (error 'syntax-test "unknown test form: ~.s" (car y))])
                x)
               (cadr y))
              (check-stx x (cddr y))]

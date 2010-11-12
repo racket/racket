@@ -378,8 +378,8 @@
 	      (message-box
 	       "Preference Error"
 	       (format (string-append
-			"The biff delay must be an exact integer between 1 and 3600.~n"
-			"You provided:~n"
+			"The biff delay must be an exact integer between 1 and 3600.\n"
+			"You provided:\n"
 			"  ~a")
 		       s)
 	       tl
@@ -401,8 +401,8 @@
 	      (message-box
 	       "Preference Error"
 	       (format (string-append
-			"The message size must be an exact, positive integer.~n"
-			"You provided:~n"
+			"The message size must be an exact, positive integer.\n"
+			"You provided:\n"
 			"  ~a")
 		       s)
 	       tl

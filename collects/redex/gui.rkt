@@ -2,7 +2,7 @@
 ;; use `count-snips'; use something associated with the
 ;; equal hash-table
 
-#lang scheme/base
+#lang racket/base
 
 (require "private/stepper.ss"
          "private/traces.ss"
@@ -10,9 +10,9 @@
          "private/reduction-semantics.ss"
          "private/size-snip.ss"
          mrlib/graph
-         scheme/contract
-         scheme/class
-         scheme/gui/base)
+         racket/contract
+         racket/class
+         racket/gui/base)
 
 (define pp-contract
   (or/c (-> any/c string?)
@@ -35,8 +35,8 @@
                             (any/c term-node? . -> . any))
                #:pp pp-contract
                #:colors (listof (list/c string? string?))
-               #:racket-colors? boolean?
                #:scheme-colors? boolean?
+               #:racket-colors? boolean?
                #:layout (-> any/c any/c)
                #:edge-label-font (or/c #f (is-a?/c font%))
                #:edge-labels? boolean?
@@ -52,8 +52,8 @@
                                (any/c term-node? . -> . any))
                   #:pp pp-contract
                   #:colors (listof any/c)
-                  #:racket-colors? boolean?
                   #:scheme-colors? boolean?
+                  #:racket-colors? boolean?
                   #:layout (-> any/c any/c)
                   #:edge-label-font (or/c #f (is-a?/c font%))
                   #:edge-labels? boolean?
@@ -97,6 +97,10 @@
  [light-text-color (parameter/c (or/c string? (is-a?/c color%)))]
  [initial-font-size (parameter/c number?)]
  [initial-char-width (parameter/c (or/c number? (-> any/c number?)))])
-         
-(provide reduction-steps-cutoff
-         default-pretty-printer)
+
+(provide/contract 
+ [reduction-steps-cutoff (parameter/c exact-nonnegative-integer?)]
+ [default-pretty-printer
+   (-> any/c output-port? exact-nonnegative-integer? (is-a?/c text%) 
+       void?)]
+ [pretty-print-parameters (parameter/c (-> (-> any) any))])

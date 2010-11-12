@@ -11,12 +11,13 @@ WARNING: printf is rebound in the body of the unit to always
          scheme/class
          scheme/match
          scheme/path
-         "sig.ss"
-         "../gui-utils.ss"
-         "../preferences.ss"
+         "sig.rkt"
+         "../gui-utils.rkt"
+         "../preferences.rkt"
          mred/mred-sig
          mrlib/interactive-value-port
          setup/dirs
+         racket/list
          (prefix-in srfi1: srfi/1))
 (require setup/xref
          scribble/xref
@@ -144,98 +145,45 @@ WARNING: printf is rebound in the body of the unit to always
       (send (get-style-list) find-named-style "Standard"))
     
     (define/private (invalidate-rectangles rectangles)
-      (let ([b1 (box 0)]
-            [b2 (box 0)]
-            [b3 (box 0)]
-            [b4 (box 0)]
-            [canvases (get-canvases)])
-        (let-values ([(min-left max-right)
-                      (cond
-                        [(null? canvases)
-                         (let ([admin (get-admin)])
-                           (if admin
-                               (begin
-                                 (send admin get-view b1 b2 b3 b4)
-                                 (let* ([this-left (unbox b1)]
-                                        [this-width (unbox b3)]
-                                        [this-right (+ this-left this-width)])
-                                   (values this-left
-                                           this-right)))
-                               (values #f #f)))]
-                        [else 
-                         (let loop ([left #f]
-                                    [right #f]
-                                    [canvases canvases])
-                           (cond
-                             [(null? canvases)
-                              (values left right)]
-                             [else
-                              (let-values ([(this-left this-right)
-                                            (send (car canvases)
-                                                  call-as-primary-owner
-                                                  (λ ()
-                                                    (send (get-admin) get-view b1 b2 b3 b4)
-                                                    (let* ([this-left (unbox b1)]
-                                                           [this-width (unbox b3)]
-                                                           [this-right (+ this-left this-width)])
-                                                      (values this-left
-                                                              this-right))))])
-                                (if (and left right)
-                                    (loop (min this-left left)
-                                          (max this-right right)
-                                          (cdr canvases))
-                                    (loop this-left
-                                          this-right
-                                          (cdr canvases))))]))])])
-          (when (and min-left max-right)
-            (let loop ([left #f]
-                       [top #f]
-                       [right #f]
-                       [bottom #f]
-                       [rectangles rectangles]
-                       [refresh? #f])
-              (cond
-                [(null? rectangles)
-                 (when left
-                   (let ([width (- right left)]
-                         [height (- bottom top)])
-                     (when refresh?
-                       (for-each (λ (canvas) (send canvas refresh))
-                                 canvases))
-                     (when (and (> width 0)
-                                (> height 0))
-                       (invalidate-bitmap-cache left top width height))))]
-                [else (let* ([r (car rectangles)]
-                             
-                             [adjust (λ (w f) 
-                                       (+ w (f (case (rectangle-style r)
-                                                 [(dot hollow-ellipse) 8]
-                                                 [else 0]))))]
-                             [this-left (if (number? (rectangle-left r))
-                                            (adjust (rectangle-left r) -)
-                                            min-left)]
-                             [this-right (if (number? (rectangle-right r))
-                                             (adjust (rectangle-right r) +)
-                                             max-right)]
-                             [this-top (adjust (rectangle-top r) -)]
-                             [this-bottom (adjust (rectangle-bottom r) +)])
-                        (if (and left top right bottom)
-                            (loop (min this-left left)
-                                  (min this-top top)
-                                  (max this-right right)
-                                  (max this-bottom bottom)
-                                  (cdr rectangles)
-                                  (or refresh? 
-                                      (not (number? (rectangle-left r)))
-                                      (not (number? (rectangle-right r)))))
-                            (loop this-left 
-                                  this-top
-                                  this-right
-                                  this-bottom
-                                  (cdr rectangles)
-                                  (or refresh? 
-                                      (not (number? (rectangle-left r)))
-                                      (not (number? (rectangle-right r)))))))]))))))
+      (let loop ([left #f]
+                 [top #f]
+                 [right #f]
+                 [bottom #f]
+                 [rectangles rectangles])
+        (cond
+         [(null? rectangles)
+          (when left
+            (let ([width (if (number? right) (- right left) 'display-end)]
+                  [height (if (number? bottom) (- bottom top) 'display-end)])
+              (when (and (or (symbol? width) (> width 0))
+                         (or (symbol? height) (> height 0)))
+                (invalidate-bitmap-cache left top width height))))]
+         [else (let* ([r (car rectangles)]
+                      [adjust (λ (w f) 
+                                 (+ w (f (case (rectangle-style r)
+                                           [(dot hollow-ellipse) 8]
+                                           [else 0]))))]
+                      [this-left (if (number? (rectangle-left r))
+                                     (adjust (rectangle-left r) -)
+                                     0.0)]
+                      [this-right (if (number? (rectangle-right r))
+                                      (adjust (rectangle-right r) +)
+                                      'display-end)]
+                      [this-top (adjust (rectangle-top r) -)]
+                      [this-bottom (adjust (rectangle-bottom r) +)])
+                 (if (and left top right bottom)
+                     (loop (min this-left left)
+                           (min this-top top)
+                           (if (and (number? this-right) (number? right))
+                               (max this-right right)
+                               'display-end)
+                           (max this-bottom bottom)
+                           (cdr rectangles))
+                     (loop this-left 
+                           this-top
+                           this-right
+                           this-bottom
+                           (cdr rectangles))))])))
     
     (define/private (recompute-range-rectangles)
       (let* ([b1 (box 0)]
@@ -3749,3 +3697,240 @@ designates the character that triggers autocompletion
 (define backup-autosave% (editor:backup-autosave-mixin clever-file-format%))
 (define searching% (searching-mixin backup-autosave%))
 (define info% (info-mixin (editor:info-mixin searching%)))
+
+;; ============================================================
+;; line number text%
+
+(define line-numbers<%>
+  (interface ()
+             show-line-numbers!
+             showing-line-numbers?
+             set-line-numbers-color))
+
+;; draws line numbers on the left hand side of a text% object
+(define line-numbers-mixin
+  (mixin ((class->interface text%)) (line-numbers<%>)
+    (super-new)
+    (inherit get-visible-line-range
+             get-visible-position-range
+             last-line
+             line-location
+             line-paragraph
+             line-start-position
+             line-end-position)
+
+    (init-field [line-numbers-color "black"])
+    (init-field [show-line-numbers? #t])
+    ;; whether the numbers are aligned on the left or right
+    ;; only two values should be 'left or 'right
+    (init-field [alignment 'right])
+
+    (define (number-space)
+      (number->string (max (* 10 (add1 (last-line))) 100)))
+    ;; add an extra 0 so it looks nice
+    (define (number-space+1) (string-append (number-space) "0"))
+
+    (define cached-snips (list))
+    (define need-to-recalculate-snips #f)
+
+    ;; call this method with #t or #f to turn on/off line numbers
+    (define/public (show-line-numbers! what)
+      (set! show-line-numbers? what))
+
+    (define/public (showing-line-numbers?)
+      show-line-numbers?)
+
+    (define/public (set-line-numbers-color color)
+      (set! line-numbers-color color))
+
+    (define (get-style-font)
+      (let* ([style-list (send this get-style-list)]
+             [std (or (send style-list find-named-style "Standard")
+                      #t
+                      #;
+                      (send style-list basic-style))])
+        (send std get-font)))
+
+    ;; a <= b <= c
+    (define (between low what high)
+      (and (>= what low)
+           (<= what high)))
+
+    ;; set the dc stuff to values we want
+    (define (setup-dc dc)
+      (send dc set-pen "black" 1 'solid)
+      (send dc set-font (get-style-font))
+      (send dc set-text-foreground (make-object color% line-numbers-color)))
+
+    (define (lighter-color color)
+      (define (integer number)
+        (inexact->exact (round number)))
+      ;; hue 0-360
+      ;; saturation 0-1
+      ;; lightness 0-1
+      ;; returns rgb as float values with ranges 0-1
+      (define (hsl->rgb hue saturation lightness)
+        (define (helper x a b)
+          (define x* (cond
+                       [(< x 0) (+ x 1)]
+                       [(> x 1) (- x 1)]
+                       [else x]))
+          (cond
+            [(< (* x 6) 1) (+ b (* 6 (- a b) x))]
+            [(< (* x 6) 3) a]
+            [(< (* x 6) 4) (+ b (* (- a b) (- 4 (* 6 x))))]
+            [else b]))
+
+        (define h (/ hue 360))
+        (define a (if (< lightness 0.5)
+                    (+ lightness (* lightness saturation))
+                    (- (+ lightness saturation) (* lightness saturation))))
+        (define b (- (* lightness 2) a))
+        (define red (helper (+ h (/ 1.0 3)) a b))
+        (define green (helper h a b))
+        (define blue (helper (- h (/ 1.0 3)) a b))
+        (values red green blue))
+        
+      ;; red 0-255
+      ;; green 0-255
+      ;; blue 0-255
+      (define (rgb->hsl red green blue)
+        (define-values (a b c d)
+                       (if (> red green)
+                         (if (> red blue)
+                           (if (> green blue)
+                             (values red (- green blue) blue 0)
+                             (values red (- green blue) green 0))
+                           (values blue (- red green) green 4))
+                         (if (> red blue)
+                           (values green (- blue red) blue 2)
+                           (if (> green blue)
+                             (values green (- blue red) red 2)
+                             (values blue (- red green) red 4)))))
+        (define hue (if (= a c) 0
+                      (let ([x (* 60 (+ d (/ b (- a c))))])
+                        (if (< x 0) (+ x 360) x))))
+        (define saturation (cond
+                             [(= a c) 0]
+                             [(< (+ a c) 1) (/ (- a c) (+ a c))]
+                             [else (/ (- a c) (- 2 a c))]))
+        (define lightness (/ (+ a c) 2))
+        (values hue saturation lightness))
+      (define-values (hue saturation lightness)
+                     (rgb->hsl (send color red)
+                               (send color green)
+                               (send color blue)))
+      (define-values (red green blue)
+                     (hsl->rgb hue saturation (+ 0.5 lightness)))
+      (make-object color% (min 255 (integer (* 255 red)))
+                          (min 255 (integer (* 255 green)))
+                          (min 255 (integer (* 255 blue)))))
+
+    (define (draw-numbers dc top bottom dx dy start-line end-line)
+      (define (draw-text . args)
+        (send/apply dc draw-text args))
+
+      (define right-space (text-width dc (number-space)))
+      (define single-space (text-width dc "0"))
+
+      (define last-paragraph #f)
+      (for ([line (in-range start-line end-line)])
+        (define y (line-location line))
+
+        (when (between top y bottom)
+          (define view (number->string (add1 (line-paragraph line))))
+          (define final-x
+            (+ dx 
+               (case alignment
+                 [(left) 0]
+                 [(right) (- right-space (text-width dc view) single-space)]
+                 [else 0])))
+          (define final-y (+ dy y))
+          (if (and last-paragraph (= last-paragraph (line-paragraph line)))
+            (begin
+              (send dc set-text-foreground (lighter-color (send dc get-text-foreground)))
+              (draw-text view final-x final-y)
+              (send dc set-text-foreground (make-object color% line-numbers-color)))
+            (draw-text view final-x final-y)))
+
+        (set! last-paragraph (line-paragraph line))))
+
+    ;; draw the line between the line numbers and the actual text
+    (define (draw-separator dc top bottom dx dy x)
+      (send dc draw-line (+ dx x) (+ dy top) (+ dx x) (+ dy bottom)))
+
+    (define line-numbers-space 0)
+    (define/override (find-position x y . args)
+      ;; adjust x position to account for line numbers
+      (if show-line-numbers?
+        (super find-position (- x line-numbers-space) y . args)
+        (super find-position x y . args)))
+
+    (define (draw-line-numbers dc left top right bottom dx dy)
+      (setup-dc dc)
+      (define start-line (box 0))
+      (define end-line (box 0))
+      (get-visible-line-range start-line end-line #f)
+
+      ;; draw it!
+      (draw-numbers dc top bottom dx dy (unbox start-line) (add1 (unbox end-line)))
+      (draw-separator dc top bottom dx dy (text-width dc (number-space))))
+
+    (define (text-width dc stuff)
+      (define-values (font-width font-height baseline space)
+                     (send dc get-text-extent stuff))
+      font-width)
+
+    (define (text-height dc stuff)
+      (define-values (font-width height baseline space)
+                     (send dc get-text-extent stuff))
+      height)
+
+    (define old-origin-x 0)
+    (define old-origin-y 0)
+    (define old-clipping #f)
+    (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+      (when show-line-numbers?
+        (if before?
+          (let ()
+            ;; FIXME: Moving the origin and setting the clipping rectangle
+            ;; will probably go away when 'margin's are added to editors
+            ;;
+            ;; save old origin and push it to the right a little bit
+            ;; TODO: maybe allow the line numbers to be drawn on the right hand side?
+            (define-values (x y) (send dc get-origin))
+            (set! old-origin-x x)
+            (set! old-origin-y y)
+            (set! old-clipping (send dc get-clipping-region))
+            (setup-dc dc)
+            (define-values (font-width font-height baseline space)
+                           (send dc get-text-extent (number-space)))
+            (define clipped (make-object region% dc))
+            (define all (make-object region% dc))
+            (define copy (make-object region% dc))
+            (send all set-rectangle
+                  (+ dx left) (+ dy top)
+                  (- right left) (- bottom top))
+            (if old-clipping
+              (send copy union old-clipping)
+              (send copy union all))
+            (send clipped set-rectangle
+                  0 (+ dy top)
+                  (text-width dc (number-space+1))
+                  (- bottom top))
+            #;
+            (define (print-region name region)
+              (define-values (a b c d) (send region get-bounding-box))
+              (printf "~a: ~a, ~a, ~a, ~a\n" name a b c d))
+            (send copy subtract clipped)
+            (send dc set-clipping-region copy)
+            (send dc set-origin (+ x (text-width dc (number-space+1))) y)
+            (set! line-numbers-space (text-width dc (number-space+1)))
+            )
+          (begin
+            ;; rest the origin and draw the line numbers
+            (send dc set-origin old-origin-x old-origin-y)
+            (send dc set-clipping-region old-clipping)
+            (draw-line-numbers dc left top right bottom dx dy))))
+      (super on-paint before? dc left top right bottom dx dy draw-caret))
+    ))

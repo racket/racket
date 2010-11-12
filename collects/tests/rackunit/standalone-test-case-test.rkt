@@ -12,8 +12,8 @@
 (test-case "succeed" (check-eq? 1 1))
 
 ;; These should raise errors
-(test-begin (error "Outta here!"))
-(test-case "error" (error "Outta here!"))
+(test-begin (error "First Outta here!"))
+(test-case "error" (error "Second Outta here!"))
 
 ;; Thesse should raise failures
 (test-begin (check-eq? 1 2))

@@ -85,7 +85,7 @@
 	     (vector-set! v (string->number (symbol->string (zodiac:varref-var b))) sym)))
 	  (let loop ([i 0])
 	    (unless (= i (vector-length v))
-	      (fprintf port "  ~s~a ~a~n" (-symbol->string (vector-ref v i)) comma 
+	      (fprintf port "  ~s~a ~a\n" (-symbol->string (vector-ref v i)) comma 
 		       (if c-comment? 
 			   (format "/* ~a */" i)
 			   (format "; ~a" i)))
@@ -109,14 +109,14 @@
       (define (vm->c:emit-symbol-declarations! port)
 	(unless (zero? (const:get-symbol-counter))
 	  (unless (compiler:multi-o-constant-pool)
-	    (fprintf port "static const char *SYMBOL_STRS[~a] = {~n" (const:get-symbol-counter))
+	    (fprintf port "static const char *SYMBOL_STRS[~a] = {\n" (const:get-symbol-counter))
 	    (vm->c:emit-symbol-list! port "," #t)
-	    (fprintf port "}; /* end of SYMBOL_STRS */~n~n")
-	    (fprintf port "static const long SYMBOL_LENS[~a] = {~n" (const:get-symbol-counter))
+	    (fprintf port "}; /* end of SYMBOL_STRS */\n\n")
+	    (fprintf port "static const long SYMBOL_LENS[~a] = {\n" (const:get-symbol-counter))
 	    (vm->c:emit-symbol-length-list! port "," #t)
-	    (fprintf port "}; /* end of SYMBOL_LENS */~n~n"))
+	    (fprintf port "}; /* end of SYMBOL_LENS */\n\n"))
 
-	  (fprintf port "~aScheme_Object * ~a[~a];~n~n"
+	  (fprintf port "~aScheme_Object * ~a[~a];\n\n"
 		   (if (compiler:multi-o-constant-pool) "" "static ")
 		   (vm->c:SYMBOLS-name)
 		   (const:get-symbol-counter))))
@@ -135,10 +135,10 @@
 
       (define (vm->c:emit-inexact-declarations! port)
 	(unless (zero? (const:get-inexact-counter))
-	  (fprintf port "static const double INEXACT_NUMBERS[~a] = {~n" (const:get-inexact-counter))
+	  (fprintf port "static const double INEXACT_NUMBERS[~a] = {\n" (const:get-inexact-counter))
 	  (vm->c:emit-inexact-list! port "," #t)
-	  (fprintf port "}; /* end of INEXACT_NUMBERS */~n~n")
-	  (fprintf port "static Scheme_Object * ~a[~a];~n~n" 
+	  (fprintf port "}; /* end of INEXACT_NUMBERS */\n\n")
+	  (fprintf port "static Scheme_Object * ~a[~a];\n\n" 
 		   (vm->c:INEXACTS-name)
 		   (const:get-inexact-counter))))
 
@@ -161,7 +161,7 @@
 				(substring str 0 (min len 24))
 				(bytes->string/latin-1 (subbytes str 0 (min len 24))))])
 	      (fprintf port
-		       "/* ~a */~n"
+		       "/* ~a */\n"
 		       (list->string (map (lambda (i)
 					    (cond
 					     [(eq? i #\/) #\_]
@@ -173,12 +173,12 @@
 	    (let loop ([i 0])
 	      (unless (= i len)
 		(when (zero? (modulo i 20))
-		  (fprintf port "~n    "))
+		  (fprintf port "\n    "))
 		(fprintf port "~a, " (if (string? str)
 					 (char->integer (string-ref str i))
 					 (bytes-ref str i)))
 		(loop (add1 i)))))
-	  (fprintf port "0 }; /* end of ~a */~n~n" name)))
+	  (fprintf port "0 }; /* end of ~a */\n\n" name)))
 
       (define (vm->c:emit-symbol-definitions! port)
 	(unless (zero? (const:get-symbol-counter))
@@ -193,7 +193,7 @@
 	   (lambda (sym b)
 	     (unless (interned? sym)
 	       (let ([pos (zodiac:varref-var b)])
-		 (fprintf port "  s = scheme_make_exact_symbol(SYMBOL_STRS[~a], SYMBOL_LENS[~a]); /* uninterned */~n"
+		 (fprintf port "  s = scheme_make_exact_symbol(SYMBOL_STRS[~a], SYMBOL_LENS[~a]); /* uninterned */\n"
 			  pos pos)
 		 (fprintf port "  SYMBOLS[~a] = s;\n" pos)))))))
 
@@ -208,24 +208,24 @@
       (define vm->c:emit-prim-ref-declarations!
 	(lambda (port)
 	  (unless (set-empty? (compiler:get-primitive-refs))
-	    (fprintf port "/* primitives referenced by the code */~n")
-	    (fprintf port "static struct {~n")
+	    (fprintf port "/* primitives referenced by the code */\n")
+	    (fprintf port "static struct {\n")
 	    (for-each (lambda (a)
-			(fprintf port "  Scheme_Object * ~a;~n"
+			(fprintf port "  Scheme_Object * ~a;\n"
 				 (vm->c:convert-symbol 
 				  (vm->c:bucket-name
                                    (module-path-index-join ''#%kernel #f)
 				   a))))
 		      (set->list (compiler:get-primitive-refs)))
-	    (fprintf port "} P;~n")
+	    (fprintf port "} P;\n")
 	    (newline port))))
 
       (define vm->c:emit-prim-ref-definitions!
 	(lambda (port)
 	  (unless (set-empty? (compiler:get-primitive-refs))
-	    (fprintf port "   /* primitives referenced by the code */~n")
+	    (fprintf port "   /* primitives referenced by the code */\n")
 	    (for-each (lambda (a)
-			(fprintf port "~aP.~a = scheme_module_bucket(~a, ~a, -1, env)->val;~n"
+			(fprintf port "~aP.~a = scheme_module_bucket(~a, ~a, -1, env)->val;\n"
 				 vm->c:indent-spaces
 				 (vm->c:convert-symbol (vm->c:bucket-name (module-path-index-join ''#%kernel #f) a))
 				 (vm->c:make-symbol-const-string (compiler:get-symbol-const! #f '#%kernel))
@@ -234,21 +234,21 @@
 
       (define vm->c:emit-struct-definitions!
 	(lambda (structs port)
-	  (fprintf port "/* compiler-written structures */~n")
+	  (fprintf port "/* compiler-written structures */\n")
 	  (for-each (lambda (struct)
-		      (fprintf port "struct ~a~n{~n"
+		      (fprintf port "struct ~a\n{\n"
 			       (vm->c:convert-symbol
 				(rep:struct-name struct)))
 		      (for-each
 		       (lambda (field)
-			 (fprintf port "~a~a ~a;~n"
+			 (fprintf port "~a~a ~a;\n"
 				  vm->c:indent-spaces
 				  (vm->c:convert-type-definition
 				   (rep:struct-field-rep field))
 				  (vm->c:convert-symbol
 				   (rep:struct-field-name field)))) 
 		       (rep:struct-fields struct))
-		      (fprintf port "};~n"))
+		      (fprintf port "};\n"))
 		    (reverse structs))
 	  (newline port)))
 
@@ -259,57 +259,57 @@
 
       (define (emit-static-variable-fields! port l)
 	(unless (null? l)
-	  (fprintf port "#ifndef MZ_PRECISE_GC~n")
-	  (fprintf port "  /* Write fields as an array to help C compilers */~n")
-	  (fprintf port "  /* that don't like really big records. */~n")
-	  (fprintf port "  Scheme_Object * _consts_[~a];~n" (length l))
+	  (fprintf port "#ifndef MZ_PRECISE_GC\n")
+	  (fprintf port "  /* Write fields as an array to help C compilers */\n")
+	  (fprintf port "  /* that don't like really big records. */\n")
+	  (fprintf port "  Scheme_Object * _consts_[~a];\n" (length l))
 	  (let svloop ([l l][n 0])
 	    (unless (null? l)
-	      (fprintf port "# define ~a _consts_[~a]~n"
+	      (fprintf port "# define ~a _consts_[~a]\n"
 		       (vm->c:convert-symbol (car l)) n)
 	      (svloop (cdr l) (add1 n))))
-	  (fprintf port "#else~n")
+	  (fprintf port "#else\n")
 	  (for-each (lambda (c)
-		      (fprintf port "  Scheme_Object * ~a;~n"
+		      (fprintf port "  Scheme_Object * ~a;\n"
 			       (vm->c:convert-symbol c)))
 		    l)
-	  (fprintf port "#endif~n")))
+	  (fprintf port "#endif\n")))
 
       ;; when statics have binding information, this will look more like 
       ;; emit-local-variable-declarations!
       (define vm->c:emit-static-declarations!
 	(lambda (port)
 	  (unless (not (compiler:any-statics?))
-	    (fprintf port "/* compiler-written static variables */~n")
-	    (fprintf port "static struct {~n")
+	    (fprintf port "/* compiler-written static variables */\n")
+	    (fprintf port "static struct {\n")
 	    (emit-static-variable-fields! port (compiler:get-static-list))
 	    (unless (null? (compiler:get-case-lambdas))
-	      (fprintf port "  mzshort *casesArities[~a];~n"
+	      (fprintf port "  mzshort *casesArities[~a];\n"
 		       (length (compiler:get-case-lambdas))))
 	    (for-each
 	     (lambda (ll)
-	       (fprintf port "  Scheme_Object * ~a;~n" 
+	       (fprintf port "  Scheme_Object * ~a;\n" 
 			(vm->c:convert-symbol (zodiac:varref-var ll))))
 	     (compiler:get-lifted-lambda-vars))
-	    (fprintf port "} S;~n~n"))
+	    (fprintf port "} S;\n\n"))
 
-	  (fprintf port "/* compiler-written per-load static variables */~n")
-	  (fprintf port "typedef struct Scheme_Per_Load_Statics {~n")
+	  (fprintf port "/* compiler-written per-load static variables */\n")
+	  (fprintf port "typedef struct Scheme_Per_Load_Statics {\n")
 	  (if (null? (compiler:get-per-load-static-list))
-	      (fprintf port "  int dummy;~n")
+	      (fprintf port "  int dummy;\n")
 	      (emit-static-variable-fields! port (compiler:get-per-load-static-list)))
-	  (fprintf port "} Scheme_Per_Load_Statics;~n")
+	  (fprintf port "} Scheme_Per_Load_Statics;\n")
 	  (newline port)))
       
       ;; when statics have binding information, this need only register
       ;; pointer declarations
       (define vm->c:emit-registration!
 	(lambda (port)
-	  (fprintf port "~a/* register compiler-written static variables with GC */~n"
+	  (fprintf port "~a/* register compiler-written static variables with GC */\n"
 		   vm->c:indent-spaces)
 	  (let ([register
 		 (lambda (v)
-		   (fprintf port "~ascheme_register_extension_global(&~a, sizeof(~a));~n"
+		   (fprintf port "~ascheme_register_extension_global(&~a, sizeof(~a));\n"
 			    vm->c:indent-spaces v v))])
 	    (unless (or (zero? (const:get-symbol-counter)) (compiler:multi-o-constant-pool))
 	      (register "SYMBOLS"))
@@ -322,30 +322,30 @@
 	  (newline port)))
 
       (define (vm->c:emit-case-arities-definitions! port)
-	(fprintf port "   /* arity information for compiled case-lambdas */~n")
+	(fprintf port "   /* arity information for compiled case-lambdas */\n")
 	(let caloop ([l (reverse (compiler:get-case-lambdas))][pos 0])
 	  (unless (null? l)
 	    (let* ([ast (car l)]
 		   [args (zodiac:case-lambda-form-args ast)])
 	      (if (null? args)
-		  (fprintf port "~aS.casesArities[~a] = NULL;~n"
+		  (fprintf port "~aS.casesArities[~a] = NULL;\n"
 			   vm->c:indent-spaces pos)
 		  (begin
-		    (fprintf port "~a{~n~a  mzshort * arities;~n" 
+		    (fprintf port "~a{\n~a  mzshort * arities;\n" 
 			     vm->c:indent-spaces vm->c:indent-spaces)
-		    (fprintf port "~a  arities = (mzshort *)scheme_malloc_atomic(~a * sizeof(mzshort));~n"
+		    (fprintf port "~a  arities = (mzshort *)scheme_malloc_atomic(~a * sizeof(mzshort));\n"
 			     vm->c:indent-spaces
 			     (* 2 (length args)))
 		    (let cailoop ([l args][n 0])
 		      (unless (null? l)
 			(let-values ([(min-arity max-arity) (compiler:formals->arity (car l))])
-			  (fprintf port "~a  arities[~a] = ~a;~n~a  arities[~a] = ~a;~n"
+			  (fprintf port "~a  arities[~a] = ~a;\n~a  arities[~a] = ~a;\n"
 				   vm->c:indent-spaces (* 2 n) min-arity
 				   vm->c:indent-spaces (add1 (* 2 n)) max-arity))
 			(cailoop (cdr l) (add1 n))))
-		    (fprintf port "~a  S.casesArities[~a] = arities;~n"
+		    (fprintf port "~a  S.casesArities[~a] = arities;\n"
 			     vm->c:indent-spaces pos)
-		    (fprintf port "~a}~n" vm->c:indent-spaces))))
+		    (fprintf port "~a}\n" vm->c:indent-spaces))))
 	    (caloop (cdr l) (add1 pos)))))
 
       (define (vm->c:emit-top-levels! kind return? per-load? null-self-modidx? count vm-list locals-list
@@ -357,26 +357,26 @@
 		       [ll locals-list]
 		       [bl globals-list])
 	  (fprintf c-port
-		   "static ~a ~a_~a(Scheme_Env * env~a)~n{~n"
+		   "static ~a ~a_~a(Scheme_Env * env~a)\n{\n"
 		   (if return? "Scheme_Object *" "void")
 		   kind i
 		   (if (or per-load? module) ", Scheme_Per_Load_Statics *PLS" ""))
-	  (when null-self-modidx? (fprintf c-port "#define self_modidx NULL~n"))
+	  (when null-self-modidx? (fprintf c-port "#define self_modidx NULL\n"))
 	  (when (> max-arity 0)
 	    (fprintf c-port
-		     "~aScheme_Object * arg[~a];~n"
+		     "~aScheme_Object * arg[~a];\n"
 		     vm->c:indent-spaces
 		     max-arity)
-	    (fprintf c-port "~aScheme_Object ** tail_buf;~n"
+	    (fprintf c-port "~aScheme_Object ** tail_buf;\n"
 		     vm->c:indent-spaces))
 	  (let loop ([c (compiler:option:max-exprs-per-top-level-set)][n n][vml vml][ll ll][bl bl])
 	    (if (or (zero? c) (null? vml) (= n count))
 		(begin
 		  (unless (or (null? vml) (= n count) (not return?))
-		    (fprintf c-port "~areturn NULL;~n" vm->c:indent-spaces))
-		  (when null-self-modidx? (fprintf c-port "#undef self_modidx~n"))
+		    (fprintf c-port "~areturn NULL;\n" vm->c:indent-spaces))
+		  (when null-self-modidx? (fprintf c-port "#undef self_modidx\n"))
 		  (fprintf c-port 
-			   "} /* end of ~a_~a */~n~n" kind i)
+			   "} /* end of ~a_~a */\n\n" kind i)
 		  (if (or (null? vml) (= n count))
 		      i
 		      (tls-loop (add1 i) n vml ll bl)))
@@ -384,7 +384,7 @@
 		    (loop c n (cdr vml) (cdr ll) (cdr bl))
 		    (begin
 		      (let ([start (zodiac:zodiac-start (car vml))])
-			(fprintf c-port "~a{ /* [~a,~a] */~n" vm->c:indent-spaces
+			(fprintf c-port "~a{ /* [~a,~a] */\n" vm->c:indent-spaces
 				 (zodiac:location-line start)
 				 (zodiac:location-column start)))
 		      (vm->c:emit-local-variable-declarations! 
@@ -403,7 +403,7 @@
 		      
 		      (vm->c-expression (car vml) #f c-port vm->c:indent-by #t n)
 		      
-		      (fprintf c-port "~a}~n" vm->c:indent-spaces)
+		      (fprintf c-port "~a}\n" vm->c:indent-spaces)
 		      
 		      (loop (sub1 c) (add1 n) (cdr vml) (cdr ll) (cdr bl))))))))
 
@@ -426,13 +426,13 @@
       (define vm->c:emit-vehicle-declaration
 	(lambda (port number)
 	  (vm->c:emit-vehicle-prototype port number)
-	  (fprintf port "; /* ~a */ ~n"
+	  (fprintf port "; /* ~a */ \n"
 		   (vehicle-total-labels (get-vehicle number)))))
 
       (define vm->c:emit-vehicle-header
 	(lambda (port number)
 	  (vm->c:emit-vehicle-prototype port number)
-	  (fprintf port "~n{~n")))
+	  (fprintf port "\n{\n")))
 
       (define vm->c:emit-vehicle-prologue
 	(lambda (port vehicle)
@@ -442,18 +442,18 @@
 			      0)])
 	    (when (> max-arity 0)
 	      ;; emit declaration of argument stack 
-	      (fprintf port "~aScheme_Object * arg[~a];~n" 
+	      (fprintf port "~aScheme_Object * arg[~a];\n" 
 		       vm->c:indent-spaces 
 		       max-arity))
 	    (when (> max-args 0)
 	      ;; emit declaration of global variables for argument passing
 	      (let loop ([n 0])
 		(unless (= n max-args)
-		  (fprintf port "~aregister long reg~a;~n" vm->c:indent-spaces n)
+		  (fprintf port "~aregister long reg~a;\n" vm->c:indent-spaces n)
 		  (loop (+ n 1)))))
 	    (when (> max-arity 0)
 	      ;; tail-buffer-setup
-	      (fprintf port "~aScheme_Object ** tail_buf;~n"
+	      (fprintf port "~aScheme_Object ** tail_buf;\n"
 		       vm->c:indent-spaces)))
 
 	  (when local-vars-at-top?
@@ -466,23 +466,23 @@
 	  ;; emit jump to function...
 	  (when (> (vehicle-total-labels vehicle) 1)
 	    ;; emit switch dispatcher
-	    (fprintf port "~aswitch(MZC_PARAM_TO_SWITCH(void_param))~n~a{ " 
+	    (fprintf port "~aswitch(MZC_PARAM_TO_SWITCH(void_param))\n~a{ " 
 		     vm->c:indent-spaces
 		     vm->c:indent-spaces )
 	    (let loop ([n 0])
 	      (when (and (zero? (modulo n 3))
 			 (not (= n (compiler:get-label-number))))
-		(fprintf port "~n~a~a" vm->c:indent-spaces vm->c:indent-spaces))
+		(fprintf port "\n~a~a" vm->c:indent-spaces vm->c:indent-spaces))
 	      (if (= n (sub1 (vehicle-total-labels vehicle)))
 		  (fprintf port "default: goto FGN~a;" n)
 		  (begin
 		    (fprintf port "case ~a: goto FGN~a;" n n)
 		    (loop (add1 n)))))
-	    (fprintf port "~n~a}~n" vm->c:indent-spaces))))
+	    (fprintf port "\n~a}\n" vm->c:indent-spaces))))
 
       (define vm->c:emit-vehicle-epilogue
 	(lambda (port number)
-	  (fprintf port "} /* end of vehicle # ~a */~n" number)))
+	  (fprintf port "} /* end of vehicle # ~a */\n" number)))
 
       ;; Will be expanded to hold environments, perhaps, etc.
       (define vm->c:convert-type-definition
@@ -539,7 +539,7 @@
 		(void)
 		(let* ([bound (car locals)]
 		       [rep (binding-rep (get-annotation bound))])
-		  (fprintf port "~a~a ~a;~n"
+		  (fprintf port "~a~a ~a;\n"
 			   indent
 			   (vm->c:convert-type-definition rep)
 			   (vm->c:convert-symbol (zodiac:binding-var bound)))
@@ -552,10 +552,10 @@
 	     (cond
 	      [(const:per-load-statics-table? var)
 	       (unless top-level?
-		 (fprintf port "~aScheme_Per_Load_Statics * PLS;~n"
+		 (fprintf port "~aScheme_Per_Load_Statics * PLS;\n"
 			  indent))]
 	      [else
-	       (fprintf port "~aScheme_Bucket * G~a;~n"
+	       (fprintf port "~aScheme_Bucket * G~a;\n"
 			indent
 			(vm->c:convert-symbol (mod-glob-cname var)))]))
 	   (set->list globals))))
@@ -576,7 +576,7 @@
 				   (compiler:get-module-path-constant mod))]
 		      [mod-local (and mod (not (symbol? mod)) (not modidx))]
 		      [mod-far (and mod (or (symbol? mod) modidx))])
-		 (fprintf port "~aG~a = scheme_~a~a~a_bucket(~a~a~a, ~a~a~a);~n"
+		 (fprintf port "~aG~a = scheme_~a~a~a_bucket(~a~a~a, ~a~a~a);\n"
 			  indent 
 			  name 
 			  (if et? "exptime_" "")
@@ -619,29 +619,29 @@
 		      ;; if the binding is mutable, we need to make a box and fill it with
 		      ;; the correct value
 		      (let ([rep (get-rep n)])
-			(fprintf port "~ascheme_malloc(sizeof(~a));~n" 
+			(fprintf port "~ascheme_malloc(sizeof(~a));\n" 
 				 (get-cast n #f)
 				 (vm->c:convert-type-definition
 				  (rep:pointer-to rep)))
-			(fprintf port "~a*(~a)~a = (~a)~a;~n"
+			(fprintf port "~a*(~a)~a = (~a)~a;\n"
 				 indent
 				 (vm->c:convert-type-definition rep)
 				 (get-dest n) 
 				 (vm->c:convert-type-definition (rep:pointer-to rep))
 				 (argv-n)))
 		      
-		      (fprintf port "~a~a;~n" (get-cast n #t) (argv-n)))
+		      (fprintf port "~a~a;\n" (get-cast n #t) (argv-n)))
 		  (loop (cdr args) (sub1 n) #f)]
 		 
 		 [else ; the rest get pulled into a list
 		  (when (dest-boxed? n)
 		    (fprintf port
-			     "~a~a = ~ascheme_malloc(sizeof(Scheme_Object *));~n"
+			     "~a~a = ~ascheme_malloc(sizeof(Scheme_Object *));\n"
 			     indent
 			     (get-dest n)
 			     (get-cast n #f)))
 		  (fprintf port 
-			   "~a~a~a = ~ascheme_build_list_offset(argc, argv, ~a);~n"
+			   "~a~a~a = ~ascheme_build_list_offset(argc, argv, ~a);\n"
 			   indent
 			   (if (dest-boxed? n)
 			       "*(Scheme_Object * *)" 
@@ -677,7 +677,7 @@
 	   (lambda (binding)
 	     (let* ([rep (binding-rep (get-annotation binding))]
 		    [derep (rep:pointer-to rep)])
-	       (fprintf port "~a~a = (~a)~a;~n~a*(~a) = scheme_undefined;~n"
+	       (fprintf port "~a~a = (~a)~a;\n~a*(~a) = scheme_undefined;\n"
 			indent
 			(vm->c:convert-symbol (zodiac:binding-var binding))
 			(vm->c:convert-type-definition rep)
@@ -691,7 +691,7 @@
 	(lambda (undefines indent port)
 	  (for-each
 	   (lambda (name)
-	     (fprintf port "#~aundef ~a~n"
+	     (fprintf port "#~aundef ~a\n"
 		      indent name))
 	   undefines)))
 
@@ -703,7 +703,7 @@
 		(values 1 #f)
 		(begin
 		  ;; The foreign entry label      
-		  (fprintf port "FGN~a:~n" label)
+		  (fprintf port "FGN~a:\n" label)
 		  (let loop ([args (zodiac:case-lambda-form-args L)][i 0])
 		    (if (null? args)
 			(begin
@@ -718,27 +718,27 @@
 					    (compiler:formals->arity (car l))])
 				(fprintf port ", ~a, ~a" min-arity max-arity)
 				(loop (cdr l)))))
-			  (fprintf port ");~n")
-			  (fprintf port "~a~areturn NULL;~n"
+			  (fprintf port ");\n")
+			  (fprintf port "~a~areturn NULL;\n"
 				   vm->c:indent-spaces vm->c:indent-spaces)
 			  (values i #t))
 			(let ([a (car args)])
 			  (cond
 			   [(zodiac:sym-arglist? a)
-			    (fprintf port "~a~agoto FGN~ac~a;~n" 
+			    (fprintf port "~a~agoto FGN~ac~a;\n" 
 				     vm->c:indent-spaces vm->c:indent-spaces
 				     label
 				     i)
 			    (values (add1 i) #t)]
 			   [(zodiac:list-arglist? a)
-			    (fprintf port "~a~aif (argc == ~a) goto FGN~ac~a;~n"
+			    (fprintf port "~a~aif (argc == ~a) goto FGN~ac~a;\n"
 				     vm->c:indent-spaces vm->c:indent-spaces
 				     (length (zodiac:arglist-vars a))
 				     label
 				     i)
 			    (loop (cdr args) (add1 i))]
 			   [else
-			    (fprintf port "~a~aif (argc >= ~a) goto FGN~ac~a;~n"
+			    (fprintf port "~a~aif (argc >= ~a) goto FGN~ac~a;\n"
 				     vm->c:indent-spaces vm->c:indent-spaces
 				     (sub1 (length (zodiac:arglist-vars a)))
 				     label
@@ -757,8 +757,8 @@
 		       [name (vm->c:convert-symbol vname)]
 		       [fname (rep:find-field (closure-code-rep code) vname)])
 		  (fprintf port (if (compiler:option:unpack-environments)
-				    "~a~a = env->~a;~n"
-				    "#~adefine ~a env->~a~n")
+				    "~a~a = env->~a;\n"
+				    "#~adefine ~a env->~a\n")
 			   indent
 			   name
 			   fname)
@@ -781,8 +781,8 @@
 		    (begin
 		      (fprintf port 
 			       (if (compiler:option:unpack-environments)
-				   "~aPLS = env->pls;~n"
-				   "#~adefine PLS env->pls~n")
+				   "~aPLS = env->pls;\n"
+				   "#~adefine PLS env->pls\n")
 			       indent)
 		      (loop (cdr vars)
 			    (if (compiler:option:unpack-environments)
@@ -794,8 +794,8 @@
 			   [fname (rep:find-field (closure-code-rep code) vname)])
 		      (fprintf port 
 			       (if (compiler:option:unpack-environments)
-				   "~aG~a = env->~a;~n"
-				   "#~adefine G~a env->~a~n")
+				   "~aG~a = env->~a;\n"
+				   "#~adefine G~a env->~a\n")
 			       indent
 			       name
 			       fname)
@@ -827,12 +827,12 @@
 					 (loop (cdr l))))))))])
 		    (set-minus free-set uncaptured-anchor-set))])
 					; The foreign entry label      
-	    (fprintf port "FGN~a~a:~n" label lsuffix)
+	    (fprintf port "FGN~a~a:\n" label lsuffix)
 					; Pull arguments to global registers      
 	    (vm->c:pack-global-registers! L which indent port)
 
 					; The local entry label
-	    (fprintf port "LOC~a~a:~n" label lsuffix)
+	    (fprintf port "LOC~a~a:\n" label lsuffix)
 	    (pre-decl)
 	    (unless local-vars-at-top?
 	      (vm->c:emit-local-variable-declarations! (code-local-vars case-code) indent port))
@@ -843,8 +843,8 @@
 	    
 	    (let ([r (closure-code-rep code)])
 	      (when r
-		;; (fprintf port "~aconst ~a * env;~n" indent (vm->c:convert-type-definition r))
-		(fprintf port "#~adefine env MZC_ENV_POINTER(~a, ~a, void_param)~n" 
+		;; (fprintf port "~aconst ~a * env;\n" indent (vm->c:convert-type-definition r))
+		(fprintf port "#~adefine env MZC_ENV_POINTER(~a, ~a, void_param)\n" 
 			 indent 
 			 (vm->c:convert-type-definition r)
 			 (vm->c:convert-type-definition (closure-code-alloc-rep code)))))
@@ -875,7 +875,7 @@
 	    #|
 	    (let ([r (closure-code-rep code)])
 	      (when r
-		(fprintf port "~aenv = (~a *)void_param;~n"
+		(fprintf port "~aenv = (~a *)void_param;\n"
 			 indent
 			 (vm->c:convert-type-definition r))))
 	    |#
@@ -897,18 +897,18 @@
 			  undefines))
 
 	    (when (case-code-has-continue? case-code)
-	      (fprintf port "~awhile(1)~n" indent))
+	      (fprintf port "~awhile(1)\n" indent))
 
 	    undefines)))
 
       (define vm->c:emit-case-epilogue
 	(lambda (code which undefines indent port)
-	  (fprintf port "#~aundef env~n" indent)
+	  (fprintf port "#~aundef env\n" indent)
 	  (vm->c:emit-undefines undefines indent port)))
 
       (define vm->c:emit-function-epilogue
 	(lambda (code close port)
-	  (fprintf port "~a~a /* end of function body ~a */~n" 
+	  (fprintf port "~a~a /* end of function body ~a */\n" 
 		   vm->c:indent-spaces close (closure-code-label code))))
 
       (define vm->c:convert-symbol
@@ -1007,12 +1007,12 @@
 	       ;; (%sequence V ...) -> { M; ... }
 	       [(vm:sequence? ast)
 		(let* ([seq (vm:sequence-vals ast)])
-		  (when braces? (emit-indentation) (emit "{~n"))
+		  (when braces? (emit-indentation) (emit "{\n"))
 		  (for-each (lambda (v)
 			      (process v (indent) #t #t)
-			      (unless (vm->c:block-statement? v) (emit ";~n")))
+			      (unless (vm->c:block-statement? v) (emit ";\n")))
 			    seq)
-		  (when braces? (emit-indentation) (emit "}~n")))]
+		  (when braces? (emit-indentation) (emit "}\n")))]
 	       
 	       ;; (if R (sequence V) (sequence V)) ->
 	       ;;    if (!SCHEME_FALSEP(A)) { V ... } else { V ...}
@@ -1032,7 +1032,7 @@
 			    (emit "!SCHEME_FALSEP(")
 			    (process test indent-level #f #t)
 			    (emit ")"))))
-		    (emit ")~n")
+		    (emit ")\n")
 		    (process (vm:if-then ast) indent-level #t #t)
 		    (let ([else-vals (vm:sequence-vals else)])
 		      (cond 
@@ -1041,7 +1041,7 @@
 			(emit-indentation) (emit "else ")
 			(iloop (car else-vals))]
 		       [(not (null? else-vals))
-			(emit-indentation) (emit "else~n")
+			(emit-indentation) (emit "else\n")
 			(process (vm:if-else ast) indent-level #f #t)]
 		       [else (void)]))))]
 	       
@@ -1056,15 +1056,15 @@
 		(let ([var (vm->c:convert-symbol
 			    (vm:local-varref-var (vm:begin0-setup!-var ast)))])
 		  (emit-indentation)
-		  (emit "if (~a.val == SCHEME_MULTIPLE_VALUES) {~n" var)
+		  (emit "if (~a.val == SCHEME_MULTIPLE_VALUES) {\n" var)
 		  (emit-indentation)
 		  (emit "  Scheme_Thread *pr = scheme_current_thread;\n")
 		  (emit-indentation)
-		  (emit "  ~a.array = pr->ku.multiple.array;~n" var)
+		  (emit "  ~a.array = pr->ku.multiple.array;\n" var)
 		  (emit-indentation)
-		  (emit "  ~a.count = pr->ku.multiple.count;~n" var)
+		  (emit "  ~a.count = pr->ku.multiple.count;\n" var)
 		  (emit-indentation)
-		  (emit "  SCHEME_DETATCH_MV_BUFFER(~a.array, pr);~n" var)
+		  (emit "  SCHEME_DETATCH_MV_BUFFER(~a.array, pr);\n" var)
 		  (emit-indentation)
 		  (emit "} else ~a.array = NULL" var))]
 	       [(vm:begin0-extract? ast)
@@ -1138,12 +1138,12 @@
 			    (emit "CHECK_MULTIPLE_VALUES(res, ~a);" num-to-set))
 			  (emit "}")
 			  (if (not (null? vars))
-			      (emit "~n"))
+			      (emit "\n"))
 			  (let aloop ([vars vars] [n 0])
 			    (unless (null? vars)
 			      (emit-indentation)
 			      (process-set! (car vars) (format "scheme_multiple_array[~a]" n) #f)
-			      (emit ";~n")
+			      (emit ";\n")
 			      (aloop (cdr vars) (+ n 1))))
 			  ))))]
 
@@ -1183,7 +1183,7 @@
 		(when (and (eq? arg-type:tail-arg (vm:args-type ast))
 			   (not (null? (vm:args-vals ast))))
 		  (emit-indentation)
-		  (emit "tail_buf = scheme_tail_apply_buffer_wp(~a, scheme_current_thread);~n"
+		  (emit "tail_buf = scheme_tail_apply_buffer_wp(~a, scheme_current_thread);\n"
 			(length (vm:args-vals ast))))
 		(if (null? (vm:args-vals ast))
 		    (emit-indentation)
@@ -1201,7 +1201,7 @@
 			(process (car args) indent-level #f #t)
 			;; (emit ")") ;; DEBUGGING
 			(unless (null? (cdr args))
-			  (emit ";~n"))
+			  (emit ";\n"))
 			(arloop (add1 n) (cdr args)))))]
 
 	       [(vm:register-args? ast)
@@ -1214,7 +1214,7 @@
 		      (emit "~a = " (vm->c:convert-symbol (zodiac:binding-var var)))
 		      (process val indent-level #f #f)
 		      (unless (null? (cdr vars))
-			(emit ";~n")
+			(emit ";\n")
 			(raloop (cdr vars) (cdr vals))))))]
 
 	       ;; (alloc ) -> malloc
@@ -1304,11 +1304,11 @@
 		(let ([var (vm->c:convert-symbol
 			    (vm:local-varref-var (vm:wcm-remember!-var ast)))])
 		  (emit-indentation)
-		  (emit "scheme_temp_dec_mark_depth();~n")
+		  (emit "scheme_temp_dec_mark_depth();\n")
 		  (emit-indentation)
 		  (emit "~a.val = " var)
 		  (process (vm:wcm-remember!-val ast) indent-level #f #t)
-		  (emit ";~n")
+		  (emit ";\n")
 		  (emit-indentation)
 		  (emit "scheme_temp_inc_mark_depth()"))]
 	       [(vm:wcm-extract? ast)
@@ -1319,7 +1319,7 @@
 	       ;; (continue) -> continue;
 	       [(vm:continue? ast)
 		(unless (compiler:option:disable-interrupts)
-		  (emit-expr "SCHEME_USE_FUEL(1);~n"))
+		  (emit-expr "SCHEME_USE_FUEL(1);\n"))
 		(emit-expr "continue")]
 	       
 	       ;; use NULL instead of tail_buf if no args
@@ -1337,11 +1337,11 @@
 		  (emit-indentation)
 		  (emit "void_param = MZC_PRIM_CLS_DATA(")
 		  (process (vm:tail-call-closure ast) indent-level #f #t)
-		  (emit ");~n"))
+		  (emit ");\n"))
 		;; be nice to threads & user breaks:
 		(unless (compiler:option:disable-interrupts)
 		  (emit-indentation)
-		  (emit "SCHEME_USE_FUEL(1);~n"))
+		  (emit "SCHEME_USE_FUEL(1);\n"))
 		(emit-indentation)
 					; unless its to a variable arity function! ARGH
 		(let* ([label (vm:tail-call-label ast)]

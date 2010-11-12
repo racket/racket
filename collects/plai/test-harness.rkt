@@ -68,7 +68,10 @@
           #t))
     (set! plai-all-test-results (cons result plai-all-test-results))
     (when print?
-      (write result) (newline))
+      (if (abridged-test-output)
+          (apply printf "(~s ~v ~v)" result)
+          (apply printf "(~s ~s ~v ~v ~s)" result))
+      (newline))
     (when (and halt-on-errors? error?)
       (raise (make-exn:test (string->immutable-string (format "test failed: ~s" result))
                             (current-continuation-marks))))))
@@ -91,7 +94,7 @@
 ;;; expression in a thunk.  More importantly, they automatically specify the
 ;;; line number of the test as the comment.
 
-(provide generic-test)
+(provide generic-test equal~?)
 (define (abridged v)
   (if (abridged-test-output)
       empty

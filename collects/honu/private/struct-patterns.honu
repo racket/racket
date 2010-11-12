@@ -1,0 +1,5 @@
+#lang honu/core
+
+provide structField;
+
+pattern structField (name_result) [name:identifier];

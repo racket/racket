@@ -1019,7 +1019,7 @@
 						(+ x-space (* xs w)))
 					    (>= (send scroll-bm get-height) 
 						(+ y-space (* ys h))))
-				 (set! scroll-bm (make-bitmap
+				 (set! scroll-bm (make-screen-bitmap
 						  (inexact->exact (ceiling (+ x-space (* xs w))))
 						  (inexact->exact (ceiling (+ y-space (* ys h))))))
 				 (if (send scroll-bm ok?)

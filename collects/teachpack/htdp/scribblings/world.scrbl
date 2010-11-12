@@ -162,7 +162,7 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
 
 @defproc[(on-mouse-event [clack (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) (unsyntax @tech{World}))]) true]{
    Tell DrRacket to call @scheme[clack] on the current world, the current
-   @scheme[x] and @scheme[y] coordinates of the mouse, and and a
+   @scheme[x] and @scheme[y] coordinates of the mouse, and a
    @tech{MouseEvent} for every action of the mouse by the user of the
    computer. The result of the call becomes the current world.}
 

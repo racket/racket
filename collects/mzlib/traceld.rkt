@@ -8,7 +8,7 @@
          (lambda (load)
            (lambda (filename expected-module)
              (fprintf ep
-                      "~aloading ~a at ~a~n" 
+                      "~aloading ~a at ~a\n" 
                       tab filename (current-process-milliseconds))
              (begin0
               (let ([s tab])
@@ -18,7 +18,7 @@
                       (load filename expected-module))
                     (lambda () (set! tab s))))
               (fprintf ep
-                       "~adone ~a at ~a~n"
+                       "~adone ~a at ~a\n"
                        tab filename (current-process-milliseconds)))))])
     (current-load (mk-chain load))
     (current-load-extension (mk-chain load-extension))))

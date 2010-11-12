@@ -1,12 +1,13 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require racket/string "data.rkt" "../www/download.rkt")
+(require "resources.rkt" "data.rkt" "../www/download.rkt")
 
 (define (in-ftp . paths)
   (string-join (cons "/var/ftp/pub/racket" paths) "/"))
 
 (define docs       (symlink (in-ftp "docs")))
 (define installers (symlink (in-ftp "installers")))
+(define libs       (symlink (in-ftp "libs")))
 (define stubs      (symlink "/www/stubs"))
 
 (provide index)
@@ -19,4 +20,5 @@
         @li{Current documentation in
             @a[href: `(,docs "/recent/html")]{HTML} and in
             @a[href: `(,docs "/recent/pdf")]{PDF}
-            (or @a[href: docs]{all versions}).}}})
+            (or @a[href: docs]{all versions}).}
+        @li{Binary @a[href: libs]{libraries} mainly for GRacket.}}})

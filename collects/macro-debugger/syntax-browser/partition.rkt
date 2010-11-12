@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/class
-         syntax/stx
          "interfaces.rkt"
          "../util/stxobj.rkt")
 (provide new-bound-partition

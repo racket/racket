@@ -47,7 +47,7 @@
 			  ;; from getting too big.
 			  (set! cnt 0)
 			  (set! search (mk-search)))
-			(printf "------------~n~a~n" (board->string depth board))
+			(printf "------------\n~a\n" (board->string depth board))
 			(cond
 			 [(winner? board 'red) 0]
 			 [(winner? board 'yellow)
@@ -112,6 +112,6 @@
 		      (hash-table-for-each move-map
 					   (lambda (k v)
 					     (when (> (list-ref v 3) 1)
-					       (printf "~s~n" (cons k v)))))))
+					       (printf "~s\n" (cons k v)))))))
 		  CONFIG EXPLORE MODEL HEURISTICS)])
     (export))))

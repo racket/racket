@@ -1,70 +1,129 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "bib.rkt" (prefix-in ver: version/utils)
-         racket/list)
+(require "resources.rkt" "people.rkt" "../download/data.rkt"
+         "bib.rkt" (prefix-in - version/utils))
 
-(provide make-bib-table)
+;; New style TR entries -------------------------------------------------------
 
-(define version->date
-  '#hash(["5.0"   . ("2010" "May")]
-         ["4.2.5" . ("2010" "April")]
-         ["4.2.4" . ("2010" "January")]
-         ["4.2.3" . ("2009" "December")]
-         ["4.2.2" . ("2009" "October")]
-         ["4.2.1" . ("2009" "July")]
-         ["4.2"   . ("2009" "June")]
-         ["4.1.5" . ("2009" "March")]
-         ["4.1.4" . ("2009" "January")]
-         ["4.1.3" . ("2008" "November")]
-         ["4.1.2" . ("2008" "October")]
-         ["4.1.1" . ("2008" "October")]
-         ["4.1"   . ("2008" "August")]
-         ["4.0.2" . ("2008" "July")]
-         ["4.0.1" . ("2008" "June")]
-         ["4.0"   . ("2008" "June")]
-         ["372"   . ("2007" "December")]
-         ["371"   . ("2007" "August")]
-         ["370"   . ("2007" "May")]
-         ["360"   . ("2006" "November")]
-         ["352"   . ("2006" "July")]
-         ["351"   . ("2006" "July")]
-         ["350"   . ("2006" "June")]
-         ["301"   . ("2006" "January")]
-         ["300"   . ("2005" "December")]
-         ["209"   . ("2004" "December")]
-         ["208"   . ("2004" "August")]
-         ["207"   . ("2004" "May")]
-         ["206p1" . ("2004" "January")]
-         ["206"   . ("2004" "January")]
-         ["205"   . ("2003" "August")]
-         ["204"   . ("2003" "May")]
-         ["203"   . ("2002" "December")]
-         ["202"   . ("2002" "August")]
-         ["201"   . ("2002" "July")]
-         ["200"   . ("2002" "June")]
-         ["103p1" . ("2001" "August")]))
+(define (-all-techreports-)
+  (list (TR 1 'reference "Reference: Racket" '(mflatt plt)
+            #:description "Racket Programming Language")
+        (TR 2 'drracket "DrRacket: Programming Environment" '(robby plt)
+            #:description "DrRacket API"
+            #:note
+            @list{
+              Preferred generic citation:
+              @blockquote[style: "margin-top: 0.5ex; margin-bottom: 0.5ex;"]{
+                R. B. Findler, J. Clements, C. Flanagan, M. Flatt,
+                S. Krishnamurthi, P. Steckler and M. Felleisen. @br
+                @i{DrScheme: A programming environment for Scheme.} @br
+                Journal of Functional Programming, 12(2): 159–182, March 2002.}
+              Please cite the DrRacket technical report only if internal
+              details of DrRacket are concerned, otherwise use the DrScheme
+              reference.})
+        (TR 3 'gui "GUI: Racket Graphics Toolkit" '(mflatt robby clements)
+            #:description "Racket Graphics Toolkit")))
+
+(define (doc-url doc [fmt 'html] [ver 'recent])
+  (format "http://download.racket-lang.org/docs/~a/~a/~a~a" ver fmt doc
+          (if (eq? 'html fmt) "" (format ".~a" fmt))))
+
+(define (TR num docname title authors* #:description [desc title]
+            #:note [note #f])
+  (define tr-name @list{PLT-TR-2010-@num})
+  (define author-strings
+    (map (lambda (a) (if (eq? 'plt a) "PLT" (person-bibname (find-person a))))
+         authors*))
+  (define (link fmt [ver 'recent]) @a[href: (doc-url docname fmt ver)]{[@fmt]})
+  (define (title-line link?)
+    @list{@big{@b{@(if link? cite-page values){@tr-name}}}
+          @|nbsp nbsp| @small{@link['html] @link['pdf]}})
+  (define (content)
+    @list{@(add-between author-strings " and ") @br
+          @i{@title} @br
+          PLT Technical Report #@num @br
+          @(and note @div[style: "margin-top: 1ex; font-size: small;"]{
+                       @note})})
+  (define ((refblock . title) . body)
+    @list{@h2{@title}
+          @blockquote{@PRE{@body}}})
+  (define cite-page
+    @page[#:file (format "tr~a/" num) #:title tr-name #:part-of 'learning]{
+      @h1{@title-line[#f]}
+      @p*{@blockquote{@big{@content}}
+          @~ For citations of the @desc, please use @TT{\cite{plt-tr@num}} in
+             LaTeX, or @TT|{@cite[plt-tr1]}| in Scribble, using the definitions
+             below.
+          @~ For references to specific releases and/or chapters, use
+             @TT{\cite[Version M.N]{plt-tr@num}} or
+             @TT|{@cite[(in-bib plt-tr|@num "Version M.N")]}| instead.  The
+             year in the bibliographic entry should be 2010 regardless of the
+             version's date.}
+      @@refblock{BibTeX}|{
+        @techreport{plt-tr|@num,
+          title       = {|@title},
+          author      = {|@(add-between author-strings " and ")},
+          number      = {|@tr-name},
+          institution = {PLT Inc.},
+          year        = {2010},
+          note        = {\url{|@(get-resource-path cite-page #t)}}
+        }}|
+      @@refblock{Scribble}|{
+        (define plt-tr|@num
+          (make-bib #:title    "|@title"
+                    #:author   |@(format "~s" (cons 'authors author-strings))
+                    #:date     "2010"
+                    #:location (techrpt-location "|@tr-name")
+                    #:url      "|@(get-resource-path cite-page #t)"))}|
+      @h2{Specific Versions}
+      @blockquote{
+        @table[frame: 'box rules: 'rows cellpadding: 10]{
+          @(for/list ([v (remove-duplicates
+                          (map installer-version all-installers))])
+             @tr{@td{@b{@v} @br @small{(@version->date[v])}}
+                 @td{@TT{\cite[Version @v]{plt-tr@num}} @br
+                     @TT|{@cite[(in-bib plt-tr|@num "Version |@v")]}|}
+                 @td{@link['html v], @link['pdf v]}})}
+        @p{@small{Reminder: the release dates should not be included in the
+                  entry or the citation.}}}})
+  @list{@dt{@title-line[#t]}
+        @dd[style: "margin-bottom: 1.5ex;"]{
+          @content}})
+
+(provide techreports)
+(define techreports
+  @page[#:file "tr/" #:title "PLT Technical Reports" #:part-of 'learning]{
+    @p*{
+    @~ For citations of generic pieces of the Racket infrastructure, please use
+       @TT{\cite{plt-tr1}}, @TT{\cite{plt-tr2}}, etc. in LaTeX, or
+       @TT|{@cite[plt-tr1]}|, @TT|{@cite[plt-tr2]}|, etc. in Scribble, with the
+       BibTeX and Scribble entries provided in the web pages below.
+    @~ For references to specific releases and/or chapters of the language, use
+       @TT{\cite[Version M.N]{plt-tr1}} or
+       @TT|{@cite[(in-bib plt-tr1 "Version M.N")]}|
+       instead.}
+    @dl{@(add-newlines (-all-techreports-))}})
+
+;; Old style TR entries, for compatibility ------------------------------------
+
+(define last-old-tr "4.9")
 
 (define authors
   '([plt      "PLT"]
-    [mflatt   "Matthew Flatt"]
-    [robby    "Robert Bruce Findler"]
     [ff       mflatt robby]
     [fplt     mflatt plt]
     [rplt     robby plt]
     [ffplt    ff plt]
     [ffc      ff clements]
     [fb       mflatt eli]
-    [eli      "Eli Barzilay"]
-    [clements "John Clements"]
     [dorai    "Dorai Sitaram"]
     [wright   "Andrew K. Wright"]
     [flanagan "Cormac Flanagan"]
-    [web      burns gregp jaym]
+    [web      burns gregp jay]
     [burns    "Mike Burns"]
-    [jaym     "Jay McCarthy"]
     [gregp    "Greg Pettyjohn"]
     [dyoo     "Danny Yoo"]
-    [ym       dyoo jaym]
+    [ym       dyoo jay]
     [kathyg   "Kathryn E. Gray"]
     [jacobm   "Jacob Matthews"]
     [sowens   "Scott Owens"]
@@ -118,8 +177,8 @@
                 [type "Introduction"])
     (more       "*...!"    plt    "More: Systems Programming with PLT Scheme"
      [type "Introduction"])
-    ;; (continue   "4.1.1...!"    ym     "Continue: Web Applications in PLT Scheme"
-    ;;  [type "Introduction"])
+    (continue   "4.1.1..." ym    "Continue: Web Applications in PLT Scheme"
+     [type "Introduction"])
     (guide      "*...!"    ffplt  "Guide: PLT Scheme" [type "Introduction"])
     (reference  "*...!"    fplt   "Reference: PLT Scheme")
     (htdp-langs "*...!"    plt    "How to Design Programs Languages")
@@ -128,12 +187,12 @@
     (eopl       "*...!"    plt    "Essentials of Programming Languages Language")
     (drscheme   "*...!"    rplt   "DrScheme: PLT Programming Environment")
     (mzc        "*...!"    plt    "mzc: PLT Compilation and Packaging")
-    (setup-plt  "*...!"    plt   "setup-plt: PLT Configuration and Installation")
+    (setup-plt  "*...!"    plt    "setup-plt: PLT Configuration and Installation")
     (planet     "*...!"    jacobm "PLaneT: Automatic Package Distribution")
     (redex      "4.1...!"  robby  "Redex: Debugging Operational Semantics")
     (scribble   "*...!"    fb     "Scribble: PLT Documentation Tool")
     (slideshow  "*...!"    ff     "Slideshow: PLT Figure and Presentation Tools")
-    (web-server "*...!"    jaym   "Web Server: PLT HTTP Server")
+    (web-server "*...!"    jay    "Web Server: PLT HTTP Server")
     (tools      "*...!"    robby  "Plugins: Extending DrScheme")
     (gui        "*...!"    ffc    "GUI: PLT Graphics Toolkit")
     (framework  "*...!"    ff     "Framework: PLT GUI Application Framework")
@@ -191,20 +250,19 @@
     (test-box-recovery "*...!" plt "Test Box Recovery Tool")
 
     ;; Racket versions
-    (quick      "+..."     mflatt
+    (quick      "!..."     mflatt
                 "Quick: An Introduction to Racket with Pictures"
                 [type "Introduction"])
-    (more       "+..."    plt    "More: Systems Programming with Racket"
+    (more       "!..."    plt    "More: Systems Programming with Racket"
                 [type "Introduction"])
-    (guide      "+..."    ffplt  "Guide: Racket" [type "Introduction"])
-    (reference  "+..."    fplt   "Reference: Racket")
-    (drracket   "+..."    rplt   "DrRacket: Programming Environment")
-    (scribble   "+..."    fb     "Scribble: Racket Documentation Tool")
-    (slideshow  "+..."    ff     "Slideshow: Racket Figure and Presentation Tools")
-    (web-server "+..."    jaym   "Web Server: Racket HTTP Server")
-    (foreign    "+..."    eli    "FFI: Racket Foreign Interface")
-    (inside     "+..."    mflatt "Inside: Racket C API")
-
+    (guide      "!..."    ffplt  "Guide: Racket" [type "Introduction"])
+    (reference  "!..."    fplt   "Reference: Racket")
+    (drracket   "!..."    rplt   "DrRacket: Programming Environment")
+    (scribble   "!..."    fb     "Scribble: Racket Documentation Tool")
+    (slideshow  "!..."    ff     "Slideshow: Racket Figure and Presentation Tools")
+    (web-server "!..."    jay    "Web Server: Racket HTTP Server")
+    (foreign    "!..."    eli    "FFI: Racket Foreign Interface")
+    (inside     "!..."    mflatt "Inside: Racket C API")
 
     ;; Both Scheme and Racket
     (r6rs       "*..."    plt    "R6RS: Standard Language"
@@ -227,29 +285,32 @@
      ;;   [year "2002"])
     ))
 
+;; Use this instead of the built-in one, to make sure that we only deal
+;; with known released version.
 (define version->integer
-  (let ([t (for/hash ([(v d) (in-hash version->date)])
-             (values v (ver:version->integer v)))])
+  (let ([t (for*/hash ([v+d (in-list versions+dates)]
+                       [v (in-value (car v+d))])
+             (values v (-version->integer (regexp-replace #rx"^0+" v ""))))])
     (lambda (ver)
       (hash-ref t ver (lambda ()
                         (error 'version->integer
                                "unknown pltreport version: ~e" ver))))))
 
-(define versions
-  (sort (hash-map version->date (lambda (v d) v))
-        > #:key version->integer #:cache-keys? #t))
+(define (date->year+month date)
+  (let ([m (regexp-match #rx"^([A-Z][a-z]+) +([0-9]+)$" date)])
+    (if m
+      (values (caddr m) (cadr m))
+      (error 'date->year+month "unexpected date string: ~.a" date))))
 
 ;; "V...V"        version range
 ;; "...V", "V..." open-ended version range
 ;; "..."          all versions
 ;; "V"            specific version
 ;; ""             no versions
-;; V can be `*' which is a number between the v3 docs and the v4 docs
-;; V can be `!' which is the last PLT Scheme version
-;; V can be `+' which is the first Racket version
-(define middle-version  (ver:version->integer "379"))
-(define last-scheme-version  (ver:version->integer "4.2.5"))
-(define first-racket-version  (ver:version->integer "5.0"))
+;; V can be `*': a number between the v3 docs and the v4 docs
+;; V can be `!': a number between the last PLT Scheme and the first Racket
+(define v:3->4 (-version->integer "379"))
+(define v:4->5 (-version->integer "4.3"))
 (define (versions->pred str)
   (let* ([str (regexp-replace* #rx"  +" str " ")]
          [str (regexp-replace #rx"^ +" str "")]
@@ -257,9 +318,8 @@
          [l (regexp-split #rx" *[.][.][.] *" str)]
          [l (map (lambda (x)
                    (cond [(equal? "" x) #f]
-                         [(equal? "*"  x) middle-version]
-                         [(equal? "!"  x) last-scheme-version]
-                         [(equal? "+"  x) first-racket-version]
+                         [(equal? "*"  x) v:3->4]
+                         [(equal? "!"  x) v:4->5]
                          [(version->integer x)]
                          [else (error 'versions->pred "bad version: ~e" x)]))
                  l)])
@@ -271,7 +331,7 @@
                   [(from to)
                    (let ([from (or from -inf.0)]
                          [to   (or to   +inf.0)])
-                     (lambda (ver) (<= from (version->integer ver) to)))]
+                     (lambda (v) (<= from (version->integer v) to)))]
                   [_ (error 'versions->pred "bad versions spec: ~e" str)])
      l)))
 
@@ -283,11 +343,11 @@
     t))
 
 (define (author->string author)
-  (let ([r (hash-ref authors* author)])
+  (let ([r (hash-ref authors* author
+                     (lambda () (person-bibname (find-person author))))])
     (if (string? r)
       r
-      (let ([r (apply string-append
-                      (add-between (map author->string r) " and "))])
+      (let ([r (string-join (map author->string r) " and ")])
         (hash-set! authors* author r)
         r))))
 
@@ -303,27 +363,30 @@
          ,@attrs))
      (if (number? (cadr d)) d (list* (car d) #f (cdr d))))))
 
-(define (url s) s)
-
 (define bibs
-  (for*/list ([ver versions] [doc doc-defs*] #:when ((car doc) ver))
+  (for*/list ([ver (filter (let ([last (-version->integer last-old-tr)])
+                             (lambda (v) (<= (version->integer v) last)))
+                           (reverse all-versions))]
+              [doc doc-defs*]
+              #:when ((car doc) ver))
     (define attrs (cdr doc))
     (define (get key [dflt #f]) (cond [(assq key attrs) => cadr] [else dflt]))
     (define docname (get '#:docname))
-    (define-values (year month) (apply values (hash-ref version->date ver)))
+    (define-values (year month) (date->year+month (version->date ver)))
     (define number (format (get '#:number-template) year ver))
     (define key (regexp-replace* #rx":" (string-downcase number) "_"))
+    (define old? (< (version->integer ver) v:4->5))
+    (define site (if old? "plt-scheme" "racket-lang"))
     (define note
-      (let ([n1 "\\url{http://plt-scheme.org/techreports/}"]
+      (let ([n1 (format "\\url{http://~a.org/techreports/}" site)]
             [n2 (get '#:note #f)])
         (if n2 (cons (string-append n1 ";") n2) (list n1))))
-    (define old? (< (ver:version->integer ver) first-racket-version))
-    (define site (if old? "plt-scheme" "racket-lang"))
     (define maybe-s (if old? "" "s"))
-    (define (url* path)
-      (url (format (string-append "http://download." site ".org/doc" maybe-s "/~a/" path) ver docname)))
-    (define pdf-url  (url* "pdf/~a.pdf"))
-    (define pdf-html (url* "html/~a/"))
+    (define (mk-url dir sfx)
+      (format "http://download.~a.org/doc~a/~a/~a/~a~a"
+              site maybe-s ver dir docname sfx))
+    (define pdf-url  (mk-url "pdf" ".pdf"))
+    (define pdf-html (mk-url "html" "/"))
     (bib 'techreport key
          `(,@attrs
            [year        ,year]
@@ -337,25 +400,38 @@
            [#:html-url  ,pdf-html]
            [note        ,@note]))))
 
-(define (make-bib-file bib)
-  (let ([file (format "~a.txt"
-                      (regexp-replace* #rx":" (hash-ref bib '#:key) "_"))])
-    (content-resource
-     (parameterize ([current-output-port (open-output-string)])
-       (display-bib bib)
-       (get-output-string (current-output-port)))
-     (web-path "www" "techreports" file))
-    file))
-
-(define (make-bib-table)
-  (apply table width: "98%" cellspacing: 0 cellpadding: 6 border: 0
-         align: 'center style: "font-size: 75%;"
-    (for/list ([bib bibs] [n (in-naturals)])
-      @tr[valign: 'top bgcolor: (if (even? n) "#e0e0e0" "white")]{
-        @td[style: "white-space: nowrap;"]{@(hash-ref bib 'number)}
-        @td[align: 'left]{@i{@(without-braces (hash-ref bib 'title))}}
-        @td{@(bib-author bib)}
-        @td{@a[href: (url (make-bib-file bib))]{[bib]}@|nbsp|@;
-            @a[href: (hash-ref bib '#:pdf-url)]{[pdf]}@|nbsp|@;
-            @a[href: (hash-ref bib '#:html-url)]{[html]}}})))
-
+(define old-techreports
+  @page[#:file "techreports/" #:title "Old PLT Technical Reports"
+        #:part-of 'learning
+        #:extra-headers
+        @script/inline[type: "text/javascript"]{
+          function show_bib(n) {
+            var s = document.getElementById("bibrow"+n).style;
+            s.display = (s.display == "table-row") ? "none" : "table-row";
+          }}]{
+    @p{@strong{Note:} the entries on this page are outdated, please see the new
+       @techreports page.}
+    @p{PLT publishes technical reports about some of its tools and libraries so
+       that scholars who wish to give proper credit to some of our innovations
+       have a definite citation.  Each entry below provides the full pdf and a
+       bibtex entry; some of the bibtex entries provide additional citations to
+       published papers.}
+    @table[width: "98%" cellspacing: 0 cellpadding: 6 border: 0
+           align: 'center style: "font-size: 75%;"]{
+      @(for/list ([bib (in-list bibs)] [n (in-naturals)])
+         (define bgcolor (if (even? n) "#e0e0e0" "white"))
+         (define bibtext
+           (parameterize ([current-output-port (open-output-string)])
+             (display-bib bib)
+             (get-output-string (current-output-port))))
+         @list{
+           @tr[valign: 'top bgcolor: bgcolor]{
+             @td[style: "white-space: nowrap;"]{@(hash-ref bib 'number)}
+             @td[align: 'left]{@i{@(without-braces (hash-ref bib 'title))}}
+             @td{@(bib-author bib)}
+             @td{@a[href: @list{javascript: show_bib(@n)@";"}]{[bib]}@|nbsp|@;
+                 @a[href: (hash-ref bib '#:pdf-url)]{[pdf]}@|nbsp|@;
+                 @a[href: (hash-ref bib '#:html-url)]{[html]}}}
+           @tr[valign: 'top bgcolor: bgcolor
+               id: @list{bibrow@n} style: "display: none;"]{
+             @td{}@td[colspan: 3]{@pre{@bibtext}}}})}})

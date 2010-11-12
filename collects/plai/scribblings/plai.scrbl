@@ -412,6 +412,9 @@ The @MUTATE-LANG language supports the following syntactic forms:
 
 @schemeblock[if and or cond case define define-values let let-values let* set! lambda λ quote error begin]
 
+The syntax of @racket[define] is restricted to: @racket[(define (id arg-id ...) body ...+)].
+The syntax of @racket[lambda] and @racket[λ] are restricted to: @racket[(lambda (arg-id ...) body ...+)].
+
 The language also defines the following procedures:
 
 @schemeblock[add1 sub1 zero? + - * / even? odd? = < > <= >= cons first rest

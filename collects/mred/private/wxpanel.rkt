@@ -1,8 +1,8 @@
-(module wxpanel mzscheme
+(module wxpanel racket/base
   (require mzlib/class
 	   mzlib/class100
 	   mzlib/list
-	   (prefix wx: "kernel.ss")
+	   (prefix-in wx: "kernel.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "helper.ss"
@@ -12,16 +12,19 @@
 	   "wxitem.ss"
 	   "wxcontainer.ss")
 
-  (provide (protect wx-panel%
-		    wx-vertical-panel%
-		    wx-horizontal-panel%
-		    wx-pane%
-		    wx-vertical-pane%
-		    wx-horizontal-pane%
-		    wx-grow-box-pane%))
+  (provide (protect-out wx-panel%
+                        wx-vertical-panel%
+                        wx-vertical-tab-panel%
+                        wx-vertical-group-panel%
+                        wx-horizontal-panel%
+                        wx-control-horizontal-panel%
+                        wx-pane%
+                        wx-vertical-pane%
+                        wx-horizontal-pane%
+                        wx-grow-box-pane%))
 
   (define wx:windowless-panel%
-    (class100 object% (prnt x y w h style)
+    (class100 object% (prnt x y w h style label)
       (private-field
        [pos-x 0] [pos-y 0] [width 1] [height 1]
        [parent prnt])
@@ -59,8 +62,8 @@
 				  0
 				  2))
 
-  (define (wx-make-basic-panel% wx:panel% stretch?)
-    (class100* (wx-make-container% (make-item% wx:panel% 0 0 stretch? stretch?)) (wx-basic-panel<%>) (parent style)
+  (define (wx-make-basic-panel% wx:panel% stretch? [x-m 0] [y-m 0])
+    (class100* (wx-make-container% (make-item% wx:panel% x-m y-m stretch? stretch?)) (wx-basic-panel<%>) (parent style label)
 	       (inherit get-x get-y get-width get-height
 			min-width min-height set-min-width set-min-height
 			x-margin y-margin
@@ -417,14 +420,8 @@
 			  (raise-mismatch-error 'container-redraw 
 						"result from place-children is not a list of 4-integer lists with the correct length: "
 						l))
-			(when hidden-child
-			  ;; This goes with the hack for macos and macosx below
-			  (send hidden-child set-phantom-size width height))
 			(panel-redraw children children-info (if hidden-child
-								 (cons (list 0 0 width 
-									     (if (memq (system-type) '(macos macosx)) ;; Yucky hack
-										 (child-info-y-min (car children-info)) 
-										 height))
+								 (cons (list 0 0 width height)
 								       (let ([dy (child-info-y-min (car children-info))])
 									 (map (lambda (i)
 										(list (+ (car i) tab-h-border)
@@ -455,7 +452,7 @@
 		     child-infos
 		     placements))])
 	       (sequence
-		 (super-init style parent -1 -1 0 0 (cons 'deleted style))
+		 (super-init style parent -1 -1 0 0 (cons 'deleted style) label)
                  (unless (memq 'deleted style)
                    (send (get-top-level) show-control this #t)))))
 
@@ -480,8 +477,8 @@
       (sequence
 	(apply super-init args))))
 
-  (define (wx-make-panel% wx:panel%)
-    (class100 (make-container-glue% (make-window-glue% (wx-make-basic-panel% wx:panel% #t))) args
+  (define (wx-make-panel% wx:panel% [x-m 0] [y-m 0])
+    (class100 (make-container-glue% (make-window-glue% (wx-make-basic-panel% wx:panel% #t x-m y-m))) args
       (rename [super-on-visible on-visible]
 	      [super-on-active on-active])
       (inherit get-children)
@@ -728,20 +725,29 @@
   (define (wx-make-vertical-panel% wx-linear-panel%) (wx-make-horizontal/vertical-panel% wx-linear-panel% #f))
 
   (define wx-panel% (wx-make-panel% wx:panel%))
+  (define wx-control-panel% (wx-make-panel% wx:panel% const-default-x-margin const-default-y-margin))
+  (define wx-tab-panel% (wx-make-panel% wx:tab-panel%))
+  (define wx-group-panel% (wx-make-panel% wx:group-panel%))
   (define wx-linear-panel% (wx-make-linear-panel% wx-panel%))
+  (define wx-control-linear-panel% (wx-make-linear-panel% wx-control-panel%))
+  (define wx-linear-tab-panel% (wx-make-linear-panel% wx-tab-panel%))
+  (define wx-linear-group-panel% (wx-make-linear-panel% wx-group-panel%))
   (define wx-horizontal-panel% (wx-make-horizontal-panel% wx-linear-panel%))
   (define wx-vertical-panel% (wx-make-vertical-panel% wx-linear-panel%))
+  (define wx-vertical-tab-panel% (wx-make-vertical-panel% wx-linear-tab-panel%))
+  (define wx-vertical-group-panel% (wx-make-vertical-panel% wx-linear-group-panel%))
+  (define wx-control-horizontal-panel% (wx-make-horizontal-panel% wx-control-linear-panel%))
 
   (define wx-pane% (wx-make-pane% wx:windowless-panel% #t))
   (define wx-grow-box-pane%
-    (class100 (wx-make-pane% wx:windowless-panel% #f) (mred proxy parent style)
+    (class100 (wx-make-pane% wx:windowless-panel% #f) (mred proxy parent style label)
       (override
 	[init-min (lambda (x) (if (or (eq? (system-type) 'macos)
 				      (eq? (system-type) 'macosx))
 				  15
 				  0))])
       (sequence
-	(super-init mred proxy parent style))))
+	(super-init mred proxy parent style label))))
   (define wx-linear-pane% (wx-make-linear-panel% wx-pane%))
   (define wx-horizontal-pane% (wx-make-horizontal-panel% wx-linear-pane%))
   (define wx-vertical-pane% (wx-make-vertical-panel% wx-linear-pane%)))

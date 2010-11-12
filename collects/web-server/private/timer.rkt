@@ -13,7 +13,7 @@
   (thread
    (lambda ()
      (let loop ([timers null])
-       #;(printf "Timers: ~a~n" (length timers))
+       #;(printf "Timers: ~a\n" (length timers))
        ;; Wait for either...
        (apply sync
               ;; ... a timer-request message ...

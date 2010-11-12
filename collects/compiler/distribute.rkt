@@ -148,10 +148,7 @@
 			     (if (file-exists? f)
 				 (format template filename-version-part)
 				 (format template "xxxxxxx"))))])
-	 (map copy-dll
-	      (list
-	       "iconv.dll"
-	       "UnicoWS.dll"))
+	 (map copy-dll '("iconv.dll"))
 	 (when (or (memq 'racketcgc types)
 		   (memq 'gracketcgc types))
 	   (map copy-dll
@@ -162,24 +159,14 @@
 		   (memq 'gracket3m types))
 	   (map copy-dll
 		(list
-		 (versionize "libracket3m~a.dll"))))
-	 (when (memq 'gracketcgc types)
-	   (map copy-dll
-		(list
-		 (versionize "libgracket~a.dll"))))
-	 (when (memq 'gracket3m types)
-	   (map copy-dll
-		(list
-		 (versionize "libgracket3m~a.dll")))))]
+		 (versionize "libracket3m~a.dll")))))]
       [(macosx)
-       (when (memq 'racketcgc types)
+       (when (or (memq 'racketcgc types)
+                 (memq 'gracketcgc types))
 	 (copy-framework "Racket" #f lib-dir))
-       (when (memq 'racket3m types)
-	 (copy-framework "Racket" #t lib-dir))
-       (when (memq 'gracketcgc types)
-	 (copy-framework "GRacket" #f lib-dir))
-       (when (memq 'gracket3m types)
-	 (copy-framework "GRacket" #t lib-dir))]
+       (when (or (memq 'racket3m types)
+                 (memq 'gracket3m types))
+	 (copy-framework "Racket" #t lib-dir))]
       [(unix)
        (let ([lib-plt-dir (build-path lib-dir "plt")])
 	 (unless (directory-exists? lib-plt-dir)
@@ -205,11 +192,7 @@
 	     (copy-shared-lib "mzgc" lib-dir))
 	   (when (or (memq 'racket3m types)
 		     (memq 'gracket3m types))
-	     (copy-shared-lib "racket3m" lib-dir))
-	   (when (memq 'gracketcgc types)
-	     (copy-shared-lib "gracket" lib-dir))
-	   (when (memq 'gracket3m types)
-	     (copy-shared-lib "gracket3m" lib-dir))))]))
+	     (copy-shared-lib "racket3m" lib-dir))))]))
 
   (define (search-dll dll-dir dll)
     (if dll-dir
@@ -393,35 +376,40 @@
                             ;; Copy over the extensions for this binary, generating a separate path
                             ;; for each executable
                             (let loop ([exts exts][counter counter])
-                              (if (null? exts)
-                                  (values null counter)
-                                  (let* ([src (extract-src (car exts) (car orig-binaries))]
-                                         [dest (construct-dest src)]
-                                         [sub (format "e~a" counter)])
-                                    (when (and src copy?)
-                                      ; Make dest and copy
-                                      (make-directory* (build-path exts-dir sub (or (path-only dest) 'same)))
-                                      (let ([f (build-path exts-dir sub dest)])
-                                        (when (or (file-exists? f)
-                                                  (directory-exists? f)
-                                                  (link-exists? f))
-                                          (delete-directory/files f))
-                                        (copy-directory/files src f)))
-                                    ;; Generate the new extension entry for the table, and combine with
-                                    ;; recur result for the rest:
-                                    (let-values ([(rest-exts counter)
-                                                  (loop (cdr exts) (inc-counter counter))])
-                                      (values (if src
-                                                  (cons (transform-entry
-                                                         (path->bytes 
-                                                          (relative->binary-relative (car sub-dirs) 
-                                                                                     (car types)
-                                                                                     (build-path relative-exts-dir sub dest)))
-                                                         (car exts))
-                                                        rest-exts)
-                                                  (cons (car exts)
-                                                        rest-exts))
-                                              counter)))))])
+                              (cond
+                               [(null? exts) (values null counter)]
+                               [(eq? 'module (cadar (car exts)))
+                                (let-values ([(rest-exts counter)
+                                              (loop (cdr exts) counter)])
+                                  (values (cons (car exts) rest-exts) counter))]
+                               [else
+                                (let* ([src (extract-src (car exts) (car orig-binaries))]
+                                       [dest (construct-dest src)]
+                                       [sub (format "e~a" counter)])
+                                  (when (and src copy?)
+                                        ; Make dest and copy
+                                    (make-directory* (build-path exts-dir sub (or (path-only dest) 'same)))
+                                    (let ([f (build-path exts-dir sub dest)])
+                                      (when (or (file-exists? f)
+                                                (directory-exists? f)
+                                                (link-exists? f))
+                                        (delete-directory/files f))
+                                      (copy-directory/files src f)))
+                                  ;; Generate the new extension entry for the table, and combine with
+                                  ;; recur result for the rest:
+                                  (let-values ([(rest-exts counter)
+                                                (loop (cdr exts) (inc-counter counter))])
+                                    (values (if src
+                                                (cons (transform-entry
+                                                       (path->bytes 
+                                                        (relative->binary-relative (car sub-dirs) 
+                                                                                   (car types)
+                                                                                   (build-path relative-exts-dir sub dest)))
+                                                       (car exts))
+                                                      rest-exts)
+                                                (cons (car exts)
+                                                      rest-exts))
+                                            counter)))]))])
                 (when copy?
                   ;; Update the binary with the new paths
                   (let* ([str (string->bytes/utf-8 (format "~s" new-exts))]
@@ -477,6 +465,7 @@
                                ;; extract-src:
                                (lambda (rt orig-binary)
                                  (and (cadr rt)
+                                      (bytes? (cadr rt))
                                       (bytes->path (cadr rt))))
                                ;; construct-dest:
                                (lambda (src)

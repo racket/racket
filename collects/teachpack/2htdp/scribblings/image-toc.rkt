@@ -6,26 +6,127 @@
 
 (define mapping
   (list
-   (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-height (text "Hello" 24 "black")) 'val 24)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 18)
-   (list '(image-height (rectangle 10 0 "solid" "purple")) 'val 0)
+   (list
+    '(let* ((s
+             (crop
+              0
+              0
+              20
+              20
+              (rectangle
+               20
+               20
+               "outline"
+               (make-pen "black" 2 "solid" "round" "round"))))
+            (r (beside s s s s s s)))
+       (above r r r r r r))
+    'image
+    "5127be89b4-1.png")
+   (list
+    '(crop
+      0
+      0
+      20
+      20
+      (rectangle 20 20 "outline" (make-pen "black" 2 "solid" "round" "round")))
+    'image
+    "284a96a769b-1.png")
+   (list
+    '(let* ((s (rectangle 20 20 "outline" "black")) (r (beside s s s s s s)))
+       (above r r r r r r))
+    'image
+    "245380940d6-1.png")
+   (list
+    '(let* ((t (triangle 40 "solid" "orange"))
+            (w (image-width t))
+            (h (image-height t)))
+       (clear-pinhole
+        (overlay/pinhole
+         (put-pinhole (/ w 2) 0 t)
+         (put-pinhole w h t)
+         (put-pinhole 0 h t))))
+    'image
+    "1847b22ee5c.png")
+   (list
+    '(underlay/pinhole
+      (put-pinhole 25 10 (ellipse 100 50 "solid" "red"))
+      (put-pinhole 75 40 (ellipse 100 50 "solid" "blue")))
+    'image
+    "1648582961a.png")
+   (list
+    '(let ((petal (put-pinhole 20 20 (ellipse 100 40 "solid" "purple"))))
+       (clear-pinhole
+        (overlay/pinhole
+         (circle 30 "solid" "yellow")
+         (rotate (* 60 0) petal)
+         (rotate (* 60 1) petal)
+         (rotate (* 60 2) petal)
+         (rotate (* 60 3) petal)
+         (rotate (* 60 4) petal)
+         (rotate (* 60 5) petal))))
+    'image
+    "31011b92fc.png")
+   (list
+    '(overlay/pinhole
+      (put-pinhole 25 10 (ellipse 100 50 "solid" "red"))
+      (put-pinhole 75 40 (ellipse 100 50 "solid" "blue")))
+    'image
+    "d2d7809e7e.png")
+   (list '(pinhole-y (center-pinhole (rectangle 10 10 "solid" "red"))) 'val '5)
+   (list '(pinhole-x (center-pinhole (rectangle 10 10 "solid" "red"))) 'val '5)
+   (list
+    '(put-pinhole 2 18 (rectangle 40 20 "solid" "forestgreen"))
+    'image
+    "14fa9751041.png")
+   (list
+    '(rotate 30 (center-pinhole (rectangle 40 20 "solid" "orange")))
+    'image
+    "f89620acd3.png")
+   (list
+    '(center-pinhole (rectangle 40 20 "solid" "red"))
+    'image
+    "b2c3ee438.png")
+   (list '(image-height (rectangle 100 100 "solid" "black")) 'val '100)
+   (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val '100)
+   (list '(image-height (text "Hello" 24 "black")) 'val '24)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val '18)
+   (list '(image-height (rectangle 10 0 "solid" "purple")) 'val '0)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
     'val
-    60)
-   (list '(image-height (circle 30 "solid" "orange")) 'val 60)
-   (list '(image-height (ellipse 30 40 "solid" "orange")) 'val 40)
-   (list '(image-width (rectangle 0 10 "solid" "purple")) 'val 0)
+    '60)
+   (list '(image-height (circle 30 "solid" "orange")) 'val '60)
+   (list '(image-height (ellipse 30 40 "solid" "orange")) 'val '40)
+   (list '(image-width (rectangle 0 10 "solid" "purple")) 'val '0)
    (list
     '(image-width
       (beside (circle 20 "solid" "orange") (circle 20 "solid" "purple")))
     'val
-    80)
-   (list '(image-width (circle 30 "solid" "orange")) 'val 60)
-   (list '(image-width (ellipse 30 40 "solid" "orange")) 'val 30)
+    '80)
+   (list '(image-width (circle 30 "solid" "orange")) 'val '60)
+   (list '(image-width (ellipse 30 40 "solid" "orange")) 'val '30)
+   (list
+    '(scale 40 (color-list->bitmap (list "red" "green" "blue") 3 1))
+    'image
+    "2e45632f5de.png")
+   (list
+    '(image->color-list
+      (above
+       (beside
+        (rectangle 1 1 "solid" (make-color 1 1 1))
+        (rectangle 1 1 "solid" (make-color 2 2 2)))
+       (beside
+        (rectangle 1 1 "solid" (make-color 3 3 3))
+        (rectangle 1 1 "solid" (make-color 4 4 4)))))
+    'val
+    '(list (color 1 1 1) (color 2 2 2) (color 3 3 3) (color 4 4 4)))
+   (list
+    '(image->color-list (rectangle 2 2 "solid" "black"))
+    'val
+    '(list (color 0 0 0) (color 0 0 0) (color 0 0 0) (color 0 0 0)))
+   (list '(bitmap icons/b-run.png) 'image "13aef4074e9.png")
+   (list '(bitmap icons/stop-16x16.png) 'image "72aef3dc67.png")
    (list
     '(beside
       (ellipse 20 70 "solid" "lightsteelblue")
@@ -34,7 +135,7 @@
       (ellipse 20 10 "solid" "navy"))
     'image
     "54a488e1a5.png")
-   (list '(frame (ellipse 20 20 "outline" "black")) 'image "6a5a617f28.png")
+   (list '(frame (ellipse 40 40 "solid" "gray")) 'image "1a74ac09f8a.png")
    (list
     '(above
       (beside
@@ -611,8 +712,6 @@
     "2dde939d6dc.png")
    (list '(right-triangle 36 48 "solid" "black") 'image "1a0088e3819.png")
    (list '(triangle 40 "solid" "tan") 'image "aeddf66d5d.png")
-   (list '(bitmap icons/b-run.png) 'image "13aef4074e9.png")
-   (list '(bitmap icons/stop-16x16.png) 'image "72aef3dc67.png")
    (list
     '(text/font "not really a link" 18 "blue" #f 'roman 'normal 'normal #t)
     'image
@@ -717,4 +816,34 @@
    (list '(ellipse 20 40 "solid" "blue") 'image "25451dd2997.png")
    (list '(ellipse 40 20 "outline" "black") 'image "8cb34e62d4.png")
    (list '(circle 20 "solid" "blue") 'image "54d58bf7f6.png")
-   (list '(circle 30 "outline" "red") 'image "262a4fa650a.png")))
+   (list '(circle 30 "outline" "red") 'image "262a4fa650a.png")
+   (list
+    '(let* ((s
+             (crop
+              0
+              0
+              20
+              20
+              (rectangle
+               20
+               20
+               "outline"
+               (make-pen "black" 2 "solid" "round" "round"))))
+            (r (beside s s s s s s)))
+       (above r r r r r r))
+    'image
+    "5127be89b4.png")
+   (list
+    '(crop
+      0
+      0
+      20
+      20
+      (rectangle 20 20 "outline" (make-pen "black" 2 "solid" "round" "round")))
+    'image
+    "284a96a769b.png")
+   (list
+    '(let* ((s (rectangle 20 20 "outline" "black")) (r (beside s s s s s s)))
+       (above r r r r r r))
+    'image
+    "245380940d6.png")))

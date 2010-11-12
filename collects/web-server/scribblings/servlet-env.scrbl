@@ -1,11 +1,11 @@
 #lang scribble/doc
 @(require "web-server.rkt")
 
-@title[#:tag "servlet-env"
-       #:style 'toc]{Simple Single Servlet Servers}
+@title[#:tag "servlet-env"]{Simple Single Servlet Servers}
 @(require (for-label web-server/servlet-env
                      web-server/http
                      web-server/managers/lru
+                     web-server/managers/manager
                      web-server/lang/lang-api
                      web-server/private/util
                      web-server/dispatchers/dispatch
@@ -16,9 +16,13 @@
                      web-server/stuffers
                      racket/list))
 
-@defmodule[web-server/servlet-env]{
+@defmodule[web-server/servlet-env]
 
-The @web-server provides a way to quickly configure and start a servlet with more customizability than @racketmodname[web-server/insta] provides. This is provided by the @racketmodname[web-server/servlet-env] module. Here is a simple example of its use:
+The @web-server provides a way to quickly configure and start a servlet with more customizability than @racketmodname[web-server/insta] provides. This is provided by the @racketmodname[web-server/servlet-env] module.
+
+@section{Examples}
+
+Here is a simple example of its use:
 @racketmod[
 racket
 (require web-server/servlet
@@ -93,6 +97,8 @@ and don't want a browser opened or the DrRacket banner printed, then you can wri
                #:command-line? #t)
 ]
 
+@subsection{Stateless Servlets}
+
 Suppose you would like to start a server for a stateless Web servlet @filepath{servlet.rkt} that provides @racketid[start]:
 @racketmod[
  racket
@@ -102,8 +108,7 @@ Suppose you would like to start a server for a stateless Web servlet @filepath{s
  (serve/servlet start #:stateless? #t)
 ]
 
-@bold{Warning:} If you put the call to @racket[serve/servlet] in a @racketmodname[web-server] module directly it will not work correctly. 
-Consider the following module:
+You can also put the call to @racket[serve/servlet] in the @racketmodname[web-server] module directly:
 @racketmod[
  web-server
  (require web-server/servlet-env)
@@ -116,14 +121,13 @@ Consider the following module:
  
  (serve/servlet start #:stateless? #t)
 ]
-First, if this module is not saved in a file (e.g., @filepath{servlet.rkt}), then the serialization layer cannot locate the definitions of the 
-serialized continuations. Second, due to an unfortunately subtle bug that we have not yet corrected,
-every time the continuation link is clicked, @racket[serve/servlet] will
-run and attempt to start a Web server instance and open a browser window. These problems do not occur if your servlet is saved in a file
-and if @racket[serve/servlet] is run in another module.
+Like always, you don't even need to save the file.
+
+@section{Full API}
 
 @defproc[(serve/servlet [start (request? . -> . response/c)]
                         [#:command-line? command-line? boolean? #f]
+                        [#:connection-close? connection-close? boolean? #f]
                         [#:launch-browser? launch-browser? boolean? (not command-line?)]
                         [#:quit? quit? boolean? (not command-line?)]
                         [#:banner? banner? boolean? (not command-line?)]
@@ -185,13 +189,13 @@ and if @racket[serve/servlet] is run in another module.
  as its continuation manager. (The default manager limits the amount of memory to 64 MB and
  deals with memory pressure as discussed in the @racket[make-threshold-LRU-manager] documentation.)
  
- The modules specified by @racket[servlet-namespace] are shared with other servlets.
- 
  The server files are rooted at @racket[server-root-path] (which is defaultly the distribution root.)
  File paths, in addition to the @filepath["htdocs"] directory under @racket[server-root-path] may be
  provided with @racket[extra-files-paths]. These paths are checked first, in the order they appear in the list.
  
- Other servlets are served from @racket[servlets-root].
+ Other servlets are served from @racket[servlets-root]. 
+ The modules specified by @racket[servlet-namespace] are shared between servlets found in @racket[servlets-root] and the current namespace (and therefore
+ the @racket[start] procedure.)
  
  If a file cannot be found, @racket[file-not-found-responder] is used to generate an error response.
  
@@ -204,6 +208,8 @@ and if @racket[serve/servlet] is run in another module.
 
  If @racket[log-file] is given, then it used to log requests using @racket[log-format] as the format. Allowable formats
  are those allowed by @racket[log-format->format].
+ 
+ If @racket[connection-close?] is @racket[#t], then every connection is closed after one
+ request. Otherwise, the client decides based on what HTTP version it uses.
 }
               
-}

@@ -25,7 +25,7 @@ exec "$PLTHOME/bin/gracket" "$0"
  (lambda ()
    (let* ([bytes (make-bytes 1000)]
           [len/eof (sync (read-bytes-avail!-evt bytes in))])
-     (die "got some data printed to stdout/stderr:\n~a\n"
+     (die "text printed to stdout/stderr:\n~a\n"
           (if (eof-object? len/eof) len/eof (subbytes bytes 0 len/eof))))))
 
 (uncaught-exception-handler my-handler)
@@ -45,26 +45,33 @@ exec "$PLTHOME/bin/gracket" "$0"
 (with-output-to-file (find-system-path 'pref-file) #:exists 'truncate
   (lambda ()
     (printf "~s\n" `((plt:framework-prefs
-                      ((drscheme:last-version ,(version))
-                       (drscheme:last-language english)))))))
+                      ((drracket:last-version ,(version))
+                       (drracket:last-language english)))))))
 
-;; start drscheme
-(queue-callback
- (lambda ()
-   (dynamic-require '(lib "drscheme.ss" "drscheme") #f)))
+;; start drracket, get interface for testing its windows
+(define <%> #f)
+(queue-callback (lambda ()
+                  (dynamic-require 'drracket #f)
+                  (set! <%> (dynamic-require 'drracket/tool-lib
+                                             'drracket:unit:frame<%>))))
 
-;; wait for the drscheme window to appear
+(define (is-drracket-frame? win) (and <%> (is-a? win <%>)))
+
+;; wait for the drracket window to appear
 (define (window-title w) (send w get-label))
 (let loop ()
   (sleep 1/100)
   (let ([wins (get-top-level-windows)])
-    (cond [(null? wins) (loop)]
-          [(and (regexp-match #rx"^Untitled( - DrScheme)?$"
-                              (window-title (car wins)))
-                (null? (cdr wins)))
-           (fprintf stderr "got a good window: ~a\n"
-                    (window-title (car wins)))]
-          [else (die "bad windows popped up: ~s" (map window-title wins))])))
+    (cond
+      ;; wait to have windows
+      [(null? wins) (loop)]
+      ;; that are all drracket frames
+      [(not (andmap is-drracket-frame? wins)) (loop)]
+      [(pair? (cdr wins))
+       (die "too many windows popped up: ~s" (map window-title wins))]
+      [(regexp-match #rx"^Untitled( - DrRacket)?$" (window-title (car wins)))
+       (fprintf stderr "got a good window: ~a\n" (window-title (car wins)))]
+      [else (die "bad window popped up: ~s" (window-title (car wins)))])))
 
 ;; handle some events
 (let loop ([n 20]) (unless (zero? n) (yield) (loop (sub1 n))))

@@ -1,3 +1,18 @@
+v5.0.2
+
+  * added `pretty-print-parameters' to control term pretty-printing
+
+  * added `grammar-style' and `paren-style' typesetting parameters
+
+  * added support for computed reduction rule names
+
+  * added delimited control model to examples
+
+  * added optional #:attempt-size and #:prepare keyword arguments to random 
+    testing forms
+
+  * fixed minor bugs
+
 v5.0.1
 
   * changed the matching of `where' clauses in a

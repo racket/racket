@@ -1,9 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     syntax/parse)
-         racket/list
+                     syntax/parse
+                     syntax/parse/experimental/contract)
          racket/contract
-         "deriv.rkt"
          "deriv-util.rkt"
          "stx-util.rkt"
          "context.rkt"
@@ -149,7 +148,7 @@
                       (current-state-with v (with-syntax1 ([p f]) fs)))]
              [type-var type])
          (DEBUG
-          (printf "visibility = ~s\n" (visibility))
+          (printf "visibility = ~s\n" (if (visibility) 'VISIBLE 'HIDDEN))
           (printf "step: s1 = ~s\n" s)
           (printf "step: s2 = ~s\n\n" s2))
          (let ([ws2
@@ -289,9 +288,9 @@
 
     [(R** f v p s ws [#:print-state msg] . more)
      #'(begin (printf "** ~s\n" msg)
-              (printf "f = ~e\n" (stx->datum f))
-              (printf "v = ~e\n" (stx->datum v))
-              (printf "s = ~e\n" (stx->datum s))
+              (printf "f = ~.s\n" (stx->datum f))
+              (printf "v = ~.s\n" (stx->datum v))
+              (printf "s = ~.s\n" (stx->datum s))
               (R** f v p s ws . more))]
 
     ;; ** Multi-pass reductions **
@@ -323,7 +322,7 @@
          (visibility-off (not previous-pass-hides?)
                          v
                          (lambda ()
-                           (print-viable-subterms v)
+                           (when #f (print-viable-subterms v))
                            (R** f v p s ws clause ... => k))
                          #t))]
 
@@ -365,10 +364,10 @@
               [fills fills-e])
          (DEBUG
            (printf "Run (multi, vis=~s)\n" (visibility))
-           (printf " f: ~e\n" (stx->datum f))
-           (printf " v: ~e\n" (stx->datum v))
-           (printf " p: ~e\n" 'p)
-           (printf " hole: ~e\n" '(hole :::))
+           (printf " f: ~.s\n" (stx->datum f))
+           (printf " v: ~.s\n" (stx->datum v))
+           (printf " p: ~.s\n" 'p)
+           (printf " hole: ~.s\n" '(hole :::))
            (print-viable-subterms v))
          (if (visibility)
              (let ([vctx (CC (hole :::) v p)]
@@ -381,10 +380,10 @@
               [fctx (CC hole f p)])
          (DEBUG
            (printf "Run (single, vis=~s)\n" (visibility))
-           (printf " f: ~e\n" (stx->datum f))
-           (printf " v: ~e\n" (stx->datum v))
-           (printf " p: ~e\n" 'p)
-           (printf " hole: ~e\n" 'hole)
+           (printf " f: ~.s\n" (stx->datum f))
+           (printf " v: ~.s\n" (stx->datum v))
+           (printf " p: ~.s\n" 'p)
+           (printf " hole: ~.s\n" 'hole)
            (print-viable-subterms v))
          (if (visibility)
              (let ([vctx (CC hole v p)]
@@ -396,8 +395,8 @@
 (define (run-one reducer init-e fctx vsub vctx fill s ws k)
   (DEBUG
     (printf "run-one\n")
-    (printf "  fctx: ~e\n" (stx->datum (fctx #'HOLE)))
-    (printf "  vctx: ~e\n" (stx->datum (vctx #'HOLE))))
+    (printf "  fctx: ~.s\n" (stx->datum (fctx #'HOLE)))
+    (printf "  vctx: ~.s\n" (stx->datum (vctx #'HOLE))))
   (RSbind (with-context vctx
             ((reducer fill) init-e vsub s ws))
           (lambda (f2 v2 s2 ws2) (k (fctx f2) (vctx v2) s2 ws2))))
@@ -406,12 +405,12 @@
 (define (run-multiple/visible reducer init-e1s fctx vsubs vctx fills s ws k)
   (DEBUG
     (printf "run-multiple/visible\n")
-    (printf "  fctx: ~e\n" (stx->datum (fctx (for/list ([dummy init-e1s]) #'HOLE))))
-    (printf "  vctx: ~e\n" (stx->datum (vctx (for/list ([dummy init-e1s]) #'HOLE))))
+    (printf "  fctx: ~.s\n" (stx->datum (fctx (for/list ([dummy init-e1s]) #'HOLE))))
+    (printf "  vctx: ~.s\n" (stx->datum (vctx (for/list ([dummy init-e1s]) #'HOLE))))
     (unless (= (length fills) (length init-e1s))
-      (printf "  fills(~s): ~e\n" (length fills) fills)
-      (printf "  init-e1s: ~s\n" (stx->datum init-e1s))
-      (printf "  vsubs: ~s\n" (stx->datum vsubs))))
+      (printf "  fills(~s): ~.s\n" (length fills) fills)
+      (printf "  init-e1s: ~.s\n" (stx->datum init-e1s))
+      (printf "  vsubs: ~.s\n" (stx->datum vsubs))))
   (let loop ([fills fills] [prefix null] [vprefix null] [suffix init-e1s] [vsuffix vsubs] [s s] [ws ws])
     (cond
      [(pair? fills)
@@ -432,10 +431,10 @@
 (define (run-multiple/nonvisible reducer init-e1s fctx v fills s ws k)
   (DEBUG
     (printf "run-multiple/nonvisible\n")
-    (printf "  fctx: ~e\n" (stx->datum (fctx (for/list ([dummy init-e1s]) #'HOLE)))))
+    (printf "  fctx: ~.s\n" (stx->datum (fctx (for/list ([dummy init-e1s]) #'HOLE)))))
   (let loop ([fills fills] [prefix null] [suffix init-e1s] [v v] [s s] [ws ws])
     (DEBUG
-      (printf "  v: ~e\n" (stx->datum (datum->syntax #f v))))
+      (printf "  v: ~.s\n" (stx->datum (datum->syntax #f v))))
     (cond
      [(pair? fills)
       (RSbind ((reducer (car fills)) (car suffix) v s ws)
@@ -468,7 +467,7 @@
   (cond [(and (not new-visible?) (or (visibility) reset-subterms?))
          (begin
            (DEBUG
-            (printf "hide => seek: ~e\n" (stx->datum stx)))
+            (printf "hide => seek: ~.s\n" (stx->datum stx)))
            (current-pass-hides? #t)
            (let* ([subterms (gather-proper-subterms stx)]
                   [marking (marking-table)]
@@ -494,26 +493,29 @@
 (define (seek-point stx vstx k)
   (if (visibility)
       (k vstx)
-      (let ([paths (table-get (subterms-table) stx)])
-        (cond [(null? paths)
-               (DEBUG (printf "seek-point: failed on ~e\n" (stx->datum stx)))
-               (k vstx)]
-              [(null? (cdr paths))
-               (let ([path (car paths)])
-                 (DEBUG (printf "seek => hide: ~e\n" (stx->datum stx)))
-                 (let ([ctx (lambda (x) (path-replace vstx path x))])
-                   (RScase (parameterize ((visibility #t)
-                                          (subterms-table #f)
-                                          (marking-table #f))
-                             ;; Found stx within vstx
-                             (with-context ctx (k stx)))
-                           (lambda (ws2 stx2 vstx2 s2)
-                             (let ([vstx2 (ctx vstx2)])
-                               (RSunit ws2 stx2 vstx2 s2)))
-                           (lambda (ws exn)
-                             (RSfail ws exn)))))]
-              [else
-               (raise (make nonlinearity stx paths))]))))
+      (begin
+        (DEBUG (printf "Seek point\n")
+               (print-viable-subterms stx))
+        (let ([paths (table-get (subterms-table) stx)])
+          (cond [(null? paths)
+                 (DEBUG (printf "seek-point: failed on ~.s\n" (stx->datum stx)))
+                 (k vstx)]
+                [(null? (cdr paths))
+                 (let ([path (car paths)])
+                   (DEBUG (printf "seek => hide: ~.s\n" (stx->datum stx)))
+                   (let ([ctx (lambda (x) (path-replace vstx path x))])
+                     (RScase (parameterize ((visibility #t)
+                                            (subterms-table #f)
+                                            (marking-table #f))
+                               ;; Found stx within vstx
+                               (with-context ctx (k stx)))
+                             (lambda (ws2 stx2 vstx2 s2)
+                               (let ([vstx2 (ctx vstx2)])
+                                 (RSunit ws2 stx2 vstx2 s2)))
+                             (lambda (ws exn)
+                               (RSfail ws exn)))))]
+                [else
+                 (raise (make nonlinearity stx paths))])))))
 
 (provide print-viable-subterms)
 (define (print-viable-subterms stx)
@@ -538,16 +540,16 @@
            [same-form? (equal? actual-datum expected-datum)])
       (if same-form?
           (fprintf (current-error-port)
-                   "same form but wrong wrappings:\n~e\nwrongness:\n~e\n"
+                   "same form but wrong wrappings:\n~.s\nwrongness:\n~.s\n"
                    actual-datum
                    (wrongness actual expected))
           (fprintf (current-error-port)
-                   "got:\n~s\n\nexpected:\n~e\n"
+                   "got:\n~.s\n\nexpected:\n~.s\n"
                    actual-datum
                    expected-datum))
       (for ([d derivs])
         (fprintf (current-error-port)
-                 "\n~e\n" d))
+                 "\n~.s\n" d))
       (error function
              (if same-form?
                  "wrong starting point (wraps)!"

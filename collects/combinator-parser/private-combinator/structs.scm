@@ -82,7 +82,7 @@
   (define (next-opt lc)
     (letrec ([next 
               (lambda (lc update-errors)
-                #;(printf "next-opt ~a~n" lc)
+                #;(printf "next-opt ~a\n" lc)
                 (cond
                   [(null? (lazy-opts-thunks lc)) #f]
                   [else

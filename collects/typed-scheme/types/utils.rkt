@@ -1,17 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
-(require "../utils/utils.rkt")
-
-(require (rep type-rep filter-rep object-rep rep-utils)
+(require "../utils/utils.rkt"
+         (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          "substitute.rkt"
          (only-in (rep free-variance) combine-frees)
          (env index-env tvar-env)
-         scheme/match
-         scheme/list
-         mzlib/trace
-         scheme/contract
-         (for-syntax scheme/base syntax/parse))
+         racket/match
+         racket/list
+         racket/contract
+         (for-syntax racket/base syntax/parse))
 
 (provide fv fv/list fi
          instantiate-poly
@@ -137,16 +135,16 @@
 
 (p/c
  [ret    
-  (->d ([t (or/c Type/c (listof Type/c))])
-       ([f (if (list? t)
-               (listof FilterSet/c)
-               FilterSet/c)]
-        [o (if (list? t)
-               (listof Object?)
-               Object?)]
+  (->i ([t (or/c Type/c (listof Type/c))])
+       ([f (t) (if (list? t)
+                   (listof FilterSet/c)
+                   FilterSet/c)]
+        [o (t) (if (list? t)
+                   (listof Object?)
+                   Object?)]
         [dty Type/c]
         [dbound symbol?])
-       [_ tc-results?])])
+       [res tc-results?])])
 
 (define (combine-results tcs)
   (match tcs

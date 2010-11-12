@@ -20,7 +20,8 @@ This file sets up the right lexical environment to invoke the tools that want to
          string-constants)
 
 (require (for-syntax racket/base racket/match
-                     compiler/cm-accomplice))
+                     compiler/cm-accomplice
+                     syntax/modread))
 
 (import [prefix drscheme:frame: drracket:frame^]
         [prefix drscheme:unit: drracket:unit^]
@@ -46,8 +47,9 @@ This file sets up the right lexical environment to invoke the tools that want to
        (define full-sexp
          (call-with-input-file tool-lib-src
            (λ (port)
-             (parameterize ([read-accept-reader #t])
-               (read port)))))
+              (with-module-reading-parameterization
+               (lambda ()
+                 (read port))))))
        
        (register-external-file tool-lib-src)
 

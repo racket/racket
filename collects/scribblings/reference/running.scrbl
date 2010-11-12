@@ -9,3 +9,4 @@
 @include-section["collects.scrbl"]
 @include-section["help.scrbl"]
 @include-section["enter.scrbl"]
+@include-section["debugging.scrbl"]

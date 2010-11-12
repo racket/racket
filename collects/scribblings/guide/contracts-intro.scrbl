@@ -143,9 +143,9 @@ Of course, this breaks assignment to the provided variable.
 (module b racket 
   (require a)
   
-  (printf "~s~n" amount)
+  (printf "~s\n" amount)
   <font color="red">(do-it)</font>
-  (printf "~s~n" amount))
+  (printf "~s\n" amount))
 
 (require b)
 </racket>

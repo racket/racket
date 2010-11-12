@@ -203,21 +203,21 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
          (define succs (length (hash-ref success-ht kind-name empty)))
          (define all (+ fails succs))
          (unless (zero? all)
-           (printf "~S~n"
+           (printf "~S\n"
                    `(,kind-name
                      (#f ,fails)
                      (#t ,succs)
                      ,all))))
        (newline)
-       (printf "~a tests passed~n" (length (hash-ref success-ht 'everything empty)))
+       (printf "~a tests passed\n" (length (hash-ref success-ht 'everything empty)))
        
        (let ([common-errors 
               (sort (filter (λ (p) ((car p) . > . 10))
                             (hash-map errors (λ (k v) (cons v k))))
                     > #:key car)])
          (unless (empty? common-errors)
-           (printf "Common Errors:~n")
+           (printf "Common Errors:\n")
            (for ([p (in-list common-errors)])
-             (printf "~a:~n~a~n~n" (car p) (cdr p)))))))))
+             (printf "~a:\n~a\n\n" (car p) (cdr p)))))))))
 
 (thread-wait final-thread)

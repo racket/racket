@@ -51,11 +51,13 @@
                          (let* ([prop-name (syntax-e (read-one))])   
                            (skip-whitespace port)
                            (syntax-property name prop-name (read-one)))]
-                 ;; type annotation
-                 [else (syntax-property name 'type-label (syntax->datum next))])))
+                 ;; otherwise error
+                 [else 
+                  (let-values ([(l c p) (port-next-location port)])
+                    (raise-read-error (format "typed expression ~a must be followed by :, ::, or @"
+                                              (syntax->datum name)) src l c p 1))])))
       (skip-whitespace port)
       (let ([c (read-char port)])
-        #;(printf "char: ~a" c)
         (unless (equal? #\} c)
           (let-values ([(l c p) (port-next-location port)])
             (raise-read-error (format "typed expression ~a not properly terminated" (syntax->datum name)) src l c p 1)))))))
@@ -72,15 +74,15 @@
       (let-values ([(l c p) (port-next-location port)])
         (list src line col pos (and pos (- p pos)))))]))
 
-(define readtable
-  (make-readtable #f #\{ 'dispatch-macro parse-id-type))
+(define (readtable)
+  (make-readtable (current-readtable) #\{ 'dispatch-macro parse-id-type))
 
 (define (*read inp)
-  (parameterize ([current-readtable readtable])
+  (parameterize ([current-readtable (readtable)])
     (read inp)))
 
 (define (*read-syntax src port)
-  (parameterize ([current-readtable readtable])
+  (parameterize ([current-readtable (readtable)])
     (read-syntax src port)))
 
 (provide readtable (rename-out [*read read] [*read-syntax read-syntax]))

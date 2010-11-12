@@ -65,7 +65,6 @@
 					       (format "~a: Argument kein ~a: ~e" 
 						       'tag '?type-name s))
 					      (current-continuation-marks))))
-					  (check-struct-wraps! s)
 					  (raw-generic-access s i)))
 				       'inferred-name
 				       (syntax-e accessor))))
@@ -171,7 +170,7 @@
 		       (with-syntax ((base-signature
 				      (stepper-syntax-property
 				       #'(define ?type-name 
-					   (signature (predicate real-predicate)))
+					   (signature ?type-name (predicate real-predicate)))
 				       'stepper-skip-completely 
 				       #t))
 				     (constructor-signature
@@ -184,7 +183,21 @@
 							  component-signature ...)))
 					   ;; lazy signatures
 					   #'(define (?signature-constructor-name ?param ...)
-					       (make-struct-wrap-signature '?type-name type-descriptor (list ?param ...) #'?type-name)))
+					       (let* ((sigs (list ?param ...))
+						      (sig
+						       (make-lazy-wrap-signature '?type-name #t
+										 type-descriptor raw-predicate
+										 sigs
+										 #'?type-name)))
+						 (let ((arbs (map signature-arbitrary sigs)))
+						   (when (andmap values arbs)
+						     (set-signature-arbitrary! 
+						      sig
+						      (apply arbitrary-record
+							     ?constructor
+							     (list raw-accessor-proc ...)
+							     arbs))))
+						 sig)))
 				       'stepper-skip-completely
 				       #t)))
 			 #'(begin
@@ -406,7 +419,7 @@ prints as:
 
 	 (check-for-id!
 	  (syntax ?signature-constructor-name)
-	  "Vertrags-Konstruktor-Name ist kein Bezeichner")
+	  "Signaturkonstruktor-Name ist kein Bezeichner")
 
          (check-for-id!
           (syntax ?constructor)
@@ -527,7 +540,7 @@ prints as:
 
 	 (check-for-id!
 	  (syntax ?signature-constructor-name)
-	  "Vertrags-Konstruktor-Name ist kein Bezeichner")
+	  "Signaturkonstruktor-Name ist kein Bezeichner")
 
 	 (check-for-id!
 	  (syntax ?constructor)

@@ -29,7 +29,7 @@
 (for-each
  (lambda (n)
    (unless (test-scode n)
-	   (printf "Error in test-scode for value ~a~n" n)
+	   (printf "Error in test-scode for value ~a\n" n)
 	   (set! errors? #t)))
  '(25 -22 -1 -233344433 177000000 859489222))
 
@@ -49,13 +49,13 @@
   (set-date-dst?! date #f)
   (set-date-time-zone-offset! date 0)
   (unless (test-date date)
-	  (printf "Error in test-date~n")
+	  (printf "Error in test-date\n")
 	  (set! errors? #t)))
 
 (for-each
  (lambda (n)
    (unless (test-currency n)
-	   (printf "Error in test-currency for value ~a~n" n)
+	   (printf "Error in test-currency for value ~a\n" n)
 	   (set! errors? #t)))
  '(0 1 3.14 25.00 -22.34 11.7832 91000000000 25034343434.9933))
 
@@ -81,7 +81,7 @@
 	 [expected (caddr t)])
      (unless (equal? got expected)
 	     (set! errors? #t)
-	     (printf "Error in com-tests. Expected: ~a~nGot     : ~a~n"
+	     (printf "Error in com-tests. Expected: ~a\nGot     : ~a\n"
 		     expected got))))
  com-tests)
 
@@ -93,11 +93,11 @@
 	(set! errors? #t))
 
 (if errors?
-      (printf "There were errors!~n")
-      (printf "No errors in conversions and COM tests~n")) 	
+      (printf "There were errors!\n")
+      (printf "No errors in conversions and COM tests\n")) 	
 
 (define (make-mousefun s)
-  (let ([t (string-append s ": button = ~a shift = ~a x = ~a y = ~a~n")])
+  (let ([t (string-append s ": button = ~a shift = ~a x = ~a y = ~a\n")])
     (lambda (button shift x y) 
       (printf t button shift x y))))
 
@@ -110,17 +110,10 @@
 	 (lambda (sf) 
 	   (com-register-event-handler ctrl (car sf) (cadr sf)))
 	 `(("Click"
-	    ,(lambda () (printf "Click~n")))
+	    ,(lambda () (printf "Click\n")))
 	   ,(mouse-pair "MouseMove")
 	   ,(mouse-pair "MouseDown")
 	   ,(mouse-pair "MouseUp")))
 
-	(printf "Try clicking and moving the mouse over the object~n")
-	(printf "You should see Click, MouseMove, MouseDown, and MouseUp events~n"))
-
-	   
-         
-	
-	
-
-
+	(printf "Try clicking and moving the mouse over the object\n")
+	(printf "You should see Click, MouseMove, MouseDown, and MouseUp events\n"))

@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt")
 
 (require mzlib/struct mzlib/pconvert
-         scheme/match
+         racket/match
          syntax/boundmap
          "free-variance.rkt"
          "interning.rkt"
@@ -12,7 +12,7 @@
          (for-syntax 
           scheme/list
           (only-in unstable/syntax generate-temporary)
-          scheme/match
+          racket/match
           (except-in syntax/parse id identifier keyword)
           scheme/base
           syntax/struct

@@ -2,7 +2,7 @@
 @(require scribble/manual
   (for-label scheme
     scheme/class
-    (except-in scheme/gui/base send-event)
+    scheme/gui/base
     (only-in frtime 
              undefined undefined? behavior? event? signal? seconds milliseconds never-e
 	     new-cell set-cell! event-receiver send-event

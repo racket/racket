@@ -19,5 +19,4 @@
         (if path
             (let ([u (path->url path)])
               (send-url (url->string u)))
-            (error 'show-scribbling "cannot find docs for: ~e ~e" mod-path tag))))))
-
+            (error 'show-scribbling "cannot find docs for: ~.s ~.s" mod-path tag))))))

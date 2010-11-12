@@ -193,8 +193,8 @@ zero.
 The given @racket[size] is in pixels, but it is ignored if a
 @racket[font%] object is provided in the text-style.
 
-The @racket[rotation] is in radians, and positive values rotate
-counter-clockwise. For a non-zero @racket[rotation], the resulting
+The @racket[angle] is in radians, and positive values rotate
+counter-clockwise. For a non-zero @racket[angle], the resulting
 pict's bounding box covers the rotated text, and the descent is zero
 and the ascent is the height.}
 
@@ -297,7 +297,7 @@ argument for consistency with the other functions.}
                       [#:start-pull start-pull real? 1/4]
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
-                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                      [#:color color (or/c #f string? (is-a?/c color%)) #f]
                       [#:under? under? any/c #f])
             pict?]
            [(pin-arrow-line [arrow-size real?] [pict pict?]
@@ -310,7 +310,7 @@ argument for consistency with the other functions.}
                       [#:start-pull start-pull real? 1/4]
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
-                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                      [#:color color (or/c #f string? (is-a?/c color%)) #f]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
 		      [#:hide-arrowhead? any/c #f])
@@ -325,7 +325,7 @@ argument for consistency with the other functions.}
                       [#:start-pull start-pull real? 1/4]
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
-                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                      [#:color color (or/c #f string? (is-a?/c color%)) #f]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
 		      [#:hide-arrowhead? any/c #f])

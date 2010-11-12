@@ -1,4 +1,4 @@
-#lang scheme/load
+#lang racket/load
 
 ;; purpose: make sure that each clause exists at most once 
 ;; (why am I running this in scheme/load for the namespace in eval)
@@ -38,3 +38,16 @@
                        (on-tick add1)
                        (on-tick sub1))))))
 
+(with-handlers ((exn:fail:syntax? 
+                 (lambda (e) 
+                   (define msg (exn-message e))
+                   (unless (string=? msg "big-bang: duplicate to-draw clause") 
+                     (raise e)))))
+  (eval '(module a racket
+	   (require 2htdp/universe)
+	   (define s "")
+	   (define x 0)
+	   (big-bang 0
+	     (on-tick (lambda (w) (begin (set! x (+ x 1)) w)))
+	     (to-draw (lambda (w) (set! s (number->string w))))
+	     (on-draw (lambda (w) (set! s (number->string w))))) )))

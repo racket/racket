@@ -15,8 +15,8 @@
        (for-each (λ (exp) (printf "~s\n" (syntax->datum exp)))
                  (syntax->list #'(exp ...))))
      #'(interleave 
-         (list (racketinput exp) ...)
-         (list 'exp ...))]))
+        (list (racketinput exp) ...)
+        (list 'exp ...))]))
 
 (define (interleave expr-paras val-list+outputs)
   (make-table

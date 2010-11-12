@@ -1,9 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         racket/list
          racket/contract
          racket/match
-         "deriv.rkt"
+         "../util/eomap.rkt"
          "deriv-util.rkt"
          "stx-util.rkt"
          "context.rkt"
@@ -35,8 +34,8 @@
  [big-context (parameter/c big-context/c)]
  [marking-table (parameter/c (or/c hash? false/c))]
  [current-binders (parameter/c (listof identifier?))]
- [current-definites (parameter/c (listof identifier?))]
- [current-binders (parameter/c (listof identifier?))]
+ [current-definites (parameter/c eomap?)] ;; eomap[identifier => phase-level]
+ [current-binders (parameter/c hash?)] ;; hash[identifier => phase-level]
  [current-frontier (parameter/c (listof syntax?))]
  [sequence-number (parameter/c (or/c false/c exact-nonnegative-integer?))]
  [phase (parameter/c exact-nonnegative-integer?)]
@@ -82,11 +81,11 @@
 ;; marking-table
 (define marking-table (make-parameter #f))
 
-;; current-binders : parameterof (listof identifier)
-(define current-binders (make-parameter null))
+;; current-binders : parameter of hash[identifier => phase-level]
+(define current-binders (make-parameter #f))
 
-;; current-definites : parameter of (list-of identifier)
-(define current-definites (make-parameter null))
+;; current-definites : parameter of eomap[identifier => phase-level]
+(define current-definites (make-parameter #f))
 
 ;; current-frontier : parameter of (list-of syntax)
 (define current-frontier (make-parameter null))
@@ -151,11 +150,12 @@
 
 (define (learn-definites ids)
   (current-definites
-   (append ids (current-definites))))
+   (eomap-set* (current-definites) ids (phase))))
 
 (define (learn-binders ids)
   (current-binders
-   (append ids (current-binders))))
+   (for/fold ([binders (current-binders)]) ([id (in-list ids)])
+     (hash-set binders id (phase)))))
 
 (define (get-frontier) (or (current-frontier) null))
 
@@ -249,9 +249,9 @@
   (lambda (stx #:allow-nonstx? [allow-nonstx? #f] #:default [default #f])
     (let ([replacement (hash-ref table stx #f)])
       (if replacement
-          (begin #;(printf "  replacing ~s with ~s~n" stx replacement)
+          (begin #;(printf "  replacing ~s with ~s\n" stx replacement)
                  replacement)
-          (begin #;(printf "  not replacing ~s~n" stx)
+          (begin #;(printf "  not replacing ~s\n" stx)
                  default)))))
 
 (define (make-renames-table from0 to0)
@@ -286,11 +286,11 @@
            ;; Only bad effect should be missed subterms (usually at phase1).
            (STRICT-CHECKS
             (fprintf (current-error-port)
-                     "from:\n~e\n\nto:\n~e\n\n"
+                     "from:\n~.s\n\nto:\n~.s\n\n"
                      (stx->datum from)
                      (stx->datum to))
             (fprintf (current-error-port)
-                     "original from:\n~e\n\noriginal to:\n~e\n\n"
+                     "original from:\n~.s\n\noriginal to:\n~.s\n\n"
                      (stx->datum from0)
                      (stx->datum to0))
             (error 'add-to-renames-table))

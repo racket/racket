@@ -1,6 +1,6 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(require "data.rkt")
+(require "resources.rkt" "data.rkt")
 
 (define (render-installer-page installer)
   (define path (installer-path installer))

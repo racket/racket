@@ -1,10 +1,9 @@
-(module fit-low-level mzscheme
-  (require mzlib/foreign mzlib/runtime-path)
+(module fit-low-level racket/base
+  (require mzlib/foreign mzlib/runtime-path
+           (for-syntax racket/base))
   (unsafe!)
 
-  (define-runtime-path libfit-path
-    (build-path "compiled" "native" (system-library-subpath #f)
-                (path-replace-suffix "libfit" (system-type 'so-suffix))))
+  (define-runtime-path libfit-path '(so "libfit"))
 
   (define libfit (ffi-lib libfit-path))
 

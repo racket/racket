@@ -23,7 +23,10 @@
     [(list name models string expected-steps)
      (when (assq name list-of-tests)
        (error 'add-test "name ~v is already in the list of tests" name))
-     (set! list-of-tests (append list-of-tests (list (list name (list models string expected-steps)))))]))
+     (set! list-of-tests 
+           (append list-of-tests 
+                   (list (list name
+                               (list models string expected-steps)))))]))
 
 (define (t1 name models string expected-steps)
   (add-test (list name models string expected-steps)))
@@ -55,7 +58,7 @@
   (let ([maybe-test (assq name list-of-tests)])
     (if maybe-test
         (run-one-test/helper maybe-test)
-        (error 'run-test "test not found: ~e" name))))
+        (error 'run-test "test not found: ~.s" name))))
 
 (define (run-tests names)
   (ormap/no-shortcut run-test names))
@@ -68,12 +71,7 @@
 (define (andmap/no-shortcut f args)
   (foldl (lambda (a b) (and a b)) #t (map f args)))
 
-(t 'mz1 m:mz
-   (for-each (lambda (x) x) '(1 2 3))
-   :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
-   :: ... -> (... {2} ...)
-   :: ... -> (... {3} ...)
-   :: ... -> {(void)})
+
 
 ;; new test case language:
 ;; an expected is (listof step)
@@ -105,6 +103,13 @@
 ;; * a `finished-stepping' is added if no error was specified
 ;; * a `{...}' is replaced with `(hilite ...)'
 
+ (t 'mz1 m:mz
+   (for-each (lambda (x) x) '(1 2 3))
+   :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
+   :: ... -> (... {2} ...)
+   :: ... -> (... {3} ...)
+   :: ... -> {(void)})
+
 (t 'mz-app m:mz
    (+ 3 4)
    :: {(+ 3 4)} -> {7})
@@ -116,15 +121,6 @@
 (t 'mz-if m:mz
    (if 3 4 5)
    :: {(if 3 4 5)} -> {4})
-
-(t 'simple-if m:upto-int/lam
-   (if true false true)
-   :: {(if true false true)} -> {false})
-
-(t 'if-bool m:upto-int/lam
-   (if (if true false true) false true)
-   :: (if {(if true false true)} false true) -> (if {false} false true)
-   :: {(if false false true)} -> {true})
 
 (t 'direct-app m:mz
    ((lambda (x) x) 3)
@@ -164,6 +160,18 @@
 ;                    ((hilite ,h-p)) 3)))
 
 ;(syntax-object->datum (cadr (annotate-expr test2 'mzscheme 0 (lambda (x) x))))
+
+   
+
+(t 'simple-if m:upto-int/lam
+   (if true false true)
+   :: {(if true false true)} -> {false})
+
+(t 'if-bool m:upto-int/lam
+   (if (if true false true) false true)
+   :: (if {(if true false true)} false true) -> (if {false} false true)
+   :: {(if false false true)} -> {true})
+
 
 (t 'top-def m:upto-int/lam
    (define a (+ 3 4))
@@ -1451,21 +1459,31 @@
   #;(t1 'bad-stx-and m:upto-int/lam
       "(and)"
       `((error "foo")))
-
   
+  (t 'local-struct/i m:intermediate
+     (define (f x) (local ((define-struct a (b c))) x))  (f 1)
+     :: (define (f x) (local ((define-struct a (b c))) x)) {(f 1)}
+     -> (define (f x) (local ((define-struct a (b c))) x)) 
+     {(define-struct a_1 (b c))} {1})
+  
+  (t 'local-struct/ilam m:intermediate-lambda
+     (define (f x) (local ((define-struct a (b c))) x))  (f 1)
+     :: (define (f x) (local ((define-struct a (b c))) x)) {(f 1)}
+     -> (define (f x) (local ((define-struct a (b c))) x)) 
+     {((lambda (x) (local ((define-struct a (b c))) x)) 1)}
+     -> (define (f x) (local ((define-struct a (b c))) x)) 
+     {(define-struct a_1 (b c))} {1})
+  
+  
+ 
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
-    (parameterize (#;[disable-stepper-error-handling #t]
+    (parameterize ([disable-stepper-error-handling #t]
                    #;[display-only-errors #t]
                    #;[store-steps #f]
                    #;[show-all-steps #t])
-      #;(run-tests '(check-expect forward-ref check-within check-within-bad check-error check-error-bad))
+      #;(run-tests '(check-expect forward-ref check-within check-within-bad
+                                  check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
-      #;(run-tests '(simple-if))
-      (run-all-tests)))
-  
-  
-
-
-  
-  
+      #;(run-all-tests)
+      (run-tests '(check-expect))))

@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/sandbox)
-(provide (all-from-out scheme/sandbox))
+#lang racket/base
+(require racket/sandbox)
+(provide (all-from-out racket/sandbox))
 
 ;; no input/output
 (sandbox-input        #f)
@@ -20,6 +20,7 @@
      ,@(if gui? '(mrlib/cache-image-snip) '()))))
 
 ;; local overrides
+(require racket/runtime-path)
+(define-runtime-path overrides "overridden-collects")
 (sandbox-override-collection-paths
- (cons (build-path (collection-path "handin-server") "overridden-collects")
-       (sandbox-override-collection-paths)))
+ (cons overrides (sandbox-override-collection-paths)))

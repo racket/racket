@@ -61,6 +61,10 @@
 
    local-remark         ; (listof (U string syntax))
    local-artificial-step ; (list syntax syntax syntax syntax)
+
+   track-origin         ; (cons stx stx)
+   local-value          ; identifier
+   local-value-result   ; boolean
    ))
 
 (define-tokens renames-tokens
@@ -175,8 +179,10 @@
     (149 prim-varref)
     (150 lift-require            ,token-lift-require)
     (151 lift-provide            ,token-lift-provide)
-    (155 prim-#%stratified-body)
-    ))
+    (152 track-origin            ,token-track-origin)
+    (153 local-value             ,token-local-value)
+    (154 local-value-result      ,token-local-value-result)
+    (155 prim-#%stratified-body)))
 
 (define (signal->symbol sig)
   (if (symbol? sig)

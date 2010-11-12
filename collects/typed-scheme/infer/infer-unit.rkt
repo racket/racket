@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require scheme/require (path-up "utils/utils.rkt")
+(require racket/require (path-up "utils/utils.rkt")
          (except-in 
           (combine-in
            (utils tc-utils)
@@ -11,11 +11,11 @@
           make-env -> ->* one-of/c)
          "constraint-structs.rkt"
 	 "signatures.rkt"                  
-         scheme/match
+         racket/match
          mzlib/etc
          racket/trace racket/contract
 	 unstable/sequence unstable/list unstable/debug unstable/hash
-         scheme/list)
+         racket/list)
 
 (import dmap^ constraints^ promote-demote^)
 (export infer^)
@@ -476,6 +476,9 @@
           ;; syntax is covariant
           [((Syntax: s1) (Syntax: s2))
            (cg s1 s2)]
+          ;; futures are covariant
+          [((Future: s1) (Future: s2))
+           (cg s1 s2)]
           ;; parameters are just like one-arg functions
           [((Param: in1 out1) (Param: in2 out2))
            (cset-meet (cg in2 in1) (cg out1 out2))]
@@ -522,7 +525,7 @@
     (match v
       [(c S X T)
        (let ([var (hash-ref h (or variable X) Constant)])
-         ;(printf "variance was: ~a~nR was ~a~nX was ~a~nS T ~a ~a~n" var R (or variable X) S T)
+         ;(printf "variance was: ~a\nR was ~a\nX was ~a\nS T ~a ~a\n" var R (or variable X) S T)
          (evcase var 
                  [Constant S]
                  [Covariant S]

@@ -45,11 +45,15 @@ The @scheme[style] argument indicates one or more of the following styles:
  @item{@scheme['resize-corner] --- leaves room for a resize control at the canvas's
                                   bottom right when only one scrollbar is visible}
 
- @item{@scheme['gl] --- @italic{obsolete} (every canvas is an OpenGL context where supported)}
+ @item{@scheme['gl] --- creates a canvas for OpenGL drawing instead of
+       normal @racket[dc<%>] drawing; call the @method[dc<%>
+       get-gl-context] method on the result of @method[canvas<%>
+       get-dc]; this style is usually combined with
+       @racket['no-autoclear]}
 
  @item{@scheme['no-autoclear] --- prevents automatic erasing of the
- canvas before calls to
-@method[canvas% on-paint]} 
+       canvas before calls to @method[canvas% on-paint]} 
+
  @item{@scheme['transparent] --- the canvas is automatically ``erased''
  before an update using it's parent window's background; the result is
  undefined if this flag is combined with @scheme['no-autoclear]}
@@ -90,8 +94,9 @@ The @scheme[gl-config] argument determines properties of an OpenGL
 
 }
 
+
 @defmethod[(get-scroll-page [which (one-of/c 'horizontal 'vertical)])
-           (integer-in 1 1000000000)]{
+           (integer-in 1 1000000)]{
 
 Get the current page step size of a manual scrollbar. The result is
  @scheme[0] if the scrollbar is not active or it is automatic.
@@ -106,7 +111,7 @@ See also
 
 
 @defmethod[(get-scroll-pos [which (one-of/c 'horizontal 'vertical)])
-           (integer-in 0 1000000000)]{
+           (integer-in 0 1000000)]{
 
 Gets the current value of a manual scrollbar. The result is always
  @scheme[0] if the scrollbar is not active or it is automatic.
@@ -121,7 +126,7 @@ See also
 
 
 @defmethod[(get-scroll-range [which (one-of/c 'horizontal 'vertical)])
-           (integer-in 0 1000000000)]{
+           (integer-in 0 1000000)]{
 
 Gets the current maximum value of a manual scrollbar. The result is
  always @scheme[0] if the scrollbar is not active or it is automatic.
@@ -163,8 +168,8 @@ Gets the size in device units of the scrollable canvas area (as
 }
 
 
-@defmethod[(init-auto-scrollbars [horiz-pixels (or/c (integer-in 1 1000000000) false/c)]
-                                 [vert-pixels (or/c (integer-in 1 1000000000) false/c)]
+@defmethod[(init-auto-scrollbars [horiz-pixels (or/c (integer-in 1 1000000) false/c)]
+                                 [vert-pixels (or/c (integer-in 1 1000000) false/c)]
                                  [h-value (real-in 0.0 1.0)]
                                  [v-value (real-in 0.0 1.0)])
            void?]{
@@ -202,12 +207,12 @@ See also
 
 }
 
-@defmethod[(init-manual-scrollbars [h-length (or/c (integer-in 0 1000000000) false/c)]
-                                   [v-length (or/c (integer-in 0 1000000000) false/c)]
-                                   [h-page (integer-in 1 1000000000)]
-                                   [v-page (integer-in 1 1000000000)]
-                                   [h-value (integer-in 0 1000000000)]
-                                   [v-value (integer-in 0 1000000000)])
+@defmethod[(init-manual-scrollbars [h-length (or/c (integer-in 0 1000000) false/c)]
+                                   [v-length (or/c (integer-in 0 1000000) false/c)]
+                                   [h-page (integer-in 1 1000000)]
+                                   [v-page (integer-in 1 1000000)]
+                                   [h-value (integer-in 0 1000000)]
+                                   [v-value (integer-in 0 1000000)])
            void?]{
 
 Enables and initializes manual scrollbars for the canvas.  A
@@ -248,6 +253,13 @@ See also
 
 }
 
+@defmethod[(make-bitmap [width exact-positive-integer?]
+                        [height exact-positive-integer?]) 
+           (is-a/c? bitmap%)]{
+
+Creates a bitmap that draws in a way that is the same as drawing to the
+canvas. See also @racket[make-screen-bitmap].}
+
 
 @defmethod[#:mode override 
            (on-paint)
@@ -287,9 +299,9 @@ The @scheme[h-value] and @scheme[v-value] arguments each specify a fraction
  of the scrollbar's movement.  A @scheme[0.0] value sets the scrollbar to
  its left/top, while a @scheme[1.0] value sets the scrollbar to its
  right/bottom. A @scheme[0.5] value sets the scrollbar to its middle. In
- general, if the canvas's virtual size is @scheme[v], its client size is
- @scheme[c], and @scheme[(> v c)], then scrolling to @scheme[p]
- sets the view start to @scheme[(floor (* p (- v c)))].
+ general, if the canvas's virtual size is @scheme[_v], its client size is
+ @scheme[_c], and @scheme[(> _v _c)], then scrolling to @scheme[_p]
+ sets the view start to @scheme[(floor (* _p (- _v _c)))].
 
 See also
 @method[canvas% init-auto-scrollbars] and
@@ -299,7 +311,7 @@ See also
 
 
 @defmethod[(set-scroll-page [which (one-of/c 'horizontal 'vertical)]
-                            [value (integer-in 1 1000000000)])
+                            [value (integer-in 1 1000000)])
            void?]{
 
 Set the current page step size of a manual scrollbar. (This method has
@@ -316,7 +328,7 @@ See also
 
 
 @defmethod[(set-scroll-pos [which (one-of/c 'horizontal 'vertical)]
-                           [value (integer-in 0 1000000000)])
+                           [value (integer-in 0 1000000)])
            void?]{
 
 Sets the current value of a manual scrollbar. (This method has no
@@ -336,7 +348,7 @@ See also
 
 
 @defmethod[(set-scroll-range [which (one-of/c 'horizontal 'vertical)]
-                             [value (integer-in 0 1000000000)])
+                             [value (integer-in 0 1000000)])
            void?]{
 
 Sets the current maximum value of a manual scrollbar. (This method has

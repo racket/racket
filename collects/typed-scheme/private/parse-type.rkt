@@ -7,7 +7,7 @@
          syntax/stx (prefix-in c: scheme/contract)
          syntax/parse
          (env type-env-structs tvar-env type-name-env type-alias-env lexical-env index-env)         
-         scheme/match unstable/debug
+         racket/match unstable/debug
          (for-template scheme/base "colon.ss")
          ;; needed at this phase for tests
          (combine-in (prefix-in t: "base-types-extra.ss") "colon.ss")
@@ -24,7 +24,7 @@
 (define enable-mu-parsing (make-parameter #t))
 
 (define ((parse/id p) loc datum)
-  #;(printf "parse-type/id id : ~a~n ty: ~a~n" (syntax-object->datum loc) (syntax-object->datum stx))
+  #;(printf "parse-type/id id : ~a\n ty: ~a\n" (syntax-object->datum loc) (syntax-object->datum stx))
   (let* ([stx* (datum->syntax loc datum loc loc)])
     (p stx*)))
 
@@ -65,7 +65,7 @@
      (parse-type s)]))
 
 (define (parse-all-type stx parse-type)
-  ;(printf "parse-all-type: ~a ~n" (syntax->datum stx))
+  ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx #:literals (t:All)
     [((~and kw t:All) (vars:id ... v:id dd:ddd) . t)
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
@@ -282,13 +282,13 @@
          [(lookup-type-alias #'id parse-type (lambda () #f))
           =>
           (lambda (t)
-            ;(printf "found a type alias ~a~n" #'id)
+            ;(printf "found a type alias ~a\n" #'id)
             (add-type-name-reference #'id)
             t)]
          ;; if it's a type name, we just use the name
          [(lookup-type-name #'id (lambda () #f))
           (add-type-name-reference #'id)
-          ;(printf "found a type name ~a~n" #'id)
+          ;(printf "found a type name ~a\n" #'id)
           (make-Name #'id)]
          [(free-identifier=? #'id #'t:->)
           (tc-error/delayed "Incorrect use of -> type constructor")

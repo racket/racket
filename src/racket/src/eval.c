@@ -1954,9 +1954,15 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
     Scheme_Object *modname, *varname;
     int mod_phase = 0;
     if (SCHEME_SYMBOLP(expr)) {
-      varname = expr;
-      modname = env->module->modname;
-      mod_phase = env->mod_phase;
+      if (!env->module) {
+        /* compiled as a module variable, but instantiated in a non-module
+           namespace; grab a bucket */
+        return (Scheme_Object *)scheme_global_bucket(expr, env);
+      } else {
+        varname = expr;
+        modname = env->module->modname;
+        mod_phase = env->mod_phase;
+      }
     } else {
       varname = SCHEME_CAR(expr);
       modname = SCHEME_CDR(expr);
@@ -3032,12 +3038,8 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
             || IS_NAMED_PRIM(rator, "flacos")
             || IS_NAMED_PRIM(rator, "flatan")
             || IS_NAMED_PRIM(rator, "fllog")
-            || IS_NAMED_PRIM(rator, "flexp"))
-          return 1;
-      }
-    } else if (SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
-      if (!rotate_mode) {
-        if (IS_NAMED_PRIM(rator, "fl+")
+            || IS_NAMED_PRIM(rator, "flexp")
+            || IS_NAMED_PRIM(rator, "fl+")
             || IS_NAMED_PRIM(rator, "fl-")
             || IS_NAMED_PRIM(rator, "fl*")
             || IS_NAMED_PRIM(rator, "fl/")
@@ -3049,7 +3051,6 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
             || IS_NAMED_PRIM(rator, "flmax"))
           return 1;
       }
-    } else if (SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
       if ((rotate_mode || (argpos == 2))
           && IS_NAMED_PRIM(rator, "unsafe-flvector-set!")) 
         return 1;
@@ -4359,8 +4360,11 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
               return scheme_optimize_expr(val, info, context);
             }
           }
-          /* Can't move expression, so lookup again to mark as used. */
-          (void)scheme_optimize_info_lookup(info, pos, NULL, NULL, 0, context, NULL);
+          /* Can't move expression, so lookup again to mark as used
+             and to perform any copy propagation that might apply. */
+          val = scheme_optimize_info_lookup(info, pos, NULL, NULL, 0, context, NULL);
+          if (val)
+            return val;
         } else {
           if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type)) {
             info->size -= 1;
@@ -6577,8 +6581,9 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
       } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
         if (scheme_is_rename_transformer(SCHEME_PTR_VAL(val))) {
           /* It's a rename. Look up the target name and try again. */
-          name = scheme_stx_cert(scheme_rename_transformer_id(SCHEME_PTR_VAL(val)), 
-                                 scheme_false, menv, name, NULL, 1);
+          name = scheme_transfer_srcloc(scheme_stx_cert(scheme_rename_transformer_id(SCHEME_PTR_VAL(val)), 
+                                                        scheme_false, menv, name, NULL, 1),
+                                        name);
           menv = NULL;
           SCHEME_USE_FUEL(1);
         } else {
@@ -6782,7 +6787,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
 	  new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
-	  find_name = new_name;
+	  find_name = scheme_transfer_srcloc(new_name, find_name);
 	  SCHEME_USE_FUEL(1);
 	  menv = NULL;
 	  protected = 0;
@@ -6827,6 +6832,9 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
           } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
                      && scheme_extract_flfxnum(var)) {
             return scheme_extract_flfxnum(var);
+          } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
+                     && scheme_extract_futures(var)) {
+            return scheme_extract_futures(var);
           } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
                      || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type))
 	    return scheme_register_toplevel_in_prefix(var, env, rec, drec, 
@@ -6896,7 +6904,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
 	  new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
-	  find_name = new_name;
+          find_name = scheme_transfer_srcloc(new_name, find_name);
 	  SCHEME_USE_FUEL(1);
 	  menv = NULL;
 	} else
@@ -6983,7 +6991,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	  new_name = scheme_stx_track(new_name, find_name, find_name);
 	}
 	new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
-	find_name = new_name;
+        find_name = scheme_transfer_srcloc(new_name, find_name);
 	SCHEME_USE_FUEL(1);
 	menv = NULL;
       } else
@@ -8869,6 +8877,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
          created with a new thread or a barrier prompt. */
       p->meta_continuation = NULL; /* since prompt wasn't in any meta-continuation */
       p->meta_prompt = NULL;
+      p->acting_barrier_prompt = NULL;
       if ((c->barrier_prompt == barrier_prompt) && barrier_prompt) {
         /* Barrier determines continuation end. */
         c->resume_to = NULL;
@@ -9487,61 +9496,113 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       UPDATE_THREAD_RSPTR();
       scheme_escape_to_continuation(obj, num_rands, rands, NULL);
       return NULL;
-    } else if (type == scheme_proc_struct_type) {
+    } else if ((type == scheme_proc_struct_type)
+               || ((type == scheme_proc_chaperone_type)
+                   /* Chaperone is for struct fields, not function arguments --- but
+                      the chaperone may guard access to the function as a field inside
+                      the struct. We'll need to keep track of the original object
+                      as we unwrap to discover procedure chaperones. */
+                   && (SCHEME_VECTORP(((Scheme_Chaperone *)obj)->redirects)))
+               /* A raw pair is from scheme_apply_chaperone(), propagating the
+                  original object for an applicable structure. */
+               || (type == scheme_raw_pair_type)) {
       int is_method;
       int check_rands = num_rands;
+      Scheme_Object *orig_obj;
 
-      do {
-        VACATE_TAIL_BUFFER_USE_RUNSTACK();
+      if (SCHEME_RPAIRP(obj)) {
+        orig_obj = SCHEME_CDR(obj);
+        obj = SCHEME_CAR(obj);
+      } else {
+        orig_obj = obj;
+      }
 
-        UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
+      while (1) {
+        /* Like the apply loop around this one, but we need
+           to keep track of orig_obj until we get down to the
+           structure. */
 
-        v = obj;
-        obj = scheme_extract_struct_procedure(obj, check_rands, rands, &is_method);
-        if (is_method) {
-          /* Have to add an extra argument to the front of rands */
-          if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
-            /* Common case: we can just push self onto the front: */
-            rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
-            rands[0] = v;
-          } else {
-            int i;
-            Scheme_Object **a;
+        type = SCHEME_TYPE(obj);
+        if (type == scheme_proc_struct_type) {
+          do {
+            VACATE_TAIL_BUFFER_USE_RUNSTACK();
 
-            if (p->tail_buffer && (num_rands < p->tail_buffer_size)) {
-              /* Use tail-call buffer. Shift in such a way that this works if
-                 rands == p->tail_buffer */
-              a = p->tail_buffer;
+            UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
+
+            v = obj;
+            obj = scheme_extract_struct_procedure(orig_obj, check_rands, rands, &is_method);
+            if (is_method) {
+              /* Have to add an extra argument to the front of rands */
+              if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
+                /* Common case: we can just push self onto the front: */
+                rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
+                rands[0] = v;
+              } else {
+                int i;
+                Scheme_Object **a;
+
+                if (p->tail_buffer && (num_rands < p->tail_buffer_size)) {
+                  /* Use tail-call buffer. Shift in such a way that this works if
+                     rands == p->tail_buffer */
+                  a = p->tail_buffer;
+                } else {
+                  /* Uncommon general case --- allocate an array */
+                  UPDATE_THREAD_RSPTR_FOR_GC();
+                  a = MALLOC_N(Scheme_Object *, num_rands + 1);
+                }
+
+                for (i = num_rands; i--; ) {
+                  a[i + 1] = rands[i];
+                }
+                a[0] = v;
+                rands = a;
+              }
+              num_rands++;
+            }
+
+            /* After we check arity once, no need to check again
+               (which would lead to O(n^2) checking for nested
+               struct procs): */
+            check_rands = -1;
+
+            DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
+
+            break;
+          } while (SAME_TYPE(scheme_proc_struct_type, SCHEME_TYPE(obj)));
+
+          goto apply_top;
+        } else {
+          if (SCHEME_VECTORP(((Scheme_Chaperone *)obj)->redirects))
+            obj = ((Scheme_Chaperone *)obj)->prev;
+          else if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj)->redirects), scheme_nack_guard_evt_type))
+            /* Chaperone is for evt, not function arguments */
+            obj = ((Scheme_Chaperone *)obj)->prev;
+          else {
+            /* Chaperone is for function arguments */
+            VACATE_TAIL_BUFFER_USE_RUNSTACK();
+            UPDATE_THREAD_RSPTR();
+            v = scheme_apply_chaperone(scheme_make_raw_pair(obj, orig_obj), num_rands, rands, NULL);
+            
+            if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING)) {
+              /* Need to stay in this loop, because a tail-call result must
+                 be a tail call to an unwrapped layer, so we'll eventually
+                 need to use orig_obj. */
+              obj = p->ku.apply.tail_rator;
+              num_rands = p->ku.apply.tail_num_rands;
+              if (check_rands != -1) check_rands = num_rands;
+              rands = p->ku.apply.tail_rands;
+              p->ku.apply.tail_rator = NULL;
+              p->ku.apply.tail_rands = NULL;
+              RUNSTACK = old_runstack;
+              RUNSTACK_CHANGED();
             } else {
-              /* Uncommon general case --- allocate an array */
-              UPDATE_THREAD_RSPTR_FOR_GC();
-              a = MALLOC_N(Scheme_Object *, num_rands + 1);
+              break;
             }
-
-            for (i = num_rands; i--; ) {
-              a[i + 1] = rands[i];
-            }
-            a[0] = v;
-            rands = a;
           }
-          num_rands++;
         }
-
-        /* After we check arity once, no need to check again
-           (which would lead to O(n^2) checking for nested
-           struct procs): */
-        check_rands = -1;
-
-        DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
-      } while (SAME_TYPE(scheme_proc_struct_type, SCHEME_TYPE(obj)));
-
-      goto apply_top;
+      }
     } else if (type == scheme_proc_chaperone_type) {
-      if (SCHEME_VECTORP(((Scheme_Chaperone *)obj)->redirects)) {
-        /* Chaperone is for struct fields, not function arguments */
-        obj = ((Scheme_Chaperone *)obj)->prev;
-        goto apply_top;
-      } else if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj)->redirects), scheme_nack_guard_evt_type)) {
+      if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj)->redirects), scheme_nack_guard_evt_type)) {
         /* Chaperone is for evt, not function arguments */
         obj = ((Scheme_Chaperone *)obj)->prev;
         goto apply_top;
@@ -11720,6 +11781,27 @@ void scheme_pop_prefix(Scheme_Object **rs)
   /* This function must not allocate, since a relevant multiple-values
      result may be in the thread record (and we don't want it zerod) */
   MZ_RUNSTACK = rs;
+}
+
+Scheme_Object *scheme_suspend_prefix(Scheme_Object **rs)
+{
+  if (rs != MZ_RUNSTACK) {
+    Scheme_Object *v;
+    v = MZ_RUNSTACK[0];
+    MZ_RUNSTACK++;
+    return v;
+  } else
+    return NULL;
+}
+
+Scheme_Object **scheme_resume_prefix(Scheme_Object *v)
+{
+  if (v) {
+    --MZ_RUNSTACK;
+    MZ_RUNSTACK[0] = v;
+    return MZ_RUNSTACK + 1;
+  } else
+    return MZ_RUNSTACK;
 }
 
 /*========================================================================*/

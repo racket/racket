@@ -1,3 +1,0 @@
-
-extern void *wxsCheckEventspace(char *);
-@MACRO CHECKEVENTSPACE[who] = WITH_VAR_STACK(wxsCheckEventspace(<who>));

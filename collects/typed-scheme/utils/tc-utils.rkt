@@ -6,10 +6,8 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out))
-(require "syntax-traversal.rkt"
-	 "utils.rkt" racket/dict
-	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match unstable/debug
-         (for-syntax unstable/syntax))
+(require "syntax-traversal.rkt" racket/dict
+	 syntax/parse (for-syntax scheme/base syntax/parse) racket/match)
 
 ;; a parameter representing the original location of the syntax being currently checked
 (define current-orig-stx (make-parameter #'here))
@@ -54,15 +52,15 @@ don't depend on any other portion of the system
                (and (syntax-transforming?) (syntax-original? (syntax-local-introduce e)))
                #;(and (orig-module-stx) (eq? (debugf syntax-source-module e) (debugf syntax-source-module (orig-module-stx))))
 	       #;(syntax-source-module stx))
-      (log-message l 'warning (format "Typed Scheme has detected unreachable code: ~e" (syntax->datum (locate-stx e)))
+      (log-message l 'warning (format "Typed Scheme has detected unreachable code: ~.s" (syntax->datum (locate-stx e)))
                    e))))
 
 (define (locate-stx stx)
   (define omodule (orig-module-stx))
   (define emodule (expanded-module-stx))
-  ;(printf "orig: ~a~n" (syntax-object->datum omodule))
-  ;(printf "exp: ~a~n" (syntax-object->datum emodule))
-  ;(printf "stx (locate): ~a~n" (syntax-object->datum stx))
+  ;(printf "orig: ~a\n" (syntax-object->datum omodule))
+  ;(printf "exp: ~a\n" (syntax-object->datum emodule))
+  ;(printf "stx (locate): ~a\n" (syntax-object->datum stx))
   (if (and (not (print-syntax?)) omodule emodule stx)
       (or (look-for-in-orig omodule emodule stx) stx)
       stx))
@@ -85,6 +83,7 @@ don't depend on any other portion of the system
   (define (reset!) (set! delayed-errors null))
   (match (reverse delayed-errors)
     [(list) (void)]
+    ;; if there's only one, we don't need multiple-error handling
     [(list (struct err (msg stx)))
      (reset!)
      (raise-typecheck-error msg stx)]
@@ -138,13 +137,12 @@ don't depend on any other portion of the system
 
 ;; raise an internal error - typechecker bug!
 (define (int-err msg . args) 
-  (parameterize ([custom-printer #t])
-    (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
-					    (apply format msg args)
-					    (format "\nwhile typechecking\n~aoriginally\n~a"
-						    (syntax->datum (current-orig-stx))
-						    (syntax->datum (locate-stx (current-orig-stx)))))
-			     (current-continuation-marks)))))
+  (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
+                                          (apply format msg args)
+                                          (format "\nwhile typechecking\n~aoriginally\n~a"
+                                                  (syntax->datum (current-orig-stx))
+                                                  (syntax->datum (locate-stx (current-orig-stx)))))
+                           (current-continuation-marks))))
 
 (define-syntax (nyi stx)
   (syntax-case stx ()
@@ -168,8 +166,8 @@ don't depend on any other portion of the system
     #:transparent
     #:attributes (ty id)
     (pattern [nm:identifier ~! ty]
-             #:fail-unless (list? (identifier-template-binding #'nm)) "not a bound identifier"
-             #:with id #'#'nm)
+             #:fail-unless (list? ((if (= 1 (syntax-local-phase-level)) identifier-template-binding identifier-template-binding) #'nm)) "not a bound identifier"
+             #:with id #'(quote-syntax nm))
     (pattern [e:expr ty]
              #:with id #'e))
   (syntax-parse stx

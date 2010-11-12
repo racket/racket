@@ -210,6 +210,8 @@ HOOK_SHARED_OK void (*scheme_on_atomic_timeout)(void);
 HOOK_SHARED_OK static int atomic_timeout_auto_suspend;
 HOOK_SHARED_OK static int atomic_timeout_atomic_level;
 
+THREAD_LOCAL_DECL(struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_descs);
+
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
 ROSYM static Scheme_Object *froz_key;
@@ -236,6 +238,9 @@ THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_out_callbacks);
 THREAD_LOCAL_DECL(static Scheme_Object *recycle_cell);
 THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
 THREAD_LOCAL_DECL(static int recycle_cc_count);
+
+THREAD_LOCAL_DECL(struct Scheme_Hash_Table *place_local_misc_table);
+
 
 #ifdef MZ_PRECISE_GC
 extern long GC_get_memory_use(void *c);
@@ -265,7 +270,7 @@ typedef struct {
   Scheme_Custodian *val;
 } Scheme_Custodian_Weak_Box;
 
-# define MALLOC_MREF() (Scheme_Custodian_Reference *)scheme_make_weak_box(NULL)
+# define MALLOC_MREF() (Scheme_Custodian_Reference *)scheme_make_late_weak_box(NULL)
 # define CUSTODIAN_FAM(x) ((Scheme_Custodian_Weak_Box *)x)->val
 # define xCUSTODIAN_FAM(x) SCHEME_BOX_VAL(x)
 #else
@@ -824,6 +829,8 @@ void scheme_init_thread_places(void) {
   buffer_init_size = INIT_TB_SIZE;
   REGISTER_SO(recycle_cell);
   REGISTER_SO(maybe_recycle_cell);
+  REGISTER_SO(gc_prepost_callback_descs);
+  REGISTER_SO(place_local_misc_table);
 }
 
 void scheme_init_memtrace(Scheme_Env *env)
@@ -1425,7 +1432,7 @@ Scheme_Custodian_Reference *scheme_add_managed(Scheme_Custodian *m, Scheme_Objec
   }
 
 #ifdef MZ_PRECISE_GC
-  b = scheme_make_weak_box(NULL);
+  b = scheme_make_late_weak_box(NULL);
 #else
   b = MALLOC_ONE_WEAK(Scheme_Object*);
 #endif
@@ -1826,7 +1833,7 @@ static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[])
   /* 3m  */
   {
     Scheme_Object *wb, *pr, *prev;
-    wb = GC_malloc_weak_box(cb, NULL, 0);
+    wb = GC_malloc_weak_box(cb, NULL, 0, 1);
     pr = scheme_make_raw_pair(wb, cb->cust->cust_boxes);
     cb->cust->cust_boxes = pr;
     cb->cust->num_cust_boxes++;
@@ -2546,7 +2553,8 @@ void *scheme_register_process_global(const char *key, void *val)
   long len;
 
 #if defined(MZ_USE_MZRT)
-  mzrt_mutex_lock(process_global_lock);
+  if (process_global_lock)
+    mzrt_mutex_lock(process_global_lock);
 #endif
 
   for (pg = process_globals; pg; pg = pg->next) {
@@ -2568,7 +2576,8 @@ void *scheme_register_process_global(const char *key, void *val)
   }
 
 #if defined(MZ_USE_MZRT)
-  mzrt_mutex_unlock(process_global_lock);
+  if (process_global_lock)
+    mzrt_mutex_unlock(process_global_lock);
 #endif
 
   return old_val;
@@ -2579,6 +2588,13 @@ void scheme_init_process_globals(void)
 #if defined(MZ_USE_MZRT)
   mzrt_mutex_create(&process_global_lock);
 #endif
+}
+
+Scheme_Object *scheme_get_place_table(void)
+{
+  if (!place_local_misc_table)
+    place_local_misc_table = scheme_make_hash_table(SCHEME_hash_ptr);
+  return (Scheme_Object *)place_local_misc_table;
 }
 
 /*========================================================================*/
@@ -3674,10 +3690,10 @@ static int check_sleep(int need_activity, int sleep_now)
       }
 
       if (merge_time) {
-	double d = p->sleep_end;
+	double d;
 	double t;
 
-	d = (d - scheme_get_inexact_milliseconds());
+	d = (p_time - scheme_get_inexact_milliseconds());
 
 	t = (d / 1000);
 	if (t <= 0) {
@@ -3967,14 +3983,26 @@ static void exit_or_escape(Scheme_Thread *p)
   select_thread();
 }
 
-void scheme_break_main_thread()
+void scheme_break_main_thread_at(void *p)
 /* This function can be called from an interrupt handler. 
    On some platforms, it will even be called from multiple
    OS threads. In the case of multiple threads, there's a
    tiny chance that a single Ctl-C will trigger multiple
    break exceptions. */
 {
-  delayed_break_ready = 1;
+  *(volatile short *)p = 1;
+}
+
+void scheme_break_main_thread()
+/* Calling this function from an arbitary
+   thread is dangerous when therad locals are enabled. */
+{
+  scheme_break_main_thread_at((void *)&delayed_break_ready);
+}
+
+void *scheme_get_main_thread_break_handle()
+{
+  return (void *)&delayed_break_ready;
 }
 
 void scheme_set_break_main_target(Scheme_Thread *p)
@@ -4294,7 +4322,8 @@ void scheme_thread_block(float sleep_time)
     do_swap_thread();
   } else if (do_atomic && scheme_on_atomic_timeout
              && (atomic_timeout_auto_suspend < 2)) {
-    if (do_atomic <= atomic_timeout_atomic_level) {
+    if (!atomic_timeout_auto_suspend
+        || (do_atomic <= atomic_timeout_atomic_level)) {
       if (atomic_timeout_auto_suspend) {
         atomic_timeout_auto_suspend++;
         scheme_fuel_counter = p->engine_weight;
@@ -4565,10 +4594,12 @@ void scheme_end_atomic_can_break(void)
 
 static void wait_until_suspend_ok(int for_stack)
 {
-  if (do_atomic > atomic_timeout_atomic_level) {
-    if (for_stack && atomic_timeout_auto_suspend) {
-      /* new-style atomic timeout, where a stack oveflow is ok */
-    } else {
+  if (scheme_on_atomic_timeout && atomic_timeout_auto_suspend) {
+    /* new-style atomic timeout */
+    if (for_stack) {
+      /* a stack overflow is ok for the new-style timeout */
+      return;
+    } else if (do_atomic > atomic_timeout_atomic_level) {
       scheme_log_abort("attempted to wait for suspend in nested atomic mode");
       abort();
     }
@@ -4588,6 +4619,8 @@ Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Time
   if (p) {
     atomic_timeout_auto_suspend = 1;
     atomic_timeout_atomic_level = do_atomic;
+  } else {
+    atomic_timeout_auto_suspend = 0;
   }
 
   return old;
@@ -6770,6 +6803,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_CAN_READ_QUASI, scheme_true);
   init_param(cells, paramz, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
   init_param(cells, paramz, MZCONFIG_CAN_READ_READER, scheme_false);
+  init_param(cells, paramz, MZCONFIG_CAN_READ_LANG, scheme_true);
   init_param(cells, paramz, MZCONFIG_LOAD_DELAY_ENABLED, init_load_on_demand ? scheme_true : scheme_false);
   init_param(cells, paramz, MZCONFIG_DELAY_LOAD_INFO, scheme_false);
 
@@ -6782,6 +6816,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_PRINT_PAIR_CURLY, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_MPAIR_CURLY, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_READER, scheme_false);
+  init_param(cells, paramz, MZCONFIG_PRINT_LONG_BOOLEAN, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_AS_QQ, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_SYNTAX_WIDTH, scheme_make_integer(32));
 
@@ -7244,6 +7279,7 @@ typedef struct WillExecutor {
   Scheme_Object so;
   Scheme_Object *sema;
   ActiveWill *first, *last;
+  int is_stubborn;
 } WillExecutor;
 
 static void activate_will(void *o, void *data) 
@@ -7252,8 +7288,13 @@ static void activate_will(void *o, void *data)
   WillExecutor *w;
   Scheme_Object *proc;
 
-  w = (WillExecutor *)scheme_ephemeron_key(data);
-  proc = scheme_ephemeron_value(data);
+  if (SCHEME_PAIRP(data)) {
+    w = (WillExecutor *)SCHEME_CAR(data);
+    proc = SCHEME_CDR(data);
+  } else {
+    w = (WillExecutor *)scheme_ephemeron_key(data);
+    proc = scheme_ephemeron_value(data);
+  }
 
   if (w) {
     a = MALLOC_ONE_RT(ActiveWill);
@@ -7300,6 +7341,17 @@ static Scheme_Object *make_will_executor(int argc, Scheme_Object **argv)
   w->first = NULL;
   w->last = NULL;
   w->sema = sema;
+  w->is_stubborn = 0;
+
+  return (Scheme_Object *)w;
+}
+
+Scheme_Object *scheme_make_stubborn_will_executor()
+{
+  WillExecutor *w;
+
+  w = (WillExecutor *)make_will_executor(0, NULL);
+  w->is_stubborn = 1;
 
   return (Scheme_Object *)w;
 }
@@ -7319,10 +7371,15 @@ static Scheme_Object *register_will(int argc, Scheme_Object **argv)
     scheme_wrong_type("will-register", "will-executor", 0, argc, argv);
   scheme_check_proc_arity("will-register", 1, 2, argc, argv);
 
-  /* If we lose track of the will executor, then drop the finalizer. */
-  e = scheme_make_ephemeron(argv[0], argv[2]);
+  if (((WillExecutor *)argv[0])->is_stubborn) {
+    e = scheme_make_pair(argv[0], argv[2]);
+    scheme_add_finalizer(argv[1], activate_will, e);
+  } else {
+    /* If we lose track of the will executor, then drop the finalizer. */
+    e = scheme_make_ephemeron(argv[0], argv[2]);
+    scheme_add_scheme_finalizer(argv[1], activate_will, e);
+  }
 
-  scheme_add_scheme_finalizer(argv[1], activate_will, e);
 
   return scheme_void;
 }
@@ -7369,6 +7426,209 @@ static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost)
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif
+
+typedef struct Scheme_GC_Pre_Post_Callback_Desc {
+  /* All pointer fields => allocate with GC_malloc() */
+  Scheme_Object *boxed_key;
+  Scheme_Object *pre_desc;
+  Scheme_Object *post_desc;
+  struct Scheme_GC_Pre_Post_Callback_Desc *prev;
+  struct Scheme_GC_Pre_Post_Callback_Desc *next;
+} Scheme_GC_Pre_Post_Callback_Desc;
+
+
+Scheme_Object *scheme_add_gc_callback(Scheme_Object *pre, Scheme_Object *post)
+{
+  Scheme_GC_Pre_Post_Callback_Desc *desc;
+  Scheme_Object *key, *boxed;
+
+  desc = (Scheme_GC_Pre_Post_Callback_Desc *)GC_malloc(sizeof(Scheme_GC_Pre_Post_Callback_Desc));
+  desc->pre_desc = pre;
+  desc->post_desc = post;
+
+  key = scheme_make_vector(1, scheme_false);
+  boxed = scheme_make_weak_box(key);
+  desc->boxed_key = boxed;
+
+  desc->next = gc_prepost_callback_descs;
+  gc_prepost_callback_descs = desc;
+  
+  return key;
+}
+
+void scheme_remove_gc_callback(Scheme_Object *key)
+{
+  Scheme_GC_Pre_Post_Callback_Desc *prev = NULL, *desc;
+
+  desc = gc_prepost_callback_descs; 
+  while (desc) {
+    if (SAME_OBJ(SCHEME_WEAK_BOX_VAL(desc->boxed_key), key)) {
+      if (prev)
+        prev->next = desc->next;
+      else
+        gc_prepost_callback_descs = desc->next;
+      if (desc->next)
+        desc->next->prev = desc->prev;
+    }
+    prev = desc;
+    desc = desc->next;
+  }
+}
+
+#if defined(_MSC_VER)
+# define mzOSAPI WINAPI
+#else
+# define mzOSAPI /* empty */
+#endif
+
+typedef void (*gccb_Ptr_Ptr_Ptr_Int_to_Void)(void*, void*, void*, int);
+typedef void (*gccb_Ptr_Ptr_Ptr_to_Void)(void*, void*, void*);
+typedef void (*gccb_Ptr_Ptr_Float_to_Void)(void*, void*, float);
+typedef void (*gccb_Ptr_Ptr_Double_to_Void)(void*, void*, double);
+typedef void (*gccb_Ptr_Ptr_Ptr_Nine_Ints)(void*,void*,void*,int,int,int,int,int,int,int,int,int);
+typedef void (mzOSAPI *gccb_OSapi_Ptr_Int_to_Void)(void*, int);
+typedef void (mzOSAPI *gccb_OSapi_Ptr_Ptr_to_Void)(void*, void*);
+typedef void (mzOSAPI *gccb_OSapi_Ptr_Four_Ints_Ptr_Int_Int_Long_to_Void)(void*, int, int, int, int, 
+                                                                          void*, int, int, long);
+
+#ifdef DONT_USE_FOREIGN
+# define scheme_extract_pointer(x) NULL
+#endif
+
+static void run_gc_callbacks(int pre) 
+  XFORM_SKIP_PROC
+{
+  Scheme_GC_Pre_Post_Callback_Desc *prev = NULL, *desc;
+  Scheme_Object *acts, *act, *protocol;
+  int j;
+
+  desc = gc_prepost_callback_descs; 
+  while (desc) {
+    if (!SCHEME_WEAK_BOX_VAL(desc->boxed_key)) {
+      if (prev)
+        prev->next = desc->next;
+      else
+        gc_prepost_callback_descs = desc->next;
+      if (desc->next)
+        desc->next->prev = desc->prev;
+    } else {
+      if (pre)
+        acts = desc->pre_desc;
+      else
+        acts = desc->post_desc;
+      for (j = 0; j < SCHEME_VEC_SIZE(acts); j++) {
+        act = SCHEME_VEC_ELS(acts)[j];
+        protocol = SCHEME_VEC_ELS(act)[0];
+        /* The set of suported protocols is arbitary, based on what we've needed
+           so far. */
+        if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr_int->void")) {
+          gccb_Ptr_Ptr_Ptr_Int_to_Void proc;
+          void *a, *b, *c;
+          int i;
+
+          proc = (gccb_Ptr_Ptr_Ptr_Int_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          c = scheme_extract_pointer(SCHEME_VEC_ELS(act)[4]);
+          i = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[5]);
+
+          proc(a, b, c, i);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr->void")) {
+          gccb_Ptr_Ptr_Ptr_to_Void proc;
+          void *a, *b, *c;
+
+          proc = (gccb_Ptr_Ptr_Ptr_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          c = scheme_extract_pointer(SCHEME_VEC_ELS(act)[4]);
+
+          proc(a, b, c);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_float->void")) {
+          gccb_Ptr_Ptr_Float_to_Void proc;
+          void *a, *b;
+          float f;
+
+          proc = (gccb_Ptr_Ptr_Float_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          f = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[4]);
+
+          proc(a, b, f);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_double->void")) {
+          gccb_Ptr_Ptr_Double_to_Void proc;
+          void *a, *b;
+          double d;
+
+          proc = (gccb_Ptr_Ptr_Double_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          d = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[4]);
+
+          proc(a, b, d);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void")) {
+          gccb_Ptr_Ptr_Ptr_Nine_Ints proc;
+          void *a, *b, *c;
+          int i1, i2, i3, i4, i5, i6, i7, i8, i9;
+
+          proc = (gccb_Ptr_Ptr_Ptr_Nine_Ints)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          c = scheme_extract_pointer(SCHEME_VEC_ELS(act)[4]);
+          i1 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[5]);
+          i2 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[6]);
+          i3 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[7]);
+          i4 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[8]);
+          i5 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[9]);
+          i6 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[10]);
+          i7 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[11]);
+          i8 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[12]);
+          i9 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[13]);
+
+          proc(a, b, c, i1, i2, i3, i4, i5, i6, i7, i8, i9);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "osapi_ptr_ptr->void")) {
+          gccb_OSapi_Ptr_Ptr_to_Void proc;
+          void *a, *b;
+
+          proc = (gccb_OSapi_Ptr_Ptr_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+
+          proc(a, b);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "osapi_ptr_int->void")) {
+          gccb_OSapi_Ptr_Int_to_Void proc;
+          void *a;
+          int i;
+
+          proc = (gccb_OSapi_Ptr_Int_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          i = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[3]);
+
+          proc(a, i);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "osapi_ptr_int_int_int_int_ptr_int_int_long->void")) {
+          gccb_OSapi_Ptr_Four_Ints_Ptr_Int_Int_Long_to_Void proc;
+          void *a, *b;
+          int i1, i2, i3, i4, i5, i6;
+          long l1;
+
+          proc = (gccb_OSapi_Ptr_Four_Ints_Ptr_Int_Int_Long_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          i1 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[3]);
+          i2 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[4]);
+          i3 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[5]);
+          i4 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[6]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[7]);
+          i5 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[8]);
+          i6 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[9]);
+          l1 = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[10]);
+
+          proc(a, i1, i2, i3, i4, b, i5, i6, l1);
+        }
+        prev = desc;
+      }
+    }
+    desc = desc->next;
+  }
+}
 
 void scheme_zero_unneeded_rands(Scheme_Thread *p)
 {
@@ -7528,6 +7788,8 @@ static void get_ready_for_GC()
   scheme_future_block_until_gc();
 #endif
 
+  run_gc_callbacks(1);
+
   scheme_zero_unneeded_rands(scheme_current_thread);
 
   scheme_clear_modidx_cache();
@@ -7595,6 +7857,8 @@ static void done_with_GC()
 
   end_this_gc_time = scheme_get_process_milliseconds();
   scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
+
+  run_gc_callbacks(0);
 
 #ifdef MZ_USE_FUTURES
   scheme_future_continue_after_gc();

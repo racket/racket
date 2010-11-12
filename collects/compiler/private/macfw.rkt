@@ -36,9 +36,7 @@
 					   (regexp-quote old-path))
 					  #"$"))
 					(string->bytes/utf-8 new-path))))
-		(if mred?
-		    '("GRacket")
-		    '("Racket")))))
+                '("Racket"))))
 
   (define (get-current-framework-path dest p)
     (let ([v (get/set-dylib-path dest

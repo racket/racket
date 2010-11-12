@@ -1,18 +1,18 @@
-This directory contains 
+This directory contains
 
- - solution files and project files for building Racket and GRacket
-    with Microsoft Visual Studio 8.0 and up (which work with the
-    Express 2005 version of Visual Studio);
+  - solution files and project files for building Racket and GRacket
+    with Microsoft Visual Studio 8.0 and up (which work with the Express
+    2005 version of Visual Studio);
 
- - mzconfig.h which is a manual version of information that is
-    gathered automatically when using the "configure" script;
+  - mzconfig.h which is a manual version of information that is gathered
+    automatically when using the "configure" script;
 
- - scripts for building 3m variants of Racket and GRacket using
-    Visual Studio command-line tools; and
+  - scripts for building 3m variants of Racket and GRacket using Visual
+    Studio command-line tools; and
 
- - solution files and project files for building MzCOM and MysterX
-    with Microsoft Visual Studio 8.0 (not Express, which doesn't
-    support ATL and MFC).
+  - solution files and project files for building MzCOM and MysterX with
+    Microsoft Visual Studio 8.0 (not Express, which doesn't support ATL
+    and MFC).
 
 Visual Studio Express is available for free from Microsoft; it can be
 used to build Racket and GRacket, but not MzCOM and MysterX.
@@ -43,21 +43,17 @@ Building Racket and GRacket
 
 If you're using MSVC 8.0 (not Express), and if `devenv.exe' is in your
 path, then you can just run
-       racket\src\worksp\build.bat
+    racket\src\worksp\build.bat
 from its own directory to perform all steps up to "Versioning",
 including the MzCOM and MysterX steps.
 
-The CGC variants of Racket, MzCOM, GRacket, and MysterX can be built via
+The CGC variants of Racket, GRacket, MzCOM, and MysterX can be built via
 Visual Studio projects.  The 3m variants are built by a Racket script
 that runs the MSVC command-line tools.  (See "CGC versus 3m" in
 racket\src\README if you don't know about the two variants.)
 
-The 3m build requires some parts of the CGC build:
-       racket\src\worksp\racket
-       racket\src\worksp\wxutils
-       racket\src\worksp\jpeg
-       racket\src\worksp\png
-       racket\src\worksp\zlib
+The 3m build requires:
+    racket\src\worksp\racket
 It's simplest to just build the main CGC solutions, which automatically
 build all of the above projects, and then build 3m.
 
@@ -69,58 +65,56 @@ projects that are grouped into a few solutions.  To build the `X'
 solution with Visual Studio, open the file racket\src\worksp\X\X.sln.
 
 To build RacketCGC, build the Racket solution in
-   racket\src\worksp\racket - makes racket\RacketCGC.exe
+  racket\src\worksp\racket - makes racket\RacketCGC.exe
 
-   [When you open the solution, it may default to "Debug"
-    configuration.  Switch to "Release" before building.]
+  [When you open the solution, it may default to "Debug"
+   configuration.  Switch to "Release" before building.]
 
 To build GRacketCGC, build the GRacket solution:
-   racket\src\worksp\gracket - makes racket\GRacketCGC.exe
+  racket\src\worksp\gracket - makes racket\GRacketCGC.exe
 
-   [Again, switch to the "Release" configuration if necessary.]
+  [Again, switch to the "Release" configuration if necessary.]
 
-The build processes for RacketCGC automatically builds
-   libmzgc    - makes racket\lib\libmzgcxxxxxxx.dll and
-                racket\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
-   libracket  - makes racket\lib\libracketxxxxxxx.dll and
-                racket\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
-
-The build process for GRacketCGC automatically builds
-   libmzgc    - as above
-   libracket  - as above
-   libgracket - makes racket\lib\libgracketxxxxxxx.dll and
-                racket\src\worksp\libgracket\Release\libgracketxxxxxxx.lib
-   wxutils    - makes racket\src\worksp\wxutils\Release\wxutils.lib
-   wxwin      - makes racket\src\worksp\wxwin\Release\wxwin.lib
-   wxs        - makes racket\src\worksp\wxs\Release\wxs.lib
-   wxme       - makes racket\src\worksp\wxme\Release\wxme.lib
-   jpeg       - makes racket\src\worksp\jpeg\Release\jpeg.lib
-   png        - makes racket\src\worksp\jpeg\Release\png.lib
-   zlib       - makes racket\src\worksp\jpeg\Release\zlib.lib
+The build processes for RacketCGC and GRacketCGC automatically builds
+  libmzgc    - makes racket\lib\libmzgcxxxxxxx.dll and
+               racket\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
+  libracket  - makes racket\lib\libracketxxxxxxx.dll and
+               racket\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
 
 In addition, building RacketCGC executes
-   racket\src\racket\dynsrc\mkmzdyn.bat
-which copies .exp, .obj, and .lib files into racket\lib\, and also
-copies DLLs from the "extradlls" directory to to racket\lib\.
+    racket\src\racket\dynsrc\mkmzdyn.bat
+which copies .exp, .obj, and .lib files into racket\lib\.
+
+Finally, you must install pre-build DLLs that GRacket needs to run.
+The DLLs are available from
+
+    http://download.racket-lang.org/libs/
+
+and they must be installed into
+
+    racket\lib
+
+The "get-libs.rkt" script in "racket\src" can download the libraries,
+and the script is used by "build.bat".
+
 
 Building Racket3m and GRacket3m
 -------------------------------
 
 After RacketCGC and GRacketCGC are built, you can can build 3m binaries:
 
- 1. Ensure that the Visual Studio command-line tools are in your path.
-    You may need to run "vsvars32.bat" from your Visual Studio
-    installation, so that PATH and other environment variables are set.
+  1. Ensure that the Visual Studio command-line tools are in your path.
+     You may need to run "vsvars32.bat" from your Visual Studio
+     installation, so that PATH and other environment variables are set.
 
- 2. Change directories to racket\src\worksp\gc2 and run
+  2. Change directories to racket\src\worksp\gc2 and run
 
-      ..\..\..\racketcgc.exe -c make.rkt
+       ..\..\..\racketcgc.exe -c make.rkt
 
 The resulting Racket.exe and GRacket.exe will appear in the top-level
-"racket" directory, along with DLLs libracket3mxxxxxxx.dll and
-libgracket3mxxxxxxx.dll in racket/lib.  (There is no corresponding
-libmzgc3mxxxxxxx.dll.  Instead, it is merged with
-libracket3mxxxxxxx.dll.)
+"racket" directory, along with DLLs libracket3mxxxxxxx.dll in
+racket\lib.  (There is no corresponding libmzgc3mxxxxxxx.dll.  Instead,
+it is merged with libracket3mxxxxxxx.dll.)
 
 Building Collections and Other Executables
 ------------------------------------------
@@ -129,16 +123,16 @@ If you're building from scratch, you'll also want the starter programs
 used by the launcher collection to create "raco.exe".  Build the
 following solutions:
 
- racket\src\worksp\mzstart - makes racket\collects\launcher\mzstart.exe
- racket\src\worksp\mrstart - makes racket\collects\launcher\mrstart.exe
+  racket\src\worksp\mzstart - makes racket\collects\launcher\mzstart.exe
+  racket\src\worksp\mrstart - makes racket\collects\launcher\mrstart.exe
 
- [The "mzstart" and "mrstart" programs have no CGC versus 3m
-  distinction.]
+  [The "mzstart" and "mrstart" programs have no CGC versus 3m
+   distinction.]
 
 Then, set up all the other executables (besides GRacket[CGC].exe and
 Racket[CGC].exe) by running
 
-   racket.exe -l- setup
+    racket.exe -l- setup
 
 This last step makes the .zo files, too.  To skip compiling .zos, add
 `-n' to the end of the above command.
@@ -162,7 +156,7 @@ be replaced with a specific version.
 
 To replace the "xxxxxxx" with a specific version, run
 
-  racket -l setup/winvers
+    racket -l setup/winvers
 
 in a shell.
 
@@ -184,20 +178,20 @@ Building MzCOM
 --------------
 
 To build MzCOMCGC, make the MzCOM solution in
-   racket\src\worksp\mzcom - makes racket\MzCOMCGC.exe
+    racket\src\worksp\mzcom - makes racket\MzCOMCGC.exe
 
 Use the "Release" configuration.
 
 After building MzCOMCGC, you can build the 3m variant by
 
- 1. Change directories to racket\src\worksp\mzcom and run
+  1. Change directories to racket\src\worksp\mzcom and run
 
-      ..\..\..\racketcgc.exe -cu xform.rkt
+       ..\..\..\racketcgc.exe -cu xform.rkt
 
- 2. Switch to the "3m" configuration in the MzCOM solution (in Visual
-    Studio).
+  2. Switch to the "3m" configuration in the MzCOM solution (in Visual
+     Studio).
 
- 3. Build (in Visual Studio).
+  3. Build (in Visual Studio).
 
 The result is racket\MzCOM.exe.
 
@@ -205,33 +199,32 @@ Building MysterX
 ----------------
 
 To build MysterXCGC, make the MysterX solution in
-   racket\src\worksp\libmysterx - makes racket\lib\myssink.dll,
-          racket\lib\myspage.dll, and mxmain.dll in
-          collects\mysterx\private\compiled\native\win32\i386
+    racket\src\worksp\libmysterx - makes racket\lib\myssink.dll,
+           racket\lib\myspage.dll, and mxmain.dll in
+           collects\mysterx\private\compiled\native\win32\i386
 
 Use the "Release" configuration.
 
 After building MysterXCGC, you can build the 3m variant by
 
- 1. Change directories to racket\src\worksp\libmysterx and run
+  1. Change directories to racket\src\worksp\libmysterx and run
 
-      ..\..\..\racketcgc.exe -cu xform.rkt
+       ..\..\..\racketcgc.exe -cu xform.rkt
 
- 2. Switch to the "3m" configuration in the libmysterx solution (in
-    Visual Studio).
+  2. Switch to the "3m" configuration in the libmysterx solution (in
+     Visual Studio).
 
- 3. Build (in Visual Studio).
+  3. Build (in Visual Studio).
 
 The result is mxmain.dll (no 3m suffix) in
-  collects\mysterx\private\compiled\native\win32\i386\3m
+    collects\mysterx\private\compiled\native\win32\i386\3m
 
 ------------
 Finding DLLs
 ------------
 
-Since the DLLs libracket3mxxxxxxx.dll (or libmzgcxxxxxxx.dll and
-libracketxxxxxxx.dll) and libgracket3mxxxxxxx.dll (or
-libgracketxxxxxxx.dll) are installed into racket\lib\ instead of just
+Since the DLL libracket3mxxxxxxx.dll (or libmzgcxxxxxxx.dll and
+libracketxxxxxxx.dll) is installed into racket\lib\ instead of just
 racket\, the normal search path for DLLs would not find them when
 running "Racket.exe" or "GRacket.exe".  To find the DLLs, the
 executables are "delayload" linked with the DLLs, and the executables

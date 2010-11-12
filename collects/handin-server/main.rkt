@@ -1,22 +1,22 @@
-#lang scheme/base
+#lang racket/base
 
 (require mzlib/thread
-         scheme/port
+         racket/port
          openssl
-         scheme/file
-         "private/logger.ss"
-         "private/config.ss"
-         "private/lock.ss"
-         "private/md5.ss"
-         "private/run-status.ss"
-         "private/reloadable.ss"
-         "private/hooker.ss"
-         (prefix-in web: "web-status-server.ss")
+         racket/file
+         "private/logger.rkt"
+         "private/config.rkt"
+         "private/lock.rkt"
+         "private/md5.rkt"
+         "private/run-status.rkt"
+         "private/reloadable.rkt"
+         "private/hooker.rkt"
+         (prefix-in web: "web-status-server.rkt")
          ;; this sets some global parameter values, and this needs
          ;; to be done in the main thread, rather than later in a
          ;; user session thread (that will make the global changes
          ;; not to be global.)
-         "sandbox.ss")
+         "sandbox.rkt")
 
 (install-logger-port)
 
@@ -48,8 +48,8 @@
                      (lambda (f)
                        (error 'handin-server
                               "unable to clean up lock file: ~s" f))
-                     "users.ss"))
-  "users.ss")
+                     "users.rktd"))
+  "users.rktd")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,7 +214,7 @@
         (save-submission s (build-path ATTEMPT-DIR "handin"))
         (timeout-control 'reset)
         (log-line "checking ~a for ~a" assignment users)
-        (let* ([checker* (path->complete-path (build-path 'up "checker.ss"))]
+        (let* ([checker* (path->complete-path (build-path 'up "checker.rkt"))]
                [checker* (and (file-exists? checker*)
                               (parameterize ([current-directory server-dir])
                                 (auto-reload-value
@@ -282,7 +282,8 @@
   (parameterize ([current-directory submission-dir])
     (define magics '(#"WXME"
                      #"<<<MULTI-SUBMISSION-FILE>>>"
-                     #"#reader(lib\"read.ss\"\"wxme\")WXME"))
+                     #"#reader(lib\"read.ss\"\"wxme\")WXME"
+                     #"#reader(lib\"read.rkt\"\"wxme\")WXME"))
     (define mlen (apply max (map bytes-length magics)))
     (define file
       ;; find the newest wxme file
@@ -326,12 +327,12 @@
       (list (string->symbol username)) (list data)
       (lambda (f)
         (error* "user database busy; please try again, and alert the adminstrator if problems persist"))
-      "users.ss"))
+      "users.rktd"))
    orig-custodian))
 
 (define (get-user-data username)
   (get-preference (string->symbol username) (lambda () #f) 'timestamp
-                  "users.ss"))
+                  "users.rktd"))
 (define (check-field value field-re field-name field-desc)
   (unless (cond [(or (string? field-re) (regexp? field-re))
                  (regexp-match field-re value)]
@@ -372,8 +373,8 @@
     (error* "username must not begin or end with a space or period"))
   (when (regexp-match #rx"^solution" username)
     (error* "the username prefix \"solution\" is reserved"))
-  (when (string=? "checker.ss" username)
-    (error* "the username \"checker.ss\" is reserved"))
+  (when (string=? "checker.rkt" username)
+    (error* "the username \"checker.rkt\" is reserved"))
   (when (get-user-data username)
     (error* "username already exists: `~a'" username))
   (for ([str (in-list extra-fields)]
@@ -650,7 +651,7 @@
                           (lambda (exn)
                             (let ([msg (if (exn? exn)
                                          (exn-message exn)
-                                         (format "~e" exn))])
+                                         (format "~.s" exn))])
                               (kill-watcher)
                               (log-line "ERROR: ~a" msg)
                               (write+flush w msg)
@@ -677,7 +678,7 @@
 (define (handle-*-request r w)
   (let* ([proto (regexp-match-peek #rx#"^[^\r\n]*(?=\r?\n)" r 0 (* 4 1024))]
          [proto (and proto (car proto))])
-    ((cond [(not proto) (error 'handin "no protocol line" proto)]
+    ((cond [(not proto) (error 'handin "no protocol line")]
            [(equal? #"handin" proto) handle-handin-request]
            [(regexp-match? #rx#"(?i:http/[0-9.]+)$" proto) handle-http-request]
            [else (error 'handin "unknown protocol: ~e" proto)])

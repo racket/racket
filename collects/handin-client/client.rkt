@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require openssl/mzssl "this-collection.ss")
+(require openssl/mzssl "this-collection.rkt")
 
 (provide handin-connect
          handin-disconnect

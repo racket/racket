@@ -12,7 +12,7 @@
          (for-syntax syntax/parse racket/base)
          racket/contract/private/provide unstable/list
          unstable/debug syntax/id-table racket/dict
-         unstable/syntax scheme/struct-info scheme/match
+         unstable/syntax scheme/struct-info racket/match
          "def-binding.rkt" syntax/parse
          (for-template scheme/base "def-export.rkt" scheme/contract))
 
@@ -90,7 +90,7 @@
                    (make-provide/contract-transformer
                     (quote-syntax the-contract)
                     (quote-syntax id)
-                    (quote-syntax out-id)
+                    (quote-syntax export-id)
                     (quote-syntax module-source)))
                  (def-export export-id id cnt-id)))
            new-id)]

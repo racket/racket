@@ -137,13 +137,19 @@
               (match a
                 [(arr: dom rng rest #f ktys) (make-arr* dom rng #:rest rest)]))])
        (if (null? new-arities)
-           (tc-error/expr 
+           (domain-mismatches
+            (car (syntax-e form)) (cdr (syntax-e form))
+            arities doms rests drests rngs
+            (map tc-expr (syntax->list pos-args))
+            #f #f #:expected expected
             #:return (or expected (ret (Un)))
-            (string-append "No function domains matched in function application:\n"
-                           (domain-mismatches arities doms rests drests rngs (map tc-expr (syntax->list pos-args)) #f #f)))
-         (tc/funapp (car (syntax-e form)) kw-args
-                    (ret (make-Function new-arities))
-                    (map tc-expr (syntax->list pos-args)) expected)))]))
+            #:msg-thunk
+            (lambda (dom)
+              (string-append "No function domains matched in function application:\n"
+                             dom)))
+           (tc/funapp (car (syntax-e form)) kw-args
+                      (ret (make-Function new-arities))
+                      (map tc-expr (syntax->list pos-args)) expected)))]))
 
 (define (type->list t)
   (match t
@@ -173,7 +179,7 @@
          (for ([n names]
                #:when (not (memq n tnames)))
            (tc-error/delayed 
-            "unknown named argument ~a for class~nlegal named arguments are ~a"
+            "unknown named argument ~a for class\nlegal named arguments are ~a"
             n (stringify tnames)))
          (for-each (match-lambda
                      [(list tname tfty opt?)
@@ -623,25 +629,25 @@
     ;; special case for `list'
     [(#%plain-app list . args)
      (begin
-       ;(printf "calling list: ~a ~a~n" (syntax->datum #'args) expected)
+       ;(printf "calling list: ~a ~a\n" (syntax->datum #'args) expected)
        (match expected
          [(tc-result1: (Mu: var (Union: (or 
                                          (list (Pair: elem-ty (F: var)) (Value: '()))
                                          (list (Value: '()) (Pair: elem-ty (F: var)))))))
-          ;(printf "special case 1 ~a~n" elem-ty)
+          ;(printf "special case 1 ~a\n" elem-ty)
           (for ([i (in-list (syntax->list #'args))])
                (tc-expr/check i (ret elem-ty)))
           expected]
          [(tc-result1: (app untuple (? (lambda (ts) (and ts (= (length (syntax->list #'args))
                                                                (length ts))))
                                        ts)))    
-          ;(printf "special case 2 ~a~n" ts)
+          ;(printf "special case 2 ~a\n" ts)
           (for ([ac (in-list (syntax->list #'args))]
                 [exp (in-list ts)])
                (tc-expr/check ac (ret exp)))
           expected]
          [_
-          ;(printf "not special case~n")
+          ;(printf "not special case\n")
           (let ([tys (map tc-expr/t (syntax->list #'args))])
             (ret (apply -lst* tys)))]))]
     ;; special case for `list*'
@@ -699,7 +705,7 @@
                                          dom)
                                       (Values: (list (Result: v (FilterSet: (Top:) (Top:)) (Empty:))))
                                       #f #f (list (Keyword: _ _ #f) ...)))))))
-          ;(printf "f dom: ~a ~a~n" (syntax->datum #'f) dom)
+          ;(printf "f dom: ~a ~a\n" (syntax->datum #'f) dom)
           (let ([arg-tys (map (lambda (a t) (tc-expr/check a (ret t))) 
                               (syntax->list #'args)
                               dom)])

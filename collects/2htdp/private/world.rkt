@@ -6,7 +6,6 @@
          "checked-cell.ss"
          "stop.ss"
          "universe-image.ss"
-         "utilities.rkt"
          htdp/error
          mzlib/runtime-path
          mrlib/bitmap-label
@@ -51,26 +50,13 @@
    (clock-mixin
     (class* object% (start-stop<%>)
       (inspect #f)
-      
-      (init-field
-       world0            ;; World
-       (name #f)         ;; (U #f String)
-       (state #f)        ;; Boolean 
-       (register #f)     ;; (U #f IP)
-       (check-with True) ;; Any -> Boolean 
-       (tick K))         ;; (U (World -> World) (list (World -> World) Nat))
-      
-      (init
-       (on-key K)        ;; World KeyEvent -> World 
-       (on-release K)    ;; World KeyEvent -> World 
-       (on-mouse K)      ;; World Nat Nat MouseEvent -> World 
-       (on-receive #f)   ;; (U #f (World S-expression -> World))
-       (on-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
-       (stop-when False) ;; World -> Boolean 
-       (record? #f))     ;; Boolean 
+      (init-field world0)
+      (init-field name state register check-with on-key on-mouse record?)
+      (init on-release on-receive on-draw stop-when)
       
       ;; -----------------------------------------------------------------------
       (field
+       [to-draw on-draw]
        [world
         (new checked-cell% [msg "World"] [value0 world0] [ok? check-with]
              [display (and state (or name "your world program's state"))])])
@@ -134,12 +120,12 @@
       ;; -----------------------------------------------------------------------
       (field
        (draw   (cond
-                 [(procedure? on-draw) on-draw]
-                 [(pair? on-draw)      (first on-draw)]
-                 [else on-draw]))
+                 [(procedure? to-draw) to-draw]
+                 [(pair? to-draw)      (first to-draw)]
+                 [else to-draw]))
        (live   (not (boolean? draw)))
-       (width  (if (pair? on-draw) (second on-draw) #f))
-       (height (if (pair? on-draw) (third on-draw) #f)))
+       (width  (if (pair? to-draw) (second to-draw) #f))
+       (height (if (pair? to-draw) (third to-draw) #f)))
       
       ;; the visible world 
       (field [enable-images-button void] ;; used if stop-when call produces #t
@@ -159,6 +145,36 @@
           (create-frame)
           (show fst-scene)))
       
+      (define/private (deal-with-key %)
+        (if (not on-key) %
+            (class %
+              (super-new)
+              (define/override (on-char e) 
+                (when live
+                  (let ([e:str (key-event->parts e)])
+                    (if (string=? e:str "release")
+                        (prelease (key-release->parts e))
+                        (pkey e:str))))))))
+      
+      (define/private (deal-with-mouse %)
+        (if (not on-mouse) 
+            ;; No mouse handler => discard mouse events (so snip are not selected
+            ;;  in the pasteboard, for example
+            (class %
+              (super-new)
+              (define/override (on-event e)
+                (void)))
+            ;; Mouse handler => handle mouse events
+            (class %
+              (super-new)
+              (define/override (on-event e)
+                (define-values (x y me) (mouse-event->parts e))
+                (when live
+                  (cond
+                    [(and (<= 0 x width) (<= 0 y height)) (pmouse x y me)]
+                    [(member me '("leave" "enter")) (pmouse x y me)]
+                    [else (void)]))))))
+      
       ;; effect: create, show and set the-frame
       (define/pubment (create-frame)
         (define play-back:cust (make-custodian))
@@ -170,24 +186,9 @@
                            (label (if name (format "~a" name) "World"))
                            (alignment '(center center))
                            (style '(no-resize-border metal))))
-        (define editor-canvas 
-          (new (class editor-canvas%
-                 (super-new)
-                 ;; deal with keyboard events 
-                 (define/override (on-char e) 
-                   (when live
-                     (let ([e:str (key-event->parts e)])
-                       (if (string=? e:str "release")
-                           (prelease (key-release->parts e))
-                           (pkey e:str)))))
-                 ;; deal with mouse events if live and within range 
-                 (define/override (on-event e)
-                   (define-values (x y me) (mouse-event->parts e))
-                   (when live
-                     (cond
-                       [(and (<= 0 x width) (<= 0 y height)) (pmouse x y me)]
-                       [(member me '("leave" "enter")) (pmouse x y me)]
-                       [else (void)]))))
+        
+        (define editor-canvas
+          (new (deal-with-key (deal-with-mouse editor-canvas%))
                (parent frame)
                (editor visible)
                (stretchable-width #f)
@@ -227,74 +228,79 @@
       (define draw# 0) 
       (set-draw#!)
       
-      (define-syntax-rule (def/pub-cback (name arg ...) transform)
+      (define-syntax-rule 
+        (def/cback pub (name arg ...) transform)
         ;; Any ... -> Boolean
-        (define/public (name arg ...) 
-          (queue-callback 
-           (lambda ()
-             (with-handlers ([exn? (handler #t)])
-               (define tag (format "~a callback" 'transform))
-               (define nw (transform (send world get) arg ...))
-               (define (d) (pdraw) (set-draw#!))
-               ;; ---
-               ;; [Listof (Box [d | void])]
-               (define w '()) 
-               ;; set all to void, then w to null 
-               ;; when a high priority draw is scheduledd
-               ;; --- 
-               (when (package? nw)
-                 (broadcast (package-message nw))
-                 (set! nw (package-world nw)))
-               (if (stop-the-world? nw)
-                   (begin
-                     (set! nw (stop-the-world-world nw))
-                     (send world set tag nw)
-                     (when last-picture
-                       (set! draw last-picture))
-                     (when draw (pdraw))
-                     (callback-stop! 'name)
-                     (enable-images-button))
-                   (let ([changed-world? (send world set tag nw)])
-                     ;; this is the old "Robby optimization" see checked-cell:
-                     ; unless changed-world? 
-                     (when draw 
-                       (cond
-                         [(not drawing)
-                          (set! drawing #t)
-                          (let ([b (box d)])
-                            (set! w (cons b w))
-                            ;; low priority, otherwise it's too fast
-                            (queue-callback (lambda () ((unbox b))) #f))]
-                         [(< draw# 0)
-                          (set-draw#!)
-                          (for-each (lambda (b) (set-box! b void)) w)
-                          (set! w '())
-                          ;; high!!  the scheduled callback didn't fire
-                          (queue-callback (lambda () (d)) #t)]
-                         [else 
-                          (set! draw# (- draw# 1))]))
-                     (when (pstop)
-                       (when last-picture 
-                         (set! draw last-picture)
-                         (pdraw))
+        (begin
+          (define/public (name arg ...) 
+            (define (last-draw)
+              (define draw0 draw)
+              (dynamic-wind (lambda () (set! draw last-picture))
+                            (lambda () (pdraw))
+                            (lambda () (set! draw draw0))))
+            (queue-callback 
+             (lambda ()
+               (with-handlers ([exn? (handler #t)])
+                 (define tag (format "~a callback" 'transform))
+                 (define nw (transform (send world get) arg ...))
+                 (define (d) (pdraw) (set-draw#!))
+                 ;; ---
+                 ;; [Listof (Box [d | void])]
+                 (define w '()) 
+                 ;; set all to void, then w to null 
+                 ;; when a high priority draw is scheduledd
+                 ;; --- 
+                 (when (package? nw)
+                   (broadcast (package-message nw))
+                   (set! nw (package-world nw)))
+                 (if (stop-the-world? nw)
+                     (begin
+                       (set! nw (stop-the-world-world nw))
+                       (send world set tag nw)
+                       (when last-picture (last-draw))
+                       (when draw (pdraw))
                        (callback-stop! 'name)
                        (enable-images-button))
-                     changed-world?)))))))
+                     (let ([changed-world? (send world set tag nw)])
+                       ;; this is the old "Robby optimization" see checked-cell:
+                       ; unless changed-world? 
+                       (when draw 
+                         (cond
+                           [(not drawing)
+                            (set! drawing #t)
+                            (let ([b (box d)])
+                              (set! w (cons b w))
+                              ;; low priority, otherwise it's too fast
+                              (queue-callback (lambda () ((unbox b))) #f))]
+                           [(< draw# 0)
+                            (set-draw#!)
+                            (for-each (lambda (b) (set-box! b void)) w)
+                            (set! w '())
+                            ;; high!!  the scheduled callback didn't fire
+                            (queue-callback (lambda () (d)) #t)]
+                           [else 
+                            (set! draw# (- draw# 1))]))
+                       (when (pstop)
+                         (when last-picture (last-draw))
+                         (callback-stop! 'name)
+                         (enable-images-button))
+                       changed-world?))))))))
       
       ;; tick, tock : deal with a tick event for this world 
-      (def/pub-cback (ptock) tick)
+      (def/cback pubment (ptock) (lambda (w) (pptock w)))
+      (define/public (pptock w) (void))
       
       ;; key events 
-      (def/pub-cback (pkey ke) key)
+      (def/cback pubment (pkey ke) key)
       
       ;; release events 
-      (def/pub-cback (prelease ke) release)
+      (def/cback pubment (prelease ke) release)
       
       ;; mouse events 
-      (def/pub-cback (pmouse x y me) mouse)
+      (def/cback pubment (pmouse x y me) mouse)
       
       ;; receive revents 
-      (def/pub-cback (prec msg) rec)
+      (def/cback pubment (prec msg) rec)
       
       ;; ----------------------------------------------------------------------
       ;; -> Void 
@@ -304,7 +310,7 @@
       
       ;; -> Scene
       ;; produce the scene for the this state
-      (define/private (ppdraw)
+      (define/public (ppdraw)
         (check-scene-result (name-of draw 'your-draw) (draw (send world get))))
       
       ;; -----------------------------------------------------------------------
@@ -324,7 +330,6 @@
       
       (define (handler re-raise)
         (lambda (e)
-          (printf "breaking ..\n")
           (disable-images-button)
           (stop! (if re-raise e (send world get)))))
       
@@ -345,9 +350,10 @@
       (start!)
       (let ([w (send world get)])
         (cond
-          [(stop w) (stop! (send world get))]
-          [(stop-the-world? w) 
-           (stop! (stop-the-world-world (send world get)))]))))))
+          [(stop w) (stop! w)]
+          [(stop-the-world? w) (stop! (stop-the-world-world w))]))))))
+
+; (define make-new-world (new-world world%))
 
 ;; -----------------------------------------------------------------------------
 (define-runtime-path break-btn:path '(lib "icons/break.png"))
@@ -359,17 +365,25 @@
 
 (define aworld%
   (class world% (super-new)
-    (inherit-field world0 tick key release mouse rec draw rate width height)
+    (inherit-field world0 draw rate width height record?)
     (inherit show callback-stop!)
     
+     ;; -> String or false 
+    (define/private (recordable-directory)
+      (and (string? record?) (directory-exists? record?) record?))
+
     ;; Frame Custodian ->* (-> Void) (-> Void)
     ;; adds the stop animation and image creation button, 
     ;; whose callbacks runs as a thread in the custodian
     (define/augment (create-frame frm play-back-custodian)
       (define p (new horizontal-pane% [parent frm][alignment '(center center)]))
+      (define (pb)
+        (parameterize ([current-custodian play-back-custodian])
+          (thread (lambda () (play-back)))
+          (stop)))
       (define (switch)
         (send stop-button enable #f)
-        (send image-button enable #t))
+        (if (recordable-directory) (pb) (send image-button enable #t)))
       (define (stop) 
         (send image-button enable #f)
         (send stop-button enable #f))
@@ -379,10 +393,101 @@
       (define stop-button 
         (btn break-button:label (b e) (callback-stop! 'stop-images) (switch)))
       (define image-button 
-        (btn image-button:label (b e)
-             (parameterize ([current-custodian play-back-custodian])
-               (thread (lambda () (play-back)))
-               (stop))))
+        (btn image-button:label (b e) (pb)))
+      (send image-button enable #f)
+      (values switch stop))
+   
+    ;; an argument-recording ppdraw
+    (field [image-history '()]) ;; [Listof Evt]
+    (define/override (ppdraw)
+      (define image (super ppdraw))
+      (set! image-history (cons image image-history))
+      image)
+    
+    ;; --> Void
+    ;; re-play the history of events; create a png per step; create animated gif
+    ;; effect: write to user-chosen directory
+    (define/private (play-back)
+      ;; World EventRecord -> World 
+      (define (world-transition world fst) (apply (car fst) world (cdr fst)))
+      ;; --- creating images 
+      (define total (+ (length image-history) 1))
+      (define digt# (string-length (number->string total)))
+      (define imag# 0)
+      (define bmps '())
+      ;; Image -> Void
+      (define (save-image img)
+        (define bm (make-object bitmap% width height))
+        (define dc (make-object bitmap-dc% bm))
+        (send dc clear)
+        (send img draw dc 0 0 0 0 width height 0 0 #f)
+        (set! imag# (+ imag# 1))
+        (send bm save-file (format "i~a.png" (zero-fill imag# digt#)) 'png)
+        (set! bmps (cons bm bmps))
+        img)
+      ;; --- choose place 
+      (define img:dir
+        (or (recordable-directory)
+            (get-directory "image directory:" #f (current-directory))))
+      (when img:dir
+        (parameterize ([current-directory img:dir])
+          (define imageN 
+            (if (empty? image-history)
+                (save-image (draw world0))
+                (first (map save-image image-history))))
+          (show (text (format "creating ~a" ANIMATED-GIF-FILE) 18 'red))
+          (create-animated-gif rate bmps)
+          (show imageN))))))
+
+;; Number [Listof (-> bitmap)] -> Void
+;; turn the list of thunks into animated gifs 
+;; effect: overwrite the ANIMATED-GIF-FILE (in current directory)
+;; [Listof (-> bitmap)] -> Void
+;; turn the list of thunks into animated gifs 
+;; effect: overwrite the ANIMATED-GIF-FILE (in current directory)
+(define (create-animated-gif R bitmap-list)
+  (when (file-exists? ANIMATED-GIF-FILE) (delete-file ANIMATED-GIF-FILE))
+  (write-animated-gif bitmap-list (if (> +inf.0 R 0) (number->integer R) 5)
+                      ANIMATED-GIF-FILE
+                      #:one-at-a-time? #t
+                      #:loop? #f))
+
+(define ANIMATED-GIF-FILE "i-animated.gif")
+
+;; the version of aworld below records all events (pointers to functions)
+;; and replays them starting from the initial world. In terms of space, this 
+;; is quite efficient because there are only six differente actions (pointers)
+;; BUT, it doesn't work with random or other effectful stuff
+;; EXPLORE: put random into the library and make it an event 
+(define aworld-old%
+  (class world% (super-new)
+    (inherit-field world0 tick key release mouse rec draw rate width height record?)
+    (inherit show callback-stop!)
+    
+    ;; Frame Custodian ->* (-> Void) (-> Void)
+    ;; adds the stop animation and image creation button, 
+    ;; whose callbacks runs as a thread in the custodian
+    (define/augment (create-frame frm play-back-custodian)
+      (define p (new horizontal-pane% [parent frm][alignment '(center center)]))
+      (define (pb)
+        (parameterize ([current-custodian play-back-custodian])
+          (thread (lambda () (play-back)))
+          (stop)))
+      (define (switch)
+        (send stop-button enable #f)
+        (if (and (string? record?) (directory-exists? record?))
+            (pb)
+            (send image-button enable #t)))
+      (define (stop) 
+        (send image-button enable #f)
+        (send stop-button enable #f))
+      (define-syntax-rule (btn l a y ...)
+        (new button% [parent p] [label l] [style '(border)] 
+             [callback (lambda a y ...)]))
+      (define stop-button 
+        (btn break-button:label (b e) (callback-stop! 'stop-images) (switch)))
+      (define image-button 
+        (btn image-button:label (b e) (pb)))
       (send image-button enable #f)
       (values switch stop))
     
@@ -392,15 +497,16 @@
       (set! event-history (cons (cons type stuff) event-history)))
     
     ;; --- new callbacks ---
-    (define-syntax-rule (def/over-cb (pname name arg ...))
+    (define-syntax-rule
+      (def/cb ovr (pname name arg ...))
       (define/override (pname arg ...) 
         (when (super pname arg ...) (add-event name arg ...))))
     
-    (def/over-cb (ptock tick))
-    (def/over-cb (pkey key e))
-    (def/over-cb (prelease release e))
-    (def/over-cb (pmouse mouse x y me))
-    (def/over-cb (prec rec m))
+    (def/cb augment (ptock tick))
+    (def/cb augment (pkey key e))
+    (def/cb augment (prelease release e))
+    (def/cb augment (pmouse mouse x y me))
+    (def/cb augment (prec rec m))
     
     ;; --> Void
     ;; re-play the history of events; create a png per step; create animated gif
@@ -423,31 +529,17 @@
         (send bm save-file (format "i~a.png" (zero-fill imag# digt#)) 'png)
         (set! bmps (cons bm bmps)))
       ;; --- choose place 
-      (define img:dir (get-directory "image directory:" #f (current-directory)))
+      (define img:dir 
+        (or (and (string? record?) (directory-exists? record?) record?)
+            (get-directory "image directory:" #f (current-directory))))
       (when img:dir
         (parameterize ([current-directory img:dir])
-          (define last 
-            (foldr (lambda (event world)
-                     (save-image (draw world))
-                     (show (text (format "~a/~a created" imag# total) 18 'red))
-                     (world-transition world event))
-                   world0 
-                   event-history))
+          (define worldN 
+            (let L ([history event-history][world world0])
+              (save-image (draw world))
+              (if (empty? history) 
+                  world
+                  (L (rest history) (world-transition world (first history))))))
           (show (text (format "creating ~a" ANIMATED-GIF-FILE) 18 'red))
           (create-animated-gif rate (reverse bmps))
-          (show (draw last)))))))
-
-;; Number [Listof (-> bitmap)] -> Void
-;; turn the list of thunks into animated gifs 
-;; effect: overwrite the ANIMATED-GIF-FILE (in current directory)
-;; [Listof (-> bitmap)] -> Void
-;; turn the list of thunks into animated gifs 
-;; effect: overwrite the ANIMATED-GIF-FILE (in current directory)
-(define (create-animated-gif R bitmap-list)
-  (when (file-exists? ANIMATED-GIF-FILE) (delete-file ANIMATED-GIF-FILE))
-  (write-animated-gif bitmap-list (if (> +inf.0 R 0) (number->integer R) 5)
-                      ANIMATED-GIF-FILE
-                      #:one-at-a-time? #t
-                      #:loop? #f))
-
-(define ANIMATED-GIF-FILE "i-animated.gif")
+          (show (draw worldN)))))))

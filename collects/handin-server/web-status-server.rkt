@@ -1,16 +1,16 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/list
-         scheme/path
-         scheme/file
-         scheme/date
+(require racket/list
+         racket/path
+         racket/file
+         racket/date
          net/uri-codec
          web-server/servlet
          handin-server/private/md5
          handin-server/private/logger
          handin-server/private/config
          handin-server/private/hooker
-         "run-servlet.ss")
+         "run-servlet.rkt")
 
 (define (aget alist key)
   (cond [(assq key alist) => cdr] [else #f]))
@@ -23,7 +23,7 @@
          (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
 
 (define get-user-data
-  (let ([users-file (build-path server-dir "users.ss")])
+  (let ([users-file (build-path server-dir "users.rktd")])
     (unless (file-exists? users-file)
       (log-line "WARNING: users file missing on startup: ~a" users-file))
     (lambda (user)
@@ -182,7 +182,8 @@
     (let* ([data (file->bytes file)]
            [html? (regexp-match? #rx"[.]html?$" (string-foldcase tag))]
            [wxme? (regexp-match?
-                   #rx#"^(?:#reader[(]lib\"read.ss\"\"wxme\"[)])?WXME" data)])
+                   #rx#"^(?:#reader[(]lib\"read.(?:ss|rkt)\"\"wxme\"[)])?WXME"
+                   data)])
       (make-response/full 200 #"Okay" (current-seconds)
         (cond [html? #"text/html"]
               [wxme? #"application/data"]

@@ -15,7 +15,7 @@
                             (datum->syntax #f (format-statement s) (assertion-srcloc s))))))
 
 (define (print-questions ls)
-  (displayln 
+  (displayln
    (format-questions ls)))
 
 (define (eval-program p)

@@ -6,12 +6,15 @@
 		     (module-begin intermediate-module-begin)
 		     (module-begin advanced-module-begin)))
 
-(require lang/private/signature-syntax)
+(require deinprogramm/signature/signature
+	 lang/private/signature-syntax)
 
 (require (for-syntax scheme/base)
-	 (for-syntax mzlib/list)
+	 (for-syntax racket/list)
 	 (for-syntax syntax/boundmap)
 	 (for-syntax syntax/kerncase))
+
+(require (for-syntax "firstorder.ss"))
 
 (define-syntax (print-results stx)
   (syntax-case stx ()
@@ -43,25 +46,33 @@
       (lambda (lostx) 
 	(let* ((table (make-bound-identifier-mapping))
 	       (non-signatures
-		(filter (lambda (maybe)
-			  (syntax-case maybe (:)
-			    ((: ?id ?cnt)
-			     (identifier? #'id)
-			     (begin
-			       (when (bound-identifier-mapping-get table #'?id (lambda () #f))
-				 (raise-syntax-error #f
-						     "Second signature declaraton for the same name."
-						     maybe))
-			       (bound-identifier-mapping-put! table #'?id #'?cnt)
-			       #f))
-			    ((: ?id)
-			     (raise-syntax-error 'signatures "Signature declaration is missing a signature." maybe))
-			    ((: ?id ?cnt ?stuff0 ?stuff1 ...)
-			     (raise-syntax-error 'signatures "The : form expects a name and a signature; there is more."
-						 (syntax/loc #'?stuff0
-							     (?stuff0 ?stuff1 ...))))
-			    (_ #t)))
-			lostx)))
+		(filter-map (lambda (maybe)
+			      (syntax-case maybe (:)
+				((: ?exp ?sig)
+				 (not (identifier? #'?exp))
+				 #'(apply-signature/blame (signature ?sig) ?exp))
+				((: ?id ?sig)
+				 (begin
+				   (let ((real-id (first-order->higher-order #'?id)))
+				     (cond
+				      ((bound-identifier-mapping-get table real-id (lambda () #f))
+				       => (lambda (old-sig-stx)
+					    (unless (equal? (syntax->datum old-sig-stx)
+							    (syntax->datum #'?sig))
+					      (raise-syntax-error #f
+								  "Second signature declaration for the same name."
+								  maybe))))
+				      (else
+				       (bound-identifier-mapping-put! table real-id #'?sig)))
+				     #f)))
+				((: ?id)
+				 (raise-syntax-error #f "Signature declaration is missing a signature." maybe))
+				((: ?id ?sig ?stuff0 ?stuff1 ...)
+				 (raise-syntax-error #f "The : form expects a name and a signature; there is more."
+						     (syntax/loc #'?stuff0
+								 (?stuff0 ?stuff1 ...))))
+				(_ maybe)))
+			    lostx)))
 	  (values table non-signatures))))
 
     (define local-expand-stop-list 
@@ -91,11 +102,11 @@
 			      (map (lambda (id)
 				     (cond
 				      ((bound-identifier-mapping-get signature-table id (lambda () #f))
-				       => (lambda (cnt)
+				       => (lambda (sig)
 					    (bound-identifier-mapping-put! signature-table id #f) ; check for orphaned signatures
 					    (with-syntax ((?id id)
-							  (?cnt cnt))
-					      #'(?id (signature ?cnt)))))
+							  (?sig sig))
+					      #'(?id (signature ?sig)))))
 				      (else
 				       id)))
 				   (syntax->list #'(?id ...))))
@@ -154,9 +165,9 @@
 			(reverse (syntax->list #'(defined-id ...)))))
 	    ;; Now handle signatures:
 	    (let ((top-level (reverse (syntax->list (syntax (e1 ...))))))
-	      (let-values (((cnt-table expr-list)
+	      (let-values (((sig-table expr-list)
 			    (extract-signatures top-level)))
-		(expand-signature-expressions cnt-table expr-list)))))
+		(expand-signature-expressions sig-table expr-list)))))
 	 ((frm e3s e1s def-ids)
 	  (let loop ((e3s #'e3s)
 		     (e1s #'e1s)

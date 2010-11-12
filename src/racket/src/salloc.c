@@ -82,6 +82,7 @@ void **GC_variable_stack;
 
 #ifndef MZ_PRECISE_GC
 extern MZ_DLLIMPORT void GC_register_late_disappearing_link(void **link, void *obj);
+extern MZ_DLLIMPORT void GC_register_indirect_disappearing_link(void **link, void *obj);
 #endif
 
 SHARED_OK static int use_registered_statics;
@@ -526,6 +527,7 @@ Scheme_Object *scheme_make_external_cptr(GC_CAN_IGNORE void *cptr, Scheme_Object
 {
   Scheme_Object *o;
   o = scheme_make_cptr(NULL, typetag);
+  SCHEME_CPTR_FLAGS(o) |= 1;
   SCHEME_CPTR_VAL(o) = cptr;
   return o;
 }
@@ -547,6 +549,7 @@ Scheme_Object *scheme_make_offset_external_cptr(GC_CAN_IGNORE void *cptr, long o
 {
   Scheme_Object *o;
   o = scheme_make_offset_cptr(NULL, offset, typetag);
+  SCHEME_CPTR_FLAGS(o) |= 1;
   SCHEME_CPTR_VAL(o) = cptr;
   return o;
 }
@@ -1195,7 +1198,7 @@ START_XFORM_SKIP;
 END_XFORM_SKIP;
 
 #define GC_register_eager_finalizer(o, level, f, d, of, od) GC_set_finalizer(o, 1, level, f, d, of, od)
-#define GC_register_finalizer(o, f, d, of, od) GC_set_finalizer(o, 1, 3, f, d, of, od)
+#define GC_register_finalizer(o, f, d, of, od) GC_set_finalizer(o, 1, 1, f, d, of, od)
 
 #endif
 
@@ -1302,11 +1305,16 @@ static void add_finalizer(void *v, void (*f)(void*,void*), void *data,
   if (oldf) {
     if (oldf != do_next_finalization) {
       /* This happens if an extenal use of GC_ routines conflicts with us. */
-      scheme_warning("warning: non-Racket finalization on object dropped!");
+      scheme_warning("warning: non-Racket finalization on object dropped! %lx %lx",
+                     (long)oldf, (long)olddata);
     } else {
       *fns_ptr = *(Finalizations **)olddata;
       save_fns_ptr = (Finalizations **)olddata;
       *save_fns_ptr = NULL;
+      if (prim && (*fns_ptr)->scheme_first) {
+        /* Reset level back to 1: */
+        GC_register_eager_finalizer(v, 1, do_next_finalization, fns_ptr, NULL, NULL);
+      }
     }
   } else if (rmve) {
     GC_register_finalizer(v, NULL, NULL, NULL, NULL);
@@ -1382,6 +1390,17 @@ static void add_finalizer(void *v, void (*f)(void*,void*), void *data,
 }
 
 #ifndef MZ_PRECISE_GC
+void scheme_late_weak_reference(void **p)
+{
+  scheme_late_weak_reference_indirect(p, *p);
+}
+
+void scheme_late_weak_reference_indirect(void **p, void *v)
+{
+  if (GC_base(v) == v)
+    GC_register_late_disappearing_link(p, v);
+}
+
 void scheme_weak_reference(void **p)
 {
   scheme_weak_reference_indirect(p, *p);
@@ -1390,7 +1409,7 @@ void scheme_weak_reference(void **p)
 void scheme_weak_reference_indirect(void **p, void *v)
 {
   if (GC_base(v) == v)
-    GC_register_late_disappearing_link(p, v);
+    GC_register_indirect_disappearing_link(p, v);
 }
 
 void scheme_unweak_reference(void **p)
@@ -1428,7 +1447,7 @@ void scheme_register_finalizer(void *p, void (*f)(void *p, void *data),
 			       void *data, void (**oldf)(void *p, void *data), 
 			       void **olddata)
 {
-  add_finalizer(p, f, data, 0, 1, oldf, olddata, 0, 0);
+  add_finalizer(p, f, data, 1, 1, oldf, olddata, 0, 0);
 }
 
 void scheme_remove_all_finalization(void *p)

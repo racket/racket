@@ -313,6 +313,18 @@ package: :=
           (notes: ,p/) (man: ,p) (tests: ,p/)
           ,@(if (getkey '#:src?) `((src: ,p/ ,(concat "worksp/" p/))) '()))))
 
+;; Utility for pulling out the names of libraries
+get-libs: :=
+  (lambda (p)
+    (let* ([xs (parameterize ([current-command-line-arguments
+                               '#("--no-op" "" "" "")])
+                 (dynamic-require (build-path racket/ "src" "get-libs.rkt")
+                                  'all-files+sizes))]
+           [xs (or (assq p xs) (error 'get-libs "unknown package, ~s" p))]
+           [xs (append-map cdr (cdr xs))]
+           [xs (remove-duplicates (map car xs))])
+      `(lib: ,@xs)))
+
 ;; ============================================================================
 ;; Base distribution specs
 
@@ -353,8 +365,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
 
 mr-base := (package: "gracket") (bin: "gracket-text")
            (package: "mred") (bin: "mred-text")
-           (collects: "afm/")
-mr-manuals := (doc+src: "gui/")
+mr-manuals := (doc+src: "gui/") (doc+src: "draw/")
 
 dr-base := (package: "drracket") (package: "drscheme") (package: "framework")
 dr-manuals := (doc+src: "tools/")
@@ -366,16 +377,17 @@ dr-extras  :=
 plt-extras :=
 
 ;; Tests definitions
-mz-tests := (tests: "racket/" "info.rkt" "utils/" "match/" "eli-tester.rkt")
+mz-tests := (tests: "info.rkt" "racket/" "utils/" "match/"
+                    "eli-tester.rkt" "stress.rkt")
 
 ;; ============================================================================
 ;; Source definitions
 
-mz-src := (+ (- (src: "README" "Makefile.in" "configure" "lt/" "racket/" "utils/"
+mz-src := (+ (- (src: "README" "configure" "Makefile.in" "lt/" "racket/"
+                      "get-libs.rkt" "utils/"
                       (cond win => "worksp/{README|mzconfig.h}"
                                    "worksp/{racket|libracket|libmzgc|gc2}/"
-                                   "worksp/{mzstart|starters}/"
-                                   "worksp/extradlls/"))
+                                   "worksp/{mzstart|starters}/"))
                 (cond (not mr) => (src: "worksp/starters/mrstart.ico")))
              foreign-src)
 
@@ -396,16 +408,15 @@ foreign-src := (src: "foreign/{Makefile.in|README}"
 ;; queries have no point elsewhere.)
 
 mz-bins := (lib: "buildinfo" "**/mzdyn{|w}{|3[mM]|cgc|CGC}.{o|obj|exp|def}")
+           (get-libs: core)
            (cond mac => (lib: "Racket*/")
-                 win => (dll: "lib{mzgc|racket}" "UnicoWS" "iconv")
+                 win => (dll: "lib{mzgc|racket}")
                         (lib: "gcc/{fixup|init}.o" "bcc/mzdynb.{obj|def}")
                  unix => (lib: "starter"))
-           extra-dynlibs
 
-mr-bins := (cond mac => (lib: "GRacket*/")
+mr-bins := (get-libs: gui)
+           (cond mac => (lib: "GRacket*/")
                  win => (dll: "libgracket"))
-
-extra-dynlibs := (cond win => (dll: "{ssl|lib}eay32"))
 
 ;; ============================================================================
 ;; This filter is used on the full compiled trees to get the binary
@@ -538,12 +549,9 @@ mr-extras :+= (- (+ (package: "mrlib/")
 
 ;; -------------------- sgl
 mr-extras :+= (package: "sgl/")
-;; gl-info.rkt doesn't exist, but gl-info.zo holds platform-dependent data
-platform-dependent :+= (and (collects: "sgl/")
-                            (srcfile: "sgl/gl-info"))
 
 ;; -------------------- syntax-color
-dr-extras :+= (package: "syntax-color")
+mz-extras :+= (package: "syntax-color")
 
 ;; -------------------- plt-help
 dr-extras :+= (collects: "help") (bin: "Racket Documentation")
@@ -629,11 +637,8 @@ mz-extras :+= (- (package: "swindle")
                  (cond (not dr) => (srcfile: "tool.rkt" "swindle*.png")))
 
 ;; -------------------- plot
-plt-extras :+=
-  (- (package: "plot")
-     ;; src should be included, otherwise it will be impossible to recompile it
-     ;; (cond (not src) => "src/")
-     )
+plt-extras :+= (package: "plot" #:src? #t)
+               (lib: "lib{plplot|fit}*")
 
 ;; -------------------- mzcom
 plt-extras :+= (- (package: "mzcom" #:src? #t)
@@ -659,6 +664,9 @@ plt-extras :+= (package: "redex")
 plt-extras :+= (package: "deinprogramm/")
                (collects: "teachpack/deinprogramm/")
                (doc: "DMdA-lib")
+
+;; -------------------- data
+mz-extras :+= (package: "data")
 
 ;; -------------------- unstable
 mz-extras :+= (- (package: "unstable")
@@ -687,23 +695,23 @@ version := (lambda () (version))
 platform
 := (cond i386-linux        => "Linux (i386)"
          i386-linux-gcc2   => "Linux (i386/gcc2)"
-         i386-linux-fc2    => "Fedora Core 2 (i386)"
-         i386-linux-fc5    => "Fedora Core 5 (i386)"
-         i386-linux-fc6    => "Fedora Core 6 (i386)"
-         i386-linux-f7     => "Fedora 7 (i386)"
-         x86_64-linux-f7   => "Fedora 7 (x86_64)"
-         i386-linux-f9     => "Fedora 9 (i386)"
-         i386-linux-f12    => "Fedora 12 (i386)"
-         i386-linux-debian => "Debian Stable (i386)"
-         i386-linux-debian-testing  => "Debian Testing (i386)"
-         i386-linux-debian-unstable => "Debian Unstable (i386)"
-         i386-linux-ubuntu          => "Ubuntu (i386)"
-         i386-linux-ubuntu-dapper   => "Ubuntu Dapper (i386)"
-         i386-linux-ubuntu-edgy     => "Ubuntu Edgy (i386)"
-         i386-linux-ubuntu-feisty   => "Ubuntu Feisty (i386)"
-         i386-linux-ubuntu-hardy    => "Ubuntu Hardy (i386)"
-         i386-linux-ubuntu-intrepid => "Ubuntu Intrepid (i386)"
-         i386-linux-ubuntu-jaunty   => "Ubuntu Jaunty (i386)"
+         i386-linux-fc2    => "Linux i386, built on Fedora Core 2"
+         i386-linux-fc5    => "Linux i386, built on Fedora Core 5"
+         i386-linux-fc6    => "Linux i386, built on Fedora Core 6"
+         i386-linux-f7     => "Linux i386, built on Fedora 7"
+         x86_64-linux-f7   => "Linux x86_64, built on Fedora 7"
+         i386-linux-f9     => "Linux i386, built on Fedora 9"
+         i386-linux-f12    => "Linux i386, built on Fedora 12"
+         i386-linux-debian => "Linux i386, built on Debian Stable"
+         i386-linux-debian-testing  => "Linux i386, built on Debian Testing"
+         i386-linux-debian-unstable => "Linux i386, built on Debian Unstable"
+         i386-linux-ubuntu          => "Linux i386, built on Ubuntu"
+         i386-linux-ubuntu-dapper   => "Linux i386, built on Ubuntu Dapper"
+         i386-linux-ubuntu-edgy     => "Linux i386, built on Ubuntu Edgy"
+         i386-linux-ubuntu-feisty   => "Linux i386, built on Ubuntu Feisty"
+         i386-linux-ubuntu-hardy    => "Linux i386, built on Ubuntu Hardy"
+         i386-linux-ubuntu-intrepid => "Linux i386, built on Ubuntu Intrepid"
+         i386-linux-ubuntu-jaunty   => "Linux i386, built on Ubuntu Jaunty"
          i386-freebsd      => "FreeBSD (i386)"
          sparc-solaris     => "Solaris"
          ppc-osx-mac       => "Mac OS X (PPC)"

@@ -1,5 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base)
+         racket/serialize
          racket/pretty)
 
 (provide set seteq seteqv
@@ -13,7 +14,7 @@
          for/set for/seteq for/seteqv
          for*/set for*/seteq for*/seteqv)
 
-(define-struct set (ht)
+(define-serializable-struct set (ht)
   #:omit-define-syntaxes
   #:property prop:custom-print-quotable 'never
   #:property prop:custom-write
@@ -132,7 +133,7 @@
    [(set . sets)
     (for ([s (in-list (cons set sets))]
           [i (in-naturals)])
-      (unless (set? s) (apply raise-type-error 'set-union "set" i sets)))
+      (unless (set? s) (apply raise-type-error 'set-union "set" i (cons set sets))))
     (for/fold ([set set]) ([set2 (in-list sets)])
       (set-union set set2))]))
 
@@ -167,7 +168,7 @@
    [(set . sets)
     (for ([s (in-list (cons set sets))]
           [i (in-naturals)])
-      (unless (set? s) (apply raise-type-error 'set-intersect "set" i sets)))
+      (unless (set? s) (apply raise-type-error 'set-intersect "set" i (cons set sets))))
     (for/fold ([set set]) ([set2 (in-list sets)])
       (set-intersect set set2))]))
 
@@ -199,7 +200,7 @@
    [(set . sets)
     (for ([s (in-list (cons set sets))]
           [i (in-naturals)])
-      (unless (set? s) (apply raise-type-error 'set-subtract "set" i sets)))
+      (unless (set? s) (apply raise-type-error 'set-subtract "set" i (cons s sets))))
     (for/fold ([set set]) ([set2 (in-list sets)])
       (set-subtract set set2))]))
 

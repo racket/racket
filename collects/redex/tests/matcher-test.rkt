@@ -302,6 +302,10 @@
     (test-empty '(a ... b) '(b c) #f)
     (test-empty '(a ... b) '(a b c) #f)
     
+    (test-lang '(n n ...) '((1 1) 1 1) (list (make-mtch (make-bindings (list (make-bind 'n '(1 1)))) '((1 1) 1 1) none))
+               (list (make-nt 'n (list (make-rhs 'any) (make-rhs 'number)))))
+    (test-lang '(n (n ...)) '((1 1) (1 1)) (list (make-mtch (make-bindings (list (make-bind 'n '(1 1)))) '((1 1) (1 1)) none))
+               (list (make-nt 'n (list (make-rhs 'any) (make-rhs 'number)))))
     (test-empty '((name x any) 
                   ((name x number) ...))
                 '((1 1) (1 1))

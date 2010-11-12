@@ -12,6 +12,3 @@
 @include-section["control-flow.scrbl"]
 @include-section["misc.scrbl"]
 @include-section["ui.scrbl"]
-@include-section["running-tests.scrbl"]
-
-

@@ -22,7 +22,7 @@ code does the parsing and validation of the syntax.
 ;; pre  : (or/c pre/post? #f)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (or/c pre/post? #f)
-(struct istx (args rst pre ress post))
+(struct istx (args rst pre ress post) #:transparent)
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
 ;;       but only temporarily; in that case, a syntax error
 ;;       is signaled and the istx struct is not used afterwards
@@ -30,23 +30,23 @@ code does the parsing and validation of the syntax.
 ;; var  : identifier?
 ;; vars : (or/c #f (listof identifier?))
 ;; ctc  : syntax[expr]
-(struct arg/res (var vars ctc))
+(struct arg/res (var vars ctc) #:transparent)
 
 ;; kwd  : (or/c #f syntax[kwd])
 ;; optional? : boolean?
-(struct arg arg/res (kwd optional?))
+(struct arg arg/res (kwd optional?) #:transparent)
 
 ;; these represent res contracts that came from _s (and thus should be evaluated early)
 ;; eid : identifier?  --- extra variable to be bound to the result 
 ;;                    --- of evaluating the result contract early
-(struct eres arg/res (eid))
+(struct eres arg/res (eid) #:transparent)
 
 ;; these represent res contracts that do not come from _s (and thus should be evaluated later)
-(struct lres arg/res ())
+(struct lres arg/res () #:transparent)
 
 ;; vars : (listof identifier?)
 ;; exp  : syntax[expr]
-(struct pre/post (vars exp))
+(struct pre/post (vars exp) #:transparent)
 
 (define (parse-->i stx)
   (if (identifier? stx)
@@ -344,8 +344,8 @@ code does the parsing and validation of the syntax.
                       (for-each (λ (x) (check-id stx x))
                                 (syntax->list #'(id2 ...)))
                       (values (arg/res #'id 
-                                   (syntax->list #'(id2 ...))
-                                   #'rest-expr)
+                                       (syntax->list #'(id2 ...))
+                                       #'rest-expr)
                               #'leftover))]
                    [(#:rest other . leftover)
                     (raise-syntax-error #f "expected an id+ctc"
@@ -383,6 +383,12 @@ code does the parsing and validation of the syntax.
                         [any (raise-syntax-error #f "cannot have a #:post with any as the range" stx #'post-cond)]
                         [_ (void)])
                       (values (pre/post (syntax->list #'(id ...)) #'post-cond) #'leftover))]
+                   [(#:post a b . stuff)
+                    (begin
+                      (raise-syntax-error #f "expected a sequence of variables to follow #:post" stx #'a))]
+                   [(#:post a)
+                    (begin
+                      (raise-syntax-error #f "expected a sequence of variables and an expression to follow #:post" stx #'a))]
                    [_ (values #f leftover)])])
     (syntax-case leftover ()
       [() 
@@ -391,12 +397,6 @@ code does the parsing and validation of the syntax.
        (raise-syntax-error #f "bad syntax" stx #'a)]
       [_
        (raise-syntax-error #f "bad syntax" stx)])))
-
-;(define (ensure-no-cycles istx)
-;  (let (;; cm : id -o> {'pending, 'no-cycle}
-;        [cm (make-free-identifier-map)])
-;    (for ([dom (in-list (istx-args istx))])
-;      (let loop ([id (
 
 (provide
  parse-->i

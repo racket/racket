@@ -287,7 +287,7 @@
                                 (if (<= input test)
                                     'input-smaller
                                     'test-smaller)))]))])
-          ; (printf "~a ~a ~a~n" compare secs (date->string date))
+          ; (printf "~a ~a ~a\n" compare secs (date->string date))
           (cond
             [(eq? compare 'equal) secs]
             [(or (= secs below-secs) (= secs above-secs))

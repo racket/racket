@@ -12,6 +12,7 @@
 	   "wx.ss"
 	   "wxtop.ss"
 	   "wxpanel.ss"
+	   "wxitem.ss"
 	   "mrwindow.ss"
 	   "mrcontainer.ss")
 
@@ -40,6 +41,10 @@
 
   (define-keywords top-level-window%-keywords
     window%-keywords container%-keywords area%-keywords)
+
+  (define-local-member-name
+    do-create-status-line
+    do-set-status-text)
 
   (define basic-top-level-window%
     (class100* (make-area-container-window% (make-window% #t (make-container% area%))) (top-level-window<%>) 
@@ -93,7 +98,7 @@
 		 (lambda (w h)
 		   (check-range-integer '(method top-level-window<%> resize) w)
 		   (check-range-integer '(method top-level-window<%> resize) h)
-		   (send wx set-size -1 -1 w h)))]
+		   (send wx set-size -11111 -11111 w h)))]
 
 	[get-focus-window (entry-point
 			   (lambda () (let ([w (send wx get-focus-window)])
@@ -111,24 +116,41 @@
 	[on-message (lambda (m) (void))])
       (private-field
        [wx #f]
+       [mid-panel #f] ;; supports status line
        [wx-panel #f]
+       [status-message #f]
        [finish (entry-point
 		(lambda (top-level hide-panel?)
-		  (set! wx-panel (make-object wx-vertical-panel% #f this top-level null))
+		  (set! mid-panel (make-object wx-vertical-panel% #f this top-level null #f))
+                  (send mid-panel skip-subwindow-events? #t)
+                  (send (send mid-panel area-parent) add-child mid-panel)
+		  (set! wx-panel (make-object wx-vertical-panel% #f this mid-panel null #f))
+                  (send wx-panel skip-subwindow-events? #t)
 		  (send (send wx-panel area-parent) add-child wx-panel)
 		  (send top-level set-container wx-panel)
 		  (when hide-panel?
-		    (send wx-panel show #f))
+		    (send mid-panel show #f))
 		  top-level))])
+      (public
+        [do-create-status-line (lambda ()
+                                 (unless status-message
+                                   (set! status-message (make-object wx-message% this this mid-panel "" -1 -1 null #f))
+                                   (send status-message stretchable-in-x #t)))]
+        [do-set-status-text (lambda (s)
+                              (when status-message
+                                (send status-message set-label s)))])
       (sequence 
-	(super-init (lambda () (set! wx (mk-wx finish)) wx) (lambda () wx-panel) mismatches label parent arrow-cursor))))
+	(super-init (lambda () (set! wx (mk-wx finish)) wx) 
+                    (lambda () wx-panel) (lambda () mid-panel)
+                    mismatches label parent arrow-cursor))))
 
 
   (define frame%
     (class100*/kw basic-top-level-window% ()
 		  [(label [parent #f] [width #f] [height #f] [x #f] [y #f] [style null])
 		   top-level-window%-keywords]
-      (inherit on-traverse-char on-system-menu-char)
+      (inherit on-traverse-char on-system-menu-char
+               do-create-status-line do-set-status-text)
       (sequence
 	(let ([cwho '(constructor frame)])
 	  (check-label-string cwho label)
@@ -164,8 +186,8 @@
 			 (send wx handle-menu-key e)))]
 	[on-mdi-activate (lambda (on?) (void))]
 	[on-toolbar-button-click (lambda () (void))]
-	[create-status-line (entry-point (lambda () (unless status-line? (send wx create-status-line) (set! status-line? #t))))]
-	[set-status-text (lambda (s) (send wx set-status-text s))]
+	[create-status-line (entry-point (lambda () (unless status-line? (do-create-status-line) (set! status-line? #t))))]
+	[set-status-text (lambda (s) (do-set-status-text s))]
 	[has-status-line? (lambda () status-line?)]
 	[iconize (entry-point (lambda (on?) (send wx iconize on?)))]
 	[is-iconized? (entry-point (lambda () (send wx iconized?)))]
@@ -228,7 +250,7 @@
 	 (lambda ()
 	   (super-init (lambda (finish) 
 			 (set! wx (finish (make-object wx-dialog% this this
-						       (and parent (mred->wx parent)) label #t
+						       (and parent (mred->wx parent)) label
 						       (or x -11111) (or y -11111) (or width 0) (or height 0)
 						       style)
 					  #f))

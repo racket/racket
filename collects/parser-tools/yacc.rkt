@@ -174,7 +174,7 @@
                               (lambda (e)
                                 (fprintf 
                                  (current-error-port)
-                                 "Cannot write yacc-output to file \"~a\"~n"
+                                 "Cannot write yacc-output to file \"~a\"\n"
                                  yacc-output)))]
                (call-with-output-file yacc-output
                  (lambda (port)
@@ -271,14 +271,14 @@
                             (let ((a (find-action stack tok val start-pos end-pos)))
                               (cond
                                 ((runtime-shift? a)
-                                 ;; (printf "shift:~a~n" (runtime-shift-state a))
+                                 ;; (printf "shift:~a\n" (runtime-shift-state a))
                                  (cons (make-stack-frame (runtime-shift-state a)
                                                          val
                                                          start-pos
                                                          end-pos)
                                        stack))
                                 (else
-                                 ;; (printf "discard input:~a~n" tok)
+                                 ;; (printf "discard input:~a\n" tok)
                                  (let-values (((tok val start-pos end-pos)
                                                (extract (get-token))))
                                    (remove-input tok val start-pos end-pos))))))))
@@ -286,7 +286,7 @@
                   (let ((a (find-action stack 'error #f start-pos end-pos)))
                     (cond
                       ((runtime-shift? a)
-                       ;; (printf "shift:~a~n" (runtime-shift-state a))
+                       ;; (printf "shift:~a\n" (runtime-shift-state a))
                        (set! stack 
                              (cons
                               (make-stack-frame (runtime-shift-state a) 
@@ -296,7 +296,7 @@
                               stack))
                        (remove-input tok val start-pos end-pos))
                       (else
-                       ;; (printf "discard state:~a~n" (car stack))
+                       ;; (printf "discard state:~a\n" (car stack))
                        (cond
                          ((< (length stack) 2)
                           (raise-read-error "parser: Cannot continue after error"
@@ -330,7 +330,7 @@
                     (let ((action (find-action stack tok val start-pos end-pos)))
                       (cond
                         ((runtime-shift? action)
-                         ;; (printf "shift:~a~n" (runtime-shift-state action))
+                         ;; (printf "shift:~a\n" (runtime-shift-state action))
                          (parsing-loop (cons (make-stack-frame (runtime-shift-state action)
                                                                val
                                                                start-pos
@@ -338,7 +338,7 @@
                                              stack)
                                        (get-token)))
                         ((runtime-reduce? action)
-                         ;; (printf "reduce:~a~n" (runtime-reduce-prod-num action))
+                         ;; (printf "reduce:~a\n" (runtime-reduce-prod-num action))
                          (let-values (((new-stack args)
                                        (reduce-stack stack 
                                                      (runtime-reduce-rhs-length action)
@@ -367,7 +367,7 @@
                                new-stack)
                               ip))))
                         ((runtime-accept? action)
-                         ;; (printf "accept~n")
+                         ;; (printf "accept\n")
                          (stack-frame-value (car stack)))
                         (else 
                          (if src-pos

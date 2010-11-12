@@ -400,7 +400,11 @@
 	      (if (if (stx-pair? e)
 		      (stx-null? (stx-cdr e))
 		      #t)
-		  (stx-car e)
+                  (datum->syntax
+                   here
+                   (list (quote-syntax #%expression)
+                         (stx-car e))
+                   x)
 		  (datum->syntax
 		   here
 		   (list (quote-syntax if)
@@ -422,7 +426,11 @@
 	      (if (if (stx-pair? e)
 		      (stx-null? (stx-cdr e))
 		      #f)
-		  (stx-car e)
+                  (datum->syntax
+                   here
+                   (list (quote-syntax #%expression)
+                         (stx-car e))
+                   x)
 		  (if (stx-list? e)
 		      (let-values ([(tmp) 'or-part])
 			(datum->syntax

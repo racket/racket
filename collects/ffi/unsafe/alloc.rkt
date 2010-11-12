@@ -1,12 +1,11 @@
-#lang scheme/base
-(require scheme/foreign
+#lang racket/base
+(require ffi/unsafe
          "atomic.ss")
-(unsafe!)
 
 (provide allocator deallocator retainer 
          (rename-out [deallocator releaser]))
 
-(define allocated (make-weak-hasheq))
+(define allocated (make-late-weak-hasheq))
 
 (define (deallocate v)
   ;; Called as a finalizer, we we assume that the
@@ -42,7 +41,7 @@
                (when ds
                  (if (null? (cdr ds))
                      (hash-remove! allocated v)
-                     (hash-set! allocated (cdr ds)))))))
+                     (hash-set! allocated v (cdr ds)))))))
          end-atomic))
    proc))
 

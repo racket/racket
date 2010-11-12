@@ -26,12 +26,12 @@
         (send snip get-margin l t r b)
         (printf "get-margin: ~sX~s  ~sX~s\n" (unbox l) (unbox r) (unbox t) (unbox b)))
       
-      (printf "get-max-height: ~s~n" (send snip get-max-height))
-      (printf "get-max-width: ~s~n" (send snip get-max-width))
-      (printf "get-min-height: ~s~n" (send snip get-min-height))
-      (printf "get-min-width: ~s~n" (send snip get-min-width))
-      ;(printf "snip-width: ~s~n" (send pasteboard snip-width snip))
-      ;(printf "snip-height: ~s~n" (send pasteboard snip-height snip))
+      (printf "get-max-height: ~s\n" (send snip get-max-height))
+      (printf "get-max-width: ~s\n" (send snip get-max-width))
+      (printf "get-min-height: ~s\n" (send snip get-min-height))
+      (printf "get-min-width: ~s\n" (send snip get-min-width))
+      ;(printf "snip-width: ~s\n" (send pasteboard snip-width snip))
+      ;(printf "snip-height: ~s\n" (send pasteboard snip-height snip))
       ))
   
   ;;debug-pasteboard: -> (void)

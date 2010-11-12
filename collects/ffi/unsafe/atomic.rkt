@@ -1,7 +1,6 @@
-#lang scheme/base
-(require scheme/foreign
-         (for-syntax scheme/base))
-(unsafe!)
+#lang racket/base
+(require ffi/unsafe
+         (for-syntax racket/base))
 
 (provide (protect-out start-atomic
                       end-atomic
@@ -36,6 +35,8 @@
 (define old-paramz #f)
 (define old-break-paramz #f)
 
+(define extra-atomic-depth 0)
+
 (define exited-key (gensym 'as-exit))
 (define lock-tag (make-continuation-prompt-tag 'lock))
 
@@ -47,7 +48,13 @@
    [(eq? monitor-owner (current-thread))
     ;; Increment atomicity level for cooperation with anything
     ;; that is sensitive to the current depth of atomicity.
-    (dynamic-wind start-atomic f end-atomic)]
+    (dynamic-wind (lambda () 
+                    (start-breakable-atomic)
+                    (set! extra-atomic-depth (add1 extra-atomic-depth)))
+                  f
+                  (lambda () 
+                    (set! extra-atomic-depth (sub1 extra-atomic-depth))
+                    (end-breakable-atomic)))]
    [else
     (with-continuation-mark 
         exited-key 
@@ -89,7 +96,8 @@
   (unless (eq? monitor-owner (current-thread)) 
     (error 'call-as-nonatomic "not in atomic area for ~e" f))
   (let ([paramz old-paramz]
-        [break-paramz old-break-paramz])
+        [break-paramz old-break-paramz]
+        [extra-depth extra-atomic-depth])
     (with-continuation-mark 
         exited-key 
         #t ; disables special exception handling
@@ -101,11 +109,21 @@
           (lambda ()
             (dynamic-wind
                 (lambda ()		
-                  (set! monitor-owner #f)	 
-                  (end-breakable-atomic))
+                  (set! monitor-owner #f)
+                  (set! extra-atomic-depth 0)
+                  (end-breakable-atomic)
+                  (let loop ([i extra-depth])
+                    (unless (zero? i)
+                      (end-breakable-atomic)
+                      (loop (sub1 i)))))
                 f
                 (lambda ()
+                  (start-breakable-atomic)
                   (set! old-paramz paramz)
                   (set! old-break-paramz break-paramz)
-                  (start-breakable-atomic)
+                  (let loop ([i extra-depth])
+                    (unless (zero? i)
+                      (start-breakable-atomic)
+                      (loop (sub1 i))))
+                  (set! extra-atomic-depth extra-depth)
                   (set! monitor-owner (current-thread)))))))))))

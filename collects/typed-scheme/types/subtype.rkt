@@ -1,15 +1,14 @@
-#lang scheme/base
+#lang racket/base
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
 	 (types utils comparison resolve abbrev substitute)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
-         scheme/match unstable/match
-         mzlib/trace (rename-in scheme/contract
-                                [-> c->]
-                                [->* c->*])
-	 (for-syntax scheme/base syntax/parse))
+         racket/match unstable/match
+         (rename-in racket/contract
+                    [-> c->] [->* c->*])
+	 (for-syntax racket/base syntax/parse))
 
 ;; exn representing failure of subtyping
 ;; s,t both types
@@ -234,9 +233,10 @@
 	      ;; value types              
 	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
 	      ;; now we encode the numeric hierarchy - bletch
+              [((Base: 'Integer _) (== -Real =t)) A0]
 	      [((Base: 'Integer _) (Base: 'Number _)) A0]
+              [((Base: 'Flonum _)  (Base: 'Inexact-Real _)) A0]
 	      [((Base: 'Flonum _)  (== -Real =t)) A0]
-	      [((Base: 'Integer _)  (== -Real =t)) A0]
 	      [((Base: 'Flonum _)  (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
 	      [((Base: 'Integer _) (Base: 'Exact-Rational _)) A0]
@@ -264,10 +264,13 @@
 	      [((== -Fixnum =t) (Base: 'Integer _)) A0]
 
               [((Base: 'Nonnegative-Flonum _) (Base: 'Flonum _)) A0]
-              [((Base: 'Nonnegative-Flonum _) (Base: 'InexactComplex _)) A0]
+              [((Base: 'Nonnegative-Flonum _) (Base: 'Inexact-Real _)) A0]
               [((Base: 'Nonnegative-Flonum _) (Base: 'Number _)) A0]
 
-              [((Base: 'InexactComplex _) (Base: 'Number _)) A0]
+              [((Base: 'Inexact-Real _) (== -Real =t)) A0]
+              [((Base: 'Inexact-Real _) (Base: 'Number _)) A0]
+
+              [((Base: 'Float-Complex _) (Base: 'Number _)) A0]
 
               
               ;; values are subtypes of their "type"
@@ -275,7 +278,7 @@
 	      [((Value: (and n (? number?) (? exact?) (? rational?))) (Base: 'Exact-Rational _)) A0]
 	      [((Value: (? exact-nonnegative-integer? n)) (== -Nat =t)) A0]
 	      [((Value: (? exact-positive-integer? n)) (Base: 'Exact-Positive-Integer _)) A0]	      
-	      [((Value: (? inexact-real? n)) (Base: 'Flonum _)) A0]
+	      [((Value: (? flonum? n)) (Base: 'Flonum _)) A0]
 	      [((Value: (? real? n)) (== -Real =t)) A0]
 	      [((Value: (? number? n)) (Base: 'Number _)) A0]
 
@@ -378,7 +381,7 @@
               [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy
 	      [((Struct: nm (? Type? parent) flds proc _ _ _ _) other) 
-               ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
+               ;(printf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
 	      [((Struct: (== promise-sym) _ (list t) _ _ _ _ _) (Struct: (== promise-sym) _ (list t*) _ _ _ _ _)) (subtype* A0 t t*)]
@@ -393,6 +396,8 @@
 	      ;; subtyping on other stuff
 	      [((Syntax: t) (Syntax: t*))
 	       (subtype* A0 t t*)]
+              [((Future: t) (Future: t*))
+               (subtype* A0 t t*)]
 	      [((Instance: t) (Instance: t*))
 	       (subtype* A0 t t*)]
               [((Class: '() '() (list (and s  (list names  meths )) ...))

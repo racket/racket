@@ -1,0 +1,48 @@
+Things to do for syntax/parse
+=============================
+
+TEST & DOC - Generalize stxclass arities.
+TEST & DOC - provide-syntax-class/contract
+
+Refine expr/c.
+
+Wrap default args in stxclass parameters with 'this-syntax'
+  - other stxparams? like 'this-base-syntax' etc?
+
+Add debugging mode that records *all* intermediate patterns 
+on expectstack.
+
+Add "roles" to error messages, eg
+  expected identifier for foo thingummy name
+instead of the current
+  expected identifier
+
+Improve ~do.
+
+Improve reflection.
+
+More cowbell.
+
+Reorganize tests.
+
+Allow reflected syntax classes in conventions.
+
+Rename "conventions" to "convention-set"?
+
+Unify convention-sets and literal-sets?
+
+For documentation, talk about "primary attributes" vs "nested
+attributes". Helps explain ~eh-var and #:auto-nested-attributes.
+
+For documentation, deftech "term-sequence", use consistently in
+H-pattern docs, etc.
+
+Add documentation sections:
+  - Pattern matching model
+  - Static semantics (attributes)
+
+Add syntax exception variant with more information.
+
+Fix syntaxes pinpointed for repetition constraint violations.
+
+Make a #:with-like version of #:defaults (currently #:attr-like).

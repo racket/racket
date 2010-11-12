@@ -87,6 +87,43 @@ X(scheme_alloc, _string)(long size, Xchar fill)
   return str;
 }
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC) && defined(GENERATING_BYTE)
+Scheme_Object *
+X(scheme_alloc_shared, _string)(long size, Xchar fill)
+{
+  Scheme_Object *str;
+  Xchar *s;
+  long i;
+  void *original_gc;
+  
+  if (size < 0) {
+    str = scheme_make_integer(size);
+    scheme_wrong_type("make-" XSTRINGSTR, "non-negative exact integer",
+		      -1, 0, &str);
+  }
+
+  original_gc = GC_switch_to_master_gc();
+  str = scheme_alloc_object();
+  str->type = scheme_x_string_type;
+  SHARED_ALLOCATED_SET(str);
+
+  if (size < 100)
+    s = (Xchar *)scheme_malloc_atomic(sizeof(Xchar)*(size + 1));
+  else
+    s = (Xchar *)scheme_malloc_fail_ok(scheme_malloc_atomic, sizeof(Xchar)*(size + 1));
+  GC_switch_back_from_master(original_gc);
+
+  for (i = size; i--; ) {
+    s[i] = fill;
+  }
+  s[size] = 0;
+  SCHEME_X_STR_VAL(str) = s;
+  SCHEME_X_STRTAG_VAL(str) = size;
+
+  return str;
+}
+#endif
+
 /**********************************************************************/
 /*                          string procs                              */
 /**********************************************************************/
@@ -138,6 +175,50 @@ X__(string) (int argc, Scheme_Object *argv[])
 
   return str;
 }
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC) && defined(GENERATING_BYTE)
+static Scheme_Object *
+X_(make_shared, string) (int argc, Scheme_Object *argv[])
+{
+  long len;
+  Xchar fill;
+  Scheme_Object *str;
+
+  len = scheme_extract_index("make-" XSTRINGSTR, 0, argc, argv, -1, 0);
+
+  if (argc == 2) {
+    if (!CHARP(argv[1]))
+      scheme_wrong_type("make-" XSTRINGSTR, CHAR_STR, 1, argc, argv);
+    fill = (Xchar)CHAR_VAL(argv[1]);
+  } else
+    fill = 0;
+
+  if (len == -1) {
+    scheme_raise_out_of_memory("make-" XSTRINGSTR, "making " XSTR "string of length %s",
+			       scheme_make_provided_string(argv[0], 0, NULL));
+  }
+
+  str = X(scheme_alloc_shared, _string)(len, fill);
+  return str;
+}
+
+static Scheme_Object *
+X_(shared, string) (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *str;
+  int i;
+
+  str = X(scheme_alloc_shared, _string)(argc, 0);
+
+  for ( i=0 ; i<argc ; ++i ) {
+    if (!CHARP(argv[i]))
+      scheme_wrong_type(XSTRINGSTR, CHAR_STR, i, argc, argv);
+    SCHEME_X_STR_VAL(str)[i] = (Xchar)CHAR_VAL(argv[i]);
+  }
+
+  return str;
+}
+#endif
 
 static Scheme_Object *
 X__(string_length) (int argc, Scheme_Object *argv[])

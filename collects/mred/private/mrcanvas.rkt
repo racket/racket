@@ -51,6 +51,22 @@
 	[warp-pointer (entry-point (lambda (x y) (send wx warp-pointer x y)))]
 
 	[get-dc (entry-point (lambda () (send wx get-dc)))]
+	[make-bitmap (lambda (w h)
+                       (unless (exact-positive-integer? w)
+                         (raise-type-error (who->name '(method canvas% make-bitmap))
+                                           "exact positive integer"
+                                           w))
+                       (unless (exact-positive-integer? h)
+                         (raise-type-error (who->name '(method canvas% make-bitmap))
+                                           "exact positive integer"
+                                           h))
+                       (send wx make-compatible-bitmap w h))]
+
+        [suspend-flush (lambda ()
+                         (send wx begin-refresh-sequence))]
+        [resume-flush (lambda ()
+                        (send wx end-refresh-sequence))]
+        [flush (lambda () (send wx flush))]
 
 	[set-canvas-background
 	 (entry-point
@@ -76,7 +92,7 @@
       (sequence
 	(as-entry
 	 (lambda ()
-	   (super-init (lambda () (set! wx (mk-wx)) wx) (lambda () wx) mismatches #f parent #f))))))
+	   (super-init (lambda () (set! wx (mk-wx)) wx) (lambda () wx) (lambda () wx) mismatches #f parent #f))))))
 
   (define default-paint-cb (lambda (canvas dc) (void)))
 

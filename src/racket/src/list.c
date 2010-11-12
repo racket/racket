@@ -90,6 +90,7 @@ static Scheme_Object *box_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unbox (int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_box (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_box(int argc, Scheme_Object **argv);
+static Scheme_Object *impersonate_box(int argc, Scheme_Object **argv);
 
 static Scheme_Object *make_hash(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_hasheq(int argc, Scheme_Object *argv[]);
@@ -126,6 +127,7 @@ static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv);
+static Scheme_Object *impersonate_hash(int argc, Scheme_Object **argv);
 
 static Scheme_Object *make_weak_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *weak_box_value(int argc, Scheme_Object *argv[]);
@@ -152,7 +154,9 @@ static Scheme_Object *unsafe_mcdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_mcar (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_set_box_star (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *chaperone_hash_key(const char *name, Scheme_Object *table, Scheme_Object *key);
 static Scheme_Object *chaperone_hash_tree_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val);
@@ -469,6 +473,11 @@ scheme_init_list (Scheme_Env *env)
                                                       "chaperone-box",
                                                       3, -1),
                              env);
+  scheme_add_global_constant("impersonate-box",
+                             scheme_make_prim_w_arity(impersonate_box,
+                                                      "impersonate-box",
+                                                      3, -1),
+                             env);
 
   scheme_add_global_constant("make-hash",
 			     scheme_make_immed_prim(make_hash,
@@ -627,6 +636,11 @@ scheme_init_list (Scheme_Env *env)
                                                       "chaperone-hash",
                                                       5, -1),
                              env);
+  scheme_add_global_constant("impersonate-hash",
+                             scheme_make_prim_w_arity(impersonate_hash,
+                                                      "impersonate-hash",
+                                                      5, -1),
+                             env);
 
   scheme_add_global_constant("eq-hash-code",
 			     scheme_make_immed_prim(eq_hash_code,
@@ -769,7 +783,7 @@ scheme_init_unsafe_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant("unsafe-unbox", p, env);
 
-  p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox*", 1, 1);
+  p = scheme_make_immed_prim(unsafe_unbox_star, "unsafe-unbox*", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant("unsafe-unbox*", p, env);
 
@@ -777,7 +791,7 @@ scheme_init_unsafe_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-set-box!", p, env);
 
-  p = scheme_make_immed_prim(unsafe_set_box, "unsafe-set-box*!", 2, 2);
+  p = scheme_make_immed_prim(unsafe_set_box_star, "unsafe-set-box*!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-set-box*!", p, env);
 }
@@ -1549,11 +1563,12 @@ static Scheme_Object *chaperone_unbox(Scheme_Object *obj)
   a[1] = orig;
   obj = _scheme_apply(SCHEME_CAR(px->redirects), 2, a);
 
-  if (!scheme_chaperone_of(obj, orig))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "unbox: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                     obj,
-                     orig);
+  if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+    if (!scheme_chaperone_of(obj, orig))
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "unbox: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                       obj,
+                       orig);
 
   return obj;
 }
@@ -1588,11 +1603,12 @@ static void chaperone_set_box(Scheme_Object *obj, Scheme_Object *v)
       a[1] = v;
       v = _scheme_apply(SCHEME_CDR(px->redirects), 2, a);
 
-      if (!scheme_chaperone_of(v, a[1]))
-        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                         "vector-set!: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                         v,
-                         a[1]);
+      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+        if (!scheme_chaperone_of(v, a[1]))
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                           "vector-set!: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                           v,
+                           a[1]);
     }
   }
 }
@@ -1642,7 +1658,7 @@ static Scheme_Object *set_box(int c, Scheme_Object *p[])
   return scheme_void;
 }
 
-static Scheme_Object *chaperone_box(int argc, Scheme_Object **argv)
+static Scheme_Object *do_chaperone_box(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
@@ -1652,23 +1668,36 @@ static Scheme_Object *chaperone_box(int argc, Scheme_Object **argv)
   if (SCHEME_CHAPERONEP(val))
     val = SCHEME_CHAPERONE_VAL(val);
 
-  if (!SCHEME_BOXP(val))
-    scheme_wrong_type("chaperone-box", "box", 0, argc, argv);
-  scheme_check_proc_arity("chaperone-box", 2, 1, argc, argv);
-  scheme_check_proc_arity("chaperone-box", 2, 2, argc, argv);
+  if (!SCHEME_BOXP(val) || (is_impersonator && !SCHEME_MUTABLEP(val)))
+    scheme_wrong_type(name, is_impersonator ? "mutable box" : "box", 0, argc, argv);
+  scheme_check_proc_arity(name, 2, 1, argc, argv);
+  scheme_check_proc_arity(name, 2, 2, argc, argv);
 
   redirects = scheme_make_pair(argv[1], argv[2]);
   
-  props = scheme_parse_chaperone_props("chaperone-box", 3, argc, argv);
+  props = scheme_parse_chaperone_props(name, 3, argc, argv);
 
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
-  px->so.type = scheme_chaperone_type;
+  px->iso.so.type = scheme_chaperone_type;
   px->val = val;
   px->prev = argv[0];
   px->props = props;
   px->redirects = redirects;
 
+  if (is_impersonator)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+
   return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_box(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_box("chaperone-box", 0, argc, argv);
+}
+
+static Scheme_Object *impersonate_box(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_box("impersonate-box", 1, argc, argv);
 }
 
 static int compare_equal(void *v1, void *v2)
@@ -1994,7 +2023,8 @@ static Scheme_Object *hash_table_copy(int argc, Scheme_Object *argv[])
       scheme_hash_tree_index(t, i, &k, &val);
       if (!SAME_OBJ((Scheme_Object *)t, v))
         val = scheme_chaperone_hash_traversal_get(v, k);
-      scheme_hash_set(naya, k, val);
+      if (val)
+        scheme_hash_set(naya, k, val);
     }
 
     return (Scheme_Object *)naya;
@@ -2303,6 +2333,11 @@ static Scheme_Object *do_map_hash_table(int argc,
           v = chaperone_hash_key(name, chaperone, p[0]);
           p[0] = v;
           v = scheme_chaperone_hash_get(chaperone, v);
+          if (!v)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: no value found for post-impersonator key: %V",
+                             name,
+                             p[0]);
         } else
           v = (Scheme_Object *)bucket->val;
         if (v) {
@@ -2332,6 +2367,11 @@ static Scheme_Object *do_map_hash_table(int argc,
           v = chaperone_hash_key(name, chaperone, p[0]);
           p[0] = v;
           v = scheme_chaperone_hash_get(chaperone, v);
+          if (!v)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: no value found for post-impersonator key: %V",
+                             name,
+                             p[0]);
         } else {
           v = hash->vals[i];
         }
@@ -2364,6 +2404,11 @@ static Scheme_Object *do_map_hash_table(int argc,
       if (chaperone) {
         ik = chaperone_hash_key(name, chaperone, ik);
         iv = scheme_chaperone_hash_get(chaperone, ik);
+        if (!iv)
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                           "%s: no value found for post-chaperone key: %V",
+                           name,
+                           ik);
       }
       if (iv) {
         p[1] = iv;
@@ -2497,7 +2542,7 @@ static Scheme_Object *hash_table_iterate_next(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object *argv[], int get_val)
 {
-  Scheme_Object *p = argv[1], *obj, *chaperone;
+  Scheme_Object *p = argv[1], *obj, *chaperone, *key;
   int pos, sz;
 
   obj = argv[0];
@@ -2524,9 +2569,15 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
     if (pos < sz) {
       if (hash->vals[pos]) {
         if (chaperone) {
-          if (get_val)
-            return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, hash->keys[pos]));
-          else
+          if (get_val) {
+            key = chaperone_hash_key(name, chaperone, hash->keys[pos]);
+            obj = scheme_chaperone_hash_get(chaperone, key);
+            if (!obj)
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                               "hash-iterate-value: no value found for post-impersonator key: %V",
+                               key);
+            return obj;
+          } else
             return chaperone_hash_key(name, chaperone, hash->keys[pos]);
         } else if (get_val)
           return hash->vals[pos];
@@ -2538,9 +2589,15 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
     Scheme_Object *v, *k;
     if (scheme_hash_tree_index((Scheme_Hash_Tree *)obj, pos, &k, &v)) {
       if (chaperone) {
-        if (get_val)
-          return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, k));
-        else
+        if (get_val) {
+          key = chaperone_hash_key(name, chaperone, k);
+          obj = scheme_chaperone_hash_get(chaperone, key);
+          if (!obj)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "hash-iterate-value: no value found for post-chaperone key: %V",
+                             key);
+          return obj;
+        } else
           return chaperone_hash_key(name, chaperone, k);
       } else
         return (get_val ? v : k);
@@ -2564,9 +2621,15 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
           else
             obj = (Scheme_Object *)bucket->key;
           if (chaperone) {
-            if (get_val)
-              return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, obj));
-            else
+            if (get_val) {
+              key = chaperone_hash_key(name, chaperone, obj);
+              obj = scheme_chaperone_hash_get(chaperone, key);
+              if (!obj)
+                scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                                 "hash-iterate-value: no value found for post-impersonator key: %V",
+                                 key);
+              return obj;
+            } else
               return chaperone_hash_key(name, chaperone, obj);
           } else
             return obj;
@@ -2600,7 +2663,7 @@ static Scheme_Object *hash_table_iterate_key(int argc, Scheme_Object *argv[])
   return hash_table_index("hash-iterate-key", argc, argv, 0);
 }
 
-static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv)
+static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
@@ -2610,12 +2673,14 @@ static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv)
   if (SCHEME_CHAPERONEP(val))
     val = SCHEME_CHAPERONE_VAL(val);
 
-  if (!SCHEME_HASHTP(val) && !SCHEME_HASHTRP(val) && !SCHEME_BUCKTP(val))
-    scheme_wrong_type("chaperone-hash", "hash", 0, argc, argv);
-  scheme_check_proc_arity("chaperone-hash", 2, 1, argc, argv); /* ref */
-  scheme_check_proc_arity("chaperone-hash", 3, 2, argc, argv); /* set! */
-  scheme_check_proc_arity("chaperone-hash", 2, 3, argc, argv); /* remove */
-  scheme_check_proc_arity("chaperone-hash", 2, 4, argc, argv); /* key */
+  if (!SCHEME_HASHTP(val) 
+      && (is_impersonator || !SCHEME_HASHTRP(val))
+      && !SCHEME_BUCKTP(val))
+    scheme_wrong_type(name, is_impersonator ? "mutable hash" : "hash", 0, argc, argv);
+  scheme_check_proc_arity(name, 2, 1, argc, argv); /* ref */
+  scheme_check_proc_arity(name, 3, 2, argc, argv); /* set! */
+  scheme_check_proc_arity(name, 2, 3, argc, argv); /* remove */
+  scheme_check_proc_arity(name, 2, 4, argc, argv); /* key */
 
   redirects = scheme_make_vector(4, NULL);
   SCHEME_VEC_ELS(redirects)[0] = argv[1];
@@ -2624,16 +2689,29 @@ static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv)
   SCHEME_VEC_ELS(redirects)[3] = argv[4];
   redirects = scheme_box(redirects); /* so it doesn't look like a struct chaperone */
 
-  props = scheme_parse_chaperone_props("chaperone-hash", 5, argc, argv);
+  props = scheme_parse_chaperone_props(name, 5, argc, argv);
   
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
-  px->so.type = scheme_chaperone_type;
+  px->iso.so.type = scheme_chaperone_type;
   px->val = val;
   px->prev = argv[0];
   px->props = props;
   px->redirects = redirects;
 
+  if (is_impersonator)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+
   return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_hash("chaperone-hash", 0, argc, argv);
+}
+
+static Scheme_Object *impersonate_hash(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_hash("impersonate-hash", 1, argc, argv);
 }
 
 static Scheme_Object *transfer_chaperone(Scheme_Object *chaperone, Scheme_Object *v)
@@ -2667,7 +2745,12 @@ static Scheme_Object *chaperone_hash_op_k(void)
   p->ku.k.p3 = NULL;
   p->ku.k.p4 = NULL;
 
-  return chaperone_hash_op(who, o, k, v, p->ku.k.i1);
+  o = chaperone_hash_op(who, o, k, v, p->ku.k.i1);
+  
+  if (!o)
+    return scheme_false;
+  else
+    return scheme_box(o);
 }
 
 static Scheme_Object *chaperone_hash_op_overflow(const char *who, Scheme_Object *o, Scheme_Object *k, 
@@ -2681,7 +2764,12 @@ static Scheme_Object *chaperone_hash_op_overflow(const char *who, Scheme_Object 
   p->ku.k.p4 = (void *)who;
   p->ku.k.i1 = mode;
 
-  return scheme_handle_stack_overflow(chaperone_hash_op_k);
+  o = scheme_handle_stack_overflow(chaperone_hash_op_k);
+
+  if (SCHEME_FALSEP(o)) 
+    return NULL;
+  else
+    return SCHEME_BOX_VAL(o);
 }
 
 static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Scheme_Object *k, 
@@ -2783,12 +2871,13 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
                              red,
                              cnt);
 
-          if (!scheme_chaperone_of(vals[0], k))
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                             "%s: chaperone produced a key: %V that is not a chaperone of the original key: %V",
-                             who,
-                             vals[0],
-                             k);
+          if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+            if (!scheme_chaperone_of(vals[0], k))
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                               "%s: chaperone produced a key: %V that is not a chaperone of the original key: %V",
+                               who,
+                               vals[0],
+                               k);
           k = vals[0];
           o = vals[1];
 
@@ -2818,12 +2907,13 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
           what = "key";
         }
 
-        if (!scheme_chaperone_of(o, orig))
-          scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                           "%s: chaperone produced a %s: %V that is not a chaperone of the original %s: %V",
-                           who, what,
-                           o, 
-                           what, orig);
+        if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+          if (!scheme_chaperone_of(o, orig))
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: chaperone produced a %s: %V that is not a chaperone of the original %s: %V",
+                             who, what,
+                             o, 
+                             what, orig);
       }
 
       if ((mode == 0) || (mode == 3))
@@ -2978,7 +3068,7 @@ static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[])
 Scheme_Object *scheme_make_weak_box(Scheme_Object *v)
 {
 #ifdef MZ_PRECISE_GC
-  return (Scheme_Object *)GC_malloc_weak_box(v, NULL, 0);
+  return (Scheme_Object *)GC_malloc_weak_box(v, NULL, 0, 0);
 #else
   Scheme_Small_Object *obj;
 
@@ -2988,6 +3078,24 @@ Scheme_Object *scheme_make_weak_box(Scheme_Object *v)
 
   obj->u.ptr_val = v;
   scheme_weak_reference((void **)(void *)&obj->u.ptr_val);
+
+  return (Scheme_Object *)obj;
+#endif
+}
+
+Scheme_Object *scheme_make_late_weak_box(Scheme_Object *v)
+{
+#ifdef MZ_PRECISE_GC
+  return (Scheme_Object *)GC_malloc_weak_box(v, NULL, 0, 1);
+#else
+  Scheme_Small_Object *obj;
+
+  obj = MALLOC_ONE_TAGGED_WEAK(Scheme_Small_Object);
+
+  obj->iso.so.type = scheme_weak_box_type;
+
+  obj->u.ptr_val = v;
+  scheme_late_weak_reference((void **)(void *)&obj->u.ptr_val);
 
   return (Scheme_Object *)obj;
 #endif
@@ -3341,13 +3449,30 @@ static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
-static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[])
+static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[])
 {
   return SCHEME_BOX_VAL(argv[0]);
 }
 
-static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[])
+static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_NP_CHAPERONEP(argv[0]))
+    return chaperone_unbox(argv[0]);
+  else
+    return SCHEME_BOX_VAL(argv[0]);
+}
+
+static Scheme_Object *unsafe_set_box_star (int argc, Scheme_Object *argv[])
 {
   SCHEME_BOX_VAL(argv[0]) = argv[1];
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_NP_CHAPERONEP(argv[0]))
+    chaperone_set_box(argv[0], argv[1]);
+  else
+    SCHEME_BOX_VAL(argv[0]) = argv[1];
   return scheme_void;
 }

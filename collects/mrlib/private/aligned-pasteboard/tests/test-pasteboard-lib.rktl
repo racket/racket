@@ -8,7 +8,7 @@
  "../aligned-pasteboard.ss"
  "../aligned-editor-container.ss")
 
-;; (printf "running tests for pasteboard-lib.ss~n")
+;; (printf "running tests for pasteboard-lib.ss\n")
 
 ;;pasteboard-root: ((is-a?/c aligned-pasteboard<%>) -> (is-a?/c aligned-pasteboard<%>))
 ;;gets the top most aligned pasteboard in the tree of pasteboards and containers
@@ -203,5 +203,5 @@
   (send frame show false)
   )
 
-(printf "tests done~n")
+(printf "tests done\n")
 |#

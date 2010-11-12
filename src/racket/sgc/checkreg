@@ -1,5 +1,5 @@
 #!/bin/sh
-string=? ; exec ${PLTHOME}/bin/racket -gqr $0 "$@"
+string=? ; exec "${PLTHOME}/bin/racket" -gqr $0 "$@"
 
 ; Script to check that global and static variables are registered
 
@@ -154,26 +154,26 @@ string=? ; exec ${PLTHOME}/bin/racket -gqr $0 "$@"
  (vector->list argv))
 
 #|
-(printf "Declared: ~n")
+(printf "Declared: \n")
 (hash-table-for-each declared
 		     (lambda (k v)
-		       (printf "  ~a:   ~a : ~a~n" 
+		       (printf "  ~a:   ~a : ~a\n" 
 			       (decl-file v) k (decl-type v))))
 
-(printf "Registered: ~n")
+(printf "Registered: \n")
 (hash-table-for-each registered
 		     (lambda (k v)
-		       (printf "  ~a~n" k)))
+		       (printf "  ~a\n" k)))
 
 |#
 
-(printf "Declared but not registered: ~n")
+(printf "Declared but not registered: \n")
 (hash-table-for-each declared
 		     (lambda (k v)
 		       (hash-table-get registered
 				       k
 				       (lambda ()
-					 (printf "  ~a:   ~a : ~a~n" 
+					 (printf "  ~a:   ~a : ~a\n" 
 						 (decl-file v) k 
 						 (decl-type v))))))
 

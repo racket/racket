@@ -41,6 +41,7 @@
   (test "net/main.rkt")
   (test "file/main.rkt")
   (test "profile/main.rkt")
+  (test "errortrace/alert.rkt")
   )
 
 (require racket/runtime-path)

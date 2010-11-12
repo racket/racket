@@ -44,13 +44,16 @@
     (let* ([end (or in-end (send text last-position))]
            [port (open-input-text-editor text start end)])
       (with-handlers ([exn:fail:read:eof? (λ (x) #f)]
-                      [exn:fail:read? (λ (x) #f)])
+                      [exn:fail:read? (λ (x) #t)])
         (let ([first (read port)])
-          (and (not (eof-object? first))
-               (let loop ()
-                 (let ([s (read port)])
-                   (or (eof-object? s)
-                       (loop))))))))))
+          (cond
+            [(eof-object? first) #f]
+            [else
+             (let loop ()
+               (let ([s (read port)])
+                 (cond
+                   [(eof-object? s) #t]
+                   [else (loop)])))]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
@@ -201,7 +204,8 @@
          (let ([up-sexp (send text find-up-sexp click-pos)])
            (when up-sexp 
              (let ([fwd (send text get-forward-sexp up-sexp)])
-               (make-collapse-item text up-sexp fwd menu))))]))))
+               (when fwd
+                 (make-collapse-item text up-sexp fwd menu)))))]))))
 
 ;; make-expand-item : (instanceof text%) (instanceof sexp-snip<%>) (instanceof menu%) -> void
 (define (make-expand-item text snip menu)
@@ -1216,7 +1220,7 @@
     
     (define/override (put-file text sup directory default-name)
       (parameterize ([finder:default-extension "rkt"]
-                     [finder:default-filters '(["Racket Sources" "*.rkt;*.ss;*.scm"]
+                     [finder:default-filters '(["Racket Sources" "*.rkt;*.scrbl;*.ss;*.scm"]
                                                ["Any" "*.*"])])
         ;; don't call the surrogate's super, since it sets the default extension
         (sup directory default-name)))

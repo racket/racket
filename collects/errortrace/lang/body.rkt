@@ -1,7 +1,7 @@
-#lang scheme/base
-(require (for-syntax scheme/base
+#lang racket/base
+(require (for-syntax racket/base
                      syntax/strip-context
-                     "../errortrace-lib.ss"))
+                     "../errortrace-lib.rkt"))
 
 (provide (rename-out [module-begin #%module-begin]))
 

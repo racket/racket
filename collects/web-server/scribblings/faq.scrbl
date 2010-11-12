@@ -69,14 +69,38 @@ from the MIT Cookie Eaters.
 Note: It may be considered a great feature that URLs can be shared this way, because delegation is
 easily built into an application via URLs.
 
-@section{IE ignores my CSS or behaves strange in other ways}
+@section{My browser displays my page strangely: my CSS is ignored, sections are missing, etc.}
 
-@(require (for-label xml))
+@(require (for-label xml
+                     web-server/http/response-structs))
 
-In quirks mode, IE does not parse your page as XML, in particular it will not recognize many instances of
-"empty tag shorthand", e.g. "<img src='...' />", whereas the @web-server uses @racketmodname[xml]
-to format XML, which uses empty tag shorthand by default. You can change the default with the @racket[empty-tag-shorthand]
-parameter: @racket[(empty-tag-shorthand 'never)].
+@(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
+
+Most @web-server developers use @|xexpr|s for representing the
+HTML of their page. However, @|xexpr|s only represent XML and HTML is not exactly
+XML. This is a common source of problems.
+
+For example, XML allows the "empty tag shorthand", e.g. @litchar{<img src='...' />},
+on every tag, while HTML occasionally requires an end tag, e.g. @link["http://www.w3.org/TR/html401/interact/forms.html#h-17.7"]{TEXTAREA}.
+Similarly, XML allows an end tag, e.g. @litchar{<img src='...'></img>}, on every tag, while
+HTML occasionally forbides an end tag, e.g. @link["http://www.w3.org/TR/html401/struct/objects.html#h-13.2"]{IMG}.
+(Of course, browsers do not necessarily implement their HTML parsing as specified and may be more or less lenient towards
+XML-like HTML, so your test browser may not treat these forms as problematic.)
+
+Since the @web-server uses @racketmodname[xml] to format @|xexpr|s, it inherits @racketmodname[xml]'s default rendering behavior
+in general and its use of "empty tag shorthand" in particular. @racketmodname[xml]'s is to always use this short hand. You
+can change it with the @racket[empty-tag-shorthand] parameter.
+
+You can also change your @xexpr so that an end tag is forced. For example, @racket['(textarea [(name "text")])] renders as
+@litchar{<textarea name="text" />}, while @racket['(textarea [(name "text")] "")] renders as
+@litchar{<textarea name="text"></textarea>}, because of the string content in the @|xexpr|.
+
+You may think the @web-server could do a better job advertising that the contents it serves is more like XML by default. Unfortunately,
+browser support for such @link["http://www.w3.org/TR/xhtml-media-types/#media-types"]{advertisement} is @link["http://www.w3.org/MarkUp/2004/xhtml-faq#ie"]{lacking}.
+You can use @racket[make-xexpr-response] to easily customize your application's MIME type and response headers.
+
+Finally, you may find Web browser inspectors such as the Safari Inspector, Firebug, and the Google Chrome error console to be useful
+tools in identifying offending tags.
 
 @section{How do I use templates ``dynamically"?}
 

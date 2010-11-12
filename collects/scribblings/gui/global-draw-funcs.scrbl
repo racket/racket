@@ -6,11 +6,13 @@
 @defproc[(flush-display)
          void?]{
 
-Under X and Mac OS X, flushes pending display messages such that the
- user's display reflects the actual state of the windows. Under
- Windows, the procedure has no effect.
+Flushes canvas offscreen drawing and other updates onto the
+ screen.
 
-}
+Normally, drawing is automatically flushed to the screen. Use
+@racket[flush-display] sparingly to force updates to the screen when
+other actions depend on updating the display.}
+
 
 @defproc[(get-display-depth)
          exact-nonnegative-integer?]{
@@ -55,46 +57,5 @@ Returns the screen's width and height.
 
 Returns @scheme[#t] if the main display has color, @scheme[#f]
 otherwise.
-
-}
-
-@defproc[(register-collecting-blit [canvas (is-a?/c canvas%)]
-                                   [x real?]
-                                   [y real?]
-                                   [w (and/c real? (not/c negative?))]
-                                   [h (and/c real? (not/c negative?))]
-                                   [on (is-a?/c bitmap%)]
-                                   [off (is-a?/c bitmap%)]
-                                   [on-x real? 0]
-                                   [on-y real? 0]
-                                   [off-x real? 0]
-                                   [off-y real? 0])
-         void?]{
-
-Registers a blit to occur when garbage collection starts or ends.
-
-When garbage collection starts, @scheme[(send (send canvas #,(::
- canvas<%> get-dc)) #,(:: dc<%> draw-bitmap-section) on on-x on-y x y w
- h)] is called. When garbage collection ends, @scheme[(send (send
- canvas #,(:: canvas<%> get-dc)) #,(:: dc<%> draw-bitmap-section) off
- off-x off-y x y w h)] is called. If @scheme[canvas]'s device context
- has a scale, the scale may or may not be temporarily disabled during
- the bitmap drawing.
-
-The @scheme[canvas] is registered weakly, so it will be automatically
- unregistered if the canvas becomes invisible and inaccessible.
- Multiple registrations can be installed for the same canvas.
-
-See also @scheme[unregister-collecting-blit].
-
-}
-
-@defproc[(unregister-collecting-blit [canvas (is-a?/c canvas%)])
-         void?]{
-
-Unregisters a blit request installed with See also
- @scheme[register-collecting-blit].
-
-Unregisters all blits for @scheme[canvas].
 
 }

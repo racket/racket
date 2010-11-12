@@ -559,7 +559,7 @@
 						((unknown) ".")
 						((on) "#"))))
 				    row)
-			  (printf "~n"))
+			  (printf "\n"))
 			(extract-rows board)))
 	    
 	    ; animate-changes takes a board and draws it on the main screen

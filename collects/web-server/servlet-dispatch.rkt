@@ -28,7 +28,6 @@
  [dispatch/servlet (((request? . -> . response/c))
                     (#:regexp regexp?
                               #:current-directory path-string?
-                              #:namespace (listof module-path?)
                               #:stateless? boolean?
                               #:stuffer (stuffer/c serializable? bytes?)
                               #:manager manager?)
@@ -36,6 +35,7 @@
                     dispatcher/c)]
  [serve/launch/wait (((semaphore? . -> . dispatcher/c))
                      (#:launch-path (or/c false/c string?)
+                                    #:connection-close? boolean?
                                     #:banner? boolean?
                                     #:listen-ip (or/c false/c string?)
                                     #:port tcp-listen-port?
@@ -49,9 +49,7 @@
          #:regexp
          [servlet-regexp #rx""]
          #:current-directory 
-         [servlet-current-directory (current-directory)]
-         #:namespace 
-         [servlet-namespace empty]                  
+         [servlet-current-directory (current-directory)]              
          #:stateless? 
          [stateless? #f]
          #:stuffer
@@ -64,8 +62,7 @@
                     (body (p "Sorry, this page has expired. Please go back."))))
            (* 64 1024 1024))])
   (define servlet-box (box #f))
-  (define make-servlet-namespace
-    (make-make-servlet-namespace #:to-be-copied-module-specs servlet-namespace))
+  (define namespace-now (current-namespace))
   (filter:make
    servlet-regexp
    (servlets:make
@@ -73,10 +70,7 @@
       (or (unbox servlet-box)
           (let ([servlet
                  (parameterize ([current-custodian (make-custodian)]
-                                [current-namespace
-                                 (make-servlet-namespace
-                                  #:additional-specs
-                                  default-module-specs)])
+                                [current-namespace namespace-now])
                    (if stateless?
                        (make-stateless.servlet servlet-current-directory stuffer manager start)
                        (make-v2.servlet servlet-current-directory manager start)))])
@@ -86,6 +80,8 @@
 (define (serve/launch/wait
          dispatcher
          
+         #:connection-close?
+         [connection-close? #f]
          #:launch-path
          [launch-path #f]          
          #:banner?
@@ -104,6 +100,7 @@
   (define confirm-ch (make-async-channel 1))
   (define shutdown-server
     (serve #:confirmation-channel confirm-ch
+           #:connection-close? connection-close?
            #:dispatch (dispatcher sema)
            #:listen-ip listen-ip
            #:port port-arg
@@ -138,7 +135,7 @@
                   (if launch-path 
                       (string-append server-url launch-path)
                       server-url))
-          (printf "Click 'Stop' at any time to terminate the Web Server.\n"))
+          (printf "Stop this program at any time to terminate the Web Server.\n"))
         (let ([bye (lambda ()
                      (when banner? (printf "\nWeb Server stopped.\n"))
                      (shutdown-server))])

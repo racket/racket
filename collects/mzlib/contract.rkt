@@ -25,6 +25,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; old-style flat mutable contracts
+;;
+(require "private/contract-mutable.rkt")
+(provide (all-from-out "private/contract-mutable.rkt"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; provide everything from the racket/ implementation
 ;; except the arrow contracts
 ;;

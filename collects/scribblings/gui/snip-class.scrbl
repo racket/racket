@@ -170,7 +170,9 @@ Called when the snip's editor's method is called,
                  [bottom real?]
                  [dx real?]
                  [dy real?]
-                 [draw-caret (one-of/c 'no-caret 'show-inactive-caret 'show-caret)])
+                 [draw-caret (or/c (one-of/c 'no-caret 'show-inactive-caret 'show-caret)
+                                   (cons/c exact-nonnegative-integer?
+                                           exact-nonnegative-integer?))])
            void?]{
 @methspec{
 
@@ -187,7 +189,11 @@ The @scheme[dx] and @scheme[dy] argument provide numbers that can be
  editor coordinates (as opposed to DC coordinates, which are used for
  drawing).
 
-See @|drawcaretdiscuss| for information about @scheme[draw-caret].
+See @|drawcaretdiscuss| for information about
+@scheme[draw-caret]. When @racket[draw-caret] is a pair, refrain from
+drawing a background for the selected region, and use
+@racket[get-highlight-text-color] when it is not @racket[#f] for
+drawing text and other ``foreground'' elements.
 
 Before this method is called, the correct font, text color, and pen
  color for the snip's style will have been set in the drawing context

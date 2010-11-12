@@ -237,11 +237,12 @@ a number @scheme[_delta]. The test case checks that each number in the
 result of the first @scheme[expr] is within @scheme[_delta] of each
 corresponding number from the second @scheme[expr].}
 
-@defform[(check-error expr expr)]{
+@defform*[[(check-error expr expr)
+           (check-error expr)]]{
 
 A test case to check that the first @scheme[expr] signals an error,
 where the error messages matches the string produced by the second
-@scheme[expr].}
+@scheme[expr], if it is present.}
 
 @defform[(check-member-of expr expr expr ...)]{
 

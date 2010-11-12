@@ -7,4 +7,3 @@ copy mzdyn.exp ..\..\..\lib\msvc
 copy mzdyn.obj ..\..\..\lib\msvc
 copy ..\..\worksp\libmzsch\debug\libmzschxxxxxxx.lib ..\..\..\lib\msvc
 copy ..\..\worksp\libmzgc\debug\libmzgcxxxxxxx.lib ..\..\..\lib\msvc
-copy ..\..\worksp\extradlls\*.dll ..\..\..\lib

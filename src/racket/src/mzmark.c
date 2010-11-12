@@ -1453,6 +1453,34 @@ static int vector_obj_FIXUP(void *p, struct NewGC *gc) {
 #define vector_obj_IS_CONST_SIZE 0
 
 
+static int fxvector_obj_SIZE(void *p, struct NewGC *gc) {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+}
+
+static int fxvector_obj_MARK(void *p, struct NewGC *gc) {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+}
+
+static int fxvector_obj_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+}
+
+#define fxvector_obj_IS_ATOMIC 1
+#define fxvector_obj_IS_CONST_SIZE 0
+
+
 static int flvector_obj_SIZE(void *p, struct NewGC *gc) {
   Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
 
@@ -1639,6 +1667,7 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(pr->meta_prompt, gc);
   gcMARK2(pr->meta_continuation, gc);
+  gcMARK2(pr->acting_barrier_prompt, gc);
   
   gcMARK2(pr->cont_mark_stack_segments, gc);
   gcMARK2(pr->cont_mark_stack_owner, gc);
@@ -1650,6 +1679,8 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   
   gcMARK2(pr->nester, gc);
   gcMARK2(pr->nestee, gc);
+
+  gcMARK2(pr->current_ft, gc);
   
   gcMARK2(pr->blocker, gc);
   gcMARK2(pr->overflow, gc);
@@ -1751,6 +1782,7 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(pr->meta_prompt, gc);
   gcFIXUP2(pr->meta_continuation, gc);
+  gcFIXUP2(pr->acting_barrier_prompt, gc);
   
   gcFIXUP2(pr->cont_mark_stack_segments, gc);
   gcFIXUP2(pr->cont_mark_stack_owner, gc);
@@ -1762,6 +1794,8 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(pr->nester, gc);
   gcFIXUP2(pr->nestee, gc);
+
+  gcFIXUP2(pr->current_ft, gc);
   
   gcFIXUP2(pr->blocker, gc);
   gcFIXUP2(pr->overflow, gc);
@@ -3287,6 +3321,43 @@ static int mark_cont_mark_chain_FIXUP(void *p, struct NewGC *gc) {
 #define mark_cont_mark_chain_IS_CONST_SIZE 1
 
 
+#ifdef MZ_USE_JIT
+
+static int mark_lightweight_cont_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
+}
+
+static int mark_lightweight_cont_MARK(void *p, struct NewGC *gc) {
+  Scheme_Lightweight_Continuation *lw = (Scheme_Lightweight_Continuation *)p;
+
+  gcMARK2(lw->saved_lwc, gc);
+  gcMARK2(lw->stack_slice, gc);
+  gcMARK2(lw->runstack_slice, gc);
+  gcMARK2(lw->cont_mark_stack_slice, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
+}
+
+static int mark_lightweight_cont_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Lightweight_Continuation *lw = (Scheme_Lightweight_Continuation *)p;
+
+  gcFIXUP2(lw->saved_lwc, gc);
+  gcFIXUP2(lw->stack_slice, gc);
+  gcFIXUP2(lw->runstack_slice, gc);
+  gcFIXUP2(lw->cont_mark_stack_slice, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
+}
+
+#define mark_lightweight_cont_IS_ATOMIC 0
+#define mark_lightweight_cont_IS_CONST_SIZE 1
+
+
+#endif
+
 #endif  /* FUN */
 
 /**********************************************************************/
@@ -3432,6 +3503,7 @@ static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   int i;
   gcMARK2(pac->msgs, gc);
+  gcMARK2(pac->msg_memory, gc);
   for (i = pac->size; i--; )
     gcMARK2(pac->msgs[i], gc);
 
@@ -3443,6 +3515,7 @@ static int place_async_channel_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   int i;
   gcFIXUP2(pac->msgs, gc);
+  gcFIXUP2(pac->msg_memory, gc);
   for (i = pac->size; i--; )
     gcFIXUP2(pac->msgs[i], gc);
 
@@ -5078,6 +5151,7 @@ static int mark_read_params_MARK(void *p, struct NewGC *gc) {
   gcMARK2(rp->magic_sym, gc);
   gcMARK2(rp->magic_val, gc);
   gcMARK2(rp->delay_load_info, gc);
+  gcMARK2(rp->read_relative_path, gc);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
@@ -5088,6 +5162,7 @@ static int mark_read_params_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(rp->magic_sym, gc);
   gcFIXUP2(rp->magic_val, gc);
   gcFIXUP2(rp->delay_load_info, gc);
+  gcFIXUP2(rp->read_relative_path, gc);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
@@ -5690,6 +5765,8 @@ static int future_MARK(void *p, struct NewGC *gc) {
   gcMARK2(f->prev, gc);
   gcMARK2(f->next, gc);
   gcMARK2(f->next_waiting_atomic, gc);
+  gcMARK2(f->next_waiting_lwc, gc);
+  gcMARK2(f->suspended_lw, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5716,6 +5793,8 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(f->prev, gc);
   gcFIXUP2(f->next, gc);
   gcFIXUP2(f->next_waiting_atomic, gc);
+  gcFIXUP2(f->next_waiting_lwc, gc);
+  gcFIXUP2(f->suspended_lw, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

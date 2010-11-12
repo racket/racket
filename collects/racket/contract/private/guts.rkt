@@ -15,7 +15,11 @@
          coerce-contracts
          coerce-flat-contract
          coerce-flat-contracts
+         coerce-chaperone-contract
+         coerce-chaperone-contracts
          coerce-contract/f
+         
+         chaperone-contract?
          
          flat-contract?
          flat-contract
@@ -40,6 +44,7 @@
          contract-first-order-passes?
          
          prop:contracted
+         impersonator-prop:contracted
          has-contract?
          value-contract
          
@@ -52,7 +57,19 @@
          define/final-prop
          define/subexpression-pos-prop)
 
-(define-values (prop:contracted has-contract? value-contract)
+(define (has-contract? v)
+  (or (has-prop:contracted? v)
+      (has-impersonator-prop:contracted? v)))
+
+(define (value-contract v)
+  (cond
+    [(has-prop:contracted? v)
+     (get-prop:contracted v)]
+    [(has-impersonator-prop:contracted? v)
+     (get-impersonator-prop:contracted v)]
+    [else #f]))
+
+(define-values (prop:contracted has-prop:contracted? get-prop:contracted)
   (let-values ([(prop pred get)
                 (make-struct-type-property
                  'prop:contracted
@@ -61,14 +78,17 @@
                        (let ([ref (cadddr si)])
                          (lambda (s) (ref s v)))
                        (lambda (s) v))))])
-    (values prop pred (λ (v) (if (pred v) ((get v) v) #f)))))
+    (values prop pred (λ (v) ((get v) v)))))
+
+(define-values (impersonator-prop:contracted has-impersonator-prop:contracted? get-impersonator-prop:contracted)
+  (make-impersonator-property 'impersonator-prop:contracted))
 
 (define-syntax (any stx)
-  (raise-syntax-error 'any "use of 'any' outside of an arrow contract" stx))
+  (raise-syntax-error 'any "use of 'any' outside the range of an arrow contract" stx))
 
 (define (contract-first-order c)
   (contract-struct-first-order
-   (coerce-contract 'contract-first-order-passes? c)))
+   (coerce-contract 'contract-first-order c)))
 
 (define (contract-first-order-passes? c v)
   ((contract-struct-first-order
@@ -94,18 +114,37 @@
 ;; coerce-flat-contacts : symbol (listof any/c) -> (listof flat-contract)
 ;; like coerce-contracts, but insists on flat-contracts
 (define (coerce-flat-contracts name xs) 
-  (let loop ([xs xs]
-             [i 1])
-    (cond
-      [(null? xs) '()]
-      [else
-       (let ([fst (coerce-contract/f (car xs))])
-         (unless (flat-contract-struct? fst)
-           (error name 
-                  "expected all of the arguments to be flat contracts, but argument ~a was not, got ~e" 
-                  i
-                  (car xs)))
-         (cons fst (loop (cdr xs) (+ i 1))))])))
+  (for/list ([x (in-list xs)]
+             [i (in-naturals)])
+    (let ([ctc (coerce-contract/f x)])
+      (unless (flat-contract-struct? ctc)
+        (error name
+               "expected all of the arguments to be flat contracts, but argument ~a was not, got ~e"
+               i
+               x))
+      ctc)))
+
+;; coerce-chaperone-contract : symbol any/c -> contract
+(define (coerce-chaperone-contract name x)
+  (let ([ctc (coerce-contract/f x)])
+    (unless (chaperone-contract-struct? ctc)
+      (error name
+             "expected a chaperone contract or a value that can be coerced into one, got ~e"
+             x))
+    ctc))
+
+;; coerce-chaperone-contacts : symbol (listof any/c) -> (listof flat-contract)
+;; like coerce-contracts, but insists on chaperone-contracts
+(define (coerce-chaperone-contracts name xs)
+  (for/list ([x (in-list xs)]
+             [i (in-naturals)])
+    (let ([ctc (coerce-contract/f x)])
+      (unless (chaperone-contract-struct? ctc)
+        (error name
+               "expected all of the arguments to be chaperone contracts, but argument ~a was not, got ~e"
+               i
+               x))
+      ctc)))
 
 ;; coerce-contract : symbol any/c -> contract
 (define (coerce-contract name x)
@@ -118,17 +157,16 @@
 ;; turns all of the arguments in 'xs' into contracts
 ;; the error messages assume that the function named by 'name'
 ;; got 'xs' as it argument directly
-(define (coerce-contracts name xs) 
-  (let loop ([xs xs]
-             [i 1])
-    (cond
-      [(null? xs) '()]
-      [(coerce-contract/f (car xs)) => (λ (x) (cons x (loop (cdr xs) (+ i 1))))]
-      [else
-       (error name 
-              "expected all of the arguments to be contracts, but argument ~a was not, got ~e" 
+(define (coerce-contracts name xs)
+  (for/list ([x (in-list xs)]
+             [i (in-naturals)])
+    (let ([ctc (coerce-contract/f x)])
+      (unless ctc
+        (error name
+              "expected all of the arguments to be contracts, but argument ~a was not, got ~e"
               i
-              (car xs))])))
+              x))
+      ctc)))
 
 ;; coerce-contract/f : any -> (or/c #f contract?)
 ;; returns #f if the argument could not be coerced to a contract
@@ -143,6 +181,72 @@
     [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x)]
     [else #f]))
        
+(define-syntax (define/final-prop stx)
+  (syntax-case stx ()
+    [(_ header bodies ...)
+     (with-syntax ([ctc (if (identifier? #'header)
+                            #'header
+                            (car (syntax-e #'header)))])
+       (with-syntax ([ctc/proc (string->symbol (format "~a/proc" (syntax-e #'ctc)))])
+         #'(begin
+             (define ctc/proc
+               (let ()
+                 (define header bodies ...)
+                 ctc))
+             (define-syntax (ctc stx)
+               (syntax-case stx ()
+                 [x
+                  (identifier? #'x)
+                  (syntax-property 
+                   #'ctc/proc
+                   'racket/contract:contract 
+                   (vector (gensym 'ctc) 
+                           (list stx)
+                           '()))]
+                 [(_ margs (... ...))
+                  (with-syntax ([app (datum->syntax stx '#%app)])
+                    (syntax-property 
+                     #'(app ctc/proc margs (... ...))
+                     'racket/contract:contract 
+                     (vector (gensym 'ctc) 
+                             (list (car (syntax-e stx)))
+                             '())))])))))]))
+
+(define-syntax (define/subexpression-pos-prop stx)
+  (syntax-case stx ()
+    [(_ header bodies ...)
+     (with-syntax ([ctc (if (identifier? #'header)
+                            #'header
+                            (car (syntax-e #'header)))])
+       (with-syntax ([ctc/proc (string->symbol (format "~a/proc" (syntax-e #'ctc)))])
+         #'(begin
+             (define ctc/proc
+               (let ()
+                 (define header bodies ...)
+                 ctc))
+             (define-syntax (ctc stx)
+               (syntax-case stx ()
+                 [x
+                  (identifier? #'x)
+                  (syntax-property 
+                   #'ctc/proc
+                   'racket/contract:contract 
+                   (vector (gensym 'ctc) 
+                           (list stx)
+                           '()))]
+                 [(_ margs (... ...))
+                  (let ([this-one (gensym 'ctc)])
+                    (with-syntax ([(margs (... ...)) 
+                                   (map (λ (x) (syntax-property x 'racket/contract:positive-position this-one))
+                                        (syntax->list #'(margs (... ...))))]
+                                  [app (datum->syntax stx '#%app)])
+                      (syntax-property 
+                       #'(app ctc/proc margs (... ...))
+                       'racket/contract:contract 
+                       (vector this-one 
+                               (list (car (syntax-e stx)))
+                               '()))))])))))]))
+
 ;                                                      
 ;                                                      
 ;                                                      
@@ -168,6 +272,11 @@
   (let ([c (coerce-contract/f x)])
     (and c
          (flat-contract-struct? c))))
+
+(define (chaperone-contract? x)
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (chaperone-contract-struct? c))))
 
 (define (contract-name ctc)
   (contract-struct-name
@@ -195,67 +304,61 @@
 
 ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
 (define (build-compound-type-name . fs)
-  (let loop ([subs fs])
-    (cond
-      [(null? subs)
-       '()]
-      [else (let ([sub (car subs)])
-              (cond
-                [(contract-struct? sub)
-                 (let ([mk-sub-name (contract-name sub)])
-                   `(,mk-sub-name ,@(loop (cdr subs))))]
-                [else `(,sub ,@(loop (cdr subs)))]))])))
+  (for/list ([sub (in-list fs)])
+    (if (contract-struct? sub) (contract-name sub) sub)))
+
+(define (and-name ctc)
+  (apply build-compound-type-name 'and/c (base-and/c-ctcs ctc)))
+
+(define (and-first-order ctc)
+  (let ([tests (map contract-first-order (base-and/c-ctcs ctc))])
+    (λ (x) (for/and ([test (in-list tests)]) (test x)))))
 
 (define (and-proj ctc)
-  (let ([mk-pos-projs (map contract-projection (and/c-ctcs ctc))])
+  (let ([mk-pos-projs (map contract-projection (base-and/c-ctcs ctc))])
     (lambda (blame)
       (let ([projs (map (λ (c) (c blame)) mk-pos-projs)])
-        (let loop ([projs (cdr projs)]
-                   [proj (car projs)])
-          (cond
-            [(null? projs) proj]
-            [else (loop (cdr projs)
-                        (let ([f (car projs)])
-                          (λ (v) (f (proj v)))))]))))))
+        (for/fold ([proj (car projs)])
+          ([p (in-list (cdr projs))])
+          (λ (v) (p (proj v))))))))
 
-(define-struct and/c (ctcs)
-  #:omit-define-syntaxes
+(define (and-stronger? this that)
+  (and (base-and/c? that)
+       (let ([this-ctcs (base-and/c-ctcs this)]
+             [that-ctcs (base-and/c-ctcs that)])
+         (and (= (length this-ctcs) (length that-ctcs))
+              (andmap contract-stronger?
+                      this-ctcs
+                      that-ctcs)))))
+
+(define-struct base-and/c (ctcs))
+(define-struct (chaperone-and/c base-and/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection and-proj
+   #:name and-name
+   #:first-order and-first-order
+   #:stronger and-stronger?))
+(define-struct (impersonator-and/c base-and/c) ()
   #:property prop:contract
   (build-contract-property
    #:projection and-proj
-   #:name (λ (ctc) (apply build-compound-type-name 'and/c (and/c-ctcs ctc)))
-   #:first-order
-   (λ (ctc)
-      (let ([tests (map contract-first-order (and/c-ctcs ctc))])
-        (λ (x) 
-           (andmap (λ (f) (f x)) tests))))
-   #:stronger
-   (λ (this that)
-      (and (and/c? that)
-           (let ([this-ctcs (and/c-ctcs this)]
-                 [that-ctcs (and/c-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs)))))))
+   #:name and-name
+   #:first-order and-first-order
+   #:stronger and-stronger?))
 
-(define (and/c . raw-fs)
+(define/subexpression-pos-prop (and/c . raw-fs)
   (let ([contracts (coerce-contracts 'and/c raw-fs)])
     (cond
       [(null? contracts) any/c]
       [(andmap flat-contract? contracts)
-       (let* ([pred
-               (let loop ([pred (flat-contract-predicate (car contracts))]
-                          [preds (cdr contracts)])
-                 (cond
-                   [(null? preds) pred]
-                   [else
-                    (let* ([fst (flat-contract-predicate (car preds))])
-                      (loop (let ([and/c-contract? (lambda (x) (and (pred x) (fst x)))])
-                              and/c-contract?)
-                            (cdr preds)))]))])
-         (flat-named-contract (apply build-compound-type-name 'and/c contracts) pred))]
-      [else (make-and/c contracts)])))
+       (let ([preds (map flat-contract-predicate contracts)])
+         (flat-named-contract
+          (apply build-compound-type-name 'and/c contracts)
+          (λ (x) (for/and ([pred (in-list preds)]) (pred x)))))]
+      [(andmap chaperone-contract? contracts)
+       (make-chaperone-and/c contracts)]
+      [else (make-impersonator-and/c contracts)])))
 
 (define (get-any-projection c) any-projection)
 (define (any-projection b) any-function)
@@ -273,7 +376,7 @@
    #:name (λ (ctc) 'any/c)
    #:first-order get-any?))
 
-(define any/c (make-any/c))
+(define/final-prop any/c (make-any/c))
 
 (define (none-curried-proj ctc)
   (λ (blame)
@@ -294,7 +397,7 @@
    #:name (λ (ctc) (none/c-name ctc))
    #:first-order (λ (ctc) (λ (val) #f))))
 
-(define none/c (make-none/c 'none/c))
+(define/final-prop none/c (make-none/c 'none/c))
 
 
 
@@ -379,66 +482,3 @@
 
 (define (build-flat-contract name pred) (make-predicate-contract name pred))
 
-(define-syntax (define/final-prop stx)
-  (syntax-case stx ()
-    [(_ header bodies ...)
-     (with-syntax ([ctc (if (identifier? #'header)
-                            #'header
-                            (car (syntax-e #'header)))])
-       (with-syntax ([ctc/proc (string->symbol (format "~a/proc" (syntax-e #'ctc)))])
-         #'(begin
-             (define ctc/proc
-               (let ()
-                 (define header bodies ...)
-                 ctc))
-             (define-syntax (ctc stx)
-               (syntax-case stx ()
-                 [x
-                  (identifier? #'x)
-                  (syntax-property 
-                   #'x
-                   'racket/contract:contract 
-                   (vector (gensym 'ctc) 
-                           (list stx)
-                           '()))]
-                 [(_ margs (... ...))
-                  (syntax-property 
-                   #'(ctc/proc margs (... ...))
-                   'racket/contract:contract 
-                   (vector (gensym 'ctc) 
-                           (list (car (syntax-e stx)))
-                           '()))])))))]))
-
-(define-syntax (define/subexpression-pos-prop stx)
-  (syntax-case stx ()
-    [(_ header bodies ...)
-     (with-syntax ([ctc (if (identifier? #'header)
-                            #'header
-                            (car (syntax-e #'header)))])
-       (with-syntax ([ctc/proc (string->symbol (format "~a/proc" (syntax-e #'ctc)))])
-         #'(begin
-             (define ctc/proc
-               (let ()
-                 (define header bodies ...)
-                 ctc))
-             (define-syntax (ctc stx)
-               (syntax-case stx ()
-                 [x
-                  (identifier? #'x)
-                  (syntax-property 
-                   #'ctc/proc
-                   'racket/contract:contract 
-                   (vector (gensym 'ctc) 
-                           (list stx)
-                           '()))]
-                 [(_ margs (... ...))
-                  (let ([this-one (gensym 'ctc)])
-                    (with-syntax ([(margs (... ...)) 
-                                   (map (λ (x) (syntax-property x 'racket/contract:positive-position this-one))
-                                        (syntax->list #'(margs (... ...))))])
-                      (syntax-property 
-                       #'(ctc/proc margs (... ...))
-                       'racket/contract:contract 
-                       (vector this-one 
-                               (list (car (syntax-e stx)))
-                               '()))))])))))]))

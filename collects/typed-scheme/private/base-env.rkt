@@ -1,26 +1,31 @@
 #lang s-exp "env-lang.rkt"
 
 (require
- racket/tcp
- racket
- racket/unsafe/ops
- racket/fixnum
- (only-in rnrs/lists-6 fold-left)
- '#%paramz
- "extra-procs.rkt"
- (only-in '#%kernel [apply kernel:apply])
+ 
+ 
+ (for-template 
+  (except-in racket -> ->* one-of/c)
+  racket/unsafe/ops
+  racket/tcp
+  racket/fixnum
+  racket/future
+  (only-in rnrs/lists-6 fold-left)
+  '#%paramz
+  "extra-procs.rkt"
+  (only-in '#%kernel [apply kernel:apply])
+  (only-in racket/private/pre-base new-apply-proc) 
+  scheme/promise scheme/system
+  racket/function
+  racket/mpair
+  racket/base
+  (only-in string-constants/private/only-once maybe-print-message)
+  (only-in mzscheme make-namespace)
+  (only-in racket/match/runtime match:error matchable? match-equality-test))
  (only-in racket/private/pre-base new-apply-proc)
- (for-syntax (only-in racket/private/pre-base new-apply-proc)
-             #;racket/string)
- scheme/promise scheme/system
- racket/mpair
- (only-in string-constants/private/only-once maybe-print-message)
- (only-in mzscheme make-namespace)
- (only-in racket/match/runtime match:error matchable? match-equality-test)
- (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
-             (only-in (rep type-rep) make-HashtableTop make-MPairTop
-                                     make-BoxTop make-ChannelTop make-VectorTop
-                                     make-HeterogenousVector)))
+ (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
+ (only-in (rep type-rep) make-HashtableTop make-MPairTop
+          make-BoxTop make-ChannelTop make-VectorTop
+          make-HeterogenousVector))
 
 [raise (Univ . -> . (Un))]
 [raise-syntax-error (cl->* 
@@ -311,6 +316,9 @@
 [thread-try-receive (-> Univ)]
 [thread-rewind-receive (-> (-lst Univ) -Void)]
 
+[future (-poly (A) ((-> A) . -> . (-future A)))]
+[touch (-poly (A) ((-future A) . -> . A))]
+
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
 [length (-poly (a) (-> (-lst a) -NonnegativeFixnum))]
@@ -378,7 +386,7 @@
 [string-copy (-> -String -String)]
 [string->immutable-string (-> -String -String)]
 [string->path (-> -String -Path)]
-[file-exists? (-> -Pathlike B)]
+
 
 [build-path ((list -Pathlike*) -Pathlike* . ->* . -Path)]
 [with-input-from-file
@@ -482,7 +490,6 @@
 
 [match:error ((list) Univ . ->* . (Un))]
 
-[file-exists? (-Pathlike . -> . B)]
 [string->symbol (-String . -> . Sym)]
 [symbol->string (Sym . -> . -String)]
 [string->keyword (-String . -> . -Keyword)]
@@ -526,17 +533,27 @@
 [file-exists? (-> -Pathlike B)]
 [directory-list (cl-> [() (-lst -Path)]
                       [(-Path) (-lst -Path)])]
+[file-or-directory-modify-seconds
+ (cl->* (-Pathlike . -> . -Nat)
+        (-Pathlike (-val #f) . -> . -Nat)
+        (-Pathlike -Nat . -> . -Void)
+        (-Pathlike (-opt -Nat) (-> Univ) . -> . Univ))]
+
+[file-or-directory-permissions (-> -Pathlike (-lst (Un (-val 'read) (-val 'write) (-val 'execute))))]
+[file-or-directory-identity (->opt -Pathlike (Univ) -Nat)]
+[file-size (-> -Pathlike -Nat)]
+
 
 [hash? (make-pred-ty (make-HashtableTop))]
 [hash-eq? (-> (make-HashtableTop) B)]
 [hash-eqv? (-> (make-HashtableTop) B)]
 [hash-weak? (-> (make-HashtableTop) B)]
-[make-hash (-poly (a b) (-> (-HT a b)))]
-[make-hasheq (-poly (a b) (-> (-HT a b)))]
-[make-hasheqv (-poly (a b) (-> (-HT a b)))]
-[make-weak-hash (-poly (a b) (-> (-HT a b)))]
-[make-weak-hasheq (-poly (a b) (-> (-HT a b)))]
-[make-weak-hasheqv (-poly (a b) (-> (-HT a b)))]
+[make-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-weak-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-weak-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-weak-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 [make-immutable-hash (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
 [make-immutable-hasheq (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
 [make-immutable-hasheqv (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
@@ -601,7 +618,8 @@
 [flush-output (->opt [-Output-Port] -Void)]
 [file-stream-buffer-mode (cl-> [(-Port) (Un (-val 'none) (-val 'line) (-val 'block) (-val #f))]
                                [(-Port (Un (-val 'none) (-val 'line) (-val 'block))) -Void])]
-[file-position (-> -Port -Nat)]
+[file-position (cl-> [(-Port) -Nat]
+                     [(-Port -Integer) -Void])]
 
 [force (-poly (a) (-> (-Promise a) a))]
 [regexp-replace*
@@ -635,6 +653,8 @@
 [exit (-> (Un))]
 
 [collect-garbage (-> -Void)]
+[current-memory-use (-> -Nat)]
+[dump-memory-stats (-> Univ)]
 
 [module->namespace (-> (-mu x (-lst (Un -Symbol -String -Nat x (-val #f)))) -Namespace)]
 [current-namespace (-Param -Namespace -Namespace)]
@@ -1001,3 +1021,5 @@
 [module-compiled-language-info
  (-> -Compiled-Module-Expression
      (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
+
+[compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]

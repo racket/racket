@@ -28,23 +28,23 @@
 
 (define (loop x)
   
-  (printf "Iteration: ~a~n" x)
+  (printf "Iteration: ~a\n" x)
   
   (if (zero? x) 0
         (loop (- (+ (local-vars) (- x 1)) 8))))
 ; Generate gradually increasing sizes of lists
 ; To trigger garbage collection at different points
-(printf "~a~n" (gen-list 1))
-(printf "~a~n" (gen-list 2))
-(printf "~a~n" (gen-list 4))
-(printf "~a~n" (gen-list 8))
+(printf "~a\n" (gen-list 1))
+(printf "~a\n" (gen-list 2))
+(printf "~a\n" (gen-list 4))
+(printf "~a\n" (gen-list 8))
 
 ; Run a loop that uses local vars a few times
-(printf "Generating Primitives in loops~n")
+(printf "Generating Primitives in loops\n")
 (loop 20)
 
-(printf "Try Allocating large list again~n")
-(printf "~a~n" (gen-list 8))
+(printf "Try Allocating large list again\n")
+(printf "~a\n" (gen-list 8))
 
 
 ; Create some circular references
@@ -54,25 +54,25 @@
       (set-rest! x y)
       x)))
 
-(printf "Testing Circular References~n")
-(printf "~a~n" (gen-circular))
-(printf "~a~n" (gen-circular))
-(printf "~a~n" (gen-circular))
-(printf "~a~n" (gen-circular))
-(printf "~a~n" (gen-circular))
-(printf "~a~n" (gen-circular))
-(printf "~a~n" (gen-circular))
-(printf "~a~n" (gen-circular))
-(printf "~a~n" (gen-circular))
+(printf "Testing Circular References\n")
+(printf "~a\n" (gen-circular))
+(printf "~a\n" (gen-circular))
+(printf "~a\n" (gen-circular))
+(printf "~a\n" (gen-circular))
+(printf "~a\n" (gen-circular))
+(printf "~a\n" (gen-circular))
+(printf "~a\n" (gen-circular))
+(printf "~a\n" (gen-circular))
+(printf "~a\n" (gen-circular))
 
-(printf "Try allocating large list again~n")
-(printf "~a~n" (gen-list 8))
-(printf "~a~n" (gen-list 8))
-(printf "~a~n" (gen-list 8))
-(printf "~a~n" (gen-list 8))
-(printf "~a~n" (gen-list 8))
+(printf "Try allocating large list again\n")
+(printf "~a\n" (gen-list 8))
+(printf "~a\n" (gen-list 8))
+(printf "~a\n" (gen-list 8))
+(printf "~a\n" (gen-list 8))
+(printf "~a\n" (gen-list 8))
 
-(printf "Running sample tests~n")
+(printf "Running sample tests\n")
 (define (fact x)
   (if (zero? x)
       1
@@ -114,18 +114,18 @@
 (define head (cons 4 (cons 3 (cons 2 tail))))
 (set-rest! tail head)
 
-(printf "res ~a~n" head)
+(printf "res ~a\n" head)
 (set! head empty)
 (set! tail head)
-(printf "res ~a~n" lst)
-(printf "res ~a~n" (length '(hello goodbye)))
-(printf "res ~a~n" (map sub1 lst))
+(printf "res ~a\n" lst)
+(printf "res ~a\n" (length '(hello goodbye)))
+(printf "res ~a\n" (map sub1 lst))
 
-(printf "(fact-help 15 1): ~a~n" (fact-help 15 1))
-(printf "(fact 9): ~a~n" (fact 9))
+(printf "(fact-help 15 1): ~a\n" (fact-help 15 1))
+(printf "(fact 9): ~a\n" (fact 9))
 
-(printf "(append lst lst): ~a~n" (append lst lst))
+(printf "(append lst lst): ~a\n" (append lst lst))
 
-(printf "(map-add 5 lst): ~a~n" (map-add 5 lst))
-(printf "(filter even? (map sub1 lst)): ~a~n" (filter even? (map sub1 lst)))
-(printf "(length lst): ~a~n" (length lst))
+(printf "(map-add 5 lst): ~a\n" (map-add 5 lst))
+(printf "(filter even? (map sub1 lst)): ~a\n" (filter even? (map sub1 lst)))
+(printf "(length lst): ~a\n" (length lst))

@@ -185,7 +185,10 @@ and source overlap.}
 
 Similar to @scheme[memmove], but the destination is uniformly filled
 with @scheme[byte] (i.e., an exact integer between 0 and 255
-inclusive).}
+inclusive). When a @scheme[type] argument is present, the result
+is that of a call to memset with no @scheme[type] argument and the
+@scheme[count] multiplied by the size associated with the
+@scheme[type].}
 
 @defproc[(cpointer-tag [cptr cpointer?]) any]{
 

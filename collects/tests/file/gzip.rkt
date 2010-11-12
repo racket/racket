@@ -48,7 +48,7 @@
 
 (for-each (lambda (f)
 	    (when (file-exists? f)
-	      (printf "trying ~a~n" f)
+	      (printf "trying ~a\n" f)
 	      (let ([str
 		     (call-with-input-file f
 		       (lambda (p)
@@ -113,7 +113,7 @@
 (for-each
  (lambda (f)
    (when (file-exists? f)
-     (printf "trying ~a~n" f)
+     (printf "trying ~a\n" f)
      (let-values ([(zo zi zn ze zf) 
 		   (apply values (process* gzip "-c" f))]
 		  [(mi mo) (make-pipe 4096)])

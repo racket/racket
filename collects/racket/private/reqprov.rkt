@@ -868,8 +868,8 @@
                                                       (raise-syntax-error
                                                        #f
                                                        (if (null? ids)
-                                                           "no import for structure-type identifier"
-                                                           (format "multiple imports (~a~a~a~a) for structure-type identifier"
+                                                           "no binding for structure-type identifier"
+                                                           (format "multiple bindings (~a~a~a~a) for structure-type identifier"
                                                                    (syntax-e (car ids))
                                                                    (if (null? (cddr ids))
                                                                        " and "

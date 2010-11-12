@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide current-run-status-box set-run-status
          current-messenger message)

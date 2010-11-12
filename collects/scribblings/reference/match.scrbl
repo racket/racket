@@ -17,12 +17,12 @@ on regular-expression matching on strings, bytes, and streams.
 @note-lib[racket/match #:use-sources (racket/match)]
 
 @defform/subs[(match val-expr clause ...)
-              ([clause [pat expr ...+]
-                       [pat (=> id) expr ...+]])]{
+              ([clause [pat body ...+]
+                       [pat (=> id) body ...+]])]{
 
 Finds the first @racket[pat] that matches the result of
-@racket[val-expr], and evaluates the corresponding @racket[expr]s with
-bindings introduced by @racket[pat] (if any). The last @racket[expr]
+@racket[val-expr], and evaluates the corresponding @racket[body]s with
+bindings introduced by @racket[pat] (if any). The last @racket[body]
 in the matching clause is evaluated in tail position with respect to
 the @racket[match] expression.
 
@@ -30,10 +30,10 @@ The @racket[clause]s are tried in order to find a match. If no
 @racket[clause] matches, then the @exnraise[exn:misc:match?].
 
 An optional @racket[(=> id)] between a @racket[pat] and the
-@racket[expr]s is bound to a @defterm{failure procedure} of zero
+@racket[body]s is bound to a @defterm{failure procedure} of zero
 arguments.  If this procedure is invoked, it escapes back to the
 pattern matching expression, and resumes the matching process as if
-the pattern had failed to match.  The @racket[expr]s must not mutate
+the pattern had failed to match.  The @racket[body]s must not mutate
 the object being matched before calling the failure procedure,
 otherwise the behavior of matching is unpredictable.
 
@@ -358,8 +358,8 @@ In more detail, patterns match as follows:
 @section{Additional Matching Forms}
 
 @defform/subs[(match* (val-expr ...+) clause* ...)
-	      ([clause* [(pat ...+) expr ...+]
-			[(pat ...+) (=> id) expr ...+]])]{
+	      ([clause* [(pat ...+) body ...+]
+			[(pat ...+) (=> id) body ...+]])]{
 Matches a sequence of values against each clause in order, matching
 only when all patterns in a clause match.  Each clause must have the
 same number of patterns as the number of @racket[val-expr]s. 

@@ -222,7 +222,7 @@
   
       (define s:expand-top-level-expressions!
 	(lambda (input-directory reader verbose?)
-	  (when verbose? (printf "~n Reading... ") (flush-output))
+	  (when verbose? (printf "\n Reading... ") (flush-output))
 	  ;; During reads, errors are truly fatal
 	  (let ([exprs (let ([failed? #f])
 			 (let loop ([n 1])
@@ -238,7 +238,7 @@
 				   (cons sexp (loop (+ n 1))))))))])
 	    (unless (null? compiler:messages) (when (compiler:option:verbose) (newline)))
 	    (compiler:report-messages! #t)
-	    (when verbose? (printf " expanding...~n"))
+	    (when verbose? (printf " expanding...\n"))
 	    (parameterize ([current-load-relative-directory input-directory])
 	      (map (lambda (expr)
 		     (let ([expanded ((if has-prefix?
@@ -314,7 +314,7 @@
 			max-arity)
 		(begin
 
-		  ;; (printf "~a~n" (syntax-line (zodiac:zodiac-stx (car sexps))))
+		  ;; (printf "~a\n" (syntax-line (zodiac:zodiac-stx (car sexps))))
 
 		  (let-values ([(exp free-vars local-vars global-vars used-vars captured-vars
 				     children new-max-arity multi)
@@ -492,7 +492,7 @@
 			       [string (compiler:message-message message)])
 			  (zodiac:print-start! (current-output-port) ast)
 			  (printf 
-			   "~a: ~a~n"
+			   "~a: ~a\n"
 			   (cond
 			    [(compiler:error-msg? message) "Error"]
 			    [(compiler:warning-msg? message) "Warning"]
@@ -503,9 +503,9 @@
 			  (when (compiler:internal-error-msg? message)
 			    (printf 
 			     (string-append
-			      " please report the bug using Help Desk~n"
-			      "  or http://bugs.racket-lang.org/~n"
-			      "  and include a transcript in verbose mode~n")))))
+			      " please report the bug using DrRacket\n"
+			      "  or http://bugs.racket-lang.org/\n"
+			      "  and include a transcript in verbose mode\n")))))
 		      
 		      msgs)
 	    (when (and stop-on-errors?
@@ -521,7 +521,7 @@
 	    (set! total-cpu-time (+ total-cpu-time cpu))
 	    (set! total-real-time (+ total-real-time real))
 	    (when (compiler:option:verbose)
-	      (printf "      [cpu: ~ams, real: ~ams, gc: ~ams]~n" cpu real gc))
+	      (printf "      [cpu: ~ams, real: ~ams, gc: ~ams]\n" cpu real gc))
 	    (apply values vals))))
 
       ;;-----------------------------------------------------------------------------
@@ -704,8 +704,8 @@
 		  ;; Extract stateless, phaseless core, leaving the rest of bytecode
 		  ;;
 		  
-		  (when (compiler:option:verbose) (printf " extracting core expressions~n"))
-		  (when (compiler:option:debug) (debug " = CORE =~n"))
+		  (when (compiler:option:verbose) (printf " extracting core expressions\n"))
+		  (when (compiler:option:debug) (debug " = CORE =\n"))
 
 		  (let ([core-thunk
 			 (lambda ()
@@ -736,8 +736,8 @@
 		  ;; Run a preprocessing phase on the input
 		  ;;
 	      
-		  (when (compiler:option:verbose) (printf " pre-processing and scanning for errors~n"))
-		  (when (compiler:option:debug) (debug " = PREPHASE =~n"))
+		  (when (compiler:option:verbose) (printf " pre-processing and scanning for errors\n"))
+		  (when (compiler:option:debug) (debug " = PREPHASE =\n"))
 	      
 		  (let ([prephase-thunk 
 			 (lambda () 
@@ -758,7 +758,7 @@
 		    (verbose-time prephase-thunk))
 		  (compiler:report-messages! (not (compiler:option:test)))
 		  (when (compiler:option:test)
-		    (printf "skipping over top-level expressions with errors...~n"))
+		    (printf "skipping over top-level expressions with errors...\n"))
 	      
 	      ; (map (lambda (ast) (pretty-print (zodiac->sexp/annotate ast))) (block-source s:file-block))
 	      
@@ -766,8 +766,8 @@
 	      ;; A-normalize input
 	      ;;
 	      
-	      (when (compiler:option:verbose) (printf " transforming to a-normal form~n"))
-	      (when (compiler:option:debug) (debug " = ANORM =~n"))
+	      (when (compiler:option:verbose) (printf " transforming to a-normal form\n"))
+	      (when (compiler:option:debug) (debug " = ANORM =\n"))
 	      
 	      (let ([anorm-thunk
 		     (lambda ()
@@ -784,9 +784,9 @@
 	      ;;
 
 	      (when (compiler:option:verbose) 
-		(printf " determining known bindings~n"))
+		(printf " determining known bindings\n"))
 	      (when (compiler:option:debug)
-		(debug " = KNOWN =~n"))
+		(debug " = KNOWN =\n"))
 
 	      ; analyze top level expressions
 	      (let ([known-thunk
@@ -806,9 +806,9 @@
 	      ;;
 
 	      (when (compiler:option:verbose) 
-		(printf " transforming to b-normal form, analyzing, and inlining~n"))
+		(printf " transforming to b-normal form, analyzing, and inlining\n"))
 	      (when (compiler:option:debug)
-		(debug " = ANALYZE =~n"))
+		(debug " = ANALYZE =\n"))
 
 	      ; analyze top level expressions, cataloguing local variables
 	      (compiler:init-define-lists!)
@@ -840,9 +840,9 @@
 	      ;;
 
 	      (when (compiler:option:verbose) 
-		(printf " finding static procedures~n"))
+		(printf " finding static procedures\n"))
 	      (when (compiler:option:debug)
-		(debug " = LIFT =~n"))
+		(debug " = LIFT =\n"))
 
 	      (let ([lift-thunk s:lift])
 		(verbose-time lift-thunk))
@@ -855,7 +855,7 @@
 	      ;;
 	      
 	      (when (compiler:option:verbose) 
-		(printf " closure conversion and explicit control transformation~n"))
+		(printf " closure conversion and explicit control transformation\n"))
 	      
 	      (let ([closure-thunk
 		     (lambda ()
@@ -871,7 +871,7 @@
 	      ;;
 	      
 	      (when (compiler:option:verbose)
-		(printf " closure->vehicle mapping~n"))
+		(printf " closure->vehicle mapping\n"))
 	      
 	      (when (eq? (compiler:option:vehicles) 'vehicles:automatic)
 		(for-each 
@@ -885,7 +885,7 @@
 	      (when (eq? (compiler:option:vehicles) 'vehicles:units)
 		(compiler:fatal-error 
 		 #f 
-		 "unit-wise vehicle mapping not currently supported~n"))
+		 "unit-wise vehicle mapping not currently supported\n"))
 	      (let ([vehicle-thunk
 		     (lambda ()
 		       (compiler:init-vehicles!)
@@ -900,7 +900,7 @@
 	      
 	      (when (compiler:option:verbose) 
 		(printf 
-		 " choosing data representations~n"))
+		 " choosing data representations\n"))
 	      
 	      (let ([rep-thunk
 		     (lambda ()
@@ -936,8 +936,8 @@
 	      ;;    we have to update the local variable set for each top-level
 	      ;;    expression or code body.
 	      
-	      (when (compiler:option:verbose) (printf " transforming to Virtual Machine form~n"))
-	      (when (compiler:option:debug) (debug " = VMPHASE =~n"))
+	      (when (compiler:option:verbose) (printf " transforming to Virtual Machine form\n"))
+	      (when (compiler:option:debug) (debug " = VMPHASE =\n"))
 	      
 	      (let ([vmphase-thunk
 		     (lambda ()
@@ -1018,7 +1018,7 @@
 	      ;;
 	      ;;  As in the previous phase, new local variables may be created.
 	      
-	      (when (compiler:option:verbose) (printf " optimizing Virtual Machine code~n"))
+	      (when (compiler:option:verbose) (printf " optimizing Virtual Machine code\n"))
 	      
 	      (let ([vmopt-thunk
 		     (lambda ()
@@ -1064,7 +1064,7 @@
 	      ;; Virtual Machine -> ANSI C translation
 	      ;;
 	      (when (compiler:option:verbose)
-		(printf " [emitting ~a C to \"~a\"]~n" 
+		(printf " [emitting ~a C to \"~a\"]\n" 
 			"ANSI"
 			c-output-path))
 	
@@ -1078,38 +1078,38 @@
 			       
 			       ;;value
 			       (lambda ()
-				 (fprintf c-port "#define MZC_SRC_FILE ~s~n" input-name)
-				 (when (compiler:option:unsafe) (fprintf c-port "#define MZC_UNSAFE 1~n"))
-				 (when (compiler:option:disable-interrupts) (fprintf c-port "#define MZC_DISABLE_INTERRUPTS 1~n"))
-				 (when (compiler:option:fixnum-arithmetic) (fprintf c-port "#define MZC_FIXNUM 1~n"))
+				 (fprintf c-port "#define MZC_SRC_FILE ~s\n" input-name)
+				 (when (compiler:option:unsafe) (fprintf c-port "#define MZC_UNSAFE 1\n"))
+				 (when (compiler:option:disable-interrupts) (fprintf c-port "#define MZC_DISABLE_INTERRUPTS 1\n"))
+				 (when (compiler:option:fixnum-arithmetic) (fprintf c-port "#define MZC_FIXNUM 1\n"))
 				 
-				 (fprintf c-port "~n#include \"~ascheme.h\"~n"
+				 (fprintf c-port "\n#include \"~ascheme.h\"\n"
 					  (if (compiler:option:compile-for-embedded)
 					      ""
 					      "e"))
 				 
 				 (unless (null? c-declares)
-				   (fprintf c-port "~n/* c-declare literals */~n~n")
+				   (fprintf c-port "\n/* c-declare literals */\n\n")
 				   (for-each
 				    (lambda (c-declare)
-				      (fprintf c-port "~a~n" c-declare))
+				      (fprintf c-port "~a\n" c-declare))
 				    (reverse c-declares))
-				   (fprintf c-port "~n/* done with c-declare literals */~n~n"))
+				   (fprintf c-port "\n/* done with c-declare literals */\n\n"))
 
 				 (unless (null? c-lambdas)
-				   (fprintf c-port "~n/* c-lambda implementations */~n~n")
+				   (fprintf c-port "\n/* c-lambda implementations */\n\n")
 				   (for-each
 				    (lambda (c-lambda)
 				      (let ([name (car c-lambda)]
 					    [body (cdr c-lambda)])
 					(fprintf c-port "Scheme_Object *~a(int argc, Scheme_Object **argv) {\n"
 						 name)
-					(fprintf c-port "~a~n" body)
-					(fprintf c-port "}~n")))
+					(fprintf c-port "~a\n" body)
+					(fprintf c-port "}\n")))
 				    (reverse c-lambdas))
-				   (fprintf c-port "~n/* done with c-lambda implementations */~n~n"))
+				   (fprintf c-port "\n/* done with c-lambda implementations */\n\n"))
 
-				 (fprintf c-port "#include \"mzc.h\"~n~n")
+				 (fprintf c-port "#include \"mzc.h\"\n\n")
 				 (vm->c:emit-struct-definitions! (compiler:get-structs) c-port)
 				 (vm->c:emit-symbol-declarations! c-port)
 				 (vm->c:emit-inexact-declarations! c-port)
@@ -1138,27 +1138,27 @@
 				 (newline c-port)
 				 
 				 (unless (compiler:multi-o-constant-pool)
-				   (fprintf c-port "~nstatic void make_symbols()~n{~n")
+				   (fprintf c-port "\nstatic void make_symbols()\n{\n")
 				   (vm->c:emit-symbol-definitions! c-port)
-				   (fprintf c-port "}~n"))
+				   (fprintf c-port "}\n"))
 
 				 (unless (zero? (const:get-inexact-counter))
-				   (fprintf c-port "~nstatic void make_inexacts()~n{~n")
+				   (fprintf c-port "\nstatic void make_inexacts()\n{\n")
 				   (vm->c:emit-inexact-definitions! c-port)
-				   (fprintf c-port "}~n"))
+				   (fprintf c-port "}\n"))
 
-				 (fprintf c-port "~nstatic void gc_registration()~n{~n")
+				 (fprintf c-port "\nstatic void gc_registration()\n{\n")
 				 (vm->c:emit-registration! c-port)
-				 (fprintf c-port "}~n")
+				 (fprintf c-port "}\n")
 
-				 (fprintf c-port "~nstatic void init_prims(Scheme_Env * env)~n{~n")
+				 (fprintf c-port "\nstatic void init_prims(Scheme_Env * env)\n{\n")
 				 (vm->c:emit-prim-ref-definitions! c-port)
-				 (fprintf c-port "}~n")
+				 (fprintf c-port "}\n")
 				 
 				 (unless (null? (compiler:get-case-lambdas))
-				   (fprintf c-port "~nstatic void init_cases_arities()~n{~n")
+				   (fprintf c-port "\nstatic void init_cases_arities()\n{\n")
 				   (vm->c:emit-case-arities-definitions! c-port)
-				   (fprintf c-port "}~n"))
+				   (fprintf c-port "}\n"))
 				 (newline c-port)
 
 				 (let* ([codes (block-codes s:file-block)]
@@ -1182,91 +1182,91 @@
 								 #f #f ; no module entries
 								 c-port)])
 				   (fprintf c-port
-					    "static Scheme_Object * do_scheme_reload(Scheme_Env * env)~n{~n")
-				   (fprintf c-port"~aScheme_Per_Load_Statics *PLS;~n"
+					    "static Scheme_Object * do_scheme_reload(Scheme_Env * env)\n{\n")
+				   (fprintf c-port"~aScheme_Per_Load_Statics *PLS;\n"
 					    vm->c:indent-spaces)
 				   (fprintf c-port 
-					    "~aPLS = (Scheme_Per_Load_Statics *)scheme_malloc(sizeof(Scheme_Per_Load_Statics));~n"
+					    "~aPLS = (Scheme_Per_Load_Statics *)scheme_malloc(sizeof(Scheme_Per_Load_Statics));\n"
 					    vm->c:indent-spaces)
 				   (let loop ([c 0])
-				     (fprintf c-port "~a~atop_level_~a(env, PLS);~n" 
+				     (fprintf c-port "~a~atop_level_~a(env, PLS);\n" 
 					      vm->c:indent-spaces 
 					      (if (= c top-level-count) "return " "")
 					      c)
 				     (unless (= c top-level-count)
 				       (loop (add1 c))))
 				   (fprintf c-port 
-					    "}~n~n")
+					    "}\n\n")
 
 
 				   (fprintf c-port
-					    "Scheme_Object * scheme_reload~a(Scheme_Env * env)~n{~n"
+					    "Scheme_Object * scheme_reload~a(Scheme_Env * env)\n{\n"
 					    compiler:setup-suffix)
-				   (fprintf c-port"~areturn do_scheme_reload(env);~n"
+				   (fprintf c-port"~areturn do_scheme_reload(env);\n"
 					    vm->c:indent-spaces)
 				   (fprintf c-port 
-					    "}~n~n")
+					    "}\n\n")
 
 				   (fprintf c-port
-					    "~nstatic void do_scheme_setup(Scheme_Env * env)~n{~n")
+					    "\nstatic void do_scheme_setup(Scheme_Env * env)\n{\n")
 				   (fprintf c-port
-					    "~ascheme_set_tail_buffer_size(~a);~n"
+					    "~ascheme_set_tail_buffer_size(~a);\n"
 					    vm->c:indent-spaces
 					    s:max-arity)
-				   (fprintf c-port "~agc_registration();~n"
+				   (fprintf c-port "~agc_registration();\n"
 					    vm->c:indent-spaces)
 				   (unless (compiler:multi-o-constant-pool)
-				     (fprintf c-port "~amake_symbols();~n"
+				     (fprintf c-port "~amake_symbols();\n"
 					      vm->c:indent-spaces))
 				   (unless (zero? (const:get-inexact-counter))
-				     (fprintf c-port "~amake_inexacts();~n"
+				     (fprintf c-port "~amake_inexacts();\n"
 					      vm->c:indent-spaces))
-				   (fprintf c-port "~ainit_prims(env);~n"
+				   (fprintf c-port "~ainit_prims(env);\n"
 					    vm->c:indent-spaces)
 				   (unless (null? (compiler:get-case-lambdas))
-				     (fprintf c-port "~ainit_cases_arities();~n"
+				     (fprintf c-port "~ainit_cases_arities();\n"
 					      vm->c:indent-spaces))		       
 
 				   (let loop ([c 0])
 				     (unless (> c init-constants-count)
-				       (fprintf c-port "~ainit_constants_~a(env);~n" 
+				       (fprintf c-port "~ainit_constants_~a(env);\n" 
 						vm->c:indent-spaces
 						c)
 				       (loop (add1 c))))
 
 				   (fprintf c-port 
-					    "}~n~n")
+					    "}\n\n")
 
                                    (fprintf c-port
-					    "~nvoid scheme_setup~a(Scheme_Env * env)~n{~n"
+					    "\nvoid scheme_setup~a(Scheme_Env * env)\n{\n"
 					    compiler:setup-suffix)
 				   (fprintf c-port
-					    "~ado_scheme_setup(env);~n"
+					    "~ado_scheme_setup(env);\n"
 					    vm->c:indent-spaces)
 				   (fprintf c-port 
-					    "}~n~n")
+					    "}\n\n")
 				   
 				   (when (string=? "" compiler:setup-suffix)
 				     (fprintf c-port
-					      "~nScheme_Object * scheme_initialize(Scheme_Env * env)~n{~n")
-				     (fprintf c-port "~ado_scheme_setup~a(env);~n"
+					      "\nScheme_Object * scheme_initialize(Scheme_Env * env)\n{\n")
+				     (fprintf c-port "~ado_scheme_setup~a(env);\n"
 					      vm->c:indent-spaces
 					      compiler:setup-suffix)
-				     (fprintf c-port "~areturn do_scheme_reload~a(env);~n"
+				     (fprintf c-port "~areturn do_scheme_reload~a(env);\n"
 					      vm->c:indent-spaces
 					      compiler:setup-suffix)
 				     (fprintf c-port 
-					      "}~n~n"))
+					      "}\n\n"))
 
 				   (fprintf c-port
-					    "~nScheme_Object * ~ascheme_module_name()~n{~n~areturn "
+					    "\nScheme_Object * ~ascheme_module_name()\n{\n~areturn "
 					    compiler:setup-suffix
 					    vm->c:indent-spaces)
 				   (if compiler:module-decl-name
 				       (let ([s (symbol->string compiler:module-decl-name)])
 					 (fprintf c-port "scheme_intern_exact_symbol(~s, ~a)" s (string-length s)))
 				       (fprintf c-port "scheme_false"))
-				   (fprintf c-port ";~n}~n"))
+				   (fprintf c-port ";\n}\n"))
 
 				 (let emit-vehicles ([vehicle-number 0])
 				   (unless (= vehicle-number (compiler:get-total-vehicles))
@@ -1288,7 +1288,7 @@
 				       (for-each (lambda (L)
 						   (let ([code (get-annotation L)]
 							 [start (zodiac:zodiac-start L)])
-						     (fprintf c-port "~a/* code body ~a ~a [~a,~a] */~n"
+						     (fprintf c-port "~a/* code body ~a ~a [~a,~a] */\n"
 							      vm->c:indent-spaces (closure-code-label code)
 							      (let ([n (closure-code-name code)])
 								(if n
@@ -1311,11 +1311,11 @@
 								     (vm->c:emit-case-prologue L i
 											       (lambda ()
 												 (if suffix?
-												     (fprintf c-port "~a~a/* begin case ~a */~n~a~a{~n" 
+												     (fprintf c-port "~a~a/* begin case ~a */\n~a~a{\n" 
 													      vm->c:indent-spaces vm->c:indent-spaces i
 													      vm->c:indent-spaces vm->c:indent-spaces)
 												     (when (zero? i)
-												       (fprintf c-port "~a{~n" vm->c:indent-spaces))))
+												       (fprintf c-port "~a{\n" vm->c:indent-spaces))))
 											       (if suffix? (format "c~a" i) "")
 											       indent
 											       c-port)])
@@ -1327,7 +1327,7 @@
 										 -1)
 							       (vm->c:emit-case-epilogue L i undefines indent c-port)
 							       (when suffix?
-								 (fprintf c-port "~a~a} /* end case ~a */~n" 
+								 (fprintf c-port "~a~a} /* end case ~a */\n" 
 									  vm->c:indent-spaces 
 									  vm->c:indent-spaces i)))
 							     
@@ -1359,9 +1359,9 @@
 	      (when (compiler:multi-o-constant-pool)
 		(call-with-output-file constant-pool-output-path
 		  (lambda (port)
-		    (fprintf port "(~s~n (symbols~n" compiler:setup-suffix)
+		    (fprintf port "(~s\n (symbols\n" compiler:setup-suffix)
 		    (vm->c:emit-symbol-list! port "" #f)
-		    (fprintf port "  )~n )~n")))))))
+		    (fprintf port "  )\n )\n")))))))
 
 	;;-----------------------------------------------------------------------
 	;; 3m xform
@@ -1369,7 +1369,7 @@
 	
         (when c3m-output-path
 	  (when (compiler:option:verbose)
-	    (printf " [xforming C to \"~a\"]~n" 
+	    (printf " [xforming C to \"~a\"]\n" 
 		    c3m-output-path))
 
 	  (let ([clean-up-src-c
@@ -1400,14 +1400,14 @@
 	
 	(if c-only?
             (when (compiler:option:somewhat-verbose)
-              (printf " [output to \"~a\"]~n" (or c3m-output-path c-output-path)))
+              (printf " [output to \"~a\"]\n" (or c3m-output-path c-output-path)))
 	    
 	    (begin
 	      (unless input-path
                 (when (compiler:option:somewhat-verbose)
-                  (printf "\"~a\": ~n" (or c3m-output-path c-output-path))))
+                  (printf "\"~a\": \n" (or c3m-output-path c-output-path))))
 	      
-	      (when (compiler:option:verbose) (printf " [compiling native code to \"~a\"]~n"
+	      (when (compiler:option:verbose) (printf " [compiling native code to \"~a\"]\n"
 						      obj-output-path))
 	      
               (let ([clean-up
@@ -1440,11 +1440,11 @@
 	      
 	      (if multi-o?
                   (when (compiler:option:somewhat-verbose)
-                    (printf " [output to \"~a\"]~n" obj-output-path))
+                    (printf " [output to \"~a\"]\n" obj-output-path))
 		  
 		  (begin
 		    ;; Link
-		    (when (compiler:option:verbose) (printf " [linking to \"~a\"]~n"
+		    (when (compiler:option:verbose) (printf " [linking to \"~a\"]\n"
 							    dll-output-path))
 		    (let ([link-thunk
 			   (lambda ()
@@ -1465,7 +1465,7 @@
 		      (delete-file obj-output-path))
 		    
                     (when (compiler:option:somewhat-verbose)
-                      (printf " [output to \"~a\"]~n" dll-output-path))))))
+                      (printf " [output to \"~a\"]\n" dll-output-path))))))
 	
 	(when debug:port
 	  (close-output-port debug:port))
@@ -1477,6 +1477,6 @@
 	(compiler:init-structs!)
 	(set! s:file-block #f)
 	(when (compiler:option:verbose)
-	  (printf " finished [cpu ~a, real ~a].~n"
+	  (printf " finished [cpu ~a, real ~a].\n"
 		  total-cpu-time
 		  total-real-time)))))))

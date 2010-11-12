@@ -309,7 +309,8 @@
 	(list* 'h
 	       (if (immutable? v) '- '!)
 	       (append
-		(if (not (hash-eq? v)) '(equal) null)
+		(if (hash-equal? v) '(equal) null)
+		(if (hash-eqv? v) '(eqv) null)
 		(if (hash-weak? v) '(weak) null))
 	       (let ([loop (serial #t)])
 		 (hash-map v (lambda (k v)
@@ -342,7 +343,8 @@
       'b]
      [(hash? v)
       (cons 'h (append
-		(if (not (hash-eq? v)) '(equal) null)
+		(if (hash-equal? v) '(equal) null)
+		(if (hash-eqv? v) '(eqv) null)
 		(if (hash-weak? v) '(weak) null)))]
      [else
       ;; A mutable prefab
@@ -395,13 +397,19 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-hash/flags v)
-    (cond
-     [(null? v) (make-hasheq)]
-     [(eq? (car v) 'equal)
-      (if (null? (cdr v))
-          (make-hash)
-          (make-weak-hash))]
-     [else (make-weak-hasheq)]))
+    (if (null? v) 
+        (make-hasheq)
+        (case (car v)
+          [(equal)
+           (if (null? (cdr v))
+               (make-hash)
+               (make-weak-hash))]
+          [(eqv)
+           (if (null? (cdr v))
+               (make-hasheqv)
+               (make-weak-hasheqv))]
+          [(weak)
+           (make-weak-hasheq)])))
 
   (define-struct not-ready (shares fixup))
 
@@ -470,7 +478,9 @@
 		       ht)
                      (if (null? (caddr v))
                          (make-immutable-hasheq al)
-                         (make-immutable-hash al))))]
+                         (if (eq? (caaddr v) 'equal)
+                             (make-immutable-hash al)
+                             (make-immutable-hasheqv al)))))]
 	  [(date) (apply make-date (map loop (cdr v)))]
 	  [(arity-at-least) (make-arity-at-least (loop (cdr v)))]
 	  [(mpi) (module-path-index-join (loop (cadr v))

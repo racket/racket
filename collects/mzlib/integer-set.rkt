@@ -8,7 +8,7 @@
        (let* defs
          (let ((real-ans code))
            (unless (equal? real-ans right-ans)
-             (printf "Test failed: ~e gave ~e.  Expected ~e~n"
+             (printf "Test failed: ~e gave ~e.  Expected ~e\n"
                      'code real-ans 'right-ans))) ...))))
 
   (define-syntax test-block

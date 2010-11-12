@@ -959,7 +959,11 @@ The @scheme[show-errors?] argument is no longer used.
 
 
 @defmethod[(insert-image [filename (or/c path-string? #f) #f]
-                         [type (or/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict) 'unknown]
+                         [type (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                                         'gif 'gif/mask 'gif/alpha 
+                                         'jpeg 'png 'png/mask 'png/alpha
+                                         'xbm 'xpm 'bmp 'pict)
+                               'unknown/alpha]
                          [relative-path? any/c #f]
                          [inline? any/c #t])
            void?]{
@@ -1006,8 +1010,8 @@ See also @method[editor<%> insert-file].
 
 @defmethod[(invalidate-bitmap-cache [x real? 0.0]
                                     [y real? 0.0]
-                                    [width (or/c (and/c real? (not/c negative?)) 'end) 'end]
-                                    [height (or/c (and/c real? (not/c negative?)) 'end) 'end])
+                                    [width (or/c (and/c real? (not/c negative?)) 'end 'display-end) 'end]
+                                    [height (or/c (and/c real? (not/c negative?)) 'end 'display-end) 'end])
            void?]{
 
 When @method[editor<%> on-paint] is overridden, call this method when
@@ -1018,7 +1022,13 @@ The @scheme[x], @scheme[y], @scheme[width], and @scheme[height]
  coordinates. If @scheme[width]/@scheme[height] is @scheme['end], then
  the total height/width of the editor (as reported by
  @method[editor<%> get-extent]) is used. Note that the editor's size
- can be smaller than the visible region of its @techlink{display}.
+ can be smaller than the visible region of its @techlink{display}.  If
+ @scheme[width]/@scheme[height] is @scheme['display-end], then the
+ largest height/width of the editor's views (as reported by
+ @method[editor-admin% get-max-view]) is used. If
+ @scheme[width]/@scheme[height] is not @scheme['display-end], then
+ the given @scheme[width]/@scheme[height] is constrained to the
+ editor's size.
 
 The default implementation triggers a redraw of the editor, either
  immediately or at the end of the current edit sequence (if any)
@@ -1515,7 +1525,10 @@ Creates a @scheme[editor-snip%] with either a sub-editor from
 
 
 @defmethod[(on-new-image-snip [filename path?]
-                              [kind (or/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
+                              [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                                              'gif 'gif/mask 'gif/alpha 
+                                              'jpeg 'png 'png/mask 'png/alpha
+                                              'xbm 'xpm 'bmp 'pict)]
                               [relative-path? any/c]
                               [inline? any/c])
            (is-a?/c image-snip%)]{
@@ -1543,7 +1556,9 @@ Returns @scheme[(make-object image-snip% filename kind relative-path? inline?)].
                      [bottom real?]
                      [dx real?]
                      [dy real?]
-                     [draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret)])
+                     [draw-caret (or/c (one-of/c 'no-caret 'show-inactive-caret 'show-caret)
+                                       (cons/c exact-nonnegative-integer?
+                                               exact-nonnegative-integer?))])
            void?]{
 @methspec{
 
@@ -1882,7 +1897,9 @@ See also @method[editor<%> add-undo].
                     [y real?]
                     [width (and/c real? (not/c negative?))]
                     [height (and/c real? (not/c negative?))]
-                    [draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret)]
+                    [draw-caret (or/c (one-of/c 'no-caret 'show-inactive-caret 'show-caret)
+                                      (cons/c exact-nonnegative-integer?
+                                              exact-nonnegative-integer?))]
                     [background (or/c (is-a?/c color%) #f)])
            void?]{
 

@@ -1,23 +1,23 @@
 #lang racket/unit
 
-(require (rename-in "../utils/utils.rkt" [infer r:infer]))
-(require "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
+(require (rename-in "../utils/utils.rkt" [infer r:infer])
+         "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt"
          (types utils convenience)
          (private type-annotation parse-type)
 	 (env lexical-env type-alias-env global-env type-env-structs)
          (rep type-rep)
          syntax/free-vars
-         racket/trace unstable/debug
+         ;racket/trace unstable/debug
          racket/match (prefix-in c: racket/contract)
          (except-in racket/contract -> ->* one-of/c)
          syntax/kerncase syntax/parse
+         unstable/debug
          (for-template 
           racket/base
           "internal-forms.rkt"))
 
 (require (only-in srfi/1/list s:member))
-
 
 (import tc-expr^)
 (export tc-let^)
@@ -42,8 +42,8 @@
                [names (in-list namess)])
               (match r 
                 [(tc-results: ts (FilterSet: fs+ fs-) os)
-                 ;(printf "f+: ~a~n" fs+)
-                 ;(printf "f-: ~a~n" fs-)
+                 ;(printf "f+: ~a\n" fs+)
+                 ;(printf "f-: ~a\n" fs-)
                  (values ts
                          (apply append
                                 (for/list ([n names]
@@ -129,7 +129,7 @@
                   [(tc-results: ts) ts]))
           (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
         [else
-         ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a~n" (syntax-e v))) vs)) names)
+         ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a\n" (syntax-e v))) vs)) names)
          (do-check (lambda (stx e t) (tc-expr/check e t))
                    names (map (λ (l) (ret (map get-type l))) names) form exprs body clauses expected)]))))
 

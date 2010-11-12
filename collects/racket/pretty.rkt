@@ -251,57 +251,59 @@
    (define (make-tentative-output-port pport width esc)
      (let* ([content null]
 	    [special-ok? (port-writes-special? pport)]
-	    ;; The null device counts for us:
-	    [/dev/null (let-values ([(line col pos) (port-next-location pport)])
-			 (relocate-output-port 
-			  (let ([p (open-output-nowhere special-ok?)])
-			    (port-count-lines! p)
-			    p)
-			  (or line 1) (or col 0) (or pos 1)))]
-	    [check-esc (lambda ()
-			 (let-values ([(l c p) (port-next-location /dev/null)])
-			   (when (c . > . width)
-			     (esc))))]
-	    [p (make-output-port
-		'tentative
-		always-evt
-		(lambda (s start end block? break?)
-		  (write-bytes s /dev/null start end)
-		  (check-esc)
-		  (set! content (cons (subbytes s start end) content))
-		  (- end start))
-		void
-		(and special-ok?
-		     (lambda (special block break?)
-		       (write-special special /dev/null)
-		       (check-esc)
-		       (set! content (cons (cons 'special special) content))
-		       #t))
-		#f #f
-		(lambda ()
-		  (port-next-location /dev/null)))]
-	    [first-line? #t])
+            ;; The null device counts for us:
+            [/dev/null
+             (let-values ([(line col pos) (port-next-location pport)])
+               (relocate-output-port 
+                (let ([p (open-output-nowhere special-ok?)])
+                  (port-count-lines! p)
+                  p)
+                (or line 1) (or col 0) (or pos 1)))]
+            [first-line? #t]
+            [check-esc (lambda ()
+                         (let-values ([(l c p) (port-next-location /dev/null)])
+                           (when (or (c . > . width)
+                                     (not first-line?))
+                             (esc))))]
+            [p (make-output-port
+                'tentative
+                always-evt
+                (lambda (s start end block? break?)
+                  (write-bytes s /dev/null start end)
+                  (check-esc)
+                  (set! content (cons (subbytes s start end) content))
+                  (- end start))
+                void
+                (and special-ok?
+                     (lambda (special block break?)
+                       (write-special special /dev/null)
+                       (check-esc)
+                       (set! content (cons (cons 'special special) content))
+                       #t))
+                #f #f
+                (lambda ()
+                  (port-next-location /dev/null)))])
        (port-count-lines! /dev/null)
        (port-count-lines! p)
        (register-printing-port p 
-			       (make-print-port-info
-				(lambda () (reverse content))
-				(box #t)
-				(lambda (v)
-				  (set! content (cons (cons 'pre v) content)))
-				(lambda (v)
-				  (set! content (cons (cons 'post v) content)))
-				(lambda (v len display?)
-				  (display (make-string len #\.) /dev/null)
-				  (set! content (cons (list* 'hooked v len display?)
-						      content)))
-				(lambda (use-line? offset width)
-				  (when (and (number? width)
-					     (not first-line?))
-				    (newline p))
-				  (set! first-line? #f)
-				  0)
-				esc))
+                               (make-print-port-info
+                                (lambda () (reverse content))
+                                (box #t)
+                                (lambda (v)
+                                  (set! content (cons (cons 'pre v) content)))
+                                (lambda (v)
+                                  (set! content (cons (cons 'post v) content)))
+                                (lambda (v len display?)
+                                  (display (make-string len #\.) /dev/null)
+                                  (set! content (cons (list* 'hooked v len display?)
+                                                      content)))
+                                (lambda (use-line? offset width)
+                                  (when (and (number? width)
+                                             (not first-line?))
+                                    (newline p))
+                                  (set! first-line? #f)
+                                  0)
+                                esc))
        p))
 
    (define (make-tentative-pretty-print-output-port pport width esc)
@@ -431,6 +433,8 @@
 
      (define show-inexactness? (pretty-print-show-inexactness))
      (define exact-as-decimal? (pretty-print-exact-as-decimal))
+
+     (define long-bools? (print-boolean-long-form))
      
      (define vector->repeatless-list
        (if print-vec-length?
@@ -653,7 +657,7 @@
        (lambda (obj pport check? c-k d-k n-k)
 	 (let ([ref (and check? 
 			 found
-			 (hash-ref found obj  #f))])
+			 (hash-ref found obj #f))])
 	   (if (and ref (unbox (mark-def ref)))
 	       (if c-k
 		   (c-k (mark-str ref))
@@ -670,12 +674,12 @@
 	 (let ([p (relocate-output-port pport l c p)])
 	   (port-count-lines! p)
 	   (let ([writer (lambda (v port)
-			   (recur port v (dsub1 depth) #f qd))]
+			   (recur port v (dsub1 depth) #f #f))]
 		 [displayer (lambda (v port)
-			      (recur port v (dsub1 depth) #t qd))]
+			      (recur port v (dsub1 depth) #t #f))]
                  [printer (case-lambda 
-                           [(v port) (recur port v (dsub1 depth) #t qd)]
-                           [(v port qd) (recur port v (dsub1 depth) #t qd)])])
+                           [(v port) (recur port v (dsub1 depth) #f qd)]
+                           [(v port qd) (recur port v (dsub1 depth) #f qd)])])
 	     (port-write-handler p writer)
 	     (port-display-handler p displayer)
 	     (port-print-handler p printer))
@@ -754,7 +758,11 @@
                       (lambda (s) (out " . ") (out s) (out close))
                       (lambda ()
                         (out " . ")
-                        (wr-lst l check? (dsub1 depth) pair? car cdr open close qd)
+                        (check-expr-found ;; will find it!
+                         l pport #t
+                         #f #f
+                         (lambda ()
+                           (wr-lst l check? (dsub1 depth) pair? car cdr open close qd)))
                         (out close))
                       (lambda ()
                         (cond 
@@ -906,7 +914,9 @@
             [(hide? obj)
              (wr* pport (hide-val obj) depth display? qd)]
 	    [(boolean? obj)
-	     (out (if obj "#t" "#f"))]
+	     (out (if long-bools?
+                      (if obj "#true" "#false")
+                      (if obj "#t" "#f")))]
 	    [(number? obj)
 	     (when (and show-inexactness?
 			(inexact? obj))

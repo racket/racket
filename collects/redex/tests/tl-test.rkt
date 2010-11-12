@@ -1,8 +1,8 @@
-(module tl-test scheme
+#lang racket
   (require "../reduction-semantics.ss"
            "test-util.ss"
            (only-in "../private/matcher.ss" make-bindings make-bind)
-           scheme/match
+           racket/match
            "../private/struct.ss")
   
   (reset-count)
@@ -101,6 +101,19 @@
         '("...."))
   
 
+  (let ()
+    ; error message shows correct form name
+    (test-syn-err
+     (let ()
+       (define-language L)
+       (define-extended-language M L
+         (z () (1 y_1)))
+       (void))
+     #rx"define-extended-language:.*underscore")
+    ; non-terminals added by extension can have underscores
+    (define-extended-language L base-grammar
+      (z () (1 z_1 z_1)))
+    (test (redex-match L z (term (1 () (1 () ())))) #f))
   
   ;; test multiple variable non-terminals
   (let ()
@@ -226,7 +239,7 @@
               main
               [(X Y Z) q])
             (void)))
-        "extend-language: new language extends old non-terminal X and also adds new shortcut Z")
+        "define-extended-language: new language extends old non-terminal X and also adds new shortcut Z")
   
   (test (with-handlers ([exn? exn-message])
           (let () 
@@ -237,7 +250,7 @@
               main
               [(X P) q])
             (void)))
-        "extend-language: new language does not have the same non-terminal aliases as the old, non-terminal P was not in the same group as X in the old language")
+        "define-extended-language: new language does not have the same non-terminal aliases as the old, non-terminal P was not in the same group as X in the old language")
   
   ;; underscores in literals
   (let ()
@@ -300,6 +313,39 @@
       (term (f 1)))
     (test rhs-eval-count 2))
   
+  (let ()
+    (define-language L)
+    (define-extended-language E L
+      (v ((bar X_1) X_1))
+      ((X Y) any))
+    (test (and (redex-match E v (term ((bar 1) 1))) #t) #t)
+    (test (redex-match E v (term ((bar 1) 2))) #f))
+  
+  (let ()
+    (define-language L
+      (M N ::= (M N) (λ (x) M) x)
+      (x ::= variable-not-otherwise-mentioned))
+    (test (and (redex-match L M '(λ (x) (x x))) #t) #t)
+    (test (and (redex-match L N '(λ (x) (x x))) #t) #t)
+    (define-extended-language L+ L
+      (M ::= .... n)
+      (n m ::= number))
+    (test (and (redex-match L+ M '(λ (x) 7)) #t) #t)
+    (test (and (redex-match L+ m 7) #t) #t)
+    (let ([::= void])
+      (define-language L
+        (::= () (number ::=)))
+      (test (and (redex-match L ::= '(1 ())) #t) #t)))
+  
+  (test-syn-err (define-language (L)) #rx"expected an identifier")
+  (test-syn-err (define-language L (x ::=)) #rx"expected at least one production")
+  (test-syn-err (define-language L (x)) #rx"expected at least one production")
+  (test-syn-err (define-language L ((x))) #rx"expected at least one production")
+  (test-syn-err (define-language L (::= a b)) #rx"expected preceding non-terminal names")
+  (test-syn-err (define-language L (x (y) ::= z)) #rx"expected non-terminal name")
+  (test-syn-err (define-language L (x ::= y ::= z)) #rx"expected production")
+  (test-syn-err (define-language L q) #rx"expected non-terminal definition")
+  (test-syn-err (define-language L ()) #rx"expected non-terminal definition")
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        
@@ -354,6 +400,14 @@
   (test (with-handlers ((exn? (λ (x) 'exn-raised))) (term (f mis-match)) 'no-exn)
         'exn-raised)
 
+  ;; test redex-match in RHS and side-condition
+  (let ()
+    (define-metafunction empty-language
+      [(f)
+       ,(and (redex-match empty-language number 7) #t)
+       (side-condition (redex-match empty-language number 7))])
+    (test (term (f)) #t))
+  
   (define-metafunction grammar
     [(h (M_1 M_2)) ((h M_2) (h M_1))]
     [(h number_1) ,(+ (term number_1) 1)])
@@ -398,6 +452,37 @@
      (term-let ((y 'z))
                (in-domain? (f y)))
      #f))
+  
+  ; Extension reinterprets the base meta-function's contract
+  ; according to the new language.
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define-metafunction L
+      f : x -> x
+      [(f x) x])
+    (define-metafunction/extension f M
+      [(g q) q])
+    
+    (with-handlers ([(λ (x) 
+                       (and (exn:fail? x)
+                            (regexp-match? #rx"no clauses matched"
+                                           (exn-message x))))
+                     (λ (_) #f)])
+      (test (begin (term (g 2)) #t) #t))
+    
+    (test (in-domain? (g 2)) #t))
+  
+  ; in-domain? interprets base meta-function LHSs according to
+  ; the new language.
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define-metafunction L
+      [(f x) x])
+    (define-metafunction/extension f M
+      [(g q) q])
+    (test (in-domain? (g 2)) #t))
   
   ;; mutually recursive metafunctions
   (define-metafunction grammar
@@ -509,6 +594,56 @@
       [(h number_1) number_1])
     (test (term (g 11 17)) 11)
     (test (term (h 11 17)) 11))
+
+  (let ()
+    (define-language L 
+      (v 1))
+    (define-extended-language M
+      L
+      (v .... 2))
+    (define-metafunction L
+      [(f v) v])
+    (define-metafunction/extension f M
+      [(g 17) 17])
+    (test (term (g 2)) 2))
+  
+  (let ()
+    (define-metafunction empty-language
+      [(f any) 1])
+    (define-metafunction/extension f empty-language
+      [(g any) 2])
+    (test (term (g 0)) 2))
+  
+  (let ()
+    (define-language L 
+      (v 1 (v)))
+    (define-metafunction L
+      f : v -> v
+      [(f (v)) 
+       any_1
+       (where any_1 (f v))])
+    
+    (define-extended-language M
+      L
+      (v .... 2))
+    (define-metafunction/extension f M
+      g : v -> v
+      [(g 2) 2])
+
+    (test (term (g (2))) 2))
+  
+  (let ()
+    (define-language L (x 1))
+    (define-extended-language M L (x 2))
+    (define-metafunction L 
+      [(f)
+       yes
+       (where x 2)]
+      [(f)
+       no])
+    (define-metafunction/extension f M
+      g : -> any)
+    (test (term (g)) 'yes))
   
   (let ()
     (define-metafunction empty-language
@@ -647,14 +782,28 @@
                      [current-traced-metafunctions 'all]
                      [print-as-expression #f])
         (term (f 1)))
-      (test (get-output-string sp) ">(f 1)\n<0\n"))
+      (test (get-output-string sp) "c>(f 1)\n <0\n"))
     
     (let ([sp (open-output-string)])
       (parameterize ([current-output-port sp]
                      [current-traced-metafunctions '(f)]
                      [print-as-expression #f])
         (term (f 1)))
-      (test (get-output-string sp) ">(f 1)\n<0\n")))
+      (test (get-output-string sp) "c>(f 1)\n <0\n"))
+    
+    
+    (define-metafunction empty-language
+      [(g (any)) ((g any) (g any))]
+      [(g 1) 1])
+    
+    (let ([sp (open-output-string)])
+      (parameterize ([current-output-port sp]
+                     [current-traced-metafunctions '(g)]
+                     [print-as-expression #f])
+        (term (g (1))))
+      (test (get-output-string sp) " >(g (1))\n > (g 1)\n < 1\nc> (g 1)\n < 1\n <(1 1)\n"))
+    
+    )
   
   (let ()
     (define-language var-lang [(x y z w) variable])
@@ -789,7 +938,40 @@
     (test (term (<: 1 2 2)) #f)
     (test (term (<: 1 1 1)) #t))
   
- 
+  (let ()
+    (define-relation empty-language
+      d ⊆ any × any
+      [(d (any) (any)) (d any any)]
+      [(d () ())])
+    
+    (test (term (d ((())) ((())))) #t)
+    (test (term (d ((())) ())) #f))
+  
+  (let ()
+    (define-relation empty-language
+      d ⊂ any x any
+      [(d (any) (any)) (d any any)]
+      [(d () ())])
+    
+    (test (term (d ((())) ((())))) #t)
+    (test (term (d ((())) ())) #f))
+  
+  (let ()
+    (define-relation empty-language
+      d ⊂ (any)
+      [(d (1))])
+    
+    (test (term (d (1))) #t)
+    (test (term (d (2))) #f)
+    (test (with-handlers ((exn:fail? (λ (x) 'passed)))
+            (term (d 1))
+            'failed)
+          'passed))
+  
+  (test-syn-err 
+   (define-relation grammar R)
+   #rx"expected the name of the relation")
+  
 ;                    ;;                         ;                                        ;;                    ;                 
 ;                     ;                 ;                                                 ;            ;                         
 ;   ;; ;;   ;;;    ;; ; ;;  ;;   ;;;;  ;;;;;  ;;;     ;;;  ;; ;;          ;; ;;   ;;;     ;     ;;;   ;;;;;  ;;;     ;;;  ;; ;;  
@@ -898,6 +1080,17 @@
          '())
         '(()))
   
+  (test (apply-reduction-relation
+         (reduction-relation
+          empty-language
+          (--> (in-hole (name E
+                              (in-hole ((hide-hole hole) hole)
+                                       hole))
+                        number)
+               (in-hole E ,(add1 (term number)))))
+         (term (hole 2)))
+        (list (term (hole 3))))
+  
   (test (apply-reduction-relation/tag-with-names
          (reduction-relation 
           grammar
@@ -934,6 +1127,25 @@
           [(--> (M_1 a) (M_1 b)) (==> a b)])
          '((2 3) (4 5)))
         (list (list "mult" '((2 3) 20))))
+  
+  (test (apply-reduction-relation/tag-with-names
+         (reduction-relation
+          grammar
+          (--> any
+               (number_i number_i*)
+               (where (number_0 ... number_i number_i+1 ...) any)
+               (where (number_0* ... number_i* number_i+1* ...) any)
+               pick-two
+               (computed-name
+                (format "(~s, ~s)"
+                        (length (term (number_0 ...)))
+                        (length (term (number_0* ...)))))))
+         '(9 7))
+        '(("(0, 0)" (9 9)) ("(0, 1)" (9 7)) ("(1, 0)" (7 9)) ("(1, 1)" (7 7))))
+  
+  (test (apply-reduction-relation/tag-with-names
+         (reduction-relation grammar (--> 1 2 (computed-name 3))) 1)
+        '(("3" 2)))
   
   (test (apply-reduction-relation
          (union-reduction-relations
@@ -1163,6 +1375,18 @@
                 #rx"different depths"
                 2)
   
+  (test-syn-err (redex-match
+                 grammar
+                 ((name x any) (name x any_2) ...))
+                #rx"different depths"
+                2)
+  
+  (test-syn-err (define-language bad-lang5
+                 (e ((name x any) (name x any_2) ...)))
+                #rx"different depths"
+                2)
+
+  
   (test-syn-err (reduction-relation 
                  grammar
                  (--> 1 2)
@@ -1195,12 +1419,12 @@
   
   (test-syn-err (define-language bad-lang1 (e name)) #rx"name")
   (test-syn-err (define-language bad-lang2 (name x)) #rx"name")
-  (test-syn-err (define-language bad-lang3 (x_y x)) #rx"cannot have _")
-  (test-syn-err (define-language bad-lang4 (a 1 2) (b)) #rx"no productions")
+  (test-syn-err (define-language bad-lang3 (x_y x)) #rx"cannot use _")
+  (test-syn-err (define-language bad-lang4 (a 1 2) (b)) #rx"at least one production")
   (test-syn-err (let ()
                   (define-language good-lang (a 1 2))
                   (define-extended-language bad-lang5 good-lang (a) (b 2)))
-                #rx"no productions")
+                #rx"at least one production")
   
   (test-syn-err (redex-match grammar m_1) #rx"before underscore")
   (test-syn-err (redex-match grammar (variable-except a 2 c)) #rx"expected an identifier")
@@ -1375,6 +1599,22 @@
          1)
         '(3 2))
   
+  (test (apply-reduction-relation
+         (extend-reduction-relation
+          (reduction-relation empty-language (--> 1 2 (computed-name 1)))
+          empty-language
+          (--> 1 3 (computed-name 1)))
+         1)
+        '(3 2))
+  
+  (test (apply-reduction-relation
+         (extend-reduction-relation
+          (reduction-relation empty-language (--> 1 2 (computed-name 1) x))
+          empty-language
+          (--> 1 3 (computed-name 1) x))
+         1)
+        '(3))
+  
   (let ()
     (define-language e1
       (e 1))
@@ -1460,6 +1700,13 @@
           (--> q r y)
           (--> r p x)))
         '(a b c z y x))
+  
+  (test (reduction-relation->rule-names
+         (reduction-relation
+          empty-language
+          (--> x y a (computed-name "x to y"))
+          (--> y z (computed-name "y to z"))))
+        '(a))
   
   (test (reduction-relation->rule-names
          (extend-reduction-relation
@@ -1980,7 +2227,7 @@
     (test (capture-output (test--> R #:equiv mod2=? 7 1 0) (test-results))
           "One test passed.\n")
     (test (capture-output (test--> R #:equiv mod2=? 7 1) (test-results))
-          #rx"FAILED tl-test.(?:.+):[0-9.]+\nexpected: 1\n  actual: 8\n  actual: 7\n1 test failed \\(out of 1 total\\).\n"))
+          #rx"FAILED tl-test\\.(?:.+):[0-9.]+\nexpected: 1\n  actual: 8\n  actual: 7\n1 test failed \\(out of 1 total\\).\n"))
   
   (let-syntax ([test-bad-equiv-arg
                 (λ (stx)
@@ -1990,8 +2237,47 @@
                                (test-form (reduction-relation empty-language (--> any any))
                                           #:equiv 1 2)
                                "no error raised")
-                             #rx"expected argument of type")]))])
+                             #rx"tl-test\\.(?:.+).*broke the contract")]))])
     (test-bad-equiv-arg test-->)
     (test-bad-equiv-arg test-->>))
 
-  (print-tests-passed 'tl-test.ss))
+  (let ()
+    (capture-output (test-results))
+    (define-language L)
+    
+    (define 1+
+      (reduction-relation 
+       L
+       (--> number ,(add1 (term number)))))
+    
+    (define (equal-to-7 x) (= x 7))
+    (test (capture-output (test-->>∃ #:steps 5 1+ 0 equal-to-7))
+          #rx"^FAILED .*\nno reachable term satisfying #<procedure:equal-to-7> \\(but some terms were not unexplored\\)\n$")
+    
+    (test (capture-output (test-->>∃ 1+ 0 7)) "")
+    (test (capture-output (test-->>E 1+ 0 7)) "")
+    (test (capture-output (test-->>∃ #:steps +inf.0 1+ 0 7)) "")
+    (test (capture-output (test-->>∃ 1+ 0 equal-to-7)) "")
+    
+    (define identity
+      (reduction-relation
+       L
+       (--> any any)))
+    
+    (test (capture-output (test-->>∃ identity 0 1))
+          #rx"^FAILED .*\nno reachable term equal to 1\n$")
+    
+    (test (capture-output (test-results)) "2 tests failed (out of 6 total).\n")
+    
+    (test (with-handlers ([exn:fail:contract? exn-message])
+            (test-->>∃ 1+ 0 (λ (x y) x)))
+          #rx"tl-test\\.(?:.+).*broke the contract.*goal expression")
+    (test (with-handlers ([exn:fail:contract? exn-message])
+            (test-->>∃ 1 0 1))
+          #rx"tl-test\\.(?:.+).*broke the contract.*reduction relation expression")
+    (test (with-handlers ([exn:fail:contract? exn-message])
+            (test-->>∃ #:steps 1.1 1+ 0 1))
+          #rx"tl-test\\.(?:.+).*broke the contract.*steps expression"))
+  
+  (print-tests-passed 'tl-test.ss)
+  

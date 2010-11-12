@@ -6,6 +6,6 @@
   (fprintf (if (even? i)
                (current-error-port)
                (current-output-port))
-           "~a~n"
+           "~a\n"
            i))
 

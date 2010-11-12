@@ -548,6 +548,15 @@ vector_obj {
 		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
 }
 
+fxvector_obj {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+
+ mark:
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
+}
+
 flvector_obj {
   Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
 
@@ -641,6 +650,7 @@ thread_val {
 
   gcMARK2(pr->meta_prompt, gc);
   gcMARK2(pr->meta_continuation, gc);
+  gcMARK2(pr->acting_barrier_prompt, gc);
   
   gcMARK2(pr->cont_mark_stack_segments, gc);
   gcMARK2(pr->cont_mark_stack_owner, gc);
@@ -652,6 +662,8 @@ thread_val {
   
   gcMARK2(pr->nester, gc);
   gcMARK2(pr->nestee, gc);
+
+  gcMARK2(pr->current_ft, gc);
   
   gcMARK2(pr->blocker, gc);
   gcMARK2(pr->overflow, gc);
@@ -1325,6 +1337,23 @@ mark_cont_mark_chain {
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Chain));
 }
 
+#ifdef MZ_USE_JIT
+
+mark_lightweight_cont {
+ mark:
+  Scheme_Lightweight_Continuation *lw = (Scheme_Lightweight_Continuation *)p;
+
+  gcMARK2(lw->saved_lwc, gc);
+  gcMARK2(lw->stack_slice, gc);
+  gcMARK2(lw->runstack_slice, gc);
+  gcMARK2(lw->cont_mark_stack_slice, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lightweight_Continuation));
+}
+
+#endif
+
 END fun;
 
 /**********************************************************************/
@@ -1390,6 +1419,7 @@ place_async_channel_val {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   int i;
   gcMARK2(pac->msgs, gc);
+  gcMARK2(pac->msg_memory, gc);
   for (i = pac->size; i--; )
     gcMARK2(pac->msgs[i], gc);
 
@@ -2076,6 +2106,7 @@ mark_read_params {
   gcMARK2(rp->magic_sym, gc);
   gcMARK2(rp->magic_val, gc);
   gcMARK2(rp->delay_load_info, gc);
+  gcMARK2(rp->read_relative_path, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
@@ -2342,6 +2373,8 @@ future {
   gcMARK2(f->prev, gc);
   gcMARK2(f->next, gc);
   gcMARK2(f->next_waiting_atomic, gc);
+  gcMARK2(f->next_waiting_lwc, gc);
+  gcMARK2(f->suspended_lw, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

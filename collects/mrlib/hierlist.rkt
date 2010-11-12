@@ -22,13 +22,13 @@
 				(when f (f i))))]
 			   [on-select
 			    (lambda (i)
-			      (printf "Selected: ~a~n"
+			      (printf "Selected: ~a\n"
 				      (if i 
 					  (send (send i get-editor) get-flattened-text)
 					  i)))]
 			   [on-double-select
 			    (lambda (s)
-			      (printf "Double-click: ~a~n"
+			      (printf "Double-click: ~a\n"
 				      (send (send s get-editor) get-flattened-text)))])
 			 (sequence (apply super-init args)))
 		       p))

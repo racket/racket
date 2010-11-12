@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/match scheme/contract)
+(require racket/match scheme/contract)
 (require "rep-utils.rkt" "free-variance.rkt")
 
 (define (Filter/c-predicate? e)
@@ -15,7 +15,7 @@
 (provide Filter/c FilterSet/c name-ref/c hash-name)
 
 (define name-ref/c (or/c identifier? integer?))
-(define (hash-name v) (if (identifier? v) (hash-id v) v))
+(define (hash-name v) (if (identifier? v) (hash-id v) (list v)))
 
 (df Bot () [#:fold-rhs #:base])
 (df Top () [#:fold-rhs #:base])
@@ -46,10 +46,10 @@
              (combine-frees (map free-idxs* fs))])
 
 (df FilterSet (thn els)
-    [#:contract (->d ([t any/c]
+    [#:contract (->i ([t any/c]
                       [e any/c])
                      (#:syntax [stx #f])
-                     #:pre-cond
+                     #:pre (t e)
                      (and (cond [(Bot? t) #t]
                                 [(Bot? e) (Top? t)]
                                 [else (Filter/c-predicate? t)])

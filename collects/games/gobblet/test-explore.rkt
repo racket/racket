@@ -70,7 +70,7 @@
                ;; Time test
                (let ([start (current-inexact-milliseconds)]
                      [m (test-search 5 empty-board 'red null)])
-                 (printf "[~a secs]~n" (/ (- (current-inexact-milliseconds) start)
+                 (printf "[~a secs]\n" (/ (- (current-inexact-milliseconds) start)
                                           1000.0))
                  ))
              CONFIG EXPLORE MODEL HEURISTICS)])

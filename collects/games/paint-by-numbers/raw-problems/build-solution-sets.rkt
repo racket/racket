@@ -28,8 +28,8 @@ The col and row type specs are in sig.ss and the solution type is:
          (prefix solve: "../solve.ss"))
 
 (if (equal? (vector) argv)
-    (printf "pass any command line argument to skip the solver~n~n")
-    (printf "skipping the solver~n"))
+    (printf "pass any command line argument to skip the solver\n\n")
+    (printf "skipping the solver\n"))
 
 (define memory-limit (* 1024 1024 400)) ;; in bytes (500 megs)
 
@@ -161,7 +161,7 @@ The col and row type specs are in sig.ss and the solution type is:
          (newline)]
         [else
          (let ([dots-to-print (floor (- (* progress-bar-max (/ counter (- max 1))) dots-printed))])
-           '(printf "~spercentage: ~a ~a ~a ~a~n"
+           '(printf "~spercentage: ~a ~a ~a ~a\n"
                      cleanup
                      dots-to-print
                      counter
@@ -184,7 +184,7 @@ The col and row type specs are in sig.ss and the solution type is:
 (define (solve name rows cols)
   (cond
     [(equal? argv (vector))
-     (printf "Solving ~s; memory limit ~a~n"
+     (printf "Solving ~s; memory limit ~a\n"
               name (format-memory-txt memory-limit))
      (let ([row-count (length rows)]
            [col-count (length cols)])
@@ -205,7 +205,7 @@ The col and row type specs are in sig.ss and the solution type is:
                                        (semaphore-wait kill)
                                        (set! sucessful? #f)
                                        (kill-thread k)
-                                       (fprintf (current-error-port) "~nsolver raised an exception~n~a~n"
+                                       (fprintf (current-error-port) "\nsolver raised an exception\n~a\n"
                                                 (if (exn? x)
                                                     (exn-message x)
                                                     x))
@@ -235,7 +235,7 @@ The col and row type specs are in sig.ss and the solution type is:
                                      (void))))))
                   (semaphore-wait kill)
                   (kill-thread t)
-                  (fprintf (current-error-port) "~n memory limit expired.~n")
+                  (fprintf (current-error-port) "\n memory limit expired.\n")
                   (collect-garbage)(collect-garbage)(collect-garbage)(collect-garbage)(collect-garbage)
                   (update-memory-display)
                   (semaphore-post done)))])
@@ -271,10 +271,10 @@ The col and row type specs are in sig.ss and the solution type is:
          [problems (caddr set)])
      (for-each sanity-check problems)
      (if (file-exists? output-file)
-         (printf "skipping ~s (~a)~n" set-name (normalize-path output-file))
+         (printf "skipping ~s (~a)\n" set-name (normalize-path output-file))
          (call-with-output-file output-file
            (lambda (port)
-             (printf "Building ~s~n" set-name)
+             (printf "Building ~s\n" set-name)
              (parameterize ([current-output-port port])
                (write
                 `(unit/sig paint-by-numbers:problem-set^

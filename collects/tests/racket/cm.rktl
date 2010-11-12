@@ -119,19 +119,24 @@
       car
       (file-stamp-in-collection
        (build-path (collection-path "file") "gif.rkt")))
-;; gl-info.rkt doesn't have a .rkt source:
-(test (file-or-directory-modify-seconds (build-path (collection-path "sgl") 
-                                                    "compiled"
-                                                    "gl-info_rkt.zo"))
-      car
-      (file-stamp-in-collection
-       (build-path (collection-path "sgl") "gl-info.rkt")))
+;; check bytecode without a source:
+(let ([f (build-path dir "compiled" "nosrc_rkt.zo")])
+  (with-output-to-file f #:exists 'truncate (lambda () (write (compile #'(module nosrc racket/base)))))
+  (test (file-or-directory-modify-seconds f)
+        car
+        (file-stamp-in-paths
+         (build-path dir "nosrc.rkt")
+         (list dir))))
 ;; setup/main doesn't have a .zo:
 (test (file-or-directory-modify-seconds (build-path (collection-path "setup") 
                                                     "main.rkt"))
       car
       (file-stamp-in-collection
        (build-path (collection-path "setup") "main.rkt")))
+
+;; ----------------------------------------
+
+(delete-directory/files dir)
 
 ;; ----------------------------------------
 

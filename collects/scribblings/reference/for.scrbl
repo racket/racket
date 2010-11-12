@@ -86,6 +86,22 @@ expression is a list of the results in order.
   (error "doesn't get here"))
 ]}
 
+@defform*[((for/vector (for-clause ...) body ...+)
+           (for/vector #:length length-expr (for-clause ...) body ...+))]{
+
+Iterates like @scheme[for], but the last expression
+in the @scheme[body]s must produce a single value, which is placed in
+the corresponding slot of a vector.  If the optional @scheme[#:length]
+form is used, then @scheme[length-expr] must evaluate to an
+@scheme[exact-nonnegative-integer?], and the result vector is
+constructed with this length.  In this case, the iteration can be
+performed more efficiently, and terminates when the vector is full or
+the requested number of iterations have been performed, whichever
+comes first.  If the provided @scheme[length-expr] evaluates to a
+length longer than the number of iterations then the remaining slots
+of the vector are intialized to the default argument of
+@scheme[make-vector].}
+
 @deftogether[(
 @defform[(for/hash (for-clause ...) body ...+)]
 @defform[(for/hasheq (for-clause ...) body ...+)]
@@ -212,6 +228,8 @@ nested.
 @deftogether[(
 @defform[(for*/list (for-clause ...) body ...+)]
 @defform[(for*/lists (id ...) (for-clause ...) body ...+)]
+@defform*[((for*/vector (for-clause ...) body ...+)
+           (for*/vector #:length length-expr (for-clause ...) body ...+))]
 @defform[(for*/hash (for-clause ...) body ...+)]
 @defform[(for*/hasheq (for-clause ...) body ...+)]
 @defform[(for*/hasheqv (for-clause ...) body ...+)]
@@ -321,7 +339,7 @@ parallel iterations.}
 
 @defform/subs[(do ([id init-expr step-expr-maybe] ...)
                   (stop?-expr finish-expr ...)
-                expr ...+)
+                expr ...)
               ([step-expr-maybe code:blank
                                 step-expr])]{
 

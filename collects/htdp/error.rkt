@@ -73,7 +73,7 @@
 ;; Symbol (union true String) String X -> void
 (define (check-list-list pname condition pred given)
   (when (string? condition)
-    (tp-error pname (string-append condition (format "~nin ~e" given)))))
+    (tp-error pname (string-append condition (format "\nin ~e" given)))))
 
 ;; Symbol (_ -> Boolean) String X  X *-> X 
 (define (check-result pname pred? expected given . other-given)

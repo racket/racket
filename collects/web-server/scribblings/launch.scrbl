@@ -22,6 +22,7 @@ This module provides functions for launching dispatching servers.
 
 @defproc[(serve [#:dispatch dispatch dispatcher/c]
                 [#:confirmation-channel confirmation-channel (or/c false/c async-channel?) #f]
+                [#:connection-close? connection-close? boolean? #f]
                 [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                 [#:port port tcp-listen-port? 80]
                 [#:listen-ip listen-ip (or/c string? false/c) #f]
@@ -30,6 +31,9 @@ This module provides functions for launching dispatching servers.
          (-> void)]{
  Constructs an appropriate @racket[dispatch-server-config^], invokes the
  @racket[dispatch-server@], and calls its @racket[serve] function.
+ 
+ If @racket[connection-close?] is @racket[#t], then every connection is closed after one
+ request. Otherwise, the client decides based on what HTTP version it uses.
  
  The @racket[#:tcp@] keyword is provided for building an SSL server. See @secref["faq:https"].
 }
@@ -51,6 +55,7 @@ from a given path:
 
 @defproc[(serve/ports [#:dispatch dispatch dispatcher/c]
                       [#:confirmation-channel confirmation-channel (or/c false/c async-channel?) #f]
+                      [#:connection-close? connection-close? boolean? #f]
                       [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                       [#:ports ports (listof tcp-listen-port?) (list 80)]
                       [#:listen-ip listen-ip (or/c string? false/c) #f]
@@ -63,6 +68,7 @@ from a given path:
 
 @defproc[(serve/ips+ports [#:dispatch dispatch dispatcher/c]
                           [#:confirmation-channel confirmation-channel (or/c false/c async-channel?) #f]
+                          [#:connection-close? connection-close? boolean? #f]
                           [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                           [#:ips+ports ips+ports (listof (cons/c (or/c string? false/c) (listof tcp-listen-port?))) (list (cons #f (list 80)))]
                           [#:max-waiting max-waiting integer? 40]

@@ -45,7 +45,9 @@
 
 	   ssl-listener?
 	   ssl-addresses
-	   ssl-abandon-port)
+	   ssl-abandon-port
+
+           ssl-port?)
 
   (unsafe!)
 
@@ -938,11 +940,12 @@
       (let ([p (ephemeron-value v)])
 	(values (car p) (cdr p)))))
 
-  (define (ssl-addresses p . more)
-    (let-values ([(mzssl input?) (lookup 'ssl-addresses "SSL port" p)])
-      (apply tcp-addresses
-             (if input? (mzssl-i mzssl) (mzssl-o mzssl))
-             more)))
+  (define (ssl-addresses p [port-numbers? #f])
+    (let-values ([(mzssl input?) (lookup 'ssl-addresses "SSL port or listener" p)])
+      (tcp-addresses (if (eq? 'listener input?)
+                         (ssl-listener-l mzssl)
+                         (if input? (mzssl-i mzssl) (mzssl-o mzssl)))
+                     port-numbers?)))
 
   (define (ssl-abandon-port p)
     (let-values ([(mzssl input?) (lookup 'ssl-abandon-port "SSL output port" p)])
@@ -950,18 +953,22 @@
 	(raise-type-error 'ssl-abandon-port "SSL output port" p))
       (set-mzssl-shutdown-on-close?! mzssl #f)))
 
+  (define (ssl-port? v)
+    (and (hash-ref ssl-ports v #f) #t))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL listen
 
   (define (ssl-listen port-k
                       [queue-k 5] [reuse? #f] [hostname-or-#f #f]
                       [protocol-symbol-or-context default-encrypt])
-    (let ([ctx (if (ssl-server-context? protocol-symbol-or-context)
+    (let* ([ctx (if (ssl-server-context? protocol-symbol-or-context)
                  protocol-symbol-or-context
                  (make-context 'ssl-listen protocol-symbol-or-context
                                "server context, " #f))]
-          [l (tcp-listen port-k queue-k reuse? hostname-or-#f)])
-      (make-ssl-listener l ctx)))
+          [l (tcp-listen port-k queue-k reuse? hostname-or-#f)]
+          [ssl-l (make-ssl-listener l ctx)])
+      (register ssl-l ssl-l 'listener)))
 
   (define (ssl-close l)
     (unless (ssl-listener? l)

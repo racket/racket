@@ -1111,7 +1111,7 @@
 			   (or (regexp-match "linux" (path->string (system-library-subpath)))
 			       (eq? 'macosx (system-type)))))
 
-(printf "Known locale?: ~a~n" known-locale?)
+(printf "Known locale?: ~a\n" known-locale?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; String comparison. Relies on the default locale knowing

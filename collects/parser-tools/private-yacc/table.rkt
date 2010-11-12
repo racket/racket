@@ -97,16 +97,16 @@
       (for-each
        (lambda (prod)
          (fprintf port 
-                  "~a\t~a\t=\t~a~n" 
+                  "~a\t~a\t=\t~a\n" 
                   (prod-index prod)
                   (gram-sym-symbol (prod-lhs prod))
                   (map gram-sym-symbol (vector->list (prod-rhs prod)))))
        prods)
       (send a for-each-state
         (lambda (state)
-          (fprintf port "State ~a~n" (kernel-index state))
+          (fprintf port "State ~a\n" (kernel-index state))
           (for-each (lambda (item)
-                      (fprintf port "\t~a~n" (item->string item)))
+                      (fprintf port "\t~a\n" (item->string item)))
                     (kernel-items state))
           (newline port)
           (for-each
@@ -118,22 +118,22 @@
                 ((null? (cdr act))
                  (print-entry sym (car act) port))
                 (else
-                 (fprintf port "begin conflict:~n")
+                 (fprintf port "begin conflict:\n")
                  (when (> (count reduce? act) 1)
                    (set! RR-conflicts (add1 RR-conflicts)))
                  (when (> (count shift? act) 0)
                    (set! SR-conflicts (add1 SR-conflicts)))
                  (map (lambda (x) (print-entry sym x port)) act)
-                 (fprintf port "end conflict~n")))))
+                 (fprintf port "end conflict\n")))))
            (vector-ref grouped-table (kernel-index state)))
           (newline port)))
       
       (when (> SR-conflicts 0)
-        (fprintf port "~a shift/reduce conflict~a~n" 
+        (fprintf port "~a shift/reduce conflict~a\n" 
                  SR-conflicts
                  (if (= SR-conflicts 1) "" "s")))
       (when (> RR-conflicts 0)
-        (fprintf port "~a reduce/reduce conflict~a~n"
+        (fprintf port "~a reduce/reduce conflict~a\n"
                  RR-conflicts
                  (if (= RR-conflicts 1) "" "s")))))
   
@@ -159,7 +159,7 @@
               (loop (car rest) (cdr rest)))
              ((accept? (car rest))
               (fprintf (current-error-port) 
-                       "accept/reduce or accept/shift conflicts.  Check the grammar for useless cycles of productions~n")
+                       "accept/reduce or accept/shift conflicts.  Check the grammar for useless cycles of productions\n")
               (loop current-guess (cdr rest)))
              (else (loop current-guess (cdr rest)))))))))
   
@@ -180,12 +180,12 @@
       (unless suppress
         (when (> SR-conflicts 0)
           (fprintf (current-error-port) 
-                   "~a shift/reduce conflict~a~n" 
+                   "~a shift/reduce conflict~a\n" 
                    SR-conflicts
                    (if (= SR-conflicts 1) "" "s")))
         (when (> RR-conflicts 0)
           (fprintf (current-error-port)
-                   "~a reduce/reduce conflict~a~n"
+                   "~a reduce/reduce conflict~a\n"
                    RR-conflicts
                    (if (= RR-conflicts 1) "" "s"))))
       table))

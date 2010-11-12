@@ -24,11 +24,11 @@
 (define txt (send doc find-element "P" "text"))
 
 (define (test-prop getter setter expected)
-  (printf "Checking ~a~n" getter)
+  (printf "Checking ~a\n" getter)
   (send-generic txt (make-generic mx-element% setter) expected)
   (let ([got (send-generic txt (make-generic mx-element% getter))])
     (unless (equal? got expected)
-	    (printf "~a: Expected ~a, got ~a~n" 
+	    (printf "~a: Expected ~a, got ~a\n" 
 		    getter expected got))))
 
 (define tests
@@ -144,18 +144,18 @@
 
 (let ([result (send txt filter)]) 
   (if (equal? result filter-spec)
-      (printf "Checking filter~n")
-      (error (format "filter test: Expected ~a, got ~a~n"
+      (printf "Checking filter\n")
+      (error (format "filter test: Expected ~a, got ~a\n"
 		     filter-spec result))))
 
-(printf "Navigating to CNN~n")
+(printf "Navigating to CNN\n")
 (send wb navigate "http://www.cnn.com")
 (sleep 2)
-(printf "Navigating to IBM~n")
+(printf "Navigating to IBM\n")
 (send wb navigate/status "http://www.ibm.com")
 (sleep 2)
-(printf "Back to CNN~n")
+(printf "Back to CNN\n")
 (send wb go-back) 
 (sleep 2)
-(printf "Forward to IBM~n")
+(printf "Forward to IBM\n")
 (send wb go-forward)

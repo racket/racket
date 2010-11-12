@@ -1,18 +1,18 @@
 #lang scheme/base
 
 (require syntax/parse
-         syntax/id-table racket/dict
-         unstable/match scheme/match
+         racket/match
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt" "../utils/tc-utils.rkt"
          (rep type-rep)
-         (types abbrev type-table utils subtype)
+         (types abbrev type-table utils)
          (optimizer utils string))
 
 (provide sequence-opt-expr)
 
 
 (define-syntax-class list-expr
+  #:commit
   (pattern e:expr
            #:when (match (type-of #'e)
                     [(tc-result1: (Listof: _)) #t]
@@ -22,6 +22,7 @@
 
 ;; unlike other vector optimizations, this works on unknown-length vectors
 (define-syntax-class vector-expr
+  #:commit
   (pattern e:expr
            #:when (match (type-of #'e)
                     [(tc-result1: (Vector: _)) #t]
@@ -30,6 +31,7 @@
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class sequence-opt-expr
+  #:commit
   ;; if we're iterating (with the for macros) over something we know is a list,
   ;; we can generate code that would be similar to if in-list had been used
   (pattern (#%plain-app op:id _ l)
@@ -49,8 +51,8 @@
            #:with opt
            (begin (log-optimization "in-vector" #'op)
                   #'(let* ((i   v*.opt)
-                           (len (unsafe-vector*-length i)))
-                      (values (lambda (x) (unsafe-vector*-ref i x))
+                           (len (unsafe-vector-length i)))
+                      (values (lambda (x) (unsafe-vector-ref i x))
                               (lambda (x) (unsafe-fx+ 1 x))
                               0
                               (lambda (x) (unsafe-fx< x len))

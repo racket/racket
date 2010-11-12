@@ -48,9 +48,37 @@ so the test can be named.
 
 
 @defproc[(test-case? (obj any)) boolean?]{
- True if @racket[obj] is a test case, and false otherwise
+ True if @racket[obj] is a test case, and false otherwise.
 }
 
+@subsection{Shortcuts for Defining Test Cases}
+
+@defproc*[([(test-check [name string?]
+                        [operator (-> any/c any/c any/c)]
+                        [v1 any/c]
+                        [v2 any/c])
+            void?]
+           [(test-pred [name string?]
+                       [pred (-> any/c any/c)]
+                       [v any/c])
+            void?]
+           [(test-equal? [name string?] [v1 any/c] [v2 any/c]) (void?)]
+           [(test-eq? [name string?] [v1 any/c] [v2 any/c]) void?]
+           [(test-eqv? [name string?] [v1 any/c] [v2 any/c]) void?]
+           [(test-= [name string?] [v1 real?] [v2 real?] [epsilon real?]) void?]
+           [(test-true [name string?] [v any/c]) void?]
+           [(test-false [name string?] [v any/c]) void?]
+           [(test-not-false [name string?] [v any/c]) void?]
+           [(test-exn [name string?] [pred (-> exn? any/c)] [thunk (-> any)]) void?]
+           [(test-not-exn [name string?] [thunk (-> any)]) void?])]{
+
+Creates a test case with the given @racket[name] that performs the
+corresponding check. For example,
+
+@racketblock[(test-equal? "Fruit test" "apple" "pear")]
+is equivalent to
+@racketblock[(test-case "Fruit test" (check-equal? "apple" "pear"))]
+}
 
 
 @section{Test Suites}
@@ -150,38 +178,3 @@ As far I know no-one uses this macro, so it might disappear
 in future versions of RackUnit.}
 }
 
-
-@section{Compound Testing Evaluation Context}
-
-Just like with checks, there are several parameters that
-control the semantics of compound testing forms.
-
-@defparam[current-test-name name (or/c string? false/c)]{
-
-This parameter stores the name of the current test case.  A
-value of @racket[#f] indicates a test case with no name,
-such as one constructed by @racket[test-begin].  }
-
-@defparam[current-test-case-around handler (-> (-> any/c) any/c)]{
-
-This parameter handles evaluation of test cases.  The value
-of the parameter is a function that is passed a thunk (a
-function of no arguments). The function, when applied,
-evaluates the expressions within a test case.  The default
-value of the @racket[current-test-case-around] parameters
-evaluates the thunk in a context that catches exceptions and
-prints an appropriate message indicating test case failure.}
-
-@defproc[(test-suite-test-case-around [thunk (-> any/c)]) any/c]{
-
-The @racket[current-test-case-around] parameter is
-parameterized to this value within the scope of a
-@racket[test-suite].  This function creates a test case
-structure instead of immediately evaluating the thunk.}
-
-@defproc[(test-suite-check-around [thunk (-> any/c)]) any/c]{
-
-The @racket[current-check-around] parameter is parameterized
-to this value within the scope of a @racket[test-suite].
-This function creates a test case structure instead of
-immediately evaluating a check.}

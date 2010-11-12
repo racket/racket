@@ -84,7 +84,7 @@ Reads HTML from a port, producing an @xexpr compatible with the
       [(struct h:html-element (attributes))
        '()]))
   
-  (printf "~s~n" (extract-pcdata an-html)))
+  (printf "~s\n" (extract-pcdata an-html)))
 (require 'html-example)
 ]
 

@@ -3,23 +3,11 @@
          racket/unit
          racket/list
          racket/match
-         racket/gui
-         framework
+         racket/gui/base
          unstable/class-iop
          "interfaces.rkt"
-         "prefs.rkt"
-         "extensions.rkt"
-         "hiding-panel.rkt"
-         "../model/deriv.rkt"
-         "../model/deriv-util.rkt"
-         "../model/deriv-parser.rkt"
-         "../model/trace.rkt"
-         "../model/reductions-config.rkt"
-         "../model/reductions.rkt"
          "../model/steps.rkt"
-         unstable/gui/notify
 	 (prefix-in sb: "../syntax-browser/interfaces.rkt")
-         "cursor.rkt"
          "debug-format.rkt")
 
 #;
@@ -43,9 +31,13 @@
 
     (define/public (add-internal-error part exn stx events)
       (send/i sbview sb:syntax-browser<%> add-text
-              (if part
-                  (format "Macro stepper error (~a)" part)
-                  "Macro stepper error"))
+              (string-append
+               (if (exn:break? exn)
+                   "Macro stepper was interrupted"
+                   "Macro stepper error")
+               (if part
+                   (format " (~a)" part)
+                   "")))
       (when (exn? exn)
         (send/i sbview sb:syntax-browser<%> add-text " ")
         (send/i sbview sb:syntax-browser<%> add-clickback "[details]"
@@ -56,7 +48,9 @@
       (when stx (send/i sbview sb:syntax-browser<%> add-syntax stx)))
 
     (define/private (show-internal-error-details exn events)
-      (case (message-box/custom "Macro stepper internal error"
+      (case (message-box/custom (if (exn:break? exn)
+                                    "Macro stepper was interrupted"
+                                    "Macro stepper internal error")
                                 (format "Internal error:\n~a" (exn-message exn))
                                 "Show error"
                                 "Dump debugging file"
@@ -90,8 +84,8 @@
              (show-poststep step shift-table)]))
 
     (define/public (add-syntax stx
-                               #:binders [binders null]
-                               #:definites [definites null]
+                               #:binders [binders #f]
+                               #:definites [definites #f]
                                #:shift-table [shift-table #f])
       (send/i sbview sb:syntax-browser<%> add-syntax stx
               #:binders binders
@@ -221,8 +215,8 @@
       (when (exn:fail:syntax? (misstep-exn step))
         (for ([e (exn:fail:syntax-exprs (misstep-exn step))])
           (send/i sbview sb:syntax-browser<%> add-syntax e
-                  #:binders (or (state-binders state) null)
-                  #:definites (or (state-uses state) null)
+                  #:binders (state-binders state)
+                  #:definites (state-uses state)
                   #:shift-table shift-table)))
       (show-lctx step shift-table))
 
@@ -236,8 +230,8 @@
               [(syntax? content)
                (send*/i sbview sb:syntax-browser<%>
                  (add-syntax content
-                             #:binders (or (state-binders state) null)
-                             #:definites (or (state-uses state) null)
+                             #:binders (state-binders state)
+                             #:definites (state-uses state)
                              #:shift-table shift-table)
                  (add-text "\n"))]))
       (show-lctx step shift-table))
@@ -248,7 +242,7 @@
       (define highlight-foci? (send/i config config<%> get-highlight-foci?))
       (define highlight-frontier? (send/i config config<%> get-highlight-frontier?))
       (send/i sbview sb:syntax-browser<%> add-syntax stx
-              #:definites (or definites null)
+              #:definites definites
               #:binders binders
               #:shift-table shift-table
               #:hi-colors (list hi-color

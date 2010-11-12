@@ -22,7 +22,7 @@
 (define OUT "convert-out.dat")
 
 (define (create-convert-in)
-  (printf "212 32~n-40~n"))
+  (printf "212 32\n-40\n"))
 
 (define (check-convert-out)
   (and (= (read) 100)

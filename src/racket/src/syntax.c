@@ -2816,36 +2816,60 @@ static int is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
       int i;
       if (!is_liftable_prim(app->args[0]))
         return 0;
-      if (bind_count >= 0)
-        bind_count += app->num_args;
+      if (0) /* not resolved, yet */
+        if (bind_count >= 0)
+          bind_count += app->num_args;
       for (i = app->num_args + 1; i--; ) {
 	if (!is_liftable(app->args[i], bind_count, fuel - 1, 1))
 	  return 0;
       }
       return 1;
     }
+    break;
   case scheme_application2_type:
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
       if (!is_liftable_prim(app->rator))
         return 0;
-      if (bind_count >= 0)
-        bind_count += 1;
+      if (0) /* not resolved, yet */
+        if (bind_count >= 0)
+          bind_count += 1;
       if (is_liftable(app->rator, bind_count, fuel - 1, 1)
 	  && is_liftable(app->rand, bind_count, fuel - 1, 1))
 	return 1;
     }
+    break;
   case scheme_application3_type:
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
       if (!is_liftable_prim(app->rator))
         return 0;
-      if (bind_count >= 0)
-        bind_count += 2;
+      if (0) /* not resolved, yet */
+        if (bind_count >= 0)
+          bind_count += 2;
       if (is_liftable(app->rator, bind_count, fuel - 1, 1)
 	  && is_liftable(app->rand1, bind_count, fuel - 1, 1)
 	  && is_liftable(app->rand2, bind_count, fuel - 1, 1))
 	return 1;
+    }
+    break;
+  case scheme_compiled_let_void_type:
+    {
+      Scheme_Let_Header *lh = (Scheme_Let_Header *)o;
+      int i;
+      int post_bind = !(SCHEME_LET_FLAGS(lh) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
+
+      if (post_bind) {
+        o = lh->body;
+        for (i = lh->num_clauses; i--; ) {
+          if (!is_liftable(((Scheme_Compiled_Let_Value *)o)->value, bind_count, fuel - 1, as_rator))
+            return 0;
+          o = ((Scheme_Compiled_Let_Value *)o)->body;
+        }
+        if (is_liftable(o, bind_count + lh->count, fuel - 1, as_rator))
+          return 1;
+      }
+      break;
     }
   default:
     if (t > _scheme_compiled_values_types_)
@@ -3067,9 +3091,9 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   Scheme_Let_Header *head = (Scheme_Let_Header *)form;
   Scheme_Compiled_Let_Value *clv, *pre_body, *retry_start, *prev_body;
   Scheme_Object *body, *value, *ready_pairs = NULL, *rp_last = NULL, *ready_pairs_start;
-  Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL;
+  Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL, *once_used;
   int i, j, pos, is_rec, not_simply_let_star = 0, undiscourage, split_shift, skip_opts = 0;
-  int size_before_opt, did_set_value;
+  int size_before_opt, did_set_value, checked_once;
   int remove_last_one = 0, inline_fuel, rev_bind_order;
   int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
 
@@ -3436,6 +3460,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           pre_body = naya;
           body = (Scheme_Object *)naya;
           value = pre_body->value;
+          pos = pre_body->position;
         } else {
           /* We've dropped this clause entirely. */
           i++;
@@ -3447,6 +3472,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         }
       }
     }
+
+    checked_once = 0;
 
     if ((pre_body->count == 1)
 	&& !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
@@ -3485,7 +3512,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
            that's not available yet, or that's mutable. */
         int vpos;
         vpos = SCHEME_LOCAL_POS(value);
-        if ((vpos < head->count) && !pos_EARLIER(vpos, pos))
+        if (!post_bind && (vpos < head->count) && !pos_EARLIER(vpos, pos))
           value = NULL;
         else {
           /* Convert value back to a pre-optimized local coordinates.
@@ -3512,6 +3539,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
         scheme_optimize_propagate(body_info, pos, value, cnt == 1);
 	did_set_value = 1;
+        checked_once = 1;
       } else if (value && !is_rec) {
         int cnt;
 
@@ -3519,13 +3547,38 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           scheme_optimize_produces_flonum(body_info, pos);
         
         if (!indirect) {
+          checked_once = 1;
           cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
           if (cnt == 1) {
             /* used only once; we may be able to shift the expression to the use
                site, instead of binding to a temporary */
-            last_once_used = scheme_make_once_used(value, pos, rhs_info->vclock, last_once_used);
-            if (!first_once_used) first_once_used = last_once_used;
-            scheme_optimize_propagate(body_info, pos, (Scheme_Object *)last_once_used, 1);
+            once_used = scheme_make_once_used(value, pos, rhs_info->vclock, NULL);
+            if (!last_once_used)
+              first_once_used = once_used;
+            else
+              last_once_used->next = once_used;
+            last_once_used = once_used;
+            scheme_optimize_propagate(body_info, pos, (Scheme_Object *)once_used, 1);
+          }
+        }
+      }
+    }
+
+    if (!checked_once) {
+      /* Didn't handle once-used check in case of copy propagation, so check here. */
+      int i, cnt;
+      for (i = pre_body->count; i--; ) {
+        if (!(pre_body->flags[i] & SCHEME_WAS_SET_BANGED)) {
+          cnt = ((pre_body->flags[i] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
+          if (cnt == 1) {
+            /* Need to register as once-used, in case of copy propagation */
+            once_used = scheme_make_once_used(NULL, pos+i, rhs_info->vclock, NULL);
+            if (!last_once_used)
+              first_once_used = once_used;
+            else
+              last_once_used->next = once_used;
+            last_once_used = once_used;
+            scheme_optimize_propagate(body_info, pos+i, (Scheme_Object *)once_used, 1);
           }
         }
       }
@@ -3705,25 +3758,26 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     pre_body = (Scheme_Compiled_Let_Value *)body;
     pos = pre_body->position;
 
-    while (first_once_used && pos_EARLIER(first_once_used->pos, pos)) {
-      first_once_used = first_once_used->next;
-    }
-
     for (j = pre_body->count; j--; ) {
       if (scheme_optimize_is_used(body_info, pos+j)) {
         used = 1;
         break;
       }
     }
+
     if (!used
         && (scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0, info, -1)
-            || (first_once_used
+            || ((pre_body->count == 1)
+                && first_once_used
                 && (first_once_used->pos == pos) 
                 && first_once_used->used))) {
       for (j = pre_body->count; j--; ) {
         if (pre_body->flags[j] & SCHEME_WAS_USED) {
           pre_body->flags[j] -= SCHEME_WAS_USED;
         }
+
+        if (first_once_used && (first_once_used->pos == (pos + j)))
+          first_once_used = first_once_used->next;
       }
       if (pre_body->count == 1) {
         /* Drop expr and deduct from size to aid further inlining. */
@@ -3737,6 +3791,14 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         pre_body->flags[j] |= SCHEME_WAS_USED;
         if (scheme_optimize_is_flonum_arg(body_info, pos+j, 0))
           pre_body->flags[j] |= SCHEME_WAS_FLONUM_ARGUMENT;          
+
+        if (first_once_used && (first_once_used->pos == (pos+j))) {
+          if (first_once_used->vclock < 0) {
+            /* single-use no longer true, due to copy propagation */
+            pre_body->flags[j] |= SCHEME_USE_COUNT_MASK;
+          }
+          first_once_used = first_once_used->next;
+        }
       }
       info->size += 1;
     }

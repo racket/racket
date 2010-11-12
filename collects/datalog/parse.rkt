@@ -31,7 +31,7 @@
                            (datum->syntax #f tok-value (make-srcloc start-pos end-pos)))))
     (grammar
      (program [(statements) $1])
-     (statements [(statement) (list $1)]
+     (statements [() empty]
                  [(statement statements) (list* $1 $2)])
      (statement [(assertion) $1]
                 [(query) $1]
@@ -46,6 +46,7 @@
      (literal [(predicate-sym LPAREN RPAREN) (make-literal (make-srcloc $1-start-pos $3-end-pos) $1 empty)]
               [(predicate-sym LPAREN terms RPAREN) (make-literal (make-srcloc $1-start-pos $4-end-pos) $1 $3)]
               [(predicate-sym) (make-literal (make-srcloc $1-start-pos $1-end-pos) $1 empty)]
+              [(term NEQUAL term) (make-literal (make-srcloc $1-start-pos $3-end-pos) '!= (list $1 $3))]
               [(term EQUAL term) (make-literal (make-srcloc $1-start-pos $3-end-pos) '= (list $1 $3))])
      (predicate-sym [(IDENTIFIER) (string->symbol $1)]
                     [(STRING) $1])

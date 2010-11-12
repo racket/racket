@@ -31,9 +31,13 @@ all:
 3m:
 	cd racket; $(MAKE) 3m
 	$(MAKE) @MAKE_GRACKET@-3m
+	$(MAKE) @MAKE_PLOT@-3m
 
 gracket-3m:
 	cd gracket; $(MAKE) 3m
+
+plot-3m:
+	cd plot; $(MAKE) 3m
 
 no-3m:
 	$(NOOP)
@@ -41,9 +45,13 @@ no-3m:
 cgc:
 	cd racket; $(MAKE) cgc
 	$(MAKE) @MAKE_GRACKET@-cgc
+	$(MAKE) @MAKE_PLOT@-cgc
 
 gracket-cgc:
 	cd gracket; $(MAKE) cgc
+
+plot-cgc:
+	cd plot; $(MAKE) cgc
 
 no-cgc:
 	$(NOOP)
@@ -76,12 +84,19 @@ install-common-first:
 	mkdir -p $(ALLDIRINFO)
 
 install-common-middle:
+	$(MAKE) install-@MAKE_PLOT@
 	$(MAKE) @MAKE_COPYTREE@-run
 	$(MAKE) install-@MAKE_GRACKET@-post-collects
 	$(MAKE) lib-finish
 
 install-common-last:
 	$(MAKE) fix-paths
+
+install-plot:
+	cd plot; $(MAKE) install
+
+install-no:
+	$(NOOP)
 
 lib-finish:
 	@LIBFINISH@ "$(libdir)"

@@ -3,7 +3,7 @@
 
 (require (utils tc-utils) 
 	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
-         mzlib/trace scheme/match mzlib/etc
+         mzlib/trace racket/match mzlib/etc
          scheme/contract unstable/debug
          (for-syntax scheme/base syntax/parse))
 
@@ -149,8 +149,8 @@
 ;; n is how many variables are bound here
 ;; body is a Scope
 (dt Poly (n body) #:no-provide 
-    [#:contract (->d ([n natural-number/c]
-                      [body (scope-depth n)])
+    [#:contract (->i ([n natural-number/c]
+                      [body (n) (scope-depth n)])
                      (#:syntax [stx (or/c #f syntax?)])
                      [result Poly?])]
     [#:frees (λ (f) (f body))]
@@ -162,8 +162,8 @@
 ;; there are n-1 'normal' vars and 1 ... var
 ;; body is a Scope
 (dt PolyDots (n body) #:no-provide
-    [#:contract (->d ([n natural-number/c]
-                      [body (scope-depth n)])
+    [#:contract (->i ([n natural-number/c]
+                      [body (n) (scope-depth n)])
                      (#:syntax [stx (or/c #f syntax?)])
                      [result PolyDots?])]
     [#:key (Type-key body)]
@@ -187,7 +187,6 @@
     [#:frees (λ (frees) (combine-frees (map frees (list t f o))))]
     [#:fold-rhs (*Result (type-rec-id t) (filter-rec-id f) (object-rec-id o))])
 
-;; types : Listof[Type]
 (dt Values ([rs (listof Result?)]) 
     [#:frees (λ (f) (combine-frees (map f rs)))]
     [#:fold-rhs (*Values (map type-rec-id rs))])
@@ -330,11 +329,14 @@
 
 ;; in : Type
 ;; out : Type
-(dt Param ([in Type/c] [out Type/c]) [#:key 'parameter])
+(dt Param ([in Type/c] [out Type/c]) 
+    [#:key 'parameter]
+    [#:frees (λ (f) (combine-frees (list (f out) (flip-variances (f in)))))])
 
 ;; key : Type
 ;; value : Type
-(dt Hashtable ([key Type/c] [value Type/c]) [#:key 'hash])
+(dt Hashtable ([key Type/c] [value Type/c]) [#:key 'hash]
+    [#:frees (λ (f) (combine-frees (list (make-invariant (f key)) (make-invariant (f value)))))])
 
 ;; parent : Type
 ;; pred : Identifier
@@ -382,6 +384,8 @@
 (dt Sequence ([tys (listof Type/c)])
     [#:frees (λ (f) (combine-frees (map f tys)))]
     [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
+
+(dt Future ([t Type/c]) [#:key 'future])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

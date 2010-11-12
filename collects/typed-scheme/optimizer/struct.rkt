@@ -1,17 +1,15 @@
 #lang scheme/base
 
 (require syntax/parse
-         syntax/id-table racket/dict
-         unstable/match scheme/match
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
-         (rep type-rep)
-         (types abbrev type-table utils subtype)
+         (types type-table)
          (optimizer utils))
 
 (provide struct-opt-expr)
 
 (define-syntax-class struct-opt-expr
+  #:commit
   ;; we can always optimize struct accessors and mutators
   ;; if they typecheck, they're safe
   (pattern (#%plain-app op:id s:expr v:expr ...)

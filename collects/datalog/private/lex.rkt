@@ -3,7 +3,7 @@
          (prefix-in : parser-tools/lex-sre))
 
 (define-tokens dtokens (VARIABLE IDENTIFIER STRING))
-(define-empty-tokens dpunct (LPAREN COMMA RPAREN TSTILE DOT EQUAL TILDE QMARK EOF))
+(define-empty-tokens dpunct (LPAREN COMMA RPAREN TSTILE DOT EQUAL NEQUAL TILDE QMARK EOF))
 (define-lex-abbrev line-break #\newline)
 (define-lex-abbrev id-chars (char-complement (char-set "(,)=:.~?\"% \n")))
 (define-lex-abbrev variable-re (:: upper-case (:* (:or upper-case lower-case (char-set "0123456789_")))))
@@ -38,6 +38,7 @@
    [#\~ (token-TILDE)]
    [#\? (token-QMARK)]
    [#\= (token-EQUAL)]
+   ["!=" (token-NEQUAL)]
    [(eof) (token-EOF)]))
 
 (provide dtokens dpunct 

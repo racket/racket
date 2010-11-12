@@ -80,10 +80,13 @@ typedef struct Scheme_Print_Params {
   char print_unreadable;
   char print_pair_curly, print_mpair_curly;
   char print_reader;
+  char print_long_bools;
   char can_read_pipe_quote;
   char case_sens;
   char honu_mode;
   Scheme_Object *inspector;
+
+  char printing_quoted;
 
   /* Used during `display' and `write': */
   char *print_buffer;
@@ -971,6 +974,7 @@ print_to_string(Scheme_Object *obj,
   params.print_port = port;
   params.print_syntax = 0;
   params.depth_delta = NULL;
+  params.printing_quoted = 0;
 
   /* Getting print params can take a while, and they're irrelevant
      for simple things like displaying numbers. So try a shortcut: */
@@ -986,6 +990,7 @@ print_to_string(Scheme_Object *obj,
     params.print_hash_table = 0;
     params.print_unreadable = 1;
     params.print_reader = 1;
+    params.print_long_bools = 0;
     params.print_pair_curly = 0;
     params.print_mpair_curly = 1;
     params.can_read_pipe_quote = 1;
@@ -1050,6 +1055,8 @@ print_to_string(Scheme_Object *obj,
     params.can_read_pipe_quote = SCHEME_TRUEP(v);
     v = scheme_get_param(config, MZCONFIG_CASE_SENS);
     params.case_sens = SCHEME_TRUEP(v);
+    v = scheme_get_param(config, MZCONFIG_PRINT_LONG_BOOLEAN);
+    params.print_long_bools = SCHEME_TRUEP(v);
     if (check_honu) {
       v = scheme_get_param(config, MZCONFIG_HONU_MODE);
       params.honu_mode = SCHEME_TRUEP(v);
@@ -1680,8 +1687,8 @@ static void cannot_print(PrintParams *pp, int notdisplay,
 			 int compact)
 {
   scheme_raise_exn(MZEXN_FAIL,
-		   (compact
-		    ? "%s: cannot marshal constant that is embedded in compiled code: %V"
+		   ((compact || pp->printing_quoted)
+		    ? "%s: cannot marshal value that is embedded in compiled code: %V"
 		    : "%s: printing disabled for unreadable value: %V"),
 		   notdisplay ? "write" : "display",
 		   obj);
@@ -1805,7 +1812,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 		  || SCHEME_EOFP(obj)
 		  || SAME_TYPE(scheme_always_evt_type, SCHEME_TYPE(obj))
 		  || SAME_TYPE(scheme_never_evt_type, SCHEME_TYPE(obj))
-		  || SAME_TYPE(scheme_struct_property_type, SCHEME_TYPE(obj)))) {
+		  || SAME_TYPE(scheme_struct_property_type, SCHEME_TYPE(obj))
+                  || SAME_OBJ(scheme_app_mark_impersonator_property, obj))) {
     /* Check whether this is a global constant */
     Scheme_Object *val;
     val = scheme_hash_get(global_constants_ht, obj);
@@ -2230,6 +2238,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact(pp, CPT_TRUE);
       else if (pp->honu_mode)
 	print_utf8_string(pp, "true", 0, 4);
+      else if (pp->print_long_bools)
+	print_utf8_string(pp, "#true", 0, 5);
       else
 	print_utf8_string(pp, "#t", 0, 2);
     }
@@ -2239,6 +2249,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact(pp, CPT_FALSE);
       else if (pp->honu_mode)
 	print_utf8_string(pp, "false", 0, 5);
+      else if (pp->print_long_bools)
+	print_utf8_string(pp, "#false", 0, 6);
       else
 	print_utf8_string(pp, "#f", 0, 2);
     }
@@ -2343,7 +2355,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	Scheme_Object *idx;
 	int l;
 	
-	idx = get_symtab_idx(mt, obj);
+        idx = get_symtab_idx(mt, obj);
 	if (idx) {
           print_symtab_ref(pp, idx);
 	} else {
@@ -2351,10 +2363,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  
 	  dir = scheme_get_param(scheme_current_config(),
 				 MZCONFIG_WRITE_DIRECTORY);
-	  if (SCHEME_PATHP(dir)) {
+	  if (SCHEME_PATHP(dir))
 	    obj = scheme_extract_relative_to(obj, dir);
-	  }
-
+          
 	  print_compact(pp, CPT_PATH);
 
 	  l = SCHEME_PATH_LEN(obj);
@@ -2363,6 +2374,24 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
           symtab_set(pp, mt, orig_obj);
 	}
+      } else if (!compact && pp->printing_quoted) {
+        /* An unlikely case: we're in escaped mode for printing a constant;
+           use a special escape, which is recognized only when reading
+           an escaped S-expression, to write a path: */
+        Scheme_Object *dir;
+
+        dir = scheme_get_param(scheme_current_config(),
+                               MZCONFIG_WRITE_DIRECTORY);
+        if (SCHEME_PATHP(dir))
+          obj = scheme_extract_relative_to(obj, dir);
+
+        print_utf8_string(pp, "#^", 0, 2);
+        obj = scheme_make_sized_byte_string(SCHEME_PATH_VAL(obj),
+                                            SCHEME_PATH_LEN(obj),
+                                            1);
+        print(obj, notdisplay, compact, ht, mt, pp);
+
+        closed = 1;
       } else if (!pp->print_unreadable) {
 	cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
@@ -2570,6 +2599,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_utf8_string(pp, ">", 0, 1);
       }
     }
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_chaperone_type))
+    { 
+      /* some kind of chaperone that doesn't normally print */
+      closed = print(SCHEME_CHAPERONE_VAL(obj), notdisplay, compact, ht, mt, pp);
+    }
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_regexp_type))
     {
        if (compact) {
@@ -2653,7 +2687,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (SCHEME_STXP(obj))
     {
-      if (compact) {
+      if (compact && !pp->printing_quoted) {
 	print_compact(pp, CPT_STX);
 	
 	/* "2" in scheme_syntax_to_datum() call preserves wraps. */
@@ -2838,7 +2872,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       Scheme_Hash_Table *q_ht;
       Scheme_Object *v;
-      int counter = 1, qpht, qpb;
+      int counter = 1, qpht, qpb, qpu;
 
       v = SCHEME_PTR_VAL(obj);
 
@@ -2865,7 +2899,15 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 #endif
       }
 
+      /* Avoid all unprintable values, whether or not we stay in compact mode. */
+      qpu = pp->print_unreadable;
+      pp->print_unreadable = 0;
+      pp->printing_quoted = 1;
+
       compact = print(v, notdisplay, 1, q_ht, mt, pp);
+
+      pp->printing_quoted = 0;
+      pp->print_unreadable = qpu;
 
       pp->print_hash_table = qpht;
       pp->print_box = qpb;
@@ -3771,7 +3813,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
 {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(_vec)[0];
   Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)SCHEME_VEC_ELS(_vec)[1];
-  PrintParams * volatile pp = (PrintParams *)SCHEME_VEC_ELS(_vec)[2];
+  PrintParams * volatile pp = (PrintParams *)SCHEME_VEC_ELS(_vec)[2], *sub_pp;
   Scheme_Object * volatile save_port;
   mz_jmp_buf escape, * volatile save;
   volatile long save_max;
@@ -3821,34 +3863,43 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
 	pp->print_port = argv[1];
 
         if (notdisplay > 1) {
+          /* If printing to a string, flush again, now that pp is
+             directed to a port, in case we clone pp below: */
+          print_this_string(pp, NULL, 0, 0);
+        }
+
+        if (notdisplay > 1) {
           if (argc > 2) {
             Scheme_Object *qq_depth = argv[2];
             if (!scheme_nonneg_exact_p(qq_depth))
               scheme_wrong_type("print/recursive", "nonnegative exact integer", 2, argc, argv);
-            pp = copy_print_params(pp);
+            sub_pp = copy_print_params(pp);
             if (scheme_bin_gt(qq_depth, scheme_make_integer(REASONABLE_QQ_DEPTH))) {
               notdisplay = 3 + REASONABLE_QQ_DEPTH;
               qq_depth = scheme_bin_minus(qq_depth, scheme_make_integer(REASONABLE_QQ_DEPTH));
-              pp->depth_delta = qq_depth;
+              sub_pp->depth_delta = qq_depth;
             } else {
-              pp->depth_delta = scheme_make_integer(0);
+              sub_pp->depth_delta = scheme_make_integer(0);
               notdisplay = 3 + SCHEME_INT_VAL(qq_depth);
             }
           } else if (pp->depth_delta) {
             notdisplay = 3;
             if (!SAME_OBJ(pp->depth_delta, scheme_make_integer(0))) {
-              pp = copy_print_params(pp);
-              pp->depth_delta = scheme_make_integer(0);
-            }
-          }
-        }
+              sub_pp = copy_print_params(pp);
+              sub_pp->depth_delta = scheme_make_integer(0);
+            } else
+              sub_pp = pp;
+          } else
+            sub_pp = pp;
+        } else
+          sub_pp = pp;
 
-	/* Recur */
-	print(argv[0], notdisplay, 0, ht, mt, pp);
+        /* Recur */
+	print(argv[0], notdisplay, 0, ht, mt, sub_pp);
 
 	/* Flush print cache, to ensure that future writes to the
 	   port go after printed data. */
-	print_this_string(pp, NULL, 0, 0);
+	print_this_string(sub_pp, NULL, 0, 0);
       }
 
       pp->print_port = save_port;
@@ -3932,7 +3983,6 @@ static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht,
   a[1] = o;
   if (notdisplay >= 3) {
     a[2] = scheme_bin_plus(pp->depth_delta, scheme_make_integer(notdisplay - 3));
-    pp->depth_delta = a[2];
   } else
     a[2] = (notdisplay ? scheme_true : scheme_false);
 

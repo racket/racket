@@ -74,7 +74,7 @@
                           (car rhs))
                 (if (= 3 (length rhs))
                     (p "%prec ~a" (cadadr rhs)))
-                (p "~n"))))
+                (p "\n"))))
         (for-each
          (lambda (t)
            (for-each
@@ -86,7 +86,7 @@
          (lambda (t)
            (for-each
             (lambda (t)
-              (p "%token ~a~n" t)
+              (p "%token ~a\n" t)
               (hash-table-put! term-table t (format "~a" t)))
             (syntax-object->datum (terminals-def-t t))))
          terms)
@@ -96,10 +96,10 @@
                         (for-each (lambda (tok)
                                     (p " ~a" (hash-table-get term-table tok)))
                                   (cdr prec))
-                        (p "~n"))
+                        (p "\n"))
                       precs))
-        (p "%start ~a~n" start)
-        (p "%%~n")
+        (p "%start ~a\n" start)
+        (p "%%\n")
 
         (for-each (lambda (prod)
                     (let ((nt (car prod)))
@@ -109,9 +109,9 @@
                                   (p "| ")
                                   (display-rhs rhs))
                                 (cddr prod))
-                      (p ";~n")))
+                      (p ";\n")))
           grammar)
-        (p "%%~n"))))
+        (p "%%\n"))))
   
 
 )  

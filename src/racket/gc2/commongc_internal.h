@@ -30,7 +30,7 @@ typedef struct GC_Weak_Box {
   void *val;
   /* The rest is up to us: */
   void **secondary_erase;
-  int soffset;
+  int soffset, is_late;
   struct GC_Weak_Box *next;
 } GC_Weak_Box;
 

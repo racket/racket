@@ -3,10 +3,11 @@
 (provide module-begin)
 
 (require deinprogramm/define-record-procedures
+	 deinprogramm/signature/signature
 	 deinprogramm/signature/signature-syntax)
 
 (require (for-syntax scheme/base)
-	 (for-syntax mzlib/list)
+	 (for-syntax racket/list)
 	 (for-syntax syntax/boundmap)
 	 (for-syntax syntax/kerncase))
 
@@ -40,24 +41,31 @@
       (lambda (lostx) 
 	(let* ((table (make-bound-identifier-mapping))
 	       (non-signatures
-		(filter (lambda (maybe)
-			  (syntax-case maybe (:)
-			    ((: ?id ?cnt)
-			     (identifier? #'id)
-			     (begin
-			       (when (bound-identifier-mapping-get table #'?id (lambda () #f))
-				 (raise-syntax-error #f
-						     "Zweite Vertragsdefinition für denselben Namen."
-						     maybe))
-			       (bound-identifier-mapping-put! table #'?id #'?cnt)
-			       #f))
-			    ((: ?id)
-			     (raise-syntax-error 'signatures "Bei dieser Vertragsdefinition fehlt der Vertrag" maybe))
-			    ((: ?id ?cnt ?stuff0 ?stuff1 ...)
-			     (raise-syntax-error 'signatures "In der :-Form werden ein Name und ein Vertrag erwartet; da steht noch mehr"
-						 (syntax/loc #'?stuff0
-							     (?stuff0 ?stuff1 ...))))
-			    (_ #t)))
+		(filter-map (lambda (maybe)
+			      (syntax-case maybe (:)
+				((: ?exp ?sig)
+				 (not (identifier? #'?exp))
+				 #'(apply-signature/blame (signature ?sig) ?exp))
+				((: ?id ?sig)
+				 (begin
+				   (cond
+				    ((bound-identifier-mapping-get table #'?id (lambda () #f))
+				     => (lambda (old-sig-stx)
+					  (unless (equal? (syntax->datum old-sig-stx)
+							  (syntax->datum #'?sig))
+					    (raise-syntax-error #f
+								"Zweite Signaturdeklaration für denselben Namen."
+								maybe))))
+				    (else
+				     (bound-identifier-mapping-put! table #'?id #'?sig)))
+				   #f))
+				((: ?id)
+				 (raise-syntax-error #f "Bei dieser Signaturdeklaration fehlt die Signatur" maybe))
+				((: ?id ?sig ?stuff0 ?stuff1 ...)
+				 (raise-syntax-error #f "In der :-Form werden ein Name und eine Signatur erwartet; da steht noch mehr"
+						     (syntax/loc #'?stuff0
+								 (?stuff0 ?stuff1 ...))))
+				(_ maybe)))
 			lostx)))
 	  (values table non-signatures))))
 
@@ -76,8 +84,8 @@
 					     (lambda (id thing)
 					       (when thing
 						 (if (identifier-binding id)
-						     (raise-syntax-error #f "Zu einer eingebauten Form kann kein Vertrag erklärt werden" id)
-						     (raise-syntax-error #f "Zu diesem Vertrag gibt es keine Definition" id)))))
+						     (raise-syntax-error #f "Zu einer eingebauten Form kann keine Signatur deklariert werden" id)
+						     (raise-syntax-error #f "Zu dieser Signatur gibt es keine Definition" id)))))
 	  #'(begin))
 	 (else
 	  (let ((expanded (car exprs)))
@@ -88,11 +96,11 @@
 			      (map (lambda (id)
 				     (cond
 				      ((bound-identifier-mapping-get signature-table id (lambda () #f))
-				       => (lambda (cnt)
+				       => (lambda (sig)
 					    (bound-identifier-mapping-put! signature-table id #f) ; check for orphaned signatures
 					    (with-syntax ((?id id)
-							  (?cnt cnt))
-					      #'(?id (signature ?cnt)))))
+							  (?sig sig))
+					      #'(?id (signature ?sig)))))
 				      (else
 				       id)))
 				   (syntax->list #'(?id ...))))
@@ -151,9 +159,9 @@
 			(reverse (syntax->list #'(defined-id ...)))))
 	    ;; Now handle signatures:
 	    (let ((top-level (reverse (syntax->list (syntax (e1 ...))))))
-	      (let-values (((cnt-table expr-list)
+	      (let-values (((sig-table expr-list)
 			    (extract-signatures top-level)))
-		(expand-signature-expressions cnt-table expr-list)))))
+		(expand-signature-expressions sig-table expr-list)))))
 	 ((frm e3s e1s def-ids)
 	  (let loop ((e3s #'e3s)
 		     (e1s #'e1s)

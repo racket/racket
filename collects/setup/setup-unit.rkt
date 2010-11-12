@@ -63,6 +63,15 @@
       (build-path "compiled" (compile-mode))
       (build-path "compiled")))
 
+  (unless (make-user)
+    (current-library-collection-paths
+     (if (member main-collects-dir (current-library-collection-paths))
+       (list main-collects-dir)
+       '())))
+
+  (current-library-collection-paths
+   (map simple-form-path (current-library-collection-paths)))
+
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
       (apply fprintf p (string-append name-str ": " task s "\n") args)))
@@ -88,15 +97,19 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define errors null)
+  (define (append-error cc desc exn out err type)
+    (set! errors (cons (list cc desc exn out err type) errors)))
+  (define (handle-error cc desc exn out err type)
+      (if (verbose)
+          ((error-display-handler)
+           (format "~a\n" (exn->string exn))
+           exn)
+          (fprintf (current-error-port) "~a\n" (exn->string exn)))
+      (append-error cc desc exn out err type))
   (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
                      (lambda (x)
-                       (if (verbose)
-                           ((error-display-handler)
-                            (format "~a\n" (exn->string x))
-                            x)
-                           (fprintf (current-error-port) "~a\n" (exn->string x)))
-                       (set! errors (cons (list cc desc x) errors))
+                       (handle-error cc desc x "" "" "error")
                        (fail-k))])
       (go)))
   (define-syntax begin-record-error
@@ -104,10 +117,11 @@
       [(_ cc desc body ...) (record-error cc desc (lambda () body ...) void)]))
   (define (show-errors port)
     (for ([e (reverse errors)])
-      (match-let ([(list cc desc x) e])
-        (setup-fprintf port "error" "during ~a for ~a"
-                       desc (if (cc? cc) (cc-name cc) cc))
-        (setup-fprintf port #f "  ~a" (exn->string x)))))
+      (match-let ([(list cc desc x out err type) e])
+        (setup-fprintf port type "during ~a for ~a" desc (if (cc? cc) (cc-name cc) cc))
+        (when (not (null? x)) (setup-fprintf port #f "  ~a" (exn->string x)))
+        (when (not (zero? (string-length out))) (eprintf "STDOUT:\n~a=====\n" out))
+        (when (not (zero? (string-length err))) (eprintf "STDERR:\n~a=====\n" err)))))
 
   (define (done)
     (setup-printf #f "done")
@@ -668,7 +682,7 @@
               (let ([dir (cc-path cc)]
                     [info (cc-info cc)])
                   (clean-cc dir info))) cct)
-            (parallel-compile (parallel-workers) setup-fprintf cct))
+            (parallel-compile (parallel-workers) setup-fprintf handle-error cct))
           (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
             (compile-cc cc gcs)))]
       [else
@@ -949,15 +963,6 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; setup-unit Body                ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (unless (make-user)
-    (current-library-collection-paths
-     (if (member main-collects-dir (current-library-collection-paths))
-       (list main-collects-dir)
-       '())))
-
-  (current-library-collection-paths
-   (map simple-form-path (current-library-collection-paths)))
 
   (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))

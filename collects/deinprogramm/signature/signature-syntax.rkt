@@ -4,14 +4,15 @@
 	 signature signature/arbitrary
 	 define-contract contract ; legacy
 	 define/signature define-values/signature
-	 -> mixed one-of predicate combined property)
+	 -> mixed one-of predicate combined property list-of)
 
 (require deinprogramm/signature/signature
+	 deinprogramm/signature/signature-german
 	 scheme/promise
 	 (for-syntax scheme/base)
 	 (for-syntax syntax/stx)
 	 (for-syntax stepper/private/shared)
-	 (only-in lang/private/teachprims beginner-equal?))
+	 (only-in lang/private/teachprims teach-equal?))
 
 (define-for-syntax (phase-lift stx)
   (with-syntax ((?stx stx))
@@ -20,7 +21,7 @@
 
 (define-for-syntax (parse-signature name stx)
   (syntax-case* stx
-		(mixed one-of predicate list -> combined property reference at signature)
+		(mixed one-of predicate list -> combined property reference at signature list-of)
 		module-or-top-identifier=?
     ((mixed ?signature ...)
      (with-syntax ((?stx (phase-lift stx))
@@ -43,13 +44,13 @@
 			       (with-syntax ((?raise
 					      (syntax/loc 
 					       #'?exp
-					       (error 'signatures "hier kein Vertrag zulässig, nur normaler Wert"))))
+					       (error 'signatures "hier keine Signatur zulässig, nur normaler Wert"))))
 				 #'(when (signature? ?temp)
 				     ?raise))))
 			   (syntax->list #'((?temp ?exp) ...)))))
        #'(let ((?temp ?exp) ...)
 	   ?check ...
-	   (make-case-signature '?name (list ?temp ...) beginner-equal? ?stx)))))
+	   (make-case-signature '?name (list ?temp ...) teach-equal? ?stx)))))
     ((predicate ?exp)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name))
@@ -61,7 +62,16 @@
        #'(make-list-signature '?name ?signature-expr ?stx)))
     ((list ?signature1 ?rest ...)
      (raise-syntax-error #f
-			 "list-Vertrag darf nur einen Operanden haben."
+			 "list-Signatur darf nur einen Operanden haben."
+			 (syntax ?signature1)))
+    ((list-of ?signature)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name)
+		   (?signature-expr (parse-signature #f #'?signature)))
+       #'(make-list-signature '?name ?signature-expr ?stx)))
+    ((list-of ?signature)
+     (raise-syntax-error #f
+			 "list-of-Signatur darf nur einen Operanden haben."
 			 (syntax ?signature1)))
     ((?arg-signature ... -> ?return-signature)
      (with-syntax ((?stx (phase-lift stx))
@@ -73,7 +83,7 @@
        #'(make-procedure-signature '?name (list ?arg-signature-exprs ...) ?return-signature-expr ?stx)))
     ((?arg-signature ... -> ?return-signature1 ?return-signature2 . ?_)
      (raise-syntax-error #f
-			 "Nach dem -> darf nur ein Vertrag stehen."
+			 "Nach dem -> darf nur eine Signatur stehen."
 			 (syntax ?return-signature2)))
     ((at ?loc ?sig)
      (with-syntax ((?sig-expr (parse-signature #f #'?sig)))
@@ -84,10 +94,10 @@
     (?id
      (identifier? #'?id)
      (with-syntax ((?stx (phase-lift stx))
-		   (?name name))
+		   (?name (or name (syntax->datum #'?id))))
        (let ((name (symbol->string (syntax->datum #'?id))))
 	 (if (char=? #\% (string-ref name 0))
-	     #'(make-type-variable-signature '?id ?stx)
+	     #'(make-type-variable-signature '?name ?stx)
 	     (with-syntax
 		 ((?raise
 		   (syntax/loc #'?stx
@@ -122,6 +132,10 @@
 				 ?access
 				 ?signature-expr
 				 ?stx)))
+    ((signature ?stuff ...)
+     (raise-syntax-error #f
+			 "`signature' als Operator ergibt keinen Sinn"
+			 stx))
     ((?signature-abstr ?signature ...)
      (identifier? #'?signature-abstr)
      (with-syntax ((?stx (phase-lift stx))
@@ -129,6 +143,7 @@
 		   ((?signature-expr ...) (map (lambda (sig)
 						(parse-signature #f sig))
 					      (syntax->list #'(?signature ...)))))
+
        (with-syntax
 	   ((?call (syntax/loc stx (?signature-abstr ?signature-expr ...))))
 	 #'(make-call-signature '?name
@@ -136,8 +151,8 @@
 			       (delay ?signature-abstr) (delay (list ?signature-expr ...))
 			       ?stx))))
     (else
-     (raise-syntax-error 'signature
-			 "ungültiger Vertrag" stx))))
+     (raise-syntax-error #f
+			 "ungültige Signatur" stx))))
 
 ; regrettable
 (define signature/signature
@@ -249,7 +264,7 @@
 
 (define-for-syntax (within-signature-syntax-error stx name)
   (raise-syntax-error #f
-		      "darf nur in Verträgen vorkommen"
+		      "darf nur in Signaturen vorkommen"
 		      name))
 
 ;; Expression -> Expression
@@ -269,5 +284,4 @@
 (define-syntax predicate within-signature-syntax-transformer)
 (define-syntax combined within-signature-syntax-transformer)
 (define-syntax property within-signature-syntax-transformer)
-; not a good idea:
-; (define-syntax list within-signature-syntax-transformer)
+(define-syntax list-of within-signature-syntax-transformer)

@@ -95,7 +95,7 @@
 		  (drscheme:debug:make-debug-error-display-handler (error-display-handler)))
 		 (current-compile (make-errortrace-compile-handler))
                  (with-handlers ([void (lambda (x)
-                                         (printf "~a~n"
+                                         (printf "~a\n"
                                                  (exn-message x)))])
                    (namespace-attach-module n path)
                    (namespace-require path))))))

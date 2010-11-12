@@ -36,6 +36,34 @@
        (extend-reduction-relation red lang (--> 1 2)))
       "extended-reduction-relation.png")
 
+(test (render-reduction-relation
+       (with-unquote-rewriter
+        (let ([once? #f])
+          (λ (l)
+            (if once?
+                l
+                (begin0
+                  (struct-copy lw
+                               l
+                               [e "a: any"]
+                               [unq? #f])
+                  (set! once? #t)))))
+        (reduction-relation
+         lang
+         (--> (a any) 1 "a" (computed-name (format "a: ~a" (term any))))
+         (--> (b any) 2 "b" (computed-name (format "b: ~a" (term any))))
+         (--> (c any) 3 (computed-name (format "c: ~a" (term any)))))))
+      "reduction-relation-with-computed-labels.png")
+
+(let ([R (reduction-relation
+          lang
+          (--> 1 1 "a")
+          (--> 2 2 "b" (computed-name "a"))
+          (--> 3 3 (computed-name "c")))])
+  (test (parameterize ([render-reduction-relation-rules (remq 'b (reduction-relation->rule-names R))])
+          (render-reduction-relation R))
+        "reduction-relation-with-computed-labels-and-hiding.png"))
+
 ;; this test should fail because it gets the order wrong
 ;; for the where/side-conditions
 (define red2
@@ -158,6 +186,20 @@
 
 ;; make sure two metafunctions simultaneously rewritten line up properly
 (test (render-metafunctions S T TL) "metafunctions-multiple.png")
+
+;; make sure that the ellipses don't have commas before them.
+(define-metafunction lang
+  rdups : x ... -> (x ...)
+  [(rdups x_1 x_2 ... x_1 x_3 ...)
+   (rdups x_2 ... x_1 x_3 ...)]
+  [(rdups x_1 x_2 ...)
+   (x_1 x_3 ...)
+   (where (x_3 ...) (rdups x_2 ...))]
+  [(rdups) ()])
+
+(test (render-metafunction rdups) "rdups-delimited.png")
+(parameterize ([delimit-ellipsis-arguments? #f])
+  (test (render-metafunction rdups) "rdups-undelimited.png"))
 
 ;; Non-terminal superscripts
 (test (render-lw lang (to-lw (x_^abcdef x_q^abcdef)))

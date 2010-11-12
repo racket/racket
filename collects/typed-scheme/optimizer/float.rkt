@@ -1,13 +1,13 @@
 #lang scheme/base
 
 (require syntax/parse
-         syntax/id-table racket/dict scheme/flonum
-         (for-template scheme/base scheme/flonum scheme/unsafe/ops)
+         racket/dict racket/flonum
+         (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
-         (types abbrev type-table utils subtype)
+         (types abbrev)
          (optimizer utils fixnum))
 
-(provide float-opt-expr float-expr int-expr float-coerce-expr)
+(provide float-opt-expr float-coerce-expr)
 
 
 (define (mk-float-tbl generic)
@@ -28,19 +28,23 @@
                       #'sqrt #'round #'floor #'ceiling #'truncate)))
 
 (define-syntax-class (float-op tbl)
+  #:commit
   (pattern i:id
            #:when (dict-ref tbl #'i #f)
            #:with unsafe (dict-ref tbl #'i)))
 
 (define-syntax-class float-expr
+  #:commit
   (pattern e:expr
            #:when (subtypeof? #'e -Flonum)
            #:with opt ((optimize) #'e)))
 (define-syntax-class int-expr
+  #:commit
   (pattern e:expr
            #:when (subtypeof? #'e -Integer)
            #:with opt ((optimize) #'e)))
 (define-syntax-class real-expr
+  #:commit
   (pattern e:expr
            #:when (subtypeof? #'e -Real)
            #:with opt ((optimize) #'e)))
@@ -48,6 +52,7 @@
 
 ;; generates coercions to floats
 (define-syntax-class float-coerce-expr
+  #:commit
   (pattern e:float-arg-expr
            #:with opt #'e.opt)
   (pattern e:real-expr
@@ -59,6 +64,7 @@
 ;; note: none of the unary operations have types where non-float arguments
 ;;  can result in float (as opposed to real) results
 (define-syntax-class float-arg-expr
+  #:commit
   ;; we can convert literals right away
   (pattern (quote n)
            #:when (exact-integer? (syntax->datum #'n))
@@ -72,17 +78,18 @@
            #:with opt #'e.opt))
 
 (define-syntax-class float-opt-expr
-  (pattern (~and res (#%plain-app (~var op (float-op unary-float-ops)) f:float-expr))
-           #:when (subtypeof? #'res -Flonum)
+  #:commit
+  (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-expr)
+           #:when (subtypeof? this-syntax -Flonum)
            #:with opt
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
-  (pattern (~and res (#%plain-app (~var op (float-op binary-float-ops))
-                                  f1:float-arg-expr
-                                  f2:float-arg-expr
-                                  fs:float-arg-expr ...))
+  (pattern (#%plain-app (~var op (float-op binary-float-ops))
+                        f1:float-arg-expr
+                        f2:float-arg-expr
+                        fs:float-arg-expr ...)
            ;; if the result is a float, we can coerce integers to floats and optimize
-           #:when (subtypeof? #'res -Flonum)
+           #:when (subtypeof? this-syntax -Flonum)
            #:with opt
            (begin (log-optimization "binary float" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
@@ -108,7 +115,7 @@
            #:with opt
            (begin (log-optimization "int to float" #'op)
                   #'(->fl n.opt)))
-  ;; we can get rid of it altogether if we're giving it an inexact number
+  ;; we can get rid of it altogether if we're giving it a float
   (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-expr)
            #:with opt
            (begin (log-optimization "float to float" #'op)

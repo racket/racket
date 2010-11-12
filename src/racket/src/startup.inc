@@ -764,7 +764,7 @@
 "(eq?(car s) nsr))"
 "(error"
 " 'standard-module-name-resolver"
-" \"cycle in loading at ~e: ~e\""
+" \"cycle in loading at ~.s: ~.s\""
 " filename"
 "(map cdr(reverse(cons s l))))))"
 " l))"

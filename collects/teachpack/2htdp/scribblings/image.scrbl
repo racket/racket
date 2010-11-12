@@ -27,7 +27,7 @@ The image teachpack provides a number of basic image construction functions, alo
 combinators for building more complex images out of existing images. Basic images include
 various polygons, ellipses and circles, and text, as well as bitmaps (typically bitmaps 
 come about via the @onscreen{Insert Image...} menu item in DrRacket).
-Existing images can be rotated, scaled, and overlaid on top of each other.
+Existing images can be rotated, scaled, flipped, and overlaid on top of each other.
 
 @section{Basic Images}
 
@@ -175,18 +175,6 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
                              #f 'modern 'italic 'normal #f)
                   (text/font "not really a link" 18 "blue"
                              #f 'roman 'normal 'normal #t)]
-}
-
-@defform/subs[(bitmap bitmap-spec)
-              ([bitmap-spec rel-string
-                            id])]{
-                                  
-  Loads the bitmap specified by @racket[bitmap-spec]. If @racket[bitmap-spec] is a string, it is treated as a 
-  relative path. If it is an identifier, it is treated like a require spec and used to refer to a file
-  in a collection.
-  
-  @image-examples[(bitmap icons/stop-16x16.png)
-                  (bitmap icons/b-run.png)]
 }
 
 @section{Polygons}
@@ -1019,7 +1007,8 @@ the parts that fit onto @racket[scene].
                           (scale/xy 1 1/2 (flip-vertical (star 40 "solid" "gray"))))]
 }
 
-@defproc[(crop [x real?] [y real?] 
+@defproc[(crop [x (and/c real? (between/c 0 (image-width image)))]
+               [y (and/c real? (between/c 0 (image-height image)))] 
                [width (and/c real? (not/c negative?))]
                [height (and/c real? (not/c negative?))]
                [image image?])
@@ -1027,6 +1016,9 @@ the parts that fit onto @racket[scene].
 
  Crops @racket[image] to the rectangle with the upper left at the point (@racket[x],@racket[y])
  and with @racket[width] and @racket[height]. 
+ 
+ The @racket[x] and @racket[y] arguments must be between 0 and
+ the @racket[width] or @racket[height], respectively.
  
  @image-examples[(crop 0 0 40 40 (circle 40 "solid" "chocolate"))
                  (crop 40 60 40 60 (ellipse 80 120 "solid" "dodgerblue"))
@@ -1043,7 +1035,7 @@ the parts that fit onto @racket[scene].
   with a black, single pixel frame drawn around the 
   bounding box of the image.
   
-  @image-examples[(frame (ellipse 20 20 "outline" "black"))]
+  @image-examples[(frame (ellipse 40 40 "solid" "gray"))]
   
   Generally speaking, this function is useful to 
   debug image constructions, i.e., to see where
@@ -1055,6 +1047,58 @@ the parts that fit onto @racket[scene].
                    (ellipse 20 30 "solid" "slateblue")
                    (ellipse 20 10 "solid" "navy"))]
 }
+
+@section{Bitmaps}
+
+DrRacket's @seclink["images" #:doc '(lib "scribblings/drracket/drracket.scrbl")]{Insert Image ...} 
+menu item allows you to insert images into your program text, and those images are treated 
+as images for this library. 
+
+Unlike all of the other images in this library, those images (and the other images created
+by functions in this section of the documentation)
+are represented as bitmaps, i.e., an array of colors (that can be quite large in some cases).
+This means that scaling and rotating them loses fidelity in the image and is significantly
+more expensive than with the other shapes.
+
+@defform/subs[(bitmap bitmap-spec)
+              ([bitmap-spec rel-string
+                            id])]{
+                                  
+  Loads the bitmap specified by @racket[bitmap-spec]. If @racket[bitmap-spec] is a string, it is treated as a 
+  relative path. If it is an identifier, it is treated like a require spec and used to refer to a file
+  in a collection.
+  
+  @image-examples[(bitmap icons/stop-16x16.png)
+                  (bitmap icons/b-run.png)]
+}
+
+@defproc[(image->color-list [image image?]) (listof color?)]{
+  Returns a list of colors that correspond to the colors in the
+  image, reading from left to right, top to bottom.
+  
+  @image-examples[(image->color-list (rectangle 2 2 "solid" "black"))
+                  (image->color-list
+                   (above (beside (rectangle 1 1 "solid" (make-color 1 1 1))
+                                  (rectangle 1 1 "solid" (make-color 2 2 2)))
+                          (beside (rectangle 1 1 "solid" (make-color 3 3 3))
+                                  (rectangle 1 1 "solid" (make-color 4 4 4)))))]
+  
+}
+
+@defproc[(color-list->bitmap [colors (listof image-color?)] 
+                             [width (and/c real? (not/c negative?))]
+                             [height (and/c real? (not/c negative?))])
+         image?]{
+  Constructs a bitmap from the given @racket[colors], with the given @racket[width] and @racket[height].
+
+  @image-examples[(scale
+                   40
+                   (color-list->bitmap
+                    (list "red" "green" "blue")
+                    3 1))]
+  
+  }
+                             
 
 @section{Image Properties}
 
@@ -1146,11 +1190,14 @@ This section lists predicates for the basic structures provided by the image lib
 @racket['middle],
 @racket["center"],
 @racket['center],
-@racket["baseline"], or
-@racket['baseline].
+@racket["baseline"],
+@racket['baseline],
+@racket["pinhole"], or
+@racket['pinhole].
 
 The baseline of an image is the place where the bottoms any letters line up, not counting descenders, e.g. the tail on ``y'' or ``g'' or ``j''.
 
+Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the image arguments have @seclink["pinholes"]{pinholes}.
 
 }
 
@@ -1163,8 +1210,13 @@ The baseline of an image is the place where the bottoms any letters line up, not
   @racket['right],
   @racket["middle"],
   @racket['middle],
-  @racket["center"], or
-  @racket['center].
+  @racket["center"],
+  @racket['center],
+  @racket["pinhole"], or
+  @racket['pinhole].
+
+  Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the image arguments have @seclink["pinholes"]{pinholes}.
+
 }
 
 @defproc[(angle? [x any/c]) boolean?]{
@@ -1227,13 +1279,97 @@ The baseline of an image is the place where the bottoms any letters line up, not
 
 @section{Equality Testing of Images}
 
-Two images are equal if they draw exactly the same way, at their current size
-(not neccessarily at all sizes).
+Two images are @racket[equal?] if they draw exactly the same way at their current size
+(not neccessarily at all sizes) and, if there are pinholes, the pinholes are
+in the same place.
+
+@section[#:tag "pinholes"]{Pinholes}
+
+A pinhole is an optional property of an image that identifies a point somewhere
+in the image. The pinhole can then be used to facilitate overlaying images by
+lining them up on the their pinholes. 
+
+When an image has a pinhole, the pinhole
+is drawn with crosshairs on the image.
+The crosshairs are drawn with a two one pixel wide black lines (one horizontal and one vertical)
+and two one pixel wide white lines,
+where the black lines is drawn .5 pixels to the left and above the pinhole, and the
+white lines are drawn .5 pixels to the right and below the pinhole. 
+Accordingly, when the pixel is on an integral coordinate, then black and white lines all 
+take up a single pixel and in the center of their intersections is the actual pinholes.
+See @secref["nitty-gritty"] for more details about pixels.
+
+When images are @racket[overlay]'d, @racket[underlay]'d (or the variants of those functions),
+placed @racket[beside], or @racket[above] each other, 
+the pinhole of the resulting image is the pinhole of the first image argument passed to the combining
+operation. When images are combined with @racket[place-image] (or the variants of @racket[place-image]), 
+then the scene argument's pinhole is preserved.
+
+@defproc[(center-pinhole [image image?]) image?]{
+  Creates a pinhole in @racket[image] at its center.
+  @image-examples[(center-pinhole (rectangle 40 20 "solid" "red"))
+                  (rotate 30 (center-pinhole (rectangle 40 20 "solid" "orange")))]
+}
+@defproc[(put-pinhole [x integer?] [y integer?] [image image?]) image?]{
+  Creates a pinhole in @racket[image] at the point (@racket[x],@racket[y]).
+  @image-examples[(put-pinhole 2 18 (rectangle 40 20 "solid" "forestgreen"))]
+}
+@defproc[(pinhole-x [image image?]) (or/c integer? #f)]{
+  Returns the x coordinate of @racket[image]'s pinhole.
+  @image-examples[(pinhole-x (center-pinhole (rectangle 10 10 "solid" "red")))]
+}
+@defproc[(pinhole-y [image image?]) (or/c integer? #f)]{
+  Returns the y coordinate of @racket[image]'s pinhole.
+  @image-examples[(pinhole-y (center-pinhole (rectangle 10 10 "solid" "red")))]
+}
+@defproc[(clear-pinhole [image image?]) image?]{
+  Removes a pinhole from @racket[image] (if the image has a pinhole).                                                  
+}
+
+@defproc[(overlay/pinhole [i1 image?] [i2 image?] [is image?] ...) image?]{
+  
+  Overlays all of the image arguments on their pinholes. If any of the
+  arguments do not have pinholes, then the center of the image is used instead.
+  
+  @image-examples[(overlay/pinhole
+                   (put-pinhole 25 10 (ellipse 100 50 "solid" "red"))
+                   (put-pinhole 75 40 (ellipse 100 50 "solid" "blue")))
+                  (let ([petal (put-pinhole 
+                                20 20
+                                (ellipse 100 40 "solid" "purple"))])
+                    (clear-pinhole
+                     (overlay/pinhole
+                      (circle 30 "solid" "yellow")
+                      (rotate (* 60 0) petal)
+                      (rotate (* 60 1) petal)
+                      (rotate (* 60 2) petal)
+                      (rotate (* 60 3) petal)
+                      (rotate (* 60 4) petal)
+                      (rotate (* 60 5) petal))))]
+}
+
+@defproc[(underlay/pinhole [i1 image?] [i2 image?] [is image?] ...) image?]{
+  
+  Underlays all of the image arguments on their pinholes. If any of the
+  arguments do not have pinholes, then the center of the image is used instead.
+  
+  @image-examples[(underlay/pinhole
+                   (put-pinhole 25 10 (ellipse 100 50 "solid" "red"))
+                   (put-pinhole 75 40 (ellipse 100 50 "solid" "blue")))
+                  (let* ([t (triangle 40 "solid" "orange")]
+                         [w (image-width t)]
+                         [h (image-height t)])
+                    (clear-pinhole
+                     (overlay/pinhole
+                      (put-pinhole (/ w 2) 0 t)
+                      (put-pinhole w h t)
+                      (put-pinhole 0 h t))))]
+}
 
 @section[#:tag "nitty-gritty"]{The nitty gritty of pixels, pens, and lines}
 
 The image library treats coordinates as if they are in the upper-left corner 
-of each pixel, and infinitesimally small.
+of each pixel, and infinitesimally small (unlike pixels which have some area).
 
 Thus, when drawing a solid @racket[square] of whose side-length is 10, the image library
 colors in all of the pixels enclosed by the @racket[square] starting at the upper
@@ -1253,20 +1389,61 @@ This means that the outline slightly exceeds the bounding box of the shape.
 Specifically, the upper and left-hand lines around the square are within
 the bounding box, but the lower and right-hand lines are just outside.
 
-The special case of adding 0.5 to each coordinate when drawing the square
-applies to all polygon-based shapes, but does not apply when a @racket[pen]
-is passed as the last argument to create the shape.
-In that case, not adjustment of the pixels is performed and using a one
-pixel wide pen draws the pixels above and below the line, but each with
-a color that is half of the intensity of the given color. Using a
-@racket[pen] with with two, colors the pixels above and below the line
-with the full intensity. 
+This kind of rectangle is useful when putting rectangles next to each other
+and avoiding extra thick lines on the interior. For example, imagine
+building a grid like this:
 
+@image-examples[(let* ([s (rectangle 20 20 "outline" "black")]
+                       [r (beside s s s s s s)])
+                  (above r r r r r r))]
+
+The reason interior lines in this grid are the same thickness as the lines around the edge
+is because the rectangles overlap with each other. 
+That is, the upper-left rectangle's right edge is right on top of the
+next rectangle's left edge.
+
+The special case of adding 0.5 to each coordinate when drawing the square
+applies to all outline polygon-based shapes that just pass color, 
+but does not apply when a @racket[pen]
+is passed as the last argument to create the shape.
+For example, if using a pen of thickness 2 to draw a rectangle, we get a
+shape that has a border drawing the row of pixels just inside and just outside
+the shape. One might imagine that a pen of thickness 1 would draw an outline around the shape with
+a 1 pixel thick line, but this would require 1/2 of each pixel to be illuminated, something
+that is not possible. Instead, the same pixels are lit up as with the 2 pixel wide pen, but
+with only 1/2 of the intensity of the color. So a 1 pixel wide black @racket[pen] object draws
+a 2 pixel wide outline, but in gray.
+
+When combining pens and cropping, we can make a rectangle that has a line that is one pixel
+wide, but where the line is drawn entirely within the rectangle
+
+@image-examples[(crop
+                 0 0 20 20
+                 (rectangle
+                  20 20 "outline" 
+                  (make-pen "black" 2 "solid" "round" "round")))]
+
+and we can use that to build a grid now too, but this grid has doubled lines on the
+interior.
+
+@image-examples[(let* ([s (crop
+                           0 0 20 20
+                           (rectangle
+                            20 20 "outline" 
+                            (make-pen "black" 2 "solid" "round" "round")))]
+                       [r (beside s s s s s s)])
+                  (above r r r r r r))]
+
+While this kind of rectangle is not useful for building grids, it 
+is important to be able to build rectangles whose drawing does not
+exceed its bounding box. Specifically, this kind of drawing is used
+by @racket[frame] and @racket[empty-scene] so that the extra drawn pixels
+are not lost if the image is later clipped to its bounding box.
 
 @;-----------------------------------------------------------------------------
 @section{Exporting Images to Disk}
 
-In order to use an image as an input to another program (Photoshop, e.g., or 
+In order to use an image as an input to another program (e.g., Photoshop or 
 a web browser), it is necessary to represent it in a format that these programs
 can understand. The @racket[save-image] function provides this functionality, 
 writing an image to disk using the @tt{PNG} format. Since this
@@ -1274,8 +1451,21 @@ format represents an image using a set of pixel values, an image written to disk
 generally contains less information than the image that was written, and cannot be scaled
 or manipulated as cleanly (by any image program).
 
-@defproc[(save-image [image image?] [filename path-string?]) boolean?]{
- writes an image to the path specified by @racket[filename], using the
- @tt{PNG} format.}
+@defproc[(save-image [image image?]
+                     [filename path-string?]
+                     [width 
+                      (and/c real? (not/c negative?))
+                      (image-width image)]
+                     [height 
+                      (and/c real? (not/c negative?))
+                      (image-height image)])
+         boolean?]{
+ Writes an image to the path specified by @racket[filename], using the
+ @tt{PNG} format.
+ 
+ The last two arguments are optional. If present, they determine the width
+ and height of the save image file. If absent, the width and height of the image is used.
+ 
+ }
 
 

@@ -118,6 +118,7 @@
 (drr:set-default 'drracket:module-language-first-line-special? #t boolean?)
 
 (drr:set-default 'drracket:defns-popup-sort-by-name? #f boolean?)
+(drr:set-default 'drracket:show-line-numbers? #f boolean?)
 
 (drr:set-default 'drracket:toolbar-state 
                          '(#f . top)
@@ -299,14 +300,15 @@
 (preferences:add-general-checkbox-panel)
 
 (let ([make-check-box
-       (λ (pref-sym string parent)
+       (λ (pref-sym string parent [extra-functionality #f])
          (let ([q (make-object check-box%
                     string
                     parent
                     (λ (checkbox evt)
-                      (preferences:set 
-                       pref-sym 
-                       (send checkbox get-value))))])
+                      (define value (send checkbox get-value))
+                      (preferences:set pref-sym value)
+                      (when extra-functionality
+                        (extra-functionality value))))])
            (preferences:add-callback pref-sym (λ (p v) (send q set-value v)))
            (send q set-value (preferences:get pref-sym))))])
   (preferences:add-to-general-checkbox-panel
@@ -314,6 +316,18 @@
      (make-check-box 'drracket:open-in-tabs 
                      (string-constant open-files-in-tabs)
                      editor-panel)
+     (make-check-box 'drracket:show-line-numbers?
+                     (string-constant show-line-numbers)
+                     editor-panel
+                     (lambda (value)
+                       (define (drracket:frame? frame)
+                         (and (is-a? frame top-level-window<%>)
+                              (is-a? frame drracket:unit:frame%)))
+                       ;; is it a hack to use `get-top-level-windows' ?
+                       (define frames (filter drracket:frame? (get-top-level-windows)))
+                       (when (not (null? frames))
+                         (send (car frames) show-line-numbers! value))))
+
      (make-check-box 'drracket:show-interactions-on-execute 
                      (string-constant show-interactions-on-execute)
                      editor-panel)
@@ -325,7 +339,7 @@
      (make-check-box 'drracket:defs/ints-horizontal
                      (string-constant interactions-beside-definitions)
                      editor-panel)
-     
+
      (make-check-box 'drracket:module-language-first-line-special?
                      (string-constant ml-always-show-#lang-line)
                      editor-panel)))
@@ -668,6 +682,7 @@
       (send (send frame get-interactions-canvas) focus))
     (send frame show #t)))
 
+;; FIXME: get this from racket/list ?
 (define (remove-duplicates files)
   (let loop ([files files])
     (cond

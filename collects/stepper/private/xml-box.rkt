@@ -15,7 +15,7 @@
       (rewrite-xml-box stx rewrite-other))
     
     (define (rewrite-xml-error)
-      (error 'rewrite-xml-box "unexpected syntax in expansion of xml box: ~e" stx))
+      (error 'rewrite-xml-box "unexpected syntax in expansion of xml box: ~.s" stx))
 
     (case (stepper-syntax-property stx 'stepper-hint) 
       [(from-scheme-box from-splice-box) (rewrite-other stx)]
@@ -56,9 +56,6 @@
         'from-xml-box)]
       
       [else
-       (error 'rewrite-xml-box "unexpected stepper-hint \"~v\" on syntax from xml box: ~e" 
+       (error 'rewrite-xml-box "unexpected stepper-hint ~e on syntax from xml box: ~.s"
               (stepper-syntax-property stx 'stepper-hint)
               stx)])))
-
-
-

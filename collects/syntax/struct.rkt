@@ -166,13 +166,17 @@
   (define build-struct-expand-info
     (lambda (name-stx fields omit-sel? omit-set? base-name base-getters base-setters 
                       #:omit-constructor? [no-ctr? #f]
-                      #:constructor-name [ctr-name #f])
+                      #:constructor-name [ctr-name #f]
+                      #:omit-struct-type? [no-type? #f])
       (let* ([names (build-struct-names name-stx fields omit-sel? omit-set?
                                         #:constructor-name ctr-name)]
              [names (if no-ctr?
                         (list* (car names)
                                #f
                                (cddr names))
+                        names)]
+             [names (if no-type?
+                        (cons #f (cdr names))
                         names)])
 	(build-struct-expand-info* names name-stx fields omit-sel? omit-set? base-name base-getters base-setters))))
 

@@ -53,9 +53,21 @@
                                        final-arg)])
                  body ...))))]
       [(define/chk (fn-name args ...) body ...)
-       (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)])
+       (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)]
+                     [(arg-ids ...)
+                      (map (λ (arg)
+                             (syntax-case arg ()
+                               [x 
+                                (identifier? #'x)
+                                #'x]
+                               [(x y)
+                                (identifier? #'x)
+                                #'x]
+                               [_
+                                (raise-syntax-error 'define/chk "unknown argument spec" stx arg)]))
+                           (syntax->list #'(args ...)))])
          #'(define (fn-name args ...)
-             (let ([args (check/normalize 'fn-name 'args args i)] ...)
+             (let ([arg-ids (check/normalize 'fn-name 'arg-ids arg-ids i)] ...)
                body ...)))])))
 
 (define (map/i f l)
@@ -182,6 +194,9 @@
           (if (send the-color-database find-color color-str)
               color-str
               "black"))])]
+    [(color-list)
+     (check-arg fn-name (and (list? arg) (andmap image-color? arg)) 'color-list i arg)
+     arg]
     [(string)
      (check-arg fn-name (string? arg) 'string i arg)
      arg]
@@ -239,15 +254,18 @@
      (if (string? arg)
          (string->symbol arg)
          arg)]
+    [(filename)
+     (check-arg fn-name (path-string? arg) 'path-string i arg)
+     arg]
     [else
      (error 'check "the function ~a has an argument with an unknown name: ~s"
             fn-name
             argname)]))
 
 (define (y-place? arg)
-  (member arg '("top" top "bottom" bottom "middle" middle "center" center "baseline" baseline)))
+  (member arg '("top" top "bottom" bottom "middle" middle "center" center "baseline" baseline "pinhole" pinhole)))
 (define (x-place? arg)
-  (member arg '("left" left "right" right "middle" middle "center" center)))
+  (member arg '("left" left "right" right "middle" middle "center" center "pinhole" pinhole)))
 (define (mode? arg)
   (member arg '(solid outline "solid" "outline")))
 (define (angle? arg)

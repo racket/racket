@@ -47,7 +47,9 @@ static Scheme_Object *eqv_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *equalish_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *impersonator_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_of (int argc, Scheme_Object *argv[]);
+static Scheme_Object *impersonator_of (int argc, Scheme_Object *argv[]);
 
 typedef struct Equal_Info {
   long depth; /* always odd, so it looks like a fixnum */
@@ -55,12 +57,13 @@ typedef struct Equal_Info {
   Scheme_Hash_Table *ht;
   Scheme_Object *recur;
   Scheme_Object *next, *next_next;
-  int for_chaperone;
+  int for_chaperone; /* 2 => for impersonator */
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
 static int vector_equal (Scheme_Object *vec1, Scheme_Object *vec2, Equal_Info *eql);
 static int struct_equal (Scheme_Object *s1, Scheme_Object *s2, Equal_Info *eql);
+static Scheme_Object *apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj);
 
 void scheme_init_true_false(void)
 {
@@ -106,8 +109,15 @@ void scheme_init_bool (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("chaperone?", p, env);
 
+  p = scheme_make_immed_prim(impersonator_p, "impersonator?", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("impersonator?", p, env);
+
   scheme_add_global_constant("chaperone-of?",
                              scheme_make_prim_w_arity(chaperone_of, "chaperone-of?", 2, 2),
+                             env);
+  scheme_add_global_constant("impersonator-of?",
+                             scheme_make_prim_w_arity(impersonator_of, "impersonator-of?", 2, 2),
                              env);
 }
 
@@ -370,7 +380,10 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 
   if (scheme_eqv(obj1, obj2))
     return 1;
-  else if (eql->for_chaperone && SCHEME_CHAPERONEP(obj1)) {
+  else if (eql->for_chaperone 
+           && SCHEME_CHAPERONEP(obj1)
+           && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
+               || (eql->for_chaperone > 1))) {
     obj1 = ((Scheme_Chaperone *)obj1)->prev;
     goto top;
   } else if (NOT_SAME_TYPE(SCHEME_TYPE(obj1), SCHEME_TYPE(obj2))) {
@@ -401,7 +414,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       return 0;
   } else if (SCHEME_MUTABLE_PAIRP(obj1)) {
 #   include "mzeqchk.inc"
-    if (eql->for_chaperone)
+    if (eql->for_chaperone == 1)
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
@@ -411,10 +424,11 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       goto top;
     } else
       return 0;
-  } else if (SCHEME_VECTORP(obj1)) {
+  } else if (SCHEME_VECTORP(obj1)
+             || SCHEME_FXVECTORP(obj1)) {
 #   include "mzeqchk.inc"
-    if (eql->for_chaperone && (!SCHEME_IMMUTABLEP(obj1)
-                               || !SCHEME_IMMUTABLEP(obj2)))
+    if ((eql->for_chaperone == 1) && (!SCHEME_IMMUTABLEP(obj1)
+                                      || !SCHEME_IMMUTABLEP(obj2)))
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
@@ -435,8 +449,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
   } else if (SCHEME_BYTE_STRINGP(obj1)
 	     || SCHEME_GENERAL_PATHP(obj1)) {
     int l1, l2;
-    if (eql->for_chaperone && (!SCHEME_IMMUTABLEP(obj1)
-                               || !SCHEME_IMMUTABLEP(obj2)))
+    if ((eql->for_chaperone == 1) && (!SCHEME_IMMUTABLEP(obj1)
+                                      || !SCHEME_IMMUTABLEP(obj2)))
       return 0;
     l1 = SCHEME_BYTE_STRTAG_VAL(obj1);
     l2 = SCHEME_BYTE_STRTAG_VAL(obj2);
@@ -444,8 +458,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 	    && !memcmp(SCHEME_BYTE_STR_VAL(obj1), SCHEME_BYTE_STR_VAL(obj2), l1));
   } else if (SCHEME_CHAR_STRINGP(obj1)) {
     int l1, l2;
-    if (eql->for_chaperone && (!SCHEME_IMMUTABLEP(obj1)
-                               || !SCHEME_IMMUTABLEP(obj2)))
+    if ((eql->for_chaperone == 1) && (!SCHEME_IMMUTABLEP(obj1)
+                                      || !SCHEME_IMMUTABLEP(obj2)))
       return 0;
     l1 = SCHEME_CHAR_STRTAG_VAL(obj1);
     l2 = SCHEME_CHAR_STRTAG_VAL(obj2);
@@ -458,76 +472,97 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     st1 = SCHEME_STRUCT_TYPE(obj1);
     st2 = SCHEME_STRUCT_TYPE(obj2);
 
-    if (eql->for_chaperone) {
+    if (eql->for_chaperone == 1)
       procs1 = NULL;
-    } else {
-      procs1 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st1);
-      if (procs1 && (st1 != st2)) {
-        procs2 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st2);
-        if (!procs2
-            || !SAME_OBJ(SCHEME_VEC_ELS(procs1)[0], SCHEME_VEC_ELS(procs2)[0]))
-          procs1 = NULL;
-      }
+    else
+      procs1 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st1);
+    if (procs1)
+      procs1 = apply_impersonator_of(eql->for_chaperone, procs1, obj1);
+    if (eql->for_chaperone)
+      procs2 = NULL;
+    else {
+      procs2 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st2);
+      if (procs2)
+        procs2 = apply_impersonator_of(eql->for_chaperone, procs2, obj2);
     }
 
-    if (procs1) {
-      /* Has an equality property: */
-      Scheme_Object *a[3], *recur;
-      Equal_Info *eql2;
+    if (procs1 || procs2) {
+      /* impersonator-of property trumps other forms of checking */
+      if (procs1) obj1 = procs1;
+      if (procs2) obj2 = procs2;
+      goto top;
+    } else {
+      if (eql->for_chaperone) {
+        procs1 = NULL;
+      } else {
+        procs1 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st1);
+        if (procs1 && (st1 != st2)) {
+          procs2 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st2);
+          if (!procs2
+              || !SAME_OBJ(SCHEME_VEC_ELS(procs1)[0], SCHEME_VEC_ELS(procs2)[0]))
+            procs1 = NULL;
+        }
+      }
+
+      if (procs1) {
+        /* Has an equality property: */
+        Scheme_Object *a[3], *recur;
+        Equal_Info *eql2;
 #     include "mzeqchk.inc"
 
-      if (union_check(obj1, obj2, eql))
-        return 1;
-
-      /* Create/cache closure to use for recursive equality checks: */
-      if (eql->recur) {
-        recur = eql->recur;
-        eql2 = (Equal_Info *)SCHEME_PRIM_CLOSURE_ELS(recur)[0];
-      } else {
-        eql2 = (Equal_Info *)scheme_malloc(sizeof(Equal_Info));
-        a[0] = (Scheme_Object *)eql2;
-        recur = scheme_make_prim_closure_w_arity(equal_recur,
-                                                 1, a,
-                                                 "equal?/recur",
-                                                 2, 2);
-        eql->recur = recur;
-      }
-      memcpy(eql2, eql, sizeof(Equal_Info));
-
-      a[0] = obj1;
-      a[1] = obj2;
-      a[2] = recur;
-
-      procs1 = SCHEME_VEC_ELS(procs1)[1];
-
-      recur = _scheme_apply(procs1, 3, a);
-
-      memcpy(eql, eql2, sizeof(Equal_Info));
-
-      return SCHEME_TRUEP(recur);
-    } else if (st1 != st2) {
-      return 0;
-    } else if (eql->for_chaperone
-               && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
-      return 0;
-    } else {
-      /* Same types, but doesn't have an equality property
-         (or checking for chaperone), so check transparency: */
-      Scheme_Object *insp;
-      insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
-      if (scheme_inspector_sees_part(obj1, insp, -2)
-	  && scheme_inspector_sees_part(obj2, insp, -2)) {
-#       include "mzeqchk.inc"
         if (union_check(obj1, obj2, eql))
           return 1;
-	return struct_equal(obj1, obj2, eql);
-      } else
-	return 0;
+
+        /* Create/cache closure to use for recursive equality checks: */
+        if (eql->recur) {
+          recur = eql->recur;
+          eql2 = (Equal_Info *)SCHEME_PRIM_CLOSURE_ELS(recur)[0];
+        } else {
+          eql2 = (Equal_Info *)scheme_malloc(sizeof(Equal_Info));
+          a[0] = (Scheme_Object *)eql2;
+          recur = scheme_make_prim_closure_w_arity(equal_recur,
+                                                   1, a,
+                                                   "equal?/recur",
+                                                   2, 2);
+          eql->recur = recur;
+        }
+        memcpy(eql2, eql, sizeof(Equal_Info));
+
+        a[0] = obj1;
+        a[1] = obj2;
+        a[2] = recur;
+
+        procs1 = SCHEME_VEC_ELS(procs1)[1];
+
+        recur = _scheme_apply(procs1, 3, a);
+
+        memcpy(eql, eql2, sizeof(Equal_Info));
+
+        return SCHEME_TRUEP(recur);
+      } else if (st1 != st2) {
+        return 0;
+      } else if ((eql->for_chaperone == 1)
+                 && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
+        return 0;
+      } else {
+        /* Same types, but doesn't have an equality property
+           (or checking for chaperone), so check transparency: */
+        Scheme_Object *insp;
+        insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+        if (scheme_inspector_sees_part(obj1, insp, -2)
+            && scheme_inspector_sees_part(obj2, insp, -2)) {
+#       include "mzeqchk.inc"
+          if (union_check(obj1, obj2, eql))
+            return 1;
+          return struct_equal(obj1, obj2, eql);
+        } else
+          return 0;
+      }
     }
   } else if (SCHEME_BOXP(obj1)) {
     SCHEME_USE_FUEL(1);
-    if (eql->for_chaperone && (!SCHEME_IMMUTABLEP(obj1)
-                               || !SCHEME_IMMUTABLEP(obj2)))
+    if ((eql->for_chaperone == 1) && (!SCHEME_IMMUTABLEP(obj1)
+                                      || !SCHEME_IMMUTABLEP(obj2)))
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
@@ -536,7 +571,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     goto top;
   } else if (SCHEME_HASHTP(obj1)) {
 #   include "mzeqchk.inc"
-    if (eql->for_chaperone) 
+    if (eql->for_chaperone == 1) 
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
@@ -548,7 +583,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     return scheme_hash_tree_equal_rec((Scheme_Hash_Tree *)obj1, (Scheme_Hash_Tree *)obj2, eql);
   } else if (SCHEME_BUCKTP(obj1)) {
 #   include "mzeqchk.inc"
-    if (eql->for_chaperone) 
+    if (eql->for_chaperone == 1) 
       return 0;
     if (union_check(obj1, obj2, eql))
       return 1;
@@ -627,12 +662,25 @@ Scheme_Object * scheme_make_false (void)
 
 static Scheme_Object *chaperone_p(int argc, Scheme_Object *argv[])
 {
+  return ((SCHEME_CHAPERONEP(argv[0]) 
+           && !(SCHEME_CHAPERONE_FLAGS(((Scheme_Chaperone *)argv[0])) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+          ? scheme_true 
+          : scheme_false);
+}
+
+static Scheme_Object *impersonator_p(int argc, Scheme_Object *argv[])
+{
   return (SCHEME_CHAPERONEP(argv[0]) ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *chaperone_of(int argc, Scheme_Object *argv[])
 {
   return (scheme_chaperone_of(argv[0], argv[1]) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *impersonator_of(int argc, Scheme_Object *argv[])
+{
+  return (scheme_impersonator_of(argv[0], argv[1]) ? scheme_true : scheme_false);
 }
 
 int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2)
@@ -648,4 +696,47 @@ int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2)
   eql.for_chaperone = 1;
 
   return is_equal(obj1, obj2, &eql);
+}
+
+int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2)
+{
+  Equal_Info eql;
+
+  eql.depth = 1;
+  eql.car_depth = 1;
+  eql.ht = NULL;
+  eql.recur = NULL;
+  eql.next = NULL;
+  eql.next_next = NULL;
+  eql.for_chaperone = 2;
+
+  return is_equal(obj1, obj2, &eql);
+}
+
+static Scheme_Object *apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj)
+{
+  Scheme_Object *a[1], *v, *oprocs;
+
+  a[0] = obj;
+  v = _scheme_apply(SCHEME_CDR(procs), 1, a);
+  
+  if (SCHEME_FALSEP(v))
+    return NULL;
+  
+  oprocs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);  
+  if (!oprocs || !SAME_OBJ(SCHEME_CAR(oprocs), SCHEME_CAR(procs)))
+    scheme_arg_mismatch((for_chaperone ? "impersonator-of?" : "equal?"),
+                        "impersonator-of property procedure returned a value with a different prop:impersonator-of source: ",
+                        v);
+
+  procs = scheme_struct_type_property_ref(scheme_equal_property, obj);
+  oprocs = scheme_struct_type_property_ref(scheme_equal_property, v);  
+  if (procs || oprocs)
+    if (!procs || !oprocs || !SAME_OBJ(SCHEME_VEC_ELS(oprocs)[0], 
+                                       SCHEME_VEC_ELS(procs)[0]))
+      scheme_arg_mismatch((for_chaperone ? "impersonator-of?" : "equal?"),
+                          "impersonator-of property procedure returned a value with a different prop:equal+hash source: ",
+                          v);
+
+  return v;
 }

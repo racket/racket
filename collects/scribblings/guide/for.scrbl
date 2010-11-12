@@ -214,7 +214,7 @@ form normally suffices with @racket[for], a @racket[when] expression
 form in a @racket[for/list] would cause the result list to contain
 @|void-const|s instead of omitting list elements.
 
-The @racket[for*/list] is like @racket[for*], nesting multiple
+The @racket[for*/list] form is like @racket[for*], nesting multiple
 iterations:
 
 @interaction[
@@ -228,6 +228,39 @@ A @racket[for*/list] form is not quite the same thing as nested
 list of lists, instead of one flattened list. Much like
 @racket[#:when], then, the nesting of @racket[for*/list] is more
 useful than the nesting of @racket[for*].
+
+@section{@racket[for/vector] and @racket[for*/vector]}
+
+The @racket[for/vector] form can be used with the same syntax as the
+@racket[for/list] form, but the evaluated @racket[_body]s go into a
+newly-constructed vector instead of a list:
+
+@interaction[
+(for/vector ([i (in-naturals 1)]
+             [chapter '("Intro" "Details" "Conclusion")])
+  (string-append (number->string i) ". " chapter))
+]
+
+The @racket[for*/vector] form behaves similarly, but the iterations are
+nested as in @racket[for*].
+
+The @racket[for/vector] and @racket[for*/vector] forms also allow the
+length of the vector to be constructed to be supplied in advance.  The
+resulting iteration can be performed more efficiently than plain
+@racket[for/vector] or @racket[for*/vector]:
+
+@interaction[
+(let ((chapters '("Intro" "Details" "Conclusion")))
+  (for/vector #:length (length chapters) ([i (in-naturals 1)]
+                                          [chapter chapters])
+    (string-append (number->string i) ". " chapter)))
+]
+
+If a length is provided, the iteration stops when the vector is filled
+or the requested iterations are complete, whichever comes first.  If
+the provided length exceeds the requested number of iterations, then
+the remaining slots in the vector are initialized to the default
+argument of @racket[make-vector].
 
 @section{@racket[for/and] and @racket[for/or]}
 

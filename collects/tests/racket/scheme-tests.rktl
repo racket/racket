@@ -9,4 +9,5 @@
 (load-in-sandbox "dict.rktl")
 (load-in-sandbox "contract-test.rktl")
 (load-in-sandbox "fixnum.rktl")
+(load-in-sandbox "flonum.rktl")
 

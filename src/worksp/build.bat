@@ -8,6 +8,15 @@ cd gc2
 ..\..\..\racketcgc -cu make.rkt
 cd ..
 
+..\..\racket -cu ..\get-libs.rkt core ..\racket  ..\..\lib
+..\..\racket -cu ..\get-libs.rkt gui  ..\gracket ..\..\lib
+
+cd mzstart
+devenv mzstart.sln /Build Release
+cd ..\mrstart
+devenv mrstart.sln /Build Release
+cd ..
+
 cd mzcom
 devenv mzcom.sln /Build Release
 cd ..\libmysterx
@@ -26,12 +35,6 @@ cd mzcom
 devenv mzcom.sln /Build 3m
 cd ..\libmysterx
 devenv libmysterx.sln /Build 3m
-cd ..
-
-cd mzstart
-devenv mzstart.sln /Build Release
-cd ..\mrstart
-devenv mrstart.sln /Build Release
 cd ..
 
 ..\..\racket -l setup -N "raco setup"

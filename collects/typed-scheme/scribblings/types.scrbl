@@ -193,9 +193,9 @@ The second definition
 (struct: (a) Some ([v : a]))
 ]
 
-creates a parameterized type, @racket[Just], which is a structure with
+creates a parameterized type, @racket[Some], which is a structure with
 one element, whose type is that of the type argument to
-@racket[Just].  Here the type parameters (only one, @racket[a], in
+@racket[Some].  Here the type parameters (only one, @racket[a], in
 this case) are written before the type name, and can be referred to in
 the types of the fields.
 

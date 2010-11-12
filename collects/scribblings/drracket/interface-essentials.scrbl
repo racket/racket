@@ -513,7 +513,7 @@ graphical elements as expressions within a program. Plug-in tools can
 extend the available graphical syntax, but this section describes some
 of the more commonly used elements.
 
-@subsection{Images}
+@subsection[#:tag "images"]{Images}
 
 DrRacket's @menuitem["Insert" "Insert Image..."] menu item lets you
 select an image file from disk (in various formats such as GIF, PNG,

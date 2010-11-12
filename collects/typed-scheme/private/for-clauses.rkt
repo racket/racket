@@ -9,13 +9,13 @@
 
 (define-splicing-syntax-class for-clause
     ;; single-valued seq-expr
-    (pattern (~and c (var:annotated-name seq-expr:expr))
+    (pattern (~and c (var:optionally-annotated-name seq-expr:expr))
              #:with (expand ...) (list (syntax/loc
                                            #'c
                                          (var.ann-name seq-expr))))
     ;; multi-valued seq-expr
     ;; currently disabled because it triggers an internal error in the typechecker
-    #;(pattern (~and c (((v:annotated-name) ...) seq-expr:expr))
+    #;(pattern (~and c (((v:optionally-annotated-name) ...) seq-expr:expr))
              #:with (expand ...) (list (syntax/loc
                                            #'c
                                          ((v.ann-name ...) seq-expr))))
@@ -26,14 +26,14 @@
 ;; intersperses "#:when #t" clauses to emulate the for* variants' semantics
 (define-splicing-syntax-class for*-clause
   ;; single-valued seq-expr
-    (pattern (~and c (var:annotated-name seq-expr:expr))
+    (pattern (~and c (var:optionally-annotated-name seq-expr:expr))
              #:with (expand ...) (list (syntax/loc
                                            #'c
                                          (var.ann-name seq-expr))
                                        #'#:when #'#t))
     ;; multi-valued seq-expr
     ;; currently disabled because it triggers an internal error in the typechecker
-    #;(pattern (~and c (((v:annotated-name) ...) seq-expr:expr))
+    #;(pattern (~and c (((v:optionally-annotated-name) ...) seq-expr:expr))
              #:with (expand ...) (list (quasisyntax/loc
                                            #'c
                                          ((v.ann-name ...) seq-expr))

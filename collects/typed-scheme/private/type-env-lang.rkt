@@ -21,7 +21,7 @@
             ;(define-syntax provider (lambda (stx) #'(begin (provide nm) ...)))
             ;(provide provider)            
             (begin-for-syntax 
-              ;(printf "running base-types~n")
+              ;(printf "running base-types\n")
               (initialize-type-name-env
                (list (list #'nm ty) ...))))))]
     [(mb . rest)

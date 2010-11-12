@@ -24,8 +24,13 @@ A stateless servlet has the following process performed on it automatically:
 
 This process allows the continuations captured by your servlet to be serialized.
 This means they may be stored on the client's browser or the server's disk.
-Thus, your servlet has no cost to the server other than execution. This is
+
+This means your servlet has no cost to the server other than execution. This is
 very attractive if you've used Racket servlets and had memory problems.
+
+This means your server can restart in the middle of a long running Web interaction
+without the URLs that have been shared with the client expiring.  This is
+very attractive if you've used Racket servlets and had session timeout problems.
 
 This process is defined on all of Racket and occurs after macro-expansion,
 so you are free to use all interesting features of Racket. However, there
@@ -75,7 +80,9 @@ be taking huge risks. You will be assuming that the serialized continuation
 is invoked on the same server before the server is restarted or
 the memory is garbage collected.
 
-This process is derived from the ICFP papers
-@emph{@link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/pcmkf-cont-from-gen-stack-insp/"]{Continuations from Generalized Stack Inspection}} by Pettyjohn et al. in 2005 and 
-@emph{Automatically RESTful Web Applications, Or Marking Modular Serializable Continuations} by Jay McCarthy in 2009.
+This process is derived from the papers
+@emph{@link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/pcmkf-cont-from-gen-stack-insp/"]{Continuations from Generalized Stack Inspection}} by Pettyjohn et al. in 2005, 
+@emph{@link["http://faculty.cs.byu.edu/~jay/static/icfp065-mccarthy.pdf"]{Automatically RESTful Web Applications, Or Marking Modular Serializable Continuations}} by Jay McCarthy in 2009,
+and
+@emph{@link["http://faculty.cs.byu.edu/~jay/static/oopsla026-mccarthy.pdf"]{The Two-State Solution: Native and Serializable Continuations Accord}} by Jay McCarthy in 2010,
 We thank Greg Pettyjohn for his initial implementation of this algorithm.

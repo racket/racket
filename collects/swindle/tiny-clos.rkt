@@ -438,7 +438,8 @@
                            ;;   (%class-getters-n-setters class))
                            (%class-getters-n-setters class))
                      (raise* make-exn:fail:contract
-                             "slot-ref: no slot `~e' in ~e" slot-name class)))))
+                             "slot-ref: no slot `~.s' in ~.s"
+                             slot-name class)))))
 
 ;;; These are for optimizations - works only for single inheritance!
 (define (%slot-getter class slot-name)
@@ -560,7 +561,7 @@
     (cond [(integer? a) (sub1 a)]
           [(arity-at-least? a)
            (make-arity-at-least (sub1 (arity-at-least-value a)))]
-          [else (error 'method-arity "the procedure in ~e has bad arity ~e"
+          [else (error 'method-arity "the procedure in ~.s has bad arity ~e"
                        m a)])))
 
 ;;; These versions will be optimized later.
@@ -784,7 +785,7 @@
   (make-setter-locked! (lookup-slot-info <method> slot values) #t
     (lambda ()
       (raise* make-exn:fail:contract
-              "slot-set!: slot `~e' in <method> is locked" slot))))
+              "slot-set!: slot `~.s' in <method> is locked" slot))))
 
 ;;>>...
 ;;> *** Convenience functions
@@ -1591,14 +1592,14 @@
                                       (%instance-set! o f n)
                                       (raise* make-exn:fail:contract
                                               "slot-set!: wrong type for slot ~
-                                              ~e in ~e (~e not in ~e)"
+                                               `~.s' in ~e (~e not in ~e)"
                                               (car slot) class n type)))
                                   (lambda (o n) (%instance-set! o f n))))])
                (when lock
                  (make-setter-locked! g+s lock
                    (lambda ()
                      (raise* make-exn:fail:contract
-                             "slot-set!: slot `~e' in ~e is locked"
+                             "slot-set!: slot `~.s' in ~.s is locked"
                              (car slot) (%class-name class)))))
                g+s)]
             [(:class)
@@ -1629,14 +1630,14 @@
                                       (raise*
                                        make-exn:fail:contract
                                        "slot-set!: wrong type for shared slot ~
-                                       ~e in ~e (~e not in ~e)"
+                                        `~.s' in ~e (~e not in ~e)"
                                        (car slot) class n type)
                                       (set! cell n))))])
                  (when lock
                    (make-setter-locked! (car slot) g+s lock
                      (lambda ()
                        (raise* make-exn:fail:contract
-                               "slot-set!: slot `~e' in ~e is locked"
+                               "slot-set!: slot `~.s' in ~.s is locked"
                                (car slot) (%class-name class)))))
                  g+s)
                ;; the slot was inherited as :class - fetch its getters/setters
@@ -1646,7 +1647,7 @@
                        [else (loop (cdr cpl))])))]
             [else
              (error 'class
-                    "allocation for ~e must be :class or :instance, got ~e"
+                    "allocation for `~.s' must be :class or :instance, got ~e"
                     (car slot) allocation)]))))))
 
 ;;; Use the previous function when populating this generic.
@@ -1783,7 +1784,7 @@
 ;;; class-names (in case of unnamed-methods in clos.ss).
 (define (compute-method-name specs generic-name)
   (define (spec-string spec)
-    (cond [(%singleton? spec) (format "{~e}" (singleton-value spec))]
+    (cond [(%singleton? spec) (format "{~.s}" (singleton-value spec))]
           [(%class? spec)     (symbol->string
                                (%class-name (%struct->class spec)))]
           [else               "???"]))
@@ -1809,7 +1810,7 @@
            ;; note: equal? works on arity-at-least structs
            [(not (equal? generic-arity method-arity))
             (error 'add-method
-                   "wrong arity for `~e', expects ~a; given a method with ~a"
+                   "wrong arity for `~.s', expects ~a; given a method with ~a"
                    (%generic-name generic)
                    (if (integer? generic-arity)
                      generic-arity

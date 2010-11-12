@@ -33,6 +33,7 @@ module browser threading seems wrong.
            "drsig.rkt"
            "auto-language.rkt"
            "insert-large-letters.rkt"
+           "get-defs.rkt"
            (prefix-in drracket:arrow: "../arrow.rkt")
            
            mred
@@ -446,9 +447,12 @@ module browser threading seems wrong.
             (set! definitions-text% (make-definitions-text%)))
           definitions-text%)))
 
+    (define (show-line-numbers?)
+      (preferences:get 'drracket:show-line-numbers?))
+
     (define (make-definitions-text%)
       (let ([definitions-super%
-              ((get-program-editor-mixin)
+              (text:line-numbers-mixin
                (text:first-line-mixin
                 (drracket:module-language:module-language-put-file-mixin
                  (scheme:text-mixin
@@ -461,6 +465,7 @@ module browser threading seems wrong.
                         (λ (x) x)
                         (text:normalize-paste-mixin
                          text:info%)))))))))))])
+        ((get-program-editor-mixin)
         (class* definitions-super% (definitions-text<%>)
           (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line)
           
@@ -810,7 +815,7 @@ module browser threading seems wrong.
           
           (define error-arrows #f)
           
-          (super-new)
+          (super-new [show-line-numbers? (show-line-numbers?)])
           
           ;; insert the default-text
           (queue-callback (lambda () (insert-auto-text)))
@@ -818,7 +823,7 @@ module browser threading seems wrong.
            (is-a? (drracket:language-configuration:language-settings-language next-settings)
                   drracket:module-language:module-language<%>))
           (inherit set-max-undo-history)
-          (set-max-undo-history 'forever))))
+          (set-max-undo-history 'forever)))))
     
     ;; is-lang-line? : string -> boolean
     ;; given the first line in the editor, this returns #t if it is a #lang line.
@@ -1033,122 +1038,7 @@ module browser threading seems wrong.
                    [string-constant-no-full-name-since-not-saved 
                     (string-constant no-full-name-since-not-saved)])))
     
-    ;; defn = (make-defn number string number number)
-    (define-struct defn (indent name start-pos end-pos) #:mutable)
-    
-    ;; get-definitions : boolean text -> (listof defn)
-    (define (get-definitions tag-string indent? text)
-      (let* ([min-indent 0]
-             [defs (let loop ([pos 0])
-                     (let ([defn-pos (send text find-string tag-string 'forward pos 'eof #t #f)])
-                       (cond
-                         [(not defn-pos) null]
-                         [(in-semicolon-comment? text defn-pos)
-                          (loop (+ defn-pos (string-length tag-string)))]
-                         [else
-                          (let ([indent (get-defn-indent text defn-pos)]
-                                [name (get-defn-name text (+ defn-pos (string-length tag-string)))])
-                            (set! min-indent (min indent min-indent))
-                            (cons (make-defn indent name defn-pos defn-pos)
-                                  (loop (+ defn-pos (string-length tag-string)))))])))])
-        
-        ;; update end-pos's based on the start pos of the next defn
-        (unless (null? defs)
-          (let loop ([first (car defs)]
-                     [defs (cdr defs)])
-            (cond
-              [(null? defs) 
-               (set-defn-end-pos! first (send text last-position))]
-              [else (set-defn-end-pos! first (max (- (defn-start-pos (car defs)) 1)
-                                                  (defn-start-pos first)))
-                    (loop (car defs) (cdr defs))])))
-        
-        (when indent?
-          (for-each (λ (defn)
-                      (set-defn-name! defn
-                                      (string-append
-                                       (apply string
-                                              (vector->list
-                                               (make-vector 
-                                                (- (defn-indent defn) min-indent) #\space)))
-                                       (defn-name defn))))
-                    defs))
-        defs))
-    
-    ;; in-semicolon-comment: text number -> boolean
-    ;; returns #t if `define-start-pos' is in a semicolon comment and #f otherwise
-    (define (in-semicolon-comment? text define-start-pos)
-      (let* ([para (send text position-paragraph define-start-pos)]
-             [start (send text paragraph-start-position para)])
-        (let loop ([pos start])
-          (cond
-            [(pos . >= . define-start-pos) #f]
-            [(char=? #\; (send text get-character pos)) #t]
-            [else (loop (+ pos 1))]))))
-    
-    ;; get-defn-indent : text number -> number
-    ;; returns the amount to indent a particular definition
-    (define (get-defn-indent text pos)
-      (let* ([para (send text position-paragraph pos)]
-             [para-start (send text paragraph-start-position para #t)])
-        (let loop ([c-pos para-start]
-                   [offset 0])
-          (if (< c-pos pos)
-              (let ([char (send text get-character c-pos)])
-                (cond
-                  [(char=? char #\tab)
-                   (loop (+ c-pos 1) (+ offset (- 8 (modulo offset 8))))]
-                  [else
-                   (loop (+ c-pos 1) (+ offset 1))]))
-              offset))))
-    
-    ;; skip-to-whitespace/paren : text number -> number
-    ;; skips to the next parenthesis or whitespace after `pos', returns that position.
-    (define (skip-to-whitespace/paren text pos)
-      (let loop ([pos pos])
-        (if (>= pos (send text last-position))
-            (send text last-position)
-            (let ([char (send text get-character pos)])
-              (cond
-                [(or (char=? #\) char)
-                     (char=? #\( char)
-                     (char=? #\] char)
-                     (char=? #\[ char)
-                     (char-whitespace? char))
-                 pos]
-                [else (loop (+ pos 1))])))))
-    
-    ;; skip-whitespace/paren : text number -> number
-    ;; skips past any parenthesis or whitespace
-    (define (skip-whitespace/paren text pos)
-      (let loop ([pos pos])
-        (if (>= pos (send text last-position))
-            (send text last-position)
-            (let ([char (send text get-character pos)])
-              (cond
-                [(or (char=? #\) char)
-                     (char=? #\( char)
-                     (char=? #\] char)
-                     (char=? #\[ char)
-                     (char-whitespace? char))
-                 (loop (+ pos 1))]
-                [else pos])))))
-    
-    ;; get-defn-name : text number -> string
-    ;; returns the name of the definition starting at `define-pos'
-    (define (get-defn-name text define-pos)
-      (if (>= define-pos (send text last-position))
-          (string-constant end-of-buffer-define)
-          (let* ([start-pos (skip-whitespace/paren text (skip-to-whitespace/paren text define-pos))]
-                 [end-pos (skip-to-whitespace/paren text start-pos)])
-            (send text get-text start-pos end-pos))))
-    
     (define (set-box/f! b v) (when (box? b) (set-box! b v)))
-    
-    
-    
-    
-    
 
 ;                                        
 ;                                        
@@ -1470,6 +1360,12 @@ module browser threading seems wrong.
                         change-children
                         (λ (l) (remq execute-warning-panel l)))
                  (send execute-warning-canvas set-message #f))])))
+
+        (define/public (show-line-numbers! show)
+          (for ([tab tabs])
+            (define text (send tab get-defs))
+            (send text show-line-numbers! show))
+          (send definitions-canvas refresh))
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -2574,6 +2470,16 @@ module browser threading seems wrong.
           (set! interactions-shown? (not interactions-shown?))
           (unless  interactions-shown?
             (set! definitions-shown? #t)))
+
+        (define (immediate-children parent children)
+          (define (immediate child)
+            (let loop ([child child])
+              (define immediate-parent (send child get-parent))
+              (if (eq? immediate-parent parent)
+                child
+                (loop immediate-parent))))
+          (for/list ([child children])
+            (immediate child)))
         
         (define/override (update-shown)
           (super update-shown)
@@ -2602,7 +2508,9 @@ module browser threading seems wrong.
             (send resizable-panel begin-container-sequence)
             
             ;; this might change the unit-window-size-percentage, so save/restore it
-            (send resizable-panel change-children (λ (l) new-children))
+            (send resizable-panel change-children
+                  (λ (old)
+                     (immediate-children resizable-panel new-children)))
             
             (preferences:set 'drracket:unit-window-size-percentage p)
             ;; restore preferred interactions/definitions sizes
@@ -2776,12 +2684,15 @@ module browser threading seems wrong.
         (define/override (get-canvas)
           (initialize-definitions-canvas)
           definitions-canvas)
+
+        (define (create-definitions-canvas)
+          (new (drracket:get/extend:get-definitions-canvas)
+                 [parent resizable-panel]
+                 [editor definitions-text]))
+
         (define/private (initialize-definitions-canvas)
           (unless definitions-canvas
-            (set! definitions-canvas
-                  (new (drracket:get/extend:get-definitions-canvas)
-                       (parent resizable-panel)
-                       (editor definitions-text)))))
+            (set! definitions-canvas (create-definitions-canvas))))
         
         (define/override (get-delegated-text) definitions-text)
         (define/override (get-open-here-editor) definitions-text)
@@ -3530,10 +3441,12 @@ module browser threading seems wrong.
               (hash-set! capability-menu-items menu (cons this-one old-ones)))))
         
         (define/private (update-items/capability menu)
-          (let ([new-items (begin '(get-items/capability menu)
-                                  (send menu get-items))])
-            (for-each (λ (i) (send i delete)) (send menu get-items))
-            (for-each (λ (i) (send i restore)) new-items)))
+          (let* ([old-items (send menu get-items)]
+                 [new-items (begin '(get-items/capability menu)
+                                   old-items)])
+            (unless (equal? old-items new-items)
+              (for-each (λ (i) (send i delete)) old-items)
+              (for-each (λ (i) (send i restore)) new-items))))
         (define/private (get-items/capability menu)
           (let loop ([capability-items (reverse (hash-ref capability-menu-items menu '()))]
                      [all-items (send menu get-items)]
@@ -3726,13 +3639,18 @@ module browser threading seems wrong.
                  (parent language-specific-menu)
                  (callback
                   (λ (_1 _2) 
-                    (let ([ints (send (get-current-tab) get-ints)])
-                      (send ints reset-error-ranges))))
+                    (let* ([tab  (get-current-tab)]
+                           [ints (send tab get-ints)]
+                           [defs (send tab get-defs)])
+                      (send ints reset-error-ranges)
+                      (send defs clear-test-coverage))))
                  (help-string (string-constant clear-error-highlight-item-help-string))
                  (demand-callback
                   (λ (item)
-                    (let ([ints (send (get-current-tab) get-ints)])
-                      (send item enable (send ints get-error-ranges))))))
+                    (let* ([tab (get-current-tab)]
+                           [ints (send tab get-ints)])
+                      (send item enable (or (send ints get-error-ranges)
+                                            (send tab get-test-coverage-info-visible?)))))))
             (make-object separator-menu-item% language-specific-menu)
             (make-object menu:can-restore-menu-item%
               (string-constant create-executable-menu-item-label)
@@ -3878,6 +3796,20 @@ module browser threading seems wrong.
                 #f
                 has-editor-on-demand)
               (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
+
+            (new menu:can-restore-menu-item%
+                 [label (if (show-line-numbers?)
+                          (string-constant hide-line-numbers)
+                          (string-constant show-line-numbers))]
+                 [parent (get-show-menu)]
+                 [callback (lambda (self event)
+                             (define value (preferences:get 'drracket:show-line-numbers?))
+                             (send self set-label
+                                   (if value
+                                     (string-constant show-line-numbers)
+                                     (string-constant hide-line-numbers)))
+                             (preferences:set 'drracket:show-line-numbers? (not value))
+                             (show-line-numbers! (not value)))])
             
             (make-object separator-menu-item% (get-show-menu))
             
@@ -4228,8 +4160,8 @@ module browser threading seems wrong.
         (define/override (on-event evt)
           (let-values ([(w h) (get-client-size)])
             (let ([new-inside?
-                   (and (<= 0 (send evt get-x) w)
-                        (<= 0 (send evt get-y) h))]
+                   (and (< 0 (send evt get-x) w)
+                        (< 0 (send evt get-y) h))]
                   [old-inside? inside?])
               (set! inside? new-inside?)
               (cond

@@ -48,19 +48,19 @@ evaluate this file and see if the library is correct.
 Here's the result I get:
 
 @verbatim{
-#t
 --------------------
 FAILURE
 name:       check-equal?
 location:   (file-test.rkt 7 0 117 27)
 expression: (check-equal? (my-* 1 2) 2)
 params:     (4 2)
+message:    "Simple multiplication"
 actual:     4
 expected:   2
 
 --------------------}
 
-The first @racket[#t] indicates the first test passed.  The
+The first test passed and so prints nothing.  The
 second test failed, as shown by the message.
 
 Requiring RackUnit and writing checks is all you need to
@@ -119,7 +119,7 @@ we're testing.  We can give a test case a name with the
     lst)))
 ]
 
-Now if we want to structure our tests are bit more we can
+Now if we want to structure our tests a bit more we can
 group them into a test suite:
 
 @racketblock[

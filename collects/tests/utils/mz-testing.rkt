@@ -226,9 +226,9 @@
                      (let ([v (with-handlers ([void
                                                (lambda (exn)
                                                  (if (check? exn)
-                                                     (printf " ~a~n" (exn-message exn))
+                                                     (printf " ~a\n" (exn-message exn))
                                                      (let ([ok-type? (exn:application:arity? exn)])
-                                                       (printf " WRONG EXN ~a: ~s~n" 
+                                                       (printf " WRONG EXN ~a: ~s\n" 
                                                                (if ok-type?
                                                                    "FIELD"
                                                                    "TYPE")
@@ -240,7 +240,7 @@
                                                                            (cons f args)))))
                                                  (done (void)))])
                                 (apply f args))])
-                       (printf "~s~n BUT EXPECTED ERROR~n" v)
+                       (printf "~s\n BUT EXPECTED ERROR\n" v)
                        (record-error (list v 'Error (cons f args))))))])
          (let loop ([n 0][l '()])
            (unless (>= n min)
@@ -265,11 +265,11 @@
     (test l call-with-values thunk list))
 
   (define (report-errs)
-    (printf "~nPerformed ~a expression tests (~a good expressions, ~a bad expressions)~n"
+    (printf "\nPerformed ~a expression tests (~a good expressions, ~a bad expressions)\n"
             (+ number-of-tests number-of-error-tests)
             number-of-tests 
             number-of-error-tests)
-    (printf "and ~a exception field tests.~n~n" 
+    (printf "and ~a exception field tests.\n\n" 
             number-of-exn-tests)
     (if (null? errs) 
         (display "Passed all tests.")

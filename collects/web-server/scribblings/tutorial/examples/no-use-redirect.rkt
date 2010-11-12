@@ -2,7 +2,7 @@
 
 ;; A roster is a (make-roster names)
 ;; where names is a list of string.
-(define-struct roster (names) #:mutable)
+(struct roster (names) #:mutable)
 
 ;; roster-add-name!: roster string -> void
 ;; Given a roster and a name, adds the name
@@ -12,7 +12,7 @@
                     (append (roster-names a-roster)
                             (list a-name))))
 
-(define ROSTER (make-roster '("kathi" "shriram" "dan")))
+(define ROSTER (roster '("kathi" "shriram" "dan")))
 
 ;; start: request -> html-response
 (define (start request)

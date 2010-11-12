@@ -1,20 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Poor man's stack-trace-on-exceptions/profiler.
 ;; See manual for information.
 
-(require "stacktrace.ss"
-         "errortrace-key.ss"
-         scheme/contract
-         scheme/unit
-         scheme/runtime-path
-         (for-template scheme/base)
-         (for-syntax scheme/base))
-
-(define oprintf
-  (let ([op (current-output-port)])
-    (λ args
-      (apply fprintf op args))))
+(require "stacktrace.rkt"
+         "errortrace-key.rkt"
+         racket/contract
+         racket/unit
+         racket/runtime-path
+         (for-template racket/base)
+         (for-syntax racket/base))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test coverage run-time support
@@ -57,7 +52,7 @@
             #f)))]))
 
 (define (annotate-covered-file filename-path [display-string #f])
-  (annotate-file filename-path 
+  (annotate-file filename-path
                  (map (λ (c) (cons (car c) (if (cdr c) 1 0))) (get-coverage))
                  display-string))
 
@@ -66,7 +61,7 @@
 ;; expressions with test suite coverage information.  Returning the
 ;; first argument means no tests coverage information is collected.
 
-;; test-coverage-point : syntax syntax -> (values syntax info)
+;; test-coverage-point : syntax syntax integer -> (values syntax info)
 ;; sets a test coverage point for a single expression
 (define (test-coverage-point body expr phase)
   (if (and (test-coverage-enabled) (zero? phase))
@@ -200,7 +195,7 @@
 ;; Stacktrace instrumenter
 
 (define-runtime-path key-syntax
-  '(lib "errortrace-key-syntax.ss" "errortrace"))
+  '(lib "errortrace-key-syntax.rkt" "errortrace"))
 
 (define dynamic-errortrace-key
   (dynamic-require key-syntax 'errortrace-key-syntax))
@@ -240,18 +235,16 @@
         (with-syntax ([key (datum->syntax #f key (quote-syntax here))]
                       [expr expr]
                       [register-executed-once register-executed-once]);<- 3D!
-          (syntax
-           (begin
-             (register-executed-once 'key)
-             expr))))
+          #'(begin (register-executed-once 'key)
+                   expr)))
       expr))
 
 (define (get-execute-counts)
-  (hash-map execute-info (lambda (k v) (cons (mcar v)
-                                             (mcdr v)))))
+  (hash-map execute-info
+            (lambda (k v) (cons (mcar v) (mcdr v)))))
 
-(define (annotate-executed-file name [display-string "^.,"])
-  (annotate-file name (get-execute-counts) display-string))
+(define (annotate-executed-file filename-path [display-string "^.,"])
+  (annotate-file filename-path (get-execute-counts) display-string))
 
 ;; shared functionality for annotate-executed-file and annotate-covered-file
 (define (annotate-file name counts display-string)
@@ -356,12 +349,11 @@
               [line (syntax-line stx)]
               [col (syntax-column stx)]
               [pos (syntax-position stx)])
-         (fprintf p "~a~a: ~e~n"
+         (fprintf p "~a~a: ~.s\n"
                   (or file "[unknown source]")
-                  (cond
-                    [line (format ":~a:~a" line col)]
-                    [pos (format "::~a" pos)]
-                    [else ""])
+                  (cond [line (format ":~a:~a" line col)]
+                        [pos (format "::~a" pos)]
+                        [else ""])
                   (syntax->datum stx))
          (loop (- n 1) (cdr l)))])))
 
@@ -371,17 +363,17 @@
 (define (output-profile-results paths? sort-time?)
   (profiling-enabled #f)
   (error-print-width 50)
-  (printf "Sorting profile data...~n")
+  (printf "Sorting profile data...\n")
   (let* ([sel (if sort-time? cadr car)]
          [counts (sort (filter (lambda (c) (positive? (car c)))
                                (get-profile-results))
-                       (lambda (a b) (< (sel a) (sel b))))]
+                       < #:key sel)]
          [total 0])
     (for-each
      (lambda (c)
        (set! total (+ total (sel c)))
-       (printf "=========================================================~n")
-       (printf "time = ~a : no. = ~a : ~e in ~s~n"
+       (printf "=========================================================\n")
+       (printf "time = ~a : no. = ~a : ~.s in ~s\n"
                (cadr c) (car c) (caddr c) (cadddr c))
        ;; print call paths
        (when paths?
@@ -393,10 +385,10 @@
                (lambda (cm)
                  (printf " <- ~e" (car cm)))
                (cddr cms))
-              (printf "~n")))
+              (printf "\n")))
           (sort (cadddr (cdr c)) (lambda (a b) (> (car a) (car b)))))))
      counts)
-    (printf "Total samples: ~a~n" total)))
+    (printf "Total sample ~a: ~a\n" (if sort-time? "time" "counts") total)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -444,7 +436,7 @@
 (define (make-errortrace-compile-handler)
   (let ([orig (current-compile)]
         [reg (namespace-module-registry (current-namespace))])
-    (namespace-attach-module (namespace-anchor->namespace orig-namespace) 'scheme/base)
+    (namespace-attach-module (namespace-anchor->namespace orig-namespace) 'racket/base)
     (namespace-attach-module (namespace-anchor->namespace orig-namespace) 'errortrace/errortrace-key)
     (lambda (e immediate-eval?)
       (orig

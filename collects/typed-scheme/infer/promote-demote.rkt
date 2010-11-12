@@ -4,7 +4,7 @@
 (require (rep type-rep rep-utils)
 	 (types convenience union utils)
          "signatures.rkt"
-         scheme/list scheme/match)
+         scheme/list racket/match)
 
 (import)
 (export promote-demote^)

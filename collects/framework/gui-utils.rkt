@@ -294,34 +294,38 @@
 (provide/doc
  (proc-doc
   gui-utils:trim-string
-  (->d ([str string?][size (and/c number? positive?)])
+  (->i ([str string?]
+        [size (and/c number? positive?)])
        ()
-       [_ (and/c string?
-                 (λ (str)
-                   ((string-length str) . <= . size)))])
+       [res (size)
+            (and/c string?
+                   (λ (str)
+                     ((string-length str) . <= . size)))])
   @{Constructs a string whose size is less
     than @scheme[size] by trimming the @scheme[str]
     and inserting an ellispses into it.})
 
  (proc-doc
   gui-utils:quote-literal-label
-  (->d ([str string?])
+  (->i ([str string?])
        ()
-       [_ (and/c string?
-                 (lambda (str)
-                   ((string-length str) . <= . 200)))])
+       [res (str)
+            (and/c string?
+                   (lambda (str)
+                     ((string-length str) . <= . 200)))])
   @{Constructs a string whose ampersand characters are
     escaped; the label is also trimmed to <= 200
     characters.})
 
  (proc-doc
   gui-utils:format-literal-label
-  (->d ([str string?])
+  (->i ([str string?])
        ()
-       #:rest rest (listof any/c)
-       [_ (and/c string?
-                 (lambda (str)
-                   ((string-length str) . <= . 200)))])
+       #:rest [rest (listof any/c)]
+       [res (str)
+            (and/c string?
+                   (lambda (str)
+                     ((string-length str) . <= . 200)))])
   @{Formats a string whose ampersand characters are
     mk-escaped; the label is also trimmed to <= 200
     mk-characters.})

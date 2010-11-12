@@ -1,5 +1,0 @@
-#pragma precompile_target "AListCarbonPrecomp"
-
-#define TARGET_API_MAC_CARBON		1
-
-#include <Carbon/Carbon.h>

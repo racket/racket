@@ -128,6 +128,14 @@
          [(unify-term (empty-env) a b)
           => (lambda (env) (equal-test (subst-term env a) (subst-term env b)))]
          [else (equal-test a b)])]
+      [(struct literal (srcloc '!= (list a b)))
+       (define (equal-test a b)
+         (unless (term-equal? a b)
+           (fact! sg (make-literal srcloc '!= (list a b)))))
+       (cond
+         [(unify-term (empty-env) a b)
+          => (lambda (env) (equal-test (subst-term env a) (subst-term env b)))]
+         [else (equal-test a b)])]
       [_
        (search-theory! sg)]))
   (define sg (make-subgoal q empty empty))

@@ -55,9 +55,10 @@
 
 ;; pred is an identifier
 ;; super is an identifier, or #f
+;; complete? is a boolean
 ;; accessors is a listof identifiers (NB in reverse order from the struct info)
 ;; ps is a listof patterns
-(define-struct (Struct CPat) (id pred super accessors ps) #:transparent)
+(define-struct (Struct CPat) (id pred super complete? accessors ps) #:transparent)
 
 ;; both fields are lists of pats
 (define-struct (HashTable CPat) (key-pats val-pats) #:transparent)

@@ -1,5 +1,5 @@
 ((("CFBundleTypeName"
-   "Scheme Source")
+   "Racket Source")
   ("CFBundleTypeIconFile"
    "doc")
   ("CFBundleTypeRole"
@@ -19,7 +19,7 @@
   ("CFBundleTypeExtensions"
    (array "plt")))
  (("CFBundleTypeName"
-   "Scheme Doc Source")
+   "Racket Doc Source")
   ("CFBundleTypeIconFile"
    "doc")
   ("CFBundleTypeRole"

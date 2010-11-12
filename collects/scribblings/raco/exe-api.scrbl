@@ -306,12 +306,15 @@ run-time path declarations in included modules, so that the path
 resolutions can be directed to the current locations (and, ultimately,
 redirected to copies in a distribution).
 
-The @racket[#:src-filter] argument takes a path and returns true if
+The @racket[#:src-filter] @racket[src-filter] argument takes a path and returns true if
 the corresponding file source should be included in the embedding
 executable in source form (instead of compiled form), @racket[#f]
 otherwise. The default returns @racket[#f] for all paths. Beware that
 the current output port may be redirected to the result executable
-when the filter procedure is called.
+when the filter procedure is called. Each path given to
+@racket[src-filter] corresponds to the actual file name (e.g.,
+@filepath{.ss}/@filepath{.rkt} conversions have been applied as needed
+to refer to the existing file).
 
 If the @racket[#:on-extension] argument is a procedure, the procedure
 is called when the traversal of module dependencies arrives at an
@@ -321,7 +324,7 @@ location) to be embedded into the executable. The procedure is called
 with two arguments: a path for the extension, and a @racket[#f] (for
 historical reasons).
   
-The @racket[#:get-extra-imports] argument takes a source pathname and
+The @racket[#:get-extra-imports] @racket[extras-proc] argument takes a source pathname and
 compiled module for each module to be included in the executable. It
 returns a list of quoted module paths (absolute, as opposed to
 relative to the module) for extra modules to be included in the
@@ -329,7 +332,9 @@ executable in addition to the modules that the source module
 @racket[require]s. For example, these modules might correspond to
 reader extensions needed to parse a module that will be included as
 source, as long as the reader is referenced through an absolute module
-path.}
+path. Each path given to @racket[extras-proc] corresponds to the
+actual file name (e.g., @filepath{.ss}/@filepath{.rkt} conversions
+have been applied as needed to refer to the existing file).}
 
 
 @defproc[(make-embedding-executable [dest path-string?]

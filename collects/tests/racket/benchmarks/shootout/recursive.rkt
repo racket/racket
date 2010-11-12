@@ -43,16 +43,16 @@
 
 (define (main n)
 
-  (printf "Ack(3,~A): ~A~%" n (ack 3 n))
-  (printf "Fib(~a): ~a~%" 
+  (printf "Ack(3,~A): ~A\n" n (ack 3 n))
+  (printf "Fib(~a): ~a\n" 
           (real->decimal-string (+ 27.0 n) 1)
           (real->decimal-string (fibflt (+ 27.0 n)) 1))
   
   (set! n (- n 1))
-  (printf "Tak(~A,~A,~A): ~A~%" (* n 3) (* n 2) n (tak (* n 3) (* n 2) n))
+  (printf "Tak(~A,~A,~A): ~A\n" (* n 3) (* n 2) n (tak (* n 3) (* n 2) n))
   
-  (printf "Fib(3): ~A~%" (fib 3))
-  (printf "Tak(3.0,2.0,1.0): ~a~%" (real->decimal-string (takflt 3.0 2.0 1.0) 1)))
+  (printf "Fib(3): ~A\n" (fib 3))
+  (printf "Tak(3.0,2.0,1.0): ~a\n" (real->decimal-string (takflt 3.0 2.0 1.0) 1)))
 
 ;; -------------------------------
 

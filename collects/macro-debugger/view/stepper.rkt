@@ -3,11 +3,10 @@
          racket/unit
          racket/list
          racket/match
-         racket/gui
-         framework
+         racket/gui/base
+         racket/pretty
          unstable/class-iop
          "interfaces.rkt"
-         "prefs.rkt"
          "extensions.rkt"
          "hiding-panel.rkt"
          "term-record.rkt"
@@ -15,10 +14,9 @@
 	 (prefix-in sb: "../syntax-browser/interfaces.rkt")
          "../model/deriv.rkt"
          "../model/deriv-util.rkt"
-         "../model/trace.rkt"
-         "../model/reductions.rkt"
-         "../model/steps.rkt"
          "cursor.rkt"
+         "gui-util.rkt"
+         "../syntax-browser/util.rkt"
          unstable/gui/notify
          (only-in mzscheme [#%top-interaction mz-top-interaction]))
 (provide macro-stepper-widget%
@@ -32,6 +30,13 @@
     (init-field parent)
     (init-field config)
     (init-field/i (director director<%>))
+
+    (define frame (send parent get-top-level-window))
+    (define eventspace (send frame get-eventspace))
+
+    (define-syntax-rule (with-eventspace . body)
+      (parameterize ((current-eventspace eventspace))
+        (queue-callback (lambda () . body))))
 
     ;; Terms
 
@@ -61,16 +66,17 @@
         (add trec)))
 
     ;; add : TermRecord -> void
-    (define/public (add trec)
-      (set! all-terms (cons trec all-terms))
-      (let ([display-new-term? (cursor:at-end? terms)]
-            [invisible? (send/i trec term-record<%> get-deriv-hidden?)])
-        (unless invisible?
-          (cursor:add-to-end! terms (list trec))
-          (trim-navigator)
-          (if display-new-term?
-              (refresh)
-              (update)))))
+    (define/private (add trec)
+      (with-eventspace
+       (set! all-terms (cons trec all-terms))
+       (let ([display-new-term? (cursor:at-end? terms)]
+             [invisible? (send/i trec term-record<%> get-deriv-hidden?)])
+         (unless invisible?
+           (cursor:add-to-end! terms (list trec))
+           (trim-navigator)
+           (if display-new-term?
+               (refresh)
+               (update))))))
 
     ;; remove-current-term : -> void
     (define/public (remove-current-term)
@@ -103,7 +109,11 @@
       (send/i sbc sb:controller<%> reset-primary-partition)
       (update/preserve-view))
 
-    (define area (new vertical-panel% (parent parent)))
+    (define superarea (new vertical-pane% (parent parent)))
+    (define area
+      (new vertical-panel%
+           (parent superarea)
+           (enabled #f)))
     (define supernavigator
       (new horizontal-panel%
            (parent area)
@@ -135,11 +145,17 @@
       (send/i sbview sb:syntax-browser<%> get-controller))
     (define control-pane
       (new vertical-panel% (parent area) (stretchable-height #f)))
+
     (define/i macro-hiding-prefs hiding-prefs<%>
       (new macro-hiding-prefs-widget%
            (parent control-pane)
            (stepper this)
            (config config)))
+
+    (define status-area
+      (new status-area%
+           (parent superarea)
+           (stop-callback (lambda _ (stop-processing)))))
 
     (send/i sbc sb:controller<%>
            listen-selected-syntax
@@ -243,28 +259,25 @@
                   (list navigator extra-navigator)
                   (list navigator)))))
 
+    (define/public (change-status msg)
+      (send status-area set-status msg))
+
     ;; Navigation
-#|
-    (define/public-final (at-start?)
-      (send/i (focused-term) term-record<%> at-start?))
-    (define/public-final (at-end?)
-      (send/i (focused-term) term-record<%> at-end?))
-|#
     (define/public-final (navigate-to-start)
       (send/i (focused-term) term-record<%> navigate-to-start)
-      (update/save-position))
+      (update/preserve-lines-view))
     (define/public-final (navigate-to-end)
       (send/i (focused-term) term-record<%> navigate-to-end)
-      (update/save-position))
+      (update/preserve-lines-view))
     (define/public-final (navigate-previous)
       (send/i (focused-term) term-record<%> navigate-previous)
-      (update/save-position))
+      (update/preserve-lines-view))
     (define/public-final (navigate-next)
       (send/i (focused-term) term-record<%> navigate-next)
-      (update/save-position))
+      (update/preserve-lines-view))
     (define/public-final (navigate-to n)
       (send/i (focused-term) term-record<%> navigate-to n)
-      (update/save-position))
+      (update/preserve-lines-view))
 
     (define/public-final (navigate-up)
       (when (focused-term)
@@ -277,108 +290,159 @@
       (cursor:move-next terms)
       (refresh/move))
 
-    ;; Update
+    ;; enable/disable-buttons : -> void
+    (define/private (enable/disable-buttons [? #t])
+      (define term (and ? (focused-term)))
+      ;; (message-box "alert" (format "enable/disable: ~s" ?))
+      (send area enable ?)
+      (send (send frame get-menu-bar) enable ?)
+      (send nav:start enable (and ? term (send/i term term-record<%> has-prev?)))
+      (send nav:previous enable (and ? term (send/i term term-record<%> has-prev?)))
+      (send nav:next enable (and ? term (send/i term term-record<%> has-next?)))
+      (send nav:end enable (and ? term (send/i term term-record<%> has-next?)))
+      (send nav:text enable (and ? term #t))
+      (send nav:up enable (and ? (cursor:has-prev? terms)))
+      (send nav:down enable (and ? (cursor:has-next? terms)))
+      (send status-area enable-stop (not ?)))
 
-    ;; update/save-position : -> void
-    (define/private (update/save-position)
-      (update/preserve-lines-view))
+    ;; Async update & refresh
+
+    (define update-thread #f)
+
+    (define ASYNC-DELAY 500) ;; milliseconds
+
+    (define/private (call-with-update-thread thunk)
+      (send status-area set-visible #f)
+      (let* ([lock (make-semaphore 1)] ;; mutex for status variable
+             [status #f] ;; mutable: one of #f, 'done, 'async
+             [thd
+              (parameterize-break #f
+                (thread (lambda ()
+                          (with-handlers ([exn:break?
+                                           (lambda (e)
+                                             (change-status "Interrupted")
+                                             (void))])
+                            (parameterize-break #t
+                              (thunk)
+                              (change-status #f)))
+                          (semaphore-wait lock)
+                          (case status
+                            ((async)
+                             (set! update-thread #f)
+                             (with-eventspace
+                              (enable/disable-buttons #t)))
+                            (else
+                             (set! status 'done)))
+                          (semaphore-post lock))))])
+        (sync thd (alarm-evt (+ (current-inexact-milliseconds) ASYNC-DELAY)))
+        (semaphore-wait lock)
+        (case status
+          ((done)
+           ;; Thread finished; enable/disable skipped, so do it now to update.
+           (enable/disable-buttons #t))
+          (else
+           (set! update-thread thd)
+           (send status-area set-visible #t)
+           (enable/disable-buttons #f)
+           (set! status 'async)))
+        (semaphore-post lock)))
+
+    (define-syntax-rule (with-update-thread . body)
+      (call-with-update-thread (lambda () . body)))
+
+    (define/private (stop-processing)
+      (let ([t update-thread])
+        (when t (break-thread t))))
+
+    ;; Update
 
     ;; update/preserve-lines-view : -> void
     (define/public (update/preserve-lines-view)
-      (define text (send/i sbview sb:syntax-browser<%> get-text))
-      (define start-box (box 0))
-      (define end-box (box 0))
-      (send text get-visible-line-range start-box end-box)
-      (update)
-      (send text scroll-to-position
-            (send text line-start-position (unbox start-box))
-            #f
-            (send text line-start-position (unbox end-box))
-            'start))
+      (with-update-thread
+       (define text (send/i sbview sb:syntax-browser<%> get-text))
+       (define start-box (box 0))
+       (define end-box (box 0))
+       (send text get-visible-line-range start-box end-box)
+       (update*)
+       (send text scroll-to-position
+             (send text line-start-position (unbox start-box))
+             #f
+             (send text line-start-position (unbox end-box))
+             'start)))
 
     ;; update/preserve-view : -> void
     (define/public (update/preserve-view)
-      (define text (send/i sbview sb:syntax-browser<%> get-text))
-      (define start-box (box 0))
-      (define end-box (box 0))
-      (send text get-visible-position-range start-box end-box)
-      (update)
-      (send text scroll-to-position (unbox start-box) #f (unbox end-box) 'start))
+      (with-update-thread
+       (define text (send/i sbview sb:syntax-browser<%> get-text))
+       (define start-box (box 0))
+       (define end-box (box 0))
+       (send text get-visible-position-range start-box end-box)
+       (update*)
+       (send text scroll-to-position (unbox start-box) #f (unbox end-box) 'start)))
 
     ;; update : -> void
     ;; Updates the terms in the syntax browser to the current step
     (define/private (update)
+      (with-update-thread
+       (update*)))
+
+    (define/private (update*)
+      ;; update:show-prefix : -> void
+      (define (update:show-prefix)
+        ;; Show the final terms from the cached synth'd derivs
+        (for ([trec (in-list (cursor:prefix->list terms))])
+          (send/i trec term-record<%> display-final-term)))
+      ;; update:show-current-step : -> void
+      (define (update:show-current-step)
+        (when (focused-term)
+          (send/i (focused-term) term-record<%> display-step)))
+      ;; update:show-suffix : -> void
+      (define (update:show-suffix)
+        (let ([suffix0 (cursor:suffix->list terms)])
+          (when (pair? suffix0)
+            (for ([trec (in-list (cdr suffix0))])
+              (send/i trec term-record<%> display-initial-term)))))
+      ;; update-nav-index : -> void
+      (define (update-nav-index)
+        (define term (focused-term))
+        (set-current-step-index
+         (and term (send/i term term-record<%> get-step-index))))
+
       (define text (send/i sbview sb:syntax-browser<%> get-text))
       (define position-of-interest 0)
       (define multiple-terms? (> (length (cursor->list terms)) 1))
-      (send text begin-edit-sequence #f)
-      (send/i sbview sb:syntax-browser<%> erase-all)
 
-      (update:show-prefix)
-      (when multiple-terms? (send/i sbview sb:syntax-browser<%> add-separator))
-      (set! position-of-interest (send text last-position))
-      (update:show-current-step)
-      (when multiple-terms? (send/i sbview sb:syntax-browser<%> add-separator))
-      (update:show-suffix)
-      (send text end-edit-sequence)
+      (with-unlock text
+        (send/i sbview sb:syntax-browser<%> erase-all)
+        (update:show-prefix)
+        (when multiple-terms? (send/i sbview sb:syntax-browser<%> add-separator))
+        (set! position-of-interest (send text last-position))
+        (update:show-current-step)
+        (when multiple-terms? (send/i sbview sb:syntax-browser<%> add-separator))
+        (update:show-suffix))
+
       (send text scroll-to-position
             position-of-interest
             #f
             (send text last-position)
             'start)
       (update-nav-index)
-      (enable/disable-buttons))
-
-    ;; update:show-prefix : -> void
-    (define/private (update:show-prefix)
-      ;; Show the final terms from the cached synth'd derivs
-      (for-each (lambda (trec) (send/i trec term-record<%> display-final-term))
-                (cursor:prefix->list terms)))
-
-    ;; update:show-current-step : -> void
-    (define/private (update:show-current-step)
-      (when (focused-term)
-        (send/i (focused-term) term-record<%> display-step)))
-
-    ;; update:show-suffix : -> void
-    (define/private (update:show-suffix)
-      (let ([suffix0 (cursor:suffix->list terms)])
-        (when (pair? suffix0)
-          (for-each (lambda (trec)
-                      (send/i trec term-record<%> display-initial-term))
-                    (cdr suffix0)))))
-
-    ;; update-nav-index : -> void
-    (define/private (update-nav-index)
-      (define term (focused-term))
-      (set-current-step-index
-       (and term (send/i term term-record<%> get-step-index))))
-
-    ;; enable/disable-buttons : -> void
-    (define/private (enable/disable-buttons)
-      (define term (focused-term))
-      (send nav:start enable (and term (send/i term term-record<%> has-prev?)))
-      (send nav:previous enable (and term (send/i term term-record<%> has-prev?)))
-      (send nav:next enable (and term (send/i term term-record<%> has-next?)))
-      (send nav:end enable (and term (send/i term term-record<%> has-next?)))
-      (send nav:text enable (and term #t))
-      (send nav:up enable (cursor:has-prev? terms))
-      (send nav:down enable (cursor:has-next? terms)))
+      (change-status #f))
 
     ;; --
 
     ;; refresh/resynth : -> void
     ;; Macro hiding policy has changed; invalidate cached parts of trec
     (define/public (refresh/resynth)
-      (for-each (lambda (trec) (send/i trec term-record<%> invalidate-synth!))
-                (cursor->list terms))
+      (for ([trec (in-list (cursor->list terms))])
+        (send/i trec term-record<%> invalidate-synth!))
       (refresh))
 
     ;; refresh/re-reduce : -> void
     ;; Reduction config has changed; invalidate cached parts of trec
     (define/private (refresh/re-reduce)
-      (for-each (lambda (trec) (send/i trec term-record<%> invalidate-steps!))
-                (cursor->list terms))
+      (for ([trec (in-list (cursor->list terms))])
+        (send/i trec term-record<%> invalidate-steps!))
       (refresh))
 
     ;; refresh/move : -> void
@@ -388,18 +452,17 @@
 
     ;; refresh : -> void
     (define/public (refresh)
-      (when (focused-term)
-        (send/i (focused-term) term-record<%> on-get-focus))
-      (send nav:step-count set-label "")
-      (let ([term (focused-term)])
-        (when term
-          (let ([step-count (send/i term term-record<%> get-step-count)])
-            (when step-count
-              ;; +1 for end of expansion "step"
-              (send nav:step-count set-label (format "of ~s" (add1 step-count)))))))
-      (update))
-
-    (define/private (foci x) (if (list? x) x (list x)))
+      (with-update-thread
+       (when (focused-term)
+         (send/i (focused-term) term-record<%> on-get-focus))
+       (send nav:step-count set-label "")
+       (let ([term (focused-term)])
+         (when term
+           (let ([step-count (send/i term term-record<%> get-step-count)])
+             (when step-count
+               ;; +1 for end of expansion "step"
+               (send nav:step-count set-label (format "of ~s" (add1 step-count)))))))
+       (update*)))
 
     ;; Hiding policy
     
@@ -415,7 +478,6 @@
     (super-new)
     (show-macro-hiding-panel (send/i config config<%> get-show-hiding-panel?))
     (show-extra-navigation (send/i config config<%> get-extra-navigation?))
-    (refresh/move)
     ))
 
 (define (macro-stepper-widget/process-mixin %)

@@ -13,12 +13,13 @@ improve method arity mismatch contract violation error messages?
          recursive-contract
          current-contract-region)
 
-(require (for-syntax racket/base)
+(require (for-syntax racket/base syntax/name)
          racket/stxparam
          unstable/srcloc
          unstable/location
          "guts.rkt"
-         "blame.rkt")
+         "blame.rkt"
+         "arrow.rkt")
 
 (define-syntax-parameter current-contract-region
   (λ (stx) #'(quote-module-path)))
@@ -29,8 +30,11 @@ improve method arity mismatch contract violation error messages?
      (syntax/loc stx
        (apply-contract c v pos neg name loc (current-contract-region)))]
     [(_ c v pos neg)
-     (syntax/loc stx
-       (apply-contract c v pos neg #f (build-source-location #f) (current-contract-region)))]
+     (with-syntax ([name (syntax-local-infer-name stx)])
+      (syntax/loc stx
+        (apply-contract c v pos neg 'name
+                        (build-source-location #f)
+                        (current-contract-region))))]
     [(_ c v pos neg src)
      (raise-syntax-error 'contract
        (string-append
@@ -40,9 +44,28 @@ improve method arity mismatch contract violation error messages?
 (define (apply-contract c v pos neg name loc usr)
   (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
-    (((contract-projection c)
-      (make-blame loc name (contract-name c) pos neg usr #t))
-     v)))
+    (let ([new-val
+           (((contract-projection c)
+             (make-blame loc name (contract-name c) pos neg usr #t))
+            v)])
+      (if (and (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
+               (procedure? new-val)
+               (object-name v)
+               (not (eq? (object-name v) (object-name new-val))))
+          (let ([vs-name (object-name v)])
+            (cond
+              [(contracted-function? new-val)
+               ;; when PR11222 is fixed, change these things:
+               ;;   - eliminate this cond case
+               ;;   - remove the require of arrow.rkt above
+               ;;   - change (struct-out contracted-function) 
+               ;;     in arrow.rkt to make-contracted-function
+               (make-contracted-function 
+                (procedure-rename (contracted-function-proc new-val) vs-name)
+                (contracted-function-ctc new-val))]
+              [else
+               (procedure-rename new-val vs-name)]))
+          new-val))))
 
 (define-syntax (recursive-contract stx)
   (syntax-case stx ()

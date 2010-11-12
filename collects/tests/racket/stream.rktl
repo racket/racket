@@ -1,5 +1,5 @@
 
-(printf "Stream Tests (current dir must be startup dir)~n")
+(printf "Stream Tests (current dir must be startup dir)\n")
 
 (require scheme/system)
 
@@ -51,7 +51,7 @@
 	      (error "check-failed" (file-position p) c c2)
 	      (begin
 		(fprintf (current-error-port)
-			 "fail: ~a ~s=~s ~s=~s~n"
+			 "fail: ~a ~s=~s ~s=~s\n"
 			 (file-position p) c (integer->char c) c2 (integer->char c2))
 		(loop (add1 badc)))))
 	(unless (eof-object? c)
@@ -107,8 +107,8 @@
   (define r2 #f)
   (define w2 #f)
   (thread (copy-stream (cadddr p) (current-error-port)))
-  (fprintf (cadr p) "(define log void)~n")
-  (fprintf (cadr p) "~s~n" cs-prog)
+  (fprintf (cadr p) "(define log void)\n")
+  (fprintf (cadr p) "~s\n" cs-prog)
   (if tcp?
       (let ([t 
 	     (thread (lambda ()
@@ -118,12 +118,12 @@
 		       (set! w ww)
 		       (set! r2 rr2)
 		       (set! w2 ww2)))])
-	(fprintf (cadr p) "(define-values (r w) (tcp-connect \"localhost\" ~a))~n" portno)
-	(fprintf (cadr p) "(define-values (r2 w2) (tcp-connect \"localhost\" ~a))~n" (add1 portno))
+	(fprintf (cadr p) "(define-values (r w) (tcp-connect \"localhost\" ~a))\n" portno)
+	(fprintf (cadr p) "(define-values (r2 w2) (tcp-connect \"localhost\" ~a))\n" (add1 portno))
         (flush-output (cadr p))
 	(thread-wait t)
-	(fprintf (cadr p) "(begin ((copy-stream r w2)) (exit))~n"))
-      (fprintf (cadr p) "(begin (flush-output) ((copy-stream (current-input-port) (current-output-port))) (exit))~n"))
+	(fprintf (cadr p) "(begin ((copy-stream r w2)) (exit))\n"))
+      (fprintf (cadr p) "(begin (flush-output) ((copy-stream (current-input-port) (current-output-port))) (exit))\n"))
   (flush-output (cadr p))
 
   (unless tcp?
@@ -149,51 +149,51 @@
   (let ([ps-ms (current-process-milliseconds)]
 	[gc-ms (current-gc-milliseconds)]
 	[ms (current-milliseconds)])
-    (printf "cpu: ~a real: ~a gc ~a~n" 
+    (printf "cpu: ~a real: ~a gc ~a\n" 
 	    (- ps-ms start-ps-ms)
 	    (- ms start-ms)
 	    (- gc-ms start-gc-ms))))
 
 '(thread (lambda ()
 	  (let loop ()
-	    (printf "alive~n")
+	    (printf "alive\n")
 	    (sleep 1)
 	    (loop))))
 
-(start "Quick check:~n")
+(start "Quick check:\n")
 (define p (open-input-file test-file))
 (check-file/fast p)
 (close-input-port p)
 (end)
 
-(start "Quicker check:~n")
+(start "Quicker check:\n")
 (define p (open-input-file test-file))
 (check-file/fastest p)
 (close-input-port p)
 (end)
 
-(start "Plain pipe...~n")
+(start "Plain pipe...\n")
 (define-values (r w) (make-pipe))
 (feed-file w)
 (close-output-port w)
 (check-file r)
 (end)
 
-(start "Plain pipe, faster...~n")
+(start "Plain pipe, faster...\n")
 (define-values (r w) (make-pipe))
 (feed-file/fast w)
 (close-output-port w)
 (check-file/fast r)
 (end)
 
-(start "Plain pipe, fastest...~n")
+(start "Plain pipe, fastest...\n")
 (define-values (r w) (make-pipe))
 (feed-file/fast w)
 (close-output-port w)
 (check-file/fastest r)
 (end)
 
-(start "Limited pipe...~n")
+(start "Limited pipe...\n")
 (define-values (r w) (make-pipe 253))
 (thread (lambda ()
 	  (feed-file w)
@@ -201,7 +201,7 @@
 (check-file r)
 (end)
 
-(start "Limited pipe, faster...~n")
+(start "Limited pipe, faster...\n")
 (define-values (r w) (make-pipe 253))
 (thread (lambda ()
 	  (feed-file/fast w)
@@ -209,7 +209,7 @@
 (check-file/fast r)
 (end)
 
-(start "Limited pipe, fastest...~n")
+(start "Limited pipe, fastest...\n")
 (define-values (r w) (make-pipe 253))
 (thread (lambda ()
 	  (feed-file/fast w)
@@ -217,8 +217,8 @@
 (check-file/fastest r)
 (end)
 
-(start "To file and back:~n")
-(start " to...~n")
+(start "To file and back:\n")
+(start " to...\n")
 (define-values (r w) (make-pipe))
 (define p (open-output-file tmp-file #:exists 'truncate))
 (define t (thread (copy-stream r p)))
@@ -228,7 +228,7 @@
 (close-output-port p)
 (end)
 
-(start " back...~n")
+(start " back...\n")
 (define-values (r w) (make-pipe))
 (define p (open-input-file tmp-file))
 (define t (thread (copy-stream p w)))
@@ -238,8 +238,8 @@
 (check-file r)
 (end)
 
-(start "To file and back, faster:~n")
-(start " to...~n")
+(start "To file and back, faster:\n")
+(start " to...\n")
 (define-values (r w) (make-pipe))
 (define p (open-output-file tmp-file #:exists 'truncate))
 (define t (thread (copy-stream r p)))
@@ -249,7 +249,7 @@
 (close-output-port p)
 (end)
 
-(start " back...~n")
+(start " back...\n")
 (define-values (r w) (make-pipe))
 (define p (open-input-file tmp-file))
 (define t (thread (copy-stream p w)))
@@ -259,7 +259,7 @@
 (check-file/fast r)
 (end)
 
-(start "File back, fastest:~n")
+(start "File back, fastest:\n")
 (define-values (r w) (make-pipe))
 (define p (open-input-file tmp-file))
 (define t (thread (copy-stream p w)))
@@ -269,7 +269,7 @@
 (check-file/fastest r)
 (end)
 
-(start "Echo...~n")
+(start "Echo...\n")
 (define p (setup-mzscheme-echo #f))
 (thread (lambda () 
 	  (feed-file (cadr p))
@@ -277,7 +277,7 @@
 (check-file (car p))
 (end)
 
-(start "Echo, faster...~n")
+(start "Echo, faster...\n")
 (define p (setup-mzscheme-echo #f))
 (thread (lambda () 
 	  (feed-file/fast (cadr p))
@@ -285,7 +285,7 @@
 (check-file/fast (car p))
 (end)
 
-(start "Echo, indirect...~n")
+(start "Echo, indirect...\n")
 (define p (setup-mzscheme-echo #f))
 (define-values (rp1 wp1) (make-pipe))
 (define-values (rp2 wp2) (make-pipe))
@@ -300,7 +300,7 @@
 (define l1 (tcp-listen portno 5 #t))
 (define l2 (tcp-listen (add1 portno) 5 #t))
 
-(start "TCP Echo...~n")
+(start "TCP Echo...\n")
 (define-values (r w r2 w2) (setup-mzscheme-echo #t))
 (close-input-port r)
 (thread (lambda () 
@@ -310,7 +310,7 @@
 (close-input-port r2)
 (end)
 
-(start "TCP Echo, faster...~n")
+(start "TCP Echo, faster...\n")
 (define-values (r w r2 w2) (setup-mzscheme-echo #t))
 (close-input-port r)
 (thread (lambda () 
@@ -320,7 +320,7 @@
 (close-input-port r2)
 (end)
 
-(start "TCP Echo, indirect...~n")
+(start "TCP Echo, indirect...\n")
 (define-values (rp1 wp1) (make-pipe))
 (define-values (rp2 wp2) (make-pipe))
 (define-values (r w r2 w2) (setup-mzscheme-echo #t))

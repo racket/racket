@@ -1,53 +1,75 @@
-#lang scheme
+#lang racket
 
 (provide define-keywords 
-         ;; (define-keywords (name1:identifier ... spec:expr) ...)
-         ;; constraint: the first name is the original name
+         DEFAULT
+         ;; constraint: the first kw is the original one 
          ;; and it is also the name of the field in the class
-         function-with-arity expr-with-check except err 
          ->args
+         function-with-arity expr-with-check except err 
          ->kwds-in
          clauses-use-kwd)
 
 (require 
- (for-template "syn-aux-aux.ss" 
-               scheme
+ (for-syntax "syn-aux-aux.rkt" syntax/parse)
+ (for-template "syn-aux-aux.rkt"
+               racket
                (rename-in lang/prim (first-order->higher-order f2h))))
 
-(require (for-syntax syntax/parse))
-(define-syntax (define-keywords stx)
-  (syntax-parse stx 
-    [(define-keywords the-list (kw:identifier ... coerce:expr) ...)
-     #'(begin
-         (provide kw ...) ...
-         (define-syntaxes (kw ...)
-           (values (lambda (x)
-                     (raise-syntax-error 'kw "used out of context" x))
-                   ...))
-         ...
-         (define-for-syntax the-list
-           (apply append 
-                  (list 
-                   (let* ([x (list (list #'kw ''kw) ...)]
-                          [f (caar x)])
-                     (map (lambda (x) 
-                            (define clause-name (car x))
-                            (define clause-spec (cadr x))
-                            (list clause-name f (coerce clause-spec)))
-                          x))
-                   ...))))]))
+(define-syntax (DEFAULT stx)
+  (raise-syntax-error 'DEFAULT "used out of context" stx))
 
-#;
-(define-syntax-rule
-  (define-keywords the-list (kw coerce) ...)
-  (begin
-    (provide kw ...) 
-    (define-syntax kw
-      (lambda (x)
-        (raise-syntax-error 'kw "used out of context" x)))
-    ...
-    (define-for-syntax the-list
-      (list (list #'kw (coerce ''kw)) ...))))
+(define-syntax (define-keywords stx)
+  (syntax-parse stx #:literals (DEFAULT) 
+    [(_ the-list super-list define-create
+        (kw:identifier 
+         (~optional kw-alt:identifier #:defaults ((kw-alt #'kw)))
+         (~optional (~seq DEFAULT default:expr))
+         coerce:expr) ...)
+     (let* ([defs (attribute default)])
+       #`(begin
+           ;; define and create list of keywords and associated values 
+           (define-for-syntax the-list
+             (list* (list #'kw #'kw-alt (coerce ''kw) default) ... super-list))
+           ;; define and provide keywords
+           (provide (rename-out (kw  kw-alt) ...))
+           (provide kw ...) 
+           (define-syntaxes (kw ...)
+             (values (lambda (x)
+                       (raise-syntax-error 'kw "used out of context" x))
+                     ...))
+           
+           ;; a macro for creating functions that instantiate the proper object
+           ;; (define-create para ...) :: additional parameters for the new func
+           (define-syntax (define-create stx)
+             (syntax-case stx ()
+               [(_ para (... ...))
+                (let*-values
+                    ([(kwds defs)
+                      (values (map car the-list) '())
+                      #;
+                      (let L ([the-list the-list][kwds '()][defs '()])
+                        (if (null? the-list)
+                            (values kwds defs)
+                            (let* ([kw-alt-c-d (car the-list)]
+                                   [kw0 (car kw-alt-c-d)]
+                                   [kw1 (cadr kw-alt-c-d)]
+                                   [coe (caddr kw-alt-c-d)]
+                                   [def (cadddr kw-alt-c-d)])
+                              (if (eq? (syntax-e kw0) (syntax-e kw1))
+                                  (L (cdr the-list) (cons kw0 kwds) (cons def defs))
+                                  (L (cdr the-list)
+                                     (list* kw0 kw1 kwds)
+                                     (list* def def defs))))))]
+                     ;; the defaults list defs is no longer needed
+                     [(args) (lambda (para*)
+                               (append para* (foldr cons '() kwds)))]
+                     [(body) (lambda (para*)
+                               (map (lambda (x) `(,x ,x)) (append para* kwds)))])
+                  (let ([para* (syntax->list #'(para (... ...)))])
+                    #`(lambda (%)
+                        (lambda #,(args para*)
+                          (lambda ()
+                            (new % #,@(body para*)))))))]))))]))
 
 #|
   transform the clauses into the initial arguments specification 
@@ -62,24 +84,45 @@
   
   if anything fails, use the legal keyword to specialize the error message
 |#
-(define (->args tag stx state0 clauses AllSpec PartSpec ->rec? legal)
+(define (->args tag stx state0 clauses Spec ->rec? legal)
   (define msg (format "not a legal clause in a ~a description" legal))
-  (define Spec (append AllSpec PartSpec))
   (define kwds (map (compose (curry datum->syntax stx) car) Spec))
   (define spec (clauses-use-kwd (syntax->list clauses) ->rec? msg kwds))
   (duplicates? tag spec)
   (not-a-clause tag stx state0 kwds)
-  (map (lambda (x) 
-         (define kw (car x))
-         (define-values (key coercion)
-           (let loop ([kwds kwds][Spec Spec])
-             (if (free-identifier=? (car kwds) kw)
-                 ;; -- the original keyword, which is also the init-field name
-                 ;; -- the coercion that comes with it 
-                 (values (cadar Spec) (caddar Spec))
-                 (loop (cdr kwds) (cdr Spec)))))
-         (list key (coercion (cdr x))))
-       spec))
+  (map (lambda (s) 
+         (define kw (first s))
+         (define kw-alt (second s))
+         (define r
+           (let loop ([spec spec])
+             (cond
+               [(null? spec) #false]
+               [(or (free-identifier=? (caar spec) kw)
+                    (free-identifier=? (caar spec) kw-alt))
+                (syntax->list (cdar spec))]
+               [else (loop (cdr spec))])))
+         (if r ((third s) r) (fourth s)))
+       Spec)
+  #;
+  (apply append
+         (map (lambda (x) 
+                (define kw (car x))
+                (define-values (key coercion)
+                  (let loop ([kwds kwds][Spec Spec])
+                    (if (free-identifier=? (car kwds) kw)
+                        ;; -- the original keyword, which is also the init-field name
+                        ;; -- the coercion that comes with it 
+                        (values (cadar Spec) (caddar Spec))
+                        (loop (cdr kwds) (cdr Spec)))))
+                (list (mk-kwd key) (coercion (cdr x))))
+              spec)))
+
+;; Syntax -> Syntax 
+;; eventually: convert syntax to keyword
+(define (mk-kwd key)
+  (define key:id (symbol->string (syntax-e key)))
+  (define key:wd (string->keyword key:id))
+  key:wd)
 
 ;; Symbol Syntax Syntax [Listof Kw] -> true
 ;; effect: if state0 looks like a clause, raise special error 
@@ -140,14 +183,14 @@
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
-           [_ (err tag p)])))]
+           [_ (displayln p) (err tag p)])))]
     [(_ arity except extra)
      (lambda (tag)
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
            extra
-           [_ (err tag p)])))]))
+           [_ (displayln p) (err tag p)])))]))
 
 (define (err spec p . xtras)
   (raise-syntax-error (cadr spec)

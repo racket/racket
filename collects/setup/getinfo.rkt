@@ -35,8 +35,7 @@
     (apply error 'get-info (string-append "info file " fmt " in ~a")
            (append args (list file))))
   (define (contents)
-    (parameterize ([read-accept-reader #t]
-                   [current-reader-guard
+    (parameterize ([current-reader-guard
                     (lambda (x)
                       (if (eq? x 'setup/infotab/lang/reader)
                         x

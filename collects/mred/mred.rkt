@@ -4,6 +4,7 @@
                  namespace-anchor->empty-namespace
                  make-base-empty-namespace)
            scheme/class
+           racket/draw
            mzlib/etc
 	   (prefix wx: "private/kernel.ss")
 	   (prefix wx: "private/wxme/style.ss")
@@ -38,23 +39,9 @@
 	   "private/gdi.ss"
 	   "private/snipfile.ss"
 	   "private/repl.ss"
-	   "private/afm.ss"
            "private/helper.ss"
            "private/dynamic.ss"
            "private/check.ss")
-
-  ;; Initialize AFM/PS:
-  (wx:set-ps-procs
-   afm-draw-text
-   afm-get-text-extent
-   afm-expand-name
-   afm-glyph-exists?
-   afm-record-font
-   afm-fonts-string)
-  
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (wx:set-dialogs get-file put-file get-ps-setup-from-user message-box)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; These functions are re-implemented in scheme/gui/base
@@ -115,34 +102,23 @@
 	     add-pasteboard-keymap-functions
 	     begin-busy-cursor
 	     bell
-	     bitmap%
-	     brush%
-	     brush-list%
 	     editor-data%
 	     editor-data-class%
 	     editor-data-class-list<%>
 	     check-for-break
 	     clipboard<%>
 	     clipboard-client%
-	     color%
-	     color-database<%>
 	     control-event%
 	     current-eventspace
-	     current-ps-setup
 	     cursor%
-	     dc<%>
-	     dc-path%
 	     get-display-depth
 	     end-busy-cursor
 	     event%
 	     event-dispatch-handler
 	     eventspace?
-	     find-graphical-system-path
 	     flush-display
-	     font%
-	     font-list%
-	     font-name-directory<%>
-	     get-resource
+	     get-highlight-background-color
+             get-highlight-text-color
 	     get-the-editor-data-class-list
 	     get-the-snip-class-list
 	     image-snip%
@@ -162,14 +138,9 @@
 	     editor-wordbreak-map%
 	     mouse-event%
 	     mult-color<%>
-	     pen%
-	     pen-list%
-	     point%
-	     ps-setup%
 	     read-editor-global-footer
 	     read-editor-global-header
 	     read-editor-version
-	     region%
 	     scroll-event%
 	     snip%
 	     snip-admin%
@@ -187,24 +158,32 @@
 	     write-editor-global-footer
 	     write-editor-global-header
 	     write-editor-version
-	     write-resource
 	     queue-callback
 	     yield
 	     eventspace-shutdown?
 	     get-panel-background
-	     send-event
-	     gl-context<%>
-	     gl-config%)
 
-  (define the-color-database (wx:get-the-color-database))
-  (define the-font-name-directory (wx:get-the-font-name-directory))
+             the-style-list
+             the-editor-wordbreak-map
+             make-screen-bitmap
+             make-gl-bitmap)
+   
   (define the-clipboard (wx:get-the-clipboard))
   (define the-x-selection-clipboard (wx:get-the-x-selection))
-  (define the-font-list (wx:get-the-font-list))
-  (define the-pen-list (wx:get-the-pen-list))
-  (define the-brush-list (wx:get-the-brush-list))
-  (define the-style-list wx:the-style-list)
-  (define the-editor-wordbreak-map wx:the-editor-wordbreak-map)
+
+  (define (find-graphical-system-path what)
+    (unless (memq what '(init-file x-display))
+      (raise-type-error 'find-graphical-system-path "'init-file or 'x-display" what))
+    (or (wx:find-graphical-system-path what)
+        (case what
+          [(init-file)
+           (build-path (find-system-path 'init-dir)
+                       (case (system-type)
+                         [(windows) "gracketrc.rktl"]
+                         [else ".gracketrc"]))]
+          [else #f])))
+
+  (provide (all-from racket/draw))
 
   (provide button%
 	   canvas%
@@ -276,29 +255,19 @@
 	   get-display-left-top-inset
 	   get-color-from-user
 	   get-font-from-user
-	   append-editor-operation-menu-items
+           append-editor-operation-menu-items
 	   append-editor-font-menu-items
 	   get-top-level-focus-window
 	   get-top-level-edit-target-window
 	   register-collecting-blit
 	   unregister-collecting-blit
-	   bitmap-dc%
-	   post-script-dc%
 	   printer-dc%
 	   current-text-keymap-initializer
 	   sleep/yield
 	   get-window-text-extent
-	   get-family-builtin-face
 	   send-message-to-window
 	   the-clipboard
 	   the-x-selection-clipboard
-	   the-editor-wordbreak-map
-	   the-brush-list
-	   the-color-database
-	   the-font-name-directory
-	   the-pen-list
-	   the-font-list
-	   the-style-list
 	   normal-control-font
 	   small-control-font
 	   tiny-control-font
@@ -321,9 +290,8 @@
 	   make-gui-namespace
 	   make-gui-empty-namespace
 	   file-creator-and-type
-	   current-ps-afm-file-paths
-	   current-ps-cmap-file-paths
 	   hide-cursor-until-moved
            system-position-ok-before-cancel?
            label-string?
-           key-code-symbol?))
+           key-code-symbol?
+           find-graphical-system-path))

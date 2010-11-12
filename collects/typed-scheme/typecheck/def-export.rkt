@@ -1,15 +1,9 @@
 #lang racket/base
 
-(require racket/require
-         (for-syntax syntax/parse racket/base 
-                     (path-up "utils/tc-utils.rkt" "private/typed-renaming.rkt" "env/type-name-env.rkt")))
+(require racket/require (for-template "renamer.rkt") "renamer.rkt"
+         (for-syntax syntax/parse racket/base "renamer.rkt"
+                     (path-up "utils/tc-utils.rkt" "env/type-name-env.rkt")))
 (provide def-export)
-
-
-(define-for-syntax (renamer id #:alt [alt #f])
-  (if alt
-      (make-typed-renaming (syntax-property id 'not-free-identifier=? #t) alt)
-      (make-rename-transformer (syntax-property id 'not-free-identifier=? #t))))
 
 (define-syntax (def-export stx)
   (syntax-parse stx

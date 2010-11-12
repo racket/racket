@@ -33,11 +33,11 @@
                           (cond
                             [(not (match-blame blame msg))
                              (error 'test-contract-error
-                                    "blame \"~a\" not found in:~n\"~a\""
+                                    "blame \"~a\" not found in:\n\"~a\""
                                      blame msg)]
                             [(not (match-obj obj msg))
                              (error 'test-contract-error
-                                    "object \"~a\" not found in:~n\"~a\""
+                                    "object \"~a\" not found in:\n\"~a\""
                                     obj msg)]
                             [else 
                              (printf "contract error \"~a\" on ~a blaming ~a: ok\n\t\"~a\"\n\n" 

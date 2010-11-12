@@ -76,7 +76,7 @@
 				  sr))])
 		   (or (equal? st (symbol->string (object-name value)))
 		       (and (fprintf (current-error-port)
-				     "different: ~s ~s~n" st (object-name value))
+				     "different: ~s ~s\n" st (object-name value))
 			    #f))))))
 	 gvl)))
 

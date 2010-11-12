@@ -4,7 +4,9 @@
          (for-syntax scheme/base))
 
 (provide trace untrace
-         current-trace-print-args trace-call
+         current-trace-print-results
+         current-trace-print-args
+         trace-call
          current-trace-notify
          current-prefix-out current-prefix-in)
 
@@ -93,9 +95,8 @@
                        (lambda (n port offset width)
                          (display
                           (if n
-                              (if (zero? n) first
-                                  (format "~n~a" rest))
-                              (format "~n"))
+                            (if (zero? n) first (format "\n~a" rest))
+                            "\n")
                           port)
                          (if n
                              (if (zero? n)
@@ -109,44 +110,43 @@
   (lambda (name results level)
     (as-trace-notify
      (lambda ()
-       (trace-print-results name results level)))))
+       ((current-trace-print-results) name results level)))))
 
-(define trace-print-results
-  (lambda (name results level)
-    (let-values (((first rest)
-                  (build-prefixes level (current-prefix-out))))
-      (parameterize ((pretty-print-print-line
-                      (lambda (n port offset width)
-                        (display
+(define current-trace-print-results
+  (make-parameter
+   (lambda (name results level)
+     (let-values (((first rest)
+                   (build-prefixes level (current-prefix-out))))
+       (parameterize ((pretty-print-print-line
+                       (lambda (n port offset width)
+                         (display
+                          (if n
+                              (if (zero? n) first (format "\n~a" rest))
+                              "\n")
+                          port)
                          (if n
-                             (if (zero? n) first
-                                 (format "~n~a" rest))
-                             (format "~n"))
-                         port)
-                        (if n
-                            (if (zero? n)
-                                (string-length first)
-                                (string-length rest))
-                            0))))
-        (cond
-          ((null? results)
-           (pretty-display "*** no values ***"))
-          ((null? (cdr results))
-           (pretty-print (car results)))
-          (else
-           (pretty-print (car results))
-           (parameterize ((pretty-print-print-line
-                           (lambda (n port offset width)
-                             (display
+                             (if (zero? n)
+                                 (string-length first)
+                                 (string-length rest))
+                             0))))
+         (cond
+           ((null? results)
+            (pretty-display "*** no values ***"))
+           ((null? (cdr results))
+            (pretty-print (car results)))
+           (else
+            (pretty-print (car results))
+            (parameterize ((pretty-print-print-line
+                            (lambda (n port offset width)
+                              (display
+                               (if n
+                                   (if (zero? n) rest (format "\n~a" rest))
+                                   "\n")
+                               port)
                               (if n
-                                  (if (zero? n) rest
-                                      (format "~n~a" rest))
-                                  (format "~n"))
-                              port)
-                             (if n
-                                 (string-length rest)
-                                 0))))
-             (for-each pretty-print (cdr results)))))))))
+                                  (string-length rest)
+                                  0))))
+              (for-each pretty-print (cdr results))))))))))
 
 
 ;; A traced-proc struct instance acts like a procedure,

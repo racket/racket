@@ -16,7 +16,9 @@ namespace.
 
 (require mzlib/list 
          mzlib/math
-         mzlib/etc)
+         mzlib/etc
+	 deinprogramm/signature/signature
+	 deinprogramm/signature/signature-english)
 
 (define-syntax (define-teach stx)
   (syntax-case stx ()
@@ -178,6 +180,18 @@ namespace.
     (check-second 'cons a b)
     (cons a b)))
 
+(define-teach beginner car
+  (lambda (p) (checked-car p)))
+
+(define-teach beginner first
+  (lambda (p) (checked-first p)))
+
+(define-teach beginner cdr
+  (lambda (p) (checked-cdr p)))
+
+(define-teach beginner rest
+  (lambda (p) (checked-rest p)))
+
 (define-teach beginner list*
   (lambda x
     (check-last 'list* x)
@@ -228,7 +242,7 @@ namespace.
 (define-teach beginner exit
   (lambda () (exit)))
 
-(define (tequal? a b epsilon)
+(define (tequal? x y epsilon)
   (let* ([ht (make-hash)] ;; make-hash
          [union-find (lambda (a)
                        (let loop ([prev a]
@@ -250,14 +264,48 @@ namespace.
                                 #t
                                 (begin
                                   (hash-set! ht b a)
-                                  #f))))])
-    (let ? ([a a][b b])
+                                  #f))))]
+	 [fail (lambda (fmt arg)
+		 (raise (make-exn:fail:contract (if (or (eq? arg x)
+							(eq? arg y))
+						    (format fmt arg)
+						    (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
+						(current-continuation-marks))))])
+    (let ? ([a x][b y])
       (cond
         [(real? a)
          (and (real? b)
               (beginner-=~ a b epsilon))]
+	[(procedure? a)
+	 (fail "first argument of equality cannot be a procedure, given ~e" a)]
+	[(procedure? b)
+	 (fail "second argument of equality cannot be a procedure, given ~e" b)]
         [(union-equal!? a b) #t]
         [else (equal?/recur a b ?)]))))
+
+(define (teach-equal? x y)
+
+  (define (fail fmt arg)
+    (raise (make-exn:fail:contract (if (or (eq? arg x)
+					   (eq? arg y))
+				       (format fmt arg)
+				       (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
+				   (current-continuation-marks))))
+
+  (let recur ([a x] [b y])
+    (cond
+     [(procedure? a)
+      (fail "first argument of equality cannot be a procedure, given ~e" a)]
+     [(procedure? b)
+      (fail "second argument of equality cannot be a procedure, given ~e" b)]
+     [(and (number? a)
+	   (inexact? a))
+      (fail "first argument of equality cannot be an inexact number, given ~e" a)]
+     [(and (number? b)
+	   (inexact? b))
+      (fail "first argument of equality cannot be an inexact number, given ~e" b)]
+     [else
+      (equal?/recur a b recur)])))
 
 (define-teach beginner equal?
   (lambda (a b)
@@ -346,16 +394,28 @@ namespace.
     (apply append x)))
 
 (define-teach advanced make-hash
-  (lambda (a)
+  (lambda ([a empty])
     (make-hash (map (lambda (l) (cons (first l) (second l))) a))))
 
 (define-teach advanced make-hasheq
-  (lambda (a)
+  (lambda ([a empty])
     (make-hasheq (map (lambda (l) (cons (first l) (second l))) a))))
 
 (define-teach advanced make-hasheqv
-  (lambda (a)
+  (lambda ([a empty])
     (make-hasheqv (map (lambda (l) (cons (first l) (second l))) a))))
+
+(define-teach advanced make-immutable-hash
+  (lambda ([a empty])
+    (make-immutable-hash (map (lambda (l) (cons (first l) (second l))) a))))
+
+(define-teach advanced make-immutable-hasheq
+  (lambda ([a empty])
+    (make-immutable-hasheq (map (lambda (l) (cons (first l) (second l))) a))))
+
+(define-teach advanced make-immutable-hasheqv
+  (lambda ([a empty])
+    (make-immutable-hasheqv (map (lambda (l) (cons (first l) (second l))) a))))
 
 (provide  
  false?
@@ -370,6 +430,10 @@ namespace.
  beginner-member?
  beginner-remove
  beginner-cons
+ beginner-car
+ beginner-cdr
+ beginner-first
+ beginner-rest
  beginner-list*
  beginner-append
  intermediate-append
@@ -390,7 +454,11 @@ namespace.
  advanced-make-hash
  advanced-make-hasheq
  advanced-make-hasheqv
- cyclic-list?)
+ advanced-make-immutable-hash
+ advanced-make-immutable-hasheq
+ advanced-make-immutable-hasheqv
+ cyclic-list?
+ teach-equal?)
 
 ;; -----------------------------------------------------------------------------
 ;; auxiliary stuff, ignore
@@ -437,7 +505,7 @@ namespace.
 
 (define-teach beginner string-ith
   (lambda (s n)
-    (define f "<exact integer in [0, length of the given string (~s)]>")
+    (define f "<exact integer in [0, length of the given string (~s))>")
     (cerr 'string-ith (string? s) "<string>" s "first")
     (cerr 'string-ith (and (number? n) (integer? n) (>= n 0)) NAT n "second")
     (let ([l (string-length s)]) 

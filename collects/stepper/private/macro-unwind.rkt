@@ -159,14 +159,14 @@
                                     "unknown value for syntax property 'stepper-define-type: ~e"
                                     define-type)])]
                     [else (error 'unwind-define
-                                 "expr with stepper-define-type is not a lambda: ~e"
+                                 "expr with stepper-define-type is not a lambda: ~.s"
                                  (syntax->datum unwound-body))])
                   #`(define #,printed-name #,unwound-body)))
             ;; this is there just to see the unsupported stuff go by...
             #`(define-values (name . others) #,(unwind #'body settings))
             )]
        [else (error 'unwind-define
-                    "expression is not a define-values: ~e"
+                    "expression is not a define-values: ~.s"
                     (syntax->datum stx))]))
    
    (define (unwind-mz-let stx settings)
@@ -216,7 +216,7 @@
                                    #`((define-values vars exp) ...)))])
           #`(local defns #,(unwind #'body settings)))]
        [else (error 'unwind-local
-                    "expected a letrec-values, given: ~e"
+                    "expected a letrec-values, given: ~.s"
                     (syntax->datum stx))]))
    
    ;(define (unwind-quasiquote-the-cons-application stx settings)
@@ -244,7 +244,7 @@
                              (syntax-property stx 'user-source))
                         (eq? user-position
                              (syntax-property stx 'user-position)))
-                   (syntax-case stx (if begin)
+                   (syntax-case stx (if begin let-values)
                      ;; the else clause disappears when it's a
                      ;; language-inserted else clause
                      [(if test result)
@@ -254,13 +254,13 @@
                             (loop (syntax else-clause)))]
                      ;; else clause appears momentarily in 'before,' even
                      ;; though it's a 'skip-completely'
-                     [(begin . rest) null]
+                     [(let-values () . rest) null]
                      [else-stx
                       (error 'unwind-cond
-                             "expected an if, got: ~e"
+                             "expected an if, got: ~.s"
                              (syntax->datum (syntax else-stx)))])
                    (error 'unwind-cond
-                          "expected a cond clause expansion, got: ~e"
+                          "expected a cond clause expansion, got: ~.s"
                           (syntax->datum stx))))])
          (syntax (cond . clauses)))))
    

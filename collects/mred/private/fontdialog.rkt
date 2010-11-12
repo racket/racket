@@ -39,7 +39,7 @@
 						 (let ([s (send (send edit get-style-list) find-named-style "Standard")])
 						   (send s set-delta (font->delta f))))))]
 	       [p (make-object horizontal-pane% f)]
-	       [face (make-object list-box% #f (get-face-list) p refresh-sample)]
+	       [face (make-object list-box% #f (wx:get-face-list) p refresh-sample)]
 	       [p2 (make-object vertical-pane% p)]
 	       [p3 (instantiate horizontal-pane% (p2) [stretchable-width #f])]
 	       [style (let ([pnl (instantiate group-box-panel% ("Style" p3) [stretchable-height #f] [stretchable-width #f])])
@@ -52,7 +52,9 @@
 	       [sip (make-object check-box% "Size in Pixels" p4 refresh-sample)]
 	       [sym (make-object check-box% "Map as Symbol" p4 refresh-sample)]
 	       [size (make-object slider% "Size:" 4 127 p2 refresh-sample 12)]
-	       [sample (make-object text-field% "Sample" f void "The quick brown fox jumped over the lazy dog" '(multiple))]
+	       [sample (make-object text-field% "Sample" f void 
+                                    "The quick brown fox jumped over the lazy dog\n(\u3bb (x) x)\n" 
+                                    '(multiple))]
 	       [edit (send sample get-editor)]
 	       [done (lambda (ok) (lambda (b e) (set! ok? ok) (send f show #f)))]
 	       [get-font (lambda () (let ([face (send face get-string-selection)])
@@ -71,7 +73,7 @@
 							  [(3) 'unsmoothed])
 							(send sip get-value)))))]
 	       [bp (instantiate horizontal-pane% (f) [stretchable-height #f])]
-	       [ms-button (if (eq? (system-type) 'windows)
+	       [ms-button (if (eq? (wx:font-from-user-platform-mode) 'dialog)
 			      (begin0
 			       (make-object button% "Use System Dialog..." bp
 					    (lambda (b e)
@@ -96,7 +98,7 @@
 		(lambda (font)
 		  (let* ([facen (if font
 				    (send font get-face)
-				    (get-family-builtin-face 'default))]
+				    (wx:get-family-builtin-face 'default))]
 			 [f (and facen (send face find-string facen))])
 		    (and f (>= f 0) (send face set-selection f)))
 		  (when font

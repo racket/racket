@@ -46,6 +46,12 @@
     #:property prop:custom-print-quotable 'always)
 
   (ptest "1" 1)
+  (parameterize ([print-boolean-long-form #f])
+    (ptest "#t" #t)
+    (ptest "#f" #f))
+  (parameterize ([print-boolean-long-form #t])
+    (ptest "#true" #t)
+    (ptest "#false" #f))
   (ptest "1/2" 1/2)
   (ptest "#f" #f)
   (ptest "#\\x" #\x)

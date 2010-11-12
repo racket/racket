@@ -71,7 +71,7 @@ The @scheme[style] list can contain the following flags:
                              method}
 
  @item{@scheme['transparent] --- the canvas is ``erased'' before an
-                             update using it's parent window's background}
+                             update using its parent window's background}
 
 ]
 

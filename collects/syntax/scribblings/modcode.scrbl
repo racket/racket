@@ -19,7 +19,7 @@
                             (or/c (symbols 'src 'zo 'so) false/c))
                            (lambda (src zo so) #f)]
                           [#:notify notify-proc (any/c . -> . any) void]
-                          [#:src-reader read-syntax-proc 
+                          [#:source-reader read-syntax-proc 
                                         (any/c input-port? . -> . syntax?) 
                                         read-syntax])
          any]{

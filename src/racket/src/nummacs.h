@@ -143,8 +143,8 @@ static MZ_INLINE rettype name ## __int_comp(const Scheme_Object *n1, const Schem
               (n2)); \
 }) \
 FLOATWRAP( \
-static MZ_INLINE rettype name ## __flt_big(const Scheme_Object *n1, const Scheme_Object *n2) { \
-  Small_Rational sr2; \
+static MZ_INLINE rettype name ## __flt_big(float d1, const Scheme_Object *n1, const Scheme_Object *n2) { \
+  toi_or_toe(,Small_Rational sr2); \
   snanchk_more(d1); \
   wrap(if (MZ_IS_POS_INFINITY(d1)) return combineinf(swaybigf, n2);) \
   wrap(if (MZ_IS_NEG_INFINITY(d1)) return combineinf(swaysmallf, n2);) \
@@ -152,8 +152,8 @@ static MZ_INLINE rettype name ## __flt_big(const Scheme_Object *n1, const Scheme
                     rop(rat_from_float(d1, &sr2), scheme_integer_to_rational(n2))); \
 }) \
 FLOATWRAP( \
-static MZ_INLINE rettype name ## __flt_rat(const Scheme_Object *n1, const Scheme_Object *n2) { \
-  Small_Rational sr3; \
+static MZ_INLINE rettype name ## __flt_rat(float d1, const Scheme_Object *n1, const Scheme_Object *n2) { \
+  toi_or_toe(,Small_Rational sr3); \
   snanchk_more(d1); \
   wrap(if (MZ_IS_POS_INFINITY(d1)) return combineinf(swaybigf, n2);) \
   wrap(if (MZ_IS_NEG_INFINITY(d1)) return combineinf(swaysmallf, n2);) \
@@ -162,7 +162,7 @@ static MZ_INLINE rettype name ## __flt_rat(const Scheme_Object *n1, const Scheme
                     rop(rat_from_float(d1, &sr3), (n2))); \
 })\
 FLOATWRAP(complexwrap(  \
-static MZ_INLINE rettype name ## __flt_comp(const Scheme_Object *n1, const Scheme_Object *n2) { \
+static MZ_INLINE rettype name ## __flt_comp(float d1, const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Complex sc; \
   snanchk_more(d1); \
   return cxop((scheme_make_small_complex(n1, &sc)), \
@@ -199,9 +199,9 @@ static MZ_INLINE rettype name ## __big_int(const Scheme_Object *n1, const Scheme
   return bn_op((n1), (scheme_make_small_bignum(SCHEME_INT_VAL(n2), &sb))); \
 } \
 FLOATWRAP( \
-static MZ_INLINE rettype name ## __big_flt(double d1, const Scheme_Object *n1, const Scheme_Object *n2) { \
-  Small_Rational sr6; \
+static MZ_INLINE rettype name ## __big_flt(const Scheme_Object *n1, const Scheme_Object *n2) { \
   float d2; \
+  toi_or_toe(,Small_Rational sr6); \
   d2 = SCHEME_FLT_VAL(n2); \
   snanchk_more(d2); \
   wrap(if (MZ_IS_POS_INFINITY(d2)) return combineinf(swaysmalls, n1);) \
@@ -236,8 +236,8 @@ static MZ_INLINE rettype name ## __rat_int(const Scheme_Object *n1, const Scheme
 } \
 FLOATWRAP( \
 static MZ_INLINE rettype name ## __rat_flt(const Scheme_Object *n1, const Scheme_Object *n2) { \
-  Small_Rational sr9; \
   float d2; \
+  toi_or_toe(,Small_Rational sr9); \
   d2 = SCHEME_FLT_VAL(n2); \
   snanchk_more(d2); \
   wrap(if (MZ_IS_POS_INFINITY(d2)) return combineinf(swaysmalls, n1);) \
@@ -354,14 +354,14 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
         return fop(d1, d2); \
       } \
       if (t2 == scheme_bignum_type) { \
-        return name ## __flt_big(n1, n2); \
+        return name ## __flt_big(d1, n1, n2);    \
       } \
        if (t2 == scheme_rational_type) { \
-        return name ## __flt_rat(n1, n2); \
+        return name ## __flt_rat(d1, n1, n2);   \
       } \
       complexwrap( \
        if (noniziwrap((t2 == scheme_complex_type))) { \
-        return name ## __flt_comp(n1, n2); \
+        return name ## __flt_comp(d1, n1, n2);        \
       } \
       )\
       return name ## __wrong_type(n2); \

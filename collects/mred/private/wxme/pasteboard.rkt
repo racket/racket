@@ -34,8 +34,9 @@
 (define black-brush (send the-brush-list find-or-create-brush "black" 'xor))
 (define white-brush (send the-brush-list find-or-create-brush "white" 'solid))
 (define invisi-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
-(define rb-brush (send the-brush-list find-or-create-brush "black" 'transparent))
-(define rb-pen (send the-pen-list find-or-create-pen "black" 1 'xor-dot))
+(define invisi-brush (send the-brush-list find-or-create-brush "black" 'transparent))
+(define rb-pen (send the-pen-list find-or-create-pen (get-highlight-background-color) 1 'xor-dot))
+(define rb-brush (send the-brush-list find-or-create-brush (get-highlight-background-color) 'solid))
 
 (define arrow (make-object cursor% 'arrow))
 
@@ -122,6 +123,11 @@
   (define dragging? #f)
   (define rubberband? #f)
 
+  (define rb-x 0.0)
+  (define rb-y 0.0)
+  (define rb-w 0.0)
+  (define rb-h 0.0)
+
   (define need-resize? #f)
 
   (define resizing #f) ; a snip
@@ -137,8 +143,10 @@
 
   (define update-left 0.0)
   (define update-right 0.0)
+  (define update-right-end #f)
   (define update-top 0.0)
   (define update-bottom 0.0)
+  (define update-bottom-end #f)
   (define update-nonempty? #f)
   (define no-implicit-update? #f)
 
@@ -165,7 +173,7 @@
 
   ;; ----------------------------------------
 
-  (define/private (rubber-band x y w h)
+  (define/private (rubber-band-update x y w h)
     (when (and s-admin
                (not (zero? w))
                (not (zero? h)))
@@ -190,22 +198,11 @@
                   [b (min b (+ vy vh))])
               (unless (or (x . >= . r)
                           (y . >= . b))
-                (let-boxes ([dc #f]
-                            [dx 0.0]
-                            [dy 0.0])
-                    (set-box! dc (send s-admin get-dc dx dy))
-                  (let ([old-pen (send dc get-pen)]
-                        [old-brush (send dc get-brush)])
-                    (send dc set-pen rb-pen)
-                    (send dc set-brush rb-brush)
-  
-                    (send dc draw-rectangle
-                          (- x dx) (- y dy)
-                          (- r x)
-                          (- b y))
-
-                    (send dc set-pen old-pen)
-                    (send dc set-brush old-brush))))))))))
+                (set! rb-x x)
+                (set! rb-y y)
+                (set! rb-w (- r x))
+                (set! rb-h (- b y))
+                (update rb-x rb-y rb-w rb-h))))))))
 
   (def/override (adjust-cursor [mouse-event% event])
     (if (not s-admin)
@@ -315,7 +312,7 @@
 
               (when rubberband?
                 (set! rubberband? #f)
-                (rubber-band start-x start-y (- last-x start-x) (- last-y start-y))
+                (rubber-band-update start-x start-y (- last-x start-x) (- last-y start-y))
                 (add-selected start-x start-y (- last-x start-x) (- last-y start-y))
                 (update-all)))
 
@@ -375,10 +372,12 @@
                   (when (send event dragging?)
                     (cond
                      [rubberband?
+                      (begin-edit-sequence)
                       ;; erase old
-                      (rubber-band start-x start-y (- last-x start-x) (- last-y start-y))
+                      (rubber-band-update start-x start-y (- last-x start-x) (- last-y start-y))
                       ;; draw new:
-                      (rubber-band start-x start-y (- x start-x) (- y start-y))]
+                      (rubber-band-update start-x start-y (- x start-x) (- y start-y))
+                      (end-edit-sequence)]
                      [resizing
                       (do-event-resize x y)]
                      [else
@@ -914,6 +913,8 @@
                       (on-resize snip w h)
                       (set! write-locked (sub1 write-locked))
 
+                      (update-location loc)
+
                       (let ([rv? 
                              (and (send snip resize w h)
                                   (begin
@@ -932,6 +933,8 @@
                           (set-modified #t))
 
                         (after-resize snip w h rv?)
+
+                        (update-location loc)
 
                         (set! write-locked (add1 write-locked))
                         (end-edit-sequence)
@@ -1273,6 +1276,17 @@
                         show-caret
                         'no-caret))
 
+          (when rubberband?
+            (let ([a (send dc get-alpha)])
+              (send dc set-alpha (* a 0.5))
+              (send dc set-brush rb-brush)
+              (send dc set-pen invisi-pen)
+              (send dc draw-rectangle (+ rb-x dx) (+ rb-y dy) rb-w rb-h)
+              (send dc set-pen rb-pen)
+              (send dc set-alpha a)
+              (send dc set-brush invisi-brush)
+              (send dc draw-rectangle (+ rb-x dx) (+ rb-y dy) rb-w rb-h)))
+
           (set! flow-locked? #f)
           (set! write-locked (sub1 write-locked))))))
 
@@ -1338,18 +1352,25 @@
                         [bgmode (send dc get-text-mode)]
                         [rgn (send dc get-clipping-region)])
 
+                    (send dc suspend-flush)
+
                     (send dc set-clipping-rect (- left x) (- top y) width height)
-
-                    (draw dc (- x) (- y) left top width height show-caret bg-color)
-
-                    (send dc set-clipping-region rgn)
-
-                    (send dc set-brush brush)
-                    (send dc set-pen pen)
-                    (send dc set-font font)
-                    (send dc set-text-foreground fg)
-                    (send dc set-text-background bg)
-                    (send dc set-text-mode bgmode)))))
+                    
+                    (dynamic-wind
+                        void
+                        (lambda ()
+                          (draw dc (- x) (- y) left top width height show-caret bg-color))
+                        (lambda ()
+                          (send dc set-clipping-region rgn)
+                          
+                          (send dc set-brush brush)
+                          (send dc set-pen pen)
+                          (send dc set-font font)
+                          (send dc set-text-foreground fg)
+                          (send dc set-text-background bg)
+                          (send dc set-text-mode bgmode)
+                          
+                          (send dc resume-flush)))))))
 
           (end-sequence-lock)))]))
   ;; ----------------------------------------
@@ -1409,8 +1430,8 @@
                               delayedscroll-x delayedscroll-y
                               delayedscroll-w delayedscroll-h
                               #t delayedscrollbias)))
-      (let ([r (+ x w)]
-            [b (+ y h)])
+      (let ([r (if (symbol? w) x (+ x w))]
+            [b (if (symbol? h) y (+ y h))])
         (let ([x (max x 0.0)]
               [y (max y 0.0)]
               [r (max r 0.0)]
@@ -1422,51 +1443,42 @@
               (begin
                 (set! update-top y)
                 (set! update-left x)
-                (set! update-bottom (if (h . < . 0) h b))
-                (set! update-right (if (w . < . 0) w r))
+                (set! update-bottom b)
+                (set! update-bottom-end (and (symbol? h) h))
+                (set! update-right r)
+                (set! update-right-end (and (symbol? w) w))
                 (set! update-nonempty? #t))
               (begin
                 (set! update-top (min y update-top))
                 (set! update-left (min x update-left))
-                (let ([ub (if (and (h . < . 0) (update-bottom . > . 0))
-                              (- update-bottom)
-                              update-bottom)])
-                  (set! update-bottom
-                        (if (ub . < . 0)
-                            (if (and (h . < . 0) (h . < . ub))
-                                h
-                                (if (and (h . > . 0)
-                                         ((- b) . < . ub))
-                                    (- b)
-                                    ub))
-                            (max b ub))))
-                (let ([ur (if (and (w . < . 0) (update-right . > . 0))
-                              (- update-right)
-                              update-right)])
-                  (set! update-right
-                        (if (ur . < . 0)
-                            (if (and (w . < . 0) (w . < . ur))
-                                w
-                                (if (and (w . > . 0)
-                                         ((- r) . < . ur))
-                                    (- r)
-                                    ur))
-                            (max r ur))))))
+                (set! update-bottom (max b update-bottom))
+                (when (symbol? h)
+                  (if (eq? h 'display-end)
+                      (set! update-bottom-end 'display-end)
+                      (unless (eq? update-bottom-end 'display-end)
+                        (set! update-bottom-end 'end))))
+                (set! update-right (max r update-right))
+                (when (symbol? w)
+                  (if (eq? w 'display-end)
+                      (set! update-right-end 'display-end)
+                      (unless (eq? update-right-end 'display-end)
+                        (set! update-right-end 'end))))))
 
           (unless (or (positive? sequence)
                       (not s-admin)
                       flow-locked?)
             (check-recalc)
 
-            (when (update-bottom . < . 0)
-              (set! update-bottom (- update-bottom))
-              (when (update-bottom . < . real-height)
-                (set! update-bottom real-height)))
-
-            (when (update-right . < . 0)
-              (set! update-right (- update-right))
-              (when (update-right . < . real-width)
-                (set! update-right real-width)))
+            (let-boxes ([vx 0.0] [vy 0.0] [vw 0.0] [vh 0.0])
+                (when (or (eq? update-bottom-end 'display-end)
+                          (eq? update-right-end 'display-end))
+                  (send s-admin get-max-view x y w h))
+              (case update-bottom-end
+                [(end) (set! update-bottom (max update-bottom real-height))]
+                [(display-end) (set! update-bottom (max update-bottom vh))])
+              (case update-right-end
+                [(end) (set! update-right (max update-right real-width))]
+                [(display-end) (set! update-right (max update-right vw))]))
 
             (set! update-nonempty? #f)
 
@@ -1520,9 +1532,9 @@
 
   (def/override (invalidate-bitmap-cache [real? [x 0.0]] 
                                          [real? [y 0.0]]
-                                         [(make-alts nonnegative-real? (symbol-in end)) [w 'end]]
-                                         [(make-alts nonnegative-real? (symbol-in end)) [h 'end]])
-    (update x y (if (symbol? w) -1.0 w) (if (symbol? h) -1.0 h)))
+                                         [(make-alts nonnegative-real? (symbol-in end display-end)) [w 'end]]
+                                         [(make-alts nonnegative-real? (symbol-in end display-end)) [h 'end]])
+    (update x y w h))
 
   ;; ----------------------------------------
 

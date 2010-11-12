@@ -17,6 +17,7 @@
    "lex"
    
    (test-lexer "=" 'EQUAL #f)
+   (test-lexer "!=" 'NEQUAL #f)
    (test-lexer "?" 'QMARK #f)
    (test-lexer "~" 'TILDE #f)
    (test-lexer "." 'DOT #f)

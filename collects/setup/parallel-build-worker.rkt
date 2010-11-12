@@ -2,6 +2,11 @@
 (require compiler/cm)
 (require racket/match)
 
+(define prev-uncaught-exception-handler (uncaught-exception-handler))
+(uncaught-exception-handler (lambda (x)
+  (when (exn:break? x) (exit 1))
+  (prev-uncaught-exception-handler x)))
+
 (let ([cmc (make-caching-managed-compile-zo)]
       [worker-id (read)])
  (let loop ()
@@ -17,7 +22,7 @@
               (write msg)))
           (let ([cep (current-error-port)])
             (define (pp x)
-              (fprintf cep "COMPILING ~a ~a ~a ~a~n" worker-id name file x))
+              (fprintf cep "COMPILING ~a ~a ~a ~a\n" worker-id name file x))
           (with-handlers ([exn:fail? (lambda (x)
                            (send/resp (list 'ERROR (exn-message x))))])
             (parameterize (

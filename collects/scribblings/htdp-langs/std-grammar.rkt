@@ -21,7 +21,8 @@
               @#,scheme[(check-within expr expr expr)]
 	      @#,scheme[(check-member-of expr expr (... ...))]
 	      @#,scheme[(check-range expr expr expr)]
-              @#,scheme[(check-error expr expr)]]
+              @#,scheme[(check-error expr expr)]
+              @#,scheme[(check-error expr)]]
    (...
     [library-require @#,scheme[(require string)]
                      @#,scheme[(require (lib string string ...))]

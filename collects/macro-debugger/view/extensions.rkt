@@ -3,21 +3,11 @@
          racket/unit
          racket/list
          racket/match
-         racket/gui
-         framework
+         racket/gui/base
          unstable/class-iop
          "interfaces.rkt"
-         "prefs.rkt"
-         "hiding-panel.rkt"
          (prefix-in s: "../syntax-browser/widget.rkt")
-         (prefix-in s: "../syntax-browser/keymap.rkt")
-         (prefix-in s: "../syntax-browser/interfaces.rkt")
-         "../model/deriv.rkt"
-         "../model/deriv-util.rkt"
-         "../model/trace.rkt"
-         "../model/steps.rkt"
-         "cursor.rkt"
-         unstable/gui/notify)
+         (prefix-in s: "../syntax-browser/keymap.rkt"))
 (provide stepper-keymap%
          stepper-syntax-widget%)
 
@@ -29,6 +19,7 @@
     (inherit-field config
                    controller)
     (inherit add-function
+             map-function
              call-function)
 
     (define show-macro #f)
@@ -38,6 +29,9 @@
 
     (define/public (get-hiding-panel)
       (send/i macro-stepper widget<%> get-macro-hiding-prefs))
+
+    (map-function ":s" "hiding:show-macro")
+    (map-function ":h" "hiding:hide-macro")
 
     (add-function "hiding:show-macro"
                   (lambda (i e)

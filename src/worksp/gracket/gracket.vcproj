@@ -43,7 +43,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\racket\include,..\..\racket\utils,..\..\wxwindow\contrib\fafa"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\racket\include"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -68,8 +68,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libgracketxxxxxxx.dll"
-				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\GRacketCGC.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -130,7 +130,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\racket\include,..\..\racket\utils,..\..\wxwindow\contrib\fafa"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\racket\include"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -154,8 +154,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libgracketxxxxxxx.dll"
-				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\GRacketCGC.exe"
 				SuppressStartupBanner="true"
 				IgnoreDefaultLibraryNames="libcd.lib"
@@ -201,11 +201,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gracket\grmain.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\racket\uniplt.c"
+				RelativePath="..\..\gracket\grmain.c"
 				>
 			</File>
 		</Filter>
@@ -213,14 +209,6 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;fi;fd"
 			>
-			<File
-				RelativePath="..\..\gracket\gracket.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\racket\utils\xcglue.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

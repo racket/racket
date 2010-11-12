@@ -1,18 +1,19 @@
 #lang racket
 
 (require
- "../utils/utils.rkt"
- racket/tcp 
- (only-in rnrs/lists-6 fold-left)
- '#%paramz
- "extra-procs.rkt"
- (utils tc-utils )
- (types  union convenience)
- (only-in '#%kernel [apply kernel:apply])
- racket/promise racket/system
- (only-in string-constants/private/only-once maybe-print-message)
- (only-in racket/match/runtime match:error matchable? match-equality-test)
- (for-template racket racket/unsafe/ops)
+ "../utils/utils.rkt" 
+ (for-template '#%paramz racket/base racket/list
+               racket/tcp 
+               (only-in rnrs/lists-6 fold-left)
+               '#%paramz
+               "extra-procs.rkt"
+               (only-in '#%kernel [apply kernel:apply])
+               racket/promise racket/system
+               (only-in string-constants/private/only-once maybe-print-message)
+               (only-in racket/match/runtime match:error matchable? match-equality-test)
+               racket/unsafe/ops)
+ (utils tc-utils)
+ (types union convenience) 
  (rename-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym]))
 
 (provide indexing)

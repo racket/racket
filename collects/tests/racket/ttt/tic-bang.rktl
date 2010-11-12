@@ -53,9 +53,9 @@
 (define make-move
   (lambda (other-move p/o tag)
     (lambda (states)
-      (printf "~s: processing ~s states ~n" tag (length states))
+      (printf "~s: processing ~s states \n" tag (length states))
       (let ((t (print&remove-terminals states)))
-	(printf "terminal states removed: ~s~n" 
+	(printf "terminal states removed: ~s\n" 
 		(- (length states) (length t)))
 	(if (null? t) 
 	    (void)

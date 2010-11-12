@@ -12,7 +12,7 @@
          mzlib/trace      
          unstable/debug
          racket/function
-         scheme/match
+         racket/match
          (only-in racket/contract
                   listof any/c or/c
                   [->* c->*]
@@ -123,7 +123,9 @@
                        (make-fld t g setters?))]
          [flds (append parent-fields this-flds)]
          [sty (make-Struct name parent flds proc-ty poly? pred
-                           (syntax-local-certifier) (or maker* maker))]
+                           ;; this check is so that the tests work
+                           (if (syntax-transforming?) (syntax-local-certifier) values)
+                           (or maker* maker))]
          [external-fld-types/no-parent types]
          [external-fld-types (map fld-t flds)])
     (if type-only
@@ -211,7 +213,7 @@
 
 ;; check and register types for a polymorphic define struct
 ;; tc/poly-struct : Listof[identifier] (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
-(define (tc/poly-struct vars nm/par flds tys #:maker [maker #f])
+(define (tc/poly-struct vars nm/par flds tys #:maker [maker #f] #:mutable [mutable #f])
   ;; parent field types can't actually be determined here
   (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
   ;; create type variables for the new type parameters
@@ -236,6 +238,7 @@
   ;; then register them
   (mk/register-sty nm flds parent-name parent-field-types types
                    #:maker maker
+                   #:mutable mutable
                    ;; wrap everything in the approriate forall
                    #:wrapper (λ (t) (make-Poly tvars t))
                    #:type-wrapper (λ (t) (make-App t new-tvars #f))

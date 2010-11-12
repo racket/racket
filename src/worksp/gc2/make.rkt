@@ -6,7 +6,7 @@
 	 mzlib/process)
 
 (define (system- s)
-  (fprintf (current-error-port) "~a~n" s)
+  (fprintf (current-error-port) "~a\n" s)
   (system s))
 
 (define accounting-gc? #t)
@@ -244,7 +244,7 @@
 	     (> (file-or-directory-modify-seconds f)
 		ms))
 	   objs)
-      (unless (system- (format "cl.exe ~a /MT /Zi /Fe~a unicows.lib ~a ~a /link ~a~a~a"
+      (unless (system- (format "cl.exe ~a /MT /Zi /Fe~a ~a ~a /link ~a~a~a"
 			       (if exe? "" "/LD /DLL")
 			       dll
 			       (let loop ([objs (append objs sys-libs)])
@@ -271,13 +271,7 @@
 				     ""))))
 	(error 'winmake "~a link failed" (if exe? "EXE" "DLL"))))))
 
-(c-compile "../racket/uniplt.c"
-	   "xsrc/uniplt.obj"
-	   null
-	   " -Dwx_msw")
-
 (let ([objs (list*
-	     "../libracket/Release/uniplt.obj"
 	     "xsrc/gc2.obj"
 	     "xsrc/mzsj86.obj"
 	     "xsrc/foreign.obj"
@@ -297,7 +291,7 @@
 	       (>= (file-or-directory-modify-seconds res)
 		   (file-or-directory-modify-seconds rc)))
 	  (system- (string-append 
-		    "rc /l 0x409  /I ../../wxwindow/include/msw /I ../../wxwindow/contrib/fafa "
+		    "rc /l 0x409 "
 		    (format "/fo~a ~a" res rc)))))
 
 (check-rc "racket.res" "../racket/racket.rc")
@@ -305,188 +299,44 @@
 (let ([objs (list
 	     "racket.res"
 	     "xsrc/main.obj"
-	     "xsrc/uniplt.obj"
 	     "../../../lib/msvc/libracket3mxxxxxxx.lib")])
   (link-dll objs 
 	    '("libracket3mxxxxxxx.dll")
 	    '("delayimp.lib")
 	    exe "" #t))
+(system- "mt.exe -manifest ../../../Racket.exe.manifest -outputresource:../../../Racket.exe;1")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define wx-inc (string-append "/I ../../racket/include "
 			      "/I .. "
-			      "/I ../../racket/gc2 "
-			      "/I ../../wxwindow/include/msw "
-			      "/I ../../wxwindow/include/base "
-			      "/I ../../gracket/wxme "
-			      "/I ../../wxwindow/contrib/wxxpm/libxpm.34b/lib "
-			      "/I ../../wxWindow/contrib/fafa "
-			      "/I ../../wxcommon/jpeg /I ../jpeg /I ../../wxcommon/zlib "))
-(try "wxprecomp.cxx" (list* "../../racket/src/schvers.h" common-deps)
-     "xsrc/wxprecomp.h" #f wx-inc #f "" "-DGC2_AS_IMPORT" #f #f)
+			      "/I ../../racket "
+			      "/I ../../racket/gc2 "))
 
-(define (wx-try base proj x use-precomp? suffix indirect?)
-  (let ([cxx-file (format "../../~a/~a.~a" base x suffix)])
-    (try cxx-file
-	 (list* cxx-file
-		common-deps)
-	 (format "xsrc/~a.~a" x suffix)
-	 (format "xsrc/~a.obj" x)
-	 wx-inc
-	 (and use-precomp? "xsrc/wxprecomp.h")
-	 "-DGC2_JUST_MACROS /FI../../../racket/gc2/gc2.h"
-	 (string-append "-DGC2_AS_IMPORT"
-			(if backtrace-gc?
-			    " /D MZ_GC_BACKTRACE"
-			    ""))
-	 "wx.pch"
-	 indirect?)))
-
-(define wxwin-base-srcs
-  '("wb_canvs"
-    "wb_cmdlg"
-    "wb_data"
-    "wb_dc"
-    "wb_dialg"
-    "wb_frame"
-    "wb_gdi"
-    "wb_hash"
-    "wb_item"
-    "wb_list"
-    "wb_main"
-    "wb_obj"
-    "wb_panel"
-    "wb_print"
-    "wb_ps"
-    "wb_stdev"
-    "wb_sysev"
-    "wb_timer"
-    "wb_types"
-    "wb_utils"
-    "wb_win"))
-
-(for-each (lambda (x)
-	    (wx-try "wxwindow/src/base" "wxwin" x #t "cxx" #f))
-	  wxwin-base-srcs)
-
-(define wxwin-msw-srcs
-  '("wx_buttn"
-    "wx_canvs"
-    "wx_check"
-    "wx_choic"
-    "wx_clipb"
-    "wx_cmdlg"
-    "wx_dc"
-    "wx_dialg"
-    "wx_frame"
-    "wx_gauge"
-    "wx_gbox"
-    "wx_gdi"
-    "wx_graph_glue"
-    "wx_item"
-    "wx_lbox"
-    "wx_main"
-    "wx_menu"
-    "wx_messg"
-    "wx_panel"
-    "wx_pdf"
-    "wx_rbox"
-    "wx_slidr"
-    "wx_tabc"
-    "wx_timer"
-    "wx_utils"
-    "wx_win"
-    "wximgfil"))
-
-(for-each (lambda (x)
-	    (wx-try "wxwindow/src/msw" "wxwin" x #t "cxx" #f))
-	  wxwin-msw-srcs)
-
-(define wxs-srcs
-  '("wxs_bmap"
-    "wxs_butn"
-    "wxs_chce"
-    "wxs_ckbx"
-    "wxs_cnvs"
-    "wxs_dc"
-    "wxs_evnt"
-    "wxs_fram"
-    "wxs_gage"
-    "wxs_gdi"
-    "wxs_glob"
-    "wxs_item"
-    "wxs_lbox"
-    "wxs_menu"
-    "wxs_misc"
-    "wxs_obj"
-    "wxs_panl"
-    "wxs_rado"
-    "wxs_slid"
-    "wxs_tabc"
-    "wxs_win"
-    "wxscheme"))
-
-(for-each (lambda (x)
-	    (wx-try "gracket/wxs" "wxs" x #t "cxx" #f))
-	  wxs-srcs)
-
-(define gracket-srcs
-  '("gracket"
-    "gracketmsw"))
-
-(for-each (lambda (x)
-	    (wx-try "gracket" "libgracket" x #t "cxx" #f))
-	  gracket-srcs)
-
-(wx-try "wxcommon" "wxme" "wxJPEG" #t "cxx" #f)
-(wx-try "racket/utils" "wxme" "xcglue" #f "c" #f)
-(c-compile "../../wxcommon/wxGC.cxx"
-	   "xsrc/wxGC.obj"
-	   null
-	   (string-append wx-inc " -DMZ_PRECISE_GC -DGC2_AS_IMPORT -Dwx_msw"))
-
-(let ([objs (append (list
-		     "xsrc/uniplt.obj"
-		     "xsrc/wxGC.obj"
-		     "xsrc/wxJPEG.obj"
-		     "xsrc/xcglue.obj")
-		    (map
-		     (lambda (n)
-		       (format "xsrc/~a.obj" n))
-		     (append wxwin-base-srcs
-			     wxwin-msw-srcs
-			     wxs-srcs
-			     gracket-srcs)))]
-      [libs (list
-	     "../../../lib/msvc/libracket3mxxxxxxx.lib"
-	     "../wxutils/Release/wxutils.lib"
-	     "../jpeg/Release/jpeg.lib"
-	     "../png/Release/png.lib"
-	     "../zlib/Release/zlib.lib")]
-      [win-libs (list
-		 "comctl32.lib" "glu32.lib" "opengl32.lib"
-		 "gdi32.lib" "comdlg32.lib" "advapi32.lib" 
-		 "shell32.lib" "ole32.lib" "oleaut32.lib"
-		 "winmm.lib")])
-  (link-dll (append objs libs) null win-libs "../../../lib/libgracket3mxxxxxxx.dll" "" #f))
-
-(wx-try "gracket" "gracket" "grmain" #f "cxx" #t)
+(try "../../gracket/grmain.c"
+     (list* "../../gracket/grmain.c"
+	    common-deps)
+     "xsrc/grmain.c"
+     "xsrc/grmain.obj"
+     wx-inc
+     #f
+     ""
+     "/DWIN32 "
+     #f
+     #t)
 
 (check-rc "gracket.res" "../gracket/gracket.rc")
 
 (let ([objs (list
 	     "gracket.res"
 	     "xsrc/grmain.obj"
-	     "xsrc/uniplt.obj"
-	     "../../../lib/msvc/libracket3mxxxxxxx.lib"
-	     "../../../lib/msvc/libgracket3mxxxxxxx.lib")])
+	     "../../../lib/msvc/libracket3mxxxxxxx.lib")])
   (link-dll objs 
-	    '("libracket3mxxxxxxx.dll" 
-	      "libgracket3mxxxxxxx.dll")
+	    '("libracket3mxxxxxxx.dll")
 	    '("advapi32.lib" 
 	      "delayimp.lib") 
 	    "../../../GRacket.exe" " /subsystem:windows" #t))
+(system- "mt.exe -manifest ../../../GRacket.exe.manifest -outputresource:../../../GRacket.exe;1")
 
 (system- "cl.exe /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj")
 (system- "lib.exe -def:../../racket/dynsrc/mzdyn.def -out:mzdyn3m.lib")
@@ -495,7 +345,7 @@
   (unless (and (file-exists? dest)
 	       (string=? (with-input-from-file src (lambda () (read-string (file-size src))))
 			 (with-input-from-file dest (lambda () (read-string (file-size dest))))))
-    (printf "Updating ~a~n" dest)
+    (printf "Updating ~a\n" dest)
     (when (file-exists? dest) (delete-file dest))
     (copy-file src dest)))
 

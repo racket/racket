@@ -1,21 +1,10 @@
-#lang at-exp s-exp "shared.rkt"
+#lang meta/web
 
-(define brown-pubs
-  @a[href: "http://www.cs.brown.edu/~sk/Publications/Papers/"]{
-    Brown PLT Publications})
-(define nwu-pubs
-  @a[href: "http://www.eecs.northwestern.edu/~robby/pubs/"]{
-    Northwestern PLT Publications})
-(define neu-pubs
-  @a[href: "http://www.ccs.neu.edu/scheme/pubs/"]{
-    Northeastern PLT Publications})
-(define utah-pubs
-  @a[href: "http://www.cs.utah.edu/plt/publications/"]{Utah PLT Publications})
-;; TODO: add calpoly & byu?
+(require "resources.rkt" "people.rkt" "techreports.rkt")
 
 (provide learning)
 (define learning
-  @page{
+  @page[#:part-of 'learning]{
     @parlist[@strong{Resources for Learning}
       (apply parlist @text{Documentation for getting started:} intros)
       @text{@-cookbook — useful recipes, many of which apply to Racket.}
@@ -28,17 +17,35 @@
       @text{@-teachscheme — a workshop to train teachers using @-htdp in the
         classroom.}
       @text{@-bootstrap — a curriculum for middle-school students.}]
-    @parlist[@strong{Publications}
-             techreports brown-pubs nwu-pubs neu-pubs utah-pubs]
+    @(apply parlist @strong{PLT Publications}
+            (cons techreports
+                  (for*/list ([place (in-list all-places)]
+                              [pubs (in-value (place-pubs place))]
+                              #:when pubs)
+                    @a[href: pubs]{@(place-name place)})))
     @parlist[@strong{Graduate Study}
              @text{We welcome applications from students interested in
                    @|graduate-study|.}]})
 
 (define graduate-study
-  @page[#:file "common-plt-app.html" #:part-of learning]{
+  @page[#:file "common-plt-app.html" #:part-of 'learning]{
     @(define (box-style border-width color)
        @list{border: @|border-width|px solid black; padding: 5px; @;
              background: @|color|@";"})
+    @(define place-names
+       (add-between
+        (sort (map (lambda (p)
+                     (regexp-replace #rx", [A-Z][A-Z]$" (place-location p) ""))
+                   all-places)
+              string<?)
+        " / "))
+    @(define responsible-people
+       (add-between
+        (for/list ([person (sort (map (compose car place-people) all-places)
+                                 string<? #:key person-name)])
+          @a[href: (person-url person)]{
+            @(regexp-replace #rx" .*$" (person-name person) "")})
+        ", "))
     @h1{Graduate Study with PLT}
     @p{An open letter to graduate applicants:}
     @div[style: (box-style 3 "#ddd")]{
@@ -52,13 +59,12 @@
       we have created the following common application form.  By filling it in
       once, you can automatically apply to all current PLT institutions.
     @~ @|style: (box-style 1 "#bbb")|@;
-      Yes, we know you don't like Boston/Chicago/Providence/Provo/Salt Lake
-      City/San Luis Obispo/Worcester (circle those applicable).  But we like
-      them, or we wouldn't be living there.  Think about the message you're
-      sending by rejecting our choices.  Moreover, we think very highly of our
-      colleagues—more highly than we think of your judgment in this matter—so
-      for your own good, we're going to forward your application to them
-      anyway.
+      Yes, we know you don't like @place-names (circle those applicable).  But
+      we like them, or we wouldn't be living there.  Think about the message
+      you're sending by rejecting our choices.  Moreover, we think very highly
+      of our colleagues—more highly than we think of your judgment in this
+      matter—so for your own good, we're going to forward your application to
+      them anyway.
     @~ How many years have you programmed in Scheme?
     @~ How many years have you programmed in PLT Scheme?
     @~ If the two numbers above are not identical, justify.
@@ -79,29 +85,11 @@
        innovation, you should strongly consider graduate study with us.  We
        look forward to hearing from you.  All of us, no matter where we may
        live.}
-    @p[align: 'right]{
-      —@;
-      @a[href: "http://www.ccs.neu.edu/home/matthias/"]{Matthias},
-      @a[href: "http://www.eecs.northwestern.edu/~robby/"]{Robby},
-      @a[href: "http://www.cs.wpi.edu/~kfisler/"]{Kathi},
-      @a[href: "http://www.cs.utah.edu/~mflatt/"]{Matthew},
-      @a[href: "http://www.cs.brown.edu/~sk/"]{Shriram}}})
-
-(require "techreports.rkt")
-(define techreports
-  @page[#:file "techreports/" #:part-of learning
-        #:title "Technical Reports"]{
-    @p{PLT publishes technical reports about some of its tools and libraries so
-       that scholars who wish to give proper credit to some of our innovations
-       have a definite citation.  Each entry below provides the full pdf and a
-       bibtex entry; some of the bibtex entries provide additional citations to
-       published papers.}
-
-    @make-bib-table{}})
+    @p[align: 'right]{—@responsible-people}})
 
 ;; redirection page for the previous name of this page
 (define outreach+research
-  @page[#:part-of learning
+  @page[#:part-of 'learning
         #:title "Outreach & Research"
         #:link-title @list{Outreach@|nbsp|&@|nbsp|Research}
         #:extra-headers

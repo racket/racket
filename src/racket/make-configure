@@ -39,6 +39,5 @@ exit 0
 	  (loop)
 	  ;; Copy
 	  (begin
-	    (printf "~a~n" l)
+	    (printf "~a\n" l)
 	    (loop))))))
-

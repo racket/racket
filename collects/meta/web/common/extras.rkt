@@ -1,4 +1,6 @@
-#lang at-exp s-exp meta/web/html
+#lang at-exp racket/base
+
+(require scribble/html)
 
 ;; list of a header paragraphs and sub paragraphs (don't use `p' since it looks
 ;; like they should not be nested)
@@ -20,6 +22,9 @@
 (provide TT)
 (define (TT . xs)
   @tt[style: "background-color: #dde;"]{@xs})
+(provide PRE)
+(define (PRE . xs)
+  @pre[style: "background-color: #dde;"]{@xs})
 
 ;; some tags with convenient separators
 (provide make-separated-tag (rename-out [the-separator ~])

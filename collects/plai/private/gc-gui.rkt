@@ -88,11 +88,11 @@
             (vector-set! row-heights 
                          row
                          (max (+ ch cell-vertical-padding)
-                              (vector-ref row-heights row)))
+                              #;(vector-ref row-heights row)))
             (vector-set! column-widths 
                          column
                          (max (+ cw cell-horizontal-padding) 
-                              (vector-ref column-widths column)))))))
+                              #;(vector-ref column-widths column)))))))
     
     (define/private (cell-min-size obj)
       (let ([dc (get-dc)])
@@ -304,30 +304,31 @@
       (cond
         [(and mouse-x mouse-y)
          (let-values ([(i j) (mouse-xy->ij mouse-x mouse-y)])
-           (if (and i j)
-               (let ([index (+ (* j (vector-length column-widths)) i)])
-                 (update-arrows (find-connections index))
-                 (update-highlighted-cells
-                  (cond
-                    [(< index (vector-length heap-vec))
-                     (cons index (index->nexts index))]
-                    [else '()])))
-               (update-highlighted-cells '())))]
+           (let ([index (and i j (+ (* j (vector-length column-widths)) i))])
+             (cond
+               [(and index (< index (vector-length heap-vec)))
+                (update-arrows (find-connections index))
+                (update-highlighted-cells (cons index (index->nexts index)))]
+               [else
+                (update-highlighted-cells '())
+                (update-arrows '())])))]
         [else
          (update-highlighted-cells '())
          (update-arrows '())]))
 
     (define/private (index->nexts index)
-      (let ([n (vector-ref heap-vec index)])
-        (cond
-          [(and (exact-integer? n)
-                (<= 0 n)
-                (< n (vector-length heap-vec)))
-           (list n)]
-          [(procedure? n)
-           (map read-root (procedure-roots n))]
-          [else
-           '()])))
+      (if (< index (vector-length heap-vec))
+          (let ([n (vector-ref heap-vec index)])
+            (cond
+              [(and (exact-integer? n)
+                    (<= 0 n)
+                    (< n (vector-length heap-vec)))
+               (list n)]
+              [(procedure? n)
+               (map read-root (procedure-roots n))]
+              [else
+               '()]))
+          '()))
     
     (define/private (find-connections start)
       (let ([visited (make-hash)]

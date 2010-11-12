@@ -2,7 +2,8 @@
 
 @begin[(require "utils.rkt" scribble/eval scriblib/footnote
                 racket/sandbox)
-       (require (for-label (only-meta-in 0 typed/racket)
+       (require (for-label (only-meta-in 0 [except-in typed/racket for])
+                           (only-in racket/base for)
                            racket/list srfi/14
                            version/check))]
 
@@ -34,19 +35,27 @@ any expression of this type will not evaluate to a value.}
 @deftogether[(
 @defidform[Number]
 @defidform[Complex]
-@defidform[Inexact-Complex]
+@defidform[Float-Complex]
 @defidform[Real]
 @defidform[Float]
 @defidform[Nonnegative-Float]
+@defidform[Inexact-Real]
 @defidform[Exact-Rational]
 @defidform[Integer]
 @defidform[Natural]
 @defidform[Exact-Nonnegative-Integer]
 @defidform[Exact-Positive-Integer]
+@defidform[Fixnum]
+@defidform[Nonnegative-Fixnum]
+@defidform[Positive-Fixnum]
 @defidform[Zero]
 )]{These types represent the hierarchy of @rtech{numbers} of Racket.
 @racket[Integer] includes only @rtech{integers} that are @rtech{exact
-numbers}, corresponding to the predicate @racket[exact-integer?]. 
+numbers}, corresponding to the predicate @racket[exact-integer?].
+@racket{Real} includes both exact and inexact reals.
+An @racket{Inexact-Real} can be either 32- or 64-bit floating-point
+numbers. @racket{Float} is restricted to 64-bit floats, which are the
+default in Racket.
 
 @ex[
 7
@@ -248,8 +257,8 @@ creating new types, and annotating expressions.
 Local bindings, like @racket[let], each with
 associated types.  In the second form, @racket[_t0] is the type of the
 result of @racket[_loop] (and thus the result of the entire
-			      expression as well as the final
-				expression in @racket[body]).}
+expression as well as the final expression in @racket[body]).
+Type annotations are optional.}
 @deftogether[[
 @defform[(letrec: ([v : t e] ...) . body)]
 @defform[(let*: ([v : t e] ...) . body)]
@@ -258,7 +267,8 @@ result of @racket[_loop] (and thus the result of the entire
 @defform[(let*-values: ([([v : t] ...) e] ...) . body)]]]{
 Type-annotated versions of
 @racket[letrec], @racket[let*], @racket[let-values],
-  @racket[letrec-values], and @racket[let*-values].}  
+@racket[letrec-values], and @racket[let*-values]. As with
+@racket[let:], type annotations are optional.}
 
 @deftogether[[
 @defform[(let/cc: v : t . body)]
@@ -293,11 +303,14 @@ A polymorphic function of multiple arities.}
               ([type-ann-maybe code:blank
                                @code:line[: Void]]
 	       [for:-clause [id : t seq-expr]
+	                    [id seq-expr]
 	                    @code:line[#:when guard]])]{
 Like @racket[for], but each @racket[id] having the associated type
 @racket[t]. Since the return type is always @racket[Void], annotating
 the return type of a @racket[for] form is optional. Unlike
 @racket[for], multi-valued @racket[seq-expr]s are not supported.
+Type annotations in clauses are optional for all @racket[for:]
+variants.
 }
 
 @deftogether[[
@@ -305,6 +318,8 @@ the return type of a @racket[for] form is optional. Unlike
 @;@defform[(for/hash: : u (for:-clause ...) expr ...+)] @; the ones that are commented out don't currently work
 @;@defform[(for/hasheq: : u (for:-clause ...) expr ...+)]
 @;@defform[(for/hasheqv: : u (for:-clause ...) expr ...+)]
+@;@defform[(for/vector: : u (for:-clause ...) expr ...+)]
+@;@defform[(for/flvector: : u (for:-clause ...) expr ...+)]
 @;@defform[(for/and: : u (for:-clause ...) expr ...+)]
 @defform[(for/or:   : u (for:-clause ...) expr ...+)]
 @;@defform[(for/first: : u (for:-clause ...) expr ...+)]
@@ -345,7 +360,8 @@ These behave like their non-annotated counterparts.
               ([step-expr-maybe code:blank
                                 step-expr])]{
 Like @racket[do], but each @racket[id] having the associated type @racket[t], and 
-the final body @racket[expr] having the type @racket[u].
+the final body @racket[expr] having the type @racket[u]. Type
+annotations are optional.
 }
 
 
@@ -529,6 +545,13 @@ y
 (assert y number?)
 (assert y boolean?)]
 
+@defform*/subs[[(with-asserts ([id maybe-pred] ...) body ...+)]
+              ([maybe-pred code:blank
+                           (code:line predicate)])]{
+Guard the body with assertions. If any of the assertions fail, the
+program errors. These assertions behave like @racket[assert].
+}
+
 
 @section{Typed Racket Syntax Without Type Checking}
 
@@ -606,11 +629,12 @@ Typed Racket provides a type-driven optimizer that rewrites well-typed
 programs to potentially make them faster. It should in no way make
 your programs slower or unsafe.
 
-Typed Racket's optimizer is not currently turned on by default. If you
-want to activate it, you must add the @racket[#:optimize] keyword when
-specifying the language of your program:
+Typed Racket's optimizer is turned on by default. If you want to
+deactivate it (for debugging, for instance), you must add the
+@racket[#:no-optimize] keyword when specifying the language of your
+program:
 
-@racketmod[typed/racket #:optimize]
+@racketmod[typed/racket #:no-optimize]
 
 @section{Legacy Forms}
 

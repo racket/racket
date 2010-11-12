@@ -1,0 +1,25 @@
+DrDr2 is a network of message passing servers.
+
+- Monitor finds pushes and sends them to the scheduler
+
+- The scheduler receives pushes, prepares a tar ball, and sends
+  jobs to the masters
+
+- Each master sends commands to its slave and confirms to the scheduler
+  (so that it will receive more commands) 
+
+- The slave receives commands and executes them on a test machine
+  and sends the answer to the master
+
+- The master receives the answer and sends it to the analyzer
+
+- The analyzer records data for the renderer and informs the notifier
+
+- The renderer queries the database
+
+----
+
+DrDr2 uses the MongoDB database for storage
+
+DrDr2 is monitored using Monit
+

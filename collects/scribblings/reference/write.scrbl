@@ -142,7 +142,7 @@ supplied than are used by the format string, the
 
 @examples[
 (fprintf (current-output-port)
-         "~a as a string is ~s.~n"
+         "~a as a string is ~s.\n"
          '(3 4) 
          "(3 4)")
 ]}
@@ -163,7 +163,7 @@ Formats to a string. The result is the same as
 ]
 
 @examples[
-(format "~a as a string is ~s.~n" '(3 4) "(3 4)")
+(format "~a as a string is ~s.\n" '(3 4) "(3 4)")
 ]}
 
 @defboolparam[print-pair-curly-braces on?]{
@@ -219,6 +219,15 @@ A parameter that controls printing vectors; defaults to
 A parameter that controls printing hash tables; defaults to
 @racket[#f]. See @secref["print-hashtable"] for more information.}
 
+
+@defboolparam[print-boolean-long-form on?]{
+
+A parameter that controls printing of booleans. When the parameter's
+value is true, @racket[#t] and @racket[#f] print as @litchar{#true}
+and @litchar{#false}, otherwise they print as @litchar{#t}
+and @litchar{#f}.}
+
+
 @defboolparam[print-reader-abbreviations on?]{
 
 A parameter that controls printing of two-element lists that start
@@ -251,7 +260,7 @@ object within @litchar{#<syntax}...@litchar{>} (after the
                                             (or/c (and/c path-string? complete-path?) #f)
                                             (or/c (and/c path? complete-path?) #f)]{
 
-A parameter that is used when writing compiled code that contains
+A parameter that is used when writing compiled code (see @secref["print-compiled"]) that contains
 pathname literals, including source-location pathnames for procedure
 names. When not @racket[#f], paths that syntactically extend the
 parameter's value are converted to relative paths; when the resulting

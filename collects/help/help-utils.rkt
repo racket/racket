@@ -43,7 +43,7 @@
         (if tag
           (go-to-tag xref tag)
           (error 'help
-                 "no documentation found for: ~e provided by: ~a"
+                 "no documentation found for: ~.s provided by: ~a"
                  (syntax-e id)
                  (module-path-index-resolve (caddr b)))))
       (search-for-exports xref (syntax-e id) any-b))))

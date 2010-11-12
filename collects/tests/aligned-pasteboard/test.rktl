@@ -22,7 +22,7 @@
 ;                             ;                          
 ;                            ;;;                         
                                                         
-(printf "running test1.ss~n")
+(printf "running test1.ss\n")
 
 (define frame
   (instantiate frame% ()
@@ -229,4 +229,4 @@
  )
 
 (send frame show false)
-(printf "done~n")
+(printf "done\n")

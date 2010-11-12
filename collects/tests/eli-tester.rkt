@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require scheme/match scheme/list scheme/string
          (for-syntax scheme/base scheme/match))
@@ -18,37 +18,33 @@
 
 (define show
   (match-lambda
-    [(list 'values x)        (format "~e" x)]
-    [(list 'values xs ...)   (format "~e" (cons 'values xs))]
+    [(list 'values x)
+     (format "~e" x)]
+    [(list 'values xs ...)
+     (string-append "(values "
+                    (string-join (map (lambda (x) (format "~e" x)) xs) " ")
+                    ")")]
     [(list 'error err val)
-     (cond [(procedure? err) (format "error satisfying ~s" err)]
-           [(regexp? err)    (format "error matching ~s" err)]
-           [err              (format "error: ~a" err)]
-           [else             (format "a raised non-exception ~s" val)])]
-    [x (format "INTERNAL ERROR, unexpected value: ~s" x)]))
+     (cond [(procedure? err) (format "error satisfying ~.s" err)]
+           [(regexp? err)    (format "error matching ~.s" err)]
+           [err              (format "error: ~.a" err)]
+           [else             (format "a raised non-exception ~.s" val)])]
+    [x (format "INTERNAL ERROR, unexpected value: ~.s" x)]))
 
-(define test-context    (make-parameter #f))
-(define failure-format 
+(define test-context (make-parameter #f))
+(define failure-format
   (make-parameter
    (lambda (prefix qe fmt . args)
-     (define prefix-str 
-       (apply string-append 
-              (add-between (reverse (list* "" prefix))
-                           " > ")))
-     (define str 
-       (regexp-replace #rx"\n"
-                       (apply format fmt args)
-                       "\n  "))
-     (format "~atest failure in ~e\n  ~a"
-             prefix-str qe str))))
+     (define str
+       (regexp-replace #rx"\n" (apply format fmt args) "\n  "))
+     (string-join (reverse (cons (format "test failure in ~.s\n  ~a" qe str)
+                                 prefix))
+                  " > "))))
 
 (define (make-failure-message msg)
-  (define str
-    (regexp-replace #rx"\n" msg "\n  "))
-  (define real-msg
-    (format "test failure\n  ~a" str))
-  (lambda (prefix qe fmt . args)
-    real-msg))
+  (define str (regexp-replace #rx"\n" msg "\n  "))
+  (define real-msg (format "test failure\n  ~a" str))
+  (lambda (prefix qe fmt . args) real-msg))
 (define failure-prefix-mark (gensym 'failure-prefix))
 
 (define-syntax (test-thunk stx)
@@ -63,17 +59,17 @@
                        [else "?"])))))
     (with-syntax ([e e] [fmt fmt] [(arg ...) args] [loc loc])
       #'(let* ([form (failure-format)]
-               [prefix
-                (continuation-mark-set->list (current-continuation-marks) failure-prefix-mark)])
-          (error 'loc (form prefix 'e fmt arg ...)))))
-  (define (t1 x)
+               [prefix (continuation-mark-set->list (current-continuation-marks)
+                                                    failure-prefix-mark)])
+          (error 'loc "~a" (form prefix 'e fmt arg ...)))))
+  (define (test-1 x)
     #`(let ([x (safe #,x)])
         (unless (and (eq? 'values (car x)) (= 2 (length x)) (cadr x))
           #,(blame x "expected: non-#f single value\n     got: ~a"
                    #'(show x)))))
-  (define (t2 x y [eval2? #t])
+  (define (test-2 x y [eval2? #t])
     #`(let* ([x (safe #,x)]                   [xtag (car x)]
-                                              [y #,(if eval2? #`(safe #,y) y)] [ytag (car y)])
+             [y #,(if eval2? #`(safe #,y) y)] [ytag (car y)])
         (cond
           [(eq? ytag 'values)
            (unless (equal? x y)
@@ -100,13 +96,13 @@
                       #,(blame x "bad error message, expected ~a: ~s\ngot: ~s"
                                "an exception satisfying" #'yerr #'xerr))]
                    [else (error 'test "bad error specification: ~e" yerr)]))])))
-  (define (te x y) (t2 x #`(list 'error #,y #f) #f))
+  (define (test-error x y) (test-2 x #`(list 'error #,y #f) #f))
   (define (try t . args)
     #`(let ([c (test-context)])
         (with-handlers ([exn? (lambda (e) (set-mcdr! c (cons e (mcdr c))))])
           (set-mcar! c (add1 (mcar c)))
           #,(apply t args))))
-  (define (tb x) x)
+  (define (test-0 x) x)
   (let loop ([xs (map (lambda (x)
                         (let ([e (syntax-e x)])
                           (if (or (memq e '(do => <= =error> <error=))
@@ -119,36 +115,38 @@
                  [(list* #:failure-prefix msg r)
                   (let ([r (tloop r)])
                     (if (pair? r)
-                        (cons
-                         #`(with-continuation-mark failure-prefix-mark #,msg #,(car r))
-                         (cdr r))
-                        r))]
+                      (cons #`(with-continuation-mark failure-prefix-mark
+                                                      #,msg #,(car r))
+                            (cdr r))
+                      r))]
                  [(list* #:failure-message msg r)
                   (let ([r (tloop r)])
                     (if (pair? r)
                         (cons
-                         #`(parameterize ([failure-format (make-failure-message #,msg)])
+                         #`(parameterize ([failure-format
+                                           (make-failure-message #,msg)])
                              #,(car r))
                          (cdr r))
                         r))]
                  [(list* 'do x r) ; to avoid counting non-test exprs as tests
-                  (cons (tb x) r)]
-                 [(list* x '=> y r)      (cons (try t2 x y) r)]
-                 [(list* y '<= x r)      (cons (try t2 x y) r)]
-                 [(list* x '=error> y r) (cons (try te x y) r)]
-                 [(list* y '<error= x r) (cons (try te x y) r)]
+                  (cons (test-0 x) r)]
+                 [(list* x '=> y r)      (cons (try test-2 x y) r)]
+                 [(list* y '<= x r)      (cons (try test-2 x y) r)]
+                 [(list* x '=error> y r) (cons (try test-error x y) r)]
+                 [(list* y '<error= x r) (cons (try test-error x y) r)]
                  [(list* x r)
                   ;; if x = (test ...), then it's implicitly in a `do'
                   ;; (not really needed, but avoids an extra count of tests)
                   (syntax-case x (test)
-                    [(test x0 x1 ...) (cons (tb x) r)]
-                    [_ (cons (try t1 x) r)])]
+                    [(test x0 x1 ...) (cons (test-0 x) r)]
+                    [_ (cons (try test-1 x) r)])]
                  [(list) '()]))])
       (if (pair? t)
           (loop (cdr t) (cons (car t) r))
           #`(lambda () #,@(reverse r))))))
 
-(define (run-tests thunk force-new-context?)
+;; pass 'quiet to have nothing printed on success
+(define (run-tests thunk force-new-context? #:on-pass [pass 'loud])
   (if (and (test-context) (not force-new-context?))
       (thunk)
       (let ([c (mcons 0 '())])
@@ -160,15 +158,25 @@
              (test-context #f)
              (let ([num (mcar c)] [exns (mcdr c)])
                (if (null? exns)
-                   (printf "~a test~a passed\n" num (if (= num 1) "" "s"))
+                   (case pass
+                     [(loud) (printf "~a test~a passed\n" num (if (= num 1) "" "s"))]
+                     [(quiet) (void)])
                    (error 'test "~a/~a test failures:~a" (length exns) num
                           (string-append*
                            (append-map (lambda (e) (list "\n" (exn-message e)))
                                        (reverse exns))))))))))))
 
+(define-syntax-rule (define-test name force-context)
+  (define-syntax (name stx)
+    (syntax-case stx ()
+      [(_ #:on-pass pass x0 x (... ...))
+       #'(run-tests #:on-pass pass (test-thunk x0 x (... ...)) force-context)]
+      [(_ x0 x (... ...))
+       #'(run-tests (test-thunk x0 x (... ...)) force-context)])))
+
 (provide test test*)
-(define-syntax-rule (test  x0 x ...) (run-tests (test-thunk x0 x ...) #f))
-(define-syntax-rule (test* x0 x ...) (run-tests (test-thunk x0 x ...) #t))
+(define-test test  #f)
+(define-test test* #t)
 
 #; ; test the `test' macro
 
@@ -188,7 +196,7 @@
  (car '()) => (error "expects argument of type")
  ;; syntax errors
  (if 1) =error> "if: bad syntax"
- 
+
  ;; error (and non-exception raises) predicates
  (+ 1 "2")   =error> exn:fail:contract?
  (+ 1 "2")   =error> (lambda (x) (not (exn:fail:filesystem? x)))
@@ -196,7 +204,7 @@
  (error "1") =error> exn?
  (raise 1)   =error> number?
  (raise "1") =error> string?
- 
+
  ;; test `test' errors
  (test* (/ 0)) =error> "expected: non-#f single value"
  (test* 1 => 2) =error> "expected: 2"
@@ -206,7 +214,7 @@
  (test* #:failure-message "FOO" (/ 0) => 1) =error> "FOO"
  (test* #:failure-message "FOO" (/ 0)) =error> "FOO"
  (test* #:failure-prefix "FOO" (/ 0)) =error> "FOO"
- 
+
  ;; test possitive message
  (let ([o (open-output-bytes)])
    (list (begin (parameterize ([current-output-port o]) (test* 1 => 1))

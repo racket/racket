@@ -5,7 +5,7 @@
 	 (env type-name-env)
 	 (utils tc-utils)
          (types utils)
-         scheme/match
+         racket/match
          scheme/contract)
 
 (provide resolve-name resolve-app needs-resolving? resolve)

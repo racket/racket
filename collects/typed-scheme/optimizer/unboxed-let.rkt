@@ -1,19 +1,20 @@
 #lang scheme/base
 
 (require syntax/parse
-         scheme/list scheme/dict scheme/match
+         scheme/list scheme/dict racket/match
          "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
          (for-template scheme/base)
          (types abbrev utils type-table)
          (rep type-rep)
-         (optimizer utils inexact-complex))
+         (optimizer utils float-complex))
 
 (provide unboxed-let-opt-expr)
 
 ;; possibly replace bindings of complex numbers by bindings of their 2 components
 ;; useful for intermediate results used more than once and for loop variables
 (define-syntax-class unboxed-let-opt-expr
+  #:commit
   (pattern e:app-of-unboxed-let-opt-expr
            #:with opt #'e.opt)
   (pattern (~var e (unboxed-let-opt-expr-internal #f))
@@ -24,30 +25,31 @@
 ;; escapes in the operator position of a call site we control (here)
 ;; we can extend unboxing
 (define-syntax-class app-of-unboxed-let-opt-expr
+  #:commit
   #:literal-sets (kernel-literals)
-  (pattern (~and e ((~literal #%plain-app)
-                    (~and let-e
-                          ((~literal letrec-values)
-                           bindings
-                           loop-fun:id)) ; sole element of the body
-                    args:expr ...))
+  (pattern (#%plain-app
+            (~and let-e ((~literal letrec-values)
+                         bindings
+                         loop-fun:id)) ; sole element of the body
+            args:expr ...)
            #:with (~var operator (unboxed-let-opt-expr-internal #t)) #'let-e
            #:with unboxed-info (dict-ref unboxed-funs-table #'loop-fun #f)
            #:when (syntax->datum #'unboxed-info)
-           #:with (~var e* (inexact-complex-call-site-opt-expr
+           #:with (~var e* (float-complex-call-site-opt-expr
                             #'unboxed-info #'operator.opt))
-           #'e
+           this-syntax
            #:with opt
-           #'e*.opt))
+           (begin (log-optimization "unboxed let loop" #'loop-fun)
+                  #'e*.opt)))
 
 ;; does the bulk of the work
 ;; detects which let bindings can be unboxed, same for arguments of let-bound
 ;; functions
 (define-syntax-class (unboxed-let-opt-expr-internal let-loop?)
+  #:commit
   #:literal-sets (kernel-literals)
-  (pattern (~and exp (letk:let-like-keyword
-                      ((~and clause (lhs rhs ...)) ...)
-                      body:expr ...))
+  (pattern (letk:let-like-keyword ((~and clause (lhs rhs ...)) ...)
+                                  body:expr ...)
            ;; we look for bindings of complexes that are not mutated and only
            ;; used in positions where we would unbox them
            ;; these are candidates for unboxing
@@ -57,12 +59,12 @@
                  ;; clauses of form ((v) rhs), currently only supports 1 lhs var
                  (partition
                   (lambda (p)
-                    (and (isoftype? (cadr p) -InexactComplex)
+                    (and (isoftype? (cadr p) -FloatComplex)
                          (could-be-unboxed-in? (car (syntax-e (car p)))
                                                #'(begin body ...))))
                   (map syntax->list (syntax->list #'(clause ...)))))
                 ((function-candidates others)
-                 ;; extract function bindings that have inexact-complex arguments
+                 ;; extract function bindings that have float-complex arguments
                  ;; we may be able to pass arguments unboxed
                  ;; this covers loop variables
                  (partition
@@ -82,7 +84,7 @@
                                                                (and rests #f)
                                                                (and drests #f)
                                                                (and kws '())))))
-                           ;; at least 1 argument has to be of type inexact-complex
+                           ;; at least 1 argument has to be of type float-complex
                            ;; and can be unboxed
                            (syntax-parse (cadr p)
                              [((~literal #%plain-lambda) params body ...)
@@ -98,13 +100,19 @@
                                             ;; if so, add to the table of functions with
                                             ;; unboxed params, so we can modify its call
                                             ;; sites, it's body and its header
+                                            (begin (log-optimization
+                                                    "unboxed function -> table"
+                                                    fun-name)
+                                                   #t)
                                             (dict-set! unboxed-funs-table fun-name
                                                        (list (reverse unboxed)
                                                              (reverse boxed))))]
-                                      [(and (equal? (car doms) -InexactComplex)
+                                      [(and (equal? (car doms) -FloatComplex)
                                             (could-be-unboxed-in?
                                              (car params) #'(begin body ...)))
                                        ;; we can unbox
+                                       (log-optimization "unboxed var -> table"
+                                                         (car params))
                                        (loop (cons i unboxed) boxed
                                              (add1 i) (cdr params) (cdr doms))]
                                       [else ; can't unbox
@@ -118,13 +126,18 @@
            #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
            #:with (opt-others:opt-let-clause ...) #'(others ...)
            #:with opt
-           (begin (log-optimization "unboxed let bindings" #'exp)
+           (begin (when (not (null? (syntax->list #'(opt-candidates.id ...))))
+                    ;; only log when we actually optimize
+                    (log-optimization "unboxed let bindings" this-syntax))
                   ;; add the unboxed bindings to the table, for them to be used by
                   ;; further optimizations
                   (for ((v (in-list (syntax->list #'(opt-candidates.id ...))))
                         (r (in-list (syntax->list #'(opt-candidates.real-binding ...))))
                         (i (in-list (syntax->list #'(opt-candidates.imag-binding ...)))))
                        (dict-set! unboxed-vars-table v (list r i)))
+                  ;; in the case where no bindings are unboxed, we create a let
+                  ;; that is equivalent to the original, but with all parts
+                  ;; optimized
                   #`(letk.key ...
                         (opt-candidates.bindings ... ...
                          opt-functions.res ...
@@ -132,6 +145,7 @@
                       #,@(map (optimize) (syntax->list #'(body ...)))))))
 
 (define-splicing-syntax-class let-like-keyword
+  #:commit
   #:literal-sets (kernel-literals)
   (pattern (~literal let-values)
            #:with (key ...) #'(let*-values))
@@ -160,7 +174,8 @@
       #:literal-sets (kernel-literals)
       
       ;; can be used in a complex arithmetic expr, can be a direct child
-      [exp:inexact-complex-arith-opt-expr
+      [exp:float-complex-arith-opt-expr
+       #:when (not (identifier? #'exp))
        (or (direct-child-of? v #'exp)
            (ormap rec (syntax->list #'exp)))]
       ;; if the variable gets rebound to something else, we look for unboxing
@@ -202,7 +217,7 @@
 
 ;; very simple escape analysis for functions
 ;; if a function is ever used in a non-operator position, we consider it escapes
-;; if it doesn't escape, we may be able to pass its inexact complex args unboxed
+;; if it doesn't escape, we may be able to pass its float complex args unboxed
 ;; if we are in a let loop, don't consider functions that escape by being the
 ;; sole thing in the let's body as escaping, since they would only escape to
 ;; a call site that we control, which is fine
@@ -255,16 +270,18 @@
 
 ;; let clause whose rhs is going to be unboxed (turned into multiple bindings)
 (define-syntax-class unboxed-let-clause
-  (pattern ((v:id) rhs:unboxed-inexact-complex-opt-expr)
+  #:commit
+  (pattern ((v:id) rhs:unboxed-float-complex-opt-expr)
            #:with id #'v
            #:with real-binding #'rhs.real-binding
            #:with imag-binding #'rhs.imag-binding
            #:with (bindings ...) #'(rhs.bindings ...)))
 
-;; let clause whose rhs is a function with some inexact complex arguments
+;; let clause whose rhs is a function with some float complex arguments
 ;; these arguments may be unboxed
 ;; the new function will have all the unboxed arguments first, then all the boxed
 (define-syntax-class unboxed-fun-clause
+  #:commit
   (pattern ((v:id) (#%plain-lambda params body:expr ...))
            #:with id #'v
            #:with unboxed-info (dict-ref unboxed-funs-table #'v #f)
@@ -277,6 +294,7 @@
                                          (syntax->list #'(to-unbox ...)))
            #:with res
            (begin
+             (log-optimization "fun -> unboxed fun" #'v)
              ;; add unboxed parameters to the unboxed vars table
              (let ((to-unbox (map syntax->datum (syntax->list #'(to-unbox ...)))))
                (let loop ((params     (syntax->list #'params))
@@ -304,5 +322,6 @@
                               (cons (car params) boxed))]))))))
 
 (define-syntax-class opt-let-clause
+  #:commit
   (pattern (vs rhs:expr)
            #:with res #`(vs #,((optimize) #'rhs))))

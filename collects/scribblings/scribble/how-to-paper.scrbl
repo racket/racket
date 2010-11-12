@@ -2,9 +2,15 @@
 @(require scribble/manual
           scribble/bnf
           "utils.ss"
-          (for-label scriblib/figure))
+          (for-label scriblib/figure
+                     scribble/base
+                     scribble/sigplan))
 
-@(define (sample . text) (nested #:style 'inset (apply verbatim text)))
+@(define-syntax-rule (samplemod . text) (codeblock . text))
+@(define-syntax-rule (sample a . text) (codeblock #:context #'a 
+                                                  #:keep-lang-line? #f 
+                                                  "#lang scribble/base" "\n" 
+                                                  a . text))
 @(define (result . text) (apply nested #:style 'inset text))
 
 @title[#:tag "getting-started"]{Getting Started}
@@ -18,7 +24,7 @@ goal-specific advice on how to continue.
 
 Create a file @filepath{mouse.scrbl} with this content:
 
-          @sample|{
+          @samplemod|{
             #lang scribble/base
 
             @title{On the Cookie-Eating Habits of Mice}
@@ -65,7 +71,7 @@ for the kind of document that you want as output:
 
 Add more text to @filepath{mouse.scrbl} so that it looks like this:
 
-          @sample|{
+          @samplemod|{
             #lang scribble/base
 
             @title{On the Cookie-Eating Habits of Mice}
@@ -111,7 +117,7 @@ larger document.
 To split the example document into multiple files, change
 @filepath{mouse.scrbl} to just
 
-          @sample|{
+          @samplemod|{
             #lang scribble/base
 
             @title{On the Cookie-Eating Habits of Mice}
@@ -126,7 +132,7 @@ To split the example document into multiple files, change
 Create @filepath{milk.scrbl} and @filepath{straw.scrbl} in the same
 directory as @filepath{mouse.scrbl}. In @filepath{milk.scrbl}, put
 
-         @sample|{
+         @samplemod|{
             #lang scribble/base
 
             @title{The Consequences of Milk}
@@ -136,7 +142,7 @@ directory as @filepath{mouse.scrbl}. In @filepath{milk.scrbl}, put
 
 and in @filepath{straw.scbl}, put
 
-         @sample|{
+         @samplemod|{
             #lang scribble/base
 
             @title{Not the Last Straw}
@@ -167,14 +173,14 @@ the paper to a workshop on programming languages, then---well, you
 probably need a different topic. But you can start making the current
 content look right by changing the first line to
 
-          @sample|{
+          @samplemod|{
             #lang scribble/sigplan
           }|
 
 If you're instead working toward Racket library documentation,
 try changing the first line to 
 
-          @sample|{
+          @samplemod|{
             #lang scribble/manual
           }|
 
@@ -191,7 +197,7 @@ version number---but it changes the set of bindings available in the
 document body. For example, with @racketmodname[scribble/sigplan], the
 introductory text can be marked as an abstract:
 
-          @sample|{
+          @samplemod|{
             #lang scribble/sigplan
 
             @title{On the Cookie-Eating Habits of Mice}
@@ -573,9 +579,9 @@ renders as
 
 because the source is equivalent to
 
-    @sample|{
+    @racketblock[
       (verbatim (number->string (+ 1 2)))
-    }|
+    ]
 
 where @racket[(number->string (+ 1 2))] is evaluated to produce the
 argument to @racket[verbatim]. The @litchar["|{"]...@litchar["}|"]

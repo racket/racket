@@ -1,4 +1,16 @@
 ------------------------------------------------------------------------
+Version 5.0.2.  			  [Wed Oct 27 18:30:26 EDT 2010]
+
+* fixed stepper-universe interaction (on my side) 
+* record? allows specification of a directory 
+* small bug fixes 
+* small doc fixes 
+
+* batch-io is now in shape to be used (somewhat) in 2e
+
+* robby added pinholes to his image teachpack 
+
+------------------------------------------------------------------------
 Version 5.0.1.  			  [Tue Jul 20 20:52:09 EDT 2010]
 
 * typos in documentation 

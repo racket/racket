@@ -53,12 +53,21 @@
                p/c ...
                (void (quote-syntax (provide/doc (for-docs id) ...)))))))]))
 
+(define-for-syntax (remove->i-deps stx)
+  (syntax-case stx ()
+    [(id (id2 ...) ctc)
+     #'(id ctc)]
+    [(id ctc)
+     #'(id ctc)]
+    [else
+     (error 'remove->i-deps "unknown thing ~s" stx)]))
+
 (define-provide/doc-transformer proc-doc
   (lambda (stx)
     (syntax-case stx ()
       [(_ id contract desc)
        (with-syntax ([(header result (body-stuff ...))
-                      (syntax-case #'contract (->d -> values)
+                      (syntax-case #'contract (->d ->i -> values)
                         [(->d (req ...) () (values [name res] ...))
                          #'((id req ...) (values res ...) ())]
                         [(->d (req ...) () #:pre-cond condition (values [name res] ...))
@@ -82,6 +91,42 @@
                           (format "unsupported ->d contract form for ~a" (syntax->datum #'id))
                           stx
                           #'contract)]
+                        
+                        [(->i (req ...) () (values ress ...))
+                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
+                                       [([name res] ...) (map remove->i-deps (syntax->list #'(req ...)))])
+                           #'((id req ...) (values res ...) ()))]
+                        [(->i (req ...) () #:pre (pre-id ...) condition (values ress ...))
+                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
+                                       [([name res] ...) (map remove->i-deps (syntax->list #'(req ...)))])
+                           #'((id req ...) (values res ...) ((bold "Pre-condition: ") (scheme condition) "\n" "\n")))]
+                        [(->i (req ...) () res)
+                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
+                                       [[name res] (remove->i-deps #'res)])
+                           #'((id req ...) res ()))]
+                        [(->i (req ...) () #:pre (pre-id ...) condition [name res])
+                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
+                                       [[name res] (remove->i-deps #'res)])
+                           #'((id req ...) res ((bold "Pre-condition: ")  (scheme condition) "\n" "\n" )))]
+                        [(->i (req ...) () #:rest rest res)
+                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
+                                       [[name res] (remove->i-deps #'res)]
+                                       [[name-t rest-ctc] (remove->i-deps #'rest)])
+                           #'((id req ... [name-t rest-ctc] (... ...)) res ()))]
+                        [(->i (req ...) (one more ...) whatever)
+                         (raise-syntax-error
+                          #f
+                          (format "unsupported ->i contract form for ~a, optional arguments non-empty, must use proc-doc/names"
+                                  (syntax->datum #'id))
+                          stx
+                          #'contract)]
+                        [(->i whatever ...) 
+                         (raise-syntax-error
+                          #f
+                          (format "unsupported ->i contract form for ~a" (syntax->datum #'id))
+                          stx
+                          #'contract)]
+                        
                         [(-> result)
                          #'((id) result ())]
                         [(-> whatever ...) 

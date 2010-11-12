@@ -23,7 +23,7 @@
 ;; Simple `process' tests using "cat"
 
 (let ([p (process* cat)])
-  (fprintf (cadr p) "Hello~n")
+  (fprintf (cadr p) "Hello\n")
   (close-output-port (cadr p))
   (test "Hello" read-line (car p))
   (test eof read-line (car p))
@@ -38,7 +38,7 @@
 ;; Generate output to stderr as well as stdout
 
 (let ([p (process* cat "-" "nosuchfile")])
-  (fprintf (cadr p) "Hello~n")
+  (fprintf (cadr p) "Hello\n")
   (close-output-port (cadr p))
   (test "Hello" read-line (car p))
   (test eof read-line (car p))
@@ -58,7 +58,7 @@
   (let ([p (process*/ports f #f #f cat)])
     (test #f car p)
 
-    (fprintf (cadr p) "Hello~n")
+    (fprintf (cadr p) "Hello\n")
     (close-output-port (cadr p))
     (test eof read-line (cadddr p))
 
@@ -78,7 +78,7 @@
     (test #f car p)
     (test #f cadddr p)
 
-    (fprintf (cadr p) "Hello~n")
+    (fprintf (cadr p) "Hello\n")
     (close-output-port (cadr p))
 
     ((list-ref p 4) 'wait)
@@ -132,7 +132,7 @@
     (test #f car p)
     (test #f cadddr p)
 
-    (fprintf (cadr p) "First line~n")
+    (fprintf (cadr p) "First line\n")
     (close-output-port (cadr p))
 
     ((list-ref p 4) 'wait)
@@ -153,7 +153,7 @@
     (test #f car p)
     (test #f cadddr p)
 
-    (fprintf (cadr p) "The line~n")
+    (fprintf (cadr p) "The line\n")
     (close-output-port (cadr p))
 
     ((list-ref p 4) 'wait)
@@ -175,7 +175,7 @@
 ;; Supply file for stdin
 
 (let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
-  (fprintf f "Howdy~n")
+  (fprintf f "Howdy\n")
   (close-output-port f))
 (let ([f (open-input-file tmpfile)])
   (let ([p (process*/ports #f f #f cat)])
@@ -256,7 +256,7 @@
 			  "(let loop () (unless (eof-object? (eval (read))) (loop)))")))
 
 (define (test-line out in)
-  (fprintf w "~a~n" in)
+  (fprintf w "~a\n" in)
   (flush-output w)
   (when out
     (test out (lambda (ignored) (read-line r)) in)))

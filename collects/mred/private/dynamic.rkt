@@ -6,6 +6,4 @@
 
 (provide kernel-initialized)
 
-(dynamic-require ''#%mred-kernel #f)
-
 (define kernel-initialized 'done)

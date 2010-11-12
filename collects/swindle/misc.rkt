@@ -1651,10 +1651,10 @@
                         (arity-at-least-value arity))]
          [required (or at-least arity)])
     (unless (integer? required)
-      (error 'echo "handler function for `~e' has bad arity" keyword))
+      (error 'echo "handler function for `~.s' has bad arity" keyword))
     (lambda (args)
       (if (< (length args) required)
-        (error 'echo "user-keyword `~e' didn't get enough arguments" keyword)
+        (error 'echo "user-keyword `~.s' didn't get enough arguments" keyword)
         (let*-values ([(proc-args rest-args)
                        (if at-least
                          (values args '())
@@ -1724,7 +1724,7 @@
           (when (and (pair? l-args) (eq? echo: (car l-args)))
             (set! l-args (cdr l-args)) (pop-key-tags)))
         (when (null? args)
-          (error 'echo "found a `~e' with no matching `~e'" :\{ :\}))
+          (error 'echo "found a `~.s' with no matching `~.s'" :\{ :\}))
         (let ([arg (getarg)])
           (define (next) (loop (cons arg l-args)))
           (cond
@@ -1777,18 +1777,18 @@
               [(:push)  (push-state!)]
               [(:pop)   (pop-state!)]
               [(:\{)    (process-list)]
-              [(:\} :^) (error 'echo "unexpected list keyword `~e'" arg)]
+              [(:\} :^) (error 'echo "unexpected list keyword `~.s'" arg)]
               [(:k-)    (set! keys? #f)]
               [(:k+)    (set! keys? #t)]
               [(:set-user :unset-user)
                (let loop ([keyword echo:])
                  (if (null? args)
-                   (error 'echo "expecting a keyword+handler after `~e'" arg)
+                   (error 'echo "expecting a keyword+handler after `~.s'" arg)
                    (let ([x (getarg)])
                      (cond
                       [(eq? keyword echo:) (loop x)]
                       [(not (keyword? keyword))
-                       (error 'echo "got a `~e' with a non-keyword `~e'"
+                       (error 'echo "got a `~.s' with a non-keyword `~.s'"
                               arg keyword)]
                       [(eq? arg :unset-user)
                        (hash-table-put! echo-user-table keyword #f)]
@@ -1806,7 +1806,7 @@
                          (cond [(procedure? user) (user args)]
                                [(keyword? user) (list* echo: user args)]
                                [else (cons user args)]))
-                   (error 'echo "unknown keyword: `~e'" arg)))])]
+                   (error 'echo "unknown keyword: `~.s'" arg)))])]
            [first?  (printer arg out) (set! first? #f)]
            [spaces? (display " " out) (printer arg out)
                     (unless (eq? spaces? #t) (set! spaces? #f))]

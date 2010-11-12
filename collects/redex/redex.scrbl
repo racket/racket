@@ -584,9 +584,10 @@ all non-GUI portions of Redex) and also exported by
 @racketmodname[redex] (which includes all of Redex).
 
 @defform/subs[(define-language lang-name 
-                (non-terminal-spec @#,ttpattern ...)
-                ...)
-              ([non-terminal-spec symbol (symbol ...)])]{
+                non-terminal-def ...)
+              ([non-terminal-def (non-terminal-name ...+ ::= @#,ttpattern ...+)
+                                 (non-terminal-name @#,ttpattern ...+)
+                                 ((non-terminal-name ...+) @#,ttpattern ...+)])]{
 
 This form defines the grammar of a language. It allows the
 definition of recursive @|pattern|s, much like a BNF, but for
@@ -595,10 +596,9 @@ power, however, because repeated @racket[name] @|pattern|s and
 side-conditions can restrict matches in a context-sensitive
 way.
 
-The non-terminal-spec can either by a symbol, indicating a
-single name for this non-terminal, or a sequence of symbols,
-indicating that all of the symbols refer to these
-productions.
+A @racket[non-terminal-def] comprises one or more non-terminal names
+(considered aliases) followed by one or more productions. A non-terminal's
+names and productions may be separated by the keyword @racket[::=].
 
 As a simple example of a grammar, this is the lambda
 calculus:
@@ -618,9 +618,11 @@ with non-terminals @racket[e] for the expression language, @racket[x] for
 variables, @racket[c] for the evaluation contexts and @racket[v] for values.
 }
 
-@defform[(define-extended-language language language
-           (non-terminal @#,ttpattern ...)
-           ...)]{
+@defform/subs[(define-extended-language extended-lang base-lang 
+                non-terminal-def ...)
+              ([non-terminal-def (non-terminal-name ...+ ::= @#,ttpattern ...+)
+                                 (non-terminal-name @#,ttpattern ...+)
+                                 ((non-terminal-name ...+) @#,ttpattern ...+)])]{
 
 This form extends a language with some new, replaced, or
 extended non-terminals. For example, this language:
@@ -679,26 +681,46 @@ all non-GUI portions of Redex) and also exported by
               ([domain (code:line) (code:line #:domain @#,ttpattern)]
                [main-arrow (code:line) (code:line #:arrow arrow)]
                [reduction-case (--> @#,ttpattern @#,tttterm extras ...)]
-               [extras name
+               [extras rule-name
                        (fresh fresh-clause ...)
                        (side-condition racket-expression)
-                       (where tl-pat @#,tttterm)
+                       (where pat @#,tttterm)
                        (side-condition/hidden racket-expression)
-                       (where/hidden tl-pat @#,tttterm)]
-               [fresh-clause var ((var1 ...) (var2 ...))]
-               [tl-pat identifier (tl-pat-ele ...)]
-               [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+                       (where/hidden pat @#,tttterm)]
+               [rule-name identifier
+                          string 
+                          (computed-name racket-expression)]
+               [fresh-clause var ((var1 ...) (var2 ...))])]{
 
 Defines a reduction relation casewise, one case for each of the
 clauses beginning with @racket[-->] (or with @racket[arrow], if
 specified). Each of the @racket[pattern]s
 refers to the @racket[language], and binds variables in the
-@|tttterm|. 
+@|tttterm|. If present, the pattern following the @racket[#:domain]
+keyword specifies what terms the reduction relation operates on and
+is checked when the relation is used.
 
 Following the @|pattern| and @|tterm| can be the name of the
 reduction rule, declarations of some fresh variables, and/or
-some side-conditions. The name can either be a literal
-name (identifier), or a literal string. 
+some side-conditions.
+
+The rule's name (used in @seclink["Typesetting" "typesetting"],
+the @racket[stepper], @racket[traces], and 
+@racket[apply-reduction-relation/tag-with-names]) can be given
+as a literal (an identifier or a string) or as an expression
+that computes a name using the values of the bound pattern
+variables (much like the rule's right-hand side). Some operations
+require literal names, so a rule definition may provide both
+a literal name and a computed name. In particular, only rules that include
+a literal name may be replaced using @racket[extend-reduction-relation],
+used as breakpoints in the @racket[stepper], and selected using
+@racket[render-reduction-relation-rules]. The output of 
+@racket[apply-reduction-relation/tag-with-names], @racket[traces], and
+the @racket[stepper] prefers the computed name, if it exists. Typesetting
+a rule with a computed name shows the expression that computes the name
+only when the rule has no literal name or when it would not typeset in 
+pink due to @racket[with-unquote-rewriter]s in the context; otherwise,
+the literal name (or nothing) is shown.
 
 The fresh variables clause generates variables that do not
 occur in the term being matched. If the @racket[fresh-clause] is a
@@ -821,10 +843,9 @@ arguments would have stepped.
 }
 
 @defproc[(reduction-relation->rule-names [r reduction-relation?])
-         (listof (union false/c symbol?))]{
+         (listof symbol?)]{
 
-Returns the names of all of the reduction relation's clauses
-(or false if there is no name for a given clause).
+Returns the names of the reduction relation's named clauses.
 }
 
 @defform[(compatible-closure reduction-relation lang non-terminal)]{
@@ -909,17 +930,15 @@ all non-GUI portions of Redex) and also exported by
 
 @defform/subs[#:literals (: -> where side-condition side-condition/hidden where/hidden)
              (define-metafunction language
-               contract
+               metafunction-contract
                [(name @#,ttpattern ...) @#,tttterm extras ...] 
                ...)
-             ([contract (code:line) 
-                        (code:line id : @#,ttpattern ... -> @#,ttpattern)]
+             ([metafunction-contract (code:line) 
+                                     (code:line id : @#,ttpattern ... -> @#,ttpattern)]
               [extras (side-condition racket-expression)
                       (side-condition/hidden racket-expression)
-                      (where tl-pat @#,tttterm)
-                      (where/hidden tl-pat @#,tttterm)]
-              [tl-pat identifier (tl-pat-ele ...)]
-              [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+                      (where pat @#,tttterm)
+                      (where/hidden pat @#,tttterm)])]{
 
 The @racket[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -992,7 +1011,7 @@ match.
 }
 
 @defform[(define-metafunction/extension f language 
-           contract
+           metafunction-contract
            [(g @#,ttpattern ...) @#,tttterm extras ...] 
            ...)]{
 
@@ -1025,9 +1044,11 @@ and @racket[#f] otherwise.
 
 @defform/subs[#:literals ()
               (define-relation language
+               relation-contract
                [(name @#,ttpattern ...) @#,tttterm ...] ...)
-               ([tl-pat identifier (tl-pat-ele ...)]
-                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+               ([relation-contract (code:line)
+                                   (code:line id ⊂ pat x ... x pat)
+                                   (code:line id ⊆ pat × ... × pat)])]{
 
 The @racket[define-relation] form builds a relation on
 sexpressions according to the pattern and right-hand-side
@@ -1046,6 +1067,11 @@ the result is @racket[#f]. If there are multiple expressions on
 the right-hand side of a relation, then all of them must be satisfied
 in order for that clause of the relation to be satisfied.
 
+The contract specification for a relation restricts the patterns that can
+be used as input to a relation. For each argument to the relation, there
+should be a single pattern, using @racket[x] or @racket[×] to separate
+the argument contracts.
+
 Note that relations are assumed to always return the same results for
 the same inputs, and their results are cached, unless
 @racket[caching-enable?] is set to @racket[#f]. Accordingly, if a
@@ -1058,6 +1084,12 @@ sides are evaluated only once.
 Controls which metafunctions are currently being traced. If it is
 @racket['all], all of them are. Otherwise, the elements of the list
 name the metafunctions to trace. 
+
+The tracing looks just like the tracing done by the @racketmodname[racket/trace]
+library, except that the first column printed by each traced call indicate
+if this call to the metafunction is cached. Specifically, a @tt{c} is printed
+in the first column if the result is just returned from the cache and a
+space is printed if the metafunction call is actually performed.
 
 Defaults to @racket['()].
 
@@ -1119,6 +1151,37 @@ step, using @racket[pred-expr] to determine equivalence.
        (test--> R #:equiv mod2=? 7 1)
 
        (test--> R #:equiv mod2=? 7 1 0)
+       
+       (test-results)]
+
+@defform/subs[(test-->>∃ option ... rel-expr start-expr spec-expr)
+              ([option (code:line #:steps steps-expr)])
+              #:contracts ([rel-expr reduction-relation?]
+                           [start-expr any/c]
+                           [spec-expr (or/c (-> any/c any/c)
+                                            (not/c procedure?))]
+                           [steps-expr (or/c natural-number/c +inf.0)])]{
+Tests to see if the term @racket[start-expr] reduces according to the reduction 
+relation @racket[rel-expr] to a term specified by @racket[goal-expr] in 
+@racket[steps-expr] or fewer steps (default 1,000). The specification 
+@racket[goal-expr] may be either a predicate on terms or a term itself.
+}
+@defidform[test-->>E]{An alias for @racket[test-->>∃].}
+
+@examples[
+#:eval redex-eval
+       (define-language L
+         (n natural))
+
+       (define succ-mod8
+         (reduction-relation
+          L
+          (--> n ,(modulo (add1 (term n)) 8))))
+
+       (test-->>∃ succ-mod8 6 2)
+       (test-->>∃ succ-mod8 6 even?)
+       (test-->>∃ succ-mod8 6 8)
+       (test-->>∃ #:steps 6 succ-mod8 6 5)
        
        (test-results)]
 
@@ -1458,8 +1521,8 @@ exploring reduction sequences.
          void?]{
 
 This function opens a new window and inserts each expression
-in expr (if @racket[multiple?] is #t -- if
-@racket[multiple?] is #f, then expr is treated as a single
+in expr (if @racket[multiple?] is @racket[#t] -- if
+@racket[multiple?] is @racket[#f], then expr is treated as a single
 expression). Then, it reduces the terms until at least
 @racket[reduction-steps-cutoff] (see below) different terms are
 found, or no more reductions can occur. It inserts each new
@@ -1596,7 +1659,14 @@ behavior of its third argument in the reduction system
 described by its first two arguments. 
 
 The @racket[pp] argument is the same as to the
-@racket[traces] functions (above).
+@racket[traces] functions (above) but is here for
+backwards compatibility only and
+should not be changed for most uses, but instead adjusted with
+@racket[pretty-print-parameters]. Specifically, the 
+highlighting shown in the stepper window can be wrong if
+@racket[default-pretty-printer] does not print sufficiently similarly
+to how @racket[pretty-print] prints (when adjusted by
+@racket[pretty-print-parameters]'s behavior, of course).
 }
 
 @defproc[(stepper/seed [reductions reduction-relation?]
@@ -1729,11 +1799,24 @@ the color used to fill the arrowhead and the text colors control the
 color used to draw the label on the edge.
 }
 
-@defproc[(default-pretty-printer [v any] [port output-port] [width number] [text (is-a?/c text%)]) void?]{
+@defparam[pretty-print-parameters f (-> (-> any/c) any/c)]{
+  A parameter that is used to set other @racket[pretty-print]
+  parameters. 
+  
+  Specifically, whenever @racket[default-pretty-printer] prints
+  something it calls @racket[f] with a thunk that does the actual
+  printing. Thus, @racket[f] can adjust @racket[pretty-print]'s
+  parameters to adjust how printing happens.
+
+}
+                                                                       
+@defproc[(default-pretty-printer [v any/c] [port output-port?] [width exact-nonnegative-integer?] [text (is-a?/c text%)]) void?]{
 
 This is the default value of @racket[pp] used by @racket[traces] and
 @racket[stepper] and it uses
-@racket[pretty-print].
+@racket[pretty-print]. 
+
+This function uses the value of @racket[pretty-print-parameters] to adjust how it prints.
 
 It sets the @racket[pretty-print-columns] parameter to
 @racket[width], and it sets @racket[pretty-print-size-hook]
@@ -1912,15 +1995,15 @@ This function sets @racket[dc-for-text-size]. See also
 
 @defparam[extend-language-show-union show? boolean?]{
 
-If this is #t, then a language constructed with
+If this is @racket[#t], then a language constructed with
 extend-language is shown as if the language had been
-constructed directly with @racket[language]. If it is #f, then only
+constructed directly with @racket[language]. If it is @racket[#f], then only
 the last extension to the language is shown (with
 four-period ellipses, just like in the concrete syntax).
 
 Defaultly @racket[#f].
 
-Note that the #t variant can look a little bit strange if
+Note that the @racket[#t] variant can look a little bit strange if
 @racket[....] are used and the original version of the language has
 multi-line right-hand sides.
 }
@@ -1999,7 +2082,24 @@ The @racket['left-right/beside-side-conditions] variant is like
 @racket['left-right], except it puts the side-conditions on the 
 same line, instead of on a new line below the case.}
 
-
+@defparam[delimit-ellipsis-arguments? delimit? any/c]{
+This parameter controls the typesetting of metafunction definitions
+and applications. When it is non-@racket[#f] (the default), commas
+precede ellipses that represent argument sequences; when it is 
+@racket[#f] no commas appear in those positions.
+}                                                                            
+                                                                            
+@defparam[linebreaks breaks (or/c #f (listof boolean?))]{
+  This parameter controls which cases in the metafunction 
+  are rendered on two lines and which are rendered on one.
+  
+  If its value is a list, the length of the list must match
+  the number of cases and each boolean indicates if that
+  case has a linebreak or not.
+  
+  This influences the @racket['left/right] styles only.
+}
+                                                                            
 @defparam[metafunction-cases 
           cases
           (or/c #f (and/c (listof (and/c integer?
@@ -2012,6 +2112,8 @@ cases appear. If it is a list of numbers, then only the selected cases appear (c
 
 @deftogether[[
 @defparam[label-style style text-style/c]{}
+@defparam[grammar-style style text-style/c]{}
+@defparam[paren-style style text-style/c]{}
 @defparam[literal-style style text-style/c]{}
 @defparam[metafunction-style style text-style/c]{}
 @defparam[non-terminal-style style text-style/c]{}
@@ -2032,6 +2134,12 @@ names. The @racket[literal-style] is used for names that aren't
 non-terminals that appear in patterns. The
 @racket[metafunction-style] is used for the names of
 metafunctions. 
+The @racket[paren-style] is used for the parentheses 
+(including ``['', ``]'', ``@"{"'', and ``@"}"'',
+as well as ``('' and ``)''), but not for the square brackets used for
+in-hole decompositions, which use the @racket[default-style].
+The @racket[grammar-style] is used for the ``::='' and ``|''
+in grammars.
 
 The @racket[non-terminal-style] is used for the names of non-terminals.
 Two parameters style the text in the (optional) "underscore" component
@@ -2048,7 +2156,7 @@ The
 after the underscore in non-terminal references.
 
 The @racket[default-style] is used for parenthesis, the dot in dotted
-lists, spaces, the separator words in the grammar, the
+lists, spaces, the
 "where" and "fresh" in side-conditions, and other places
 where the other parameters aren't used.
 }
@@ -2074,7 +2182,7 @@ relation. Defaults to 4.
 Controls if the open and close quotes for strings are turned
 into “ and ” or are left as merely ".
 
-Defaults to #t.
+Defaults to @racket[#t].
 }
 
 @defparam[current-text proc (-> string? text-style/c number? pict?)]{
@@ -2084,7 +2192,7 @@ some part of a grammar, reduction relation, or
 metafunction. It defaults to slideshow's @racket[text] function.
 }
 
-@defparam[set-arrow-pict! proc (-> symbol? (-> pict?) void?)]{
+@defproc[(set-arrow-pict! [arrow symbol?] [proc  (-> pict?)]) void?]{
 
 This functions sets the pict for a given reduction-relation
 symbol. When typesetting a reduction relation that uses the
@@ -2097,7 +2205,7 @@ single reduction relation.
 
   This parameter is used when typesetting metafunctions to
   determine how to create the @"\u301a\u301b"
-  characters. Rather than using those characters directory
+  characters. Rather than using those characters directly
   (since glyphs tend not to be available in PostScript
   fonts), they are created by combining two ‘[’ characters
   or two ‘]’ characters together.
@@ -2131,7 +2239,7 @@ single reduction relation.
 
 }
 
-@deftech{Removing the pink background from PLT Redex rendered picts and ps files}
+@section[#:tag "pink"]{Removing the pink background from PLT Redex rendered picts and ps files}
 
 When reduction rules, a metafunction, or a grammar contains
 unquoted Racket code or side-conditions, they are rendered
@@ -2156,7 +2264,9 @@ another @racket[lw] that contains a rewritten version of the
 code.
 }
 
-@defform[(with-atomic-rewriter name-symbol string-or-thunk-returning-pict expression)]{
+@defform[(with-atomic-rewriter name-symbol
+                               string-or-thunk-returning-pict
+                               expression)]{
 
 This extends the current set of atomic-rewriters with one
 new one that rewrites the value of name-symbol to
@@ -2168,7 +2278,9 @@ of string-or-thunk-returning-pict is used whever the symbol
 appears in a pattern.
 }
 
-@defform[(with-compound-rewriter name-symbol proc expression)]{
+@defform[(with-compound-rewriter name-symbol
+                                 proc
+                                 expression)]{
 
 This extends the current set of compound-rewriters with one
 new one that rewrites the value of name-symbol via proc,

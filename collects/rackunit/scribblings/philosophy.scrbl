@@ -5,7 +5,7 @@
 
 RackUnit is designed to allow tests to evolve in step with
 the evolution of the program under testing.  RackUnit
-scales from the unstructed checks suitable for simple
+scales from the unstructured checks suitable for simple
 programs to the complex structure necessary for large
 projects.
 
@@ -83,7 +83,7 @@ RackUnit manner (for example, test results may be logged
 for the purpose of improving software quality, or they may
 be displayed on a website to indicate service quality). For
 these programmers it is necessary to delay the execution of
-tests so they can processed in the programmer's chosen
+tests so they can be processed in the programmer's chosen
 manner. To do this, the programmer simply wraps a test-suite
 around their tests:
 

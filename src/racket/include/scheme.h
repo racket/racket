@@ -302,8 +302,14 @@ typedef struct Scheme_Vector {
   Scheme_Object *els[1];
 } Scheme_Vector;
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+# define SHARED_ALLOCATED 0x2
+# define SHARED_ALLOCATEDP(so) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(so)) & SHARED_ALLOCATED)
+# define SHARED_ALLOCATED_SET(so) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(so)) |= SHARED_ALLOCATED)
+#endif
+
 typedef struct Scheme_Double_Vector {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* & 0x2 indicates allocated in the MASTERGC */
   long size;
   double els[1];
 } Scheme_Double_Vector;
@@ -426,6 +432,7 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 #define SCHEME_IMMUTABLE_VECTORP(obj)  (SCHEME_VECTORP(obj) && SCHEME_IMMUTABLEP(obj))
 
 #define SCHEME_FLVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_flvector_type)
+#define SCHEME_FXVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_fxvector_type)
 
 #define SCHEME_STRUCTP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_structure_type) || SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_struct_type))
 #define SCHEME_STRUCT_TYPEP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_struct_type_type)
@@ -536,6 +543,9 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 
 #define SCHEME_FLVEC_SIZE(obj) (((Scheme_Double_Vector *)(obj))->size)
 #define SCHEME_FLVEC_ELS(obj)  (((Scheme_Double_Vector *)(obj))->els)
+
+#define SCHEME_FXVEC_SIZE(obj) SCHEME_VEC_SIZE(obj)
+#define SCHEME_FXVEC_ELS(obj) SCHEME_VEC_ELS(obj)
 
 #define SCHEME_ENVBOX_VAL(obj)  (*((Scheme_Object **)(obj)))
 #define SCHEME_WEAK_BOX_VAL(obj) SCHEME_BOX_VAL(obj)
@@ -814,7 +824,8 @@ typedef struct Scheme_Bucket_Table
   int size; /* power of 2 */
   int count;
   Scheme_Bucket **buckets;
-  char weak, with_home;
+  char weak; /* 1 => normal weak, 2 => late weak */
+  char with_home;
   void (*make_hash_indices)(void *v, long *h1, long *h2);
   int (*compare)(void *v1, void *v2);
   Scheme_Object *mutex;
@@ -825,7 +836,8 @@ enum {
   SCHEME_hash_string,
   SCHEME_hash_ptr,
   SCHEME_hash_bound_id,
-  SCHEME_hash_weak_ptr
+  SCHEME_hash_weak_ptr,
+  SCHEME_hash_late_weak_ptr
 };
 
 typedef struct Scheme_Env Scheme_Env;
@@ -979,6 +991,7 @@ typedef struct Scheme_Thread {
   struct Scheme_Prompt *meta_prompt; /* a pseudo-prompt */
   
   struct Scheme_Meta_Continuation *meta_continuation;
+  struct Scheme_Prompt *acting_barrier_prompt;
 
   long engine_weight;
 
@@ -1005,6 +1018,8 @@ typedef struct Scheme_Thread {
   Scheme_Object *running_box;   /* contains pointer to thread when it's running */
 
   struct Scheme_Thread *nester, *nestee;
+
+  struct future_t *current_ft;
 
   double sleep_end; /* blocker has starting sleep time */
   int block_descriptor;
@@ -1190,6 +1205,7 @@ enum {
   MZCONFIG_CAN_READ_INFIX_DOT,
   MZCONFIG_CAN_READ_QUASI,
   MZCONFIG_CAN_READ_READER,
+  MZCONFIG_CAN_READ_LANG,
   MZCONFIG_READ_DECIMAL_INEXACT,
   
   MZCONFIG_PRINT_GRAPH,
@@ -1202,6 +1218,7 @@ enum {
   MZCONFIG_PRINT_MPAIR_CURLY,
   MZCONFIG_PRINT_SYNTAX_WIDTH,
   MZCONFIG_PRINT_READER,
+  MZCONFIG_PRINT_LONG_BOOLEAN,
   MZCONFIG_PRINT_AS_QQ,
 
   MZCONFIG_CASE_SENS,
@@ -1214,6 +1231,8 @@ enum {
   MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH,
 
   MZCONFIG_ERROR_ESCAPE_HANDLER,
+
+  MZCONFIG_EXE_YIELD_HANDLER,
 
   MZCONFIG_ALLOW_SET_UNDEFINED,
   MZCONFIG_COMPILE_MODULE_CONSTS,
@@ -1656,7 +1675,6 @@ extern void *scheme_malloc_envunbox(size_t);
 # define scheme_malloc_small_atomic_tagged scheme_malloc_atomic_tagged
 #endif
 
-
 #ifdef MZ_PRECISE_GC
 # define MZ_GC_DECL_REG(size) void *__gc_var_stack__[size+2] = { (void *)0, (void *)size };
 # define MZ_GC_VAR_IN_REG(x, v) (__gc_var_stack__[x+2] = (void *)&(v))
@@ -1743,7 +1761,10 @@ MZ_EXTERN void scheme_set_atexit(Scheme_At_Exit_Proc p);
 typedef void (*scheme_console_printf_t)(char *str, ...);
 MZ_EXTERN scheme_console_printf_t scheme_console_printf;
 MZ_EXTERN scheme_console_printf_t scheme_get_console_printf();
-MZ_EXTERN void (*scheme_console_output)(char *str, long len);
+MZ_EXTERN void scheme_set_console_printf(scheme_console_printf_t p);
+typedef void (*scheme_console_output_t)(char *str, long len);
+MZ_EXTERN scheme_console_output_t scheme_console_output;
+MZ_EXTERN void scheme_set_console_output(scheme_console_output_t p);
 MZ_EXTERN void (*scheme_sleep)(float seconds, void *fds);
 MZ_EXTERN void (*scheme_notify_multithread)(int on);
 MZ_EXTERN void (*scheme_wakeup_on_input)(void *fds);
@@ -1762,9 +1783,15 @@ void scheme_restore_nonmain_thread(void);
 extern long scheme_creator_id;
 #endif
 
+typedef Scheme_Object *(*Scheme_Stdio_Maker_Proc)(void);
 MZ_EXTERN Scheme_Object *(*scheme_make_stdin)(void);
 MZ_EXTERN Scheme_Object *(*scheme_make_stdout)(void);
 MZ_EXTERN Scheme_Object *(*scheme_make_stderr)(void);
+
+MZ_EXTERN void scheme_set_stdio_makers(Scheme_Stdio_Maker_Proc in,
+				       Scheme_Stdio_Maker_Proc out,
+				       Scheme_Stdio_Maker_Proc err);
+
 
 MZ_EXTERN void scheme_set_banner(char *s);
 MZ_EXTERN Scheme_Object *scheme_set_exec_cmd(char *s);

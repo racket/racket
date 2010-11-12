@@ -4,7 +4,7 @@
 	 syntax/boundmap
          (utils tc-utils)
          mzlib/trace
-         scheme/match)
+         racket/match)
 
 (provide register-type-alias
          lookup-type-alias
@@ -27,7 +27,7 @@
 ;; add a name to the mapping
 ;; identifier type-stx -> void
 (define (register-type-alias id stx)
-  ;(printf "registering type ~a~n~a~n" (syntax-e id) id)
+  ;(printf "registering type ~a\n~a\n" (syntax-e id) id)
   (mapping-put! id (make-unresolved stx #f)))
 
 (define (register-resolved-type-alias id ty)

@@ -8,7 +8,10 @@ bindings that a module does not provide.  It is useful for
 testing the private functions of modules.
 
 @defform[(require/expose module (id ...))]{
-Requires @racket[id] from @racket[module] into the current module.  It doesn't matter if the source module provides the bindings or not; @racket[require/expose] can still get at them.
+
+Requires @racket[id] from @racket[module] into the current module.  It
+doesn't matter if the source module provides the bindings or not;
+@racket[require/expose] can still get at them.
 
 Note that @racket[require/expose] can be a bit fragile,
 especially when mixed with compiled code.  Use at your own risk!

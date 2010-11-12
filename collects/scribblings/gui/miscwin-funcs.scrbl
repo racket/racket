@@ -56,8 +56,8 @@ The get operation always returns @racket[#"????"] and @racket[#"????"] for
  Windows.
 }
 
-@defproc[(find-graphical-system-path [what (one-of/c 'init-file 'setup-file 'x-display)])
-         (or/c path? false/c)]{
+@defproc[(find-graphical-system-path [what (one-of/c 'init-file 'x-display)])
+         (or/c path? #f)]{
 
 Finds a platform-specific (and possibly user- or machine-specific)
  standard filename or directory. See also @racket[find-system-path].
@@ -75,12 +75,9 @@ The result depends on @racket[what], and a @racket[#f] result is only
   @itemize[
 
   @item{@|AllUnix|: @indexed-file{.gracketrc}}
-  @item{Windows: @indexed-file{racketrc.rktl}}
+  @item{Windows: @indexed-file{gracketrc.rktl}}
 
   ]}
-
- @item{@racket['setup-file] returns the path to the file
- containing resources used by @racket[get-resource]; obsolete.}
 
  @item{@racket['x-display] returns a ``path'' whose string identifies
  the X display if specified by either the @Flag{display} flag or the
@@ -115,59 +112,17 @@ Returns the background color of a panel (usually some shade of gray)
 
 }
 
-@defproc[(get-resource [section string?]
-                       [entry string?]
-                       [value (box/c (or/c string? exact-integer?))]
-                       [file (or/c path? false/c) #f])
-         boolean?]{
 
-Gets a resource value from the resource database. The resource value
- is keyed on the combination of @racket[section] and @racket[entry].  The
- return value is @racket[#t] if a value is found, @racket[#f] if it is
- not. The type of the value initially in the @racket[value] box
- determines the way that the resource is interpreted, and @racket[value]
- is filled with a new value of the same type if one is found.
+@defproc[(get-highlight-background-color) (is-a?/c color%)]{
 
-If @racket[file] is @racket[#f], platform-specific resource files
- are read, as determined by @racket[find-graphical-system-path]
- with @indexed-racket['setup-file]. (Under X, when @racket[file] is
- @racket[#f], the user's @filepath{.Xdefaults} file is also read, or the
- file specified by the @filepath{XENVIRONMENT} environment variable.)
+Returns the color drawn behind selected text.}
 
-The format of a resource entry depends on the platform. Windows
- resources use the standard @filepath{.ini} format. X and Mac OS X
- resources use the standard X resource format, where each entry
- consists of a @racket[section].@racket[entry] resource name, a colon, and
- the resource value, terminated by a newline.  Section and entry names are
- case-sensitive.
 
-@index['("registry")]{@index['("Windows registry")]{Under}} Windows, if
- @racket[section] is one of the following strings, then @racket[file]
- is ignored, and @racket[entry] is used as a resource path:
+@defproc[(get-highlight-text-color) (or/c (is-a?/c color%) #f)]{
 
-@itemize[
+Returns the color used to draw selected text or @racket[#f] if
+selected text is drawn with its usual color.}
 
- @item{@indexed-racket["HKEY_CLASSES_ROOT"]}
- @item{@indexed-racket["HKEY_CURRENT_CONFIG"]}
- @item{@indexed-racket["HKEY_CURRENT_USER"]}
- @item{@indexed-racket["HKEY_LOCAL_MACHINE"]}
- @item{@indexed-racket["HKEY_USERS"]}
-
-]
-
-In that case, the @racket[entry] argument is parsed as a resource entry
-path, followed by a backslash, followed by a value name. To get the
-``default'' value for an entry, use the empty name. For example, the
-following expression gets a command line for starting a browser:
-
-@racketblock[
-(let ([b (box "")])
-  (get-resource "HKEY_CLASSES_ROOT"
-                "htmlfile\\shell\\open\\command\\" b)
-  (unbox b))
-]
-
-See also @racket[write-resource].}
 
 @defproc[(get-window-text-extent [string string]
                                  [font (is-a?/c font%)]
@@ -264,6 +219,20 @@ Strips shortcut ampersands from @racket[label], removes parenthesized
 }
 
 
+@defproc[(make-gl-bitmap [width exact-positive-integer?]
+                         [height exact-positive-integer?]
+                         [config (is-a?/c gl-config%)])
+         (is-a/c? bitmap%)]{
+
+Creates a bitmap that supports both normal @racket[dc<%>] drawing an
+OpenGL drawing through a context returned by @xmethod[dc<%> get-gl-context].
+
+For @racket[dc<%>] drawing, an OpenGL-supporting bitmap draws like a
+bitmap frmo @racket[make-screen-bitmap] on some platforms, while it
+draws like a bitmap instantiated directly from @racket[bitmap%] on
+other platforms.}
+
+
 @defproc[(make-gui-empty-namespace) namespace?]{
 
 Like @racket[make-base-empty-namespace], but with
@@ -275,6 +244,17 @@ attached to the result namespace.}
 Like @racket[make-base-namespace], but with @racketmodname[racket/class] and
 @racketmodname[racket/gui/base] also required into the top-level
 environment of the result namespace.}
+
+
+@defproc[(make-screen-bitmap [width exact-positive-integer?]
+                             [height exact-positive-integer?]) 
+         (is-a/c? bitmap%)]{
+
+Creates a bitmap that draws in a way that is the same as drawing to a
+canvas in its default configuration.
+
+A normal @racket[bitmap%] draws in a more platform-independent way and
+may use fewer constrained resources, particularly under Windows.}
 
 
 @defproc[(play-sound [filename path-string?]
@@ -305,77 +285,49 @@ Under X, the function invokes an external sound-playing program;
 Under Mac OS X, Quicktime is used to play sounds; most sound
  formats (.wav, .aiff, .mp3) are supported in recent versions of
  Quicktime. In order to play .wav files, Quicktime 3.0 (compatible
- with OS 7.5 and up) is required.
+ with OS 7.5 and up) is required.}
 
 
+@defproc[(register-collecting-blit [canvas (is-a?/c canvas%)]
+                                   [x real?]
+                                   [y real?]
+                                   [w (and/c real? (not/c negative?))]
+                                   [h (and/c real? (not/c negative?))]
+                                   [on (is-a?/c bitmap%)]
+                                   [off (is-a?/c bitmap%)]
+                                   [on-x real? 0]
+                                   [on-y real? 0]
+                                   [off-x real? 0]
+                                   [off-y real? 0])
+         void?]{
 
-}
+Registers a ``blit'' to occur when garbage collection starts and
+ ends. When garbage collection starts, @racket[on] is drawn at
+ location @racket[x] and @racket[y] within @racket[canvas], if
+ @racket[canvas] is shown.  When garbage collection ends, the drawing
+ is reverted, possibly by drawing the @racket[off] bitmap.
+
+The background behind @racket[on] is unspecified, so @racket[on]
+ should be a solid image, and the canvas's scale or scrolling is not
+ applied to the drawing. Only the portion of @racket[on] within
+ @racket[w] and @racket[h] pixels is used; if @racket[on-x] and
+ @racket[on-y] are specified, they specify an offset within the bitmap
+ that is used for drawing, and @racket[off-x] and @racket[off-y]
+ similarly specify an offset within @racket[off].
+
+The blit is automatically unregistered if @scheme[canvas] becomes
+ invisible and inaccessible.  Multiple registrations can be installed
+ for the same @scheme[canvas].
+
+See also @scheme[unregister-collecting-blit].}
 
 
-@defproc[(send-event [receiver-bytes (lambda (s) (and (bytes? s)
-                                                      (= 4 (bytes-length s))))]
-                     [event-class-bytes (lambda (s) (and (bytes? s)
-                                                         (= 4 (bytes-length s))))]
-                     [event-id-bytes (lambda (s) (and (bytes? s)
-                                                      (= 4 (bytes-length s))))]
-                     [direct-arg-v any/c (void)]
-                     [argument-list list? null])
-         any/c]{
+@defproc[(unregister-collecting-blit [canvas (is-a?/c canvas%)])
+         void?]{
 
-Sends an AppleEvent or raises @racket[exn:fail:unsupported].
+Unregisters all blit requests installed for @racket[canvas] with
+ @scheme[register-collecting-blit].}
 
-The @racket[receiver-bytes], @racket[event-class-bytes], and
-@racket[event-id-bytes] arguments specify the signature of the
-receiving application, the class of the AppleEvent, and the ID of
-the AppleEvent.
-
-The @racket[direct-arg-v] value is converted (see below) and passed as
-the main argument of the event; if @racket[direct-argument-v] is
-@|void-const|, no main argument is sent in the event. The
-@racket[argument-list] argument is a list of two-element lists
-containing a typestring and value; each typestring is used ad the
-keyword name of an AppleEvent argument for the associated converted
-value. 
-
-The following types of Racket values can be converted to AppleEvent
-values passed to the receiver:
-
-@atable[
-(tline @elem{@racket[#t] or @racket[#f]}  @elem{Boolean})
-(tline @elem{small integer}   @elem{Long Integer})
-(tline @elem{inexact real number} @elem{Double})
-(tline @elem{string} @elem{Characters})
-(tline @elem{list of convertible values}  @elem{List of converted values})
-(tline @racket[#(file _pathname)]   @elem{Alias (file exists) or FSSpec (does not exist)})
-(tline @racket[#(record (_typestring _v) ...)]   @elem{Record of keyword-tagged values})
-]
-
-If other types of values are passed to @racket[send-event] for
- conversion, the @exnraise[exn:fail:unsupported].
-
-The @racket[send-event] procedure does not return until the receiver
-of the AppleEvent replies. The result of @racket[send-event] is the
-reverse-converted reply value (see below), or the @exnraise[exn:fail]
-if there is an error. If there is no error or return value,
-@racket[send-event] returns @|void-const|.
-
-The following types of AppleEvent values can be reverse-converted into
-a Racket value returned by @racket[send-event]:
-
-@atable[
-(tline @elem{Boolean}  @elem{@racket[#t] or @racket[#f]})
-(tline @elem{Signed Integer}  @elem{integer})
-(tline @elem{Float, Double, or Extended}  @elem{inexact real number})
-(tline @elem{Characters}  @elem{string})
-(tline @elem{List of reverse-convertible values}  @elem{list of reverse-converted values})
-(tline @elem{Alias or FSSpec}  @racket[#(file _pathname)])
-(tline @elem{Record of keyword-tagged values}  @racket[#(record (_typestring _v) ...)])
-]
-
-If the AppleEvent reply contains a value that cannot be
- reverse-converted, the @exnraise[exn:fail].
-
-}
 
 @defproc[(send-message-to-window [x (integer-in -10000 10000)]
                                  [y (integer-in -10000 10000)]
@@ -414,31 +366,6 @@ See @racket[clipboard<%>].
 
 
 }
-
-@defproc[(write-resource [section string?]
-                         [entry string?]
-                         [value (or/c string? exact-integer?)]
-                         [file (or/c path-string? false/c) #f])
-         boolean?]{
-
-Writes a resource value to the specified resource database. The
- resource value is keyed on the combination of @racket[section] and
- @racket[entry], with the same special handling of @racket[entry] for
- under Windows as for @racket[get-resource].
-
-If @racket[file] is @racket[#f], the platform-specific resource
- database is read, as determined by
- @racket[find-graphical-system-path] with
- @indexed-racket['setup-file].
-
-The return value is @racket[#t] if the write succeeds, @racket[#f]
- otherwise. (A failure indicates that the resource file cannot be
- written.)
-
-If @racket[value] is an integer outside a platform-specific range,
- @|MismatchExn|.
-
-See also @racket[get-resource].}
 
 @defproc[(label-string? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] is a string whose length is less than or equal to @racket[200].                                             

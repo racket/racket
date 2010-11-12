@@ -13,6 +13,7 @@
          web-server/private/util)
 
 (provide/contract
+ [print-headers (output-port? (listof header?) . -> . void)]
  [rename ext:output-response output-response (connection? response/c . -> . void)]
  [rename ext:output-response/method output-response/method (connection? response/c bytes? . -> . void)]
  [rename ext:output-file output-file (connection? path-string? bytes? bytes? (or/c pair? false/c) . -> . void)])
@@ -263,7 +264,7 @@
                          (- (cdr range) (car range)))
                        converted-ranges)))
         (with-handlers ([exn:fail? (lambda (exn) (network-error 'output-file (exn-message exn)))])
-          (call-with-input-file file-path
+          (call-with-input-file* file-path
             (lambda (input)
               (if (= (length converted-ranges) 1)
                   ; Single ranges (in 200 or 206 responses) are sent straight out

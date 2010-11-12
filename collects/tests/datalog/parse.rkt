@@ -21,6 +21,8 @@
                         (make-literal #f 'parent (list (make-constant #f 'john) (make-constant #f 'douglas))))
     (test-literal-parse "1 = 2"
                         (make-literal #f '= (list (make-constant #f '|1|) (make-constant #f '|2|))))
+    (test-literal-parse "1 != 2"
+                        (make-literal #f '!= (list (make-constant #f '|1|) (make-constant #f '|2|))))
     (test-literal-parse "zero-arity-literal"
                         (make-literal #f 'zero-arity-literal empty))
     (test-literal-parse "zero-arity-literal()"

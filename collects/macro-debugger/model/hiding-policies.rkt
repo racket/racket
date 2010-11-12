@@ -1,6 +1,5 @@
 #lang racket/base
-(require (for-syntax racket/base)
-         racket/match
+(require racket/match
          "reductions-config.rkt"
          "../util/mpi.rkt")
 (provide policy->predicate)

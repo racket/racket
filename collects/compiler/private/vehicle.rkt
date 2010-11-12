@@ -137,7 +137,7 @@
 							vnum
 							(lambda ()
 							  (compiler:internal-error 
-							   #f "bad hash table lookup (2)~n")))]
+							   #f "bad hash table lookup (2)\n")))]
 			       [curr-label (vehicle-total-labels vehicle)])
 			  (vehicle:register-max-arity! vehicle (closure-code-max-arity code))
 			  (s:register-max-arity! (closure-code-max-arity code))

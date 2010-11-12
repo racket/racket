@@ -220,7 +220,7 @@ on @racket[target] in Windows. For platforms other than Windows, the
 For example,
 
 @racketblock[
-(shell-execute #f "http://www.racket-lang.org" "" 
+(shell-execute #f "http://racket-lang.org" ""
                (current-directory) 'sw_shownormal)
 ]
 

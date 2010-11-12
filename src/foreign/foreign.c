@@ -482,8 +482,9 @@ static unsigned short *ucs4_string_to_utf16_pointer(Scheme_Object *ucs)
   long ulen;
   unsigned short *res;
   res = scheme_ucs4_to_utf16
-          (SCHEME_CHAR_STR_VAL(ucs), 0, 1+SCHEME_CHAR_STRLEN_VAL(ucs),
-           NULL, -1, &ulen, 0);
+          (SCHEME_CHAR_STR_VAL(ucs), 0, SCHEME_CHAR_STRLEN_VAL(ucs),
+           NULL, -1, &ulen, 1);
+  res[ulen] = 0;
   return res;
 }
 
@@ -500,7 +501,8 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
   int end;
   if (!utf) return scheme_false;
   for (end=0; utf[end] != 0; end++) { /**/ }
-  res = scheme_utf16_to_ucs4(utf, 0, end, NULL, -1, &ulen, 0);
+  res = scheme_utf16_to_ucs4(utf, 0, end, NULL, -1, &ulen, 1);
+  res[ulen] = 0;
   return scheme_make_sized_char_string(res, ulen, 0);
 }
 
@@ -1013,6 +1015,16 @@ void free_libffi_type(void *ignored, void *p)
   free(p);
 }
 
+void free_libffi_type_with_alignment(void *ignored, void *p)
+{
+  int i;
+
+  for (i = 0; ((ffi_type*)p)->elements[i]; i++) {
+    free(((ffi_type*)p)->elements[i]);
+  }
+  free_libffi_type(ignored, p);
+}
+
 /*****************************************************************************/
 /* ABI spec */
 
@@ -1049,7 +1061,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 /*****************************************************************************/
 /* cstruct types */
 
-/* (make-cstruct-type types [abi]) -> ctype */
+/* (make-cstruct-type types [abi alignment]) -> ctype */
 /* This creates a new primitive type that is a struct.  This type can be used
  * with cpointer objects, except that the contents is used rather than the
  * pointer value.  Marshaling to lists or whatever should be done in Scheme. */
@@ -1063,11 +1075,24 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   GC_CAN_IGNORE ffi_type **elements, *libffi_type, **dummy;
   ctype_struct *type;
   ffi_cif cif;
-  int i, nargs;
+  int i, nargs, with_alignment;
   ffi_abi abi;
   nargs = scheme_proper_list_length(argv[0]);
   if (nargs < 0) scheme_wrong_type(MYNAME, "proper list", 0, argc, argv);
   abi = GET_ABI(MYNAME,1);
+  if (argc > 2) {
+    if (!SCHEME_FALSEP(argv[2])) {
+      if (!SAME_OBJ(argv[2], scheme_make_integer(1))
+          && !SAME_OBJ(argv[2], scheme_make_integer(2))
+          && !SAME_OBJ(argv[2], scheme_make_integer(4))
+          && !SAME_OBJ(argv[2], scheme_make_integer(8))
+          && !SAME_OBJ(argv[2], scheme_make_integer(16)))
+        scheme_wrong_type(MYNAME, "1, 2, 4, 8, 16, or #f", 2, argc, argv);
+      with_alignment = SCHEME_INT_VAL(argv[2]);
+    } else
+      with_alignment = 0;
+  } else
+    with_alignment = 0;
   /* allocate the type elements */
   elements = malloc((nargs+1) * sizeof(ffi_type*));
   elements[nargs] = NULL;
@@ -1077,6 +1102,14 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
     if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
       scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 0, argc, argv);
     elements[i] = CTYPE_PRIMTYPE(base);
+    if (with_alignment) {
+      /* copy the type to set an alignment: */
+      libffi_type = malloc(sizeof(ffi_type));
+      memcpy(libffi_type, elements[i], sizeof(ffi_type));
+      elements[i] = libffi_type;
+      if (with_alignment < elements[i]->alignment)
+        elements[i]->alignment = with_alignment;
+    }
   }
   /* allocate the new libffi type object */
   libffi_type = malloc(sizeof(ffi_type));
@@ -1093,7 +1126,10 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   type->basetype = (argv[0]);
   type->scheme_to_c = ((Scheme_Object*)libffi_type);
   type->c_to_scheme = ((Scheme_Object*)FOREIGN_struct);
-  scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
+  if (with_alignment)
+    scheme_register_finalizer(type, free_libffi_type_with_alignment, libffi_type, NULL, NULL);
+  else
+    scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
   return (Scheme_Object*)type;
 }
 #undef MYNAME
@@ -1176,6 +1212,9 @@ END_XFORM_SKIP;
 #define scheme_make_foreign_cpointer(x) \
   ((x==NULL)?scheme_false:scheme_make_cptr(x,NULL))
 
+#define scheme_make_foreign_offset_cpointer(x, delta) \
+  ((delta == 0) ? scheme_make_foreign_cpointer(x) : scheme_make_offset_cptr(x,delta,NULL))
+
 #define scheme_make_foreign_external_cpointer(x) \
   ((x==NULL)?scheme_false:scheme_make_external_cptr(x,NULL))
 
@@ -1206,6 +1245,10 @@ static Scheme_Object *foreign_set_cpointer_tag_bang(int argc, Scheme_Object *arg
   return scheme_void;
 }
 #undef MYNAME
+
+void *scheme_extract_pointer(Scheme_Object *v) {
+  return SCHEME_FFIANYPTR_VAL(v);
+}
 
 /*****************************************************************************/
 /* Scheme<-->C conversions */
@@ -1266,7 +1309,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     case FOREIGN_scheme: return REF_CTYPE(Scheme_Object*);
     case FOREIGN_fpointer: return (REF_CTYPE(void*));
     case FOREIGN_struct:
-           return scheme_make_foreign_cpointer(W_OFFSET(src, delta));
+           return scheme_make_foreign_offset_cpointer(src, delta);
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
   return NULL; /* hush the compiler */
@@ -1964,7 +2007,9 @@ static Scheme_Object *foreign_free(int argc, Scheme_Object *argv[])
 #define MYNAME "malloc-immobile-cell"
 static Scheme_Object *foreign_malloc_immobile_cell(int argc, Scheme_Object *argv[])
 {
-  return scheme_make_foreign_external_cpointer(scheme_malloc_immobile_box(argv[0]));
+  void *p;
+  p = scheme_malloc_immobile_box(argv[0]);
+  return scheme_make_foreign_external_cpointer(p); /* <- beware: macro duplicates `p' */
 }
 #undef MYNAME
 
@@ -2919,7 +2964,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
     {
       /* put data in immobile, weak box */
       void **tmp;
-      tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0));
+      tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0, 1));
       cl_cif_args->data = (struct immobile_box*)tmp;
     }
 #   else /* MZ_PRECISE_GC undefined */
@@ -2974,6 +3019,32 @@ static Scheme_Object *foreign_lookup_errno(int argc, Scheme_Object *argv[])
   }
   scheme_wrong_type(MYNAME, "'EINTR, 'EEXIST, or 'EAGAIN",0, argc, argv);
   return NULL;
+}
+#undef MYNAME
+
+/*****************************************************************************/
+
+/* (make-stubborn-will-executor) -> #<will-executor> */
+#define MYNAME "make-stubborn-will-executor"
+static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_stubborn_will_executor();
+}
+#undef MYNAME
+
+/* (make-late-weak-box val) -> #<weak-box> */
+#define MYNAME "make-late-weak-box"
+static Scheme_Object *foreign_make_late_weak_box(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_late_weak_box(argv[0]);
+}
+#undef MYNAME
+
+/* (make-late-weak-hasheq) -> #<hash> */
+#define MYNAME "make-late-weak-hasheq"
+static Scheme_Object *foreign_make_late_weak_hasheq(int argc, Scheme_Object *argv[])
+{
+  return (Scheme_Object *)scheme_make_bucket_table(20, SCHEME_hash_late_weak_ptr);
 }
 #undef MYNAME
 
@@ -3084,7 +3155,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("make-ctype",
     scheme_make_prim_w_arity(foreign_make_ctype, "make-ctype", 3, 3), menv);
   scheme_add_global("make-cstruct-type",
-    scheme_make_prim_w_arity(foreign_make_cstruct_type, "make-cstruct-type", 1, 2), menv);
+    scheme_make_prim_w_arity(foreign_make_cstruct_type, "make-cstruct-type", 1, 3), menv);
   scheme_add_global("ffi-callback?",
     scheme_make_prim_w_arity(foreign_ffi_callback_p, "ffi-callback?", 1, 1), menv);
   scheme_add_global("cpointer?",
@@ -3145,6 +3216,12 @@ void scheme_init_foreign(Scheme_Env *env)
     scheme_make_prim_w_arity(foreign_saved_errno, "saved-errno", 0, 0), menv);
   scheme_add_global("lookup-errno",
     scheme_make_prim_w_arity(foreign_lookup_errno, "lookup-errno", 1, 1), menv);
+  scheme_add_global("make-stubborn-will-executor",
+    scheme_make_prim_w_arity(foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), menv);
+  scheme_add_global("make-late-weak-box",
+    scheme_make_prim_w_arity(foreign_make_late_weak_box, "make-late-weak-box", 1, 1), menv);
+  scheme_add_global("make-late-weak-hasheq",
+    scheme_make_prim_w_arity(foreign_make_late_weak_hasheq, "make-late-weak-hasheq", 0, 0), menv);
   s = scheme_intern_symbol("void");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -3382,7 +3459,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("make-ctype",
    scheme_make_prim_w_arity((Scheme_Prim *)foreign_make_ctype, "make-ctype", 3, 3), menv);
   scheme_add_global("make-cstruct-type",
-   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 2), menv);
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 3), menv);
   scheme_add_global("ffi-callback?",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-callback?", 1, 1), menv);
   scheme_add_global("cpointer?",
@@ -3443,6 +3520,12 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "saved-errno", 0, 0), menv);
   scheme_add_global("lookup-errno",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), menv);
+  scheme_add_global("make-stubborn-will-executor",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-stubborn-will-executor", 0, 0), menv);
+  scheme_add_global("make-late-weak-box",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-late-weak-box", 1, 1), menv);
+  scheme_add_global("make-late-weak-hasheq",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-late-weak-hasheq", 0, 0), menv);
   scheme_add_global("_void", scheme_false, menv);
   scheme_add_global("_int8", scheme_false, menv);
   scheme_add_global("_uint8", scheme_false, menv);

@@ -126,7 +126,7 @@ AO_test_and_set_full(volatile AO_TS_t *addr)
   /* Note: the "xchg" instruction does not need a "lock" prefix */
   __asm__ __volatile__("xchgb %0, %1"
 		: "=q"(oldval), "=m"(*addr)
-		: "0"(0xff), "m"(*addr) : "memory");
+		: "0"((AO_TS_t) 0xff), "m"(*addr) : "memory");
   return (AO_TS_VAL_t)oldval;
 }
 

@@ -94,10 +94,10 @@ Correct output N = 1000 is
   (let loop-i ([i 0] [px 0.0] [py 0.0] [pz 0.0])
     (if (unsafe-fx= i *system-size*)
       (begin
-        (set-body-vx! (unsafe-vector-ref *system* 0) (fl/ (fl- 0.0 px) +solar-mass+))
-        (set-body-vy! (unsafe-vector-ref *system* 0) (fl/ (fl- 0.0 py) +solar-mass+))
-        (set-body-vz! (unsafe-vector-ref *system* 0) (fl/ (fl- 0.0 pz) +solar-mass+)))
-      (let ([i1 (unsafe-vector-ref *system* i)])
+        (set-body-vx! (unsafe-vector*-ref *system* 0) (fl/ (fl- 0.0 px) +solar-mass+))
+        (set-body-vy! (unsafe-vector*-ref *system* 0) (fl/ (fl- 0.0 py) +solar-mass+))
+        (set-body-vz! (unsafe-vector*-ref *system* 0) (fl/ (fl- 0.0 pz) +solar-mass+)))
+      (let ([i1 (unsafe-vector*-ref *system* i)])
         (loop-i (unsafe-fx+ i 1)
                 (fl+ px (fl* (body-vx i1) (body-mass i1)))
                 (fl+ py (fl* (body-vy i1) (body-mass i1)))
@@ -108,7 +108,7 @@ Correct output N = 1000 is
   (let loop-o ([o 0] [e 0.0])
     (if (unsafe-fx= o *system-size*)
       e
-      (let* ([o1 (unsafe-vector-ref *system* o)]
+      (let* ([o1 (unsafe-vector*-ref *system* o)]
              [e (fl+ e (fl* (fl* 0.5 (body-mass o1))
                         (fl+ (fl+ (fl* (body-vx o1) (body-vx o1))
                               (fl* (body-vy o1) (body-vy o1)))
@@ -116,7 +116,7 @@ Correct output N = 1000 is
         (let loop-i ([i (unsafe-fx+ o 1)] [e e])
           (if (unsafe-fx= i *system-size*)
             (loop-o (unsafe-fx+ o 1) e)
-            (let* ([i1   (unsafe-vector-ref *system* i)]
+            (let* ([i1   (unsafe-vector*-ref *system* i)]
                    [dx   (fl- (body-x o1) (body-x i1))]
                    [dy   (fl- (body-y o1) (body-y i1))]
                    [dz   (fl- (body-z o1) (body-z i1))]
@@ -128,13 +128,13 @@ Correct output N = 1000 is
 (define (advance)
   (let loop-o ([o 0])
     (unless (unsafe-fx= o *system-size*)
-      (let* ([o1 (unsafe-vector-ref *system* o)])
+      (let* ([o1 (unsafe-vector*-ref *system* o)])
         (let loop-i ([i  (unsafe-fx+ o 1)]
                      [vx (body-vx o1)]
                      [vy (body-vy o1)]
                      [vz (body-vz o1)])
           (if (unsafe-fx< i *system-size*)
-            (let* ([i1    (unsafe-vector-ref *system* i)]
+            (let* ([i1    (unsafe-vector*-ref *system* i)]
                    [dx    (fl- (body-x o1) (body-x i1))]
                    [dy    (fl- (body-y o1) (body-y i1))]
                    [dz    (fl- (body-z o1) (body-z i1))]

@@ -12,7 +12,7 @@ protect abstractions, ensuring that clients of your module
 cannot depend on the precise representation choices you make
 for your data structures.
 
-#; @ctc-section{Getting Started, with a Stack Example}
+@; @ctc-section{Getting Started, with a Stack Example}
 
 @margin-note{
   You can type @racket[#:exists] instead of @racket[#:∃] if you 

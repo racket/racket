@@ -46,7 +46,7 @@
 			   [(left top) 0]
 			   [(right bottom) (- total-size item-size)]
 			   [else (error 'place-children
-					"alignment spec is unknown ~a~n" spec)])))])
+					"alignment spec is unknown ~a\n" spec)])))])
 		 (map (lambda (l) 
 			(let*-values ([(min-width min-height v-stretch? h-stretch?)
 				       (apply values l)]

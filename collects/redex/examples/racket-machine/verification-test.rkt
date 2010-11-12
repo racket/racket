@@ -374,6 +374,65 @@
  (negate bytecode-ok?)
  '(let-one 'x (branch (loc-noclr 0) (loc-noclr 0) (loc-clr 0))))
 
+(test-predicate
+ bytecode-ok?
+ '(proc-const (val val val)
+              (branch (loc 0)
+                      (branch (loc 1)
+                              (loc-clr 2)
+                              void)
+                      (application (loc 2)))))
+
+(test-predicate
+ bytecode-ok?
+ '(let-one 'x
+           (branch #f
+                   (let-one (loc-noclr 1) void)
+                   (loc-clr 0))))
+
+(test-predicate
+ (negate bytecode-ok?)
+ '(proc-const (val)
+              (seq
+               (branch (loc 0)
+                       (loc-clr 0)
+                       void)
+               (install-value 0 'x void))))
+
+(test-predicate
+ bytecode-ok?
+ '(proc-const (val)
+              (seq
+               (branch (loc 0)
+                       (let-one 'x
+                                (branch (loc 1)
+                                        (loc-clr 0)
+                                        void))
+                       void)
+               (loc 0))))
+
+(test-predicate
+ bytecode-ok?
+ '(proc-const (val)
+              (branch (loc 0)
+                      (let-void-box 2
+                                    (branch (loc 2)
+                                            (loc-box-clr 1)
+                                            void))
+                      void)))
+
+(test-predicate
+ bytecode-ok?
+ '(proc-const (val)
+              (seq
+               (branch (loc 0)
+                       (let-one 'x
+                                (branch (loc 1)
+                                        (let-one 'x (loc-clr 1))
+                                        void))
+                       void)
+               (loc 0))))
+
 ; let-rec
 (test-predicate
  bytecode-ok?

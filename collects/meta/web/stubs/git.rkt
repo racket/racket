@@ -1,4 +1,4 @@
-#lang at-exp s-exp "../common.rkt"
+#lang meta/web
 
 (define-context "stubs/git")
 
@@ -47,6 +47,7 @@
     # specification of visible repositories (managed by gitolite)
     our $projects_list = "plt-repos";
     our $projects_list_description_width = 80;
+    our $default_projects_order = "age";
     # hide repositories that are not listed in the above
     our $strict_export = 1;
     @||
@@ -151,6 +152,7 @@
   @ul*{
   @~ Ubuntu:
      @pre{sudo add-apt-repository ppa:git-core/ppa
+          sudo apt-get update
           sudo apt-get install git-core}
   @~ OSX using macports:
      @pre{sudo port selfupdate
@@ -210,8 +212,8 @@
   server, is via ssh.  (Access is controlled via a tool called “gitolite” —
   more on this below.)  The username and hostname of the server is
   "git@at-git-racket" — and you should be able to connect to this account using
-  the ssh identity key that corresponds to the public key that you gave me.  To
-  try it, run
+  the ssh identity key that corresponds to the public key that you use with the
+  git server.  To try it, run
   @pre{ssh git@at-git-racket}
   and the server (gitolite, actually) should reply with information about your
   current permissions.  The exact details of this is not important for now,
@@ -2449,8 +2451,8 @@
    @pre{git push my-fork :my-branch}
    Using an empty branch name for the local branch that you push is the way to
    delete remote branches.  (As with local branches, this might lead to losing
-   commits, so be careful.  If you make a mistake, let me know, since it is
-   likely easy to fix.)}
+   commits, so be careful.  As always, git has a few safety mechanisms in
+   place, so even if did this by mistake, it is very likely recoverable.)}
 @h3{Using a clone of your private repository, pushing changes to the public
     one:}
 @ol*{
@@ -2601,7 +2603,7 @@
        accept it.  On the other hand, if you're working with someone specific,
        they might prefer attachments (for example, it's easier to save the
        attached file from gmail).}}
-@~ Once the commits have been pushed the the main repository, you would get
+@~ Once the commits have been pushed to the main repository, you would get
    them when you pull to update.  The commits will now be different objects
    than the ones you have — since the information changed (at least the
    committer information will be different, the log message might have been

@@ -1,12 +1,9 @@
 parent(john, douglas).
 
-
 parent(john, douglas).
 parent(bob, john).
 parent(ebbon, bob).
-
 parent(john, douglas).
-
 
 ancestor(ebbon, bob).
 ancestor(bob, john).
@@ -14,13 +11,9 @@ ancestor(john, douglas).
 ancestor(bob, douglas).
 ancestor(ebbon, john).
 ancestor(ebbon, douglas).
-
 ancestor(bob, john).
 ancestor(ebbon, john).
-
 parent(john, douglas).
 parent(ebbon, bob).
-
 ancestor(ebbon, bob).
 ancestor(john, douglas).
-

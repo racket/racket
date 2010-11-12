@@ -852,18 +852,35 @@ trigger runtime errors in check syntax.
 	(let ([drs (wait-for-drscheme-frame)])
 	  (set-language-level! (list "Pretty Big"))
 	  (do-execute drs)
-	  (let* ([defs (send drs get-definitions-text)]
+          (let* ([defs (send drs get-definitions-text)]
 		 [filename (make-temporary-file "syncheck-test~a")])
 	    (let-values ([(dir _1 _2) (split-path filename)])
-	      (send defs save-file filename)
+              (send defs save-file filename)
 	      (preferences:set 'framework:coloring-active #f)
-	      (for-each (run-one-test (normalize-path dir)) tests)
+              (close-the-error-window-test drs)
+              (for-each (run-one-test (normalize-path dir)) tests)
 	      (preferences:set 'framework:coloring-active #t)
 	      (send defs save-file) ;; clear out autosave
 	      (send defs set-filename #f)
-	      (delete-file filename)))))))
+              (delete-file filename)
+              
+              (printf "Ran ~a tests.\n" total-tests-run)))))))
+  
+  (define (close-the-error-window-test drs)
+    (clear-definitions drs)
+    (insert-in-definitions drs "(")
+    (click-check-syntax-button drs)
+    (wait-for-computation drs)
+    (unless (send drs syncheck:error-report-visible?)
+      (error 'close-the-error-window-test "error report window never appeared"))
+    (do-execute drs)
+    (when (send drs syncheck:error-report-visible?)
+      (error 'close-the-error-window-test "error report window did not go away after clicking Run")))
+    
+  (define total-tests-run 0)
   
   (define ((run-one-test save-dir) test)
+    (set! total-tests-run (+ total-tests-run 1))
     (let* ([drs (wait-for-drscheme-frame)]
            [defs (send drs get-definitions-text)]
            [input (test-input test)]
@@ -875,18 +892,18 @@ trigger runtime errors in check syntax.
         [(dir-test? test)
          (insert-in-definitions drs (format input (path->string relative)))]
         [else (insert-in-definitions drs input)])
-      (test:run-one (lambda () (send (send drs syncheck:get-button) command)))
+      (click-check-syntax-button drs)
       (wait-for-computation drs)
       
-      ;; this isn't right -- seems like there is a race condition because
-      ;; wait-for-computation isn't waiting long enough?
-      '(when (send defs in-edit-sequence?)
-         (error 'syncheck-test.rkt "still in edit sequence for ~s" input))
+      (when (send defs in-edit-sequence?)
+        (error 'syncheck-test.rkt "still in edit sequence for ~s" input))
       
-      (when (send drs syncheck:error-report-visible?)
-        (fprintf (current-error-port)
-                 "FAILED ~s\n   error report window is visible\n"
-                 input))
+      (let ([err (send drs syncheck:get-error-report-contents)]) 
+        (when err
+          (fprintf (current-error-port)
+                   "FAILED ~s\n   error report window is visible:\n   ~a\n"
+                   input
+                   err)))
       
       ;; need to check for syntax error here
       (let ([got (get-annotated-output drs)])
@@ -904,6 +921,7 @@ trigger runtime errors in check syntax.
                         arrows 
                         (send defs syncheck:get-bindings-table)
                         input))))
+  
   
   (define remappings
     '((constant default-color)
@@ -995,4 +1013,7 @@ trigger runtime errors in check syntax.
          (channel-put chan (get-string/style-desc (send drs get-definitions-text)))))
       (channel-get chan)))
   
+  (define (click-check-syntax-button drs)
+    (test:run-one (lambda () (send (send drs syncheck:get-button) command))))
+    
   (main)

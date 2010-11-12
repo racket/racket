@@ -7,15 +7,21 @@
 @mzlib[#:mode title pconvert]
 
 The @schememodname[mzlib/pconvert] library defines routines for
-printing Scheme values as @scheme[eval]uable S-expressions, rather
-than @scheme[read]able S-expressions.
+printing Scheme values as @scheme[eval]uable S-expressions. Racket's
+default printing mode also prints values as expressions (in contrast
+to the Lisp and Scheme tradition of printing @scheme[read]able
+S-expressions), but @schememodname[mzlib/pconvert] is more
+configurable and approximates expressions for a wider range of
+values. For example, procedures print using @schemeresultfont{lambda}
+instead of @schemeresultfont{#<procedure>}.
 
 The @scheme[print-convert] procedure does not print values; rather, it
 converts a Scheme value into another Scheme value such that the new
-value pretty-prints as a Scheme expression that evaluates to the
-original value. For example, @scheme[(pretty-print (print-convert `(9
-,(box 5) #(6 7))))] prints the literal expression @schemeresult[(list
-9 (box 5) (vector 6 7))] to the current output port.
+value @racket[pretty-write]s as a Scheme expression that evaluates to
+the original value. For example, @scheme[(pretty-write (print-convert
+`(9 ,(box 5) #(6 7))))] prints the literal expression
+@schemeresult[(list 9 (box 5) (vector 6 7))] to the current output
+port.
 
 To install print converting into the read-eval-print loop, require
 @scheme[mzlib/pconvert] and call the procedure
@@ -182,8 +188,10 @@ might return the list
 @defproc[(install-converting-printer) void?]{
 
 Sets the current print handler to print values using
-@scheme[print-convert]. The current read handler is also set to use
-the prompt returned by
+@scheme[print-convert] and sets @racket[print-as-expression] to
+@racket[#f] (since the conversion of a value is meant to be printed in
+@racket[read]able form rather than @racket[eval]uable form). The
+current read handler is also set to use the prompt returned by
 @scheme[current-read-eval-convert-print-prompt].}
 
 

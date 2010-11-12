@@ -9,9 +9,9 @@ An @scheme[image-snip%] is a snip that can display bitmap images
 
 
 @defconstructor*/make[(([filename (or/c path-string? false/c) #f]
-                        [kind (one-of/c 'unknown 'unknown/mask 
-                                        'gif 'gif/mask 
-                                        'jpeg 'png 'png/mask 
+                        [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                                        'gif 'gif/mask 'gif/alpha 
+                                        'jpeg 'png 'png/mask 'png/alpha
                                         'xbm 'xpm 'bmp 'pict) 'unknown]
                         [relative-path? any/c #f]
                         [inline? any/c #t])
@@ -95,9 +95,10 @@ relative to the owning editor's path}]
 }
 
 @defmethod[(get-filetype)
-           (one-of/c 'unknown 'unknwon/mask
-                     'gif 'gif/mask 
-                     'jpeg 'png 'png/mask 'xbm 'xpm 'bmp 'pict)]{
+           (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                     'gif 'gif/mask 'gif/alpha 
+                     'jpeg 'png 'png/mask 'png/alpha
+                     'xbm 'xpm 'bmp 'pict)]{
 
 Returns the kind used to load the currently loaded, non-inlined file,
  or @scheme['unknown] if a file is not loaded or if a file was loaded
@@ -106,9 +107,9 @@ Returns the kind used to load the currently loaded, non-inlined file,
 }
 
 @defmethod[(load-file [filename (or/c path-string? false/c)]
-                      [kind (one-of/c 'unknown 'unknown/mask 
-                                      'gif 'gif/mask 
-                                      'jpeg 'png 'png/mask 
+                      [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
+                                      'gif 'gif/mask 'gif/alpha 
+                                      'jpeg 'png 'png/mask 'png/alpha
                                       'xbm 'xpm 'bmp 'pict) 'unknown]
                       [relative-path? any/c #f]
                       [inline? any/c #t])

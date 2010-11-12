@@ -23,14 +23,16 @@
 	[do-on-scroll (lambda (e) (super on-scroll e))]
 	[do-on-paint (lambda () (super on-paint))])
       (private-field
-       [tabable? default-tabable?])
+       [tabable? default-tabable?]
+       [on-popup-callback void])
       (public
         [get-tab-focus (lambda () tabable?)]
         [set-tab-focus (lambda (v) (set! tabable? v))]
         [on-tab-in (lambda () 
 		     (let ([mred (wx->mred this)])
 		       (when mred
-			 (send mred on-tab-in))))])
+			 (send mred on-tab-in))))]
+        [set-on-popup (lambda (proc) (set! on-popup-callback proc))])
       (override
         [gets-focus? (lambda () tabable?)]
         [handles-key-code
@@ -61,25 +63,16 @@
 		    (lambda (e)
 		      (let ([mred (get-mred)])
 			(if mred
-			    ;; Delay callback for Windows scrollbar 
-			    ;; and Windows/Mac trampoiline
-			    (queue-window-callback
-			     this
-			     (lambda () (send mred on-scroll e)))
+			    (send mred on-scroll e)
 			    (as-exit (lambda () (super on-scroll e)))))))]
 	[on-paint (entry-point
 		   (lambda ()
 		     (let ([mred (get-mred)])
 		       (if mred
-			   (if (and (eq? 'windows (system-type))
-				    (not (eq? (wx:current-eventspace)
-					      (send (get-top-level) get-eventspace))))
-			       ;; Windows circumvented the event queue; delay
-			       (queue-window-callback
-				this
-				(lambda () (clear-and-on-paint mred)))
-			       (as-exit (lambda () (clear-and-on-paint mred))))
-			   (as-exit (lambda () (clear-margins) (super on-paint)))))))])
+			   (as-exit (lambda () (clear-and-on-paint mred)))
+			   (as-exit (lambda () (clear-margins) (super on-paint)))))))]
+        ;; for 'combo canvases:
+        [on-popup (lambda () (on-popup-callback))])
       (sequence (apply super-init mred proxy args))))
 
   (define wx-canvas% 
@@ -226,12 +219,9 @@
             #t
             (make-editor-canvas% (make-control% wx:editor-canvas%
                                                 0 0 #t #t)))
-      (inherit editor-canvas-on-scroll)
+      (inherit editor-canvas-on-scroll
+               set-no-expose-focus)
       (define/override (on-scroll e)
-        (if (or (eq? 'windows (system-type))
-                (eq? 'macosx (system-type)))
-            (queue-window-callback
-             this
-             (lambda () (editor-canvas-on-scroll)))
-            (editor-canvas-on-scroll)))
-      (super-new))))
+        (editor-canvas-on-scroll))
+      (super-new)
+      #;(set-no-expose-focus))))

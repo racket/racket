@@ -43,10 +43,12 @@
 /* globals */
 SHARED_OK scheme_console_printf_t scheme_console_printf;
 scheme_console_printf_t scheme_get_console_printf() { return scheme_console_printf; }
+void scheme_set_console_printf(scheme_console_printf_t p) { scheme_console_printf = p; }
 SHARED_OK Scheme_Exit_Proc scheme_exit;
 void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
 
 HOOK_SHARED_OK void (*scheme_console_output)(char *str, long len);
+void scheme_set_console_output(scheme_console_output_t p) { scheme_console_output = p; }
 
 SHARED_OK static int init_syslog_level = INIT_SYSLOG_LEVEL;
 SHARED_OK static int init_stderr_level = SCHEME_LOG_ERROR;
@@ -69,6 +71,7 @@ ROSYM static Scheme_Object *def_err_val_proc;
 ROSYM static Scheme_Object *def_error_esc_proc;
 ROSYM static Scheme_Object *default_display_handler;
 ROSYM static Scheme_Object *emergency_display_handler;
+ROSYM static Scheme_Object *def_exe_yield_proc;
 READ_ONLY Scheme_Object *scheme_def_exit_proc;
 READ_ONLY Scheme_Object *scheme_raise_arity_error_proc;
 
@@ -88,6 +91,7 @@ static Scheme_Object *error_escape_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_value_string_handler(int, Scheme_Object *[]);
 static Scheme_Object *exit_handler(int, Scheme_Object *[]);
+static Scheme_Object *exe_yield_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_print_width(int, Scheme_Object *[]);
 static Scheme_Object *error_print_context_length(int, Scheme_Object *[]);
 static Scheme_Object *error_print_srcloc(int, Scheme_Object *[]);
@@ -96,6 +100,7 @@ static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_exit_handler_proc(int, Scheme_Object *[]);
+static Scheme_Object *default_yield_handler(int, Scheme_Object *[]);
 
 static Scheme_Object *log_message(int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_level_p(int argc, Scheme_Object *argv[]);
@@ -568,6 +573,7 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_PARAMETER("error-value->string-handler", error_value_string_handler, MZCONFIG_ERROR_PRINT_VALUE_HANDLER,   env);
   GLOBAL_PARAMETER("error-escape-handler",        error_escape_handler,       MZCONFIG_ERROR_ESCAPE_HANDLER,        env);
   GLOBAL_PARAMETER("exit-handler",                exit_handler,               MZCONFIG_EXIT_HANDLER,                env);
+  GLOBAL_PARAMETER("executable-yield-handler",    exe_yield_handler,          MZCONFIG_EXE_YIELD_HANDLER,           env);
   GLOBAL_PARAMETER("error-print-width",           error_print_width,          MZCONFIG_ERROR_PRINT_WIDTH,           env);
   GLOBAL_PARAMETER("error-print-context-length",  error_print_context_length, MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH,  env);
   GLOBAL_PARAMETER("error-print-source-location", error_print_srcloc,         MZCONFIG_ERROR_PRINT_SRCLOC,          env);
@@ -618,6 +624,11 @@ void scheme_init_error(Scheme_Env *env)
   }
                                                             
   scheme_add_global_constant("prop:arity-string", arity_property, env);
+
+  REGISTER_SO(def_exe_yield_proc);
+  def_exe_yield_proc = scheme_make_prim_w_arity(default_yield_handler,
+                                                "default-executable-yield-handler",
+                                                1, 1);
 }
 
 void scheme_init_logger()
@@ -637,6 +648,7 @@ void scheme_init_error_config(void)
   scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_exit_proc);
   scheme_set_root_param(MZCONFIG_ERROR_DISPLAY_HANDLER, default_display_handler);
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_VALUE_HANDLER, def_err_val_proc);
+  scheme_set_root_param(MZCONFIG_EXE_YIELD_HANDLER, def_exe_yield_proc);
 }
 
 void scheme_init_logger_config() {
@@ -2565,6 +2577,20 @@ scheme_do_exit(int argc, Scheme_Object *argv[])
 void scheme_immediate_exit(int status)
 {
   exit(status);
+}
+
+static Scheme_Object *
+exe_yield_handler(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("exeuctable-yield-handler",
+			     scheme_make_integer(MZCONFIG_EXE_YIELD_HANDLER),
+			     argc, argv,
+			     1, NULL, NULL, 0);
+}
+
+static Scheme_Object *default_yield_handler(int argc, Scheme_Object **argv)
+{
+  return scheme_void;
 }
 
 /***********************************************************************/

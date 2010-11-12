@@ -12,7 +12,7 @@
  (types resolve utils)
  (prefix-in t: (types convenience))
  (private parse-type)
- scheme/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list 
+ racket/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list 
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base scheme/contract unstable/poly-c (utils any-wrap)
 	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
@@ -55,9 +55,11 @@
 (define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t] #:flat [flat? #f])
   (define vars (make-parameter '()))
   (let/ec exit
-    (let loop ([ty ty] [pos? #t] [from-typed? from-typed?] [structs-seen null])
-      (define (t->c t #:seen [structs-seen structs-seen]) (loop t pos? from-typed? structs-seen))
-      (define (t->c/neg t #:seen [structs-seen structs-seen]) (loop t (not pos?) (not from-typed?) structs-seen))
+    (let loop ([ty ty] [pos? #t] [from-typed? from-typed?] [structs-seen null] [flat? flat?])
+      (define (t->c t #:seen [structs-seen structs-seen] #:flat [flat? flat?])
+        (loop t pos? from-typed? structs-seen flat?))
+      (define (t->c/neg t #:seen [structs-seen structs-seen] #:flat [flat? flat?])
+        (loop t (not pos?) (not from-typed?) structs-seen flat?))
       (define (t->c/fun f #:method [method? #f])
         (match f
           [(Function: (list (top-arr:))) #'procedure?]
@@ -115,7 +117,9 @@
         [(Univ:) (if from-typed? #'any-wrap/c #'any/c)]
         ;; we special-case lists:
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
-         #`(listof #,(t->c elem-ty))]
+         (if (and (not from-typed?) (type-equal? elem-ty t:Univ))
+             #'list?
+             #`(listof #,(t->c elem-ty)))]
         [(? (lambda (e) (eq? t:Any-Syntax e))) #'syntax?]
         [(Base: sym cnt) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
         [(Refinement: par p? cert)
@@ -128,27 +132,35 @@
              #'(or/c . cnts)))]
         [(and t (Function: _)) (t->c/fun t)]
         [(Vector: t)
-         #`(vectorof #,(t->c t))]
+         (if flat?
+             #`(vectorof #,(t->c t #:flat #t) #:flat? #t)
+             #`(vectorof #,(t->c t)))]
         [(Box: t)
-         #`(box/c #,(t->c t))]
+         (if flat?
+             #`(box/c #,(t->c t #:flat #t) #:flat? #t)
+             #`(box/c #,(t->c t)))]
         [(Pair: t1 t2)
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
         [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
-	[(Poly: vs (and b (Function: _)))
-         (when flat? (exit (fail)))
-         (match-let ([(Poly-names: vs-nm _) ty])
-           (with-syntax ([(v ...) (generate-temporaries vs-nm)])
-             (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
-					  (vars))])
-               #`(parametric/c (v ...) #,(t->c b)))))]
+	[(Poly: vs b)
+         (if from-typed?
+             ;; in positive position, no checking needed for the variables
+             (parameterize ([vars (append (for/list ([v vs]) (list v #'any/c)))])
+               (t->c b))
+             ;; in negative position, use `parameteric/c'
+             (match-let ([(Poly-names: vs-nm _) ty])
+               (with-syntax ([(v ...) (generate-temporaries vs-nm)])
+                 (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
+                                              (vars))])
+                   #`(parametric/c (v ...) #,(t->c b))))))]
         [(Mu: n b)
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
-               #`(flat-rec-contract n* #,(t->c b)))))]
+               #`(flat-rec-contract n* #,(t->c b #:flat #t)))))]
         [(Value: #f) #'false/c]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
          (when flat? (exit (fail)))
@@ -162,7 +174,6 @@
                        [(name ...) name]
                        [(by-name-cnt ...) (for/list ([t by-name-init-ty]) (t->c/neg t))]
                        [(by-name-init ...) by-name-init])
-           #;#'class?           
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
         [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred? cert maker-id)
@@ -177,26 +188,32 @@
                            [cnt-name nm]
                            [(fld-cnts ...)
                             (for/list ([fty flds]
-                                       [f-acc acc-ids])
-                              #`(((contract-projection
-                                   #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec)) structs-seen)))
-                                  blame)
-                                 (#,f-acc val)))])
-              #`(letrec ([rec 
-                          (make-contract 
-                           #:name 'cnt-name
-                           #:first-order #,pred?
-                           #:projection 
-                           (lambda (blame)
-                             (lambda (val)
-                               (maker fld-cnts ...))))])
-                  rec))]
+                                       [f-acc acc-ids]
+                                       [m? mut?])
+                #`(((contract-projection
+                     #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec)) structs-seen)))
+                    blame)
+                   (#,f-acc val)))])
+                #`(letrec ([rec 
+                            (make-contract 
+                             #:name 'cnt-name
+                             #:first-order #,pred?
+                             #:projection 
+                             (lambda (blame)
+                               (lambda (val)
+                                 (unless (#,pred? val)
+                                   (raise-blame-error blame val "expected ~a value, got ~v" 'cnt-name val))
+                                 (maker fld-cnts ...))))])
+                    rec))]
            [else #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))])]
         [(Syntax: (Base: 'Symbol _)) #'identifier?]
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [(Param: in out) #`(parameter/c #,(t->c out))]
-	[(Hashtable: k v) #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care)]
+	[(Hashtable: k v) 
+         (if flat?
+             #`(hash/c #,(t->c k #:flat #t) #,(t->c v #:flat #t) #:flat? #t #:immutable 'dont-care)
+             #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care))]
         [else          
          (exit (fail))]))))
 

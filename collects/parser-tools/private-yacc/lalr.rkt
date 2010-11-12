@@ -149,14 +149,14 @@
     (print-input-st-prod l "LA" a g print-output-terms))
 
   (define (print-input-st-sym f name a g print-output)
-    (printf "~a:~n" name)
+    (printf "~a:\n" name)
     (send a for-each-state
      (lambda (state)
        (for-each
         (lambda (non-term)
           (let ((res (f (make-trans-key state non-term))))
             (if (not (null? res))
-                (printf "~a(~a, ~a) = ~a~n"
+                (printf "~a(~a, ~a) = ~a\n"
                         name
                         state
                         (gram-sym-symbol non-term)
@@ -165,7 +165,7 @@
     (newline))
 
   (define (print-input-st-prod f name a g print-output)
-    (printf "~a:~n" name)
+    (printf "~a:\n" name)
     (send a for-each-state
      (lambda (state)
        (for-each
@@ -174,7 +174,7 @@
            (lambda (prod)
              (let ((res (f state prod)))
                (if (not (null? res))
-                   (printf "~a(~a, ~a) = ~a~n"
+                   (printf "~a(~a, ~a) = ~a\n"
                            name
                            (kernel-index state)
                            (prod-index prod)

@@ -33,6 +33,8 @@ scheme_thread_w_details
 scheme_kill_thread
 scheme_break_thread
 scheme_break_main_thread
+scheme_break_main_thread_at
+scheme_get_main_thread_break_handle
 scheme_set_break_main_target
 scheme_thread_block
 scheme_thread_block_enable_break
@@ -204,6 +206,8 @@ scheme_calloc
 scheme_strdup
 scheme_strdup_eternal
 scheme_malloc_fail_ok
+scheme_late_weak_reference
+scheme_late_weak_reference_indirect
 scheme_weak_reference
 scheme_weak_reference_indirect
 scheme_unweak_reference
@@ -225,6 +229,8 @@ GC_fixup
 GC_fixup_self
 scheme_malloc_immobile_box
 scheme_free_immobile_box
+scheme_add_gc_callback
+scheme_remove_gc_callback
 scheme_make_bucket_table
 scheme_add_to_table
 scheme_change_in_table
@@ -553,6 +559,7 @@ scheme_eq
 scheme_eqv
 scheme_equal
 scheme_chaperone_of
+scheme_impersonator_of
 scheme_hash_key
 scheme_equal_hash_key
 scheme_equal_hash_key2
@@ -581,9 +588,11 @@ scheme_box
 scheme_unbox
 scheme_set_box
 scheme_make_weak_box
+scheme_make_late_weak_box
 scheme_make_ephemeron
 scheme_ephemeron_value
 scheme_ephemeron_key
+scheme_make_stubborn_will_executor
 scheme_load
 scheme_load_extension
 scheme_register_extension_global
@@ -604,4 +613,5 @@ scheme_signal_received_at
 scheme_get_signal_handle
 scheme_char_strlen
 scheme_stx_extract_marks
+scheme_get_place_table
 scheme_register_process_global

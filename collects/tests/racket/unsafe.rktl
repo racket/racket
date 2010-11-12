@@ -5,6 +5,7 @@
 
 (require scheme/unsafe/ops
          scheme/flonum
+         scheme/fixnum
          scheme/foreign)
 
 (let ()
@@ -221,7 +222,7 @@
               #:post (lambda (x) (mcdr v))
               #:literal-ok? #f))
 
-  (for ([star (list values (add-star "vector"))])
+  (for ([star (list values (add-star "box"))])
     (test-un 3 (star 'unsafe-unbox) #&3)
     (let ([b (box 12)])
       (test-tri (list (void) 8) 
@@ -230,6 +231,9 @@
                 #:pre (lambda () (set-box! b 12))
                 #:post (lambda (x) (list x (unbox b)))
                 #:literal-ok? #f)))
+  (test-un 3 'unsafe-unbox (chaperone-box (box 3)
+                                          (lambda (b v) v)
+                                          (lambda (b v) v)))
 
   (for ([star (list values (add-star "vector"))])
     (test-bin 5 (star 'unsafe-vector-ref) #(1 5 7) 1)
@@ -239,6 +243,13 @@
                 #:pre (lambda () (vector-set! v 2 0)) 
                 #:post (lambda (x) (list x (vector-ref v 2)))
                 #:literal-ok? #f)))
+  (test-bin 5 'unsafe-vector-ref (chaperone-vector #(1 5 7)
+                                                   (lambda (v i x) x)
+                                                   (lambda (v i x) x))
+            1)
+  (test-un 3 'unsafe-vector-length (chaperone-vector #(1 5 7)
+                                                     (lambda (v i x) x)
+                                                     (lambda (v i x) x)))
 
   (test-bin 53 'unsafe-bytes-ref #"157" 1)
   (test-un 3 'unsafe-bytes-length #"157")
@@ -270,6 +281,31 @@
               #:pre (lambda () (f64vector-set! v 2 0.0)) 
               #:post (lambda (x) (list x (f64vector-ref v 2)))
               #:literal-ok? #f))
+
+  (test-bin 95 'unsafe-fxvector-ref (fxvector 10 95 187) 1)
+  (test-un 5 'unsafe-fxvector-length (fxvector 11 20 31 45 57))
+  (let ([v (fxvector 10 95 187)])
+    (test-tri (list (void) 274) 'unsafe-fxvector-set! v 2 274
+              #:pre (lambda () (fxvector-set! v 2 0)) 
+              #:post (lambda (x) (list x (fxvector-ref v 2)))
+              #:literal-ok? #f))
+
+  (test-bin 95 'unsafe-s16vector-ref (s16vector 10 95 187) 1)
+  (let ([v (s16vector 10 95 187)])
+    (test-tri (list (void) 274) 'unsafe-s16vector-set! v 2 274
+              #:pre (lambda () (s16vector-set! v 2 0)) 
+              #:post (lambda (x) (list x (s16vector-ref v 2)))
+              #:literal-ok? #f))
+  (test-bin -32768 'unsafe-s16vector-ref (s16vector 10 -32768 187) 1)
+  (test-bin 32767 'unsafe-s16vector-ref (s16vector 10 32767 187) 1)
+
+  (test-bin 95 'unsafe-u16vector-ref (u16vector 10 95 187) 1)
+  (let ([v (u16vector 10 95 187)])
+    (test-tri (list (void) 274) 'unsafe-u16vector-set! v 2 274
+              #:pre (lambda () (u16vector-set! v 2 0)) 
+              #:post (lambda (x) (list x (u16vector-ref v 2)))
+              #:literal-ok? #f))
+  (test-bin 65535 'unsafe-u16vector-ref (u16vector 10 65535 187) 1)
 
   (for ([star (list values (add-star "star"))])
     (define-struct posn (x [y #:mutable] z))
@@ -331,6 +367,24 @@
       [g (lambda (x) (if x x (unsafe-cdr 4)))])
   (test 5 f 5)
   (test 5 g 5))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A regression test to check that unsafe-fl/ doesn't
+;; reorder its arguments when it isn't safe to do so, where the
+;; unsafeness of the reordering has to do with safe-for-space
+;; clearing of a variable that is used multiple times.
+
+(let ()
+  (define weird #f)
+  (set! weird 
+        (lambda (get-M)
+          (let* ([M  (get-M)]
+                 [N1 (unsafe-fl/ M (unsafe-fllog M))])
+            (get-M) ; triggers safe-for-space clearing of M
+            N1)))
+  
+  (test 15388.0 floor (* 1000.0 (weird (lambda () 64.0)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

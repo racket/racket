@@ -55,7 +55,7 @@
                            [num (bytes-append #"(" area #") " exch #"-" numb)]
                            [count (add1 count)])
                       (when (zero? n)
-                        (printf "~a: ~a~n" count num))
+                        (printf "~a: ~a\n" count num))
                       (loop (cdr phones) count)))
                   (loop (cdr phones) count))))))))
 

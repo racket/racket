@@ -2,25 +2,25 @@
 
 ;; A blog is a (make-blog posts)
 ;; where posts is a (listof post)
-(define-struct blog (posts) #:mutable)
+(struct blog (posts) #:mutable)
 
 ;; and post is a (make-post title body)
 ;; where title is a string, and body is a string
-(define-struct post (title body))
+(struct post (title body))
 
 ;; BLOG: blog
 ;; The initial BLOG.
 (define BLOG 
-  (make-blog
-   (list (make-post "First Post" "This is my first post")
-         (make-post "Second Post" "This is another post"))))
+  (blog
+   (list (post "First Post" "This is my first post")
+         (post "Second Post" "This is another post"))))
 
 ;; blog-insert-post!: blog post -> void
 ;; Consumes a blog and a post, adds the post at the top of the blog.
 (define (blog-insert-post! a-blog a-post)
   (set-blog-posts! a-blog
                    (cons a-post (blog-posts a-blog))))
-  
+
 ;; start: request -> html-response
 ;; Consumes a request and produces a page that displays
 ;; all of the web content.
@@ -30,8 +30,8 @@
 ;; parse-post: bindings -> post
 ;; Extracts a post out of the bindings.
 (define (parse-post bindings)
-  (make-post (extract-binding/single 'title bindings)
-             (extract-binding/single 'body bindings)))
+  (post (extract-binding/single 'title bindings)
+        (extract-binding/single 'body bindings)))
 
 ;; render-blog-page: request -> html-response
 ;; Produces an html-response page of the content of the BLOG.
@@ -43,15 +43,15 @@
                     ,(render-posts)
                     (form ((action 
                             ,(make-url insert-post-handler)))
-                     (input ((name "title")))
-                     (input ((name "body")))
-                     (input ((type "submit")))))))
+                          (input ((name "title")))
+                          (input ((name "body")))
+                          (input ((type "submit")))))))
           
           (define (insert-post-handler request)
             (blog-insert-post! 
              BLOG (parse-post (request-bindings request)))
             (render-blog-page request))]
-
+    
     (send/suspend/dispatch response-generator)))
 
 ;; render-post: post -> html-response

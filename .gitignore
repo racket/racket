@@ -11,6 +11,7 @@
 /*.pdb
 /*.ilk
 /GRacket.exe.manifest
+/Racket.exe.manifest
 
 # a common convenient place to set the PLTADDON directory to
 /add-on/

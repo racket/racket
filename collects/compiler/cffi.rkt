@@ -298,7 +298,7 @@
 	   (raise-syntax-error 'c-declare "declaration is not a string" stx decl))
 	 (let ([stx-out (syntax
 			 (error 'c-declare 
-				"declaration not compiled by mzc: ~e"
+				"declaration not compiled by mzc: ~.s"
 				str))])
 	   (syntax-property stx-out 'mzc-cffi 'c-declare)))]))
 

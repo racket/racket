@@ -123,11 +123,11 @@
   (define (display-mark mark)
     (apply
      string-append
-     (format "source: ~a~n" (mz:syntax-object->datum (mark-source mark)))
-     (format "label: ~a~n" (mark-label mark))
-     (format "bindings:~n")
+     (format "source: ~a\n" (mz:syntax-object->datum (mark-source mark)))
+     (format "label: ~a\n" (mark-label mark))
+     (format "bindings:\n")
      (map (lambda (binding)
-                 (format " ~a : ~a~n" (syntax-e (mark-binding-binding binding))
+                 (format " ~a : ~a\n" (syntax-e (mark-binding-binding binding))
                          (mark-binding-value binding)))
                (mark-bindings mark))))
   
@@ -152,7 +152,7 @@
      (lookup-first-binding (lambda (id2) (mz:module-identifier=? id id2)) 
                            mark-list 
                            (lambda ()
-                             (error 'lookup-binding "variable not found in environment: ~a~n" (if (syntax? id) 
+                             (error 'lookup-binding "variable not found in environment: ~a\n" (if (syntax? id) 
                                                                                                   (mz:syntax-object->datum id)
                                                                                                   id))))))
   

@@ -16,6 +16,7 @@
              (namespace-require ''#%kernel)
              (namespace-require ''#%unsafe)
              (namespace-require ''#%flfxnum)
+             (namespace-require ''#%futures)
              (for/list ([l (namespace-mapped-symbols)])
                (cons l (with-handlers ([exn:fail? (lambda (x) #f)])
                          (compile l))))))]
@@ -159,8 +160,6 @@
      (extract-name name)]
     [(struct closure (lam gen-id))
      (extract-id lam)]
-    [(struct indirect (v))
-     (extract-id v)]
     [else #f]))
 
 (define (extract-ids! body ids)
@@ -287,15 +286,10 @@
          (begin
            (hash-set! closed gen-id #t)
            `(#%closed ,gen-id ,(decompile-expr lam globs stack closed))))]
-    [(struct indirect (val))
-     (if (closure? val)
-         (decompile-expr val globs stack closed)
-         '???)]
     [else `(quote ,expr)]))
 
 (define (decompile-lam expr globs stack closed)
   (match expr
-    [(struct indirect (val)) (decompile-lam val globs stack closed)]
     [(struct closure (lam gen-id)) (decompile-lam lam globs stack closed)]
     [(struct lam (name flags num-params arg-types rest? closure-map closure-types max-let-depth body))
      (let ([vars (for/list ([i (in-range num-params)]

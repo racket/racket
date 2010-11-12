@@ -2,23 +2,23 @@
 
 ;; A blog is a (make-blog posts)
 ;; where posts is a (listof post)
-(define-struct blog (posts) #:mutable)
+(struct blog (posts) #:mutable)
 
 ;; and post is a (make-post title body comments)
 ;; where title is a string, body is a string, 
 ;; and comments is a (listof string)
-(define-struct post (title body comments) #:mutable)
+(struct post (title body comments) #:mutable)
 
 ;; BLOG: blog
 ;; The initial BLOG.
 (define BLOG 
-  (make-blog
-   (list (make-post "First Post" 
-                    "This is my first post" 
-                    (list "First comment!"))
-         (make-post "Second Post" 
-                    "This is another post"
-                               (list)))))
+  (blog
+   (list (post "First Post" 
+               "This is my first post" 
+               (list "First comment!"))
+         (post "Second Post" 
+               "This is another post"
+               (list)))))
 
 ;; blog-insert-post!: blog post -> void
 ;; Consumes a blog and a post, adds the post at the top of the blog.

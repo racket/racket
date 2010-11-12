@@ -290,9 +290,9 @@
                                                                   (format
                                                                    (string-append
                                                                     "There was an error running the "
-                                                                    "program player for ~a.~n"
-                                                                    "We'll assume a default move, T1.~n"
-                                                                    "Here is the error message:~n~a")
+                                                                    "program player for ~a.\n"
+                                                                    "We'll assume a default move, T1.\n"
+                                                                    "Here is the error message:\n~a")
                                                                    who
                                                                    (if (exn? exn)
                                                                        (exn-message exn)
@@ -685,7 +685,7 @@
                                 (with-handlers ([void
                                                  (lambda (exn)
                                                    (message-box "Error"
-                                                                (format "There was an error:~n~a"
+                                                                (format "There was an error:\n~a"
                                                                         (if (exn? exn)
                                                                             (exn-message exn)
                                                                             exn))))])

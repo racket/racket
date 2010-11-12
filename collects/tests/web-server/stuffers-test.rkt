@@ -125,8 +125,3 @@
                           (context-wrap
                            (lambda ()
                              (check-not-false (is-url-too-big? (make-bytes 3000 65)))))))))
-
-#|
-(require (planet schematics/rackunit:3/text-ui))
-(run-tests all-stuffers-tests)
-|#

@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "utils.ss")
+@(require "utils.ss"
+          (for-label ffi/unsafe))
 
 @title[#:tag "im:memoryalloc"]{Memory Allocation}
 
@@ -55,12 +56,15 @@ The basic collector allocation functions are:
  object for future garbage collection (as described
  in @secref["im:3m"]).}
 
- @item{@cppi{scheme_malloc_allow_interior} --- Allocates a large
- array of pointers such that references are allowed into the middle of
- the block under 3m, and such pointers prevent the block from being
- collected. This procedure is the same as @cppi{scheme_malloc} with
- the conservative collector, but in the that case, having @italic{only}
- a pointer into the interior will not prevent the array from being
+ @item{@cppi{scheme_malloc_allow_interior} --- Allocates an array of
+ pointers such that the array is never moved by the garbage collector
+ and references are allowed into the middle of the block under 3m (and
+ pointers to the middle prevent the block from being collected). Use
+ this procedure sparingly, because small, non-moving objects are
+ handled less efficiently than movable objects by the 3m collector.
+ This procedure is the same as @cppi{scheme_malloc} with the
+ conservative collector, but in the that case, having @italic{only} a
+ pointer into the interior will not prevent the array from being
  collected.}
 
  @item{@cppi{scheme_malloc_atomic_allow_interior} --- Like
@@ -650,13 +654,13 @@ Like @cpp{scheme_malloc}, but in 3m, the type tag determines how the
 @function[(void* scheme_malloc_allow_interior
            [size_t n])]{
 
-Like @cpp{scheme_malloc}, but in 3m, pointers are allowed to
+Like @cpp{scheme_malloc}, but in 3m, the object never moves, and pointers are allowed to
  reference the middle of the object; see @secref["im:memoryalloc"].}
 
 @function[(void* scheme_malloc_atomic_allow_interior
            [size_t n])]{
 
-Like @cpp{scheme_malloc_atomic}, but in 3m, pointers are allowed to
+Like @cpp{scheme_malloc_atomic}, but in 3m, the object never moves, and pointers are allowed to
  reference the middle of the object; see @secref["im:memoryalloc"].}
 
 @function[(char* scheme_strdup
@@ -914,16 +918,16 @@ To remove an added finalizer, use @cpp{scheme_subtract_finalizer}.}
            [void* data])]{
 
 Installs a ``will''-like finalizer, similar to @scheme[will-register].
- Scheme finalizers are called one at a time, requiring the collector
+ Will-like finalizers are called one at a time, requiring the collector
  to prove that a value has become inaccessible again before calling
- the next Racket finalizer. Finalizers registered with
+ the next will-like finalizer. Finalizers registered with
  @cpp{scheme_register_finalizer} or @cpp{scheme_add_finalizer} are
- not called until all Racket finalizers have been exhausted.
+ not called until all will-like finalizers have been exhausted.
 
 See @cpp{scheme_register_finalizer}, above, for information about
  the arguments.
 
-There is currently no facility to remove a ``will''-like finalizer.}
+There is currently no facility to remove a will-like finalizer.}
 
 @function[(void scheme_add_finalizer_once
            [void* p]
@@ -1032,3 +1036,64 @@ implementations of the memory manager, the result is the same as
 moved before it is fixed. With other implementations, an object might
 be moved after the fixup process, and the result is the location that
 the object will have after garbage collection finished.}
+
+@function[(Scheme_Object* scheme_add_gc_callback [Scheme_Object* pre_desc]
+                                                 [Scheme_Object* post_desc])]{
+
+Registers descriptions of foreign functions to be called just before
+and just after a garbage collection. The foreign functions must not
+allocate garbage-collected memory, and they are called in a way that
+does not allocate, which is why @var{pre_desc} and @var{post_desc} are
+function descriptions instead of thunks.
+
+A description is a vector of vectors, where each of the inner vectors
+describes a single call, and the calls are performed in sequence. Each
+call vector starts with a symbol that indicates the protocol of the
+foreign function to be called. The following protocols are supported:
+
+@itemlist[
+
+ @item{@racket['ptr_ptr_ptr->void] corresponds to @cpp{void
+ (*)(void*, void*, void*)}.}
+
+ @item{@racket['ptr_ptr_ptr_int->void] corresponds to @cpp{void
+ (*)(void*, void*, void*, int)}.}
+
+ @item{@racket['ptr_ptr_float->void] corresponds to @cpp{void
+ (*)(void*, void*, float)}.}
+
+ @item{@racket['ptr_ptr_double->void] corresponds to @cpp{void
+ (*)(void*, void*, double)}.}
+
+ @item{@racket['ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void]
+ corresponds to @cpp{void (*)(void*, void*, void*, int, int, int, int,
+ int, int, int, int, int)}.}
+
+ @item{@racket['osapi_ptr_int->void] corresponds to @cpp{void
+ (*)(void*, int)}, but using the stdcall calling convention
+ under Windows.}
+
+ @item{@racket['osapi_ptr_ptr->void] corresponds to @cpp{void
+ (*)(void*, void*)}, but using the stdcall calling convention
+ under Windows.}
+
+ @item{@racket['osapi_ptr_int_int_int_int_ptr_int_int_long->void]
+ corresponds to @cpp{void (*)(void*, int, int, int, int, void*,
+ int, int, long)}, but using the stdcall calling convention
+ under Windows.}
+
+]
+
+After the protocol symbol, the vector should contain a pointer to a
+foreign function and then an element for each of the function's
+arguments. Pointer values are represented as for the @racket[_pointer]
+representation defined by @racketmodname[ffi/unsafe].
+
+The result is a key for use with @cpp{scheme_remove_gc_callback}. If
+the key becomes inaccessible, then the callback will be removed
+automatically (but beware that the pre-callback will have executed and
+the post-callback will not have executed).}
+
+@function[(void scheme_remove_gc_callback [Scheme_Object* key])]{
+
+Removes a garbage-collection callback installed with @cpp{scheme_add_gc_callback}.}

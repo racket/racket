@@ -15,6 +15,7 @@
   (#%provide for/fold for*/fold
              for for*
              for/list for*/list
+             for/vector for*/vector
              for/lists for*/lists
              for/and for*/and
              for/or for*/or
@@ -908,6 +909,44 @@
     (lambda (x) x)
     (lambda (x) `(,#'cons ,x ,#'fold-var)))
 
+  (define-syntax (for/vector stx)
+    (syntax-case stx ()
+      ((for/vector (for-clause ...) body ...)
+       (syntax/loc stx
+         (list->vector 
+          (for/list (for-clause ...) body ...))))
+      ((for/vector #:length length-expr (for-clause ...) body ...)
+       (syntax/loc stx
+         (let ((len length-expr))
+           (unless (exact-nonnegative-integer? len)
+             (raise-type-error 'for/vector "exact nonnegative integer" len))
+           (let ((v (make-vector len)))
+             (for/fold ((i 0))
+                 (for-clause ... 
+                             #:when (< i len))
+               (vector-set! v i (begin body ...))
+               (add1 i))
+             v))))))
+
+  (define-syntax (for*/vector stx)
+    (syntax-case stx ()
+      ((for*/vector (for-clause ...) body ...)
+       (syntax/loc stx
+         (list->vector 
+          (for*/list (for-clause ...) body ...))))
+      ((for*/vector #:length length-expr (for-clause ...) body ...)
+       (syntax/loc stx
+         (let ((len length-expr))
+           (unless (exact-nonnegative-integer? len)
+             (raise-type-error 'for*/vector "exact nonnegative integer" len))
+           (let ((v (make-vector len)))
+             (for*/fold ((i 0))
+                 (for-clause ...
+                  #:when (< i len))
+               (vector-set! v i (begin body ...))
+               (add1 i))
+             v))))))
+
   (define-for-syntax (do-for/lists for/fold-id stx)
     (syntax-case stx ()
       [(_ (id ...) bindings expr1 expr ...)
@@ -1197,9 +1236,9 @@
   (define-sequence-syntax *in-vector
     (lambda () #'in-vector)
     (vector-like-gen #'vector?
-                     #'unsafe-vector*-length
+                     #'unsafe-vector-length
                      #'in-vector
-                     #'unsafe-vector*-ref))
+                     #'unsafe-vector-ref))
 
   (define-sequence-syntax *in-string
     (lambda () #'in-string)
@@ -1251,6 +1290,32 @@
                ([(id) (producer* more* ...)])
                ;; pre guard
                (not (stop? id))
+               ;; post guard
+               #t
+               ;; loop args
+               ())])]
+        [[() (_ producer stop more ...)]
+         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
+           #'[()
+              (:do-in
+                ([(producer*) producer] [(more*) more] ...
+                 [(stop?) (let ([s stop])
+                           (if (procedure? s)
+                             s
+                             (lambda (args)
+                               (and (not (null? args))
+                                    (eq? (car args) s)))))])
+               ;; outer check
+               #t
+               ;; loop bindings
+               ()
+               ;; pos check
+               #t
+               ;; inner bindings
+               ([(check) (call-with-values (lambda () (producer* more* ...))
+                                           (lambda vs vs))])
+               ;; pre guard
+               (not (stop? check))
                ;; post guard
                #t
                ;; loop args

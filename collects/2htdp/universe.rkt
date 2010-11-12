@@ -1,7 +1,10 @@
-#lang scheme/gui
+#lang racket/gui
+
+;; DONT USE to-draw IN THIS FILE 
 
 #| TODO: 
-   -- yield instead of sync
+   -- check that on-release is only defined if on-key is defined 
+
    -- run callbacks in user eventspace
    -- make timer fire just once; restart after on-tick callback finishes
    -- take out counting; replace by 0.25 delay
@@ -9,7 +12,7 @@
    -- make window resizable :: why
 |#
 
-(require (for-syntax "private/syn-aux.ss" scheme/function)
+(require (for-syntax "private/syn-aux.ss")
          "private/syn-aux-aux.ss" 
          "private/syn-aux.ss"
          "private/check-aux.ss"
@@ -35,9 +38,14 @@
  sexp?  ;; Any -> Boolean 
  )
 
-(define-keywords AllSpec
-  ;; -- on-tick must specify a tick handler; it may specify a clock-tick rate
-  [on-tick (function-with-arity
+(define new-world (create-world world0))
+(define new-universe (create-universe universe0))
+
+(define-keywords AllSpec '() define-all
+  ;; -- on-tick must specify a tick handler: World -> World 
+  ;; it may specify a clock-tick rate
+  [on-tick DEFAULT #'#f
+           (function-with-arity
             1 
             except
             [(_ f rate) 
@@ -46,9 +54,80 @@
                 (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
                       "positive number" "rate"))])]
   ;; -- state specifies whether to display the current state 
-  [state (expr-with-check bool> "expected a boolean (show state or not)")]
-  ;; -- check-with must specify a predicate 
-  [check-with (function-with-arity 1)])
+  [state DEFAULT #'#f (expr-with-check bool> "expected a boolean")]
+  ;; Any -> Boolean 
+  ;; -- check-with: all states should specify this predicate 
+  [check-with DEFAULT #'True (function-with-arity 1)])
+
+;  (create-world world0)
+(define-keywords WldSpec AllSpec create-world
+  ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
+  ;; on-draw must specify a rendering function; 
+  ;;   it may specify dimensions
+  [on-draw to-draw DEFAULT #'#f
+           (function-with-arity 
+            1 
+            except
+            [(_ f width height)
+             #'(list (proc> 'to-draw (f2h f) 1) 
+                     (nat> 'to-draw width "width")
+                     (nat> 'to-draw height "height"))])]
+  ;; World Nat Nat MouseEvent -> World 
+  ;; on-mouse must specify a mouse event handler 
+  [on-mouse DEFAULT #f (function-with-arity 4)]
+  ;; World KeyEvent -> World 
+  ;; on-key must specify a key event handler 
+  [on-key DEFAULT #f (function-with-arity 2)]
+  ;; World KeyEvent -> World 
+  ;; on-release must specify a release event handler 
+  [on-release DEFAULT #'K (function-with-arity 2)]
+  ;; (U #f (World S-expression -> World))
+  ;; -- on-receive must specify a receive handler 
+  [on-receive DEFAULT #'#f (function-with-arity 2)]
+  ;; World -> Boolean 
+  ;; -- stop-when must specify a predicate; it may specify a rendering function
+  [stop-when DEFAULT #'False
+             (function-with-arity 
+              1
+              except
+              [(_ stop? last-picture)
+               #'(list (proc> 'stop-when (f2h stop?) 1)
+                       (proc> 'stop-when (f2h last-picture) 1))])]
+  ;; (U #f Any)
+  ;; -- should the session be recorded and turned into PNGs and an animated GIF
+  ;; -- if the value is a string and is the name of a local directory, use it! 
+  [record? DEFAULT #'#f (expr-with-check any> "")]
+  ;; (U #f String)
+  ;; -- name specifies one string 
+  [name DEFAULT #'#f (expr-with-check string> "expected a string")]
+  ;; (U #f IP)  
+  ;; -- register must specify the internet address of a host (e.g., LOCALHOST)
+  [register DEFAULT #'#f (expr-with-check ip> "expected a host (ip address)")])
+
+;  (create-universe universe0)
+(define-keywords UniSpec AllSpec create-universe
+  ;; -- on-new must specify what happens when a world joins the universe
+  [on-new 
+   DEFAULT #'"my-bad"
+   (function-with-arity 2)]
+  ;; -- on-msg must specify what happens to a message from a world 
+  [on-msg
+   DEFAULT #'"my-bad"
+   (function-with-arity 3)]
+  ;; -- on-disconnect may specify what happens when a world drops out
+  [on-disconnect
+   ;; ******************************************************************
+   DEFAULT #'(lambda (u w) (make-bundle u '() '()))
+   ;; this is the wrong default function 
+   ;; instead of K there should be a function that produces a bundle 
+   (function-with-arity 2)
+   ;; ******************************************************************
+   ]
+  ;; -- to-string specifies how to render the universe as a string for display
+  [to-string
+   DEFAULT #'#f
+   (function-with-arity 1)])
+
 
 ;                                     
 ;                                     
@@ -70,15 +149,15 @@
          )
 
 (provide-primitives
-         make-package ;; World Sexp -> Package
-         package?     ;; Any -> Boolean 
-         run-movie    ;; [Listof Image] -> true 
-         mouse-event?  ;; Any -> Boolean : MOUSE-EVTS
-         mouse=?       ;; MOUSE-EVTS MOUSE-EVTS -> Boolean 
-         key-event?    ;; Any -> Boolean : KEY-EVTS
-         key=?         ;; KEY-EVTS KEY-EVTS -> Boolean
-         ;; IP : a string that points to a machine on the net 
-         )
+ make-package ;; World Sexp -> Package
+ package?     ;; Any -> Boolean 
+ run-movie    ;; [Listof Image] -> true 
+ mouse-event?  ;; Any -> Boolean : MOUSE-EVTS
+ mouse=?       ;; MOUSE-EVTS MOUSE-EVTS -> Boolean 
+ key-event?    ;; Any -> Boolean : KEY-EVTS
+ key=?         ;; KEY-EVTS KEY-EVTS -> Boolean
+ ;; IP : a string that points to a machine on the net 
+ )
 
 (provide LOCALHOST     ;; IP
          )
@@ -133,37 +212,6 @@
     "wheel-up"
     "wheel-down"))
 
-(define-keywords WldSpec 
-  ;; -- on-draw must specify a rendering function; it may specify dimensions
-  [on-draw to-draw
-           (function-with-arity 
-            1 
-            except
-            [(_ f width height)
-             #'(list (proc> 'to-draw (f2h f) 1) 
-                     (nat> 'to-draw width "width")
-                     (nat> 'to-draw height "height"))])]
-  ;; -- on-mouse must specify a mouse event handler 
-  [on-mouse (function-with-arity 4)]
-  ;; -- on-key must specify a key event handler 
-  [on-key (function-with-arity 2)]
-  ;; -- on-release must specify a release event handler 
-  [on-release (function-with-arity 2)]
-  ;; -- on-receive must specify a receive handler 
-  [on-receive (function-with-arity 2)]
-  ;; -- stop-when must specify a predicate; it may specify a rendering function
-  [stop-when (function-with-arity 
-              1
-              except
-              [(_ stop? last-picture)
-               #'(list (proc> 'stop-when (f2h stop?) 1)
-                       (proc> 'stop-when (f2h last-picture) 1))])]
-  ;; -- should the session be recorded and turned into PNGs and an animated GIF
-  [record? (expr-with-check bool> "expected a boolean (to record? or not)")]
-  [name (expr-with-check string> "expected a name (string) for the world")]
-  ;; -- register must specify the internet address of a host (e.g., LOCALHOST)
-  [register (expr-with-check ip> "expected a host (ip address)")])
-
 (define-syntax (big-bang stx)
   (define world0 "big-bang needs at least an initial world")
   (syntax-case stx ()
@@ -177,13 +225,8 @@
                    [(V) (set! rec? #'V)]
                    [_ (err '#'record? stx)])))]
             [args 
-             (->args 'big-bang stx (syntax w) (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
-       #`(let* ([esp (make-eventspace)]
-                [thd (eventspace-handler-thread esp)])
-           (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
-             (parameterize ([current-eventspace esp])
-               (let ([o (new (if #,rec? aworld% world%) [world0 w] #,@args)])
-                 (send o last))))))]))
+             (->args 'big-bang stx #'w #'(clause ...) WldSpec ->rec? "world")])
+       #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args)))]))
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
@@ -257,34 +300,45 @@
  universe    ;; <syntax> : see below 
  )
 
-(define-keywords UniSpec
-  ;; -- on-new must specify what happens when a world joins the universe
-  [on-new (function-with-arity 2)]
-  ;; -- on-msg must specify what happens to a message from a world 
-  [on-msg (function-with-arity 3)]
-  ;; -- on-disconnect may specify what happens when a world drops out
-  [on-disconnect (function-with-arity 2)]
-  ;; -- to-string specifies how to render the universe as a string for display
-  [to-string (function-with-arity 1)])
-
 (define-syntax (universe stx)
-  (define legal "not a legal clause in a universe description")
   (syntax-case stx ()
     [(universe) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u bind ...)
-     (let*
-         ([args (->args 'universe stx (syntax u) (syntax (bind ...)) AllSpec UniSpec void "universe")]
-          [domain (map (compose syntax-e car) args)])
+     (let* ([args
+             (->args 'universe stx #'u #'(bind ...) UniSpec void "universe")]
+            [dom (map (compose car syntax->datum) (syntax->list #'(bind ...)))])
        (cond
-         [(not (memq 'on-new domain))
+         [(not (memq 'on-new dom))
           (raise-syntax-error #f "missing on-new clause" stx)]
-         [(not (memq 'on-msg domain))
+         [(not (memq 'on-msg dom))
           (raise-syntax-error #f "missing on-msg clause" stx)]
-         [else ; (and (memq #'on-new domain) (memq #'on-msg domain))
-          #`(let* ([esp (make-eventspace)]
-                   [thd (eventspace-handler-thread esp)])
-              (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
-                (parameterize ([current-eventspace esp])
-                  (send (new universe% [universe0 u] #,@args) last))))]))]))
+         [else ; (and (memq #'on-new dom) (memq #'on-msg dom))
+          #`(run-it ((new-universe universe%) u #,@args))]))]))
 
+;                                          
+;                                          
+;                                          
+;      ;               ;;;                 
+;                     ;                    
+;    ;;;    ;; ;;   ;;;;;;  ;; ;;;   ;;;;  
+;      ;     ;;  ;    ;      ;;     ;    ; 
+;      ;     ;   ;    ;      ;       ;;;;; 
+;      ;     ;   ;    ;      ;      ;    ; 
+;      ;     ;   ;    ;      ;      ;   ;; 
+;    ;;;;;  ;;; ;;; ;;;;;;  ;;;;;    ;;; ;;
+;                                          
+;                                          
+;                                          
+;                                          
+
+;; (-> Object) -> Any
+(define (run-it o)
+  (define esp (make-eventspace))
+  (define thd (eventspace-handler-thread esp))
+  (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
+    (define obj:ch (make-channel))
+    (parameterize ([current-eventspace esp])
+      (queue-callback (lambda () (channel-put obj:ch (o)))))
+    (send (channel-get obj:ch) last)))
+    

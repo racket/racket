@@ -9,7 +9,6 @@
 */
 #endif
 
-
 typedef struct mpage {
   struct mpage *next;
   struct mpage *prev;
@@ -43,25 +42,31 @@ typedef struct mpage {
 } mpage;
 
 typedef struct Gen0 {
- struct mpage *curr_alloc_page;
- struct mpage *pages;
- struct mpage *big_pages;
- unsigned long current_size;
- unsigned long max_size;
+  struct mpage *curr_alloc_page;
+  struct mpage *pages;
+  struct mpage *big_pages;
+  unsigned long current_size;
+  unsigned long max_size;
+  unsigned long page_alloc_size;
 } Gen0;
+
+typedef struct MsgMemory {
+  struct mpage *pages;
+  struct mpage *big_pages;
+  unsigned long size;
+} MsgMemory;
+
+typedef struct Allocator {
+  Gen0 savedGen0;
+  unsigned long saved_alloc_page_ptr;
+  unsigned long saved_alloc_page_end;
+} Allocator;
 
 typedef struct MarkSegment {
   struct MarkSegment *prev;
   struct MarkSegment *next;
   void **top;
 } MarkSegment;
-
-typedef struct Weak_Finalizer {
-  void *p;
-  int offset;
-  void *saved;
-  struct Weak_Finalizer *next;
-} Weak_Finalizer;
 
 typedef struct GC_Thread_Info {
   void *thread;
@@ -142,7 +147,6 @@ typedef struct NewGC {
   /* Finalization */
   Fnl *run_queue;
   Fnl *last_in_queue;
-  Weak_Finalizer *weak_finalizers;
 
   struct NewGC *primoridal_gc;
   unsigned long max_heap_size;
@@ -227,10 +231,12 @@ typedef struct NewGC {
 
   Roots roots;
   GC_Weak_Array *weak_arrays;
-  GC_Weak_Box   *weak_boxes;
+  GC_Weak_Box   *weak_boxes[2];
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
   struct MMU     *mmu;
+
+  Allocator *saved_allocator;
 
 #if defined(GC_DEBUG_PAGES)
   FILE *GCVERBOSEFH;

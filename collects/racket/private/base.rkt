@@ -1,7 +1,6 @@
 (module base "pre-base.rkt"
-  
-  (#%require "sequence.rkt"
-             "hash.rkt"
+
+  (#%require "hash.rkt"
              "list.rkt"
              "string.rkt"
              "stxcase-scheme.rkt"
@@ -23,7 +22,6 @@
                               regexp-replace*
                               new-apply-proc)
              struct
-             (all-from "sequence.rkt")
              (all-from "hash.rkt")
              (all-from "list.rkt")
              (all-from-except "string.rkt" 
@@ -43,4 +41,3 @@
              (rename -with-output-to-file with-output-to-file)
              call-with-input-file*
              call-with-output-file*))
-

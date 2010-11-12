@@ -9,6 +9,7 @@
          size-editor-snip%
          size-text%
          default-pretty-printer
+         pretty-print-parameters
          initial-char-width
          resizing-pasteboard-mixin
          get-user-char-width)
@@ -21,6 +22,8 @@
     [(number? cw/proc) cw/proc]
     [else (cw/proc expr)]))
 
+(define pretty-print-parameters (make-parameter (λ (thunk) (thunk))))
+  
 (define (default-pretty-printer v port w spec)
   (parameterize ([pretty-print-columns w]
                  [pretty-print-size-hook
@@ -36,7 +39,9 @@
                        (display "hole" op)]
                       [(eq? val 'hole) 
                        (display ",'hole" op)]))])
-    (pretty-print v port)))
+    ((pretty-print-parameters)
+     (λ ()
+       (pretty-print v port)))))
 
 (define reflowing-snip<%>
   (interface ()

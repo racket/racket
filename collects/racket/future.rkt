@@ -4,4 +4,5 @@
 (provide future?
          future
          touch
-         processor-count)
+         processor-count
+         current-future)

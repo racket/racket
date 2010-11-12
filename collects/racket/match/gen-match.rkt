@@ -9,10 +9,14 @@
 ;; this transforms `match'-style clauses into ones acceptable to `go'
 ;; go : syntax syntax syntax [certifier] -> syntax
 (define (go/one parse/cert stx expr clauses [cert (syntax-local-certifier)])
+  (define-syntax-class cl
+    (pattern [p . rhs]
+             #:with res (syntax/loc this-syntax [(p) . rhs])))
   (syntax-parse clauses
-    [([p . rhs] ...) 
+    [(c:cl ...)
      (go parse/cert stx (quasisyntax/loc expr (#,expr))
-         #'([(p) . rhs] ...) cert)]))
+         #'(c.res ...)
+         cert)]))
 
 ;; this parses the clauses using parse/cert, then compiles them
 ;; go : syntax syntax syntax [certifier] -> syntax
@@ -58,7 +62,7 @@
                    (let ([mk (lambda (unm rhs)
                                (make-Row (for/list ([p (syntax->list pats)])
                                            (parse/cert p cert))
-                                         #`(begin . #,rhs) unm null))])
+                                         #`(let-values () . #,rhs) unm null))])
                      (syntax-case* rhs (=>)
                        (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
                        [((=> unm) . rhs) (mk #'unm #'rhs)]

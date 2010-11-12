@@ -4,12 +4,15 @@
 #ifndef SCHEME_STACK_BOUNDARY
 # define SCHEME_STACK_BOUNDARY scheme_stack_boundary
 #endif
+#ifndef SCHEME_PLUS_STACK_DELTA
+# define SCHEME_PLUS_STACK_DELTA(x) x
+#endif
 
 #ifdef SPAWN_NEW_STACK
   unsigned long _stk_pos;
 
   _stk_pos = (unsigned long)&_stk_pos;
-  if (STK_COMP(_stk_pos, (unsigned long)SCHEME_CURRENT_PROCESS->stack_end)
+  if (STK_COMP(SCHEME_PLUS_STACK_DELTA(_stk_pos), (unsigned long)SCHEME_CURRENT_PROCESS->stack_end)
       && !scheme_no_stack_overflow)
 #else
 # ifdef USE_STACKAVAIL
@@ -23,10 +26,11 @@
 
   _stk_pos = (unsigned long)&_stk_pos;
 
-  if (STK_COMP(_stk_pos, SCHEME_STACK_BOUNDARY)
+if (STK_COMP(SCHEME_PLUS_STACK_DELTA(_stk_pos), SCHEME_STACK_BOUNDARY)
       && !scheme_no_stack_overflow)
 # endif
 #endif
 
 #undef SCHEME_CURRENT_PROCESS
 #undef SCHEME_STACK_BOUNDARY
+#undef SCHEME_PLUS_STACK_DELTA

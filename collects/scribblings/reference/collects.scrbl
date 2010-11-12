@@ -59,7 +59,7 @@ The translation of a @racket[planet] or @racket[lib] path to a
 resolver}, as specified by the @racket[current-module-name-resolver]
 parameter.
 
-For the default @tech{module name resolver}, The search path for
+For the default @tech{module name resolver}, the search path for
 collections is determined by the
 @racket[current-library-collection-paths] parameter. The list of paths
 in @racket[current-library-collection-paths] is searched from first to

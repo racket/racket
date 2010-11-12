@@ -21,7 +21,7 @@
    (define-compound-unit u3 (import) (export)
      (link (((S : s)) u1)
            (() u2 S)))
-   (printf "~a~n" (invoke-unit u3))
+   (printf "~a\n" (invoke-unit u3))
    )
  
  ;; 4
@@ -33,7 +33,7 @@
    (define-unit u1 (import) (export s)
      (define a 1))
    (define-values/invoke-unit u1 (import) (export (rename s)))
-   (printf "~a~n" (+ y (z)))
+   (printf "~a\n" (+ y (z)))
    )
  ;;4
  (require 'test3)

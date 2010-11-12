@@ -43,7 +43,9 @@ define_ts_z_p(GC_malloc_one_small_tagged, FSRC_OTHER)
 define_ts_n_s(scheme_make_native_closure, FSRC_OTHER)
 define_ts_n_s(scheme_make_native_case_closure, FSRC_OTHER)
 define_ts_bsi_v(call_set_global_bucket, FSRC_MARKS)
+#ifndef CAN_INLINE_ALLOC
 define_ts_s_s(scheme_make_envunbox, FSRC_OTHER)
+#endif
 define_ts_s_s(make_global_ref, FSRC_OTHER)
 define_ts_iiS_v(lexical_binding_wrong_return_arity, FSRC_MARKS)
 define_ts_iiS_v(call_wrong_return_arity, FSRC_MARKS)
@@ -71,6 +73,7 @@ define_ts_tt_s(scheme_make_complex, FSRC_OTHER)
 define_ts_s_s(scheme_unbox, FSRC_MARKS)
 define_ts_s_s(scheme_vector_length, FSRC_MARKS)
 define_ts_s_s(scheme_flvector_length, FSRC_MARKS)
+define_ts_s_s(scheme_fxvector_length, FSRC_MARKS)
 define_ts_si_s(scheme_struct_ref, FSRC_MARKS)
 define_ts_sis_v(scheme_struct_set, FSRC_MARKS)
 define_ts_s_s(tail_call_with_values_from_multiple_result, FSRC_MARKS)
@@ -85,6 +88,8 @@ define_ts_iS_s(scheme_checked_byte_string_ref, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_byte_string_set, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_flvector_ref, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_flvector_set, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_fxvector_ref, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_fxvector_set, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_syntax_e, FSRC_MARKS)
 define_ts_iS_s(scheme_extract_checked_procedure, FSRC_MARKS)
 define_ts_S_s(apply_checked_fail, FSRC_MARKS)
@@ -143,6 +148,7 @@ define_ts_siS_v(wrong_argument_count, FSRC_MARKS)
 # define ts_scheme_set_box scheme_set_box
 # define ts_scheme_vector_length scheme_vector_length
 # define ts_scheme_flvector_length scheme_flvector_length
+# define ts_scheme_fxvector_length scheme_fxvector_length
 # define ts_scheme_struct_ref scheme_struct_ref
 # define ts_scheme_struct_set scheme_struct_set
 # define ts_tail_call_with_values_from_multiple_result tail_call_with_values_from_multiple_result
@@ -157,6 +163,8 @@ define_ts_siS_v(wrong_argument_count, FSRC_MARKS)
 # define ts_scheme_checked_byte_string_set scheme_checked_byte_string_set
 # define ts_scheme_checked_flvector_ref scheme_checked_flvector_ref
 # define ts_scheme_checked_flvector_set scheme_checked_flvector_set
+# define ts_scheme_checked_fxvector_ref scheme_checked_fxvector_ref
+# define ts_scheme_checked_fxvector_set scheme_checked_fxvector_set
 # define ts_scheme_checked_syntax_e scheme_checked_syntax_e
 # define ts_scheme_extract_checked_procedure scheme_extract_checked_procedure
 # define ts_apply_checked_fail apply_checked_fail

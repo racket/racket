@@ -1,6 +1,5 @@
 ;; By Brendan Burns, with modifications by Scott Owens
-
-(module gl-frame lang/plt-pretty-big
+(module gl-frame racket/gui
   (require sgl/gl
            sgl/gl-vectors)
   (provide set-gl-draw-fn
@@ -110,7 +109,7 @@
       (letrec
           ([loop
             (lambda ()
-              (if (< i pixels)
+              (when (< i pixels)
                   (begin
                     (gl-vector-set! vec (* i  3) 
                                     (bytes-ref data (+ (* i 4) 1)))
@@ -147,6 +146,3 @@
     (lambda (ix)
       (gl-vector-ref *textures* ix)))
   )
-
-
-
