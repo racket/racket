@@ -1364,5 +1364,24 @@
                          x)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that an unboxable flonum argument 
+;; is not incorrectly inferred:
+
+(test '(done)
+      'unboxing-inference-test
+      (let ()
+        (define (f x y)
+          (if (zero? y)
+              ;; prevents inlining:
+              '(done)
+              (if (zero? y)
+                  ;; incorrectly triggered unboxing, 
+                  ;; once upon a time:
+                  (fl+ x 1.0) 
+                  ;; not a float argument => no unboxing of x:
+                  (f y (sub1 y)))))
+        (f 1.0 100)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

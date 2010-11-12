@@ -1143,12 +1143,41 @@ void scheme_set_closure_flonum_map(Scheme_Closure_Data *data, char *flonum_map)
     cl->flonum_map = flonum_map;
   }
   
-  for (i = data->num_params; i--; ) {
-    if (flonum_map[i]) break;
+  if (flonum_map) {
+    for (i = data->num_params; i--; ) {
+      if (flonum_map[i]) break;
+    }
+    
+    if (i < 0) {
+      cl->flonum_map = NULL;
+    }
   }
+}
 
-  if (i < 0) {
-    cl->flonum_map = NULL;
+void scheme_merge_closure_flonum_map(Scheme_Closure_Data *data1, Scheme_Closure_Data *data2)
+{
+  Closure_Info *cl1 = (Closure_Info *)data1->closure_map;
+  Closure_Info *cl2 = (Closure_Info *)data2->closure_map;
+
+  if (cl1->has_flomap) {
+    if (!cl1->flonum_map || !cl2->has_flomap) {
+      cl2->has_flomap = 1;
+      cl2->flonum_map = cl1->flonum_map;
+    } else if (cl2->flonum_map) {
+      int i;
+      for (i = data1->num_params; i--; ) {
+        if (cl1->flonum_map[i] != cl2->flonum_map[i]) {
+          cl2->flonum_map = NULL;
+          cl1->flonum_map = NULL;
+          break;
+        }
+      }
+    } else {
+      cl1->flonum_map = NULL;
+    }
+  } else if (cl2->has_flomap) {
+    cl1->has_flomap = 1;
+    cl1->flonum_map = cl2->flonum_map;
   }
 }
 
