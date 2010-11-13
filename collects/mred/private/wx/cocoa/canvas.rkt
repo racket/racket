@@ -272,9 +272,11 @@
      ;; are defined by `canvas-mixin' from ../common/canvas-mixin
      (define/public (queue-paint) (void))
      (define/public (request-canvas-flush-delay)
-       (request-flush-delay (get-cocoa-window)))
+       (unless is-gl?
+         (request-flush-delay (get-cocoa-window))))
      (define/public (cancel-canvas-flush-delay req)
-       (cancel-flush-delay req))
+       (unless is-gl?
+         (cancel-flush-delay req)))
      (define/public (queue-canvas-refresh-event thunk)
        (queue-window-refresh-event this  thunk))
 
