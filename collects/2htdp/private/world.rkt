@@ -211,9 +211,15 @@
         (let ([s (send visible find-first-snip)]
               [c (send visible get-canvas)])
           (when s (send visible delete s))
-          (send visible insert (send pict copy) 0 0))
-        (send visible lock #t)
-        (send visible end-edit-sequence))
+          (send visible insert (send pict copy) 0 0)
+          (send visible lock #t)
+          (send visible end-edit-sequence)
+          ;; The following flush trades streaming performance (where updates
+          ;; could be skipped if they're replaced fast enough) for 
+          ;; responsiveness (where too many updates might not get 
+          ;; through if the canvas is mostly in suspended-refresh 
+          ;; mode for scene changes):
+          (send c flush)))
       
       ;; ----------------------------------------------------------------------
       ;; callbacks 
