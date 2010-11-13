@@ -163,11 +163,11 @@
                                 file)]))
 
 (define (delete-path path)
-  (if (directory-exists? path)
-    (begin (parameterize ([current-directory path])
-             (for-each delete-path (directory-list)))
-           (delete-directory path))
-    (delete-file path)))
+  (cond [(directory-exists? path)
+         (parameterize ([current-directory path])
+           (for-each delete-path (directory-list)))
+         (delete-directory path)]
+        [(or (file-exists? path) (link-exists? path)) (delete-file path)]))
 
 (define (directory-size dir)
   (parameterize ([current-directory dir])
