@@ -157,19 +157,20 @@
                 [hdc (BeginPaint w ps)])
            (if for-gl?
                (queue-paint)
-               (unless (positive? paint-suspended)
-                 (let* ([hbrush (if no-autoclear?
-                                    #f
-                                    (if transparent?
-                                        background-hbrush
-                                        (CreateSolidBrush bg-colorref)))])
-                   (when hbrush
-                     (let ([r (GetClientRect canvas-hwnd)])
-                       (FillRect hdc r hbrush))
-                     (unless transparent?
-                       (DeleteObject hbrush)))
-                   (unless (do-canvas-backing-flush hdc)
-                     (queue-paint)))))
+               (if (positive? paint-suspended)
+                   (set! suspended-refresh? #t)
+                   (let* ([hbrush (if no-autoclear?
+                                      #f
+                                      (if transparent?
+                                          background-hbrush
+                                          (CreateSolidBrush bg-colorref)))])
+                     (when hbrush
+                       (let ([r (GetClientRect canvas-hwnd)])
+                         (FillRect hdc r hbrush))
+                       (unless transparent?
+                         (DeleteObject hbrush)))
+                     (unless (do-canvas-backing-flush hdc)
+                       (queue-paint)))))
            (EndPaint hdc ps))
          0]
         [(= msg WM_NCPAINT)
@@ -271,22 +272,38 @@
      (define/public (do-canvas-backing-flush hdc)
        (if hdc
            (do-backing-flush this dc hdc)
-           (let ([hdc (GetDC canvas-hwnd)])
-             (do-backing-flush this dc hdc)
-             (ReleaseDC canvas-hwnd hdc)
-             (ValidateRect canvas-hwnd #f))))
+           (if (positive? paint-suspended)
+               ;; suspended => try again later
+               (schedule-periodic-backing-flush)
+               ;; not suspended
+               (let ([hdc (GetDC canvas-hwnd)])
+                 (do-backing-flush this dc hdc)
+                 (ReleaseDC canvas-hwnd hdc)
+                 ;; We'd like to validate the region that
+                 ;; we just updated, so we can potentially
+                 ;; avoid a redundant refresh. For some reason,
+                 ;; vadilation can cancel an update that hasn't
+                 ;; happened, yet; this problem needs further
+                 ;; invesitigation.
+                 #;
+                 (ValidateRect canvas-hwnd #f)))))
 
      (define/public (make-compatible-bitmap w h)
        (send dc make-backing-bitmap w h))
 
      (define paint-suspended 0)
+     (define suspended-refresh? #f)
      (define/public (suspend-paint-handling)
        (atomically
         (set! paint-suspended (add1 paint-suspended))))
      (define/public (resume-paint-handling)
        (atomically
         (unless (zero? paint-suspended)
-          (set! paint-suspended (sub1 paint-suspended)))))
+          (set! paint-suspended (sub1 paint-suspended))
+          (when (and (zero? paint-suspended)
+                     suspended-refresh?)
+            (set! suspended-refresh? #f)
+            (InvalidateRect canvas-hwnd #f #f)))))
 
      (define no-autoclear? (memq 'no-autoclear style))
      (define transparent? (memq 'transparent style))
