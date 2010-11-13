@@ -75,11 +75,9 @@ bin:
 	$(MAKE) @MAIN_VARIANT@
 
 3m:
-	$(MAKE) libs/gui-ready$(DOWNLOAD_BIN_VERSION)
 	cd gc2; $(MAKE) 3m
 
 cgc:
-	$(MAKE) libs/gui-ready$(DOWNLOAD_BIN_VERSION)
 	$(MAKE) $(LINKRESULT)
 
 both:
@@ -126,9 +124,6 @@ grmain_ee.@LTO@ : gracket.@LTO@
 ee-main:
 	$(MAKE) grmain_ee.@LTO@
 
-libs/gui-ready$(DOWNLOAD_BIN_VERSION):
-	$(RACKET) -c "$(srcdir)/../get-libs.rkt" --touch gui-ready$(DOWNLOAD_BIN_VERSION) gui "$(srcdir)" libs
-
 clean:
 	rm -f *.@LTO@ *.d core gracket gracket3m
 	rm -f gc2/*.@LTO@ gc2/xsrc/* gc2/macxsrc/* gc2/*.d gc2/*.dd
@@ -163,7 +158,7 @@ install-post-collects:
 	$(MAKE) install-@WXVARIANT@-post-collects
 
 install-common:
-	$(RACKET) -c "$(srcdir)/../get-libs.rkt" --install gui . "$(DESTDIR)$(libpltdir)"
+	$(RACKET) -c "$(srcdir)/../get-libs.rkt" gui "$(DESTDIR)$(libpltdir)"
 
 # X11 ----------------------------------------
 

@@ -5,15 +5,16 @@
 ;; This program avoids racket/port and net/url, because it is loaded
 ;; without using bytecode.
 
-(define mode 'download)
-(define touch #f)
-
 (define url-host "download.racket-lang.org")
 (define url-path "/libs/1/")
 (define url-base (string-append "http://" url-host url-path))
 
 (provide all-files+sizes)
 (define all-files+sizes
+  ;; alist mapping package to
+  ;;   alist mapping architecture to
+  ;;     a list of entries, each has filename and size
+  ;;     and optionally a path that it would install to and the installed size
   `(;; Core Libraries
     [core
      [win32/i386
@@ -35,7 +36,7 @@
       ["libpixman-1.0.dylib" 459304]
       ["libgthread-2.0.0.dylib" 24592]
       ["libpng14.14.dylib" 182992]
-      ["PSMTabBarControl.tgz" 89039]]
+      ["PSMTabBarControl.tgz" 89039 "PSMTabBarControl.framework" 247760]]
      [x86_64-macosx
       ["libcairo.2.dylib" 944552]
       ["libintl.8.dylib" 61016]
@@ -49,7 +50,7 @@
       ["libpixman-1.0.dylib" 499440]
       ["libgthread-2.0.0.dylib" 21728]
       ["libpng14.14.dylib" 192224]
-      ["PSMTabBarControl.tgz" 105765]]
+      ["PSMTabBarControl.tgz" 105765 "PSMTabBarControl.framework" 316512]]
      [ppc-macosx
       ["libcairo.2.dylib" 2716096]
       ["libintl.8.dylib" 133156]
@@ -63,7 +64,7 @@
       ["libpixman-1.0.dylib" 1366816]
       ["libgthread-2.0.0.dylib" 25416]
       ["libpng14.14.dylib" 505920]
-      ["PSMTabBarControl.tgz" 95862]]
+      ["PSMTabBarControl.tgz" 95862 "PSMTabBarControl.framework" 229493]]
      [win32/i386
       ["libjpeg-7.dll" 233192]
       ["libcairo-2.dll" 921369]
@@ -91,16 +92,9 @@
             ["gtkrc" 1181])
           '())]]))
 
-(define-values (package src-dir dest-dir)
-  (command-line
-   #:once-any
-   [("--download") "download mode (the default)" (set! mode 'download)]
-   [("--install") "install mode"                 (set! mode 'install)]
-   [("--no-op") "do nothing (for internal use)"  (set! mode #f)]
-   #:once-each
-   [("--touch") file "touch `<file>' on download success" (set! touch file)]
-   #:args [package src-dir dest-dir]
-   (values (string->symbol package) src-dir dest-dir)))
+(define-values [package dest-dir]
+  (command-line #:args [package [dest-dir (current-directory)]]
+    (values (string->symbol package) dest-dir)))
 
 (define (unixize p)
   (let-values ([(base name dir?) (split-path p)])
@@ -108,17 +102,15 @@
       (string-append (unixize base) "/" (path->string name))
       (path->string name))))
 
-(define (needed-files+sizes)
-  (let* ([files+sizes
-          (cdr (or (assq package all-files+sizes)
-                   (error 'get-libs "bad package: ~s, expecting one of ~s"
-                          package (map car all-files+sizes))))]
-         [arch (unixize (system-library-subpath))]
-         [arch (string->symbol (regexp-replace #rx"/3m$" arch ""))])
-    (cond [(assq arch files+sizes) => cdr]
-          [else '()])))
+(define architecture (string->symbol (unixize (system-library-subpath #f))))
 
-(define explained? #f)
+(define (needed-files+sizes)
+  (let ([files+sizes
+         (cdr (or (assq package all-files+sizes)
+                  (error 'get-libs "bad package: ~s, expecting one of ~s"
+                         package (map car all-files+sizes))))])
+    (cond [(assq architecture files+sizes) => cdr]
+          [else '()])))
 
 (define (purify-port port)
   (let ([m (regexp-match-peek-positions #rx#"^HTTP/.*?(?:\r\n\r\n|\n\n|\r\r)"
@@ -138,75 +130,89 @@
               ;; Must be EOF
               [else (void)])))))
 
-(define (download-if-needed dest-dir file size)
-  (define dest (build-path dest-dir file))
-  (if (and (file-exists? dest) (= (file-size dest) size))
-    (printf " ~a is ready\n" file)
-    (let* ([sub (unixize (system-library-subpath #f))]
-           [src (format "~a~a/~a" url-path sub file)])
-      (unless explained?
-        (set! explained? #t)
-        (printf ">> Downloading files from\n>>  ~a~a\n" url-base sub)
-        (printf ">> If you don't want automatic download, download each file\n")
-        (printf ">> yourself from there to\n")
-        (printf ">>  ~a\n" (path->complete-path dest-dir)))
-      (printf "  ~a downloading..." file)
-      (flush-output)
-      (define-values [i o] (tcp-connect url-host 80))
-      (fprintf o "GET ~a HTTP/1.0\r\n" src)
-      (fprintf o "Host: ~a\r\n" url-host)
-      (fprintf o "\r\n")
-      (flush-output o)
-      (tcp-abandon-port o)
-      (purify-port i)
-      (define tmp (build-path dest-dir (format "~a.download" file)))
-      (call-with-output-file tmp #:exists 'truncate/replace
-        (lambda (out) (copy-port i out)))
-      (rename-file-or-directory tmp dest #t)
-      (let ([sz (file-size dest)])
-        (unless (= size sz)
-          (eprintf "\n")
-          (raise-user-error
-           'get-libs "size of ~a is ~a; doesn't match expected size ~a"
-           dest sz size)))
-      (printf "done\n"))))
+(define (download file size)
+  (define src (format "~a~a/~a" url-path architecture file))
+  (define-values [i o] (tcp-connect url-host 80))
+  (fprintf o "GET ~a HTTP/1.0\r\nHost: ~a\r\n\r\n" src url-host)
+  (flush-output o) (tcp-abandon-port o)
+  (purify-port i)
+  (define tmp (format "~a.download" file))
+  (call-with-output-file tmp #:exists 'truncate/replace
+    (lambda (out) (copy-port i out)))
+  (rename-file-or-directory tmp file #t)
+  (let ([sz (file-size file)])
+    (unless (= size sz)
+      (eprintf "\n")
+      (raise-user-error 'get-libs
+                        "size of ~a is ~a; doesn't match expected size ~a"
+                        file sz size))))
 
-(define (same-content? f1 f2)
-  ;; approximate:
-  (and (file-exists? f1) (file-exists? f2) (= (file-size f1) (file-size f2))))
+(define (unpack-tgz tgz)
+  (printf " unpacking...") (flush-output)
+  (define-values [p pout pin perr]
+    (subprocess
+     (current-output-port) (current-input-port) (current-error-port)
+     (find-executable-path "tar") "zxf" tgz))
+  (subprocess-wait p)
+  (delete-file tgz))
 
-(define (install-file src dest)
-  (if (regexp-match? #rx"[.]tgz" (path->string src))
-    ;; Unpack tar file:
-    (unpack-tgz src dest)
-    ;; Plain copy:
-    (unless (same-content? src dest)
-      (printf "Updating ~a\n" dest)
-      (when (file-exists? dest) (delete-file dest))
-      (copy-file src dest))))
+(define (install file)
+  (cond [(regexp-match? #rx"[.]tgz" file) (unpack-tgz file)]
+        [else (eprintf "\n")
+              (raise-user-error 'get-libs "don't know how to install file: ~a"
+                                file)]))
 
-(define (unpack-tgz src* dest)
-  (define src (path->string (path->complete-path src*)))
-  (parameterize ([current-directory
-                  (let-values ([(base name dir?) (split-path dest)]) base)])
-    (define-values [p pout pin perr]
-      (subprocess
-       (current-output-port) (current-input-port) (current-error-port)
-       (find-executable-path "tar") "zxf" src))
-    (subprocess-wait p)))
+(define (delete-path path)
+  (if (directory-exists? path)
+    (begin (parameterize ([current-directory path])
+             (for-each delete-path (directory-list)))
+           (delete-directory path))
+    (delete-file path)))
 
-(case mode
-  [(#f) (void)]
-  [(download)
-   (unless (directory-exists? dest-dir) (make-directory dest-dir))
-   (for ([file+size (in-list (needed-files+sizes))])
-     (download-if-needed dest-dir (car file+size) (cadr file+size)))
-   (when touch
-     (define ok (build-path dest-dir touch))
-     (when (file-exists? ok) (delete-file ok))
-     (unless (file-exists? ok) (with-output-to-file ok void)))]
-  [(install)
-   (for ([file+size (in-list (needed-files+sizes))])
-     (define file (car file+size))
-     (install-file (build-path src-dir "libs" file)
-                   (build-path dest-dir file)))])
+(define (directory-size dir)
+  (parameterize ([current-directory dir])
+    (for/fold ([sum 0]) ([path (in-list (directory-list))])
+      (+ sum (path-size path)))))
+
+(define (path-size path)
+  (cond [(file-exists? path) (file-size path)]
+        [(directory-exists? path) (directory-size path)]
+        [else 0]))
+
+(define got-path? ; approximate, using size
+  (case-lambda [(path size unpacked-path unpacked-size)
+                (got-path? unpacked-path unpacked-size)]
+               [(path size)
+                (equal? size (path-size path))]))
+
+(unless (eq? package 'nothing)
+  (unless (directory-exists? dest-dir) (make-directory dest-dir))
+  (parameterize ([current-directory dest-dir])
+    (define needed (needed-files+sizes))
+    (define really-needed
+      (filter (lambda (n) (not (apply got-path? n))) needed))
+    (printf (if (null? needed)
+              ">> No ~a libraries to download for ~a\n"
+              ">> Getting ~a libraries for ~a\n")
+            package architecture)
+    (cond
+      [(null? needed) (void)]
+      [(null? really-needed)
+       (printf ">> All files present, no downloads needed.\n")]
+      [else
+       (printf ">> Downloading files from\n>>   ~a~a\n" url-base architecture)
+       (printf ">> If you don't want automatic download, download each file\n")
+       (printf ">> yourself from there to\n")
+       (printf ">>   ~a\n" (path->complete-path (current-directory)))
+       (for ([file+size (in-list needed)])
+         (define file (car file+size))
+         (define size (cadr file+size))
+         (printf "  ~a" file)
+         (if (member file+size really-needed)
+           (begin (printf " downloading...") (flush-output)
+                  (download file size)
+                  (when (pair? (cddr file+size))
+                    (delete-path (caddr file+size))
+                    (install file))
+                  (printf " done.\n"))
+           (printf " already exists.\n")))])))

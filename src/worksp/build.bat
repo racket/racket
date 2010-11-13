@@ -8,8 +8,8 @@ cd gc2
 ..\..\..\racketcgc -cu make.rkt
 cd ..
 
-..\..\racket -cu ..\get-libs.rkt core ..\racket  ..\..\lib
-..\..\racket -cu ..\get-libs.rkt gui  ..\gracket ..\..\lib
+..\..\racket -cu ..\get-libs.rkt core ..\..\lib
+..\..\racket -cu ..\get-libs.rkt gui  ..\..\lib
 
 cd mzstart
 devenv mzstart.sln /Build Release
