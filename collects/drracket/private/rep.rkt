@@ -303,8 +303,6 @@ TODO
   (send drs-bindings-keymap map-function "f1" "search-help-desk")
   (send drs-bindings-keymap map-function "c:tab" "next-tab")
   (send drs-bindings-keymap map-function "c:s:tab" "prev-tab")
-  (send drs-bindings-keymap map-function "d:s:right" "next-tab")
-  (send drs-bindings-keymap map-function "d:s:left" "prev-tab")
   (send drs-bindings-keymap map-function "c:pagedown" "next-tab")
   (send drs-bindings-keymap map-function "c:pageup" "prev-tab")
   
