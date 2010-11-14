@@ -3,7 +3,7 @@ Allocation rules:
 
  * Use `as-objc-allocation' when creating a Cocoa object. When the
    resulting reference becomes unreachable, the Cocoa object will be
-   releaset.
+   released.
 
  * Use `with-autorelease' in atomic mode around calls that autorelease
    and where the release should take effect immediate. Do not create

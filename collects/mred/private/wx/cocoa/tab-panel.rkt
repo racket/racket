@@ -28,7 +28,6 @@
 
 (define-objc-class MyTabView NSTabView
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
-  #:protocols (NSTabViewDelegate)
   [wxb]
   (-a _void (tabView: [_id cocoa] didSelectTabViewItem: [_id item-cocoa])
       (queue-window*-event wxb (lambda (wx) (send wx do-callback)))))
@@ -50,7 +49,8 @@
   (define tabv-cocoa (as-objc-allocation
                       (tell (tell MyTabView alloc) init)))
   (define cocoa (if (not (memq 'border style))
-                    (tell (tell NSView alloc) init)
+                    (as-objc-allocation
+                     (tell (tell NSView alloc) init))
                     tabv-cocoa))
 
   (define control-cocoa
