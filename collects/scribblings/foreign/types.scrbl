@@ -814,7 +814,9 @@ The resulting bindings are as follows:
   an argument for each type.}
 
  @item{@schemevarfont{id}@schemeidfont{-}@scheme[field-id] : an accessor
-  function for each @scheme[field-id].}
+  function for each @scheme[field-id]; if the field has a cstruct type, then
+  the result of the accessor is a pointer to the field within the
+  enclosing structure, rather than a  copy of the field.}
 
  @item{@schemeidfont{set-}@schemevarfont{id}@schemeidfont{-}@scheme[field-id]@schemeidfont{!}
   : a mutator function for each @scheme[field-id].}
@@ -860,12 +862,11 @@ addition for the new fields.  This adjustment of the constructor is,
 again, in analogy to using a supertype with @scheme[define-struct].
 
 Note that structs are allocated as atomic blocks, which means that the
-garbage collector ignores their content.  Currently, there is no safe
-way to store pointers to GC-managed objects in structs (even if you
-keep a reference to avoid collecting the referenced objects, a the 3m
-variant's GC will invalidate the pointer's value).  Thus, only
-non-pointer values and pointers to memory that is outside the GC's
-control can be placed into struct fields.
+garbage collector ignores their content.  Thus, struct fields can hold
+only non-pointer values, pointers to memory outside the GC's control,
+and otherwise-reachable pointers to immobile GC-managed values (such
+as those allocated with @racket[malloc] and @racket['internal] or
+@racket['internal-atomic]).
 
 As an example, consider the following C code:
 

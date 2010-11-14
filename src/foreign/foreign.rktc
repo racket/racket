@@ -664,14 +664,14 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * meaningless to use NULL. */
 
 @(defctype 'string/ucs-4
-   'ftype "pointer"
+   'ftype "gcpointer"
    'ctype "mzchar*"
    'pred  "SCHEME_FALSEP_OR_CHAR_STRINGP"
    's->c  "ucs4_string_or_null_to_ucs4_pointer"
    'c->s  "scheme_make_char_string_without_copying")
 
 @(defctype 'string/utf-16
-   'ftype "pointer"
+   'ftype "gcpointer"
    'ctype "unsigned short*"
    'pred  "SCHEME_FALSEP_OR_CHAR_STRINGP"
    's->c  "ucs4_string_or_null_to_utf16_pointer"
@@ -681,7 +681,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * (note: these are not like char* which is just a pointer) */
 
 @(defctype 'bytes
-   'ftype "pointer"
+   'ftype "gcpointer"
    'ctype "char*"
    'pred  (lambda (x aux)
             @list{SCHEME_FALSEP(@x)||SCHEME_BYTE_STRINGP(@x)})
@@ -692,7 +692,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
                   scheme_make_byte_string_without_copying(@x)}))
 
 @(defctype 'path
-   'ftype "pointer"
+   'ftype "gcpointer"
    'ctype "char*"
    'pred  (lambda (x aux)
             @list{SCHEME_FALSEP(@x)||SCHEME_PATH_STRINGP(@x)})
@@ -755,6 +755,11 @@ typedef union _ForeignAny {
 /* This is a tag that is used to identify user-made struct types. */
 @; last makes sure this is the last one value that gets used
 #define FOREIGN_struct (@(type-counter 'last))
+
+static int is_gcable_pointer(Scheme_Object *o) {
+ return !SCHEME_CPTRP(o)
+        || !(SCHEME_CPTR_FLAGS(o) & 0x1);
+}
 
 /*****************************************************************************/
 /* Type objects */
@@ -1014,6 +1019,9 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 #define scheme_make_foreign_external_cpointer(x) \
   ((x==NULL)?scheme_false:scheme_make_external_cptr(x,NULL))
 
+#define scheme_make_foreign_offset_external_cpointer(x, delta) \
+  ((delta == 0) ? scheme_make_foreign_external_cpointer(x) : scheme_make_offset_external_cptr(x,delta,NULL))
+
 @cdefine[cpointer? 1]{
   return SCHEME_FFIANYPTRP(argv[0]) ? scheme_true : scheme_false;
 }
@@ -1045,23 +1053,23 @@ void *scheme_extract_pointer(Scheme_Object *v) {
  * memory location -- deal with it via a C2SCHEME macro wrapper that is used
  * for both the function definition and calls */
 #ifdef SCHEME_BIG_ENDIAN
-#define C2SCHEME(typ,src,delta,argsloc) c_to_scheme(typ,src,delta,argsloc)
+#define C2SCHEME(typ,src,delta,argsloc,gcsrc) c_to_scheme(typ,src,delta,argsloc,gcsrc)
 #define REF_CTYPE(ctype) (((sizeof(ctype)<sizeof(int)) && args_loc) \
   ? ((ctype)(((int*)W_OFFSET(src,delta))[0])) \
   : (((ctype *)W_OFFSET(src,delta))[0]))
 #else
-#define C2SCHEME(typ,src,delta,argsloc) c_to_scheme(typ,src,delta)
+#define C2SCHEME(typ,src,delta,argsloc,gcsrc) c_to_scheme(typ,src,delta,gcsrc)
 #define REF_CTYPE(ctype) (((ctype *)W_OFFSET(src,delta))[0])
 #endif
 
 static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
-                               int delta, int args_loc)
+                               int delta, int args_loc, int gcsrc)
 {
   Scheme_Object *res;
   if (!SCHEME_CTYPEP(type))
     scheme_wrong_type("C->Scheme", "C-type", 0, 1, &type);
   if (CTYPE_USERP(type)) {
-    res = C2SCHEME(CTYPE_BASETYPE(type), src, delta, args_loc);
+    res = C2SCHEME(CTYPE_BASETYPE(type), src, delta, args_loc, gcsrc);
     if (SCHEME_FALSEP(CTYPE_USER_C2S(type)))
       return res;
     else
@@ -1076,7 +1084,10 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
                    (if (procedure? c->s) (c->s x) (list c->s"("x")")))
                  "scheme_void")})
     case FOREIGN_struct:
-           return scheme_make_foreign_offset_cpointer(src, delta);
+      if (gcsrc)
+        return scheme_make_foreign_offset_cpointer(src, delta);
+      else
+        return scheme_make_foreign_offset_external_cpointer(src, delta);
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
   @hush
@@ -1150,23 +1161,26 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
                        if (_offset) *_offset = toff;@;
                      @"\n"  }]@;
                      @(if ptr?
-                        @list{if (basetype_p == NULL || @;
-                                  @(if offset
-                                     @list{(tmp == NULL && toff == 0)}
-                                     @list{tmp == NULL})) {
-                                @x = @(if offset
-                                        @list{(_offset ? tmp : @;
-                                                 (@ctype)W_OFFSET(tmp, toff))}
-                                        "tmp");
-                                return NULL;
-                              } else {
-                                *basetype_p = FOREIGN_@cname;
-                                return @(if offset
-                                          @list{_offset ? tmp : @;
-                                                  (@ctype)W_OFFSET(tmp, toff)}
+                          @list{if (basetype_p == NULL || @;
+                                    @(if offset
+                                       @list{(tmp == NULL && toff == 0)}
+                                       @list{tmp == NULL}) || @;
+                                    @(if (equal? ftype "pointer")
+                                         @list{!is_gcable_pointer(val)}
+                                         @list{0})) {
+                                  @x = @(if offset
+                                          @list{(_offset ? tmp : @;
+                                                   (@ctype)W_OFFSET(tmp, toff))}
                                           "tmp");
-                              }}
-                        @list{@x = tmp@";" return NULL@";"})
+                                  return NULL;
+                                } else {
+                                  *basetype_p = FOREIGN_@cname;
+                                  return @(if offset
+                                            @list{_offset ? tmp : @;
+                                                    (@ctype)W_OFFSET(tmp, toff)}
+                                            "tmp");
+                                }}
+                          @list{@x = tmp@";" return NULL@";"})
                    } else {
                      @wrong-type["val" stype];
                      @hush
@@ -1651,12 +1665,14 @@ static Scheme_Object *do_memop(const char *who, int mode,
 /* WARNING: there are *NO* checks at all, this is raw C level code. */
 @cdefine[ptr-ref 2 4]{
   int size=0; void *ptr; Scheme_Object *base;
-  long delta;
+  long delta; int gcsrc=1;
 
   if (!SCHEME_FFIANYPTRP(argv[0]))
     scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
   ptr = SCHEME_FFIANYPTR_VAL(argv[0]);
   delta = SCHEME_FFIANYPTR_OFFSET(argv[0]);
+  if (!is_gcable_pointer(argv[0]))
+    gcsrc = 0;
   if ((ptr == NULL) && (delta == 0))
     scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
   if (NULL == (base = get_ctype_base(argv[1])))
@@ -1691,7 +1707,7 @@ static Scheme_Object *do_memop(const char *who, int mode,
       scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
     delta += (size * SCHEME_INT_VAL(argv[2]));
   }
-  return C2SCHEME(argv[1], ptr, delta, 0);
+  return C2SCHEME(argv[1], ptr, delta, 0, gcsrc);
 }
 
 /* (ptr-set! cpointer type [['abs] n] value) -> void */
@@ -1909,6 +1925,9 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
       /* ... set the ivals pointer (pointer type doesn't matter) and avalues */
       ivals[i].x_pointer = avalues[i];
       avalues[i] = &(ivals[i]);
+    } else if (offsets[i]) {
+      /* struct argument has an offset */
+      avalues[i] = (char *)avalues[i] + offsets[i];
     }
     /* Otherwise it was a struct pointer, and avalues[i] is already fine. */
     /* Add offset, if any: */
@@ -1937,7 +1956,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     }
     break;
   }
-  return C2SCHEME(otype, p, 0, 1);
+  return C2SCHEME(otype, p, 0, 1, 1);
 }
 
 /* see below */
@@ -2061,7 +2080,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   if (data->sync && !SCHEME_RPAIRP(data->sync))
     scheme_start_in_scheduler();
   for (i=0, p=data->itypes; i<argc; i++, p=SCHEME_CDR(p)) {
-    v = C2SCHEME(SCHEME_CAR(p), args[i], 0, 0);
+    v = C2SCHEME(SCHEME_CAR(p), args[i], 0, 0, 0);
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);
