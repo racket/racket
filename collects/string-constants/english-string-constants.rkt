@@ -448,8 +448,8 @@ please adhere to these guidelines:
  (show-interactions-on-execute "Automatically open interactions window when running a program")
  (switch-to-module-language-automatically "Automatically switch to the module language when opening a module")
  (interactions-beside-definitions "Put the interactions window beside the definitions window") ;; in preferences, below the checkbox one line above this one
- (show-line-numbers "Show line numbers")
- (hide-line-numbers "Hide line numbers")
+ (show-line-numbers "Show Line Numbers")
+ (hide-line-numbers "Hide Line Numbers")
  (limit-interactions-size "Limit interactions size")
  (background-color "Background Color")
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
