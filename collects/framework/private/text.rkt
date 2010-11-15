@@ -3756,6 +3756,17 @@ designates the character that triggers autocompletion
       (and (>= what low)
            (<= what high)))
 
+    (define-struct saved-dc-state (pen font foreground-color))
+    (define (save-dc-state dc)
+      (saved-dc-state (send dc get-pen)
+                      (send dc get-font)
+                      (send dc get-text-foreground)))
+
+    (define (restore-dc-state dc dc-state)
+      (send dc set-pen (saved-dc-state-pen dc-state))
+      (send dc set-font (saved-dc-state-font dc-state))
+      (send dc set-text-foreground (saved-dc-state-foreground-color dc-state)))
+
     ;; set the dc stuff to values we want
     (define (setup-dc dc)
       (send dc set-pen "black" 1 'solid)
@@ -3859,6 +3870,7 @@ designates the character that triggers autocompletion
     (define (draw-separator dc top bottom dx dy x)
       (send dc draw-line (+ dx x) (+ dy top) (+ dx x) (+ dy bottom)))
 
+    ;; `line-numbers-space' will get mutated in the `on-paint' method
     (define line-numbers-space 0)
     (define/override (find-position x y . args)
       ;; adjust x position to account for line numbers
@@ -3867,6 +3879,7 @@ designates the character that triggers autocompletion
         (super find-position x y . args)))
 
     (define (draw-line-numbers dc left top right bottom dx dy)
+      (define saved-dc (save-dc-state dc))
       (setup-dc dc)
       (define start-line (box 0))
       (define end-line (box 0))
@@ -3874,7 +3887,8 @@ designates the character that triggers autocompletion
 
       ;; draw it!
       (draw-numbers dc top bottom dx dy (unbox start-line) (add1 (unbox end-line)))
-      (draw-separator dc top bottom dx dy (text-width dc (number-space))))
+      (draw-separator dc top bottom dx dy (text-width dc (number-space)))
+      (restore-dc-state dc saved-dc))
 
     (define (text-width dc stuff)
       (define-values (font-width font-height baseline space)
@@ -3897,14 +3911,17 @@ designates the character that triggers autocompletion
             ;; will probably go away when 'margin's are added to editors
             ;;
             ;; save old origin and push it to the right a little bit
-            ;; TODO: maybe allow the line numbers to be drawn on the right hand side?
+            ;; TODO: maybe allow the line numbers to be drawn on the right hand side
+            ;; of the editor?
             (define-values (x y) (send dc get-origin))
             (set! old-origin-x x)
             (set! old-origin-y y)
             (set! old-clipping (send dc get-clipping-region))
+            (define saved-dc (save-dc-state dc))
             (setup-dc dc)
             (define-values (font-width font-height baseline space)
                            (send dc get-text-extent (number-space)))
+            (restore-dc-state dc saved-dc)
             (define clipped (make-object region% dc))
             (define all (make-object region% dc))
             (define copy (make-object region% dc))
