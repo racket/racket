@@ -7,6 +7,8 @@
          web-server/http/request-structs
          racket/async-channel
          unstable/contract
+         net/tcp-sig
+         (prefix-in raw: net/tcp-unit)
          net/websocket/conn
          net/websocket/handshake)
 (provide (except-out (all-from-out net/websocket/conn) ws-conn))
@@ -16,6 +18,8 @@
   (->* ((open-ws-conn? any/c . -> . void))
        (#:conn-headers 
         (bytes? (listof header?) . -> . (values (listof header?) any/c))
+        #:tcp@
+        (unit/c (import) (export tcp^))
         #:port
         tcp-listen-port?
         #:listen-ip
@@ -30,6 +34,7 @@
 
 (define (ws-serve conn-dispatch
                   #:conn-headers [pre-conn-dispatch (λ (cline hs) (values empty (void)))]
+                  #:tcp@ [tcp@ raw:tcp@]
                   #:port [port 80]
                   #:listen-ip [listen-ip #f]
                   #:max-waiting [max-waiting 4]
@@ -71,5 +76,14 @@
     
     (conn-dispatch conn state))
   
-  (define-values/invoke-unit/infer dispatch-server@)
+  (define-unit-binding a-tcp@
+    tcp@ (import) (export tcp^))
+  (define-compound-unit/infer dispatch-server@/tcp@
+    (import dispatch-server-config^)
+    (link a-tcp@ dispatch-server@)
+    (export dispatch-server^))
+  (define-values/invoke-unit
+    dispatch-server@/tcp@
+    (import dispatch-server-config^)
+    (export dispatch-server^))
   (serve #:confirmation-channel confirm-ch))
