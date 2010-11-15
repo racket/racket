@@ -324,7 +324,45 @@
         '(<>
           ()
           [1 2 1 2]
-          (λ (v) 10))))
+          (λ (v) 10)))
+  (test "prompt enclosing prompt-tag expression"
+        '(<> () [] 
+             (% 0
+                (% (abort 0 1) 2 3)
+                (λ (x) x)))
+        '(<> () [] 1))
+  (test "prompt enclosing prompt-handler expression"
+        '(<> () []
+             (% 0 
+                (begin 
+                  (% 0 1 (abort 0 2))
+                  (print 3))
+                (λ (x) x)))
+        '(<> () [] 2))
+  (test "prompt-tag position in continuation-marks context"
+        '(<> () []
+             (% 0 
+                (call/cm 
+                 1 2
+                 (λ ()
+                   (% (abort 0 (current-marks 1 0))
+                      3
+                      4)))
+                (λ (x) x)))
+        '(<> () [] (list 2)))
+  (test "prompt-handler position in continuation-marks context"
+        '(<> () []
+             (% 0 
+                (call/cm 
+                 1 2
+                 (λ ()
+                   (call/cm
+                    1 3
+                    (% 0
+                       4
+                       (abort 0 (current-marks 1 0))))))
+                (λ (x) x)))
+        '(<> () [] (list 2))))
 
 ;; R6RS dynamic-wind ----------------------------------------
 

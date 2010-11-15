@@ -63,7 +63,9 @@
   [(noPrompt v_1 (begin E_1 e_2)) (noPrompt v_1 E_1)]
   [(noPrompt v_1 (set! x E_1)) (noPrompt v_1 E_1)]
   [(noPrompt v_1 (wcm w E_1)) (noPrompt v_1 E_1)]
-  [(noPrompt v_1 (dw x e_0 E_1 e_1)) (noPrompt v_1 E_1)])
+  [(noPrompt v_1 (dw x e_0 E_1 e_1)) (noPrompt v_1 E_1)]
+  [(noPrompt v_1 (% v_2 e E_1)) (noPrompt v_1 E_1)]
+  [(noPrompt v_1 (% E_1 e_1 e_2)) (noPrompt v_1 E_1)])
 
 (define-metafunction grammar
   [(get-marks-core (in-hole hole hole) v e_2) e_2]
@@ -72,6 +74,8 @@
   [(get-marks-core (v ... E_1 e ...) v_1 e_2) (get-marks E_1 v_1 e_2)]
   [(get-marks-core (begin E_1 e) v_1 e_2) (get-marks E_1 v_1 e_2)]
   [(get-marks-core (% v_2 E_1 v_3) v_1 e_2) (get-marks E_1 v_1 e_2)]
+  [(get-marks-core (% v_2 e_1 E_1) v_1 e_2) (get-marks E_1 v_1 e_2)]
+  [(get-marks-core (% E_1 e_1 e_3) v_1 e_2) (get-marks E_1 v_1 e_2)]
   [(get-marks-core (dw x e E_1 e) v_1 e_2) (get-marks E_1 v_1 e_2)])
 
 (define-metafunction grammar
