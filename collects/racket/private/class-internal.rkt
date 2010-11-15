@@ -6,6 +6,7 @@
          (only-in racket/contract/private/arrow making-a-method)
          racket/list
          racket/stxparam
+         racket/unsafe/ops
          "class-events.rkt"
          "serialize-structs.rkt"
          "define-struct.rkt"
@@ -2172,24 +2173,23 @@
               (let-values ([(inh-accessors inh-mutators)
                             (values (map (lambda (id)
                                            (let* ([cls/index (hash-ref field-ht id)]
-                                                  [accessor
-                                                   (make-struct-field-accessor (class-field-ref (car cls/index)) (cadr cls/index) #f)]
+                                                  [idx (cadr cls/index)]
                                                   [access-proj (vector-ref int-field-ref-projs (cddr cls/index))])
-                                             (λ (o) (access-proj (accessor o)))))
+                                             (λ (o) (access-proj (unsafe-struct-ref o idx)))))
                                          inherit-field-names)
                                     (map (lambda (id)
                                            (let* ([cls/index (hash-ref field-ht id)]
-                                                  [mutator
-                                                   (make-struct-field-mutator (class-field-set! (car cls/index)) (cadr cls/index) #f)]
+                                                  [idx (cadr cls/index)]
                                                   [mutate-proj (vector-ref int-field-set-projs (cddr cls/index))])
-                                             (λ (o v) (mutator o (mutate-proj v)))))
+                                             (λ (o v) (unsafe-struct-set! o idx (mutate-proj v)))))
                                          inherit-field-names))])
                 ;; Add class/index pairs for public fields.
                 (unless no-new-fields?
-                  (let ([sup-count (class-field-pub-width super)])
+                  (let ([sup-count (class-field-width super)]
+                        [sup-pub-count (class-field-pub-width super)])
                     (for ([id (in-list public-field-names)]
                           [i (in-naturals)])
-                      (hash-set! field-ht id (cons c (cons i (+ i sup-count)))))))
+                      (hash-set! field-ht id (cons c (cons (+ i sup-count) (+ i sup-pub-count)))))))
                 
                 ;; -- Extract superclass methods and make rename-inners ---
                 (let ([rename-supers (map (lambda (index mname)
@@ -3784,19 +3784,17 @@
                                   (for-class (class-name class))))))])
     (values (λ (class name)
               (let* ([cls/index (check-and-get-index 'class-field-accessor class name)]
-                     [field-ref (class-field-ref (car cls/index))]
                      [field-pos (cadr cls/index)]
                      [proj (vector-ref (class-ext-field-ref-projs class) (cddr cls/index))])
                 (λ (o) (if (object? o)
-                           (proj (field-ref o field-pos))
+                           (proj (unsafe-struct-ref o field-pos))
                            (raise-type-error 'class-field-accessor "object" o)))))
             (λ (class name)
               (let* ([cls/index (check-and-get-index 'class-field-mutator class name)]
-                     [field-set! (class-field-set! (car cls/index))]
                      [field-pos (cadr cls/index)]
                      [proj (vector-ref (class-ext-field-set-projs class) (cddr cls/index))])
                 (λ (o v) (if (object? o)
-                             (field-set! o field-pos (proj v))
+                             (unsafe-struct-set! o field-pos (proj v))
                              (raise-type-error 'class-field-mutator "object" o))))))))
 
 (define-struct generic (name applicable))
@@ -3950,10 +3948,9 @@
           [field-ht (class-field-ht cls)]
           [cls/index (hash-ref field-ht id #f)])
      (if cls/index
-         (let ([field-set! (class-field-set! (car cls/index))]
-               [field-pos (cadr cls/index)]
+         (let ([field-pos (cadr cls/index)]
                [proj (vector-ref (class-ext-field-set-projs cls) (cddr cls/index))])
-           (field-set! obj field-pos (proj val)))
+           (unsafe-struct-set! obj field-pos (proj val)))
          (raise-mismatch-error 
           'get-field
           (format "expected an object that has a field named ~s, got " id)
@@ -3989,10 +3986,9 @@
           [field-ht (class-field-ht cls)]
           [cls/index (hash-ref field-ht id #f)])
      (if cls/index
-         (let ([field-ref (class-field-ref (car cls/index))]
-               [field-pos (cadr cls/index)]
+         (let ([field-pos (cadr cls/index)]
                [proj (vector-ref (class-ext-field-ref-projs cls) (cddr cls/index))])
-           (proj (field-ref obj field-pos)))
+           (proj (unsafe-struct-ref obj field-pos)))
          (raise-mismatch-error 
           'get-field
           (format "expected an object that has a field named ~s, got " id)
