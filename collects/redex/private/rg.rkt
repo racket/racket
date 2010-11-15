@@ -307,12 +307,13 @@
                          (let ([ctx (recur context)]
                                [ctm (recur contractum)])
                            (λ (r s a e h)
-                             (let-values ([(term env) (ctm r s a e h)])
-                               (ctx r s a env term))))]
+                             (let*-values ([(tctm env) (ctm r s a e h)]
+                                           [(tctx env) (ctx r s a env the-hole)])
+                               (values (plug tctx tctm) env))))]
                         [`(hide-hole ,pattern)
                          (let ([g (recur pattern)])
                            (λ (r s a e h)
-                             (g r s a e the-hole)))]
+                             (g r s a e the-not-hole)))]
                         [`any
                          (λ (r s a e h)
                            (let*-values ([(lang nt) ((next-any-decision) langc sexpc)]

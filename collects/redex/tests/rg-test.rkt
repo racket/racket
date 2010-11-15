@@ -412,6 +412,10 @@
      #:num (build-list 5 (λ (x) (λ (_) x)))))
    '(+ (+ 1 2) (+ 0 (+ 3 4))))
   
+  (test (let/ec k
+          (generate-term lang (side-condition (in-hole C_1 1) (k (term C_1))) 5))
+        (term hole))
+  
   (test (generate-term lang (in-hole (in-hole (1 hole) hole) 5) 5) '(1 5))
   (test (generate-term lang (hole 4) 5) (term (hole 4)))
   (test (generate-term/decisions 
