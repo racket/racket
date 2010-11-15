@@ -9940,6 +9940,9 @@ so that propagation occurs.
   (let ([ctc (vector/c number? number?)])
     (test ctc value-contract (contract ctc (vector 4 5) 'pos 'neg)))
   
+  (let ([ctc (object-contract)])
+    (test ctc value-contract (contract ctc (new object%) 'pos 'neg)))
+  
 ;                             
 ;                             
 ;                             

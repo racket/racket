@@ -39,7 +39,7 @@
    (λ (ctc)
      (λ (blame)
        (λ (val)
-         (make-wrapper-object val blame
+         (make-wrapper-object ctc val blame
                               (object-contract-methods ctc) (object-contract-method-ctcs ctc)
                               (object-contract-fields ctc) (object-contract-field-ctcs ctc)))))
    #:name

@@ -281,20 +281,22 @@
                     ...
                     [field-ctc-var (coerce-contract 'object-contract field-ctc-stx)]
                     ...)
-                (make-contract
-                 #:name
-                 `(object-contract 
-                   ,(build-compound-type-name 'method-name method-ctc-var) ...
-                   ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
-                 #:projection
-                 (lambda (blame)
+                (define ctc
+                  (make-contract
+                   #:name
+                   `(object-contract 
+                     ,(build-compound-type-name 'method-name method-ctc-var) ...
+                     ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
+                   #:projection
+                   (lambda (blame)
+                     (lambda (val)
+                       (make-wrapper-object ctc val blame
+                                            (list 'method-name ...) (list method-ctc-var ...)
+                                            (list 'field-name ...) (list field-ctc-var ...))))
+                   #:first-order
                    (lambda (val)
-                     (make-wrapper-object val blame
-                                          (list 'method-name ...) (list method-ctc-var ...)
-                                          (list 'field-name ...) (list field-ctc-var ...))))
-                 #:first-order
-                 (lambda (val)
-                   (check-object-contract val #f (list 'method-name ...) (list 'field-name ...))))))))]))))
+                     (check-object-contract val #f (list 'method-name ...) (list 'field-name ...))))
+                  ctc)))))]))))
 
 
 (define (check-object val blame)
