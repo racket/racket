@@ -6,6 +6,7 @@
                      web-server/http
                      racket/list
                      racket/async-channel
+                     (prefix-in raw: (for-label net/tcp-unit))
                      net/websocket
                      net/websocket/client
                      net/websocket/server
@@ -46,6 +47,7 @@ This module also provides the exports from @racketmodname[net/websocket/conn].
                     conn-headers
                     (bytes? (listof header?) . -> . (values (listof header?) any/c))
                     (λ (b hs) (values empty (void)))]
+                   [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                    [#:port port tcp-listen-port? 80]
                    [#:listen-ip listen-ip (or/c string? false/c) #f]
                    [#:max-waiting max-waiting integer? 4]
@@ -64,6 +66,7 @@ This module also provides the exports from @racketmodname[net/websocket/conn].
  
  All other arguments are used as in a @secref["dispatch-server-unit" #:doc '(lib "web-server/scribblings/web-server-internal.scrbl")].
                     
+ The @racket[#:tcp@] keyword is provided for building an SSL server.
 }
        
 This module also provides the exports from @racketmodname[net/websocket/conn].
