@@ -66,12 +66,18 @@
                  (string? label))
         (when font
           (let ([n (send font get-point-size)])
+            ;; If the font is small, adjust the control size:
             (when (n . < . sys-font-size)
               (tellv (tell cocoa cell) 
                      setControlSize: #:type _int 
                      (if (n . < . (- sys-font-size 2))
                          NSMiniControlSize
-                         NSSmallControlSize)))))
+                         NSSmallControlSize))
+              (tellv cocoa sizeToFit))
+            ;; If the font is big, use a scalable control shape:
+            (when (n . > . (+ sys-font-size 2))
+              (tellv cocoa setBezelStyle: #:type _int NSRegularSquareBezelStyle)
+              (tellv cocoa sizeToFit))))
         (let ([frame (tell #:type _NSRect cocoa frame)])
           (tellv cocoa setFrame: #:type _NSRect 
                  (make-NSRect (NSRect-origin frame)
