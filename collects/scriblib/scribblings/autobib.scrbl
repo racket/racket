@@ -114,7 +114,7 @@ Combines elements to generate an element that is suitable for
 describing a technical report's location.}
 
 @defproc[(dissertation-location [#:institution institution edition any/c]
-                                [#:number degree any/c "PhD"])
+                                [#:degree degree any/c "PhD"])
          element?]{
 
 Combines elements to generate an element that is suitable for
