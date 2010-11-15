@@ -61,7 +61,7 @@
           (quasisyntax/loc stx (#,replace-stx . args))])))))
 
 (define (make-field-map trace-flag the-finder the-obj the-unwrapper the-binder the-binder-localized
-                        field-accessor field-mutator field-pos/null)
+                        field-accessor field-mutator)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
     (mk-set!-trans
      the-binder-localized
@@ -74,8 +74,7 @@
                           [trace (syntax/loc stx (set-event obj (quote id) id))]
                           [set (quasisyntax/loc stx
                                  ((unsyntax field-mutator)
-                                  ((unsyntax the-unwrapper) obj)
-                                  (unsyntax-splicing field-pos/null) id))])
+                                  ((unsyntax the-unwrapper) obj) id))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace set))
                   (syntax/loc stx (let* bindings set))))]
@@ -84,8 +83,7 @@
                           [trace (syntax/loc stx (get-event obj (quote id)))]
                           [call (quasisyntax/loc stx
                                   (((unsyntax field-accessor)
-                                    ((unsyntax the-unwrapper) obj)
-                                    (unsyntax-splicing field-pos/null)) . args))])
+                                    ((unsyntax the-unwrapper) obj)) . args))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace call))
                   (syntax/loc stx (let* bindings call))))]
@@ -94,8 +92,7 @@
                           [trace (syntax/loc stx (get-event obj (quote id)))]
                           [get (quasisyntax/loc stx
                                  ((unsyntax field-accessor) 
-                                  ((unsyntax the-unwrapper) obj)
-                                  (unsyntax-splicing field-pos/null)))])
+                                  ((unsyntax the-unwrapper) obj)))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace get))
                   (syntax/loc stx (let* bindings get))))]))))))

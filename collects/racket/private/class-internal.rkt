@@ -1194,8 +1194,7 @@
                                                      (quote-syntax inherit-field-name)
                                                      (quote-syntax inherit-field-name-localized)
                                                      (quote-syntax inherit-field-accessor)
-                                                     (quote-syntax inherit-field-mutator)
-                                                     '())
+                                                     (quote-syntax inherit-field-mutator))
                                      ...
                                      (make-field-map trace-flag
                                                      (quote-syntax the-finder)
@@ -1204,8 +1203,7 @@
                                                      (quote-syntax local-field)
                                                      (quote-syntax local-field-localized)
                                                      (quote-syntax local-field-accessor)
-                                                     (quote-syntax local-field-mutator)
-                                                     '())
+                                                     (quote-syntax local-field-mutator))
                                      ...
                                      (make-rename-super-map (quote-syntax the-finder)
                                                             (quote the-obj)
