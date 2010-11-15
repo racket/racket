@@ -321,8 +321,7 @@ get-libs: :=
                                   'all-files+sizes))]
            [xs (or (assq p xs) (error 'get-libs "unknown package, ~s" p))]
            [xs (append-map cdr (cdr xs))]
-           [xs (map (lambda (x)
-                      (if (>= (length xs) 3) (list-ref xs 2) (car xs)))
+           [xs (map (lambda (x) (if (>= (length x) 3) (list-ref x 2) (car x)))
                     xs)]
            [xs (remove-duplicates xs)])
       `(lib: ,@xs)))
