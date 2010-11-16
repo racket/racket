@@ -211,7 +211,7 @@
                                  (lambda () 
                                    (list* gracket-path 
                                           "-display" 
-                                          (format ":~a" (+ XSERVER-OFFSET (current-worker)))
+                                          (format ":~a" (cpu->child (current-worker)))
                                           rst))
                                  #f)]
                             [_
@@ -224,7 +224,7 @@
                                 void
                                 (λ ()
                                   (define l (pth-cmd))
-                                  (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))])
+                                  (with-env (["DISPLAY" (format ":~a" (cpu->child (current-worker)))])
                                     (with-temporary-home-directory
                                         (with-temporary-directory
                                             (run/collect/wait/log log-pth 
@@ -277,7 +277,10 @@
                     (recur-many (sub1 i) r f)))))
 
 (define XSERVER-OFFSET 20)
-(define PARENT-X-SERVER 19)
+(define (cpu->parent cpu-i)
+  (+ XSERVER-OFFSET (* cpu-i 2) 0))
+(define (cpu->child cpu-i)
+  (+ XSERVER-OFFSET (* cpu-i 2) 1))
 
 (define (integrate-revision rev)
   (define test-dir
@@ -325,6 +328,7 @@
            (with-running-program
                (Xvfb-path) (list (format ":~a" i) "-ac" "-rfbauth" "/home/jay/.vnc/passwd")
              (lambda ()
+               (sleep 1)
                (with-running-program
                    (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
                  (if parent
@@ -335,15 +339,15 @@
                          inner))
                      inner)))))
          
-         (start-x-server 
-          PARENT-X-SERVER #f
-          (λ ()
-            (recur-many (number-of-cpus)
-                        (lambda (j inner)
-                          (define i (+ j XSERVER-OFFSET))
-                          (start-x-server i PARENT-X-SERVER inner))
-                        (lambda ()
-                          (test-revision rev)))))))
+         (recur-many (number-of-cpus)
+                     (lambda (cpu-i inner)
+                       (define parent (cpu->parent cpu-i))
+                       (define child (cpu->child cpu-i))
+                       (start-x-server parent #f 
+                                       (λ ()
+                                         (start-x-server child parent inner))))
+                     (lambda ()
+                       (test-revision rev)))))
      ; Remove the test directory
      (safely-delete-directory test-dir))))
 
