@@ -211,39 +211,26 @@
 ;; The caller gives the absolute position, and this function fills
 ;; in the projections.
 (define (make-field-info apos)
-  (vector apos identity identity identity identity))
+  (let ([field-ref (λ (o) (unsafe-struct-ref o apos))]
+        [field-set! (λ (o v) (unsafe-struct-set! o apos v))])
+    (vector field-ref field-set! field-ref field-set!)))
 
 (define (field-info-extend-internal! fi ppos pneg)
-  (let ([old-ref-proj (unsafe-vector-ref fi 1)]
-        [old-set-proj (unsafe-vector-ref fi 2)])
-    (unsafe-vector-set! fi 1 (λ (v) (ppos (old-ref-proj v))))
-    (unsafe-vector-set! fi 2 (λ (v) (old-set-proj (pneg v))))))
+  (let ([old-ref (unsafe-vector-ref fi 0)]
+        [old-set! (unsafe-vector-ref fi 1)])
+    (unsafe-vector-set! fi 0 (λ (o) (ppos (old-ref o))))
+    (unsafe-vector-set! fi 1 (λ (o v) (old-set! o (pneg v))))))
 
 (define (field-info-extend-external! fi ppos pneg)
-  (let ([old-ref-proj (unsafe-vector-ref fi 3)]
-        [old-set-proj (unsafe-vector-ref fi 4)])
-    (unsafe-vector-set! fi 3 (λ (v) (ppos (old-ref-proj v))))
-    (unsafe-vector-set! fi 4 (λ (v) (old-set-proj (pneg v))))))
+  (let ([old-ref (unsafe-vector-ref fi 2)]
+        [old-set! (unsafe-vector-ref fi 3)])
+    (unsafe-vector-set! fi 2 (λ (o) (ppos (old-ref o))))
+    (unsafe-vector-set! fi 3 (λ (o v) (old-set! o (pneg v))))))
 
-(define (field-info-internal-ref fi)
-  (let ([apos (unsafe-vector-ref fi 0)]
-        [proj (unsafe-vector-ref fi 1)])
-    (λ (o) (proj (unsafe-struct-ref o apos)))))
-
-(define (field-info-internal-set! fi)
-  (let ([apos (unsafe-vector-ref fi 0)]
-        [proj (unsafe-vector-ref fi 2)])
-    (λ (o v) (unsafe-struct-set! o apos (proj v)))))
-
-(define (field-info-external-ref fi)
-  (let ([apos (unsafe-vector-ref fi 0)]
-        [proj (unsafe-vector-ref fi 3)])
-    (λ (o) (proj (unsafe-struct-ref o apos)))))
-
-(define (field-info-external-set! fi)
-  (let ([apos (unsafe-vector-ref fi 0)]
-        [proj (unsafe-vector-ref fi 4)])
-    (λ (o v) (unsafe-struct-set! o apos (proj v)))))
+(define (field-info-internal-ref  fi) (unsafe-vector-ref fi 0))
+(define (field-info-internal-set! fi) (unsafe-vector-ref fi 1))
+(define (field-info-external-ref  fi) (unsafe-vector-ref fi 2))
+(define (field-info-external-set! fi) (unsafe-vector-ref fi 3))
 
 ;;--------------------------------------------------------------------
 ;;  class macros
