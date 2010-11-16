@@ -88,12 +88,21 @@
 (define (extract-bib-key b)
   (author-element-names (auto-bib-author b)))
 
+(define (extract-bib-year b)
+  (string->number (auto-bib-date b)))
+
+
 (define (gen-bib tag group)
-  (let* ([author<? (lambda (a b)
-                     (string<? (extract-bib-key a) (extract-bib-key b)))]
+  (let* ([author/date<? 
+          (lambda (a b)
+            (or
+             (string<? (extract-bib-key a) (extract-bib-key b))
+             (and (string=? (extract-bib-key a) (extract-bib-key b))
+                  (extract-bib-year a) (extract-bib-year b)
+                  (< (extract-bib-year a) (extract-bib-year b)))))]
          [bibs (sort (hash-map (bib-group-ht group)
                                (lambda (k v) k))
-                     author<?)])
+                     author/date<?)])
     (make-part
      #f
      `((part ,tag))
