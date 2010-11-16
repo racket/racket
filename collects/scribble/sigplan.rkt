@@ -35,7 +35,7 @@
   (->* () () #:rest (listof pre-content?)
        content?)])
 
-(provide preprint 10pt nocopyright
+(provide preprint 10pt nocopyright onecolumn
          include-abstract)
 
 (define-syntax-rule (defopts name ...)
@@ -45,7 +45,7 @@
                                stx))
          ...
          (provide name ...)))
-(defopts preprint 10pt nocopyright)
+(defopts preprint 10pt nocopyright onecolumn)
 
 (define sigplan-extras
   (let ([abs (lambda (s)

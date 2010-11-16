@@ -17,9 +17,10 @@
     [(_ id . body)
      (let ([preprint? #f]
            [10pt? #f]
+           [onecolumn? #f]
            [nocopyright? #f])
        (let loop ([stuff #'body])
-         (syntax-case* stuff (preprint 10pt nocopyright) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
+         (syntax-case* stuff (onecolumn preprint 10pt nocopyright) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
            [(ws . body)
             ;; Skip intraline whitespace to find options:
             (and (string? (syntax-e #'ws))
@@ -28,6 +29,9 @@
            [(preprint . body)
             (set! preprint? "preprint")
             (loop #'body)]
+           [(onecolumn . body)
+            (set! onecolumn? "onecolumn")
+            (loop #'body)]
            [(nocopyright . body)
             (set! nocopyright? "nocopyrightspace")
             (loop #'body)]
@@ -35,7 +39,7 @@
             (set! 10pt? "10pt")
             (loop #'body)]
            [body
-            #`(#%module-begin id (post-process #,preprint? #,10pt? #,nocopyright?) () . body)])))]))
+            #`(#%module-begin id (post-process #,preprint? #,10pt? #,nocopyright? #,onecolumn?) () . body)])))]))
 
 (define ((post-process . opts) doc)
   (let ([options 
