@@ -730,6 +730,19 @@ Ctrl-C was typed when the evaluator is currently executing, which
 propagates the break to the evaluator's context.}
 
 
+@defproc[(get-user-custodian [evaluator (any/c . -> . any)]) void?]{
+
+Retrieves the @racket[evaluator]'s toplevel custodian.  This returns a
+value that is different from @racket[(evaluator '(current-custodian))]
+or @racket[call-in-sandbox-context evaluator current-custodian] --- each
+sandbox interaction is wrapped in its own custodian, which is what these
+would return.
+
+(One use for this custodian is with @racket[current-memory-use], where
+the per-interaction sub-custodians will not be charged with the memory
+for the whole sandbox.)}
+
+
 @defproc[(set-eval-limits [evaluator (any/c . -> . any)]
                           [secs (or/c exact-nonnegative-integer? #f)]
                           [mb (or/c exact-nonnegative-integer? #f)])
