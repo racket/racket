@@ -2159,14 +2159,14 @@
                 (vector-copy! int-field-set-projs 0 (class-int-field-set-projs super))
                 (vector-copy! ext-field-ref-projs 0 (class-ext-field-ref-projs super))
                 (vector-copy! ext-field-set-projs 0 (class-ext-field-set-projs super))
-                ;; For public fields, set both the internal and external accessors/mutators.
+                ;; For new public fields, set both the internal and external accessors/mutator
+                ;; projections to the identity function.
                 (for ([n (in-range (class-field-pub-width super) field-pub-width)]
-                      [i (in-naturals)]
-                      [id (in-list public-field-names)])
-                  (vector-set! int-field-ref-projs n values)
-                  (vector-set! int-field-set-projs n values)
-                  (vector-set! ext-field-ref-projs n values)
-                  (vector-set! ext-field-set-projs n values)))
+                      [i (in-naturals)])
+                  (vector-set! int-field-ref-projs n identity)
+                  (vector-set! int-field-set-projs n identity)
+                  (vector-set! ext-field-ref-projs n identity)
+                  (vector-set! ext-field-set-projs n identity)))
               
               ;; --- Build field accessors and mutators ---
               ;;  Use public field names to name the accessors and mutators
@@ -2306,9 +2306,9 @@
                                   (vector-set! super-methods index method)
                                   (vector-set! int-methods index (vector method))
                                   (vector-set! beta-methods index (vector))
-                                  (vector-set! inner-projs index values)
+                                  (vector-set! inner-projs index identity)
                                   (vector-set! dynamic-idxs index 0)
-                                  (vector-set! dynamic-projs index (vector values)))
+                                  (vector-set! dynamic-projs index (vector identity)))
                                 (append new-augonly-indices new-final-indices new-normal-indices)
                                 new-methods)
                       ;; Override old methods:
@@ -2362,7 +2362,7 @@
                                     (let ([v (list->vector (append (vector->list (vector-ref beta-methods index))
                                                                    (list #f)))])
                                       ;; Since this starts a new part of the chain, reset the projection.
-                                      (vector-set! inner-projs index values)
+                                      (vector-set! inner-projs index identity)
                                       (vector-set! beta-methods index v))))
                                 augonly-names)
                       ;; Mark final methods:
@@ -2793,7 +2793,7 @@
                            [old-int-vec (vector-ref int-methods i)])
                       (vector-set! dynamic-idxs i new-idx)
                       (vector-copy! new-proj-vec 0 old-proj-vec)
-                      (vector-set! new-proj-vec new-idx values)
+                      (vector-set! new-proj-vec new-idx identity)
                       (vector-set! dynamic-projs i new-proj-vec)
                       (vector-copy! new-int-vec 0 old-int-vec)
                       ;; Just copy over the last entry here.  We'll
