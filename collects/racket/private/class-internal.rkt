@@ -210,9 +210,9 @@
 ;; make-field-info creates a new field-info for a field.
 ;; The caller gives the absolute position, and this function fills
 ;; in the projections.
-(define (make-field-info apos)
-  (let ([field-ref (λ (o) (unsafe-struct-ref o apos))]
-        [field-set! (λ (o v) (unsafe-struct-set! o apos v))])
+(define (make-field-info cls rpos)
+  (let ([field-ref (make-struct-field-accessor (class-field-ref cls) rpos)]
+        [field-set! (make-struct-field-mutator (class-field-set! cls) rpos)])
     (vector field-ref field-set! field-ref field-set!)))
 
 (define (field-info-extend-internal! fi ppos pneg)
@@ -2181,8 +2181,8 @@
                 ;; Add class/index pairs for public fields.
                 (unless no-new-fields?
                   (for ([id (in-list public-field-names)]
-                        [i (in-naturals (class-field-width super))])
-                    (hash-set! field-ht id (make-field-info i))))
+                        [i (in-naturals)])
+                    (hash-set! field-ht id (make-field-info c i))))
                 
                 ;; -- Extract superclass methods and make rename-inners ---
                 (let ([rename-supers (map (lambda (index mname)
