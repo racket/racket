@@ -989,7 +989,9 @@ Although the constructors below are describes as procedures, they are
 implemented as syntax, so that error messages can report a type name
 where the syntactic context implies one.
 
-@defproc[(_enum [symbols list?] [basetype ctype? _ufixint])
+@defproc[(_enum [symbols list?]
+                [basetype ctype? _ufixint]
+                [#:unknown unknown any/c (lambda (x) (error ....))])
          ctype?]{
 
 Takes a list of symbols and generates an enumeration type.  The
@@ -1002,7 +1004,12 @@ example, the list @scheme['(x y = 10 z)] maps @scheme['x] to
 @scheme[0], @scheme['y] to @scheme[10], and @scheme['z] to
 @scheme[11].
 
-The @scheme[basetype] argument specifies the base type to use.}
+The @scheme[basetype] argument specifies the base type to use.
+
+The @scheme[unknown] argument specifies the result of converting an
+unknown integer from the foreign side: it can be a one-argument function
+to be applied on the integer, or a value to return instead.  The default
+is to throw an exception.}
 
 @defproc[(_bitmask [symbols (or symbol? list?)] [basetype ctype? _uint])
          ctype?]{
