@@ -45,9 +45,9 @@ Enables the @tt{onecolumn} option. Use @racket[onecolumn] only on the
 same line as @hash-lang[], with only whitespace between
 @racketmodname[scribble/sigplan] and @racket[onecolumn]:
 
-@codeblock{
+@codeblock|{
   #lang scribble/sigplan @onecolumn
-}}
+}|}
 
 The @racket[10pt], @racket[preprint], @racket[nocopyright], and
 @racket[onecolumn] options can be used together and may appear in any
