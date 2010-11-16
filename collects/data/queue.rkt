@@ -1,6 +1,6 @@
 #lang racket/base
 
-;; A Queue contains a linked list with mutable cdrs, hoding two pointers
+;; A Queue contains a linked list with mutable cdrs, holding two pointers
 ;; to the head and the tail -- where items are pulled from the head and
 ;; pushed on the tail.  It is not thread safe: mutating a queue from
 ;; different threads can break it.
@@ -31,6 +31,13 @@
     (set-queue-head! q (link-tail old))
     (link-value old)))
 
+(define (queue-count queue)
+  (let loop ([link (queue-head queue)]
+             [count 0])
+    (if (not link)
+      count
+      (loop (link-tail link) (add1 count)))))
+
 ;; --- contracts ---
 
 (require racket/contract)
@@ -48,6 +55,7 @@
  [nonempty-queue/c flat-contract?]
  [queue? (-> any/c boolean?)]
  [make-queue (-> queue/c)]
- [queue-empty? (-> queue/c boolean?)])
+ [queue-empty? (-> queue/c boolean?)]
+ [queue-count (-> queue/c integer?)])
 
 (provide enqueue! dequeue!)

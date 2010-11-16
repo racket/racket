@@ -34,6 +34,19 @@ thread-unsafe way.
     (dequeue! q)]
 }
 
+@defproc[(queue-count [queue queue/c]) integer?]{
+  Returns the number of elements in the queue.
+
+  @defexamples[#:eval qeval
+    (define queue (make-queue))
+    (queue-count queue)
+    (enqueue! queue 5)
+    (enqueue! queue 12)
+    (queue-count queue)
+    (dequeue! queue)
+    (queue-count queue)]
+}
+
 @defproc[(queue-empty? [q queue/c]) boolean?]{
   Recognizes whether a queue is empty or not.
 
