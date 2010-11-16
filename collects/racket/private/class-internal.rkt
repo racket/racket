@@ -214,12 +214,16 @@
   (vector apos identity identity identity identity))
 
 (define (field-info-extend-internal! fi ppos pneg)
-  (unsafe-vector-set! fi 1 (compose ppos (unsafe-vector-ref fi 1)))
-  (unsafe-vector-set! fi 2 (compose (unsafe-vector-ref fi 2) pneg)))
+  (let ([old-ref-proj (unsafe-vector-ref fi 1)]
+        [old-set-proj (unsafe-vector-ref fi 2)])
+    (unsafe-vector-set! fi 1 (λ (v) (ppos (old-ref-proj v))))
+    (unsafe-vector-set! fi 2 (λ (v) (old-set-proj (pneg v))))))
 
 (define (field-info-extend-external! fi ppos pneg)
-  (unsafe-vector-set! fi 3 (compose ppos (unsafe-vector-ref fi 3)))
-  (unsafe-vector-set! fi 4 (compose (unsafe-vector-ref fi 4) pneg)))
+  (let ([old-ref-proj (unsafe-vector-ref fi 3)]
+        [old-set-proj (unsafe-vector-ref fi 4)])
+    (unsafe-vector-set! fi 3 (λ (v) (ppos (old-ref-proj v))))
+    (unsafe-vector-set! fi 4 (λ (v) (old-set-proj (pneg v))))))
 
 (define (field-info-internal-ref fi)
   (let ([apos (unsafe-vector-ref fi 0)]
@@ -2722,10 +2726,10 @@
             (for ([m (in-list (class/c-inners ctc))]
                   [c (in-list (class/c-inner-contracts ctc))])
               (when c
-                (let ([i (hash-ref method-ht m)]
-                      [p ((contract-projection c) bswap)])
-                  (vector-set! inner-projs i
-                               (compose (vector-ref inner-projs i) p))))))
+                (let* ([i (hash-ref method-ht m)]
+                       [p ((contract-projection c) bswap)]
+                       [old-proj (vector-ref inner-projs i)])
+                  (vector-set! inner-projs i (λ (v) (old-proj (p v))))))))
           
           ;; Handle both internal and external field contracts
           (unless no-field-ctcs?
@@ -2786,9 +2790,9 @@
                   (let* ([i (hash-ref method-ht m)]
                          [p ((contract-projection c) bswap)]
                          [old-idx (vector-ref old-idxs i)]
-                         [proj-vec (vector-ref dynamic-projs i)])
-                    (vector-set! proj-vec old-idx
-                                 (compose (vector-ref proj-vec old-idx) p))))))
+                         [proj-vec (vector-ref dynamic-projs i)]
+                         [old-proj (vector-ref proj-vec old-idx)])
+                    (vector-set! proj-vec old-idx (λ (v) (old-proj (p v))))))))
             
             ;; For augment and augride contracts, we both update the projection
             ;; and go ahead and apply the projection to the last slot (which will
@@ -2805,9 +2809,9 @@
                          [old-idx (vector-ref old-idxs i)]
                          [new-idx (vector-ref dynamic-idxs i)]
                          [proj-vec (vector-ref dynamic-projs i)]
-                         [int-vec (vector-ref int-methods i)])
-                    (vector-set! proj-vec old-idx
-                                 (compose p (vector-ref proj-vec old-idx)))
+                         [int-vec (vector-ref int-methods i)]
+                         [old-proj (vector-ref proj-vec old-idx)])
+                    (vector-set! proj-vec old-idx (λ (v) (p (old-proj v))))
                     (vector-set! int-vec new-idx
                                  (make-method (p (vector-ref int-vec new-idx)) m))))))
             
