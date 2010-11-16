@@ -41,11 +41,11 @@
         (let ([a (tell NSArray 
                        arrayWithObjects: #:type (_list i _NSString) extensions
                        count: #:type _NSUInteger (length extensions))])
-          (tellv ns setAllowedFileTypes: a))))
-    (let ([others? (ormap (lambda (e)
-                            (equal? (cadr e) "*.*"))
-                          filters)])
-      (tellv ns setAllowsOtherFileTypes: #:type _BOOL others?))
+          (tellv ns setAllowedFileTypes: a))
+        (let ([others? (ormap (lambda (e)
+                                (equal? (cadr e) "*.*"))
+                              filters)])
+          (tellv ns setAllowsOtherFileTypes: #:type _BOOL others?))))
 
     (cond
      [(memq 'multi style)
