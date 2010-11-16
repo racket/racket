@@ -34,6 +34,18 @@ thread-unsafe way.
     (dequeue! q)]
 }
 
+@defproc[(queue->list [queue queue/c]) (listof any/c)]{
+  Returns an immutable list containing the elements of the queue
+  in the order the elements were added.
+
+  @defexamples[#:eval qeval
+    (define queue (make-queue))
+    (enqueue! queue 8)
+    (enqueue! queue 9)
+    (enqueue! queue 0)
+    (queue->list queue)]
+}
+
 @defproc[(queue-count [queue queue/c]) integer?]{
   Returns the number of elements in the queue.
 

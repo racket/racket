@@ -31,6 +31,23 @@
     (set-queue-head! q (link-tail old))
     (link-value old)))
 
+(define (queue->list queue)
+  (let loop ([link (queue-head queue)]
+             [out '()])
+    (if (not link)
+      (reverse out)
+      (loop (link-tail link) (cons (link-value link) out)))))
+
+;; queue->vector could be implemented as (list->vector (queue->list q))
+;; but this is somewhat slow. a direct translation between queue's and
+;; vector's should be fast so the ideal situation is not to use a list
+;; as an intermediate data structure.
+;; maybe add the elements to a gvector and use gvector->vector?
+
+;; could use (length (queue->list q)) here but that would double
+;; the time it takes to get the count
+;; probably if `queue->vector' gets implemented it would be better to
+;; do (vector-length (queue->vector q))
 (define (queue-count queue)
   (let loop ([link (queue-head queue)]
              [count 0])
@@ -56,6 +73,7 @@
  [queue? (-> any/c boolean?)]
  [make-queue (-> queue/c)]
  [queue-empty? (-> queue/c boolean?)]
- [queue-count (-> queue/c integer?)])
+ [queue-count (-> queue/c integer?)]
+ [queue->list (-> queue/c (listof any/c))])
 
 (provide enqueue! dequeue!)

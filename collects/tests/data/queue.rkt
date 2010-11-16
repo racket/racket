@@ -63,4 +63,14 @@
          (enqueue! q 2)
          (check-equal? (dequeue! q) 1)
          (check-equal? (dequeue! q) 2)
-         (check-exn exn:fail? (lambda () (dequeue! q))))))))
+         (check-exn exn:fail? (lambda () (dequeue! q))))))
+   (test-suite "queue misc"
+     (test-case "queue to empty list"
+       (let ([queue (make-queue)])
+         (check-equal? (queue->list queue) '())))
+     (test-case "queue length"
+       (let ([queue (make-queue)])
+         (enqueue! queue 1)
+         (enqueue! queue 2)
+         (enqueue! queue 3)
+         (check-equal? (queue->list queue) '(1 2 3)))))))
