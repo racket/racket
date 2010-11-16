@@ -215,17 +215,25 @@
         [field-set! (make-struct-field-mutator (class-field-set! cls) rpos)])
     (vector field-ref field-set! field-ref field-set!)))
 
-(define (field-info-extend-internal! fi ppos pneg)
-  (let ([old-ref (unsafe-vector-ref fi 0)]
-        [old-set! (unsafe-vector-ref fi 1)])
-    (unsafe-vector-set! fi 0 (λ (o) (ppos (old-ref o))))
-    (unsafe-vector-set! fi 1 (λ (o v) (old-set! o (pneg v))))))
+(define (field-info-extend-internal! field-ht f ppos pneg)
+  (let* ([fi (hash-ref field-ht f)]
+         [old-ref (unsafe-vector-ref fi 0)]
+         [old-set! (unsafe-vector-ref fi 1)])
+    (hash-set! field-ht f
+               (vector (λ (o) (ppos (old-ref o)))
+                       (λ (o v) (old-set! o (pneg v)))
+                       (unsafe-vector-ref fi 2)
+                       (unsafe-vector-ref fi 3)))))
 
-(define (field-info-extend-external! fi ppos pneg)
-  (let ([old-ref (unsafe-vector-ref fi 2)]
-        [old-set! (unsafe-vector-ref fi 3)])
-    (unsafe-vector-set! fi 2 (λ (o) (ppos (old-ref o))))
-    (unsafe-vector-set! fi 3 (λ (o v) (old-set! o (pneg v))))))
+(define (field-info-extend-external! field-ht f ppos pneg)
+  (let* ([fi (hash-ref field-ht f)]
+         [old-ref (unsafe-vector-ref fi 2)]
+         [old-set! (unsafe-vector-ref fi 3)])
+    (hash-set! field-ht f
+               (vector (unsafe-vector-ref fi 0)
+                       (unsafe-vector-ref fi 1)
+                       (λ (o) (ppos (old-ref o)))
+                       (λ (o v) (old-set! o (pneg v)))))))
 
 (define (field-info-internal-ref  fi) (unsafe-vector-ref fi 0))
 (define (field-info-internal-set! fi) (unsafe-vector-ref fi 1))
@@ -2723,17 +2731,15 @@
             (for ([f (in-list (class/c-fields ctc))]
                   [c (in-list (class/c-field-contracts ctc))])
               (when c
-                (let* ([fi (hash-ref field-ht f)]
-                       [p-pos ((contract-projection c) blame)]
+                (let* ([p-pos ((contract-projection c) blame)]
                        [p-neg ((contract-projection c) bswap)])
-                  (field-info-extend-external! fi p-pos p-neg))))
+                  (field-info-extend-external! field-ht f p-pos p-neg))))
             (for ([f (in-list (class/c-inherit-fields ctc))]
                   [c (in-list (class/c-inherit-field-contracts ctc))])
               (when c
-                (let* ([fi (hash-ref field-ht f)]
-                       [p-pos ((contract-projection c) blame)]
+                (let* ([p-pos ((contract-projection c) blame)]
                        [p-neg ((contract-projection c) bswap)])
-                  (field-info-extend-internal! fi p-pos p-neg)))))
+                  (field-info-extend-internal! field-ht f p-pos p-neg)))))
           
           ;; Now the trickiest of them all, internal dynamic dispatch.
           ;; First we update any dynamic indexes, as applicable.
@@ -4427,10 +4433,9 @@
         (for ([f (in-list fields)]
               [c (in-list field-contracts)])
           (when c
-            (let* ([fi (hash-ref field-ht f)]
-                   [p-pos ((contract-projection c) blame)]
+            (let* ([p-pos ((contract-projection c) blame)]
                    [p-neg ((contract-projection c) bset)])
-              (field-info-extend-external! fi p-pos p-neg))))))
+              (field-info-extend-external! field-ht f p-pos p-neg))))))
     
     c))
 
