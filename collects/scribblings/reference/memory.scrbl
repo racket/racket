@@ -172,10 +172,10 @@ this procedure is never called.}
 Returns an estimate of the number of bytes of memory occupied by
 reachable data from @racket[cust].  This estimate is calculated by the
 last garbage colection, and can be 0 if none occured (or if none occured
-since the given custodian was created).  @racket[current-memory-use] by
-itself does @italic{not} perform a collection; doing one before the call
-will generally decrease the result (or increase it from 0 if no
-collections happened yet).
+since the given custodian was created).  The @racket[current-memory-use]
+function does @italic{not} perform a collection by itself; doing one
+before the call will generally decrease the result (or increase it from
+0 if no collections happened yet).
 
 If @racket[cust] is not provided, the estimate is a total reachable from
 any custodians.
