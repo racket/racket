@@ -170,11 +170,15 @@ this procedure is never called.}
 @defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{
 
 Returns an estimate of the number of bytes of memory occupied by
-reachable data from @racket[cust]. (The estimate is calculated
-@italic{without} performing an immediate garbage collection;
-performing a collection generally decreases the number returned by
-@racket[current-memory-use].) If @racket[cust] is not provided, the
-estimate is a total reachable from any custodians.
+reachable data from @racket[cust].  This estimate is calculated by the
+last garbage colection, and can be 0 if none occured (or if none occured
+since the given custodian was created).  @racket[current-memory-use] by
+itself does @italic{not} perform a collection; doing one before the call
+will generally decrease the result (or increase it from 0 if no
+collections happened yet).
+
+If @racket[cust] is not provided, the estimate is a total reachable from
+any custodians.
 
 When Racket is compiled without support for memory accounting, the
 estimate is the same (i.e., all memory) for any individual custodian;
@@ -184,4 +188,3 @@ see also @racket[custodian-memory-accounting-available?].}
 
 Dumps information about memory usage to the (low-level) standard
 output port.}
-
