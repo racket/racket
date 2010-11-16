@@ -46,17 +46,17 @@ thread-unsafe way.
     (queue->list queue)]
 }
 
-@defproc[(queue-count [queue queue/c]) integer?]{
+@defproc[(queue-length [queue queue/c]) integer?]{
   Returns the number of elements in the queue.
 
   @defexamples[#:eval qeval
     (define queue (make-queue))
-    (queue-count queue)
+    (queue-length queue)
     (enqueue! queue 5)
     (enqueue! queue 12)
-    (queue-count queue)
+    (queue-length queue)
     (dequeue! queue)
-    (queue-count queue)]
+    (queue-length queue)]
 }
 
 @defproc[(queue-empty? [q queue/c]) boolean?]{

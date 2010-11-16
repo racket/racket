@@ -45,10 +45,10 @@
 ;; maybe add the elements to a gvector and use gvector->vector?
 
 ;; could use (length (queue->list q)) here but that would double
-;; the time it takes to get the count
+;; the time it takes to get the length
 ;; probably if `queue->vector' gets implemented it would be better to
 ;; do (vector-length (queue->vector q))
-(define (queue-count queue)
+(define (queue-length queue)
   (let loop ([link (queue-head queue)]
              [count 0])
     (if (not link)
@@ -73,7 +73,7 @@
  [queue? (-> any/c boolean?)]
  [make-queue (-> queue/c)]
  [queue-empty? (-> queue/c boolean?)]
- [queue-count (-> queue/c integer?)]
+ [queue-length (-> queue/c integer?)]
  [queue->list (-> queue/c (listof any/c))])
 
 (provide enqueue! dequeue!)
