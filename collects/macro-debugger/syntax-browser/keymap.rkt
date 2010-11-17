@@ -118,7 +118,7 @@
                (demand-callback
                 (lambda (i)
                   (let ([stx (selected-syntax)])
-                    (when stx
+                    (when (identifier? stx)
                       (send i set-label
                             (format "Format ~s ~a" (syntax-e stx) (cadr sym+desc)))))))
                (callback
