@@ -1,5 +1,8 @@
 #lang racket/base
 
+(require (for-syntax racket/base
+                     unstable/wrapc))
+
 ;; A Queue contains a linked list with mutable cdrs, holding two pointers
 ;; to the head and the tail -- where items are pulled from the head and
 ;; pushed on the tail.  It is not thread safe: mutating a queue from
@@ -55,6 +58,28 @@
       count
       (loop (link-tail link) (add1 count)))))
 
+(define (in-queue queue)
+  (in-list (queue->list queue)))
+
+(define-sequence-syntax in-queue*
+  (lambda () #'in-queue)
+  (lambda (stx)
+    (syntax-case stx ()
+      ([(var) (in-queue* queue-expression)]
+       (with-syntax ([queue-expression/c (wrap-expr/c #'queue? #'queue-expression
+                                                      #:macro #'in-queue*)])
+       #'[(var)
+          (:do-in ([(queue) queue-expression/c])
+                  (void) ;; handled by contract
+                  ([link (queue-head queue)])
+                  link
+                  ([(var) (link-value link)])
+                  #t
+                  #t
+                  ((link-tail link)))]))
+       ([(var ...) (in-queue* queue-expression)]
+        #f))))
+
 ;; --- contracts ---
 
 (require racket/contract)
@@ -76,4 +101,4 @@
  [queue-length (-> queue/c integer?)]
  [queue->list (-> queue/c (listof any/c))])
 
-(provide enqueue! dequeue!)
+(provide enqueue! dequeue! (rename-out [in-queue* in-queue]))

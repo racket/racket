@@ -79,6 +79,13 @@ thread-unsafe way.
     (queue? 'not-a-queue)]
 }
 
+@defproc[(in-queue [queue queue?])
+         sequence?]{
+
+Returns a sequence whose elements are the elements of
+@racket[queue].
+}
+
 @deftogether[(
   @defthing[queue/c flat-contract?]
   @defthing[nonempty-queue/c flat-contract?]

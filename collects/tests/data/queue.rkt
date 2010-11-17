@@ -65,6 +65,13 @@
          (check-equal? (dequeue! q) 2)
          (check-exn exn:fail? (lambda () (dequeue! q))))))
    (test-suite "queue misc"
+     (test-case "queue as a sequence"
+       (let ([queue (make-queue)])
+         (enqueue! queue 1)
+         (enqueue! queue 2)
+         (enqueue! queue 3)
+         (check-equal? '(1 2 3) (for/list ([item (in-queue queue)]) item)))
+         (check-equal? '() (for/list ([item (in-queue (make-queue))]) item)))
      (test-case "queue to empty list"
        (let ([queue (make-queue)])
          (check-equal? (queue->list queue) '())))
