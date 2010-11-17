@@ -273,7 +273,7 @@
 \if \@onecolumn
   \if \@notp{\@explicitsize}%
     \@setflag \@ninepoint = \@false
-    \PassOptionsToClass{11pt}{article}%
+%    \PassOptionsToClass{11pt}{article}%
   \fi
   \PassOptionsToClass{twoside,onecolumn}{article}
 \else
