@@ -68,6 +68,12 @@
                (for/list ([x (in-gvector gv)]) x))
              '(1 2 3))
 
+(test-equal? "in-gvector expression form"
+             (let* ([gv (gvector 1 2 3)]
+                    [gv-sequence (in-gvector gv)])
+               (for/list ([x gv-sequence]) x))
+             '(1 2 3))
+
 (test-equal? "gvector as sequence"
              (let ([gv (gvector 1 2 3)])
                (for/list ([x gv]) x))
