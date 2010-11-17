@@ -12,7 +12,7 @@
    grammar
    
    ;; beta
-   (~~> ((λ (x_1 ...) e_1) v_1 ...)
+   (~~> ((λ (x_1 ..._1) e_1) v_1 ..._1)
         (subst* (x_1 ...) (v_1 ...) e_1)
         "beta")
    
@@ -25,7 +25,7 @@
         "zero?")
    (~~> (zero? v_1)
         #f
-        (side-condition (not (zero? (term v_1))))
+        (side-condition (not (equal? 0 (term v_1))))
         "non-zero")
    
    ;; lists
