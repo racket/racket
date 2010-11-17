@@ -212,7 +212,7 @@ This command does not unpack or install the named .plt file."
       (define (show-normals)
         (printf "Normally-installed packages:\n")
         (for-each 
-         (lambda (l) (apply printf "  ~a\t~a\t~a ~a\n" l))
+         (lambda (l) (apply printf "  ~a \t~a \t~a ~a\n" l))
          (sort-by-criteria 
           (map (lambda (x) (match x [(_ owner pkg _ maj min) (list owner pkg maj min)])) normal-packages)
           (list string<? string=?)
