@@ -362,6 +362,15 @@
                        4
                        (abort 0 (current-marks 1 0))))))
                 (λ (x) x)))
+        '(<> () [] (list 2)))
+  (test "if-test position in continuation-marks context"
+        '(<> ()
+             []
+             (% 0
+                (call/cm 
+                 1 2 
+                 (λ () (if (abort 0 (current-marks 1 0)) 3 4)))
+                (λ (x) x)))
         '(<> () [] (list 2))))
 
 ;; R6RS dynamic-wind ----------------------------------------
