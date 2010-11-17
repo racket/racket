@@ -4223,7 +4223,9 @@
     (raise-type-error 'object=? "object" o1))
   (unless (object? o2)
     (raise-type-error 'object=? "object" o2))
-  (or (impersonator-of? o1 o2) (impersonator-of? o2 o1)))
+  (let ([orig-o1 (if (has-original-object? o1) (original-object o1) o1)]
+        [orig-o2 (if (has-original-object? o2) (original-object o2) o2)])
+    (eq? orig-o1 orig-o2)))
 
 ;;--------------------------------------------------------------------
 ;;  primitive classes
@@ -4429,11 +4431,17 @@
     
     c))
 
+(define-values (impersonator-prop:original-object has-original-object? original-object)
+  (make-impersonator-property 'impersonator-prop:original-object))
+
 ;; make-wrapper-object: contract object blame (listof symbol) (listof contract?) (listof symbol) (listof contract?)
 (define (make-wrapper-object ctc obj blame methods method-contracts fields field-contracts)
   (check-object-contract obj methods fields (λ args (apply raise-blame-error blame obj args)))
-  (let* ([new-cls (make-wrapper-class (object-ref obj) blame methods method-contracts fields field-contracts)])
-    (impersonate-struct obj object-ref (λ (o c) new-cls) impersonator-prop:contracted ctc)))
+  (let ([original-obj (if (has-original-object? obj) (original-object obj) obj)]
+        [new-cls (make-wrapper-class (object-ref obj) blame methods method-contracts fields field-contracts)])
+    (impersonate-struct obj object-ref (λ (o c) new-cls)
+                        impersonator-prop:contracted ctc
+                        impersonator-prop:original-object original-obj)))
 
 ;;--------------------------------------------------------------------
 ;;  misc utils
