@@ -63,7 +63,7 @@
       (create-menu "menu")
       (let ([b (box #f)])
         (set! popup-box b)
-        (if #t ;; use the 10.5 code, for now
+        (if (not (version-10.6-or-later?))
             ;; For 10.5 and earlier:
             (let ([p (tell #:type _NSPoint v
                            convertPoint: #:type _NSPoint (make-NSPoint x y)

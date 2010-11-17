@@ -21,7 +21,8 @@
               clean-menu-label
               ->wxb
               ->wx
-              old-cocoa?)
+              old-cocoa?
+              version-10.6-or-later?)
  define-mz)
 
 (define cocoa-lib (ffi-lib (format "/System/Library/Frameworks/Cocoa.framework/Cocoa")))
@@ -79,6 +80,10 @@
   (and wxb
        (weak-box-value wxb)))
 
-;; FIXME: need a better test:
-(define old-cocoa? (equal? (path->string (system-library-subpath #f))
-                           "ppc-macosx"))
+(define-appkit NSAppKitVersionNumber _double)
+
+(define old-cocoa? 
+  ; earlier than 10.5?
+  (NSAppKitVersionNumber . < . 949))
+(define (version-10.6-or-later?)
+  (NSAppKitVersionNumber . >= . 1038))

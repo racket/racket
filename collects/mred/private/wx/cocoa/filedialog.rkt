@@ -74,7 +74,9 @@
            ;; all other eventspaces and threads. It would be nice to improve
            ;; on this, but it's good enough.
            (atomically
-            (let ([front (get-front)])
+            (let ([front (get-front)]
+                  [parent (and (version-10.6-or-later?)
+                               parent)])
               (when parent
                 (tellv ns beginSheetModalForWindow: (send parent get-cocoa-window)
                        completionHandler: #f))
