@@ -1353,7 +1353,24 @@
             (syntax-case stx ()
               [(_ v) (datum->syntax stx (kw/f #:x #'v opt))]))
           (kw/g 7))))
-      
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check mutation of local define-for-syntax in let-syntax:
+
+(module set-local-dfs racket/base
+  (require (for-syntax racket/base))
+  (provide ten)
+
+  (define-for-syntax tl-var 9)
+
+  (define ten
+    (let-syntax ([x1 (lambda (stx)
+                       (set! tl-var (add1 tl-var))
+                       (datum->syntax stx tl-var))])
+      (x1))))
+
+(test 10 dynamic-require ''set-local-dfs 'ten)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

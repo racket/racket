@@ -3112,7 +3112,10 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 				       modpos, SCHEME_INT_VAL(mod_defn_phase));
   }
 
-  if (!modname && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) && genv->module) {
+  if (!modname 
+      && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) 
+      && genv->module
+      && !(flags & SCHEME_RESOLVE_MODIDS)) {
     /* Need to return a variable reference in this case, too. */
     return scheme_hash_module_variable(env->genv, genv->module->self_modidx, find_global_id, 
 				       genv->module->insp,
