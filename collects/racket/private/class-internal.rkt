@@ -200,40 +200,35 @@
 ;; field info creation/access
 ;;--------------------------------------------------------------------
 
-;; A field-info is a (vector apos iref iset eref eset)
+;; A field-info is a (vector iref iset eref eset)
 ;; where
-;;   apos is the absolute position of the field in the object struct
-;;     used for calls to unsafe-struct-ref/-set!
 ;;   iref, iset, eref, and eset are projections to be applied
-;;     on internal and external reference and setting.
+;;     on internal and external access and mutation.
 
 ;; make-field-info creates a new field-info for a field.
-;; The caller gives the absolute position, and this function fills
+;; The caller gives the class and relative position (in the
+;; new object struct layer), and this function fills
 ;; in the projections.
 (define (make-field-info cls rpos)
   (let ([field-ref (make-struct-field-accessor (class-field-ref cls) rpos)]
         [field-set! (make-struct-field-mutator (class-field-set! cls) rpos)])
     (vector field-ref field-set! field-ref field-set!)))
 
-(define (field-info-extend-internal! field-ht f ppos pneg)
-  (let* ([fi (hash-ref field-ht f)]
-         [old-ref (unsafe-vector-ref fi 0)]
+(define (field-info-extend-internal fi ppos pneg)
+  (let* ([old-ref (unsafe-vector-ref fi 0)]
          [old-set! (unsafe-vector-ref fi 1)])
-    (hash-set! field-ht f
-               (vector (λ (o) (ppos (old-ref o)))
-                       (λ (o v) (old-set! o (pneg v)))
-                       (unsafe-vector-ref fi 2)
-                       (unsafe-vector-ref fi 3)))))
+    (vector (λ (o) (ppos (old-ref o)))
+            (λ (o v) (old-set! o (pneg v)))
+            (unsafe-vector-ref fi 2)
+            (unsafe-vector-ref fi 3))))
 
-(define (field-info-extend-external! field-ht f ppos pneg)
-  (let* ([fi (hash-ref field-ht f)]
-         [old-ref (unsafe-vector-ref fi 2)]
+(define (field-info-extend-external fi ppos pneg)
+  (let* ([old-ref (unsafe-vector-ref fi 2)]
          [old-set! (unsafe-vector-ref fi 3)])
-    (hash-set! field-ht f
-               (vector (unsafe-vector-ref fi 0)
-                       (unsafe-vector-ref fi 1)
-                       (λ (o) (ppos (old-ref o)))
-                       (λ (o v) (old-set! o (pneg v)))))))
+    (vector (unsafe-vector-ref fi 0)
+            (unsafe-vector-ref fi 1)
+            (λ (o) (ppos (old-ref o)))
+            (λ (o v) (old-set! o (pneg v))))))
 
 (define (field-info-internal-ref  fi) (unsafe-vector-ref fi 0))
 (define (field-info-internal-set! fi) (unsafe-vector-ref fi 1))
@@ -2726,15 +2721,17 @@
             (for ([f (in-list (class/c-fields ctc))]
                   [c (in-list (class/c-field-contracts ctc))])
               (when c
-                (let* ([p-pos ((contract-projection c) blame)]
-                       [p-neg ((contract-projection c) bswap)])
-                  (field-info-extend-external! field-ht f p-pos p-neg))))
+                (let ([fi (hash-ref field-ht f)]
+                      [p-pos ((contract-projection c) blame)]
+                      [p-neg ((contract-projection c) bswap)])
+                  (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
             (for ([f (in-list (class/c-inherit-fields ctc))]
                   [c (in-list (class/c-inherit-field-contracts ctc))])
               (when c
-                (let* ([p-pos ((contract-projection c) blame)]
-                       [p-neg ((contract-projection c) bswap)])
-                  (field-info-extend-internal! field-ht f p-pos p-neg)))))
+                (let ([fi (hash-ref field-ht f)]
+                      [p-pos ((contract-projection c) blame)]
+                      [p-neg ((contract-projection c) bswap)])
+                  (hash-set! field-ht f (field-info-extend-internal fi p-pos p-neg))))))
           
           ;; Now the trickiest of them all, internal dynamic dispatch.
           ;; First we update any dynamic indexes, as applicable.
@@ -4425,9 +4422,10 @@
         (for ([f (in-list fields)]
               [c (in-list field-contracts)])
           (when c
-            (let* ([p-pos ((contract-projection c) blame)]
-                   [p-neg ((contract-projection c) bset)])
-              (field-info-extend-external! field-ht f p-pos p-neg))))))
+            (let ([fi (hash-ref field-ht f)]
+                  [p-pos ((contract-projection c) blame)]
+                  [p-neg ((contract-projection c) bset)])
+              (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))))
     
     c))
 
