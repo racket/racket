@@ -53,7 +53,9 @@
    #:first-order 
    (λ (ctc)
      (λ (val)
-       (check-object-contract val #f (object-contract-methods ctc) (object-contract-fields ctc))))))
+       (let/ec ret
+         (check-object-contract val (object-contract-methods ctc) (object-contract-fields ctc)
+                                (λ args (ret #f))))))))
 
 (define-syntax (object-contract stx)
   (syntax-case stx ()
