@@ -66,9 +66,10 @@
                                              isDirectory: #:type _BOOL #t))
             (tellv ns setDirectory: #:type _NSString dir))))
     (when filename
-      (tellv ns setNameFieldStringValue: #:type _NSString (path->string
-                                                           (file-name-from-path filename))))
-
+      (when (version-10.6-or-later?)
+        (tellv ns setNameFieldStringValue: #:type _NSString (path->string
+                                                             (file-name-from-path filename)))))
+    
     (when (memq 'enter-packages style)
       (tellv ns setTreatsFilePackagesAsDirectories: #:type _BOOL #t))
 
