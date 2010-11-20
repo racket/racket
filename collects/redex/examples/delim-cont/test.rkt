@@ -383,7 +383,17 @@
                             (λ () (current-marks 1 0))
                             (λ () #t))))
                 (λ (x) x)))
-        '(<> () [] (list 2))))
+        '(<> () [] (list 2)))
+  (test "wcm without key in continuation-marks context"
+        '(<> ()
+             []
+             (% 0
+                (wcm ([1 2])
+                     ((λ (x) x)
+                      (wcm ([3 4])
+                           (current-marks 3 0))))
+                (λ (x) x)))
+        '(<> () [] (list 4))))
 
 ;; R6RS dynamic-wind ----------------------------------------
 
