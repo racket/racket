@@ -57,11 +57,14 @@
     (when message
       (tellv ns setMessage: #:type _NSString message))
     (when directory
-      (tellv ns setDirectoryURL: (tell NSURL 
-                                       fileURLWithPath: #:type _NSString (if (string? directory)
-                                                                             directory
-                                                                             (path->string directory))
-                                       isDirectory: #:type _BOOL #t)))
+      (let ([dir (if (string? directory)
+                     directory
+                     (path->string directory))])
+        (if (version-10.6-or-later?)
+            (tellv ns setDirectoryURL: (tell NSURL 
+                                             fileURLWithPath: #:type _NSString dir
+                                             isDirectory: #:type _BOOL #t))
+            (tellv ns setDirectory: #:type _NSString dir))))
     (when filename
       (tellv ns setNameFieldStringValue: #:type _NSString (path->string
                                                            (file-name-from-path filename))))
