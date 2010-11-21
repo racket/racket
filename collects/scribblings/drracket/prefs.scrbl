@@ -36,7 +36,7 @@ The preferences dialog consists of several panels.
 
          This panel controls which keywords DrRacket recognizes for
          indenting, and how each keyword is treated.}
-
+    
  @item{@onscreen{Square bracket}
 
       This panel controls which keywords DrRacket uses to determine
@@ -49,6 +49,100 @@ The preferences dialog consists of several panels.
       columns behave.}
 
  @item{@onscreen{General}
+           @itemize[@item{@PrefItem{Map delete to backspace} --- If checked, the editor
+                           treats the Delete key like the Backspace key.}
+
+   @item{@PrefItem{Wrap words in editor buffers} --- If checked,
+     DrRacket editors auto-wrap text lines by default. Changing this
+     preference affects new windows only.}
+
+   @item{@PrefItem{Reuse existing frames when opening new files} ---
+    If checked, new files are opened in the same DrRacket window,
+    rather than creating a new DrRacket window for each new file.}
+
+   @item{@PrefItem{Enable keybindings in menus} --- If checked, some
+    DrRacket menu items have keybindings. Otherwise, no menu items
+    have key bindings. This preference is designed for people who are
+    comfortable editing in Emacs and find the standard menu
+    keybindings interfere with the Emacs keybindings.}
+
+    
+   @item{@PrefItem{Treat command key as meta} --- If checked, DrRacket will use the command key for some Emacs-like keybindings, instead of using it for menu shortcuts. This option is only available under Mac OS X.}
+   
+  @item{@PrefItem{Color syntax interactively} --- If checked, DrRacket
+    colors your syntax as you type.}
+                                    
+   @item{@PrefItem{Search using anchors} --- If checked, DrRacket's searching mode will jump directly to the first search hit, using an ``anchor'' to determine where to search if the search string changes.}
+   
+   @item{@PrefItem{Normalize pasted strings} --- If checked, DrRacket adjusts strings that are pasted into the editor to avoid confusion. For example, non-breaking spaces look just like spaces but are not considered separators like ordinary spaces are. If this is checked DrRacket will automatically turn those non-breaking spaces into regular spaces. Similarly with other (less common) characters.}
+   
+   @item{@PrefItem{Enable overwrite mode keybindings} --- If checked, DrRacket enables the insert keybinding to swap into overwrite mode}
+   
+   @item{@PrefItem{Show line numbers} --- If checked, DrRacket shows line numbers for the file being edited in the left-hand column}
+                                    
+                                    ]}
+
+
+
+
+
+ @item{@onscreen{Racket}
+
+  @itemize[
+
+   @item{@PrefItem{Highlight between matching parens} --- If checked, the
+    editor marks the region between matching parenthesis with a gray
+    background (in color) or a stipple pattern (in monochrome) when
+    the blinking caret is next to a parenthesis.}
+
+   @item{@PrefItem{Automatically adjust closing parens} --- If checked, the editor
+    automatically converts a typed @litchar[")"] to @litchar["]"] to
+    match @litchar["["], or it converts a typed @litchar["]"] to
+    @litchar[")"] to match @litchar["("].}
+   
+   @item{@PrefItem{Automatically adjust opening square brackets} If checked, the editor changes
+    typed @litchar["["] to match the context (as explained in
+    @secref["editor"]).}
+
+   @item{@PrefItem{Flash paren match} --- If checked, typing a closing
+    parenthesis, square bracket, or quotation mark flashes the
+    matching open parenthesis/bracket/quote.}
+
+  ]}]
+
+@section{@onscreen{Warnings}}
+
+  @itemize[
+
+   @item{@PrefItem{Ask before changing save format} --- If checked,
+    DrRacket consults the user before saving a file in non-text format
+    (see @secref["drracket-file-formats"]).}
+
+   @item{@PrefItem{Verify exit} --- If checked, DrRacket consults the
+    user before exiting.}
+
+   @item{@PrefItem{Ask about normalizing strings} --- If checked, DrRacket
+          consults the user before normalizing a string pasted into the editor.}
+   
+   @item{@PrefItem{Only warn once when executions and interactions are
+    not synchronized} --- If checked, DrRacket warns the user on the
+    first interaction after the definitions window, language, or
+    teachpack is changed without a corresponding click on
+    @onscreen{Run}. Otherwise, the warning appears on every
+    interaction.}
+
+   @item{@PrefItem{Ask about clearing test coverage} --- If checked,
+     when test coverage annotations are displayed DrRacket prompts
+     about removing them. This setting only applies to the PLT
+     languages. DrRacket never asks in the teaching languages.}
+
+   @item{@PrefItem{Check for newer Racket versions} --- If
+     checked, DrRacket periodically polls a server to determine
+     whether a newer version of DrRacket is available.}
+
+ ]
+
+@section{@onscreen{General}}
 
   @itemize[
 
@@ -66,9 +160,6 @@ The preferences dialog consists of several panels.
     files have the same name as the original, except that they end in
     either @indexed-file{.bak} or @indexed-file{~}.}
 
-   @item{@PrefItem{Map delete to backspace} --- If checked, the editor
-    treats the Delete key like the Backspace key.}
-
    @item{@PrefItem{Show status-line} --- If checked, DrRacket shows a
     status line at the bottom of each window.}
 
@@ -80,29 +171,6 @@ The preferences dialog consists of several panels.
     offsets} --- If checked, the status line shows a
     @nonterm{line}:@nonterm{column} display for the current selection
     rather than the character offset into the text.}
-
-   @item{@PrefItem{Wrap words in editor buffers} --- If checked,
-     DrRacket editors auto-wrap text lines by default. Changing this
-     preference affects new windows only.}
-
-   @item{@PrefItem{Use separate dialog for searching} --- If checked,
-    then selecting the @onscreen{Find} menu item opens a separate
-    dialog for searching and replacing. Otherwise, selecting
-    @onscreen{Find} opens an interactive search-and-replace panel at
-    the bottom of a DrRacket window.}
-
-   @item{@PrefItem{Reuse existing frames when opening new files} ---
-    If checked, new files are opened in the same DrRacket window,
-    rather than creating a new DrRacket window for each new file.}
-
-   @item{@PrefItem{Enable keybindings in menus} --- If checked, some
-    DrRacket menu items have keybindings. Otherwise, no menu items
-    have key bindings. This preference is designed for people who are
-    comfortable editing in Emacs and find the standard menu
-    keybindings interfere with the Emacs keybindings.}
-    
-  @item{@PrefItem{Color syntax interactively} --- If checked, DrRacket
-    colors your syntax as you type.}
 
   @item{@PrefItem{Automatically print to PostScript file} --- If
     checked, printing will automatically save PostScript files. If
@@ -117,6 +185,10 @@ The preferences dialog consists of several panels.
     a program} -- If checked, DrRacket shows the interactions window
     (if it is hidden) when a program is run.}
 
+  @item{@PrefItem{Automatically switch to the module language when opening a module} --
+         If checked, DrRacket will recognize files that have a @tt{#lang} line
+         and adjust the language setting automatically.}
+
 @item{@PrefItem{Put the interactions window beside the definitions
    window} -- If checked, DrRacket puts the interactions window to the
    right of the definitions window. By default, the interactions
@@ -128,60 +200,7 @@ The preferences dialog consists of several panels.
   that the @hash-lang[] line is the first line in the file.
 }
 
-  ]}
-
- @item{@onscreen{Racket}
-
-  @itemize[
-
-   @item{@PrefItem{Highlight between matching parens} --- If checked, the
-    editor marks the region between matching parenthesis with a gray
-    background (in color) or a stipple pattern (in monochrome) when
-    the blinking caret is next to a parenthesis.}
-
-   @item{@PrefItem{Correct parens} --- If checked, the editor
-    automatically converts a typed @litchar[")"] to @litchar["]"] to
-    match @litchar["["], or it converts a typed @litchar["]"] to
-    @litchar[")"] to match @litchar["("]. Also, the editor changes
-    typed @litchar["["] to match the context (as explained in
-    @secref["editor"]).}
-
-   @item{@PrefItem{Flash paren match} --- If checked, typing a closing
-    parenthesis, square bracket, or quotation mark flashes the
-    matching open parenthesis/bracket/quote.}
-
-  ]}
-
-]
-
-@section{@onscreen{Warnings}}
-
-  @itemize[
-
-   @item{@PrefItem{Ask before changing save format} --- If checked,
-    DrRacket consults the user before saving a file in non-text format
-    (see @secref["drracket-file-formats"]).}
-
-   @item{@PrefItem{Verify exit} --- If checked, DrRacket consults the
-    user before exiting.}
-
-   @item{@PrefItem{Only warn once when executions and interactions are
-    not synchronized} --- If checked, DrRacket warns the user on the
-    first interaction after the definitions window, language, or
-    teachpack is changed without a corresponding click on
-    @onscreen{Run}. Otherwise, the warning appears on every
-    interaction.}
-
-   @item{@PrefItem{Ask about clearing test coverage} --- If checked,
-     when test coverage annotations are displayed DrRacket prompts
-     about removing them. This setting only applies to the PLT
-     languages. DrRacket never asks in the teaching languages.}
-
-   @item{@PrefItem{Check for newer PLT Racket versions} --- If
-     checked, DrRacket periodically polls a server to determine
-     whether a newer version of DrRacket is available.}
-
- ]
+  ]
 
 @section{@onscreen{Profiling}}
   
@@ -199,3 +218,7 @@ The preferences dialog consists of several panels.
   
   This preferences panel allows you to configure your HTTP
   proxy. Contact your system administrator for details.
+
+@section{@onscreen{Tools}}
+
+This preference panel allows you to configure the currently active plugins.
