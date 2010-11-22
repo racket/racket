@@ -79,7 +79,7 @@
 (provide-and-document
  procedures
  ("Zahlen"
-  (number? (%a -> boolean)
+  (number? (any -> boolean)
 	   "feststellen, ob ein Wert eine Zahl ist")
 
   (= (number number number ... -> boolean)
@@ -141,9 +141,9 @@
   (exact? (number -> boolean)
 	  "feststellen, ob eine Zahl exakt ist")
   
-  (integer? (%a -> boolean)
+  (integer? (any -> boolean)
 	    "feststellen, ob ein Wert eine ganze Zahl ist")
-  (natural? (%a -> boolean)
+  (natural? (any -> boolean)
 	    "feststellen, ob ein Wert eine natürliche Zahl (inkl. 0) ist")
   
   (zero? (number -> boolean)
@@ -163,7 +163,7 @@
   (gcd (integer integer ... -> natural)
        "größten gemeinsamen Teiler berechnen")
   
-  (rational? (%a -> boolean)
+  (rational? (any -> boolean)
 	     "feststellen, ob eine Zahl rational ist")
   
   (numerator (rational -> integer)
@@ -175,7 +175,7 @@
   (inexact? (number -> boolean)
 	    "feststellen, ob eine Zahl inexakt ist")
   
-  (real? (%a -> boolean)
+  (real? (any -> boolean)
 	 "feststellen, ob ein Wert eine reelle Zahl ist")
   
   (floor (real -> integer)
@@ -187,7 +187,7 @@
   (round (real -> integer)
 	 "relle Zahl auf eine ganze Zahl runden")
   
-  (complex? (%a -> boolean)
+  (complex? (any -> boolean)
 	    "feststellen, ob ein Wert eine komplexe Zahl ist")
   
   (make-polar (real real -> number)
@@ -226,7 +226,7 @@
 		   "aktuelle Zeit in Sekunden seit einem unspezifizierten Startzeitpunkt berechnen"))
 
  ("boolesche Werte" 
-  (boolean? (%a -> boolean)
+  (boolean? (any -> boolean)
 	    "feststellen, ob ein Wert ein boolescher Wert ist")
   
   ((DMdA-not not) (boolean -> boolean)
@@ -235,45 +235,45 @@
   (boolean=? (boolean boolean -> boolean)
 	     "Booleans auf Gleichheit testen")
 
-  (true? (%a -> boolean)
+  (true? (any -> boolean)
 	 "feststellen, ob ein Wert #t ist")
-  (false? (%a -> boolean)
+  (false? (any -> boolean)
 	  "feststellen, ob ein Wert #f ist"))
 
  ("Listen"
   (empty list "die leere Liste")
-  (make-pair (%a (list %a) -> (list %a))
+  (make-pair (%a (list-of %a) -> (list-of %a))
 	     "erzeuge ein Paar aus Element und Liste")
-  ((DMdA-cons cons) (%a -> boolean)
+  ((DMdA-cons cons) (%a (list-of %a) -> (list-of %a))
 	     "erzeuge ein Paar aus Element und Liste")
-  (pair? (%a -> boolean)
+  (pair? (any -> boolean)
 	 "feststellen, ob ein Wert ein Paar ist")	
-  (cons? (%a -> boolean)
+  (cons? (any -> boolean)
 	 "feststellen, ob ein Wert ein Paar ist")
-  (empty? (%a -> boolean)
+  (empty? (any -> boolean)
 	  "feststellen, ob ein Wert die leere Liste ist")
   
-  (first ((list %a) -> %a)
+  (first ((list-of %a) -> %a)
 	 "erstes Element eines Paars extrahieren")
-  (rest ((list %a) -> (list %a))
+  (rest ((list-of %a) -> (list-of %a))
 	"Rest eines Paars extrahieren")
 
-  (list (%a ... -> (list %a))
+  (list (%a ... -> (list-of %a))
 	"Liste aus den Argumenten konstruieren")
 
-  (length ((list %a) -> natural)
+  (length ((list-of %a) -> natural)
 	  "Länge einer Liste berechnen")
 
-  (fold ((%b (%a %b -> %b) (list %a) -> %b)
-	 "Liste einfalten."))
+  (fold (%b (%a %b -> %b) (list-of %a) -> %b)
+	 "Liste einfalten.")
   
-  ((DMdA-append append) ((list %a) ... -> (list %a))
+  ((DMdA-append append) ((list-of %a) ... -> (list-of %a))
    "mehrere Listen aneinanderhängen")
 
-  (list-ref ((list %a) natural -> %a)
+  (list-ref ((list-of %a) natural -> %a)
 	    "das Listenelement an der gegebenen Position extrahieren")
   
-  (reverse ((list %a)  -> (list %a))
+  (reverse ((list-of %a)  -> (list-of %a))
 	   "Liste in umgekehrte Reihenfolge bringen"))
 
  ("Computer"
@@ -281,7 +281,7 @@
 	    "Signatur für Computer")
   (make-computer (string rational rational -> computer)
 		 "Computer aus Prozessorname, Arbeitsspeicher und Festplattenkapazität konstruieren")
-  (computer? (%a -> boolean)
+  (computer? (any -> boolean)
 	     "feststellen, ob Wert ein Computer ist")
   (computer-processor (computer -> string)
 		      "Prozessorname aus Computer extrahieren")
@@ -295,7 +295,7 @@
 		    "Signatur für Schokokekse")
   (make-chocolate-cookie (number number -> chocolate-cookie)
 			 "Schokokeks aus Schoko- und Keks-Anteil konstruieren")
-  (chocolate-cookie? (%a -> boolean)
+  (chocolate-cookie? (any -> boolean)
 		     "feststellen, ob ein Wert ein Schokokeks ist")
   (chocolate-cookie-chocolate (chocolate-cookie -> number)
 			      "Schoko-Anteil eines Schokokekses extrahieren")
@@ -305,7 +305,7 @@
  ;; #### Zeichen sollten noch dazu, Vektoren wahrscheinlich auch
 
  ("Zeichenketten"
-  (string? (%a -> boolean)
+  (string? (any -> boolean)
 	   "feststellen, ob ein Wert eine Zeichenkette ist")
 
   (string=? (string string string ... -> boolean)
@@ -332,7 +332,7 @@
 		 "Liefert Länge einer Zeichenkette"))
 
  ("Symbole"
-  (symbol? (%a -> boolean)
+  (symbol? (any -> boolean)
 	   "feststellen, ob ein Wert ein Symbol ist")
   (symbol->string (symbol -> string)
 		  "Symbol in Zeichenkette umwandeln")
