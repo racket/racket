@@ -381,6 +381,9 @@
 [inexact->exact (cl->*
                  (-Real . -> . -ExactRational)
                  (N . -> . N))]
+[fl->exact-integer (cl->*
+                    (-NonnegativeFlonum . -> . -Nat)
+                    (-Flonum . -> . -Integer))]
 
 [floor rounder]
 [ceiling rounder]
