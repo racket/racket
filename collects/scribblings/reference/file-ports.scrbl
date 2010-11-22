@@ -192,7 +192,7 @@ A @tech{path} value that is the @tech{cleanse}d version of
 
 @defproc[(open-input-output-file [path path-string?]
                            [#:mode mode-flag (or/c 'binary 'text) 'binary]
-                           [#:exists exists-flag (or/c 'error 'append 'update
+                           [#:exists exists-flag (or/c 'error 'append 'update 'can-update
                                                        'replace 'truncate 'truncate/replace) 'error])
           (values input-port? output-port?)]{
 
