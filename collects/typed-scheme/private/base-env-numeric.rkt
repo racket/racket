@@ -434,7 +434,14 @@
 
 ;; scheme/math
 
-[sgn (-Real . -> . -Real)]
+[sgn (cl->* (-Zero . -> . -Zero)
+            (-ExactPositiveInteger . -> . -PositiveFixnum)
+            (-ExactNonnegativeInteger . -> . -NonnegativeFixnum)
+            (-ExactRational . -> . -Fixnum)
+            (-Flonum . -> . -Flonum)
+            (-InexactReal . -> . -InexactReal)
+            (-Real . -> . -Real))]
+
 [pi -NonnegativeFlonum]
 [sqr (cl->* (-> -Pos -Pos)
             (-> -Integer -Nat)
