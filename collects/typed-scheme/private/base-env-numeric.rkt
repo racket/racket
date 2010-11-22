@@ -338,9 +338,12 @@
                            (-Nat -Nat . -> . (-values (list -Nat -Nat)))
                            (-Integer -Integer . -> . (-values (list -Integer -Integer))))]
 
-[arithmetic-shift (cl->* (-Fixnum (Un -NegativeFixnum (-val 0)) . -> . -Fixnum)
-                         (-Nat -Nat . -> . -Nat)
+[arithmetic-shift (cl->* ((-val 0) (Un -NegativeFixnum (-val 0)) . -> . (-val 0))
+                         (-NonnegativeFixnum (Un -NegativeFixnum (-val 0)) . -> . -NonnegativeFixnum)
+                         (-Fixnum (Un -NegativeFixnum (-val 0)) . -> . -Fixnum)
+                         (-Nat -Integer . -> . -Nat)
                          (-Integer -Integer . -> . -Integer))]
+
 [bitwise-and (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
                     ((list -Integer) -NonnegativeFixnum . ->* . -NonnegativeFixnum)
                     (null -Fixnum . ->* . -Fixnum)
