@@ -368,6 +368,7 @@
             (-Fixnum . -> . -NonnegativeFixnum)
             (-Pos . -> . -Pos)
             (-Integer . -> . -Nat)
+            (-ExactRational . -> . -ExactRational)
             (-Flonum . -> . -NonnegativeFlonum)
             (-InexactReal . -> . -InexactReal)
             (-Real . -> . -Real))]
