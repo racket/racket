@@ -414,6 +414,12 @@
        (-NonnegativeFlonum . -> . -NonnegativeFlonum)
        (-FloatComplex . -> . -FloatComplex)
        (N . -> . N))]
+[integer-sqrt (cl->*
+               (-Zero . -> . -Zero)
+               (-NonnegativeFixnum . -> . -NonnegativeFixnum)
+               (-Nat . -> . -Nat)
+               (-NonnegativeFlonum . -> . -NonnegativeFlonum)
+               (-Real . -> . N))]
 [log (cl->*
       (-Pos . -> . -Real)
       (-FloatComplex . -> . -FloatComplex)
