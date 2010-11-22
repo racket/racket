@@ -216,7 +216,7 @@
   (number->string (number -> string)
 		  "Zahl in Zeichenkette umwandeln")
 
-  (string->number (string -> (mixed number (one-of #f)))
+  (string->number (string -> (mixed number false))
 		  "Zeichenkette in Zahl umwandeln, falls möglich")
   
   (random (natural -> natural)
