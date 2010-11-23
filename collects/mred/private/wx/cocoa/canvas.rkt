@@ -404,6 +404,11 @@
        (super show-children)
        (resume-all-reg-blits))
 
+     (define/override (fixup-locations-children)
+       ;; in atomic mode
+       (suspend-all-reg-blits)
+       (resume-all-reg-blits))
+
      (define/private (do-set-size x y w h)
        (when (pair? blits)
          (atomically (suspend-all-reg-blits)))

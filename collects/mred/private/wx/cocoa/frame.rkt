@@ -319,6 +319,9 @@
     (define/override (show-children)
       (when saved-child
         (send saved-child show-children)))
+    (define/override (fixup-locations-children)
+      (when saved-child
+        (send saved-child fixup-locations-children)))
 
     (define/override (children-accept-drag on?)
       (when saved-child
@@ -532,3 +535,8 @@
                    (make-NSPoint x (- (NSSize-height (NSRect-size f)) y)))
                  belowWindowWithWindowNumber: #:type _NSInteger 0)])
     (atomically (hash-ref all-windows n #f))))
+
+(set-fixup-window-locations!
+ (lambda ()
+   (for ([f (in-hash-values all-windows)])
+     (send f fixup-locations-children))))

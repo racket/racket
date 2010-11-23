@@ -379,6 +379,8 @@
       (focus-is-on #f))
     (define/public (show-children)
       (void))
+    (define/public (fixup-locations-children)
+      (void))
     (define/public (fix-dc) 
       (void))
     (define/public (paint-children)

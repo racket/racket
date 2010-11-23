@@ -19,6 +19,7 @@
               set-eventspace-hook!
               set-front-hook!
               set-menu-bar-hooks!
+              set-fixup-window-locations!
               post-dummy-event
 
               try-to-sync-refresh)
@@ -58,8 +59,11 @@
       (let ([priviledged-custodian ((get-ffi-obj 'scheme_make_custodian #f (_fun _pointer -> _scheme)) #f)])
         (parameterize ([current-custodian priviledged-custodian])
           (thread (lambda () (sleep 5.0)))))
-      ;; FIXME: Also need to reset blit windows, since OS may move them incorrectly
-      (void)])
+      ;; Also need to reset blit windows, since OS may move them incorrectly:
+      (fixup-window-locations)])
+
+(define fixup-window-locations void)
+(define (set-fixup-window-locations! f) (set! fixup-window-locations f))
 
 ;; In case we were started in an executable without a bundle,
 ;; explicitly register with the dock so the application can receive

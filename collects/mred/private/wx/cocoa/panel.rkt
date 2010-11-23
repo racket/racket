@@ -40,6 +40,10 @@
     (define/override (show-children)
       (for ([child (in-list children)])
         (send child show-children)))
+
+    (define/override (fixup-locations-children)
+      (for ([child (in-list children)])
+        (send child fixup-locations-children)))
     
     (define/override (paint-children)
       (for ([child (in-list children)])
