@@ -1187,10 +1187,10 @@ END_XFORM_SKIP;
 #endif
 
 /* The sync field:
-     NULL => non-atomic mode, no sync proc
+     NULL => non-atomic mode
      #t => atomic mode, no sync proc
-     (rcons queue proc) => non-atomic mode, sync proc
-     (box (rcons queue proc)) => atomic mode, sync proc */
+     proc => non-atomic mode, sync proc
+     (box proc) => atomic mode, sync proc */
 
 /*****************************************************************************/
 /* Pointer objects */
@@ -2709,7 +2709,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
     argv = argv_stack;
   else
     argv = scheme_malloc(argc * sizeof(Scheme_Object*));
-  if (data->sync && !SCHEME_RPAIRP(data->sync))
+  if (data->sync && !SCHEME_PROCP(data->sync))
     scheme_start_in_scheduler();
   for (i=0, p=data->itypes; i<argc; i++, p=SCHEME_CDR(p)) {
     v = C2SCHEME(SCHEME_CAR(p), args[i], 0, 0, 0);
@@ -2717,7 +2717,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   }
   p = _scheme_apply(data->proc, argc, argv);
   SCHEME2C(data->otype, resultp, 0, p, NULL, NULL, 1);
-  if (data->sync && !SCHEME_RPAIRP(data->sync))
+  if (data->sync && !SCHEME_PROCP(data->sync))
     scheme_end_in_scheduler();
 }
 
@@ -2786,7 +2786,6 @@ void scheme_check_foreign_work(void)
 
         proc = data->sync;
         if (SCHEME_BOXP(proc)) proc = SCHEME_BOX_VAL(proc);
-        proc = SCHEME_CDR(proc);
 
         scheme_start_in_scheduler();
         _scheme_apply(proc, 1, a);
@@ -2802,49 +2801,44 @@ void scheme_check_foreign_work(void)
 void ffi_queue_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   XFORM_SKIP_PROC
 {
-  ffi_callback_struct *data;
-
-  data = extract_ffi_callback(userdata);
-
 #ifdef MZ_USE_MZRT
-  {
-    FFI_Sync_Queue *queue;
-    Scheme_Object *o;
+  /* This function must not refer to any GCable address, not even
+     temporarily, because a GC may occur concurrent to this
+     function if it's in another thread. */
+  FFI_Sync_Queue *queue;
 
-    o = data->sync;
-    if (SCHEME_BOXP(o)) o = SCHEME_BOX_VAL(o);
+  queue = (FFI_Sync_Queue *)((void **)userdata)[1];
+  userdata = ((void **)userdata)[0];
 
-    queue = (FFI_Sync_Queue *)SCHEME_CAR(o);
+  if (queue->orig_thread != mz_proc_thread_self()) {
+    Queued_Callback *qc;
+    mzrt_sema *sema;
 
-    if (queue->orig_thread != mz_proc_thread_self()) {
-      Queued_Callback *qc;
-      mzrt_sema *sema;
+    mzrt_sema_create(&sema, 0);
 
-      mzrt_sema_create(&sema, 0);
+    qc = (Queued_Callback *)malloc(sizeof(Queued_Callback));
+    qc->cif = cif;
+    qc->resultp = resultp;
+    qc->args = args;
+    qc->userdata = userdata;
+    qc->sema = sema;
+    qc->called = 0;
 
-      qc = (Queued_Callback *)malloc(sizeof(Queued_Callback));
-      qc->cif = cif;
-      qc->resultp = resultp;
-      qc->args = args;
-      qc->userdata = userdata;
-      qc->sema = sema;
-      qc->called = 0;
+    mzrt_mutex_lock(queue->lock);
+    qc->next = queue->callbacks;
+    queue->callbacks = qc;
+    mzrt_mutex_unlock(queue->lock);
+    scheme_signal_received_at(queue->sig_hand);
 
-      mzrt_mutex_lock(queue->lock);
-      qc->next = queue->callbacks;
-      queue->callbacks = qc;
-      mzrt_mutex_unlock(queue->lock);
-      scheme_signal_received_at(queue->sig_hand);
+    /* wait for the callback to be invoked in the main thread */
+    mzrt_sema_wait(sema);
 
-      /* wait for the callback to be invoked in the main thread */
-      mzrt_sema_wait(sema);
-
-      mzrt_sema_destroy(sema);
-      free(qc);
-      return;
-    }
+    mzrt_sema_destroy(sema);
+    free(qc);
+    return;
   }
 #endif
+
   ffi_do_callback(cif, resultp, args, userdata);
 }
 
@@ -2858,6 +2852,7 @@ typedef struct closure_and_cif_struct {
   void                *data;
 #endif
 } closure_and_cif;
+
 /* free the above */
 void free_cl_cif_args(void *ignored, void *p)
 {
@@ -2872,6 +2867,20 @@ void free_cl_cif_args(void *ignored, void *p)
 #endif
   scheme_free_code(p);
 }
+
+#ifdef MZ_USE_MZRT
+void free_cl_cif_queue_args(void *ignored, void *p)
+{
+  void *data = ((closure_and_cif*)p)->data;
+  void **q = (void **)data;
+  data = q[0];
+  free(q);
+#ifdef MZ_PRECISE_GC
+  GC_free_immobile_box((void**)data);
+#endif
+  scheme_free_code(p);
+}
+#endif
 
 /* (ffi-callback scheme-proc in-types out-type [abi atomic? sync]) -> ffi-callback */
 /* the treatment of in-types and out-types is similar to that in ffi-call */
@@ -2921,6 +2930,11 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
     GC_CAN_IGNORE ffi_closure *cl;
     GC_CAN_IGNORE closure_and_cif *cl_cif_args;
     GC_CAN_IGNORE ffi_callback_t do_callback;
+    GC_CAN_IGNORE void *callback_data;
+  #ifdef MZ_USE_MZRT
+    int keep_queue = 0;
+  #endif
+
     if (!SCHEME_PROCP(argv[0]))
       scheme_wrong_type(MYNAME, "procedure", 0, argc, argv);
     nargs = scheme_proper_list_length(itypes);
@@ -2948,9 +2962,9 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
         ffi_sync_queue->sig_hand = sig_hand;
         ffi_sync_queue->callbacks = NULL;
       }
-      sync = scheme_make_raw_pair((Scheme_Object *)ffi_sync_queue,
-                                  argv[5]);
+      sync = argv[5];
       if (is_atomic) sync = scheme_box(sync);
+      keep_queue = 1;
   #endif
       do_callback = ffi_queue_callback;
     } else
@@ -2979,18 +2993,36 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
 #   ifdef MZ_PRECISE_GC
     {
       /* put data in immobile, weak box */
-      void **tmp;
+      GC_CAN_IGNORE void **tmp;
       tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0, 1));
-      cl_cif_args->data = (struct immobile_box*)tmp;
+      callback_data = (struct immobile_box*)tmp;
     }
 #   else /* MZ_PRECISE_GC undefined */
-    cl_cif_args->data = (void*)data;
+    callback_data = (void*)data;
 #   endif /* MZ_PRECISE_GC */
+  #ifdef MZ_USE_MZRT
+    if (keep_queue) {
+      /* For ffi_queue_callback(), add a level of indirection in
+         `data' to hold the place-specific `ffi_sync_queue'.
+         Use `free_cl_cif_data_args' to clean up this extra level. */
+      GC_CAN_IGNORE void **tmp;
+      tmp = (void **)malloc(sizeof(void*) * 2);
+      tmp[0] = callback_data;
+      tmp[1] = ffi_sync_queue;
+      callback_data = (void *)tmp;
+    }
+  #endif
+    cl_cif_args->data = callback_data;
     if (ffi_prep_closure(cl, cif, do_callback, (void*)(cl_cif_args->data))
         != FFI_OK)
       scheme_signal_error
         ("internal error: ffi_prep_closure did not return FFI_OK");
-    scheme_register_finalizer(data, free_cl_cif_args, cl_cif_args, NULL, NULL);
+  #ifdef MZ_USE_MZRT
+    if (keep_queue)
+      scheme_register_finalizer(data, free_cl_cif_queue_args, cl_cif_args, NULL, NULL);
+    else
+  #endif
+      scheme_register_finalizer(data, free_cl_cif_args, cl_cif_args, NULL, NULL);
     return (Scheme_Object*)data;
 }
 #undef MYNAME
