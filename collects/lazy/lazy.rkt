@@ -446,7 +446,7 @@
 
   (define* (~list-ref l k)
     (let ([k (! k)])
-      (unless (and (integer? k) (exact? k) (<= 0 k))
+      (unless (exact-nonnegative-integer? k)
         (raise-type-error 'list-ref "non-negative exact integer" 1 l k))
       (let loop ([k k] [l (! l)])
         (cond [(not (pair? l))
@@ -455,7 +455,7 @@
               [else (loop (sub1 k) (! (cdr l)))]))))
   (define* (~list-tail l k)
     (let ([k (! k)])
-      (unless (and (integer? k) (exact? k) (<= 0 k))
+      (unless (exact-nonnegative-integer? k)
         (raise-type-error 'list-tail "non-negative exact integer" 1 l k))
       (let loop ([k k] [l l]) ; don't force here -- unlike list-ref
         (cond [(zero? k) l]
@@ -575,10 +575,13 @@
   ;; Extra functionality that is useful for lazy list stuff
 
   (define* (take n l)
-    (let loop ([n (! n)] [l (! l)])
-      (cond [(or (<= n 0) (null? l)) '()]
-            [(pair? l) (cons (car l) (~ (loop (sub1 n) (! (cdr l)))))]
-            [else (error 'take "not a proper list: ~e" l)])))
+    (let ([n (! n)] [l (! l)])
+      (if (exact-nonnegative-integer? n)
+        (let loop ([n n] [l l])
+          (cond [(or (<= n 0) (null? l)) '()]
+                [(pair? l) (cons (car l) (~ (loop (sub1 n) (! (cdr l)))))]
+                [else (error 'take "not a proper list: ~e" l)]))
+        (raise-type-error 'take "non-negative exact integer" 0 n l))))
 
   ;; not like Haskell's `cycle' that consumes a list
   (define* (cycle . l)
@@ -692,7 +695,7 @@
 
   (define* (build-list n f)
     (let ([n (! n)] [f (! f)])
-      (unless (and (integer? n) (exact? n) (>= n 0))
+      (unless (exact-nonnegative-integer? n)
         (error 'build-list "~s must be an exact integer >= 0" n))
       (unless (procedure? f)
         (error 'build-list "~s must be a procedure" f))
