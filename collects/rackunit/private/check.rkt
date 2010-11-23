@@ -171,7 +171,9 @@
                  (name
                   (identifier? #'name)
                   (syntax/loc stx
-                    check-secret-name)))))
+                    (λ (formal ...) (check-secret-name formal ... 
+                                                       #:location (quote loc) 
+                                                       #:expression (quote (name actual ...)))))))))
            ))))))
 
 (define-syntax define-simple-check
