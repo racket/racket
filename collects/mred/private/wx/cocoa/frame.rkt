@@ -545,5 +545,6 @@
    ;; in atomic mode
    (for ([b (in-hash-values all-windows)])
      (let ([f (weak-box-value b)])
-       (send f fixup-locations-children)))))
+       (when f
+         (send f fixup-locations-children))))))
 
