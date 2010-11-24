@@ -372,7 +372,9 @@
 (define (free-fields obj names)
   (for-each (lambda (name)
               (let-values ([(ivar p) (object_getInstanceVariable obj name)])
-                (when p (free-immobile-cell p))))
+                (when p
+                  (object_setInstanceVariable obj name #f)
+                  (free-immobile-cell p))))
             names))
 
 ;; ----------------------------------------
