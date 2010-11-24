@@ -271,6 +271,7 @@
                         (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
                           (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
                             (and (tell #:type _BOOL win isVisible)
+                                 (not (tell win parentWindow))
                                  (or (not root-fake-frame)
                                      (not (ptr-equal? win (send root-fake-frame get-cocoa))))
                                  win)))))))])
