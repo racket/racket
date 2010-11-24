@@ -161,8 +161,7 @@
                                   "untitled.ps")))
                     (send pss set-orientation 'landscape)
                     (parameterize ([current-ps-setup pss])
-                      (if (and native-printing?
-                               (not (memq (system-type) '(unix))))
+                      (if native-printing?
                           ;; Make printer-dc%
                           (begin
                             (when (can-get-page-setup-from-user?)
