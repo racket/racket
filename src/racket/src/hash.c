@@ -1080,7 +1080,7 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
     {
       k = (k << 3) + k;
       k += (long)((char *)SCHEME_CPTR_VAL(o) + SCHEME_CPTR_OFFSET(o));
-      break;
+      return k;
     }
   case scheme_vector_type:
   case scheme_fxvector_type:
