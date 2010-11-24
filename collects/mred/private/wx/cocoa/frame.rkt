@@ -36,6 +36,9 @@
 (define empty-mb (new menu-bar%))
 (define root-fake-frame #f)
 
+;; Maps window numbers to weak boxes of frame objects;
+;;  the weak-box layer is needed to avoid GC-accounting
+;;  problems.
 (define all-windows (make-hash))
 
 (define-objc-mixin (MyWindowMethods Superclass)
@@ -278,12 +281,12 @@
       (register-frame-shown this on?)
       (let ([num (tell #:type _NSInteger cocoa windowNumber)])
         (if on?
-            (hash-set! all-windows num this)
+            (hash-set! all-windows num (make-weak-box this))
             (hash-remove! all-windows num)))
       (when on?
         (let ([b (eventspace-wait-cursor-count (get-eventspace))])
           (set-wait-cursor-mode (not (zero? b))))))
-    
+
     (define/override (show on?)
       (let ([es (get-eventspace)])
         (when on?
@@ -534,9 +537,13 @@
                  (let ([f (tell #:type _NSRect (tell NSScreen mainScreen) frame)])
                    (make-NSPoint x (- (NSSize-height (NSRect-size f)) y)))
                  belowWindowWithWindowNumber: #:type _NSInteger 0)])
-    (atomically (hash-ref all-windows n #f))))
+    (atomically (let ([b (hash-ref all-windows n #f)])
+                  (and b (weak-box-value b))))))
 
 (set-fixup-window-locations!
  (lambda ()
-   (for ([f (in-hash-values all-windows)])
-     (send f fixup-locations-children))))
+   ;; in atomic mode
+   (for ([b (in-hash-values all-windows)])
+     (let ([f (weak-box-value b)])
+       (send f fixup-locations-children)))))
+
