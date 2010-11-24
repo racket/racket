@@ -1986,11 +1986,11 @@ Returns two values, analogous to the return
 values of @scheme[struct-info]:
 @itemize[
 
-  @item{@scheme[class]: a class or @scheme[#f]; the result is
+  @item{@scheme[_class]: a class or @scheme[#f]; the result is
   @scheme[#f] if the current inspector does not control any class for
   which the @scheme[object] is an instance.}
 
-  @item{@scheme[skipped?]: @scheme[#f] if the first result corresponds
+  @item{@scheme[_skipped?]: @scheme[#f] if the first result corresponds
   to the most specific class of @scheme[object], @scheme[#t]
   otherwise.}
 
@@ -2011,31 +2011,31 @@ values of @scheme[struct-type-info]:
 
 @itemize[
 
-  @item{@scheme[name]: the class's name as a symbol;}
+  @item{@scheme[_name]: the class's name as a symbol;}
 
-  @item{@scheme[field-cnt]: the number of fields (public and private)
+  @item{@scheme[_field-cnt]: the number of fields (public and private)
    defined by the class;}
 
-  @item{@scheme[field-name-list]: a list of symbols corresponding to the
-  class's public fields; this list can be larger than @scheme[field-k]
+  @item{@scheme[_field-name-list]: a list of symbols corresponding to the
+  class's public fields; this list can be larger than @scheme[_field-cnt]
   because it includes inherited fields;}
 
-  @item{@scheme[field-accessor]: an accessor procedure for obtaining
+  @item{@scheme[_field-accessor]: an accessor procedure for obtaining
   field values in instances of the class; the accessor takes an
   instance and a field index between @scheme[0] (inclusive)
-  and @scheme[field-cnt] (exclusive);}
+  and @scheme[_field-cnt] (exclusive);}
 
-  @item{@scheme[field-mutator]: a mutator procedure for modifying
+  @item{@scheme[_field-mutator]: a mutator procedure for modifying
   field values in instances of the class; the mutator takes an
   instance, a field index between @scheme[0] (inclusive)
-  and @scheme[field-cnt] (exclusive), and a new field value;}
+  and @scheme[_field-cnt] (exclusive), and a new field value;}
 
-  @item{@scheme[super-class]: a class for the most specific ancestor of
+  @item{@scheme[_super-class]: a class for the most specific ancestor of
    the given class that is controlled by the current inspector,
    or @scheme[#f] if no ancestor is controlled by the current
    inspector;}
 
-  @item{@scheme[skipped?]: @scheme[#f] if the sixth result is the most
+  @item{@scheme[_skipped?]: @scheme[#f] if the sixth result is the most
    specific ancestor class, @scheme[#t] otherwise.}
 
 ]}
