@@ -1076,6 +1076,12 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
       o = SCHEME_CDR(o);
       break;
     }
+  case scheme_cpointer_type:
+    {
+      k = (k << 3) + k;
+      k += (long)((char *)SCHEME_CPTR_VAL(o) + SCHEME_CPTR_OFFSET(o));
+      break;
+    }
   case scheme_vector_type:
   case scheme_fxvector_type:
   case scheme_wrap_chunk_type:
@@ -1489,6 +1495,10 @@ static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       v1 = equal_hash_key2(SCHEME_CAR(o), hi);
       v2 = equal_hash_key2(SCHEME_CDR(o), hi);
       return v1 + v2;
+    }
+  case scheme_cpointer_type:
+    {
+      return (long)((char *)SCHEME_CPTR_VAL(o) + SCHEME_CPTR_OFFSET(o));
     }
   case scheme_vector_type:
   case scheme_fxvector_type:

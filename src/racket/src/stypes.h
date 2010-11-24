@@ -88,7 +88,7 @@ enum {
   scheme_hash_table_type,               /* 69 */
   scheme_hash_tree_type,                /* 70 */
   scheme_cpointer_type,                 /* 71 */
-  scheme_offset_cpointer_type,          /* 72 */
+  scheme_currently_unused_type,         /* 72 */
   scheme_weak_box_type,                 /* 73 */
   scheme_ephemeron_type,                /* 74 */
   scheme_struct_type_type,              /* 75 */
@@ -183,6 +183,7 @@ enum {
   scheme_once_used_type,                /* 164 */
   scheme_serialized_symbol_type,        /* 165 */
   scheme_serialized_structure_type,     /* 166 */
+  /* use scheme_currently_unused_type above, first */
 
 #ifdef MZTAG_REQUIRED
   _scheme_last_normal_type_,            /* 167 */

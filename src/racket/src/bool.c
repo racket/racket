@@ -588,6 +588,9 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     if (union_check(obj1, obj2, eql))
       return 1;
     return scheme_bucket_table_equal_rec((Scheme_Bucket_Table *)obj1, (Scheme_Bucket_Table *)obj2, eql);
+  } else if (SCHEME_CPTRP(obj1)) {
+    return (((char *)SCHEME_CPTR_VAL(obj1) + SCHEME_CPTR_OFFSET(obj1))
+            == ((char *)SCHEME_CPTR_VAL(obj2) + SCHEME_CPTR_OFFSET(obj2)));
   } else if (SAME_TYPE(SCHEME_TYPE(obj1), scheme_wrap_chunk_type)) {
     return vector_equal(obj1, obj2, eql);
   } else if (SAME_TYPE(SCHEME_TYPE(obj1), scheme_resolved_module_path_type)) {

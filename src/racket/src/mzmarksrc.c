@@ -61,17 +61,10 @@ cpointer_obj {
   }
   gcMARK2(SCHEME_CPTR_TYPE(p), gc);
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
-}
-
-offset_cpointer_obj {
- mark:
-  if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
-    gcMARK2(SCHEME_CPTR_VAL(p), gc);
-  }
-  gcMARK2(SCHEME_CPTR_TYPE(p), gc);
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
+  if (SCHEME_CPTR_HAS_OFFSET(p))
+    return gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
+  else
+    return gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
 }
 
 twoptr_obj {

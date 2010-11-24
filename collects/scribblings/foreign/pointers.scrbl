@@ -14,7 +14,11 @@ Returns @scheme[#f] for other values.}
 @defproc[(ptr-equal? [cptr1 cpointer?] [cptr2 cpointer?]) boolean?]{
 
 Compares the values of the two pointers. Two different Racket
-pointer objects can contain the same pointer.}
+pointer objects can contain the same pointer.
+
+If the values are both C pointers---as opposed to @racket[#f], a byte
+string, @scheme[ffi-obj], or callback---this comparison is the same as
+@racket[equal?].}
 
 
 @defproc[(ptr-add [cptr cpointer?] [offset exact-integer?] [type ctype? _byte]) 

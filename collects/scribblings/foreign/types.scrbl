@@ -284,7 +284,11 @@ The address referenced by a @scheme[_pointer] value must not refer to
 memory managed by the garbage collector (unless the address
 corresponds to a value that supports interior pointers and that is
 otherwise referenced to preserve the value from garbage collection).
-The reference is not traced or updated by the garbage collector.}
+The reference is not traced or updated by the garbage collector.
+
+The @racket[equal?] predicate equates C pointers (including pointers
+for @racket[_gcpointer] and possibly containing an offset) when they
+refer to the same address.}
 
 
 @defthing[_gcpointer ctype?]{

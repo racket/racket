@@ -1212,7 +1212,7 @@ END_XFORM_SKIP;
   W_OFFSET(SCHEME_FFIANYPTR_VAL(x), SCHEME_FFIANYPTR_OFFSET(x))
 
 #define SCHEME_CPOINTER_W_OFFSET_P(x) \
-  SAME_TYPE(SCHEME_TYPE(x), scheme_offset_cpointer_type)
+  (SCHEME_CPTRP(x) && SCHEME_CPTR_HAS_OFFSET(x))
 
 #define scheme_make_foreign_cpointer(x) \
   ((x==NULL)?scheme_false:scheme_make_cptr(x,NULL))
