@@ -83,14 +83,6 @@ monochrome bitmap and @racket[32] for a color bitmap. See also
 
 }
 
-@defmethod[(get-gl-config [config (is-a?/c gl-config%)])
-           void?]{
-
-Returns a copy of this bitmap's requested OpenGL configuration. See
- also @method[bitmap% set-gl-config].
-
-}
-
 @defmethod[(get-height)
            exact-positive-integer?]{
 
@@ -279,18 +271,6 @@ A monochrome bitmap saved as @scheme['png] without a mask bitmap
 
 The same as @xmethod[bitmap-dc% set-argb-pixels], but the
 bitmap does not have to be selected into the DC.
-
-}
-
-@defmethod[(set-gl-config [config (is-a?/c gl-config%)])
-           void?]{
-
-Sets the requested OpenGL configuration for this bitmap. The
- configuration is used when the bitmap selected into a drawing
- context, and then a GL context is created for the drawing context.
-
-The given @scheme[gl-config%] object is copied, so that changes to
- the object do not affect the bitmap's configuration.
 
 }
 

@@ -42,7 +42,9 @@ alphas; for example, drawing a line in the middle of an empty bitmap
 produces an image with non-zero alpha only at the drawn line.
 
 Only bitmaps created with the new `make-gl-bitmap' function support
-OpenGL drawing.
+OpenGL drawing. The `make-gl-bitmap' function takes a `gl-config%' as
+an argument, and the `get-gl-config' and `set-gl-config' methods of
+`bitmap%' have been removed.
 
 Use the new `make-bitmap', `read-bitmap', `make-monochrome-bitmap',
 `make-screen-bitmap', and `make-gl-bitmap' functions to create
