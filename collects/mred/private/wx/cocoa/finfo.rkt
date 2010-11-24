@@ -65,8 +65,6 @@
 
 (define _FSRef _pointer) ; 80 bytes
 
-(define _OSStatus _sint32)
-
 (define-coreserv FSPathMakeRef (_fun _path _FSRef (_pointer = #f) -> _OSStatus))
 
 (define-coreserv FSGetCatalogInfo

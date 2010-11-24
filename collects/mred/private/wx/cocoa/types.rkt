@@ -5,7 +5,7 @@
          "utils.rkt")
 
 (provide 
- (protect-out _NSInteger _NSUInteger
+ (protect-out _NSInteger _NSUInteger _OSStatus
               _CGFloat
               _NSPoint _NSPoint-pointer (struct-out NSPoint)
               _NSSize _NSSize-pointer (struct-out NSSize)
@@ -17,6 +17,8 @@
 
 (define _NSInteger _long)
 (define _NSUInteger _ulong)
+
+(define _OSStatus _sint32)
 
 (define 64-bit? (= (ctype-sizeof _long) 8))
 

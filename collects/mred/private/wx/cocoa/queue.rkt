@@ -68,15 +68,16 @@
 ;; In case we were started in an executable without a bundle,
 ;; explicitly register with the dock so the application can receive
 ;; keyboard events.
-;; This technique is not sanctioned by Apple --- I found the code in SDL.
-(define-cstruct _CPSProcessSerNum ([lo _uint32] [hi _uint32]))
-(define-appserv CPSGetCurrentProcess (_fun _CPSProcessSerNum-pointer -> _int)
-  #:fail (lambda () (lambda args 1)))
-(define-appserv CPSEnableForegroundOperation (_fun _CPSProcessSerNum-pointer _int _int _int _int -> _int)
-  #:fail (lambda () #f))
-(let ([psn (make-CPSProcessSerNum 0 0)])
-  (when (zero? (CPSGetCurrentProcess psn))
-    (void (CPSEnableForegroundOperation psn #x03 #x3C #x2C #x1103))))
+(define-cstruct _ProcessSerialNumber
+  ([highLongOfPSN _ulong]
+   [lowLongOfPSN _ulong]))
+(define kCurrentProcess 2)
+(define kProcessTransformToForegroundApplication 1)
+(define-appserv TransformProcessType (_fun _ProcessSerialNumber-pointer
+                                           _uint32
+                                           -> _OSStatus))
+(void (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
+                            kProcessTransformToForegroundApplication))
 
 (define app-delegate (tell (tell MyApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)
