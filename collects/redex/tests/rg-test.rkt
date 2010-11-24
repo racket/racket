@@ -434,6 +434,45 @@
         '((2 ((3 (2 1)) 3)) 1)))
 
 (let ()
+  (define-language L
+    (C (c hole))
+    (D (d hole))
+    (E (e hole))
+    (F (f hole)))
+  
+  (test (generate-term L (in-hole 3 4) 5) 3)
+  (test (generate-term L (in-hole (hole hole) 4) 5) '(4 4))
+  (test (generate-term/decisions L (in-hole (hole ... hole) 4) 5 0 (decisions #:seq (list (λ (_) 1))))
+        '(4 4))
+  
+  (let-syntax ([test-sequence-holes 
+                (λ (stx)
+                  (syntax-case stx ()
+                    [(_ l)
+                     #`(let ([length l]
+                             [bindings #f])
+                         (test (generate-term/decisions 
+                                L
+                                (side-condition (in-hole ((name x (q C)) (... ...)) 4)
+                                                (set! bindings (term ((x C) (... ...)))))
+                                5 0 (decisions #:seq (list (λ (_) length))))
+                               #,(syntax/loc stx (build-list length (λ (_) '(q (c 4))))))
+                         (test bindings 
+                               #,(syntax/loc stx (build-list length (λ (_) (term ((q (c hole)) (c hole))))))))]))])
+    (test-sequence-holes 3)
+    (test-sequence-holes 0))
+  
+  (let ([bindings #f])
+    (test (generate-term 
+           L 
+           (side-condition (name CDEF (in-hole (name CDE (in-hole (name CD (in-hole C D)) E)) F))
+                           (set! bindings (term (C D E F CD CDE CDEF))))
+           0)
+          (term (c (d (e (f hole))))))
+    (test bindings (term ((c hole) (d hole) (e hole) (f hole) 
+                                   (c (d hole)) (c (d (e hole))) (c (d (e (f hole)))))))))
+
+(let ()
   (define-language lc
       (e (e e) (+ e e) x v)
       (v (λ (x) e) number)
@@ -473,7 +512,8 @@
 (let ()
   (define-language lang
     (e (hide-hole (in-hole ((hide-hole hole) hole) 1))))
-  (test (generate-term lang e 5) (term (hole 1))))
+  (test (generate-term lang e 5) (term (hole 1)))
+  (test (plug (generate-term lang (hide-hole hole) 0) 3) 3))
 
 (define (output-error-port thunk)
   (let ([port (open-output-string)])
