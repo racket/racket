@@ -30,8 +30,6 @@ Creates a new memory DC. If @scheme[bitmap] is not @scheme[#f], it is
 @defmethod[(draw-bitmap-section-smooth [source (is-a?/c bitmap%)]
                                        [dest-x real?]
                                        [dest-y real?]
-                                       [dest-width (and/c real? (not/c negative?))]
-                                       [dest-height (and/c real? (not/c negative?))]
                                        [src-x real?]
                                        [src-y real?]
                                        [src-width (and/c real? (not/c negative?))]

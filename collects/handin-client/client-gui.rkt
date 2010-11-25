@@ -704,13 +704,13 @@
                     (make-object bitmap% (quotient w 2) (quotient h 2)))]
          [mdc (make-object bitmap-dc% bm2)])
     (send mdc draw-bitmap-section-smooth bm 
-          0 0 (quotient w 2) (quotient h 2)
+          0 0
           0 0 w h)
     (send mdc set-bitmap #f)
     (when mbm2
       (send mdc set-bitmap mbm2)
       (send mdc draw-bitmap-section-smooth (send bm get-loaded-mask)
-            0 0 (quotient w 2) (quotient h 2)
+            0 0 
             0 0 w h)
       (send mdc set-bitmap #f)
       (send bm2 set-loaded-mask mbm2))
