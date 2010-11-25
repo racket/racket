@@ -237,7 +237,7 @@
 	  (check-label-string cwho label)
 	  (check-top-level-parent/false cwho parent)
 	  (for-each (lambda (x) (check-dimension cwho x)) (list width height x y))
-	  (check-style cwho #f '(no-caption resize-border no-sheet) style)))
+	  (check-style cwho #f '(no-caption resize-border no-sheet close-button) style)))
       (rename [super-on-subwindow-char on-subwindow-char])
       (private-field [wx #f])
       (override

@@ -286,7 +286,7 @@
     (define/augment (on-close)
       (when quit-on-close?
         (exit)))
-    (super-new)))
+    (super-new [style '(close-button)])))
 
 (define splash-canvas%
   (class canvas%

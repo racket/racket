@@ -90,7 +90,7 @@
        [panel #f]
 
        [use-default-position? (and (= -11111 (list-ref args 2))
-				   (= -11111 (list-ref args (if dlg? 3 1))))]
+                                   (= -11111 (list-ref args (if dlg? 3 1))))]
        
        [enabled? #t]
        [focus #f]

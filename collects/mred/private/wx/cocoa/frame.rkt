@@ -167,7 +167,9 @@
                                                               NSTitledWindowMask
                                                               (if is-sheet? NSUtilityWindowMask 0)
                                                               (if is-dialog?
-                                                                  0
+                                                                  (if (memq 'close-button style)
+                                                                      NSClosableWindowMask
+                                                                      0)
                                                                   (bitwise-ior 
                                                                    NSClosableWindowMask
                                                                    NSMiniaturizableWindowMask
@@ -190,7 +192,7 @@
          (tellv tb setVisible: #:type _BOOL #f)
          (tellv tb release))))
 
-    (move -11111 (if (= y -11111) 0 y))
+    (internal-move -11111 (if (= y -11111) 0 y))
 
     (tellv cocoa setAcceptsMouseMovedEvents: #:type _BOOL #t)
 
@@ -415,7 +417,7 @@
 
     (define/override (set-size x y w h)
       (unless (and (= x -1) (= y -1))
-        (move x y))
+        (internal-move x y))
       (let ([f (tell #:type _NSRect cocoa frame)])
         (tellv cocoa setFrame: 
                #:type _NSRect (make-NSRect 
@@ -436,7 +438,7 @@
                                                    (NSSize-height (NSRect-size f)))))
                                (make-NSSize w h))
                display: #:type _BOOL #t)))
-    (define/override (move x y)
+    (define/override (internal-move x y)
       (let ([x (if (= x -11111) (get-x) x)]
             [y (if (= y -11111) (get-y) y)])
         (tellv cocoa setFrameTopLeftPoint: #:type _NSPoint (make-NSPoint x (- (flip-screen y)

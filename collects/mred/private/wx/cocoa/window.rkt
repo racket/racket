@@ -520,8 +520,10 @@
         (tellv cocoa setNeedsDisplay: #:type _BOOL #t)
         (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
                                                            (make-NSSize w h)))))
-    (define/public (move x y)
+    (define/public (internal-move x y)
       (set-size x y (get-width) (get-height)))
+    (define/public (move x y)
+      (internal-move x y))
 
     (define accept-drag? #f)
     (define accept-parent-drag? #f)
