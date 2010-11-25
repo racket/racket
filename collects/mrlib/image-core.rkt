@@ -214,26 +214,20 @@ has been moved out).
                           (equal? (get-normalized-shape) (send that get-normalized-shape)))
                      (let ([w (+ 1 (round (inexact->exact (bb-right bb))))]    ;; some shapes (ie, rectangles) draw 1 outside the bounding box
                            [h (+ 1 (round (inexact->exact (bb-bottom bb))))])  ;; so we make the bitmap slightly bigger to accomodate that.
-                       (or (zero? w)
-                           (zero? h)
-                           (let ([bm1 (make-object bitmap% w h)]
-                                 [bm2 (make-object bitmap% w h)]
+                       (or ;(zero? w)
+                           ;(zero? h)
+                           (let ([bm1 (make-bitmap w h #t)]
+                                 [bm2 (make-bitmap w h #t)]
                                  [bytes1 (make-bytes (* w h 4) 0)]
                                  [bytes2 (make-bytes (* w h 4) 0)]
                                  [bdc (make-object bitmap-dc%)])
-                             (and (check-same? bm1 bm2 bytes1 bytes2 bdc "red" that)
-                                  (check-same? bm1 bm2 bytes1 bytes2 bdc "green" that))))))))))
+                             (draw-into bm1 bdc bytes1 this)
+                             (draw-into bm2 bdc bytes2 that)
+                             (equal? bytes1 bytes2)))))))))
     
-    (define/private (check-same? bm1 bm2 bytes1 bytes2 bdc color that)
-      (clear-bitmap/draw/bytes bm1 bdc bytes1 this color)
-      (clear-bitmap/draw/bytes bm2 bdc bytes2 that color)
-      (equal? bytes1 bytes2))
-    
-    (define/private (clear-bitmap/draw/bytes bm bdc bytes obj color)
+    (define/private (draw-into bm bdc bytes obj)
       (send bdc set-bitmap bm)
-      (send bdc set-pen "black" 1 'transparent)
-      (send bdc set-brush color 'solid)
-      (send bdc draw-rectangle 0 0 (send bm get-width) (send bm get-height))
+      (send bdc clear)
       (render-image obj bdc 0 0)
       (send bdc get-argb-pixels 0 0 (send bm get-width) (send bm get-height) bytes))
     
