@@ -1014,7 +1014,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
        [(pen? color)
         (pen->pen-obj/cache color)]
        [else
-        (send the-pen-list find-or-create-pen (get-color-arg color) 0 'solid)])]
+        (send the-pen-list find-or-create-pen (get-color-arg color) 0 'solid 'round 'miter)])]
     [(solid)
      (send the-pen-list find-or-create-pen "black" 1 'transparent)]))
 
