@@ -156,6 +156,15 @@
       =>
       0)
 
+(test (image-width empty-image) => 0)
+(test (image-height empty-image) => 0)
+(test (equal? (above empty-image
+                     (rectangle 10 10 "solid" "red"))
+              (beside empty-image
+                      (rectangle 10 10 "solid" "red")))
+      =>
+      #t)
+
 (check-close (image-width (rotate 45 (rectangle 100 0 'solid 'blue)))
              (inexact->exact (ceiling (* (sin (* pi 1/4)) 100))))
 (check-close (image-height (rotate 45 (rectangle 100 0 'solid 'blue)))

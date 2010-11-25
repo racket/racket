@@ -713,6 +713,13 @@
    (list '(right-triangle 36 48 "solid" "black") 'image "1a0088e3819.png")
    (list '(triangle 40 "solid" "tan") 'image "aeddf66d5d.png")
    (list
+    '(equal?
+      (above empty-image (rectangle 10 10 "solid" "red"))
+      (beside empty-image (rectangle 10 10 "solid" "red")))
+    'val
+    '#t)
+   (list '(image-width empty-image) 'val '0)
+   (list
     '(text/font "not really a link" 18 "blue" #f 'roman 'normal 'normal #t)
     'image
     "27bbbb6fd64.png")

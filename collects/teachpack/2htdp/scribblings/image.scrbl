@@ -177,6 +177,16 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
                              #f 'roman 'normal 'normal #t)]
 }
 
+@defthing[empty-image image?]{
+  The empty image. Its width and height are both zero and it does not draw at all.
+  
+  @image-examples[(image-width empty-image)
+                  (equal? (above empty-image
+                                 (rectangle 10 10 "solid" "red"))
+                          (beside empty-image
+                                  (rectangle 10 10 "solid" "red")))]
+}
+                
 @section{Polygons}
                      
 @defproc*[([(triangle [side-length (and/c real? (not/c negative?))] 

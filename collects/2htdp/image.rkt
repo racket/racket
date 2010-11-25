@@ -105,6 +105,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          scene+curve
          text
          text/font
+         
          image->color-list
          color-list->bitmap
          
@@ -139,7 +140,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          step-count?
          save-image)
 
-(provide bitmap)
+(provide bitmap
+         empty-image)
 
 (define-primitive make-color build-color/make-color)
 (define-primitive color build-color/color)
