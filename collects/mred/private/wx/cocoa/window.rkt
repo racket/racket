@@ -78,6 +78,7 @@
 (import-protocol NSTextInput)
 
 (define current-insert-text (make-parameter #f))
+(define current-set-mark (make-parameter #f))
 
 (define NSDragOperationCopy 1)
 
@@ -169,6 +170,9 @@
   [-a _NSRange (markedRange) (make-NSRange 0 0)]
   [-a _NSRange (selectedRange) (make-NSRange 0 0)]
   [-a _void (setMarkedText: [_id aString] selectedRange: [_NSRange selRange])
+      ;; We interpreter a call to `setMarkedText:' as meaning that the
+      ;; key is a dead key for composing some other character.
+      (let ([m (current-set-mark)]) (when m (set-box! m #t)))
       (void)]
   [-a _id (validAttributesForMarkedText) #f]
   [-a _id (attributedSubstringFromRange: [_NSRange theRange]) #f]
@@ -213,7 +217,8 @@
   (let ([wx (->wx wxb)])
     (and
      wx
-     (let ([inserted-text (box #f)])
+     (let ([inserted-text (box #f)]
+           [set-mark (box #f)])
        (unless wheel?
          ;; Calling `interpretKeyEvents:' allows key combinations to be
          ;; handled, such as option-e followed by e to produce é. The
@@ -222,16 +227,22 @@
          ;; give us back the text in the parameter. For now, we ignore the
          ;; text and handle the event as usual, though probably we should
          ;; be doing something with it.
-         (parameterize ([current-insert-text inserted-text])
-           (tellv self interpretKeyEvents: (tell (tell NSArray alloc) 
-                                                 initWithObjects: #:type (_ptr i _id) event
-                                                 count: #:type _NSUInteger 1))))
+         (parameterize ([current-insert-text inserted-text]
+                        [current-set-mark set-mark])
+           (let ([array (tell (tell NSArray alloc) 
+                              initWithObjects: #:type (_ptr i _id) event
+                              count: #:type _NSUInteger 1)])
+             (tellv self interpretKeyEvents: array)
+             (tellv array release))))
        (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
               [bit? (lambda (m b) (positive? (bitwise-and m b)))]
               [pos (tell #:type _NSPoint event locationInWindow)]
-              [str (if wheel?
-                       #f
-                       (tell #:type _NSString event characters))]
+              [str (cond
+                    [wheel? #f]
+                    [(unbox set-mark) ""] ; => dead key for composing characters
+                    [(unbox inserted-text)]
+                    [else
+                     (tell #:type _NSString event characters)])]
               [control? (bit? modifiers NSControlKeyMask)]
               [option? (bit? modifiers NSAlternateKeyMask)]
               [delta-y (and wheel?
