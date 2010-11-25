@@ -66,7 +66,7 @@
     (test #t `(client-size ,f ,cw ,ch ,w ,h) (and (<= 1 cw w) (<= 1 ch h))))
   (stv f refresh))
 
-(define (area-tests f sw? sh? no-stretch?)
+(define (area-tests f sw? sh? no-stretch? use-client-size?)
   (printf "Area ~a\n" f)
   (let ([x (send f min-width)]
 	[y (send f min-height)])
@@ -75,7 +75,9 @@
     (stv (send f get-top-level-window) reflow-container)
     (pause) ; to make sure size has taken effect
     (let-values ([(w h) (if no-stretch?
-			    (send f get-size)
+			    (if use-client-size?
+                                (send f get-client-size)
+                                (send f get-size))
 			    (values 0 0))])
       (printf "Size ~a x ~a\n" w h)
       (when no-stretch?
@@ -95,7 +97,7 @@
     (stv f min-height y)))
 
 (define (containee-tests f sw? sh? m)
-  (area-tests f sw? sh? #f)
+  (area-tests f sw? sh? #f #f)
   (printf "Containee ~a\n" f)
   (st m f horiz-margin)
   (st m f vert-margin)
@@ -166,7 +168,7 @@
     (st my-l b get-plain-label)
     (stv b set-label &-l)))
 			      
-(let ([f (make-object frame% "Yes & No" #f 150 151 20 21)])
+(let ([f (make-object frame% "Yes & No" #f 150 151 70 21)])
   (let ([init-tests
 	 (lambda (hidden?)
 	   (st "Yes & No" f get-label)
@@ -177,15 +179,8 @@
 	   (stv f set-label "Yes & No")
 	   (st #f f get-parent)
 	   (st f f get-top-level-window)
-           (case (system-type 'os)
-             [(unix)
-              (st 21 f get-x)
-              (if hidden?
-                  (st 43 f get-y)
-                  (st 22 f get-y))]
-             [else
-              (st 20 f get-x)
-              (st 21 f get-y)])
+           (st 70 f get-x)
+           (st 21 f get-y)
 	   (st 150 f get-width)
 	   (st 151 f get-height)
 	   (stvals (list (send f get-width) (send f get-height)) f get-size)
@@ -218,7 +213,7 @@
 	[container-tests
 	 (lambda ()
 	   (printf "Container\n")
-	   (area-tests f #t #t #t)
+	   (area-tests f #t #t #t #t)
 	   (let-values ([(x y) (send f container-size null)])
 	     (st x f min-width)
 	     (st y f min-height))
@@ -263,7 +258,7 @@
     (stv f iconize #t)
     (pause)
     (pause)
-    (st #t f is-iconized?)  ; NB: test will fail on MacOS
+    (st #t f is-iconized?)
     (stv f show #t)
     (pause)
     (st #f f is-iconized?)
@@ -1010,7 +1005,7 @@
 	       (test-controls panel frame)
 	       (if win?
 		   ((if % containee-window-tests window-tests) panel #t #t (and % frame) frame 0)
-		   (area-tests panel #t #t #f))
+		   (area-tests panel #t #t #f #f))
                (when (is-a? panel panel%)
                  (st #t panel get-orientation (is-a? panel horizontal-panel%)))
 	       (container-tests panel win?)
