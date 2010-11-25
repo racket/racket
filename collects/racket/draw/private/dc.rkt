@@ -1450,8 +1450,8 @@
                                      [real? dest-y]
                                      [real? src-x]
                                      [real? src-y]
-                                     [real? src-w]
-                                     [real? src-h]
+                                     [nonnegative-real? src-w]
+                                     [nonnegative-real? src-h]
                                      [(symbol-in solid opaque xor) [style 'solid]]
                                      [(make-or-false color%) [color black]]
                                      [(make-or-false bitmap%) [mask #f]])

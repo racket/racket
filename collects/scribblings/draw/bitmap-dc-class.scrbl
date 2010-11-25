@@ -39,10 +39,14 @@ Creates a new memory DC. If @scheme[bitmap] is not @scheme[#f], it is
                                        [mask (or/c (is-a?/c bitmap%) false/c)])
            boolean?]{
 
-The same as @method[dc<%> draw-bitmap-section]. In older version, this
- method smoothed drawing more than @method[dc<%> draw-bitmap-section], but
- smoothing is now provided by @method[dc<%> draw-bitmap-section].
+The same as @method[dc<%> draw-bitmap-section], except that
+ @racket[dest-width] and @racket[dest-height] cause the DC's
+ transformation to be adjusted while drawing the bitmap so 
+ that the bitmap is scaled.
 
+In older versions, this method smoothed drawing more than
+ @method[dc<%> draw-bitmap-section], but smoothing is now provided by
+ @method[dc<%> draw-bitmap-section].
 }
 
 @defmethod[(get-argb-pixels [x real?]
