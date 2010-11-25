@@ -110,7 +110,10 @@
     [(_) (mutator-app void)]
     [(_ e) e]
     [(_ fe e ...)
-     (let ([tmp fe]) (mutator-begin e ...))]))
+     (let ([tmp 
+            (syntax-parameterize ([mutator-tail-call? #f])
+                                 fe)])
+       (mutator-begin e ...))]))
 
 ; Real Macros
 (define-syntax-rule (mutator-define-values (id ...) e)

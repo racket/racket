@@ -15,8 +15,6 @@
 ;; returns true if evaluating the example code (as a mutator)
 ;; returns one result at the top-level, namely the symbol 'passed.
 (define (test-code exps)
-  (printf "Test code\n")
-  (for-each pretty-print exps)
   (let ([tmpfile (make-temporary-file "plai-random-mutator-test-~a")])
     (call-with-output-file tmpfile
       (λ (port)
