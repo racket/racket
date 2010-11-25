@@ -35,6 +35,21 @@
 ;; Basic ----------------------------------------
 
 (define (basic-tests)
+  (test "(λx.e)[y←v] ≠ λy.(e[x←y][y←v])"
+        '(<>
+          ([k 4]) []
+          (((λ (k1) (λ (k) k))
+            (λ () k))
+           0))
+        '(<> ([k 4]) [] 0))
+  (test "(λx.e)[y←v] ≠ λz.(e[x←z][y←v]) if z ∈ FV(e)"
+        '(<>
+          ([k2 5])
+          ()
+          (((λ (k1) (λ (k) k2))
+            (λ () k))
+           0))
+        '(<> ([k2 5]) [] 5))
   (test "basic dw"
         '(<>
           () []
@@ -995,7 +1010,7 @@
                               (λ (x) x)))))
                         hole))
                  100)
-                (λ (x) x)))))
+                (λ (x1) x1)))))
   (test "similar way to get stuck, but using the pre thunk"
         '(<>
           ([output (list)]
@@ -1059,7 +1074,7 @@
                     hole))
                   100)
                  0)
-                (λ (x) x)))))
+                (λ (x1) x1)))))
   (test "loop"
         '(<>
           ([counter (list 4 3 2 1 0)])

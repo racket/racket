@@ -14,7 +14,7 @@
   [(subst x_1 x_2 (λ (x_3 ...) e_1)) ; shortcut; x_1 != any x_3
    (λ (x_3 ...) (subst x_1 x_2 e_1))]
   [(subst x_1 e_1 (λ (x_2 ...) e_2)) ; x_1 != any x_2
-   ,(term-let ([(x_new ...) (variables-not-in (term e_1) (term (x_2 ...)))])
+   ,(term-let ([(x_new ...) (variables-not-in (term (x_1 e_1 e_2)) (term (x_2 ...)))])
               (term (λ (x_new ...) 
                       (subst x_1 e_1 (subst* (x_2 ...) (x_new ...) e_2)))))]
   [(subst x_1 e_1 x_1) e_1]
