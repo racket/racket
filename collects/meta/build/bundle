@@ -227,7 +227,7 @@
                 (error 'binaries "no binaries found for ~s" platform)))
             *platforms* *platform-tree-lists*)
   ;; Get the racket tree, remove junk and binary stuff
-  (set-racket-tree! racket-base/ racket/-name *platform-tree-lists*)
+  (set-racket-tree! racket/ racket-base/ racket/-name *platform-tree-lists*)
   (set-bin-files-delayed-lists!
    (delay (map (lambda (trees)
                  (sort* (mappend tree-flatten (add-trees trees))))

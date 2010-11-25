@@ -22,7 +22,7 @@
   (register-spec! 'verify! verify!)
   (register-spec! 'distribute! void)
 
-  (set-racket-tree! racket-base/ racket/-name null)
+  (set-racket-tree! racket/ racket-base/ racket/-name null)
 
   (set-bin-files-delayed-lists!
    ;; FIXME: hard-wired list of binary-specific files
