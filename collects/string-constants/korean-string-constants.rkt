@@ -52,7 +52,6 @@
  (web-materials "관련 사이트") ;; menu item title
  (tool-web-sites "참고 사이트")   ;; menu item title
  (plt-homepage "Racket")
- (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (pbd-homepage "Program by Design")
 
  ;;; bug report form

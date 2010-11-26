@@ -134,7 +134,6 @@ please adhere to these guidelines:
  (web-materials "Related Web Sites") ;; menu item title
  (tool-web-sites "Tool Web Sites")   ;; menu item title
  (plt-homepage "Racket")
- (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (pbd-homepage "Program by Design")
 
  ;;; bug report form

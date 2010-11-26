@@ -134,7 +134,6 @@
   (web-materials "Sites web apparentés") ;; menu item title
   (tool-web-sites "Sites web d'outils")   ;; menu item title
   (plt-homepage "Racket")
-  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
   (pbd-homepage "Program by Design")
   
   ;;; bug report form

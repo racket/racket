@@ -36,7 +36,6 @@
  (web-materials "Verwandte Web-Seiten")
  (tool-web-sites "Web-Seiten mit Tools")
  (plt-homepage "Racket")
- (how-to-use-scheme "How to Use Scheme")
  (pbd-homepage "Program by Design")
 
  ;;; bug report form

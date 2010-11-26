@@ -32,7 +32,6 @@
  ;;; important urls
  (web-materials "Verwante Web Sites") ;; menu item title
  (plt-homepage "Racket")
- (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (pbd-homepage "Program by Design")
 
  ;;; bug report form
