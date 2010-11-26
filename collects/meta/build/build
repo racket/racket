@@ -95,7 +95,7 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
 # defbuild "punge"       "i386-linux-ubuntu-jaunty" "renice=20"
 # defbuild "bjorn"       "i386-linux-gcc2"
 # defbuild "chicago"     "i386-linux-debian"
-defbuild "brownbuild"  "i386-linux-debian" # really an AMD64 machine
+# defbuild "brownbuild"  "i386-linux-debian" # really an AMD64 machine
 # defbuild "inga"        "i386-freebsd"
 # defbuild "chicago-unstable" "i386-linux-debian-unstable"
 # Start the main build last
