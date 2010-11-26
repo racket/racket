@@ -22,9 +22,15 @@
     (init [interactive #t]
           [parent #f]
           [use-paper-bbox #f]
-          [as-eps #t])
+          [as-eps #t]
+          [output #f])
 
-    (define-values (s port-box width height landscape?)
+    (unless (or (not output)
+                (path-string? output)
+                (output-port? output))
+      (raise-type-error (init-name (if pdf? 'pdf-dc% 'post-script-dc%)) "path string, output port, or #f" output))
+
+    (define-values (s port-box close-port? width height landscape?)
       (let ([su (if interactive
                     ((gui-dynamic-require 'get-ps-setup-from-user) #f parent)
                     (current-ps-setup))])
@@ -44,23 +50,26 @@
                               (and fn (file-name-from-path fn))
                               (if pdf? "pdf" "ps")))]
                  [fn (if to-file?
-                         (if interactive
-                             (get-file (send pss get-file))
-                             (let ([fn (send pss get-file)])
-                               (or fn (get-file #f))))
+                         (or output
+                             (if interactive
+                                 (get-file (send pss get-file))
+                                 (let ([fn (send pss get-file)])
+                                   (or fn (get-file #f)))))
                          #f)])
             (if (and to-file?
                      (not fn))
-                (values #f #f #f #f #f)
+                (values #f #f #f #f #f #f)
                 (let* ([paper (assoc (send pss get-paper-name) paper-sizes)]
                        [w (cadr paper)]
                        [h (caddr paper)]
                        [landscape? (eq? (send pss get-orientation) 'landscape)]
-                       [file (open-output-file
-                              (or fn (make-temporary-file (if pdf?
-                                                              "draw~a.pdf"
-                                                              "draw~a.ps")))
-                              #:exists 'truncate/replace)]
+                       [file (if (output-port? fn)
+                                 fn
+                                 (open-output-file
+                                  (or fn (make-temporary-file (if pdf?
+                                                                  "draw~a.pdf"
+                                                                  "draw~a.ps")))
+                                  #:exists 'truncate/replace))]
                        [port-box (make-immobile file)])
                   (let-values ([(w h) (if (and pdf? landscape?)
                                           (values h w)
@@ -74,11 +83,12 @@
                       w
                       h)
                      port-box ; needs to be accessible as long as `s'
+                     (not (output-port? fn))
                      w
                      h
                      landscape?)))))]
          [else
-          (values #f #f #f #f #f)])))
+          (values #f #f #f #f #f #f)])))
 
     (define-values (margin-x margin-y)
       (let ([xb (box 0)] [yb (box 0.0)])
@@ -119,7 +129,8 @@
       (cairo_destroy c)
       (set! c #f)
       (set! s #f)
-      (close-output-port (ptr-ref port-box _racket))
+      (when close-port?
+        (close-output-port (ptr-ref port-box _racket)))
       (set! port-box #f))
 
     (define/override (init-cr-matrix c)

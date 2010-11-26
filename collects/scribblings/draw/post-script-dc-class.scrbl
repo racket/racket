@@ -15,7 +15,8 @@ See also @scheme[printer-dc%].
 @defconstructor[([interactive any/c #t]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f]
                  [use-paper-bbox any/c #f]
-                 [as-eps any/c #t])]{
+                 [as-eps any/c #t]
+                 [output (or/c path-string? output-port? #f) #f])]{
 
 If @scheme[interactive] is true, the user is given a dialog for
  setting printing parameters (see @scheme[get-ps-setup-from-user]);
@@ -31,8 +32,8 @@ If @scheme[parent] is not @scheme[#f], it is used as the parent window of
 If @scheme[interactive] is @scheme[#f], then the settings returned by
  @scheme[current-ps-setup] are used. A file dialog is still presented
  to the user if the @method[ps-setup% get-file] method returns
- @scheme[#f], and the user may hit cancel in that case so that
- @method[dc<%> ok?] returns @scheme[#f].
+ @scheme[#f] and @racket[output] is @racket[#f], and the user may 
+ hit @onscreen{Cancel} in that case so that @method[dc<%> ok?] returns @scheme[#f].
 
 If @scheme[use-paper-bbox] is @scheme[#f], then the PostScript
  bounding box for the output is determined by drawing commands issued
@@ -48,6 +49,11 @@ If @scheme[use-paper-bbox] is @scheme[#f], then the PostScript
  Encapsulated PostScript (EPS) header, and instead includes a generic
  PostScript header. Otherwise, the generated PostScript includes a
  header that identifiers it as EPS.
+
+When @racket[output] is not @racket[#f], then file-mode output is
+ written to @racket[output]. If @racket[output] is @racket[#f], then
+ the destination is determined via @racket[current-ps-setup] or by
+ prompting the user for a pathname.
 
 See also @scheme[ps-setup%] and @scheme[current-ps-setup]. The
 settings for a particular @scheme[post-script-dc%] object are fixed to
