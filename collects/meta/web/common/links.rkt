@@ -29,13 +29,13 @@
 ;; External links
 
 (define* -htdp
-  @make-link["http://www.htdp.org/"]{@i{How to Design Programs}})
+  @make-link["http://htdp.org/"]{@i{How to Design Programs}})
 
 (define* -redex
   @make-link["http://redex.plt-scheme.org/"]{Redex})
 
-(define* -teachscheme
-  @make-link["http://www.teach-scheme.org/"]{TeachScheme!})
+(define* -pbd
+  @make-link["http://programbydesign.org/"]{Program by Design})
 
 (define* -cookbook
   @make-link["http://schemecookbook.org/"]{Schematics Scheme Cookbook})
