@@ -53,7 +53,7 @@
  (tool-web-sites "참고 사이트")   ;; menu item title
  (plt-homepage "Racket")
  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
- (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
+ (pbd-homepage "Program by Design")
 
  ;;; bug report form
  (cancel-bug-report? "오류 보고를 취소하시겠습니까?")
