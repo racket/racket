@@ -2872,6 +2872,11 @@ void scheme_log_abort(char *buffer)
   scheme_log_message(&logger, SCHEME_LOG_FATAL, buffer, strlen(buffer), scheme_false);
 }
 
+void scheme_log_warning(char *buffer)
+{
+  scheme_log_message(scheme_main_logger, SCHEME_LOG_WARNING, buffer, strlen(buffer), scheme_false);
+}
+
 static int extract_level(const char *who, int which, int argc, Scheme_Object **argv)
 {
   Scheme_Object *v;
