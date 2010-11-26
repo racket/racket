@@ -12,8 +12,14 @@
          (for-syntax "keyword-macros.ss")
          mrlib/tex-table)
 
-(define (exotic-choice? [random random]) (= 0 (random 5)))
-(define (use-lang-literal? [random random]) (= 0 (random 20)))
+(define redex-pseudo-random-generator
+  (make-parameter (current-pseudo-random-generator)))
+(define (generator-random . arg)
+  (parameterize ([current-pseudo-random-generator (redex-pseudo-random-generator)])
+    (apply random arg)))
+
+(define (exotic-choice? [random generator-random]) (= 0 (random 5)))
+(define (use-lang-literal? [random generator-random]) (= 0 (random 20)))
 
 (define default-check-attempts 1000)
 
@@ -21,11 +27,11 @@
 (define tex-chars-threshold 1500)
 (define chinese-chars-threshold 2500)
 
-(define (pick-var lang-lits attempt [random random])
+(define (pick-var lang-lits attempt [random generator-random])
   (let ([length (add1 (random-natural 4/5 random))])
     (string->symbol (random-string lang-lits length attempt random))))
 
-(define (pick-char attempt [random random])
+(define (pick-char attempt [random generator-random])
   (cond [(or (< attempt ascii-chars-threshold) (not (exotic-choice? random)))
          (let ([i (random (add1 (- (char->integer #\z) (char->integer #\a))))]
                [cap? (zero? (random 2))])
@@ -39,18 +45,18 @@
         [else
          (integer->char (+ #x4E00 (random (- #x9FCF #x4E00))))]))
 
-(define (random-string lang-lits length attempt [random random])
+(define (random-string lang-lits length attempt [random generator-random])
   (if (and (not (null? lang-lits)) (use-lang-literal? random))
       (pick-from-list lang-lits random)
       (list->string (build-list length (λ (_) (pick-char attempt random))))))
 
-(define (pick-any lang sexp [random random]) 
+(define (pick-any lang sexp [random generator-random]) 
   (if (and (> (dict-count (rg-lang-non-cross lang)) 0) (zero? (random 5)))
       (let ([nts (rg-lang-non-cross lang)])
         (values lang (pick-from-list (dict-map nts (λ (nt _) nt)) random)))
       (values sexp 'sexp)))
 
-(define (pick-string lang-lits attempt [random random])
+(define (pick-string lang-lits attempt [random generator-random])
   (random-string lang-lits (random-natural 1/5 random) attempt random))
 
 ;; next-non-terminal-decision selects a subset of a non-terminal's productions.
@@ -58,7 +64,8 @@
 ;; generator's test cases restrict the productions.
 (define pick-nts values)
 
-(define (pick-from-list l [random random]) (list-ref l (random (length l))))
+(define (pick-from-list l [random generator-random])
+  (list-ref l (random (length l))))
 
 ;; Chooses a random (exact) natural number from the "shifted" geometric distribution:
 ;;   P(random-natural = k) = p(1-p)^k
@@ -66,22 +73,22 @@
 ;; P(random-natural >= k) = (1-p)^(k+1)
 ;; E(random-natural) = (1-p)/p
 ;; Var(random-natural) = (1-p)/p^2
-(define (random-natural p [random random])
+(define (random-natural p [random generator-random])
   (sub1 (inexact->exact (ceiling (real-part (/ (log (random)) (log (- 1 p))))))))
 
 (define (negative? random)
   (zero? (random 2)))
 
-(define (random-integer p [random random])
+(define (random-integer p [random generator-random])
   (* (if (negative? random) -1 1) (random-natural p random)))
 
-(define (random-rational p [random random])
+(define (random-rational p [random generator-random])
   (/ (random-integer p random) (add1 (random-natural p random))))
 
-(define (random-real p [random random])
+(define (random-real p [random generator-random])
   (* (random) 2 (random-integer p random)))
 
-(define (random-complex p [random random])
+(define (random-complex p [random generator-random])
   (let ([randoms (list random-integer random-rational random-real)])
     (make-rectangular ((pick-from-list randoms random) p random) 
                       ((pick-from-list randoms random) p random))))
@@ -109,7 +116,7 @@
 (define attempt->size 
   (make-parameter default-attempt->size))
 
-(define (pick-number attempt #:top-threshold [top-threshold complex-threshold] [random random])
+(define (pick-number attempt #:top-threshold [top-threshold complex-threshold] [random generator-random])
   (let loop ([threshold 0] 
              [generator random-natural]
              [levels `((,integer-threshold . ,random-integer)
@@ -123,13 +130,13 @@
         (generator (expected-value->p ((attempt->size) (- attempt threshold))) random)
         (loop (caar levels) (cdar levels) (cdr levels)))))
 
-(define (pick-natural attempt [random random])
+(define (pick-natural attempt [random generator-random])
   (pick-number attempt #:top-threshold 0 random))
 
-(define (pick-integer attempt [random random])
+(define (pick-integer attempt [random generator-random])
   (pick-number attempt #:top-threshold integer-threshold random))
 
-(define (pick-real attempt [random random])
+(define (pick-real attempt [random generator-random])
   (pick-number attempt #:top-threshold real-threshold random))
 
 (define (pick-sequence-length attempt)
@@ -991,7 +998,8 @@
          generate-term
          check-reduction-relation
          check-metafunction
-         exn:fail:redex:generation-failure?)
+         exn:fail:redex:generation-failure?
+         redex-pseudo-random-generator)
 
 (provide (struct-out ellipsis) 
          (struct-out mismatch)

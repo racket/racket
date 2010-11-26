@@ -1454,7 +1454,12 @@ produces and consumes argument lists.}
   @racket[redex-check], etc. when those forms are unable to produce
   a term matching some pattern.
 }
-                                                            
+               
+@defparam[redex-pseudo-random-generator generator pseudo-random-generator?]{
+@racket[generate-term] and the randomized testing forms (e.g., @racket[redex-check])
+use the parameter @racket[generator] to construct random terms. The parameter's
+initial value is @racket[(current-pseudo-random-generator)].}
+
 @deftech{Debugging PLT Redex Programs}
 
 It is easy to write grammars and reduction rules that are

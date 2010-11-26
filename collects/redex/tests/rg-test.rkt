@@ -1257,4 +1257,22 @@
    '(x ..._1 x ..._2 variable ..._2 variable ..._3 variable_1 ..._3 variable_1 ..._4)
    '((..._1 . ..._4) (..._2 . ..._4) (..._3 . ..._4))))
 
+;; redex-test-seed
+(let ([seed 0])
+  (define-language L)
+  (define (generate)
+    (generate-term L (number ...) 10000000 #:attempt-num 10000000))
+  (test (begin (random-seed seed) (generate))
+        (begin (random-seed seed) (generate)))
+  (let ([prg (make-pseudo-random-generator)])
+    (define (seed-effect-generate effect)
+      (begin
+        (parameterize ([current-pseudo-random-generator prg])
+          (random-seed seed))
+        (effect)
+        (parameterize ([redex-pseudo-random-generator prg])
+          (generate))))
+    (test (seed-effect-generate void)
+          (seed-effect-generate random))))
+
 (print-tests-passed 'rg-test.ss)
