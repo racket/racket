@@ -442,3 +442,30 @@
 
       (define (draw-pict p dc dx dy)
 	((make-pict-drawer p) dc dx dy))
+
+
+      (define (convert-pict p format default)
+        (case format
+          [(png-bytes)
+           (let* ([bm (make-bitmap (max 1 (pict-width p)) (max 1 (pict-height p)))]
+                  [dc (make-object bitmap-dc% bm)])
+             (draw-pict p dc 0 0)
+             (send dc set-bitmap #f)
+             (let ([s (open-output-bytes)])
+               (send bm save-file s 'png)
+               (get-output-bytes s)))]
+          [(eps-bytes pdf-bytes)
+           (let ([s (open-output-bytes)])
+             (let ([dc (new (if (eq? format 'eps-bytes) post-script-dc% pdf-dc%)
+                            [interactive #f]
+                            [as-eps #t]
+                            [output s])])
+               (send dc start-doc "pict")
+               (send dc start-page)
+               (draw-pict p dc 0 0)
+               (send dc end-page)
+               (send dc end-doc))
+             (get-output-bytes s))]
+          [else default]))
+
+             

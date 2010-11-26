@@ -65,6 +65,10 @@ picts. The functions @racket[pict-width], @racket[pict-height],
 @racket[pict-descent], and @racket[pict-ascent] extract bounding-box
 information from a pict.
 
+A pict is a convertible datatype through the @racket[file/convertible]
+protocol. Supported conversions include @racket['png-bytes],
+@racket['eps-bytes], and @racket['pdf-bytes].
+
 
 @defstruct[pict ([draw any/c]
                  [width real?]

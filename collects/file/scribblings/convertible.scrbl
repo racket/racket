@@ -23,6 +23,7 @@ should be considered standard:
  @item{@scheme['gif-bytes] --- a byte string containing a GIF image encoding}
  @item{@scheme['png-bytes] --- a byte string containing a PNG image encoding}
  @item{@scheme['ps-bytes] --- a byte string containing a PostScript document}
+ @item{@scheme['eps-bytes] --- a byte string containing an Encapsulated PostScript document}
  @item{@scheme['pdf-bytes] --- a byte string containing a PDF document}
 ]
 

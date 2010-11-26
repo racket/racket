@@ -466,3 +466,5 @@
 		  [else (error 'pict->string "bad tag: ~s" tag)])))))
 
       (define pict->commands pict->command-list)
+
+      (define (convert-pict p v d) d)
