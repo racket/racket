@@ -30,6 +30,17 @@
     (thread (lambda () (sleep 0.01) (semaphore-post s)))
     (test s 'yield (yield s))))
 
+(define (iconize-pause)
+  (if (eq? 'unix (system-type))
+      ;; iconization might take a while
+      ;; for the window manager to report back
+      (begin
+        (pause)
+        (when (regexp-match? #rx"darwin" (path->string (system-library-subpath)))
+          (sleep 0.75))
+        (pause))
+      (pause)))
+
 (let ([s (make-semaphore 1)])
   (test s 'yield-wrapped (yield s)))
 (let ([s (make-semaphore 1)])
@@ -256,21 +267,18 @@
     
     (printf "Iconize\n")
     (stv f iconize #t)
-    (pause)
-    (pause)
+    (iconize-pause)
     (st #t f is-iconized?)
     (stv f iconize #f)
-    (pause)
-    (pause)
+    (iconize-pause)
     (st #f f is-iconized?)
     (stv f iconize #t)
-    (pause)
-    (pause)
+    (iconize-pause)
     (st #t f is-iconized?)
     (stv f show #t)
-    (pause)
+    (iconize-pause)
     (st #f f is-iconized?)
-    
+
     (stv f maximize #t)
     (pause)
     (stv f maximize #f)

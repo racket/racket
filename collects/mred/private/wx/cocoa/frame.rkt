@@ -520,7 +520,9 @@
     (define/public (iconized?)
       (tell #:type _BOOL cocoa isMiniaturized))
     (define/public (iconize on?)
-      (tellv cocoa miniaturize: cocoa))
+      (if on?
+          (tellv cocoa miniaturize: cocoa)
+          (tellv cocoa deminiaturize: cocoa)))
 
     (define/public (set-title s)
       (tellv cocoa setTitle: #:type _NSString s))
