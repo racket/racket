@@ -69,6 +69,8 @@
                           (build-path example-servlets "add-ssd.rkt"))
     (test-add-two-numbers mkd "add-formlets.rkt - send/formlet"
                           (build-path example-servlets "add-formlets.rkt"))
+    (test-add-two-numbers mkd "add-page.rkt"
+                          (build-path example-servlets "add-page.rkt"))
     (test-equal? "count.rkt - state"
                  (let* ([d (mkd (build-path example-servlets "count.rkt"))]
                         [ext (lambda (c)

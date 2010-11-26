@@ -1,6 +1,8 @@
 #lang racket/base
 (require web-server/servlet
          racket/stxparam
+         racket/list
+         racket/contract
          (for-syntax racket/base))
 
 (define-syntax-parameter embed/url
@@ -48,20 +50,22 @@
     [(binding)
      b]))
           
-(define (get-binding id #:format [format 'string])
+(define (get-binding id [req (current-request)]
+                     #:format [format 'string])
   (convert-binding
    format
    (bindings-assq 
     (binding-id->bytes id) 
-    (request-bindings/raw (current-request)))))
+    (request-bindings/raw req))))
 
-(define (get-bindings id #:format [format 'string])
+(define (get-bindings id [req (current-request)]
+                      #:format [format 'string])
   (define id-bs (binding-id->bytes id))
   (filter-map
    (λ (b)
      (and (bytes=? id-bs (binding-id b))
           (convert-binding format b)))
-   (request-bindings/raw (current-request))))
+   (request-bindings/raw req)))
              
 (provide embed/url
          page
@@ -71,7 +75,7 @@
  [current-request (parameter/c (or/c false/c request?))]
  [binding-id/c contract?]
  [binding-format/c contract?]
- [get-binding (->* (binding-id/c) (#:format binding-format/c)
+ [get-binding (->* (binding-id/c) (request? #:format binding-format/c)
                    (or/c false/c string? bytes? binding?))]
- [get-bindings (->* (binding-id/c) (#:format binding-format/c)
+ [get-bindings (->* (binding-id/c) (request? #:format binding-format/c)
                     (listof (or/c string? bytes? binding?)))])

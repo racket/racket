@@ -16,8 +16,7 @@ This manual describes the Racket libraries for building Web applications.
 The @secref["http"] section describes the common library function for manipulating HTTP requests and creating HTTP responses.
 In particular, this section covers cookies, authentication, and request bindings.
 
-The final three sections (@secref["dispatch"], @secref["formlets"], and @secref["templates"]) cover utility libraries that
-ease the creation of typical Web applications.
+The final four sections (@secref["dispatch"], @secref["formlets"], @secref["templates"], and @secref["page"]) cover utility libraries that ease the creation of typical Web applications.
 
 This manual closes with a frequently asked questions section: @secref["faq"].
 
@@ -33,6 +32,7 @@ This manual closes with a frequently asked questions section: @secref["faq"].
 @include-section["dispatch.scrbl"]
 @include-section["formlets.scrbl"]
 @include-section["templates.scrbl"]
+@include-section["page.scrbl"]
 
 @include-section["faq.scrbl"]
 
