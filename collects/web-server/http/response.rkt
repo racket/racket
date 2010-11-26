@@ -103,6 +103,8 @@
      (for-each
       (lambda (str) (display str o-port))
       (response/full-body bresp))]
+    [(? response/port?)
+     ((response/port-output bresp) o-port)]
     [(? response/incremental?)
      (if (connection-close? conn)
          ((response/incremental-generator bresp)

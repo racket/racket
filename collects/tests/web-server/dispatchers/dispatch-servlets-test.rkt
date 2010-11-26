@@ -54,6 +54,11 @@
                         [t0 (simple-xpath* '(p) (call d url0 empty))])
                    t0)
                  "Hello, Web!")
+    (test-equal? "port.rkt"
+                 (let* ([d (mkd (build-path example-servlets "port.rkt"))]
+                        [t0 (simple-xpath* '(p) (call d url0 empty))])
+                   t0)
+                 "Hello, Web!")
     (test-equal? "response.rktd - loading"
                  (parameterize ([xexpr-drop-empty-attributes #t])
                    (let* ([d (mkd (build-path example-servlets "response.rktd"))])
