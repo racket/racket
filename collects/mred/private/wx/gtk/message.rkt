@@ -2,6 +2,7 @@
 (require racket/class
          ffi/unsafe
          "../../syntax.rkt"
+         "../../lock.rkt"
          "item.rkt"
          "utils.rkt"
          "types.rkt"
@@ -21,6 +22,7 @@
 (define-gtk gtk_label_set_text_with_mnemonic (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_image_new_from_stock (_fun _string _int -> _GtkWidget))
 (define-gtk gtk_misc_set_alignment (_fun _GtkWidget _float _float -> _void))
+(define-gtk gtk_image_set_from_pixbuf (_fun _GtkWidget _GdkPixbuf -> _void))
 
 (define (mnemonic-string s)
   (if (regexp-match? #rx"&" s)
@@ -75,6 +77,13 @@
   (set-auto-size)
 
   (define/override (set-label s)
-    (gtk_label_set_text_with_mnemonic (get-gtk) (mnemonic-string s)))
+    (cond
+     [(string? s)
+      (gtk_label_set_text_with_mnemonic (get-gtk) (mnemonic-string s))]
+     [else
+      (let ([pixbuf (bitmap->pixbuf s)])
+        (atomically
+         (gtk_image_set_from_pixbuf (get-gtk) pixbuf)
+         (release-pixbuf pixbuf)))]))
 
   (def/public-unimplemented get-font))

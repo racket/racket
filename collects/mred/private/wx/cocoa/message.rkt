@@ -94,7 +94,11 @@
              [no-show? (memq 'deleted style)])
 
   (define/override (set-label label)
-    (tellv (get-cocoa) setTitleWithMnemonic: #:type _NSString label))
+    (cond
+     [(string? label)
+      (tellv (get-cocoa) setTitleWithMnemonic: #:type _NSString label)]
+     [else
+      (tellv (get-cocoa) setImage: (bitmap->image label))]))
 
   (define/override (gets-focus?) #f)
 
