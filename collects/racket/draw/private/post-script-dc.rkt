@@ -14,9 +14,10 @@
          "local.ss"
          "ps-setup.ss")
 
-(provide post-script-dc%)
+(provide post-script-dc%
+         pdf-dc%)
 
-(define dc-backend%
+(define (make-dc-backend pdf?)
   (class default-dc-backend%
     (init [interactive #t]
           [parent #f]
@@ -35,11 +36,13 @@
                  [to-file? (eq? (send pss get-mode) 'file)]
                  [get-file (lambda (fn)
                              ((gui-dynamic-require 'put-file)
-                              "Save PostScript As"
+                              (if pdf?
+                                  "Save PDF As"
+                                  "Save PostScript As")
                               parent
                               (and fn (path-only fn))
                               (and fn (file-name-from-path fn))
-                              "ps"))]
+                              (if pdf? "pdf" "ps")))]
                  [fn (if to-file?
                          (if interactive
                              (get-file (send pss get-file))
@@ -54,18 +57,26 @@
                        [h (caddr paper)]
                        [landscape? (eq? (send pss get-orientation) 'landscape)]
                        [file (open-output-file
-                              (or fn (make-temporary-file "draw~a.ps"))
+                              (or fn (make-temporary-file (if pdf?
+                                                              "draw~a.pdf"
+                                                              "draw~a.ps")))
                               #:exists 'truncate/replace)]
                        [port-box (make-immobile file)])
-                  (values
-                   (cairo_ps_surface_create_for_stream write_port_bytes
-                                                       port-box
-                                                       w
-                                                       h)
-                   port-box ; needs to be accessible as long as `s'
-                   w
-                   h
-                   landscape?))))]
+                  (let-values ([(w h) (if (and pdf? landscape?)
+                                          (values h w)
+                                          (values w h))])
+                    (values
+                     ((if pdf?
+                          cairo_pdf_surface_create_for_stream 
+                          cairo_ps_surface_create_for_stream)
+                      write_port_bytes
+                      port-box
+                      w
+                      h)
+                     port-box ; needs to be accessible as long as `s'
+                     w
+                     h
+                     landscape?)))))]
          [else
           (values #f #f #f #f)])))
 
@@ -82,10 +93,11 @@
         (send (current-ps-setup) get-translation xb yb)
         (values (unbox xb) (unbox yb))))
 
-    (when (and s as-eps)
-      (cairo_ps_surface_set_eps s #t))
-    (when (and s landscape?)
-      (cairo_ps_surface_dsc_comment s "%%Orientation: Landscape"))
+    (unless pdf?
+      (when (and s as-eps)
+        (cairo_ps_surface_set_eps s #t))
+      (when (and s landscape?)
+        (cairo_ps_surface_dsc_comment s "%%Orientation: Landscape")))
 
     (define c (and s (cairo_create s)))
     
@@ -98,7 +110,7 @@
     (def/override (get-size)
       (let ([w (exact->inexact (/ (- width margin-x margin-x) scale-x))]
             [h (exact->inexact (/ (- height margin-y margin-y) scale-y))])
-        (if landscape?
+        (if (and (not pdf?) landscape?)
             (values h w)
             (values w h))))
 
@@ -112,7 +124,7 @@
 
     (define/override (init-cr-matrix c)
       (cairo_translate c trans-x trans-y)
-      (if landscape?
+      (if (and landscape? (not pdf?))
           (begin
             (cairo_translate c 0 height)
             (cairo_rotate c (/ pi -2))
@@ -138,7 +150,10 @@
 
     (super-new)))
 
-(define post-script-dc% (dc-mixin dc-backend%))
+(define post-script-dc% (class (dc-mixin (make-dc-backend #f))
+                          (super-new)))
+(define pdf-dc% (class (dc-mixin (make-dc-backend #t))
+                  (super-new)))
 
 (define (write-port-bytes port-box bytes len)
   (write-bytes (scheme_make_sized_byte_string bytes len 0) 

@@ -263,7 +263,7 @@
 	     [on-paint
 	      (case-lambda
 	       [() (time (on-paint #f))]
-	       [(ps?)
+	       [(kind)
 		(let* ([can-dc (get-dc)]
 		       [pen0s (make-object pen% "BLACK" 0 'solid)]
 		       [pen1s (make-object pen% "BLACK" 1 'solid)]
@@ -811,7 +811,7 @@
 				  (send dc draw-rectangle 180 205 20 20)
 				  (send dc set-brush brushs))))
 			    
-			    (when (and pixel-copy? last? (not (or ps? (eq? dc can-dc))))
+			    (when (and pixel-copy? last? (not (or kind (eq? dc can-dc))))
 			      (let* ([x 100]
 				     [y 170]
 				     [x2 245] [y2 188]
@@ -941,7 +941,7 @@
 				(send dc draw-rectangle 187 310 20 20)
 				(send dc set-pen p)))
 			      
-			    (when (and last? (not (or ps? (eq? dc can-dc)))
+			    (when (and last? (not (or kind (eq? dc can-dc)))
 				       (send mem-dc get-bitmap))
 			      (send can-dc draw-bitmap (send mem-dc get-bitmap) 0 0 'opaque)))
 			  
@@ -950,10 +950,11 @@
 		  (send (get-dc) set-scale 1 1)
 		  (send (get-dc) set-origin 0 0)
 
-		  (let ([dc (if ps?
-				(let ([dc (if (eq? ps? 'print)
-					      (make-object printer-dc%)
-					      (make-object post-script-dc%))])
+		  (let ([dc (if kind
+				(let ([dc (case kind
+                                            [(print) (make-object printer-dc%)]
+                                            [(ps) (make-object post-script-dc%)]
+                                            [(pdf) (make-object pdf-dc%)])])
 				  (and (send dc ok?) dc))
 				(if (and use-bitmap?)
 				    (begin
@@ -1112,7 +1113,7 @@
 
 		      (let-values ([(w h) (send dc get-size)])
 			(unless (cond
-				 [ps? #t]
+				 [kind #t]
 				 [use-bad? #t]
 				 [use-bitmap? (and (= w (* xscale DRAW-WIDTH)) (= h (* yscale DRAW-HEIGHT)))]
 				 [else (and (= w (* 2 DRAW-WIDTH)) (= h (* 2 DRAW-HEIGHT)))])
@@ -1143,10 +1144,10 @@
 		 '(horizontal))
     (make-object button% "PS" hp
 		 (lambda (self event)
-		   (send canvas on-paint #t)))
-    (make-object button% "Print" hp
+		   (send canvas on-paint 'ps)))
+    (make-object button% "PDF" hp
 		 (lambda (self event)
-		   (send canvas on-paint 'print)))
+		   (send canvas on-paint 'pdf)))
     (make-object choice% #f '("1" "*2" "/2" "1,*2" "*2,1") hp
 		 (lambda (self event)
 		   (send canvas set-scale 
@@ -1243,6 +1244,7 @@
 			     (send canvas refresh))))])
       (set! do-clock clock)
       (make-object button% "Clip Clock" hp3 (lambda (b e) (clock #t)))
+      (make-object button% "Print" hp4 (lambda (self event) (send canvas on-paint 'print)))
       (make-object button% "Print Setup" hp4 (lambda (b e) (let ([c (get-page-setup-from-user)])
                                                              (when c
                                                                (send (current-ps-setup) copy-from c)))))

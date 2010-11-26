@@ -143,6 +143,7 @@ open-output-text-editor
 pane%
 panel%
 pasteboard%
+pdf-dc%
 pen%
 pen-list%
 play-sound

@@ -1,5 +1,5 @@
 (module face mzscheme
-  (require mred
+  (require racket/draw
            texpict/mrpict
            texpict/utils
            mzlib/class

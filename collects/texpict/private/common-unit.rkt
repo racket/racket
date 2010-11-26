@@ -1,6 +1,6 @@
 #lang racket/unit
 
-  (require racket/gui/base
+  (require racket/draw
            racket/class
            racket/list)
   

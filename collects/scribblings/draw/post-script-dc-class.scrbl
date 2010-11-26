@@ -5,7 +5,7 @@
 
 A @scheme[post-script-dc%] object is a PostScript device context, that
  can write PostScript files on any platform. See also
- @scheme[ps-setup%].
+ @scheme[ps-setup%] and @racket[pdf-dc%].
 
 @|PrintNote|
 

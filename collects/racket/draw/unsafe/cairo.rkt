@@ -201,6 +201,10 @@
   ;; allocation.
   (_fun  _fpointer _pointer _double* _double* -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy))
+(define-cairo cairo_pdf_surface_create_for_stream 
+  ;; As above:
+  (_fun  _fpointer _pointer _double* _double* -> _cairo_surface_t)
+  #:wrap (allocator cairo_surface_destroy))
 (define/provide _cairo_write_func_t (_fun _pointer _pointer _uint -> _int))
 (define-cairo cairo_ps_surface_set_eps (_fun _cairo_surface_t _bool -> _void)
   #:fail (lambda ()

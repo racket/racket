@@ -26,8 +26,7 @@
     (define-values (use-screen-w use-screen-h) (values actual-screen-w actual-screen-h))
 
     (define condense? #f)
-    (define printing? #f)
-    (define native-printing? #f)
+    (define printing-mode #f)
     (define commentary? #f)
     (define commentary-on-slide? #f)
     (define show-gauge? #f)
@@ -60,12 +59,13 @@
        [once-each
         (("-d" "--preview") "show next-slide preview (useful on a non-mirroring display)" 
          (set! two-frames? #t))
-        (("-p" "--print") "print (always to PostScript, except under Windows and Mac OS)"
-         (set! printing? #t)
-         (set! native-printing? #t))
+        (("-p" "--print") "print"
+         (set! printing-mode 'print))
         (("-P" "--ps") "print to PostScript"
-         (set! printing? #t))
-        (("-o") file "set output file for PostScript printing"
+         (set! printing-mode 'ps))
+        (("-D" "--pdf") "print to PDF"
+         (set! printing-mode 'pdf))
+        (("-o") file "set output file for PostScript or PDF printing"
          (set! print-target file))
         (("-c" "--condense") "condense"
          (set! condense? #t))
@@ -138,40 +138,50 @@
                          (length slide-module-file)
                          slide-module-file)])]))
 
-    (when (or printing? condense?)
+    (define printing? (and printing-mode #t))
+
+    (when (or printing-mode condense?)
       (set! use-transitions? #f))
 
-    (when printing?
+    (when printing-mode
       (set! use-offscreen? #f)
       (set! use-prefetch? #f)
       (set! keep-titlebar? #t))
 
     (dc-for-text-size
-     (if printing?
+     (if printing-mode
          (let ([p (let ([pss (make-object ps-setup%)])
                     (send pss set-mode 'file)
                     (send pss set-file
                           (if print-target
                               print-target
-                              (if file-to-load
-                                  (path-replace-suffix (file-name-from-path file-to-load)
-                                                       (if quad-view?
-                                                           "-4u.ps"
-                                                           ".ps"))
-                                  "untitled.ps")))
+                              (let ([suffix
+                                     (if (eq? printing-mode 'pdf)
+                                         "pdf"
+                                         "ps")])
+                                (if file-to-load
+                                    (path-replace-suffix (file-name-from-path file-to-load)
+                                                         (format
+                                                          (if quad-view?
+                                                              "-4u.~a"
+                                                              ".~a")
+                                                          suffix))
+                                    (format "untitled.~a" suffix)))))
                     (send pss set-orientation 'landscape)
                     (parameterize ([current-ps-setup pss])
-                      (if native-printing?
-                          ;; Make printer-dc%
-                          (begin
-                            (when (can-get-page-setup-from-user?)
-                              (let ([v (get-page-setup-from-user)])
-                                (if v
-                                    (send pss copy-from v)
-                                    (exit))))
-                            (make-object printer-dc% #f))
-                          ;; Make ps-dc%:
-                          (make-object post-script-dc% (not print-target) #f #t #f))))])
+                      (case printing-mode
+                        [(print)
+                         ;; Make printer-dc%
+                         (when (can-get-page-setup-from-user?)
+                           (let ([v (get-page-setup-from-user)])
+                             (if v
+                                 (send pss copy-from v)
+                                 (exit))))
+                         (make-object printer-dc% #f)]
+                        [(ps)
+                         (make-object post-script-dc% (not print-target) #f #t #f)]
+                        [(pdf)
+                         (make-object pdf-dc% (not print-target) #f #t #f)])))])
            ;; Init page, set "screen" size, etc.:
            (unless (send p ok?) (exit))
            (send p start-doc "Slides")

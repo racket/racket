@@ -3,7 +3,7 @@
   (require scheme/class
            scheme/unit
            scheme/file
-           mred
+           racket/draw
            texpict/mrpict
            texpict/utils
            scheme/math
@@ -1019,7 +1019,7 @@
 						(+ x-space (* xs w)))
 					    (>= (send scroll-bm get-height) 
 						(+ y-space (* ys h))))
-				 (set! scroll-bm (make-screen-bitmap
+				 (set! scroll-bm (make-bitmap
 						  (inexact->exact (ceiling (+ x-space (* xs w))))
 						  (inexact->exact (ceiling (+ y-space (* ys h))))))
 				 (if (send scroll-bm ok?)

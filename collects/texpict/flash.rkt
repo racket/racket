@@ -3,7 +3,7 @@
   (require "mrpict.ss"
 	   mzlib/math
 	   mzlib/etc
-           mred
+           racket/draw
            mzlib/class)
 
   (provide filled-flash

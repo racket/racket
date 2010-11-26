@@ -67,7 +67,7 @@ GRacket (or PostScript) output
 
 The GRacket texpict function set is loaded by the _mrpict.ss_ library.
 The library is available in unit form via _mrpict-unit.ss_, which
-exports a `mrpict@' unit that imports mred^ and exports
+exports a `mrpict@' unit that imports draw^ and exports
 `texpict-common^' and `mrpict-extra^'. The _mrpict-sig.ss_ library
 file provides both signatures.
 

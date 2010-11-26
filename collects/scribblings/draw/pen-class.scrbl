@@ -95,17 +95,21 @@ A pen of size @scheme[0] uses the minimum line size for the
                         [style (one-of/c 'transparent 'solid 'xor 'hilite 
                                          'dot 'long-dash 'short-dash 'dot-dash 
                                          'xor-dot 'xor-long-dash 'xor-short-dash 
-                                         'xor-dot-dash)])
+                                         'xor-dot-dash)]
+                        [cap-style (one-of/c 'round 'projecting 'butt)]
+                        [join-style (one-of/c 'round 'bevel 'miter)])
                        ([color-name string?]
                         [width (real-in 0 255)]
                         [style (one-of/c 'transparent 'solid 'xor 'dot 'hilite
                                          'long-dash 'short-dash 'dot-dash
                                          'xor-dot 'xor-long-dash 'xor-short-dash
-                                         'xor-dot-dash)]))]{
+                                         'xor-dot-dash)]
+                        [cap-style (one-of/c 'round 'projecting 'butt)]
+                        [join-style (one-of/c 'round 'bevel 'miter)]))]{
 
 When no argument are provided, the result is a solid black pen of
  width @scheme[0].  Otherwise, the result is a pen with the given
- color, width, and style. For the case that the color is specified
+ color, width, style, cap style, and join style. For the case that the color is specified
  using a name, see @scheme[color-database<%>] for information about
  color names; if the name is not known, the pen's color is black.
 

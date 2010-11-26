@@ -112,6 +112,9 @@ that it is installed as a clipping region.
 The old 'xor mode for pens and brushes is no longer available (since
 it is not supported by Cairo).
 
+The new `pdf-dc%' drawing context is like `post-script-dc%', but it
+generates PDF output.
+
 
 Editor Changes
 --------------
