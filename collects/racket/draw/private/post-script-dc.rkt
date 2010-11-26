@@ -78,7 +78,7 @@
                      h
                      landscape?)))))]
          [else
-          (values #f #f #f #f)])))
+          (values #f #f #f #f #f)])))
 
     (define-values (margin-x margin-y)
       (let ([xb (box 0)] [yb (box 0.0)])
