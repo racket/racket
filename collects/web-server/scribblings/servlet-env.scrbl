@@ -169,7 +169,7 @@ Like always, you don't even need to save the file.
  @racket[start] is loaded as a servlet and responds to requests that match @racket[servlet-regexp]. The current directory
  of servlet execution is @racket[servlet-current-directory].
 
- If @racket[launch-browser?] is true, then a web browser is opened to @filepath{http://localhost:<port><servlet-path>}.
+ If @racket[launch-browser?] is true, then a web browser is opened to @filepath{http://localhost:<port><servlet-path>}. @racket[servlet-path] has no other purpose, if @racket[servlet-regexp] is provided.
  
  If @racket[quit?] is true, then the URL @filepath["/quit"] ends the server.
   
