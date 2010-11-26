@@ -108,7 +108,7 @@
            pre-on-char pre-on-event
            reset-cursor-in-child)
 
-  (define/public (create-frame parent label w h style)
+  (define/public (create-frame parent label x y w h style)
     (CreateWindowExW (if (memq 'float style)
                          (bitwise-ior WS_EX_TOOLWINDOW
                                       (if (memq 'no-caption style)
@@ -131,7 +131,9 @@
                           0
                           (bitwise-ior WS_CAPTION
                                        WS_MINIMIZEBOX)))
-                     0 0 w h
+                     (if (= x -11111) CW_USEDEFAULT x)
+                     (if (= y -11111) CW_USEDEFAULT y)
+                     w h
                      #f
                      #f
                      hInstance
@@ -146,7 +148,7 @@
   (define max-height #f)
 
   (super-new [parent #f]
-	     [hwnd (create-frame parent label w h style)]
+	     [hwnd (create-frame parent label x y w h style)]
 	     [style (cons 'deleted style)])
 
   (define hwnd (get-hwnd))
@@ -185,7 +187,9 @@
       (set! hidden-zoomed? (is-maximized?)))
     (super direct-show on? (if hidden-zoomed?
                                SW_SHOWMAXIMIZED
-                               SW_SHOW)))
+                               SW_SHOW))
+    (when (and on? (iconized?))
+      (ShowWindow hwnd SW_RESTORE)))
 
   (define/public (destroy)
     (direct-show #f))
@@ -393,7 +397,7 @@
 
   (define/public (iconize on?)
     (when (is-shown?)
-      (when (or on? (not (iconized?)))
+      (unless (eq? (and on? #t) (iconized?))
         (ShowWindow hwnd (if on? SW_MINIMIZE SW_RESTORE)))))
 
   (define/private (get-placement)

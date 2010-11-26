@@ -400,7 +400,7 @@
 (define BS_FLAT             #x00008000)
 (define BS_RIGHTBUTTON      BS_LEFTTEXT)
 
-(define CW_USEDEFAULT       #x80000000)
+(define CW_USEDEFAULT       (- #x80000000)) ; minus sign => int instead of uint
 
 (define WS_EX_LAYERED       #x00080000)
 (define WS_EX_TRANSPARENT   #x00000020)
