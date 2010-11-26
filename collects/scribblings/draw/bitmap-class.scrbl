@@ -221,12 +221,12 @@ Returns @scheme[#t] if the bitmap is usable (created or changed
 
 }
 
-@defmethod[(save-file [name path-string?]
+@defmethod[(save-file [name (or/c path-string? output-port?)]
                       [kind (one-of/c 'png 'jpeg 'xbm 'xpm 'bmp)]
                       [quality (integer-in 0 100) 75])
            boolean?]{
 
-Saves a bitmap in the named file.
+Writes a bitmap to the named file or output stream.
 
 The @scheme[kind] argument determined the type of file that is created,
  one of:
