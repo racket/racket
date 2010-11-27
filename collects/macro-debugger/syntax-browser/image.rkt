@@ -48,8 +48,8 @@ TODO: tacked arrows
 (define (print-syntax-to-bitmap stx
                                 #:columns [columns (print-syntax-columns)])
   (define t (prepare-editor stx columns))
-  (define f (new frame% [label "dummy"]))
-  (define ec (new editor-canvas% (editor t) (parent f)))
+  (define admin (new dummy-admin%))
+  (send t set-admin admin)
   (define dc (new bitmap-dc% (bitmap (make-object bitmap% 1 1))))
   (define char-width
     (let* ([sl (send t get-style-list)]
@@ -93,3 +93,13 @@ TODO: tacked arrows
                           (new controller%) (new syntax-prefs/readonly%)
                           columns (send t last-position))
   t)
+
+;; dummy editor-admin
+(define dummy-admin%
+  (class editor-admin%
+    (define the-dc (new bitmap-dc% (bitmap (make-object bitmap% 1 1))))
+    (define/override (get-dc [x #f] [y #f])
+      (when x (set-box! x 0.0))
+      (when y (set-box! y 0.0))
+      the-dc)
+    (super-new)))
