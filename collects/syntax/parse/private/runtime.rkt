@@ -308,15 +308,15 @@
     [(no-shadow e)
      (let ([ee (local-expand #'e (syntax-local-context)
                              (kernel-form-identifier-list))])
-       (syntax-case ee (begin define-values defines-syntaxes)
+       (syntax-case ee (begin define-values define-syntaxes)
          [(begin d ...)
           #'(begin (no-shadow d) ...)]
          [(define-values . _)
-          (check-shadow ee)
-          ee]
+          (begin (check-shadow ee)
+                 ee)]
          [(define-syntaxes . _)
-          (check-shadow ee)
-          ee]
+          (begin (check-shadow ee)
+                 ee)]
          [_
           ee]))]))
 
