@@ -9048,7 +9048,7 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
   rest = mc;
   for (i = 0; i < actual_depth - 1; i++) {
     rest->cont_mark_total = 0;
-    rest->cont_mark_offset = 0;
+    rest->cont_mark_offset = rest->cont_mark_stack;
     rest->cont_mark_stack_copied = NULL;
     sync_meta_cont(rest);
     rest = rest->next;
