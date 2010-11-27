@@ -38,7 +38,7 @@
         "web-server/default-web-root"))
 
 (provide/contract
- [serve/servlet (((request? . -> . response/c))
+ [serve/servlet (((request? . -> . response?))
                  (#:connection-close? boolean?
                   #:command-line? boolean?
                   #:launch-browser? boolean?
@@ -57,7 +57,7 @@
                   #:extra-files-paths (listof path-string?)
                   #:servlets-root path-string?
                   #:servlet-current-directory path-string?
-                  #:file-not-found-responder (request? . -> . response/c)
+                  #:file-not-found-responder (request? . -> . response?)
                   #:mime-types-path path-string?
                   #:servlet-path string?
                   #:servlet-regexp regexp?

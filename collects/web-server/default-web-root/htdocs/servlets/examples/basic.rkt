@@ -7,6 +7,7 @@
             (body (h1 "User: " ,(bytes->string/utf-8 user))
                   (h1 "Pass: " ,(bytes->string/utf-8 pass))))]
     [else
-     (make-response/basic
+     (response
       401 #"Unauthorized" (current-seconds) TEXT/HTML-MIME-TYPE
-      (list (make-basic-auth-header (format "Basic Auth Test: ~a" (gensym)))))]))
+      (list (make-basic-auth-header (format "Basic Auth Test: ~a" (gensym))))
+      void)]))

@@ -16,7 +16,7 @@ Equivalent to @racket[string?].
 Example: @racket["http://localhost:8080/servlets;1*1*20131636/examples/add.rkt"]}
 
 @defthing[response-generator/c contract?]{
-Equivalent to @racket[(k-url? . -> . response/c)].
+Equivalent to @racket[(k-url? . -> . response?)].
            
 Example: @racketblock[(lambda (k-url)
                         `(html 
@@ -26,7 +26,7 @@ Example: @racketblock[(lambda (k-url)
 }
 
 @defthing[expiration-handler/c contract?]{
-Equivalent to @racket[(or/c false/c (request? . -> . response/c))].
+Equivalent to @racket[(or/c false/c (request? . -> . response?))].
               
 Typically @racket[#f] uses the default expiration handler, which displays an error message.
            

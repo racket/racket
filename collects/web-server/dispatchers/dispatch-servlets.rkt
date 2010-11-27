@@ -47,8 +47,8 @@
 ; -----
 (provide/contract
  [make (->* (url->servlet/c)
-            (#:responders-servlet-loading (url? any/c . -> . response/c)
-                                          #:responders-servlet (url? any/c . -> . response/c))
+            (#:responders-servlet-loading (url? any/c . -> . response?)
+                                          #:responders-servlet (url? any/c . -> . response?))
             dispatcher/c)])
 
 (define (make url->servlet

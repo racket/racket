@@ -20,7 +20,7 @@
 These functions optimize the construction of dispatchers and launching of servers for single servlets and interactive development.
 
 @defproc[(dispatch/servlet 
-          [start (request? . -> . response/c)]
+          [start (request? . -> . response?)]
           [#:regexp regexp regexp? #rx""]
           [#:stateless? stateless? boolean? #f]
           [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]

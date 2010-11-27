@@ -5,7 +5,7 @@
          web-server/http/response)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
- [make ((request? . -> . response/c) . -> . dispatcher/c)])
+ [make ((request? . -> . response?) . -> . dispatcher/c)])
 
 (define interface-version 'v1)
 (define ((make procedure) conn req)

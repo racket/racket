@@ -12,7 +12,7 @@
 @racketmodname[web-server/servlet/web] library provides the primary
 functions of interest for the servlet developer.
 
-@defproc[(send/back [response response/c])
+@defproc[(send/back [response response?])
          void?]{
  Sends @racket[response] to the client. No continuation is captured, so the servlet is done.
        
@@ -27,11 +27,11 @@ functions of interest for the servlet developer.
  ]
 }
 
-@defproc[(send/suspend [make-response (string? . -> . response/c)])
+@defproc[(send/suspend [make-response (string? . -> . response?)])
          request?]{
  Captures the current continuation, stores it with @racket[exp] as the expiration
  handler, and binds it to a URL. @racket[make-response] is called with this URL and
- is expected to generate a @racket[response/c], which is sent to the client. If the
+ is expected to generate a @racket[response?], which is sent to the client. If the
  continuation URL is invoked, the captured continuation is invoked and the request is
  returned from this call to @racket[send/suspend].
  
@@ -51,12 +51,12 @@ functions of interest for the servlet developer.
  Thus, the request will be ``returned'' from @racket[send/suspend] to the continuation of this call.
 }
                   
-@defproc[(send/suspend/url [make-response (url? . -> . response/c)])
+@defproc[(send/suspend/url [make-response (url? . -> . response?)])
          request?]{
  Like @racket[send/suspend] but with a URL struct.
 }
                   
-@defproc[(send/suspend/dispatch [make-response (((request? . -> . any) . -> . string?) . -> . response/c)])
+@defproc[(send/suspend/dispatch [make-response (((request? . -> . any) . -> . string?) . -> . response?)])
          any]{
  Calls @racket[make-response] with a function (@racket[embed/url]) that, when called with a procedure from
  @racket[request?] to @racket[any/c] will generate a URL, that when invoked will call
@@ -117,19 +117,19 @@ functions of interest for the servlet developer.
   ]
 }
              
-@defproc[(send/suspend/url/dispatch [make-response (((request? . -> . any) . -> . url?) . -> . response/c)])
+@defproc[(send/suspend/url/dispatch [make-response (((request? . -> . any) . -> . url?) . -> . response?)])
          any]{
  Like @racket[send/suspend/dispatch], but with a URL struct.
 }
 
-@defproc[(send/forward [make-response (string? . -> . response/c)])
+@defproc[(send/forward [make-response (string? . -> . response?)])
          request?]{
  Calls @racket[clear-continuation-table!], then @racket[send/suspend].
        
  Use this if the user can logically go `forward' in your application, but cannot go backward.
 }
 
-@defproc[(send/finish [response response/c])
+@defproc[(send/finish [response response?])
          void?]{
  Calls @racket[clear-continuation-table!], then @racket[send/back].
        
@@ -176,7 +176,7 @@ functions of interest for the servlet developer.
  captured continuations.
 }
                
-@defproc[(with-errors-to-browser [send/finish-or-back (response/c . -> . request?)]
+@defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . request?)]
                                  [thunk (-> any)])
          any]{
  Calls @racket[thunk] with an exception handler that generates an HTML error page

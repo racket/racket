@@ -39,14 +39,14 @@ the configuration table S-expression file format described in
             [paths paths?])]
 
 @defstruct[responders
-           ([servlet (url? any/c . -> . response/c)]
-            [servlet-loading (url? any/c . -> . response/c)]
-            [authentication (url? (cons/c symbol? string?) . -> . response/c)]
-            [servlets-refreshed (-> response/c)]
-            [passwords-refreshed (-> response/c)]
-            [file-not-found (request? . -> . response/c)]
-            [protocol (url? . -> . response/c)]
-            [collect-garbage (-> response/c)])]
+           ([servlet (url? any/c . -> . response?)]
+            [servlet-loading (url? any/c . -> . response?)]
+            [authentication (url? (cons/c symbol? string?) . -> . response?)]
+            [servlets-refreshed (-> response?)]
+            [passwords-refreshed (-> response?)]
+            [file-not-found (request? . -> . response?)]
+            [protocol (url? . -> . response?)]
+            [collect-garbage (-> response?)])]
 
 @defstruct[messages
            ([servlet string?]

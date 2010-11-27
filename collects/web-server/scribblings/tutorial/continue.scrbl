@@ -1246,7 +1246,7 @@ to
 racket
 
 (require web-server/servlet)
-(provide/contract (start (request? . -> . response/c)))
+(provide/contract (start (request? . -> . response?)))
 ]
 
 Second, add the following at the bottom of your application:

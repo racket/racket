@@ -14,8 +14,8 @@
 
 (provide/contract
  [print-headers (output-port? (listof header?) . -> . void)]
- [rename ext:output-response output-response (connection? response/c . -> . void)]
- [rename ext:output-response/method output-response/method (connection? response/c bytes? . -> . void)]
+ [rename ext:output-response output-response (connection? response? . -> . void)]
+ [rename ext:output-response/method output-response/method (connection? response? bytes? . -> . void)]
  [rename ext:output-file output-file (connection? path-string? bytes? bytes? (or/c pair? false/c) . -> . void)])
 
 ;; Table 1. head responses:
@@ -60,29 +60,28 @@
   (output-response/method conn resp #"GET"))
 
 (define (output-response/method conn resp meth)
-  (define bresp (normalize-response resp (connection-close? conn)))
-  (output-headers+response/basic conn bresp)
+  (output-response-head conn resp)
   (unless (bytes-ci=? meth #"HEAD")
-    (output-response/basic conn bresp)))
+    (output-response-body conn resp)))
 
 ;; Write the headers portion of a response to an output port.
 ;; NOTE: According to RFC 2145 the server should write HTTP/1.1
 ;;       header for *all* clients.
-(define (output-headers+response/basic conn bresp)
+(define (output-response-head conn bresp)
   (fprintf (connection-o-port conn)
            "HTTP/1.1 ~a ~a\r\n"
-           (response/basic-code bresp)
-           (response/basic-message bresp))
+           (response-code bresp)
+           (response-message bresp))
   (output-headers
    conn 
    (list* (make-header #"Date" (string->bytes/utf-8 (seconds->gmt-string (current-seconds))))
-          (make-header #"Last-Modified" (string->bytes/utf-8 (seconds->gmt-string (response/basic-seconds bresp))))
+          (make-header #"Last-Modified" (string->bytes/utf-8 (seconds->gmt-string (response-seconds bresp))))
           (make-header #"Server" #"Racket")
-          (make-header #"Content-Type" (response/basic-mime bresp))
+          (make-header #"Content-Type" (response-mime bresp))
           (append (if (connection-close? conn)
                       (list (make-header #"Connection" #"close"))
                       empty)
-                  (response/basic-headers bresp)))))
+                  (response-headers bresp)))))
 
 ;; output-headers : connection (list-of header) -> void
 (define (output-headers conn headers)
@@ -96,32 +95,10 @@
             headers)
   (fprintf out "\r\n"))
 
-(define (output-response/basic conn bresp)
+(define (output-response-body conn bresp)
   (define o-port (connection-o-port conn))
-  (match bresp
-    [(? response/full?)
-     (for-each
-      (lambda (str) (display str o-port))
-      (response/full-body bresp))]
-    [(? response/port?)
-     ((response/port-output bresp) o-port)]
-    [(? response/incremental?)
-     (if (connection-close? conn)
-         ((response/incremental-generator bresp)
-          (lambda chunks
-            (for-each (lambda (chunk) (display chunk o-port)) chunks)))
-         (begin
-           ((response/incremental-generator bresp)
-            (lambda chunks
-              (define length (apply + 0 (map bytes-length chunks)))
-              (if (zero? length)
-                  (flush-output o-port)
-                  (begin
-                    (fprintf o-port "~x\r\n" length)                  
-                    (for-each (lambda (chunk) (display chunk o-port)) chunks)
-                    (fprintf o-port "\r\n")))))
-           ; one \r\n ends the last (empty) chunk and the second \r\n ends the (non-existant) trailers
-           (fprintf o-port "0\r\n\r\n")))]))
+  ((response-output bresp) o-port)
+  (flush-output o-port))
 
 ; seconds->gmt-string : Nat -> String
 ; format is rfc1123 compliant according to rfc2068 (http/1.1)
@@ -215,7 +192,7 @@
                    (lambda (exn)
                      (fprintf (current-error-port)
                               (exn-message exn))
-                     (output-headers+response/basic
+                     (output-response-head
                       conn
                       (make-416-response modified-seconds mime-type)))])
     (let* (; converted-ranges : (alist-of integer integer)
@@ -251,7 +228,7 @@
                       converted-ranges
                       multipart-headers))])
       ; Send a 206 iff ranges were specified in the request:
-      (output-headers+response/basic
+      (output-response-head
        conn
        (if ranges
            (make-206-response modified-seconds mime-type total-content-length total-file-length converted-ranges boundary)
@@ -358,36 +335,40 @@
   (if (= (length converted-ranges) 1)
       (let ([start (caar converted-ranges)]
             [end   (cdar converted-ranges)])
-        (make-response/basic
+        (response
          206 #"Partial content"
          modified-seconds
          mime-type 
          (list (make-header #"Accept-Ranges" #"bytes")
                (make-content-length-header total-content-length)
-               (make-content-range-header start end total-file-length))))
-      (make-response/basic
+               (make-content-range-header start end total-file-length))
+         void))
+      (response
        206 #"Partial content"
        modified-seconds
        (bytes-append #"multipart/byteranges; boundary=" boundary)
        (list (make-header #"Accept-Ranges" #"bytes")
-             (make-content-length-header total-content-length)))))
+             (make-content-length-header total-content-length))
+       void)))
 
 ;; make-200-response : integer bytes integer -> basic-response
 (define (make-200-response modified-seconds mime-type total-content-length)
-  (make-response/basic
+  (response
    200 #"OK"
    modified-seconds
    mime-type 
    (list (make-header #"Accept-Ranges" #"bytes")
-         (make-content-length-header total-content-length))))
+         (make-content-length-header total-content-length))
+   void))
 
 ;; make-416-response : integer bytes -> basic-response
 (define (make-416-response modified-seconds mime-type)
-  (make-response/basic
+  (response
    416 #"Invalid range request"
    modified-seconds
    mime-type 
-   null))
+   null
+   void))
 
 ;; make-content-length-header : integer -> header
 (define (make-content-length-header total-content-length)

@@ -261,9 +261,9 @@ the @racket[list] response type:
  (list #"text/html" (include-template "static.html"))
 ]
 
-If you want more control then you can generate a @racket[response/full] struct:
+If you want more control then you can generate a @racket[response?] struct:
 @racketblock[
- (make-response/full
+ (response/full
   200 #"Okay"
   (current-seconds) TEXT/HTML-MIME-TYPE
   empty

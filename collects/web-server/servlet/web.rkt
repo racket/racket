@@ -41,13 +41,13 @@
  [redirect/get/forget (() (#:headers (listof header?)) . ->* . request?)]
  [adjust-timeout! (number? . -> . void?)]
  [clear-continuation-table! (-> void?)]
- [send/back (response/c . -> . void?)]
- [send/finish (response/c . -> . void?)]
+ [send/back (response? . -> . void?)]
+ [send/finish (response? . -> . void?)]
  [send/forward (response-generator/c . -> . request?)]
  [send/suspend (response-generator/c . -> . request?)]
- [send/suspend/dispatch ((embed/url/c . -> . response/c) . -> . any/c)]
- [send/suspend/url ((url? . -> . response/c) . -> . request?)]
- [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c) . -> . any/c)])
+ [send/suspend/dispatch ((embed/url/c . -> . response?) . -> . any/c)]
+ [send/suspend/url ((url? . -> . response?) . -> . request?)]
+ [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response?) . -> . any/c)])
 
 ;; ************************************************************
 ;; EXPORTS
@@ -158,7 +158,7 @@
 
 (provide/contract
  [with-errors-to-browser
-  ((response/c . -> . request?)
+  ((response? . -> . request?)
    (-> any)
    . -> .
    any)])

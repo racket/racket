@@ -23,7 +23,7 @@ A stateful servlet should @racket[provide] the following exports:
 }
 
 @defproc[(start [initial-request request?])
-         response/c]{
+         response?]{
  This function is called when an instance of this servlet is started.
  The argument is the HTTP request that initiated the instance.
 }

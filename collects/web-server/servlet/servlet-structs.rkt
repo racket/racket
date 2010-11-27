@@ -6,11 +6,11 @@
   string?)
 
 (define response-generator/c
-  (k-url? . -> . response/c))
+  (k-url? . -> . response?))
 
 (define expiration-handler/c
   (or/c false/c
-        (request? . -> . response/c)))
+        (request? . -> . response?)))
 
 (define embed/url/c
   ((request? . -> . any/c) . -> . string?))

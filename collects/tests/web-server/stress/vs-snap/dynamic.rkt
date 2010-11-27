@@ -4,7 +4,7 @@
          racket/list)
 
 (define resp
-  (make-response/full
+  (response/full
    200 #"Okay"
    (current-seconds) TEXT/HTML-MIME-TYPE
    empty

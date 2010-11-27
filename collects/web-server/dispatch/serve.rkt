@@ -8,4 +8,4 @@
                  #:servlet-regexp #rx""))
 
 (provide/contract
- [serve/dispatch ((request? . -> . response/c) . -> . void)])
+ [serve/dispatch ((request? . -> . response?) . -> . void)])

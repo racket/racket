@@ -13,8 +13,7 @@
                                             #:path (or/c false/c string?)
                                             #:secure? (or/c false/c boolean?))
                                  . ->* . cookie?)]
- [cookie->header (cookie? . -> . header?)]
- [xexpr-response/cookies ((listof cookie?) pretty-xexpr/c . -> . response/full?)])
+ [cookie->header (cookie? . -> . header?)])
 
 (define-syntax setter
   (syntax-rules ()
@@ -45,14 +44,3 @@
 (define (cookie->header cookie)
   (make-header #"Set-Cookie" (string->bytes/utf-8 (print-cookie cookie))))
 
-;; build-cookie-response : xexpr[xhtml] (listof cookie) -> response
-(define (xexpr-response/cookies cookies xexpr)
-  (make-response/full 
-   200
-   #"Okay"
-   (current-seconds)
-   TEXT/HTML-MIME-TYPE
-   (map cookie->header cookies) ; rfc2109 also recommends some cache-control stuff here
-   (list 
-    (string->bytes/utf-8 
-     (xexpr->string xexpr)))))

@@ -21,11 +21,11 @@
 @defproc[(make [url->servlet url->servlet/c]
                [#:responders-servlet-loading
                 responders-servlet-loading
-                (url? exn? . -> . response/c)
+                (url? exn? . -> . response?)
                 servlet-loading-responder]
                [#:responders-servlet
                 responders-servlet
-                (url? exn? . -> . response/c)
+                (url? exn? . -> . response?)
                 servlet-error-responder])
          dispatcher/c]{
  This dispatcher runs racket servlets, using @racket[url->servlet] to resolve URLs to the underlying servlets.
@@ -46,7 +46,7 @@
                      [namespace namespace?]
                      [manager manager?]
                      [directory path-string?]
-                     [handler (request? . -> . response/c)])
+                     [handler (request? . -> . response?)])
                     #:mutable]{
   Instances of this structure hold the necessary parts of a servlet:
   the @racket[custodian] responsible for the servlet's resources,
