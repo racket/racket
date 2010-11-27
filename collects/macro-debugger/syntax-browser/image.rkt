@@ -5,7 +5,8 @@
          framework
          "prefs.rkt"
          "controller.rkt"
-         "display.rkt")
+         "display.rkt"
+         "text.rkt")
 
 #|
 
@@ -36,12 +37,10 @@ TODO: tacked arrows
 ;; print-syntax-columns : (parameter-of (U number 'infinity))
 (define print-syntax-columns (make-parameter 40))
 
-(define standard-text% (text:foreground-color-mixin (editor:standard-style-list-mixin text:basic%)))
-
 ;; print-syntax-to-png : syntax path -> void
 (define (print-syntax-to-png stx file
                              #:columns [columns (print-syntax-columns)])
-  (let ([bmp (print-syntax-to-bitmap stx columns)])
+  (let ([bmp (print-syntax-to-bitmap stx #:columns columns)])
     (send bmp save-file file 'png))
   (void))
 
@@ -87,7 +86,7 @@ TODO: tacked arrows
     (send t print #f #f 'postscript #f #f #t)))
 
 (define (prepare-editor stx columns)
-  (define t (new standard-text%))
+  (define t (new browser-text%))
   (define sl (send t get-style-list))
   (send t change-style (send sl find-named-style (editor:get-default-color-style-name)))
   (print-syntax-to-editor stx t 
