@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/unsafe/ops
+         file/convertible
          "syntax.rkt"
          "hold.rkt"
          "../unsafe/bstr.rkt"
@@ -62,8 +63,19 @@
 (define fx+ unsafe-fx+)
 (define fx* unsafe-fx*)
 
+(define png-convertible<%>
+  (interface* ()
+              ([prop:convertible
+                (lambda (bm format default)
+                  (case format
+                    [(png-bytes)
+                     (let ([s (open-output-bytes)])
+                       (send bm save-file s 'png)
+                       (get-output-bytes s))]
+                    [else default]))])))
+
 (define bitmap%
-  (class object%
+  (class* object% (png-convertible<%>)
 
     ;; We support three kinds of bitmaps:
     ;;  * Color with alpha channel; 

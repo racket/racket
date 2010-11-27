@@ -253,6 +253,12 @@
                                   => (lambda (bstr)
                                        (let ([fn (install-file "pict.pdf" bstr)])
                                          (printf "\\includegraphics{~a}" fn)))]
+                                 [(and (convertible? e)
+                                       (not (disable-images))
+                                       (convert e 'png-bytes))
+                                  => (lambda (bstr)
+                                       (let ([fn (install-file "pict.png" bstr)])
+                                         (printf "\\includegraphics{~a}" fn)))]
                                  [else
                                   (parameterize ([rendering-tt (or tt? (rendering-tt))])
                                     (super render-content e part ri))]))]

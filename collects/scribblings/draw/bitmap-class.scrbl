@@ -12,6 +12,9 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
  the bitmap cannot be supplied to methods that consume or operate on
  bitmaps (otherwise, @|MismatchExn|).
 
+A bitmap is convertible to @racket['png-bytes] through the
+@racketmodname[file/convertible] protocol.
+
 
 @defconstructor*/make[(([width exact-positive-integer?]
                         [height exact-positive-integer?]

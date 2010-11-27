@@ -1099,7 +1099,9 @@
           (vector? v)
           (and (struct? v)
                (or (and qq 
-                        ;; Watch out for partially transparent subtypes of `element':
+                        ;; Watch out for partially transparent subtypes of `element'
+                        ;;  or convertible values:
+                        (not (convertible? v))
                         (not (element? v)))
                    (prefab-struct-key v))))
       (let ([orig-ht (unbox ht)]

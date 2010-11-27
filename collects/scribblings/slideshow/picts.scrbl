@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require "ss.ss"
+          "pict-diagram.rkt"
           (for-label racket/gui
                      slideshow/code
                      slideshow/flash
@@ -34,16 +35,7 @@ offset of an embedded pict in a larger pict.
 In addition to its drawing part, a pict has the following
 @deftech{bounding box} structure:
 
-@verbatim[#:indent 7]{
-           w
-   ------------------
-  |                  | a  \
-  |------------------|    |
-  |                  |    | h
-  |----------last----|    |
-  |                  | d  /
-   ------------------
-}
+@centerline[pict-diagram]
 
 That is, the bounding box has a width @math{w} and a height
 @math{h}. For a single text line, @math{d} is descent below the
@@ -65,7 +57,7 @@ picts. The functions @racket[pict-width], @racket[pict-height],
 @racket[pict-descent], and @racket[pict-ascent] extract bounding-box
 information from a pict.
 
-A pict is a convertible datatype through the @racket[file/convertible]
+A pict is a convertible datatype through the @racketmodname[file/convertible]
 protocol. Supported conversions include @racket['png-bytes],
 @racket['eps-bytes], and @racket['pdf-bytes].
 
