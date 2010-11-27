@@ -95,6 +95,17 @@ backward-compatibile. Methods like `get-translation',
 `set-translation', `scale', etc. help hide the reundancy.
 
 
+PostScript and PDF Drawing Contexts
+-----------------------------------
+
+The dimensions for PostScript output are no longer inferred from the
+drawing. Instead, the width and height must be supplied when the
+`post-script-dc%' is created.
+
+The new `pdf-dc%' drawing context is like `post-script-dc%', but it
+generates PDF output.
+
+
 Other Drawing-Context Changes
 -----------------------------
 
@@ -111,9 +122,6 @@ that it is installed as a clipping region.
 
 The old 'xor mode for pens and brushes is no longer available (since
 it is not supported by Cairo).
-
-The new `pdf-dc%' drawing context is like `post-script-dc%', but it
-generates PDF output.
 
 
 Editor Changes

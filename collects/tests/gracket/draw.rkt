@@ -953,8 +953,20 @@
 		  (let ([dc (if kind
 				(let ([dc (case kind
                                             [(print) (make-object printer-dc%)]
-                                            [(ps) (make-object post-script-dc%)]
-                                            [(pdf) (make-object pdf-dc%)])])
+                                            [(ps pdf)
+                                             (let ([page?
+                                                    (eq? 'yes (message-box
+                                                               "Bounding Box"
+                                                               "Use paper bounding box?"
+                                                               #f
+                                                               '(yes-no)))])
+                                               (new (if (eq? kind 'ps)
+                                                        post-script-dc% 
+                                                        pdf-dc%)
+                                                    [width (* xscale DRAW-WIDTH)]
+                                                    [height (* yscale DRAW-HEIGHT)]
+                                                    [as-eps (not page?)]
+                                                    [use-paper-bbox page?]))])])
 				  (and (send dc ok?) dc))
 				(if (and use-bitmap?)
 				    (begin

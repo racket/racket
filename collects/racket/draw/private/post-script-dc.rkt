@@ -23,12 +23,22 @@
           [parent #f]
           [use-paper-bbox #f]
           [as-eps #t]
+          [(init-w width) #f]
+          [(init-h height) #f]
           [output #f])
 
-    (unless (or (not output)
-                (path-string? output)
-                (output-port? output))
-      (raise-type-error (init-name (if pdf? 'pdf-dc% 'post-script-dc%)) "path string, output port, or #f" output))
+    (let ([get-name (lambda ()
+                      (init-name (if pdf? 'pdf-dc% 'post-script-dc%)))])
+      (unless (or (not init-w) 
+                  (and (real? init-w) (not (negative? init-w))))
+        (raise-type-error (get-name) "nonnegative real or #f" init-w))
+      (unless (or (not init-h) 
+                  (and (real? init-h) (not (negative? init-h))))
+        (raise-type-error (get-name) "nonnegative real or #f" init-h))
+      (unless (or (not output)
+                  (path-string? output)
+                  (output-port? output))
+        (raise-type-error (get-name) "path string, output port, or #f" output)))
 
     (define-values (s port-box close-port? width height landscape?)
       (let ([su (if interactive
@@ -60,8 +70,12 @@
                      (not fn))
                 (values #f #f #f #f #f #f)
                 (let* ([paper (assoc (send pss get-paper-name) paper-sizes)]
-                       [w (cadr paper)]
-                       [h (caddr paper)]
+                       [w (if (or (not init-w) use-paper-bbox)
+                              (cadr paper)
+                              init-w)]
+                       [h (if (or (not init-h) use-paper-bbox)
+                              (caddr paper)
+                              init-h)]
                        [landscape? (eq? (send pss get-orientation) 'landscape)]
                        [file (if (output-port? fn)
                                  fn
@@ -91,17 +105,21 @@
           (values #f #f #f #f #f #f)])))
 
     (define-values (margin-x margin-y)
-      (let ([xb (box 0)] [yb (box 0.0)])
-        (send (current-ps-setup) get-margin xb yb)
-        (values (unbox xb) (unbox yb))))
+      (if as-eps
+          (values 0.0 0.0)
+          (let ([xb (box 0)] [yb (box 0.0)])
+            (send (current-ps-setup) get-margin xb yb)
+            (values (unbox xb) (unbox yb)))))
     (define-values (scale-x scale-y)
       (let ([xb (box 0)] [yb (box 0.0)])
         (send (current-ps-setup) get-scaling xb yb)
         (values (unbox xb) (unbox yb))))
     (define-values (trans-x trans-y)
-      (let ([xb (box 0)] [yb (box 0.0)])
-        (send (current-ps-setup) get-translation xb yb)
-        (values (unbox xb) (unbox yb))))
+      (if as-eps
+          (values 0.0 0.0)
+          (let ([xb (box 0)] [yb (box 0.0)])
+            (send (current-ps-setup) get-translation xb yb)
+            (values (unbox xb) (unbox yb)))))
 
     (unless pdf?
       (when (and s as-eps)

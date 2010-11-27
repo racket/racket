@@ -459,6 +459,8 @@
              (let ([dc (new (if (eq? format 'eps-bytes) post-script-dc% pdf-dc%)
                             [interactive #f]
                             [as-eps #t]
+                            [width (pict-width p)]
+                            [height (pict-height p)]
                             [output s])])
                (send dc start-doc "pict")
                (send dc start-page)
