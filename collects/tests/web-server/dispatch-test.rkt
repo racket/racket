@@ -10,7 +10,8 @@
          web-server/dispatch/pattern
          web-server/dispatch/url-patterns
          web-server/dispatch/syntax
-         web-server/dispatch/serve)
+         web-server/dispatch/serve
+         web-server/dispatch/container)
 (provide all-dispatch-tests)
 
 (define (test-request url)
@@ -308,52 +309,72 @@
       (test-blog-dispatch/exn "http://www.example.com/archive/2008/post")
       (test-blog-dispatch/exn "http://www.example.com/foo"))
     
-    (local
-      [(define (list-posts req) `(list-posts))
-       (define (review-post req p) `(review-post ,p))
-       (define (review-archive req y m) `(review-archive ,y ,m))
-       (define-values (blog-dispatch blog-url)
-         (dispatch-rules
-          [("") list-posts]
-          [() list-posts]
-          [("posts" (string-arg)) review-post]
-          [("archive" (integer-arg) (integer-arg)) review-archive]))
-       (define (test-blog-dispatch url res)
-         (test-equal? url (blog-dispatch (test-request (string->url url))) res))
-       (define (test-blog-url url . args)
-         (test-equal? (format "~S" args)
-                      (apply blog-url args)
-                      url))
-       (define (test-blog-url/exn . args)
-         (test-exn (format "~S" args)
-                   exn?
-                   (lambda ()
-                     (apply blog-url args))))
-       (define (test-blog-dispatch/exn url)
-         (test-exn url exn:dispatcher? (lambda () (blog-dispatch (test-request (string->url url))))))]
+    (let ()
+      (define (list-posts req) `(list-posts))
+      (define (review-post req p) `(review-post ,p))
+      (define (review-archive req y m) `(review-archive ,y ,m))
+      
+      (define (make-dispatch-test-suite blog-dispatch blog-url)
+        (define (test-blog-dispatch url res)
+          (test-equal? url (blog-dispatch (test-request (string->url url))) res))
+        (define (test-blog-url url . args)
+          (test-equal? (format "~S" args)
+                       (apply blog-url args)
+                       url))
+        (define (test-blog-url/exn . args)
+          (test-exn (format "~S" args)
+                    exn?
+                    (lambda ()
+                      (apply blog-url args))))
+        (define (test-blog-dispatch/exn url)
+          (test-exn url exn:dispatcher? (lambda () (blog-dispatch (test-request (string->url url))))))
+        
+        (test-suite
+         "blog"
+         
+         (test-blog-dispatch "http://www.example.com" `(list-posts))
+         (test-blog-dispatch "http://www.example.com/" `(list-posts))
+         (test-blog-dispatch "http://www.example.com/posts/hello-world" `(review-post "hello-world"))
+         (test-blog-dispatch "http://www.example.com/archive/2008/02" `(review-archive 2008 02))
+         (test-blog-dispatch/exn "http://www.example.com/posts")
+         (test-blog-dispatch/exn "http://www.example.com/archive/post/02")
+         (test-blog-dispatch/exn "http://www.example.com/archive/2008/post")
+         (test-blog-dispatch/exn "http://www.example.com/foo")
+         
+         (test-blog-url "/" list-posts)
+         (test-blog-url "/posts/hello-world" review-post "hello-world")
+         (test-blog-url "/archive/2008/2" review-archive 2008 02)
+         (test-blog-url/exn list-posts 50)
+         (test-blog-url/exn +)
+         (test-blog-url/exn review-post 50)
+         (test-blog-url/exn review-post "hello" "world")
+         (test-blog-url/exn review-archive 2008 02 1)
+         (test-blog-url/exn review-archive "2008" 02)
+         (test-blog-url/exn review-archive 2008 "02")))
       
       (test-suite
-       "blog"
+       "dispatch"
+       (let ()
+         (define-values (blog-dispatch blog-url)
+           (dispatch-rules
+            [("") list-posts]
+            [() list-posts]
+            [("posts" (string-arg)) review-post]
+            [("archive" (integer-arg) (integer-arg)) review-archive]))
+         (make-dispatch-test-suite blog-dispatch blog-url))
        
-       (test-blog-dispatch "http://www.example.com" `(list-posts))
-       (test-blog-dispatch "http://www.example.com/" `(list-posts))
-       (test-blog-dispatch "http://www.example.com/posts/hello-world" `(review-post "hello-world"))
-       (test-blog-dispatch "http://www.example.com/archive/2008/02" `(review-archive 2008 02))
-       (test-blog-dispatch/exn "http://www.example.com/posts")
-       (test-blog-dispatch/exn "http://www.example.com/archive/post/02")
-       (test-blog-dispatch/exn "http://www.example.com/archive/2008/post")
-       (test-blog-dispatch/exn "http://www.example.com/foo")
-       
-       (test-blog-url "/" list-posts)
-       (test-blog-url "/posts/hello-world" review-post "hello-world")
-       (test-blog-url "/archive/2008/2" review-archive 2008 02)
-       (test-blog-url/exn list-posts 50)
-       (test-blog-url/exn +)
-       (test-blog-url/exn review-post 50)
-       (test-blog-url/exn review-post "hello" "world")
-       (test-blog-url/exn review-archive 2008 02 1)
-       (test-blog-url/exn review-archive "2008" 02)
-       (test-blog-url/exn review-archive 2008 "02")))
+       (let ()
+         (define-container blog-container
+           (blog-dispatch blog-url))
+         (dispatch-rules! blog-container
+                          [("") list-posts])
+         (dispatch-rules! blog-container
+                          [() list-posts])
+         (dispatch-rules! blog-container
+                          [("posts" (string-arg)) review-post])
+         (dispatch-rules! blog-container
+                          [("archive" (integer-arg) (integer-arg)) review-archive])
+         (make-dispatch-test-suite blog-dispatch blog-url))))
     
     (local
       [(define (sum req as) (apply + as))
