@@ -36,15 +36,20 @@
 
 (define 2pi (* 2 pi))
 
+(define black (send the-color-database find-color "black"))
+
 (define (copy-color c)
-  (if (send c is-immutable?)
-      c
-      (let ([c (make-object color% 
-                            (color-red c) 
-                            (color-green c) 
-                            (color-blue c))]) 
-        (send c set-immutable)
-        c)))
+  (if (string? c)
+      (or (send the-color-database find-color c)
+          black)
+      (if (send c is-immutable?)
+          c
+          (let ([c (make-object color% 
+                                (color-red c) 
+                                (color-green c) 
+                                (color-blue c))]) 
+            (send c set-immutable)
+            c))))
 
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
@@ -268,7 +273,6 @@
     (define contexts (make-vector (vector-length font-maps) #f))
     (define desc-layoutss (make-vector (vector-length font-maps) #f))
 
-    (define black (send the-color-database find-color "black"))
     (define pen (send the-pen-list find-or-create-pen "black" 1 'solid))
     (define brush (send the-brush-list find-or-create-brush "white" 'solid))
     (define font (send the-font-list find-or-create-font 12 'default))
@@ -554,11 +558,11 @@
     (define/private (brush-draws?)
       (not (eq? (send brush get-style) 'transparent)))
 
-    (def/public (set-text-foreground [color% c])
+    (def/public (set-text-foreground [(make-alts color% string?) c])
       (set! text-fg (copy-color c)))
-    (def/public (set-text-background [color% c])
+    (def/public (set-text-background [(make-alts color% string?) c])
       (set! text-bg (copy-color c)))
-    (def/public (set-background [color% c])
+    (def/public (set-background [(make-alts color% string?) c])
       (set! pen-stipple-s #f)
       (set! brush-stipple-s #f)
       (set! bg (copy-color c)))

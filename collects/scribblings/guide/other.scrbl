@@ -4,10 +4,6 @@
 
 @title{More Libraries}
 
-@other-manual['(lib "scribblings/gui/gui.scrbl")] describes the Racket
-graphics toolbox, whose core is implemented by the @exec{gracket}
-executable.
-
 @other-manual['(lib "scribblings/foreign/foreign.scrbl")] describes
 tools for using Racket to access libraries that are normally used by C
 programs.

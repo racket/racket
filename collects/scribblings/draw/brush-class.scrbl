@@ -86,22 +86,18 @@ To avoid creating multiple brushes with the same characteristics, use
  @xmethod[dc<%> set-brush].
 
 
-@defconstructor*/make[(()
-                       ([color (is-a?/c color%)]
-                        [style (one-of/c 'transparent 'solid 'opaque 
-                                         'xor 'hilite 'panel 
-                                         'bdiagonal-hatch 'crossdiag-hatch 
-                                         'fdiagonal-hatch 'cross-hatch
-                                          'horizontal-hatch 'vertical-hatch)])
-                       ([color-name string?]
-                        [style (one-of/c 'transparent 'solid 'opaque 
-                                         'xor 'hilite 'panel 
-                                         'bdiagonal-hatch 'crossdiag-hatch 
-                                         'fdiagonal-hatch 'cross-hatch
-                                          'horizontal-hatch 'vertical-hatch)]))]{
+@defconstructor[([color (or/c string? (is-a?/c color%)) "black"]
+                 [style (one-of/c 'transparent 'solid 'opaque 
+                                  'xor 'hilite 'panel 
+                                  'bdiagonal-hatch 'crossdiag-hatch 
+                                  'fdiagonal-hatch 'cross-hatch
+                                  'horizontal-hatch 'vertical-hatch)
+                         'solid]
+                 [stipple (or/c #f (is-a?/c bitmap%))
+                          #f])]{
 
 When no argument are provided, the result is a solid black brush.
- Otherwise, the result is a brush with the given color and style. For
+ Otherwise, the result is a brush with the given color, style, and stipple. For
  the case that the color is specified using a name, see
  @scheme[color-database<%>] for information about color names; if the
  name is not known, the brush's color is black.

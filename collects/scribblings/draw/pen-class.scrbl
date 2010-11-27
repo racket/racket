@@ -89,27 +89,24 @@ A pen of size @scheme[0] uses the minimum line size for the
 
 
 
-@defconstructor*/make[(()
-                       ([color (is-a?/c color%)]
-                        [width (real-in 0 255)]
-                        [style (one-of/c 'transparent 'solid 'xor 'hilite 
-                                         'dot 'long-dash 'short-dash 'dot-dash 
-                                         'xor-dot 'xor-long-dash 'xor-short-dash 
-                                         'xor-dot-dash)]
-                        [cap-style (one-of/c 'round 'projecting 'butt)]
-                        [join-style (one-of/c 'round 'bevel 'miter)])
-                       ([color-name string?]
-                        [width (real-in 0 255)]
-                        [style (one-of/c 'transparent 'solid 'xor 'dot 'hilite
-                                         'long-dash 'short-dash 'dot-dash
-                                         'xor-dot 'xor-long-dash 'xor-short-dash
-                                         'xor-dot-dash)]
-                        [cap-style (one-of/c 'round 'projecting 'butt)]
-                        [join-style (one-of/c 'round 'bevel 'miter)]))]{
+@defconstructor[([color (or/c string? (is-a?/c color%)) "black"]
+                 [width (real-in 0 255) 0]
+                 [style (one-of/c 'transparent 'solid 'xor 'hilite 
+                                  'dot 'long-dash 'short-dash 'dot-dash 
+                                  'xor-dot 'xor-long-dash 'xor-short-dash 
+                                  'xor-dot-dash)
+                        'solid]
+                 [cap (one-of/c 'round 'projecting 'butt)
+                      'round]
+                 [join (one-of/c 'round 'bevel 'miter)
+                       'round]
+                 [stipple (or/c #f (is-a?/c bitmap%)) 
+                          #f])]{
 
 When no argument are provided, the result is a solid black pen of
  width @scheme[0].  Otherwise, the result is a pen with the given
- color, width, style, cap style, and join style. For the case that the color is specified
+ color, width, style, cap style, join style, and stipple. 
+ For the case that the color is specified
  using a name, see @scheme[color-database<%>] for information about
  color names; if the name is not known, the pen's color is black.
 
