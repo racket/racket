@@ -447,8 +447,10 @@
       (define (convert-pict p format default)
         (case format
           [(png-bytes)
-           (let* ([bm (make-bitmap (max 1 (pict-width p)) (max 1 (pict-height p)))]
+           (let* ([bm (make-bitmap (max 1 (inexact->exact (ceiling (pict-width p))))
+                                   (max 1 (inexact->exact (ceiling (pict-height p)))))]
                   [dc (make-object bitmap-dc% bm)])
+             (send dc set-smoothing 'aligned)
              (draw-pict p dc 0 0)
              (send dc set-bitmap #f)
              (let ([s (open-output-bytes)])

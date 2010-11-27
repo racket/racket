@@ -1,7 +1,8 @@
 #lang scheme/base
 (require "private/provide-structs.ss"
          scheme/serialize
-         scheme/contract)
+         scheme/contract
+         file/convertible)
 
 ;; ----------------------------------------
 
@@ -119,7 +120,8 @@
       (traverse-element? v)
       (part-relative-element? v)
       (multiarg-element? v)
-      (hash-ref content-symbols v #f)))
+      (hash-ref content-symbols v #f)
+      (convertible? v)))
 
 (provide element-style?)
 (define (element-style? s)
