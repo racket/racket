@@ -8,6 +8,7 @@
            racket/sandbox
            racket/promise
            racket/string
+           file/convertible
            (for-syntax racket/base))
 
   (provide interaction
@@ -37,6 +38,8 @@
   (define image-counter 0)
 
   (define maxlen 60)
+
+  (define-namespace-anchor anchor)
 
   (namespace-require 'racket/base)
   (namespace-require '(for-syntax racket/base))
@@ -270,7 +273,12 @@
        (parameterize ([sandbox-output 'string]
                       [sandbox-error-output 'string]
                       [sandbox-propagate-breaks #f])
-         (make-evaluator '(begin))))))
+         (let ([e (make-evaluator '(begin))])
+           (let ([ns (namespace-anchor->namespace anchor)])
+             (call-in-sandbox-context e
+                                      (lambda ()
+                                        (namespace-attach-module ns 'file/convertible))))
+           e)))))
 
   (define (make-base-eval-factory mod-paths)
     (let ([ns (delay (let ([ns (make-base-empty-namespace)])
