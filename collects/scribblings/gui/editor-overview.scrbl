@@ -720,11 +720,10 @@ An editor is not tied to any particular thread or eventspace, except
  to the degree that it is displayed in a canvas (which has an
  eventspace). Concurrent access of an editor is always safe, in the
  sense that the editor will not become corrupted. However, because
- editor access can trigger locks, and because lock-rejected operations
- tend to fail silently, concurrent access can produce unexpected
- results.
+ editor access can trigger locks, concurrent access can produce 
+ contract failures or unexpected results.
 
-Nevertheless, the editor supports certain concurrent patterns
+An editor supports certain concurrent patterns
  reliably. One relevant pattern is updating an editor in one thread
  while the editor is displayed in a canvas that is managed by a
  different (handler) thread. To ensure that canvas refreshes are not
