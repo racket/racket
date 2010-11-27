@@ -12,13 +12,14 @@ seems little point to that).
 
 |#
   
-(provide planet-terse-register 
+(provide planet-terse-register
          planet-terse-log
-         planet-terse-set-key) 
+         planet-terse-set-key
+         planet-terse-log-key-param) 
 
 (define terse-log-message-chan (make-channel))
 (define terse-log-proc-chan (make-channel))
-(define terse-log-key-param (make-parameter (gensym)))
+(define planet-terse-log-key-param (make-parameter (gensym)))
   
 (define thd
   (thread
@@ -33,7 +34,7 @@ seems little point to that).
                    [id (list-ref msg 1)]
                    [str (list-ref msg 2)])
                (for-each (lambda (eph) 
-                           (let ([proc (ephemeron-value eph)])
+                           (let ([proc (weak-box-value eph)])
                              (when proc
                                (proc id str))))
                          (hash-ref procs registry '())))
@@ -45,15 +46,17 @@ seems little point to that).
                    [proc (list-ref rp 1)])
                (hash-update! procs
                              registry 
-                             (lambda (x) (cons (make-ephemeron registry proc) x)) 
+                             (lambda (x) (cons (make-weak-box proc) x)) 
                              '())
                (loop))))))))))
 
-(define (planet-terse-log id str [key (terse-log-key-param)])
-  (sync (channel-put-evt terse-log-message-chan (list key id str))))
+(define (planet-terse-log id str [key (planet-terse-log-key-param)])
+  (sync (channel-put-evt terse-log-message-chan (list key id str)))
+  (void))
   
-(define (planet-terse-register proc [key (terse-log-key-param)])
-  (sync (channel-put-evt terse-log-proc-chan (list key proc))))
+(define (planet-terse-register proc [key (planet-terse-log-key-param)])
+  (sync (channel-put-evt terse-log-proc-chan (list key proc)))
+  (void))
 
 (define (planet-terse-set-key new-key)
-  (terse-log-key-param new-key))
+  (planet-terse-log-key-param new-key))

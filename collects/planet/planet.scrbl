@@ -734,8 +734,11 @@ is saved in the namespace, making the listening and information producing
 namespace-specific.
 
 @defproc[(planet-terse-register
-          [proc (-> (or/c 'download 'install 'docs-build 'finish) string? any/c)]
-          [namespace namespace? (current-namespace)]) void?]{
+          [proc (-> (or/c 'download 'install 'docs-build 'finish)
+                    string?
+                    any/c)]
+          [key symbol? (planet-terse-log-key-param)])
+         void?]{
 Registers @racket[proc] as a function to be called when
 @racket[planet-terse-log] is called with a matching namespace argument.
  Note that @racket[proc] is called 
@@ -744,9 +747,19 @@ asynchronously (ie, on some thread other than the one calling @racket[planet-ter
 
 @defproc[(planet-terse-log [id (or/c 'download 'install 'finish)]
                            [msg string?]
-                           [namespace namespace? (current-namespace)]) void?]{
-  This function is called by PLaneT to announce when things are happening.
-The namespace passed along is used to identify the procs to notify.
+                           [key symbol? (planet-terse-log-key-param)]) void?]{
+This function is called by PLaneT to announce when things are happening.
+The namespace passed along is used to identify the procs to notify. This function
+invokes all of the callbacks registered with @racket[key], and when PLaneT invokes it,
+the @racket[key] argument is always @racket[(planet-terse-log-key-param)].
+}
+
+@defparam[planet-terse-log-key-param key symbol?]{
+  Holds the current value of the key used for getting and setting the @PLaneT logging information.                                                  
+}
+
+@defproc[(planet-terse-set-key [key symbol?]) void?]{
+  Equivalent to @racket[(planet-terse-log-key-param new-key)].                                               
 }
 
 @section{Developing Packages for PLaneT}
