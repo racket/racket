@@ -66,13 +66,13 @@ window and hit Enter, DrRacket evaluates the expression and prints its
 result. An expression can be just a value, such as the number
 @racket[5] or the string @racket["art gallery"]:
 
-@mr-interaction[5 "art gallery"]
+@ss-interaction[5 "art gallery"]
 
 An expression can also be a function call. To call a function, put
 an open parenthesis before the function name, then expressions for the
 function arguments, and then a close parenthesis, like this:
 
-@mr-interaction[(circle 10)]
+@ss-interaction[(circle 10)]
 
 A result from the @racket[circle] function is a picture value, which
 prints as an expression result in much the same way that numbers or
@@ -80,12 +80,12 @@ strings print.  The argument to @racket[circle] determines the
 circle's size in pixels.  As you might guess, there's a
 @racket[rectangle] function that takes two arguments instead of one:
 
-@mr-interaction[(rectangle 10 20)]
+@ss-interaction[(rectangle 10 20)]
 
 Try giving @racket[circle] the wrong number of arguments, just to see
 what happens:
 
-@mr-interaction[(circle 10 20)]
+@ss-interaction[(circle 10 20)]
 
 Note that DrRacket highlights in pink the expression that triggered
 the error (but pink highlighting is not shown in this documentation).
@@ -95,7 +95,7 @@ In addition to basic picture constructors like @racket[circle] and
 combines pictures. When you start composing function calls in Racket,
 it looks like this:
 
-@mr-interaction[(hc-append (circle 10) (rectangle 10 20))]
+@ss-interaction[(hc-append (circle 10) (rectangle 10 20))]
 
 The hyphen in the name @racket[hc-append] is just a part of the
 identifier; it's not @racketidfont{hc} minus
@@ -122,7 +122,7 @@ simpler to give them names. Move back to the definitions area (the top
 area) and add two definitions, so that the complete content of the
 definitions area looks like this:
 
-@mr-racketmod+eval[
+@ss-racketmod+eval[
 slideshow
 (define c (circle 10))
 (define r (rectangle 10 20))
@@ -131,7 +131,7 @@ slideshow
 Then click @onscreen{Run} again. Now, you can just type @racket[c] or
 @racket[r]:
 
-@mr-interaction[r (hc-append c r) (hc-append 20 c r c)]
+@ss-interaction[r (hc-append c r) (hc-append 20 c r c)]
 
 As you can see, the @racket[hc-append] function accepts an optional
 number argument before the picture arguments, and it accepts any
@@ -149,7 +149,7 @@ uses @racket[define], just like our shape definitions, but with an
 open parenthesis before the function name, and names for the function
 arguments before the matching close parenthesis:
 
-@mr-racketblock+eval[
+@ss-racketblock+eval[
 (define (square n)
   (code:comment @#,t{A semi-colon starts a line comment.})
   (code:comment @#,t{The expression below is the function body.})
@@ -159,7 +159,7 @@ arguments before the matching close parenthesis:
 The syntax of the definition mirrors the syntax of a function
 call:
 
-@mr-interaction[(square 10)]
+@ss-interaction[(square 10)]
 
 In the same way that definitions can be evaluated in the interactions
 area, expressions can be included in the definitions area. When a
@@ -176,7 +176,7 @@ definition area.
 The @racket[define] form can be used in some places to create local
 bindings. For example, it can be used inside a function body:
 
-@mr-def+int[
+@ss-def+int[
 (define (four p)
   (define two-p (hc-append p p))
   (vc-append two-p two-p))
@@ -188,7 +188,7 @@ for local binding. An advantage of @racket[let] is that it can be used
 in any expression position. Also, it binds many identifiers at once,
 instead of requiring a separate @racket[define] for each identifier:
 
-@mr-def+int[
+@ss-def+int[
 (define (checker p1 p2)
   (let ([p12 (hc-append p1 p2)]
         [p21 (hc-append p2 p1)])
@@ -201,7 +201,7 @@ A @racket[let] form binds many identifiers at the same time, so the
 bindings cannot refer to each other. The @racket[let*] form, in
 contrast, allows later bindings to use earlier bindings:
 
-@mr-def+int[
+@ss-def+int[
 (define (checkerboard p)
   (let* ([rp (colorize p "red")]
          [bp (colorize p "black")]
@@ -217,7 +217,7 @@ contrast, allows later bindings to use earlier bindings:
 Instead of calling @racket[circle] as a function, try evaluating just
 @racket[circle] as an expression:
 
-@mr-interaction[circle]
+@ss-interaction[circle]
 
 That is, the identifier @racket[circle] is bound to a function
 (a.k.a. ``procedure''), just like @racket[c] is bound to a
@@ -230,7 +230,7 @@ pictures (even if they don't print as nicely). Since functions are
 values, you can define functions that expect other functions as
 arguments:
 
-@mr-def+int[
+@ss-def+int[
 (define (series mk)
   (hc-append 4 (mk 5) (mk 10) (mk 20)))
 (series circle)
@@ -244,7 +244,7 @@ have to make up a name and find a place to put the function
 definition. The alternative is to use @racket[lambda], which creates an
 anonymous function:
 
-@mr-interaction[(series (lambda (size) (checkerboard (square size))))]
+@ss-interaction[(series (lambda (size) (checkerboard (square size))))]
 
 The parenthesized names after a @racket[lambda] are the arguments to
 the function, and the expression after the argument names is the
@@ -278,7 +278,7 @@ of @racket[mk] in each @racket[lambda] form to refer to the argument of
 @racket[rgb-series], since that's the binding that is textually in
 scope:
 
-@mr-def+int[
+@ss-def+int[
 (define (rgb-series mk)
   (vc-append
    (series (lambda (sz) (colorize (mk sz) "red")))
@@ -291,7 +291,7 @@ scope:
 Here's another example, where @racket[rgb-maker] takes a function and
 returns a new one that remembers and uses the original function.
 
-@mr-def+int[
+@ss-def+int[
 (define (rgb-maker mk)
   (lambda (sz)
     (vc-append (colorize (mk sz) "red")
@@ -315,7 +315,7 @@ part of Racket.
 The @racket[list] function takes any number of arguments and returns
 a list containing the given values:
 
-@mr-interaction[(list "red" "green" "blue")
+@ss-interaction[(list "red" "green" "blue")
                 (list (circle 10) (square 10))]
 
 As you can see, a list prints as a single quote and then pair of parentheses wrapped around
@@ -332,7 +332,7 @@ each of the elements. The @racket[map] function takes a list and a
 function to apply to each element of the list; it returns a new list
 to combine the function's results:
 
-@mr-def+int[
+@ss-def+int[
 (define (rainbow p)
   (map (lambda (color)
          (colorize p color))
@@ -347,7 +347,7 @@ each one individually. The @racket[apply] function is especially
 useful with functions that take any number of arguments, such as
 @racket[vc-append]:
 
-@mr-interaction[
+@ss-interaction[
 (apply vc-append (rainbow (square 5)))
 ]
 
@@ -375,7 +375,7 @@ To import additional libraries, use the @racket[require] form. For
 example, the library @racketmodname[slideshow/flash] provides a
 @racket[filled-flash] function:
 
-@mr-def+int[
+@ss-def+int[
 (require slideshow/flash)
 (filled-flash 40 30)
 ]
@@ -398,13 +398,13 @@ Modules are named and distributed in various ways:
        that you evaluate the following fragment:
 
        @mr-def+int[
-        (require (planet "random.rkt" ("schematics" "random.plt" 1 0)))
+        (require (planet schematics/random:1:0/random))
         (random-gaussian)
        ]
 
        DrRacket automatically downloads version 1.0 of the
-       @filepath{random.plt} library and then imports the
-       @filepath{random.rkt} module.}
+       @filepath{random.plt} library by @filepath{schematics} and then
+       imports the @filepath{random.rkt} module.}
 
  @item{Some modules live relative to other modules, without
        necessarily belonging to any particular collection or package.
@@ -517,7 +517,8 @@ classes. By convention, the classes are given names that end with
 @racket[%]:
 
 @mr-defs+int[
-[(require racket/class racket/gui/base)
+[(require racket/class
+          racket/gui/base)
  (define f (new frame% [label "My Art"]
                        [width 300]
                        [height 300]
