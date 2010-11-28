@@ -24,14 +24,15 @@
 ;; generate the page for the question
 (define (make-cue-page mc-q)
   (lambda (ses-url k-hidden)
-    `(html (head (title "Question"))
-           (body
-            (form ([action ,(url->string ses-url)] [method "post"]
-                                                   [enctype "application/x-www-form-urlencoded"])
-                  ,(mc-question-cue mc-q)
-                  (table () ,@(answer-rows mc-q))
-                  (input ([type "submit"]))
-                  ,k-hidden)))))
+    (response/xexpr
+     `(html (head (title "Question"))
+            (body
+             (form ([action ,(url->string ses-url)] [method "post"]
+                                                    [enctype "application/x-www-form-urlencoded"])
+                   ,(mc-question-cue mc-q)
+                   (table () ,@(answer-rows mc-q))
+                   (input ([type "submit"]))
+                   ,k-hidden))))))
 
 (define quiz
   (list

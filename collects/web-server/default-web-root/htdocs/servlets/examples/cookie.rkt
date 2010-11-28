@@ -17,8 +17,9 @@
         (cookie->header (make-cookie "id" "joseph"))))))
 
 (define (hello who)
-  `(html (head (title "Hello!"))
-         (body
-          (h1 "Hello "
-              ,who))))
+  (response/xexpr
+   `(html (head (title "Hello!"))
+          (body
+           (h1 "Hello "
+               ,who)))))
 

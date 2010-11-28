@@ -12,14 +12,15 @@
           (send/suspend/url
            (lambda (k-url)
              (printf "ssu\n")
-             `(html (head (title ,(format "Get ~a number" msg)))
-                    (body
-                     (form ([action ,(url->string k-url)]
-                            [method "post"]
-                            [enctype "application/x-www-form-urlencoded"])
-                           ,(format "Enter the ~a number to add: " msg)
-                           (input ([type "text"] [name "number"] [value ""]))
-                           (input ([type "submit"])))))))]
+             (response/xexpr
+              `(html (head (title ,(format "Get ~a number" msg)))
+                     (body
+                      (form ([action ,(url->string k-url)]
+                             [method "post"]
+                             [enctype "application/x-www-form-urlencoded"])
+                            ,(format "Enter the ~a number to add: " msg)
+                            (input ([type "text"] [name "number"] [value ""]))
+                            (input ([type "submit"]))))))))]
          [num (string->number
                (bytes->string/utf-8
                 (binding:form-value
@@ -30,8 +31,9 @@
 
 (define (start initial-request)
   (printf "after s-s\n")
-  `(html (head (title "Final Page"))
-         (body
-          (h1 "Final Page")
-          (p ,(format "The answer is ~a"
-                      (+ (get-number "first") (get-number "second")))))))
+  (response/xexpr
+   `(html (head (title "Final Page"))
+          (body
+           (h1 "Final Page")
+           (p ,(format "The answer is ~a"
+                       (+ (get-number "first") (get-number "second"))))))))

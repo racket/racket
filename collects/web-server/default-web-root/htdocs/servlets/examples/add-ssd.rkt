@@ -8,21 +8,23 @@
 (define (request-number which-number)
   (send/suspend/dispatch
    (lambda (embed/url)
-     `(html (head (title "Enter a Number to Add"))
-            (body ([bgcolor "white"])
-                  (form ([action ,(embed/url
-                                   (lambda (request)
-                                     (string->number
-                                      (extract-binding/single
-                                       'number
-                                       (request-bindings request)))))]
-                         [method "post"])
-                        "Enter the " ,which-number " number to add: "
-                        (input ([type "text"] [name "number"] [value ""]))
-                        (input ([type "submit"] [name "enter"] [value "Enter"]))))))))
+     (response/xexpr
+      `(html (head (title "Enter a Number to Add"))
+             (body ([bgcolor "white"])
+                   (form ([action ,(embed/url
+                                    (lambda (request)
+                                      (string->number
+                                       (extract-binding/single
+                                        'number
+                                        (request-bindings request)))))]
+                          [method "post"])
+                         "Enter the " ,which-number " number to add: "
+                         (input ([type "text"] [name "number"] [value ""]))
+                         (input ([type "submit"] [name "enter"] [value "Enter"])))))))))
 
 (define (start initial-request)
-  `(html (head (title "Sum"))
-         (body ([bgcolor "white"])
-               (p "The answer is "
-                  ,(number->string (+ (request-number "first") (request-number "second")))))))
+  (response/xexpr
+   `(html (head (title "Sum"))
+          (body ([bgcolor "white"])
+                (p "The answer is "
+                   ,(number->string (+ (request-number "first") (request-number "second"))))))))

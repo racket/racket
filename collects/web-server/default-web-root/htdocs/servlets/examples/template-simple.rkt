@@ -5,4 +5,4 @@
 (define timeout +inf.0)
 
 (define (start initial-request)
-  (list #"text/html" (include-template "static.html")))
+  (response/template (include-template "static.html")))

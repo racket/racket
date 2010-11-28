@@ -44,14 +44,15 @@
 (define build-suspender
   (opt-lambda (title content [body-attributes '([bgcolor "white"])] [head-attributes null])
     (lambda (k-url)
-      `(html (head ,head-attributes
-                   (meta ([http-equiv "Pragma"] [content "no-cache"])) ; don't cache in netscape
-                   (meta ([http-equiv "Expires"] [content "-1"])) ; don't cache in IE
-                   ; one site said to use -1, another said to use 0.
-                   (title . ,title))
-             (body ,body-attributes
-                   (form ([action ,k-url] [method "post"])
-                         ,@content))))))
+      (response/xexpr
+       `(html (head ,head-attributes
+                    (meta ([http-equiv "Pragma"] [content "no-cache"])) ; don't cache in netscape
+                    (meta ([http-equiv "Expires"] [content "-1"])) ; don't cache in IE
+                    ; one site said to use -1, another said to use 0.
+                    (title . ,title))
+              (body ,body-attributes
+                    (form ([action ,k-url] [method "post"])
+                          ,@content)))))))
 
 ; write-to-file : str TST -> void
 (define (write-to-file file-name x)
@@ -87,18 +88,20 @@
 
 ; access-error-page : html
 (define access-error-page
-  `(html (head (title "Web Server Configuration Access Error"))
-         (body ([bgcolor "white"])
-               (p "You must connect to the configuration tool from the machine the server runs on using 127.0.0.1 for the host part of the URL.")
-               ,footer)))
+  (response/xexpr
+   `(html (head (title "Web Server Configuration Access Error"))
+          (body ([bgcolor "white"])
+                (p "You must connect to the configuration tool from the machine the server runs on using 127.0.0.1 for the host part of the URL.")
+                ,footer))))
 
 ; permission-error-page : path -> html
 (define (permission-error-page configuration-path)
-  `(html (head (title "Web Server Configuration Permissions Error"))
-         (body ([bgcolor "white"])
-               (p "You must have read and write access to "
-                  (code ,(path->string configuration-path))
-                  " in order to configure the server."))))
+  (response/xexpr
+   `(html (head (title "Web Server Configuration Permissions Error"))
+          (body ([bgcolor "white"])
+                (p "You must have read and write access to "
+                   (code ,(path->string configuration-path))
+                   " in order to configure the server.")))))
 
 ; check-ip-address : request -> request
 (define (check-ip-address request)
@@ -650,35 +653,39 @@
 
 ; initialization-error-page : request -> response
 (define (initialization-error-page initial-request)
-  `(html (head (title "Web Server Configuration Program Invocation Error"))
-         (body ([bgcolor "white"])
-               (p "Please direct your browser directly to the "
-                  (a ([href ,(url->string (request-uri initial-request))]) "configuration program,")
-                  " not through another URL.")
-               ,footer)))
+  (response/xexpr
+   `(html (head (title "Web Server Configuration Program Invocation Error"))
+          (body ([bgcolor "white"])
+                (p "Please direct your browser directly to the "
+                   (a ([href ,(url->string (request-uri initial-request))]) "configuration program,")
+                   " not through another URL.")
+                ,footer))))
 
 ; done-page : html
 (define done-page
-  ; more-here - consider adding more useful information
-  `(html (head (title "done"))
-         (body ([bgcolor "white"])
-               (h2 "Configuration Saved.")
-               (p "Click your browser's back button to continue configuring the server.")
-               ,footer)))
+  (response/xexpr
+   ; more-here - consider adding more useful information
+   `(html (head (title "done"))
+          (body ([bgcolor "white"])
+                (h2 "Configuration Saved.")
+                (p "Click your browser's back button to continue configuring the server.")
+                ,footer))))
 
 ; exception-error-page : TST -> html
 (define (exception-error-page exn)
-  `(html (head (title "Error"))
-         (body ([bgcolor "white"])
-               (p "Servlet exception: "
-                  (pre ,(exn->string exn)))
-               ,footer)))
+  (response/xexpr
+   `(html (head (title "Error"))
+          (body ([bgcolor "white"])
+                (p "Servlet exception: "
+                   (pre ,(exn->string exn)))
+                ,footer))))
 
 (define must-select-host-page
-  `(html (head (title "Web Server Configuration Error"))
-         (body ([bgcolor "white"])
-               (p "Please select which host to edit before clicking the Edit button.")
-               ,footer)))
+  (response/xexpr
+   `(html (head (title "Web Server Configuration Error"))
+          (body ([bgcolor "white"])
+                (p "Please select which host to edit before clicking the Edit button.")
+                ,footer))))
 
 ; io
 

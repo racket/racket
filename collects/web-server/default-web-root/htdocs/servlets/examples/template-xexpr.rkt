@@ -6,6 +6,7 @@
 (define timeout +inf.0)
 
 (define (start initial-request)
-  `(html (pre ,(include-template "static.html"))
-         "versus"
-         ,(make-cdata #f #f (include-template "static.html"))))
+  (response/xexpr
+   `(html (pre ,(include-template "static.html"))
+          "versus"
+          ,(make-cdata #f #f (include-template "static.html")))))

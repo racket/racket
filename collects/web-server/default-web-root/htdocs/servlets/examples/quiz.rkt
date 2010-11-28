@@ -45,26 +45,27 @@
    (send/suspend
     (lambda (k-url)
       (let ((answer-num -1))
-        `(html
-          (head
-           (title "Quiz Servlet")
-           (body
-            (p ,(format "Question ~A of ~A" (add1 question-number)
-                        n-questions))
-            (p ,(question-text question-sexp))
-            (form ((method "post") (action ,k-url))
-                  ,@(map (lambda (choice)
-                           (set! answer-num (add1 answer-num))
-                           `(p
-                             ,(choice-descriptor answer-num) ". "
-                             (input ((type "radio")
-                                     (name "answer")
-                                     (value ,(number->string
-                                              answer-num))))
-                             ,choice))
-                         (cadr question-sexp))
-                  (input ((type "submit")
-                          (value "Next"))))))))))))
+        (response/xexpr
+         `(html
+           (head
+            (title "Quiz Servlet")
+            (body
+             (p ,(format "Question ~A of ~A" (add1 question-number)
+                         n-questions))
+             (p ,(question-text question-sexp))
+             (form ((method "post") (action ,k-url))
+                   ,@(map (lambda (choice)
+                            (set! answer-num (add1 answer-num))
+                            `(p
+                              ,(choice-descriptor answer-num) ". "
+                              (input ((type "radio")
+                                      (name "answer")
+                                      (value ,(number->string
+                                               answer-num))))
+                              ,choice))
+                          (cadr question-sexp))
+                   (input ((type "submit")
+                           (value "Next")))))))))))))
 
 ;; ((listof question-sexp) size) -> (listof question-sexp)
 ;; Choose a subset (without duplicates) of given size from a given list
@@ -92,14 +93,15 @@
 (define (begin-quiz)
   (send/suspend
    (lambda (k-url)
-     `(html
-       (head
-        (title "Quiz Servlet"))
-       (body
-        (p ,quiz-intro)
-        (form ((method "post") (action ,k-url))
-              (input ((type "submit")
-                      (value "Begin Quiz")))))))))
+     (response/xexpr
+      `(html
+        (head
+         (title "Quiz Servlet"))
+        (body
+         (p ,quiz-intro)
+         (form ((method "post") (action ,k-url))
+               (input ((type "submit")
+                       (value "Begin Quiz"))))))))))
 
 ;; Compare list of questions to answers.
 ;; ((listof question-sexp) (listof integer|false)) -> (listof integer)
@@ -129,39 +131,40 @@
             (skipped (cadr score))
             (wrong (caddr score))
             (xml
-             `(html
-               (head
-                (title "Quiz Servlet"))
-               (body
-                (p ,(format "Your score: ~A/~A"
-                            correct
-                            (+ correct wrong skipped)))
-                (p ,(format "Correct: ~A" correct))
-                (p ,(format "Skipped: ~A" skipped))
-                (p ,(format "Wrong: ~A" wrong))
-                (table ((border "5"))
-                       (tr (td "Question") (td "Correct Answer")
-                           (td "Your Answer") (td "Explanation"))
-                       ,@(map
-                          (lambda (q a)
-                            `(tr
-                              (td ,(question-text q))
-                              (td ,(format "~A. ~A"
-                                           (choice-descriptor
-                                            (question-answer q))
-                                           (list-ref (question-choices q)
-                                                     (question-answer q))))
-                              (td ,(if a
-                                       (format "~A. ~A" (choice-descriptor a)
-                                               (list-ref
-                                                (question-choices q) a))
-                                       "Skipped"))
-                              (td ,(question-explanation q))))
-                          questions answers))
-                (form ((method "get")
-                       (action ,k-url))
-                      (input ((type "submit")
-                              (value "New Quiz"))))))))
+             (response/xexpr
+              `(html
+                (head
+                 (title "Quiz Servlet"))
+                (body
+                 (p ,(format "Your score: ~A/~A"
+                             correct
+                             (+ correct wrong skipped)))
+                 (p ,(format "Correct: ~A" correct))
+                 (p ,(format "Skipped: ~A" skipped))
+                 (p ,(format "Wrong: ~A" wrong))
+                 (table ((border "5"))
+                        (tr (td "Question") (td "Correct Answer")
+                            (td "Your Answer") (td "Explanation"))
+                        ,@(map
+                           (lambda (q a)
+                             `(tr
+                               (td ,(question-text q))
+                               (td ,(format "~A. ~A"
+                                            (choice-descriptor
+                                             (question-answer q))
+                                            (list-ref (question-choices q)
+                                                      (question-answer q))))
+                               (td ,(if a
+                                        (format "~A. ~A" (choice-descriptor a)
+                                                (list-ref
+                                                 (question-choices q) a))
+                                        "Skipped"))
+                               (td ,(question-explanation q))))
+                           questions answers))
+                 (form ((method "get")
+                        (action ,k-url))
+                       (input ((type "submit")
+                               (value "New Quiz")))))))))
        xml))))
 
 ;; Return the first value for key in bindings, if it at least one

@@ -19,7 +19,7 @@
    code message seconds mime-type 
    ; rfc2109 also recommends some cache-control stuff here for cookies
    (append hdrs (map cookie->header cooks))
-   ; XXX Use a normal response and 
+   ; XXX Use a normal response and an efficient xexpr printer
    (list preamble (string->bytes/utf-8 (xexpr->string xexpr)))))
 
 (provide/contract

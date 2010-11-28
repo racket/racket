@@ -13,5 +13,6 @@
   (printf "Done\n")
   (start
    (send/suspend
-   (lambda (k-url)
-     `(html (body (a ([href ,k-url]) "Done")))))))
+    (lambda (k-url)
+      (response/xexpr
+       `(html (body (a ([href ,k-url]) "Done"))))))))

@@ -15,14 +15,15 @@
   (let ([req
          (send/suspend/url
           (lambda (k-url)
-            `(html (head (title ,message))
-                   (body
-                    (form ([action ,(url->string k-url)]
-                           [method "post"]
-                           [enctype "application/x-www-form-urlencoded"])
-                          ,message
-                          (input ([type "text"] [name "number"] [value ""]))
-                          (input ([type "submit"])))))))])
+            (response/xexpr
+             `(html (head (title ,message))
+                    (body
+                     (form ([action ,(url->string k-url)]
+                            [method "post"]
+                            [enctype "application/x-www-form-urlencoded"])
+                           ,message
+                           (input ([type "text"] [name "number"] [value ""]))
+                           (input ([type "submit"]))))))))])
     (string->number
      (bytes->string/utf-8
       (binding:form-value
@@ -32,12 +33,13 @@
 (define (start initial-request)
   (define how-many-numbers
     (get-number-from-user "How many numbers do you want to add?"))
-  `(html (head (title "Final Page"))
-         (body
-          (h1 "Final Page")
-          (p ,(format "The answer is ~a"
-                      (apply +
-                             (build-list/native how-many-numbers
-                                                (lambda (i)
-                                                  (get-number-from-user
-                                                   (format "Enter number ~a" (add1 i)))))))))))
+  (response/xexpr
+   `(html (head (title "Final Page"))
+          (body
+           (h1 "Final Page")
+           (p ,(format "The answer is ~a"
+                       (apply +
+                              (build-list/native how-many-numbers
+                                                 (lambda (i)
+                                                   (get-number-from-user
+                                                    (format "Enter number ~a" (add1 i))))))))))))

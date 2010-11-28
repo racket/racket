@@ -7,7 +7,9 @@
   (adjust-timeout! 1)
   (send/suspend
    (lambda (k-url)
-     `(html (head (title "Hello"))
-            (body (a ([href ,k-url])
-                     "Link")))))
-  `(html (body "Should not happen")))
+     (response/xexpr
+      `(html (head (title "Hello"))
+             (body (a ([href ,k-url])
+                      "Link"))))))
+  (response/xexpr
+   `(html (body "Should not happen"))))
