@@ -29,6 +29,17 @@
 (import-class NSView NSTabView NSTabViewItem PSMTabBarControl)
 (import-protocol NSTabViewDelegate)
 
+(define NSOrderedAscending -1)
+(define NSOrderedSame 0)
+(define NSOrderedDescending 1)
+(define (order-content-first a b data)
+  (cond
+   [(ptr-equal? a data) NSOrderedDescending]
+   [(ptr-equal? b data) NSOrderedAscending]
+   [else NSOrderedSame]))
+(define order_content_first (function-ptr order-content-first
+                                          (_fun #:atomic? #t _id _id _id -> _int)))
+
 (define-objc-class MyTabView NSTabView
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
@@ -131,7 +142,11 @@
                  (tell (tell NSTabViewItem alloc) initWithIdentifier: #f))])
       (tellv item setLabel: #:type _NSString (label->plain-label lbl))
       (tellv tabv-cocoa addTabViewItem: item)
-      (set! item-cocoas (append item-cocoas (list item)))))
+      (set! item-cocoas (append item-cocoas (list item)))
+      ;; Sometimes the sub-view for the tab buttons gets put in front
+      ;; of the content view, so fix the order:
+      (tellv tabv-cocoa sortSubviewsUsingFunction: #:type _fpointer order_content_first
+             context: #:type _pointer content-cocoa)))
 
   (define/public (delete i)
     (let ([item-cocoa (list-ref item-cocoas i)])
