@@ -1198,7 +1198,7 @@ path/s is either such a string or a list of them.
 "collects/redex/examples/church.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/combinators.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/compatible-closure.rkt" drdr:command-line (mzc *)
-"collects/redex/examples/delim-cont/randomized-tests-test.rkt" drdr:timeout 120 drdr:random #t
+"collects/redex/examples/delim-cont/randomized-tests-test.rkt" drdr:timeout 180 drdr:random #t
 "collects/redex/examples/delim-cont/randomized-tests.rkt" drdr:random #t
 "collects/redex/examples/delim-cont/test.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/letrec.rkt" drdr:command-line (mzc *)
