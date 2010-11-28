@@ -1951,6 +1951,7 @@ path/s is either such a string or a list of them.
 "collects/tests/unstable/srcloc.rktl" responsible (cce) drdr:command-line (racket "-f" *)
 "collects/tests/utils/gui.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/web-server" responsible (jay)
+"collects/tests/web-server/pr/length.rkt" drdr:command-line #f
 "collects/tests/web-server/run-all-tests.rkt" drdr:timeout 300
 "collects/tests/web-server/servlet-env/env.rkt" drdr:command-line (mzc *)
 "collects/tests/web-server/servlet-env/insta.rkt" drdr:command-line (mzc "-k" *)

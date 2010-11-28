@@ -18,48 +18,12 @@
  [rename ext:output-response/method output-response/method (connection? response? bytes? . -> . void)]
  [rename ext:output-file output-file (connection? path-string? bytes? bytes? (or/c pair? false/c) . -> . void)])
 
-;; Table 1. head responses:
-; ------------------------------------------------------------------------------
-; |method | close? | x-fer coding || response actions
-; |-----------------------------------------------------------------------------
-; |-----------------------------------------------------------------------------
-; |head   |   #t   | chunked      || 1. Output the headers only.
-; |-------------------------------|| 2. Add the special connection-close header.
-; |head   |   #t   | not-chunked  ||
-; |-----------------------------------------------------------------------------
-; |head   |   #f   | chunked      || 1. Output the headers only.
-; |-------------------------------|| 2. Don't add the connection-close header.
-; |head   |   #f   | not-chunked  ||
-; |-----------------------------------------------------------------------------
-
-;; Table 2. get responses:
-; ------------------------------------------------------------------------------
-; |method | x-fer-coding | close? || response actions
-; |-----------------------------------------------------------------------------
-; |-----------------------------------------------------------------------------
-; | get   | chunked      |   #t   || 1. Output headers as above.
-; |       |              |        || 2. Generate trivial chunked response.
-; |-----------------------------------------------------------------------------
-; | get   | chunked      |   #f   || 1. Output headers as above.
-; |       |              |        || 2. Generate chunks as per RFC 2616 sec. 3.6
-; |-----------------------------------------------------------------------------
-; | get   | not chunked  |   #t   || 1. Output headers as above.
-; |-------------------------------|| 2. Generate usual non-chunked response.
-; | get   | not chunked  |   #f   ||
-; |-----------------------------------------------------------------------------
-
-;; Notes:
-;; 1. close? is a boolean which corresponds roughly to the protocol version.
-;;    #t |-> 1.0 and #f |-> 1.1. See function close-connection?
-;;
-;; 2. In the case of a chunked response when close? = #f, then the response
-;;    must be compliant with http 1.0. In this case the chunked response is
-;;    simply turned into a non-chunked one.
-
 (define (output-response conn resp)
   (output-response/method conn resp #"GET"))
 
 (define (output-response/method conn resp meth)
+  (unless (terminated-response? resp)
+    (set-connection-close?! conn #t))
   (output-response-head conn resp)
   (unless (bytes-ci=? meth #"HEAD")
     (output-response-body conn resp)))
@@ -94,6 +58,15 @@
                (fprintf out "~a: ~a\r\n" field value)])
             headers)
   (fprintf out "\r\n"))
+
+; RFC 2616 Section 4.4
+(define (terminated-response? r)
+  (define hs (response-headers r))
+  (or (headers-assq* #"Content-Length" hs)
+      (cond 
+        [(headers-assq* #"Transfer-Encoding" hs)
+         => (λ (h) (not (bytes=? (header-value h) #"identity")))]
+        [else #f])))
 
 (define (output-response-body conn bresp)
   (define o-port (connection-o-port conn))
