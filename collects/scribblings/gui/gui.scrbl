@@ -17,7 +17,7 @@ to the bindings of @racketmodname[racket/draw].}
 @racketmodname[racket] language and the
 @racketmodname[racket/gui/base] and @racketmodname[racket/draw] modules.}
 
-The @racketmodname[racket/draw] toolbox is roughly organized into two
+The @racketmodname[racket/gui] toolbox is roughly organized into two
 parts:
 
 @itemize[
