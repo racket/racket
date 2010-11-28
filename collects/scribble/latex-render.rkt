@@ -254,7 +254,7 @@
                                              (ftag (convert e 'eps-bytes) ".ps")
                                              (ftag (convert e 'png-bytes) ".png"))))
                                   => (lambda (bstr+suffix)
-                                       (let ([fn (install-file (format "pict.~a" (cadr bstr+suffix))
+                                       (let ([fn (install-file (format "pict~a" (cadr bstr+suffix))
                                                                (car bstr+suffix))])
                                          (printf "\\includegraphics{~a}" fn)))]
                                  [else
