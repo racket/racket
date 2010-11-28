@@ -2,7 +2,7 @@
 @(require scribble/manual
           "guide-utils.ss")
 
-@title[#:tag "graphics" #:style 'toc]{Graphics and GUIs}
+@title[#:tag "graphics"]{Graphics and GUIs}
 
 Racket provides many libraries for graphics and graphical user
 interfaces (GUIs):
@@ -10,15 +10,19 @@ interfaces (GUIs):
 @itemlist[
 
  @item{The @racketmodname[racket/draw] library provides basic drawing
-       tools, including @tech{drawing contexts} such as bitmaps and
+       tools, including drawing contexts such as bitmaps and
        PostScript files.
 
-       See @secref["draw"] for an overview.}
+       See @other-doc['(lib "scribblings/draw/draw.scrbl")]
+       for more information.}
 
  @item{The @racketmodname[racket/gui] library provides GUI widgets
        such as windows, buttons, checkboxes, and text fields. The
        library also includes a sophisticated and extensible text
-       editor.}
+       editor.
+
+       See @other-doc['(lib "scribblings/gui/gui.scrbl")]
+       for more information.}
 
  @item{The @racketmodname[slideshow/pict] library provides a more
        functional abstraction layer over @racketmodname[racket/draw].
@@ -29,7 +33,7 @@ interfaces (GUIs):
        "scribblings/scribble/scribble.scrbl") "top"]{Scribble}
        documents or other drawing tasks. Pictures created with the
        @racketmodname[slideshow/pict] library can be rendered to any
-       @tech{drawing context}.
+       drawing context.
 
        See @other-doc['(lib "scribblings/slideshow/slideshow.scrbl")]
        for more information.}
@@ -49,5 +53,3 @@ interfaces (GUIs):
        information.}
 
 ]
-
-@include-section["draw.scrbl"]

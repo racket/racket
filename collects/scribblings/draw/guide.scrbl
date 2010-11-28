@@ -1,12 +1,10 @@
 #lang scribble/doc
 @(require scribble/manual
-          "guide-utils.ss"
+          "common.ss"
           scribble/eval
           scribble/racket
           (for-syntax racket/base)
-          (for-label racket/draw
-                     racket/math
-                     racket/gui))
+          (for-label racket/math))
 
 @(define draw-eval (make-base-eval))
 @interaction-eval[#:eval draw-eval (require racket/class
@@ -74,14 +72,15 @@
 @(define-linked-method rotate dc<%>)
 @(define-linked-method set-path region%)
 
-@title[#:tag "draw"]{Drawing}
+@title[#:tag "overview"]{Overview}
 
 The @racketmodname[racket/draw] library provides a drawing API that is
 based on the PostScript drawing model. It supports line drawing, shape
 filling, bitmap copying, alpha blending, and affine transformations
 (i.e., scale, rotation, and translation).
 
-@guideother{See @secref["classes"] for an introduction to classes and
+@margin-note{See @secref["classes" #:doc '(lib
+"scribblings/guide/guide.scrbl")] for an introduction to classes and
 interfaces in Racket.}
 
 Drawing with @racketmodname[racket/draw] requires a @deftech{drawing context}

@@ -11,13 +11,11 @@
 @racketmodname[racket/draw] library provides all of the class,
 interface, and procedure bindings defined in this manual.}
 
-For an overview of the drawing library, see @secref["draw" #:doc
-'(lib "scribblings/guide/guide.scrbl")].
-
 @table-of-contents[]
 
 @;------------------------------------------------------------------------
 
+@include-section["guide.scrbl"]
 @include-section["bitmap-class.scrbl"]
 @include-section["bitmap-dc-class.scrbl"]
 @include-section["brush-class.scrbl"]
