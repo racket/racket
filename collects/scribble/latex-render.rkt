@@ -249,15 +249,13 @@
                                             (image-element-scale e) fn))]
                                  [(and (convertible? e)
                                        (not (disable-images))
-                                       (convert e 'pdf-bytes))
-                                  => (lambda (bstr)
-                                       (let ([fn (install-file "pict.pdf" bstr)])
-                                         (printf "\\includegraphics{~a}" fn)))]
-                                 [(and (convertible? e)
-                                       (not (disable-images))
-                                       (convert e 'png-bytes))
-                                  => (lambda (bstr)
-                                       (let ([fn (install-file "pict.png" bstr)])
+                                       (let ([ftag (lambda (v suffix) (and v (list v suffix)))])
+                                         (or (ftag (convert e 'pdf-bytes) ".pdf")
+                                             (ftag (convert e 'eps-bytes) ".ps")
+                                             (ftag (convert e 'png-bytes) ".png"))))
+                                  => (lambda (bstr+suffix)
+                                       (let ([fn (install-file (format "pict.~a" (cadr bstr+suffix))
+                                                               (car bstr+suffix))])
                                          (printf "\\includegraphics{~a}" fn)))]
                                  [else
                                   (parameterize ([rendering-tt (or tt? (rendering-tt))])
