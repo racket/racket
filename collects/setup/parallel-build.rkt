@@ -27,9 +27,12 @@
                   ((collects-queue-append-error jobqueue) cc "making" null out err "output"))])
             (when last ((collects-queue-printer jobqueue) (current-output-port) "made" "~a" cc-name )))]
         [else
-          (eprintf "work-done match cc failed.\n")
-          (eprintf "trying to match:\n~a\n" (list work msg))]))
-          
+          (match work 
+            [(list (list cc file last) message)
+              ((collects-queue-append-error jobqueue) cc "making" null "" "" "error")
+              (eprintf "work-done match cc failed.\n")
+              (eprintf "trying to match:\n~a\n" (list work msg))])]))
+         
     ;; assigns a collection to each worker to be compiled
     ;; when it runs out of collections, steals work from other workers collections
     (define (get-job jobqueue workerid)
