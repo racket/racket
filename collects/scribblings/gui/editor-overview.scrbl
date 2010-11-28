@@ -2,7 +2,7 @@
 @(require scribble/bnf
           "common.ss")
 
-@title[#:tag "editor-overview"]{Editor}
+@title[#:tag "editor-overview"]{Editors}
 
 The editor toolbox provides a foundation for two common kinds of
  applications:

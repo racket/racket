@@ -92,6 +92,10 @@ the @method[canvas<%> get-dc] method of a
 canvas returns a @scheme[dc<%>] instance for drawing into the canvas
 window.
 
+@margin-note{See @secref["canvas-drawing" #:doc '(lib
+"scribblings/gui/gui.scrbl")] for an introduction to drawing 
+in a GUI window.}
+
 @; ------------------------------------------------------------
 @section{Lines and Simple Shapes}
 

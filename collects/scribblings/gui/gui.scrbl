@@ -17,13 +17,35 @@ to the bindings of @racketmodname[racket/draw].}
 @racketmodname[racket] language and the
 @racketmodname[racket/gui/base] and @racketmodname[racket/draw] modules.}
 
+The @racketmodname[racket/draw] toolbox is roughly organized into two
+parts:
+
+@itemize[
+
+ @item{The @deftech{windowing toolbox}, for implementing windows,
+ buttons, menus, text fields, and other controls.}
+
+ @item{The @deftech{editor toolbox}, for developing traditional text
+ editors, editors that mix text and graphics, or free-form layout
+ editors (such as a word processor, HTML editor, or icon-based file
+ browser).}
+
+]
+
+Both parts of the toolbox rely extensively on the
+@racketmodname[racket/draw] drawing library.
 
 @table-of-contents[]
 
 @;------------------------------------------------------------------------
 
-@include-section["guide.scrbl"]
-@include-section["reference.scrbl"]
+@include-section["win-overview.scrbl"]
+@include-section["win-classes.scrbl"]
+@include-section["win-funcs.scrbl"]
+@include-section["editor-overview.scrbl"]
+@include-section["editor-classes.scrbl"]
+@include-section["editor-funcs.scrbl"]
+@include-section["wxme.scrbl"]
 @include-section["prefs.scrbl"]
 @include-section["dynamic.scrbl"]
 
