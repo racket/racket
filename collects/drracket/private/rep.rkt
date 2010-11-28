@@ -1320,15 +1320,17 @@ TODO
                  (initialize-parameters snip-classes))))
             
 
-            ;; register drscheme with the planet-terse-register for the user's namespace
-            ;; must be called after 'initialize-parameters' is called (since it initializes
-            ;; the user's namespace)
-            (planet-terse-set-key (gensym))
-            (planet-terse-register
-             (lambda (tag package)
-               (parameterize ([current-eventspace drracket:init:system-eventspace])
-                 (queue-callback (λ () (new-planet-info tag package))))))
-            
+            (queue-user/wait
+             (λ ()
+               ;; register drscheme with the planet-terse-register for the user's namespace
+               ;; must be called after 'initialize-parameters' is called (since it initializes
+               ;; the user's namespace)
+               (planet-terse-set-key (namespace-module-registry (current-namespace)))
+               (planet-terse-register 
+                (lambda (tag package)
+                  (parameterize ([current-eventspace drracket:init:system-eventspace])
+                    (queue-callback (λ () (new-planet-info tag package))))))))
+               
             ;; disable breaks until an evaluation actually occurs
             (send context set-breakables #f #f)
             
