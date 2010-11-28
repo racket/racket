@@ -49,7 +49,8 @@ An example @racket['stateless] servlet module:
    serialize-stuffer
    (md5-stuffer (build-path (find-system-path 'home-dir) ".urls"))))
  (define (start req)
-   `(html (body (h2 "Look ma, no state!"))))
+   (response/xexpr
+    `(html (body (h2 "Look ma, no state!")))))
 ]
 
 

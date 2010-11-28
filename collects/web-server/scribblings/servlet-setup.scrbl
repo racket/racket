@@ -6,7 +6,9 @@
                      web-server/http
                      web-server/private/servlet
                      web-server/managers/manager
-                     web-server/configuration/namespace))
+                     web-server/configuration/namespace
+                     racket/serialize
+                     web-server/stuffers/stuffer))
 
 @defmodule[web-server/servlet/setup]{
 

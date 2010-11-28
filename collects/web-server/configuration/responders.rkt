@@ -2,6 +2,7 @@
 (require racket/runtime-path
          net/url
          web-server/private/xexpr
+         web-server/http/xexpr
          web-server/http/response-structs
          web-server/http/request-structs)
 
@@ -24,22 +25,23 @@
         "web-server/default-web-root/htdocs/error.css"))
 
 (define (pretty-exception-response url exn)
-  `(html
-    (head
-     (title "Servlet Error")
-     (link ([rel "stylesheet"] [href "/error.css"])))
-    (body
-     (div ([class "section"])
-          (div ([class "title"]) "Exception")
-          (p
-           "The application raised an exception with the message:"
-           (pre ,(if (exn:pretty? exn)
-                     (exn:pretty-xexpr exn)
-                     (exn-message exn))))
-          (p
-           "Stack trace:"
-           ,(format-stack-trace
-             (continuation-mark-set->context (exn-continuation-marks exn))))))))
+  (response/xexpr
+   `(html
+     (head
+      (title "Servlet Error")
+      (link ([rel "stylesheet"] [href "/error.css"])))
+     (body
+      (div ([class "section"])
+           (div ([class "title"]) "Exception")
+           (p
+            "The application raised an exception with the message:"
+            (pre ,(if (exn:pretty? exn)
+                      (exn:pretty-xexpr exn)
+                      (exn-message exn))))
+           (p
+            "Stack trace:"
+            ,(format-stack-trace
+              (continuation-mark-set->context (exn-continuation-marks exn)))))))))
 
 
 ; file-response : nat str str [(cons sym str) ...] -> response

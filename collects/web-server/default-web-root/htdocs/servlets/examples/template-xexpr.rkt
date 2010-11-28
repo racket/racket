@@ -1,5 +1,6 @@
 #lang racket
 (require web-server/templates
+         web-server/http
          xml)
 (provide (all-defined-out))
 (define interface-version 'v1)

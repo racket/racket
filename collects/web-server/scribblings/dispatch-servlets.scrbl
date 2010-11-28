@@ -1,5 +1,12 @@
 #lang scribble/doc
-@(require "web-server.rkt")
+@(require "web-server.rkt"
+          (for-label web-server/http
+                     web-server/private/servlet
+                     web-server/configuration/responders
+                     web-server/dispatchers/filesystem-map
+                     web-server/servlet/setup
+                     net/url
+                     web-server/managers/manager))
 
 @title[#:tag "dispatch-servlets"]{Serving Servlets}
 @a-dispatcher[web-server/dispatchers/dispatch-servlets

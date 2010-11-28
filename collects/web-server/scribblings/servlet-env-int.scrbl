@@ -5,6 +5,7 @@
 @(require (for-label web-server/servlet-env
                      web-server/servlet-dispatch
                      web-server/http
+                     web-server/managers/manager
                      web-server/managers/lru
                      web-server/private/util
                      web-server/dispatchers/dispatch

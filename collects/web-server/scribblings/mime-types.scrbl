@@ -2,7 +2,8 @@
 @(require "web-server.rkt")
 
 @title[#:tag "mime-types"]{MIME Types}
-@(require (for-label web-server/private/mime-types))
+@(require (for-label web-server/private/mime-types
+                     racket/contract))
 
 @defmodule[web-server/private/mime-types]{
 
@@ -10,7 +11,7 @@ This module provides function for dealing with @filepath{mime.types}
 files.
 
 @defproc[(read-mime-types [p path-string?])
-         (hash-table/c symbol? bytes?)]{
+         (hash/c symbol? bytes?)]{
  Reads the @filepath{mime.types} file from @racket[p] and constructs a
  hash table mapping extensions to MIME types.
 }

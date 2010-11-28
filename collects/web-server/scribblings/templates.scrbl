@@ -256,18 +256,13 @@ Notice how it also avoids the absurd amount of punctuation on line two.
 @section{HTTP Responses}
 
 The quickest way to generate an HTTP response from a template is using
-the @racket[list] response type:
-@racketblock[
- (list #"text/html" (include-template "static.html"))
-]
-
-If you want more control then you can generate a @racket[response?] struct:
+a @racket[response?] struct:
 @racketblock[
  (response/full
   200 #"Okay"
   (current-seconds) TEXT/HTML-MIME-TYPE
   empty
-  (list (include-template "static.html")))
+  (list (string->bytes/utf-8 (include-template "static.html"))))
 ]
 
 Finally, if you want to include the contents of a template inside a larger @xexpr :
@@ -335,12 +330,13 @@ He has divided his code into presentation functions and logic functions. We'll l
 The first presentation function defines the common layout of all pages.
 @racketblock[
 (define (template section body)
-  `(html
-    (head (title "Al's Church: " ,section))
-    (body
-     (h1 "Al's Church: " ,section)
-     (div ([id "main"])
-          ,@body))))
+  (response/xexpr
+   `(html
+     (head (title "Al's Church: " ,section))
+     (body
+      (h1 "Al's Church: " ,section)
+      (div ([id "main"])
+           ,@body)))))
 ]
 
 One of the things to notice here is the @racket[unquote-splicing] on the @racket[body] argument.
@@ -379,32 +375,33 @@ his blog. He changes the @racket[template] function to:
 
 @racketblock[
 (define (template section body)
-  `(html
-    (head 
-     (title "Al's Church: " ,section)
-     (style ([type "text/css"])                 
-            "body {margin: 0px; padding: 10px;}"
-            "#main {background: #dddddd;}"))
-    (body
-     (script 
-      ([type "text/javascript"])             
-      ,(make-cdata 
-        #f #f
-        "var gaJsHost = ((\"https:\" =="
-        "document.location.protocol)"
-        "? \"https://ssl.\" : \"http://www.\");"
-        "document.write(unescape(\"%3Cscript src='\" + gaJsHost"
-        "+ \"google-analytics.com/ga.js' "
-        "type='text/javascript'%3E%3C/script%3E\"));"))
-     (script
-      ([type "text/javascript"])
-      ,(make-cdata 
-        #f #f
-        "var pageTracker = _gat._getTracker(\"UA-YYYYYYY-Y\");"
-        "pageTracker._trackPageview();"))     
-     (h1 "Al's Church: " ,section)
-     (div ([id "main"])
-          ,@body))))
+  (response/xexpr
+   `(html
+     (head 
+      (title "Al's Church: " ,section)
+      (style ([type "text/css"])                 
+             "body {margin: 0px; padding: 10px;}"
+             "#main {background: #dddddd;}"))
+     (body
+      (script 
+       ([type "text/javascript"])             
+       ,(make-cdata 
+         #f #f
+         "var gaJsHost = ((\"https:\" =="
+         "document.location.protocol)"
+         "? \"https://ssl.\" : \"http://www.\");"
+         "document.write(unescape(\"%3Cscript src='\" + gaJsHost"
+         "+ \"google-analytics.com/ga.js' "
+         "type='text/javascript'%3E%3C/script%3E\"));"))
+      (script
+       ([type "text/javascript"])
+       ,(make-cdata 
+         #f #f
+         "var pageTracker = _gat._getTracker(\"UA-YYYYYYY-Y\");"
+         "pageTracker._trackPageview();"))     
+      (h1 "Al's Church: " ,section)
+      (div ([id "main"])
+           ,@body)))))
 ]
 
 @margin-note{Some of these problems go away by using here strings, as described in the documentation on
@@ -447,8 +444,11 @@ To use templates, we need only change @racket[template], @racket[blog-posted], a
 
 @racketblock[
 (define (template section body)
-  (list TEXT/HTML-MIME-TYPE
-        (include-template "blog.html")))
+  (response/full
+   200 #"Okay"
+   (current-seconds) TEXT/HTML-MIME-TYPE
+   empty
+   (list (string->bytes/utf-8 (include-template "blog.html")))))
 
 (define (blog-posted title body k-url)
   (include-template "blog-posted.html"))

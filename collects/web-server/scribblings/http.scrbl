@@ -5,7 +5,7 @@
 
 @defmodule[web-server/http]
 
-The @web-server implements many HTTP RFCs that are provided by this module.
+The @web-server implements many HTTP libraries that are provided by this module.
 
 @; ------------------------------------------------------------
 @section[#:tag "request-structs"]{Requests}
@@ -159,35 +159,37 @@ Here is an example typical of what you will find in many applications:
 
 @defmodule[web-server/http/response-structs]{
 
-@defstruct[response/basic
+@defstruct*[response
            ([code number?]
             [message bytes?]
             [seconds number?]
             [mime bytes?]
-            [headers (listof header?)])]{
- A basic HTTP response containing no body. @racket[code] is the response code,
+            [headers (listof header?)]
+            [output (output-port? . -> . void)])]{
+ An HTTP response where @racket[output] produces the body. @racket[code] is the response code,
  @racket[message] the message, @racket[seconds] the generation time, @racket[mime]
  the MIME type of the file, and @racket[extras] are the extra headers, in addition
  to those produced by the server.
  
  Example:
  @racketblock[
-  (make-response/basic
+  (response
    301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
-                      #"http://racket-lang.org/downloads")))
+                      #"http://racket-lang.org/downloads"))
+   (λ (op) (write-bytes #"Moved" op)))
  ]
 }
-
-@defstruct[(response/full response/basic)
-           ([body (listof bytes?)])]{
- As with @racket[response/basic], except with @racket[body] as the response
- body.
-
+                                                 
+@defproc[(response/full [code number?] [message bytes?] [seconds number?] [mime bytes?]
+                        [headers (listof header?)] [body (listof bytes?)])
+         response?]{
+ A constructor for responses where @racket[body] is the response body.
+                                   
  Example:
  @racketblock[
-  (make-response/full
+  (response/full
    301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
@@ -198,83 +200,6 @@ Here is an example typical of what you will find in many applications:
          #"\">here</a> instead."
          #"</p></body></html>"))
  ]
-}
-                                    
-@defstruct[(response/port response/basic)
-           ([output (output-port? . -> . void)])]{
- As with @racket[response/basic], except where @racket[output] generates the response
- body. This response type is not as safe and efficient for clients as @racket[response/incremental],
- but can be convenient on the server side.
-
- Example:
- @racketblock[
-  (make-response/full
-   301 #"Moved Permanently"
-   (current-seconds) TEXT/HTML-MIME-TYPE
-   (list (make-header #"Location"
-                      #"http://racket-lang.org/downloads"))
-   (λ (op)
-     (write-bytes #"<html><body><p>" op)
-     (write-bytes #"Please go to <a href=\"" op)
-     (write-bytes #"http://racket-lang.org/downloads" op)
-     (write-bytes #"\">here</a> instead." op)
-     (write-bytes #"</p></body></html>" op)))
- ]
-}
-
-@defstruct[(response/incremental response/basic)
-           ([generator ((() () #:rest (listof bytes?) . ->* . any) . -> . any)])]{
- As with @racket[response/basic], except with @racket[generator] as a function that is
- called to generate the response body, by being given an @racket[output-response] function
- that outputs the content it is called with. If the @racket[output-response] function is called
- with arguments of zero length (when concatenated), then the output port is flushed with
- @racket[flush-output].
- 
- Here is a short example:
- @racketblock[
-  (make-response/incremental
-    200 #"OK" (current-seconds)
-    #"application/octet-stream"
-    (list (make-header #"Content-Disposition"
-                       #"attachment; filename=\"file\""))
-    (lambda (output-response)
-      (output-response #"Some content")
-      (output-response)
-      (output-response #"Even" #"more" #"content!")
-      (output-response #"Now we're done")))
- ]
-}
-
-@defthing[response/c contract?]{
- Equivalent to 
- @racketblock[
- (or/c response/basic?
-       (cons/c bytes? (listof (or/c string? bytes?)))
-       xexpr/c)
- ]
-}
-
-@defproc[(make-xexpr-response [xexpr xexpr/c]
-                              [#:code code number? 200]
-                              [#:message message bytes? #"Okay"]
-                              [#:seconds seconds number? (current-seconds)]
-                              [#:mime-type mime-type bytes? TEXT/HTML-MIME-TYPE]
-                              [#:headers headers (listof header?) empty]
-                              [#:preamble preamble bytes? #""])
-         response/full?]{
- Equivalent to
- @racketblock[
- (make-response/full 
-  code message seconds mime-type headers
-  (list preamble (string->bytes/utf-8 (xexpr->string xexpr))))
- ]}
-                         
-@defproc[(normalize-response [response response/c] [close? boolean? #f])
-         (or/c response/full? response/incremental? response/port?)]{
- Coerces @racket[response] into a full response, filling in additional details where appropriate.
-         
- @racket[close?] represents whether the connection will be closed after the response is sent (i.e. if HTTP 1.0 is being used.) The accuracy of this only matters if
-@racket[response] is a @racket[response/incremental?].
 }
 
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @racket[#"text/html; charset=utf-8"].}
@@ -289,6 +214,7 @@ transmission that the server @bold{will not catch}.}
 
 @(require (for-label net/cookie
                      web-server/servlet
+                     web-server/http/xexpr
                      web-server/http/redirect
                      web-server/http/request-structs
                      web-server/http/response-structs
@@ -311,12 +237,6 @@ transmission that the server @bold{will not catch}.}
   Constructs a header that sets the cookie.
  }             
                   
- @defproc[(xexpr-response/cookies [cookies (listof cookie?)]
-                                  [xexpr xexpr/c])
-          response/full?]{
-  Constructs a response using @racket[xexpr] that sets all the cookies in @racket[cookies].
- }
-                         
  Examples:
  @racketblock[
   (define time-cookie 
@@ -332,11 +252,11 @@ transmission that the server @bold{will not catch}.}
         (list time-cookie id-cookie)))
   
   (send/suspend
-    (lambda (k-url)
-      (xexpr-response/cookies
-       (list time-cookie id-cookie)
-       `(html (head (title "Cookie Example"))
-              (body (h1 "You're cookie'd!"))))))
+   (lambda (k-url)
+     (response/xexpr
+      #:cookies (list time-cookie id-cookie)
+      `(html (head (title "Cookie Example"))
+             (body (h1 "You're cookie'd!"))))))
  ]
  
  @warning{When using cookies, make sure you follow the advice of the @link["http://cookies.lcs.mit.edu/"]{MIT Cookie Eaters},
@@ -347,6 +267,7 @@ transmission that the server @bold{will not catch}.}
 @section[#:tag "cookie-parse"]{Extracting Cookies}
 
 @(require (for-label web-server/http/cookie-parse
+                     web-server/http/xexpr
                      net/cookie
                      net/url
                      racket/list))
@@ -384,10 +305,11 @@ transmission that the server @bold{will not catch}.}
           (cookie->header (make-cookie "id" "joseph"))))))
         
    (define (hello who)
-     `(html (head (title "Hello!"))
-            (body 
-             (h1 "Hello " 
-                 ,who))))
+     (response/xexpr
+      `(html (head (title "Hello!"))
+             (body 
+              (h1 "Hello " 
+                  ,who)))))
  ]
 }
 
@@ -424,7 +346,8 @@ transmission that the server @bold{will not catch}.}
 
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth"]{Basic Authentication}
-@(require (for-label web-server/http/basic-auth))
+@(require (for-label web-server/http/response-structs
+                     web-server/http/basic-auth))
 
 @defmodule[web-server/http/basic-auth]{
 
@@ -449,21 +372,25 @@ web-server/insta
 (define (start req)
   (match (request->basic-credentials req)
     [(cons user pass)
-     `(html (head (title "Basic Auth Test"))
-            (body (h1 "User: " ,(bytes->string/utf-8 user))
-                  (h1 "Pass: " ,(bytes->string/utf-8 pass))))]
+     (response/xexpr
+      `(html (head (title "Basic Auth Test"))
+             (body (h1 "User: " ,(bytes->string/utf-8 user))
+                   (h1 "Pass: " ,(bytes->string/utf-8 pass)))))]
     [else
-     (make-response/basic
+     (response
       401 #"Unauthorized" (current-seconds) TEXT/HTML-MIME-TYPE
       (list 
        (make-basic-auth-header 
-        (format "Basic Auth Test: ~a" (gensym)))))])) 
+        (format "Basic Auth Test: ~a" (gensym))))
+      void)])) 
 ]
 }
 
 @; ------------------------------------------------------------
 @section[#:tag "digest-auth"]{Digest Authentication}
 @(require (for-label web-server/http/digest-auth
+                     web-server/http/xexpr
+                     web-server/http/response-structs
                      racket/pretty))
 
 @defmodule[web-server/http/digest-auth]{
@@ -518,20 +445,48 @@ web-server/insta
 (define (start req)
   (match (request->digest-credentials req)
     [#f
-     (make-response/basic
+     (response
       401 #"Unauthorized" (current-seconds) TEXT/HTML-MIME-TYPE
       (list (make-digest-auth-header
              (format "Digest Auth Test: ~a" (gensym))
-             private-key opaque)))]
+             private-key opaque))
+      void)]
     [alist
      (define check
        (make-check-digest-credentials
         (password->digest-HA1 (lambda (username realm) "pass"))))
      (define pass?
        (check "GET" alist))
-     `(html (head (title "Digest Auth Test"))
-            (body 
-             (h1 ,(if pass? "Pass!" "No Pass!"))
-             (pre ,(pretty-format alist))))])) 
+     (response/xexpr
+      `(html (head (title "Digest Auth Test"))
+             (body 
+              (h1 ,(if pass? "Pass!" "No Pass!"))
+              (pre ,(pretty-format alist)))))])) 
 ]
+}
+
+@; ------------------------------------------------------------
+@section[#:tag "xexpr"]{X-expression Support}
+@(require (for-label web-server/http/xexpr
+                     xml))
+
+@defmodule[web-server/http/xexpr]{
+
+@defproc[(response/xexpr [xexpr xexpr/c]
+                         [#:code code number? 200]
+                         [#:message message bytes? #"Okay"]
+                         [#:seconds seconds number? (current-seconds)]
+                         [#:mime-type mime-type bytes? TEXT/HTML-MIME-TYPE]
+                         [#:headers headers (listof header?) empty]
+                         [#:cookies cookies (listof cookie?) empty]
+                         [#:preamble preamble bytes? #""])
+         response?]{
+ Equivalent to
+ @racketblock[
+ (response/full
+  code message seconds mime-type 
+  (append headers (map cookie->header cookies))
+  (list preamble (string->bytes/utf-8 (xexpr->string xexpr))))
+ ]}
+
 }

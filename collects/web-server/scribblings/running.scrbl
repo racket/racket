@@ -9,6 +9,7 @@ There are a number of ways to run Web servlets.
 @section[#:tag "insta"]{Instant Servlets}
 @(require (for-label (only-in web-server/insta/insta
                               no-web-browser static-files-path)
+                     web-server/http
                      web-server/servlet-env))
 
 @defmodulelang[web-server/insta #:use-sources (web-server/insta/insta)]
@@ -19,9 +20,10 @@ The fastest way to get a servlet running in the Web server is to use the
 @racketmod[
 web-server/insta
 
-(define (start request)
-  `(html (head (title "Hello world!"))
-         (body (p "Hey out there!"))))
+(define (start req)
+  (response/xexpr
+   `(html (head (title "Hello world!"))
+          (body (p "Hey out there!")))))
 ]
 
 And press @onscreen["Run"]. A Web browser will open up showing your new servlet.

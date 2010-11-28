@@ -10,6 +10,7 @@
                      web-server/private/dispatch-server-unit
                      web-server/private/dispatch-server-sig
                      web-server/dispatchers/dispatch
+                     net/tcp-sig
                      racket/async-channel
                      unstable/contract
                      web-server/configuration/configuration-table)

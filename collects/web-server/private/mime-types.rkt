@@ -5,7 +5,7 @@
 (require "util.rkt"
          web-server/http)
 (provide/contract
- [read-mime-types (path-string? . -> . hash?)]
+ [read-mime-types (path-string? . -> . (hash/c symbol? bytes?))]
  [make-path->mime-type (path-string? . -> . (path? . -> . bytes?))])
 
 ; read-mime-types : path? -> hash-table?

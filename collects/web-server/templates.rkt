@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require xml
          scribble/text
          racket/port)

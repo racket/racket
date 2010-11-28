@@ -39,11 +39,13 @@ An example version 2 module:
  (define manager 
    (create-none-manager
     (lambda (req)
-      `(html (head (title "No Continuations Here!"))
-             (body (h1 "No Continuations Here!"))))))
+      (response/xexpr
+       `(html (head (title "No Continuations Here!"))
+              (body (h1 "No Continuations Here!")))))))
  (define (start req)
-   `(html (head (title "Hello World!"))
-          (body (h1 "Hi Mom!"))))
+   (response/xexpr
+    `(html (head (title "Hello World!"))
+           (body (h1 "Hi Mom!")))))
  ]
 
 These servlets have an extensive API available to them: @racketmodname[net/url], @racketmodname[web-server/http],

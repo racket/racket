@@ -431,19 +431,20 @@ These @tech{formlet}s are the main combinators for form input.
 
 @section{Utilities}
 
-@(require (for-label web-server/formlets/servlet))
+@(require (for-label web-server/formlets/servlet
+                     web-server/http))
 @defmodule[web-server/formlets/servlet]{
 
 A few utilities are provided for using @tech{formlet}s in Web applications.
 
 @defproc[(send/formlet [f (formlet/c any/c ...)]
                        [#:wrap wrapper
-                               (xexpr/c . -> . response?)
+                               (xexpr/c . -> . xexpr/c)
                                (lambda (form-xexpr)
                                  `(html (head (title "Form Entry"))
                                         (body ,form-xexpr)))])
          (values any/c ...)]{
- Uses @racket[send/suspend] to send @racket[f]'s rendering (wrapped in a FORM tag whose action is
+ Uses @racket[send/suspend] and @racket[response/xexpr] to send @racket[f]'s rendering (wrapped in a FORM tag whose action is
  the continuation URL (wrapped again by @racket[wrapper])) to the client.
  When the form is submitted, the request is passed to the
  processing stage of @racket[f].

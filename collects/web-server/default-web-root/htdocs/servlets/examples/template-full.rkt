@@ -10,4 +10,4 @@
    200 #"Okay"
    (current-seconds) TEXT/HTML-MIME-TYPE
    empty
-   (list (include-template "static.html"))))
+   (list (string->bytes/utf-8 (include-template "static.html")))))

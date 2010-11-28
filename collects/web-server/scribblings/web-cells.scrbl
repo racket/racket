@@ -2,7 +2,8 @@
 @(require "web-server.rkt")
 
 @title[#:tag "web-cells"]{Web Cells}
-@(require (for-label web-server/servlet/web-cells
+@(require (for-label web-server/http
+                     web-server/servlet/web-cells
                      web-server/servlet/web))
 
 @defmodule[web-server/servlet/web-cells]{The
@@ -56,12 +57,13 @@ transformations of the program into continuation or store passing style.
   (define include2 (include-counter counter2))
   (send/suspend/dispatch
    (lambda (embed/url)
-     `(html 
-       (body (h2 "Double Counters")
-             (div (h3 "First")
-                  ,(include1 embed/url))
-             (div (h3 "Second")
-                  ,(include2 embed/url)))))))
+     (response/xexpr
+      `(html 
+        (body (h2 "Double Counters")
+              (div (h3 "First")
+                   ,(include1 embed/url))
+              (div (h3 "Second")
+                   ,(include2 embed/url))))))))
 
 (define (make-counter)
   (make-web-cell 0))

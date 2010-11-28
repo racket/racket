@@ -28,9 +28,10 @@ racket
 (require web-server/servlet
          web-server/servlet-env)
 
-(define (start request)
-  `(html (head (title "Hello world!"))
-         (body (p "Hey out there!"))))
+(define (start req)
+  (response/xexpr
+   `(html (head (title "Hello world!"))
+          (body (p "Hey out there!")))))
                                       
 (serve/servlet start)
 ]
@@ -41,9 +42,10 @@ racket
 (require web-server/servlet
          web-server/servlet-env)
 
-(define (my-app request)
-  `(html (head (title "Hello world!"))
-         (body (p "Hey out there!"))))
+(define (my-app req)
+  (response/xexpr
+   `(html (head (title "Hello world!"))
+          (body (p "Hey out there!")))))
 
 (serve/servlet my-app)
 ]
@@ -117,7 +119,8 @@ You can also put the call to @racket[serve/servlet] in the @racketmodname[web-se
    (start
     (send/suspend
      (lambda (k-url)
-       `(html (body (a ([href ,k-url]) "Hello world!")))))))
+       (response/xexpr
+        `(html (body (a ([href ,k-url]) "Hello world!"))))))))
  
  (serve/servlet start #:stateless? #t)
 ]
