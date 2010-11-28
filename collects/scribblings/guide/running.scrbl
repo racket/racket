@@ -18,6 +18,12 @@ explains how to run @exec{racket} and @exec{gracket}.
 
 @section[#:tag "racket"]{Running @exec{racket} and @exec{gracket}}
 
+The @exec{gracket} executable is the same as @exec{racket}, but with
+small adjustments to behave as a GUI application rather than a console
+application. For example, @exec{gracket} by default runs in
+interactive mode with a GUI window instead of a console prompt. GUI
+applications can be run with plain @exec{racket}, however.
+
 Depending on command-line arguments, @exec{racket} or @exec{gracket}
 runs in @seclink["start-interactive-mode"]{interactive mode},
 @seclink["start-module-mode"]{module mode}, or
