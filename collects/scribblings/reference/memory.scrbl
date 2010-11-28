@@ -37,13 +37,20 @@ Returns @racket[#t] if @racket[v] is a weak box, @racket[#f] otherwise.}
 @;------------------------------------------------------------------------
 @section[#:tag "ephemerons"]{Ephemerons}
 
-An @deftech{ephemeron} is similar to a weak box (see
-@secref["weakbox"]), except that
+An @deftech{ephemeron} is a generalization of a weak box (see
+@secref["weakbox"]). Instead of just containing one value, it holds two,
+the value of the ephemeron, plus a key. Like a weak box, the 
+value in the ephemeron may be replaced by @racket[#f], but it does
+this when the key is no longer reachable. In addition, the memory 
+manager specially treats links from the value to the key.
 
+A weak box can be seen as a specialization of an ephemeron where 
+the key and value  are the same.
+
+More precisely,
 @itemize[
 
- @item{an ephemeron contains a key and a value; the value can be
- extracted from the ephemeron, but the value is replaced
+ @item{the value in an ephemeron is replaced
  by @racket[#f] when the automatic memory manager can prove that
  either the ephemeron or the key is reachable only through weak
  references (see @secref["weakbox"]); and}
@@ -57,7 +64,7 @@ An @deftech{ephemeron} is similar to a weak box (see
 
 ]
 
-In particular, an ephemeron can be combined with a weak hash table
+On particularly common use of ephemerons is to combined them with a weak hash table
 (see @secref["hashtables"]) to produce a mapping where the memory
 manager can reclaim key--value pairs even when the value refers to the
 key.
