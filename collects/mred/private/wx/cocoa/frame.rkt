@@ -141,7 +141,8 @@
              get-eventspace
              pre-on-char pre-on-event
              get-x
-             on-new-child)
+             on-new-child
+             is-window-enabled?)
 
     (super-new [parent parent]
                [cocoa
@@ -332,6 +333,10 @@
     (define/override (children-accept-drag on?)
       (when saved-child
         (send saved-child child-accept-drag on?)))
+
+    (define/override (enable-window on?)
+      (when saved-child
+        (send saved-child enable-window (and on? (is-window-enabled?)))))
 
     (define/override (is-shown?)
       (tell #:type _bool cocoa isVisible))

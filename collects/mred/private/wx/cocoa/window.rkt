@@ -520,7 +520,14 @@
     (define/public (is-window-enabled?)
       enabled?)
     (define/public (enable on?)
-      (set! enabled? on?))
+      (set! enabled? on?)
+      (enable-window on?))
+    (define/public (enable-window on?)
+      (void))
+
+    (define block-all-mouse-events? #f)
+    (define/public (block-mouse-events block?)
+      (set! block-all-mouse-events? block?))
 
     (define/private (get-frame)
       (let ([v (tell #:type _NSRect cocoa frame)])
@@ -621,7 +628,8 @@
         (accept-drags-everywhere (or accept-drag? accept-parent-drag?))))
 
     (define/public (set-focus)
-      (when (gets-focus?)
+      (when (and (gets-focus?)
+                 (is-enabled-to-root?))
         (let ([w (tell cocoa window)])
           (when w
             (tellv w makeFirstResponder: (get-cocoa-content))))))
@@ -664,7 +672,7 @@
       (cond
        [(other-modal? this) #t]
        [(call-pre-on-event this e) #t]
-       [just-pre? #f]
+       [just-pre? block-all-mouse-events?]
        [else (when enabled? (on-event e)) #t]))
 
     (define/public (call-pre-on-event w e)
@@ -773,7 +781,7 @@
     (define/public (get-cursor-width-delta) 0)
     
     (define/public (gets-focus?) #f)
-    (define/public (can-be-responder?) #t)
+    (define/public (can-be-responder?) (is-enabled-to-root?))
 
     (define/public (on-color-change)
       (send parent on-color-change))

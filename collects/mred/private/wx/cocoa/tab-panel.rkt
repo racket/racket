@@ -23,6 +23,9 @@
 (void (ffi-lib (build-path psm-tab-bar-dir "PSMTabBarControl")))
 (define NSNoTabsNoBorder 6)
 
+(define NSDefaultControlTint 0)
+(define NSClearControlTint 7)
+
 (import-class NSView NSTabView NSTabViewItem PSMTabBarControl)
 (import-protocol NSTabViewDelegate)
 
@@ -44,7 +47,9 @@
         x y w h
         style
         labels)
-  (inherit get-cocoa register-as-child)
+  (inherit get-cocoa register-as-child
+           is-window-enabled?
+           block-mouse-events)
 
   (define tabv-cocoa (as-objc-allocation
                       (tell (tell MyTabView alloc) init)))
@@ -153,6 +158,15 @@
   
   (when control-cocoa
     (set-ivar! control-cocoa wxb (->wxb this)))
+
+  (define/override (enable-window on?)
+    (super enable-window on?)
+    (let ([on? (and on? (is-window-enabled?))])
+      (block-mouse-events (not on?))
+      (tellv tabv-cocoa setControlTint: #:type _int
+             (if on? NSDefaultControlTint NSClearControlTint))
+      (when control-cocoa
+        (tellv control-cocoa setEnabled: #:type _BOOL on?))))
 
   (define/override (maybe-register-as-child parent on?)
     (register-as-child parent on?)))

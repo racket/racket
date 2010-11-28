@@ -234,6 +234,9 @@
               make-graphics-context
               is-shown-to-root?
               is-shown-to-before-root?
+              is-enabled-to-root?
+              is-window-enabled?
+              block-mouse-events
               move get-x get-y
               on-size
               register-as-child
@@ -608,6 +611,15 @@
              (scroller-page scroller)
              1)]))
 
+     (define/override (enable-window on?)
+       (let ([on? (and on? (is-window-enabled?))])
+         (let ([w (tell content-cocoa window)])
+           (when (ptr-equal? content-cocoa (tell w firstResponder))
+             (tellv w makeFirstResponder: #f)))
+         (block-mouse-events (not on?))
+         (when is-combo?
+           (tellv content-cocoa setEnabled: #:type _BOOL on?))))
+
      (define/public (clear-combo-items)
        (tellv content-cocoa removeAllItems))
      (define/public (append-combo-item str)
@@ -698,7 +710,7 @@
      (define/override (gets-focus?)
        wants-focus?)
      (define/override (can-be-responder?)
-       wants-focus?)
+       (and wants-focus? (is-enabled-to-root?)))
 
      (define/private (on-menu-click? e)
        ;; Called in Cocoa event-handling mode
