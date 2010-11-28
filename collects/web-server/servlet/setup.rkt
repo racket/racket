@@ -176,7 +176,7 @@
           [else
            (make-v1.servlet (directory-part a-path) timeouts-default-servlet
                             (v0.response->v1.lambda 
-                             (contract response? s
+                             (contract response? (response/xexpr s)
                                        pos-blame neg-blame
                                        path-string loc)
                              a-path))])))))

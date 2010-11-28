@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/date)
+(require racket/date
+         web-server/http)
 (provide (all-defined-out))
 (define interface-version 'v1)
 (define timeout +inf.0)

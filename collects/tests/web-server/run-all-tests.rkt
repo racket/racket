@@ -4,8 +4,7 @@
 (require rackunit/text-ui)
 (run-tests all-web-server-tests)
 
-#|
-(require rackunit/gui)
-(test/gui all-web-server-tests)
 
-|#
+#;(require rackunit/gui)
+#;(test/gui all-web-server-tests)
+

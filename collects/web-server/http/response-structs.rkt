@@ -17,7 +17,7 @@
                    headers)
             (lambda (op)
               (for ([b (in-list body)])
-                (write-bytes op)))))
+                (write-bytes b op)))))
 
 (provide/contract
  [struct response

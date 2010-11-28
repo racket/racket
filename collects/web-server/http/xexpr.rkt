@@ -2,9 +2,10 @@
 (require racket/contract
          racket/list
          xml
-         web-server/http/cookie
          web-server/private/xexpr
-         web-server/http/response-structs)
+         "request-structs.rkt"
+         "cookie.rkt"
+         "response-structs.rkt")
 
 (define (response/xexpr
          xexpr

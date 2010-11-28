@@ -5,7 +5,7 @@
 
 (provide/contract
  [send/formlet ((formlet*/c)
-                (#:wrap (pretty-xexpr/c . -> . response?))                 
+                (#:wrap (pretty-xexpr/c . -> . pretty-xexpr/c))
                 . ->* . any)])
 
 (define (send/formlet f
@@ -18,9 +18,10 @@
    f
    (send/suspend
     (lambda (k-url)
-      (wrapper
-       `(form ([action ,k-url])
-              ,@(formlet-display f)))))))
+      (response/xexpr
+       (wrapper
+        `(form ([action ,k-url])
+               ,@(formlet-display f))))))))
 
 (provide/contract
  [embed-formlet (embed/url/c formlet*/c . -> . pretty-xexpr/c)])
