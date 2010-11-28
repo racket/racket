@@ -87,41 +87,42 @@
                                            (NSSize-height (NSRect-size frame)))))))
       cocoa))
 
-  (define cocoa (if (and button-type
-                         (not (string? label))
-                         (send label ok?))
-                    ;; Check-box image: need an view to join a button and an image view:
-                    ;; (Could we use the NSImageButtonCell from the radio-box implementation
-                    ;;  instead?)
-                    (let* ([frame (tell #:type _NSRect button-cocoa frame)]
-                           [new-width (+ (NSSize-width (NSRect-size frame))
-                                         (send label get-width))]
-                           [new-height (max (NSSize-height (NSRect-size frame))
-                                            (send label get-height))])
-                      (let ([cocoa (as-objc-allocation
-                                    (tell (tell NSView alloc)
-                                          initWithFrame: #:type _NSRect
-                                          (make-NSRect (NSRect-origin frame)
-                                                       (make-NSSize new-width
-                                                                    new-height))))]
-                            [image-cocoa (as-objc-allocation
-                                          (tell (tell NSImageView alloc) init))])
-                        (tellv cocoa addSubview: button-cocoa)
-                        (tellv cocoa addSubview: image-cocoa)
-                        (tellv image-cocoa setImage: (bitmap->image label))
-                        (tellv image-cocoa setFrame: #:type _NSRect 
-                               (make-NSRect (make-NSPoint (NSSize-width (NSRect-size frame))
-                                                          (quotient (- new-height
-                                                                       (send label get-height))
-                                                                    2))
-                                            (make-NSSize (send label get-width)
-                                                         (send label get-height))))
-                        (tellv button-cocoa setFrame: #:type _NSRect
-                               (make-NSRect (make-NSPoint 0 0)
-                                            (make-NSSize new-width new-height)))
-                        (set-ivar! button-cocoa wxb (->wxb this))
-                        cocoa))
-                    button-cocoa))
+  (define-values (cocoa image-cocoa)
+    (if (and button-type
+             (not (string? label))
+             (send label ok?))
+        ;; Check-box image: need an view to join a button and an image view:
+        ;; (Could we use the NSImageButtonCell from the radio-box implementation
+        ;;  instead?)
+        (let* ([frame (tell #:type _NSRect button-cocoa frame)]
+               [new-width (+ (NSSize-width (NSRect-size frame))
+                             (send label get-width))]
+               [new-height (max (NSSize-height (NSRect-size frame))
+                                (send label get-height))])
+          (let ([cocoa (as-objc-allocation
+                        (tell (tell NSView alloc)
+                              initWithFrame: #:type _NSRect
+                              (make-NSRect (NSRect-origin frame)
+                                           (make-NSSize new-width
+                                                        new-height))))]
+                [image-cocoa (as-objc-allocation
+                              (tell (tell NSImageView alloc) init))])
+            (tellv cocoa addSubview: button-cocoa)
+            (tellv cocoa addSubview: image-cocoa)
+            (tellv image-cocoa setImage: (bitmap->image label))
+            (tellv image-cocoa setFrame: #:type _NSRect 
+                   (make-NSRect (make-NSPoint (NSSize-width (NSRect-size frame))
+                                              (quotient (- new-height
+                                                           (send label get-height))
+                                                        2))
+                                (make-NSSize (send label get-width)
+                                             (send label get-height))))
+            (tellv button-cocoa setFrame: #:type _NSRect
+                   (make-NSRect (make-NSPoint 0 0)
+                                (make-NSSize new-width new-height)))
+            (set-ivar! button-cocoa wxb (->wxb this))
+            (values cocoa image-cocoa)))
+        (values button-cocoa #f)))
 
   (define we (make-will-executor))
 
@@ -146,7 +147,7 @@
      [(string? label)
       (tellv cocoa setTitleWithMnemonic: #:type _NSString label)]
      [else
-      (tellv cocoa setImage: (bitmap->image label))]))
+      (tellv (or image-cocoa cocoa) setImage: (bitmap->image label))]))
   
   (define callback cb)
   (define/public (clicked)
