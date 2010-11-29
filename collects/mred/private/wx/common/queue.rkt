@@ -176,6 +176,11 @@
          [(< am bm) -1]
          [else 1]))))
 
+;; This table refers to handle threads of eventspaces
+;;  that have an open window, etc., so that the eventspace
+;;  isn't GCed
+(define active-eventspaces (make-hasheq))
+
 (define current-cb-box (make-parameter #f))
 
 (define-mz scheme_add_managed (_fun _racket ; custodian
@@ -192,7 +197,8 @@
     (set-eventspace-shutdown?! e #t)
     (semaphore-post (eventspace-done-sema e))
     (for ([f (in-list (get-top-level-windows e))])
-      (send f destroy))))
+      (send f destroy))
+    (hash-remove! active-eventspaces (eventspace-handler-thread e))))
 
 (define (make-eventspace* th)
   (let ([done-sema (make-semaphore 1)]
@@ -214,9 +220,11 @@
                                                   (positive? (hash-count frames))
                                                   (not (null? (unbox timer))))
                                               (when done-set?
+                                                (hash-set! active-eventspaces th #t)
                                                 (set! done-set? #f)
                                                 (semaphore-try-wait? done-sema))
                                               (unless done-set?
+                                                (hash-remove! active-eventspaces th)
                                                 (set! done-set? #t)
                                                 (semaphore-post done-sema))))]
                                        [enqueue (lambda (v q)
