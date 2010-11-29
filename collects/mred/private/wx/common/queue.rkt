@@ -196,6 +196,7 @@
 
 (define (make-eventspace* th)
   (let ([done-sema (make-semaphore 1)]
+        [done-set? #t]
         [frames (make-hasheq)])
     (let ([e
            (make-eventspace th
@@ -212,8 +213,12 @@
                                           (if (or (positive? count)
                                                   (positive? (hash-count frames))
                                                   (not (null? (unbox timer))))
-                                              (semaphore-try-wait? done-sema)
-                                              (semaphore-post done-sema)))]
+                                              (when done-set?
+                                                (set! done-set? #f)
+                                                (semaphore-try-wait? done-sema))
+                                              (unless done-set?
+                                                (set! done-set? #t)
+                                                (semaphore-post done-sema))))]
                                        [enqueue (lambda (v q)
                                                   (set! count (add1 count))
                                                   (check-done)
