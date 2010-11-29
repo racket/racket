@@ -3,6 +3,8 @@
           (for-label racket/set))
 
 @title[#:tag "sets"]{Sets}
+@(define set-eval (make-base-eval))
+@(interaction-eval #:eval set-eval (require racket/set))
 
 A @deftech{set} represents a set of distinct elements. For a given
 set, elements are equivalent via @scheme[equal?], @scheme[eqv?], or
@@ -86,7 +88,22 @@ Produces a set that includes all elements of all given @scheme[set]s,
 which must all use the same equivalence predicate (@scheme[equal?],
 @scheme[eq?], or @scheme[eqv?]). This operation runs in time
 proportional to the total size of all given @scheme[set]s except for
-the largest.}
+the largest.
+
+At least one set must be provided to @racket[set-union] even though
+mathematically @racket[set-union] could accept zero arguments. Since
+there are multiple types of sets (@racket[eq?], @racket[eqv?], and 
+@racket[equal?]) there is no obvious choice for a default empty set
+to be returned. If there is a case where @racket[set-union] may be
+applied to zero arguments, instead pass an empty set of the type
+you desire.
+
+@examples[#:eval set-eval
+(set-union (set))
+(set-union (seteq))
+(set-union (set 1) (set 2))
+(set-union (set 1) (seteq 2)) (code:comment "Sets of different types cannot be unioned")
+]}
 
 
 @defproc[(set-intersect [set set?] ...+) set?]{
@@ -151,3 +168,4 @@ other forms.}
 Analogous to @scheme[for/list] and @scheme[for*/list], but to
 construct a set instead of a list.}
 
+@close-eval[set-eval]

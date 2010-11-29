@@ -17,8 +17,6 @@
 (test #t set-empty? (seteqv))
 (test #t set? (seteqv 1 2 3))
 (test #f set-empty? (seteqv 1 2 3))
-(test #t set? (set-union))
-(test #t set-empty? (set-union))
 
 (test #f set-eq? (set 1 2 3))
 (test #f set-eqv? (set 1 2 3))
