@@ -29,9 +29,10 @@ We will be using the DrRacket Module language. Enter the following into the Defi
 @racketmod[
 web-server/insta
 (define (start request)
- '(html
-   (head (title "My Blog"))
-   (body (h1 "Under construction"))))
+  (response/xexpr
+   '(html
+     (head (title "My Blog"))
+     (body (h1 "Under construction")))))
 ]
 
 Press the @onscreen{Run} button.  If a web browser comes up with an ``Under
@@ -88,17 +89,19 @@ application to show it.
 When a web browser visits our application's URL, the browser
 constructs a request structure and sends it off to our web
 application.  Our start function will consume requests and produce
-responses.  One basic kind of response is to show an HTML page.
+responses.  One basic kind of response is to show an HTML page,
+represented as an X-expression in Racket, by using
+@racket[response/xexpr].
 
 @racketblock[
- (define html-response/c
+ (define xexpr/c
   (flat-rec-contract 
-   html-response
+   xexpr
    (or/c string?
-         (or/c (cons/c symbol? (listof html-response))
+         (or/c (cons/c symbol? (listof xexpr))
                (cons/c symbol?
                        (cons/c (listof (list/c symbol? string?))
-                               (listof html-response)))))))]
+                               (listof xexpr)))))))]
 
 For example:
 
@@ -116,7 +119,7 @@ The HTML @tt{hello} is represented as @racket["hello"]. Strings are automaticall
 
 @racket['(p "This is " (div ((class "emph")) "another") " example.")].
 
-We can produce these @racket[html-response]s by using @racket[cons] and @racket[list] directly.
+We can produce these @racket[xexpr]s by using @racket[cons] and @racket[list] directly.
 Doing so, however, can be notationally heavy.  Consider:
 
 @racketblock[
@@ -131,7 +134,7 @@ vs:
          (body (p "This is a simple static page.")))
 ]
 
-They both produce the same @racket[html-response], but the latter is a lot
+They both produce the same @racket[xexpr], but the latter is a lot
 easier to type and read.  We've been using the extended list
 abbreviation form described in @link["http://htdp.org/2003-09-26/Book/curriculum-Z-H-17.html#node_chap_13"]{Section 13} of @link["http://htdp.org/"]{How to Design Programs}:
 by using a leading forward quote mark to concisely represent the list
@@ -139,7 +142,7 @@ structure, we can construct static html responses with aplomb.
 
 However, we can run into a problem when we use simple list
 abbreviation with dynamic content.  If we have expressions to inject
-into the @racket[html-response] structure, we can't use a simple list-abbreviation
+into the @racket[xexpr] structure, we can't use a simple list-abbreviation
 approach because those expressions will be treated literally as part
 of the list structure!
 
@@ -157,17 +160,18 @@ prepend an unquoting comma in front of the subexpression.  As an
 example:
 
 @racketblock[
-@code:comment{render-greeting: string -> html-response}
-@code:comment{Consumes a name, and produces a dynamic html-response.}
+@code:comment{render-greeting: string -> response}
+@code:comment{Consumes a name, and produces a dynamic response.}
 (define (render-greeting a-name)
-  `(html (head (title "Welcome"))
-         (body (p ,(string-append "Hello " a-name)))))
+  (response/xexpr
+   `(html (head (title "Welcome"))
+          (body (p ,(string-append "Hello " a-name))))))
 ]
 
 @bold{Exercise.} Write a function that consumes a @racket[post] and produces
-an @racket[html-response] representing that content.
+an @racket[xexpr] representing that content.
 
-@defthing[render-post (post? . -> . html-response/c)]
+@defthing[render-post (post? . -> . xexpr/c)]
 
 As an example, we want:
 
@@ -186,33 +190,33 @@ to a post.
 
 @centerline{------------}
 
-If an expression produces a list of @racket[html-response] fragments, we may
+If an expression produces a list of @racket[xexpr] fragments, we may
 want to splice in the elements of a list into our template, rather
 plug in the whole list itself.  In these situations, we can use the
 splicing form @racket[,@expression].
 
 As an example, we may want a helper function that transforms a
-@racket[html-response] list into a fragment representing an unordered, itemized
+@racket[xexpr] list into a fragment representing an unordered, itemized
 HTML list:
 
 @racketblock[
-@code:comment{render-as-itemized-list: (listof html-response) -> html-response}
+@code:comment{render-as-itemized-list: (listof xexpr) -> xexpr}
 @code:comment{Consumes a list of items, and produces a rendering}
 @code:comment{as an unordered list.}
 (define (render-as-itemized-list fragments)
   `(ul ,@(map render-as-item fragments)))
 
-@code:comment{render-as-item: html-response -> html-response}
-@code:comment{Consumes an html-response, and produces a rendering}
+@code:comment{render-as-item: xexpr -> xexpr}
+@code:comment{Consumes an xexpr, and produces a rendering}
 @code:comment{as a list item.}
 (define (render-as-item a-fragment)
   `(li ,a-fragment))
 ]
 
 @bold{Exercise.} Write a function @racket[render-posts] that consumes a @racket[(listof post?)]
-and produces an @racket[html-response] for that content.
+and produces an @racket[xexpr] for that content.
 
-@defthing[render-posts ((listof post?) . -> . html-response/c)]
+@defthing[render-posts ((listof post?) . -> . xexpr/c)]
 
 As examples:
 
@@ -245,7 +249,7 @@ should produce:
 
 Now that we have the @racket[render-posts] function handy, let's revisit our
 web application and change our @racket[start] function to return an interesting
-@racket[html-response].
+@racket[response].
 
 @external-file["iteration-1.rkt"]
 
@@ -337,26 +341,28 @@ enter the following in the definition window.
 
 @racketmod[
 web-server/insta
-@code:comment{start: request -> html-response}
+@code:comment{start: request -> response}
 (define (start request)
   (phase-1 request))
 
-@code:comment{phase-1: request -> html-response}
+@code:comment{phase-1: request -> response}
 (define (phase-1 request)
   (local [(define (response-generator embed/url)
-            `(html 
-              (body (h1 "Phase 1")
-                    (a ((href ,(embed/url phase-2)))
-                       "click me!"))))]
+            (response/xexpr
+             `(html 
+               (body (h1 "Phase 1")
+                     (a ((href ,(embed/url phase-2)))
+                        "click me!")))))]
     (send/suspend/dispatch response-generator)))
 
-@code:comment{phase-2: request -> html-response}
+@code:comment{phase-2: request -> response}
 (define (phase-2 request)
   (local [(define (response-generator embed/url)
-            `(html 
-              (body (h1 "Phase 2")
-                    (a ((href ,(embed/url phase-1)))
-                       "click me!"))))]    
+            (response/xexpr
+             `(html 
+               (body (h1 "Phase 2")
+                     (a ((href ,(embed/url phase-1)))
+                        "click me!")))))]    
     (send/suspend/dispatch response-generator)))
 ]
 
@@ -383,19 +389,20 @@ definition.  Here's another loopy example:
 
 @racketmod[
 web-server/insta
-@code:comment{start: request -> html-response}
+@code:comment{start: request -> response}
 (define (start request)
   (show-counter 0 request))
 
-@code:comment{show-counter: number request -> html-response}
+@code:comment{show-counter: number request -> doesn't}
 @code:comment{Displays a number that's hyperlinked: when the link is pressed,}
 @code:comment{returns a new page with the incremented number.}
 (define (show-counter n request)
   (local [(define (response-generator embed/url)
-            `(html (head (title "Counting example"))
-                   (body 
-                    (a ((href ,(embed/url next-number-handler)))
-                       ,(number->string n)))))
+            (response/xexpr
+             `(html (head (title "Counting example"))
+                    (body 
+                     (a ((href ,(embed/url next-number-handler)))
+                        ,(number->string n))))))
                     
           (define (next-number-handler request)
             (show-counter (+ n 1) request))]
@@ -602,7 +609,7 @@ our response.
 @racket['(style ((type "text/css")) "p { color: green }")]
 
 It's tempting to directly embed this style information into our
-@racket[html-response]s.  However, our source file is already quite busy.  We
+@racket[response]s.  However, our source file is already quite busy.  We
 often want to separate the logical representation of our application
 from its presentation.  Rather than directly embed the .css in the
 HTML response, let's instead add a link reference to an separate .css
@@ -630,13 +637,14 @@ following content:
 @racketmod[
 web-server/insta
 (define (start request)
-  '(html (head (title "Testing"))
-         (link ((rel "stylesheet")
-                (href "/test-static.css")
-                (type "text/css")))
-         (body (h1 "Testing")
-               (h2 "This is a header")
-               (p "This is " (span ((class "hot")) "hot") "."))))
+  (response/xexpr
+   '(html (head (title "Testing"))
+          (link ((rel "stylesheet")
+                 (href "/test-static.css")
+                 (type "text/css")))
+          (body (h1 "Testing")
+                (h2 "This is a header")
+                (p "This is " (span ((class "hot")) "hot") ".")))))
 
 (static-files-path "htdocs")
 ]
@@ -1129,21 +1137,22 @@ web-server/insta
 We'll now go back to the application code. One of the poor design choices we made earlier is the loose connection between the names of form elements in the display and in the form processing code:
 
 @racketblock[
-@code:comment{render-blog-page: blog request -> html-response}
-@code:comment{Produces an html-response page of the content of the}
+@code:comment{render-blog-page: blog request -> doesnt'}
+@code:comment{Send an HTML page of the content of the}
 @code:comment{blog.}
 (define (render-blog-page a-blog request)
-  (local [(define (response-generator make-url)        
-            `(html (head (title "My Blog"))
-                   (body 
-                    (h1 "My Blog")
-                    ,(render-posts a-blog make-url)
-                    (form ((action 
-                            ,(make-url insert-post-handler)))
-                          @code:comment{"title" is used here}
-                          (input ((name "title")))
-                          (input ((name "body")))
-                          (input ((type "submit")))))))          
+  (local [(define (response-generator make-url) 
+            (response/xexpr
+             `(html (head (title "My Blog"))
+                    (body 
+                     (h1 "My Blog")
+                     ,(render-posts a-blog make-url)
+                     (form ((action 
+                             ,(make-url insert-post-handler)))
+                           @code:comment{"title" is used here}
+                           (input ((name "title")))
+                           (input ((name "body")))
+                           (input ((type "submit"))))))))          
           
           (define (insert-post-handler request)
             (define bindings (request-bindings request))
@@ -1196,22 +1205,24 @@ And @racket[(formlet-process new-post-formlet _request)] where @racket[_request]
 
 We can use @racket[new-post-formlet] in @racket[render-blog-page] as follows:
 @racketblock[
-@code:comment{render-blog-page: blog request -> html-response}
-@code:comment{Produces an html-response page of the content of the}
+@code:comment{render-blog-page: blog request -> doesn't}
+@code:comment{Sends an HTML page of the content of the}
 @code:comment{blog.}
 (define (render-blog-page a-blog request)
-  (local [(define (response-generator make-url)        
-            `(html (head (title "My Blog"))
-                   (body 
-                    (h1 "My Blog")
-                    ,(render-posts a-blog make-url)
-                    (form ([action 
-                            ,(make-url insert-post-handler)])
-                          ,@(formlet-display new-post-formlet)
-                          (input ([type "submit"]))))))
+  (local [(define (response-generator make-url)
+            (response/xexpr
+             `(html (head (title "My Blog"))
+                    (body 
+                     (h1 "My Blog")
+                     ,(render-posts a-blog make-url)
+                     (form ([action 
+                             ,(make-url insert-post-handler)])
+                           ,@(formlet-display new-post-formlet)
+                           (input ([type "submit"])))))))
           
           (define (insert-post-handler request)
-            (define-values (title body) (formlet-process new-post-formlet request))
+            (define-values (title body) 
+              (formlet-process new-post-formlet request))
             (blog-insert-post! a-blog title body)
             (render-blog-page a-blog (redirect/get)))]
     
