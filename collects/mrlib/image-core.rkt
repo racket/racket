@@ -36,7 +36,9 @@ has been moved out).
          "private/image-core-snipclass.rkt"
          "private/regmk.rkt"
          (prefix-in cis: "cache-image-snip.ss")
-         (for-syntax racket/base))
+         (for-syntax racket/base)
+         data/queue
+         "private/heap.rkt")
 
 
 
@@ -576,9 +578,33 @@ has been moved out).
       [(is-a? image image-snip%)
        (send dc draw-bitmap (send image get-bitmap) dx dy)]
       [else
+       
+       #;
+       (let ()
+         (define s (send image get-shape))
+         (define (conv ht [val? #t])
+           (sort (hash-map ht (λ (k v) (list (eq-hash-code k) v)))
+                 <
+                 #:key (if val? car cadr)))
+         (let ([times-drawn (find-times-drawn s)]
+               [steps-to-draw (find-steps-to-draw s)])
+           (printf "times drawn   ~s\n" (conv times-drawn))
+           (printf "steps to draw ~s\n" (conv steps-to-draw))
+           (let ([product (make-hasheq)])
+             (hash-for-each
+              steps-to-draw
+              (λ (k v)
+                (when (> (hash-ref times-drawn k) 1)
+                  (hash-set! product k (* v (hash-ref times-drawn k))))))
+             (printf "product ~s\n" (conv product #f)))
+           (exit)))
+       
        (if (render-normalized)
            (render-normalized-shape (send image get-normalized-shape) dc dx dy)
-           (render-arbitrary-shape (send image get-shape) dc dx dy))
+           (render-arbitrary-shape (send image get-shape)
+                                   (bb-right (send image get-bb))
+                                   (bb-bottom (send image get-bb))
+                                   dc dx dy))
        (let ([ph (send image get-pinhole)])
          (when ph
            (let* ([px (point-x ph)]
@@ -602,6 +628,145 @@ has been moved out).
     (send dc set-text-foreground fg)
     (send dc set-smoothing smoothing)
     (send dc set-alpha alpha)))
+
+(define (find-times-drawn shape)
+  (define ht (make-hasheq))
+  (define visited (make-hasheq))
+  (define parent-ht (make-hasheq))
+  (define children-ht (make-hasheq))
+  (define (add-child c p)
+    (hash-set! parent-ht p (cons c (hash-ref parent-ht p '())))
+    (hash-set! children-ht c (cons p (hash-ref children-ht c '()))))
+  
+  (hash-set! parent-ht shape '())
+
+  ;; build the parent->child mapping
+  (let loop ([shape shape])
+    (unless (hash-ref visited shape #f)
+      
+      ;; make sure there is an entry in each table for each shape
+      (hash-set! parent-ht shape (hash-ref parent-ht shape '()))
+      (hash-set! children-ht shape (hash-ref children-ht shape '()))
+      
+      (hash-set! visited shape #t)
+      (cond
+        [(translate? shape)
+         (add-child (translate-shape shape) shape)
+         (loop (translate-shape shape))]
+        [(scale? shape)
+         (add-child (scale-shape shape) shape)
+         (loop (scale-shape shape))]
+        [(overlay? shape)
+         (add-child (overlay-bottom shape) shape)
+         (add-child (overlay-top shape) shape)
+         (loop (overlay-bottom shape))
+         (loop (overlay-top shape))]
+        [(crop? shape)
+         (add-child (crop-shape shape) shape)
+         (loop (crop-shape shape))]
+        [else (void)])))
+
+  (define heap (make-heap))
+  
+  (hash-for-each
+   parent-ht
+   (λ (n parents)
+     (heap-insert! heap n (length parents))))
+    
+  (define ordered-nodes '())
+  (let loop ()
+    (unless (heap-empty? heap)
+      (define min (heap-remove-min! heap))
+      (for ([child (in-list (hash-ref children-ht min))])
+        (heap-decrease-key! heap child))
+      (set! ordered-nodes (cons min ordered-nodes))
+      (loop)))
+  
+  (let ()
+    (define port (open-output-file "ex.dot" #:exists 'truncate))
+    (define ht (make-hasheq))
+    (define q (make-queue))
+    (define (enq a b) 
+      (fprintf port " ~a -> ~a\n"
+               (eq-hash-code a)
+               (eq-hash-code b))
+      (enqueue! q (list a b)))
+    (fprintf port "digraph {\n")
+    (enqueue! q (list #f shape))
+    (let loop ()
+      (unless (queue-empty? q)
+        (define-values (from to) (apply values (dequeue! q)))
+        (define to-already-visited? (hash-ref ht to #f))
+        (define (cut str) (substring str 0 (min (string-length str) 20)))
+        (cond
+          [(not from) 
+           (hash-set! ht to 1)]
+          [else 
+           (hash-set! ht to (+ (hash-ref ht from) (hash-ref ht to 0)))])
+        (unless to-already-visited?
+          (cond
+            [(translate? to)
+             (enq to (translate-shape to))]
+            [(scale? to)
+             (enq to (scale-shape to))]
+            [(overlay? to)
+             (enq to (overlay-bottom to))
+             (enq to (overlay-top to))]
+            [(crop? to)
+             (enq to (crop-shape to))]
+            [else 
+             (void)]))
+        (loop)))
+    
+    (hash-for-each
+     ht 
+     (λ (a v)
+       (fprintf port
+                " ~a [label=\"~a ~a\"]\n"
+                (eq-hash-code a)
+                (eq-hash-code a)
+                (cond
+                  [(translate? a) 'translate]
+                  [(scale? a) 'scale]
+                  [(overlay? a) 'overlay]
+                  [(crop? a) 'crop]
+                  [(polygon? a) 
+                   (if (regexp-match #rx"red" (format "~s" a))
+                       'red-polygon
+                       'polygon)]))))
+    (fprintf port "}\n")
+    (close-output-port port))
+
+  (hash-set! ht (car ordered-nodes) 1)
+  (for ([node (in-list (cdr ordered-nodes))])
+    (hash-set! ht node (apply + (map (λ (x) (hash-ref ht x))
+                                     (hash-ref children-ht node)))))
+  
+  ht)
+
+(define (find-steps-to-draw shape)
+  (define ht (make-hasheq))
+  (let loop ([shape shape])
+    (cond
+      [(hash-ref ht shape #f)
+       =>
+       values]
+      [else
+       (define res
+         (cond
+           [(translate? shape)
+            (+ (loop (translate-shape shape)) 1)]
+           [(scale? shape)
+            (+ (loop (scale-shape shape)) 1)]
+           [(overlay? shape)
+            (+ (loop (overlay-bottom shape))
+               (loop (overlay-top shape)))]
+           [(crop? shape)
+            (+ (loop (crop-shape shape)) 1)]
+           [else 1]))
+       (hash-set! ht shape res)
+       res]))
+  ht)
 
 (define (save-image-as-bitmap image filename kind)
   (let* ([bb (send image get-bb)]
@@ -642,9 +807,10 @@ has been moved out).
        (send new-region set-path path dx dy)
        (when old-region (send new-region intersect old-region))
        (send dc set-clipping-region new-region)
-       (parameterize ([last-cropped-points points])
-         (continue inner-shape))
-       (send dc set-clipping-region old-region))]))
+       (begin0
+         (parameterize ([last-cropped-points points])
+           (continue inner-shape))
+         (send dc set-clipping-region old-region)))]))
 
 (define (render-simple-shape simple-shape dc dx dy)
   (cond
@@ -658,69 +824,88 @@ has been moved out).
     [else
      (render-poly/line-segment/curve-segment simple-shape dc dx dy)]))
 
-(define (render-arbitrary-shape shape dc dx dy)
-  (let loop ([shape shape]
-             [dx dx]
-             [dy dy]
-             [x-scale 1]
-             [y-scale 1])
-    (define (scale-point p)
-      (make-point (* x-scale (point-x p))
-                  (* y-scale (point-y p))))
-    (cond
-      [(translate? shape)
-       (loop (translate-shape shape)
-             (+ dx (* x-scale (translate-dx shape)))
-             (+ dy (* y-scale (translate-dy shape)))
-             x-scale
-             y-scale)]
-      [(scale? shape)
-       (loop (scale-shape shape)
-             dx
-             dy
-             (* x-scale (scale-x shape))
-             (* y-scale (scale-y shape)))]
-      [(overlay? shape)
-       (loop (overlay-bottom shape) dx dy x-scale y-scale)
-       (loop (overlay-top shape) dx dy x-scale y-scale)]
-      [(crop? shape)
-       (render-cropped-shape
-        (map scale-point (crop-points shape))
-        (crop-shape shape)
-        (λ (s) (loop s dx dy x-scale y-scale)) dc dx dy)]
-      [(polygon? shape)
-       (let* ([this-one 
-               (make-polygon (map scale-point (polygon-points shape))
-                             (polygon-mode shape)
-                             (scale-color (polygon-color shape) x-scale y-scale))])
-         (render-poly/line-segment/curve-segment this-one dc dx dy))]
-      [(line-segment? shape)
-       (let ([this-one 
-              (make-line-segment (scale-point (line-segment-start shape))
-                                 (scale-point (line-segment-end shape))
-                                 (scale-color (line-segment-color shape) x-scale y-scale))])
-         (render-poly/line-segment/curve-segment this-one dc dx dy))]
-      [(curve-segment? shape)
-       ;; the pull is multiplied by the distance 
-       ;; between the two points when it is drawn,
-       ;; so we don't need to scale it here
-       (let ([this-one 
-              (make-curve-segment (scale-point (curve-segment-start shape))
-                                  (curve-segment-s-angle shape)
-                                  (curve-segment-s-pull shape)
-                                  (scale-point (curve-segment-end shape))
-                                  (curve-segment-e-angle shape)
-                                  (curve-segment-e-pull shape)
-                                  (scale-color (curve-segment-color shape) x-scale y-scale))])
-         (render-poly/line-segment/curve-segment this-one dc dx dy))]
-      [(or (ibitmap? shape) (np-atomic-shape? shape))
-       (let* ([shape (if (ibitmap? shape) 
-                         (make-flip #f shape)
-                         shape)]
-              [this-one (scale-np-atomic x-scale y-scale shape)])
-         (render-np-atomic-shape this-one dc dx dy))]
-      [else 
-       (error 'normalize-shape "unknown shape ~s\n" shape)])))
+(define (render-arbitrary-shape shape w h dc dx dy)
+  (unless (or (zero? w) (zero? h))
+    (define times-drawn-table (find-times-drawn shape))
+    (define cache (make-hasheq))
+    (let loop ([shape shape]
+               [dx 0]
+               [dy 0]
+               [x-scale 1]
+               [y-scale 1])
+      (define (scale-point p)
+        (make-point (* x-scale (point-x p))
+                    (* y-scale (point-y p))))
+      (define drawing-complexity
+        (cond
+          [(translate? shape)
+           (+ (loop (translate-shape shape)
+                    (+ dx (* x-scale (translate-dx shape)))
+                    (+ dy (* y-scale (translate-dy shape)))
+                    x-scale
+                    y-scale)
+              1)]
+          [(scale? shape)
+           (loop (scale-shape shape)
+                 dx
+                 dy
+                 (* x-scale (scale-x shape))
+                 (* y-scale (scale-y shape)))]
+          [(overlay? shape)
+           (+ (loop (overlay-bottom shape) dx dy x-scale y-scale)
+              (loop (overlay-top shape) dx dy x-scale y-scale))]
+          [(crop? shape)
+           (render-cropped-shape
+            (map scale-point (crop-points shape))
+            (crop-shape shape)
+            (λ (s) (loop s dx dy x-scale y-scale)) dc dx dy)]
+          [(polygon? shape)
+           (let* ([this-one 
+                   (make-polygon (map scale-point (polygon-points shape))
+                                 (polygon-mode shape)
+                                 (scale-color (polygon-color shape) x-scale y-scale))])
+             (render-poly/line-segment/curve-segment this-one dc dx dy))
+           1]
+          [(line-segment? shape)
+           (let ([this-one 
+                  (make-line-segment (scale-point (line-segment-start shape))
+                                     (scale-point (line-segment-end shape))
+                                     (scale-color (line-segment-color shape) x-scale y-scale))])
+             (render-poly/line-segment/curve-segment this-one dc dx dy))
+           1]
+          [(curve-segment? shape)
+           ;; the pull is multiplied by the distance 
+           ;; between the two points when it is drawn,
+           ;; so we don't need to scale it here
+           (let ([this-one 
+                  (make-curve-segment (scale-point (curve-segment-start shape))
+                                      (curve-segment-s-angle shape)
+                                      (curve-segment-s-pull shape)
+                                      (scale-point (curve-segment-end shape))
+                                      (curve-segment-e-angle shape)
+                                      (curve-segment-e-pull shape)
+                                      (scale-color (curve-segment-color shape) x-scale y-scale))])
+             (render-poly/line-segment/curve-segment this-one dc dx dy))
+           1]
+          [(or (ibitmap? shape) (np-atomic-shape? shape))
+           (let* ([shape (if (ibitmap? shape) 
+                             (make-flip #f shape)
+                             shape)]
+                  [this-one (scale-np-atomic x-scale y-scale shape)])
+             (render-np-atomic-shape this-one dc dx dy))
+           1]
+          [else 
+           (error 'render-arbitrary-shape "unknown shape ~s\n" shape)]))
+      
+      (define times-drawn (hash-ref times-drawn-table shape)) 
+      (when (and (> times-drawn 1)
+                 (> (* drawing-complexity times-drawn) 100))
+        (printf "would have cached.... ~s\n" (* drawing-complexity times-drawn))
+        ;; need to copy a region of the bitmap we've just created
+        ;; into a new bitmap and save that in the cache table,
+        ;; but we don't know what that region is (ugh).
+        (void))
+      drawing-complexity)))
 
 (define/contract (render-poly/line-segment/curve-segment simple-shape dc dx dy)
   (-> (or/c polygon? line-segment? curve-segment?) any/c any/c any/c void?)
