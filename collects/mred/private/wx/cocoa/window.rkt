@@ -520,9 +520,11 @@
     (define/public (is-window-enabled?)
       enabled?)
     (define/public (enable on?)
-      (set! enabled? on?)
-      (enable-window on?))
+      (atomically
+       (set! enabled? on?)
+       (enable-window on?)))
     (define/public (enable-window on?)
+      ;; in atomic mode
       (void))
 
     (define block-all-mouse-events? #f)

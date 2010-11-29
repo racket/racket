@@ -612,6 +612,7 @@
              1)]))
 
      (define/override (enable-window on?)
+       ;; in atomic mode
        (let ([on? (and on? (is-window-enabled?))])
          (let ([w (tell content-cocoa window)])
            (when (ptr-equal? content-cocoa (tell w firstResponder))
