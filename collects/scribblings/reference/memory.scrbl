@@ -37,15 +37,26 @@ Returns @racket[#t] if @racket[v] is a weak box, @racket[#f] otherwise.}
 @;------------------------------------------------------------------------
 @section[#:tag "ephemerons"]{Ephemerons}
 
-An @deftech{ephemeron} is a generalization of a weak box (see
-@secref["weakbox"]). Instead of just containing one value, it holds two,
-the value of the ephemeron, plus a key. Like a weak box, the 
-value in the ephemeron may be replaced by @racket[#f], but it does
-this when the key is no longer reachable. In addition, the memory 
-manager specially treats links from the value to the key.
+An @deftech{ephemeron} @cite{Hayes97} is a generalization of a
+@tech{weak box} (see @secref["weakbox"]). Instead of just containing
+one value, an emphemeron holds two values: one that is considered the
+value of the ephemeron and another that is the ephemeron's key. Like
+the value in a weak box, the value in and ephemeron may be replaced by
+@racket[#f], but when the @emph{key} is no longer reachable (except
+possibly via weak references) instead of when the value is no longer
+reachable.
 
-A weak box can be seen as a specialization of an ephemeron where 
-the key and value  are the same.
+As long as an ephemeron's value is retained, the reference is
+considered a non-weak reference. References to the key via the value
+are treated specially, however, in that the reference does not
+necessarily count toward the key's reachability. A @tech{weak box} can
+be seen as a specialization of an ephemeron where the key and value
+are the same.
+
+On particularly common use of ephemerons is to combine them with a
+weak hash table (see @secref["hashtables"]) to produce a mapping where
+the memory manager can reclaim key--value pairs even when the value
+refers to the key.
 
 More precisely,
 @itemize[
@@ -63,11 +74,6 @@ More precisely,
  references).}
 
 ]
-
-On particularly common use of ephemerons is to combined them with a weak hash table
-(see @secref["hashtables"]) to produce a mapping where the memory
-manager can reclaim key--value pairs even when the value refers to the
-key.
 
 
 @defproc[(make-ephemeron [key any/c] [v any/c]) ephemeron?]{
