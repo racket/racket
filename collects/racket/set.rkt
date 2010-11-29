@@ -111,6 +111,7 @@
 
 (define set-union
   (case-lambda
+   [() (set)]
    [(set) 
     (unless (set? set) (raise-type-error 'set-union "set" 0 set))
     set]
