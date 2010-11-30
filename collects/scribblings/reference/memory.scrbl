@@ -53,7 +53,7 @@ necessarily count toward the key's reachability. A @tech{weak box} can
 be seen as a specialization of an ephemeron where the key and value
 are the same.
 
-On particularly common use of ephemerons is to combine them with a
+One particularly common use of ephemerons is to combine them with a
 weak hash table (see @secref["hashtables"]) to produce a mapping where
 the memory manager can reclaim key--value pairs even when the value
 refers to the key.
