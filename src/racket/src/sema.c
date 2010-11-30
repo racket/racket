@@ -25,7 +25,6 @@
 
 READ_ONLY Scheme_Object *scheme_always_ready_evt;
 THREAD_LOCAL_DECL(Scheme_Object *scheme_system_idle_channel);
-extern int scheme_assert_atomic;
 
 static Scheme_Object *make_sema(int n, Scheme_Object **p);
 static Scheme_Object *semap(int n, Scheme_Object **p);
@@ -94,7 +93,7 @@ void scheme_init_sema(Scheme_Env *env)
   scheme_add_global_constant("make-semaphore", 
 			     scheme_make_prim_w_arity(make_sema,
 						      "make-semaphore", 
-						      0, 2), 
+						      0, 1), 
 			     env);
   scheme_add_global_constant("semaphore?", 
 			     scheme_make_folding_prim(semap,
@@ -244,12 +243,7 @@ static Scheme_Object *make_sema(int n, Scheme_Object **p)
   } else
     v = 0;
 
-  s = scheme_make_sema(v);
-
-  if (n > 1)
-    SCHEME_CPTR_FLAGS(s) |= 0x1;
-
-  return s;
+  return scheme_make_sema(v);
 }
 
 static Scheme_Object *make_sema_repost(int n, Scheme_Object **p)
@@ -321,10 +315,6 @@ void scheme_post_sema(Scheme_Object *o)
 	w->picked = 1;
       } else
 	consumed = 0;
-
-      if (!consumed)
-        if (SCHEME_CPTR_FLAGS(o) & 0x1)
-          printf("here\n");
 
       w->in_line = 0;
       w->prev = NULL;
@@ -644,8 +634,6 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
     } else
       start_pos = 0;
 
-    scheme_assert_atomic++;
-
     /* Initial poll */
     while (1) {
       i = 0;
@@ -673,14 +661,11 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
         if (!scheme_current_thread->next)
           break;
         else {
-          --scheme_assert_atomic;
           if (!scheme_wait_until_suspend_ok()) {
-            scheme_assert_atomic++;
             break;
           } else {
             /* there may have been some action on one of the waitables;
                try again */
-            scheme_assert_atomic++;
           }
         }
       } else
@@ -732,9 +717,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 	  
 	  scheme_main_was_once_suspended = 0;
 
-          scheme_assert_atomic--;
 	  scheme_block_until(out_of_line, NULL, (Scheme_Object *)a, (float)0.0);
-          scheme_assert_atomic++;
 	  
 	  --scheme_current_thread->suspend_break;
 	} else {
@@ -744,9 +727,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 	  old_nkc = (scheme_current_thread->running & MZTHREAD_NEED_KILL_CLEANUP);
 	  if (!old_nkc)
 	    scheme_current_thread->running += MZTHREAD_NEED_KILL_CLEANUP;
-          scheme_assert_atomic--;
 	  scheme_weak_suspend_thread(scheme_current_thread);
-          scheme_assert_atomic++;
 	  if (!old_nkc && (scheme_current_thread->running & MZTHREAD_NEED_KILL_CLEANUP))
 	    scheme_current_thread->running -= MZTHREAD_NEED_KILL_CLEANUP;
 	}
@@ -794,9 +775,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 	      get_outof_line(semas[i], ws[i]);
 	  }
 	  
-          scheme_assert_atomic--;
 	  scheme_thread_block(0); /* ok if it returns multiple times */ 
-          scheme_assert_atomic++;
 	  scheme_current_thread->ran_some = 1;
 	  /* [but why would it return multiple times?! there must have been a reason...] */
 	} else {
@@ -838,8 +817,6 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 	    }
 	  }
 
-          scheme_assert_atomic--;
-
 	  if (i == -1) {
 	    scheme_thread_block(0); /* dies or suspends */
 	    scheme_current_thread->ran_some = 1;
@@ -847,8 +824,6 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 
 	  if (i < n)
 	    break;
-
-          scheme_assert_atomic++;
 	}
 
 	/* Otherwise: !syncing and someone stole the post, or we were
@@ -879,7 +854,6 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 	      get_outof_line(semas[j], ws[j]);
 	  }
 
-          scheme_assert_atomic--;
 	  break;
 	}
 
@@ -904,8 +878,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 	}
 	/* Back to top of loop to sync again */
       }
-    } else
-      scheme_assert_atomic--;
+    }
     v = i + 1;
   }
 

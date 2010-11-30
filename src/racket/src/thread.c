@@ -128,8 +128,6 @@ extern int scheme_jit_malloced;
 # define scheme_jit_malloced 0
 #endif
 
-int scheme_assert_atomic;
-
 /*========================================================================*/
 /*                    local variables and prototypes                      */
 /*========================================================================*/
@@ -2623,9 +2621,6 @@ static void do_swap_thread()
     printf("death\n");
   swapping = 1;
 #endif
-
-  if (scheme_assert_atomic)
-    *(long *)0x0 = 1;
 
   if (!swap_no_setjmp && SETJMP(scheme_current_thread)) {
     /* We're back! */
