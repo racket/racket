@@ -1710,7 +1710,7 @@ extern void *scheme_malloc_envunbox(size_t);
 /*                   embedding configuration and hooks                    */
 /*========================================================================*/
 
-typedef void (*Scheme_On_Atomic_Timeout_Proc)(void);
+typedef void (*Scheme_On_Atomic_Timeout_Proc)(int must_give_up);
 
 #if SCHEME_DIRECT_EMBEDDED
 

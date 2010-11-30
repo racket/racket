@@ -463,6 +463,8 @@ void scheme_suspend_remembered_threads(void);
 void scheme_resume_remembered_threads(void);
 #endif
 
+int scheme_wait_until_suspend_ok(void);
+
 #ifdef MZ_USE_MZRT
 extern void scheme_check_foreign_work(void);
 #endif

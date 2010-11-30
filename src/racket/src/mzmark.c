@@ -4550,39 +4550,6 @@ static int mark_thread_cell_FIXUP(void *p, struct NewGC *gc) {
 #define mark_thread_cell_IS_CONST_SIZE 1
 
 
-static int mark_frozen_tramp_SIZE(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
-}
-
-static int mark_frozen_tramp_MARK(void *p, struct NewGC *gc) {
-  FrozenTramp *f = (FrozenTramp *)p;
- 
-  gcMARK2(f->do_data, gc);
-  gcMARK2(f->old_param, gc);
-  gcMARK2(f->config, gc);
-  gcMARK2(f->progress_cont, gc);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
-}
-
-static int mark_frozen_tramp_FIXUP(void *p, struct NewGC *gc) {
-  FrozenTramp *f = (FrozenTramp *)p;
- 
-  gcFIXUP2(f->do_data, gc);
-  gcFIXUP2(f->old_param, gc);
-  gcFIXUP2(f->config, gc);
-  gcFIXUP2(f->progress_cont, gc);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
-}
-
-#define mark_frozen_tramp_IS_ATOMIC 0
-#define mark_frozen_tramp_IS_CONST_SIZE 1
-
-
 #endif  /* THREAD */
 
 /**********************************************************************/

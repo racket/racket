@@ -257,8 +257,7 @@ enum {
   scheme_rt_sfs_info,                   /* 233 */
   scheme_rt_validate_clearing,          /* 234 */
   scheme_rt_rb_node,                    /* 235 */
-  scheme_rt_frozen_tramp,               /* 236 */
-  scheme_rt_lightweight_cont,           /* 237 */
+  scheme_rt_lightweight_cont,           /* 236 */
 #endif
 
 
