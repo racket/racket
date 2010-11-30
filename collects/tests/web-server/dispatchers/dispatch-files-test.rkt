@@ -112,7 +112,7 @@
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n")
    (test-equal? "dir, not dir-url, get"
                 (collect (dispatch #t a-dir) (req #f #"GET" empty))
-                #"HTTP/1.1 302 Moved Temporarily\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nLocation: /foo/\r\n\r\n")
+                #"HTTP/1.1 302 Moved Temporarily\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\nLocation: /foo/\r\n\r\n")
    (test-exn "dir, not exists, get"
              exn:dispatcher?
              (lambda () (collect (dispatch #f a-dir) (req #t #"GET" empty))))
