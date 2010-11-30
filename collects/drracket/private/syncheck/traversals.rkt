@@ -626,7 +626,19 @@
         (color-unused require-for-templates unused-require-for-templates)
         (color-unused require-for-syntaxes unused-require-for-syntaxes)
         (color-unused requires unused-requires)
-        (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
+        
+        (define src-loc-id-table (make-hash))
+        (for ([id-set (in-list id-sets)])
+          (for-each-ids 
+           id-set
+           (λ (ids)
+             (for ([id (in-list ids)])
+               (define key (list (syntax-source id)
+                                 (syntax-position id)
+                                 (syntax-span id)))
+               (hash-set! src-loc-id-table key (hash-ref src-loc-id-table key '()))))))
+
+        (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets src-loc-id-table)))))
     
         
     ;; record-renamable-var : rename-ht syntax -> void
@@ -1309,8 +1321,11 @@
     ;                                                     ;;;  
     
     
-    ;; make-rename-menu : (cons stx[original,id] (listof stx[original,id])) (listof id-set) -> void
-    (define (make-rename-menu stxs id-sets)
+    ;; make-rename-menu : (cons stx[original,id] (listof stx[original,id]))
+    ;;                    (listof id-set) 
+    ;;                    hash[(list source number number) -o> (listof syntax)] 
+    ;;                 -> void
+    (define (make-rename-menu stxs id-sets src-loc-id-table)
       (let ([defs-text (currently-processing-definitions-text)])
         (when defs-text
           (let* ([source (syntax-source (car stxs))] ;; all stxs in the list must have the same source
@@ -1335,6 +1350,7 @@
                                                   defs-text
                                                   stxs
                                                   id-sets
+                                                  src-loc-id-table
                                                   frame-parent))))))))))))))
     
     ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
@@ -1359,10 +1375,11 @@
     ;;                   (and/c syncheck-text<%> definitions-text<%>)
     ;;                   (listof syntax[original])
     ;;                   (listof id-set) 
+    ;;                   hash[(list source number number) -o> (listof syntax)] 
     ;;                   (union #f (is-a?/c top-level-window<%>)) 
     ;;                -> void
     ;; callback for the rename popup menu item
-    (define (rename-callback name-to-offer defs-text stxs id-sets parent)
+    (define (rename-callback name-to-offer defs-text stxs id-sets src-loc-id-table parent)
       (let ([new-str
              (fw:keymap:call/text-keymap-initializer
               (λ ()
@@ -1373,18 +1390,18 @@
                  name-to-offer)))])
         (when new-str
           (let* ([new-sym (format "~s" (string->symbol new-str))]
+                 [raw-to-be-renamed 
+                  (let ([raw '()])
+                    (for ([id-set (in-list id-sets)])
+                      (for ([stx (in-list stxs)])
+                        (for ([id (in-list (or (get-ids id-set stx) '()))])
+                          (set! raw (cons id raw)))))
+                    raw)]
                  [to-be-renamed 
                   (remove-duplicates-stx
-                   (sort 
-                    (apply 
-                     append
-                     (map (λ (id-set) 
-                            (apply
-                             append
-                             (map (λ (stx) (or (get-ids id-set stx) '())) stxs)))
-                          id-sets))
-                    (λ (x y) 
-                      ((syntax-position x) . >= . (syntax-position y)))))]
+                   (sort raw-to-be-renamed
+                         >=
+                         #:key syntax-position))]
                  [do-renaming?
                   (or (not (name-duplication? to-be-renamed id-sets new-sym))
                       (equal?
