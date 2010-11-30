@@ -5,6 +5,16 @@
                     name="Org.PLT-Scheme.Racket"
                     type="win32" />
   <description>Racket.</description>
+  <!-- Avoid UAC -->
+  <!--
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  -->
   <dependency>
     <dependentAssembly>
       <assemblyIdentity type="win32"
