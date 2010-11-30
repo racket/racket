@@ -627,18 +627,7 @@
         (color-unused require-for-syntaxes unused-require-for-syntaxes)
         (color-unused requires unused-requires)
         
-        (define src-loc-id-table (make-hash))
-        (for ([id-set (in-list id-sets)])
-          (for-each-ids 
-           id-set
-           (λ (ids)
-             (for ([id (in-list ids)])
-               (define key (list (syntax-source id)
-                                 (syntax-position id)
-                                 (syntax-span id)))
-               (hash-set! src-loc-id-table key (hash-ref src-loc-id-table key '()))))))
-
-        (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets src-loc-id-table)))))
+        (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu k rename-ht id-sets)))))
     
         
     ;; record-renamable-var : rename-ht syntax -> void
@@ -1321,25 +1310,29 @@
     ;                                                     ;;;  
     
     
-    ;; make-rename-menu : (cons stx[original,id] (listof stx[original,id]))
-    ;;                    (listof id-set) 
-    ;;                    hash[(list source number number) -o> (listof syntax)] 
-    ;;                 -> void
-    (define (make-rename-menu stxs id-sets src-loc-id-table)
-      (let ([defs-text (currently-processing-definitions-text)])
+    ;; make-rename-menu : (list source number number) rename-ht (listof id-set) -> void
+    (define (make-rename-menu key rename-ht id-sets)
+      (let* ([source (list-ref key 0)]
+             [pos (list-ref key 1)]
+             [span (list-ref key 2)]
+             [defs-text (currently-processing-definitions-text)]
+             [example-id
+              ;; we know that there is at least one there b/c that's how make-rename-menu is called
+              (car (hash-ref rename-ht key))] 
+             [id-as-sym (syntax-e example-id)])
+                      
         (when defs-text
-          (let* ([source (syntax-source (car stxs))] ;; all stxs in the list must have the same source
-                 [source-editor (find-source-editor (car stxs))])
+          (let ([source-editor (find-source-editor example-id)])
             (when (is-a? source-editor text%)
-              (let* ([start (- (syntax-position (car stxs)) 1)]
-                     [fin (+ start (syntax-span (car stxs)))])
+              (let* ([start (- pos 1)]
+                     [fin (+ start span)])
                 (send defs-text syncheck:add-menu
                       source-editor
                       start 
                       fin 
-                      (syntax-e (car stxs))
+                      id-as-sym
                       (λ (menu)
-                        (let ([name-to-offer (format "~a" (syntax->datum (car stxs)))])
+                        (let ([name-to-offer (format "~a" id-as-sym)])
                           (instantiate menu-item% ()
                             (parent menu)
                             (label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer))
@@ -1348,9 +1341,9 @@
                                (let ([frame-parent (find-menu-parent menu)])
                                  (rename-callback name-to-offer
                                                   defs-text
-                                                  stxs
+                                                  key
                                                   id-sets
-                                                  src-loc-id-table
+                                                  rename-ht
                                                   frame-parent))))))))))))))
     
     ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
@@ -1373,13 +1366,13 @@
     
     ;; rename-callback : string 
     ;;                   (and/c syncheck-text<%> definitions-text<%>)
-    ;;                   (listof syntax[original])
+    ;;                   (list source number number)
     ;;                   (listof id-set) 
-    ;;                   hash[(list source number number) -o> (listof syntax)] 
+    ;;                   rename-ht
     ;;                   (union #f (is-a?/c top-level-window<%>)) 
     ;;                -> void
     ;; callback for the rename popup menu item
-    (define (rename-callback name-to-offer defs-text stxs id-sets src-loc-id-table parent)
+    (define (rename-callback name-to-offer defs-text key id-sets rename-ht parent)
       (let ([new-str
              (fw:keymap:call/text-keymap-initializer
               (λ ()
@@ -1389,61 +1382,65 @@
                  parent
                  name-to-offer)))])
         (when new-str
-          (let* ([new-sym (format "~s" (string->symbol new-str))]
-                 [raw-to-be-renamed 
-                  (let ([raw '()])
-                    (for ([id-set (in-list id-sets)])
-                      (for ([stx (in-list stxs)])
-                        (for ([id (in-list (or (get-ids id-set stx) '()))])
-                          (set! raw (cons id raw)))))
-                    raw)]
-                 [to-be-renamed 
-                  (remove-duplicates-stx
-                   (sort raw-to-be-renamed
-                         >=
-                         #:key syntax-position))]
-                 [do-renaming?
-                  (or (not (name-duplication? to-be-renamed id-sets new-sym))
-                      (equal?
-                       (message-box/custom
-                        (string-constant check-syntax)
-                        (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
-                                                           new-sym)
-                        (string-constant cs-rename-anyway)
-                        (string-constant cancel)
-                        #f
-                        parent
-                        '(stop default=2))
-                       1))])
-            (when do-renaming?
-              (unless (null? to-be-renamed)
-                (let ([txts (list defs-text)])
-                  (send defs-text begin-edit-sequence)
-                  (for-each (λ (stx) 
-                              (let ([source-editor (find-source-editor/defs stx defs-text)])
-                                (when (is-a? source-editor text%)
-                                  (unless (memq source-editor txts)
-                                    (send source-editor begin-edit-sequence)
-                                    (set! txts (cons source-editor txts)))
-                                  (let* ([start (- (syntax-position stx) 1)]
-                                         [end (+ start (syntax-span stx))])
-                                    (send source-editor delete start end #f)
-                                    (send source-editor insert new-sym start start #f)))))
-                            to-be-renamed)
-                  (send defs-text invalidate-bitmap-cache)
-                  (for-each
-                   (λ (txt) (send txt end-edit-sequence))
-                   txts))))))))
+          (define new-sym (format "~s" (string->symbol new-str)))
+          (define src-locs (make-hash))
+          (define all-stxs (make-hash))
+          (let loop ([key key])
+            (unless (hash-ref src-locs key #f)
+              (hash-set! src-locs key #t)
+              (for ([stx (in-list (hash-ref rename-ht key))])
+                (for ([id-set (in-list id-sets)])
+                  (for ([stx (in-list (or (get-ids id-set stx) '()))])
+                    (hash-set! all-stxs stx #t)
+                    (loop (list (syntax-source stx)
+                                (syntax-position stx)
+                                (syntax-span stx))))))))
+          (define locs-to-be-renamed 
+            (sort (hash-map src-locs (λ (k v) k))
+                  >=
+                  #:key cadr))
+          (define to-be-renamed (hash-map all-stxs (λ (k v) k)))
+          (define do-renaming?
+            (or (not (name-duplication? to-be-renamed id-sets new-sym))
+                (equal?
+                 (message-box/custom
+                  (string-constant check-syntax)
+                  (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
+                                                     new-sym)
+                  (string-constant cs-rename-anyway)
+                  (string-constant cancel)
+                  #f
+                  parent
+                  '(stop default=2))
+                 1)))
+          (when do-renaming?
+            (unless (null? to-be-renamed)
+              (let ([txts (list defs-text)])
+                (send defs-text begin-edit-sequence)
+                (for-each (λ (stx) 
+                            (let ([source-editor (find-source-editor/defs stx defs-text)])
+                              (when (is-a? source-editor text%)
+                                (unless (memq source-editor txts)
+                                  (send source-editor begin-edit-sequence)
+                                  (set! txts (cons source-editor txts)))
+                                (let* ([start (- (syntax-position stx) 1)]
+                                       [end (+ start (syntax-span stx))])
+                                  (send source-editor delete start end #f)
+                                  (send source-editor insert new-sym start start #f)))))
+                          to-be-renamed)
+                (send defs-text invalidate-bitmap-cache)
+                (for-each
+                 (λ (txt) (send txt end-edit-sequence))
+                 txts)))))))
     
     ;; name-duplication? : (listof syntax) (listof id-set) symbol -> boolean
     ;; returns #t if the name chosen would be the same as another name in this scope.
     (define (name-duplication? to-be-renamed id-sets new-str)
       (let ([new-ids (map (λ (id) (datum->syntax id (string->symbol new-str)))
                           to-be-renamed)])
-        (ormap (λ (id-set)
-                 (ormap (λ (new-id) (get-ids id-set new-id)) 
-                        new-ids))
-               id-sets)))
+        (for*/or ([id-set (in-list id-sets)]
+                  [new-id (in-list new-ids)])
+          (get-ids id-set new-id))))
     
     ;; remove-duplicates-stx : (listof syntax[original]) -> (listof syntax[original])
     ;; removes duplicates, based on the source locations of the identifiers
