@@ -47,8 +47,10 @@
 
 (define (add-inline-cite group bib-entries)
   (for ([i bib-entries]) (hash-set! (bib-group-ht group) i #t))
-  (when (and (pair? (cdr bib-entries)) (not (apply equal? (map auto-bib-author bib-entries))))
-    (error 'citet "citet must be used with identical authors, given ~a" (map auto-bib-author bib-entries)))
+  (when (and (pair? (cdr bib-entries)) 
+             (not (apply equal? (map (compose author-element-names auto-bib-author)  bib-entries))))
+    (error 'citet "citet must be used with identical authors, given ~a" 
+           (map (compose author-element-names auto-bib-author) bib-entries)))
   (make-element 
    #f
    (list (add-cite group (car bib-entries) 'autobib-author #f)
