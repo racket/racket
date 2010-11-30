@@ -28,7 +28,7 @@
             (when last ((collects-queue-printer jobqueue) (current-output-port) "made" "~a" cc-name )))]
         [else
           (match work 
-            [(list (list cc file last) message)
+            [(list-rest (list cc file last) message)
               ((collects-queue-append-error jobqueue) cc "making" null "" "" "error")
               (eprintf "work-done match cc failed.\n")
               (eprintf "trying to match:\n~a\n" (list work msg))])]))
