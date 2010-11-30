@@ -16,12 +16,13 @@
          #:cookies [cooks empty]
          #:headers [hdrs empty]
          #:preamble [preamble #""])
-  (response/full 
+  (response
    code message seconds mime-type 
    ; rfc2109 also recommends some cache-control stuff here for cookies
    (append hdrs (map cookie->header cooks))
-   ; XXX Use a normal response and an efficient xexpr printer
-   (list preamble (string->bytes/utf-8 (xexpr->string xexpr)))))
+   (λ (out)
+     (write-bytes preamble out)
+     (write-xexpr xexpr out))))
 
 (provide/contract
  [response/xexpr 

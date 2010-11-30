@@ -240,6 +240,13 @@ significant.}
 
 Like @racket[write-xml/content], but with indentation and newlines
 like @racket[display-xml].}
+               
+
+@defproc[(write-xexpr [xe xexpr/c] [out output-port? (current-output-port)])
+         void?]{
+
+Writes an X-expression to the given output port, without using an intermediate
+XML document.}
 
 
 @; ----------------------------------------------------------------------
