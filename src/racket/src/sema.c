@@ -226,7 +226,6 @@ Scheme_Object *scheme_make_sema(long v)
 static Scheme_Object *make_sema(int n, Scheme_Object **p)
 {
   long v;
-  Scheme_Object *s;
 
   if (n) {
     if (!SCHEME_INTP(p[0])) {
