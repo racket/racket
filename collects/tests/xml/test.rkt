@@ -482,6 +482,7 @@ END
         (test-equal? str (string->xexpr str) xe))
       (define (test-xexpr->string xe str)
         (test-equal? (format "~S" xe) (xexpr->string xe) str)
+        (test-equal? (format "~S" xe) (with-output-to-string (λ () (write-xexpr xe))) str)
         (test-string->xexpr str xe))
       (define (test-string->xexpr str xe)
         (test-equal? str (string->xexpr str) xe))]
