@@ -143,5 +143,3 @@
     (redex-check grammar p (transformation-preserves-meaning? (term p))
                #:prepare fix-prog 
                #:source :-> . kw-args)))
-
-(time (test-transformation/randomized #:attempts 1 #:attempt-size (const 3)))
