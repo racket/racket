@@ -1754,7 +1754,8 @@ Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv)
     return NULL;
   }
 
-  if (SCHEME_CHAPERONE_STRUCTP(v) && scheme_is_struct_instance((Scheme_Object *)stype, v)) {
+  /* let chaperones use the slow path, for now */
+  if (SCHEME_STRUCTP(v) && scheme_is_struct_instance((Scheme_Object *)stype, v)) {
     checker = ((Scheme_Structure *)v)->slots[0];
     proc = ((Scheme_Structure *)v)->slots[1];
     
