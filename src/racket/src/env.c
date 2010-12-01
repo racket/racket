@@ -4578,7 +4578,7 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
     return scheme_make_integer(ph);
   } else if (tl) {
     /* return env directly; need to set up  */
-    if (!env->phase)
+    if (!env->phase && env->module)
       scheme_prep_namespace_rename(env);
   } else {
     /* new namespace: */
