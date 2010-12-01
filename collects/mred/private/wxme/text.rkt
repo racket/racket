@@ -5265,20 +5265,6 @@
                                          (-startpos . > . (+ pcounter (mline-len line))))]
                                     [(hilite-some? hsxs hsxe hsys hsye old-style)
                                      (process-snips draw-first? #f old-style)])
-                        (when (and (positive? wrap-bitmap-width)
-                                   (not (has-flag? (snip->flags (mline-last-snip line)) HARD-NEWLINE))
-                                   last
-                                   (rightx . >= . max-width)
-                                   (send auto-wrap-bitmap ok?))
-                          (let ([h (min (->long (send auto-wrap-bitmap get-height))
-                                        (mline-bottombase line))]
-                                [osfg (send old-style get-foreground)])
-                            (send dc draw-bitmap-section
-                                  auto-wrap-bitmap 
-                                  (sub1 (+ max-width dx)) (+ (- bottombase h) dy)
-                                  0 0 wrap-bitmap-width h
-                                  'solid osfg)))
-
                         (let ([prevwasfirst
                                (if hilite-some?
                                    (if (not (= hsxs hsxe))
@@ -5337,6 +5323,21 @@
                                                (send dc set-pen save-pen))))
                                          prevwasfirst))
                                    prevwasfirst)])
+                          
+                          (when (and (positive? wrap-bitmap-width)
+                                     (not (has-flag? (snip->flags (mline-last-snip line)) HARD-NEWLINE))
+                                     last
+                                     (rightx . >= . max-width)
+                                     (send auto-wrap-bitmap ok?))
+                            (let ([h (min (->long (send auto-wrap-bitmap get-height))
+                                          (mline-bottombase line))]
+                                  [osfg (send old-style get-foreground)])
+                              (send dc draw-bitmap-section
+                                    auto-wrap-bitmap 
+                                    (sub1 (+ max-width dx)) (+ (- bottombase h) dy)
+                                    0 0 wrap-bitmap-width h
+                                    'solid osfg)))
+
                           (let ([old-style
                                  (if draw-first?
                                      old-style
