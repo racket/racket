@@ -88,7 +88,7 @@ If both the pen and brush are non-transparent, the wedge is filled
                         [mask (or/c (is-a?/c bitmap%) false/c) #f])
            boolean?]{
 
-Displays a bitmap. The @scheme[dest-x] and @scheme[dest-y] arguments
+Displays the @racket[source] bitmap. The @scheme[dest-x] and @scheme[dest-y] arguments
  are in DC coordinates.
 
 For color bitmaps, the drawing style and color arguments are
@@ -97,30 +97,33 @@ For color bitmaps, the drawing style and color arguments are
  and color settings to draw a monochrome stipple (see @scheme[brush%]
  for more information).
 
-If a mask bitmap is supplied, it must have the same width and height
- as the bitmap to display, and its @method[bitmap% ok?] must return
- true, otherwise @|MismatchExn|. The bitmap to draw and the mask
+If a @racket[mask] bitmap is supplied, it must have the same width and height
+ as @racket[source], and its @method[bitmap% ok?] must return
+ true, otherwise @|MismatchExn|. The @racket[source] bitmap and @racket[mask]
  bitmap can be the same object, but if the drawing context is a
  @scheme[bitmap-dc%] object, both bitmaps must be distinct from the
  destination bitmap, otherwise @|MismatchExn|.
 
-If the mask bitmap is monochrome, drawing occurs in the target
- @scheme[dc<%>] only where the mask bitmap contains black pixels.
+If the @racket[mask] bitmap is monochrome, drawing occurs in the
+ target @scheme[dc<%>] only where the mask bitmap contains black
+ pixels (independent of @racket[style], which controls how the white
+ pixels of a monochrome @racket[source] are handled).
 
-If the mask bitmap is grayscale and the bitmap to draw is not
- monochrome, then the blackness of each mask pixel controls the
- opacity of the drawn pixel (i.e., the mask acts as an inverted alpha
- channel). If a mask bitmap is color, the component values of a given
- pixel are averaged to arrive at a gray value for the pixel.
+If the @racket[mask] bitmap is grayscale, then the blackness of each
+ mask pixel controls the opacity of the drawn pixel (i.e., the mask
+ acts as an inverted alpha channel). If the @racket[mask] bitmap is
+ color, the component values of a given pixel are averaged to arrive
+ at an @racket[alpha] value for the pixel.
 
-The current brush, current pen, current text, and current alpha
- settings for the DC have no effect on how the bitmap is drawn, but
- the bitmap is scaled if the DC has a scale.
+The current brush, current pen, and current text for the DC have no
+ effect on how the bitmap is drawn, but the bitmap is scaled if the DC
+ has a scale, and the DC's alpha setting determines the opacity of the
+ drawn pixels (in combination with an alpha channel of @racket[bitmap]
+ and any given @racket[mask]).
 
-For @scheme[post-script-dc%] output, the mask bitmap is currently
- ignored, and the @scheme['solid] style is treated the same as
- @scheme['opaque]. (However, mask bitmaps and @scheme['solid] drawing
- may become supported for @scheme[post-script-dc%] in the future.)
+For @scheme[post-script-dc%] and @racket[pdf-dc%] output, opacity from
+ an alpha channel in @racket[bitmap] or from @racket[mask] is
+ rounded to full transparency or opacity.
 
 The result is @scheme[#t] if the bitmap is successfully drawn,
  @scheme[#f] otherwise (possibly because the bitmap's @method[bitmap%
@@ -986,15 +989,6 @@ The @scheme['aligned] smoothing mode is like @scheme['smoothed], but
  through @method[dc<%> draw-rectangle], @method[dc<%> draw-ellipse],
  @method[dc<%> draw-rounded-rectangle], and @method[dc<%> draw-arc],
  the given width and height are each decreased by @math{1.0}.
-
-In either smoothing mode, brush and pen stipples are ignored (except
- for PostScript drawing), and @scheme['hilite] and @scheme['xor]
- drawing modes are treated as @scheme['solid].  If smoothing is not
- supported, then attempting to set the smoothing mode to
- @scheme['smoothed] or @scheme['aligned] will have no effect, and
- @method[dc<%> get-smoothing] will always return
- @scheme['unsmoothed]. Similarly, @method[dc<%> get-smoothing] for a
- @scheme[post-script-dc%] always returns @scheme['smoothed].
 
 }
 
