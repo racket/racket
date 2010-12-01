@@ -147,7 +147,8 @@
             [sy (if (zero? src-h) 1.0 (/ dest-h src-h))])
         (let ([t (get-transformation)])
           (scale sx sy)
-          (draw-bitmap-section src (/ dest-x sx) (/ dest-y sy) src-x src-y src-w src-h style color mask)
-          (set-transformation t))))))
+          (begin0
+           (draw-bitmap-section src (/ dest-x sx) (/ dest-y sy) src-x src-y src-w src-h style color mask)
+           (set-transformation t)))))))
 
 (install-bitmap-dc-class! bitmap-dc%)

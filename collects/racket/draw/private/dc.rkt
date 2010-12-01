@@ -1594,7 +1594,8 @@
            (stamp-pattern src a-src-x a-src-y)])
          (when clip-mask
            (cairo_restore cr))
-         (flush-cr))))
+         (flush-cr)))
+      #t)
 
     (define/private (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)
       (let* ([bm-w (inexact->exact (ceiling src-w))]
