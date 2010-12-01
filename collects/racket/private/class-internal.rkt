@@ -4156,14 +4156,15 @@
     (raise-type-error 'object-info "object" o))
   (trace-begin
    (trace (inspect-event o))
-   (let loop ([c (object-ref o)]
-              [skipped? #f])
-     (if (struct? ((class-insp-mk c)))
-         ;; current objec can inspect this object
-         (values c skipped?)
-         (if (zero? (class-pos c))
-             (values #f #t)
-             (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t))))))
+   (let ([o* (if (has-original-object? o) (original-object o) o)])
+     (let loop ([c (object-ref o)]
+                [skipped? #f])
+       (if (struct? ((class-insp-mk c)))
+           ;; current objec can inspect this object
+           (values c skipped?)
+           (if (zero? (class-pos c))
+               (values #f #t)
+               (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t)))))))
 
 (define (to-sym s)
   (if (string? s)
