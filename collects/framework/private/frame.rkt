@@ -1693,15 +1693,22 @@
     (define/augment (after-delete x y)
       (update-prefs)
       (inner (void) after-delete x y))
+    (define timer #f)
     (define/private (update-prefs)
-      (preferences:set pref-sym
-                       (let loop ([snip (find-first-snip)])
-                         (cond
-                           [(not snip) '()]
-                           [(is-a? snip string-snip%)
-                            (cons (send snip get-text 0 (send snip get-count))
-                                  (loop (send snip next)))]
-                           [else (cons snip (loop (send snip next)))]))))
+      (unless timer
+        (set! timer (new timer%
+                         [notify-callback
+                          (λ ()
+                            (preferences:set pref-sym
+                                             (let loop ([snip (find-first-snip)])
+                                               (cond
+                                                 [(not snip) '()]
+                                                 [(is-a? snip string-snip%)
+                                                  (cons (send snip get-text 0 (send snip get-count))
+                                                        (loop (send snip next)))]
+                                                 [else (cons snip (loop (send snip next)))]))))])))
+      (send timer stop)
+      (send timer start 150 #t))
     (define/override (get-keymaps)
       (editor:add-after-user-keymap search/replace-keymap (super get-keymaps)))
     (super-new)
