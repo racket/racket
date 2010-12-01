@@ -22,6 +22,7 @@
   (output-response/method conn resp #"GET"))
 
 (define (output-response/method conn resp meth)
+  ; XXX Use chunked encoding for non-terminated responses
   (unless (terminated-response? resp)
     (set-connection-close?! conn #t))
   (output-response-head conn resp)
