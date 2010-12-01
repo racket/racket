@@ -284,18 +284,14 @@
                     ;
                     ; Patterns like (in-hole C_1 p) require constructing both an unfilled context
                     ; (exposed via the C_1 binding) and a filled context (exposed as the result).
-                    ; These terms can be constructed by fist generating the unfilled context then
-                    ; constructing the filled one from it, via something like `plug', but
-                    ; 1. the repeated plugging required for patterns like 
-                    ;       (in-hole (in-hole (in-hole C_1 C_2) C_3) C_4)
-                    ;    can be expensive (since it grows with the size of the output, not the 
-                    ;    size of the pattern), and
-                    ; 2. care must be taken to avoid filling holes generated within `in-hole' patterns
-                    ;    (and to avoid exposing the dreaded `the-not-hole').
-                    ; Instead, generators construct the filled and unfilled contexts simultaneously,
-                    ; taking multiple fillers as input (one of which can be `hole') and producing 
-                    ; multiple terms as output. As an optimization, generators produce singleton
-                    ; lists when the constructed term contained no fillable position.
+                    ; These terms can be constructed by first generating the unfilled context then
+                    ; constructing the filled one from it, via something like `plug', but care must 
+                    ; be taken to avoid filling holes generated within `in-hole' patterns (and to 
+                    ; avoid exposing the dreaded `the-not-hole' term). Instead, generators construct 
+                    ; the filled and unfilled contexts simultaneously, taking multiple fillers as 
+                    ; input (one of which can be `hole') and producing multiple terms as output. 
+                    ; As an optimization, generators produce singleton lists when the constructed term 
+                    ; contained no fillable position.
                     (let recur ([pat pat])
                       (match pat
                         [`number (unfilled-generator/attempts (λ (a) ((next-number-decision) a)))]
