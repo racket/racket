@@ -6045,8 +6045,8 @@
     (test #t (contract-eval 'is-a?) (contract-eval `(contract (object-contract) ,o 'pos 'neg)) c%))
   
   ;; Currently the new object contracts using impersonators don't even attempt to ensure that
-  ;; these reflective operations still work, and I'm not even sure they should.  For now, I'll
-  ;; just comment them out so that we can revive them if we decide that they should work.
+  ;; these reflective operations still work, and I'm not even sure they should.  For now, I
+  ;; just get the class info from the original object, which means that all contracts are evaded.
   ;;
   ;; Just as a note, if we move the class-insp-mk values forward in class/c-proj and make-wrapper-class,
   ;; we get a failure in object->vector for the second testcase because the field-ref/field-set! in the
@@ -6054,7 +6054,6 @@
   ;; know how to get the fields out of the object struct. We can always force it with unsafe-struct-ref,
   ;; but if we had impersonate-struct-type, with the same ability to replace the prop:object as
   ;; impersonate-struct has, then we might be able to handle this better.
-  #|
   (let ([c% (parameterize ([current-inspector (make-inspector)])
               (contract-eval '(class object% (super-new))))])
     (test (list c% #f) 
@@ -6076,7 +6075,6 @@
                       ,obj
                       'pos
                       'neg))))
-|#
 
 
 ;                                                       

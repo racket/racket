@@ -2760,10 +2760,6 @@ of the contract library does not change over time.
     (test #t (contract-eval 'is-a?) (contract-eval `(contract (object-contract) ,o 'pos 'neg)) i<%>)
     (test #t (contract-eval 'is-a?) (contract-eval `(contract (object-contract) ,o 'pos 'neg)) c%))
   
-  ;; Currently the new object contracts using impersonators don't even attempt to ensure that
-  ;; these reflective operations still work, and I'm not even sure they should.  For now, I'll
-  ;; just comment them out so that we can revive them if we decide that they should work.
-  #|
   (let ([c% (parameterize ([current-inspector (make-inspector)])
               (contract-eval '(class object% (super-new))))])
     (test (list c% #f) 
@@ -2785,7 +2781,6 @@ of the contract library does not change over time.
                       ,obj
                       'pos
                       'neg))))
-|#
   
 ;                                                                     
 ;                                                                     

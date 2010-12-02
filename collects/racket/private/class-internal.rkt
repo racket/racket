@@ -4157,7 +4157,7 @@
   (trace-begin
    (trace (inspect-event o))
    (let ([o* (if (has-original-object? o) (original-object o) o)])
-     (let loop ([c (object-ref o)]
+     (let loop ([c (object-ref o*)]
                 [skipped? #f])
        (if (struct? ((class-insp-mk c)))
            ;; current objec can inspect this object
