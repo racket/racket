@@ -437,7 +437,6 @@ TODO
   
   (define-struct sexp (left right prompt))
   
-  (define console-max-save-previous-exprs 30)
   (let* ([list-of? (λ (p?)
                      (λ (l)
                        (and (list? l)
@@ -449,25 +448,24 @@ TODO
      'drracket:console-previous-exprs
      null
      list-of-lists-of-snip/strings?))
-  (let ([marshall 
-         (λ (lls)
-           (map (λ (ls)
-                  (list
-                   (apply
-                    string-append
-                    (reverse
-                     (map (λ (s)
-                            (cond
-                              [(is-a? s string-snip%)
-                               (send s get-text 0 (send s get-count))]
-                              [(string? s) s]
-                              [else "'non-string-snip"]))
-                          ls)))))
-                lls))]
-        [unmarshall (λ (x) x)])
+  (define (marshall-previous-exprs lls)
+    (map (λ (ls)
+           (list
+            (apply
+             string-append
+             (reverse
+              (map (λ (s)
+                     (cond
+                       [(is-a? s string-snip%)
+                        (send s get-text 0 (send s get-count))]
+                       [(string? s) s]
+                       [else "'non-string-snip"]))
+                   ls)))))
+         lls))
+  (let ([unmarshall (λ (x) x)])
     (preferences:set-un/marshall
      'drracket:console-previous-exprs
-     marshall unmarshall))
+     marshall-previous-exprs unmarshall))
   
   (define color? ((get-display-depth) . > . 8))
   
@@ -1771,8 +1769,23 @@ TODO
       (define/private (add-to-previous-exprs snips)
         (set! local-previous-exprs (append local-previous-exprs (list snips))))
       
+      ; list-of-lists-of-snip/strings? -> list-of-lists-of-snip/strings?
       (define/private (trim-previous-exprs lst)
-        (take-right lst (min (length lst) console-max-save-previous-exprs)))
+        (define max-size 10000)
+        (define (expr-size expr)
+          (for/fold ([s 0]) ([e expr]) (+ s (string-length e))))
+        (define within-bound
+          (let loop ([marshalled (reverse (marshall-previous-exprs lst))]
+                     [keep 0]
+                     [sum 0])
+            (if (empty? marshalled)
+                keep
+                (let* ([size (expr-size (first marshalled))]
+                       [w/another (+ size sum)])
+                  (if (> w/another max-size)
+                      keep
+                      (loop (rest marshalled) (add1 keep) w/another))))))
+        (take-right lst within-bound))
       
       (define/private (save-interaction-in-history start end)
         (split-snip start)
