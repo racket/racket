@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?> 
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0"> 
 <assemblyIdentity 
-version="5.0.99.3" 
+version="5.0.99.4" 
 processorArchitecture="X86" 
 name="Org.PLT-Scheme.Racket" 
 type="win32" 
