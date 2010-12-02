@@ -6,8 +6,10 @@
          mred
          framework
          mzlib/class
-         mzlib/list
+         racket/list
          racket/path
+         racket/file
+         racket/dict
          browser/external
          setup/plt-installer)
 
@@ -452,6 +454,30 @@
  (λ (filename)
    (run-installer filename)
    #f))
+
+;; trim old console-previous-exprs preferences to compenstate 
+;; for a bug that let it grow without bound
+(let* ([max-len 30]
+       [trim (λ (exprs save)
+               (when (list? exprs)
+                 (let ([len (length exprs)])
+                   (when (> len max-len)
+                     (save (drop exprs (- len max-len)))))))])
+  (let ([framework-prefs (get-preference 'plt:framework-prefs)])
+    (when (and (list? framework-prefs)
+               (andmap pair? framework-prefs))
+      (let ([exprs-pref (assq 'drscheme:console-previous-exprs framework-prefs)])
+        (when exprs-pref
+          (trim (second exprs-pref)
+                (λ (trimmed)
+                  (put-preferences (list 'plt:framework-prefs)
+                                   (list (dict-set framework-prefs 'drscheme:console-previous-exprs (list trimmed)))
+                                   void)))))))
+  (trim (get-preference 'plt:framework-pref:drscheme:console-previous-exprs)
+        (λ (trimmed)
+          (put-preferences (list 'plt:framework-pref:drscheme:console-previous-exprs)
+                           (list trimmed)
+                           void))))
 
 (drracket:tools:load/invoke-all-tools
  (λ () (void))
