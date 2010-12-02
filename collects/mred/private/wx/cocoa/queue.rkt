@@ -29,8 +29,20 @@
  queue-event
  yield)
 
-(import-class NSApplication NSAutoreleasePool NSColor)
+(import-class NSApplication NSAutoreleasePool NSColor NSProcessInfo NSArray)
 (import-protocol NSApplicationDelegate)
+
+;; Extreme hackery to hide original arguments from
+;; NSApplication, because NSApplication wants to turn 
+;; the arguments into `application:openFile:' calls.
+;; To hide the arguments, we replace the implementation
+;; of `arguments' in the NSProcessInfo object.
+(define (hack-argument-replacement self method)
+  (tell NSArray 
+        arrayWithObjects: #:type (_vector i _NSString) (vector (path->string (find-system-path 'exec-file)))
+        count: #:type _NSUInteger 1))
+(let ([m (class_getInstanceMethod NSProcessInfo (selector arguments))])
+  (void (method_setImplementation m hack-argument-replacement)))
 
 (define app (tell NSApplication sharedApplication))
 
