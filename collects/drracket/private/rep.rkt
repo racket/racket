@@ -1769,18 +1769,10 @@ TODO
       (define/private (get-previous-exprs)
         (append global-previous-exprs local-previous-exprs))
       (define/private (add-to-previous-exprs snips)
-        (let* ([new-previous-exprs 
-                (let* ([trimmed-previous-exprs (trim-previous-exprs local-previous-exprs)])
-                  (let loop ([l trimmed-previous-exprs])
-                    (if (null? l)
-                        (list snips)
-                        (cons (car l) (loop (cdr l))))))])
-          (set! local-previous-exprs new-previous-exprs)))
+        (set! local-previous-exprs (append local-previous-exprs (list snips))))
       
       (define/private (trim-previous-exprs lst)
-        (if ((length lst). >= .  console-max-save-previous-exprs)
-            (cdr lst)
-            lst))
+        (take-right lst (min (length lst) console-max-save-previous-exprs)))
       
       (define/private (save-interaction-in-history start end)
         (split-snip start)
