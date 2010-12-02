@@ -6,6 +6,7 @@
          "../../lock.rkt"
          "../common/queue.rkt"
          "../common/freeze.rkt"
+         "clipboard.rkt"
          "const.rkt"
 	 "w32.rkt"
          "unique.rkt")
@@ -163,11 +164,19 @@
   (let* ([gtk (gtk_get_event_widget evt)]
          [wx (and gtk (widget-hook gtk))])
     (cond
-     [(and (= (ptr-ref evt _int) GDK_EXPOSE)
+     [(and (= (ptr-ref evt _GdkEventType) GDK_EXPOSE)
            wx
            (send wx direct-update?))
       (gtk_main_do_event evt)]
-     [(and wx (send wx get-eventspace))
+     [(or
+       ;; event for a window that we control?
+       (and wx (send wx get-eventspace))
+       ;; event to get X selection data?
+       (and (= (ptr-ref evt _GdkEventType) GDK_SELECTION_REQUEST)
+	   (let ([s (cast evt _pointer _GdkEventSelection-pointer)])
+	     (= (GdkEventSelection-selection s)
+		primary-atom))
+	   (get-selection-eventspace)))
       => (lambda (e)
            (let ([evt (gdk_event_copy evt)])
              (queue-event e (lambda () 

@@ -8,6 +8,8 @@
               _GdkScreen
               _gpointer
               _GType
+	      _GdkEventType
+	      _GdkAtom
 
               _fnpointer
               _gboolean
@@ -27,6 +29,8 @@
               (struct-out GdkEventConfigure)
               _GdkEventExpose _GdkEventExpose-pointer
               (struct-out GdkEventExpose)
+	      _GdkEventSelection _GdkEventSelection-pointer
+              (struct-out GdkEventSelection)
               (struct-out GdkRectangle)
               _GdkColor _GdkColor-pointer
               (struct-out GdkColor)))
@@ -49,6 +53,8 @@
 (define _gboolean _bool)
 (define _gfloat _float)
 (define _GdkEventType _int)
+
+(define _GdkAtom _int)
 
 (define-cstruct _GdkEventButton ([type _GdkEventType]
                                  [window _GdkWindow]
@@ -122,6 +128,15 @@
                                     [y _int]
                                     [width _int]
                                     [height _int]))
+
+(define-cstruct _GdkEventSelection ([type _GdkEventType]
+                                    [window _GdkWindow]
+                                    [send_event _byte]
+				    [selection _GdkAtom]
+				    [target _GdkAtom]
+				    [property _GdkAtom]
+				    [time _uint32]
+				    [requestor _pointer]))
 
 (define-cstruct _GdkRectangle ([x _int]
                                [y _int]
