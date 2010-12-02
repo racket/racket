@@ -54,7 +54,7 @@
 (define _gfloat _float)
 (define _GdkEventType _int)
 
-(define _GdkAtom _int)
+(define _GdkAtom _long)
 
 (define-cstruct _GdkEventButton ([type _GdkEventType]
                                  [window _GdkWindow]

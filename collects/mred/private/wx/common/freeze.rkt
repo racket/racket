@@ -40,9 +40,7 @@
     ;; Ideally, this would count as an error that we can fix. It seems that we
     ;; don't always have enough control to use the right eventspace with a
     ;; retry point, though, so just bail out with the default.
-    #;
-    (internal-error (format "constrained-reply not within an unfreeze point for ~s"
-    thunk))
+    #;(internal-error (format "constrained-reply not within an unfreeze point for ~s" thunk))
     fail-result]
    [(not (eq? (current-thread) (eventspace-handler-thread es)))
     (internal-error "wrong eventspace for constrained event handling\n")
