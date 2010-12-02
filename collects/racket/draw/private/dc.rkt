@@ -962,11 +962,13 @@
          (cairo_new_path cr)
          (cairo_rectangle cr x y width height)
          (draw cr #t #f)
-         (cairo_new_path cr)
-         (cairo_rectangle cr ax ay
-                          (- (align-x (+ x (sub1 width))) ax)
-                          (- (align-y (+ y (sub1 height))) ay))
-         (draw cr #f #t))))
+         (let ([w2 (- (align-x (+ x (sub1 width))) ax)]
+               [h2 (- (align-y (+ y (sub1 height))) ay)])
+           (when (and (positive? w2)
+                      (positive? h2))
+             (cairo_new_path cr)
+             (cairo_rectangle cr ax ay w2 h2)
+             (draw cr #f #t))))))
 
     (def/public (draw-rounded-rectangle [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height]
                                         [real? [radius -0.25]])
