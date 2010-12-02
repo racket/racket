@@ -211,7 +211,7 @@
                                                  -> (begin0
                                                       (for/list ([i (in-range len)])
                                                         (ptr-ref fams PangoFontFamily i))
-                                                      (free fams))))
+                                                      (g_free fams))))
 
 (define-pango pango_font_description_free (_fun PangoFontDescription -> _void) 
   #:wrap (deallocator))
