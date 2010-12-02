@@ -132,31 +132,58 @@ the state transitions / contracts are:
 ;; set : symbol any -> void
 ;; updates the preference
 ;; exported
-
 (define (multi-set ps values)
-  (for-each
-   (λ (p value)
-     (cond
-       [(pref-default-set? p)
-        (let ([default (hash-ref defaults p)])
-          (unless ((default-checker default) value)
-            (error 'preferences:set
-                   "tried to set preference ~e to ~e but it does not meet test from `preferences:set-default'"
-                   p value))
-          (check-callbacks p value)
-          (hash-set! preferences p value))]
-       [(not (pref-default-set? p))
-        (raise-unknown-preference-error
-         'preferences:set "tried to set the preference ~e to ~e, but no default is set"
-         p
-         value)]))
-   ps values)
-  ((preferences:low-level-put-preferences)
-   (map add-pref-prefix ps) 
-   (map (λ (p value) (marshall-pref p value))
-        ps
-        values))
-  (void))
+  (dynamic-wind
+   (λ () 
+     (call-pref-save-callbacks #t))
+   (λ ()
+     (for-each
+      (λ (p value)
+        (cond
+          [(pref-default-set? p)
+           (let ([default (hash-ref defaults p)])
+             (unless ((default-checker default) value)
+               (error 'preferences:set
+                      "tried to set preference ~e to ~e but it does not meet test from `preferences:set-default'"
+                      p value))
+             (check-callbacks p value)
+             (hash-set! preferences p value))]
+          [(not (pref-default-set? p))
+           (raise-unknown-preference-error
+            'preferences:set "tried to set the preference ~e to ~e, but no default is set"
+            p
+            value)]))
+      ps values)
+     ((preferences:low-level-put-preferences)
+      (map add-pref-prefix ps) 
+      (map (λ (p value) (marshall-pref p value))
+           ps
+           values))
+     (void))
+   (λ ()
+     (call-pref-save-callbacks #f))))
+
+(define pref-save-callbacks '())
+
+(define (preferences:register-save-callback f)
+  (define key (gensym))
+  (set! pref-save-callbacks (cons (list key f) pref-save-callbacks))
+  key)
+
+(define (preferences:unregister-save-callback k)
+  (set! pref-save-callbacks
+        (let loop ([callbacks pref-save-callbacks])
+          (cond
+            [(null? callbacks) '()]
+            [else
+             (let ([cb (car callbacks)])
+               (if (eq? (list-ref cb 0) k)
+                   (cdr callbacks)
+                   (cons cb (loop (cdr callbacks)))))]))))
+
+(define (call-pref-save-callbacks b)
+  (for ([cb (in-list pref-save-callbacks)])
+    ((list-ref cb 1) b)))
 
 (define (raise-unknown-preference-error sym fmt . args)
   (raise (exn:make-unknown-preference
@@ -436,6 +463,24 @@ the state transitions / contracts are:
   ()
   @{@scheme[(preferences:restore-defaults)] restores the users' configuration
     to the default preferences.})
+ 
+ (proc-doc/names
+  preferences:register-save-callback
+  (-> (-> boolean? any) symbol?)
+  (callback)
+  @{Registers @racket[callback] to run twice for each call to @racket[preferences:set]---once 
+              before the preferences file is written, with @racket[#t], and once after it is written, with
+              @racket[#f}. Registration returns a key for use with @racket{preferences:unregister-save-callback}. 
+              Caveats:
+              @itemize{@item{The callback occurs on whichever thread happened to call @racket[preferences:set].}
+                       @item{Pre- and post-write notifications are not necessarily paired; unregistration
+                             may cancel the post-write notification before it occurs.}}})
+ 
+ (proc-doc/names
+  preferences:unregister-save-callback
+  (-> symbol? void?)
+  (key)
+  @{Unregisters the save callback associated with @racket{key}.})
  
  (proc-doc/names
   exn:make-unknown-preference 

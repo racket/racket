@@ -560,6 +560,7 @@
                (λ (l)
                  (if (memq outer-info-panel l)
                      (begin (unregister-collecting-blit gc-canvas)
+                            (unregister-pref-save-callback)
                             (list rest-panel))
                      l)))]
         [else
@@ -569,6 +570,7 @@
                      l
                      (begin
                        (register-gc-blit)
+                       (register-pref-save-callback)
                        (list rest-panel outer-info-panel)))))]))
     
     [define close-panel-callback
@@ -580,6 +582,7 @@
     
     (define/augment (on-close)
       (unregister-collecting-blit gc-canvas)
+      (unregister-pref-save-callback)
       (close-panel-callback)
       (memory-cleanup)
       (inner (void) on-close))
@@ -637,6 +640,12 @@
         [(<= n 99) (format "0~a" n)]
         [else (number->string n)]))
     
+    (define pref-save-canvas #f)
+    (when checkout-or-nightly?
+      (set! pref-save-canvas (new pref-save-canvas% [parent (get-info-panel)])))
+    
+    [define lock-canvas (make-object lock-canvas% (get-info-panel))]
+    
     ; only for checkouts and nightly build users
     (when show-memory-text?
       (let* ([panel (new horizontal-panel%
@@ -657,7 +666,6 @@
                 (set! memory-canvases (remq ec memory-canvases))))
         (send panel stretchable-width #f)))
     
-    [define lock-canvas (make-object lock-canvas% (get-info-panel))]
     [define gc-canvas (make-object bday-click-canvas% (get-info-panel) '(border))]
     (define/private (register-gc-blit)
       (let ([onb (icon:get-gc-on-bitmap)]
@@ -669,6 +677,25 @@
                                     (send onb get-width)
                                     (send onb get-height)
                                     onb offb))))
+    
+    (define pref-save-callback-registration #f)
+    (inherit get-eventspace)
+    (define/private (register-pref-save-callback)
+      (when pref-save-canvas
+        (set! pref-save-callback-registration
+              (preferences:register-save-callback
+               (λ (start?)
+                 (cond
+                   [(eq? (current-thread) (eventspace-handler-thread (get-eventspace)))
+                    (send pref-save-canvas set-on? start?)]
+                   [else
+                    (queue-callback
+                     (λ ()
+                       (send pref-save-canvas set-on? start?)))]))))))
+    (define/private (unregister-pref-save-callback)
+      (when pref-save-callback-registration
+        (preferences:unregister-save-callback pref-save-callback-registration)))
+    (register-pref-save-callback)
     
     (unless (preferences:get 'framework:show-status-line)
       (send super-root change-children
@@ -2415,13 +2442,15 @@
     (define/override (get-editor%) (text:searching-mixin (super get-editor%)))
     (super-new)))
 
-(define memory-canvases '())
-(define show-memory-text?
+(define checkout-or-nightly?
   (or (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
         (directory-exists? (collection-path "repo-time-stamp")))
       (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
         (let ([fw (collection-path "framework")])
           (directory-exists? (build-path fw 'up 'up ".git"))))))
+
+(define memory-canvases '())
+(define show-memory-text? checkout-or-nightly?)
 
 (define bday-click-canvas%
   (class canvas%
@@ -2433,6 +2462,32 @@
                       (string-constant happy-birthday-matthew))]
         [else (super on-event evt)]))
     (super-new)))
+
+(define pref-save-canvas%
+  (class canvas%
+    (define on? #f)
+    (define indicator "P")
+    (define/override (on-paint)
+      (cond
+        [on?
+         (let-values ([(cw ch) (get-client-size)])
+           (send (get-dc) draw-text indicator
+                 (- (/ cw 2) (/ indicator-width 2))
+                 (- (/ ch 2) (/ indicator-height 2))))]))
+    (define/public (set-on? new-on?)
+      (set! on? new-on?)
+      (send (get-dc) erase)
+      (on-paint)
+      (flush))
+    
+    (inherit get-dc flush get-client-size min-width)
+    (super-new [stretchable-width #f]
+               [style '(transparent)])
+    
+    (define-values (indicator-width indicator-height)
+      (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent indicator)])
+        (values tw th)))
+    (min-width (+ (inexact->exact (ceiling indicator-width)) 4))))
 
 (define basic% (register-group-mixin (basic-mixin frame%)))
 (define size-pref% (size-pref-mixin basic%))
