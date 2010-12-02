@@ -64,9 +64,6 @@
        (real? (vector-ref v 4))
        (real? (vector-ref v 5))))
 
-(define substitute-fonts? (memq (system-type) '(macosx)))
-(define substitute-mapping (make-hasheq))
-
 ;; dc-backend : interface
 ;;
 ;; This is the interface that the backend specific code must implement
@@ -1384,43 +1381,6 @@
               (vector-set! vec 2 #f)
               (vector-set! vec 3 #f)
               (vector-set! vec 4 #f)))))
-    
-    (define/private (install-alternate-face ch layout font desc attrs context)
-      (or
-       (for/or ([face (in-list 
-                       (let ([v (hash-ref substitute-mapping (char->integer ch) #f)])
-                         (cond
-                          [(string? v) 
-                           ;; found previously
-                           (list v)]
-                          [v 
-                           ;; failed to find previously
-                           null]
-                          [else
-                           ;; Hack: prefer Lucida Grande
-                           (cons "Lucida Grande" (get-face-list))])))])
-         (let ([desc (get-pango (make-object font%
-                                             (send font get-point-size)
-                                             face
-                                             (send font get-family)
-                                             (send font get-style)
-                                             (send font get-weight)
-                                             (send font get-underlined)
-                                             (send font get-smoothing)
-                                             (send font get-size-in-pixels)))])
-           (and desc
-                (let ([attrs (send font get-pango-attrs)])
-                  (pango_layout_set_font_description layout desc)
-                  (when attrs (pango_layout_set_attributes layout attrs))
-                  (and (zero? (pango_layout_get_unknown_glyphs_count layout))
-                       (begin
-                         (hash-set! substitute-mapping (char->integer ch) face)
-                         #t))))))
-       (begin
-         (hash-set! substitute-mapping (char->integer ch) #t)
-         ;; put old desc & attrs back
-         (pango_layout_set_font_description layout desc)
-         (when attrs (pango_layout_set_attributes layout attrs)))))
     
     (def/public (get-char-width)
       10.0)
