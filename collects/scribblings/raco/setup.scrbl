@@ -1054,6 +1054,9 @@ An @deftech{unpackable} is one of the following:
    sub-directory of each collection directory (as determined by the
    @envvar{PLT_COLLECTION_PATHS} environment variable, etc.) and the
    file @filepath{cache.rkt} in the user add-on directory.
+   Note that the cache may be out of date by the time you call
+   @racket[get-info/full], so do not assume that it won't return
+   @racket[#f].
 
    The result is in a canonical order (sorted lexicographically by
    directory name), and the paths it returns are suitable for
@@ -1075,6 +1078,26 @@ An @deftech{unpackable} is one of the following:
    will only search the one that occurs first in the
    @envvar{PLT_COLLECTION_PATHS} environment variable.}
 
+@defproc[(find-relevant-directory-records
+          [syms (listof symbol?)]
+          [key (or/c 'preferred 'all-available)])
+         (listof directory-record?)]{
+  Like @racket[find-relevant-directories], but returns @racket[directory-record] structs
+  instead of @racket[path?]s.
+}
+
+@defstruct[directory-record ([maj integer?]
+                             [min integer?]
+                             [spec any/c]
+                             [path path?]
+                             [syms (listof symbol?)])]{
+  A struct that records information about a collection or a @PLaneT package that has been installed.
+  Collections will have the major version being @racket[1] and the minor version being @racket[0].
+  The @racket[spec] field is a quoted module spec; the @racket[path] field is where the @tt{info.rkt}
+  file for this collection or @PLaneT package exists on the filesystem the @racket[syms] field holds the 
+  identifiers defined in that file.
+}
+                                    
 @defproc[(reset-relevant-directories-state!) void?]{
    Resets the cache used by @racket[find-relevant-directories].}
 
