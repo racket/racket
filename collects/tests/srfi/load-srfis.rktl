@@ -24,7 +24,7 @@
 (require srfi/35)
 (require srfi/35)
 (require srfi/40)
-(require srif/41)
+(require srfi/41)
 (require srfi/42)
 (require srfi/42ref)
 (require srfi/43)

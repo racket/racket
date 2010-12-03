@@ -36,6 +36,7 @@
                 (lambda (i rec)
                   (define dir (directory-record-path rec))
                   (define s (and (or all? (in-main-collects? dir))
+                                 i
                                  (i 'scribblings)))
                   (if (not s)
                     null
