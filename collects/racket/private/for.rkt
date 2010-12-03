@@ -629,7 +629,7 @@
                          #'unsafe-vector-ref))
 
   
-  (define-:vector-like-gen :string-gen unsafe-string-ref)
+  (define-:vector-like-gen :string-gen string-ref)
   
   (define-in-vector-like in-string
     "string" string? string-length :string-gen)
