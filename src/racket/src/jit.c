@@ -1500,7 +1500,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_pop_locals() ADDQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
 # define JIT_FRAME_FLONUM_OFFSET (-(JIT_WORD_SIZE * (LOCAL_FRAME_SIZE + 3)))
 # define _jit_prolog_again(jitter, n, ret_addr_reg) (PUSHQr(ret_addr_reg), jit_base_prolog())
-# ifdef MZ_USE_JIT_X86_64
+# if defined(MZ_USE_JIT_X86_64) && !defined(_WIN64)
 #  define jit_shuffle_saved_regs() (MOVQrr(_ESI, _R12), MOVQrr(_EDI, _R13))
 #  define jit_unshuffle_saved_regs() (MOVQrr(_R12, _ESI), MOVQrr(_R13, _EDI))
 # else
@@ -3572,8 +3572,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     if (need_set_rs) {
       JIT_UPDATE_THREAD_RSPTR();
     }
-    mz_prepare_direct_prim(3);
+	mz_prepare_direct_prim(3);
     jit_pusharg_p(JIT_V1);
+    CHECK_LIMIT();
     if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
     {
       __END_SHORT_JUMPS__(1);

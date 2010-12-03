@@ -24,6 +24,8 @@
 
 #include "schpriv.h"
 
+#ifndef _WIN64
+
 int __declspec(naked) scheme_mz_setjmp(mz_jmp_buf b)
 {
   __asm {
@@ -55,3 +57,5 @@ void __declspec(naked) scheme_mz_longjmp(mz_jmp_buf b, int v)
 	ret
   }
 }
+
+#endif

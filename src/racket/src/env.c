@@ -1177,7 +1177,7 @@ Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *
 {
   Scheme_Bucket_Table *r;
   Scheme_Bucket **bs;
-  int i;
+  intptr_t i;
 
   r = scheme_make_bucket_table(ht->size, SCHEME_hash_ptr);
   if (home)
@@ -2050,7 +2050,7 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
-					   int pos, int mod_phase)
+					   int pos, intptr_t mod_phase)
 {
   Scheme_Object *val;
   Scheme_Hash_Table *ht;
@@ -2084,7 +2084,7 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
       mv->sym = stxsym;
       mv->insp = insp;
       mv->pos = pos;
-      mv->mod_phase = mod_phase;
+      mv->mod_phase = (int)mod_phase;
       
       val = (Scheme_Object *)mv;
       
@@ -2296,7 +2296,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        too bad). */
     if (!best_match) {
       char onstack[50], *buf;
-      int len;
+      intptr_t len;
 
       while (1) {
 	env->id_counter++;
@@ -2358,7 +2358,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
 
 int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym)
 {
-  int i;
+  intptr_t i;
   Scheme_Object *l, *a;
   Scheme_Hash_Table *rev_ht;
 
@@ -2814,9 +2814,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	if (!scheme_hash_get(frame->skip_table, SCHEME_STX_VAL(find_id))) {
 	  /* Skip ahead. 0 maps to frame, 1 maps to j delta, and 2 maps to p delta */
 	  val = scheme_hash_get(frame->skip_table, scheme_make_integer(1));
-	  j += SCHEME_INT_VAL(val);
+	  j += (int)SCHEME_INT_VAL(val);
 	  val = scheme_hash_get(frame->skip_table, scheme_make_integer(2));
-	  p += SCHEME_INT_VAL(val);
+	  p += (int)SCHEME_INT_VAL(val);
 	  frame = (Scheme_Comp_Env *)scheme_hash_get(frame->skip_table, scheme_make_integer(0));
 	} else
 	  break;
@@ -3059,7 +3059,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       pos = scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
 					      find_id, src_find_id, certs, NULL, rename_insp, -1, 1,
 					      _protected, NULL, env->genv, NULL);
-    modpos = SCHEME_INT_VAL(pos);
+    modpos = (int)SCHEME_INT_VAL(pos);
   } else
     modpos = -1;
 
@@ -3365,7 +3365,7 @@ static Scheme_Object *transitive_k(void)
 
   p->ku.k.p1 = NULL;
 
-  register_transitive_use(info, p->ku.k.i1, p->ku.k.i2);
+  register_transitive_use(info, (int)p->ku.k.i1, (int)p->ku.k.i2);
 
   return scheme_false;
 }
@@ -3688,7 +3688,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
       if (SCHEME_BOXP(n)) {
         /* A potential-size record: */
         if (potential_size)
-          *potential_size = SCHEME_INT_VAL(SCHEME_BOX_VAL(n));
+          *potential_size = (int)SCHEME_INT_VAL(SCHEME_BOX_VAL(n));
         break;
       }
       if (single_use)
@@ -3910,7 +3910,7 @@ Resolve_Prefix *scheme_remap_prefix(Resolve_Prefix *rp, Resolve_Info *ri)
   if (rp->num_lifts)
     cnt = rp->num_stxes;
   else
-    cnt = ri->stx_map->count;
+    cnt = (int)ri->stx_map->count;
 
   new_stxes = MALLOC_N(Scheme_Object *, cnt);
 
@@ -4071,7 +4071,7 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_O
             tl = SCHEME_CAR(lifted);
             ca = (Scheme_Object **)SCHEME_CDR(lifted);
             if (convert_shift)
-              shifted = SCHEME_INT_VAL(ca[0]) + convert_shift - 1;
+              shifted = (int)SCHEME_INT_VAL(ca[0]) + convert_shift - 1;
             else
               shifted = 0;
           } else {
@@ -4092,7 +4092,7 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_O
             int sz, i;
             mzshort *posmap, *boxmap;
             Scheme_Object *vec, *loc;
-            sz = SCHEME_INT_VAL(ca[0]);
+            sz = (int)SCHEME_INT_VAL(ca[0]);
             posmap = (mzshort *)ca[1];
             boxmap = (mzshort *)ca[3];
             vec = scheme_make_vector(sz + 1, NULL);
@@ -4217,7 +4217,7 @@ int scheme_resolve_quote_syntax_offset(int i, Resolve_Info *info)
     scheme_hash_set(ht, scheme_make_integer(i), v);
   }
 
-  return SCHEME_INT_VAL(v);
+  return (int)SCHEME_INT_VAL(v);
 }
 
 int scheme_resolve_quote_syntax_pos(Resolve_Info *info)
@@ -4256,7 +4256,7 @@ Scheme_Object *scheme_resolve_invent_toplevel(Resolve_Info *info)
   skip = scheme_resolve_toplevel_pos(info);
 
   count = SCHEME_VEC_ELS(info->lifts)[1];
-  pos = (SCHEME_INT_VAL(count)
+  pos = (int)(SCHEME_INT_VAL(count)
          + info->prefix->num_toplevels 
          + info->prefix->num_stxes
          + (info->prefix->num_stxes ? 1 : 0));
@@ -4508,7 +4508,7 @@ namespace_mapped_symbols(int argc, Scheme_Object *argv[])
   Scheme_Hash_Table *mapped;
   Scheme_Bucket_Table *ht;
   Scheme_Bucket **bs;
-  int i, j;
+  intptr_t i, j;
 
   if ((argc > 0) && !SCHEME_NAMESPACEP(argv[0]))
     scheme_wrong_type("namespace-mapped-symbols", "namespace", 0, argc, argv);
@@ -4559,7 +4559,7 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
 {
   Scheme_Object *v;
   Scheme_Env *env;
-  int ph;
+  intptr_t ph;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
     env = NULL;
@@ -4841,7 +4841,7 @@ static Scheme_Object *
 local_phase_level(int argc, Scheme_Object *argv[])
 {
   Scheme_Thread *p = scheme_current_thread;
-  int phase;
+  intptr_t phase;
 
   phase = (p->current_local_env
            ? p->current_local_env->genv->phase
@@ -5382,7 +5382,7 @@ do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object *argv[]
 
   if (stx_pos) {
     if (SCHEME_INTP(argv[0])) {
-      count = SCHEME_INT_VAL(argv[0]);
+      count = (int)SCHEME_INT_VAL(argv[0]);
     } else if (SCHEME_BIGNUMP(argv[0])) {
       if (SCHEME_BIGPOS(argv[0]))
         scheme_raise_out_of_memory(NULL, NULL);
@@ -5744,14 +5744,14 @@ static Scheme_Object *read_toplevel(Scheme_Object *obj)
 
   if (!SCHEME_PAIRP(obj)) return NULL;
 
-  depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
+  depth = (int)SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
 
   if (SCHEME_PAIRP(obj)) {
-    pos = SCHEME_INT_VAL(SCHEME_CAR(obj));
+    pos = (int)SCHEME_INT_VAL(SCHEME_CAR(obj));
     flags = SCHEME_INT_VAL(SCHEME_CDR(obj)) & SCHEME_TOPLEVEL_FLAGS_MASK;
   } else {
-    pos = SCHEME_INT_VAL(obj);
+    pos = (int)SCHEME_INT_VAL(obj);
     flags = 0;
   }
 
@@ -5817,12 +5817,12 @@ static Scheme_Object *do_read_local(Scheme_Type t, Scheme_Object *obj)
   int n, flags;
 
   if (SCHEME_PAIRP(obj)) {
-    flags = SCHEME_INT_VAL(SCHEME_CAR(obj));
+    flags = (int)SCHEME_INT_VAL(SCHEME_CAR(obj));
     obj = SCHEME_CDR(obj);
   } else
     flags = 0;
 
-  n = SCHEME_INT_VAL(obj);
+  n = (int)SCHEME_INT_VAL(obj);
 
   return scheme_make_local(t, n, flags);
 }
@@ -5881,7 +5881,8 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj, Scheme_Object *ins
 {
   Resolve_Prefix *rp;
   Scheme_Object *tv, *sv, **a, *stx;
-  int i, uses_unsafe = 0;
+  intptr_t i;
+  int uses_unsafe = 0;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
 
@@ -5906,9 +5907,9 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj, Scheme_Object *ins
 
   rp = MALLOC_ONE_TAGGED(Resolve_Prefix);
   rp->so.type = scheme_resolve_prefix_type;
-  rp->num_toplevels = SCHEME_VEC_SIZE(tv);
-  rp->num_stxes = SCHEME_VEC_SIZE(sv);
-  rp->num_lifts = i;
+  rp->num_toplevels = (int)SCHEME_VEC_SIZE(tv);
+  rp->num_stxes = (int)SCHEME_VEC_SIZE(sv);
+  rp->num_lifts = (int)i;
   if (uses_unsafe)
     rp->uses_unsafe = insp;
 

@@ -179,7 +179,7 @@ typedef struct {
 static char *copy_vers(char *vers)
 {
   if (vers) {
-    int len = strlen(vers);
+    intptr_t len = strlen(vers);
     char *vcopy;
     vcopy = (char *)scheme_malloc_atomic(len + 1);
     memcpy(vcopy, vers, len + 1);

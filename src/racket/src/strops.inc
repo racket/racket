@@ -336,7 +336,7 @@ X__(string_append) (int argc, Scheme_Object *argv[])
 Scheme_Object *
 X(scheme_append, _string)(Scheme_Object *str1, Scheme_Object *str2)
 {
-  int len1, len2;
+  intptr_t len1, len2;
   Xchar *r;
   Scheme_Object *naya;
 

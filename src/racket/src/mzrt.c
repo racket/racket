@@ -589,7 +589,7 @@ int mzrt_sema_destroy(mzrt_sema *s)
 typedef struct mzrt_rwlock {
   HANDLE readEvent;
   HANDLE writeMutex;
-  uintptr_t readers;
+  LONG readers;
 } mzrt_rwlock;
 
 int mzrt_rwlock_create(mzrt_rwlock **lock) {

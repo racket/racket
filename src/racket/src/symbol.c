@@ -95,12 +95,12 @@ typedef uintptr_t hash_v_t;
 #endif
 
 static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
-                                           GC_CAN_IGNORE const char *key, unsigned int length,
+                                           GC_CAN_IGNORE const char *key, uintptr_t length,
                                            Scheme_Object *naya);
 
 /* Special hashing for symbols: */
 static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
-				    GC_CAN_IGNORE const char *key, unsigned int length,
+				    GC_CAN_IGNORE const char *key, uintptr_t length,
 				    Scheme_Object *naya)
 {
   hash_v_t h, h2;
@@ -114,7 +114,7 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
   mask = table->size - 1;
 
   {
-    unsigned int i;
+    uintptr_t i;
     i = 0;
     h = HASH_SEED;
     h2 = 0;
@@ -166,7 +166,7 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
 }
 
 static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
-                                           GC_CAN_IGNORE const char *key, unsigned int length,
+                                           GC_CAN_IGNORE const char *key, uintptr_t length,
                                            Scheme_Object *naya)
 {
   int i, oldsize = table->size, newsize, lostc;
@@ -353,7 +353,7 @@ uintptr_t scheme_get_max_symbol_length() {
 
 
 static Scheme_Object *
-make_a_symbol(const char *name, unsigned int len, int kind)
+make_a_symbol(const char *name, uintptr_t len, int kind)
 {
   Scheme_Symbol *sym;
 
@@ -383,13 +383,13 @@ scheme_make_symbol(const char *name)
 }
 
 Scheme_Object *
-scheme_make_exact_symbol(const char *name, unsigned int len)
+scheme_make_exact_symbol(const char *name, uintptr_t len)
 {
   return make_a_symbol(name, len, 0x1);
 }
 
 Scheme_Object *
-scheme_make_exact_char_symbol(const mzchar *name, unsigned int len)
+scheme_make_exact_char_symbol(const mzchar *name, uintptr_t len)
 {
   char buf[64], *bs;
   intptr_t blen;
@@ -404,7 +404,7 @@ typedef enum {
 } enum_symbol_table_type;
 
 static Scheme_Object *
-intern_exact_symbol_in_table_worker(enum_symbol_table_type type, int kind, const char *name, unsigned int len)
+intern_exact_symbol_in_table_worker(enum_symbol_table_type type, int kind, const char *name, uintptr_t len)
 {
   Scheme_Object *sym;
   Scheme_Hash_Table *table;
@@ -470,25 +470,25 @@ intern_exact_symbol_in_table_worker(enum_symbol_table_type type, int kind, const
 }
 
 static Scheme_Object *
-intern_exact_symbol_in_table(enum_symbol_table_type type, int kind, const char *name, unsigned int len)
+intern_exact_symbol_in_table(enum_symbol_table_type type, int kind, const char *name, uintptr_t len)
 {
   return intern_exact_symbol_in_table_worker(type, kind, name, len);
 }
 
 Scheme_Object *
-scheme_intern_exact_symbol(const char *name, unsigned int len)
+scheme_intern_exact_symbol(const char *name, uintptr_t len)
 {
   return intern_exact_symbol_in_table(enum_symbol, 0, name, len);
 }
 
 Scheme_Object *
-scheme_intern_exact_parallel_symbol(const char *name, unsigned int len)
+scheme_intern_exact_parallel_symbol(const char *name, uintptr_t len)
 {
   return intern_exact_symbol_in_table(enum_parallel_symbol, 0x2, name, len);
 }
 
 Scheme_Object *
-scheme_intern_exact_char_symbol(const mzchar *name, unsigned int len)
+scheme_intern_exact_char_symbol(const mzchar *name, uintptr_t len)
 {
   char buf[64], *bs;
   intptr_t blen;
@@ -497,7 +497,7 @@ scheme_intern_exact_char_symbol(const mzchar *name, unsigned int len)
 }
 
 Scheme_Object *
-scheme_intern_exact_keyword(const char *name, unsigned int len)
+scheme_intern_exact_keyword(const char *name, uintptr_t len)
 {
   Scheme_Object *s;
   s = intern_exact_symbol_in_table(enum_keyword, 0, name, len);
@@ -506,7 +506,7 @@ scheme_intern_exact_keyword(const char *name, unsigned int len)
   return s;
 }
 
-Scheme_Object *scheme_intern_exact_char_keyword(const mzchar *name, unsigned int len)
+Scheme_Object *scheme_intern_exact_char_keyword(const mzchar *name, uintptr_t len)
 {
   char buf[64], *bs;
   intptr_t blen;
@@ -553,11 +553,11 @@ scheme_intern_symbol(const char *name)
   return scheme_intern_exact_symbol(name, strlen(name));
 }
 
-const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *length, int flags)
+const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, int flags)
 {
   int has_space = 0, has_special = 0, has_pipe = 0, has_upper = 0, digit_start;
   int dz;
-  unsigned int i, len = SCHEME_SYM_LEN(sym), total_length;
+  uintptr_t i, len = SCHEME_SYM_LEN(sym), total_length;
   int pipe_quote;
   char buf[100];
   char *s, *result;
@@ -682,7 +682,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *length
       result[len + 2] = 0;
     } else {
       int p = 0;
-      unsigned int i = 0;
+      uintptr_t i = 0;
 
       result = (char *)scheme_malloc_atomic((2 * len) + 1);
 

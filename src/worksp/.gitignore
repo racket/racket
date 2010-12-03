@@ -1,4 +1,5 @@
 # MSVC build directory:
 */Release
 */Debug
+*/x64
 */*.user

@@ -492,7 +492,11 @@
      || (defined(_MSC_VER) \
          && (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))))
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\i386"
+# ifdef _WIN64
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\x86_64"
+# else
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\i386"
+# endif
 
 # define SYSTEM_TYPE_NAME "windows"
 # define DOS_FILE_SYSTEM
@@ -521,7 +525,9 @@
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
 
-# define USE_MZ_SETJMP
+# ifndef _WIN64
+#  define USE_MZ_SETJMP
+# endif
 
 # define WINDOWS_DYNAMIC_LOAD
 
@@ -584,7 +590,11 @@
 # define USE_ICONV_DLL
 # define NO_MBTOWC_FUNCTIONS
 
-# define MZ_USE_JIT_I386
+# ifdef _WIN64
+#  define MZ_USE_JIT_X86_64
+# else
+#  define MZ_USE_JIT_I386
+# endif
 # define MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
 
 # define FLAGS_ALREADY_SET

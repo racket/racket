@@ -1476,7 +1476,7 @@ Scheme_Object *scheme_extend_module_rename(Scheme_Object *mrn,
                                            Scheme_Object *exname,      /* name in definition context  */
                                            Scheme_Object *nominal_mod, /* nominal source module */
                                            Scheme_Object *nominal_ex,  /* nominal import before local renaming */
-                                           int mod_phase,              /* phase of source defn */
+                                           intptr_t mod_phase,             /* phase of source defn */
                                            Scheme_Object *src_phase_index, /* nominal import phase */
                                            Scheme_Object *nom_phase,   /* nominal export phase */
                                            Scheme_Object *insp,        /* inspector for re-export */
@@ -1675,7 +1675,7 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 	    if (SCHEME_PAIRP(SCHEME_CDR(v))) {
 	      /* (list* modidx [mod-phase] exportname nominal_modidx+index nominal_exportname) */
 	      Scheme_Object *midx1, *midx2;
-	      int mod_phase;
+	      intptr_t mod_phase;
 	      midx1 = SCHEME_CAR(v);
 	      v = SCHEME_CDR(v);
 	      if (SCHEME_INTP(SCHEME_CAR(v))) {

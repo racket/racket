@@ -85,8 +85,8 @@ typedef int			mp_limb_signed_t;
 typedef unsigned long long int	mp_limb_t;
 typedef long long int		mp_limb_signed_t;
 #else
-typedef unsigned long int	mp_limb_t;
-typedef long int		mp_limb_signed_t;
+typedef uintptr_t               mp_limb_t;
+typedef intptr_t		mp_limb_signed_t;
 #endif
 #endif
 
@@ -97,8 +97,8 @@ typedef __gmp_const mp_limb_t *	mp_srcptr;
 typedef int			mp_size_t;
 typedef int			mp_exp_t;
 #else
-typedef long int		mp_size_t;
-typedef long int		mp_exp_t;
+typedef intptr_t		mp_size_t;
+typedef intptr_t		mp_exp_t;
 #endif
 
 typedef struct

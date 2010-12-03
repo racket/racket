@@ -3430,7 +3430,7 @@ static void setup_accessible_table(Scheme_Module *m)
   }
 }
 
-Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, int rev_mod_phase)
+Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, intptr_t rev_mod_phase)
 {
   Scheme_Env *menv;
 

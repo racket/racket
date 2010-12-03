@@ -512,7 +512,7 @@ static Scheme_Object *make_single_bigdig_result(int pos, bigdig d)
 static Scheme_Object *bignum_copy(const Scheme_Object *a, intptr_t msd)
 {
   Scheme_Object* o;
-  int c;
+  intptr_t c;
   bigdig* o_digs;
 
   c = SCHEME_BIGLEN(a);
@@ -607,7 +607,7 @@ int scheme_bignum_ge(const Scheme_Object *a, const Scheme_Object *b)
 Scheme_Object *scheme_bignum_negate(const Scheme_Object *n)
 {
   Scheme_Object *o;
-  int len;
+  intptr_t len;
 
   len = SCHEME_BIGLEN(n);
 
@@ -631,9 +631,9 @@ Scheme_Object *scheme_bignum_negate(const Scheme_Object *n)
   return o;
 }
 
-static bigdig* allocate_bigdig_array(int length)
+static bigdig* allocate_bigdig_array(intptr_t length)
 {
-  int i;
+  intptr_t i;
   bigdig* res;
   if (length > 4096) {
     res = (bigdig *)scheme_malloc_fail_ok(scheme_malloc_atomic, length * sizeof(bigdig));
@@ -647,7 +647,7 @@ static bigdig* allocate_bigdig_array(int length)
 }
 
 /* We don't want to count leading digits of 0 in the bignum's length */
-XFORM_NONGCING static int bigdig_length(bigdig* array, int alloced)
+XFORM_NONGCING static intptr_t bigdig_length(bigdig* array, intptr_t alloced)
 {
   alloced--;
   while (alloced >= 0 && array[alloced] == 0) {
@@ -690,7 +690,7 @@ static Scheme_Object *bignum_add_sub(const Scheme_Object *a, const Scheme_Object
 
   if (a_pos == b_pos) /* addition */
   {
-    int carry;
+    intptr_t carry;
 
     o_digs = allocate_bigdig_array(max_size);
 
@@ -884,7 +884,7 @@ Scheme_Object *scheme_generic_integer_power(const Scheme_Object *a, const Scheme
         || (SCHEME_INT_VAL(b) > 10000))
       scheme_signal_error(too_big);
     else if (SCHEME_BIGNUMP(a)) {
-      int len = SCHEME_BIGLEN(a);
+      intptr_t len = SCHEME_BIGLEN(a);
       if ((len > 10000)
           || (len * SCHEME_INT_VAL(b)) > 10000)
         scheme_signal_error(too_big);
@@ -1184,7 +1184,7 @@ char *scheme_bignum_to_allocated_string(const Scheme_Object *b, int radix, int a
 {
   Scheme_Object *c;
   unsigned char* str, *str2;
-  int i, slen, start, clen;
+  intptr_t i, slen, start, clen;
   bigdig *c_digs;
   SAFE_SPACE(csd)
 
@@ -1277,7 +1277,7 @@ char *scheme_bignum_to_string(const Scheme_Object *b, int radix)
 
 Scheme_Object *scheme_read_bignum(const mzchar *str, int offset, int radix)
 {
-  int len, negate, stri, alloc, i, test;
+  intptr_t len, negate, stri, alloc, i, test;
   Scheme_Object* o;
   bigdig* digs;
   unsigned char* istring;
@@ -1363,7 +1363,7 @@ Scheme_Object *scheme_read_bignum_bytes(const char *str, int offset, int radix)
 
 static void bignum_double_inplace(Scheme_Object **_stk_o)
 {
-  int carry, len;
+  intptr_t carry, len;
 
   len = SCHEME_BIGLEN(*_stk_o);
 
@@ -1379,7 +1379,7 @@ static void bignum_double_inplace(Scheme_Object **_stk_o)
 
 static void bignum_add1_inplace(Scheme_Object **_stk_o)
 {
-  int carry, len;
+  intptr_t carry, len;
 
   len = SCHEME_BIGLEN(*_stk_o);
 
@@ -1518,7 +1518,7 @@ static uintptr_t fixnum_sqrt(uintptr_t n, uintptr_t *rem)
 
   for (i = SQRT_BIT_MAX; i >= 0; i--)
   {
-    try_root = root | (0x1 << i);
+    try_root = root | ((intptr_t)0x1 << i);
     try_square = try_root * try_root;
     if (try_square <= n)
     {
@@ -1539,7 +1539,7 @@ Scheme_Object *scheme_integer_sqrt(const Scheme_Object *n)
 Scheme_Object *scheme_integer_sqrt_rem(const Scheme_Object *n, Scheme_Object **remainder)
 {
   Scheme_Object *o;
-  int rem_size;
+  intptr_t rem_size;
 
   SAFE_SPACE(qsd)
 
