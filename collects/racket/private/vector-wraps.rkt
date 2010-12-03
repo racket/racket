@@ -7,6 +7,7 @@
 (define-syntax-rule (define-vector-wraps
                       fXvector-str
                       fXvector? fXvector-length fXvector-ref fXvector-set! make-fXvector
+                      unsafe-fXvector-ref unsafe-fXvector-set! unsafe-fXvector-length
                       in-fXvector*
                       in-fXvector
                       for/fXvector
@@ -14,32 +15,17 @@
                       fXvector-copy)
   (...
    (begin
-     (define (in-fXvector* flv)
-       (let ((n (fXvector-length flv)))
-         (make-do-sequence 
-          (lambda ()
-            (values (lambda (i) (fXvector-ref flv i))
-                    add1
-                    0
-                    (lambda (i) (fx< i n))
-                    (lambda (x) #t)
-                    (lambda (i x) #t))))))
+     (define-:vector-like-gen :fXvector-gen unsafe-fXvector-ref)
+
+     (define-in-vector-like in-fXvector*
+       fXvector-str fXvector? fXvector-length :fXvector-gen)
 
      (define-sequence-syntax in-fXvector
-       (lambda () (syntax in-fXvector*))
-       (lambda (stx)
-         (syntax-case stx ()
-           (((x) (in-fXvector flv-expr))
-            (syntax/loc stx
-              (() (:do-in (((v) flv-expr))
-                          (when (not (fXvector? v))
-                            (error 'in-fXvector "expecting a ~a, got ~a" fXvector-str v))
-                          ((i 0) (n (fXvector-length v)))
-                          (fx< i n)
-                          (((x) (fXvector-ref v i)))
-                          #t
-                          #t
-                          ((add1 i) n))))))))
+       (lambda () #'in-fXvector*)
+       (make-in-vector-like #'fXvector?
+                            #'unsafe-fXvector-length
+                            #'in-fXvector*
+                            #'unsafe-fXvector-ref))
 
      (define (list->fXvector l)
        (let ((n (length l)))
@@ -108,5 +94,5 @@
        (let* ([len (- end start)]
               [vec (make-fXvector len)])
          (for ([i (in-range len)])
-           (fXvector-set! vec i (fXvector-ref flv (+ i start))))
+           (unsafe-fXvector-set! vec i (unsafe-fXvector-ref flv (+ i start))))
          vec)))))

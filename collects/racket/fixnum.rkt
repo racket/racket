@@ -1,6 +1,7 @@
 #lang scheme/base
 (require '#%flfxnum
-         "private/vector-wraps.rkt")
+         "private/vector-wraps.rkt"
+         "unsafe/ops.rkt")
 
 (provide fx->fl fl->fx
          fxabs
@@ -18,6 +19,7 @@
 
 (define-vector-wraps "fxvector"
   fxvector? fxvector-length fxvector-ref fxvector-set! make-fxvector
+  unsafe-fxvector-ref unsafe-fxvector-set! unsafe-fxvector-length
   in-fxvector*
   in-fxvector
   for/fxvector

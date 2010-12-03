@@ -60,7 +60,11 @@
 
              define-sequence-syntax
              make-do-sequence
-             :do-in)
+             :do-in
+
+             define-in-vector-like
+             define-:vector-like-gen
+             (for-syntax make-in-vector-like))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
