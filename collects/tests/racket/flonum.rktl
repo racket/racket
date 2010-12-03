@@ -2,7 +2,8 @@
 
 (Section 'flonum)
 
-(require racket/flonum)
+(require racket/flonum
+         "for-util.rkt")
 
 (define (flonum-close? fl1 fl2)
   (<= (flabs (fl- fl1 fl2))
@@ -73,5 +74,17 @@
     (test -10.0 'flvector-copy (flvector-ref vc 2))
     (test '(2.0 3.0) 'flvector-copy (for/list ([i (in-flvector (flvector-copy v 2))]) i))
     (test '(2.0) 'flvector-copy (for/list ([i (in-flvector (flvector-copy v 2 3))]) i))))
+
+;; in-flvector tests, copied from for.rktl
+
+(test-generator [(1.0 2.0 3.0)] (in-flvector (flvector 1.0 2.0 3.0)))
+(test-generator [(2.0 3.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0) 1))
+(test-generator [(2.0 3.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0) 1 4))
+(test-generator [(2.0 4.0 6.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 1 7 2))
+(test-generator [(8.0 6.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 7 1 -2))
+(test-generator [(2.0 4.0 6.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 1 6 2))
+(test-generator [(8.0 6.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 7 2 -2))
+
+
 
 (report-errs)
