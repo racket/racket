@@ -470,7 +470,7 @@ the state transitions / contracts are:
   (callback)
   @{Registers @racket[callback] to run twice for each call to @racket[preferences:set]---once 
               before the preferences file is written, with @racket[#t], and once after it is written, with
-              @racket[#f}. Registration returns a key for use with @racket{preferences:unregister-save-callback}. 
+              @racket[#f]. Registration returns a key for use with @racket[preferences:unregister-save-callback]. 
               Caveats:
               @itemize{@item{The callback occurs on whichever thread happened to call @racket[preferences:set].}
                        @item{Pre- and post-write notifications are not necessarily paired; unregistration
@@ -480,7 +480,7 @@ the state transitions / contracts are:
   preferences:unregister-save-callback
   (-> symbol? void?)
   (key)
-  @{Unregisters the save callback associated with @racket{key}.})
+  @{Unregisters the save callback associated with @racket[key].})
  
  (proc-doc/names
   exn:make-unknown-preference 
