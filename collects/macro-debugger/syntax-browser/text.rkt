@@ -17,7 +17,8 @@
          text:tacking-mixin
          text:arrows-mixin
          text:region-data-mixin
-         text:clickregion-mixin)
+         text:clickregion-mixin
+         browser-text%)
 
 (define arrow-cursor (make-object cursor% 'arrow))
 
@@ -115,14 +116,16 @@
              find-position)
 
     (define/override (on-default-event ev)
-      (define gx (send ev get-x))
-      (define gy (send ev get-y))
-      (define-values (x y) (dc-location-to-editor-location gx gy))
-      (define pos (find-position x y))
       (super on-default-event ev)
       (case (send ev get-event-type)
         ((enter motion leave)
-         (update-hover-position pos))))
+         (define-values (x y)
+           (let ([gx (send ev get-x)]
+                 [gy (send ev get-y)])
+             (dc-location-to-editor-location gx gy)))
+         (define on-it? (box #f))
+         (define pos (find-position x y #f on-it?))
+         (update-hover-position (and (unbox on-it?) pos)))))
 
     (define/public (update-hover-position pos)
       (void))
@@ -344,10 +347,13 @@ Like clickbacks, but:
           (interval-map-remove! clickbacks start end)))
 
     (define/private (get-event-position ev)
-      (define gx (send ev get-x))
-      (define gy (send ev get-y))
-      (define-values (x y) (dc-location-to-editor-location gx gy))
-      (find-position x y))
+      (define-values (x y)
+        (let ([gx (send ev get-x)]
+              [gy (send ev get-y)])
+          (dc-location-to-editor-location gx gy)))
+      (define on-it? (box #f))
+      (define pos (find-position x y #f on-it?))
+      (and (unbox on-it?) pos))
 
     (define/override (on-default-event ev)
       (define admin (get-admin))
@@ -355,11 +361,11 @@ Like clickbacks, but:
         (define pos (get-event-position ev))
         (case (send ev get-event-type)
           ((left-down)
-           (set! tracking (interval-map-ref clickbacks pos #f))
+           (set! tracking (and pos (interval-map-ref clickbacks pos #f)))
            (send admin update-cursor))
           ((left-up)
            (when tracking
-             (let ([cb (interval-map-ref clickbacks pos #f)]
+             (let ([cb (and pos (interval-map-ref clickbacks pos #f))]
                    [tracking* tracking])
                (set! tracking #f)
                (when (eq? tracking* cb)
@@ -369,7 +375,7 @@ Like clickbacks, but:
 
     (define/override (adjust-cursor ev)
       (define pos (get-event-position ev))
-      (define cb (interval-map-ref clickbacks pos #f))
+      (define cb (and pos (interval-map-ref clickbacks pos #f)))
       (if cb
           arrow-cursor
           (super adjust-cursor ev)))))
@@ -405,3 +411,25 @@ Like clickbacks, but:
               [else (search (cdr idlocs))])))
     (super-new)))
 |#
+
+
+(define browser-text%
+  (let ([browser-text-default-style-name "widget.rkt::browser-text% basic"])
+    (class (text:clickregion-mixin
+            (text:arrows-mixin
+             (text:tacking-mixin
+              (text:hover-drawings-mixin
+               (text:hover-mixin
+                (text:region-data-mixin
+                 (text:hide-caret/selection-mixin
+                  (text:foreground-color-mixin
+                   (editor:standard-style-list-mixin text:basic%)))))))))
+      (inherit set-autowrap-bitmap get-style-list)
+      (define/override (default-style-name) browser-text-default-style-name)
+      (super-new (auto-wrap #t))
+      (let* ([sl (get-style-list)]
+             [standard (send sl find-named-style (editor:get-default-color-style-name))]
+             [browser-basic (send sl find-or-create-style standard
+                                  (make-object style-delta% 'change-family 'default))])
+        (send sl new-named-style browser-text-default-style-name browser-basic))
+      (set-autowrap-bitmap #f))))

@@ -111,12 +111,18 @@ The @racketmodname[racket] library combines
             #:title "A Generalization of Exceptions and Control in ML-like Languages"
             #:location "Functional Programming Languages and Computer Architecture"
             #:date "1995")
-
-  (bib-entry #:key "Hieb90"
-             #:author "Robert Hieb and R. Kent Dybvig"
-             #:title "Continuations and Concurrency"
-             #:location "Principles and Practice of Parallel Programming"
-             #:date "1990")
+ 
+ (bib-entry #:key "Hayes97"
+            #:author "Barry Hayes"
+            #:title "Ephemerons: a New Finalization Mechanism"
+            #:location "Object-Oriented Languages, Programming, Systems, and Applications"
+            #:date "1997")
+ 
+ (bib-entry #:key "Hieb90"
+            #:author "Robert Hieb and R. Kent Dybvig"
+            #:title "Continuations and Concurrency"
+            #:location "Principles and Practice of Parallel Programming"
+            #:date "1990")
 
  (bib-entry #:key "L'Ecuyer02"
             #:author "Pierre L'Ecuyer, Richard Simard, E. Jack Chen, and W. David Kelton"

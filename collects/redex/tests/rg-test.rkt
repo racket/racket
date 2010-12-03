@@ -412,6 +412,10 @@
      #:num (build-list 5 (λ (x) (λ (_) x)))))
    '(+ (+ 1 2) (+ 0 (+ 3 4))))
   
+  (test (let/ec k
+          (generate-term lang (side-condition (in-hole C_1 1) (k (term C_1))) 5))
+        (term hole))
+  
   (test (generate-term lang (in-hole (in-hole (1 hole) hole) 5) 5) '(1 5))
   (test (generate-term lang (hole 4) 5) (term (hole 4)))
   (test (generate-term/decisions 
@@ -428,6 +432,45 @@
         '(1 0))
   (test (generate-term/decisions lang h 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 3))))
         '((2 ((3 (2 1)) 3)) 1)))
+
+(let ()
+  (define-language L
+    (C (c hole))
+    (D (d hole))
+    (E (e hole))
+    (F (f hole)))
+  
+  (test (generate-term L (in-hole 3 4) 5) 3)
+  (test (generate-term L (in-hole (hole hole) 4) 5) '(4 4))
+  (test (generate-term/decisions L (in-hole (hole ... hole) 4) 5 0 (decisions #:seq (list (λ (_) 1))))
+        '(4 4))
+  
+  (let-syntax ([test-sequence-holes 
+                (λ (stx)
+                  (syntax-case stx ()
+                    [(_ l)
+                     #`(let ([length l]
+                             [bindings #f])
+                         (test (generate-term/decisions 
+                                L
+                                (side-condition (in-hole ((name x (q C)) (... ...)) 4)
+                                                (set! bindings (term ((x C) (... ...)))))
+                                5 0 (decisions #:seq (list (λ (_) length))))
+                               #,(syntax/loc stx (build-list length (λ (_) '(q (c 4))))))
+                         (test bindings 
+                               #,(syntax/loc stx (build-list length (λ (_) (term ((q (c hole)) (c hole))))))))]))])
+    (test-sequence-holes 3)
+    (test-sequence-holes 0))
+  
+  (let ([bindings #f])
+    (test (generate-term 
+           L 
+           (side-condition (name CDEF (in-hole (name CDE (in-hole (name CD (in-hole C D)) E)) F))
+                           (set! bindings (term (C D E F CD CDE CDEF))))
+           0)
+          (term (c (d (e (f hole))))))
+    (test bindings (term ((c hole) (d hole) (e hole) (f hole) 
+                                   (c (d hole)) (c (d (e hole))) (c (d (e (f hole)))))))))
 
 (let ()
   (define-language lc
@@ -469,7 +512,8 @@
 (let ()
   (define-language lang
     (e (hide-hole (in-hole ((hide-hole hole) hole) 1))))
-  (test (generate-term lang e 5) (term (hole 1))))
+  (test (generate-term lang e 5) (term (hole 1)))
+  (test (plug (generate-term lang (hide-hole hole) 0) 3) 3))
 
 (define (output-error-port thunk)
   (let ([port (open-output-string)])
@@ -1212,5 +1256,23 @@
   (test-class-reassignments
    '(x ..._1 x ..._2 variable ..._2 variable ..._3 variable_1 ..._3 variable_1 ..._4)
    '((..._1 . ..._4) (..._2 . ..._4) (..._3 . ..._4))))
+
+;; redex-test-seed
+(let ([seed 0])
+  (define-language L)
+  (define (generate)
+    (generate-term L (number ...) 10000000 #:attempt-num 10000000))
+  (test (begin (random-seed seed) (generate))
+        (begin (random-seed seed) (generate)))
+  (let ([prg (make-pseudo-random-generator)])
+    (define (seed-effect-generate effect)
+      (begin
+        (parameterize ([current-pseudo-random-generator prg])
+          (random-seed seed))
+        (effect)
+        (parameterize ([redex-pseudo-random-generator prg])
+          (generate))))
+    (test (seed-effect-generate void)
+          (seed-effect-generate random))))
 
 (print-tests-passed 'rg-test.ss)

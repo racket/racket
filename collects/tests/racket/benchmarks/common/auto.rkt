@@ -457,8 +457,7 @@ exec racket -qu "$0" ${1+"$@"}
                 run-gambit-exe
                 extract-gambit-times
                 clean-up-o1
-                (append '(nucleic2)
-                        racket-specific-progs))
+                racket-specific-progs)
      (make-impl 'larceny
                 setup-larceny
                 mk-larceny

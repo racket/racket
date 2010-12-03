@@ -171,7 +171,15 @@
                  (name
                   (identifier? #'name)
                   (syntax/loc stx
-                    check-secret-name)))))
+                    (case-lambda
+                      [(formal ...)
+                       (check-secret-name formal ... 
+                                          #:location (quote loc) 
+                                          #:expression (quote (name actual ...)))]
+                      [(formal ... msg)
+                       (check-secret-name formal ... msg
+                                          #:location (quote loc) 
+                                          #:expression (quote (name actual ...)))]))))))
            ))))))
 
 (define-syntax define-simple-check

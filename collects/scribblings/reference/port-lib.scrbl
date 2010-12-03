@@ -51,7 +51,8 @@ Read all characters from @scheme[in], breaking them into lines. The
 @scheme['linefeed].
 
 @examples[#:eval port-eval
-(port->lines (open-input-string "line 1\nline 2\n  line 3\nline 4"))
+(port->lines
+ (open-input-string "line 1\nline 2\n  line 3\nline 4"))
 ]}
 
 @defproc[(port->bytes-lines [in input-port? (current-input-port)]
@@ -62,7 +63,8 @@ Like @scheme[port->lines], but reading bytes and collecting them into
 lines like @scheme[read-bytes-line].
 
 @examples[#:eval port-eval
-(port->bytes-lines (open-input-string "line 1\nline 2\n  line 3\nline 4"))
+(port->bytes-lines 
+ (open-input-string "line 1\nline 2\n  line 3\nline 4"))
 ]}
 
 @defproc[(display-lines [lst list?]

@@ -132,8 +132,7 @@ please adhere to these guidelines:
   (web-materials "Relaterede websites") ;; menu item title
   (tool-web-sites "Tool Web Sites")   ;; menu item title
   (plt-homepage "Racket")
-  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
-  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
+  (pbd-homepage "Program by Design")
   
   ;;; bug report form
   (cancel-bug-report? "Fortryd afsendelse af fejlrapport?")

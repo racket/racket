@@ -1198,6 +1198,8 @@ path/s is either such a string or a list of them.
 "collects/redex/examples/church.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/combinators.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/compatible-closure.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/delim-cont/randomized-tests-test.rkt" drdr:timeout 240 drdr:random #t
+"collects/redex/examples/delim-cont/randomized-tests.rkt" drdr:random #t
 "collects/redex/examples/delim-cont/test.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/letrec.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/omega.rkt" drdr:command-line (mzc *)
@@ -1416,6 +1418,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/hangman.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/io.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/language-test.rkt" responsible (robby matthias) drdr:command-line (gracket *) drdr:timeout 600
+"collects/tests/drracket/leaky-frame.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket *) drdr:timeout 120
@@ -1463,6 +1466,7 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/dc.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/draw.rkt" drdr:command-line (mzc *)
 "collects/tests/gracket/editor.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/flush-stress.rkt" drdr:command-line #f
 "collects/tests/gracket/gui-main.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/gui.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/item.rkt" drdr:command-line (mzc *)
@@ -1476,6 +1480,7 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/test-editor-admin.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/gracket/testing.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/text-scale.rktl" drdr:command-line #f
+"collects/tests/gracket/unflushed-circle.rkt" drdr:command-line #f
 "collects/tests/gracket/windowing.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/wxme-doc-random.rkt" drdr:command-line (mzc *)
 "collects/tests/gracket/wxme-random.rkt" drdr:command-line #f

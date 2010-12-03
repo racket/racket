@@ -4,17 +4,25 @@
 
 @title{More Libraries}
 
-@other-manual['(lib "scribblings/gui/gui.scrbl")] describes the Racket
-graphics toolbox, whose core is implemented by the @exec{gracket}
-executable.
+This guide covers only the Racket language and libraries that are
+documented in @|Racket|. The Racket distribution includes many
+additional libraries.
+
+@include-section["graphics.scrbl"]
+
+@section{The Web Server}
+
+@other-manual['(lib "web-server/scribblings/web-server.scrbl")]
+describes the Racket web server, which supports servlets implemented
+in Racket.
+
+@section{Using Foreign Libraries}
 
 @other-manual['(lib "scribblings/foreign/foreign.scrbl")] describes
 tools for using Racket to access libraries that are normally used by C
 programs.
 
-@other-manual['(lib "web-server/scribblings/web-server.scrbl")]
-describes the Racket web server, which supports servlets implemented
-in Racket.
+@section{And More}
 
 @link["../index.html"]{Racket Documentation} lists documentation for
 many other installed libraries. Run @exec{raco docs} to find

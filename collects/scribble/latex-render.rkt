@@ -9,7 +9,8 @@
          scheme/path
          scheme/string
          scheme/list
-         setup/main-collects)
+         setup/main-collects
+         file/convertible)
 (provide render-mixin)
 
 (define current-table-mode (make-parameter #f))
@@ -235,18 +236,30 @@
                                  es)]
                  [style (and (style? es) es)]
                  [core-render (lambda (e tt?)
-                                (if (and (image-element? e)
-                                         (not (disable-images)))
-                                    (let ([fn (install-file
-                                               (select-suffix 
-                                                (main-collects-relative->path
-                                                 (image-element-path e))
-                                                (image-element-suffixes e) 
-                                                '(".pdf" ".ps" ".png")))])
-                                      (printf "\\includegraphics[scale=~a]{~a}"
-                                              (image-element-scale e) fn))
-                                    (parameterize ([rendering-tt (or tt? (rendering-tt))])
-                                      (super render-content e part ri))))]
+                                (cond
+                                 [(and (image-element? e)
+                                       (not (disable-images)))
+                                  (let ([fn (install-file
+                                             (select-suffix 
+                                              (main-collects-relative->path
+                                               (image-element-path e))
+                                              (image-element-suffixes e) 
+                                              '(".pdf" ".ps" ".png")))])
+                                    (printf "\\includegraphics[scale=~a]{~a}"
+                                            (image-element-scale e) fn))]
+                                 [(and (convertible? e)
+                                       (not (disable-images))
+                                       (let ([ftag (lambda (v suffix) (and v (list v suffix)))])
+                                         (or (ftag (convert e 'pdf-bytes) ".pdf")
+                                             (ftag (convert e 'eps-bytes) ".ps")
+                                             (ftag (convert e 'png-bytes) ".png"))))
+                                  => (lambda (bstr+suffix)
+                                       (let ([fn (install-file (format "pict~a" (cadr bstr+suffix))
+                                                               (car bstr+suffix))])
+                                         (printf "\\includegraphics{~a}" fn)))]
+                                 [else
+                                  (parameterize ([rendering-tt (or tt? (rendering-tt))])
+                                    (super render-content e part ri))]))]
                  [wrap (lambda (e s tt?)
                          (printf "\\~a{" s)
                          (core-render e tt?)

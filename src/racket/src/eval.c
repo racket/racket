@@ -2814,14 +2814,14 @@ static void register_flonum_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec 
               if (!map) {
                 map = MALLOC_N_ATOMIC(char, n);
                 memset(map, 1, n);
+                memset(map, 0, i);
               }
             }
             if (map && !is_flonum)
               map[i] = 0;
           }
 
-          if (map)
-            scheme_set_closure_flonum_map(data, map);
+          scheme_set_closure_flonum_map(data, map);
         }
       }
     }

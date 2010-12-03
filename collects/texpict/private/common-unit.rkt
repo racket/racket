@@ -1,8 +1,9 @@
 #lang racket/unit
 
-  (require racket/gui/base
+  (require racket/draw
            racket/class
-           racket/list)
+           racket/list
+           file/convertible)
   
   (require "common-sig.ss")
 
@@ -20,7 +21,9 @@
 			   children   ; list of child records
 			   panbox     ; panorama box, computed on demand
                            last)      ; a descendent for the bottom-right
-        #:mutable)
+        #:mutable
+        #:property prop:convertible (lambda (v mode default)
+                                      (convert-pict v mode default)))
       (define-struct child (pict dx dy sx sy))
       (define-struct bbox (x1 y1 x2 y2 ay dy))
 

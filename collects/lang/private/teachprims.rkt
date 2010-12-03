@@ -242,8 +242,8 @@ namespace.
 (define-teach beginner exit
   (lambda () (exit)))
 
-(define (tequal? x y epsilon)
-  (let* ([ht (make-hash)] ;; make-hash
+(define (make-union-equal!?)
+  (let* ([ht (make-hasheq)] ;; make-hash
          [union-find (lambda (a)
                        (let loop ([prev a]
                                   [prev-prev a])
@@ -256,21 +256,24 @@ namespace.
                                      (let ([v (hash-ref ht a)])
                                        (hash-set! ht a prev)
                                        (loop v))))
-                                 prev)))))]
-         [union-equal!? (lambda (a b)
-                          (let ([a (union-find a)]
-                                [b (union-find b)])
-                            (if (eq? a b)
-                                #t
-                                (begin
-                                  (hash-set! ht b a)
-                                  #f))))]
-	 [fail (lambda (fmt arg)
-		 (raise (make-exn:fail:contract (if (or (eq? arg x)
-							(eq? arg y))
-						    (format fmt arg)
-						    (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
-						(current-continuation-marks))))])
+                                 prev)))))])
+    (lambda (a b)
+      (let ([a (union-find a)]
+	    [b (union-find b)])
+	(if (eq? a b)
+	    #t
+	    (begin
+	      (hash-set! ht b a)
+	      #f))))))
+
+(define (tequal? x y epsilon)
+  (let ([union-equal!? (make-union-equal!?)]
+	[fail (lambda (fmt arg)
+		(raise (make-exn:fail:contract (if (or (eq? arg x)
+						       (eq? arg y))
+						   (format fmt arg)
+						   (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
+					       (current-continuation-marks))))])
     (let ? ([a x][b y])
       (cond
         [(real? a)
@@ -285,27 +288,29 @@ namespace.
 
 (define (teach-equal? x y)
 
-  (define (fail fmt arg)
-    (raise (make-exn:fail:contract (if (or (eq? arg x)
-					   (eq? arg y))
-				       (format fmt arg)
-				       (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
-				   (current-continuation-marks))))
-
-  (let recur ([a x] [b y])
-    (cond
-     [(procedure? a)
-      (fail "first argument of equality cannot be a procedure, given ~e" a)]
-     [(procedure? b)
-      (fail "second argument of equality cannot be a procedure, given ~e" b)]
-     [(and (number? a)
-	   (inexact? a))
-      (fail "first argument of equality cannot be an inexact number, given ~e" a)]
-     [(and (number? b)
-	   (inexact? b))
-      (fail "first argument of equality cannot be an inexact number, given ~e" b)]
-     [else
-      (equal?/recur a b recur)])))
+  (let ([fail (lambda (fmt arg)
+		(raise (make-exn:fail:contract (if (or (eq? arg x)
+						       (eq? arg y))
+						   (format fmt arg)
+						   (format "~a (originally comparing ~e and ~e)" (format fmt arg) x y))
+					       (current-continuation-marks))))]
+	[union-equal!? (make-union-equal!?)])
+	      
+    (let recur ([a x] [b y])
+      (cond
+       [(procedure? a)
+	(fail "first argument of equality cannot be a procedure, given ~e" a)]
+       [(procedure? b)
+	(fail "second argument of equality cannot be a procedure, given ~e" b)]
+       [(and (number? a)
+	     (inexact? a))
+	(fail "first argument of equality cannot be an inexact number, given ~e" a)]
+       [(and (number? b)
+	     (inexact? b))
+	(fail "first argument of equality cannot be an inexact number, given ~e" b)]
+       [(union-equal!? a b) #t]
+       [else
+	(equal?/recur a b recur)]))))
 
 (define-teach beginner equal?
   (lambda (a b)

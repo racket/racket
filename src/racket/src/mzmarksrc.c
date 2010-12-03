@@ -61,17 +61,9 @@ cpointer_obj {
   }
   gcMARK2(SCHEME_CPTR_TYPE(p), gc);
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
-}
-
-offset_cpointer_obj {
- mark:
-  if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
-    gcMARK2(SCHEME_CPTR_VAL(p), gc);
-  }
-  gcMARK2(SCHEME_CPTR_TYPE(p), gc);
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
+   (SCHEME_CPTR_HAS_OFFSET(p)
+    ? gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr))
+    : gcBYTES_TO_WORDS(sizeof(Scheme_Cptr)));
 }
 
 twoptr_obj {
@@ -1858,19 +1850,6 @@ mark_thread_cell {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Thread_Cell));
-}
-
-mark_frozen_tramp {
- mark:
-  FrozenTramp *f = (FrozenTramp *)p;
- 
-  gcMARK2(f->do_data, gc);
-  gcMARK2(f->old_param, gc);
-  gcMARK2(f->config, gc);
-  gcMARK2(f->progress_cont, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
 }
 
 END thread;

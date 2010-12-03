@@ -206,13 +206,14 @@ the state transitions / contracts are:
   
   (define (make-preferences-dialog)
     (letrec ([stashed-prefs (preferences:get-prefs-snapshot)]
-             [cancelled? #t]
+             [cancelled? #f]
              [frame-stashed-prefs%
               (class frame:basic%
                 (inherit close)
                 (define/override (on-subwindow-char receiver event)
                   (cond
                     [(eq? 'escape (send event get-key-code))
+                     (set! cancelled? #t)
                      (close)]
                     [else 
                      (super on-subwindow-char receiver event)]))
@@ -222,7 +223,7 @@ the state transitions / contracts are:
                 (define/override (show on?)
                   (when on?
                     ;; reset the flag and save new prefs when the window becomes visible
-                    (set! cancelled? #t)
+                    (set! cancelled? #f)
                     (set! stashed-prefs (preferences:get-prefs-snapshot)))
                   (super show on?))
                 (super-new))]
@@ -280,9 +281,10 @@ the state transitions / contracts are:
                               (for-each
                                (λ (f) (f))
                                on-close-dialog-callbacks)
-                              (set! cancelled? #f)
                               (send frame close)))]
-             [cancel-callback (λ () (send frame close))])
+             [cancel-callback (λ () 
+                                (set! cancelled? #t)
+                                (send frame close))])
       (new button%
            [label (string-constant revert-to-defaults)]
            [callback

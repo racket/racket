@@ -168,7 +168,7 @@
 
     (define flush-box #f)
     
-    ;; Periodic flush is needed for Windows and Gtk, where
+    ;; Periodic flush is needed for Windows, where
     ;; updates otherwise happen only via the eventspace's queue
     (define/override (schedule-periodic-backing-flush)
       (unless flush-box

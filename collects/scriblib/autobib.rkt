@@ -1,5 +1,6 @@
 #lang at-exp racket/base
 (require scribble/manual
+         racket/list
          scribble/core
          scribble/decode
          scribble/html-properties
@@ -64,34 +65,44 @@
          ")")))
 
 (define (add-cites group bib-entries)
+  (define groups (for/fold ([h (hash)]) ([b (reverse bib-entries)])
+                   (hash-update h (author-element-names (auto-bib-author b))
+                                (lambda (cur) (cons b cur)) null)))  
   (make-element
    #f
-   (list 'nbsp
-         "("
-         (let loop ([keys bib-entries])
-           (if (null? (cdr keys))
-               (make-element 
-                #f 
-                (list 
-                 (add-cite group (car keys) 'autobib-author #f)
-                 " "
-                 (add-cite group (car keys) 'autobib-date #t)))
-               (make-element
-                #f
-                (list (loop (list (car keys)))
-                      "; "
-                      (loop (cdr keys))))))
-         ")")))
+   (append 
+    (list 'nbsp "(")
+    (add-between
+     (for/list ([(k v) groups])
+       (make-element 
+        #f 
+        (list* 
+         (add-cite group (car v) 'autobib-author #f)
+         " "
+         (add-between
+          (for/list ([b v]) (add-cite group b 'autobib-date #t))
+          ", "))))
+     "; ")
+   (list ")"))))
 
 (define (extract-bib-key b)
   (author-element-names (auto-bib-author b)))
 
+(define (extract-bib-year b)
+  (string->number (auto-bib-date b)))
+
+
 (define (gen-bib tag group)
-  (let* ([author<? (lambda (a b)
-                     (string<? (extract-bib-key a) (extract-bib-key b)))]
+  (let* ([author/date<? 
+          (lambda (a b)
+            (or
+             (string<? (extract-bib-key a) (extract-bib-key b))
+             (and (string=? (extract-bib-key a) (extract-bib-key b))
+                  (extract-bib-year a) (extract-bib-year b)
+                  (< (extract-bib-year a) (extract-bib-year b)))))]
          [bibs (sort (hash-map (bib-group-ht group)
                                (lambda (k v) k))
-                     author<?)])
+                     author/date<?)])
     (make-part
      #f
      `((part ,tag))

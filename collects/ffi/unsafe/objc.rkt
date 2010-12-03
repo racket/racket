@@ -33,7 +33,9 @@
 (define _BOOL (make-ctype _byte
                           (lambda (v) (if v 1 0))
                           (lambda (v) (not (eq? v 0)))))
-(define _IMP (_fun _id _id -> _id))
+
+(define _Method (_cpointer/null 'Method))
+(define _IMP (_fun _id _SEL -> _id))
 
 (define-cstruct _objc_super ([receiver _id][class _Class]))
 
@@ -372,7 +374,9 @@
 (define (free-fields obj names)
   (for-each (lambda (name)
               (let-values ([(ivar p) (object_getInstanceVariable obj name)])
-                (when p (free-immobile-cell p))))
+                (when p
+                  (object_setInstanceVariable obj name #f)
+                  (free-immobile-cell p))))
             names))
 
 ;; ----------------------------------------
@@ -862,3 +866,10 @@
 
 (define (objc-is-a? v c)
   (ptr-equal? (object-get-class v) c))
+
+;; --------------------------------------------------
+
+(define-objc class_getInstanceMethod (_fun _Class _SEL -> _Method))
+(define-objc method_setImplementation (_fun _Method _IMP -> _IMP))
+
+

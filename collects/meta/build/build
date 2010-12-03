@@ -95,7 +95,7 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
 # defbuild "punge"       "i386-linux-ubuntu-jaunty" "renice=20"
 # defbuild "bjorn"       "i386-linux-gcc2"
 # defbuild "chicago"     "i386-linux-debian"
-defbuild "brownbuild"  "i386-linux-debian" # really an AMD64 machine
+# defbuild "brownbuild"  "i386-linux-debian" # really an AMD64 machine
 # defbuild "inga"        "i386-freebsd"
 # defbuild "chicago-unstable" "i386-linux-debian-unstable"
 # Start the main build last
@@ -1355,9 +1355,9 @@ DO_WIN32_BUILD() {
   build_w32step VSNET "mzstart"
   build_w32step VSNET "mrstart"
 
-  _cd "$PLTHOME"
-  build_w32step RKT "get-libs (gui)" src/get-libs.rkt core src/gracket lib
-  build_w32step RKT "get-libs (gui)" src/get-libs.rkt gui src/gracket lib
+  _cd "$PLTHOME/lib"
+  build_w32step RKT "get-libs (gui)" ../src/get-libs.rkt core
+  build_w32step RKT "get-libs (gui)" ../src/get-libs.rkt gui
 
   separator "win32: Building libraries"
   _cd "$PLTHOME"

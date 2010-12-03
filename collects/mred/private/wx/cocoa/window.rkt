@@ -78,8 +78,19 @@
 (import-protocol NSTextInput)
 
 (define current-insert-text (make-parameter #f))
+(define current-set-mark (make-parameter #f))
 
 (define NSDragOperationCopy 1)
+
+(import-class NSAttributedString)
+(define _NSStringOrAttributed
+  (make-ctype _id
+              (lambda (v)
+                (cast v _NSString _id))
+              (lambda (v)
+                (if (tell #:type _BOOL v isKindOfClass: (tell NSAttributedString class))
+                    (tell #:type _NSString v string)
+                    (cast v _id _NSString)))))
 
 (define-objc-mixin (KeyMouseResponder Superclass)
   [wxb]
@@ -151,7 +162,7 @@
   [-a _void (keyUp: [_id event])
       (unless (do-key-event wxb event self #f #f)
         (super-tell #:type _void keyUp: event))]
-  [-a _void (insertText: [_NSString str])
+  [-a _void (insertText: [_NSStringOrAttributed str])
       (let ([cit (current-insert-text)])
         (if cit
             (set-box! cit str)
@@ -162,21 +173,47 @@
                                          (send wx key-event-as-string str)))))))]
 
   ;; for NSTextInput:
-  [-a _BOOL (hasMarkedText) #f]
+  [-a _BOOL (hasMarkedText) (get-saved-marked wxb)]
   [-a _id (validAttributesForMarkedText)
       (tell NSArray array)]
-  [-a _void (unmarkText) (void)]
-  [-a _NSRange (markedRange) (make-NSRange 0 0)]
+  [-a _void (unmarkText) 
+      (set-saved-marked! wxb #f)]
+  [-a _NSRange (markedRange)
+      (let ([saved-marked (get-saved-marked wxb)])
+        (make-NSRange 0 (if saved-marked 0 (length saved-marked))))]
   [-a _NSRange (selectedRange) (make-NSRange 0 0)]
-  [-a _void (setMarkedText: [_id aString] selectedRange: [_NSRange selRange])
+  [-a _void (setMarkedText: [_NSStringOrAttributed aString] selectedRange: [_NSRange selRange])
+      ;; We interpreter a call to `setMarkedText:' as meaning that the
+      ;; key is a dead key for composing some other character.
+      (let ([m (current-set-mark)]) (when m (set-box! m #t)))
+      ;; At the same time, we need to remember the text:
+      (set-saved-marked! wxb (range-substring aString selRange))
       (void)]
   [-a _id (validAttributesForMarkedText) #f]
-  [-a _id (attributedSubstringFromRange: [_NSRange theRange]) #f]
+  [-a _id (attributedSubstringFromRange: [_NSRange theRange])
+      (let ([saved-marked (get-saved-marked wxb)])
+        (and saved-marked
+             (let ([s (tell (tell NSAttributedString alloc) 
+                            initWithString: #:type _NSString
+                            (range-substring saved-marked theRange))])
+               (tellv s autorelease)
+               s)))]
+
   [-a _NSUInteger (characterIndexForPoint: [_NSPoint thePoint]) 0]
   [-a _NSInteger (conversationIdentifier) 0]
   [-a _void (doCommandBySelector: [_SEL aSelector]) (void)]
-  [-a _NSRect (firstRectForCharacterRange: [_NSRange r]) (make-NSRect (make-NSPoint 0 0)
-                                                                      (make-NSSize 0 0))]
+  [-a _NSRect (firstRectForCharacterRange: [_NSRange r]) 
+      ;; This location is used to place a window for multi-character
+      ;; input, such as when typing Chinese with Pinyin
+      (let ([f (tell #:type _NSRect self frame)]
+            [pt (tell #:type _NSPoint (tell self window)
+                      convertBaseToScreen:
+                      #:type _NSPoint
+                      (tell #:type _NSPoint self
+                            convertPoint: #:type _NSPoint
+                            (make-NSPoint 0 0)
+                            toView: #f))])
+        (make-NSRect pt (NSRect-size f)))]
 
   ;; Dragging:
   [-a _int (draggingEntered: [_id info])
@@ -196,6 +233,18 @@
                                          (lambda ()
                                            (send wx do-on-drop-file s)))))))))))
       #t])
+(define (set-saved-marked! wxb str)
+  (let ([wx (->wx wxb)])
+    (when wx
+      (send wx set-saved-marked str))))
+(define (get-saved-marked wxb)
+  (let ([wx (->wx wxb)])
+    (and wx
+         (send wx get-saved-marked))))
+(define (range-substring s range)
+  (let ([start (min (max 0 (NSRange-location range)) (string-length s))])
+    (substring s start (max (min start (NSRange-length range)) (string-length s)))))
+
 
 (define-objc-mixin (KeyMouseTextResponder Superclass)
   #:mixins (KeyMouseResponder)
@@ -213,7 +262,8 @@
   (let ([wx (->wx wxb)])
     (and
      wx
-     (let ([inserted-text (box #f)])
+     (let ([inserted-text (box #f)]
+           [set-mark (box #f)])
        (unless wheel?
          ;; Calling `interpretKeyEvents:' allows key combinations to be
          ;; handled, such as option-e followed by e to produce é. The
@@ -222,74 +272,86 @@
          ;; give us back the text in the parameter. For now, we ignore the
          ;; text and handle the event as usual, though probably we should
          ;; be doing something with it.
-         (parameterize ([current-insert-text inserted-text])
-           (tellv self interpretKeyEvents: (tell (tell NSArray alloc) 
-                                                 initWithObjects: #:type (_ptr i _id) event
-                                                 count: #:type _NSUInteger 1))))
+         (parameterize ([current-insert-text inserted-text]
+                        [current-set-mark set-mark])
+           (let ([array (tell (tell NSArray alloc) 
+                              initWithObjects: #:type (_ptr i _id) event
+                              count: #:type _NSUInteger 1)])
+             (tellv self interpretKeyEvents: array)
+             (tellv array release))))
        (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
               [bit? (lambda (m b) (positive? (bitwise-and m b)))]
               [pos (tell #:type _NSPoint event locationInWindow)]
-              [str (if wheel?
-                       #f
-                       (tell #:type _NSString event characters))]
+              [str (cond
+                    [wheel? #f]
+                    [(unbox set-mark) ""] ; => dead key for composing characters
+                    [(unbox inserted-text)]
+                    [else
+                     (tell #:type _NSString event characters)])]
               [control? (bit? modifiers NSControlKeyMask)]
               [option? (bit? modifiers NSAlternateKeyMask)]
               [delta-y (and wheel?
-                            (tell #:type _CGFloat event deltaY))])
-         (let-values ([(x y) (send wx window-point-to-view pos)])
-           (let ([k (new key-event%
-                         [key-code (if wheel?
-                                       (if (positive? delta-y)
-                                           'wheel-up
-                                           'wheel-down)
-                                       (or
-                                        (map-key-code (tell #:type _ushort event keyCode))
-                                        (if (string=? "" str)
-                                            #\nul
-                                            (let ([c (string-ref str 0)])
-                                              (or (and control?
-                                                       (char<=? #\u00 c #\u1F)
-                                                       (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
-                                                         (and (string? alt-str)
-                                                              (= 1 (string-length alt-str))
-                                                              (string-ref alt-str 0))))
-                                                  c)))))]
-                         [shift-down (bit? modifiers NSShiftKeyMask)]
-                         [control-down control?]
-                         [meta-down (bit? modifiers NSCommandKeyMask)]
-                         [alt-down option?]
-                         [x (->long x)]
-                         [y (->long y)]
-                         [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
-                         [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-             (unless wheel?
-               (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
-                 (when (and (string? alt-str)
-                            (= 1 (string-length alt-str)))
-                   (let ([alt-code (string-ref alt-str 0)])
-                     (unless (equal? alt-code (send k get-key-code))
-                       (send k set-other-altgr-key-code alt-code)))))
-               (when (and (or (and option? 
-                                   special-option-key?)
-                              (and control?
-                                   (equal? (send k get-key-code) #\u00)))
-                          (send k get-other-altgr-key-code))
-                 ;; swap altenate with main
-                 (let ([other (send k get-other-altgr-key-code)])
-                   (send k set-other-altgr-key-code (send k get-key-code))
-                   (send k set-key-code other)))
-               (unless down?
-                 ;; swap altenate with main
-                 (send k set-key-release-code (send k get-key-code))
-                 (send k set-key-code 'release)))
-             (if (send wx definitely-wants-event? k)
-                 (begin
-                   (queue-window-event wx (lambda ()
-                                            (send wx dispatch-on-char/sync k)))
-                   #t)
-                 (constrained-reply (send wx get-eventspace)
-                                    (lambda () (send wx dispatch-on-char k #t))
-                                    #t)))))))))
+                            (tell #:type _CGFloat event deltaY))]
+              [codes (cond
+                      [wheel? (if (positive? delta-y)
+                                  '(wheel-up)
+                                  '(wheel-down))]
+                      [(map-key-code (tell #:type _ushort event keyCode))
+                       => list]
+                      [(string=? "" str) '(#\nul)]
+                      [(and (= 1 (string-length str))
+                            (let ([c (string-ref str 0)])
+                              (or (and control?
+                                       (char<=? #\u00 c #\u1F)
+                                       (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
+                                         (and (string? alt-str)
+                                              (= 1 (string-length alt-str))
+                                              (string-ref alt-str 0)))))))
+                       => list]
+                      [else str])])
+         (for/fold ([result #f]) ([one-code codes])
+           (or
+            ;; Handle one key event
+            (let-values ([(x y) (send wx window-point-to-view pos)])
+              (let ([k (new key-event%
+                            [key-code one-code]
+                            [shift-down (bit? modifiers NSShiftKeyMask)]
+                            [control-down control?]
+                            [meta-down (bit? modifiers NSCommandKeyMask)]
+                            [alt-down option?]
+                            [x (->long x)]
+                            [y (->long y)]
+                            [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                            [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+                (unless wheel?
+                  (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
+                    (when (and (string? alt-str)
+                               (= 1 (string-length alt-str)))
+                      (let ([alt-code (string-ref alt-str 0)])
+                        (unless (equal? alt-code (send k get-key-code))
+                          (send k set-other-altgr-key-code alt-code)))))
+                  (when (and (or (and option? 
+                                      special-option-key?)
+                                 (and control?
+                                      (equal? (send k get-key-code) #\u00)))
+                             (send k get-other-altgr-key-code))
+                    ;; swap altenate with main
+                    (let ([other (send k get-other-altgr-key-code)])
+                      (send k set-other-altgr-key-code (send k get-key-code))
+                      (send k set-key-code other)))
+                  (unless down?
+                    ;; swap altenate with main
+                    (send k set-key-release-code (send k get-key-code))
+                    (send k set-key-code 'release)))
+                (if (send wx definitely-wants-event? k)
+                    (begin
+                      (queue-window-event wx (lambda ()
+                                               (send wx dispatch-on-char/sync k)))
+                      #t)
+                    (constrained-reply (send wx get-eventspace)
+                                       (lambda () (send wx dispatch-on-char k #t))
+                                       #t))))
+            result)))))))
 
 (define (do-mouse-event wxb event kind l? m? r? [ctl-kind kind])
   (let ([wx (->wx wxb)])
@@ -379,6 +441,8 @@
       (focus-is-on #f))
     (define/public (show-children)
       (void))
+    (define/public (fixup-locations-children)
+      (void))
     (define/public (fix-dc) 
       (void))
     (define/public (paint-children)
@@ -456,7 +520,16 @@
     (define/public (is-window-enabled?)
       enabled?)
     (define/public (enable on?)
-      (set! enabled? on?))
+      (atomically
+       (set! enabled? on?)
+       (enable-window on?)))
+    (define/public (enable-window on?)
+      ;; in atomic mode
+      (void))
+
+    (define block-all-mouse-events? #f)
+    (define/public (block-mouse-events block?)
+      (set! block-all-mouse-events? block?))
 
     (define/private (get-frame)
       (let ([v (tell #:type _NSRect cocoa frame)])
@@ -518,8 +591,10 @@
         (tellv cocoa setNeedsDisplay: #:type _BOOL #t)
         (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
                                                            (make-NSSize w h)))))
-    (define/public (move x y)
+    (define/public (internal-move x y)
       (set-size x y (get-width) (get-height)))
+    (define/public (move x y)
+      (internal-move x y))
 
     (define accept-drag? #f)
     (define accept-parent-drag? #f)
@@ -555,7 +630,8 @@
         (accept-drags-everywhere (or accept-drag? accept-parent-drag?))))
 
     (define/public (set-focus)
-      (when (gets-focus?)
+      (when (and (gets-focus?)
+                 (is-enabled-to-root?))
         (let ([w (tell cocoa window)])
           (when w
             (tellv w makeFirstResponder: (get-cocoa-content))))))
@@ -598,7 +674,7 @@
       (cond
        [(other-modal? this) #t]
        [(call-pre-on-event this e) #t]
-       [just-pre? #f]
+       [just-pre? block-all-mouse-events?]
        [else (when enabled? (on-event e)) #t]))
 
     (define/public (call-pre-on-event w e)
@@ -707,11 +783,15 @@
     (define/public (get-cursor-width-delta) 0)
     
     (define/public (gets-focus?) #f)
-    (define/public (can-be-responder?) #t)
+    (define/public (can-be-responder?) (is-enabled-to-root?))
 
     (define/public (on-color-change)
-      (send parent on-color-change))))
+      (send parent on-color-change))
 
+    ;; For multi-key character composition:
+    (define saved-marked #f)
+    (define/public (set-saved-marked v) (set! saved-marked v))
+    (define/public (get-saved-marked) saved-marked)))
 
 ;; ----------------------------------------
 

@@ -34,6 +34,21 @@
          (dequeue! q)
          (dequeue! q)
          (check-true (queue-empty? q)))))
+   (test-suite "length"
+     (test-case "length empty"
+       (let* ([queue (make-queue)])
+         (check-equal? (queue-length queue) 0)))
+     (test-case "length enqueue once"
+       (let* ([queue (make-queue)])
+         (enqueue! queue 5)
+         (check-equal? (queue-length queue) 1)))
+     (test-case "length enqueue thrice dequeue once"
+       (let* ([queue (make-queue)])
+         (enqueue! queue 5)
+         (enqueue! queue 9)
+         (enqueue! queue 12)
+         (dequeue! queue)
+         (check-equal? (queue-length queue) 2))))
    (test-suite "dequeue!"
      (test-case "make-queue"
        (check-exn exn:fail? (lambda () (dequeue! (make-queue)))))
@@ -48,4 +63,21 @@
          (enqueue! q 2)
          (check-equal? (dequeue! q) 1)
          (check-equal? (dequeue! q) 2)
-         (check-exn exn:fail? (lambda () (dequeue! q))))))))
+         (check-exn exn:fail? (lambda () (dequeue! q))))))
+   (test-suite "queue misc"
+     (test-case "queue as a sequence"
+       (let ([queue (make-queue)])
+         (enqueue! queue 1)
+         (enqueue! queue 2)
+         (enqueue! queue 3)
+         (check-equal? '(1 2 3) (for/list ([item (in-queue queue)]) item)))
+         (check-equal? '() (for/list ([item (in-queue (make-queue))]) item)))
+     (test-case "queue to empty list"
+       (let ([queue (make-queue)])
+         (check-equal? (queue->list queue) '())))
+     (test-case "queue length"
+       (let ([queue (make-queue)])
+         (enqueue! queue 1)
+         (enqueue! queue 2)
+         (enqueue! queue 3)
+         (check-equal? (queue->list queue) '(1 2 3)))))))

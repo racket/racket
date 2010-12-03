@@ -492,6 +492,15 @@ and @scheme[big-bang] will close down all event handling.}
  who wish to see how their world evolves---without having to design a
  rendering function---plus for the debugging of world programs. 
 }}
+
+@item{
+@defform[(name name-expr)
+         #:contracts
+         ([name-expr (or/c symbol? string?)])]{
+ provide a name (@scheme[namer-expr]) to this world, which is used as the
+ title of the canvas.}
+}
+
 ]
 
 The following example shows that @scheme[(run-simulation create-UFO-scene)] is
@@ -747,17 +756,11 @@ following shapes:
 @item{
 @defform[(register ip-expr) #:contracts ([ip-expr string?])]{
  connect this world to a universe server at the specified @scheme[ip-expr]
- address and set up capabilities for sending and receiving messages.}
-}
-
-@item{
-@defform[(name name-expr)
-         #:contracts
-         ([name-expr (or/c symbol? string?)])]{
- provide a name (@scheme[namer-expr]) to this world, which is used as the
- title of the canvas and the name sent to the server.}
-}
-
+ address and set up capabilities for sending and receiving messages.
+ If the world description includes a name specification of the form 
+ @scheme[(name SomeString)] or @scheme[(name SomeSymbol)], the name of the
+ world is sent along to the server. 
+}}
 ]
 
 When a world program registers with a universe program and the universe program

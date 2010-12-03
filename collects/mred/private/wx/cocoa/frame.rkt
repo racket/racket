@@ -36,6 +36,9 @@
 (define empty-mb (new menu-bar%))
 (define root-fake-frame #f)
 
+;; Maps window numbers to weak boxes of frame objects;
+;;  the weak-box layer is needed to avoid GC-accounting
+;;  problems.
 (define all-windows (make-hash))
 
 (define-objc-mixin (MyWindowMethods Superclass)
@@ -138,7 +141,8 @@
              get-eventspace
              pre-on-char pre-on-event
              get-x
-             on-new-child)
+             on-new-child
+             is-window-enabled?)
 
     (super-new [parent parent]
                [cocoa
@@ -164,7 +168,9 @@
                                                               NSTitledWindowMask
                                                               (if is-sheet? NSUtilityWindowMask 0)
                                                               (if is-dialog?
-                                                                  0
+                                                                  (if (memq 'close-button style)
+                                                                      NSClosableWindowMask
+                                                                      0)
                                                                   (bitwise-ior 
                                                                    NSClosableWindowMask
                                                                    NSMiniaturizableWindowMask
@@ -187,7 +193,7 @@
          (tellv tb setVisible: #:type _BOOL #f)
          (tellv tb release))))
 
-    (move -11111 (if (= y -11111) 0 y))
+    (internal-move -11111 (if (= y -11111) 0 y))
 
     (tellv cocoa setAcceptsMouseMovedEvents: #:type _BOOL #t)
 
@@ -268,6 +274,7 @@
                         (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
                           (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
                             (and (tell #:type _BOOL win isVisible)
+                                 (not (tell win parentWindow))
                                  (or (not root-fake-frame)
                                      (not (ptr-equal? win (send root-fake-frame get-cocoa))))
                                  win)))))))])
@@ -278,12 +285,12 @@
       (register-frame-shown this on?)
       (let ([num (tell #:type _NSInteger cocoa windowNumber)])
         (if on?
-            (hash-set! all-windows num this)
+            (hash-set! all-windows num (make-weak-box this))
             (hash-remove! all-windows num)))
       (when on?
         (let ([b (eventspace-wait-cursor-count (get-eventspace))])
           (set-wait-cursor-mode (not (zero? b))))))
-    
+
     (define/override (show on?)
       (let ([es (get-eventspace)])
         (when on?
@@ -319,10 +326,17 @@
     (define/override (show-children)
       (when saved-child
         (send saved-child show-children)))
+    (define/override (fixup-locations-children)
+      (when saved-child
+        (send saved-child fixup-locations-children)))
 
     (define/override (children-accept-drag on?)
       (when saved-child
         (send saved-child child-accept-drag on?)))
+
+    (define/override (enable-window on?)
+      (when saved-child
+        (send saved-child enable-window (and on? (is-window-enabled?)))))
 
     (define/override (is-shown?)
       (tell #:type _bool cocoa isVisible))
@@ -408,7 +422,7 @@
 
     (define/override (set-size x y w h)
       (unless (and (= x -1) (= y -1))
-        (move x y))
+        (internal-move x y))
       (let ([f (tell #:type _NSRect cocoa frame)])
         (tellv cocoa setFrame: 
                #:type _NSRect (make-NSRect 
@@ -429,7 +443,7 @@
                                                    (NSSize-height (NSRect-size f)))))
                                (make-NSSize w h))
                display: #:type _BOOL #t)))
-    (define/override (move x y)
+    (define/override (internal-move x y)
       (let ([x (if (= x -11111) (get-x) x)]
             [y (if (= y -11111) (get-y) y)])
         (tellv cocoa setFrameTopLeftPoint: #:type _NSPoint (make-NSPoint x (- (flip-screen y)
@@ -442,15 +456,15 @@
                #:type _NSRect (make-NSRect (make-NSPoint 
                                             (if (or (eq? dir 'both)
                                                     (eq? dir 'horizontal))
-                                                (/ (- (NSSize-width (NSRect-size s))
-                                                      (NSSize-width (NSRect-size f)))
-                                                   2)
+                                                (quotient (- (NSSize-width (NSRect-size s))
+                                                             (NSSize-width (NSRect-size f)))
+                                                          2)
                                                 (NSPoint-x (NSRect-origin f)))
                                             (if (or (eq? dir 'both)
                                                     (eq? dir 'vertical))
-                                                (/ (- (NSSize-height (NSRect-size s))
-                                                      (NSSize-height (NSRect-size f)))
-                                                   2)
+                                                (quotient (- (NSSize-height (NSRect-size s))
+                                                             (NSSize-height (NSRect-size f)))
+                                                          2)
                                                 (NSPoint-x (NSRect-origin f))))
                                            (NSRect-size f))
                display: #:type _BOOL #t)))
@@ -511,7 +525,9 @@
     (define/public (iconized?)
       (tell #:type _BOOL cocoa isMiniaturized))
     (define/public (iconize on?)
-      (tellv cocoa miniaturize: cocoa))
+      (if on?
+          (tellv cocoa miniaturize: cocoa)
+          (tellv cocoa deminiaturize: cocoa)))
 
     (define/public (set-title s)
       (tellv cocoa setTitle: #:type _NSString s))
@@ -531,4 +547,14 @@
                  (let ([f (tell #:type _NSRect (tell NSScreen mainScreen) frame)])
                    (make-NSPoint x (- (NSSize-height (NSRect-size f)) y)))
                  belowWindowWithWindowNumber: #:type _NSInteger 0)])
-    (atomically (hash-ref all-windows n #f))))
+    (atomically (let ([b (hash-ref all-windows n #f)])
+                  (and b (weak-box-value b))))))
+
+(set-fixup-window-locations!
+ (lambda ()
+   ;; in atomic mode
+   (for ([b (in-hash-values all-windows)])
+     (let ([f (weak-box-value b)])
+       (when f
+         (send f fixup-locations-children))))))
+

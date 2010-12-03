@@ -211,7 +211,7 @@
                                  (lambda () 
                                    (list* gracket-path 
                                           "-display" 
-                                          (format ":~a" (+ XSERVER-OFFSET (current-worker)))
+                                          (format ":~a" (cpu->child (current-worker)))
                                           rst))
                                  #f)]
                             [_
@@ -224,7 +224,7 @@
                                 void
                                 (λ ()
                                   (define l (pth-cmd))
-                                  (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))])
+                                  (with-env (["DISPLAY" (format ":~a" (cpu->child (current-worker)))])
                                     (with-temporary-home-directory
                                         (with-temporary-directory
                                             (run/collect/wait/log log-pth 
@@ -277,6 +277,10 @@
                     (recur-many (sub1 i) r f)))))
 
 (define XSERVER-OFFSET 20)
+(define (cpu->parent cpu-i)
+  (+ XSERVER-OFFSET (* cpu-i 2) 0))
+(define (cpu->child cpu-i)
+  (+ XSERVER-OFFSET (* cpu-i 2) 1))
 
 (define (integrate-revision rev)
   (define test-dir
@@ -314,20 +318,34 @@
                          (get-scm-commit-msg rev (plt-repository))))
          (when (build?)
            (build-revision rev))
-         (recur-many (number-of-cpus)
-                     (lambda (j inner)
-                       (define i (+ j XSERVER-OFFSET))
-                       (notify! "Starting X server #~a" i)
-                       (safely-delete-directory (format "/tmp/.X~a-lock" i))
-                       (safely-delete-directory (build-path tmp-dir (format ".X~a-lock" i)))
-                       (safely-delete-directory (format "/tmp/.tX~a-lock" i))
-                       (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
+         
+         (define (start-x-server i parent inner)
+           (notify! "Starting X server #~a" i)
+           (safely-delete-directory (format "/tmp/.X~a-lock" i))
+           (safely-delete-directory (build-path tmp-dir (format ".X~a-lock" i)))
+           (safely-delete-directory (format "/tmp/.tX~a-lock" i))
+           (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
+           (with-running-program
+               (Xvfb-path) (list (format ":~a" i) "-ac" "-rfbauth" "/home/jay/.vnc/passwd")
+             (lambda ()
+               (sleep 1)
+               (with-running-program
+                   (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
+                 (if parent
+                     (lambda ()
                        (with-running-program
-                           (Xvfb-path) (list (format ":~a" i) "-ac" "-rfbauth" "/home/jay/.vnc/passwd")
-                         (lambda ()
-                           (with-running-program
-                               (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
-                             inner))))
+                           (vncviewer-path) (list "-display" (format ":~a" parent) (format ":~a" i)
+                                                  "-passwd" "/home/jay/.vnc/passwd")
+                         inner))
+                     inner)))))
+         
+         (recur-many (number-of-cpus)
+                     (lambda (cpu-i inner)
+                       (define parent (cpu->parent cpu-i))
+                       (define child (cpu->child cpu-i))
+                       (start-x-server parent #f 
+                                       (λ ()
+                                         (start-x-server child parent inner))))
                      (lambda ()
                        (test-revision rev)))))
      ; Remove the test directory

@@ -26,12 +26,15 @@ The core Racket run-time system is available in two main variants:
        @as-index{@exec{racket}}. Under Windows, the executable is
        called @as-index{@exec{Racket.exe}}.}
 
- @item{GRacket, which extends @exec{racket} with GUI primitives on
-       which @racketmodname[racket/gui/base] is implemented. Under
-       Unix, the executable is called @as-index{@exec{gracket}}. Under
-       Windows, the executable is called
-       @as-index{@exec{GRacket.exe}}. Under Mac OS X, the @exec{gracket}
-       script launches @as-index{@exec{GRacket.app}}.}
+ @item{GRacket, which is a GUI variant of @exec{racket} to the degree
+       that the system distinguishes them. Under Unix, the executable
+       is called @as-index{@exec{gracket}}, and single-instance flags
+       and X11-related flags are handled and communicated specially to
+       the @racket[racket/gui/base] library. Under Windows, the
+       executable is called @as-index{@exec{GRacket.exe}}, and it is a
+       GUI application (as opposed to a console application) that
+       implements singe-instance support. Under Mac OS X, the
+       @exec{gracket} script launches @as-index{@exec{GRacket.app}}.}
 
 ]
 
@@ -92,10 +95,11 @@ is started, Racket loads the file @racket[(find-system-path
 @racket[(find-graphical-system-path 'init-file)] is loaded, unless the
 @Flag{q}/@DFlag{no-init-file} flag is specified on the command line.
 
-Finally, before GRacket exists, it waits for all frames to class, all
-timers to stop, @|etc| in the main @|eventspace| by evaluating
-@racket[(racket 'yield)]. This waiting step can be suppressed with the
-@Flag{V}/@DFlag{no-yield} command-line flag.
+Finally, before Racket or GRacket exits, it calls the procedure that
+is the current value of @racket[executable-yield-handler] in the main
+thread, unless the @Flag{V}/@DFlag{no-yield} command-line flag is
+specified. Requiring @racketmodname[racket/gui/base] sets this parameter call
+@racket[(racket 'yield)].
 
 @; ----------------------------------------------------------------------
 
@@ -212,9 +216,9 @@ flags:
         leave application in the background.}
 
   @item{@FlagFirst{V} @DFlagFirst{no-yield} : Skips final
-        @racket[(yield 'wait)] action, which normally waits until all
+        @racket[executable-yield-handler] action, which normally waits until all
         frames are closed, @|etc| in the main @|eventspace| before
-        exiting.}
+        exiting for programs that use @racketmodname[racket/gui/base].}
 
  ]}
 
@@ -333,7 +337,7 @@ the insertion of @Flag{u}/@DFlag{require-script}):
         @FlagFirst{xnllanguage} @nonterm{arg}, or @FlagFirst{xrm}
         @nonterm{arg} : Standard X11 arguments that are mostly ignored
         but accepted for compatibility with other X11 programs. The
-        @Flag{synchronous} and @Flag{xrm} flags behave in the usual
+        @Flag{synchronous} flag behaves in the usual
         way.}
 
   @item{@FlagFirst{singleInstance} : If an existing GRacket is already

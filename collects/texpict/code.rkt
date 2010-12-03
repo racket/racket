@@ -4,7 +4,7 @@
            mzlib/class
 	   mzlib/list
            (only scheme/list last)
-           mred
+           racket/draw
            mzlib/unit)
 
   (provide define-code code^ code-params^ code@)

@@ -195,5 +195,26 @@
   (test #t 'same-bits (equal? bs bs2)))
 
 ;; ----------------------------------------
+;; Test draw-bitmap-section-smooth
+
+(let* ([bm (make-bitmap 100 100)]
+       [dc (make-object bitmap-dc% bm)]
+       [bm2 (make-bitmap 70 70)]
+       [dc2 (make-object bitmap-dc% bm2)]
+       [bm3 (make-bitmap 70 70)]
+       [dc3 (make-object bitmap-dc% bm3)])
+  (send dc draw-ellipse 0 0 100 100)
+  (send dc2 draw-bitmap-section-smooth bm 
+        10 10 50 50
+        0 0 100 100)
+  (send dc3 scale 0.5 0.5)
+  (send dc3 draw-bitmap bm 20 20)
+  (let ([s2 (make-bytes (* 4 70 70))]
+        [s3 (make-bytes (* 4 70 70))])
+    (send bm2 get-argb-pixels 0 0 70 70 s2)
+    (send bm3 get-argb-pixels 0 0 70 70 s3)
+    (test #t 'same-scaled (equal? s2 s3))))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -7,8 +7,8 @@
                       [pin-line t:pin-line]
                       [pin-arrow-line t:pin-arrow-line]
                       [pin-arrows-line t:pin-arrows-line])
-           (only-in scheme/gui/base dc-path%)
-           (only-in scheme/class new send))
+           (only-in racket/draw dc-path%)
+           (only-in racket/class new send))
 
   (define (hline w h #:segment [seg #f])
     (if seg

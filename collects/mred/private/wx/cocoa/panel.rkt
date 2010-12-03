@@ -19,7 +19,8 @@
 
 (define (panel-mixin %)
   (class %
-    (inherit register-as-child on-new-child)
+    (inherit register-as-child on-new-child
+             is-window-enabled?)
 
     (define lbl-pos 'horizontal)
     (define children null)
@@ -40,6 +41,10 @@
     (define/override (show-children)
       (for ([child (in-list children)])
         (send child show-children)))
+
+    (define/override (fixup-locations-children)
+      (for ([child (in-list children)])
+        (send child fixup-locations-children)))
     
     (define/override (paint-children)
       (for ([child (in-list children)])
@@ -48,6 +53,11 @@
     (define/override (children-accept-drag on?)
       (for ([child (in-list children)])
         (send child child-accept-drag on?)))
+
+    (define/override (enable-window on?)
+      (let ([on? (and on? (is-window-enabled?))])
+        (for ([child (in-list children)])
+          (send child enable-window on?))))
     
     (define/override (set-size x y w h)
       (super set-size x y w h)

@@ -964,9 +964,14 @@
                               (send mask ok?)
                               (= w (send mask get-width))
                               (= w (send mask get-height))
-                              mask)))])
+                              mask)))]
+              [alpha (send dc get-alpha)])
+          (when (pair? caret)
+            (send dc set-alpha (* 0.5 alpha)))
           (send dc draw-bitmap-section bm x y 0 0 w h
-                'solid black-color msk))))
+                'solid black-color msk)
+          (when (pair? caret)
+            (send dc set-alpha alpha)))))
 
   (def/override (copy)
     (let ([s (new image-snip%)])

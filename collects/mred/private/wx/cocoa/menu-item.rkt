@@ -80,21 +80,22 @@
 
 (define (set-menu-item-shortcut item label)
   (let ([shortcut (regexp-match #rx"\tCut=(.)(.*)" label)])
-    (when shortcut
-      (let* ([s (string-downcase (string (integer->char (string->number (caddr shortcut)))))]
-             [flags (- (char->integer (string-ref (cadr shortcut) 0))
-                       (char->integer #\A))]
-             [mods (+ (if (positive? (bitwise-and flags 1))
-                          NSShiftKeyMask
-                          0)
-                      (if (positive? (bitwise-and flags 2))
-                          NSAlternateKeyMask
-                          0)
-                      (if (positive? (bitwise-and flags 4))
-                          NSControlKeyMask
-                          0)
-                      (if (positive? (bitwise-and flags 8))
-                          0
-                          NSCommandKeyMask))])
-        (tellv item setKeyEquivalent: #:type _NSString s)
-        (tellv item setKeyEquivalentModifierMask: #:type _NSUInteger mods)))))
+    (if shortcut
+        (let* ([s (string-downcase (string (integer->char (string->number (caddr shortcut)))))]
+               [flags (- (char->integer (string-ref (cadr shortcut) 0))
+                         (char->integer #\A))]
+               [mods (+ (if (positive? (bitwise-and flags 1))
+                            NSShiftKeyMask
+                            0)
+                        (if (positive? (bitwise-and flags 2))
+                            NSAlternateKeyMask
+                            0)
+                        (if (positive? (bitwise-and flags 4))
+                            NSControlKeyMask
+                            0)
+                        (if (positive? (bitwise-and flags 8))
+                            0
+                            NSCommandKeyMask))])
+          (tellv item setKeyEquivalent: #:type _NSString s)
+          (tellv item setKeyEquivalentModifierMask: #:type _NSUInteger mods))
+        (tellv item setKeyEquivalent: #:type _NSString ""))))

@@ -943,8 +943,9 @@ otherwise.}
 Returns @racket[#t] if @racket[v] is a string, symbol,
 @racket[element], @racket[multiarg-element],
 @racket[traverse-element], @racket[delayed-element],
-@racket[part-relative-element], or list of @tech{content}, @racket[#f]
-otherwise.}
+@racket[part-relative-element], a convertible value in 
+the sense of @racket[convertible?], or list of @tech{content}. 
+Otherwise, it returns @racket[#f].}
 
 
 @defstruct[style ([name (or/c string? symbol? #f)]

@@ -3,8 +3,8 @@
 exec racket -um "$0" "$@"
 |#
 
-#lang scheme/base
-(require version/utils scheme/file)
+#lang racket/base
+(require version/utils racket/file)
 
 (define (patches)
   ;; no grouping parens in regexps
@@ -21,7 +21,9 @@ exec racket -um "$0" "$@"
                          (concat "\r\n *VALUE \"FileVersion\", *\""commas
                                  "(?:\\\\0)?\"")
                          (concat "\r\n *VALUE \"ProductVersion\", *\""commas
-                                 "(?:\\\\0)?\""))])
+                                 "(?:\\\\0)?\""))]
+         [manifest-patch (list (concat "assemblyIdentity[ \r\n]+"
+                                       "version=\""periods"\"[ \r\n]"))])
     `([#t ; only verify that it has the right contents
        "src/racket/src/schvers.h"
        ,(concat "\n#define MZSCHEME_VERSION \"<1>.<2>"
@@ -35,9 +37,9 @@ exec racket -um "$0" "$@"
                      "0" (format "<~a>" (cadr x+n)))))]
       ["src/worksp/racket/racket.rc"   ,@rc-patch]
       ["src/worksp/gracket/gracket.rc" ,@rc-patch]
-      ["src/worksp/starters/start.rc"    ,@rc-patch]
-      ["src/worksp/gracket/gracket.manifest"
-       ,(concat "assemblyIdentity *\r\n *version *= *\""periods"\" *\r\n")]
+      ["src/worksp/starters/start.rc"  ,@rc-patch]
+      ["src/worksp/racket/racket.manifest"   ,@manifest-patch]
+      ["src/worksp/gracket/gracket.manifest" ,@manifest-patch]
       ["src/worksp/mzcom/mzobj.rgs"
        ,(concat "MzCOM.MzObj."periods" = s 'MzObj Class'")
        ,(concat "CurVer = s 'MzCOM.MzObj."periods"'")

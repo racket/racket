@@ -14,7 +14,7 @@
       @text{@-plai — a textbook on programming languages.}]
     @parlist[
       @strong{Outreach}
-      @text{@-teachscheme — a workshop to train teachers using @-htdp in the
+      @text{@-pbd — a workshop to train teachers using @-htdp in the
         classroom.}
       @text{@-bootstrap — a curriculum for middle-school students.}]
     @(apply parlist @strong{PLT Publications}

@@ -2011,9 +2011,126 @@
   (test 2 count 2)
   (test 4 count 3))
 
+;; ----------------------------------------
+;; Test genearted by a random tester that turns out
+;;  to check meta-continuation continuation-mark lookup
+;;  in a dynamic-wind thunk:
 
+(test 
+ 'exn
+ 'random-dc-test
+ (with-handlers ([exn:fail? (lambda (exn) 'exn)])
+   (let ()
+     (define tag
+       (let ([tags (make-hash)])
+         (λ (v)
+            (hash-ref tags v 
+                      (λ ()
+                         (let ([t (make-continuation-prompt-tag)])
+                           (hash-set! tags v t)
+                           t))))))
 
-      
+     (define-syntax-rule (% tag-val expr handler)
+       (call-with-continuation-prompt 
+        (λ () expr)
+        (let ([v tag-val])
+          (if (let comparable? ([v v])
+                (cond [(procedure? v) #f]
+                      [(list? v) (andmap comparable? v)]
+                      [else #t]))
+              (tag v)
+              (raise-type-error '% "non-procedure" v)))
+        (let ([h handler])
+          (λ (x) (h x)))))
 
+     (define (abort tag-val result) 
+       (abort-current-continuation (tag tag-val) result))
 
+     (define (call/comp proc tag-val) 
+       (call-with-composable-continuation (compose proc force-unary) (tag tag-val)))
 
+     (define (call/cm key val thunk)
+       (with-continuation-mark key val (thunk)))
+
+     (define (current-marks key tag-val)
+       (continuation-mark-set->list 
+        (current-continuation-marks (tag tag-val))
+        key))
+
+     (define ((force-unary f) x) (f x))
+
+     (define (_call/cc proc tag-val)
+       (call/cc (compose proc force-unary) (tag tag-val)))
+
+     (letrec ((CEJ-comp-cont_13 #f)
+              (CEJ-skip-pre?_12 #f)
+              (CEJ-allocated?_11 #f)
+              (s-comp-cont_9 #f)
+              (s-skip-pre?_8 #f)
+              (s-allocated?_7 #f)
+              (N-comp-cont_4 #f)
+              (N-skip-pre?_3 #f)
+              (N-allocated?_2 #f)
+              (handlers-disabled?_0 #f))
+       (%
+        #t
+        ((begin
+           (set! handlers-disabled?_0 #t)
+           ((λ (v_1)
+               (%
+                v_1
+                ((λ (t_5)
+                    (if N-allocated?_2
+                        (begin (if handlers-disabled?_0 #f (set! N-skip-pre?_3 #t)) (N-comp-cont_4 t_5))
+                        (%
+                         1
+                         (dynamic-wind
+                             (λ ()
+                                (if handlers-disabled?_0
+                                    #f
+                                    (if N-allocated?_2
+                                        (if N-skip-pre?_3
+                                            (set! N-skip-pre?_3 #f)
+                                            (begin
+                                              (set! handlers-disabled?_0 #t)
+                                              ((λ (v_6)
+                                                  (% v_6 (_call/cc (λ (k) (abort v_6 k)) v_6) (λ (x) (begin (set! handlers-disabled?_0 #f) x))))
+                                               print)))
+                                        #f)))
+                             (λ () ((call/comp (λ (k) (begin (set! N-comp-cont_4 k) (abort 1 k))) 1)))
+                             (λ () (if handlers-disabled?_0 (set! N-allocated?_2 #t) (if N-allocated?_2 #f (set! N-allocated?_2 #t)))))
+                         (λ (k) (begin (if handlers-disabled?_0 #f (set! N-skip-pre?_3 #t)) (k t_5))))))
+                 (λ ()
+                    ((λ (t_10)
+                        (if s-allocated?_7
+                            (begin (if handlers-disabled?_0 #f (set! s-skip-pre?_8 #t)) (s-comp-cont_9 t_10))
+                            (%
+                             1
+                             (dynamic-wind
+                                 (λ () (if handlers-disabled?_0 #f (if s-allocated?_7 (if s-skip-pre?_8 (set! s-skip-pre?_8 #f) #f) #f)))
+                                 (λ () ((call/comp (λ (k) (begin (set! s-comp-cont_9 k) (abort 1 k))) 1)))
+                                 (λ ()
+                                    (if handlers-disabled?_0 (set! s-allocated?_7 #t) (if s-allocated?_7 #f (set! s-allocated?_7 #t)))))
+                             (λ (k) (begin (if handlers-disabled?_0 #f (set! s-skip-pre?_8 #t)) (k t_10))))))
+                     (λ ()
+                        ((λ (t_14)
+                            (if CEJ-allocated?_11
+                                (begin (if handlers-disabled?_0 #f (set! CEJ-skip-pre?_12 #t)) (CEJ-comp-cont_13 t_14))
+                                (%
+                                 1
+                                 (dynamic-wind
+                                     (λ ()
+                                        (if handlers-disabled?_0
+                                            #f
+                                            (if CEJ-allocated?_11 (if CEJ-skip-pre?_12 (set! CEJ-skip-pre?_12 #f) first) #f)))
+                                     (λ () ((call/comp (λ (k) (begin (set! CEJ-comp-cont_13 k) (abort 1 k))) 1)))
+                                     (λ ()
+                                        (if handlers-disabled?_0
+                                            (set! CEJ-allocated?_11 #t)
+                                            (if CEJ-allocated?_11 call/cm (set! CEJ-allocated?_11 #t)))))
+                                 (λ (k) (begin (if handlers-disabled?_0 #f (set! CEJ-skip-pre?_12 #t)) (k t_14))))))
+                         (λ () (_call/cc (λ (k) (abort v_1 k)) v_1)))))))
+                (λ (x) (begin (set! handlers-disabled?_0 #f) x))))
+            #t))
+         1234)
+        (λ (x) x))))))

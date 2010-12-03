@@ -812,7 +812,8 @@
     (refocus
      (cc-superimpose 
       (colorize (filled-rectangle (pict-width p)
-                                  (pict-height p))
+                                  (pict-height p)
+                                  #:draw-border? #f)
                 "pink")
       p)
      p))

@@ -7,6 +7,7 @@
          "../../lock.rkt"
          "../common/queue.rkt"
          "../common/local.rkt"
+         "../common/freeze.rkt"
           "utils.rkt"
           "types.rkt"
           "pixbuf.rkt")
@@ -16,11 +17,12 @@
               has-x-selection?
               _GtkSelectionData
               gtk_selection_data_get_length
-              gtk_selection_data_get_data))
+              gtk_selection_data_get_data
+	      primary-atom
+	      get-selection-eventspace))
 
 (define (has-x-selection?) #t)
 
-(define _GdkAtom _int)
 (define _GtkClipboard (_cpointer 'GtkClipboard))
 (define _GtkDisplay _pointer)
 (define _GtkSelectionData (_cpointer 'GtkSelectionData))
@@ -81,89 +83,117 @@
 (define clear_owner
   (function-ptr clear-owner (_fun #:atomic? #t _GtkClipboard _pointer -> _void)))
 
+(define primary-atom (gdk_atom_intern "PRIMARY" #t))
+(define clipboard-atom (gdk_atom_intern "CLIPBOARD" #t))
+
+(define the-x-selection-driver #f)
 
 (defclass clipboard-driver% object%
   (init-field [x-selection? #f])
 
+  (when x-selection?
+    (set! the-x-selection-driver this))
+
   (define client #f)
   (define client-data #f)
+  (define client-types #f)
+  (define client-orig-types #f)
 
   (define cb (gtk_clipboard_get
               (if x-selection?
-                  (gdk_atom_intern "CLIPBOARD" #t)
-                  (gdk_atom_intern "PRIMARY" #t))))
+                  primary-atom
+		  clipboard-atom)))
   (define self-box #f)
 
   (define/public (get-client) client)
 
-  (define/public (set-client c types)
-    (if x-selection?
-        ;; For now, we can't call it on demand, so we don't call at all:
-        (queue-event (send c get-client-eventspace)
-                     (lambda ()
-                       (send c on-replaced)))
-        ;; In clipboard mode (as opposed to X selection), we can get the data
-        ;; now, so it's ready if anyone asks:
-        (let ([all-data (for/list ([t (in-list types)])
-                          (send c get-data t))]
-	      [types (for/list ([t (in-list types)])
-		       (if (equal? t "TEXT")
-			   "UTF8_STRING"
-			   t))])
-          (let ([target-strings (malloc 'raw _byte (+ (length types)
-						      (apply + (map string-utf-8-length types))))]
-                [targets (malloc _GtkTargetEntry (length types))])
-            (for/fold ([offset 0]) ([str (in-list types)]
-				    [i (in-naturals)])
-              (let ([t (cast (ptr-add targets i _GtkTargetEntry) _pointer _GtkTargetEntry-pointer)])
-                (set-GtkTargetEntry-target! t (ptr-add target-strings offset))
-                (set-GtkTargetEntry-flags! t 0)
-                (set-GtkTargetEntry-info! t i))
-              (let ([bstr (string->bytes/utf-8 str)])
-                (memcpy target-strings offset bstr 0 (bytes-length bstr))
-                (let ([offset (+ offset (bytes-length bstr))])
-                  (ptr-set! (ptr-add target-strings offset) _byte 0)
-                  (+ offset 1))))
-            (set! client c)
-            (set! client-data all-data)
-            
-            (atomically
-             (let ([this-box (malloc-immobile-cell this)])
-               (set! self-box this-box)
-               (gtk_clipboard_set_with_data cb
-                                            targets 
-                                            (length types)
-                                            get_data 
-                                            clear_owner
-                                            this-box)))
+  (define/public (set-client c orig-types)
+    (let ([all-data (if x-selection?
+                        ;; In X selection mode, get the data on demand:
+			#f
+                        ;; In clipboard mode, we can get the data
+                        ;; now, so it's ready if anyone asks:
+			(for/list ([t (in-list orig-types)])
+			  (send c get-data t)))]
+	  [types (for/list ([t (in-list orig-types)])
+		   (if (equal? t "TEXT")
+		       "UTF8_STRING"
+		       t))])
+      (let-values ([(orig-types types all-data)
+                    ;; For "TEXT", provide "UTF8_STRING", "STRING", and "TEXT":
+                    (if (member "TEXT" orig-types)
+                        (values (append orig-types (list "TEXT" "TEXT"))
+                                (append types (list "STRING" "TEXT"))
+                                (and all-data (append all-data
+                                                      (let loop ([all-data all-data]
+                                                                 [orig-types orig-types])
+                                                        (if (equal? "TEXT" (car orig-types))
+                                                            (list (car all-data) (car all-data))
+                                                            (loop (cdr all-data) (cdr orig-types)))))))
+                        (values orig-types types all-data))])
+        (let ([target-strings (malloc 'raw _byte (+ (length types)
+                                                    (apply + (map string-utf-8-length types))))]
+              [targets (malloc _GtkTargetEntry (length types))])
+          (for/fold ([offset 0]) ([str (in-list types)]
+                                  [i (in-naturals)])
+            (let ([t (cast (ptr-add targets i _GtkTargetEntry) _pointer _GtkTargetEntry-pointer)])
+              (set-GtkTargetEntry-target! t (ptr-add target-strings offset))
+              (set-GtkTargetEntry-flags! t 0)
+              (set-GtkTargetEntry-info! t i))
+            (let ([bstr (string->bytes/utf-8 str)])
+              (memcpy target-strings offset bstr 0 (bytes-length bstr))
+              (let ([offset (+ offset (bytes-length bstr))])
+                (ptr-set! (ptr-add target-strings offset) _byte 0)
+                (+ offset 1))))
+          (set! client c)
+          (set! client-data all-data)
+          (set! client-types types)
+          (set! client-orig-types orig-types)
+          
+          (atomically
+           (let ([this-box (malloc-immobile-cell this)])
+             (set! self-box this-box)
+             (gtk_clipboard_set_with_data cb
+                                          targets 
+                                          (length types)
+                                          get_data 
+                                          clear_owner
+                                          this-box)))
 
-            (free target-strings)))))
+          (free target-strings)))))
 
   (define/public (replaced s-box)
-    ;; Called in Gtk event-dispatch thread --- atomically with respect
-    ;; to any other thread
+    ;; In atomic mode
     (when (ptr-equal? s-box self-box)
       (set! self-box #f)
       (let ([c client])
         (when c
           (set! client #f)
           (set! client-data #f)
+          (set! client-types #f)
+          (set! client-orig-types #f)
           (queue-event (send c get-client-eventspace)
                        (lambda ()
                          (send c on-replaced))))))
     (free-immobile-cell s-box))
   
   (define/public (provide-data i sel-data)
-    ;; Called in Gtk event-dispatch thread --- atomically with respect
-    ;; to any other thread
+    ;; In atomic mode; if it's the selection (not clipboard),
+    ;; then hopefully we're in the right eventspace
     (let ([bstr (if client
-                    (list-ref client-data i)
+		    (if client-data
+			(list-ref client-data i)
+			(constrained-reply (send client get-client-eventspace)
+					   (lambda () 
+					     (send client get-data 
+						   (list-ref client-orig-types i)))
+					   #""))
                     #"")])
-        (gtk_selection_data_set sel-data
-                                (gdk_atom_intern "UTF8_STRING" #t)
-                                8
-                                bstr
-                                (bytes-length bstr))))
+      (gtk_selection_data_set sel-data
+                              (gdk_atom_intern (list-ref client-types i) #t)
+                              8
+                              bstr
+                              (bytes-length bstr))))
 
   (define/public (get-data format)
     (let ([process (lambda (v)
@@ -190,3 +220,9 @@
             (gobject-unref pixbuf)))))
   
   (super-new))
+
+(define (get-selection-eventspace)
+  (and the-x-selection-driver
+       (let ([c (send the-x-selection-driver get-client)])
+	 (and c
+	      (send c get-client-eventspace)))))

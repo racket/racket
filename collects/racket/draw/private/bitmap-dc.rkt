@@ -82,7 +82,10 @@
     (inherit draw-bitmap-section
              internal-set-bitmap
              internal-get-bitmap
-             get-size)
+             get-size
+             get-transformation
+             set-transformation
+             scale)
     
     (super-new)
 
@@ -131,13 +134,21 @@
     (def/public (draw-bitmap-section-smooth [bitmap% src]
                                             [real? dest-x]
                                             [real? dest-y]
+                                            [nonnegative-real? dest-w]
+                                            [nonnegative-real? dest-h]
                                             [real? src-x]
                                             [real? src-y]
-                                            [real? src-w]
-                                            [real? src-h]
+                                            [nonnegative-real? src-w]
+                                            [nonnegative-real? src-h]
                                             [(symbol-in solid opaque xor) [style 'solid]]
                                             [(make-or-false color%) [color black]]
                                             [(make-or-false bitmap%) [mask #f]])
-      (draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h style color mask))))
+      (let ([sx (if (zero? src-w) 1.0 (/ dest-w src-w))]
+            [sy (if (zero? src-h) 1.0 (/ dest-h src-h))])
+        (let ([t (get-transformation)])
+          (scale sx sy)
+          (begin0
+           (draw-bitmap-section src (/ dest-x sx) (/ dest-y sy) src-x src-y src-w src-h style color mask)
+           (set-transformation t)))))))
 
 (install-bitmap-dc-class! bitmap-dc%)

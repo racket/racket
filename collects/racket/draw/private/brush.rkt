@@ -28,24 +28,40 @@
   (properties #:check-immutable check-immutable 
               [[brush-style-symbol? style] 'solid])
 
-  (init-rest args)
-  (super-new)
+  (init [(_color color) black]
+        [(_style style) 'solid]
+        [(_stipple stipple) #f])
 
-  (case-args
-   args
-   [() (void)]
-   [([color% _color]
-     [brush-style-symbol? _style])
-    (set! color (color->immutable-color _color))
-    (set! style _style)]
-   [([string? _color]
-     [brush-style-symbol? _style])
-    (set! color (send the-color-database find-color _color))
-    (set! style _style)]
-   (init-name 'brush%))
+  (set! color
+        (cond
+         [(string? _color) (or (send the-color-database find-color _color) black)]
+         [(color . is-a? . color%)
+          (color->immutable-color _color)]
+         [else
+          (raise-type-error (init-name 'brush%)
+                            "string or color%"
+                            _color)]))
+  
+  (set! style
+        (if (brush-style-symbol? _style)
+            _style
+            (raise-type-error (init-name 'brush%)
+                              "brush style symbol"
+                              _style)))
 
   (define immutable? #f)
   (define lock-count 0)
+  (define stipple #f)
+
+  (when _stipple
+    (unless (_stipple . is-a? . bitmap%)
+      (raise-type-error (init-name 'brush%)
+                        "bitmap% or #f"
+                        _stipple))
+    (set-stipple _stipple))
+
+  (super-new)
+
   (define/public (set-immutable) (set! immutable? #t))
   (define/public (is-immutable?) (or immutable? (positive? lock-count)))
   (define/public (adjust-lock v) (set! lock-count (+ lock-count v)))
@@ -71,7 +87,6 @@
 
   (define/public (get-color) color)
 
-  (define stipple #f)
   (def/public (get-stipple) stipple)
   (def/public (set-stipple [(make-or-false bitmap%) s]) 
     (check-immutable 'set-stipple)
@@ -95,7 +110,8 @@
                     (values (color->immutable-color _color) _style)]
                    [([string? _color]
                      [brush-style-symbol? _style])
-                    (values (send the-color-database find-color _color)
+                    (values (or (send the-color-database find-color _color)
+                                black)
                             _style)]
                    (method-name 'find-or-create-brush 'brush-list%))])
       (let ([key (vector (send col red) (send col green) (send col blue)

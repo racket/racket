@@ -3799,15 +3799,15 @@ module browser threading seems wrong.
 
             (new menu:can-restore-menu-item%
                  [label (if (show-line-numbers?)
-                          (string-constant hide-line-numbers)
-                          (string-constant show-line-numbers))]
+                          (string-constant hide-line-numbers/menu)
+                          (string-constant show-line-numbers/menu))]
                  [parent (get-show-menu)]
                  [callback (lambda (self event)
                              (define value (preferences:get 'drracket:show-line-numbers?))
                              (send self set-label
                                    (if value
-                                     (string-constant show-line-numbers)
-                                     (string-constant hide-line-numbers)))
+                                     (string-constant show-line-numbers/menu)
+                                     (string-constant hide-line-numbers/menu)))
                              (preferences:set 'drracket:show-line-numbers? (not value))
                              (show-line-numbers! (not value)))])
             

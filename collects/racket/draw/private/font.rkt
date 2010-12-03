@@ -4,6 +4,7 @@
          ffi/unsafe/atomic
          "syntax.ss"
          "../unsafe/pango.ss"
+         "../unsafe/cairo.ss"
          "font-syms.ss"
          "font-dir.ss"
          "local.ss")
@@ -12,7 +13,9 @@
          font-list% the-font-list
          family-symbol? style-symbol? weight-symbol? smoothing-symbol?
          get-pango-attrs
-         get-face-list)
+         get-face-list
+         (protect-out substitute-fonts?
+                      install-alternate-face))
 
 (define-local-member-name 
   get-pango-attrs)
@@ -36,6 +39,65 @@
 
 (define-syntax-rule (atomically e)
   (begin (start-atomic) (begin0 e (end-atomic))))
+
+(define substitute-fonts? (memq (system-type) '(macosx)))
+(define substitute-mapping (make-hasheq))
+
+(define (install-alternate-face ch layout font desc attrs context)
+  (or
+   (for/or ([face (in-list 
+                   (let ([v (hash-ref substitute-mapping (char->integer ch) #f)])
+                     (cond
+                      [(string? v) 
+                       ;; found previously
+                       (list v)]
+                      [v 
+                       ;; failed to find previously
+                       null]
+                      [else
+                       ;; Hack: prefer Lucida Grande
+                       (cons "Lucida Grande" (get-face-list))])))])
+     (let ([desc (send (make-object font%
+                                    (send font get-point-size)
+                                    face
+                                    (send font get-family)
+                                    (send font get-style)
+                                    (send font get-weight)
+                                    (send font get-underlined)
+                                    (send font get-smoothing)
+                                    (send font get-size-in-pixels))
+                       get-pango)])
+       (and desc
+            (let ([attrs (send font get-pango-attrs)])
+              (pango_layout_set_font_description layout desc)
+              (when attrs (pango_layout_set_attributes layout attrs))
+              (and (zero? (pango_layout_get_unknown_glyphs_count layout))
+                   (begin
+                     (hash-set! substitute-mapping (char->integer ch) face)
+                     #t))))))
+   (begin
+     (hash-set! substitute-mapping (char->integer ch) #t)
+     ;; put old desc & attrs back
+     (pango_layout_set_font_description layout desc)
+     (when attrs (pango_layout_set_attributes layout attrs)))))
+
+(define (has-screen-glyph? c font desc for-label?)
+  (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 1 1)]
+         [cr (cairo_create s)]
+         [context (pango_cairo_create_context cr)]
+         [layout (pango_layout_new context)])
+    (pango_layout_set_font_description layout desc)
+    (pango_layout_set_text layout (string c))
+    (pango_cairo_update_layout cr layout)
+    (begin0
+     (or (zero? (pango_layout_get_unknown_glyphs_count layout))
+         (and substitute-fonts?
+              (install-alternate-face c layout font desc #f context)
+              (zero? (pango_layout_get_unknown_glyphs_count layout))))
+     (g_object_unref layout)
+     (g_object_unref context)
+     (cairo_destroy cr)
+     (cairo_surface_destroy s))))
 
 (defclass font% object%
 
@@ -125,8 +187,7 @@
 
   (def/public (screen-glyph-exists? [char? c]
                                     [any? [for-label? #f]])
-    ;; FIXME:
-    #t)
+    (has-screen-glyph? c this (get-pango) for-label?))
 
   (init-rest args)
   (super-new)

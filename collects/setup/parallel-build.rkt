@@ -25,7 +25,14 @@
               ['DONE
                 (when (or (not (zero? (string-length out))) (not (zero? (string-length err))))
                   ((collects-queue-append-error jobqueue) cc "making" null out err "output"))])
-            (when last ((collects-queue-printer jobqueue) (current-output-port) "made" "~a" cc-name )))]))
+            (when last ((collects-queue-printer jobqueue) (current-output-port) "made" "~a" cc-name )))]
+        [else
+          (match work 
+            [(list-rest (list cc file last) message)
+              ((collects-queue-append-error jobqueue) cc "making" null "" "" "error")
+              (eprintf "work-done match cc failed.\n")
+              (eprintf "trying to match:\n~a\n" (list work msg))])]))
+         
     ;; assigns a collection to each worker to be compiled
     ;; when it runs out of collections, steals work from other workers collections
     (define (get-job jobqueue workerid)
@@ -70,7 +77,11 @@
                   (build-job cc file #t)]
               [(cons (list cc (cons file ft) subs) tail)
                 (hash-set! w-hash id (cons (list cc ft subs) tail))
-                (build-job cc file #f)]))
+                (build-job cc file #f)]
+              [else
+                (eprintf "get-job match cc failed.\n")
+                (eprintf "trying to match:\n~a\n" cc)]))
+ 
           (match (hash-ref!/true w-hash workerid take-cc)
             [#f 
                 (match (hash/first-pair w-hash)

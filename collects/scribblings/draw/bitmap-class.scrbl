@@ -12,6 +12,9 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
  the bitmap cannot be supplied to methods that consume or operate on
  bitmaps (otherwise, @|MismatchExn|).
 
+A bitmap is convertible to @racket['png-bytes] through the
+@racketmodname[file/convertible] protocol.
+
 
 @defconstructor*/make[(([width exact-positive-integer?]
                         [height exact-positive-integer?]
@@ -80,14 +83,6 @@ the bitmap is selected into another DC, attached as a button label, etc.).
 Gets the color depth of the bitmap, which is @racket[1] for a
 monochrome bitmap and @racket[32] for a color bitmap. See also
 @method[bitmap% is-color?].
-
-}
-
-@defmethod[(get-gl-config [config (is-a?/c gl-config%)])
-           void?]{
-
-Returns a copy of this bitmap's requested OpenGL configuration. See
- also @method[bitmap% set-gl-config].
 
 }
 
@@ -229,12 +224,12 @@ Returns @scheme[#t] if the bitmap is usable (created or changed
 
 }
 
-@defmethod[(save-file [name path-string?]
+@defmethod[(save-file [name (or/c path-string? output-port?)]
                       [kind (one-of/c 'png 'jpeg 'xbm 'xpm 'bmp)]
                       [quality (integer-in 0 100) 75])
            boolean?]{
 
-Saves a bitmap in the named file.
+Writes a bitmap to the named file or output stream.
 
 The @scheme[kind] argument determined the type of file that is created,
  one of:
@@ -279,18 +274,6 @@ A monochrome bitmap saved as @scheme['png] without a mask bitmap
 
 The same as @xmethod[bitmap-dc% set-argb-pixels], but the
 bitmap does not have to be selected into the DC.
-
-}
-
-@defmethod[(set-gl-config [config (is-a?/c gl-config%)])
-           void?]{
-
-Sets the requested OpenGL configuration for this bitmap. The
- configuration is used when the bitmap selected into a drawing
- context, and then a GL context is created for the drawing context.
-
-The given @scheme[gl-config%] object is copied, so that changes to
- the object do not affect the bitmap's configuration.
 
 }
 

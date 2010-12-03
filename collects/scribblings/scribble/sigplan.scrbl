@@ -12,7 +12,7 @@ file that is included with Scribble.}
 @defidform[preprint]{
 
 Enables the @tt{preprint} option. Use @racket[preprint] only on the
-same line as @hash-lang[], with only whitespace between
+same line as @hash-lang[], with only whitespace (or other options) between
 @racketmodname[scribble/sigplan] and @racket[preprint]:
 
 @verbatim[#:indent 2]|{
@@ -22,7 +22,7 @@ same line as @hash-lang[], with only whitespace between
 @defidform[10pt]{
 
 Enables the @tt{10pt} option. Use @racket[10pt] only on the
-same line as @hash-lang[], with only whitespace between
+same line as @hash-lang[], with only whitespace (or other options) between
 @racketmodname[scribble/sigplan] and @racket[10pt]:
 
 @verbatim[#:indent 2]|{
@@ -32,15 +32,49 @@ same line as @hash-lang[], with only whitespace between
 @defidform[nocopyright]{
 
 Enables the @tt{nocopyright} option. Use @racket[nocopyright] only on the
-same line as @hash-lang[], with only whitespace between
+same line as @hash-lang[], with only whitespace (or other options) between
 @racketmodname[scribble/sigplan] and @racket[nocopyright]:
 
 @verbatim[#:indent 2]|{
   #lang scribble/sigplan @nocopyright
 }|}
 
-The @racket[10pt], @racket[preprint], and @racket[nocopyright] options can be
-used together and may appear in any order.
+@defidform[onecolumn]{
+
+Enables the @tt{onecolumn} option. Use @racket[onecolumn] only on the
+same line as @hash-lang[], with only whitespace (or other options) between
+@racketmodname[scribble/sigplan] and @racket[onecolumn]:
+
+@codeblock|{
+  #lang scribble/sigplan @onecolumn
+}|}
+
+
+@defidform[notimes]{
+
+Disables the use of @tt{\usepackage@"{"times@"}"} in the generated LaTeX output.
+Use @racket[onecolumn] only on the
+same line as @hash-lang[], with only whitespace (or other options) between
+@racketmodname[scribble/sigplan] and @racket[notimes]:
+
+@codeblock|{
+  #lang scribble/sigplan @notimes
+}|}
+
+@defidform[noqcourier]{
+
+Disables the use of @tt{\usepackage@"{"qcourier@"}"} in the generated LaTeX output.
+Use @racket[onecolumn] only on the
+same line as @hash-lang[], with only whitespace (or other options) between
+@racketmodname[scribble/sigplan] and @racket[noqcourier]:
+
+@codeblock|{
+  #lang scribble/sigplan @noqcourier
+}|}
+
+The @racket[10pt], @racket[preprint], @racket[nocopyright], 
+@racket[onecolumn], @racket[notimes], and @racket[noqcourier]
+options can be used together and may appear in any order.  
 }
 
 

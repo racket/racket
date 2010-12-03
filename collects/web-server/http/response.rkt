@@ -103,6 +103,8 @@
      (for-each
       (lambda (str) (display str o-port))
       (response/full-body bresp))]
+    [(? response/port?)
+     ((response/port-output bresp) o-port)]
     [(? response/incremental?)
      (if (connection-close? conn)
          ((response/incremental-generator bresp)
@@ -125,9 +127,7 @@
 ; format is rfc1123 compliant according to rfc2068 (http/1.1)
 (define (seconds->gmt-string s)
   (let* ([local-date (seconds->date s)]
-         [date (seconds->date (- s
-                                 (date-time-zone-offset local-date)
-                                 (if (date-dst? local-date) 3600 0)))])
+         [date (seconds->date (- s (date-time-zone-offset local-date)))])
     (format "~a, ~a ~a ~a ~a:~a:~a GMT"
             (vector-ref DAYS (date-week-day date))
             (two-digits (date-day date))

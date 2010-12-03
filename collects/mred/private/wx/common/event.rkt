@@ -14,10 +14,11 @@
   (super-new))
 
 (defclass mouse-event% event%
-  ;; FIXME: check event-type
-  (init event-type)
-  (define et event-type)
-  (init-properties [[bool? left-down] #f]
+  (init-properties [[(symbol-in enter leave left-down left-up
+                                middle-down middle-up
+                                right-down right-up motion)
+                     event-type]]
+                   [[bool? left-down] #f]
                    [[bool? middle-down] #f]
                    [[bool? right-down] #f]
                    [[exact-integer? x] 0]
@@ -30,44 +31,45 @@
   (init-properties [[bool? caps-down] #f])
   (super-new [time-stamp time-stamp])
 
-  (def/public (get-event-type) et)
-
   (def/public (button-changed? [(symbol-in left middle right any) [button 'any]])
-    (and (memq et (case button
-                    [(any) '(left-down left-up middle-down middle-up right-down right-up)]
-                    [(left) '(left-down left-up)]
-                    [(middle) '(middle-down middle-up)]
-                    [(right) '(right-down right-up)]))
+    (and (memq event-type
+               (case button
+                 [(any) '(left-down left-up middle-down middle-up right-down right-up)]
+                 [(left) '(left-down left-up)]
+                 [(middle) '(middle-down middle-up)]
+                 [(right) '(right-down right-up)]))
          #t))
 
   (def/public (button-down? [(symbol-in left middle right any) [button 'any]])
-    (and (memq et (case button
-                    [(any) '(left-down middle-down right-down)]
-                    [(left) '(left-down)]
-                    [(middle) '(middle-down)]
-                    [(right) '(right-down)]))
+    (and (memq event-type
+               (case button
+                 [(any) '(left-down middle-down right-down)]
+                 [(left) '(left-down)]
+                 [(middle) '(middle-down)]
+                 [(right) '(right-down)]))
          #t))
 
   (def/public (button-up? [(symbol-in left middle right any) [button 'any]])
-    (and (memq et (case button
-                    [(any) '(left-up middle-up right-up)]
-                    [(left) '(left-up)]
-                    [(middle) '(middle-up)]
-                    [(right) '(right-up)]))
+    (and (memq event-type
+               (case button
+                 [(any) '(left-up middle-up right-up)]
+                 [(left) '(left-up)]
+                 [(middle) '(middle-up)]
+                 [(right) '(right-up)]))
          #t))
 
   (def/public (dragging?)
-    (and (eq? et 'motion)
+    (and (eq? event-type 'motion)
          (or left-down middle-down right-down)))
 
   (def/public (entering?)
-    (eq? et 'enter))
+    (eq? event-type 'enter))
 
   (def/public (leaving?)
-    (eq? et 'leave))
+    (eq? event-type 'leave))
 
   (def/public (moving?)
-    (eq? et 'motion)))
+    (eq? event-type 'motion)))
 
 (defclass key-event% event%
   (init-properties [[(make-alts symbol? char?) key-code] #\nul]
@@ -91,9 +93,7 @@
                                 list-box list-box-dclick text-field
                                 text-field-enter slider radio-box
                                 menu-popdown menu-popdown-none tab-panel) 
-                     event-type]
-                    ;; FIXME: should have no default
-                    'button])
+                     event-type]])
   (init [time-stamp 0])
   (super-new [time-stamp time-stamp]))
 

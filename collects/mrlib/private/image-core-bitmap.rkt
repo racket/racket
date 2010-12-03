@@ -72,14 +72,8 @@ instead of this scaling code, we use the dc<%>'s scaling code.
            w
            h
            (* w h NUM-CHANNELS)))
-  (let* ([bm (make-object bitmap% w h)]
-         [mask (make-object bitmap% w h)]
-         [bdc (make-object bitmap-dc% bm)])
-    (send bdc set-argb-pixels 0 0 w h bytes #f)
-    (send bdc set-bitmap mask)
-    (send bdc set-argb-pixels 0 0 w h bytes #t)
-    (send bdc set-bitmap #f)
-    (send bm set-loaded-mask mask)
+  (let* ([bm (make-bitmap w h)])
+    (send bm set-argb-pixels 0 0 w h bytes)
     bm))
 
 (define (flip-bytes bmbytes w h)

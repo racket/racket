@@ -463,6 +463,8 @@ void scheme_suspend_remembered_threads(void);
 void scheme_resume_remembered_threads(void);
 #endif
 
+int scheme_wait_until_suspend_ok(void);
+
 #ifdef MZ_USE_MZRT
 extern void scheme_check_foreign_work(void);
 #endif
@@ -2548,6 +2550,7 @@ int scheme_optimize_is_flonum_valued(Optimize_Info *info, int pos);
 int scheme_is_flonum_expression(Scheme_Object *expr, Optimize_Info *info);
 char *scheme_get_closure_flonum_map(Scheme_Closure_Data *data, int arg_n, int *ok);
 void scheme_set_closure_flonum_map(Scheme_Closure_Data *data, char *flonum_map);
+void scheme_merge_closure_flonum_map(Scheme_Closure_Data *data1, Scheme_Closure_Data *data2);
 
 Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_depth);

@@ -317,6 +317,14 @@
   (test '(1 2 3) am list '(1 2 3))
   (test '(1 1 2 2 3 3) am (lambda (x) (list x x)) '(1 2 3)))
 
+;; ---------- shuffle ----------
+(let loop ([l (reverse '(1 2 4 8 16 32))])
+  (define (length+sum l) (list (length l) (apply + l)))
+  (define expected (length+sum l))
+  (for ([i (in-range 100)])
+    (test expected length+sum (shuffle l)))
+  (when (pair? l) (loop (cdr l))))
+
 ;; ---------- argmin & argmax ----------
 
 (let ()

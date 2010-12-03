@@ -5,11 +5,19 @@
 
 @title[#:tag "windowing-overview"]{Windowing}
 
-The Racket windowing toolbox provides the basic building blocks of GUI
+The windowing toolbox provides the basic building blocks of GUI
  programs, including frames (top-level windows), modal dialogs, menus,
- buttons, check boxes, text fields, and radio buttons.  The toolbox
- provides these building blocks via built-in classes, such as the
- @scheme[frame%] class:
+ buttons, check boxes, text fields, and radio buttons---all as
+ classes.
+
+@margin-note{See @secref["classes" #:doc '(lib
+"scribblings/guide/guide.scrbl")] for an introduction to classes and
+interfaces in Racket.}
+
+@section{Creating Windows}
+
+To create a new top-level window, instantiate the @scheme[frame%]
+ class:
 
 @schemeblock[
 (code:comment @#,t{Make a frame by instantiating the @scheme[frame%] class})
@@ -21,7 +29,7 @@ The Racket windowing toolbox provides the basic building blocks of GUI
 
 The built-in classes provide various mechanisms for handling GUI
  events. For example, when instantiating the @scheme[button%] class,
- the programmer supplies an event callback procedure to be invoked
+ supply an event callback procedure to be invoked
  when the user clicks the button. The following example program
  creates a frame with a text message and a button; when the user
  clicks the button, the message changes:
@@ -46,18 +54,18 @@ The built-in classes provide various mechanisms for handling GUI
 ]
 
 Programmers never implement the GUI event loop directly. Instead, the
- system automatically pulls each event from an internal queue and
+ windowing system automatically pulls each event from an internal queue and
  dispatches the event to an appropriate window. The dispatch invokes
  the window's callback procedure or calls one of the window's
- methods. In the above program, the system automatically invokes the
+ methods. In the above program, the windowing system automatically invokes the
  button's callback procedure whenever the user clicks @onscreen{Click
  Me}.
 
 If a window receives multiple kinds of events, the events are
  dispatched to methods of the window's class instead of to a callback
  procedure. For example, a drawing canvas receives update events,
- mouse events, keyboard events, and sizing events; to handle them, a
- programmer must derive a new class from the built-in
+ mouse events, keyboard events, and sizing events; to handle them,
+ derive a new class from the built-in
  @scheme[canvas%] class and override the event-handling methods. The
  following expression extends the frame created above with a canvas
  that handles mouse and keyboard events:
@@ -86,10 +94,10 @@ After running the above code, manually resize the frame to see the
  on-event]. While the canvas has the keyboard focus, typing on the
  keyboard invokes the canvas's @method[canvas<%> on-char] method.
 
-The system dispatches GUI events sequentially; that is, after invoking
- an event-handling callback or method, the system waits until the
+The windowing system dispatches GUI events sequentially; that is, after invoking
+ an event-handling callback or method, the windowing system waits until the
  handler returns before dispatching the next event. To illustrate the
- sequential nature of events, we extend the frame again, adding a
+ sequential nature of events, extend the frame again, adding a
  @onscreen{Pause} button:
 
 @schemeblock[
@@ -99,7 +107,7 @@ The system dispatches GUI events sequentially; that is, after invoking
 ]
 
 After the user clicks @onscreen{Pause}, the entire frame becomes
- unresponsive for five seconds; the system cannot dispatch more events
+ unresponsive for five seconds; the windowing system cannot dispatch more events
  until the call to @scheme[sleep] returns. For more information about
  event dispatching, see @secref["eventspaceinfo"].
 
@@ -111,7 +119,7 @@ In addition to dispatching events, the GUI classes also handle the
  as a frame, arranges its children in a column, and a horizontal
  container arranges its children in a row. A container can be a child
  of another container; for example, to place two buttons side-by-side
- in our frame, we create a horizontal panel for the new buttons:
+ in our frame, create a horizontal panel for the new buttons:
 
 @schemeblock[
 (define panel (new horizontal-panel% [parent frame]))
@@ -127,6 +135,49 @@ In addition to dispatching events, the GUI classes also handle the
 
 For more information about window layout and containers, see
  @secref["containeroverview"].
+
+
+@section[#:tag "canvas-drawing"]{Drawing in Canvases}
+
+The content of a canvas is determined by its @method[canvas% on-paint]
+method, where the default @method[canvas% on-paint] calls the
+@racket[paint-callback] function that is supplied when the canvas is
+created. The @method[canvas% on-paint] method receives no arguments
+and uses the canvas's @method[canvas<%> get-dc] method to obtain a
+@tech[#:doc '(lib "scribblings/draw/draw.scrbl")]{drawing context}
+(DC) for drawing; the default @method[canvas% on-paint] method passes
+the canvas and this DC on to the @racket[paint-callback] function.
+Drawing operations of the @racket[racket/draw] toolbox on the DC are
+reflected in the content of the canvas onscreen.
+
+For example, the following program creates a canvas
+that displays large, friendly letters:
+
+@schemeblock[
+(define frame (new frame% 
+                   [label "Example"]
+                   [width 300]
+                   [height 300]))
+(new canvas% [parent frame]
+             [paint-callback
+              (lambda (canvas dc)
+                (send dc #,(:: dc<%> set-scale) 3 3)
+                (send dc #,(:: dc<%> set-text-foreground) "blue")
+                (send dc #,(:: dc<%> draw-text) "Don't Panic!" 0 0))])
+(send frame #,(:: top-level-window<%> show) #t)
+]
+
+The background color of a canvas can be set through the
+@method[canvas<%> set-canvas-background] method. To make the canvas
+transparent (so that it takes on its parent's color and texture as its
+initial content), supply @racket['transparent] in the @racket[style]
+argument when creating the canvas.
+
+See @secref["overview" #:doc '(lib "scribblings/draw/draw.scrbl")] in
+@other-doc['(lib "scribblings/draw/draw.scrbl")] for an overview of
+drawing with the @racket[racket/draw] library. For more advanced
+information on canvas drawing, see @secref["animation"].
+
 
 @section{Core Windowing Classes}
 
@@ -328,7 +379,7 @@ The built-in container classes include horizontal panels (and panes),
  which align their children in a row, and vertical panels (and panes),
  which align their children in a column. By nesting horizontal and
  vertical containers, a programmer can achieve most any layout.  For
- example, we can construct a dialog with the following shape:
+ example, to construct a dialog with the shape
 
 @verbatim[#:indent 2]{
   ------------------------------------------------------
@@ -654,10 +705,9 @@ Whenever the user moves the mouse, clicks or releases a mouse button,
  target window. A program can use the @method[window<%> focus] method
  to move the focus to a subwindow or to set the initial focus.
 
- Under X, a @indexed-scheme['wheel-up] or @indexed-scheme['wheel-down]
+ A @indexed-scheme['wheel-up] or @indexed-scheme['wheel-down]
  event may be sent to a window other than the one with the keyboard
- focus, because X generates wheel events based on the location of the
- mouse pointer.
+ focus, depending on how the operating system handles wheel events.
 
  A key-press event may correspond to either an actual key press or an
  auto-key repeat. Multiple key-press events without intervening
@@ -942,3 +992,34 @@ This expression installs an exception handler that prints an error
  handler during the call to @scheme[yield], an error message is
  printed before control returns to the event dispatcher within
  @scheme[yield].
+
+
+@section[#:tag "animation"]{Animation in Canvases}
+
+The content of a canvas is buffered, so if a canvas must be redrawn,
+the @method[canvas% on-paint] method or @racket[paint-callback] function
+usually does not need to be called again. To further reduce flicker,
+while the @method[canvas% on-paint] method or @racket[paint-callback] function
+is called, the windowing system avoids flushing the canvas-content
+buffer to the screen.
+
+Canvas content can be updated at any time by drawing with the result
+of the canvas's @method[canvas<%> get-dc] method, and drawing is
+thread-safe. Changes to the canvas's content are flushed to the screen
+periodically (not necessarily on an event-handling boundary), but the
+@method[canvas<%> flush] method immediately flushes to the screen---as
+long as flushing has not been suspended. The @method[canvas<%>
+suspend-flush] and @method[canvas<%> resume-flush] methods suspend and
+resume both automatic and explicit flushes, although on some
+platforms, automatic flushes are forced in rare cases.
+
+For most animation purposes, @method[canvas<%> suspend-flush],
+@method[canvas<%> resume-flush], and @method[canvas<%> flush] can be
+used to avoid flicker and the need for an additional drawing buffer
+for animations.  During an animation, bracket the construction of each
+animation frame with @method[canvas<%> suspend-flush] and
+@method[canvas<%> resume-flush] to ensure that partially drawn frames
+are not flushed to the screen. Use @method[canvas<%> flush] to ensure
+that canvas content is flushed when it is ready if a @method[canvas<%>
+suspend-flush] will soon follow, because the process of flushing to
+the screen can be starved if flushing is frequently suspend.

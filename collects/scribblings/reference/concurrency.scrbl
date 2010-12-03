@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss")
 
-@title[#:tag "concurrency" #:style 'toc]{Concurrency}
+@title[#:tag "concurrency" #:style 'toc]{Concurrency and Parallelism}
 
 Racket supports multiple threads of control within a program,
 thread-local storage, some primitive synchronization mechanisms, and a

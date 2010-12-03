@@ -3,10 +3,10 @@
   (require mzlib/unit
            mzlib/contract
            mzlib/class
-           mred)
+           racket/draw)
 
-  (require mred/mred-sig
-	   mred/mred-unit)
+  (require racket/draw/draw-sig
+	   racket/draw/draw-unit)
   (require "private/mrpict-sig.ss"
 	   "private/common-sig.ss")
   (require "mrpict-sig.ss"
@@ -15,7 +15,7 @@
   (define-compound-unit/infer mrpict+mred@
     (import)
     (export texpict-common^ mrpict-extra^)
-    (link standard-mred@ mrpict@))
+    (link draw@ mrpict@))
   
   (define-values/invoke-unit/infer mrpict+mred@)
 

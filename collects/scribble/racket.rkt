@@ -8,6 +8,7 @@
            mzlib/for
            syntax/modresolve
            syntax/modcode
+           file/convertible
            (for-syntax racket/base))
   
   (provide define-code
@@ -215,7 +216,8 @@
                                  quote-depth)])
             (if (or (element? (syntax-e c))
                     (delayed-element? (syntax-e c))
-                    (part-relative-element? (syntax-e c)))
+                    (part-relative-element? (syntax-e c))
+                    (convertible? (syntax-e c)))
                 (out (syntax-e c) #f)
                 (out (if (and (identifier? c)
                               color?
@@ -1097,7 +1099,9 @@
           (vector? v)
           (and (struct? v)
                (or (and qq 
-                        ;; Watch out for partially transparent subtypes of `element':
+                        ;; Watch out for partially transparent subtypes of `element'
+                        ;;  or convertible values:
+                        (not (convertible? v))
                         (not (element? v)))
                    (prefab-struct-key v))))
       (let ([orig-ht (unbox ht)]

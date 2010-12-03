@@ -42,7 +42,9 @@ alphas; for example, drawing a line in the middle of an empty bitmap
 produces an image with non-zero alpha only at the drawn line.
 
 Only bitmaps created with the new `make-gl-bitmap' function support
-OpenGL drawing.
+OpenGL drawing. The `make-gl-bitmap' function takes a `gl-config%' as
+an argument, and the `get-gl-config' and `set-gl-config' methods of
+`bitmap%' have been removed.
 
 Use the new `make-bitmap', `read-bitmap', `make-monochrome-bitmap',
 `make-screen-bitmap', and `make-gl-bitmap' functions to create
@@ -91,6 +93,17 @@ other transformations. This layering is redundant, since all
 transformations can be expressed in a single matrix, but it is
 backward-compatibile. Methods like `get-translation',
 `set-translation', `scale', etc. help hide the reundancy.
+
+
+PostScript and PDF Drawing Contexts
+-----------------------------------
+
+The dimensions for PostScript output are no longer inferred from the
+drawing. Instead, the width and height must be supplied when the
+`post-script-dc%' is created.
+
+The new `pdf-dc%' drawing context is like `post-script-dc%', but it
+generates PDF output.
 
 
 Other Drawing-Context Changes

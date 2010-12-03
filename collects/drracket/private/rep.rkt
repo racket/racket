@@ -303,8 +303,6 @@ TODO
   (send drs-bindings-keymap map-function "f1" "search-help-desk")
   (send drs-bindings-keymap map-function "c:tab" "next-tab")
   (send drs-bindings-keymap map-function "c:s:tab" "prev-tab")
-  (send drs-bindings-keymap map-function "d:s:right" "next-tab")
-  (send drs-bindings-keymap map-function "d:s:left" "prev-tab")
   (send drs-bindings-keymap map-function "c:pagedown" "next-tab")
   (send drs-bindings-keymap map-function "c:pageup" "prev-tab")
   
@@ -439,7 +437,6 @@ TODO
   
   (define-struct sexp (left right prompt))
   
-  (define console-max-save-previous-exprs 30)
   (let* ([list-of? (λ (p?)
                      (λ (l)
                        (and (list? l)
@@ -451,25 +448,24 @@ TODO
      'drracket:console-previous-exprs
      null
      list-of-lists-of-snip/strings?))
-  (let ([marshall 
-         (λ (lls)
-           (map (λ (ls)
-                  (list
-                   (apply
-                    string-append
-                    (reverse
-                     (map (λ (s)
-                            (cond
-                              [(is-a? s string-snip%)
-                               (send s get-text 0 (send s get-count))]
-                              [(string? s) s]
-                              [else "'non-string-snip"]))
-                          ls)))))
-                lls))]
-        [unmarshall (λ (x) x)])
+  (define (marshall-previous-exprs lls)
+    (map (λ (ls)
+           (list
+            (apply
+             string-append
+             (reverse
+              (map (λ (s)
+                     (cond
+                       [(is-a? s string-snip%)
+                        (send s get-text 0 (send s get-count))]
+                       [(string? s) s]
+                       [else "'non-string-snip"]))
+                   ls)))))
+         lls))
+  (let ([unmarshall (λ (x) x)])
     (preferences:set-un/marshall
      'drracket:console-previous-exprs
-     marshall unmarshall))
+     marshall-previous-exprs unmarshall))
   
   (define color? ((get-display-depth) . > . 8))
   
@@ -1322,15 +1318,17 @@ TODO
                  (initialize-parameters snip-classes))))
             
 
-            ;; register drscheme with the planet-terse-register for the user's namespace
-            ;; must be called after 'initialize-parameters' is called (since it initializes
-            ;; the user's namespace)
-            (planet-terse-set-key (gensym))
-            (planet-terse-register
-             (lambda (tag package)
-               (parameterize ([current-eventspace drracket:init:system-eventspace])
-                 (queue-callback (λ () (new-planet-info tag package))))))
-            
+            (queue-user/wait
+             (λ ()
+               ;; register drscheme with the planet-terse-register for the user's namespace
+               ;; must be called after 'initialize-parameters' is called (since it initializes
+               ;; the user's namespace)
+               (planet-terse-set-key (namespace-module-registry (current-namespace)))
+               (planet-terse-register 
+                (lambda (tag package)
+                  (parameterize ([current-eventspace drracket:init:system-eventspace])
+                    (queue-callback (λ () (new-planet-info tag package))))))))
+               
             ;; disable breaks until an evaluation actually occurs
             (send context set-breakables #f #f)
             
@@ -1769,18 +1767,25 @@ TODO
       (define/private (get-previous-exprs)
         (append global-previous-exprs local-previous-exprs))
       (define/private (add-to-previous-exprs snips)
-        (let* ([new-previous-exprs 
-                (let* ([trimmed-previous-exprs (trim-previous-exprs local-previous-exprs)])
-                  (let loop ([l trimmed-previous-exprs])
-                    (if (null? l)
-                        (list snips)
-                        (cons (car l) (loop (cdr l))))))])
-          (set! local-previous-exprs new-previous-exprs)))
+        (set! local-previous-exprs (append local-previous-exprs (list snips))))
       
+      ; list-of-lists-of-snip/strings? -> list-of-lists-of-snip/strings?
       (define/private (trim-previous-exprs lst)
-        (if ((length lst). >= .  console-max-save-previous-exprs)
-            (cdr lst)
-            lst))
+        (define max-size 10000)
+        (define (expr-size expr)
+          (for/fold ([s 0]) ([e expr]) (+ s (string-length e))))
+        (define within-bound
+          (let loop ([marshalled (reverse (marshall-previous-exprs lst))]
+                     [keep 0]
+                     [sum 0])
+            (if (empty? marshalled)
+                keep
+                (let* ([size (expr-size (first marshalled))]
+                       [w/another (+ size sum)])
+                  (if (> w/another max-size)
+                      keep
+                      (loop (rest marshalled) (add1 keep) w/another))))))
+        (take-right lst within-bound))
       
       (define/private (save-interaction-in-history start end)
         (split-snip start)

@@ -43,7 +43,7 @@
   (E W (in-hole W (dw x e E e)))
   ;;  Evaluation context without `dw':
   (W M (wcm w M))
-  (M hole (v ... W e ...) (begin W e) (% v W v))
+  (M hole (v ... W e ...) (begin W e) (% W e e) (% v e W) (% v W v))
   ;; Context ending on a dw boundary:
   (D hole (in-hole E (dw x e hole e))))
 

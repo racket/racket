@@ -5,7 +5,8 @@
          framework
          "prefs.rkt"
          "controller.rkt"
-         "display.rkt")
+         "display.rkt"
+         "text.rkt")
 
 #|
 
@@ -36,12 +37,10 @@ TODO: tacked arrows
 ;; print-syntax-columns : (parameter-of (U number 'infinity))
 (define print-syntax-columns (make-parameter 40))
 
-(define standard-text% (text:foreground-color-mixin (editor:standard-style-list-mixin text:basic%)))
-
 ;; print-syntax-to-png : syntax path -> void
 (define (print-syntax-to-png stx file
                              #:columns [columns (print-syntax-columns)])
-  (let ([bmp (print-syntax-to-bitmap stx columns)])
+  (let ([bmp (print-syntax-to-bitmap stx #:columns columns)])
     (send bmp save-file file 'png))
   (void))
 
@@ -49,8 +48,8 @@ TODO: tacked arrows
 (define (print-syntax-to-bitmap stx
                                 #:columns [columns (print-syntax-columns)])
   (define t (prepare-editor stx columns))
-  (define f (new frame% [label "dummy"]))
-  (define ec (new editor-canvas% (editor t) (parent f)))
+  (define admin (new dummy-admin%))
+  (send t set-admin admin)
   (define dc (new bitmap-dc% (bitmap (make-object bitmap% 1 1))))
   (define char-width
     (let* ([sl (send t get-style-list)]
@@ -87,10 +86,20 @@ TODO: tacked arrows
     (send t print #f #f 'postscript #f #f #t)))
 
 (define (prepare-editor stx columns)
-  (define t (new standard-text%))
+  (define t (new browser-text%))
   (define sl (send t get-style-list))
   (send t change-style (send sl find-named-style (editor:get-default-color-style-name)))
   (print-syntax-to-editor stx t 
                           (new controller%) (new syntax-prefs/readonly%)
                           columns (send t last-position))
   t)
+
+;; dummy editor-admin
+(define dummy-admin%
+  (class editor-admin%
+    (define the-dc (new bitmap-dc% (bitmap (make-object bitmap% 1 1))))
+    (define/override (get-dc [x #f] [y #f])
+      (when x (set-box! x 0.0))
+      (when y (set-box! y 0.0))
+      the-dc)
+    (super-new)))

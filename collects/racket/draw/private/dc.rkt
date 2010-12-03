@@ -36,15 +36,20 @@
 
 (define 2pi (* 2 pi))
 
+(define black (send the-color-database find-color "black"))
+
 (define (copy-color c)
-  (if (send c is-immutable?)
-      c
-      (let ([c (make-object color% 
-                            (color-red c) 
-                            (color-green c) 
-                            (color-blue c))]) 
-        (send c set-immutable)
-        c)))
+  (if (string? c)
+      (or (send the-color-database find-color c)
+          black)
+      (if (send c is-immutable?)
+          c
+          (let ([c (make-object color% 
+                                (color-red c) 
+                                (color-green c) 
+                                (color-blue c))]) 
+            (send c set-immutable)
+            c))))
 
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
@@ -58,9 +63,6 @@
        (real? (vector-ref v 3))
        (real? (vector-ref v 4))
        (real? (vector-ref v 5))))
-
-(define substitute-fonts? (memq (system-type) '(macosx)))
-(define substitute-mapping (make-hasheq))
 
 ;; dc-backend : interface
 ;;
@@ -268,7 +270,6 @@
     (define contexts (make-vector (vector-length font-maps) #f))
     (define desc-layoutss (make-vector (vector-length font-maps) #f))
 
-    (define black (send the-color-database find-color "black"))
     (define pen (send the-pen-list find-or-create-pen "black" 1 'solid))
     (define brush (send the-brush-list find-or-create-brush "white" 'solid))
     (define font (send the-font-list find-or-create-font 12 'default))
@@ -554,11 +555,11 @@
     (define/private (brush-draws?)
       (not (eq? (send brush get-style) 'transparent)))
 
-    (def/public (set-text-foreground [color% c])
+    (def/public (set-text-foreground [(make-alts color% string?) c])
       (set! text-fg (copy-color c)))
-    (def/public (set-text-background [color% c])
+    (def/public (set-text-background [(make-alts color% string?) c])
       (set! text-bg (copy-color c)))
-    (def/public (set-background [color% c])
+    (def/public (set-background [(make-alts color% string?) c])
       (set! pen-stipple-s #f)
       (set! brush-stipple-s #f)
       (set! bg (copy-color c)))
@@ -1381,43 +1382,6 @@
               (vector-set! vec 3 #f)
               (vector-set! vec 4 #f)))))
     
-    (define/private (install-alternate-face ch layout font desc attrs context)
-      (or
-       (for/or ([face (in-list 
-                       (let ([v (hash-ref substitute-mapping (char->integer ch) #f)])
-                         (cond
-                          [(string? v) 
-                           ;; found previously
-                           (list v)]
-                          [v 
-                           ;; failed to find previously
-                           null]
-                          [else
-                           ;; Hack: prefer Lucida Grande
-                           (cons "Lucida Grande" (get-face-list))])))])
-         (let ([desc (get-pango (make-object font%
-                                             (send font get-point-size)
-                                             face
-                                             (send font get-family)
-                                             (send font get-style)
-                                             (send font get-weight)
-                                             (send font get-underlined)
-                                             (send font get-smoothing)
-                                             (send font get-size-in-pixels)))])
-           (and desc
-                (let ([attrs (send font get-pango-attrs)])
-                  (pango_layout_set_font_description layout desc)
-                  (when attrs (pango_layout_set_attributes layout attrs))
-                  (and (zero? (pango_layout_get_unknown_glyphs_count layout))
-                       (begin
-                         (hash-set! substitute-mapping (char->integer ch) face)
-                         #t))))))
-       (begin
-         (hash-set! substitute-mapping (char->integer ch) #t)
-         ;; put old desc & attrs back
-         (pango_layout_set_font_description layout desc)
-         (when attrs (pango_layout_set_attributes layout attrs)))))
-    
     (def/public (get-char-width)
       10.0)
 
@@ -1450,8 +1414,8 @@
                                      [real? dest-y]
                                      [real? src-x]
                                      [real? src-y]
-                                     [real? src-w]
-                                     [real? src-h]
+                                     [nonnegative-real? src-w]
+                                     [nonnegative-real? src-h]
                                      [(symbol-in solid opaque xor) [style 'solid]]
                                      [(make-or-false color%) [color black]]
                                      [(make-or-false bitmap%) [mask #f]])
@@ -1590,7 +1554,8 @@
            (stamp-pattern src a-src-x a-src-y)])
          (when clip-mask
            (cairo_restore cr))
-         (flush-cr))))
+         (flush-cr)))
+      #t)
 
     (define/private (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)
       (let* ([bm-w (inexact->exact (ceiling src-w))]

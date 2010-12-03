@@ -226,7 +226,7 @@
 
 (define-syntax (do-properties stx)
   (syntax-case stx ()
-    [(_ define-base check-immutable [[type id] expr] ...)
+    [(_ define-base check-immutable [[type id] expr ...] ...)
      (let ([ids (syntax->list #'(id ...))])
        (with-syntax ([(getter ...)
                       (map (lambda (id)
@@ -243,7 +243,7 @@
                                             id))
                            ids)])
          #'(begin
-             (define-base id expr) ...
+             (define-base id expr ...) ...
              (define/public (getter) id) ...
              (def/public (setter [type v]) (check-immutable 'setter) (set! id (coerce type v))) ...)))]))
 
@@ -271,9 +271,15 @@
      (do-properties define-init check-immutable . props)]
     [(_ . props)
      (do-properties define-init void . props)]))
-(define-syntax-rule (define-init id val) (begin
-                                           (init [(internal id) val])
-                                           (define id internal)))
+(define-syntax define-init
+  (syntax-rules ()
+    [(_ id val) (begin
+                  (init [(internal id) val])
+                  (define id internal))]
+    [(_ id) (begin
+              (init [(internal id)])
+              (define id internal))]))
+    
 
 (define (->long i) 
   (cond

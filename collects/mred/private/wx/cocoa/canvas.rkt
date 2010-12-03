@@ -234,6 +234,9 @@
               make-graphics-context
               is-shown-to-root?
               is-shown-to-before-root?
+              is-enabled-to-root?
+              is-window-enabled?
+              block-mouse-events
               move get-x get-y
               on-size
               register-as-child
@@ -272,9 +275,11 @@
      ;; are defined by `canvas-mixin' from ../common/canvas-mixin
      (define/public (queue-paint) (void))
      (define/public (request-canvas-flush-delay)
-       (request-flush-delay (get-cocoa-window)))
+       (unless is-gl?
+         (request-flush-delay (get-cocoa-window))))
      (define/public (cancel-canvas-flush-delay req)
-       (cancel-flush-delay req))
+       (unless is-gl?
+         (cancel-flush-delay req)))
      (define/public (queue-canvas-refresh-event thunk)
        (queue-window-refresh-event this  thunk))
 
@@ -400,6 +405,11 @@
 
      (define/override (show-children)
        (super show-children)
+       (resume-all-reg-blits))
+
+     (define/override (fixup-locations-children)
+       ;; in atomic mode
+       (suspend-all-reg-blits)
        (resume-all-reg-blits))
 
      (define/private (do-set-size x y w h)
@@ -601,6 +611,16 @@
              (scroller-page scroller)
              1)]))
 
+     (define/override (enable-window on?)
+       ;; in atomic mode
+       (let ([on? (and on? (is-window-enabled?))])
+         (let ([w (tell content-cocoa window)])
+           (when (ptr-equal? content-cocoa (tell w firstResponder))
+             (tellv w makeFirstResponder: #f)))
+         (block-mouse-events (not on?))
+         (when is-combo?
+           (tellv content-cocoa setEnabled: #:type _BOOL on?))))
+
      (define/public (clear-combo-items)
        (tellv content-cocoa removeAllItems))
      (define/public (append-combo-item str)
@@ -691,7 +711,7 @@
      (define/override (gets-focus?)
        wants-focus?)
      (define/override (can-be-responder?)
-       wants-focus?)
+       (and wants-focus? (is-enabled-to-root?)))
 
      (define/private (on-menu-click? e)
        ;; Called in Cocoa event-handling mode

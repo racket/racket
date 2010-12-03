@@ -134,8 +134,7 @@ please adhere to these guidelines:
  (web-materials "Related Web Sites") ;; menu item title
  (tool-web-sites "Tool Web Sites")   ;; menu item title
  (plt-homepage "Racket")
- (how-to-use-scheme "How to Use Scheme") ;; title of a book.
- (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
+ (pbd-homepage "Program by Design")
 
  ;;; bug report form
  (cancel-bug-report? "Cancel Bug Report?")
@@ -449,7 +448,8 @@ please adhere to these guidelines:
  (switch-to-module-language-automatically "Automatically switch to the module language when opening a module")
  (interactions-beside-definitions "Put the interactions window beside the definitions window") ;; in preferences, below the checkbox one line above this one
  (show-line-numbers "Show line numbers")
- (hide-line-numbers "Hide line numbers")
+ (show-line-numbers/menu "Show Line Numbers")  ;; just like the above, but capitalized for appearance in a menu item
+ (hide-line-numbers/menu "Hide Line Numbers")
  (limit-interactions-size "Limit interactions size")
  (background-color "Background Color")
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"

@@ -4,6 +4,7 @@
          ffi/unsafe/alloc
          ffi/unsafe/atomic
          setup/dirs
+         "glib.rkt"
          "cairo.rkt"
          "../private/utils.rkt"
          "../private/libs.rkt")
@@ -11,15 +12,9 @@
 (define-runtime-lib pango-lib 
   [(unix) (ffi-lib "libpango-1.0" '("0"))]
   [(macosx) 
-   (ffi-lib "libglib-2.0.0.dylib")
-   (ffi-lib "libgmodule-2.0.0.dylib")
-   (ffi-lib "libgobject-2.0.0.dylib")
    (ffi-lib "libintl.8.dylib")
    (ffi-lib "libpango-1.0.0.dylib")]
   [(windows) 
-   (ffi-lib "libglib-2.0-0.dll")
-   (ffi-lib "libgmodule-2.0-0.dll")
-   (ffi-lib "libgobject-2.0-0.dll")
    (ffi-lib "libpango-1.0-0.dll")])
 
 (define-runtime-lib pangowin32-lib 
@@ -40,25 +35,11 @@
    (ffi-lib "libpangoft2-1.0-0.dll")
    (ffi-lib "libpangocairo-1.0-0.dll")])
 
-(define-runtime-lib glib-lib 
-  [(unix) (ffi-lib "libglib-2.0" '("0"))]
-  [(macosx) (ffi-lib "libglib-2.0.0")]
-  [(windows) (ffi-lib "libglib-2.0-0.dll")])
-
-(define-runtime-lib gobj-lib 
-  [(unix) (ffi-lib "libgobject-2.0" '("0"))]
-  [(macosx) (ffi-lib "libgobject-2.0.0")]
-  [(windows) (ffi-lib "libgobject-2.0-0.dll")])
-
 (define-ffi-definer define-pango pango-lib
   #:provide provide)
 (define-ffi-definer define-pangocairo pangocairo-lib
   #:provide provide)
 (define-ffi-definer define-pangowin32 pangowin32-lib
-  #:provide provide)
-(define-ffi-definer define-glib glib-lib
-  #:provide provide)
-(define-ffi-definer define-gobj gobj-lib
   #:provide provide)
 
 (define PangoContext (_cpointer 'PangoContext))
@@ -124,7 +105,7 @@
                                  [glyphs _PangoGlyphString-pointer]))
 (provide (struct-out PangoGlyphItem))
 
-
+(provide g_object_unref g_free)
 (define-gobj g_object_unref (_fun _pointer -> _void)
   #:wrap (deallocator))
 (define-glib g_free (_fun _pointer -> _void)
@@ -230,7 +211,7 @@
                                                  -> (begin0
                                                       (for/list ([i (in-range len)])
                                                         (ptr-ref fams PangoFontFamily i))
-                                                      (free fams))))
+                                                      (g_free fams))))
 
 (define-pango pango_font_description_free (_fun PangoFontDescription -> _void) 
   #:wrap (deallocator))

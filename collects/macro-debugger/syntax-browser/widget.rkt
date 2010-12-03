@@ -247,26 +247,3 @@
     (send sd set-delta 'change-italic)
     (send sd set-delta-foreground "red")
     sd))
-
-;; Specialized classes for widget
-
-(define browser-text%
-  (let ([browser-text-default-style-name "widget.rkt::browser-text% basic"])
-    (class (text:clickregion-mixin
-            (text:arrows-mixin
-             (text:tacking-mixin
-              (text:hover-drawings-mixin
-               (text:hover-mixin
-                (text:region-data-mixin
-                 (text:hide-caret/selection-mixin
-                  (text:foreground-color-mixin
-                   (editor:standard-style-list-mixin text:basic%)))))))))
-      (inherit set-autowrap-bitmap get-style-list)
-      (define/override (default-style-name) browser-text-default-style-name)
-      (super-new (auto-wrap #t))
-      (let* ([sl (get-style-list)]
-             [standard (send sl find-named-style (editor:get-default-color-style-name))]
-             [browser-basic (send sl find-or-create-style standard
-                                  (make-object style-delta% 'change-family 'default))])
-        (send sl new-named-style browser-text-default-style-name browser-basic))
-      (set-autowrap-bitmap #f))))

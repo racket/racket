@@ -5,7 +5,7 @@
 
 A @scheme[post-script-dc%] object is a PostScript device context, that
  can write PostScript files on any platform. See also
- @scheme[ps-setup%].
+ @scheme[ps-setup%] and @racket[pdf-dc%].
 
 @|PrintNote|
 
@@ -15,7 +15,10 @@ See also @scheme[printer-dc%].
 @defconstructor[([interactive any/c #t]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f]
                  [use-paper-bbox any/c #f]
-                 [as-eps any/c #t])]{
+                 [as-eps any/c #t]
+                 [width (or/c (and/c real? (not/c negative?)) #f) #f]
+                 [height (or/c (and/c real? (not/c negative?)) #f) #f]
+                 [output (or/c path-string? output-port? #f) #f])]{
 
 If @scheme[interactive] is true, the user is given a dialog for
  setting printing parameters (see @scheme[get-ps-setup-from-user]);
@@ -31,23 +34,30 @@ If @scheme[parent] is not @scheme[#f], it is used as the parent window of
 If @scheme[interactive] is @scheme[#f], then the settings returned by
  @scheme[current-ps-setup] are used. A file dialog is still presented
  to the user if the @method[ps-setup% get-file] method returns
- @scheme[#f], and the user may hit cancel in that case so that
- @method[dc<%> ok?] returns @scheme[#f].
+ @scheme[#f] and @racket[output] is @racket[#f], and the user may 
+ hit @onscreen{Cancel} in that case so that @method[dc<%> ok?] returns @scheme[#f].
 
 If @scheme[use-paper-bbox] is @scheme[#f], then the PostScript
- bounding box for the output is determined by drawing commands issued
- to the object; such a bounding box encloses all parts of the drawing
- @italic{ignoring} clipping regions (so the bounding box may be
- approximate). If @scheme[use-paper-bbox] is not @scheme[#f], then the
- bounding box is determined by the current paper size (as specified by
- @scheme[current-ps-setup]), and the bounding box does not include the
- margin (also specified by @scheme[current-ps-setup]).
+ bounding box for the output is determined by @racket[width] and
+ @racket[height]. If @scheme[use-paper-bbox] is not @scheme[#f], then
+ the bounding box is determined by the current paper size (as
+ specified by @scheme[current-ps-setup]). When @racket[width] or
+ @racket[height] is @racket[#f], then the corresponding dimension is
+ determined by the paper size, even if @racket[use-paper-bbox] is
+ @racket[#f].
 
 @index["Encapsulated PostScript (EPS)"]{If} @scheme[as-eps] is
  @scheme[#f], then the generated PostScript does not include an
  Encapsulated PostScript (EPS) header, and instead includes a generic
- PostScript header. Otherwise, the generated PostScript includes a
- header that identifiers it as EPS.
+ PostScript header. The margin and translation factors specified by
+ @racket[current-ps-setup] are used only when @racket[as-eps] is
+ @racket[#f]. If @racket[as-eps] is true, then the generated
+ PostScript includes a header that identifiers it as EPS.
+
+When @racket[output] is not @racket[#f], then file-mode output is
+ written to @racket[output]. If @racket[output] is @racket[#f], then
+ the destination is determined via @racket[current-ps-setup] or by
+ prompting the user for a pathname.
 
 See also @scheme[ps-setup%] and @scheme[current-ps-setup]. The
 settings for a particular @scheme[post-script-dc%] object are fixed to

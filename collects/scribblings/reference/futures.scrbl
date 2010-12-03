@@ -5,7 +5,7 @@
 @(define future-eval (make-base-eval))
 @(interaction-eval #:eval future-eval (require racket/future))
 
-@title[#:tag "futures"]{Futures for Parallelism}
+@title[#:tag "futures"]{Futures}
 
 @guideintro["effective-futures"]{futures}
 
@@ -19,7 +19,7 @@ Racket.}
 
 The @racket[future] and @racket[touch] functions from
 @racketmodname[racket/future] provide access to parallelism as
-supported by the hardware and operation system.
+supported by the hardware and operating system.
 In contrast to @racket[thread], which provides concurrency for
 arbitrary computations without parallelism, @racket[future] provides
 parallelism for limited computations. A future executes its work in

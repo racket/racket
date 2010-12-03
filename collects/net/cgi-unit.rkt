@@ -24,16 +24,15 @@
 
 ;; --------------------------------------------------------------------
 
-;; query-chars->string : list (char) -> string
+;; query-string->string : string -> string
 
-;; -- The input is the characters post-processed as per Web specs, which
+;; -- The input is the string post-processed as per Web specs, which
 ;; is as follows:
 ;; spaces are turned into "+"es and lots of things are turned into %XX, where
 ;; XX are hex digits, eg, %E7 for ~.  The output is a regular Scheme string
 ;; with all the characters converted back.
 
-(define (query-chars->string chars)
-  (form-urlencoded-decode (list->string chars)))
+(define query-string->string form-urlencoded-decode)
 
 ;; string->html : string -> string
 ;; -- the input is raw text, the output is HTML appropriately quoted
@@ -92,70 +91,53 @@
 (define (output-http-headers)
   (printf "Content-type: text/html\r\n\r\n"))
 
-;; read-until-char : iport x char -> list (char) x bool
-;; -- operates on the default input port; the second value indicates whether
-;; reading stopped because an EOF was hit (as opposed to the delimiter being
-;; seen); the delimiter is not part of the result
-(define (read-until-char ip delimiter?)
-  (let loop ([chars '()])
-    (let ([c (read-char ip)])
-      (cond [(eof-object? c) (values (reverse chars) #t)]
-            [(delimiter? c) (values (reverse chars) #f)]
-            [else (loop (cons c chars))]))))
-
-;; delimiter->predicate :
-;; symbol -> (char -> bool)
-;; returns a predicates to pass to read-until-char
-(define (delimiter->predicate delimiter)
+;; delimiter->predicate : symbol -> regexp
+;; returns a regexp to read a chunk of text up to a delimiter (excluding it)
+(define (delimiter->rx delimiter)
   (case delimiter
-    [(eq) (lambda (c) (char=? c #\=))]
-    [(amp) (lambda (c) (char=? c #\&))]
-    [(semi) (lambda (c) (char=? c #\;))]
-    [(amp-or-semi) (lambda (c) (or (char=? c #\&) (char=? c #\;)))]))
+    [(amp)         #rx#"^[^&]*"]
+    [(semi)        #rx#"^[^;]*"]
+    [(amp-or-semi) #rx#"^[^&;]*"]
+    [else (error 'delimiter->rx
+                 "internal-error, unknown delimiter: ~e" delimiter)]))
 
-;; read-name+value : iport -> (symbol + bool) x (string + bool) x bool
-;; -- If the first value is false, so is the second, and the third is true,
-;; indicating EOF was reached without any input seen.  Otherwise, the first
-;; and second values contain strings and the third is either true or false
-;; depending on whether the EOF has been reached.  The strings are processed
-;; to remove the CGI spec "escape"s.  This code is _slightly_ lax: it allows
-;; an input to end in (current-alist-separator-mode).  
-;; It's not clear this is legal by the CGI spec,
-;; which suggests that the last value binding must end in an EOF.  It doesn't
-;; look like this matters.  It would also introduce needless modality and
-;; reduce flexibility.
-(define (read-name+value ip)
-  (let-values ([(name eof?) (read-until-char ip (delimiter->predicate 'eq))])
-    (cond [(and eof? (null? name)) (values #f #f #t)]
-          [eof?
-           (generate-error-output
-            (list "Server generated malformed input for POST method:"
-                  (string-append
-                   "No binding for `" (list->string name) "' field.")))]
-          [else (let-values ([(value eof?) 
-                              (read-until-char 
-                               ip 
-                               (delimiter->predicate
-                                (current-alist-separator-mode)))])
-                  (values (string->symbol (query-chars->string name))
-                          (query-chars->string value)
-                          eof?))])))
+;; get-bindings* : iport -> (listof (cons symbol string))
+;; Reads all bindings from the input port.  The strings are processed to
+;; remove the CGI spec "escape"s.
+;; This code is _slightly_ lax: it allows an input to end in
+;; (current-alist-separator-mode).  It's not clear this is legal by the
+;; CGI spec, which suggests that the last value binding must end in an
+;; EOF.  It doesn't look like this matters.
+;; ELI: * Keeping this behavior for now, maybe better to remove it?
+;;      * Looks like `form-urlencoded->alist' is doing almost exactly
+;;        the same job this code does.
+(define (get-bindings* method ip)
+  (define (err fmt . xs)
+    (generate-error-output
+     (list (format "Server generated malformed input for ~a method:" method)
+           (apply format fmt xs))))
+  (define value-rx (delimiter->rx (current-alist-separator-mode)))
+  (define (process str) (query-string->string (bytes->string/utf-8 str)))
+  (let loop ([bindings '()])
+    (if (eof-object? (peek-char ip))
+      (reverse bindings)
+      (let ()
+        (define name (car (or (regexp-match #rx"^[^=]+" ip)
+                              (err "Missing field name before `='"))))
+        (unless (eq? #\= (read-char ip))
+          (err "No binding for `~a' field." name))
+        (define value (car (regexp-match value-rx ip)))
+        (read-char ip) ; consume the delimiter, possibly eof (retested above)
+        (loop (cons (cons (string->symbol (process name)) (process value))
+                    bindings))))))
 
 ;; get-bindings/post : () -> bindings
 (define (get-bindings/post)
-  (let-values ([(name value eof?) (read-name+value (current-input-port))])
-    (cond [(and eof? (not name)) null]
-          [(and eof? name) (list (cons name value))]
-          [else (cons (cons name value) (get-bindings/post))])))
+  (get-bindings* "POST" (current-input-port)))
 
 ;; get-bindings/get : () -> bindings
 (define (get-bindings/get)
-  (let ([p (open-input-string (getenv "QUERY_STRING"))])
-    (let loop ()
-      (let-values ([(name value eof?) (read-name+value p)])
-        (cond [(and eof? (not name)) null]
-              [(and eof? name) (list (cons name value))]
-              [else (cons (cons name value) (loop))])))))
+  (get-bindings* "GET" (open-input-string (getenv "QUERY_STRING"))))
 
 ;; get-bindings : () -> bindings
 (define (get-bindings)

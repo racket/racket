@@ -123,7 +123,8 @@
   (provide texpict-common-setup^)
   (define-signature texpict-common-setup^
     (connect
-     ~connect))
+     ~connect
+     convert-pict))
 
   (provide texpict-internal^)
   (define-signature texpict-internal^

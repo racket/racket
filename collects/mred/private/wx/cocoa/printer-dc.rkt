@@ -12,6 +12,7 @@
          ffi/unsafe/objc
          "../../lock.rkt"
          "dc.rkt"
+         "frame.rkt"
          "bitmap.rkt"
          "cg.rkt"
          "utils.rkt"
@@ -101,8 +102,13 @@
                              (send pss set-native pi make-print-info)
                              pi)))])
     (install-pss-to-print-info pss print-info)
-    (if (= (tell #:type _NSInteger (tell NSPageLayout pageLayout) runModalWithPrintInfo: print-info)
-           NSOkButton)
+    (if (atomically
+         (let ([front (get-front)])
+           (begin0
+            (= (tell #:type _NSInteger (tell NSPageLayout pageLayout) runModalWithPrintInfo: print-info)
+               NSOkButton)
+            (when front
+              (tellv (send front get-cocoa-window) makeKeyAndOrderFront: #f)))))
         (begin
           (let ([o (tell #:type _int print-info orientation)])
             (send pss set-orientation (if (= o NSLandscapeOrientation)
@@ -195,4 +201,8 @@
 
       (set-ivar! view-cocoa wxb (->wxb this))
 
-      (tellv op-cocoa runOperation))))
+      (atomically
+       (let ([front (get-front)])
+         (tellv op-cocoa runOperation)
+         (when front
+           (tellv (send front get-cocoa-window) makeKeyAndOrderFront: #f)))))))

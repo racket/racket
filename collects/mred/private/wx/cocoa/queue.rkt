@@ -19,6 +19,7 @@
               set-eventspace-hook!
               set-front-hook!
               set-menu-bar-hooks!
+              set-fixup-window-locations!
               post-dummy-event
 
               try-to-sync-refresh)
@@ -28,8 +29,20 @@
  queue-event
  yield)
 
-(import-class NSApplication NSAutoreleasePool NSColor)
+(import-class NSApplication NSAutoreleasePool NSColor NSProcessInfo NSArray)
 (import-protocol NSApplicationDelegate)
+
+;; Extreme hackery to hide original arguments from
+;; NSApplication, because NSApplication wants to turn 
+;; the arguments into `application:openFile:' calls.
+;; To hide the arguments, we replace the implementation
+;; of `arguments' in the NSProcessInfo object.
+(define (hack-argument-replacement self method)
+  (tell NSArray 
+        arrayWithObjects: #:type (_vector i _NSString) (vector (path->string (find-system-path 'exec-file)))
+        count: #:type _NSUInteger 1))
+(let ([m (class_getInstanceMethod NSProcessInfo (selector arguments))])
+  (void (method_setImplementation m hack-argument-replacement)))
 
 (define app (tell NSApplication sharedApplication))
 
@@ -58,21 +71,25 @@
       (let ([priviledged-custodian ((get-ffi-obj 'scheme_make_custodian #f (_fun _pointer -> _scheme)) #f)])
         (parameterize ([current-custodian priviledged-custodian])
           (thread (lambda () (sleep 5.0)))))
-      ;; FIXME: Also need to reset blit windows, since OS may move them incorrectly
-      (void)])
+      ;; Also need to reset blit windows, since OS may move them incorrectly:
+      (fixup-window-locations)])
+
+(define fixup-window-locations void)
+(define (set-fixup-window-locations! f) (set! fixup-window-locations f))
 
 ;; In case we were started in an executable without a bundle,
 ;; explicitly register with the dock so the application can receive
 ;; keyboard events.
-;; This technique is not sanctioned by Apple --- I found the code in SDL.
-(define-cstruct _CPSProcessSerNum ([lo _uint32] [hi _uint32]))
-(define-appserv CPSGetCurrentProcess (_fun _CPSProcessSerNum-pointer -> _int)
-  #:fail (lambda () (lambda args 1)))
-(define-appserv CPSEnableForegroundOperation (_fun _CPSProcessSerNum-pointer _int _int _int _int -> _int)
-  #:fail (lambda () #f))
-(let ([psn (make-CPSProcessSerNum 0 0)])
-  (when (zero? (CPSGetCurrentProcess psn))
-    (void (CPSEnableForegroundOperation psn #x03 #x3C #x2C #x1103))))
+(define-cstruct _ProcessSerialNumber
+  ([highLongOfPSN _ulong]
+   [lowLongOfPSN _ulong]))
+(define kCurrentProcess 2)
+(define kProcessTransformToForegroundApplication 1)
+(define-appserv TransformProcessType (_fun _ProcessSerialNumber-pointer
+                                           _uint32
+                                           -> _OSStatus))
+(void (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
+                            kProcessTransformToForegroundApplication))
 
 (define app-delegate (tell (tell MyApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)

@@ -2,10 +2,11 @@
 
 (require racket/file
          racket/future
-         scheme/fasl
-         scheme/match
+         racket/port
+         racket/fasl
+         racket/match
          racket/path
-         scheme/serialize
+         racket/serialize
          unstable/generics
          racket/stxparam
          (for-syntax syntax/parse
@@ -30,14 +31,14 @@
 
 (define-struct worker (id process-handle out in err))
 (define (current-executable-path) 
-  (parameterize ([current-directory (find-system-path 'orig-dir)])
-    (find-executable-path (find-system-path 'exec-file) #f)))
+ (parameterize ([current-directory (find-system-path 'orig-dir)])
+  (find-executable-path (find-system-path 'exec-file) #f)))
 (define (current-collects-path)
-   (let ([p (find-system-path 'collects-dir)])
-                         (if (complete-path? p)
-                             p
-                             (path->complete-path p (or (path-only (current-executable-path))
-                                                        (find-system-path 'orig-dir))))))
+ (let ([p (find-system-path 'collects-dir)])
+  (if (complete-path? p)
+      p
+      (path->complete-path p (or (path-only (current-executable-path))
+                                 (find-system-path 'orig-dir))))))
 
 
 (define (parallel-do-event-loop initialcode initialmsg worker-cmdline-list jobqueue nprocs stopat)
@@ -96,17 +97,26 @@
         [(list (and (? empty?) idle) (list) count error-count) (set! workers idle)]
         ;; Wait for reply from worker
         [(list idle inflight count error-count)
+          (define (remove-dead-worker id node-worker)
+            (loop (cons (spawn id) idle)
+                  (remove node-worker inflight)
+                  count
+                  (add1 error-count)))
+            
           (apply sync (map (λ (node-worker) (match node-worker
             [(list node (and wrkr (worker id sh out in err)))
               (handle-evt out (λ (e)
                  (let ([msg (with-handlers* ([exn:fail? (lambda (e) 
                                 (printf "MASTER READ ERROR - reading from worker: ~a\n" (exn-message e))    
                                 (kill-worker wrkr)
-                                (loop (cons (spawn id) idle)
-                                      (remove node-worker inflight)
-                                      count
-                                      (add1 error-count)))])
-                             (read out))])
+                                (remove-dead-worker id node-worker))])
+                             (let ([read-msg (read out)])
+                               (if (pair? read-msg)
+                                 read-msg
+                                 (begin
+                                   (work-done jobqueue node id (string-append read-msg (port->string out))) 
+                                   (kill-worker wrkr)
+                                   (remove-dead-worker id node-worker)))))])
                    (work-done jobqueue node id msg)
                    (loop (cons wrkr idle)
                          (remove node-worker inflight) 
@@ -116,7 +126,10 @@
               (eprintf "parallel-do-event-loop match node-worker failed.\n")
               (eprintf "trying to match:\n~a\n" node-worker)]))
                            
-                          inflight))])])
+                          inflight))]
+        [x
+         (eprintf "parallel-do-event-loop match-lambda* failed.\n")
+         (eprintf "trying to match:\n~a\n" x)])])
         (loop workers null 0 0)))
      (lambda () 
       (for ([p workers]) (with-handlers ([exn? void]) (send/msg (list 'DIE) (worker-in p))))

@@ -322,7 +322,7 @@
               [dc (make-object bitmap-dc% bm)])
          (set! measure-dc dc)))
      (send measure-dc set-font (or font
-                                   (make-object font% 8 'system)))
+				   (get-default-control-font)))
      (let-values ([(w h d a) (let loop ([label label])
                                (cond
                                 [(null? label) (values 0 0 0 0)]
@@ -688,6 +688,18 @@
         (map queue-file-event args)))))
 
 ;; ----------------------------------------
+
+(define default-control-font #f)
+(define (get-default-control-font)
+  (unless default-control-font
+    (set! default-control-font
+	  (make-object font%
+		       (get-theme-font-size)
+		       (get-theme-font-face)
+		       'system
+		       'normal 'normal #f 'default
+		       #t)))
+  default-control-font)
 
 (define (queue-window-event win thunk)
   (queue-event (send win get-eventspace) thunk))

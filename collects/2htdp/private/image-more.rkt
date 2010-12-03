@@ -707,15 +707,15 @@
      (let ([bitmap (flip-shape atomic-shape)]
            [flipped? (flip-flipped? atomic-shape)])
        (make-flip flipped?
-                  (make-bitmap (ibitmap-raw-bitmap bitmap)
-                               (ibitmap-raw-mask bitmap)
-                               (bring-between (if flipped? 
-                                                  (+ (ibitmap-angle bitmap) θ)
-                                                  (- (ibitmap-angle bitmap) θ))
-                                              360)
-                               (ibitmap-x-scale bitmap)
-                               (ibitmap-y-scale bitmap)
-                               (make-hash))))]))
+                  (make-ibitmap (ibitmap-raw-bitmap bitmap)
+                                (ibitmap-raw-mask bitmap)
+                                (bring-between (if flipped? 
+                                                   (+ (ibitmap-angle bitmap) θ)
+                                                   (- (ibitmap-angle bitmap) θ))
+                                               360)
+                                (ibitmap-x-scale bitmap)
+                                (ibitmap-y-scale bitmap)
+                                (make-hash))))]))
 
 ;; rotate-point : point angle -> point
 (define (rotate-point p θ)
@@ -1171,6 +1171,8 @@
     [(zero? b) a]
     [else (gcd b (modulo a b))]))
 
+
+
 ;; swizzle : (listof X)[odd-length] -> (listof X)
 ;; returns a list with the same elements, 
 ;; but reordered according to the step. Eg, if the step
@@ -1211,6 +1213,8 @@
     (make-image (make-translate radius radius (make-ellipse w/h w/h 0 mode color))
                 (make-bb w/h w/h w/h)
                 #f)))
+
+(define empty-image (rectangle 0 0 'solid 'black))
 
 (define/chk (image-width image) (bb-select/round/exact bb-right image))
 (define/chk (image-height image) (bb-select/round/exact bb-bottom image))
@@ -1367,6 +1371,7 @@
          empty-scene
          square
          rhombus
+         empty-image
          
          polygon
          regular-polygon

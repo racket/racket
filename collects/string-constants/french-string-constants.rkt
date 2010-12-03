@@ -134,8 +134,7 @@
   (web-materials "Sites web apparentés") ;; menu item title
   (tool-web-sites "Sites web d'outils")   ;; menu item title
   (plt-homepage "Racket")
-  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
-  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
+  (pbd-homepage "Program by Design")
   
   ;;; bug report form
   (cancel-bug-report? "Annuler la soumission du rapport de bogue ?")

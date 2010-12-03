@@ -134,8 +134,7 @@ please adhere to these guidelines:
  (web-materials "Связанные Web-сайты") ;; menu item title
  (tool-web-sites "Web-сайты установленных инструментов")   ;; menu item title
  (plt-homepage "Racket")
- (how-to-use-scheme "Как использовать Scheme") ;; title of a book.
- (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
+ (pbd-homepage "Program by Design")
 
  ;;; bug report form
  (cancel-bug-report? "Отменить отправку отчета об ошибках?")

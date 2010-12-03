@@ -281,32 +281,25 @@
                     ...
                     [field-ctc-var (coerce-contract 'object-contract field-ctc-stx)]
                     ...)
-                (make-contract
-                 #:name
-                 `(object-contract 
-                   ,(build-compound-type-name 'method-name method-ctc-var) ...
-                   ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
-                 #:projection
-                 (lambda (blame)
+                (define ctc
+                  (make-contract
+                   #:name
+                   `(object-contract 
+                     ,(build-compound-type-name 'method-name method-ctc-var) ...
+                     ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
+                   #:projection
+                   (lambda (blame)
+                     (lambda (val)
+                       (make-wrapper-object ctc val blame
+                                            (list 'method-name ...) (list method-ctc-var ...)
+                                            (list 'field-name ...) (list field-ctc-var ...))))
+                   #:first-order
                    (lambda (val)
-                     (make-wrapper-object val blame
-                                          (list 'method-name ...) (list method-ctc-var ...)
-                                          (list 'field-name ...) (list field-ctc-var ...))))
-                 #:first-order
-                 (lambda (val)
-                   (check-object-contract val #f (list 'method-name ...) (list 'field-name ...))))))))]))))
+                     (let/ec ret
+                       (check-object-contract val (list 'method-name ...) (list 'field-name ...)
+                                              (λ args (ret #f)))))))
+                  ctc))))]))))
 
-
-(define (check-object val blame)
-  (unless (object? val)
-    (raise-blame-error blame val "expected an object, got ~e" val)))
-
-(define (check-method val method-name val-mtd-names blame)
-  (unless (memq method-name val-mtd-names)
-    (raise-blame-error blame val "expected an object with method ~s" method-name)))
-
-(define (field-error val field-name blame)
-  (raise-blame-error blame val "expected an object with field ~s" field-name))
 
 (define (make-mixin-contract . %/<%>s)
   ((and/c (flat-contract class?)

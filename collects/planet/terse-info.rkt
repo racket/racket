@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 #|
 
@@ -12,13 +12,13 @@ seems little point to that).
 
 |#
   
-(provide planet-terse-register 
+(provide planet-terse-register
          planet-terse-log
          planet-terse-set-key) 
 
 (define terse-log-message-chan (make-channel))
 (define terse-log-proc-chan (make-channel))
-(define terse-log-key-param (make-parameter (gensym)))
+(define log-key-tc (make-thread-cell (gensym) #t))
   
 (define thd
   (thread
@@ -32,28 +32,29 @@ seems little point to that).
              (let ([registry (list-ref msg 0)]
                    [id (list-ref msg 1)]
                    [str (list-ref msg 2)])
-               (for-each (lambda (eph) 
-                           (let ([proc (ephemeron-value eph)])
-                             (when proc
-                               (proc id str))))
-                         (hash-ref procs registry '())))
+               (for ([eph (in-list (hash-ref procs registry '()))])
+                 (let ([proc (ephemeron-value eph)])
+                   (when proc
+                     (proc id str)))))
              (loop)))
           (handle-evt
            terse-log-proc-chan
            (lambda (rp)
-             (let ([registry (list-ref rp 0)]
-                   [proc (list-ref rp 1)])
+             (let* ([registry (list-ref rp 0)]
+                    [proc (list-ref rp 1)])
                (hash-update! procs
                              registry 
                              (lambda (x) (cons (make-ephemeron registry proc) x)) 
                              '())
                (loop))))))))))
 
-(define (planet-terse-log id str [key (terse-log-key-param)])
-  (sync (channel-put-evt terse-log-message-chan (list key id str))))
-  
-(define (planet-terse-register proc [key (terse-log-key-param)])
-  (sync (channel-put-evt terse-log-proc-chan (list key proc))))
+(define (planet-terse-log id str)
+  (sync (channel-put-evt terse-log-message-chan (list (thread-cell-ref log-key-tc) id str)))
+  (void))
+
+(define (planet-terse-register proc)
+  (sync (channel-put-evt terse-log-proc-chan (list (thread-cell-ref log-key-tc) proc)))
+  (void))
 
 (define (planet-terse-set-key new-key)
-  (terse-log-key-param new-key))
+  (thread-cell-set! log-key-tc new-key))

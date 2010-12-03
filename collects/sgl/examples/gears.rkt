@@ -335,7 +335,7 @@
 	   (gl-flush)))
 	(when step?
 	  (set! step? #f)
-	  (queue-callback (lambda x (send this run))))))
+	  (queue-callback (lambda x (send this run)) #f))))
 
     (super-instantiate () (style '(gl no-autoclear)))))
 (define (f)

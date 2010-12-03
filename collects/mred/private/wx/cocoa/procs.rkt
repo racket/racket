@@ -91,10 +91,15 @@
 (define (check-for-break) #f)
 
 (define (display-origin xb yb all?)
-  (set-box! xb 0)
   (if all?
-      (set-box! yb 0)
-      (set-box! yb (get-menu-bar-height))))
+      (atomically
+       (with-autorelease
+        (let* ([screen (tell (tell NSScreen screens) objectAtIndex: #:type _NSUInteger 0)]
+               [f (tell #:type _NSRect screen visibleFrame)])
+          (set-box! xb (->long (NSPoint-x (NSRect-origin f)))))))
+      (set-box! xb 0))
+  (set-box! yb (get-menu-bar-height)))
+
 (define (display-size xb yb all?)
   (atomically
    (with-autorelease

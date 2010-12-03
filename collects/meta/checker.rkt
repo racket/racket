@@ -3,7 +3,8 @@
 
 #lang scheme/base
 
-(require scheme/cmdline scheme/runtime-path scheme/match scheme/promise
+(require scheme/cmdline scheme/runtime-path scheme/match scheme/promise 
+         scheme/list ; for use in specs too
          (for-syntax scheme/base) ; for runtime-path
          (except-in scheme/mpair mappend)
          (only-in (lib "process.ss") system)
@@ -560,8 +561,10 @@
 (provide checker-namespace-anchor)
 (define-namespace-anchor checker-namespace-anchor)
 
+(define racket/ #f)
 (provide set-racket-tree!)
-(define (set-racket-tree! racket-base/ racket/-name tree-lists)
+(define (set-racket-tree! racket/* racket-base/ racket/-name tree-lists)
+  (set! racket/ racket/*)
   (set! *platform-tree-lists* tree-lists)
   (dprintf "Scanning main tree...")
   (set! *racket-tree*

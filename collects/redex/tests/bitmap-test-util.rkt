@@ -92,10 +92,10 @@
         (let loop ([y 0])
           (unless (= y h)
             (cond
-              [(and (<= x (send new-bitmap get-width))
-                    (<= y (send new-bitmap get-height))
-                    (<= x (send old-bitmap get-width))
-                    (<= y (send old-bitmap get-height)))
+              [(and (< x (send new-bitmap get-width))
+                    (< y (send new-bitmap get-height))
+                    (< x (send old-bitmap get-width))
+                    (< y (send old-bitmap get-height)))
                (send new get-pixel x y new-c)
                (send old get-pixel x y old-c)
                (cond

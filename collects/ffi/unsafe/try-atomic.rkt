@@ -11,7 +11,7 @@
 (define scheme_call_with_composable_no_dws
   (get-ffi-obj 'scheme_call_with_composable_no_dws #f (_fun _scheme _scheme -> _scheme)))
 (define scheme_set_on_atomic_timeout
-  (get-ffi-obj 'scheme_set_on_atomic_timeout #f (_fun (_fun -> _void) -> _pointer)))
+  (get-ffi-obj 'scheme_set_on_atomic_timeout #f (_fun (_fun _int -> _void) -> _pointer)))
 (define scheme_restore_on_atomic_timeout 
   (get-ffi-obj 'scheme_set_on_atomic_timeout #f (_fun _pointer -> _pointer)))
 
@@ -59,8 +59,10 @@
      [else
       ;; try to do some work:
       (let* ([ready? #f]
-             [handler (lambda ()
-                        (when (and ready? (should-give-up?))
+             [handler (lambda (must-give-up)
+                        (when (and ready? 
+                                   (or (positive? must-give-up)
+                                       (should-give-up?)))
                           (scheme_call_with_composable_no_dws
                            (lambda (proc)
                              (set-box! b (cons proc (unbox b)))

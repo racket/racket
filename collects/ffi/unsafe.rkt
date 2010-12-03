@@ -759,22 +759,20 @@
 
 ;; Call this with a name (symbol) and a list of symbols, where a symbol can be
 ;; followed by a '= and an integer to have a similar effect of C's enum.
-(define (_enum* name symbols . base?)
-  (define basetype (if (pair? base?) (car base?) _ufixint))
+(define (_enum name symbols [basetype _ufixint] #:unknown [unknown _enum])
   (define sym->int '())
   (define int->sym '())
   (define s->c
     (if name (string->symbol (format "enum:~a->int" name)) 'enum->int))
+  (define c->s
+    (if name (string->symbol (format "enum:int->~a" name)) 'int->enum))
   (let loop ([i 0] [symbols symbols])
     (unless (null? symbols)
-      (let-values ([(i rest)
-                    (if (and (pair? (cdr symbols))
-                             (eq? '= (cadr symbols))
-                             (pair? (cddr symbols)))
-                        (values (caddr symbols)
-                                (cdddr symbols))
-                        (values i
-                                (cdr symbols)))])
+      (let-values ([(i rest) (if (and (pair? (cdr symbols))
+                                      (eq? '= (cadr symbols))
+                                      (pair? (cddr symbols)))
+                               (values (caddr symbols) (cdddr symbols))
+                               (values i (cdr symbols)))])
         (set! sym->int (cons (cons (car symbols) i) sym->int))
         (set! int->sym (cons (cons i (car symbols)) int->sym))
         (loop (add1 i) rest))))
@@ -784,26 +782,26 @@
         (if a
           (cdr a)
           (raise-type-error s->c (format "~a" (or name "enum")) x))))
-    (lambda (x) (cond [(assq x int->sym) => cdr] [else #f]))))
+    (lambda (x)
+      (cond [(assq x int->sym) => cdr]
+            [(eq? unknown _enum)
+             (error c->s "expected a known ~a, got: ~s" basetype x)]
+            [(procedure? unknown) (unknown x)]
+            [else unknown]))))
 
 ;; Macro wrapper -- no need for a name
-(provide _enum)
-(define-syntax (_enum stx)
+(provide (rename-out [_enum* _enum]))
+(define-syntax (_enum* stx)
   (syntax-case stx ()
-    [(_ syms)
-     (with-syntax ([name (syntax-local-name)])
-       #'(_enum* 'name syms))]
-    [(_ syms basetype)
-     (with-syntax ([name (syntax-local-name)])
-       #'(_enum* 'name syms basetype))]
-    [id (identifier? #'id)
-     #'(lambda (syms . base?) (apply _enum* #f syms base?))]))
+    [(_ x ...)
+     (with-syntax ([name (syntax-local-name)]) #'(_enum 'name x ...))]
+    [id (identifier? #'id) #'_enum]))
 
 ;; Call this with a name (symbol) and a list of (symbol int) or symbols like
 ;; the above with '= -- but the numbers have to be specified in some way.  The
 ;; generated type will convert a list of these symbols into the logical-or of
 ;; their values and back.
-(define (_bitmask* name orig-symbols->integers . base?)
+(define (_bitmask name orig-symbols->integers . base?)
   (define basetype (if (pair? base?) (car base?) _uint))
   (define s->c
     (if name (string->symbol (format "bitmask:~a->int" name)) 'bitmask->int))
@@ -843,17 +841,12 @@
                       l)))))))))
 
 ;; Macro wrapper -- no need for a name
-(provide _bitmask)
-(define-syntax (_bitmask stx)
+(provide (rename-out [_bitmask* _bitmask]))
+(define-syntax (_bitmask* stx)
   (syntax-case stx ()
-    [(_ syms)
-     (with-syntax ([name (syntax-local-name)])
-       #'(_bitmask* 'name syms))]
-    [(_ syms basetype)
-     (with-syntax ([name (syntax-local-name)])
-       #'(_bitmask* 'name syms basetype))]
-    [id (identifier? #'id)
-     #'(lambda (syms . base?) (apply _bitmask* #f syms base?))]))
+    [(_ x ...)
+     (with-syntax ([name (syntax-local-name)]) #'(_bitmask 'name x ...))]
+    [id (identifier? #'id) #'_bitmask]))
 
 ;; ----------------------------------------------------------------------------
 ;; Custom function type macros
@@ -1347,67 +1340,47 @@
                   (values _TYPE* _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
                           make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
                           list->TYPE list*->TYPE TYPE->list TYPE->list*))))))))
-  (define (identifiers? stx)
-    (andmap identifier? (syntax->list stx)))
-  (define (_-identifier? id stx)
-    (and (identifier? id)
-         (or (regexp-match #rx"^_." (symbol->string (syntax-e id)))
-             (raise-syntax-error #f "cstruct name must begin with a `_'"
-                                 stx id))))
-  ;; there is something wrong with the syntax, this function will find what it is
-  (define (syntax-error stx)
-    (define (check-rest rest)
-      (syntax-case rest ()
-        [() (void)]
-        [else (raise-syntax-error #f "extra arguments given" rest)]))
-    (define (check-alignment alignment)
-      (syntax-case alignment ()
-        [(#:alignment alignment-expr rest ...)
-         (check-rest #'(rest ...))]
-        [else (raise-syntax-error #f "the last argument can only be #:alignment" alignment)]))
-    (define (check-slots slots)
-      (define (check-slot slot)
-        (syntax-case slot ()
-          [(name field) (void)]
-          [else (raise-syntax-error #f "a field must be a pair of a name and a ctype such as [x _int]" slot)]))
-      ;; check that some slots are given
-      (syntax-case slots ()
-        [([name-id expr-id] ... . rest)
-         (when (and (identifiers? #'(name-id ...))
-                    (identifiers? #'(expr-id ...)))
-           (raise-syntax-error #f "fields must be a parenthesized list of name and a ctype such as ([x _int] [y _int])" slots))])
-      (syntax-case slots ()
-        [((slot ...) rest ...)
-         (begin
-           (for ([slot-stx (in-list (syntax->list #'(slot ...)))])
-             (check-slot slot-stx))
-           (check-alignment #'(rest ...)))]
-        [else (raise-syntax-error #f "fields must be a parenthesized list such as ([x _int] [y _int])" slots)]))
-    (define (check-name stx)
-      (syntax-case stx ()
-        [(_ _TYPE rest ...)
-         (check-slots #'(rest ...))]
-        [else (raise-syntax-error #f "a name must be provided to cstruct" stx)]))
-    (check-name stx))
-
+  (define (err what . xs)
+    (apply raise-syntax-error #f
+           (if (list? what) (apply string-append what) what)
+           stx xs))
   (syntax-case stx ()
-    [(_ _TYPE ([slot slot-type] ...))
-     (and (_-identifier? #'_TYPE stx)
-          (identifiers? #'(slot ...)))
-     (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...) #'#f)]
-    [(_ _TYPE ([slot slot-type] ...) #:alignment alignment-expr)
-     (and (_-identifier? #'_TYPE stx)
-          (identifiers? #'(slot ...)))
-     (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...) #'alignment-expr)]
-    [(_ (_TYPE _SUPER) ([slot slot-type] ...))
-     (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
-     (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
-       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'#f))]
-    [(_ (_TYPE _SUPER) ([slot slot-type] ...) #:alignment alignment-expr)
-     (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
-     (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
-       (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...) #'alignment-expr))]
-    [else (syntax-error stx)]))
+    [(_ type ([slot slot-type] ...) . more)
+     (let-values ([(_TYPE _SUPER)
+                   (syntax-case #'type ()
+                     [(t s) (values #'t #'s)]
+                     [_ (values #'type #f)])]
+                  [(alignment)
+                   (syntax-case #'more ()
+                     [() #'#f]
+                     [(#:alignment) (err "missing expression for #:alignment")]
+                     [(#:alignment a) #'a]
+                     [(#:alignment a x . _) (err "unexpected form" #'x)]
+                     [(x . _) (err (if (keyword? (syntax-e #'x))
+                                     "unknown keyword" "unexpected form")
+                                   #'x)])])
+       (unless (identifier? _TYPE)
+         (err "bad type, expecting a _name identifier or (_name super-ctype)"
+              _TYPE))
+       (unless (regexp-match? #rx"^_." (symbol->string (syntax-e _TYPE)))
+         (err "cstruct name must begin with a `_'" _TYPE))
+       (for ([s (in-list (syntax->list #'(slot ...)))])
+         (unless (identifier? s)
+           (err "bad field name, expecting an identifier identifier" s)))
+       (if _SUPER
+         (make-syntax _TYPE #t
+                      #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
+                      #`(#,_SUPER slot-type ...)
+                      alignment)
+         (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) alignment)))]
+    ;; specific errors for bad slot specs, leave the rest for a generic error
+    [(_ type (bad ...) . more)
+     (err "bad slot specification, expecting [name ctype]"
+          (ormap (lambda (s) (syntax-case s () [[n ct] #t] [_ s]))
+                 (syntax->list #'(bad ...))))]
+    [(_ type bad . more)
+     (err "bad slot specification, expecting a sequence of [name ctype]"
+          #'bad)]))
 
 ;; helper for the above: keep runtime information on structs
 (define cstruct-info

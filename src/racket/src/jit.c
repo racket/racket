@@ -5967,13 +5967,14 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
             } else if (v == 0) {
               (void)jit_movi_p(JIT_R0, scheme_make_integer(0));
             } else {
-              (void)jit_movi_p(JIT_R1, scheme_make_integer(v));
-              jit_andi_ul(JIT_R2, JIT_R1, (~0x1));
+              (void)jit_movi_l(JIT_R2, ((long)scheme_make_integer(v) & (~0x1)));
               jit_rshi_l(JIT_V1, JIT_R0, 0x1);
               if (unsafe_fx && !overflow_refslow)
                 jit_mulr_l(JIT_V1, JIT_V1, JIT_R2);
-              else
+              else {
+                (void)jit_movi_p(JIT_R1, scheme_make_integer(v)); /* for slow path */
                 (void)jit_bomulr_l(refslow, JIT_V1, JIT_R2);
+              }
               jit_ori_ul(JIT_R0, JIT_V1, 0x1);
             }
           } else if (arith == -2) {

@@ -42,33 +42,58 @@
               [[pen-style-symbol? style] 'solid]
               [[pen-width? width] 0])
 
-  (init-rest args)
-  (super-new)
+  (init [(_color color) black]
+        [(_width width) 0]
+        [(_style style) 'solid]
+        [(_cap cap) 'round]
+        [(_join join) 'round]
+        [(_stipple stipple) #f])
 
-  (case-args
-   args
-   [() (void)]
-   [([color% _color]
-     [pen-width? _width]
-     [pen-style-symbol? _style]
-     [pen-cap-symbol? [_cap 'round]]
-     [pen-join-symbol? [_join 'round]])
-    (set! color (color->immutable-color _color))
-    (set! width _width)
-    (set! style _style)
-    (set! cap _cap)
-    (set! join _join)]
-   [([string? _color]
-     [pen-width? _width]
-     [pen-style-symbol? _style]
-     [pen-cap-symbol? [_cap 'round]]
-     [pen-join-symbol? [_join 'round]])
-    (set! color (send the-color-database find-color _color))
-    (set! width _width)
-    (set! style _style)
-    (set! cap _cap)
-    (set! join _join)]
-   (init-name 'pen%))
+  (set! color
+        (cond
+         [(string? _color) (or (send the-color-database find-color _color) black)]
+         [(color . is-a? . color%)
+          (color->immutable-color _color)]
+         [else
+          (raise-type-error (init-name 'pen%)
+                            "string or color%"
+                            _color)]))
+  (set! width
+        (if (pen-width? _width)
+            _width
+            (raise-type-error (init-name 'pen%)
+                              "real in [0, 255]"
+                              _width)))
+  
+  (set! style
+        (if (pen-style-symbol? _style)
+            _style
+            (raise-type-error (init-name 'pen%)
+                              "pen style symbol"
+                              _style)))
+    
+  (set! cap
+        (if (pen-cap-symbol? _cap)
+            _cap
+            (raise-type-error (init-name 'pen%)
+                              "pen cap symbol"
+                              _cap)))
+    
+  (set! join
+        (if (pen-join-symbol? _join)
+            _join
+            (raise-type-error (init-name 'pen%)
+                              "pen join symbol"
+                              _join)))
+
+  (when _stipple
+    (unless (_stipple . is-a? . bitmap%)
+      (raise-type-error (init-name 'pen%)
+                        "bitmap% or #f"
+                        _stipple))
+    (set-stipple _stipple))
+
+  (super-new)
 
   (define immutable? #f)
   (define lock-count 0)
@@ -78,7 +103,7 @@
 
   (define/private (check-immutable s)
     (when (or immutable? (positive? lock-count))
-      (error (method-name 'brush% s) "object is ~a"
+      (error (method-name 'pen% s) "object is ~a"
              (if immutable? "immutable" "locked"))))
 
   (define/public (set-color . args)
@@ -128,7 +153,8 @@
                      [pen-style-symbol? _style]
                      [pen-cap-symbol? [_cap 'round]]
                      [pen-join-symbol? [_join 'round]])
-                    (values (send the-color-database find-color _color)
+                    (values (or (send the-color-database find-color _color)
+                                black)
                             _width _style _cap _join)]
                    (method-name 'find-or-create-pen 'pen-list%))])
       (let ([key (vector (send col red) (send col green) (send col blue)

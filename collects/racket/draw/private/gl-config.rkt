@@ -25,7 +25,7 @@
   (def/public (set-accum-size [(integer-in 0 256) s])
     (set! accum-size s))
 
-  (define depth-size 0)
+  (define depth-size 1)
   (define/public (get-depth-size) depth-size)
   (def/public (set-depth-size [(integer-in 0 256) s])
     (set! depth-size s))

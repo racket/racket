@@ -111,6 +111,12 @@
 
 (define set-union
   (case-lambda
+   ;; No 0 argument set exists because its not clear what type of set
+   ;; to return. A keyword is unsatisfactory because it may be hard to
+   ;; remember. A simple solution is just to provide the type of the
+   ;; empty set that you want, like (set-union (set)) or
+   ;; (set-union (set-eqv))
+   ;; [() (set)]
    [(set) 
     (unless (set? set) (raise-type-error 'set-union "set" 0 set))
     set]

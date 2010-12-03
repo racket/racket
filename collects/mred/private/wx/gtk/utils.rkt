@@ -2,16 +2,17 @@
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
+         racket/draw/unsafe/glib
          (only-in '#%foreign ctype-c->scheme)
          "../common/utils.rkt"
          "types.rkt")
 
 (provide 
  define-mz
+ define-gobj
+ define-glib
  (protect-out define-gtk
               define-gdk
-              define-gobj
-              define-glib
               define-gdk_pixbuf
 
               g_object_ref
@@ -56,27 +57,6 @@
      (ffi-lib "libgdk_pixbuf-2.0-0")
      (ffi-lib "libgdk-win32-2.0-0")]
     [else (ffi-lib "libgdk-x11-2.0" '("0"))]))
-(define gobj-lib 
-  (case (system-type)
-    [(windows)
-     (ffi-lib "libgobject-2.0-0")]
-    [(unix)
-     (ffi-lib "libgobject-2.0" '("0"))]
-    [else gdk-lib]))
-(define glib-lib 
-  (case (system-type)
-    [(windows)
-     (ffi-lib "libglib-2.0-0")]
-    [(unix)
-     (ffi-lib "libglib-2.0" '("0"))]
-    [else gdk-lib]))
-(define gmodule-lib 
-  (case (system-type)
-    [(windows)
-     (ffi-lib "libgmodule-2.0-0")]
-    [(unix)
-     (ffi-lib "libgmodule-2.0" '("0"))]
-    [else gdk-lib]))
 (define gdk_pixbuf-lib 
   (case (system-type)
     [(windows)
@@ -91,9 +71,6 @@
     [else (ffi-lib "libgtk-x11-2.0" '("0"))]))
 
 (define-ffi-definer define-gtk gtk-lib)
-(define-ffi-definer define-gobj gobj-lib)
-(define-ffi-definer define-glib glib-lib)
-(define-ffi-definer define-gmodule gmodule-lib)
 (define-ffi-definer define-gdk gdk-lib)
 (define-ffi-definer define-gdk_pixbuf gdk_pixbuf-lib)
 

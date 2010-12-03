@@ -29,16 +29,16 @@
       (tellv cocoa setFont: sys-font)))
 
 (defclass item% window%
-  (inherit get-cocoa)
+  (inherit get-cocoa
+           is-window-enabled?)
 
   (init-field callback)
 
   (define/public (get-cocoa-control) (get-cocoa))
 
-  (define/override (enable on?)
-    (tellv (get-cocoa-control) setEnabled: #:type _BOOL on?))
-  (define/override (is-window-enabled?)
-    (tell #:type _BOOL (get-cocoa-control) isEnabled))
+  (define/override (enable-window on?)
+    (let ([on? (and on? (is-window-enabled?))])
+      (tellv (get-cocoa-control) setEnabled: #:type _BOOL on?)))
 
   (define/override (gets-focus?)
     (tell #:type _BOOL (get-cocoa-control) canBecomeKeyView))

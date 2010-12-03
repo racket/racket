@@ -369,9 +369,9 @@
                (λ (x y)
                  (send-url url)))))])
     (add (string-constant plt-homepage) "http://racket-lang.org/")
-    (add (string-constant teachscheme!-homepage) "http://www.teach-scheme.org/")
-    (add (string-constant how-to-design-programs) "http://www.htdp.org/")
-    
+    (add (string-constant pbd-homepage) "http://programbydesign.org/")
+    (add (string-constant how-to-design-programs) "http://htdp.org/")
+
     (for-each (λ (tool)
                 (cond [(drracket:tools:successful-tool-url tool) 
                        =>

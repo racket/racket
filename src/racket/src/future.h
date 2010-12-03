@@ -65,6 +65,10 @@ typedef struct future_t {
   unsigned long alloc_retval;
   int alloc_retval_counter;
 
+  /* For logging the future's execution time */
+  double time_of_start;
+  double time_of_completion;
+
   void *prim_func;
   int prim_protocol;
   Scheme_Object *arg_s0;

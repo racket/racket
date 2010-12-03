@@ -152,7 +152,9 @@ static int quotesyntax_obj_FIXUP(void *p, struct NewGC *gc) {
 
 static int cpointer_obj_SIZE(void *p, struct NewGC *gc) {
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
+   (SCHEME_CPTR_HAS_OFFSET(p)
+    ? gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr))
+    : gcBYTES_TO_WORDS(sizeof(Scheme_Cptr)));
 }
 
 static int cpointer_obj_MARK(void *p, struct NewGC *gc) {
@@ -161,7 +163,9 @@ static int cpointer_obj_MARK(void *p, struct NewGC *gc) {
   }
   gcMARK2(SCHEME_CPTR_TYPE(p), gc);
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
+   (SCHEME_CPTR_HAS_OFFSET(p)
+    ? gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr))
+    : gcBYTES_TO_WORDS(sizeof(Scheme_Cptr)));
 }
 
 static int cpointer_obj_FIXUP(void *p, struct NewGC *gc) {
@@ -170,38 +174,13 @@ static int cpointer_obj_FIXUP(void *p, struct NewGC *gc) {
   }
   gcFIXUP2(SCHEME_CPTR_TYPE(p), gc);
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
+   (SCHEME_CPTR_HAS_OFFSET(p)
+    ? gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr))
+    : gcBYTES_TO_WORDS(sizeof(Scheme_Cptr)));
 }
 
 #define cpointer_obj_IS_ATOMIC 0
-#define cpointer_obj_IS_CONST_SIZE 1
-
-
-static int offset_cpointer_obj_SIZE(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
-}
-
-static int offset_cpointer_obj_MARK(void *p, struct NewGC *gc) {
-  if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
-    gcMARK2(SCHEME_CPTR_VAL(p), gc);
-  }
-  gcMARK2(SCHEME_CPTR_TYPE(p), gc);
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
-}
-
-static int offset_cpointer_obj_FIXUP(void *p, struct NewGC *gc) {
-  if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
-    gcFIXUP2(SCHEME_CPTR_VAL(p), gc);
-  }
-  gcFIXUP2(SCHEME_CPTR_TYPE(p), gc);
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
-}
-
-#define offset_cpointer_obj_IS_ATOMIC 0
-#define offset_cpointer_obj_IS_CONST_SIZE 1
+#define cpointer_obj_IS_CONST_SIZE 0
 
 
 static int twoptr_obj_SIZE(void *p, struct NewGC *gc) {
@@ -4569,39 +4548,6 @@ static int mark_thread_cell_FIXUP(void *p, struct NewGC *gc) {
 
 #define mark_thread_cell_IS_ATOMIC 0
 #define mark_thread_cell_IS_CONST_SIZE 1
-
-
-static int mark_frozen_tramp_SIZE(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
-}
-
-static int mark_frozen_tramp_MARK(void *p, struct NewGC *gc) {
-  FrozenTramp *f = (FrozenTramp *)p;
- 
-  gcMARK2(f->do_data, gc);
-  gcMARK2(f->old_param, gc);
-  gcMARK2(f->config, gc);
-  gcMARK2(f->progress_cont, gc);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
-}
-
-static int mark_frozen_tramp_FIXUP(void *p, struct NewGC *gc) {
-  FrozenTramp *f = (FrozenTramp *)p;
- 
-  gcFIXUP2(f->do_data, gc);
-  gcFIXUP2(f->old_param, gc);
-  gcFIXUP2(f->config, gc);
-  gcFIXUP2(f->progress_cont, gc);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
-}
-
-#define mark_frozen_tramp_IS_ATOMIC 0
-#define mark_frozen_tramp_IS_CONST_SIZE 1
 
 
 #endif  /* THREAD */

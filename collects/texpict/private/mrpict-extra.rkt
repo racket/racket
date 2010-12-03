@@ -4,12 +4,13 @@
   (require mzlib/class
            mzlib/etc)
 
-  (require mred/mred-sig)
+  (require racket/draw/draw-sig
+           racket/gui/dynamic)
 
   (require "mrpict-sig.ss"
 	   "common-sig.ss")
 
-  (import mred^
+  (import draw^
           texpict-common^
           texpict-internal^)
   (export mrpict-extra^
@@ -21,7 +22,7 @@
           (define pict-drawer (make-pict-drawer the-pict))
           (define no-redraw? #f)
           (define pict-frame%
-            (class frame%
+            (class (gui-dynamic-require 'frame%)
               (define/public (set-pict p)
                 (set! the-pict p)
                 (set! pict-drawer (make-pict-drawer the-pict))
@@ -34,7 +35,7 @@
                 (send c on-paint))
               (super-instantiate ())))
           (define pict-canvas%
-            (class canvas%
+            (class (gui-dynamic-require 'canvas%)
               (inherit get-dc)
               (define/override (on-paint)
                 (unless no-redraw?
@@ -441,3 +442,34 @@
 
       (define (draw-pict p dc dx dy)
 	((make-pict-drawer p) dc dx dy))
+
+
+      (define (convert-pict p format default)
+        (case format
+          [(png-bytes)
+           (let* ([bm (make-bitmap (max 1 (inexact->exact (ceiling (pict-width p))))
+                                   (max 1 (inexact->exact (ceiling (pict-height p)))))]
+                  [dc (make-object bitmap-dc% bm)])
+             (send dc set-smoothing 'aligned)
+             (draw-pict p dc 0 0)
+             (send dc set-bitmap #f)
+             (let ([s (open-output-bytes)])
+               (send bm save-file s 'png)
+               (get-output-bytes s)))]
+          [(eps-bytes pdf-bytes)
+           (let ([s (open-output-bytes)])
+             (let ([dc (new (if (eq? format 'eps-bytes) post-script-dc% pdf-dc%)
+                            [interactive #f]
+                            [as-eps #t]
+                            [width (pict-width p)]
+                            [height (pict-height p)]
+                            [output s])])
+               (send dc start-doc "pict")
+               (send dc start-page)
+               (draw-pict p dc 0 0)
+               (send dc end-page)
+               (send dc end-doc))
+             (get-output-bytes s))]
+          [else default]))
+
+             

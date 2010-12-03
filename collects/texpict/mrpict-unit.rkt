@@ -2,7 +2,7 @@
 (module mrpict-unit mzscheme
   (require mzlib/unit)
 
-  (require mred/mred-sig)
+  (require racket/draw/draw-sig)
 
   (require "private/mrpict-sig.ss"
 	   "private/common-sig.ss"
@@ -11,6 +11,6 @@
 	
   (provide mrpict@)
   (define-compound-unit/infer mrpict@
-    (import mred^)
+    (import draw^)
     (export texpict-common^ mrpict-extra^)
     (link common@ mrpict-extra@)))

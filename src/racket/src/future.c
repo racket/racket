@@ -627,6 +627,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
   Scheme_Native_Closure *nc;
   Scheme_Native_Closure_Data *ncd;
   Scheme_Object *lambda = argv[0];
+  double time_of_start;
 
   /* Input validation */
   scheme_check_proc_arity("future", 0, 0, argc, argv);
@@ -669,6 +670,11 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
   if (ft->status != PENDING_OVERSIZE) {
     mzrt_mutex_lock(fs->future_mutex);
     enqueue_future(fs, ft);
+    
+    /* Log the spawn time */
+    time_of_start = scheme_get_inexact_milliseconds();
+    ft->time_of_start = time_of_start;
+
     /* Signal that a future is pending */
     mzrt_sema_post(fs->future_pending_sema);
     /* Alert the runtime thread, in case it wants to
@@ -722,6 +728,7 @@ static void future_in_runtime(future_t * volatile ft)
   Scheme_Thread *p = scheme_current_thread;  
   Scheme_Object * volatile retval;
   future_t * volatile old_ft;
+  double time_of_completion;
 
   old_ft = p->current_ft;
   p->current_ft = ft;
@@ -744,6 +751,8 @@ static void future_in_runtime(future_t * volatile ft)
   p->error_buf = savebuf;
   p->current_ft = old_ft;
 
+  time_of_completion = scheme_get_inexact_milliseconds();
+  ft->time_of_completion = time_of_completion;
   ft->work_completed = 1;
   ft->retval = retval;
   ft->status = FINISHED;
@@ -818,8 +827,16 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
       {
         retval = ft->retval;
 
-        LOG("Successfully touched future %d\n", ft->id);
-
+        /* Log execution time */ 
+        if (scheme_log_level_p(scheme_main_logger, SCHEME_LOG_DEBUG)) {
+          scheme_log(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
+                 "future: %d finished. start time: %f, finish time: %f (%f ms)", 
+                  ft->id, 
+                  ft->time_of_start, 
+                  ft->time_of_completion, 
+                  ft->time_of_completion - ft->time_of_start);
+        }
+        
         mzrt_mutex_unlock(fs->future_mutex);
         break;
       }
@@ -1048,6 +1065,9 @@ void *worker_thread_future_loop(void *arg)
         /* Set the return val in the descriptor */
         ft->work_completed = 1;
         ft->retval = v;
+
+        /* Log future completion time */
+        ft->time_of_completion = scheme_get_inexact_milliseconds();
         
         /* In case of multiple values: */
         send_special_result(ft, v);

@@ -165,6 +165,18 @@ After mastering the world of blogging software, you decide to put the ubiquitous
  Calls @racket[serve/servlet] with a @racket[#:servlet-regexp] argument (@racket[#rx""]) so that every request is handled by @racket[dispatch].
 }
               
+@section{Imperative Dispatch Containers}
+
+@racket[dispatch-rules] is purely functional. This presents a more declarative interface, but inhibits some programming and modularity patterns. @deftech{Containers} provide an imperative overlay atop @racket[dispatch-rules].
+
+@defproc[(container? [x any/c]) boolean?]{ Identifies @tech{containers}. }
+
+@defform[(define-container container-id (dispatch-id url-id))]{
+ Defines @racket[container-id] as a container as well as @racket[dispatch-id] as its dispatching function and @racket[url-id] as its URL lookup function.}
+
+@defform[(dispatch-rules! container-expr [dispatch-pattern dispatch-fun] ...)]{
+ Like @racket[dispatch-rules], but imperatively adds the patterns to the container specified by @racket[container-expr]. The new rules are consulted @emph{before} any rules already in the container. }
+              
 @section{Built-in URL patterns}
 
 @racketmodname[web-server/dispatch] builds in a few useful URL component patterns.

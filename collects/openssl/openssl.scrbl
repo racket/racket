@@ -139,8 +139,7 @@ Returns @scheme[#t] if @scheme[v] is a value produced by
 	   (or/c ssl-server-context? symbol?) 'sslv2-or-v3])
 	 ssl-listener?]{
 
-Like @scheme[tcp-listen], but the result is an SSL listener (which is
-a synchronizable value; see @scheme[sync]). The extra optional
+Like @scheme[tcp-listen], but the result is an SSL listener. The extra optional
 @scheme[server-protocol] is as for @scheme[ssl-connect], except that a
 context must be a server context instead of a client context.
 
@@ -149,7 +148,14 @@ Call @scheme[ssl-load-certificate-chain!] and
 error on accepting connections. The file @filepath{test.pem} in the
 @filepath{openssl} collection is a suitable argument for both calls
 when testing. Since @filepath{test.pem} is public, however, such a
-test configuration obviously provides no security.}
+test configuration obviously provides no security.
+
+An SSL listener is a synchronizable value (see @scheme[sync]). It is
+ready---with itself as its value---when the underlying TCP listener is
+ready. At that point, however, accepting a connection with
+@racket[ssl-accept] may not complete immediately, because
+further communication is needed to establish the connection.}
+
 
 @deftogether[(
   @defproc[(ssl-close (listener ssl-listener?)) void?]

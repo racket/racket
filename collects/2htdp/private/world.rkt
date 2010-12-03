@@ -211,9 +211,15 @@
         (let ([s (send visible find-first-snip)]
               [c (send visible get-canvas)])
           (when s (send visible delete s))
-          (send visible insert (send pict copy) 0 0))
-        (send visible lock #t)
-        (send visible end-edit-sequence))
+          (send visible insert (send pict copy) 0 0)
+          (send visible lock #t)
+          (send visible end-edit-sequence)
+          ;; The following flush trades streaming performance (where updates
+          ;; could be skipped if they're replaced fast enough) for 
+          ;; responsiveness (where too many updates might not get 
+          ;; through if the canvas is mostly in suspended-refresh 
+          ;; mode for scene changes):
+          (send c flush)))
       
       ;; ----------------------------------------------------------------------
       ;; callbacks 
@@ -257,14 +263,17 @@
                      (begin
                        (set! nw (stop-the-world-world nw))
                        (send world set tag nw)
-                       (when last-picture (last-draw))
-                       (when draw (pdraw))
+                       (cond
+                         [last-picture (last-draw)]
+                         [draw (pdraw)])
                        (callback-stop! 'name)
                        (enable-images-button))
-                     (let ([changed-world? (send world set tag nw)])
+                     (let ([changed-world? (send world set tag nw)]
+                           [stop? (pstop)])
                        ;; this is the old "Robby optimization" see checked-cell:
                        ; unless changed-world? 
-                       (when draw 
+                       (cond
+                         [(and draw (not stop?))
                          (cond
                            [(not drawing)
                             (set! drawing #t)
@@ -279,11 +288,13 @@
                             ;; high!!  the scheduled callback didn't fire
                             (queue-callback (lambda () (d)) #t)]
                            [else 
-                            (set! draw# (- draw# 1))]))
-                       (when (pstop)
-                         (when last-picture (last-draw))
-                         (callback-stop! 'name)
-                         (enable-images-button))
+                            (set! draw# (- draw# 1))])]
+                         [stop?
+                          (cond 
+                            [last-picture (last-draw)]
+                            [draw (pdraw)])
+                          (callback-stop! 'name)
+                          (enable-images-button)])
                        changed-world?))))))))
       
       ;; tick, tock : deal with a tick event for this world 

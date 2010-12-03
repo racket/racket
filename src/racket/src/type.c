@@ -220,7 +220,6 @@ scheme_init_type ()
   set_name(scheme_subprocess_type, "<subprocess>");
 
   set_name(scheme_cpointer_type, "<cpointer>");
-  set_name(scheme_offset_cpointer_type, "<cpointer>");
 
   set_name(scheme_wrap_chunk_type, "<wrap-chunk>");
 
@@ -555,7 +554,6 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_flvector_type, flvector_obj);
   GC_REG_TRAV(scheme_fxvector_type, fxvector_obj);
   GC_REG_TRAV(scheme_cpointer_type, cpointer_obj);
-  GC_REG_TRAV(scheme_offset_cpointer_type, offset_cpointer_obj);
 
   GC_REG_TRAV(scheme_bucket_type, bucket_obj);
 

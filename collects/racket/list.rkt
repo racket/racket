@@ -30,7 +30,8 @@
 
          ;; convenience
          append-map
-         filter-not)
+         filter-not
+         shuffle)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -327,6 +328,8 @@
       (reverse result)
       (loop (cdr l) (if (f (car l)) result (cons (car l) result))))))
 
+(define (shuffle l)
+  (sort l < #:key (lambda (_) (random)) #:cache-keys? #t))
 
 ;; mk-min : (number number -> boolean) symbol (X -> real) (listof X) -> X
 (define (mk-min cmp name f xs)

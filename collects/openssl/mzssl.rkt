@@ -270,7 +270,9 @@
   (define-struct (ssl-client-context ssl-context) ())
   (define-struct (ssl-server-context ssl-context) ())
 
-  (define-struct ssl-listener (l mzctx))
+  (define-struct ssl-listener (l mzctx)
+    #:property prop:evt (lambda (lst) (wrap-evt (ssl-listener-l lst) 
+                                                (lambda (x) lst))))
 
   ;; internal:
   (define-struct mzssl (ssl i o r-bio w-bio pipe-r pipe-w 

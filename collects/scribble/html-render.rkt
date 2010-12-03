@@ -9,6 +9,7 @@
          scheme/port
          scheme/list
          scheme/string
+         file/convertible
          mzlib/runtime-path
          setup/main-doc
          setup/main-collects
@@ -947,6 +948,15 @@
       (cond
         [(string? e) (super render-content e part ri)] ; short-cut for common case
         [(list? e) (super render-content e part ri)] ; also a short-cut
+        [(and (convertible? e)
+              (convert e 'png-bytes))
+         => (lambda (bstr)
+              (let ([w (integer-bytes->integer (subbytes bstr 16 20) #f #t)]
+                    [h (integer-bytes->integer (subbytes bstr 20 24) #f #t)])
+                `((img ([src ,(install-file "pict.png" bstr)]
+                        [alt "image"]
+                        [width ,(number->string w)]
+                        [height ,(number->string h)])))))]
         [(image-element? e)
          (let* ([src (main-collects-relative->path (image-element-path e))]
                 [suffixes (image-element-suffixes e)]

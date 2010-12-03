@@ -70,8 +70,25 @@
         #:key (λ (v) (vector-ref v 1))))
 
 (define (stress-display how-many res)
+  (define-values
+    (min-cpu min-real min-gc)
+  (for/fold ([min-cpu +inf.0]
+             [min-real +inf.0]
+             [min-gc +inf.0])
+    ([v (in-list res)])
+    (match-define (vector label cpu real gc) v)
+    (printf "~a: cpu: ~a real: ~a gc: ~a (averaged over ~a runs)\n"
+            label cpu real gc how-many)
+    (values (min min-cpu cpu)
+            (min min-real real)
+            (min min-gc gc))))
+  (define (norm min x)
+    (if (zero? min)
+        "inf"
+        (real->decimal-string (/ x min))))
+  (printf "Normalized:\n")
   (for ([v (in-list res)])
     (match-define (vector label cpu real gc) v)
     (printf "~a: cpu: ~a real: ~a gc: ~a (averaged over ~a runs)\n"
-            label cpu real gc how-many))
+            label (norm min-cpu cpu) (norm min-real real) (norm min-gc gc) how-many))
   (newline))

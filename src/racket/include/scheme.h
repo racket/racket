@@ -461,7 +461,7 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 #define SCHEME_UDPP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_udp_type)
 #define SCHEME_UDP_EVTP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_udp_evt_type)
 
-#define SCHEME_CPTRP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_cpointer_type) || SAME_TYPE(SCHEME_TYPE(obj), scheme_offset_cpointer_type))
+#define SCHEME_CPTRP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_cpointer_type))
 
 #define SCHEME_MUTABLEP(obj) (!(MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) & 0x1))
 #define SCHEME_IMMUTABLEP(obj) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) & 0x1)
@@ -562,7 +562,7 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 
 typedef struct Scheme_Cptr
 {
-  Scheme_Inclhash_Object so; /* 0x1 => an external pointer (not GCable) */
+  Scheme_Inclhash_Object so; /* 0x1 => an external pointer (not GCable); 0x2 => has offset */
   void *val;
   Scheme_Object *type;
 } Scheme_Cptr;
@@ -574,8 +574,9 @@ typedef struct Scheme_Offset_Cptr
 
 #define SCHEME_CPTR_VAL(obj) (((Scheme_Cptr *)(obj))->val)
 #define SCHEME_CPTR_TYPE(obj) (((Scheme_Cptr *)(obj))->type)
-#define SCHEME_CPTR_OFFSET(obj) (SAME_TYPE(_SCHEME_TYPE(obj), scheme_offset_cpointer_type) ? ((Scheme_Offset_Cptr *)obj)->offset : 0)
+#define SCHEME_CPTR_OFFSET(obj) (SCHEME_CPTR_HAS_OFFSET(obj) ? ((Scheme_Offset_Cptr *)obj)->offset : 0)
 #define SCHEME_CPTR_FLAGS(obj) MZ_OPT_HASH_KEY(&((Scheme_Cptr *)(obj))->so)
+#define SCHEME_CPTR_HAS_OFFSET(obj) (SCHEME_CPTR_FLAGS(obj) & 0x2)
 
 #define SCHEME_SET_IMMUTABLE(obj)  ((MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) |= 0x1))
 #define SCHEME_SET_CHAR_STRING_IMMUTABLE(obj) SCHEME_SET_IMMUTABLE(obj)
@@ -1709,7 +1710,7 @@ extern void *scheme_malloc_envunbox(size_t);
 /*                   embedding configuration and hooks                    */
 /*========================================================================*/
 
-typedef void (*Scheme_On_Atomic_Timeout_Proc)(void);
+typedef void (*Scheme_On_Atomic_Timeout_Proc)(int must_give_up);
 
 #if SCHEME_DIRECT_EMBEDDED
 

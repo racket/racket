@@ -5,6 +5,7 @@
 
 @table-of-contents[]
 
+@include-section["convertible.scrbl"]
 @include-section["gzip.scrbl"]
 @include-section["gunzip.scrbl"]
 @include-section["zip.scrbl"]

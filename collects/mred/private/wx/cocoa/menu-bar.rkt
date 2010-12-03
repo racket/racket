@@ -35,14 +35,26 @@
    "MrEd"))
 
 (define the-apple-menu #f)
+(define recurring-for-command (make-parameter #f))
 
 (define-objc-class MyBarMenu NSMenu
   []
   ;; Disable automatic handling of keyboard shortcuts, except for
   ;;  the Apple menu
   (-a _BOOL (performKeyEquivalent: [_id evt])
-      (and the-apple-menu
-           (tell #:type _BOOL the-apple-menu performKeyEquivalent: evt))))
+      (or (and the-apple-menu
+               (tell #:type _BOOL the-apple-menu performKeyEquivalent: evt))
+          ;; Explicity send the event to the keyWindow:
+          (and
+           (not (recurring-for-command))
+           (let ([w (tell app keyWindow)])
+             (and w
+                  (let ([r (tell w firstResponder)])
+                    (and r
+                         (begin
+                           (parameterize ([recurring-for-command #t])
+                             (tell r keyDown: evt))
+                           #t)))))))))
 
 (define cocoa-mb (tell (tell MyBarMenu alloc) init))
 (define current-mb #f)

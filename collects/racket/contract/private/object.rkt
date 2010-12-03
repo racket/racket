@@ -39,7 +39,7 @@
    (λ (ctc)
      (λ (blame)
        (λ (val)
-         (make-wrapper-object val blame
+         (make-wrapper-object ctc val blame
                               (object-contract-methods ctc) (object-contract-method-ctcs ctc)
                               (object-contract-fields ctc) (object-contract-field-ctcs ctc)))))
    #:name
@@ -53,7 +53,9 @@
    #:first-order 
    (λ (ctc)
      (λ (val)
-       (check-object-contract val #f (object-contract-methods ctc) (object-contract-fields ctc))))))
+       (let/ec ret
+         (check-object-contract val (object-contract-methods ctc) (object-contract-fields ctc)
+                                (λ args (ret #f))))))))
 
 (define-syntax (object-contract stx)
   (syntax-case stx ()

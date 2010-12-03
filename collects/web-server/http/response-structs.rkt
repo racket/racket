@@ -9,6 +9,7 @@
 (define-struct response/basic (code message seconds mime headers))
 (define-struct (response/full response/basic) (body))
 (define-struct (response/incremental response/basic) (generator))
+(define-struct (response/port response/basic) (output))
 
 (define response/c
   (or/c response/basic?
@@ -30,6 +31,8 @@
       (list* (make-header #"Content-Length" (string->bytes/utf-8 (number->string (response/full->size resp))))
              (response/basic-headers resp))
       (response/full-body resp))]
+    [(response/port? resp)
+     resp]
     [(response/incremental? resp)
      (if close?
          resp
@@ -104,10 +107,17 @@
           [mime bytes?]
           [headers (listof header?)]
           [generator ((() () #:rest (listof bytes?) . ->* . any) . -> . any)])]
+ [struct (response/port response/basic)
+         ([code number?]
+          [message bytes?]
+          [seconds number?]
+          [mime bytes?]
+          [headers (listof header?)]
+          [output (output-port? . -> . void)])]
  [response/c contract?]
  [make-xexpr-response 
   ((pretty-xexpr/c)
    (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:headers (listof header?) #:preamble bytes?)
    . ->* . response/full?)]
- [normalize-response ((response/c) (boolean?) . ->* . (or/c response/full? response/incremental?))]
+ [normalize-response ((response/c) (boolean?) . ->* . (or/c response/full? response/incremental? response/port?))]
  [TEXT/HTML-MIME-TYPE bytes?])

@@ -37,13 +37,31 @@ Returns @racket[#t] if @racket[v] is a weak box, @racket[#f] otherwise.}
 @;------------------------------------------------------------------------
 @section[#:tag "ephemerons"]{Ephemerons}
 
-An @deftech{ephemeron} is similar to a weak box (see
-@secref["weakbox"]), except that
+An @deftech{ephemeron} @cite{Hayes97} is a generalization of a
+@tech{weak box} (see @secref["weakbox"]). Instead of just containing
+one value, an emphemeron holds two values: one that is considered the
+value of the ephemeron and another that is the ephemeron's key. Like
+the value in a weak box, the value in and ephemeron may be replaced by
+@racket[#f], but when the @emph{key} is no longer reachable (except
+possibly via weak references) instead of when the value is no longer
+reachable.
 
+As long as an ephemeron's value is retained, the reference is
+considered a non-weak reference. References to the key via the value
+are treated specially, however, in that the reference does not
+necessarily count toward the key's reachability. A @tech{weak box} can
+be seen as a specialization of an ephemeron where the key and value
+are the same.
+
+One particularly common use of ephemerons is to combine them with a
+weak hash table (see @secref["hashtables"]) to produce a mapping where
+the memory manager can reclaim key--value pairs even when the value
+refers to the key.
+
+More precisely,
 @itemize[
 
- @item{an ephemeron contains a key and a value; the value can be
- extracted from the ephemeron, but the value is replaced
+ @item{the value in an ephemeron is replaced
  by @racket[#f] when the automatic memory manager can prove that
  either the ephemeron or the key is reachable only through weak
  references (see @secref["weakbox"]); and}
@@ -56,11 +74,6 @@ An @deftech{ephemeron} is similar to a weak box (see
  references).}
 
 ]
-
-In particular, an ephemeron can be combined with a weak hash table
-(see @secref["hashtables"]) to produce a mapping where the memory
-manager can reclaim key--value pairs even when the value refers to the
-key.
 
 
 @defproc[(make-ephemeron [key any/c] [v any/c]) ephemeron?]{
@@ -170,11 +183,15 @@ this procedure is never called.}
 @defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{
 
 Returns an estimate of the number of bytes of memory occupied by
-reachable data from @racket[cust]. (The estimate is calculated
-@italic{without} performing an immediate garbage collection;
-performing a collection generally decreases the number returned by
-@racket[current-memory-use].) If @racket[cust] is not provided, the
-estimate is a total reachable from any custodians.
+reachable data from @racket[cust].  This estimate is calculated by the
+last garbage colection, and can be 0 if none occured (or if none occured
+since the given custodian was created).  The @racket[current-memory-use]
+function does @italic{not} perform a collection by itself; doing one
+before the call will generally decrease the result (or increase it from
+0 if no collections happened yet).
+
+If @racket[cust] is not provided, the estimate is a total reachable from
+any custodians.
 
 When Racket is compiled without support for memory accounting, the
 estimate is the same (i.e., all memory) for any individual custodian;
@@ -184,4 +201,3 @@ see also @racket[custodian-memory-accounting-available?].}
 
 Dumps information about memory usage to the (low-level) standard
 output port.}
-

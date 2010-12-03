@@ -180,6 +180,7 @@
     (connect-delete gtk)
     (connect-configure gtk)
     (connect-focus gtk)
+    (connect-window-state gtk)
 
     (define saved-title (or label ""))
     (define is-modified? #f)
@@ -311,6 +312,7 @@
           (hash-set! all-frames this #t)
           (hash-remove! all-frames this))
       (super direct-show on?)
+      (when on? (gtk_window_deiconify gtk))
       (register-frame-shown this on?))
 
     (define/public (destroy)

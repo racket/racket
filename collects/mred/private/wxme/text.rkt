@@ -49,12 +49,7 @@
 (define outline-pen (send the-pen-list find-or-create-pen "BLACK" 0 'transparent))
 (define outline-inactive-pen (send the-pen-list find-or-create-pen (get-highlight-background-color) 1 'solid))
 (define outline-brush (send the-brush-list find-or-create-brush (get-highlight-background-color) 'solid))
-(define xpattern #"\x88\x88\0\0\x22\x22\0\0\x88\x88\0\0\x22\x22\0\0\x88\x88\0\0\x22\x22\0\0\x88\x88\0\0\x22\x22\0\0")
-(define outline-nonowner-brush (let ([b (new brush%)])
-                                 (send b set-color "BLACK")
-                                 (send b set-stipple (make-object bitmap% xpattern 16 16))
-                                 (send b set-style 'xor)
-                                 b))
+(define outline-nonowner-brush outline-brush)
 (define clear-brush (send the-brush-list find-or-create-brush "WHITE" 'solid))
 
 (define (showcaret>= a b)
@@ -5257,28 +5252,15 @@
                                                    hilite-some? hsxs hsxe hsys hsye
                                                    old-style))))))))))
                       (let*-values ([(draw-first?)
-                                     (or (not (showcaret>= show-caret 'show-caret))
-                                         (and s-caret-snip (not (pair? show-caret)))
-                                         (not hilite-on?)
+                                     (or (and (or (not (showcaret>= show-caret 'show-caret))
+						  (and s-caret-snip (not (pair? show-caret)))
+						  (not hilite-on?))
+					      (not show-xsel?))
                                          (= -startpos -endpos)
                                          (-endpos . < . pcounter)
                                          (-startpos . > . (+ pcounter (mline-len line))))]
                                     [(hilite-some? hsxs hsxe hsys hsye old-style)
                                      (process-snips draw-first? #f old-style)])
-                        (when (and (positive? wrap-bitmap-width)
-                                   (not (has-flag? (snip->flags (mline-last-snip line)) HARD-NEWLINE))
-                                   last
-                                   (rightx . >= . max-width)
-                                   (send auto-wrap-bitmap ok?))
-                          (let ([h (min (->long (send auto-wrap-bitmap get-height))
-                                        (mline-bottombase line))]
-                                [osfg (send old-style get-foreground)])
-                            (send dc draw-bitmap-section
-                                  auto-wrap-bitmap 
-                                  (sub1 (+ max-width dx)) (+ (- bottombase h) dy)
-                                  0 0 wrap-bitmap-width h
-                                  'solid osfg)))
-
                         (let ([prevwasfirst
                                (if hilite-some?
                                    (if (not (= hsxs hsxe))
@@ -5337,6 +5319,21 @@
                                                (send dc set-pen save-pen))))
                                          prevwasfirst))
                                    prevwasfirst)])
+                          
+                          (when (and (positive? wrap-bitmap-width)
+                                     (not (has-flag? (snip->flags (mline-last-snip line)) HARD-NEWLINE))
+                                     last
+                                     (rightx . >= . max-width)
+                                     (send auto-wrap-bitmap ok?))
+                            (let ([h (min (->long (send auto-wrap-bitmap get-height))
+                                          (mline-bottombase line))]
+                                  [osfg (send old-style get-foreground)])
+                              (send dc draw-bitmap-section
+                                    auto-wrap-bitmap 
+                                    (sub1 (+ max-width dx)) (+ (- bottombase h) dy)
+                                    0 0 wrap-bitmap-width h
+                                    'solid osfg)))
+
                           (let ([old-style
                                  (if draw-first?
                                      old-style

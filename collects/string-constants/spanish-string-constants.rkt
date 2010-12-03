@@ -42,8 +42,7 @@
  (web-materials "Sitios de Web Relacionados")
  (tool-web-sites "Sitios de Web de Herramientas")   ;; menu item title
  (plt-homepage "Racket")
- (how-to-use-scheme "Cómo Usar Scheme")
- (teachscheme!-homepage "TeachScheme!")
+ (pbd-homepage "Program by Design")
  
  ;;; bug report form
  (cancel-bug-report? "¿Cancelar el reporte de problemas?")

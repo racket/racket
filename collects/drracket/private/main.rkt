@@ -6,8 +6,10 @@
          mred
          framework
          mzlib/class
-         mzlib/list
+         racket/list
          racket/path
+         racket/file
+         racket/dict
          browser/external
          setup/plt-installer)
 
@@ -316,17 +318,7 @@
      (make-check-box 'drracket:open-in-tabs 
                      (string-constant open-files-in-tabs)
                      editor-panel)
-     (make-check-box 'drracket:show-line-numbers?
-                     (string-constant show-line-numbers)
-                     editor-panel
-                     (lambda (value)
-                       (define (drracket:frame? frame)
-                         (and (is-a? frame top-level-window<%>)
-                              (is-a? frame drracket:unit:frame%)))
-                       ;; is it a hack to use `get-top-level-windows' ?
-                       (define frames (filter drracket:frame? (get-top-level-windows)))
-                       (when (not (null? frames))
-                         (send (car frames) show-line-numbers! value))))
+     
 
      (make-check-box 'drracket:show-interactions-on-execute 
                      (string-constant show-interactions-on-execute)
@@ -346,7 +338,17 @@
   
   (preferences:add-to-editor-checkbox-panel
    (λ (editor-panel)
-     (void)
+     (make-check-box 'drracket:show-line-numbers?
+                     (string-constant show-line-numbers)
+                     editor-panel
+                     (lambda (value)
+                       (define (drracket:frame? frame)
+                         (and (is-a? frame top-level-window<%>)
+                              (is-a? frame drracket:unit:frame%)))
+                       ;; is it a hack to use `get-top-level-windows' ?
+                       (define frames (filter drracket:frame? (get-top-level-windows)))
+                       (when (not (null? frames))
+                         (send (car frames) show-line-numbers! value))))
      
      ;; come back to this one.
      #;
@@ -452,6 +454,30 @@
  (λ (filename)
    (run-installer filename)
    #f))
+
+;; trim old console-previous-exprs preferences to compenstate 
+;; for a bug that let it grow without bound
+(let* ([max-len 30]
+       [trim (λ (exprs save)
+               (when (list? exprs)
+                 (let ([len (length exprs)])
+                   (when (> len max-len)
+                     (save (drop exprs (- len max-len)))))))])
+  (let ([framework-prefs (get-preference 'plt:framework-prefs)])
+    (when (and (list? framework-prefs)
+               (andmap pair? framework-prefs))
+      (let ([exprs-pref (assq 'drscheme:console-previous-exprs framework-prefs)])
+        (when exprs-pref
+          (trim (second exprs-pref)
+                (λ (trimmed)
+                  (put-preferences (list 'plt:framework-prefs)
+                                   (list (dict-set framework-prefs 'drscheme:console-previous-exprs (list trimmed)))
+                                   void)))))))
+  (trim (get-preference 'plt:framework-pref:drscheme:console-previous-exprs)
+        (λ (trimmed)
+          (put-preferences (list 'plt:framework-pref:drscheme:console-previous-exprs)
+                           (list trimmed)
+                           void))))
 
 (drracket:tools:load/invoke-all-tools
  (λ () (void))

@@ -41,11 +41,11 @@
         (let ([a (tell NSArray 
                        arrayWithObjects: #:type (_list i _NSString) extensions
                        count: #:type _NSUInteger (length extensions))])
-          (tellv ns setAllowedFileTypes: a))))
-    (let ([others? (ormap (lambda (e)
-                            (equal? (cadr e) "*.*"))
-                          filters)])
-      (tellv ns setAllowsOtherFileTypes: #:type _BOOL others?))
+          (tellv ns setAllowedFileTypes: a))
+        (let ([others? (ormap (lambda (e)
+                                (equal? (cadr e) "*.*"))
+                              filters)])
+          (tellv ns setAllowsOtherFileTypes: #:type _BOOL others?))))
 
     (cond
      [(memq 'multi style)
@@ -57,15 +57,19 @@
     (when message
       (tellv ns setMessage: #:type _NSString message))
     (when directory
-      (tellv ns setDirectoryURL: (tell NSURL 
-                                       fileURLWithPath: #:type _NSString (if (string? directory)
-                                                                             directory
-                                                                             (path->string directory))
-                                       isDirectory: #:type _BOOL #t)))
+      (let ([dir (if (string? directory)
+                     directory
+                     (path->string directory))])
+        (if (version-10.6-or-later?)
+            (tellv ns setDirectoryURL: (tell NSURL 
+                                             fileURLWithPath: #:type _NSString dir
+                                             isDirectory: #:type _BOOL #t))
+            (tellv ns setDirectory: #:type _NSString dir))))
     (when filename
-      (tellv ns setNameFieldStringValue: #:type _NSString (path->string
-                                                           (file-name-from-path filename))))
-
+      (when (version-10.6-or-later?)
+        (tellv ns setNameFieldStringValue: #:type _NSString (path->string
+                                                             (file-name-from-path filename)))))
+    
     (when (memq 'enter-packages style)
       (tellv ns setTreatsFilePackagesAsDirectories: #:type _BOOL #t))
 
@@ -74,7 +78,9 @@
            ;; all other eventspaces and threads. It would be nice to improve
            ;; on this, but it's good enough.
            (atomically
-            (let ([front (get-front)])
+            (let ([front (get-front)]
+                  [parent (and (version-10.6-or-later?)
+                               parent)])
               (when parent
                 (tellv ns beginSheetModalForWindow: (send parent get-cocoa-window)
                        completionHandler: #f))

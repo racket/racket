@@ -1,6 +1,6 @@
 
 (module slides-to-picts scheme/base
-  (require mred
+  (require racket/draw
            scheme/class
            scheme/unit
 	   "sig.ss"
@@ -14,7 +14,7 @@
 
   (define get-slides-as-picts
     (lambda (file w h c? [stop-after #f])
-      (let ([ns (make-gui-namespace)]
+      (let ([ns (make-base-namespace)]
 	    [orig-ns (namespace-anchor->empty-namespace anchor)]
 	    [slides null]
 	    [xs (/ w 1024)]

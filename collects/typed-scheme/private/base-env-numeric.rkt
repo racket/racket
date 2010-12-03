@@ -338,9 +338,12 @@
                            (-Nat -Nat . -> . (-values (list -Nat -Nat)))
                            (-Integer -Integer . -> . (-values (list -Integer -Integer))))]
 
-[arithmetic-shift (cl->* (-Fixnum (Un -NegativeFixnum (-val 0)) . -> . -Fixnum)
-                         (-Nat -Nat . -> . -Nat)
+[arithmetic-shift (cl->* ((-val 0) (Un -NegativeFixnum (-val 0)) . -> . (-val 0))
+                         (-NonnegativeFixnum (Un -NegativeFixnum (-val 0)) . -> . -NonnegativeFixnum)
+                         (-Fixnum (Un -NegativeFixnum (-val 0)) . -> . -Fixnum)
+                         (-Nat -Integer . -> . -Nat)
                          (-Integer -Integer . -> . -Integer))]
+
 [bitwise-and (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
                     ((list -Integer) -NonnegativeFixnum . ->* . -NonnegativeFixnum)
                     (null -Fixnum . ->* . -Fixnum)
@@ -365,6 +368,7 @@
             (-Fixnum . -> . -NonnegativeFixnum)
             (-Pos . -> . -Pos)
             (-Integer . -> . -Nat)
+            (-ExactRational . -> . -ExactRational)
             (-Flonum . -> . -NonnegativeFlonum)
             (-InexactReal . -> . -InexactReal)
             (-Real . -> . -Real))]
@@ -378,6 +382,9 @@
 [inexact->exact (cl->*
                  (-Real . -> . -ExactRational)
                  (N . -> . N))]
+[fl->exact-integer (cl->*
+                    (-NonnegativeFlonum . -> . -Nat)
+                    (-Flonum . -> . -Integer))]
 
 [floor rounder]
 [ceiling rounder]
@@ -414,6 +421,12 @@
        (-NonnegativeFlonum . -> . -NonnegativeFlonum)
        (-FloatComplex . -> . -FloatComplex)
        (N . -> . N))]
+[integer-sqrt (cl->*
+               (-Zero . -> . -Zero)
+               (-NonnegativeFixnum . -> . -NonnegativeFixnum)
+               (-Nat . -> . -Nat)
+               (-NonnegativeFlonum . -> . -NonnegativeFlonum)
+               (-Real . -> . N))]
 [log (cl->*
       (-Pos . -> . -Real)
       (-FloatComplex . -> . -FloatComplex)
@@ -434,7 +447,14 @@
 
 ;; scheme/math
 
-[sgn (-Real . -> . -Real)]
+[sgn (cl->* (-Zero . -> . -Zero)
+            (-ExactPositiveInteger . -> . -PositiveFixnum)
+            (-ExactNonnegativeInteger . -> . -NonnegativeFixnum)
+            (-ExactRational . -> . -Fixnum)
+            (-Flonum . -> . -Flonum)
+            (-InexactReal . -> . -InexactReal)
+            (-Real . -> . -Real))]
+
 [pi -NonnegativeFlonum]
 [sqr (cl->* (-> -Pos -Pos)
             (-> -Integer -Nat)

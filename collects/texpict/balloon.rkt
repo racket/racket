@@ -1,7 +1,7 @@
 (module balloon mzscheme
   (require "mrpict.ss"
 	   "utils.ss"
-	   mred
+	   racket/draw
            mzlib/class
            mzlib/etc
            mzlib/math)

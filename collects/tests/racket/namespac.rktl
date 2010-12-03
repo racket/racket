@@ -162,4 +162,10 @@
 
 ;; ----------------------------------------
 
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(define-namespace-anchor anchor))
+  (test 1 eval '(eval 1 (namespace-anchor->namespace anchor))))
+
+;; ----------------------------------------
+
 (report-errs)

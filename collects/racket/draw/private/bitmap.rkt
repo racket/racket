@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/unsafe/ops
+         file/convertible
          "syntax.rkt"
          "hold.rkt"
          "../unsafe/bstr.rkt"
@@ -62,8 +63,19 @@
 (define fx+ unsafe-fx+)
 (define fx* unsafe-fx*)
 
+(define png-convertible<%>
+  (interface* ()
+              ([prop:convertible
+                (lambda (bm format default)
+                  (case format
+                    [(png-bytes)
+                     (let ([s (open-output-bytes)])
+                       (send bm save-file s 'png)
+                       (get-output-bytes s))]
+                    [else default]))])))
+
 (define bitmap%
-  (class object%
+  (class* object% (png-convertible<%>)
 
     ;; We support three kinds of bitmaps:
     ;;  * Color with alpha channel; 
@@ -221,11 +233,11 @@
     (define locked 0)
     (define/public (adjust-lock delta) (set! locked (+ locked delta)))
 
-    (def/public (load-bitmap [(make-alts path-string? input-port?) in]
-                             [bitmap-file-kind-symbol? [kind 'unknown]]
-                             [(make-or-false color%) [bg #f]]
-                             [any? [complain-on-failure? #f]])
-      (check-alternate 'load-bitmap)
+    (def/public (load-file [(make-alts path-string? input-port?) in]
+                           [bitmap-file-kind-symbol? [kind 'unknown]]
+                           [(make-or-false color%) [bg #f]]
+                           [any? [complain-on-failure? #f]])
+      (check-alternate 'load-file)
       (release-bitmap-storage)
       (set!-values (s b&w?) (do-load-bitmap in kind bg complain-on-failure?))
       (set! width (if s (cairo_image_surface_get_width s) 0))

@@ -8,6 +8,7 @@
          scheme/path
          setup/main-collects
          setup/path-relativize
+         file/convertible
          "render-struct.ss")
 
 (provide render%)
@@ -677,6 +678,7 @@
          (render-content (traverse-element-content i ri) part ri)]
         [(part-relative-element? i)
          (render-content (part-relative-element-content i ri) part ri)]
+        [(convertible? i) (list "???")]
         [else (render-other i part ri)]))
 
     (define/public (render-other i part ri)
@@ -687,13 +689,15 @@
     (define copied-srcs (make-hash))
     (define copied-dests (make-hash))
 
-    (define/public (install-file fn)
-      (if refer-to-existing-files
+    (define/public (install-file fn [content #f])
+      (if (and refer-to-existing-files
+               (not content))
           (if (string? fn)
               (string->path fn)
               fn)
           (let ([normalized (normal-case-path (simplify-path (path->complete-path fn)))])
-            (or (hash-ref copied-srcs normalized #f)
+            (or (and (not content)
+                     (hash-ref copied-srcs normalized #f))
                 (let ([src-dir (path-only fn)]
                       [dest-dir (get-dest-directory #t)]
                       [fn (file-name-from-path fn)])
@@ -715,22 +719,26 @@
                     (let-values ([(dest-file normalized-dest-file)
                                   (let loop ([dest-file dest-file])
                                     (let ([normalized-dest-file 
-                                           (normal-case-path (simplify-path (path->complete-path dest-file)))])
-                                      (if (file-exists? dest-file)
-                                          (cond
-                                           [(call-with-input-file*
-                                             src-file
-                                             (lambda (src)
-                                               (call-with-input-file* 
+                                           (normal-case-path (simplify-path (path->complete-path dest-file)))]
+                                          [check-same
+                                           (lambda (src)
+                                             (call-with-input-file* 
                                                 dest-file
                                                 (lambda (dest)
-                                                  (or (equal? (port-file-identity src)
-                                                              (port-file-identity dest))
+                                                  (or (and (not content)
+                                                           (equal? (port-file-identity src)
+                                                                   (port-file-identity dest)))
                                                       (let loop ()
                                                         (let ([s (read-bytes 4096 src)]
                                                               [d (read-bytes 4096 dest)])
                                                           (and (equal? s d)
-                                                               (or (eof-object? s) (loop))))))))))
+                                                               (or (eof-object? s) (loop)))))))))])
+                                      (if (file-exists? dest-file)
+                                          (cond
+                                           [(or (and content
+                                                     (check-same (open-input-bytes content)))
+                                                (and (not content)
+                                                     (call-with-input-file* src-file check-same)))
                                             ;; same content at that destination
                                             (values dest-file normalized-dest-file)]
                                            [(hash-ref copied-dests normalized-dest-file #f)
@@ -743,10 +751,15 @@
                                           ;; new file
                                           (values dest-file normalized-dest-file))))])
                       (unless (file-exists? dest-file)
-                        (copy-file src-file dest-file))
+                        (if content
+                            (call-with-output-file*
+                             dest-file
+                             (lambda (dest) (write-bytes content dest)))
+                            (copy-file src-file dest-file)))
                       (hash-set! copied-dests normalized-dest-file #t)
                       (let ([result (path->string (file-name-from-path dest-file))])
-                        (hash-set! copied-srcs normalized result)
+                        (unless content
+                          (hash-set! copied-srcs normalized result))
                         result))))))))
 
     ;; ----------------------------------------

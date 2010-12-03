@@ -26,6 +26,7 @@
     (init [(cnvs canvas)])
     (define canvas cnvs)
 
+    (inherit end-delay)
     (super-new)
 
     (define gl #f)
@@ -59,21 +60,18 @@
         (values (unbox xb) (unbox yb))))
 
     (define/override (queue-backing-flush)
-      ;; With Cocoa window-level delay doesn't stop
-      ;; displays; it blocks flushes to the screen.
-      ;; So leave the delay in place, and `end-delay'
-      ;; after displaying to the window (after which
-      ;; we'll be ready to flush the window), which
-      ;; is at then end of `do-backing-flush'.
+      ;; Re-enable expose events so that the queued 
+      ;; backing flush will be handled:
+      (end-delay)
       (send canvas queue-backing-flush))
 
     (define/override (flush)
       (send canvas flush))
 
     (define/override (request-delay)
-      (request-flush-delay (send canvas get-flush-window)))
+      (send canvas request-canvas-flush-delay))
     (define/override (cancel-delay req)
-      (cancel-flush-delay req))))
+      (send canvas cancel-canvas-flush-delay req))))
 
 (define (do-backing-flush canvas dc ctx dx dy)
   (tellv ctx saveGraphicsState)
@@ -99,6 +97,5 @@
                    (cairo_fill cr)
                    (cairo_set_source cr s)
                    (cairo_pattern_destroy s))
-                 (cairo_destroy cr))))
-           (send dc end-delay)))
+                 (cairo_destroy cr))))))
    (tellv ctx restoreGraphicsState)))

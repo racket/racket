@@ -60,8 +60,7 @@
   (web-materials "相关网站") ;; menu item title
   (tool-web-sites "Tools网站")   ;; menu item title
   (plt-homepage "Racket")
-  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
-  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
+  (pbd-homepage "Program by Design")
   
   ;;; bug report form
   (cancel-bug-report? "取消程序错误报告？")

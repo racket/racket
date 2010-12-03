@@ -35,6 +35,21 @@
 ;; Basic ----------------------------------------
 
 (define (basic-tests)
+  (test "(λx.e)[y←v] ≠ λy.(e[x←y][y←v])"
+        '(<>
+          ([k 4]) []
+          (((λ (k1) (λ (k) k))
+            (λ () k))
+           0))
+        '(<> ([k 4]) [] 0))
+  (test "(λx.e)[y←v] ≠ λz.(e[x←z][y←v]) if z ∈ FV(e)"
+        '(<>
+          ([k2 5])
+          ()
+          (((λ (k1) (λ (k) k2))
+            (λ () k))
+           0))
+        '(<> ([k2 5]) [] 5))
   (test "basic dw"
         '(<>
           () []
@@ -141,6 +156,16 @@
             0)
            (λ (x) (+ x 1))))
         '(<> () (1 3) 8))
+  (test "abort tag eval"
+        '(<>
+          () []
+          (% (print 1) 2 3))
+        '(<> () [1] 2))
+  (test "abort handler eval"
+        '(<>
+          () []
+          (% 1 2 (print 3)))
+        '(<> () [3] 2))
   (test "call/cc 2 levels dw"
         '(<>
           ()
@@ -314,7 +339,76 @@
         '(<>
           ()
           [1 2 1 2]
-          (λ (v) 10))))
+          (λ (v) 10)))
+  (test "prompt enclosing prompt-tag expression"
+        '(<> () [] 
+             (% 0
+                (% (abort 0 1) 2 3)
+                (λ (x) x)))
+        '(<> () [] 1))
+  (test "prompt enclosing prompt-handler expression"
+        '(<> () []
+             (% 0 
+                (begin 
+                  (% 0 1 (abort 0 2))
+                  (print 3))
+                (λ (x) x)))
+        '(<> () [] 2))
+  (test "prompt-tag position in continuation-marks context"
+        '(<> () []
+             (% 0 
+                (call/cm 
+                 1 2
+                 (λ ()
+                   (% (abort 0 (current-marks 1 0))
+                      3
+                      4)))
+                (λ (x) x)))
+        '(<> () [] (list 2)))
+  (test "prompt-handler position in continuation-marks context"
+        '(<> () []
+             (% 0 
+                (call/cm 
+                 1 2
+                 (λ ()
+                   (call/cm
+                    1 3
+                    (% 0
+                       4
+                       (abort 0 (current-marks 1 0))))))
+                (λ (x) x)))
+        '(<> () [] (list 2)))
+  (test "if-test position in continuation-marks context"
+        '(<> ()
+             []
+             (% 0
+                (call/cm 
+                 1 2 
+                 (λ () (if (abort 0 (current-marks 1 0)) 3 4)))
+                (λ (x) x)))
+        '(<> () [] (list 2)))
+  (test "dw in continuation-marks context"
+        '(<> ()
+             []
+             (% 0
+                (call/cm 1 2 
+                         (λ () 
+                           (dynamic-wind
+                            (λ () #f)
+                            (λ () (current-marks 1 0))
+                            (λ () #t))))
+                (λ (x) x)))
+        '(<> () [] (list 2)))
+  (test "wcm without key in continuation-marks context"
+        '(<> ()
+             []
+             (% 0
+                (wcm ([1 2])
+                     ((λ (x) x)
+                      (wcm ([3 4])
+                           (current-marks 3 0))))
+                (λ (x) x)))
+        '(<> () [] (list 4))))
 
 ;; R6RS dynamic-wind ----------------------------------------
 
@@ -916,7 +1010,7 @@
                               (λ (x) x)))))
                         hole))
                  100)
-                (λ (x) x)))))
+                (λ (x1) x1)))))
   (test "similar way to get stuck, but using the pre thunk"
         '(<>
           ([output (list)]
@@ -980,7 +1074,7 @@
                     hole))
                   100)
                  0)
-                (λ (x) x)))))
+                (λ (x1) x1)))))
   (test "loop"
         '(<>
           ([counter (list 4 3 2 1 0)])

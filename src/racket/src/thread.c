@@ -206,7 +206,7 @@ HOOK_SHARED_OK void (*scheme_sleep)(float seconds, void *fds);
 HOOK_SHARED_OK void (*scheme_notify_multithread)(int on);
 HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
 HOOK_SHARED_OK int (*scheme_check_for_break)(void);
-HOOK_SHARED_OK void (*scheme_on_atomic_timeout)(void);
+HOOK_SHARED_OK Scheme_On_Atomic_Timeout_Proc scheme_on_atomic_timeout;
 HOOK_SHARED_OK static int atomic_timeout_auto_suspend;
 HOOK_SHARED_OK static int atomic_timeout_atomic_level;
 
@@ -214,7 +214,6 @@ THREAD_LOCAL_DECL(struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_d
 
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
-ROSYM static Scheme_Object *froz_key;
 
 THREAD_LOCAL_DECL(static int do_atomic = 0);
 THREAD_LOCAL_DECL(static int missed_context_switch = 0);
@@ -380,7 +379,6 @@ static void make_initial_config(Scheme_Thread *p);
 
 static int do_kill_thread(Scheme_Thread *p);
 static void suspend_thread(Scheme_Thread *p);
-static void wait_until_suspend_ok(int for_stack);
 
 static int check_sleep(int need_activity, int sleep_now);
 
@@ -471,9 +469,6 @@ void scheme_init_thread(Scheme_Env *env)
   client_symbol = scheme_intern_symbol("client");
   server_symbol = scheme_intern_symbol("server");
   
-  REGISTER_SO(froz_key);
-  froz_key = scheme_make_symbol("frozen"); /* uninterned */
-
   scheme_add_global_constant("dump-memory-stats",
 			     scheme_make_prim_w_arity(scheme_dump_gc_stats,
 						      "dump-memory-stats",
@@ -3311,10 +3306,6 @@ Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
   if (scheme_is_stack_too_shallow()) {
     Scheme_Thread *p = scheme_current_thread;
 
-    /* Don't mangle the stack if we're in atomic mode, because that
-       probably means a stack-freeze trampoline, etc. */
-    wait_until_suspend_ok(1);
-
     p->ku.k.p1 = thunk;
     p->ku.k.p2 = config;
     p->ku.k.p3 = mgr;
@@ -3379,7 +3370,7 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 
   SCHEME_USE_FUEL(25);
 
-  wait_until_suspend_ok(0);
+  scheme_wait_until_suspend_ok();
 
   np = MALLOC_ONE_TAGGED(Scheme_Thread);
   np->so.type = scheme_thread_type;
@@ -4051,6 +4042,43 @@ void scheme_break_thread(Scheme_Thread *p)
 # endif
 }
 
+static void call_on_atomic_timeout(int must)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  int running;
+  double sleep_end;
+  int block_descriptor;
+  Scheme_Object *blocker;
+  Scheme_Ready_Fun block_check;
+  Scheme_Needs_Wakeup_Fun block_needs_wakeup;
+
+  /* Save any state that has to do with the thread blocking or 
+     sleeping, in case scheme_on_atomic_timeout() runs Racket code. */
+
+  running = p->running;
+  sleep_end = p->sleep_end;
+  block_descriptor = p->block_descriptor;
+  blocker = p->blocker;
+  block_check = p->block_check;
+  block_needs_wakeup = p->block_needs_wakeup;
+
+  p->running = MZTHREAD_RUNNING;
+  p->sleep_end = 0.0;
+  p->block_descriptor = 0;
+  p->blocker = NULL;
+  p->block_check = NULL;
+  p->block_needs_wakeup = NULL;
+
+  scheme_on_atomic_timeout(must);
+
+  p->running = running;
+  p->sleep_end = sleep_end;
+  p->block_descriptor = block_descriptor;
+  p->blocker = blocker;
+  p->block_check = block_check;
+  p->block_needs_wakeup = block_needs_wakeup;
+}
+
 static void find_next_thread(Scheme_Thread **return_arg) {
   Scheme_Thread *next;
   Scheme_Thread *p = scheme_current_thread;
@@ -4212,7 +4240,7 @@ void scheme_thread_block(float sleep_time)
   if ((p->running & MZTHREAD_USER_SUSPENDED)
       && !(p->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
     /* This thread was suspended. */
-    wait_until_suspend_ok(0);
+    scheme_wait_until_suspend_ok();
     if (!p->next) {
       /* Suspending the main thread... */
       select_thread();
@@ -4311,9 +4339,9 @@ void scheme_thread_block(float sleep_time)
   }
 #endif
 
-/*####################################*/
-/* THREAD CONTEXT SWITCH HAPPENS HERE */
-/*####################################*/
+  /*####################################*/
+  /* THREAD CONTEXT SWITCH HAPPENS HERE */
+  /*####################################*/
 
   if (next) {
     /* Swap in `next', but first clear references to other threads. */
@@ -4329,7 +4357,7 @@ void scheme_thread_block(float sleep_time)
         scheme_fuel_counter = p->engine_weight;
         scheme_jit_stack_boundary = scheme_stack_boundary;
       }
-      scheme_on_atomic_timeout();
+      call_on_atomic_timeout(0);
       if (atomic_timeout_auto_suspend > 1)
         --atomic_timeout_auto_suspend;
     }
@@ -4360,7 +4388,7 @@ void scheme_thread_block(float sleep_time)
   /* Suspended while I was asleep? */
   if ((p->running & MZTHREAD_USER_SUSPENDED)
       && !(p->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
-    wait_until_suspend_ok(0);
+    scheme_wait_until_suspend_ok();
     if (!p->next)
       scheme_thread_block(0.0); /* main thread handled at top of this function */
     else
@@ -4592,22 +4620,24 @@ void scheme_end_atomic_can_break(void)
     scheme_check_break_now();
 }
 
-static void wait_until_suspend_ok(int for_stack)
+int scheme_wait_until_suspend_ok(void)
 {
-  if (scheme_on_atomic_timeout && atomic_timeout_auto_suspend) {
+  int did = 0;
+
+  if (scheme_on_atomic_timeout) {
     /* new-style atomic timeout */
-    if (for_stack) {
-      /* a stack overflow is ok for the new-style timeout */
-      return;
-    } else if (do_atomic > atomic_timeout_atomic_level) {
+    if (do_atomic > atomic_timeout_atomic_level) {
       scheme_log_abort("attempted to wait for suspend in nested atomic mode");
       abort();
     }
   }
 
   while (do_atomic && scheme_on_atomic_timeout) {
-    scheme_on_atomic_timeout();
+    did = 1;
+    call_on_atomic_timeout(1);
   }
+
+  return did;
 }
 
 Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Timeout_Proc p)
@@ -4631,10 +4661,6 @@ void scheme_weak_suspend_thread(Scheme_Thread *r)
   if (r->running & MZTHREAD_SUSPENDED)
     return;
 
-  if (r == scheme_current_thread) {
-    wait_until_suspend_ok(0);
-  }
-  
   if (r->prev) {
     r->prev->next = r->next;
     r->next->prev = r->prev;
@@ -4679,7 +4705,6 @@ void scheme_weak_resume_thread(Scheme_Thread *r)
 
 void scheme_about_to_move_C_stack(void)
 {
-  wait_until_suspend_ok(1);
 }
 
 static Scheme_Object *
@@ -4791,7 +4816,7 @@ void scheme_kill_thread(Scheme_Thread *p)
 {
   if (do_kill_thread(p)) {
     /* Suspend/kill self: */
-    wait_until_suspend_ok(0);
+    scheme_wait_until_suspend_ok();
     if (p->suspend_to_kill)
       suspend_thread(p);
     else
@@ -4921,7 +4946,7 @@ static void suspend_thread(Scheme_Thread *p)
     p->running |= MZTHREAD_USER_SUSPENDED;
   } else {
     if (p == scheme_current_thread) {
-      wait_until_suspend_ok(0);
+      scheme_wait_until_suspend_ok();
     }
     p->running |= MZTHREAD_USER_SUSPENDED;
     scheme_weak_suspend_thread(p); /* ok if p is scheme_current_thread */
@@ -8082,269 +8107,6 @@ void scheme_free_gmp(void *p, void **mem_pool)
 }
 
 /*========================================================================*/
-/*                             stack freezer                              */
-/*========================================================================*/
-
-/* When interacting with certain libraries that can lead to Scheme
-   callbacks, the stack region used by the library should not be
-   modified by Scheme thread swaps. In that case, the callback must be
-   constrained. Completely disallowing synchornization with ther
-   threads or unbounded computation, however, is sometimes too
-   difficult. A stack-freezer sequence offer a compromise, where the
-   callback is run as much as possible, but it can be suspended to
-   allow the library call to return so that normal Scheme-thread
-   scheduling can resume. The callback is then completed in a normal
-   scheduling context, where it is no longer specially constrained.
-   
-   The call process is
-    scheme_with_stack_freeze(f, data)
-     -> f(data) in frozen mode
-         -> ... frozen_run_some(g, data2)          \
-             -> Scheme code, may finish or may not  | maybe loop
-         froz->in_progress inicates whether done   /
-     -> continue scheme if not finished
-
-   In this process, it's the call stack between f(data) and the call
-   to frozen_run_some() that won't be copied in or out until f(data)
-   returns.
-
-   Nesting scheme_with_stack_freeze() calls should be safe, but it
-   won't achieve the goal, which is to limit the amount of work done
-   before returning (because the inner scheme_with_stack_freeze() will
-   have to run to completion). */
-
-static unsigned long get_deeper_base();
-
-typedef struct FrozenTramp {
-  MZTAG_IF_REQUIRED
-  Scheme_Frozen_Stack_Proc do_f;
-  void *do_data;
-  int val;
-  int in_progress;
-  int progress_is_resumed;
-  Scheme_Object *old_param;
-  Scheme_Config *config;
-  void *progress_base_addr;
-  mz_jmp_buf progress_base;
-  Scheme_Jumpup_Buf_Holder *progress_cont;
-  int timer_on;
-  double continue_until;
-#ifdef MZ_PRECISE_GC
-  void *fixup_var_stack_chain;
-#endif
-}  FrozenTramp;
-
-int scheme_with_stack_freeze(Scheme_Frozen_Stack_Proc wha_f, void *wha_data)
-{
-  FrozenTramp *froz;
-  Scheme_Cont_Frame_Data cframe;
-  Scheme_Object *bx;
-  int retval;
-  Scheme_Jumpup_Buf_Holder *pc;
-
-  froz = MALLOC_ONE_RT(FrozenTramp);
-  SET_REQUIRED_TAG(froz->type = scheme_rt_frozen_tramp);
-
-  bx = scheme_make_raw_pair((Scheme_Object *)froz, NULL);
-
-  scheme_push_continuation_frame(&cframe);
-  scheme_set_cont_mark(froz_key, bx);
-
-  pc = scheme_new_jmpupbuf_holder();
-  froz->progress_cont = pc;
-
-  scheme_init_jmpup_buf(&froz->progress_cont->buf);
-
-  scheme_start_atomic();
-  retval = wha_f(wha_data);
-  froz->val = retval;
-
-  if (froz->in_progress) {
-    /* We have leftover work; jump and finish it (non-atomically).
-       But don't swap until we've jumped back in, because the jump-in
-       point might be trying to suspend the thread (and that should
-       complete before any swap). */
-    scheme_end_atomic_no_swap();
-    SCHEME_CAR(bx) = NULL;
-    froz->in_progress = 0;
-    froz->progress_is_resumed = 1;
-    if (!scheme_setjmp(froz->progress_base)) {
-#ifdef MZ_PRECISE_GC
-      froz->fixup_var_stack_chain = &__gc_var_stack__;
-#endif
-      scheme_longjmpup(&froz->progress_cont->buf);
-    }
-  } else {
-    scheme_end_atomic();
-  }
-
-  scheme_pop_continuation_frame(&cframe);
-
-  froz->old_param = NULL;
-  froz->progress_cont = NULL;
-  froz->do_data = NULL;
-
-  return froz->val;
-}
-
-static void suspend_froz_progress(void)
-{
-  FrozenTramp * volatile froz;
-  double msecs;
-  Scheme_Object *v;
-
-  v = scheme_extract_one_cc_mark(NULL, froz_key);
-  froz = (FrozenTramp *)SCHEME_CAR(v);
-  v = NULL;
-
-  msecs = scheme_get_inexact_milliseconds();
-  if (msecs < froz->continue_until)
-    return;
-
-  scheme_on_atomic_timeout = NULL;
-
-  froz->in_progress = 1;
-  if (scheme_setjmpup(&froz->progress_cont->buf, (void*)froz->progress_cont, froz->progress_base_addr)) {
-    /* we're back */
-    scheme_reset_jmpup_buf(&froz->progress_cont->buf);
-#ifdef MZ_PRECISE_GC
-    /* Base addr points to the last valid gc_var_stack address.
-       Fixup that link to skip over the part of the stack we're
-       not using right now. */
-    ((void **)froz->progress_base_addr)[0] = froz->fixup_var_stack_chain;
-    ((void **)froz->progress_base_addr)[1] = NULL;
-#endif
-  } else {
-    /* we're leaving */
-    scheme_longjmp(froz->progress_base, 1);
-  }
-}
-
-static void froz_run_new(FrozenTramp * volatile froz, int run_msecs)
-{
-  double msecs;
-
-  /* We're willing to start new work that is specific to this thread */
-  froz->progress_is_resumed = 0;
-
-  msecs = scheme_get_inexact_milliseconds();
-  froz->continue_until = msecs + run_msecs;
-  
-  if (!scheme_setjmp(froz->progress_base)) {
-    Scheme_Frozen_Stack_Proc do_f;
-    scheme_start_atomic();
-    scheme_on_atomic_timeout = suspend_froz_progress;
-    atomic_timeout_atomic_level = -1;
-    do_f = froz->do_f;
-    do_f(froz->do_data);
-  }
-
-  if (froz->progress_is_resumed) {
-    /* we've already returned once; jump out to new progress base */
-    scheme_longjmp(froz->progress_base, 1);
-  } else {
-    scheme_on_atomic_timeout = NULL;
-    scheme_end_atomic_no_swap();
-  }
-}
-
-static void froz_do_run_new(FrozenTramp * volatile froz, int *iteration, int run_msecs)
-{
-  /* This function just makes room on the stack, eventually calling
-     froz_run_new(). */
-  int new_iter[32];
-
-  if (iteration[0] == 3) {
-#ifdef MZ_PRECISE_GC
-    froz->progress_base_addr = (void *)&__gc_var_stack__;
-#else
-    froz->progress_base_addr = (void *)new_iter;
-#endif
-    froz_run_new(froz, run_msecs);
-  } else {
-    new_iter[0] = iteration[0] + 1;
-    froz_do_run_new(froz, new_iter, run_msecs);
-  }
-}
-
-int scheme_frozen_run_some(Scheme_Frozen_Stack_Proc do_f, void *do_data, int run_msecs)
-{
-  FrozenTramp * volatile froz;
-  int more = 0;
-  Scheme_Object *v;
-  
-  v = scheme_extract_one_cc_mark(NULL, froz_key);
-  if (v)
-    froz = (FrozenTramp *)SCHEME_CAR(v);
-  else
-    froz = NULL;
-  v = NULL;
-
-  if (froz) {
-    if (froz->in_progress) {
-      /* We have work in progress. */
-      if ((unsigned long)froz->progress_base_addr < get_deeper_base()) {
-	/* We have stack space to resume the old work: */
-        double msecs;
-	froz->in_progress = 0;
-	froz->progress_is_resumed = 1;
-        msecs = scheme_get_inexact_milliseconds();
-        froz->continue_until = msecs + run_msecs;
-	scheme_start_atomic();
-	scheme_on_atomic_timeout = suspend_froz_progress;
-        atomic_timeout_atomic_level = -1;
-	if (!scheme_setjmp(froz->progress_base)) {
-#ifdef MZ_PRECISE_GC
-	  froz->fixup_var_stack_chain = &__gc_var_stack__;
-#endif
-	  scheme_longjmpup(&froz->progress_cont->buf);
-	} else {
-	  scheme_on_atomic_timeout = NULL;
-	  scheme_end_atomic_no_swap();
-	}
-      }
-    } else {
-      int iter[1];
-      iter[0] = 0;
-      froz->do_f = do_f;
-      froz->do_data = do_data;
-      froz_do_run_new(froz, iter, run_msecs);
-    }
-
-    more = froz->in_progress;
-  }
-
-  return more;
-}
-
-int scheme_is_in_frozen_stack()
-{
-  Scheme_Object *v;
-  
-  v = scheme_extract_one_cc_mark(NULL, froz_key);
-  if (v)
-    return 1;
-  else
-    return 0;
-}
-
-/* Disable warning for returning address of local variable: */
-#ifdef _MSC_VER
-#pragma warning (disable:4172)
-#endif
-
-static unsigned long get_deeper_base()
-{
-  long here;
-  unsigned long here_addr = (unsigned long)&here;
-  return here_addr;
-}
-
-#ifdef _MSC_VER
-#pragma warning (default:4172)
-#endif
-
-/*========================================================================*/
 /*                               precise GC                               */
 /*========================================================================*/
 
@@ -8396,7 +8158,6 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_evt, mark_evt);
   GC_REG_TRAV(scheme_rt_syncing, mark_syncing);
   GC_REG_TRAV(scheme_rt_parameterization, mark_parameterization);
-  GC_REG_TRAV(scheme_rt_frozen_tramp, mark_frozen_tramp);
 }
 
 END_XFORM_SKIP;

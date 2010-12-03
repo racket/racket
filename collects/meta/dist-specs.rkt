@@ -316,13 +316,14 @@ package: :=
 ;; Utility for pulling out the names of libraries
 get-libs: :=
   (lambda (p)
-    (let* ([xs (parameterize ([current-command-line-arguments
-                               '#("--no-op" "" "" "")])
+    (let* ([xs (parameterize ([current-command-line-arguments '#("nothing")])
                  (dynamic-require (build-path racket/ "src" "get-libs.rkt")
                                   'all-files+sizes))]
            [xs (or (assq p xs) (error 'get-libs "unknown package, ~s" p))]
            [xs (append-map cdr (cdr xs))]
-           [xs (remove-duplicates (map car xs))])
+           [xs (map (lambda (x) (if (>= (length x) 3) (list-ref x 2) (car x)))
+                    xs)]
+           [xs (remove-duplicates xs)])
       `(lib: ,@xs)))
 
 ;; ============================================================================

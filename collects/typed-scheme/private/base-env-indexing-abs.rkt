@@ -173,9 +173,9 @@
    [random (cl-> [(index-type) -Nat] [() -Real])]
    
    [raise-type-error
-    (cl->
-     [(Sym -String Univ) (Un)]
-     [(Sym -String index-type (-lst Univ)) (Un)])]
+    (cl->*
+     [-> Sym -String Univ (Un)]
+     [->* (list Sym -String index-type) Univ (Un)])]
    
    ))
  

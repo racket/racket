@@ -5,8 +5,8 @@
 
 A @scheme[gl-config%] object encapsulates configuration information
  for an OpenGL drawing context. Use a @scheme[gl-config%] object as an
- initialization argument for @scheme[canvas%], or provide it to
- @xmethod[bitmap% set-gl-config].
+ initialization argument for @scheme[canvas%] or provide it to
+ @racket[make-gl-bitmap].
 
 
 @defconstructor[()]{

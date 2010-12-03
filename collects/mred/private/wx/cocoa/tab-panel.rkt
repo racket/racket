@@ -23,12 +23,25 @@
 (void (ffi-lib (build-path psm-tab-bar-dir "PSMTabBarControl")))
 (define NSNoTabsNoBorder 6)
 
+(define NSDefaultControlTint 0)
+(define NSClearControlTint 7)
+
 (import-class NSView NSTabView NSTabViewItem PSMTabBarControl)
 (import-protocol NSTabViewDelegate)
 
+(define NSOrderedAscending -1)
+(define NSOrderedSame 0)
+(define NSOrderedDescending 1)
+(define (order-content-first a b data)
+  (cond
+   [(ptr-equal? a data) NSOrderedDescending]
+   [(ptr-equal? b data) NSOrderedAscending]
+   [else NSOrderedSame]))
+(define order_content_first (function-ptr order-content-first
+                                          (_fun #:atomic? #t _id _id _id -> _int)))
+
 (define-objc-class MyTabView NSTabView
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
-  #:protocols (NSTabViewDelegate)
   [wxb]
   (-a _void (tabView: [_id cocoa] didSelectTabViewItem: [_id item-cocoa])
       (queue-window*-event wxb (lambda (wx) (send wx do-callback)))))
@@ -45,12 +58,15 @@
         x y w h
         style
         labels)
-  (inherit get-cocoa register-as-child)
+  (inherit get-cocoa register-as-child
+           is-window-enabled?
+           block-mouse-events)
 
   (define tabv-cocoa (as-objc-allocation
                       (tell (tell MyTabView alloc) init)))
   (define cocoa (if (not (memq 'border style))
-                    (tell (tell NSView alloc) init)
+                    (as-objc-allocation
+                     (tell (tell NSView alloc) init))
                     tabv-cocoa))
 
   (define control-cocoa
@@ -126,7 +142,11 @@
                  (tell (tell NSTabViewItem alloc) initWithIdentifier: #f))])
       (tellv item setLabel: #:type _NSString (label->plain-label lbl))
       (tellv tabv-cocoa addTabViewItem: item)
-      (set! item-cocoas (append item-cocoas (list item)))))
+      (set! item-cocoas (append item-cocoas (list item)))
+      ;; Sometimes the sub-view for the tab buttons gets put in front
+      ;; of the content view, so fix the order:
+      (tellv tabv-cocoa sortSubviewsUsingFunction: #:type _fpointer order_content_first
+             context: #:type _pointer content-cocoa)))
 
   (define/public (delete i)
     (let ([item-cocoa (list-ref item-cocoas i)])
@@ -153,6 +173,15 @@
   
   (when control-cocoa
     (set-ivar! control-cocoa wxb (->wxb this)))
+
+  (define/override (enable-window on?)
+    (super enable-window on?)
+    (let ([on? (and on? (is-window-enabled?))])
+      (block-mouse-events (not on?))
+      (tellv tabv-cocoa setControlTint: #:type _int
+             (if on? NSDefaultControlTint NSClearControlTint))
+      (when control-cocoa
+        (tellv control-cocoa setEnabled: #:type _BOOL on?))))
 
   (define/override (maybe-register-as-child parent on?)
     (register-as-child parent on?)))

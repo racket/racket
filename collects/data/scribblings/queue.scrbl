@@ -34,6 +34,31 @@ thread-unsafe way.
     (dequeue! q)]
 }
 
+@defproc[(queue->list [queue queue/c]) (listof any/c)]{
+  Returns an immutable list containing the elements of the queue
+  in the order the elements were added.
+
+  @defexamples[#:eval qeval
+    (define queue (make-queue))
+    (enqueue! queue 8)
+    (enqueue! queue 9)
+    (enqueue! queue 0)
+    (queue->list queue)]
+}
+
+@defproc[(queue-length [queue queue/c]) integer?]{
+  Returns the number of elements in the queue.
+
+  @defexamples[#:eval qeval
+    (define queue (make-queue))
+    (queue-length queue)
+    (enqueue! queue 5)
+    (enqueue! queue 12)
+    (queue-length queue)
+    (dequeue! queue)
+    (queue-length queue)]
+}
+
 @defproc[(queue-empty? [q queue/c]) boolean?]{
   Recognizes whether a queue is empty or not.
 
@@ -52,6 +77,13 @@ thread-unsafe way.
   @defexamples[#:eval qeval
     (queue? (make-queue))
     (queue? 'not-a-queue)]
+}
+
+@defproc[(in-queue [queue queue?])
+         sequence?]{
+
+Returns a sequence whose elements are the elements of
+@racket[queue].
 }
 
 @deftogether[(

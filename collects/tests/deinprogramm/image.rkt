@@ -101,8 +101,8 @@
         
       (let ([bm-normal (make-object bitmap% (max 1 width) (max 1 height))]
             [bm-bitmap (make-object bitmap% (max 1 width) (max 1 height))]
-            [s-normal (make-bytes (* width height 4))]
-            [s-bitmap (make-bytes (* width height 4))])
+            [s-normal (make-bytes (* (max 1 width) (max 1 height) 4))]
+            [s-bitmap (make-bytes (* (max 1 width) (max 1 height) 4))])
         
         (send bdc set-bitmap bm-normal)
         (send bdc clear)

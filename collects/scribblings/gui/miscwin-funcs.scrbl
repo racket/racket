@@ -107,20 +107,24 @@ default is @racket['(cmd)]. Under X, the default is normally
 @defproc[(get-panel-background)
          (is-a?/c color%)]{
 
-Returns the background color of a panel (usually some shade of gray)
- for the current platform.
+Returns a shade of gray.
 
+Historically, the result matched the color of
+a @racket[panel%] background, but @racket[panel%] backgrounds can vary
+on some platforms (e.g., when nested in a @racket[group-box-panel%]),
+so the result is no longer guaranteed to be related to a
+@racket[panel%]'s color.
 }
 
 
 @defproc[(get-highlight-background-color) (is-a?/c color%)]{
 
-Returns the color drawn behind selected text.}
+Returns the color that is drawn behind selected text.}
 
 
 @defproc[(get-highlight-text-color) (or/c (is-a?/c color%) #f)]{
 
-Returns the color used to draw selected text or @racket[#f] if
+Returns the color that is used to draw selected text or @racket[#f] if
 selected text is drawn with its usual color.}
 
 

@@ -119,7 +119,7 @@
   (in-dict-values gv))
 
 (define-sequence-syntax in-gvector*
-  (lambda () #'in-vector)
+  (lambda () #'in-gvector)
   (lambda (stx)
     (syntax-case stx ()
       [[(var) (in-gv gv-expr)]
@@ -137,7 +137,7 @@
       [[(var ...) (in-gv gv-expr)]
        (with-syntax ([gv-expr-c (wrap-expr/c #'gvector? #'gv-expr #:macro #'in-gv)])
          (syntax/loc stx
-           [(var ...) (in-vector gv-expr-c)]))]
+           [(var ...) (in-gvector gv-expr-c)]))]
       [_ #f])))
 
 (define-syntax (for/gvector stx)

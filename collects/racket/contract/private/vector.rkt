@@ -9,6 +9,24 @@
 
 (define-struct base-vectorof (elem immutable))
 
+(define-for-syntax (convert-args args this-one)
+  (let loop ([args args]
+             [new-args null])
+    (cond
+      [(null? args) (reverse new-args)]
+      [(keyword? (syntax-e (car args)))
+       (if (null? (cdr args))
+           (reverse (cons (car args) new-args))
+           (loop (cddr args)
+                 (list* (cadr args) (car args) new-args)))]
+      [else
+       (loop (cdr args)
+             (cons (syntax-property
+                    (car args)
+                    'racket/contract:positive-position
+                    this-one)
+                   new-args))])))
+
 (define (vectorof-name c)
   (let ([immutable (base-vectorof-immutable c)])
     (apply build-compound-type-name 'vectorof 
@@ -111,29 +129,11 @@
       (vector (gensym 'ctc) (list #'x) null))]
     [(vecof arg ...)
      (let ([args (syntax->list #'(arg ...))]
-           [this-one (gensym 'ctc)])
-       (define (convert-args args)
-         (let loop ([args args]
-                    [new-args null])
-           (cond
-             [(null? args) (reverse new-args)]
-             [(keyword? (syntax-e (car args)))
-              (if (null? (cdr args))
-                  (reverse (cons (car args) new-args))
-                  (loop (cddr args)
-                        (list* (cadr args) (car args) new-args)))]
-             [else
-              (append (reverse new-args)
-                      (cons (syntax-property
-                             (car args)
-                             'racket/contract:positive-position
-                             this-one)
-                            (cdr args)))])))
-       (with-syntax ([(new-arg ...) (convert-args args)]
-                     [app (datum->syntax stx '#%app)])
+           [this-one (gensym 'vectorof-ctc)])
+       (with-syntax ([(new-arg ...) (convert-args args this-one)])
          (syntax-property
           (syntax/loc stx
-            (app vectorof new-arg ...))
+            (vectorof new-arg ...))
           'racket/contract:contract
           (vector this-one (list #'vecof) null))))]))
 
@@ -265,29 +265,11 @@
       (vector (gensym 'ctc) (list #'x) null))]
     [(vec/c arg ...)
      (let ([args (syntax->list #'(arg ...))]
-           [this-one (gensym 'ctc)])
-       (define (convert-args args)
-         (let loop ([args args]
-                    [new-args null])
-           (cond
-             [(null? args) (reverse new-args)]
-             [(keyword? (syntax-e (car args)))
-              (if (null? (cdr args))
-                  (reverse (cons (car args) new-args))
-                  (loop (cddr args)
-                        (list* (cadr args) (car args) new-args)))]
-             [else
-              (loop (cdr args)
-                    (cons (syntax-property
-                           (car args)
-                           'racket/contract:positive-position
-                           this-one)
-                          new-args))])))
-       (with-syntax ([(new-arg ...) (convert-args args)]
-                     [app (datum->syntax stx '#%app)])
+           [this-one (gensym 'vector/c-ctc)])
+       (with-syntax ([(new-arg ...) (convert-args args this-one)])
          (syntax-property
           (syntax/loc stx
-            (app vector/c new-arg ...))
+            (vector/c new-arg ...))
           'racket/contract:contract
           (vector this-one (list #'vec/c) null))))]))
 

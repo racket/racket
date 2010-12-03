@@ -156,6 +156,15 @@
       =>
       0)
 
+(test (image-width empty-image) => 0)
+(test (image-height empty-image) => 0)
+(test (equal? (above empty-image
+                     (rectangle 10 10 "solid" "red"))
+              (beside empty-image
+                      (rectangle 10 10 "solid" "red")))
+      =>
+      #t)
+
 (check-close (image-width (rotate 45 (rectangle 100 0 'solid 'blue)))
              (inexact->exact (ceiling (* (sin (* pi 1/4)) 100))))
 (check-close (image-height (rotate 45 (rectangle 100 0 'solid 'blue)))
@@ -1220,8 +1229,8 @@
       16)
 
 (test (let ()
-        (define bmp (make-object bitmap% 4 4))
-        (define mask (make-object bitmap% 4 4))
+        (define bmp (make-bitmap 4 4))
+        (define mask (make-bitmap 4 4))
         (define bdc (make-object bitmap-dc% bmp))
         (send bdc set-brush "black" 'solid)
         (send bdc draw-rectangle 0 0 4 4)
@@ -1233,13 +1242,13 @@
         (let-values ([(bytes w h) (bitmap->bytes bmp mask)])
           bytes))
       =>
-      (bytes-append #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"
-                    #"\0\0\0\0" #"\377\0\0\0" #"\0\0\0\0" #"\0\0\0\0"
-                    #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"
-                    #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"))
+      (bytes-append #"\377\0\0\0" #"\377\0\0\0"   #"\377\0\0\0" #"\377\0\0\0"
+                    #"\377\0\0\0" #"\377\0\0\0"   #"\377\0\0\0" #"\377\0\0\0"
+                    #"\377\0\0\0" #"\377\0\0\0"   #"\377\0\0\0" #"\377\0\0\0"
+                    #"\377\0\0\0" #"\377\0\0\0"   #"\377\0\0\0" #"\377\0\0\0"))
 
 ;; ensure no error
-(test (begin (scale 2 (make-object bitmap% 10 10))
+(test (begin (scale 2 (make-bitmap 10 10))
              (void))
       =>
       (void))
@@ -1252,18 +1261,18 @@
     (send bdc draw-rectangle x y w h)
     (send bdc set-bitmap #f)))
 
-(define blue-10x20-bitmap (make-object bitmap% 10 20))
+(define blue-10x20-bitmap (make-bitmap 10 20))
 (fill-bitmap blue-10x20-bitmap "blue")
-(define blue-20x10-bitmap (make-object bitmap% 20 10))
+(define blue-20x10-bitmap (make-bitmap 20 10))
 (fill-bitmap blue-20x10-bitmap "blue")
-(define blue-20x40-bitmap (make-object bitmap% 20 40))
+(define blue-20x40-bitmap (make-bitmap 20 40))
 (fill-bitmap blue-20x40-bitmap "blue")
 
-(define green-blue-10x20-bitmap (make-object bitmap% 10 20))
+(define green-blue-10x20-bitmap (make-bitmap 10 20))
 (fill-bitmap green-blue-10x20-bitmap "green")
 (fill-bitmap green-blue-10x20-bitmap "blue" 0 0 10 10)
 
-(define green-blue-20x10-bitmap (make-object bitmap% 20 10))
+(define green-blue-20x10-bitmap (make-bitmap 20 10))
 (fill-bitmap green-blue-20x10-bitmap "green")
 (fill-bitmap green-blue-20x10-bitmap "blue" 10 0 10 10)
 
@@ -1276,9 +1285,6 @@
 (test (image-baseline (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
       => 
       20)
-(test (scale 2 (make-object image-snip% blue-10x20-bitmap))
-      =>
-      (image-snip->image (make-object image-snip% blue-20x40-bitmap)))
 
 (test (rotate 90 (make-object image-snip% blue-10x20-bitmap))
       =>
@@ -1480,9 +1486,9 @@
                  "white"))
 
 (let* ([bdc (make-object bitmap-dc%)]
-       [bm-ul (make-object bitmap% 10 10)]
-       [bm-ur (make-object bitmap% 10 10)]
-       [bm-ll (make-object bitmap% 10 10)])
+       [bm-ul (make-bitmap 10 10)]
+       [bm-ur (make-bitmap 10 10)]
+       [bm-ll (make-bitmap 10 10)])
   (send bdc set-bitmap bm-ul)
   (send bdc set-pen "red" 1 'transparent)
   (send bdc set-brush "red" 'solid)
@@ -2145,8 +2151,8 @@
 (let ()
   (define w 200)
   (define h 200)
-  (define bm1 (make-object bitmap% w h))
-  (define bm2 (make-object bitmap% w h))
+  (define bm1 (make-bitmap w h))
+  (define bm2 (make-bitmap w h))
   (define bytes1 (make-bytes (* w h 4) 0))
   (define bytes2 (make-bytes (* w h 4) 0))
   (define bdc1 (make-object bitmap-dc% bm1))

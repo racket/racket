@@ -10,6 +10,7 @@
 (git-path "/usr/bin/git")
 (Xvfb-path "/usr/bin/Xvnc")
 (fluxbox-path "/usr/bin/fluxbox")
+(vncviewer-path "/usr/bin/vncviewer")
 (current-make-install-timeout-seconds (* 90 60))
 (current-make-timeout-seconds (* 90 60))                                       
 (current-subprocess-timeout-seconds 90)

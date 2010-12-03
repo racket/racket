@@ -34,7 +34,7 @@
   (class (dialog-mixin frame%)
     (super-new)
 
-    (define/override (create-frame parent label w h style)
+    (define/override (create-frame parent label x y w h style)
       (let ([hwnd
              (CreateDialogIndirectParamW hInstance
                                          (make-DLGTEMPLATE
@@ -46,7 +46,9 @@
                                          dialog-proc
                                          0)])
         (SetWindowTextW hwnd label)
-        (MoveWindow hwnd 0 0 w h #t)
+        (let ([x (if (= x -11111) 0 x)]
+              [y (if (= y -11111) 0 y)])
+          (MoveWindow hwnd x y w h #t))
         hwnd))
 
     (define/override (is-dialog?) #t)))

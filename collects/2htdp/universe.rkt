@@ -230,7 +230,7 @@
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
-  (big-bang 1 (on-draw f) (on-tick add1)))
+  (big-bang 0 (on-draw f) (on-tick add1)))
 
 (define animate run-simulation)
 

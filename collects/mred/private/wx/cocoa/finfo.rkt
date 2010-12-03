@@ -65,8 +65,6 @@
 
 (define _FSRef _pointer) ; 80 bytes
 
-(define _OSStatus _sint32)
-
 (define-coreserv FSPathMakeRef (_fun _path _FSRef (_pointer = #f) -> _OSStatus))
 
 (define-coreserv FSGetCatalogInfo
@@ -112,7 +110,7 @@
                              v
                              #f #f #f)])
     (unless (zero? r)
-      (error 'file-creator-and-file "lookup failed (~a): ~e"
+      (error 'file-creator-and-type "lookup failed (~a): ~e"
              r
              path))))
 
@@ -122,7 +120,7 @@
     (unless (path-string? path)
       (raise-type-error 'file-creator-and-type "path string" path))
     (let ([info (let ([fs (path->fsref path)]
-                      [v (cast (malloc 256) _pointer _FSCatalogInfo-pointer)])
+                      [v (cast (malloc 256) _pointer (_gcable _FSCatalogInfo-pointer))])
                   (get-info v fs path)
                   (FSCatalogInfo-finderInfo v))])
       (values (int->str (FileInfo-fileCreator info))
@@ -135,7 +133,7 @@
     (unless (and (bytes? type) (= 4 (bytes-length type)))
       (raise-type-error 'file-creator-and-type "bytes string of length 4" type))
     (let ([fs (path->fsref path)]
-          [v (cast (malloc 256) _pointer _FSCatalogInfo-pointer)])
+          [v (cast (malloc 256) _pointer (_gcable _FSCatalogInfo-pointer))])
       (get-info v fs path)
       (let ([info (FSCatalogInfo-finderInfo v)])
         (set-FileInfo-fileCreator! info (str->int creator))
@@ -144,7 +142,7 @@
                                  kFSCatInfoFinderInfo
                                  v)])
         (unless (zero? r)
-          (error 'file-creator-and-file "change failed (~a): ~e"
+          (error 'file-creator-and-type "change failed (~a): ~e"
                  r
                  path))))
     (void)]))

@@ -734,19 +734,33 @@ is saved in the namespace, making the listening and information producing
 namespace-specific.
 
 @defproc[(planet-terse-register
-          [proc (-> (or/c 'download 'install 'docs-build 'finish) string? any/c)]
-          [namespace namespace? (current-namespace)]) void?]{
+          [proc (-> (or/c 'download 'install 'docs-build 'finish)
+                    string?
+                    any/c)])
+         void?]{
 Registers @racket[proc] as a function to be called when
-@racket[planet-terse-log] is called with a matching namespace argument.
- Note that @racket[proc] is called 
+@racket[planet-terse-log] is called.
+
+Note that @racket[proc] is called 
 asynchronously (ie, on some thread other than the one calling @racket[planet-terse-register]).
 }
 
 @defproc[(planet-terse-log [id (or/c 'download 'install 'finish)]
-                           [msg string?]
-                           [namespace namespace? (current-namespace)]) void?]{
-  This function is called by PLaneT to announce when things are happening.
-The namespace passed along is used to identify the procs to notify.
+                           [msg string?]) void?]{
+This function is called by PLaneT to announce when things are happening. See also
+@racket[planet-terse-set-key].
+}
+
+@defproc[(planet-terse-set-key [key any/c]) void?]{
+  This sets a @seclink["threadcells" #:doc '(lib "scribblings/reference/reference.scrbl")]{thread cell}
+  to the value of @racket[key].
+  The value of the thread cell is used as an index into a table to determine which
+  of the functions passed to @racket[planet-terse-register] to call when 
+  @racket[planet-terse-log] is called.
+  
+  The table holding the key uses ephemerons and a weak hash table to ensure that
+  when the @racket[key] is unreachable, then the procedures passed to @racket[planet-terse-log]
+  cannot be reached through the table.
 }
 
 @section{Developing Packages for PLaneT}

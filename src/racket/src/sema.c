@@ -634,25 +634,41 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
       start_pos = 0;
 
     /* Initial poll */
-    i = 0;
-    for (ii = 0; ii < n; ii++) {
-      /* Randomized start position for poll ensures fairness: */
-      i = (start_pos + ii) % n;
+    while (1) {
+      i = 0;
+      for (ii = 0; ii < n; ii++) {
+        /* Randomized start position for poll ensures fairness: */
+        i = (start_pos + ii) % n;
 
-      if (semas[i]->so.type == scheme_sema_type) {
-	if (semas[i]->value) {
-	  if ((semas[i]->value > 0) && (!syncing || !syncing->reposts || !syncing->reposts[i]))
-	    --semas[i]->value;
-          if (syncing && syncing->accepts && syncing->accepts[i])
-            scheme_accept_sync(syncing, i);
-	  break;
-	}
-      } else if (semas[i]->so.type == scheme_never_evt_type) {
-	/* Never ready. */
-      } else if (semas[i]->so.type == scheme_channel_syncer_type) {
-	/* Probably no need to poll */
-      } else if (try_channel(semas[i], syncing, i, NULL))
-	break;
+        if (semas[i]->so.type == scheme_sema_type) {
+          if (semas[i]->value) {
+            if ((semas[i]->value > 0) && (!syncing || !syncing->reposts || !syncing->reposts[i]))
+              --semas[i]->value;
+            if (syncing && syncing->accepts && syncing->accepts[i])
+              scheme_accept_sync(syncing, i);
+            break;
+          }
+        } else if (semas[i]->so.type == scheme_never_evt_type) {
+          /* Never ready. */
+        } else if (semas[i]->so.type == scheme_channel_syncer_type) {
+          /* Probably no need to poll */
+        } else if (try_channel(semas[i], syncing, i, NULL))
+          break;
+      }
+
+      if (ii >= n) {
+        if (!scheme_current_thread->next)
+          break;
+        else {
+          if (!scheme_wait_until_suspend_ok()) {
+            break;
+          } else {
+            /* there may have been some action on one of the waitables;
+               try again */
+          }
+        }
+      } else
+        break;
     }
 
     /* In the following, syncers get changed back to channels,
