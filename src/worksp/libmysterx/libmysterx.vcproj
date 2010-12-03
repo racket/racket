@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="libmysterx"
 	ProjectGUID="{68D1B4E0-D9D3-45C3-9BCC-A5491F1F755A}"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -81,6 +82,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain_rkt.pdb"
 				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(OutDir)\$(InputName).lib"
 				TargetMachine="1"
 			/>
@@ -101,9 +104,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -176,6 +176,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain_rkt.pdb"
 				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(OutDir)\$(InputName).lib"
 				TargetMachine="1"
 			/>
@@ -196,9 +198,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -271,6 +270,8 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(OutDir)\$(InputName).lib"
 				TargetMachine="1"
 			/>
@@ -291,9 +292,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -366,6 +364,8 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(OutDir)\$(InputName).lib"
 				TargetMachine="1"
 			/>
@@ -388,9 +388,6 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -411,6 +408,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\mysterx\bstr.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\mysterx\comtypes.cxx"
 				>
 			</File>
@@ -420,10 +421,6 @@
 			</File>
 			<File
 				RelativePath="..\..\mysterx\htmlutil.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mysterx\bstr.cxx"
 				>
 			</File>
 			<File

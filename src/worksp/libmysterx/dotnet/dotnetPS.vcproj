@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="dotnetPS"
 	ProjectGUID="{5BF37E89-6891-42AD-9133-77B412C01724}"
 	Keyword="AtlPSProj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -24,11 +25,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Checking for required files"
-				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;
-echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;
-Exit 1&#x0D;&#x0A;
-:END&#x0D;&#x0A;
-"
+				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;&#x0D;&#x0A;echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;&#x0D;&#x0A;Exit 1&#x0D;&#x0A;&#x0D;&#x0A;:END&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -60,6 +57,8 @@ Exit 1&#x0D;&#x0A;
 				Name="VCLinkerTool"
 				AdditionalDependencies="kernel32.lib rpcndr.lib rpcns4.lib rpcrt4.lib oleaut32.lib uuid.lib"
 				ModuleDefinitionFile="dotnetPS.def"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -78,9 +77,6 @@ Exit 1&#x0D;&#x0A;
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -98,11 +94,7 @@ Exit 1&#x0D;&#x0A;
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Checking for required files"
-				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;
-echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;
-Exit 1&#x0D;&#x0A;
-:END&#x0D;&#x0A;
-"
+				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;&#x0D;&#x0A;echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;&#x0D;&#x0A;Exit 1&#x0D;&#x0A;&#x0D;&#x0A;:END&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -134,6 +126,8 @@ Exit 1&#x0D;&#x0A;
 				Name="VCLinkerTool"
 				AdditionalDependencies="kernel32.lib rpcndr.lib rpcns4.lib rpcrt4.lib oleaut32.lib uuid.lib"
 				ModuleDefinitionFile="dotnetPS.def"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -154,9 +148,6 @@ Exit 1&#x0D;&#x0A;
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Performing registration"
 				CommandLine="regsvr32 /s /c &quot;$(TargetPath)&quot;"
@@ -172,11 +163,7 @@ Exit 1&#x0D;&#x0A;
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Checking for required files"
-				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;
-echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;
-Exit 1&#x0D;&#x0A;
-:END&#x0D;&#x0A;
-"
+				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;&#x0D;&#x0A;echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;&#x0D;&#x0A;Exit 1&#x0D;&#x0A;&#x0D;&#x0A;:END&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -211,6 +198,8 @@ Exit 1&#x0D;&#x0A;
 				ModuleDefinitionFile="dotnetPS.def"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -229,9 +218,6 @@ Exit 1&#x0D;&#x0A;
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

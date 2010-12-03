@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="GRacket"
 	ProjectGUID="{D59A2B28-330B-41F5-8261-F5BC1019E163}"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -77,6 +78,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
 				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -95,9 +98,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -162,6 +162,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
 				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -180,9 +182,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -227,15 +226,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\gracket.ico"
+				>
+			</File>
+			<File
 				RelativePath=".\HAND.CUR"
 				>
 			</File>
 			<File
 				RelativePath=".\mdi.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\gracket.ico"
 				>
 			</File>
 			<File

@@ -1,5 +1,5 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MzCOM", "MzCOM.vcproj", "{36F31050-55C6-41A3-A23E-3008EBFC1273}"
 	ProjectSection(ProjectDependencies) = postProject
 		{66548E7B-294E-40EF-B7C0-C8D6D7E6234F} = {66548E7B-294E-40EF-B7C0-C8D6D7E6234F}
@@ -15,9 +15,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmzgc", "..\libmzgc\libmz
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Release|Win32 = Release|Win32
-		Debug|Win32 = Debug|Win32
 		3m|Win32 = 3m|Win32
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{36F31050-55C6-41A3-A23E-3008EBFC1273}.3m|Win32.ActiveCfg = 3m|Win32

@@ -1,3 +1,6 @@
+libmysterx.ncb
+libmysterx.suo
+
 dotnet/_dotnet.h
 dotnet/_dotnet_i.c
 dotnet/_dotnet_p.c
@@ -8,10 +11,12 @@ dotnet/dlldata.c
 dotnet/Release
 
 myspage/Release
-myspage/vc80.idb
+myspage/*.idb
+myspage/*.user
 
 myssink/Release
-myssink/vc80.idb
+myssink/*.idb
+myssink/*.user
 
 gc_traverse.inc
 3m

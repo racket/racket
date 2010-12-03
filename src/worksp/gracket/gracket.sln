@@ -1,13 +1,12 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GRacket", "gracket.vcproj", "{D59A2B28-330B-41F5-8261-F5BC1019E163}"
 	ProjectSection(ProjectDependencies) = postProject
-		{81BD2D42-F150-493D-94BA-88585B202789} = {81BD2D42-F150-493D-94BA-88585B202789}
 		{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90} = {A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}
 		{66548E7B-294E-40EF-B7C0-C8D6D7E6234F} = {66548E7B-294E-40EF-B7C0-C8D6D7E6234F}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmzsch", "..\libracket\libracket.vcproj", "{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libracket", "..\libracket\libracket.vcproj", "{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}"
 	ProjectSection(ProjectDependencies) = postProject
 		{66548E7B-294E-40EF-B7C0-C8D6D7E6234F} = {66548E7B-294E-40EF-B7C0-C8D6D7E6234F}
 	EndProjectSection
@@ -24,10 +23,6 @@ Global
 		{D59A2B28-330B-41F5-8261-F5BC1019E163}.Debug|Win32.Build.0 = Debug|Win32
 		{D59A2B28-330B-41F5-8261-F5BC1019E163}.Release|Win32.ActiveCfg = Release|Win32
 		{D59A2B28-330B-41F5-8261-F5BC1019E163}.Release|Win32.Build.0 = Release|Win32
-		{81BD2D42-F150-493D-94BA-88585B202789}.Debug|Win32.ActiveCfg = Debug|Win32
-		{81BD2D42-F150-493D-94BA-88585B202789}.Debug|Win32.Build.0 = Debug|Win32
-		{81BD2D42-F150-493D-94BA-88585B202789}.Release|Win32.ActiveCfg = Release|Win32
-		{81BD2D42-F150-493D-94BA-88585B202789}.Release|Win32.Build.0 = Release|Win32
 		{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}.Debug|Win32.ActiveCfg = Debug|Win32
 		{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}.Debug|Win32.Build.0 = Debug|Win32
 		{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}.Release|Win32.ActiveCfg = Release|Win32
