@@ -146,6 +146,7 @@
 			  "../../racket/gc2/xform-mod.rkt"))
 
 (define (find-obj f d) (format "../~a/release/~a.obj" d f))
+(define (find-lib f d) (format "../~a/release/~a.lib" d f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,7 +198,9 @@
      "xsrc/foreign.obj"
      (string-append
       mz-inc
-      "/I../../foreign/libffi_msvc "
+      "/I../libffi "
+      "/I../../foreign/libffi/src/x86 "
+      "/I../../foreign/libffi/include "
       "/I../../racket/src ")
      #f
      ""
@@ -276,10 +279,7 @@
 	     "xsrc/mzsj86.obj"
 	     "xsrc/foreign.obj"
 	     (find-obj "gmp" "libracket")
-	     (find-obj "ffi" "libracket")
-	     (find-obj "win32" "libracket")
-	     (find-obj "prep_cif" "libracket")
-	     (find-obj "types" "libracket")
+	     (find-lib "libffi" "racket")
 	     (map
 	      (lambda (n)
 		(format "xsrc/~a.obj" n))

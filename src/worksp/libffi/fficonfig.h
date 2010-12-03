@@ -4,9 +4,6 @@
 /* fficonfig.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define this for MSVC, but not for mingw32! */
-#ifdef _MSC_VER
-#define __attribute__(x) /* */
-#endif
 #define alloca _alloca
 
 /*----------------------------------------------------------------*/
@@ -94,3 +91,17 @@
 /* Define this if you are using Purify and want to suppress spurious messages. */
 /* #undef USING_PURIFY */
 
+
+#ifdef HAVE_HIDDEN_VISIBILITY_ATTRIBUTE
+#ifdef LIBFFI_ASM
+#define FFI_HIDDEN(name) .hidden name
+#else
+#define FFI_HIDDEN __attribute__ ((visibility ("hidden")))
+#endif
+#else
+#ifdef LIBFFI_ASM
+#define FFI_HIDDEN(name)
+#else
+#define FFI_HIDDEN
+#endif
+#endif

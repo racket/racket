@@ -129,7 +129,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,..\..\racket\src,..\..\foreign\libffi_msvc,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -230,10 +230,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi_msvc\ffi.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Racket\Src\File.c"
 				>
 			</File>
@@ -310,10 +306,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi_msvc\prep_cif.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Racket\Src\Print.c"
 				>
 			</File>
@@ -370,15 +362,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi_msvc\types.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Racket\Src\vector.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\foreign\libffi_msvc\win32.c"
 				>
 			</File>
 		</Filter>
