@@ -2741,7 +2741,7 @@ static void register_disappearing_link(void **p, void *a, int late)
   mem_real_use += sizeof(DisappearingLink);
 }
 
-void GC_general_register_disappearing_link(void **p, void *a)
+void GC_register_indirect_disappearing_link(void **p, void *a)
 {
   register_disappearing_link(p, a, 0);
 }
