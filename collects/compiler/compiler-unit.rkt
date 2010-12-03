@@ -1,3 +1,4 @@
+#lang scheme/base
 ;; Main compilation procedures
 ;; (c) 1997-2010 PLT
 
@@ -5,7 +6,6 @@
 ;;  by dynamically linking to code supplied by the MzLib, dynext, and
 ;;  compiler collections.
 
-#lang scheme/base
 
 (require scheme/unit
 
