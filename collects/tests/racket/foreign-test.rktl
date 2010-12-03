@@ -70,6 +70,8 @@
   (t  2 'add1_byte_int  (_fun _byte -> _int ) 1)
   (t  2 'add1_int_byte  (_fun _int  -> _byte) 1)
   (t  2 'add1_byte_byte (_fun _byte -> _byte) 1)
+  (t  -1 'add1_int_int   (_fun _int  -> _int ) -2)
+  (t  -1 'add1_int_int   (_fun _int  -> _fixint ) -2)
   ;; ---
   (t 12 'decimal_int_int_int    (_fun _int  _int  -> _int ) 1 2)
   (t 12 'decimal_byte_int_int   (_fun _byte _int  -> _int ) 1 2)

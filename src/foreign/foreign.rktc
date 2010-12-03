@@ -606,6 +606,12 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
    (lambda (x aux) @list{scheme_get_unsigned_long_long_val(@x,&@aux)}) #f
    "integer_value_from_unsigned_long_long")
 
+/* This is like int32, but always assumes fixnum: */
+@(defctype* '(fixint "int32")   "Tsint32"  "INT" "INT"  "integer")
+
+/* This is like uint32, but always assumes fixnum: */
+@(defctype* '(ufixint "uint32") "Tuint32" "INT" "UINT" "integer_from_unsigned")
+
 @@@IFNDEF{SIXTY_FOUR_BIT_LONGS}{
 #define ffi_type_smzlong ffi_type_sint32
 #define ffi_type_umzlong ffi_type_uint32
@@ -621,12 +627,6 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 #define ffi_type_smzintptr ffi_type_sint64
 #define ffi_type_umzintptr ffi_type_uint64
 }
-
-/* This is like intptr, but always assumes fixnum: */
-@(defctype* '(fixint "smzintptr")   "intptr_t"  "INT" "INT"  "integer")
-
-/* This is like uint32, but always assumes fixnum: */
-@(defctype* '(ufixint "umzintptr") "uintptr_t" "INT" "UINT" "integer_from_unsigned")
 
 /* This is what mzscheme defines as intptr, assuming fixnums: */
 @(defctype* '(fixnum "smzintptr")
