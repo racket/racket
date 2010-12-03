@@ -155,7 +155,7 @@ Creates a fresh @tech{fxvector} of size @racket[(- end start)], with all of the
 elements of @racket[vec] from @racket[start] (inclusive) to
 @racket[end] (exclusive).}
 
-@defproc[(in-fxvector [vec vector?]
+@defproc[(in-fxvector [vec fxvector?]
                     [start exact-nonnegative-integer? 0]
                     [stop (or/c exact-nonnegative-integer? #f) #f]
                     [step (and/c exact-integer? (not/c zero?)) 1])

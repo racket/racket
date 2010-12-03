@@ -172,7 +172,7 @@ elements of @racket[vec] from @racket[start] (inclusive) to
 @racket[end] (exclusive).}
 
 
-@defproc[(in-flvector [vec vector?]
+@defproc[(in-flvector [vec flvector?]
                     [start exact-nonnegative-integer? 0]
                     [stop (or/c exact-nonnegative-integer? #f) #f]
                     [step (and/c exact-integer? (not/c zero?)) 1])
