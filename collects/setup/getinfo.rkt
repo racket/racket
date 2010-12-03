@@ -215,5 +215,5 @@
           [syms (listof symbol?)]))
  (find-relevant-directory-records
   (->* [(listof symbol?)]
-       [(lambda (x) (memq x '(preferred all-available)))]
+       [(or/c 'preferred 'all-available)]
        (listof directory-record?))))
